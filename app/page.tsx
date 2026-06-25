@@ -4,6 +4,7 @@ import { useRouter } from "next/navigation";
 import { LogoMark, Wordmark } from "@/components/Logo";
 import { ImportPanel } from "@/components/ImportPanel";
 import { PrintQueue } from "@/components/PrintQueue";
+import { PrintIcon } from "@/components/icons";
 import { useQueue } from "@/lib/queue";
 
 export default function Home() {
@@ -21,6 +22,9 @@ export default function Home() {
     setAllSelected,
     clear,
   } = useQueue();
+  const selectedRecipeIds = items
+    .filter((it) => it.status === "ready" && it.selected)
+    .map((it) => it.id);
 
   function handlePreview(ids: string[]) {
     if (ids.length === 0) return;
@@ -60,8 +64,31 @@ export default function Home() {
 
           {/* Recipes to print */}
           <section className="flex flex-col gap-cp-4">
-            <div className="flex items-baseline justify-between gap-cp-4">
+            <div className="flex items-center justify-between gap-cp-4 flex-wrap">
               <h2 className="text-[1.24rem] font-extrabold tracking-[-0.025em]">Recipes to print</h2>
+              <div className="flex items-center gap-cp-3">
+                <button
+                  type="button"
+                  className="btn btn-primary btn-compact"
+                  disabled={selectedRecipeIds.length === 0}
+                  onClick={() => handlePreview(selectedRecipeIds)}
+                >
+                  {selectedRecipeIds.length > 0
+                    ? `Preview selected (${selectedRecipeIds.length})`
+                    : "Preview selected"}
+                </button>
+                <button
+                  type="button"
+                  className="btn btn-primary btn-compact"
+                  disabled={selectedRecipeIds.length === 0}
+                  onClick={() => handlePrint(selectedRecipeIds)}
+                >
+                  <PrintIcon size={16} />
+                  {selectedRecipeIds.length > 0
+                    ? `Print selected (${selectedRecipeIds.length})`
+                    : "Print selected"}
+                </button>
+              </div>
             </div>
 
             {hydrated ? (
@@ -73,8 +100,6 @@ export default function Home() {
                 onRemove={remove}
                 onSetAllSelected={setAllSelected}
                 onClear={clear}
-                onPreview={handlePreview}
-                onPrint={handlePrint}
               />
             ) : (
               <div className="h-24 rounded-2xl border border-dashed border-line-strong" />

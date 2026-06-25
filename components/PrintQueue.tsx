@@ -7,7 +7,6 @@ import {
   ImageIcon,
   LinkIcon,
   PlateIcon,
-  PrintIcon,
   RefreshIcon,
   SpinnerIcon,
   TextIcon,
@@ -169,8 +168,6 @@ export function PrintQueue({
   onRemove,
   onSetAllSelected,
   onClear,
-  onPreview,
-  onPrint,
 }: {
   items: QueueItem[];
   canRetry: (item: QueueItem) => boolean;
@@ -179,8 +176,6 @@ export function PrintQueue({
   onRemove: (id: string) => void;
   onSetAllSelected: (selected: boolean) => void;
   onClear: () => void;
-  onPreview: (ids: string[]) => void;
-  onPrint: (ids: string[]) => void;
 }) {
   const ready = items.filter((it) => it.status === "ready");
   const selected = ready.filter((it) => it.selected);
@@ -224,23 +219,6 @@ export function PrintQueue({
         )}
         <button type="button" className="btn-ghost btn-compact" onClick={onClear}>
           Clear all
-        </button>
-        <button
-          type="button"
-          className="btn btn-primary btn-compact"
-          disabled={selected.length === 0}
-          onClick={() => onPreview(selected.map((it) => it.id))}
-        >
-          {selected.length > 0 ? `Preview selected (${selected.length})` : "Preview selected"}
-        </button>
-        <button
-          type="button"
-          className="btn btn-primary btn-compact"
-          disabled={selected.length === 0}
-          onClick={() => onPrint(selected.map((it) => it.id))}
-        >
-          <PrintIcon size={16} />
-          {selected.length > 0 ? `Print selected (${selected.length})` : "Print selected"}
         </button>
       </div>
 
