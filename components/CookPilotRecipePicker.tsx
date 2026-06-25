@@ -3,9 +3,11 @@
 import { useEffect, useMemo, useState, type FormEvent } from "react";
 import {
   GoogleAuthProvider,
+  deleteUser,
   onAuthStateChanged,
   signInWithEmailAndPassword,
   signInWithPopup,
+  signOut,
   type User,
 } from "firebase/auth";
 import { getFirebaseAuth } from "@/lib/firebase/client";
@@ -37,7 +39,17 @@ function useCookPilotAuth() {
 
   useEffect(() => {
     return onAuthStateChanged(getFirebaseAuth(), (nextUser) => {
-      setUser(nextUser && !nextUser.isAnonymous ? nextUser : null);
+      // RecipePrinter has no use for anonymous accounts. Earlier builds created
+      // them before each parser call; those sessions can still be restored from
+      // IndexedDB and keep refreshing tokens (showing up as active anon users in
+      // Firebase). Purge any we encounter instead of just hiding them.
+      if (nextUser?.isAnonymous) {
+        deleteUser(nextUser).catch(() => signOut(getFirebaseAuth()).catch(() => {}));
+        setUser(null);
+        setReady(true);
+        return;
+      }
+      setUser(nextUser ?? null);
       setReady(true);
     });
   }, []);
