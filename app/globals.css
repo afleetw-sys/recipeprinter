@@ -240,8 +240,8 @@
 }
 
 /* ──────────────────────────────────────────────────────────────────────────
-   Recipe card — the default printable output. A 6in × 4in index-card layout
-   that renders identically on screen (as a preview) and on paper.
+   Recipe card — the default printable output. Starts at classic 6in × 4in
+   index-card proportions, then grows for longer recipes.
    ────────────────────────────────────────────────────────────────────────── */
 .recipe-card {
   position: relative;
@@ -253,7 +253,7 @@
   padding: 0.3in 0.34in 0.24in;
   background: #ffffff;
   color: #1a1a1a;
-  overflow: hidden;
+  overflow: visible;
   /* On-screen the card looks like a physical card; print strips this. */
   border: 1px solid var(--cp-line);
   border-radius: 14px;
@@ -395,7 +395,7 @@
 }
 
 /* ──────────────────────────────────────────────────────────────────────────
-   Print — paper is sized to the recipe card (6in × 4in). One card per page.
+   Print — cards keep their 6in width but can grow for longer recipes.
    ────────────────────────────────────────────────────────────────────────── */
 @media print {
   .no-print {
@@ -409,13 +409,12 @@
   }
 
   @page {
-    size: 6in 4in;
-    margin: 0;
+    margin: 0.25in;
   }
 
   .recipe-card {
     width: 6in;
-    height: 4in;
+    height: auto;
     min-height: 4in;
     margin: 0 !important;
     border: 0 !important;
@@ -423,7 +422,6 @@
     box-shadow: none !important;
     break-after: page;
     page-break-after: always;
-    break-inside: avoid;
   }
 
   .recipe-card:last-child {

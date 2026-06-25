@@ -73,7 +73,7 @@ function RecipeCardItem({
             <div className="absolute inset-0 grid place-items-center bg-card/70 backdrop-blur-sm">
               <div className="flex flex-col items-center gap-2 text-ink-soft">
                 <SpinnerIcon size={22} />
-                <span className="text-[0.78rem] font-semibold">Parsing…</span>
+                <span className="text-[0.78rem] font-semibold">Getting recipe…</span>
               </div>
             </div>
           )}
