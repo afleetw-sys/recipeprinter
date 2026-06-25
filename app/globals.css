@@ -1,0 +1,66 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --font-inter: "Inter", system-ui, sans-serif;
+    --font-playfair: "Playfair Display", Georgia, serif;
+  }
+
+  html {
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  body {
+    @apply bg-parchment-50 text-parchment-950 font-sans;
+  }
+}
+
+/* ─── Print styles ────────────────────────────────────────────────── */
+@media print {
+  .no-print {
+    display: none !important;
+  }
+
+  body {
+    background: white !important;
+    color: black !important;
+    font-size: 11pt;
+  }
+
+  /* Recipe content fills the full page width */
+  .print-full {
+    max-width: 100% !important;
+    margin: 0 !important;
+    padding: 0 !important;
+  }
+
+  /* Avoid page breaks inside ingredients/steps */
+  .print-avoid-break {
+    break-inside: avoid;
+  }
+
+  /* Consistent serif throughout printed page */
+  .recipe-body {
+    font-family: Georgia, "Times New Roman", serif;
+  }
+
+  a {
+    text-decoration: none;
+    color: inherit;
+  }
+
+  /* Print footer attribution */
+  .print-footer::after {
+    content: "Printed with RecipePrinter · recipeprinter.com";
+    display: block;
+    margin-top: 2rem;
+    padding-top: 1rem;
+    border-top: 1px solid #ddd;
+    font-size: 8pt;
+    color: #888;
+    font-family: system-ui, sans-serif;
+  }
+}
