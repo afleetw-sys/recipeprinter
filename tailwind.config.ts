@@ -1,5 +1,7 @@
 import type { Config } from "tailwindcss";
 
+// RecipePrinter mirrors CookPilot's real design system so the two read as siblings.
+// Source of truth: CookPilot web `src/app/globals.css` :root tokens.
 const config: Config = {
   content: [
     "./app/**/*.{js,ts,jsx,tsx,mdx}",
@@ -8,89 +10,77 @@ const config: Config = {
   theme: {
     extend: {
       colors: {
-        // Warm cream — CookPilot's page background
-        cream: {
-          DEFAULT: "#EDEAE5",
-          50:  "#FAF9F7",
-          100: "#F4F2EE",
-          200: "#EDEAE5",
-          300: "#E2DDD7",
-          400: "#CEC8C0",
-          500: "#B0A99F",
-          600: "#8C857A",
-          700: "#6B6460",
-          800: "#4A4440",
-          900: "#2E2926",
+        // CookPilot brand + neutrals (see :root in CookPilot globals.css)
+        ink: {
+          DEFAULT: "#111111",
+          soft: "#667085",
         },
-        // Dark charcoal — CookPilot's primary action color
-        charcoal: {
-          DEFAULT: "#1A1D2E",
-          50:  "#F2F3F6",
-          100: "#E0E2EA",
-          200: "#B8BDD0",
-          300: "#8A91B0",
-          400: "#5D6490",
-          500: "#3D4570",
-          600: "#2C3358",
-          700: "#1A1D2E",
-          800: "#111424",
-          900: "#080A14",
+        brand: {
+          // CookPilot's primary accent blue
+          DEFAULT: "#009bfa",
+          50: "#eaf6ff",
+          100: "#cfeaff",
         },
-        // Teal — CookPilot brand accent (logo, badges, highlights)
         teal: {
-          DEFAULT: "#2ABFC8",
-          50:  "#F0FBFC",
-          100: "#D6F4F6",
-          200: "#A8E8EC",
-          300: "#6DD8DE",
-          400: "#2ABFC8",
-          500: "#1EA3AB",
-          600: "#168590",
-          700: "#106470",
-          800: "#0B4A54",
-          900: "#073038",
+          // CookPilot's secondary accent
+          DEFAULT: "#60cac4",
+          50: "#eefaf9",
         },
-        // Semantic aliases
-        bg:      "#EDEAE5",
-        surface: "#FFFFFF",
+        page: "#f5f7fb",
+        card: "#ffffff",
+        error: "#c53f3f",
+        // Hairline borders (CookPilot --cp-line / --cp-line-strong)
+        line: "rgba(17, 17, 17, 0.08)",
+        "line-strong": "rgba(17, 17, 17, 0.14)",
       },
       fontFamily: {
-        // CookPilot uses Inter throughout; RecipePrinter matches for UI,
-        // and adds a serif for the printed recipe title (publishing identity)
-        sans:  ["var(--font-inter)", "system-ui", "sans-serif"],
+        // CookPilot uses Manrope throughout the UI; RecipePrinter matches it.
+        // A serif is reserved for printed recipe titles (cookbook identity).
+        sans: ["var(--font-manrope)", "system-ui", "sans-serif"],
         serif: ["var(--font-playfair)", "Georgia", "serif"],
       },
       borderRadius: {
-        none:    "0",
-        sm:      "4px",
-        DEFAULT: "8px",   // buttons, inputs
-        md:      "8px",
-        lg:      "12px",  // cards — matches CookPilot recipe cards
-        xl:      "16px",
-        full:    "9999px", // pills/tags
+        // CookPilot radius scale: sm 10 / md 14 / lg 18 / xl 24 / 2xl 28.
+        // Controls (buttons, inputs, toggles) use 12px.
+        none: "0",
+        sm: "10px",
+        DEFAULT: "12px",
+        md: "14px",
+        lg: "18px",
+        xl: "24px",
+        "2xl": "28px",
+        full: "9999px",
       },
       boxShadow: {
-        // Matches CookPilot's very subtle card shadow
-        card:     "0 1px 4px 0 rgb(0 0 0 / 0.06), 0 1px 2px -1px rgb(0 0 0 / 0.04)",
-        "card-md": "0 4px 16px 0 rgb(0 0 0 / 0.08), 0 2px 6px -2px rgb(0 0 0 / 0.05)",
+        // CookPilot's near-invisible card elevation
+        card: "0 4px 10px rgba(23, 32, 56, 0.026), 0 1px 2px rgba(23, 32, 56, 0.018)",
+        "card-hover": "0 18px 40px rgba(23, 32, 56, 0.10), 0 4px 12px rgba(23, 32, 56, 0.05)",
+        ring: "0 0 0 4px rgba(0, 155, 250, 0.08)",
       },
-      fontSize: {
-        // Mirrors CookPilot's scale
-        "2xs": ["0.625rem", { lineHeight: "1rem" }],
-        xs:    ["0.75rem",  { lineHeight: "1rem" }],
-        sm:    ["0.875rem", { lineHeight: "1.25rem" }],
-        base:  ["1rem",     { lineHeight: "1.5rem" }],
-        lg:    ["1.125rem", { lineHeight: "1.75rem" }],
-        xl:    ["1.25rem",  { lineHeight: "1.75rem" }],
-        "2xl": ["1.5rem",   { lineHeight: "2rem" }],
-        "3xl": ["1.875rem", { lineHeight: "2.25rem" }],
-        "4xl": ["2.25rem",  { lineHeight: "2.5rem" }],
-        "5xl": ["3rem",     { lineHeight: "1.1" }],
+      spacing: {
+        // CookPilot --cp-space scale (4 / 8 / 12 / 16 / 20 / 24 / 32)
+        "cp-1": "4px",
+        "cp-2": "8px",
+        "cp-3": "12px",
+        "cp-4": "16px",
+        "cp-5": "20px",
+        "cp-6": "24px",
+        "cp-7": "32px",
       },
       maxWidth: {
-        recipe:  "720px",
-        landing: "480px",
-        content: "1200px",
+        panel: "560px",
+        queue: "860px",
+        recipe: "720px",
+        content: "1100px",
+      },
+      keyframes: {
+        "fade-up": {
+          from: { opacity: "0", transform: "translateY(6px)" },
+          to: { opacity: "1", transform: "translateY(0)" },
+        },
+      },
+      animation: {
+        "fade-up": "fade-up 220ms ease",
       },
     },
   },

@@ -1,16 +1,18 @@
 import type { Metadata } from "next";
-import { Inter, Playfair_Display } from "next/font/google";
+import { Manrope, Playfair_Display } from "next/font/google";
 import "./globals.css";
 
-// Inter — matches CookPilot's UI font throughout the app
-const inter = Inter({
+// Manrope — CookPilot's UI typeface. Matching it is what makes RecipePrinter
+// read as a sibling product rather than a separate app.
+const manrope = Manrope({
   subsets: ["latin"],
-  variable: "--font-inter",
+  weight: ["400", "500", "600", "700", "800"],
+  variable: "--font-manrope",
   display: "swap",
 });
 
-// Playfair Display — used only for printed recipe titles;
-// gives RecipePrinter its publishing-tool identity without breaking CookPilot's sans-serif UI
+// Playfair Display — reserved for printed recipe titles only, giving the
+// printed page a cookbook identity without touching CookPilot's sans-serif UI.
 const playfair = Playfair_Display({
   subsets: ["latin"],
   variable: "--font-playfair",
@@ -18,12 +20,13 @@ const playfair = Playfair_Display({
 });
 
 export const metadata: Metadata = {
-  title: "RecipePrinter — Beautiful Printable Recipes",
+  title: "RecipePrinter — Print any recipe without the clutter",
   description:
-    "Paste any recipe URL and instantly get a clean, beautifully formatted version ready to print. No clutter, no ads — just the recipe.",
+    "Paste a recipe URL, upload a photo, or paste recipe text. We turn it into a clean, letter-size recipe you can print in seconds. A CookPilot product.",
   openGraph: {
     title: "RecipePrinter",
-    description: "Turn any online recipe into a beautiful printable version.",
+    description:
+      "Print any recipe without the clutter — clean, letter-size pages. By the CookPilot team.",
     type: "website",
   },
 };
@@ -34,7 +37,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en" className={`${inter.variable} ${playfair.variable}`}>
+    <html lang="en" className={`${manrope.variable} ${playfair.variable}`}>
       <body>{children}</body>
     </html>
   );

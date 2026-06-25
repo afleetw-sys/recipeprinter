@@ -24,7 +24,7 @@ export interface Recipe {
   title: string;
   description?: string;
   image?: string;
-  sourceUrl: string;
+  sourceUrl?: string;
   sourceName?: string;
 
   prepTime?: string;
@@ -56,3 +56,39 @@ export interface ParseError {
 }
 
 export type ParseResponse = ParseResult | ParseError;
+
+/* ── Print queue ──────────────────────────────────────────────────────────
+   RecipePrinter's primary object is a Print Queue, not a saved library.
+   Each method mirrors one of CookPilot's supported import sources.            */
+
+export type ImportMethod = "url" | "image" | "text";
+
+export type ParseRequest =
+  | { method: "url"; url: string }
+  | { method: "image"; images: string[]; label?: string }
+  | { method: "text"; text: string };
+
+export type QueueItemStatus = "parsing" | "ready" | "error";
+
+export interface QueueItem {
+  id: string;
+  method: ImportMethod;
+  /** Human-readable origin: hostname for URLs, filename for images, etc. */
+  source: string;
+  /** Full original URL for `url` items — kept so a failed parse can be retried. */
+  originalUrl?: string;
+  status: QueueItemStatus;
+  /** Best-known title — falls back to the source until parsing resolves. */
+  title: string;
+  recipe?: Recipe;
+  error?: string;
+  /** Whether the item is included in the next print run. */
+  selected: boolean;
+  addedAt: number;
+}
+
+export const IMPORT_METHOD_LABEL: Record<ImportMethod, string> = {
+  url: "URL",
+  image: "Image",
+  text: "Pasted text",
+};

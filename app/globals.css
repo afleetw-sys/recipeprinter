@@ -2,6 +2,30 @@
 @tailwind components;
 @tailwind utilities;
 
+/* ──────────────────────────────────────────────────────────────────────────
+   RecipePrinter design tokens — mirrored from CookPilot web `globals.css`.
+   Keeping the same variable values is what makes the two apps read as siblings.
+   ────────────────────────────────────────────────────────────────────────── */
+:root {
+  color-scheme: light;
+  --cp-blue: #009bfa;
+  --cp-teal: #60cac4;
+  --cp-ink: #111111;
+  --cp-ink-soft: #667085;
+  --cp-line: rgba(17, 17, 17, 0.08);
+  --cp-line-strong: rgba(17, 17, 17, 0.14);
+  --cp-page: #f5f7fb;
+  --cp-card: #ffffff;
+  --cp-error: #c53f3f;
+  /* CookPilot's layered, very subtle page background */
+  --cp-body-background:
+    radial-gradient(rgba(0, 0, 0, 0.012) 1px, transparent 1px) 0 0 / 18px 18px,
+    radial-gradient(circle at 0% 0%, rgba(0, 155, 250, 0.025), transparent 30%),
+    radial-gradient(circle at 100% 12%, rgba(96, 202, 196, 0.035), transparent 28%),
+    radial-gradient(circle at 80% 100%, rgba(73, 113, 145, 0.025), transparent 26%),
+    linear-gradient(180deg, #fafcff 0%, #f5f6f9 100%);
+}
+
 @layer base {
   html {
     -webkit-font-smoothing: antialiased;
@@ -9,102 +33,406 @@
   }
 
   body {
-    @apply bg-[#EDEAE5] text-charcoal-700 font-sans;
+    background: var(--cp-body-background);
+    background-attachment: fixed;
+    color: var(--cp-ink);
+    @apply font-sans;
   }
 
-  /* Shared input baseline — matches CookPilot's input style */
-  input[type="text"],
-  input[type="url"],
-  input[type="search"] {
-    @apply bg-white border border-cream-300 rounded text-charcoal-700 placeholder:text-cream-500
-           focus:outline-none focus:ring-2 focus:ring-teal-400/40 focus:border-teal-400
-           transition-[border-color,box-shadow];
+  a {
+    color: var(--cp-blue);
   }
 }
 
 @layer components {
-  /* Primary button — dark charcoal, matches "+ New recipe" */
+  /* ── Buttons (mirrors .cp-button) ─────────────────────────────────────── */
+  .btn {
+    @apply inline-flex items-center justify-center gap-2 whitespace-nowrap
+           rounded font-semibold text-[0.9rem]
+           transition-transform duration-150 select-none;
+    min-height: 40px;
+    padding: 0 18px;
+  }
+  .btn:hover:not(:disabled) {
+    transform: translateY(-1px);
+  }
+  .btn:disabled {
+    @apply opacity-50;
+    cursor: default;
+  }
+
+  /* Filled — primary action (ink black, like CookPilot's primary) */
   .btn-primary {
-    @apply inline-flex items-center gap-2
-           bg-charcoal-700 hover:bg-charcoal-800 active:bg-charcoal-900
-           text-white font-medium text-sm
-           px-4 py-2 rounded
-           transition-colors shadow-card
-           select-none;
+    background: var(--cp-ink);
+    color: var(--cp-card);
   }
 
-  /* Secondary button — cream background, thin border */
+  /* Outlined — secondary action */
   .btn-secondary {
-    @apply inline-flex items-center gap-1.5
-           bg-cream-200 hover:bg-cream-300 active:bg-cream-400
-           text-charcoal-700 font-medium text-sm
-           px-3 py-1.5 rounded
-           border border-cream-300
-           transition-colors
-           select-none;
+    background: transparent;
+    color: var(--cp-ink);
+    border: 1px solid var(--cp-line-strong);
+  }
+  .btn-secondary:hover:not(:disabled) {
+    background: rgba(127, 127, 127, 0.08);
   }
 
-  /* Tag / pill — matches CookPilot's filter tags */
-  .tag-pill {
-    @apply inline-flex items-center gap-1.5
-           bg-white border border-cream-300
-           text-charcoal-600 text-xs font-medium
-           px-3 py-1 rounded-full
-           select-none;
+  /* Ghost / icon */
+  .btn-ghost {
+    @apply inline-flex items-center justify-center rounded transition-colors;
+    min-height: 40px;
+    padding: 0 12px;
+    background: transparent;
+    color: var(--cp-ink-soft);
+  }
+  .btn-ghost:hover:not(:disabled) {
+    background: rgba(127, 127, 127, 0.1);
+    color: var(--cp-ink);
   }
 
-  /* Card surface */
+  .btn-compact {
+    min-height: 34px;
+    padding: 0 14px;
+    @apply text-[0.85rem];
+  }
+
+  /* ── Fields (mirrors .cp-field__control) ──────────────────────────────── */
+  .field-label {
+    @apply block text-[0.82rem] font-bold tracking-wide mb-2;
+  }
+  .field {
+    @apply w-full rounded transition-[border-color,background-color,box-shadow] duration-150;
+    min-height: 48px;
+    padding: 14px 16px;
+    border: 1px solid var(--cp-line);
+    background: color-mix(in srgb, var(--cp-card) 78%, var(--cp-page));
+    color: var(--cp-ink);
+    outline: none;
+  }
+  .field::placeholder {
+    color: var(--cp-ink-soft);
+  }
+  .field:focus {
+    border-color: rgba(0, 155, 250, 0.45);
+    background: var(--cp-card);
+    @apply shadow-ring;
+  }
+  textarea.field {
+    min-height: 140px;
+    resize: vertical;
+    line-height: 1.55;
+  }
+
+  /* ── Card / panel surfaces ────────────────────────────────────────────── */
   .card {
-    @apply bg-white rounded-lg shadow-card;
+    background: var(--cp-card);
+    border: 1px solid var(--cp-line);
+    @apply rounded-xl shadow-card;
+  }
+  .panel {
+    background: var(--cp-card);
+    border: 1px solid var(--cp-line);
+    @apply rounded-2xl shadow-card;
   }
 
-  /* Section label — small caps label style (Ingredients, Steps) */
-  .section-label {
-    @apply text-sm font-semibold text-charcoal-700;
+  /* Eyebrow (mirrors .cp-eyebrow) */
+  .eyebrow {
+    color: var(--cp-blue);
+    @apply text-[0.74rem] font-bold uppercase;
+    letter-spacing: 0.12em;
+  }
+
+  /* ── Import mode toggle (mirrors .cp-import-mode-toggle) ───────────────── */
+  .mode-toggle {
+    @apply grid gap-cp-2;
+    grid-template-columns: repeat(var(--mode-count, 3), minmax(0, 1fr));
+  }
+  .mode-toggle__item {
+    @apply inline-flex items-center justify-center gap-2 rounded font-bold transition-colors;
+    min-height: 44px;
+    padding: 0 14px;
+    border: 1px solid var(--cp-line);
+    background: #fff;
+    color: var(--cp-ink);
+    cursor: pointer;
+  }
+  .mode-toggle__item:hover:not(.is-active):not(:disabled) {
+    background: #f6f8fa;
+  }
+  .mode-toggle__item.is-active {
+    background: #eef1f4;
+    border-color: #d8dde3;
+    box-shadow: 0 1px 3px rgba(31, 38, 54, 0.08);
+  }
+  .mode-toggle__item:disabled {
+    @apply opacity-60;
+    cursor: not-allowed;
+  }
+
+  /* ── Image dropzone (mirrors .cp-image-import__button) ────────────────── */
+  .dropzone {
+    @apply flex flex-col items-center justify-center gap-2.5 rounded text-center font-bold
+           transition-[background,border-color,box-shadow,transform] duration-150;
+    min-height: 152px;
+    padding: 24px 18px;
+    border: 1.5px dashed color-mix(in srgb, var(--cp-line) 86%, var(--cp-ink));
+    background: color-mix(in srgb, var(--cp-card) 78%, var(--cp-page));
+    color: var(--cp-ink);
+    cursor: pointer;
+  }
+  .dropzone:hover,
+  .dropzone.is-dragging {
+    border-color: color-mix(in srgb, var(--cp-blue) 58%, var(--cp-line));
+    background: color-mix(in srgb, var(--cp-blue) 9%, var(--cp-card));
+    @apply shadow-card-hover;
+  }
+  .dropzone.is-dragging {
+    transform: translateY(-1px);
+  }
+
+  /* ── State block (mirrors .cp-state) ──────────────────────────────────── */
+  .state {
+    @apply flex flex-col gap-cp-1 rounded-lg;
+    padding: 16px;
+    border: 1px solid rgba(0, 155, 250, 0.12);
+    background: rgba(0, 155, 250, 0.05);
+  }
+  .state--error {
+    border-color: rgba(197, 63, 63, 0.16);
+    background: rgba(197, 63, 63, 0.06);
+  }
+  .state h4 {
+    @apply text-[0.95rem] font-bold;
+  }
+  .state p {
+    color: var(--cp-ink-soft);
+    @apply text-[0.84rem] leading-relaxed;
+  }
+
+  /* "or" divider (mirrors .cp-import-divider) */
+  .or-divider {
+    @apply flex items-center gap-cp-3 text-[0.82rem] font-medium;
+    color: var(--cp-ink-soft);
+  }
+  .or-divider::before,
+  .or-divider::after {
+    content: "";
+    @apply flex-1;
+    height: 1px;
+    background: var(--cp-line);
+  }
+
+  /* Small status / method pill */
+  .pill {
+    @apply inline-flex items-center gap-1.5 rounded-full text-[0.72rem] font-semibold;
+    padding: 3px 10px;
   }
 }
 
-/* ─── Print styles ──────────────────────────────────────────────────── */
+/* Spinner */
+.spin {
+  animation: rp-spin 800ms linear infinite;
+}
+@keyframes rp-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* ──────────────────────────────────────────────────────────────────────────
+   Recipe card — the default printable output. A 6in × 4in index-card layout
+   that renders identically on screen (as a preview) and on paper.
+   ────────────────────────────────────────────────────────────────────────── */
+.recipe-card {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  width: 6in;
+  min-height: 4in;
+  max-width: 100%;
+  padding: 0.3in 0.34in 0.24in;
+  background: #ffffff;
+  color: #1a1a1a;
+  overflow: hidden;
+  /* On-screen the card looks like a physical card; print strips this. */
+  border: 1px solid var(--cp-line);
+  border-radius: 14px;
+  box-shadow: 0 8px 24px rgba(23, 32, 56, 0.08);
+}
+
+.recipe-card__accent {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 5px;
+  background: linear-gradient(90deg, #009bfa, #60cac4);
+}
+
+.recipe-card__header {
+  margin-top: 5px;
+  padding-bottom: 7px;
+  border-bottom: 1px solid rgba(17, 17, 17, 0.12);
+}
+
+.recipe-card__title {
+  font-family: var(--font-playfair), Georgia, serif;
+  font-size: 17pt;
+  line-height: 1.08;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+}
+
+.recipe-card__meta {
+  margin-top: 5px;
+  font-size: 7.5pt;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: #6b7280;
+}
+
+.recipe-card__source {
+  color: #009bfa;
+  text-transform: none;
+  letter-spacing: 0;
+}
+
+.recipe-card__cols {
+  display: grid;
+  grid-template-columns: 1.85in 1fr;
+  gap: 0.26in;
+  padding-top: 9px;
+  flex: 1;
+}
+
+.recipe-card__label {
+  font-size: 7pt;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.14em;
+  color: #009bfa;
+  margin-bottom: 5px;
+}
+
+.recipe-card__ingredients ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2.5pt;
+}
+
+.recipe-card__ingredients li {
+  position: relative;
+  padding-left: 9pt;
+  font-size: 8pt;
+  line-height: 1.28;
+}
+
+.recipe-card__ingredients li::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 4pt;
+  width: 3pt;
+  height: 3pt;
+  border-radius: 50%;
+  background: #60cac4;
+}
+
+.recipe-card__method ol {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  counter-reset: rc-step;
+  display: flex;
+  flex-direction: column;
+  gap: 4pt;
+}
+
+.recipe-card__method li {
+  position: relative;
+  padding-left: 15pt;
+  font-size: 8pt;
+  line-height: 1.32;
+  counter-increment: rc-step;
+}
+
+.recipe-card__method li::before {
+  content: counter(rc-step);
+  position: absolute;
+  left: 0;
+  top: 0.5pt;
+  display: grid;
+  place-items: center;
+  width: 11pt;
+  height: 11pt;
+  border-radius: 50%;
+  background: rgba(0, 155, 250, 0.1);
+  color: #009bfa;
+  font-size: 6.5pt;
+  font-weight: 800;
+}
+
+.recipe-card__footer {
+  display: flex;
+  justify-content: space-between;
+  gap: 8pt;
+  margin-top: 8px;
+  padding-top: 5px;
+  border-top: 1px solid rgba(17, 17, 17, 0.1);
+  font-size: 6pt;
+  color: #aaa;
+}
+
+.recipe-card__footer-src {
+  max-width: 3.4in;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* ──────────────────────────────────────────────────────────────────────────
+   Print — paper is sized to the recipe card (6in × 4in). One card per page.
+   ────────────────────────────────────────────────────────────────────────── */
 @media print {
   .no-print {
     display: none !important;
   }
 
+  html,
   body {
-    background: white !important;
-    color: #111 !important;
-    font-size: 11pt;
-    font-family: Georgia, "Times New Roman", serif;
+    background: #fff !important;
+    color: #1a1a1a !important;
   }
 
-  .print-full {
-    max-width: 100% !important;
+  @page {
+    size: 6in 4in;
+    margin: 0;
+  }
+
+  .recipe-card {
+    width: 6in;
+    height: 4in;
+    min-height: 4in;
     margin: 0 !important;
-    padding: 0.5in 0 !important;
+    border: 0 !important;
+    border-radius: 0 !important;
+    box-shadow: none !important;
+    break-after: page;
+    page-break-after: always;
+    break-inside: avoid;
   }
 
-  /* Keep ingredient lists and steps from splitting across pages */
-  .print-avoid-break {
-    break-inside: avoid;
+  .recipe-card:last-child {
+    break-after: auto;
+    page-break-after: auto;
   }
 
   a {
     text-decoration: none;
     color: inherit;
-  }
-
-  /* Subtle footer on each printed page */
-  @page {
-    margin: 0.75in;
-  }
-
-  .print-attribution {
-    display: block !important;
-    margin-top: 2rem;
-    padding-top: 0.75rem;
-    border-top: 1px solid #ddd;
-    font-size: 8pt;
-    color: #999;
-    font-family: system-ui, sans-serif;
   }
 }
