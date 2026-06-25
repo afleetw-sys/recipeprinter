@@ -2,12 +2,15 @@ import type { Metadata } from "next";
 import { Inter, Playfair_Display } from "next/font/google";
 import "./globals.css";
 
+// Inter — matches CookPilot's UI font throughout the app
 const inter = Inter({
   subsets: ["latin"],
   variable: "--font-inter",
   display: "swap",
 });
 
+// Playfair Display — used only for printed recipe titles;
+// gives RecipePrinter its publishing-tool identity without breaking CookPilot's sans-serif UI
 const playfair = Playfair_Display({
   subsets: ["latin"],
   variable: "--font-playfair",

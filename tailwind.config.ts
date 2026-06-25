@@ -8,68 +8,89 @@ const config: Config = {
   theme: {
     extend: {
       colors: {
-        // Primary brand — deep forest green (food-adjacent, premium)
-        forest: {
-          50:  "#f2f7f2",
-          100: "#e0ece0",
-          200: "#c2d9c3",
-          300: "#96bc98",
-          400: "#659768",
-          500: "#437a46",
-          600: "#316035",
-          700: "#284d2c",
-          800: "#213e25",
-          900: "#1c341f",
-          950: "#0e1d11",
+        // Warm cream — CookPilot's page background
+        cream: {
+          DEFAULT: "#EDEAE5",
+          50:  "#FAF9F7",
+          100: "#F4F2EE",
+          200: "#EDEAE5",
+          300: "#E2DDD7",
+          400: "#CEC8C0",
+          500: "#B0A99F",
+          600: "#8C857A",
+          700: "#6B6460",
+          800: "#4A4440",
+          900: "#2E2926",
         },
-        // Accent — warm terracotta
-        terra: {
-          50:  "#fdf5f0",
-          100: "#fae6db",
-          200: "#f5cab5",
-          300: "#eda685",
-          400: "#e37a52",
-          500: "#c8502a",
-          600: "#b03d1f",
-          700: "#922f1a",
-          800: "#78281a",
-          900: "#63231a",
+        // Dark charcoal — CookPilot's primary action color
+        charcoal: {
+          DEFAULT: "#1A1D2E",
+          50:  "#F2F3F6",
+          100: "#E0E2EA",
+          200: "#B8BDD0",
+          300: "#8A91B0",
+          400: "#5D6490",
+          500: "#3D4570",
+          600: "#2C3358",
+          700: "#1A1D2E",
+          800: "#111424",
+          900: "#080A14",
         },
-        // Neutral warm grays
-        parchment: {
-          50:  "#fafaf7",
-          100: "#f4f4ef",
-          200: "#e8e8e0",
-          300: "#d5d5ca",
-          400: "#b0b0a3",
-          500: "#8a8a7c",
-          600: "#6e6e61",
-          700: "#5a5a4e",
-          800: "#4a4a3f",
-          900: "#3d3d33",
-          950: "#1e1e17",
+        // Teal — CookPilot brand accent (logo, badges, highlights)
+        teal: {
+          DEFAULT: "#2ABFC8",
+          50:  "#F0FBFC",
+          100: "#D6F4F6",
+          200: "#A8E8EC",
+          300: "#6DD8DE",
+          400: "#2ABFC8",
+          500: "#1EA3AB",
+          600: "#168590",
+          700: "#106470",
+          800: "#0B4A54",
+          900: "#073038",
         },
+        // Semantic aliases
+        bg:      "#EDEAE5",
+        surface: "#FFFFFF",
       },
       fontFamily: {
-        serif: ["var(--font-playfair)", "Georgia", "serif"],
+        // CookPilot uses Inter throughout; RecipePrinter matches for UI,
+        // and adds a serif for the printed recipe title (publishing identity)
         sans:  ["var(--font-inter)", "system-ui", "sans-serif"],
-      },
-      fontSize: {
-        "recipe-title": ["2.5rem", { lineHeight: "1.15", letterSpacing: "-0.02em", fontWeight: "700" }],
-        "recipe-section": ["0.6875rem", { lineHeight: "1", letterSpacing: "0.12em", fontWeight: "600" }],
-      },
-      maxWidth: {
-        "recipe": "680px",
-        "landing": "520px",
+        serif: ["var(--font-playfair)", "Georgia", "serif"],
       },
       borderRadius: {
-        DEFAULT: "8px",
-        "lg": "12px",
-        "xl": "16px",
+        none:    "0",
+        sm:      "4px",
+        DEFAULT: "8px",   // buttons, inputs
+        md:      "8px",
+        lg:      "12px",  // cards — matches CookPilot recipe cards
+        xl:      "16px",
+        full:    "9999px", // pills/tags
       },
       boxShadow: {
-        "card": "0 1px 3px 0 rgb(0 0 0 / 0.06), 0 1px 2px -1px rgb(0 0 0 / 0.06)",
-        "card-hover": "0 4px 12px 0 rgb(0 0 0 / 0.08), 0 2px 4px -2px rgb(0 0 0 / 0.06)",
+        // Matches CookPilot's very subtle card shadow
+        card:     "0 1px 4px 0 rgb(0 0 0 / 0.06), 0 1px 2px -1px rgb(0 0 0 / 0.04)",
+        "card-md": "0 4px 16px 0 rgb(0 0 0 / 0.08), 0 2px 6px -2px rgb(0 0 0 / 0.05)",
+      },
+      fontSize: {
+        // Mirrors CookPilot's scale
+        "2xs": ["0.625rem", { lineHeight: "1rem" }],
+        xs:    ["0.75rem",  { lineHeight: "1rem" }],
+        sm:    ["0.875rem", { lineHeight: "1.25rem" }],
+        base:  ["1rem",     { lineHeight: "1.5rem" }],
+        lg:    ["1.125rem", { lineHeight: "1.75rem" }],
+        xl:    ["1.25rem",  { lineHeight: "1.75rem" }],
+        "2xl": ["1.5rem",   { lineHeight: "2rem" }],
+        "3xl": ["1.875rem", { lineHeight: "2.25rem" }],
+        "4xl": ["2.25rem",  { lineHeight: "2.5rem" }],
+        "5xl": ["3rem",     { lineHeight: "1.1" }],
+      },
+      maxWidth: {
+        recipe:  "720px",
+        landing: "480px",
+        content: "1200px",
       },
     },
   },

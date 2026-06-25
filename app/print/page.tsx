@@ -12,6 +12,23 @@ type State =
   | { status: "success"; recipe: Recipe }
   | { status: "error"; message: string };
 
+function LogoMark({ size = 18 }: { size?: number }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" aria-hidden>
+      <path
+        d="M12 3C7.5 3 4 7 4 11.5c0 2.5 1.2 4.8 3 6.3L12 21l5-3.2c1.8-1.5 3-3.8 3-6.3C20 7 16.5 3 12 3z"
+        fill="#2ABFC8"
+        opacity="0.9"
+      />
+      <path
+        d="M9 11.5c0-1.7 1.3-3 3-3s3 1.3 3 3-1.3 3-3 3-3-1.3-3-3z"
+        fill="white"
+        opacity="0.7"
+      />
+    </svg>
+  );
+}
+
 export default function PrintPage() {
   const params = useSearchParams();
   const router = useRouter();
@@ -24,23 +41,18 @@ export default function PrintPage() {
       router.replace("/");
       return;
     }
-
     setState({ status: "loading" });
-
     try {
       const res = await fetch("/api/parse", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ url: recipeUrl }),
       });
-
       const data = await res.json();
-
       if (!res.ok || !data.success) {
         setState({ status: "error", message: data.error ?? "Something went wrong." });
         return;
       }
-
       setState({ status: "success", recipe: data.recipe });
     } catch {
       setState({ status: "error", message: "Network error — please try again." });
@@ -52,88 +64,75 @@ export default function PrintPage() {
   }, [parse]);
 
   return (
-    <div className="min-h-screen flex flex-col bg-parchment-50">
-      {/* Toolbar — hidden on print */}
-      <header className="no-print sticky top-0 z-10 bg-white/90 backdrop-blur-sm border-b border-parchment-200">
-        <div className="max-w-4xl mx-auto px-6 h-14 flex items-center justify-between gap-4">
-          <Link
-            href="/"
-            className="font-serif font-bold text-base text-parchment-950 tracking-tight hover:text-forest-700 transition-colors"
-          >
-            Recipe<span className="text-forest-600">Printer</span>
-          </Link>
+    <div className="min-h-screen flex flex-col bg-[#EDEAE5]">
 
-          <div className="flex items-center gap-3">
-            {state.status === "success" && (
-              <>
-                {/* "Open in CookPilot" CTA */}
-                <a
-                  href={`https://app.cookpilotapp.com?import=${encodeURIComponent(recipeUrl)}`}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="hidden sm:inline-flex items-center gap-1.5 text-sm text-forest-600 hover:text-forest-800 font-medium transition-colors px-3 py-2 rounded-lg hover:bg-forest-50"
-                >
-                  Open in CookPilot
-                  <svg width="12" height="12" viewBox="0 0 12 12" fill="none" aria-hidden>
-                    <path d="M2 10L10 2M10 2H5M10 2V7" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
-                  </svg>
-                </a>
+      {/* Toolbar — matches CookPilot's minimal top bar with action buttons right */}
+      <header className="no-print sticky top-0 z-10 h-14 flex items-center px-6 bg-[#EDEAE5] border-b border-cream-300">
+        <Link
+          href="/"
+          className="flex items-center gap-2 group"
+        >
+          {/* Back arrow — matches CookPilot's ← back button */}
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden
+            className="text-cream-500 group-hover:text-charcoal-700 transition-colors">
+            <path d="M10 3L5 8l5 5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+          </svg>
+          <LogoMark size={18} />
+          <span className="font-semibold text-charcoal-700 text-[15px] tracking-tight group-hover:text-charcoal-800 transition-colors">
+            RecipePrinter
+          </span>
+        </Link>
 
-                <button
-                  onClick={() => window.print()}
-                  className="inline-flex items-center gap-2 px-4 py-2 bg-forest-600 hover:bg-forest-700 active:bg-forest-800 text-white text-sm font-medium rounded-lg transition-colors shadow-card"
-                >
-                  <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden>
-                    <path d="M3 5V1h8v4M3 10H1V6h12v4h-2M3 8h8v5H3V8z" stroke="currentColor" strokeWidth="1.3" strokeLinejoin="round" />
-                  </svg>
-                  Print
-                </button>
-              </>
-            )}
-
-            <Link
-              href="/"
-              className="text-sm text-parchment-500 hover:text-parchment-800 transition-colors px-2 py-2"
+        {state.status === "success" && (
+          <div className="ml-auto flex items-center gap-2">
+            {/* "Open in CookPilot" — secondary button style */}
+            <a
+              href={`https://app.cookpilotapp.com?import=${encodeURIComponent(recipeUrl)}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="btn-secondary hidden sm:inline-flex"
             >
-              ← New recipe
-            </Link>
+              Open in CookPilot
+              <svg width="11" height="11" viewBox="0 0 11 11" fill="none" aria-hidden>
+                <path d="M2 9L9 2M9 2H5M9 2V6" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round" />
+              </svg>
+            </a>
+
+            {/* Print — primary button matching "+ New recipe" style */}
+            <button
+              onClick={() => window.print()}
+              className="btn-primary"
+            >
+              <svg width="13" height="13" viewBox="0 0 13 13" fill="none" aria-hidden>
+                <path d="M2.5 4.5V1h8v3.5M2.5 9.5H1V5.5h11v4H9.5M2.5 7.5h8v4h-8v-4z" stroke="currentColor" strokeWidth="1.25" strokeLinejoin="round" />
+              </svg>
+              Print
+            </button>
           </div>
-        </div>
+        )}
       </header>
 
       {/* Content */}
-      <main className="flex-1 py-12 px-6">
+      <main className="flex-1 py-10 px-6">
         <div className="max-w-recipe mx-auto">
+
           {state.status === "loading" && (
-            <div className="flex flex-col items-center justify-center py-32 gap-4">
-              <div className="w-8 h-8 border-2 border-parchment-300 border-t-forest-600 rounded-full animate-spin" />
-              <p className="text-parchment-500 text-sm">Extracting recipe…</p>
+            <div className="flex flex-col items-center justify-center py-40 gap-3">
+              <div className="w-6 h-6 border-2 border-cream-300 border-t-teal-400 rounded-full animate-spin" />
+              <p className="text-cream-500 text-sm">Extracting recipe…</p>
             </div>
           )}
 
           {state.status === "error" && (
-            <div className="flex flex-col items-center justify-center py-32 gap-4 text-center">
-              <div className="w-12 h-12 rounded-full bg-terra-50 flex items-center justify-center">
-                <svg width="20" height="20" viewBox="0 0 20 20" fill="none" aria-hidden>
-                  <path d="M10 7v4M10 13h.01M19 10a9 9 0 11-18 0 9 9 0 0118 0z" stroke="#c8502a" strokeWidth="1.5" strokeLinecap="round" />
-                </svg>
-              </div>
-              <div>
-                <p className="font-semibold text-parchment-950 mb-1">Couldn't extract the recipe</p>
-                <p className="text-parchment-500 text-sm max-w-xs">{state.message}</p>
-              </div>
-              <div className="flex items-center gap-3 mt-2">
-                <button
-                  onClick={parse}
-                  className="text-sm font-medium text-forest-600 hover:text-forest-800 transition-colors"
-                >
+            <div className="flex flex-col items-center justify-center py-40 gap-4 text-center">
+              <p className="font-semibold text-charcoal-700">Couldn't extract the recipe</p>
+              <p className="text-cream-600 text-sm max-w-xs">{state.message}</p>
+              <div className="flex items-center gap-3 mt-1">
+                <button onClick={parse} className="btn-secondary text-xs">
                   Try again
                 </button>
-                <Link
-                  href="/"
-                  className="px-4 py-2 bg-parchment-950 hover:bg-parchment-800 text-white text-sm font-medium rounded-lg transition-colors"
-                >
-                  ← Back
+                <Link href="/" className="btn-primary text-xs">
+                  ← New recipe
                 </Link>
               </div>
             </div>
@@ -143,21 +142,24 @@ export default function PrintPage() {
             <>
               <RecipeView recipe={state.recipe} />
 
-              {/* Post-print CTA — visible on screen only */}
-              <div className="no-print mt-14 p-6 bg-white rounded-xl border border-parchment-200 shadow-card">
-                <p className="font-semibold text-parchment-950 mb-1 text-sm">
+              {/* Post-print CTA — card matching CookPilot style */}
+              <div className="no-print mt-10 card p-5">
+                <p className="font-semibold text-charcoal-700 text-sm mb-1">
                   Want to customize this recipe?
                 </p>
-                <p className="text-parchment-500 text-sm mb-4">
-                  Adjust servings, swap ingredients, or save it to your collection in CookPilot.
+                <p className="text-cream-600 text-sm mb-4">
+                  Adjust servings, swap ingredients, or save it to your collection.
                 </p>
                 <a
                   href={`https://app.cookpilotapp.com?import=${encodeURIComponent(recipeUrl)}`}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="inline-flex items-center gap-1.5 text-sm font-medium text-forest-600 hover:text-forest-800 transition-colors"
+                  className="btn-secondary text-xs"
                 >
-                  Open in CookPilot →
+                  Open in CookPilot
+                  <svg width="11" height="11" viewBox="0 0 11 11" fill="none" aria-hidden>
+                    <path d="M2 9L9 2M9 2H5M9 2V6" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round" />
+                  </svg>
                 </a>
               </div>
             </>

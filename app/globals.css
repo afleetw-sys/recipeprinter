@@ -3,22 +3,68 @@
 @tailwind utilities;
 
 @layer base {
-  :root {
-    --font-inter: "Inter", system-ui, sans-serif;
-    --font-playfair: "Playfair Display", Georgia, serif;
-  }
-
   html {
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
   }
 
   body {
-    @apply bg-parchment-50 text-parchment-950 font-sans;
+    @apply bg-[#EDEAE5] text-charcoal-700 font-sans;
+  }
+
+  /* Shared input baseline — matches CookPilot's input style */
+  input[type="text"],
+  input[type="url"],
+  input[type="search"] {
+    @apply bg-white border border-cream-300 rounded text-charcoal-700 placeholder:text-cream-500
+           focus:outline-none focus:ring-2 focus:ring-teal-400/40 focus:border-teal-400
+           transition-[border-color,box-shadow];
   }
 }
 
-/* ─── Print styles ────────────────────────────────────────────────── */
+@layer components {
+  /* Primary button — dark charcoal, matches "+ New recipe" */
+  .btn-primary {
+    @apply inline-flex items-center gap-2
+           bg-charcoal-700 hover:bg-charcoal-800 active:bg-charcoal-900
+           text-white font-medium text-sm
+           px-4 py-2 rounded
+           transition-colors shadow-card
+           select-none;
+  }
+
+  /* Secondary button — cream background, thin border */
+  .btn-secondary {
+    @apply inline-flex items-center gap-1.5
+           bg-cream-200 hover:bg-cream-300 active:bg-cream-400
+           text-charcoal-700 font-medium text-sm
+           px-3 py-1.5 rounded
+           border border-cream-300
+           transition-colors
+           select-none;
+  }
+
+  /* Tag / pill — matches CookPilot's filter tags */
+  .tag-pill {
+    @apply inline-flex items-center gap-1.5
+           bg-white border border-cream-300
+           text-charcoal-600 text-xs font-medium
+           px-3 py-1 rounded-full
+           select-none;
+  }
+
+  /* Card surface */
+  .card {
+    @apply bg-white rounded-lg shadow-card;
+  }
+
+  /* Section label — small caps label style (Ingredients, Steps) */
+  .section-label {
+    @apply text-sm font-semibold text-charcoal-700;
+  }
+}
+
+/* ─── Print styles ──────────────────────────────────────────────────── */
 @media print {
   .no-print {
     display: none !important;
@@ -26,25 +72,20 @@
 
   body {
     background: white !important;
-    color: black !important;
+    color: #111 !important;
     font-size: 11pt;
+    font-family: Georgia, "Times New Roman", serif;
   }
 
-  /* Recipe content fills the full page width */
   .print-full {
     max-width: 100% !important;
     margin: 0 !important;
-    padding: 0 !important;
+    padding: 0.5in 0 !important;
   }
 
-  /* Avoid page breaks inside ingredients/steps */
+  /* Keep ingredient lists and steps from splitting across pages */
   .print-avoid-break {
     break-inside: avoid;
-  }
-
-  /* Consistent serif throughout printed page */
-  .recipe-body {
-    font-family: Georgia, "Times New Roman", serif;
   }
 
   a {
@@ -52,15 +93,18 @@
     color: inherit;
   }
 
-  /* Print footer attribution */
-  .print-footer::after {
-    content: "Printed with RecipePrinter · recipeprinter.com";
-    display: block;
+  /* Subtle footer on each printed page */
+  @page {
+    margin: 0.75in;
+  }
+
+  .print-attribution {
+    display: block !important;
     margin-top: 2rem;
-    padding-top: 1rem;
+    padding-top: 0.75rem;
     border-top: 1px solid #ddd;
     font-size: 8pt;
-    color: #888;
+    color: #999;
     font-family: system-ui, sans-serif;
   }
 }

@@ -1,10 +1,19 @@
 import type { Recipe } from "@/types/recipe";
 
-function TimeItem({ label, value }: { label: string; value: string }) {
+// Step badge — the teal circle with number from CookPilot's Steps section
+function StepBadge({ n }: { n: number }) {
+  return (
+    <span className="flex-shrink-0 w-7 h-7 rounded-full bg-teal-50 text-teal-500 font-semibold text-sm flex items-center justify-center leading-none select-none">
+      {n}
+    </span>
+  );
+}
+
+function MetaItem({ label, value }: { label: string; value: string }) {
   return (
     <div className="flex flex-col gap-0.5">
-      <dt className="text-recipe-section text-parchment-500 uppercase tracking-widest">{label}</dt>
-      <dd className="text-parchment-950 font-medium text-sm">{value}</dd>
+      <dt className="text-xs text-cream-500 font-medium uppercase tracking-wide">{label}</dt>
+      <dd className="text-sm font-semibold text-charcoal-700">{value}</dd>
     </div>
   );
 }
@@ -14,116 +23,125 @@ export default function RecipeView({ recipe }: { recipe: Recipe }) {
   const hasServings = recipe.servings || recipe.yield;
 
   return (
-    <article className="recipe-body print-full font-sans">
-      {/* Title block */}
-      <header className="mb-8 print-avoid-break">
-        {(recipe.cuisine || recipe.course) && (
-          <p className="text-recipe-section text-forest-600 uppercase tracking-widest mb-3">
-            {[recipe.course, recipe.cuisine].filter(Boolean).join(" · ")}
-          </p>
-        )}
+    <article>
+      {/* Hero card — matches CookPilot's large recipe detail card */}
+      <div className="card mb-6 overflow-hidden print-full">
+        <div className="p-8 print-avoid-break">
+          {/* Cuisine / course tag */}
+          {(recipe.cuisine || recipe.course) && (
+            <div className="tag-pill mb-4 w-fit">
+              {[recipe.course, recipe.cuisine].filter(Boolean).join(" · ")}
+            </div>
+          )}
 
-        <h1 className="font-serif text-recipe-title text-parchment-950 mb-4 leading-tight">
-          {recipe.title}
-        </h1>
+          {/* Title — large bold sans-serif matching CookPilot; switches to serif for print */}
+          <h1 className="text-4xl sm:text-5xl font-bold text-charcoal-700 leading-tight tracking-tight mb-5 print:font-serif">
+            {recipe.title}
+          </h1>
 
-        {recipe.description && (
-          <p className="text-parchment-600 text-base leading-relaxed max-w-prose mb-5">
-            {recipe.description}
-          </p>
-        )}
+          {recipe.description && (
+            <p className="text-cream-600 text-sm leading-relaxed mb-6 max-w-prose">
+              {recipe.description}
+            </p>
+          )}
 
-        {/* Meta row */}
-        {(hasTimes || hasServings) && (
-          <dl className="flex flex-wrap gap-x-8 gap-y-3 pt-5 border-t border-parchment-200">
-            {recipe.prepTime && <TimeItem label="Prep" value={recipe.prepTime} />}
-            {recipe.cookTime && <TimeItem label="Cook" value={recipe.cookTime} />}
-            {recipe.totalTime && <TimeItem label="Total" value={recipe.totalTime} />}
-            {(recipe.servings || recipe.yield) && (
-              <TimeItem label="Serves" value={String(recipe.servings ?? recipe.yield)} />
-            )}
-          </dl>
-        )}
-      </header>
-
-      {/* Hero image */}
-      {recipe.image && (
-        <div className="no-print mb-8 rounded-xl overflow-hidden aspect-[16/7] bg-parchment-100">
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img
-            src={recipe.image}
-            alt={recipe.title}
-            className="w-full h-full object-cover"
-          />
+          {/* Time / servings meta row — matches CookPilot's meta layout */}
+          {(hasTimes || hasServings) && (
+            <dl className="flex flex-wrap gap-x-8 gap-y-3 pt-5 border-t border-cream-200">
+              {recipe.prepTime  && <MetaItem label="Prep"   value={recipe.prepTime} />}
+              {recipe.cookTime  && <MetaItem label="Cook"   value={recipe.cookTime} />}
+              {recipe.totalTime && <MetaItem label="Total"  value={recipe.totalTime} />}
+              {(recipe.servings || recipe.yield) && (
+                <MetaItem label="Serves" value={String(recipe.servings ?? recipe.yield)} />
+              )}
+            </dl>
+          )}
         </div>
-      )}
 
-      <div className="grid grid-cols-1 md:grid-cols-[240px_1fr] gap-10">
-        {/* Ingredients */}
-        <section className="print-avoid-break">
-          <h2 className="text-recipe-section text-parchment-500 uppercase tracking-widest mb-4">
-            Ingredients
-          </h2>
+        {/* Hero image — full width, no padding, matches CookPilot card image style */}
+        {recipe.image && (
+          <div className="no-print w-full aspect-[16/7] bg-cream-100">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src={recipe.image}
+              alt={recipe.title}
+              className="w-full h-full object-cover"
+            />
+          </div>
+        )}
+      </div>
+
+      {/* Ingredients + Steps — two-panel layout matching CookPilot's detail page */}
+      <div className="grid grid-cols-1 md:grid-cols-[260px_1fr] gap-4">
+
+        {/* Ingredients card */}
+        <div className="card p-6 print-avoid-break print-full">
+          <h2 className="section-label mb-4">Ingredients</h2>
+
           <ul className="space-y-2.5">
             {recipe.ingredients.map((ing, i) => (
-              <li key={i} className="flex items-baseline gap-2 text-sm leading-snug">
-                <span className="w-1.5 h-1.5 rounded-full bg-forest-400 flex-shrink-0 mt-1.5" />
-                <span>
+              <li key={i} className="flex items-start gap-2.5 text-sm leading-snug print-avoid-break">
+                {/* Checkbox circle — matches CookPilot's ingredient checkbox */}
+                <span className="mt-0.5 w-4 h-4 rounded-full border border-cream-300 flex-shrink-0" />
+                <span className="text-charcoal-700">
                   {ing.raw ? (
                     ing.raw
                   ) : (
                     <>
                       {ing.amount && (
-                        <span className="font-semibold text-parchment-950">
-                          {ing.amount}
-                          {ing.unit ? ` ${ing.unit}` : ""}{" "}
+                        <span className="font-semibold">
+                          {ing.amount}{ing.unit ? ` ${ing.unit}` : ""}{" "}
                         </span>
                       )}
-                      <span className="text-parchment-800">{ing.name}</span>
-                      {ing.note && (
-                        <span className="text-parchment-500">, {ing.note}</span>
-                      )}
+                      {ing.name}
+                      {ing.note && <span className="text-cream-500">, {ing.note}</span>}
                     </>
                   )}
                 </span>
               </li>
             ))}
           </ul>
-        </section>
+        </div>
 
-        {/* Instructions */}
-        <section>
-          <h2 className="text-recipe-section text-parchment-500 uppercase tracking-widest mb-4">
-            Instructions
-          </h2>
-          <ol className="space-y-6">
+        {/* Steps card */}
+        <div className="card p-6 print-full">
+          <h2 className="section-label mb-5">Steps</h2>
+
+          <ol className="space-y-5">
             {recipe.instructions.map((step) => (
-              <li key={step.step} className="flex gap-4 print-avoid-break">
-                <span className="font-serif font-bold text-2xl text-parchment-200 leading-none flex-shrink-0 w-8 text-right select-none">
-                  {step.step}
-                </span>
-                <p className="text-parchment-800 text-sm leading-relaxed pt-0.5">
+              <li key={step.step} className="flex items-start gap-3 print-avoid-break">
+                <StepBadge n={step.step} />
+                <p className="text-charcoal-700 text-sm leading-relaxed pt-0.5">
                   {step.text}
                 </p>
               </li>
             ))}
           </ol>
-        </section>
+        </div>
       </div>
 
-      {/* Source attribution */}
-      <div className="print-footer mt-12 pt-6 border-t border-parchment-200">
-        <p className="text-xs text-parchment-400">
+      {/* Source + print attribution */}
+      <div className="mt-6 text-xs text-cream-500 flex items-center justify-between no-print">
+        <span>
           Recipe from{" "}
           <a
             href={recipe.sourceUrl}
             target="_blank"
             rel="noopener noreferrer"
-            className="text-forest-600 hover:underline"
+            className="text-teal-500 hover:text-teal-600 transition-colors"
           >
-            {recipe.sourceName ?? new URL(recipe.sourceUrl).hostname.replace("www.", "")}
+            {recipe.sourceName ?? (() => {
+              try { return new URL(recipe.sourceUrl).hostname.replace("www.", ""); }
+              catch { return recipe.sourceUrl; }
+            })()}
           </a>
-        </p>
+        </span>
+      </div>
+
+      {/* Print-only attribution footer */}
+      <div className="print-attribution hidden" aria-hidden>
+        Printed with RecipePrinter · recipeprinter.com · Original:{" "}
+        {recipe.sourceUrl}
       </div>
     </article>
   );
