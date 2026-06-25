@@ -11,7 +11,7 @@ import {
   type DocumentData,
   type QueryDocumentSnapshot,
 } from "firebase/firestore";
-import { db } from "@/lib/firebase/db";
+import { getDb } from "@/lib/firebase/db";
 import { adaptCookPilotRecipe } from "@/lib/cookpilot";
 import type { QueueItem, Recipe } from "@/types/recipe";
 
@@ -83,11 +83,11 @@ function decodeSummary(snapshot: QueryDocumentSnapshot<DocumentData>): CookPilot
 }
 
 function recipesCollection(userId: string) {
-  return collection(db, "users", userId, "recipes");
+  return collection(getDb(), "users", userId, "recipes");
 }
 
 function recipeDetailRef(userId: string, recipeId: string) {
-  return doc(db, "users", userId, "recipes", recipeId, "detail", "main");
+  return doc(getDb(), "users", userId, "recipes", recipeId, "detail", "main");
 }
 
 export function cookPilotQueueId(recipeId: string): string {

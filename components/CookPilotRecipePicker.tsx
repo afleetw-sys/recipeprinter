@@ -9,7 +9,7 @@ import {
   signOut,
   type User,
 } from "firebase/auth";
-import { auth } from "@/lib/firebase/client";
+import { getFirebaseAuth } from "@/lib/firebase/client";
 import {
   cookPilotQueueId,
   filterCookPilotSummaries,
@@ -39,7 +39,7 @@ function useCookPilotAuth() {
   const [ready, setReady] = useState(false);
 
   useEffect(() => {
-    return onAuthStateChanged(auth, (nextUser) => {
+    return onAuthStateChanged(getFirebaseAuth(), (nextUser) => {
       setUser(nextUser && !nextUser.isAnonymous ? nextUser : null);
       setReady(true);
     });
@@ -59,7 +59,7 @@ function LoginPanel({ onSignedIn }: { onSignedIn: () => void }) {
     setBusy(true);
     setError(null);
     try {
-      await signInWithPopup(auth, googleProvider);
+      await signInWithPopup(getFirebaseAuth(), googleProvider);
       onSignedIn();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Couldn't sign in with Google.");
@@ -80,7 +80,7 @@ function LoginPanel({ onSignedIn }: { onSignedIn: () => void }) {
     setBusy(true);
     setError(null);
     try {
-      await signInWithEmailAndPassword(auth, normalizedEmail, password);
+      await signInWithEmailAndPassword(getFirebaseAuth(), normalizedEmail, password);
       onSignedIn();
     } catch (err) {
       const code = (err as { code?: string }).code ?? "";
@@ -417,7 +417,7 @@ export function CookPilotRecipePicker({
   async function handleSignOut() {
     setAuthBusy(true);
     try {
-      await signOut(auth);
+      await signOut(getFirebaseAuth());
       setShowPicker(false);
       setShowLogin(false);
     } finally {

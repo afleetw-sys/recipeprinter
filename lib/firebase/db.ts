@@ -1,5 +1,10 @@
-import { getFirestore } from "firebase/firestore";
-import { app } from "./client";
+import { getFirestore, type Firestore } from "firebase/firestore";
+import { getFirebaseApp } from "./client";
 import "./appCheck";
 
-export const db = getFirestore(app);
+// Lazy — never initializes Firestore during server prerender (see client.ts).
+let dbInstance: Firestore | null = null;
+export function getDb(): Firestore {
+  if (!dbInstance) dbInstance = getFirestore(getFirebaseApp());
+  return dbInstance;
+}

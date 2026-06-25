@@ -1,5 +1,5 @@
 import { CustomProvider, initializeAppCheck, ReCaptchaV3Provider } from "firebase/app-check";
-import { app } from "./client";
+import { firebaseConfigured, getFirebaseApp } from "./client";
 
 // Mirrors CookPilot's App Check setup so RecipePrinter's callable requests pass
 // the same App Check gate. Dev uses a registered debug token; production uses a
@@ -18,8 +18,11 @@ if (typeof window !== "undefined") {
 }
 
 export const appCheck = (() => {
+  // Server prerender never initializes App Check (no window, no Firebase app).
   if (typeof window === "undefined") return null;
+  if (!firebaseConfigured()) return null;
 
+  const app = getFirebaseApp();
   if (siteKey) {
     return initializeAppCheck(app, {
       provider: new ReCaptchaV3Provider(siteKey),

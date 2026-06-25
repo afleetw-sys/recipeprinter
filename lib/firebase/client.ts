@@ -1,14 +1,21 @@
-import { getApp, getApps, initializeApp } from "firebase/app";
+import { getApp, getApps, initializeApp, type FirebaseApp } from "firebase/app";
 import {
   getAuth,
   indexedDBLocalPersistence,
   initializeAuth,
   signInAnonymously,
+  type Auth,
   type User,
 } from "firebase/auth";
 
 // Initializes the same Firebase project CookPilot uses, so RecipePrinter is a
 // genuine second client of CookPilot's backend rather than a reimplementation.
+//
+// Everything here is LAZY. Nothing runs at module load — important because Next
+// statically prerenders this client tree on the server at build time, where the
+// NEXT_PUBLIC_FIREBASE_* values may be absent. Eager init would throw
+// `auth/invalid-api-key` during the Vercel build. Init happens on first use,
+// which only ever occurs in the browser.
 const firebaseConfig = {
   apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
   authDomain: process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN,
@@ -18,26 +25,46 @@ const firebaseConfig = {
   appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID,
 };
 
-export const app = getApps().length > 0 ? getApp() : initializeApp(firebaseConfig);
+/** True when the Firebase web config is present (CookPilot features need it). */
+export function firebaseConfigured(): boolean {
+  return Boolean(firebaseConfig.apiKey && firebaseConfig.projectId && firebaseConfig.appId);
+}
 
-// IndexedDB persistence on the client (matches CookPilot); in-memory on server.
-export const auth = (() => {
-  if (typeof window === "undefined") return getAuth(app);
-  try {
-    return initializeAuth(app, { persistence: indexedDBLocalPersistence });
-  } catch {
-    return getAuth(app);
+let appInstance: FirebaseApp | null = null;
+export function getFirebaseApp(): FirebaseApp {
+  if (appInstance) return appInstance;
+  if (!firebaseConfigured()) {
+    throw new Error(
+      "Firebase isn't configured. Set the NEXT_PUBLIC_FIREBASE_* env vars to use CookPilot features.",
+    );
   }
-})();
+  appInstance = getApps().length > 0 ? getApp() : initializeApp(firebaseConfig);
+  return appInstance;
+}
 
-export const authReady: Promise<void> = auth.authStateReady();
+let authInstance: Auth | null = null;
+export function getFirebaseAuth(): Auth {
+  if (authInstance) return authInstance;
+  const app = getFirebaseApp();
+  if (typeof window === "undefined") {
+    authInstance = getAuth(app);
+    return authInstance;
+  }
+  try {
+    authInstance = initializeAuth(app, { persistence: indexedDBLocalPersistence });
+  } catch {
+    authInstance = getAuth(app);
+  }
+  return authInstance;
+}
 
 /**
  * CookPilot's parser callables run in the context of an (anonymous) user, just
  * like the CookPilot web app. Sign one in on demand and reuse it.
  */
 export async function ensureAnonymousUser(): Promise<User> {
-  await authReady;
+  const auth = getFirebaseAuth();
+  await auth.authStateReady();
   if (auth.currentUser) return auth.currentUser;
   const credential = await signInAnonymously(auth);
   return credential.user;

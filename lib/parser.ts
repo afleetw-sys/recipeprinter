@@ -7,14 +7,14 @@ import type { ParseResponse, Recipe } from "@/types/recipe";
 // `lib/cookpilot/functions.ts`). RecipePrinter calls them directly — same
 // backend, no duplicated parser.
 async function callCookPilotParser(name: string, data: unknown): Promise<unknown> {
-  const [{ httpsCallable }, { functions }, { ensureAnonymousUser }] = await Promise.all([
+  const [{ httpsCallable }, { getFns }, { ensureAnonymousUser }] = await Promise.all([
     import("firebase/functions"),
     import("@/lib/firebase/functions"),
     import("@/lib/firebase/client"),
   ]);
 
   await ensureAnonymousUser();
-  const callable = httpsCallable(functions, name);
+  const callable = httpsCallable(getFns(), name);
   const res = await callable(data);
   return res.data;
 }
