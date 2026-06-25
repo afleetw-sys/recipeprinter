@@ -4,7 +4,7 @@ import { httpsCallable, type HttpsCallableResult } from "firebase/functions";
 import { functions } from "@/lib/firebase/functions";
 import { ensureAnonymousUser } from "@/lib/firebase/client";
 import { adaptCookPilotRecipe, normalizeImportURL } from "@/lib/cookpilot";
-import type { Recipe } from "@/types/recipe";
+import type { ParseResponse, Recipe } from "@/types/recipe";
 
 // These are the exact callables CookPilot's web app uses (see CookPilot
 // `lib/cookpilot/functions.ts`). RecipePrinter calls them directly — same
@@ -34,9 +34,27 @@ function friendlyError(err: unknown, fallback: string): Error {
   return new Error(message || fallback);
 }
 
+async function parseUrlLocally(url: string): Promise<Recipe | null> {
+  try {
+    const response = await fetch("/api/parse", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ url }),
+    });
+    const data = (await response.json()) as ParseResponse;
+    if (data.success) return data.recipe;
+  } catch {
+    /* Fall back to CookPilot's callable parser below. */
+  }
+  return null;
+}
+
 /** URL import — CookPilot's `parseRecipeFromURL`. */
 export async function parseUrl(rawUrl: string): Promise<Recipe> {
   const url = normalizeImportURL(rawUrl);
+  const localRecipe = await parseUrlLocally(url);
+  if (localRecipe) return localRecipe;
+
   try {
     await ensureAnonymousUser();
     const res = (await parseRecipeFromURLCallable({ url })) as HttpsCallableResult;
