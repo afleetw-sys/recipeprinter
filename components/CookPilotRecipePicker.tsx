@@ -131,17 +131,19 @@ function LoginDialog({
           </p>
         </div>
 
-        <button
-          type="button"
-          className="btn btn-primary w-full"
-          onClick={handleGoogle}
-          disabled={busy}
-        >
-          {busy && !showEmail ? <SpinnerIcon size={16} /> : null}
-          Continue with Google
-        </button>
+        {initialMode === "google" && (
+          <button
+            type="button"
+            className="btn btn-primary w-full"
+            onClick={handleGoogle}
+            disabled={busy}
+          >
+            {busy && !showEmail ? <SpinnerIcon size={16} /> : null}
+            Continue with Google
+          </button>
+        )}
 
-        {!showEmail ? (
+        {initialMode === "google" && !showEmail ? (
           <button
             type="button"
             className="btn-ghost btn-compact w-full"
