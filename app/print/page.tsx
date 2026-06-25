@@ -59,7 +59,7 @@ export default function PrintPage() {
   return (
     <div className="min-h-screen">
       {/* Toolbar — hidden when printing */}
-      <header className="no-print sticky top-0 z-10 flex items-center justify-between gap-cp-4 px-cp-6 min-h-[62px] bg-page/85 backdrop-blur border-b border-line">
+      <header className="no-print sticky top-0 z-10 flex items-center justify-between gap-cp-4 px-cp-6 min-h-[62px] bg-page border-b border-line">
         <Link href="/" className="flex items-center gap-cp-3 group">
           <span className="text-ink-soft group-hover:text-ink transition-colors">←</span>
           <LogoMark size={26} />

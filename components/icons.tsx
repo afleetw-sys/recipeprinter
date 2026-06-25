@@ -62,6 +62,35 @@ export const XIcon = (p: IconProps) => (
   </Base>
 );
 
+export const ChevronLeftIcon = (p: IconProps) => (
+  <Base {...p}>
+    <path d="M15 6l-6 6 6 6" />
+  </Base>
+);
+
+export const ChevronRightIcon = (p: IconProps) => (
+  <Base {...p}>
+    <path d="M9 6l6 6-6 6" />
+  </Base>
+);
+
+export const CookPilotLogoIcon = ({
+  size = 18,
+  className = "",
+}: {
+  size?: number;
+  className?: string;
+}) => (
+  // eslint-disable-next-line @next/next/no-img-element
+  <img
+    src="/images/cookpilot-logo-bw.png"
+    alt=""
+    aria-hidden
+    className={className}
+    style={{ width: size, height: size, objectFit: "contain" }}
+  />
+);
+
 export const UploadIcon = (p: IconProps) => (
   <Base {...p}>
     <path d="M12 16V4" />

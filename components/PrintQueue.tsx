@@ -54,12 +54,12 @@ function RecipeCardItem({
         onClick={ready ? onToggle : undefined}
         aria-pressed={selected}
         disabled={!ready}
-        className={`block w-full text-left rounded-xl overflow-hidden bg-card border shadow-card transition-all ${
-          ready ? "cursor-pointer hover:-translate-y-0.5 hover:shadow-card-hover" : "cursor-default"
-        } ${selected ? "border-brand ring-2 ring-brand/30" : "border-line"}`}
+        className={`block w-full text-left rounded-xl overflow-hidden bg-card border transition-colors ${
+          ready ? "cursor-pointer hover:border-line-strong" : "cursor-default"
+        } ${selected ? "border-brand" : "border-line"}`}
       >
         {/* Cover */}
-        <div className="relative aspect-[3/2] bg-gradient-to-br from-brand-50 to-teal-50 overflow-hidden">
+        <div className="relative aspect-[3/2] bg-page overflow-hidden">
           {recipe?.image ? (
             // eslint-disable-next-line @next/next/no-img-element
             <img src={recipe.image} alt="" className="w-full h-full object-cover" />
@@ -71,7 +71,7 @@ function RecipeCardItem({
 
           {/* Parsing overlay */}
           {item.status === "parsing" && (
-            <div className="absolute inset-0 grid place-items-center bg-card/70 backdrop-blur-sm">
+            <div className="absolute inset-0 grid place-items-center bg-card/90">
               <div className="flex flex-col items-center gap-2 text-ink-soft">
                 <SpinnerIcon size={22} />
                 <span className="text-[0.78rem] font-semibold">Getting recipe…</span>
@@ -85,14 +85,14 @@ function RecipeCardItem({
           )}
 
           {/* Method pill */}
-          <span className="absolute top-2 left-2 pill bg-card/85 backdrop-blur text-ink-soft shadow-card">
+          <span className="absolute top-2 left-2 pill bg-card/90 text-ink-soft border border-line">
             <MethodIcon size={12} />
             {IMPORT_METHOD_LABEL[item.method]}
           </span>
 
           {/* Selection check */}
           {selected && (
-            <span className="absolute bottom-2 right-2 grid place-items-center w-7 h-7 rounded-full bg-brand text-white shadow-card">
+            <span className="absolute bottom-2 right-2 grid place-items-center w-7 h-7 rounded-full bg-brand text-white">
               <CheckIcon size={16} />
             </span>
           )}
@@ -136,7 +136,7 @@ function RecipeCardItem({
         onClick={onRemove}
         aria-label="Remove recipe"
         title="Remove"
-        className="absolute top-2 right-2 grid place-items-center w-8 h-8 rounded-full bg-card/85 backdrop-blur text-ink-soft hover:text-error shadow-card transition-colors"
+        className="absolute top-2 right-2 grid place-items-center w-8 h-8 rounded-full bg-card/90 border border-line text-ink-soft hover:text-error transition-colors"
       >
         <TrashIcon size={15} />
       </button>

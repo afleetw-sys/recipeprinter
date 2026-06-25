@@ -51,12 +51,6 @@ const config: Config = {
         "2xl": "28px",
         full: "9999px",
       },
-      boxShadow: {
-        // CookPilot's near-invisible card elevation
-        card: "0 4px 10px rgba(23, 32, 56, 0.026), 0 1px 2px rgba(23, 32, 56, 0.018)",
-        "card-hover": "0 18px 40px rgba(23, 32, 56, 0.10), 0 4px 12px rgba(23, 32, 56, 0.05)",
-        ring: "0 0 0 4px rgba(0, 155, 250, 0.08)",
-      },
       spacing: {
         // CookPilot --cp-space scale (4 / 8 / 12 / 16 / 20 / 24 / 32)
         "cp-1": "4px",
