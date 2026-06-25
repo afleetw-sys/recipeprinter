@@ -48,6 +48,20 @@ export const TextIcon = (p: IconProps) => (
   </Base>
 );
 
+export const SearchIcon = (p: IconProps) => (
+  <Base {...p}>
+    <circle cx="10.5" cy="10.5" r="6.5" />
+    <path d="M16 16l4 4" />
+  </Base>
+);
+
+export const XIcon = (p: IconProps) => (
+  <Base {...p}>
+    <path d="M6 6l12 12" />
+    <path d="M18 6L6 18" />
+  </Base>
+);
+
 export const UploadIcon = (p: IconProps) => (
   <Base {...p}>
     <path d="M12 16V4" />

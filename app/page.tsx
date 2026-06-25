@@ -4,6 +4,7 @@ import { useRouter } from "next/navigation";
 import { LogoMark, Wordmark } from "@/components/Logo";
 import { ImportPanel } from "@/components/ImportPanel";
 import { PrintQueue } from "@/components/PrintQueue";
+import { CookPilotRecipePicker } from "@/components/CookPilotRecipePicker";
 import { PrintIcon } from "@/components/icons";
 import { useQueue } from "@/lib/queue";
 
@@ -15,6 +16,7 @@ export default function Home() {
     addUrl,
     addImages,
     addText,
+    addCookPilotRecipes,
     retry,
     canRetry,
     remove,
@@ -66,7 +68,8 @@ export default function Home() {
           <section className="flex flex-col gap-cp-4">
             <div className="flex items-center justify-between gap-cp-4 flex-wrap">
               <h2 className="text-[1.24rem] font-extrabold tracking-[-0.025em]">Recipes to print</h2>
-              <div className="flex items-center gap-cp-3">
+              <div className="flex items-center gap-cp-3 flex-wrap">
+                <CookPilotRecipePicker items={items} onAddRecipes={addCookPilotRecipes} />
                 <button
                   type="button"
                   className="btn btn-primary btn-compact"

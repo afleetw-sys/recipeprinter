@@ -18,6 +18,7 @@ const METHOD_ICON = {
   url: LinkIcon,
   image: ImageIcon,
   text: TextIcon,
+  cookpilot: PlateIcon,
 } as const;
 
 function totalTime(recipe?: Recipe): string | null {

@@ -1,17 +1,23 @@
 "use client";
 
-import { httpsCallable, type HttpsCallableResult } from "firebase/functions";
-import { functions } from "@/lib/firebase/functions";
-import { ensureAnonymousUser } from "@/lib/firebase/client";
 import { adaptCookPilotRecipe, normalizeImportURL } from "@/lib/cookpilot";
 import type { ParseResponse, Recipe } from "@/types/recipe";
 
 // These are the exact callables CookPilot's web app uses (see CookPilot
 // `lib/cookpilot/functions.ts`). RecipePrinter calls them directly — same
 // backend, no duplicated parser.
-const parseRecipeFromURLCallable = httpsCallable(functions, "parseRecipeFromURL");
-const parseRecipeFromImagesCallable = httpsCallable(functions, "parseRecipeFromImages");
-const parseSocialRecipeCallable = httpsCallable(functions, "parseSocialRecipe");
+async function callCookPilotParser(name: string, data: unknown): Promise<unknown> {
+  const [{ httpsCallable }, { functions }, { ensureAnonymousUser }] = await Promise.all([
+    import("firebase/functions"),
+    import("@/lib/firebase/functions"),
+    import("@/lib/firebase/client"),
+  ]);
+
+  await ensureAnonymousUser();
+  const callable = httpsCallable(functions, name);
+  const res = await callable(data);
+  return res.data;
+}
 
 function friendlyError(err: unknown, fallback: string): Error {
   const message = err instanceof Error ? err.message : String(err);
@@ -56,9 +62,8 @@ export async function parseUrl(rawUrl: string): Promise<Recipe> {
   if (localRecipe) return localRecipe;
 
   try {
-    await ensureAnonymousUser();
-    const res = (await parseRecipeFromURLCallable({ url })) as HttpsCallableResult;
-    const recipe = adaptCookPilotRecipe(res.data, url);
+    const data = await callCookPilotParser("parseRecipeFromURL", { url });
+    const recipe = adaptCookPilotRecipe(data, url);
     if (!recipe) throw new Error("No recipe could be found at that URL.");
     return recipe;
   } catch (err) {
@@ -69,9 +74,8 @@ export async function parseUrl(rawUrl: string): Promise<Recipe> {
 /** Image import — CookPilot's `parseRecipeFromImages` (expects data-URL strings). */
 export async function parseImages(images: string[]): Promise<Recipe> {
   try {
-    await ensureAnonymousUser();
-    const res = (await parseRecipeFromImagesCallable({ images })) as HttpsCallableResult;
-    const recipe = adaptCookPilotRecipe(res.data);
+    const data = await callCookPilotParser("parseRecipeFromImages", { images });
+    const recipe = adaptCookPilotRecipe(data);
     if (!recipe) throw new Error("No recipe could be read from those photos.");
     return recipe;
   } catch (err) {
@@ -82,13 +86,12 @@ export async function parseImages(images: string[]): Promise<Recipe> {
 /** Pasted-text import — CookPilot's `parseSocialRecipe` (free text as caption). */
 export async function parseText(text: string): Promise<Recipe> {
   try {
-    await ensureAnonymousUser();
-    const res = (await parseSocialRecipeCallable({
+    const data = await callCookPilotParser("parseSocialRecipe", {
       platform: "other",
       caption: text,
       transcript: text,
-    })) as HttpsCallableResult;
-    const recipe = adaptCookPilotRecipe(res.data);
+    });
+    const recipe = adaptCookPilotRecipe(data);
     if (!recipe) throw new Error("No recipe could be read from that text.");
     return recipe;
   } catch (err) {

@@ -152,6 +152,18 @@ export function useQueue() {
     [commit, runParse],
   );
 
+  const addCookPilotRecipes = useCallback(
+    (recipes: QueueItem[]) => {
+      if (recipes.length === 0) return 0;
+      const existingIds = new Set(itemsRef.current.map((item) => item.id));
+      const nextRecipes = recipes.filter((recipe) => !existingIds.has(recipe.id));
+      if (nextRecipes.length === 0) return 0;
+      commit([...itemsRef.current, ...nextRecipes]);
+      return nextRecipes.length;
+    },
+    [commit],
+  );
+
   /** Whether a failed item can be retried in place (URL + text only). */
   const canRetry = useCallback((item: QueueItem) => {
     if (item.method === "url") return Boolean(item.originalUrl);
@@ -210,6 +222,7 @@ export function useQueue() {
     addUrl,
     addImages,
     addText,
+    addCookPilotRecipes,
     retry,
     canRetry,
     remove,
