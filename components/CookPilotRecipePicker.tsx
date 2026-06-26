@@ -14,6 +14,7 @@ import { getFirebaseAuth } from "@/lib/firebase/client";
 import {
   cookPilotQueueId,
   filterCookPilotSummaries,
+  getCachedCookPilotSummaries,
   loadCookPilotQueueItems,
   loadCookPilotRecipeSummaries,
   type CookPilotRecipeSummary,
@@ -275,7 +276,13 @@ function RecipeRow({
       <div className="relative h-14 w-14 flex-shrink-0 overflow-hidden rounded-lg bg-page grid place-items-center text-brand/50">
         {summary.imageURL ? (
           // eslint-disable-next-line @next/next/no-img-element
-          <img src={summary.imageURL} alt="" className="h-full w-full object-cover" />
+          <img
+            src={summary.imageURL}
+            alt=""
+            loading="lazy"
+            decoding="async"
+            className="h-full w-full object-cover"
+          />
         ) : (
           <CookPilotLogoIcon size={22} />
         )}
@@ -326,11 +333,13 @@ function SignedInCookPilotImport({
   onAddRecipes: (recipes: QueueItem[]) => number;
   onRemoveRecipe: (id: string) => void;
 }) {
-  const [summaries, setSummaries] = useState<CookPilotRecipeSummary[]>([]);
+  const [summaries, setSummaries] = useState<CookPilotRecipeSummary[]>(
+    () => getCachedCookPilotSummaries(user.uid) ?? [],
+  );
   const [queryText, setQueryText] = useState("");
   const [addingIds, setAddingIds] = useState<Set<string>>(new Set());
   const [bulkBusy, setBulkBusy] = useState(false);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(() => getCachedCookPilotSummaries(user.uid) === null);
   const [error, setError] = useState<string | null>(null);
 
   const addedIds = useMemo(() => new Set(items.map((item) => item.id)), [items]);
@@ -345,6 +354,8 @@ function SignedInCookPilotImport({
   const allVisibleAdded = visibleSummaries.length > 0 && visibleNotAdded.length === 0;
 
   useEffect(() => {
+    // Already cached from an earlier visit: state is seeded, skip the fetch.
+    if (getCachedCookPilotSummaries(user.uid)) return;
     let alive = true;
     setLoading(true);
     setError(null);

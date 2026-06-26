@@ -16,6 +16,7 @@ import { adaptCookPilotRecipe } from "@/lib/cookpilot";
 import type { QueueItem, Recipe } from "@/types/recipe";
 
 type AnyRecord = Record<string, unknown>;
+const DETAIL_LOAD_CONCURRENCY = 5;
 
 export interface CookPilotRecipeSummary {
   id: string;
@@ -94,11 +95,27 @@ export function cookPilotQueueId(recipeId: string): string {
   return `cookpilot:${recipeId}`;
 }
 
+// Summaries rarely change within a session, and the picker unmounts every time
+// the import tab switches away. Cache per-user so coming back to the CookPilot
+// tab is instant instead of re-fetching the whole list each time.
+const summaryCache = new Map<string, CookPilotRecipeSummary[]>();
+
+/** Synchronously read already-loaded summaries, or null if not yet fetched. */
+export function getCachedCookPilotSummaries(
+  userId: string,
+): CookPilotRecipeSummary[] | null {
+  return summaryCache.get(userId) ?? null;
+}
+
 export async function loadCookPilotRecipeSummaries(
   userId: string,
 ): Promise<CookPilotRecipeSummary[]> {
+  const cached = summaryCache.get(userId);
+  if (cached) return cached;
   const snapshot = await getDocs(query(recipesCollection(userId), orderBy("createdAt", "desc")));
-  return snapshot.docs.map(decodeSummary);
+  const summaries = snapshot.docs.map(decodeSummary);
+  summaryCache.set(userId, summaries);
+  return summaries;
 }
 
 function searchTextFor(summary: CookPilotRecipeSummary): string {
@@ -156,30 +173,58 @@ function recipeFromStoredDocuments(
   return recipe;
 }
 
+async function mapWithConcurrency<T, R>(
+  items: T[],
+  limit: number,
+  worker: (item: T) => Promise<R>,
+): Promise<R[]> {
+  const results = new Array<R>(items.length);
+  let nextIndex = 0;
+
+  async function runWorker() {
+    while (nextIndex < items.length) {
+      const index = nextIndex;
+      nextIndex += 1;
+      results[index] = await worker(items[index]);
+    }
+  }
+
+  const workerCount = Math.min(limit, items.length);
+  await Promise.all(Array.from({ length: workerCount }, runWorker));
+  return results;
+}
+
+async function loadCookPilotQueueItem(
+  userId: string,
+  summary: CookPilotRecipeSummary,
+): Promise<QueueItem | null> {
+  const detailSnapshot = await getDoc(recipeDetailRef(userId, summary.id));
+  const detail = detailSnapshot.exists()
+    ? (detailSnapshot.data() as CookPilotRecipeDetail)
+    : null;
+  const recipe = recipeFromStoredDocuments(summary, detail);
+  if (!recipe) return null;
+
+  return {
+    id: cookPilotQueueId(summary.id),
+    method: "cookpilot" as const,
+    source: "CookPilot",
+    status: "ready" as const,
+    title: recipe.title || summary.title || "Untitled recipe",
+    recipe,
+    selected: true,
+    addedAt: Date.now(),
+  } satisfies QueueItem;
+}
+
 export async function loadCookPilotQueueItems(
   userId: string,
   summaries: CookPilotRecipeSummary[],
 ): Promise<QueueItem[]> {
-  const loaded: Array<QueueItem | null> = await Promise.all(
-    summaries.map(async (summary) => {
-      const detailSnapshot = await getDoc(recipeDetailRef(userId, summary.id));
-      const detail = detailSnapshot.exists()
-        ? (detailSnapshot.data() as CookPilotRecipeDetail)
-        : null;
-      const recipe = recipeFromStoredDocuments(summary, detail);
-      if (!recipe) return null;
-
-      return {
-        id: cookPilotQueueId(summary.id),
-        method: "cookpilot" as const,
-        source: "CookPilot",
-        status: "ready" as const,
-        title: recipe.title || summary.title || "Untitled recipe",
-        recipe,
-        selected: true,
-        addedAt: Date.now(),
-      } satisfies QueueItem;
-    }),
+  const loaded = await mapWithConcurrency(
+    summaries,
+    DETAIL_LOAD_CONCURRENCY,
+    (summary) => loadCookPilotQueueItem(userId, summary),
   );
 
   return loaded.filter((item): item is QueueItem => item !== null);

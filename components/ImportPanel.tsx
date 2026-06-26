@@ -8,7 +8,7 @@ import {
   type DragEvent,
   type FormEvent,
 } from "react";
-import { CookPilotImportSource } from "@/components/CookPilotRecipePicker";
+import dynamic from "next/dynamic";
 import type { ImportMethod } from "@/types/recipe";
 import type { QueueItem } from "@/types/recipe";
 import {
@@ -36,6 +36,18 @@ const MODES: {
 
 const PRIMARY_MODES = MODES.filter((mode) => mode.id === "url" || mode.id === "cookpilot");
 const OVERFLOW_MODES = MODES.filter((mode) => mode.id === "image" || mode.id === "text");
+
+const CookPilotImportSource = dynamic(
+  () => import("@/components/CookPilotRecipePicker").then((mod) => mod.CookPilotImportSource),
+  {
+    ssr: false,
+    loading: () => (
+      <div className="h-40 grid place-items-center text-ink-soft rounded-2xl border border-dashed border-line-strong">
+        Loading CookPilot
+      </div>
+    ),
+  },
+);
 
 function readImageAsDataURL(file: File): Promise<string> {
   return new Promise((resolve, reject) => {

@@ -27,10 +27,18 @@ export function readQueue(): QueueItem[] {
   }
 }
 
-function writeQueue(items: QueueItem[]) {
+function serializeQueue(items: QueueItem[]): string | null {
+  try {
+    return JSON.stringify(items);
+  } catch {
+    return null;
+  }
+}
+
+function writeSerializedQueue(serialized: string) {
   if (typeof window === "undefined") return;
   try {
-    window.sessionStorage.setItem(QUEUE_STORAGE_KEY, JSON.stringify(items));
+    window.sessionStorage.setItem(QUEUE_STORAGE_KEY, serialized);
   } catch {
     /* sessionStorage may be unavailable (private mode); queue stays in memory */
   }
@@ -48,6 +56,7 @@ export function useQueue() {
   const [items, setItems] = useState<QueueItem[]>([]);
   const [hydrated, setHydrated] = useState(false);
   const itemsRef = useRef<QueueItem[]>([]);
+  const serializedItemsRef = useRef<string | null>(null);
   // Pasted text payloads are kept in memory only (too large/private to persist)
   // so a failed text import can be retried within the same session.
   const textPayloads = useRef<Map<string, string>>(new Map());
@@ -56,6 +65,7 @@ export function useQueue() {
   useEffect(() => {
     const initial = readQueue();
     itemsRef.current = initial;
+    serializedItemsRef.current = serializeQueue(initial);
     setItems(initial);
     setHydrated(true);
   }, []);
@@ -63,12 +73,29 @@ export function useQueue() {
   const commit = useCallback((next: QueueItem[]) => {
     itemsRef.current = next;
     setItems(next);
-    writeQueue(next);
+    const serialized = serializeQueue(next);
+    if (serialized && serialized !== serializedItemsRef.current) {
+      serializedItemsRef.current = serialized;
+      writeSerializedQueue(serialized);
+    }
   }, []);
 
   const patch = useCallback(
     (id: string, changes: Partial<QueueItem>) => {
-      commit(itemsRef.current.map((it) => (it.id === id ? { ...it, ...changes } : it)));
+      let changed = false;
+      const next = itemsRef.current.map((it) => {
+        if (it.id !== id) return it;
+        for (const [key, value] of Object.entries(changes) as Array<
+          [keyof QueueItem, QueueItem[keyof QueueItem]]
+        >) {
+          if (!Object.is(it[key], value)) {
+            changed = true;
+            break;
+          }
+        }
+        return changed ? { ...it, ...changes } : it;
+      });
+      if (changed) commit(next);
     },
     [commit],
   );
@@ -214,7 +241,10 @@ export function useQueue() {
     [commit],
   );
 
-  const clear = useCallback(() => commit([]), [commit]);
+  const clear = useCallback(() => {
+    textPayloads.current.clear();
+    commit([]);
+  }, [commit]);
 
   return {
     items,

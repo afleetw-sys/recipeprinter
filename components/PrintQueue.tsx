@@ -51,7 +51,13 @@ function RecipeCardItem({
         <div className="relative aspect-[3/2] bg-page overflow-hidden">
           {recipe?.image ? (
             // eslint-disable-next-line @next/next/no-img-element
-            <img src={recipe.image} alt="" className="w-full h-full object-cover" />
+            <img
+              src={recipe.image}
+              alt=""
+              loading="lazy"
+              decoding="async"
+              className="w-full h-full object-cover"
+            />
           ) : (
             <div className="w-full h-full grid place-items-center text-brand/40">
               <PlateIcon size={40} />
@@ -150,21 +156,13 @@ export function PrintQueue({
   onToggle,
   onRetry,
   onRemove,
-  onSetAllSelected,
-  onClear,
 }: {
   items: QueueItem[];
   canRetry: (item: QueueItem) => boolean;
   onToggle: (id: string) => void;
   onRetry: (id: string) => void;
   onRemove: (id: string) => void;
-  onSetAllSelected: (selected: boolean) => void;
-  onClear: () => void;
 }) {
-  const ready = items.filter((it) => it.status === "ready");
-  const selected = ready.filter((it) => it.selected);
-  const allSelected = ready.length > 0 && selected.length === ready.length;
-
   if (items.length === 0) {
     return (
       <div className="text-center py-cp-7 px-cp-5 rounded-2xl border border-dashed border-line-strong">
@@ -178,22 +176,6 @@ export function PrintQueue({
 
   return (
     <div className="flex flex-col gap-cp-4">
-      {/* Toolbar */}
-      <div className="flex items-center justify-end flex-wrap gap-x-cp-4 gap-y-cp-3">
-        {ready.length > 0 && (
-          <button
-            type="button"
-            className="btn-ghost btn-compact"
-            onClick={() => onSetAllSelected(!allSelected)}
-          >
-            {allSelected ? "Deselect all" : "Select all"}
-          </button>
-        )}
-        <button type="button" className="btn-ghost btn-compact" onClick={onClear}>
-          Clear all
-        </button>
-      </div>
-
       {/* Card grid */}
       <ul className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-cp-4 items-start">
         {items.map((item) => (

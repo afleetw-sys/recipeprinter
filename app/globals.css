@@ -351,11 +351,6 @@
         color-mix(in srgb, var(--cp-page) 86%, var(--cp-card));
     }
 
-    /* Hug content while empty; give the panel real presence once it fills. */
-    .rp-printer-workspace--active .rp-workspace-project {
-      min-height: 560px;
-    }
-
     .rp-import-panel--workspace {
       border-radius: 18px;
       background: color-mix(in srgb, var(--cp-card) 72%, var(--cp-page));

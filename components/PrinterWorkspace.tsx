@@ -1,9 +1,10 @@
 "use client";
 
+import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { ImportPanel } from "@/components/ImportPanel";
 import { PrintQueue } from "@/components/PrintQueue";
-import { PrintIcon } from "@/components/icons";
+import { MoreVerticalIcon, PrintIcon } from "@/components/icons";
 import { useQueue } from "@/lib/queue";
 
 // The interactive heart of RecipePrinter: importing recipes and managing the
@@ -26,19 +27,35 @@ export function PrinterWorkspace() {
     setAllSelected,
     clear,
   } = useQueue();
-  const selectedRecipeIds = items
-    .filter((it) => it.status === "ready" && it.selected)
-    .map((it) => it.id);
+  const readyItems = items.filter((it) => it.status === "ready");
+  const selectedRecipeIds = readyItems.filter((it) => it.selected).map((it) => it.id);
   const hasProject = hydrated && items.length > 0;
+  const allSelected =
+    readyItems.length > 0 && selectedRecipeIds.length === readyItems.length;
 
-  function handlePreview(ids: string[]) {
-    if (ids.length === 0) return;
-    router.push(`/print?ids=${ids.join(",")}`);
-  }
+  const [menuOpen, setMenuOpen] = useState(false);
+  const menuRef = useRef<HTMLDivElement | null>(null);
 
+  useEffect(() => {
+    function onPointerDown(event: PointerEvent) {
+      if (!menuRef.current?.contains(event.target as Node)) setMenuOpen(false);
+    }
+    function onKeyDown(event: KeyboardEvent) {
+      if (event.key === "Escape") setMenuOpen(false);
+    }
+    document.addEventListener("pointerdown", onPointerDown);
+    document.addEventListener("keydown", onKeyDown);
+    return () => {
+      document.removeEventListener("pointerdown", onPointerDown);
+      document.removeEventListener("keydown", onKeyDown);
+    };
+  }, []);
+
+  // Print takes them to the print preview, where they can review the layout and
+  // trigger the actual print from the browser dialog.
   function handlePrint(ids: string[]) {
     if (ids.length === 0) return;
-    router.push(`/print?ids=${ids.join(",")}&print=1`);
+    router.push(`/print?ids=${ids.join(",")}`);
   }
 
   return (
@@ -74,27 +91,59 @@ export function PrinterWorkspace() {
               Recipes to print{hydrated && items.length > 0 ? ` (${items.length})` : ""}
             </h2>
           </div>
-          {hasProject && (
-            <div className="flex items-center gap-cp-3 flex-wrap">
-              <button
-                type="button"
-                className="btn btn-primary btn-compact"
-                disabled={selectedRecipeIds.length === 0}
-                onClick={() => handlePreview(selectedRecipeIds)}
-              >
-                {selectedRecipeIds.length > 0 ? `Preview (${selectedRecipeIds.length})` : "Preview"}
-              </button>
-              <button
-                type="button"
-                className="btn btn-primary btn-compact"
-                disabled={selectedRecipeIds.length === 0}
-                onClick={() => handlePrint(selectedRecipeIds)}
-              >
-                <PrintIcon size={16} />
-                {selectedRecipeIds.length > 0 ? `Print (${selectedRecipeIds.length})` : "Print"}
-              </button>
-            </div>
-          )}
+          <div className="flex items-center gap-cp-2">
+            {hasProject && (
+              <div ref={menuRef} className="relative">
+                <button
+                  type="button"
+                  aria-label="More list actions"
+                  aria-haspopup="menu"
+                  aria-expanded={menuOpen}
+                  className="btn-ghost btn-compact"
+                  onClick={() => setMenuOpen((open) => !open)}
+                >
+                  <MoreVerticalIcon size={18} />
+                </button>
+
+                {menuOpen && (
+                  <div className="mode-toggle-menu" role="menu" aria-label="Recipe list actions">
+                    <button
+                      type="button"
+                      role="menuitem"
+                      className="mode-toggle-menu__item"
+                      onClick={() => {
+                        setAllSelected(!allSelected);
+                        setMenuOpen(false);
+                      }}
+                    >
+                      {allSelected ? "Deselect all" : "Select all"}
+                    </button>
+                    <button
+                      type="button"
+                      role="menuitem"
+                      className="mode-toggle-menu__item"
+                      onClick={() => {
+                        clear();
+                        setMenuOpen(false);
+                      }}
+                    >
+                      Clear all
+                    </button>
+                  </div>
+                )}
+              </div>
+            )}
+
+            <button
+              type="button"
+              className="btn btn-primary btn-compact"
+              disabled={selectedRecipeIds.length === 0}
+              onClick={() => handlePrint(selectedRecipeIds)}
+            >
+              <PrintIcon size={16} />
+              {selectedRecipeIds.length > 0 ? `Print (${selectedRecipeIds.length})` : "Print"}
+            </button>
+          </div>
         </div>
 
         {hydrated ? (
@@ -104,8 +153,6 @@ export function PrinterWorkspace() {
             onToggle={toggleSelected}
             onRetry={retry}
             onRemove={remove}
-            onSetAllSelected={setAllSelected}
-            onClear={clear}
           />
         ) : (
           <div className="h-24 rounded-2xl border border-dashed border-line-strong" />

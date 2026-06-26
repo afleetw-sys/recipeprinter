@@ -34,7 +34,7 @@ export default function Home() {
                 Print only the recipe.
               </h1>
               <p className="mt-cp-3 text-ink-soft text-[1.02rem] leading-relaxed">
-                We keep the ingredients and instructions, leaving everything else behind.
+                Clean, printable recipes for your kitchen, binder, or cookbook.
               </p>
             </div>
           </div>
