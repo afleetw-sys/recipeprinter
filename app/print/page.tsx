@@ -43,6 +43,7 @@ export default function PrintPage() {
     initialRecipePrintTemplate(params.get("template")),
   );
   const [doubleSided, setDoubleSided] = useState(true);
+  const [showCutLines, setShowCutLines] = useState(true);
 
   const selectedSize = PRINT_CARD_SIZE_OPTIONS.find((option) => option.id === cardSize);
 
@@ -151,6 +152,22 @@ export default function PrintPage() {
             </label>
           </div>
 
+          {cardSize === "card-6x4" && (
+            <div className="recipe-config-section">
+              <label className="recipe-toggle">
+                <input
+                  type="checkbox"
+                  checked={showCutLines}
+                  onChange={(event) => setShowCutLines(event.target.checked)}
+                />
+                <span>
+                  <strong>Cut lines</strong>
+                  <small>Show dashed guides on printed 6 x 4 cards.</small>
+                </span>
+              </label>
+            </div>
+          )}
+
           <div className="recipe-config-section">
             <h3 className="recipe-config-label">Templates</h3>
             <div className="recipe-template-list">
@@ -186,15 +203,18 @@ export default function PrintPage() {
             </p>
           )}
           <div
-            className={`recipe-print-preview recipe-print-preview--${cardSize} flex flex-col items-center gap-cp-6 print:gap-0 print:items-stretch`}
+            className={`recipe-print-preview recipe-print-preview--${cardSize} ${
+              showCutLines ? "recipe-print-preview--cut-lines" : ""
+            } flex flex-col items-center gap-cp-6 print:gap-0 print:items-stretch`}
           >
-            {items.map((item) => (
+            {items.map((item, index) => (
               <RecipeCardPrint
                 key={item.id}
                 recipe={item.recipe!}
                 size={cardSize}
                 template={template}
                 doubleSided={doubleSided}
+                isLast={index === items.length - 1}
               />
             ))}
           </div>

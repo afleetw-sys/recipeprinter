@@ -35,7 +35,7 @@ const FRONT_SECTION_BUDGET: Record<
   { ingredients: number; instructions: number }
 > = {
   letter: { ingredients: 2200, instructions: 3400 },
-  "card-6x4": { ingredients: 980, instructions: 1250 },
+  "card-6x4": { ingredients: 760, instructions: 980 },
 };
 
 const BACK_SECTION_BUDGET: Record<
@@ -43,8 +43,25 @@ const BACK_SECTION_BUDGET: Record<
   { ingredients: number; instructions: number }
 > = {
   letter: { ingredients: 2500, instructions: 3800 },
-  "card-6x4": { ingredients: 1080, instructions: 1450 },
+  "card-6x4": { ingredients: 900, instructions: 1200 },
 };
+
+const FRONT_SECTION_LIMITS: Partial<
+  Record<PrintCardSize, { ingredients: number; instructions: number }>
+> = {
+  "card-6x4": { ingredients: 12, instructions: 5 },
+};
+
+type CardSectionLayout = "standard" | "stacked";
+
+interface SplitRecipeResult {
+  frontIngredients: Recipe["ingredients"];
+  frontInstructions: Recipe["instructions"];
+  backIngredients: Recipe["ingredients"];
+  backInstructions: Recipe["instructions"];
+  frontLayout: CardSectionLayout;
+  backLayout: CardSectionLayout;
+}
 
 function sourceLabel(recipe: Recipe): string | null {
   if (recipe.sourceName) return recipe.sourceName;
@@ -77,7 +94,12 @@ function textCost(value: string): number {
   return value.length + Math.max(0, value.split(/\s+/).length - 1) * 2;
 }
 
-function splitByBudget<T>(items: T[], budget: number, label: (item: T) => string) {
+function splitByBudget<T>(
+  items: T[],
+  budget: number,
+  label: (item: T) => string,
+  maxFrontItems = Number.POSITIVE_INFINITY,
+) {
   if (!Number.isFinite(budget)) return { front: items, back: [] };
 
   const front: T[] = [];
@@ -86,7 +108,7 @@ function splitByBudget<T>(items: T[], budget: number, label: (item: T) => string
 
   for (const item of items) {
     const cost = textCost(label(item));
-    if (front.length > 0 && used + cost > budget) {
+    if (front.length > 0 && (front.length >= maxFrontItems || used + cost > budget)) {
       back.push(item);
     } else {
       front.push(item);
@@ -97,18 +119,45 @@ function splitByBudget<T>(items: T[], budget: number, label: (item: T) => string
   return { front, back };
 }
 
-function splitRecipe(recipe: Recipe, size: PrintCardSize) {
+function splitIngredientHeavyCard(recipe: Recipe): SplitRecipeResult {
+  const ingredientRows = Math.ceil(recipe.ingredients.length / 2);
+  const instructionBudget = Math.max(260, 880 - ingredientRows * 46);
+  const instructions = splitByBudget(
+    recipe.instructions,
+    instructionBudget,
+    (step) => step.text,
+    4,
+  );
+
+  return {
+    frontIngredients: recipe.ingredients,
+    frontInstructions: instructions.front,
+    backIngredients: [] as Recipe["ingredients"],
+    backInstructions: instructions.back,
+    frontLayout: "stacked",
+    backLayout: "standard",
+  };
+}
+
+function splitRecipe(recipe: Recipe, size: PrintCardSize): SplitRecipeResult {
   const frontBudget = FRONT_SECTION_BUDGET[size];
+  const frontLimits = FRONT_SECTION_LIMITS[size];
   const ingredients = splitByBudget(
     recipe.ingredients,
     frontBudget.ingredients,
     ingredientText,
+    frontLimits?.ingredients,
   );
   const instructions = splitByBudget(
     recipe.instructions,
     frontBudget.instructions,
     (step) => step.text,
+    frontLimits?.instructions,
   );
+
+  if (size === "card-6x4" && ingredients.back.length > 0) {
+    return splitIngredientHeavyCard(recipe);
+  }
 
   if (ingredients.back.length === 0 && instructions.back.length === 0) {
     return {
@@ -116,6 +165,8 @@ function splitRecipe(recipe: Recipe, size: PrintCardSize) {
       frontInstructions: instructions.front,
       backIngredients: [] as Recipe["ingredients"],
       backInstructions: [] as Recipe["instructions"],
+      frontLayout: "standard",
+      backLayout: "standard",
     };
   }
 
@@ -136,6 +187,8 @@ function splitRecipe(recipe: Recipe, size: PrintCardSize) {
     frontInstructions: instructions.front,
     backIngredients: [...backIngredients.front, ...backIngredients.back],
     backInstructions: [...backInstructions.front, ...backInstructions.back],
+    frontLayout: "standard",
+    backLayout: "standard",
   };
 }
 
@@ -145,6 +198,8 @@ function RecipeCardFace({
   instructions,
   side,
   showHeader,
+  layout,
+  hasBackFace,
   previewHidden = false,
   blank = false,
 }: {
@@ -153,17 +208,22 @@ function RecipeCardFace({
   instructions: Recipe["instructions"];
   side: "front" | "back";
   showHeader: boolean;
+  layout: CardSectionLayout;
+  hasBackFace: boolean;
   previewHidden?: boolean;
   blank?: boolean;
 }) {
   const source = sourceLabel(recipe);
   const meta = metaBits(recipe);
+  const ingredientsOnly = ingredients.length > 0 && instructions.length === 0;
+  const methodOnly = instructions.length > 0 && ingredients.length === 0;
+  const stackedLayout = layout === "stacked";
 
   if (blank) {
     return (
       <article
         aria-hidden
-        className="recipe-card recipe-card--back recipe-card--blank"
+        className="recipe-card recipe-card--back recipe-card--blank recipe-card--duplex-spacer"
         data-preview-hidden="true"
       />
     );
@@ -172,6 +232,7 @@ function RecipeCardFace({
   return (
     <article
       className={`recipe-card recipe-card--${side}`}
+      data-has-back={hasBackFace ? "true" : undefined}
       data-preview-hidden={previewHidden ? "true" : undefined}
     >
       <div className="recipe-card__accent" aria-hidden />
@@ -189,18 +250,25 @@ function RecipeCardFace({
         </header>
       ) : (
         <header className="recipe-card__header recipe-card__header--continued">
-          <p className="recipe-card__continued">Continued</p>
-          <h1 className="recipe-card__title recipe-card__title--continued">{recipe.title}</h1>
+          <p className="recipe-card__continued">
+            Continued <span>{recipe.title}</span>
+          </p>
         </header>
       )}
 
       <div
         className={`recipe-card__cols ${
           ingredients.length === 0 ? "recipe-card__cols--single" : ""
-        }`}
+        } ${ingredientsOnly ? "recipe-card__cols--ingredients-only" : ""} ${
+          methodOnly ? "recipe-card__cols--method-only" : ""
+        } ${stackedLayout ? "recipe-card__cols--stacked" : ""}`}
       >
         {ingredients.length > 0 && (
-          <section className="recipe-card__ingredients">
+          <section
+            className={`recipe-card__ingredients ${
+              ingredientsOnly || stackedLayout ? "recipe-card__ingredients--wide" : ""
+            }`}
+          >
             <h2 className="recipe-card__label">
               Ingredients{side === "back" ? " continued" : ""}
             </h2>
@@ -213,17 +281,20 @@ function RecipeCardFace({
         )}
 
         {instructions.length > 0 && (
-          <section className="recipe-card__method">
+          <section
+            className={`recipe-card__method ${
+              methodOnly || stackedLayout ? "recipe-card__method--wide" : ""
+            }`}
+          >
             <h2 className="recipe-card__label">
-              Method{side === "back" ? " continued" : ""}
+              Steps{side === "back" ? " continued" : ""}
             </h2>
-            <ol
-              style={{
-                counterReset: `rc-step ${Math.max(0, (instructions[0]?.step ?? 1) - 1)}`,
-              }}
-            >
+            <ol>
               {instructions.map((step) => (
-                <li key={step.step}>{step.text}</li>
+                <li key={`${step.step}-${step.text.slice(0, 24)}`}>
+                  <span className="recipe-card__step-number">{step.step}</span>
+                  <span>{step.text}</span>
+                </li>
               ))}
             </ol>
           </section>
@@ -243,19 +314,25 @@ export default function RecipeCardPrint({
   size,
   template,
   doubleSided,
+  isLast,
 }: {
   recipe: Recipe;
   size: PrintCardSize;
   template: RecipePrintTemplate;
   doubleSided: boolean;
+  isLast?: boolean;
 }) {
   const [previewSide, setPreviewSide] = useState<"front" | "back">("front");
-  const { frontIngredients, frontInstructions, backIngredients, backInstructions } = splitRecipe(
-    recipe,
-    size,
-  );
+  const {
+    frontIngredients,
+    frontInstructions,
+    backIngredients,
+    backInstructions,
+    frontLayout,
+    backLayout,
+  } = splitRecipe(recipe, size);
   const hasBack = backIngredients.length > 0 || backInstructions.length > 0;
-  const needsPrintBack = hasBack || doubleSided;
+  const needsPrintBack = hasBack || (doubleSided && !isLast);
 
   return (
     <div className={`recipe-card-set recipe-card-set--${size} recipe-template--${template}`}>
@@ -288,6 +365,8 @@ export default function RecipeCardPrint({
         instructions={frontInstructions}
         side="front"
         showHeader
+        layout={frontLayout}
+        hasBackFace={hasBack}
         previewHidden={hasBack && previewSide !== "front"}
       />
       {needsPrintBack &&
@@ -298,6 +377,8 @@ export default function RecipeCardPrint({
             instructions={backInstructions}
             side="back"
             showHeader={false}
+            layout={backLayout}
+            hasBackFace={hasBack}
             previewHidden={previewSide !== "back"}
           />
         ) : (
@@ -307,6 +388,8 @@ export default function RecipeCardPrint({
             instructions={[]}
             side="back"
             showHeader={false}
+            layout="standard"
+            hasBackFace={false}
             blank
           />
         ))}

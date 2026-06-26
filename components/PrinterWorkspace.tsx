@@ -31,12 +31,17 @@ export function PrinterWorkspace() {
   const readyItems = items.filter((it) => it.status === "ready");
   const selectedRecipeIds = readyItems.filter((it) => it.selected).map((it) => it.id);
   const hasProject = hydrated && items.length > 0;
-  const skipProjectIntro = hydratedWithItems;
   const allSelected =
     readyItems.length > 0 && selectedRecipeIds.length === readyItems.length;
 
   const [menuOpen, setMenuOpen] = useState(false);
+  const [hasShownEmptyState, setHasShownEmptyState] = useState(false);
   const menuRef = useRef<HTMLDivElement | null>(null);
+  const skipProjectIntro = hydratedWithItems && hasProject && !hasShownEmptyState;
+
+  useEffect(() => {
+    if (hydrated && items.length === 0) setHasShownEmptyState(true);
+  }, [hydrated, items.length]);
 
   useEffect(() => {
     function onPointerDown(event: PointerEvent) {
