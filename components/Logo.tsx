@@ -31,7 +31,7 @@ export function LogoMark({ size = 30, rounded = 12 }: { size?: number; rounded?:
 export function Wordmark({ className = "" }: { className?: string }) {
   return (
     <span className={`font-extrabold tracking-[-0.04em] ${className}`}>
-      Recipe<span className="text-brand">Printer</span>
+      RecipePrinter
     </span>
   );
 }

@@ -22,12 +22,14 @@ function RecipeCardItem({
   onToggle,
   onRetry,
   onRemove,
+  animate,
 }: {
   item: QueueItem;
   canRetry: boolean;
   onToggle: () => void;
   onRetry: () => void;
   onRemove: () => void;
+  animate: boolean;
 }) {
   const ready = item.status === "ready";
   const recipe = item.recipe;
@@ -36,7 +38,7 @@ function RecipeCardItem({
   const servings = recipe?.servings ?? recipe?.yield;
 
   return (
-    <li className="relative animate-fade-up">
+    <li className={`relative ${animate ? "animate-fade-up" : ""}`}>
       {/* Whole card toggles selection when the recipe is ready to print */}
       <button
         type="button"
@@ -156,12 +158,14 @@ export function PrintQueue({
   onToggle,
   onRetry,
   onRemove,
+  animateItems = true,
 }: {
   items: QueueItem[];
   canRetry: (item: QueueItem) => boolean;
   onToggle: (id: string) => void;
   onRetry: (id: string) => void;
   onRemove: (id: string) => void;
+  animateItems?: boolean;
 }) {
   if (items.length === 0) {
     return (
@@ -186,6 +190,7 @@ export function PrintQueue({
             onToggle={() => onToggle(item.id)}
             onRetry={() => onRetry(item.id)}
             onRemove={() => onRemove(item.id)}
+            animate={animateItems}
           />
         ))}
       </ul>

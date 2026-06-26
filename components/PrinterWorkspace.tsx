@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { ImportPanel } from "@/components/ImportPanel";
 import { PrintQueue } from "@/components/PrintQueue";
 import { MoreVerticalIcon, PrintIcon } from "@/components/icons";
-import { useQueue } from "@/lib/queue";
+import { createCurrentPrintJob, useQueue } from "@/lib/queue";
 
 // The interactive heart of RecipePrinter: importing recipes and managing the
 // print queue. Split out from the homepage so the page itself can stay a server
@@ -16,6 +16,7 @@ export function PrinterWorkspace() {
   const {
     items,
     hydrated,
+    hydratedWithItems,
     addUrl,
     addImages,
     addText,
@@ -30,6 +31,7 @@ export function PrinterWorkspace() {
   const readyItems = items.filter((it) => it.status === "ready");
   const selectedRecipeIds = readyItems.filter((it) => it.selected).map((it) => it.id);
   const hasProject = hydrated && items.length > 0;
+  const skipProjectIntro = hydratedWithItems;
   const allSelected =
     readyItems.length > 0 && selectedRecipeIds.length === readyItems.length;
 
@@ -55,14 +57,18 @@ export function PrinterWorkspace() {
   // trigger the actual print from the browser dialog.
   function handlePrint(ids: string[]) {
     if (ids.length === 0) return;
-    router.push(`/print?ids=${ids.join(",")}`);
+    if (createCurrentPrintJob(ids)) {
+      router.push("/print");
+    } else {
+      router.push(`/print?ids=${ids.join(",")}`);
+    }
   }
 
   return (
     <div
       className={`rp-printer-workspace ${
         hasProject ? "rp-printer-workspace--active" : "rp-printer-workspace--landing"
-      }`}
+      } ${skipProjectIntro ? "rp-printer-workspace--no-intro" : ""}`}
     >
       {/* Import panel */}
       <div className="rp-workspace-import">
@@ -86,7 +92,7 @@ export function PrinterWorkspace() {
           <div>
             <h2
               id="rp-queue-heading"
-              className="text-[1.24rem] font-extrabold tracking-[-0.025em]"
+              className="text-[1.06rem] font-extrabold tracking-[-0.02em]"
             >
               Recipes to print{hydrated && items.length > 0 ? ` (${items.length})` : ""}
             </h2>
@@ -153,6 +159,7 @@ export function PrinterWorkspace() {
             onToggle={toggleSelected}
             onRetry={retry}
             onRemove={remove}
+            animateItems={!skipProjectIntro}
           />
         ) : (
           <div className="h-24 rounded-2xl border border-dashed border-line-strong" />

@@ -7,6 +7,14 @@ import { parseImages, parseText, parseUrl } from "@/lib/parser";
 // The print queue is session-based for the MVP, no accounts, no saved library.
 // It survives navigation to /print (same tab) via sessionStorage.
 export const QUEUE_STORAGE_KEY = "recipeprinter:queue:v1";
+const CURRENT_PRINT_JOB_STORAGE_KEY = "recipeprinter:print-job:current:v1";
+const PRINT_JOB_STORAGE_PREFIX = "recipeprinter:print-job:v1:";
+const PRINT_JOB_MAX_AGE_MS = 24 * 60 * 60 * 1000;
+
+interface PrintJob {
+  ids: string[];
+  createdAt: number;
+}
 
 function uid(): string {
   if (typeof crypto !== "undefined" && "randomUUID" in crypto) {
@@ -24,6 +32,77 @@ export function readQueue(): QueueItem[] {
     return Array.isArray(parsed) ? (parsed as QueueItem[]) : [];
   } catch {
     return [];
+  }
+}
+
+function printJobStorageKey(id: string): string {
+  return `${PRINT_JOB_STORAGE_PREFIX}${id}`;
+}
+
+function pruneOldPrintJobs(now = Date.now()) {
+  if (typeof window === "undefined") return;
+  try {
+    for (let index = window.sessionStorage.length - 1; index >= 0; index -= 1) {
+      const key = window.sessionStorage.key(index);
+      if (!key?.startsWith(PRINT_JOB_STORAGE_PREFIX)) continue;
+      const raw = window.sessionStorage.getItem(key);
+      const parsed = raw ? (JSON.parse(raw) as Partial<PrintJob>) : null;
+      if (!parsed?.createdAt || now - parsed.createdAt > PRINT_JOB_MAX_AGE_MS) {
+        window.sessionStorage.removeItem(key);
+      }
+    }
+  } catch {
+    /* Ignore storage cleanup failures; print jobs are short-lived conveniences. */
+  }
+}
+
+export function createPrintJob(ids: string[]): string | null {
+  if (typeof window === "undefined" || ids.length === 0) return null;
+  const id = uid();
+  const job: PrintJob = { ids, createdAt: Date.now() };
+  try {
+    pruneOldPrintJobs(job.createdAt);
+    window.sessionStorage.setItem(printJobStorageKey(id), JSON.stringify(job));
+    window.sessionStorage.setItem(CURRENT_PRINT_JOB_STORAGE_KEY, JSON.stringify(job));
+    return id;
+  } catch {
+    return null;
+  }
+}
+
+export function createCurrentPrintJob(ids: string[]): boolean {
+  if (typeof window === "undefined" || ids.length === 0) return false;
+  const job: PrintJob = { ids, createdAt: Date.now() };
+  try {
+    pruneOldPrintJobs(job.createdAt);
+    window.sessionStorage.setItem(CURRENT_PRINT_JOB_STORAGE_KEY, JSON.stringify(job));
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+function idsFromPrintJob(raw: string | null): string[] | null {
+  if (!raw) return null;
+  const parsed = JSON.parse(raw) as Partial<PrintJob>;
+  return Array.isArray(parsed.ids) ? parsed.ids.filter((value) => typeof value === "string") : null;
+}
+
+export function readCurrentPrintJobIds(): string[] | null {
+  if (typeof window === "undefined") return null;
+  try {
+    return idsFromPrintJob(window.sessionStorage.getItem(CURRENT_PRINT_JOB_STORAGE_KEY));
+  } catch {
+    return null;
+  }
+}
+
+export function readPrintJobIds(id: string): string[] | null {
+  if (typeof window === "undefined" || !id) return null;
+  try {
+    return idsFromPrintJob(window.sessionStorage.getItem(printJobStorageKey(id)));
+  } catch {
+    return null;
   }
 }
 
@@ -55,6 +134,7 @@ function hostnameOf(url: string): string {
 export function useQueue() {
   const [items, setItems] = useState<QueueItem[]>([]);
   const [hydrated, setHydrated] = useState(false);
+  const [hydratedWithItems, setHydratedWithItems] = useState(false);
   const itemsRef = useRef<QueueItem[]>([]);
   const serializedItemsRef = useRef<string | null>(null);
   // Pasted text payloads are kept in memory only (too large/private to persist)
@@ -67,6 +147,7 @@ export function useQueue() {
     itemsRef.current = initial;
     serializedItemsRef.current = serializeQueue(initial);
     setItems(initial);
+    setHydratedWithItems(initial.length > 0);
     setHydrated(true);
   }, []);
 
@@ -249,6 +330,7 @@ export function useQueue() {
   return {
     items,
     hydrated,
+    hydratedWithItems,
     addUrl,
     addImages,
     addText,

@@ -3,7 +3,9 @@ import {
   getAuth,
   indexedDBLocalPersistence,
   initializeAuth,
+  signInAnonymously,
   type Auth,
+  type User,
 } from "firebase/auth";
 
 // Initializes the same Firebase project CookPilot uses, so RecipePrinter is a
@@ -54,4 +56,16 @@ export function getFirebaseAuth(): Auth {
     authInstance = getAuth(app);
   }
   return authInstance;
+}
+
+/**
+ * CookPilot parser callables expect an authenticated Firebase context. Use an
+ * anonymous session for parser-only imports unless the user is already signed in.
+ */
+export async function ensureParserUser(): Promise<User> {
+  const auth = getFirebaseAuth();
+  await auth.authStateReady();
+  if (auth.currentUser) return auth.currentUser;
+  const credential = await signInAnonymously(auth);
+  return credential.user;
 }

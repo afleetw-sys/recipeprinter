@@ -272,7 +272,7 @@ export function ImportPanel({
               id="rp-url"
               type="url"
               className="field"
-              placeholder="https://www.seriouseats.com/your-recipe"
+              placeholder="https://recipes.example/your-recipe"
               value={url}
               autoFocus
               onChange={(e) => {
