@@ -5,7 +5,7 @@ import { SITE_NAME, SITE_TAGLINE } from "@/lib/seo";
 // it in sync with the product name/tagline and avoids shipping a binary asset.
 // Next serves this for both og:image and (as a fallback) twitter:image.
 
-export const alt = `${SITE_NAME} — ${SITE_TAGLINE}`;
+export const alt = `${SITE_NAME}: ${SITE_TAGLINE}`;
 export const size = { width: 1200, height: 630 };
 export const contentType = "image/png";
 
@@ -77,7 +77,7 @@ export default function OpengraphImage() {
             maxWidth: "920px",
           }}
         >
-          Paste a URL, photo, or text — get a clean, printable recipe with no ads. Save as PDF.
+          Paste a URL, photo, or text to get a clean, printable recipe with no ads. Save as PDF.
         </div>
       </div>
     ),

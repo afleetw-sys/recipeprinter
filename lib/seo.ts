@@ -31,12 +31,12 @@ export const SITE_TAGLINE = "Print any recipe without the clutter";
 export const SITE_DESCRIPTION =
   "RecipePrinter turns any online recipe into a clean, printable page in seconds. " +
   "Paste a recipe URL, upload a photo, or paste recipe text and print it without ads, " +
-  "pop-ups, or life stories — or save it as a PDF. Print multiple recipes at once.";
+  "pop-ups, or life stories. You can also save it as a PDF. Print multiple recipes at once.";
 
 /**
  * Search intents we want the product to be the natural answer for. These are
  * surfaced as a meta keywords list and, more importantly, woven into the real
- * page copy and FAQ below — never stuffed.
+ * page copy and FAQ below, never stuffed.
  */
 export const SITE_KEYWORDS = [
   "recipe printer",
@@ -50,7 +50,7 @@ export const SITE_KEYWORDS = [
   "recipe PDF",
 ];
 
-/** The team behind RecipePrinter — used as publisher/provider in JSON-LD. */
+/** The team behind RecipePrinter, used as publisher/provider in JSON-LD. */
 export const PUBLISHER = {
   name: "CookPilot",
   url: "https://cookpilotapp.com",
@@ -64,7 +64,7 @@ export function absoluteUrl(path = "/"): string {
 // ── Site navigation ──────────────────────────────────────────────────────────
 // The homepage stays a focused utility. The deeper, genuinely-useful pages are
 // reachable from the footer (and cross-linked from each other). New public
-// sections — including future /recipes pages — slot in here without a redesign.
+// sections, including future /recipes pages, slot in here without a redesign.
 export interface NavLink {
   href: string;
   label: string;
@@ -134,13 +134,13 @@ export const FAQ: FaqItem[] = [
     question: "How do I print an online recipe without ads?",
     answer:
       "Paste the recipe's web address into RecipePrinter and we pull out just the title, " +
-      "ingredients, and steps — leaving behind the ads, pop-ups, comments, and the long " +
+      "ingredients, and steps, leaving behind the ads, pop-ups, comments, and the long " +
       "story above the recipe. You get a clean, letter-size page you can print or save as a PDF.",
   },
   {
     question: "Can I print recipes from any website?",
     answer:
-      "Yes. RecipePrinter works with recipes from across the web — paste the URL from almost " +
+      "Yes. RecipePrinter works with recipes from across the web: paste the URL from almost " +
       "any cooking site and we convert the online recipe into a printable page. If a site is " +
       "unusual, you can also paste the recipe text directly or upload a photo of it.",
   },
@@ -148,7 +148,7 @@ export const FAQ: FaqItem[] = [
     question: "Can I print multiple recipes at once?",
     answer:
       "Yes. Add as many recipes as you like to your print queue from different sources, select " +
-      "the ones you want, and print them all together in a single job — handy for weekly meal prep.",
+      "the ones you want, and print them all together in a single job, handy for weekly meal prep.",
   },
   {
     question: "Can I save a recipe as a PDF instead of printing it?",

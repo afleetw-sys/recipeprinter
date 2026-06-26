@@ -1,25 +1,15 @@
 "use client";
 
-import { IMPORT_METHOD_LABEL, type QueueItem, type Recipe } from "@/types/recipe";
+import { type QueueItem, type Recipe } from "@/types/recipe";
 import {
   CheckIcon,
   ClockIcon,
-  ImageIcon,
-  LinkIcon,
   PlateIcon,
   RefreshIcon,
   SpinnerIcon,
-  TextIcon,
   TrashIcon,
   UsersIcon,
 } from "@/components/icons";
-
-const METHOD_ICON = {
-  url: LinkIcon,
-  image: ImageIcon,
-  text: TextIcon,
-  cookpilot: PlateIcon,
-} as const;
 
 function totalTime(recipe?: Recipe): string | null {
   if (!recipe) return null;
@@ -39,7 +29,6 @@ function RecipeCardItem({
   onRetry: () => void;
   onRemove: () => void;
 }) {
-  const MethodIcon = METHOD_ICON[item.method];
   const ready = item.status === "ready";
   const recipe = item.recipe;
   const selected = ready && item.selected;
@@ -83,12 +72,6 @@ function RecipeCardItem({
           {item.status === "error" && (
             <div className="absolute inset-0 bg-[rgba(197,63,63,0.06)]" />
           )}
-
-          {/* Method pill */}
-          <span className="absolute top-2 left-2 pill bg-card/90 text-ink-soft border border-line">
-            <MethodIcon size={12} />
-            {IMPORT_METHOD_LABEL[item.method]}
-          </span>
 
           {/* Selection check */}
           {selected && (
@@ -185,10 +168,9 @@ export function PrintQueue({
   if (items.length === 0) {
     return (
       <div className="text-center py-cp-7 px-cp-5 rounded-2xl border border-dashed border-line-strong">
-        <p className="font-bold text-[1.05rem]">No recipes added yet</p>
-        <p className="text-ink-soft text-[0.9rem] mt-1.5 max-w-sm mx-auto">
-          Add a recipe above and it&apos;ll show up here as a card, ready to print. Add as many
-          as you want, then print them together.
+        <p className="font-bold text-[1.05rem]">No recipes yet</p>
+        <p className="text-ink-soft text-[0.9rem] mt-1.5 max-w-xs mx-auto">
+          Add a recipe and it&apos;ll appear here, ready to print.
         </p>
       </div>
     );
@@ -197,18 +179,7 @@ export function PrintQueue({
   return (
     <div className="flex flex-col gap-cp-4">
       {/* Toolbar */}
-      <div className="flex items-center flex-wrap gap-x-cp-4 gap-y-cp-3">
-        <div className="flex items-center gap-2 text-[0.85rem] text-ink-soft mr-auto">
-          <span className="font-bold text-ink">{items.length}</span>{" "}
-          {items.length === 1 ? "recipe" : "recipes"} added
-          {ready.length > 0 && (
-            <>
-              <span className="text-line-strong">·</span>
-              <span className="font-bold text-ink">{selected.length}</span> selected
-            </>
-          )}
-        </div>
-
+      <div className="flex items-center justify-end flex-wrap gap-x-cp-4 gap-y-cp-3">
         {ready.length > 0 && (
           <button
             type="button"

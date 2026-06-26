@@ -75,10 +75,10 @@ export interface QueueItem {
   method: ImportMethod;
   /** Human-readable origin: hostname for URLs, filename for images, etc. */
   source: string;
-  /** Full original URL for `url` items — kept so a failed parse can be retried. */
+  /** Full original URL for `url` items, kept so a failed parse can be retried. */
   originalUrl?: string;
   status: QueueItemStatus;
-  /** Best-known title — falls back to the source until parsing resolves. */
+  /** Best-known title, falls back to the source until parsing resolves. */
   title: string;
   recipe?: Recipe;
   error?: string;

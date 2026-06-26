@@ -3,7 +3,7 @@
 @tailwind utilities;
 
 /* ──────────────────────────────────────────────────────────────────────────
-   RecipePrinter design tokens — mirrored from CookPilot web `globals.css`.
+   RecipePrinter design tokens, mirrored from CookPilot web `globals.css`.
    Keeping the same variable values is what makes the two apps read as siblings.
    ────────────────────────────────────────────────────────────────────────── */
 :root {
@@ -55,13 +55,13 @@
     cursor: default;
   }
 
-  /* Filled — primary action (ink black, like CookPilot's primary) */
+  /* Filled, primary action (ink black, like CookPilot's primary) */
   .btn-primary {
     background: var(--cp-ink);
     color: var(--cp-card);
   }
 
-  /* Outlined — secondary action */
+  /* Outlined, secondary action */
   .btn-secondary {
     background: transparent;
     color: var(--cp-ink);
@@ -141,35 +141,67 @@
     width: 100%;
   }
   .mode-toggle {
-    @apply flex gap-cp-2 overflow-x-auto;
-    scroll-snap-type: x proximity;
-    scrollbar-width: none;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) 44px;
+    gap: 8px;
     padding: 1px;
   }
-  .mode-toggle::-webkit-scrollbar {
-    display: none;
+  /* Empty state: every import option is shown so people see what's available.
+     2×2 on small screens, a single row once there's room. */
+  .mode-toggle.mode-toggle--expanded {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
   .mode-toggle__item {
     @apply inline-flex items-center justify-center gap-2 rounded font-bold transition-colors;
-    flex: 1 0 148px;
     min-height: 44px;
     padding: 0 14px;
-    border: 1px solid var(--cp-line);
+    width: 100%;
+    border: 1px solid var(--cp-line-strong);
     background: #fff;
     color: var(--cp-ink);
     cursor: pointer;
-    scroll-snap-align: start;
   }
   .mode-toggle__item:hover:not(.is-active):not(:disabled) {
     background: #f6f8fa;
   }
   .mode-toggle__item.is-active {
-    background: #eef1f4;
-    border-color: #d8dde3;
+    background: var(--cp-card);
+    border-color: var(--cp-blue);
+    color: var(--cp-blue);
+    box-shadow: 0 0 0 1px var(--cp-blue);
+  }
+  .mode-toggle__item--icon {
+    padding: 0;
   }
   .mode-toggle__item:disabled {
     @apply opacity-60;
     cursor: not-allowed;
+  }
+  .mode-toggle-overflow {
+    position: relative;
+  }
+  .mode-toggle-menu {
+    position: absolute;
+    top: calc(100% + 8px);
+    right: 0;
+    z-index: 20;
+    min-width: 190px;
+    padding: 6px;
+    border: 1px solid var(--cp-line);
+    border-radius: 12px;
+    background: var(--cp-card);
+    box-shadow: 0 12px 28px rgba(17, 17, 17, 0.12);
+  }
+  .mode-toggle-menu__item {
+    @apply flex w-full items-center gap-2 rounded text-left font-bold transition-colors;
+    min-height: 38px;
+    padding: 0 10px;
+    color: var(--cp-ink);
+  }
+  .mode-toggle-menu__item:hover,
+  .mode-toggle-menu__item.is-active {
+    background: color-mix(in srgb, var(--cp-blue) 8%, var(--cp-card));
+    color: var(--cp-blue);
   }
   .mode-toggle-arrow {
     position: absolute;
@@ -266,6 +298,116 @@
     @apply inline-flex items-center gap-1.5 rounded-full text-[0.72rem] font-semibold;
     padding: 3px 10px;
   }
+
+  /* The import panel always lives on the left. On desktop both columns always
+     fill the row; only the split changes. While empty, import takes the larger
+     share; once the first recipe is added, the recipes panel takes it. It never
+     collapses back to a vertical stack. */
+  .rp-printer-workspace {
+    @apply w-full animate-fade-up;
+  }
+  .rp-printer-workspace--landing,
+  .rp-printer-workspace--active {
+    @apply flex flex-col gap-cp-6;
+  }
+  .rp-workspace-import,
+  .rp-workspace-project {
+    min-width: 0;
+  }
+
+  @media (min-width: 1024px) {
+    /* Both columns always span the full row; the fr split is all that changes,
+       so the width shift animates smoothly. */
+    .rp-printer-workspace--landing,
+    .rp-printer-workspace--active {
+      display: grid;
+      align-items: start;
+      gap: clamp(20px, 3vw, 34px);
+      transition: grid-template-columns 380ms cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    /* No recipes yet: import takes the larger share. */
+    .rp-printer-workspace--landing {
+      grid-template-columns: minmax(280px, 1.6fr) minmax(240px, 1fr);
+    }
+
+    /* First recipe added: recipes panel takes the larger share. */
+    .rp-printer-workspace--active {
+      grid-template-columns: minmax(280px, 0.46fr) minmax(0, 1fr);
+    }
+
+    .rp-workspace-import {
+      position: sticky;
+      top: 24px;
+    }
+
+    .rp-workspace-project {
+      overflow: hidden;
+      padding: 24px;
+      border: 1px solid var(--cp-line);
+      border-radius: 28px;
+      background:
+        linear-gradient(180deg, rgba(255, 255, 255, 0.78), rgba(255, 255, 255, 0.42)),
+        color-mix(in srgb, var(--cp-page) 86%, var(--cp-card));
+    }
+
+    /* Hug content while empty; give the panel real presence once it fills. */
+    .rp-printer-workspace--active .rp-workspace-project {
+      min-height: 560px;
+    }
+
+    .rp-import-panel--workspace {
+      border-radius: 18px;
+      background: color-mix(in srgb, var(--cp-card) 72%, var(--cp-page));
+      box-shadow: none;
+    }
+
+    .rp-import-panel--workspace .mode-toggle {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) 40px;
+      gap: 8px;
+    }
+
+    /* Wide empty-state column fits all four options in one row. */
+    .rp-import-panel--workspace .mode-toggle.mode-toggle--expanded {
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+    }
+
+    .rp-import-panel--workspace .mode-toggle__item {
+      min-height: 40px;
+      padding: 0 10px;
+      font-size: 0.82rem;
+      background: rgba(255, 255, 255, 0.72);
+    }
+
+    .rp-import-panel--workspace .mode-toggle__item.is-active {
+      background: var(--cp-card);
+    }
+
+    .rp-import-panel--workspace .mode-toggle__item--icon {
+      padding: 0;
+    }
+
+    .rp-import-panel--workspace .mode-toggle-arrow {
+      display: none;
+    }
+
+    .rp-import-panel--workspace .field {
+      min-height: 44px;
+      padding: 12px 14px;
+      background: rgba(255, 255, 255, 0.82);
+    }
+
+    .rp-import-panel--workspace textarea.field {
+      min-height: 118px;
+    }
+
+    .rp-import-panel--workspace .dropzone {
+      min-height: 128px;
+      padding: 18px 14px;
+      background: rgba(255, 255, 255, 0.72);
+    }
+  }
 }
 
 /* Spinner */
@@ -279,7 +421,7 @@
 }
 
 /* ──────────────────────────────────────────────────────────────────────────
-   Recipe card — the default printable output. Starts at classic 6in × 4in
+   Recipe card, the default printable output. Starts at classic 6in × 4in
    index-card proportions, then grows for longer recipes.
    ────────────────────────────────────────────────────────────────────────── */
 .recipe-card {
@@ -434,7 +576,7 @@
 }
 
 /* ──────────────────────────────────────────────────────────────────────────
-   Print — cards keep their 6in width but can grow for longer recipes.
+   Print, cards keep their 6in width but can grow for longer recipes.
    ────────────────────────────────────────────────────────────────────────── */
 @media print {
   .no-print {

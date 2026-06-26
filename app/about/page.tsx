@@ -6,7 +6,7 @@ import { pageMetadata, PUBLISHER } from "@/lib/seo";
 export const metadata: Metadata = pageMetadata({
   title: "About",
   description:
-    "Why we built RecipePrinter — a free, no-clutter way to print recipes from the web, " +
+    "Why we built RecipePrinter: a free, no-clutter way to print recipes from the web, " +
     "made by the team behind the CookPilot cooking app.",
   path: "/about",
 });
@@ -25,12 +25,12 @@ export default function AboutPage() {
           If you cook from the internet, you know the routine: you find a recipe, then scroll past a
           banner ad, an autoplay video, a newsletter pop-up, and several paragraphs about someone&apos;s
           trip to Italy before you reach the ingredients. Print it and you get all of that on paper,
-          too — spread across five wasted pages.
+          too, spread across five wasted pages.
         </p>
         <p>
           <span className="font-semibold text-ink">RecipePrinter fixes that.</span> Paste a recipe
-          URL, upload a photo, or paste recipe text, and we pull out just the recipe — title,
-          ingredients, and steps — and lay it out as a clean, letter-size page you can print or save
+          URL, upload a photo, or paste recipe text, and we pull out just the recipe (title,
+          ingredients, and steps) and lay it out as a clean, letter-size page you can print or save
           as a PDF. No ads, no clutter, no account, and nothing saved to a server.
         </p>
         <p>
@@ -49,7 +49,7 @@ export default function AboutPage() {
         </p>
         <p>
           We keep it deliberately small. RecipePrinter isn&apos;t a recipe database or a social
-          network — it&apos;s a focused utility that respects your time and your printer&apos;s ink.
+          network. It&apos;s a focused utility that respects your time and your printer&apos;s ink.
         </p>
       </div>
 

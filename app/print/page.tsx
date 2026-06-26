@@ -46,7 +46,7 @@ export default function PrintPage() {
       <div className="min-h-screen flex flex-col items-center justify-center gap-cp-4 text-center px-cp-6">
         <p className="font-bold text-[1.1rem]">Nothing to print</p>
         <p className="text-ink-soft max-w-sm">
-          We couldn&apos;t find those recipes — they may have been removed, or this page was
+          We couldn&apos;t find those recipes. They may have been removed, or this page was
           opened directly.
         </p>
         <Link href="/" className="btn btn-primary">
@@ -58,7 +58,7 @@ export default function PrintPage() {
 
   return (
     <div className="min-h-screen">
-      {/* Toolbar — hidden when printing */}
+      {/* Toolbar, hidden when printing */}
       <header className="no-print sticky top-0 z-10 flex items-center justify-between gap-cp-4 px-cp-6 min-h-[62px] bg-page border-b border-line">
         <Link href="/" className="flex items-center gap-cp-3 group">
           <span className="text-ink-soft group-hover:text-ink transition-colors">←</span>

@@ -4,7 +4,7 @@ import { SiteFooter } from "@/components/SiteFooter";
 import { PrintIcon } from "@/components/icons";
 
 // Layout for the supporting content pages (How it works, Features, FAQ, About).
-// A readable single-column article between the shared header and footer — these
+// A readable single-column article between the shared header and footer; these
 // are pages to actually read, not landing pages to skim past.
 export function PageShell({ children }: { children: React.ReactNode }) {
   return (

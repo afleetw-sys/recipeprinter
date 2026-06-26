@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { LogoMark, Wordmark } from "@/components/Logo";
 
-// Minimal top bar shared across every page — mirrors CookPilot's cp-topbar.
+// Minimal top bar shared across every page, mirrors CookPilot's cp-topbar.
 // The logo is a home link so the product always feels like one focused utility,
 // not a sprawling marketing site. Navigation lives in the footer.
 export function SiteHeader() {

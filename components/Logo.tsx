@@ -1,4 +1,4 @@
-// RecipePrinter's own mark — a printer/page glyph in CookPilot's blue→teal
+// RecipePrinter's own mark, a printer/page glyph in CookPilot's blue→teal
 // palette so it sits beside CookPilot as a sibling, not a clone of its logo.
 export function LogoMark({ size = 30, rounded = 12 }: { size?: number; rounded?: number }) {
   return (

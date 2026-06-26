@@ -10,7 +10,7 @@ import {
   PUBLISHER,
 } from "@/lib/seo";
 
-// Manrope — CookPilot's UI typeface. Matching it is what makes RecipePrinter
+// Manrope, CookPilot's UI typeface. Matching it is what makes RecipePrinter
 // read as a sibling product rather than a separate app.
 const manrope = Manrope({
   subsets: ["latin"],
@@ -19,7 +19,7 @@ const manrope = Manrope({
   display: "swap",
 });
 
-// Playfair Display — reserved for printed recipe titles only, giving the
+// Playfair Display, reserved for printed recipe titles only, giving the
 // printed page a cookbook identity without touching CookPilot's sans-serif UI.
 const playfair = Playfair_Display({
   subsets: ["latin"],
@@ -31,7 +31,7 @@ export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),
   title: {
     // Homepage uses the full default; inner pages get "<page> · RecipePrinter".
-    default: `${SITE_NAME} — ${SITE_TAGLINE}`,
+    default: `${SITE_NAME}: ${SITE_TAGLINE}`,
     template: `%s · ${SITE_NAME}`,
   },
   description: SITE_DESCRIPTION,
@@ -47,14 +47,14 @@ export const metadata: Metadata = {
   openGraph: {
     type: "website",
     siteName: SITE_NAME,
-    title: `${SITE_NAME} — ${SITE_TAGLINE}`,
+    title: `${SITE_NAME}: ${SITE_TAGLINE}`,
     description: SITE_DESCRIPTION,
     url: "/",
     locale: "en_US",
   },
   twitter: {
     card: "summary_large_image",
-    title: `${SITE_NAME} — ${SITE_TAGLINE}`,
+    title: `${SITE_NAME}: ${SITE_TAGLINE}`,
     description: SITE_DESCRIPTION,
   },
   robots: {

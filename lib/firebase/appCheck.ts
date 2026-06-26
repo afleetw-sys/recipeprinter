@@ -30,7 +30,7 @@ export const appCheck = (() => {
     });
   }
 
-  // Debug/dev mode — Firebase swaps in its debug attestation when the global
+  // Debug/dev mode, Firebase swaps in its debug attestation when the global
   // token above is set.
   return initializeAppCheck(app, {
     provider: new CustomProvider({

@@ -9,7 +9,7 @@ import {
 // Initializes the same Firebase project CookPilot uses, so RecipePrinter is a
 // genuine second client of CookPilot's backend rather than a reimplementation.
 //
-// Everything here is LAZY. Nothing runs at module load — important because Next
+// Everything here is LAZY. Nothing runs at module load, important because Next
 // statically prerenders this client tree on the server at build time, where the
 // NEXT_PUBLIC_FIREBASE_* values may be absent. Eager init would throw
 // `auth/invalid-api-key` during the Vercel build. Init happens on first use,

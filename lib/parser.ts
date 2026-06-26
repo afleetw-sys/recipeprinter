@@ -4,7 +4,7 @@ import { adaptCookPilotRecipe, normalizeImportURL } from "@/lib/cookpilot";
 import type { ParseResponse, Recipe } from "@/types/recipe";
 
 // These are the exact callables CookPilot's web app uses (see CookPilot
-// `lib/cookpilot/functions.ts`). RecipePrinter calls them directly — same
+// `lib/cookpilot/functions.ts`). RecipePrinter calls them directly, same
 // backend, no duplicated parser.
 async function callCookPilotParser(name: string, data: unknown): Promise<unknown> {
   const [{ httpsCallable }, { getFns }] = await Promise.all([
@@ -53,7 +53,7 @@ async function parseUrlLocally(url: string): Promise<Recipe | null> {
   return null;
 }
 
-/** URL import — CookPilot's `parseRecipeFromURL`. */
+/** URL import, CookPilot's `parseRecipeFromURL`. */
 export async function parseUrl(rawUrl: string): Promise<Recipe> {
   const url = normalizeImportURL(rawUrl);
   const localRecipe = await parseUrlLocally(url);
@@ -69,7 +69,7 @@ export async function parseUrl(rawUrl: string): Promise<Recipe> {
   }
 }
 
-/** Image import — CookPilot's `parseRecipeFromImages` (expects data-URL strings). */
+/** Image import, CookPilot's `parseRecipeFromImages` (expects data-URL strings). */
 export async function parseImages(images: string[]): Promise<Recipe> {
   try {
     const data = await callCookPilotParser("parseRecipeFromImages", { images });
@@ -81,7 +81,7 @@ export async function parseImages(images: string[]): Promise<Recipe> {
   }
 }
 
-/** Pasted-text import — CookPilot's `parseSocialRecipe` (free text as caption). */
+/** Pasted-text import, CookPilot's `parseSocialRecipe` (free text as caption). */
 export async function parseText(text: string): Promise<Recipe> {
   try {
     const data = await callCookPilotParser("parseSocialRecipe", {

@@ -3,7 +3,7 @@ import { absoluteUrl, NAV_LINKS } from "@/lib/seo";
 
 // Static, indexable routes. The supporting pages come straight from NAV_LINKS so
 // the sitemap and the site navigation can never drift apart. When public recipe
-// pages (e.g. /recipes/[slug]) land later, map them in here too — the canonical
+// pages (e.g. /recipes/[slug]) land later, map them in here too, the canonical
 // origin comes from lib/seo, so no redesign is needed.
 const staticRoutes: { path: string; priority: number; changeFrequency: MetadataRoute.Sitemap[number]["changeFrequency"] }[] = [
   { path: "/", priority: 1, changeFrequency: "weekly" },

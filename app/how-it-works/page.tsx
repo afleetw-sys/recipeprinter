@@ -8,7 +8,7 @@ export const metadata: Metadata = pageMetadata({
   title: "How it works",
   description:
     "See how RecipePrinter turns a recipe URL, photo, or pasted text into a clean, " +
-    "printable page with no ads — in three simple steps.",
+    "printable page with no ads, in three simple steps.",
   path: "/how-it-works",
 });
 
@@ -18,7 +18,7 @@ const SOURCES: Source[] = [
   {
     icon: LinkIcon,
     label: "A website URL",
-    body: "Paste the link to a recipe and we fetch the page and read the recipe out of it — the fastest way to print a recipe from a website.",
+    body: "Paste the link to a recipe and we fetch the page and read the recipe out of it, the fastest way to print a recipe from a website.",
   },
   {
     icon: ImageIcon,
@@ -78,7 +78,7 @@ export default function HowItWorksPage() {
             Modern recipe pages bury the food under ads, pop-ups, newsletter prompts, comments, and
             a long personal story. RecipePrinter throws all of that away and keeps only what you
             cook from: the title, ingredients, steps, and useful details like prep and cook time,
-            servings, and yield. The result is a clean, ad-free recipe — the way it would look on a
+            servings, and yield. The result is a clean, ad-free recipe, the way it would look on a
             recipe card.
           </p>
         </section>
@@ -91,7 +91,7 @@ export default function HowItWorksPage() {
             Preview a tidy, letter-size page and send it to your printer. Prefer a digital copy?
             Choose <span className="font-semibold text-ink">Save as PDF</span> in the print dialog
             to keep a clean recipe PDF on your device. Adding several recipes first? Select them all
-            and print the whole batch in one job — handy when you&apos;re planning a week of meals.
+            and print the whole batch in one job, handy when you&apos;re planning a week of meals.
           </p>
           <p className="mt-cp-3 text-ink-soft leading-relaxed">
             Nothing is stored on a server and no account is needed. Your print queue lives in your

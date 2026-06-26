@@ -5,7 +5,7 @@ import { FAQ, faqJsonLd, pageMetadata } from "@/lib/seo";
 export const metadata: Metadata = pageMetadata({
   title: "FAQ",
   description:
-    "Answers to common questions about printing recipes from the web with RecipePrinter — " +
+    "Answers to common questions about printing recipes from the web with RecipePrinter: " +
     "removing ads, saving as PDF, printing from photos, printing multiple recipes, and privacy.",
   path: "/faq",
 });

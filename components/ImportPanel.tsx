@@ -12,19 +12,16 @@ import { CookPilotImportSource } from "@/components/CookPilotRecipePicker";
 import type { ImportMethod } from "@/types/recipe";
 import type { QueueItem } from "@/types/recipe";
 import {
-  ChevronLeftIcon,
-  ChevronRightIcon,
   CookPilotLogoIcon,
   ImageIcon,
   LinkIcon,
+  MoreVerticalIcon,
   TextIcon,
   UploadIcon,
 } from "@/components/icons";
 
-// Mirrors CookPilot's New Recipe dialog (ImportRecipePanel): a mode toggle, a
-// per-mode input, and a single primary "Create printable recipe" action.
-// CookPilot ships URL + Image; RecipePrinter adds Pasted text (backed by
-// CookPilot's social text parser) so recipes can come from anywhere.
+// Compact import switch: URL and CookPilot are first-class; lower-frequency
+// sources live behind an overflow menu so the workspace rail stays quiet.
 
 const MODES: {
   id: ImportMethod;
@@ -32,10 +29,13 @@ const MODES: {
   icon: ComponentType<{ size?: number; className?: string }>;
 }[] = [
   { id: "url", label: "URL", icon: LinkIcon },
-  { id: "image", label: "Image", icon: ImageIcon },
   { id: "cookpilot", label: "CookPilot", icon: CookPilotLogoIcon },
+  { id: "image", label: "Image", icon: ImageIcon },
   { id: "text", label: "Paste Text", icon: TextIcon },
 ];
+
+const PRIMARY_MODES = MODES.filter((mode) => mode.id === "url" || mode.id === "cookpilot");
+const OVERFLOW_MODES = MODES.filter((mode) => mode.id === "image" || mode.id === "text");
 
 function readImageAsDataURL(file: File): Promise<string> {
   return new Promise((resolve, reject) => {
@@ -61,16 +61,20 @@ function imageLabel(files: File[]): string {
 
 export function ImportPanel({
   items,
+  workspace = false,
   onAddUrl,
   onAddImages,
   onAddText,
   onAddCookPilotRecipes,
+  onRemoveRecipe,
 }: {
   items: QueueItem[];
+  workspace?: boolean;
   onAddUrl: (url: string) => void;
   onAddImages: (images: string[], label: string) => void;
   onAddText: (text: string) => void;
   onAddCookPilotRecipes: (recipes: QueueItem[]) => number;
+  onRemoveRecipe: (id: string) => void;
 }) {
   const [mode, setMode] = useState<ImportMethod>("url");
   const [url, setUrl] = useState("");
@@ -79,30 +83,37 @@ export function ImportPanel({
   const [dragging, setDragging] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const modeScrollerRef = useRef<HTMLDivElement | null>(null);
-  const [canScrollLeft, setCanScrollLeft] = useState(false);
-  const [canScrollRight, setCanScrollRight] = useState(false);
+  const [overflowOpen, setOverflowOpen] = useState(false);
+  const overflowRef = useRef<HTMLDivElement | null>(null);
+  const overflowActive = OVERFLOW_MODES.some((option) => option.id === mode);
+  // While the print list is empty, surface every import option so people learn
+  // what's available; once a recipe is added, tuck the extras into the overflow.
+  const expanded = items.length === 0;
 
   useEffect(() => {
-    const scroller = modeScrollerRef.current;
-    if (!scroller) return;
-    const scrollerEl = scroller;
-
-    function updateScrollHints() {
-      setCanScrollLeft(scrollerEl.scrollLeft > 1);
-      setCanScrollRight(
-        scrollerEl.scrollLeft + scrollerEl.clientWidth < scrollerEl.scrollWidth - 1,
-      );
+    function onPointerDown(event: PointerEvent) {
+      if (!overflowRef.current?.contains(event.target as Node)) {
+        setOverflowOpen(false);
+      }
     }
 
-    updateScrollHints();
-    scrollerEl.addEventListener("scroll", updateScrollHints, { passive: true });
-    window.addEventListener("resize", updateScrollHints);
+    function onKeyDown(event: KeyboardEvent) {
+      if (event.key === "Escape") setOverflowOpen(false);
+    }
+
+    document.addEventListener("pointerdown", onPointerDown);
+    document.addEventListener("keydown", onKeyDown);
     return () => {
-      scrollerEl.removeEventListener("scroll", updateScrollHints);
-      window.removeEventListener("resize", updateScrollHints);
+      document.removeEventListener("pointerdown", onPointerDown);
+      document.removeEventListener("keydown", onKeyDown);
     };
   }, []);
+
+  function chooseMode(nextMode: ImportMethod) {
+    setMode(nextMode);
+    setOverflowOpen(false);
+    resetError();
+  }
 
   function resetError() {
     if (error) setError(null);
@@ -155,21 +166,29 @@ export function ImportPanel({
   }
 
   return (
-    <section className="panel p-cp-5 sm:p-cp-6 animate-fade-up">
-      {/* Mode toggle — mirrors CookPilot's import-mode-toggle */}
+    <section
+      className={`rp-import-panel panel p-cp-5 sm:p-cp-6 animate-fade-up ${
+        workspace ? "rp-import-panel--workspace" : ""
+      }`}
+      aria-labelledby={workspace ? "rp-import-heading" : undefined}
+      aria-label={workspace ? undefined : "Import recipes"}
+    >
+      {workspace && (
+        <div className="hidden lg:block mb-cp-4">
+          <h2 id="rp-import-heading" className="text-[1.06rem] font-extrabold tracking-[-0.02em]">
+            Import
+          </h2>
+        </div>
+      )}
+
+      {/* Mode toggle */}
       <div className="mode-toggle-shell">
-        {canScrollLeft && (
-          <button
-            type="button"
-            className="mode-toggle-arrow mode-toggle-arrow--left"
-            aria-label="Show previous import options"
-            onClick={() => modeScrollerRef.current?.scrollBy({ left: -150, behavior: "smooth" })}
-          >
-            <ChevronLeftIcon size={16} />
-          </button>
-        )}
-        <div ref={modeScrollerRef} className="mode-toggle" role="tablist" aria-label="Import source">
-          {MODES.map(({ id, label, icon: Icon }) => (
+        <div
+          className={`mode-toggle ${expanded ? "mode-toggle--expanded" : ""}`}
+          role="tablist"
+          aria-label="Import source"
+        >
+          {(expanded ? MODES : PRIMARY_MODES).map(({ id, label, icon: Icon }) => (
             <button
               key={id}
               type="button"
@@ -177,31 +196,58 @@ export function ImportPanel({
               aria-selected={mode === id}
               disabled={busy}
               className={`mode-toggle__item ${mode === id ? "is-active" : ""}`}
-              onClick={() => {
-                setMode(id);
-                resetError();
-              }}
+              onClick={() => chooseMode(id)}
             >
               <Icon size={18} />
               <span>{label}</span>
             </button>
           ))}
+
+          {!expanded && (
+            <div ref={overflowRef} className="mode-toggle-overflow">
+              <button
+                type="button"
+                aria-label="More import options"
+                aria-haspopup="menu"
+                aria-expanded={overflowOpen}
+                disabled={busy}
+                className={`mode-toggle__item mode-toggle__item--icon ${
+                  overflowActive ? "is-active" : ""
+                }`}
+                onClick={() => setOverflowOpen((open) => !open)}
+              >
+                <MoreVerticalIcon size={18} />
+              </button>
+
+              {overflowOpen && (
+                <div className="mode-toggle-menu" role="menu" aria-label="More import options">
+                  {OVERFLOW_MODES.map(({ id, label, icon: Icon }) => (
+                    <button
+                      key={id}
+                      type="button"
+                      role="menuitemradio"
+                      aria-checked={mode === id}
+                      className={`mode-toggle-menu__item ${mode === id ? "is-active" : ""}`}
+                      onClick={() => chooseMode(id)}
+                    >
+                      <Icon size={17} />
+                      <span>{label}</span>
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
         </div>
-        {canScrollRight && (
-          <button
-            type="button"
-            className="mode-toggle-arrow mode-toggle-arrow--right"
-            aria-label="Show more import options"
-            onClick={() => modeScrollerRef.current?.scrollBy({ left: 150, behavior: "smooth" })}
-          >
-            <ChevronRightIcon size={16} />
-          </button>
-        )}
       </div>
 
       {mode === "cookpilot" ? (
         <div className="mt-cp-4">
-          <CookPilotImportSource items={items} onAddRecipes={onAddCookPilotRecipes} />
+          <CookPilotImportSource
+            items={items}
+            onAddRecipes={onAddCookPilotRecipes}
+            onRemoveRecipe={onRemoveRecipe}
+          />
         </div>
       ) : (
       <form className="flex flex-col gap-cp-4 mt-cp-4" onSubmit={handleSubmit}>
@@ -254,7 +300,7 @@ export function ImportPanel({
               <UploadIcon size={26} />
               <span className="text-[0.92rem]">{imageLabel(imageFiles)}</span>
               <span className="text-[0.78rem] font-medium text-ink-soft">
-                Snap a cookbook page or screenshot — drop multiple for one recipe
+                Snap a cookbook page or screenshot, or drop multiple for one recipe
               </span>
             </label>
           </div>
@@ -268,7 +314,7 @@ export function ImportPanel({
             <textarea
               id="rp-text"
               className="field"
-              placeholder={"Paste a full recipe — title, ingredients, and steps.\n\nGrandma's Banana Bread\n\n2 cups flour\n3 ripe bananas\n…"}
+              placeholder={"Paste a full recipe with the title, ingredients, and steps.\n\nGrandma's Banana Bread\n\n2 cups flour\n3 ripe bananas\n…"}
               value={text}
               onChange={(e) => {
                 setText(e.target.value);
@@ -291,10 +337,6 @@ export function ImportPanel({
           <p>{error}</p>
         </div>
       )}
-
-      <p className="text-[0.78rem] text-ink-soft mt-cp-4 text-center">
-        Printing more than one? Add as many recipes as you want before printing.
-      </p>
     </section>
   );
 }

@@ -74,6 +74,14 @@ export const ChevronRightIcon = (p: IconProps) => (
   </Base>
 );
 
+export const MoreVerticalIcon = (p: IconProps) => (
+  <Base {...p}>
+    <circle cx="12" cy="5" r="1" fill="currentColor" stroke="none" />
+    <circle cx="12" cy="12" r="1" fill="currentColor" stroke="none" />
+    <circle cx="12" cy="19" r="1" fill="currentColor" stroke="none" />
+  </Base>
+);
+
 export const CookPilotLogoIcon = ({
   size = 18,
   className = "",

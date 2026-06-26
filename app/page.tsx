@@ -26,19 +26,17 @@ export default function Home() {
       <SiteHeader />
 
       <main id="rp-main" className="flex-1 px-cp-6">
-        <div className="max-w-queue mx-auto flex flex-col gap-cp-7 pt-cp-6 sm:pt-cp-7 pb-cp-7">
-          {/* Hero — what it does and why it's useful, in two sentences. */}
-          <div className="max-w-panel">
-            <h1 className="text-[clamp(2rem,5vw,2.75rem)] font-extrabold tracking-[-0.04em] leading-[1.05]">
-              Print any recipe
-              <br />
-              without the clutter.
-            </h1>
-            <p className="mt-cp-3 text-ink-soft text-[1.02rem] leading-relaxed">
-              RecipePrinter turns any online recipe into a clean, printable page. Paste a recipe
-              URL, upload a photo, or paste recipe text — we strip the ads and clutter and give you
-              a letter-size recipe you can print or save as a PDF in seconds.
-            </p>
+        <div className="max-w-content mx-auto flex flex-col gap-cp-7 pt-cp-6 sm:pt-cp-7 pb-cp-7">
+          {/* Hero: what it does and why it's useful, in two sentences. */}
+          <div className="rp-landing-hero w-full">
+            <div className="max-w-[46rem]">
+              <h1 className="text-[clamp(2rem,5vw,2.75rem)] font-extrabold tracking-[-0.04em] leading-[1.05]">
+                Print only the recipe.
+              </h1>
+              <p className="mt-cp-3 text-ink-soft text-[1.02rem] leading-relaxed">
+                We keep the ingredients and instructions, leaving everything else behind.
+              </p>
+            </div>
           </div>
 
           {/* The tool itself (interactive, client). */}

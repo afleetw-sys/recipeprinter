@@ -4,7 +4,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import type { QueueItem, Recipe } from "@/types/recipe";
 import { parseImages, parseText, parseUrl } from "@/lib/parser";
 
-// The print queue is session-based for the MVP — no accounts, no saved library.
+// The print queue is session-based for the MVP, no accounts, no saved library.
 // It survives navigation to /print (same tab) via sessionStorage.
 export const QUEUE_STORAGE_KEY = "recipeprinter:queue:v1";
 

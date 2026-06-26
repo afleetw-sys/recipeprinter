@@ -8,7 +8,7 @@ import { useQueue } from "@/lib/queue";
 
 // The interactive heart of RecipePrinter: importing recipes and managing the
 // print queue. Split out from the homepage so the page itself can stay a server
-// component — all the marketing, FAQ, and structured-data content around this
+// component, all the marketing, FAQ, and structured-data content around this
 // renders as static HTML for search engines and a fast first paint.
 export function PrinterWorkspace() {
   const router = useRouter();
@@ -29,6 +29,7 @@ export function PrinterWorkspace() {
   const selectedRecipeIds = items
     .filter((it) => it.status === "ready" && it.selected)
     .map((it) => it.id);
+  const hasProject = hydrated && items.length > 0;
 
   function handlePreview(ids: string[]) {
     if (ids.length === 0) return;
@@ -41,22 +42,38 @@ export function PrinterWorkspace() {
   }
 
   return (
-    <>
+    <div
+      className={`rp-printer-workspace ${
+        hasProject ? "rp-printer-workspace--active" : "rp-printer-workspace--landing"
+      }`}
+    >
       {/* Import panel */}
-      <ImportPanel
-        items={items}
-        onAddUrl={addUrl}
-        onAddImages={addImages}
-        onAddText={addText}
-        onAddCookPilotRecipes={addCookPilotRecipes}
-      />
+      <div className="rp-workspace-import">
+        <ImportPanel
+          items={items}
+          workspace
+          onAddUrl={addUrl}
+          onAddImages={addImages}
+          onAddText={addText}
+          onAddCookPilotRecipes={addCookPilotRecipes}
+          onRemoveRecipe={remove}
+        />
+      </div>
 
       {/* Recipes to print */}
-      <section className="flex flex-col gap-cp-4" aria-labelledby="rp-queue-heading">
-        <div className="flex items-center justify-between gap-cp-4 flex-wrap">
-          <h2 id="rp-queue-heading" className="text-[1.24rem] font-extrabold tracking-[-0.025em]">
-            Recipes to print
-          </h2>
+      <section
+        className="rp-workspace-project flex flex-col gap-cp-4"
+        aria-labelledby="rp-queue-heading"
+      >
+        <div className="flex items-start justify-between gap-cp-4 flex-wrap">
+          <div>
+            <h2
+              id="rp-queue-heading"
+              className="text-[1.24rem] font-extrabold tracking-[-0.025em]"
+            >
+              Recipes to print{hydrated && items.length > 0 ? ` (${items.length})` : ""}
+            </h2>
+          </div>
           <div className="flex items-center gap-cp-3 flex-wrap">
             <button
               type="button"
@@ -64,9 +81,7 @@ export function PrinterWorkspace() {
               disabled={selectedRecipeIds.length === 0}
               onClick={() => handlePreview(selectedRecipeIds)}
             >
-              {selectedRecipeIds.length > 0
-                ? `Preview selected (${selectedRecipeIds.length})`
-                : "Preview selected"}
+              {selectedRecipeIds.length > 0 ? `Preview (${selectedRecipeIds.length})` : "Preview"}
             </button>
             <button
               type="button"
@@ -75,9 +90,7 @@ export function PrinterWorkspace() {
               onClick={() => handlePrint(selectedRecipeIds)}
             >
               <PrintIcon size={16} />
-              {selectedRecipeIds.length > 0
-                ? `Print selected (${selectedRecipeIds.length})`
-                : "Print selected"}
+              {selectedRecipeIds.length > 0 ? `Print (${selectedRecipeIds.length})` : "Print"}
             </button>
           </div>
         </div>
@@ -96,6 +109,6 @@ export function PrinterWorkspace() {
           <div className="h-24 rounded-2xl border border-dashed border-line-strong" />
         )}
       </section>
-    </>
+    </div>
   );
 }

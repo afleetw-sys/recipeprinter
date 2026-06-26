@@ -50,7 +50,7 @@ const FEATURES: Feature[] = [
   {
     icon: ClockIcon,
     title: "Print multiple recipes at once",
-    body: "Build a print queue from different sources, select what you want, and print the whole batch in a single job — ideal for weekly meal prep.",
+    body: "Build a print queue from different sources, select what you want, and print the whole batch in a single job, ideal for weekly meal prep.",
   },
 ];
 

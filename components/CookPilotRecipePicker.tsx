@@ -242,39 +242,49 @@ function SignedOutCookPilotImport({
   );
 }
 
-function RecipeCard({
+function RecipeRow({
   summary,
   added,
   adding,
-  onAdd,
+  onToggle,
 }: {
   summary: CookPilotRecipeSummary;
   added: boolean;
   adding: boolean;
-  onAdd: () => void;
+  onToggle: () => void;
 }) {
   const time = summary.totalTimeMinutes ? `${summary.totalTimeMinutes} min` : null;
   const servings = summary.preferredServings ?? summary.servings;
 
   return (
-    <div
-      className={`flex items-center gap-cp-4 rounded-xl border p-cp-3 transition-shadow ${
-        added ? "border-line bg-page/60" : "border-line bg-card hover:shadow-sm"
+    <button
+      type="button"
+      onClick={onToggle}
+      disabled={adding}
+      aria-label={
+        added
+          ? `Remove ${summary.title} from print list`
+          : `Add ${summary.title} to print list`
+      }
+      className={`group flex w-full items-center gap-cp-3 rounded-xl border p-cp-2 text-left transition-colors ${
+        added
+          ? "border-emerald-200 bg-emerald-50/40"
+          : "border-line bg-card hover:border-line-strong"
       }`}
     >
-      <span className="w-[72px] h-[72px] rounded-lg overflow-hidden bg-page flex-shrink-0 grid place-items-center text-brand/60">
+      <div className="relative h-14 w-14 flex-shrink-0 overflow-hidden rounded-lg bg-page grid place-items-center text-brand/50">
         {summary.imageURL ? (
           // eslint-disable-next-line @next/next/no-img-element
-          <img src={summary.imageURL} alt="" className="w-full h-full object-cover" />
+          <img src={summary.imageURL} alt="" className="h-full w-full object-cover" />
         ) : (
-          <CookPilotLogoIcon size={28} />
+          <CookPilotLogoIcon size={22} />
         )}
-      </span>
+      </div>
 
       <div className="min-w-0 flex-1">
-        <p className="font-bold leading-snug line-clamp-2">{summary.title}</p>
+        <p className="font-bold leading-snug line-clamp-1">{summary.title}</p>
         {(time || servings) && (
-          <p className="mt-1.5 flex flex-wrap items-center gap-x-cp-3 gap-y-1 text-[0.78rem] text-ink-soft">
+          <p className="mt-0.5 flex flex-wrap items-center gap-x-cp-3 gap-y-0.5 text-[0.78rem] text-ink-soft">
             {time && (
               <span className="inline-flex items-center gap-1">
                 <ClockIcon size={13} />
@@ -292,22 +302,16 @@ function RecipeCard({
       </div>
 
       {added ? (
-        <span className="flex-shrink-0 inline-flex items-center gap-1.5 rounded-full bg-emerald-50 px-3 py-1.5 text-[0.78rem] font-semibold text-emerald-700">
-          <CheckIcon size={14} />
-          Added
+        <span className="inline-flex flex-shrink-0 items-center justify-center rounded-lg bg-emerald-50 px-2.5 py-1.5 text-emerald-700">
+          <CheckIcon size={16} />
         </span>
       ) : (
-        <button
-          type="button"
-          className="btn btn-primary btn-compact flex-shrink-0"
-          onClick={onAdd}
-          disabled={adding}
-        >
+        <span className="btn btn-secondary btn-compact flex-shrink-0 pointer-events-none transition-colors group-hover:border-line-strong group-hover:bg-[rgba(127,127,127,0.08)]">
           {adding ? <SpinnerIcon size={15} /> : <span className="text-base leading-none">+</span>}
           Add
-        </button>
+        </span>
       )}
-    </div>
+    </button>
   );
 }
 
@@ -315,14 +319,17 @@ function SignedInCookPilotImport({
   user,
   items,
   onAddRecipes,
+  onRemoveRecipe,
 }: {
   user: User;
   items: QueueItem[];
   onAddRecipes: (recipes: QueueItem[]) => number;
+  onRemoveRecipe: (id: string) => void;
 }) {
   const [summaries, setSummaries] = useState<CookPilotRecipeSummary[]>([]);
   const [queryText, setQueryText] = useState("");
   const [addingIds, setAddingIds] = useState<Set<string>>(new Set());
+  const [bulkBusy, setBulkBusy] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -331,10 +338,11 @@ function SignedInCookPilotImport({
     () => filterCookPilotSummaries(summaries, queryText),
     [summaries, queryText],
   );
-  const addedCount = useMemo(
-    () => summaries.filter((summary) => addedIds.has(cookPilotQueueId(summary.id))).length,
-    [summaries, addedIds],
+  const visibleNotAdded = useMemo(
+    () => visibleSummaries.filter((summary) => !addedIds.has(cookPilotQueueId(summary.id))),
+    [visibleSummaries, addedIds],
   );
+  const allVisibleAdded = visibleSummaries.length > 0 && visibleNotAdded.length === 0;
 
   useEffect(() => {
     let alive = true;
@@ -357,9 +365,13 @@ function SignedInCookPilotImport({
     };
   }, [user.uid]);
 
-  async function handleAdd(summary: CookPilotRecipeSummary) {
+  async function handleToggle(summary: CookPilotRecipeSummary) {
     const queueId = cookPilotQueueId(summary.id);
-    if (addedIds.has(queueId) || addingIds.has(summary.id)) return;
+    if (addingIds.has(summary.id)) return;
+    if (addedIds.has(queueId)) {
+      onRemoveRecipe(queueId);
+      return;
+    }
     setError(null);
     setAddingIds((current) => new Set(current).add(summary.id));
     try {
@@ -376,20 +388,49 @@ function SignedInCookPilotImport({
     }
   }
 
+  async function handleAddAll() {
+    if (bulkBusy) return;
+    if (allVisibleAdded) {
+      visibleSummaries.forEach((summary) => onRemoveRecipe(cookPilotQueueId(summary.id)));
+      return;
+    }
+    if (visibleNotAdded.length === 0) return;
+    setError(null);
+    setBulkBusy(true);
+    try {
+      const queueItems = await loadCookPilotQueueItems(user.uid, visibleNotAdded);
+      onAddRecipes(queueItems);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Couldn't add those recipes.");
+    } finally {
+      setBulkBusy(false);
+    }
+  }
+
   return (
     <div className="flex flex-col gap-cp-4">
-      <div>
-        <h3 className="font-extrabold tracking-[-0.02em] text-[1.05rem]">Import from CookPilot</h3>
-        <p className="text-[0.86rem] text-ink-soft mt-1">
-          Add any recipe to drop it straight into your print list.
-        </p>
+      <div className="flex items-center justify-between gap-cp-3">
+        <h3 className="field-label mb-0">
+          CookPilot recipes{summaries.length > 0 ? ` (${summaries.length})` : ""}
+        </h3>
+        {!loading && !error && visibleSummaries.length > 0 && (
+          <button
+            type="button"
+            className="btn-ghost btn-compact flex-shrink-0"
+            onClick={handleAddAll}
+            disabled={bulkBusy}
+          >
+            {bulkBusy ? <SpinnerIcon size={14} /> : null}
+            {allVisibleAdded ? "Deselect all" : "Add all"}
+          </button>
+        )}
       </div>
 
       <div className="relative">
         <SearchIcon size={17} className="absolute left-4 top-1/2 -translate-y-1/2 text-ink-soft" />
         <input
           id="cookpilot-search"
-          className="field pl-11"
+          className="field !pl-11"
           placeholder="Search your recipes..."
           aria-label="Search your CookPilot recipes"
           value={queryText}
@@ -432,32 +473,18 @@ function SignedInCookPilotImport({
       )}
 
       {!loading && !error && visibleSummaries.length > 0 && (
-        <>
-          <div className="flex items-center justify-between text-[0.82rem] text-ink-soft">
-            <span>
-              {visibleSummaries.length} {visibleSummaries.length === 1 ? "recipe" : "recipes"}
-            </span>
-            {addedCount > 0 && (
-              <span className="inline-flex items-center gap-1.5 font-semibold text-emerald-700">
-                <CheckIcon size={14} />
-                {addedCount} in your print list
-              </span>
-            )}
-          </div>
-
-          <ul className="flex flex-col gap-cp-4 max-h-[460px] overflow-y-auto pr-1">
-            {visibleSummaries.map((summary) => (
-              <li key={summary.id}>
-                <RecipeCard
-                  summary={summary}
-                  added={addedIds.has(cookPilotQueueId(summary.id))}
-                  adding={addingIds.has(summary.id)}
-                  onAdd={() => handleAdd(summary)}
-                />
-              </li>
-            ))}
-          </ul>
-        </>
+        <ul className="flex flex-col gap-cp-2 max-h-[520px] overflow-y-auto pr-1">
+          {visibleSummaries.map((summary) => (
+            <li key={summary.id}>
+              <RecipeRow
+                summary={summary}
+                added={addedIds.has(cookPilotQueueId(summary.id))}
+                adding={addingIds.has(summary.id)}
+                onToggle={() => handleToggle(summary)}
+              />
+            </li>
+          ))}
+        </ul>
       )}
     </div>
   );
@@ -466,9 +493,11 @@ function SignedInCookPilotImport({
 export function CookPilotImportSource({
   items,
   onAddRecipes,
+  onRemoveRecipe,
 }: {
   items: QueueItem[];
   onAddRecipes: (recipes: QueueItem[]) => number;
+  onRemoveRecipe: (id: string) => void;
 }) {
   const { user, ready } = useCookPilotAuth();
   const [loginMode, setLoginMode] = useState<LoginMode | null>(null);
@@ -487,7 +516,12 @@ export function CookPilotImportSource({
       {ready && !user && <SignedOutCookPilotImport onLogin={setLoginMode} />}
 
       {ready && user && (
-        <SignedInCookPilotImport user={user} items={items} onAddRecipes={onAddRecipes} />
+        <SignedInCookPilotImport
+          user={user}
+          items={items}
+          onAddRecipes={onAddRecipes}
+          onRemoveRecipe={onRemoveRecipe}
+        />
       )}
 
       {loginMode && !user && (
