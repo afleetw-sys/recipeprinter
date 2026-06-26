@@ -15,6 +15,7 @@ export function PrinterWorkspace() {
   const router = useRouter();
   const {
     items,
+    focusedItemId,
     hydrated,
     hydratedWithItems,
     addUrl,
@@ -27,6 +28,7 @@ export function PrinterWorkspace() {
     toggleSelected,
     setAllSelected,
     clear,
+    focusItem,
   } = useQueue();
   const readyItems = items.filter((it) => it.status === "ready");
   const selectedRecipeIds = readyItems.filter((it) => it.selected).map((it) => it.id);
@@ -85,6 +87,7 @@ export function PrinterWorkspace() {
           onAddText={addText}
           onAddCookPilotRecipes={addCookPilotRecipes}
           onRemoveRecipe={remove}
+          onFocusRecipe={focusItem}
         />
       </div>
 
@@ -165,6 +168,7 @@ export function PrinterWorkspace() {
             onRetry={retry}
             onRemove={remove}
             animateItems={!skipProjectIntro}
+            focusedItemId={focusedItemId}
           />
         ) : (
           <div className="h-24 rounded-2xl border border-dashed border-line-strong" />

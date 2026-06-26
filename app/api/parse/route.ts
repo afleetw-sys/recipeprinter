@@ -1,7 +1,7 @@
 import { lookup } from "node:dns/promises";
 import { isIP } from "node:net";
 import { NextResponse } from "next/server";
-import { jsonLdBlocksFromHtml, recipeFromJsonLd } from "@/lib/schemaRecipe";
+import { jsonDataBlocksFromHtml, jsonLdBlocksFromHtml, recipeFromJsonLd } from "@/lib/schemaRecipe";
 import { normalizeImportURL } from "@/lib/cookpilot";
 import type { ParseResponse } from "@/types/recipe";
 
@@ -174,7 +174,7 @@ export async function POST(request: Request) {
     }
 
     const html = await readHtmlWithLimit(response);
-    const recipe = jsonLdBlocksFromHtml(html)
+    const recipe = [...jsonLdBlocksFromHtml(html), ...jsonDataBlocksFromHtml(html)]
       .map((block) => recipeFromJsonLd(block, response.url || url.toString()))
       .find(Boolean);
 

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import type { Recipe } from "@/types/recipe";
 
 // Printable recipe layouts. Compact cards keep readable text and move overflow
@@ -333,10 +333,15 @@ export default function RecipeCardPrint({
   } = splitRecipe(recipe, size);
   const hasBack = backIngredients.length > 0 || backInstructions.length > 0;
   const needsPrintBack = hasBack || (doubleSided && !isLast);
+  const showSideNav = doubleSided && hasBack;
+
+  useEffect(() => {
+    if (!doubleSided) setPreviewSide("front");
+  }, [doubleSided]);
 
   return (
     <div className={`recipe-card-set recipe-card-set--${size} recipe-template--${template}`}>
-      {hasBack && (
+      {showSideNav && (
         <div className="recipe-card-side-nav no-print" aria-label={`${recipe.title} sides`}>
           <button
             type="button"
@@ -367,7 +372,7 @@ export default function RecipeCardPrint({
         showHeader
         layout={frontLayout}
         hasBackFace={hasBack}
-        previewHidden={hasBack && previewSide !== "front"}
+        previewHidden={showSideNav && previewSide !== "front"}
       />
       {needsPrintBack &&
         (hasBack ? (
@@ -379,7 +384,7 @@ export default function RecipeCardPrint({
             showHeader={false}
             layout={backLayout}
             hasBackFace={hasBack}
-            previewHidden={previewSide !== "back"}
+            previewHidden={doubleSided && previewSide !== "back"}
           />
         ) : (
           <RecipeCardFace

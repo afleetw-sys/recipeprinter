@@ -49,30 +49,39 @@ function typeMatches(node: AnyRecord, expected: string): boolean {
   return false;
 }
 
-function findRecipeNode(value: unknown): AnyRecord | null {
+function findRecipeNode(value: unknown, seen = new WeakSet<object>()): AnyRecord | null {
   const node = asRecord(value);
   if (!node) {
     if (Array.isArray(value)) {
       for (const item of value) {
-        const found = findRecipeNode(item);
+        const found = findRecipeNode(item, seen);
         if (found) return found;
       }
     }
     return null;
   }
 
+  if (seen.has(node)) return null;
+  seen.add(node);
+
   if (typeMatches(node, "Recipe")) return node;
 
   const graph = node["@graph"];
   if (Array.isArray(graph)) {
     for (const item of graph) {
-      const found = findRecipeNode(item);
+      const found = findRecipeNode(item, seen);
       if (found) return found;
     }
   }
 
   for (const key of ["mainEntity", "mainEntityOfPage", "about"]) {
-    const found = findRecipeNode(node[key]);
+    const found = findRecipeNode(node[key], seen);
+    if (found) return found;
+  }
+
+  for (const child of Object.values(node)) {
+    if (!child || typeof child !== "object") continue;
+    const found = findRecipeNode(child, seen);
     if (found) return found;
   }
 
@@ -215,6 +224,31 @@ export function jsonLdBlocksFromHtml(html: string): unknown[] {
           blocks.push(JSON.parse(decodeEntities(raw)));
         } catch {
           /* Ignore malformed structured-data blocks. */
+        }
+      }
+    }
+    match = scriptPattern.exec(html);
+  }
+
+  return blocks;
+}
+
+export function jsonDataBlocksFromHtml(html: string): unknown[] {
+  const blocks: unknown[] = [];
+  const scriptPattern =
+    /<script\b(?=[^>]*type=["']application\/json["'])[^>]*>([\s\S]*?)<\/script>/gi;
+
+  let match = scriptPattern.exec(html);
+  while (match) {
+    const raw = match[1]?.trim();
+    if (raw) {
+      try {
+        blocks.push(JSON.parse(raw));
+      } catch {
+        try {
+          blocks.push(JSON.parse(decodeEntities(raw)));
+        } catch {
+          /* Ignore malformed app-data blocks. */
         }
       }
     }

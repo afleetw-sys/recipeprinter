@@ -147,7 +147,6 @@ export default function PrintPage() {
               />
               <span>
                 <strong>Double-sided cards</strong>
-                <small>Add blank backs when needed so fronts and backs stay paired.</small>
               </span>
             </label>
           </div>
@@ -206,6 +205,7 @@ export default function PrintPage() {
             className={`recipe-print-preview recipe-print-preview--${cardSize} ${
               showCutLines ? "recipe-print-preview--cut-lines" : ""
             } flex flex-col items-center gap-cp-6 print:gap-0 print:items-stretch`}
+            data-double-sided={doubleSided ? "true" : "false"}
           >
             {items.map((item, index) => (
               <RecipeCardPrint

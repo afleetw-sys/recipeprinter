@@ -322,11 +322,13 @@ function SignedInCookPilotImport({
   items,
   onAddRecipes,
   onRemoveRecipe,
+  onFocusRecipe,
 }: {
   user: User;
   items: QueueItem[];
   onAddRecipes: (recipes: QueueItem[]) => number;
   onRemoveRecipe: (id: string) => void;
+  onFocusRecipe: (id: string) => void;
 }) {
   const [summaries, setSummaries] = useState<CookPilotRecipeSummary[]>(
     () => getCachedCookPilotSummaries(user.uid) ?? [],
@@ -375,7 +377,7 @@ function SignedInCookPilotImport({
     const queueId = cookPilotQueueId(summary.id);
     if (addingIds.has(summary.id)) return;
     if (addedIds.has(queueId)) {
-      onRemoveRecipe(queueId);
+      onFocusRecipe(queueId);
       return;
     }
     setError(null);
@@ -500,10 +502,12 @@ export function CookPilotImportSource({
   items,
   onAddRecipes,
   onRemoveRecipe,
+  onFocusRecipe,
 }: {
   items: QueueItem[];
   onAddRecipes: (recipes: QueueItem[]) => number;
   onRemoveRecipe: (id: string) => void;
+  onFocusRecipe: (id: string) => void;
 }) {
   const { user, ready } = useCookPilotAuth();
   const [loginMode, setLoginMode] = useState<LoginMode | null>(null);
@@ -527,6 +531,7 @@ export function CookPilotImportSource({
           items={items}
           onAddRecipes={onAddRecipes}
           onRemoveRecipe={onRemoveRecipe}
+          onFocusRecipe={onFocusRecipe}
         />
       )}
 

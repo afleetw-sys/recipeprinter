@@ -3,6 +3,12 @@
 import { adaptCookPilotRecipe, normalizeImportURL } from "@/lib/cookpilot";
 import type { ParseResponse, Recipe } from "@/types/recipe";
 
+interface LocalParseOutcome {
+  recipe: Recipe | null;
+  error?: string;
+  status?: number;
+}
+
 // These are the exact callables CookPilot's web app uses (see CookPilot
 // `lib/cookpilot/functions.ts`). RecipePrinter calls them directly, same
 // backend, no duplicated parser.
@@ -31,8 +37,10 @@ function friendlyError(err: unknown, fallback: string): Error {
   if (/HTTP\s*404/.test(message)) {
     return new Error("That page couldn't be found. Double-check the URL.");
   }
-  if (code.includes("unauthenticated") || code.includes("permission-denied")) {
-    return new Error("CookPilot rejected the request (auth/App Check). Check the dev token.");
+  if (isAuthOrAppCheckError(err)) {
+    return new Error(
+      "The fallback parser couldn't accept this request. Try a different recipe URL, or paste the recipe text instead.",
+    );
   }
   if (code.includes("deadline-exceeded")) {
     return new Error("The parser timed out. Please try again.");
@@ -40,7 +48,28 @@ function friendlyError(err: unknown, fallback: string): Error {
   return new Error(message || fallback);
 }
 
-async function parseUrlLocally(url: string): Promise<Recipe | null> {
+function isAuthOrAppCheckError(err: unknown): boolean {
+  const message = err instanceof Error ? err.message : String(err);
+  const code = (err as { code?: string })?.code ?? "";
+  return (
+    code.includes("unauthenticated") ||
+    code.includes("permission-denied") ||
+    code.includes("app-check") ||
+    code.includes("auth/") ||
+    /app check|appcheck|auth\/|firebase isn't configured/i.test(message)
+  );
+}
+
+function shouldUseLocalError(local: LocalParseOutcome, fallbackError: unknown): boolean {
+  if (!local.error) return false;
+  if (isAuthOrAppCheckError(fallbackError)) return true;
+
+  // A precise local fetch/parse result is more useful than a generic callable
+  // failure, especially for unsupported pages and HTTP responses.
+  return Boolean(local.status && local.status >= 400 && local.status < 500);
+}
+
+async function parseUrlLocally(url: string): Promise<LocalParseOutcome> {
   try {
     const response = await fetch("/api/parse", {
       method: "POST",
@@ -48,18 +77,19 @@ async function parseUrlLocally(url: string): Promise<Recipe | null> {
       body: JSON.stringify({ url }),
     });
     const data = (await response.json()) as ParseResponse;
-    if (data.success) return data.recipe;
+    if (data.success) return { recipe: data.recipe };
+    return { recipe: null, error: data.error, status: response.status };
   } catch {
     /* Fall back to CookPilot's callable parser below. */
   }
-  return null;
+  return { recipe: null };
 }
 
 /** URL import, CookPilot's `parseRecipeFromURL`. */
 export async function parseUrl(rawUrl: string): Promise<Recipe> {
   const url = normalizeImportURL(rawUrl);
   const localRecipe = await parseUrlLocally(url);
-  if (localRecipe) return localRecipe;
+  if (localRecipe.recipe) return localRecipe.recipe;
 
   try {
     const data = await callCookPilotParser("parseRecipeFromURL", { url });
@@ -67,6 +97,9 @@ export async function parseUrl(rawUrl: string): Promise<Recipe> {
     if (!recipe) throw new Error("No recipe could be found at that URL.");
     return recipe;
   } catch (err) {
+    if (shouldUseLocalError(localRecipe, err)) {
+      throw new Error(localRecipe.error ?? "We couldn't import a recipe from that URL.");
+    }
     throw friendlyError(err, "We couldn't import a recipe from that URL.");
   }
 }

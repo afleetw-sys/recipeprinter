@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect, useRef } from "react";
 import { type QueueItem, type Recipe } from "@/types/recipe";
 import {
   CheckIcon,
@@ -23,6 +24,7 @@ function RecipeCardItem({
   onRetry,
   onRemove,
   animate,
+  focused,
 }: {
   item: QueueItem;
   canRetry: boolean;
@@ -30,15 +32,27 @@ function RecipeCardItem({
   onRetry: () => void;
   onRemove: () => void;
   animate: boolean;
+  focused: boolean;
 }) {
+  const itemRef = useRef<HTMLLIElement | null>(null);
   const ready = item.status === "ready";
   const recipe = item.recipe;
   const selected = ready && item.selected;
   const time = totalTime(recipe);
   const servings = recipe?.servings ?? recipe?.yield;
 
+  useEffect(() => {
+    if (!focused) return;
+    itemRef.current?.scrollIntoView({ behavior: "smooth", block: "center" });
+  }, [focused]);
+
   return (
-    <li className={`relative ${animate ? "animate-fade-up" : ""}`}>
+    <li
+      ref={itemRef}
+      className={`relative ${animate ? "animate-fade-up" : ""} ${
+        focused ? "rp-queue-item--focused" : ""
+      }`}
+    >
       {/* Whole card toggles selection when the recipe is ready to print */}
       <button
         type="button"
@@ -159,6 +173,7 @@ export function PrintQueue({
   onRetry,
   onRemove,
   animateItems = true,
+  focusedItemId,
 }: {
   items: QueueItem[];
   canRetry: (item: QueueItem) => boolean;
@@ -166,6 +181,7 @@ export function PrintQueue({
   onRetry: (id: string) => void;
   onRemove: (id: string) => void;
   animateItems?: boolean;
+  focusedItemId?: string | null;
 }) {
   if (items.length === 0) {
     return (
@@ -191,6 +207,7 @@ export function PrintQueue({
             onRetry={() => onRetry(item.id)}
             onRemove={() => onRemove(item.id)}
             animate={animateItems}
+            focused={focusedItemId === item.id}
           />
         ))}
       </ul>
