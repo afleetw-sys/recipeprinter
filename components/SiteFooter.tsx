@@ -30,7 +30,7 @@ export function SiteFooter() {
             >
               {PUBLISHER.name}
             </a>{" "}
-            product
+            product.
           </span>
           <span>
             © {new Date().getFullYear()} {PUBLISHER.name}

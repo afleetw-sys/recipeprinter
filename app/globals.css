@@ -328,7 +328,7 @@
 
     /* No recipes yet: import takes the larger share. */
     .rp-printer-workspace--landing {
-      grid-template-columns: minmax(280px, 1.6fr) minmax(240px, 1fr);
+      grid-template-columns: minmax(280px, 2fr) minmax(220px, 1fr);
     }
 
     /* First recipe added: recipes panel takes the larger share. */

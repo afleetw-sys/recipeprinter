@@ -74,25 +74,27 @@ export function PrinterWorkspace() {
               Recipes to print{hydrated && items.length > 0 ? ` (${items.length})` : ""}
             </h2>
           </div>
-          <div className="flex items-center gap-cp-3 flex-wrap">
-            <button
-              type="button"
-              className="btn btn-primary btn-compact"
-              disabled={selectedRecipeIds.length === 0}
-              onClick={() => handlePreview(selectedRecipeIds)}
-            >
-              {selectedRecipeIds.length > 0 ? `Preview (${selectedRecipeIds.length})` : "Preview"}
-            </button>
-            <button
-              type="button"
-              className="btn btn-primary btn-compact"
-              disabled={selectedRecipeIds.length === 0}
-              onClick={() => handlePrint(selectedRecipeIds)}
-            >
-              <PrintIcon size={16} />
-              {selectedRecipeIds.length > 0 ? `Print (${selectedRecipeIds.length})` : "Print"}
-            </button>
-          </div>
+          {hasProject && (
+            <div className="flex items-center gap-cp-3 flex-wrap">
+              <button
+                type="button"
+                className="btn btn-primary btn-compact"
+                disabled={selectedRecipeIds.length === 0}
+                onClick={() => handlePreview(selectedRecipeIds)}
+              >
+                {selectedRecipeIds.length > 0 ? `Preview (${selectedRecipeIds.length})` : "Preview"}
+              </button>
+              <button
+                type="button"
+                className="btn btn-primary btn-compact"
+                disabled={selectedRecipeIds.length === 0}
+                onClick={() => handlePrint(selectedRecipeIds)}
+              >
+                <PrintIcon size={16} />
+                {selectedRecipeIds.length > 0 ? `Print (${selectedRecipeIds.length})` : "Print"}
+              </button>
+            </div>
+          )}
         </div>
 
         {hydrated ? (
