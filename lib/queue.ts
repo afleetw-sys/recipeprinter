@@ -149,14 +149,6 @@ function canonicalUrl(rawUrl: string): string | null {
   }
 }
 
-function textKey(text: string): string {
-  return text.trim().replace(/\s+/g, " ").toLowerCase();
-}
-
-function imageKey(images: string[]): string {
-  return images.join("\n");
-}
-
 export function useQueue() {
   const [items, setItems] = useState<QueueItem[]>([]);
   const [focusedItemId, setFocusedItemId] = useState<string | null>(null);
@@ -167,7 +159,6 @@ export function useQueue() {
   // Pasted text payloads are kept in memory only (too large/private to persist)
   // so a failed text import can be retried within the same session.
   const textPayloads = useRef<Map<string, string>>(new Map());
-  const imagePayloadKeys = useRef<Map<string, string>>(new Map());
 
   // Hydrate from sessionStorage on mount (client only).
   useEffect(() => {
@@ -273,15 +264,6 @@ export function useQueue() {
   const addImages = useCallback(
     (images: string[], label: string) => {
       if (images.length === 0) return;
-      const key = imageKey(images);
-      const duplicateId = Array.from(imagePayloadKeys.current.entries()).find(
-        ([, existingKey]) => existingKey === key,
-      )?.[0];
-      if (duplicateId && itemsRef.current.some((item) => item.id === duplicateId)) {
-        focusItem(duplicateId);
-        return;
-      }
-
       const id = uid();
       const item: QueueItem = {
         id,
@@ -292,26 +274,16 @@ export function useQueue() {
         selected: true,
         addedAt: Date.now(),
       };
-      imagePayloadKeys.current.set(id, key);
       commit([...itemsRef.current, item]);
       void runParse(id, () => parseImages(images));
     },
-    [commit, focusItem, runParse],
+    [commit, runParse],
   );
 
   const addText = useCallback(
     (text: string) => {
       const trimmed = text.trim();
       if (!trimmed) return;
-      const key = textKey(trimmed);
-      const duplicateId = Array.from(textPayloads.current.entries()).find(
-        ([, existingText]) => textKey(existingText) === key,
-      )?.[0];
-      if (duplicateId && itemsRef.current.some((item) => item.id === duplicateId)) {
-        focusItem(duplicateId);
-        return;
-      }
-
       const id = uid();
       // Use the first non-empty line as a provisional title.
       const firstLine = trimmed.split("\n").map((l) => l.trim()).find(Boolean) ?? "Pasted recipe";
@@ -328,7 +300,7 @@ export function useQueue() {
       commit([...itemsRef.current, item]);
       void runParse(id, () => parseText(trimmed));
     },
-    [commit, focusItem, runParse],
+    [commit, runParse],
   );
 
   const addCookPilotRecipes = useCallback(
@@ -336,14 +308,11 @@ export function useQueue() {
       if (recipes.length === 0) return 0;
       const existingIds = new Set(itemsRef.current.map((item) => item.id));
       const nextRecipes = recipes.filter((recipe) => !existingIds.has(recipe.id));
-      if (nextRecipes.length === 0) {
-        focusItem(recipes[0].id);
-        return 0;
-      }
+      if (nextRecipes.length === 0) return 0;
       commit([...itemsRef.current, ...nextRecipes]);
       return nextRecipes.length;
     },
-    [commit, focusItem],
+    [commit],
   );
 
   /** Whether a failed item can be retried in place (URL + text only). */
@@ -371,7 +340,6 @@ export function useQueue() {
   const remove = useCallback(
     (id: string) => {
       textPayloads.current.delete(id);
-      imagePayloadKeys.current.delete(id);
       commit(itemsRef.current.filter((it) => it.id !== id));
     },
     [commit],
@@ -399,7 +367,6 @@ export function useQueue() {
 
   const clear = useCallback(() => {
     textPayloads.current.clear();
-    imagePayloadKeys.current.clear();
     setFocusedItemId(null);
     commit([]);
   }, [commit]);

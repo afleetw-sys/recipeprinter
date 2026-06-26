@@ -79,7 +79,6 @@ export function ImportPanel({
   onAddText,
   onAddCookPilotRecipes,
   onRemoveRecipe,
-  onFocusRecipe,
 }: {
   items: QueueItem[];
   workspace?: boolean;
@@ -88,7 +87,6 @@ export function ImportPanel({
   onAddText: (text: string) => void;
   onAddCookPilotRecipes: (recipes: QueueItem[]) => number;
   onRemoveRecipe: (id: string) => void;
-  onFocusRecipe: (id: string) => void;
 }) {
   const [mode, setMode] = useState<ImportMethod>("url");
   const [url, setUrl] = useState("");
@@ -261,7 +259,6 @@ export function ImportPanel({
             items={items}
             onAddRecipes={onAddCookPilotRecipes}
             onRemoveRecipe={onRemoveRecipe}
-            onFocusRecipe={onFocusRecipe}
           />
         </div>
       ) : (

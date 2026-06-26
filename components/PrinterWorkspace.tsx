@@ -28,7 +28,6 @@ export function PrinterWorkspace() {
     toggleSelected,
     setAllSelected,
     clear,
-    focusItem,
   } = useQueue();
   const readyItems = items.filter((it) => it.status === "ready");
   const selectedRecipeIds = readyItems.filter((it) => it.selected).map((it) => it.id);
@@ -87,7 +86,6 @@ export function PrinterWorkspace() {
           onAddText={addText}
           onAddCookPilotRecipes={addCookPilotRecipes}
           onRemoveRecipe={remove}
-          onFocusRecipe={focusItem}
         />
       </div>
 
