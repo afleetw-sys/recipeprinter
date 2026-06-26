@@ -15,7 +15,7 @@ import type { Metadata } from "next";
  * environment (Vercel/preview/prod). No trailing slash.
  */
 export const SITE_URL = (
-  process.env.NEXT_PUBLIC_SITE_URL ?? "https://recipeprinter.com"
+  process.env.NEXT_PUBLIC_SITE_URL ?? "https://www.recipeprinter.com"
 ).replace(/\/$/, "");
 
 export const SITE_NAME = "RecipePrinter";
