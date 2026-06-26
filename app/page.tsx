@@ -1,53 +1,34 @@
-"use client";
+import Link from "next/link";
+import { SiteHeader } from "@/components/SiteHeader";
+import { SiteFooter } from "@/components/SiteFooter";
+import { PrinterWorkspace } from "@/components/PrinterWorkspace";
+import { webApplicationJsonLd, HOME_FAQ } from "@/lib/seo";
 
-import { useRouter } from "next/navigation";
-import { LogoMark, Wordmark } from "@/components/Logo";
-import { ImportPanel } from "@/components/ImportPanel";
-import { PrintQueue } from "@/components/PrintQueue";
-import { PrintIcon } from "@/components/icons";
-import { useQueue } from "@/lib/queue";
-
+// The homepage is a focused utility: understand what RecipePrinter does and
+// start printing without scrolling past marketing. Deeper explanations live on
+// their own pages (How it works, Features, FAQ, About), linked from the footer.
+// Server-rendered, so the hero, copy, and FAQ ship as crawlable HTML.
 export default function Home() {
-  const router = useRouter();
-  const {
-    items,
-    hydrated,
-    addUrl,
-    addImages,
-    addText,
-    addCookPilotRecipes,
-    retry,
-    canRetry,
-    remove,
-    toggleSelected,
-    setAllSelected,
-    clear,
-  } = useQueue();
-  const selectedRecipeIds = items
-    .filter((it) => it.status === "ready" && it.selected)
-    .map((it) => it.id);
-
-  function handlePreview(ids: string[]) {
-    if (ids.length === 0) return;
-    router.push(`/print?ids=${ids.join(",")}`);
-  }
-
-  function handlePrint(ids: string[]) {
-    if (ids.length === 0) return;
-    router.push(`/print?ids=${ids.join(",")}&print=1`);
-  }
-
   return (
     <div className="min-h-screen flex flex-col">
-      {/* Top bar — mirrors CookPilot's cp-topbar */}
-      <header className="no-print flex items-center gap-cp-3 px-cp-6 min-h-[62px]">
-        <LogoMark size={30} />
-        <Wordmark className="text-[1.2rem]" />
-      </header>
+      {/* Structured data describing the product itself. */}
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(webApplicationJsonLd()) }}
+      />
 
-      <main className="flex-1 px-cp-6 pb-cp-7">
-        <div className="max-w-queue mx-auto flex flex-col gap-cp-7 pt-cp-6 sm:pt-cp-7">
-          {/* Hero header — mirrors CookPilot's section-header (eyebrow + h1) */}
+      <a
+        href="#rp-main"
+        className="sr-only focus:not-sr-only focus:absolute focus:z-50 focus:top-3 focus:left-3 focus:rounded-lg focus:bg-card focus:px-cp-4 focus:py-cp-2 focus:shadow"
+      >
+        Skip to the recipe printer
+      </a>
+
+      <SiteHeader />
+
+      <main id="rp-main" className="flex-1 px-cp-6">
+        <div className="max-w-queue mx-auto flex flex-col gap-cp-7 pt-cp-6 sm:pt-cp-7 pb-cp-7">
+          {/* Hero — what it does and why it's useful, in two sentences. */}
           <div className="max-w-panel">
             <h1 className="text-[clamp(2rem,5vw,2.75rem)] font-extrabold tracking-[-0.04em] leading-[1.05]">
               Print any recipe
@@ -55,84 +36,39 @@ export default function Home() {
               without the clutter.
             </h1>
             <p className="mt-cp-3 text-ink-soft text-[1.02rem] leading-relaxed">
-              Paste a recipe URL, upload a photo, or paste recipe text. We&apos;ll turn it into a
-              clean, letter-size recipe you can print in seconds.
+              RecipePrinter turns any online recipe into a clean, printable page. Paste a recipe
+              URL, upload a photo, or paste recipe text — we strip the ads and clutter and give you
+              a letter-size recipe you can print or save as a PDF in seconds.
             </p>
           </div>
 
-          {/* Import panel */}
-          <ImportPanel
-            items={items}
-            onAddUrl={addUrl}
-            onAddImages={addImages}
-            onAddText={addText}
-            onAddCookPilotRecipes={addCookPilotRecipes}
-          />
+          {/* The tool itself (interactive, client). */}
+          <PrinterWorkspace />
 
-          {/* Recipes to print */}
-          <section className="flex flex-col gap-cp-4">
-            <div className="flex items-center justify-between gap-cp-4 flex-wrap">
-              <h2 className="text-[1.24rem] font-extrabold tracking-[-0.025em]">Recipes to print</h2>
-              <div className="flex items-center gap-cp-3 flex-wrap">
-                <button
-                  type="button"
-                  className="btn btn-primary btn-compact"
-                  disabled={selectedRecipeIds.length === 0}
-                  onClick={() => handlePreview(selectedRecipeIds)}
-                >
-                  {selectedRecipeIds.length > 0
-                    ? `Preview selected (${selectedRecipeIds.length})`
-                    : "Preview selected"}
-                </button>
-                <button
-                  type="button"
-                  className="btn btn-primary btn-compact"
-                  disabled={selectedRecipeIds.length === 0}
-                  onClick={() => handlePrint(selectedRecipeIds)}
-                >
-                  <PrintIcon size={16} />
-                  {selectedRecipeIds.length > 0
-                    ? `Print selected (${selectedRecipeIds.length})`
-                    : "Print selected"}
-                </button>
-              </div>
-            </div>
-
-            {hydrated ? (
-              <PrintQueue
-                items={items}
-                canRetry={canRetry}
-                onToggle={toggleSelected}
-                onRetry={retry}
-                onRemove={remove}
-                onSetAllSelected={setAllSelected}
-                onClear={clear}
-              />
-            ) : (
-              <div className="h-24 rounded-2xl border border-dashed border-line-strong" />
-            )}
+          {/* A few of the most-asked questions; the rest live on /faq. */}
+          <section aria-labelledby="home-faq-heading" className="flex flex-col gap-cp-4">
+            <h2 id="home-faq-heading" className="text-[1.24rem] font-extrabold tracking-[-0.025em]">
+              Common questions
+            </h2>
+            <dl className="flex flex-col gap-cp-3">
+              {HOME_FAQ.map(({ question, answer }) => (
+                <div key={question} className="card p-cp-5">
+                  <dt className="font-extrabold tracking-[-0.02em] text-[1.02rem]">{question}</dt>
+                  <dd className="mt-cp-2 text-ink-soft text-[0.94rem] leading-relaxed">{answer}</dd>
+                </div>
+              ))}
+            </dl>
+            <Link
+              href="/faq"
+              className="text-[0.9rem] font-semibold text-brand hover:underline self-start"
+            >
+              Read all FAQs →
+            </Link>
           </section>
         </div>
       </main>
 
-      {/* Footer */}
-      <footer className="no-print px-cp-6 py-cp-5 border-t border-line">
-        <div className="max-w-content mx-auto w-full flex items-center justify-between text-[0.8rem] text-ink-soft">
-          <span>
-            RecipePrinter is a{" "}
-            <a
-              href="https://cookpilotapp.com"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-brand hover:underline font-semibold"
-            >
-              CookPilot
-            </a>{" "}
-            product · session-based, nothing is saved
-          </span>
-          <span>© {new Date().getFullYear()} CookPilot</span>
-        </div>
-      </footer>
+      <SiteFooter />
     </div>
   );
 }
