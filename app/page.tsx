@@ -1,13 +1,12 @@
-import Link from "next/link";
 import { SiteHeader } from "@/components/SiteHeader";
 import { SiteFooter } from "@/components/SiteFooter";
 import { PrinterWorkspace } from "@/components/PrinterWorkspace";
-import { webApplicationJsonLd, HOME_FAQ } from "@/lib/seo";
+import { webApplicationJsonLd } from "@/lib/seo";
 
 // The homepage is a focused utility: understand what RecipePrinter does and
-// start printing without scrolling past marketing. Deeper explanations live on
-// their own pages (How it works, Features, FAQ, About), linked from the footer.
-// Server-rendered, so the hero, copy, and FAQ ship as crawlable HTML.
+// start printing without scrolling past marketing. Deeper explanations and the
+// FAQ live on their own pages (How it works, Features, FAQ, About), linked from
+// the footer. Server-rendered, so the hero and copy ship as crawlable HTML.
 export default function Home() {
   return (
     <div className="min-h-screen flex flex-col">
@@ -44,27 +43,6 @@ export default function Home() {
 
           {/* The tool itself (interactive, client). */}
           <PrinterWorkspace />
-
-          {/* A few of the most-asked questions; the rest live on /faq. */}
-          <section aria-labelledby="home-faq-heading" className="flex flex-col gap-cp-4">
-            <h2 id="home-faq-heading" className="text-[1.24rem] font-extrabold tracking-[-0.025em]">
-              Common questions
-            </h2>
-            <dl className="flex flex-col gap-cp-3">
-              {HOME_FAQ.map(({ question, answer }) => (
-                <div key={question} className="card p-cp-5">
-                  <dt className="font-extrabold tracking-[-0.02em] text-[1.02rem]">{question}</dt>
-                  <dd className="mt-cp-2 text-ink-soft text-[0.94rem] leading-relaxed">{answer}</dd>
-                </div>
-              ))}
-            </dl>
-            <Link
-              href="/faq"
-              className="text-[0.9rem] font-semibold text-brand hover:underline self-start"
-            >
-              Read all FAQs →
-            </Link>
-          </section>
         </div>
       </main>
 

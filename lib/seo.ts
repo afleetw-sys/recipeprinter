@@ -170,13 +170,6 @@ export const FAQ: FaqItem[] = [
   },
 ];
 
-/**
- * The handful of questions worth surfacing on the focused homepage. The full
- * set lives on /faq (which also carries the FAQPage structured data). These are
- * the three intents users ask most: ads, any-website, and batch printing.
- */
-export const HOME_FAQ: FaqItem[] = FAQ.slice(0, 3);
-
 // ── JSON-LD builders ─────────────────────────────────────────────────────────
 
 /**
