@@ -19,19 +19,19 @@ import {
   type CookPilotRecipeSummary,
 } from "@/lib/cookpilotRecipes";
 import type { QueueItem } from "@/types/recipe";
-import { CookPilotLogoIcon, SearchIcon, SpinnerIcon, XIcon } from "@/components/icons";
+import {
+  CheckIcon,
+  ClockIcon,
+  CookPilotLogoIcon,
+  SearchIcon,
+  SpinnerIcon,
+  UsersIcon,
+  XIcon,
+} from "@/components/icons";
 
 const googleProvider = new GoogleAuthProvider();
 
 type LoginMode = "google" | "email";
-
-function metaFor(summary: CookPilotRecipeSummary): string {
-  const bits: string[] = [];
-  if (summary.totalTimeMinutes) bits.push(`${summary.totalTimeMinutes} min`);
-  const servings = summary.preferredServings ?? summary.servings;
-  if (servings) bits.push(`Serves ${servings}`);
-  return bits.join(" · ");
-}
 
 function useCookPilotAuth() {
   const [user, setUser] = useState<User | null>(null);
@@ -225,10 +225,10 @@ function SignedOutCookPilotImport({
         <CookPilotLogoIcon size={24} />
       </div>
       <h3 className="font-extrabold tracking-[-0.02em] text-[1.05rem] mt-cp-4">
-        Choose recipes from CookPilot
+        Import from CookPilot
       </h3>
       <p className="text-[0.88rem] text-ink-soft mt-1 max-w-sm mx-auto">
-        Sign in to browse your saved CookPilot recipes and add selected ones to this print list.
+        Sign in to add your saved CookPilot recipes straight to this print list.
       </p>
       <div className="flex flex-col sm:flex-row justify-center gap-cp-3 mt-cp-5">
         <button type="button" className="btn btn-primary" onClick={() => onLogin("google")}>
@@ -238,6 +238,75 @@ function SignedOutCookPilotImport({
           Continue with Email
         </button>
       </div>
+    </div>
+  );
+}
+
+function RecipeCard({
+  summary,
+  added,
+  adding,
+  onAdd,
+}: {
+  summary: CookPilotRecipeSummary;
+  added: boolean;
+  adding: boolean;
+  onAdd: () => void;
+}) {
+  const time = summary.totalTimeMinutes ? `${summary.totalTimeMinutes} min` : null;
+  const servings = summary.preferredServings ?? summary.servings;
+
+  return (
+    <div
+      className={`flex items-center gap-cp-4 rounded-xl border p-cp-3 transition-shadow ${
+        added ? "border-line bg-page/60" : "border-line bg-card hover:shadow-sm"
+      }`}
+    >
+      <span className="w-[72px] h-[72px] rounded-lg overflow-hidden bg-page flex-shrink-0 grid place-items-center text-brand/60">
+        {summary.imageURL ? (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img src={summary.imageURL} alt="" className="w-full h-full object-cover" />
+        ) : (
+          <CookPilotLogoIcon size={28} />
+        )}
+      </span>
+
+      <div className="min-w-0 flex-1">
+        <p className="font-bold leading-snug line-clamp-2">{summary.title}</p>
+        {(time || servings) && (
+          <p className="mt-1.5 flex flex-wrap items-center gap-x-cp-3 gap-y-1 text-[0.78rem] text-ink-soft">
+            {time && (
+              <span className="inline-flex items-center gap-1">
+                <ClockIcon size={13} />
+                {time}
+              </span>
+            )}
+            {servings && (
+              <span className="inline-flex items-center gap-1">
+                <UsersIcon size={13} />
+                Serves {servings}
+              </span>
+            )}
+          </p>
+        )}
+      </div>
+
+      {added ? (
+        <span className="flex-shrink-0 inline-flex items-center gap-1.5 rounded-full bg-emerald-50 px-3 py-1.5 text-[0.78rem] font-semibold text-emerald-700">
+          <CheckIcon size={14} />
+          Added
+        </span>
+      ) : (
+        <button
+          type="button"
+          className="btn btn-primary btn-compact flex-shrink-0"
+          onClick={onAdd}
+          disabled={adding}
+        >
+          {adding ? <SpinnerIcon size={15} /> : <span className="text-base leading-none">+</span>}
+          Add
+        </button>
+      )}
     </div>
   );
 }
@@ -253,23 +322,20 @@ function SignedInCookPilotImport({
 }) {
   const [summaries, setSummaries] = useState<CookPilotRecipeSummary[]>([]);
   const [queryText, setQueryText] = useState("");
-  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [addingIds, setAddingIds] = useState<Set<string>>(new Set());
   const [loading, setLoading] = useState(true);
-  const [adding, setAdding] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [notice, setNotice] = useState<string | null>(null);
 
   const addedIds = useMemo(() => new Set(items.map((item) => item.id)), [items]);
   const visibleSummaries = useMemo(
     () => filterCookPilotSummaries(summaries, queryText),
     [summaries, queryText],
   );
-  const selectableVisible = visibleSummaries.filter(
-    (summary) => !addedIds.has(cookPilotQueueId(summary.id)),
+  const addedCount = useMemo(
+    () => summaries.filter((summary) => addedIds.has(cookPilotQueueId(summary.id))).length,
+    [summaries, addedIds],
   );
-  const selectedSummaries = summaries.filter(
-    (summary) => selectedIds.has(summary.id) && !addedIds.has(cookPilotQueueId(summary.id)),
-  );
+
   useEffect(() => {
     let alive = true;
     setLoading(true);
@@ -280,7 +346,7 @@ function SignedInCookPilotImport({
       })
       .catch((err) => {
         if (alive) {
-          setError(err instanceof Error ? err.message : "Couldn't load CookPilot recipes.");
+          setError(err instanceof Error ? err.message : "Couldn't load your recipes.");
         }
       })
       .finally(() => {
@@ -291,114 +357,51 @@ function SignedInCookPilotImport({
     };
   }, [user.uid]);
 
-  useEffect(() => {
-    setSelectedIds((current) => {
-      const next = new Set(current);
-      for (const item of items) {
-        if (item.method === "cookpilot") next.delete(item.id.replace(/^cookpilot:/, ""));
-      }
-      return next;
-    });
-  }, [items]);
-
-  function toggle(summary: CookPilotRecipeSummary) {
+  async function handleAdd(summary: CookPilotRecipeSummary) {
     const queueId = cookPilotQueueId(summary.id);
-    if (addedIds.has(queueId) || adding) return;
-    setNotice(null);
-    setSelectedIds((current) => {
-      const next = new Set(current);
-      if (next.has(summary.id)) {
-        next.delete(summary.id);
-      } else {
-        next.add(summary.id);
-      }
-      return next;
-    });
-  }
-
-  function selectAllVisible() {
-    setNotice(null);
-    setSelectedIds((current) => {
-      const next = new Set(current);
-      for (const summary of selectableVisible) {
-        next.add(summary.id);
-      }
-      return next;
-    });
-  }
-
-  async function handleAddSelected() {
-    if (selectedSummaries.length === 0 || adding) return;
-    setAdding(true);
+    if (addedIds.has(queueId) || addingIds.has(summary.id)) return;
     setError(null);
-    setNotice(null);
+    setAddingIds((current) => new Set(current).add(summary.id));
     try {
-      const queueItems = await loadCookPilotQueueItems(user.uid, selectedSummaries);
-      const addedCount = onAddRecipes(queueItems);
-      setSelectedIds(new Set());
-      setNotice(
-        addedCount > 0
-          ? `Added ${addedCount} ${addedCount === 1 ? "recipe" : "recipes"} to the print list.`
-          : "Those recipes are already in the print list.",
-      );
+      const queueItems = await loadCookPilotQueueItems(user.uid, [summary]);
+      onAddRecipes(queueItems);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Couldn't add those recipes.");
+      setError(err instanceof Error ? err.message : "Couldn't add that recipe.");
     } finally {
-      setAdding(false);
+      setAddingIds((current) => {
+        const next = new Set(current);
+        next.delete(summary.id);
+        return next;
+      });
     }
   }
 
   return (
     <div className="flex flex-col gap-cp-4">
       <div>
-        <label className="field-label" htmlFor="cookpilot-search">
-          Search CookPilot
-        </label>
-        <div className="relative">
-          <SearchIcon size={17} className="absolute left-4 top-1/2 -translate-y-1/2 text-ink-soft" />
-          <input
-            id="cookpilot-search"
-            className="field pl-11"
-            placeholder="Search by title, tag, or ingredient"
-            value={queryText}
-            onChange={(event) => {
-              setQueryText(event.target.value);
-              setNotice(null);
-            }}
-          />
-        </div>
+        <h3 className="font-extrabold tracking-[-0.02em] text-[1.05rem]">Import from CookPilot</h3>
+        <p className="text-[0.86rem] text-ink-soft mt-1">
+          Add any recipe to drop it straight into your print list.
+        </p>
       </div>
 
-      <div className="flex items-center gap-cp-3 flex-wrap">
-        <button
-          type="button"
-          className="btn btn-secondary btn-compact"
-          onClick={selectAllVisible}
-          disabled={selectableVisible.length === 0 || adding}
-        >
-          Select All
-        </button>
-        <button
-          type="button"
-          className="btn-ghost btn-compact"
-          onClick={() => {
-            setSelectedIds(new Set());
-            setNotice(null);
-          }}
-          disabled={selectedSummaries.length === 0 || adding}
-        >
-          Clear selection
-        </button>
-        <p className="text-[0.82rem] text-ink-soft ml-auto">
-          {selectedSummaries.length} selected
-        </p>
+      <div className="relative">
+        <SearchIcon size={17} className="absolute left-4 top-1/2 -translate-y-1/2 text-ink-soft" />
+        <input
+          id="cookpilot-search"
+          className="field pl-11"
+          placeholder="Search your recipes..."
+          aria-label="Search your CookPilot recipes"
+          value={queryText}
+          onChange={(event) => setQueryText(event.target.value)}
+        />
       </div>
 
       {loading && (
         <div className="h-40 grid place-items-center text-ink-soft rounded-2xl border border-dashed border-line-strong">
           <span className="inline-flex items-center gap-2">
             <SpinnerIcon size={18} />
-            Loading CookPilot recipes
+            Loading your recipes
           </span>
         </div>
       )}
@@ -412,9 +415,9 @@ function SignedInCookPilotImport({
 
       {!loading && !error && summaries.length === 0 && (
         <div className="text-center py-cp-7 px-cp-5 rounded-2xl border border-dashed border-line-strong">
-          <p className="font-bold text-[1.02rem]">No CookPilot recipes yet</p>
+          <p className="font-bold text-[1.02rem]">No recipes yet</p>
           <p className="text-ink-soft text-[0.88rem] mt-1.5">
-            Saved CookPilot recipes will appear here.
+            Recipes you save in CookPilot will show up here to import.
           </p>
         </div>
       )}
@@ -429,68 +432,33 @@ function SignedInCookPilotImport({
       )}
 
       {!loading && !error && visibleSummaries.length > 0 && (
-        <ul className="grid grid-cols-1 sm:grid-cols-2 gap-cp-3 max-h-[420px] overflow-y-auto pr-1">
-          {visibleSummaries.map((summary) => {
-            const queueId = cookPilotQueueId(summary.id);
-            const alreadyAdded = addedIds.has(queueId);
-            const selected = selectedIds.has(summary.id) && !alreadyAdded;
-            const meta = metaFor(summary);
+        <>
+          <div className="flex items-center justify-between text-[0.82rem] text-ink-soft">
+            <span>
+              {visibleSummaries.length} {visibleSummaries.length === 1 ? "recipe" : "recipes"}
+            </span>
+            {addedCount > 0 && (
+              <span className="inline-flex items-center gap-1.5 font-semibold text-emerald-700">
+                <CheckIcon size={14} />
+                {addedCount} in your print list
+              </span>
+            )}
+          </div>
 
-            return (
+          <ul className="flex flex-col gap-cp-4 max-h-[460px] overflow-y-auto pr-1">
+            {visibleSummaries.map((summary) => (
               <li key={summary.id}>
-                <button
-                  type="button"
-                  className={`w-full text-left rounded-lg border p-cp-3 flex gap-cp-3 transition-colors ${
-                    alreadyAdded
-                      ? "border-line bg-page/70 text-ink-soft cursor-default"
-                      : selected
-                        ? "border-brand bg-card"
-                        : "border-line bg-card hover:border-line-strong"
-                  }`}
-                  disabled={alreadyAdded || adding}
-                  aria-pressed={selected}
-                  onClick={() => toggle(summary)}
-                >
-                  <span className="w-16 h-16 rounded overflow-hidden bg-page flex-shrink-0 grid place-items-center text-brand/60">
-                    {summary.imageURL ? (
-                      // eslint-disable-next-line @next/next/no-img-element
-                      <img src={summary.imageURL} alt="" className="w-full h-full object-cover" />
-                    ) : (
-                      <CookPilotLogoIcon size={25} />
-                    )}
-                  </span>
-                  <span className="min-w-0 flex-1">
-                    <span className="block font-bold leading-snug line-clamp-2">{summary.title}</span>
-                    {meta && <span className="block text-[0.78rem] text-ink-soft mt-1">{meta}</span>}
-                    <span className="block text-[0.74rem] font-semibold mt-2 text-brand">
-                      {alreadyAdded ? "Added" : selected ? "Selected" : "Select"}
-                    </span>
-                  </span>
-                </button>
+                <RecipeCard
+                  summary={summary}
+                  added={addedIds.has(cookPilotQueueId(summary.id))}
+                  adding={addingIds.has(summary.id)}
+                  onAdd={() => handleAdd(summary)}
+                />
               </li>
-            );
-          })}
-        </ul>
+            ))}
+          </ul>
+        </>
       )}
-
-      {notice && (
-        <div className="state">
-          <h4>CookPilot</h4>
-          <p>{notice}</p>
-        </div>
-      )}
-
-      <button
-        type="button"
-        className="btn btn-primary w-full"
-        onClick={handleAddSelected}
-        disabled={selectedSummaries.length === 0 || adding}
-      >
-        {adding ? <SpinnerIcon size={18} /> : <span className="text-lg leading-none">+</span>}
-        {selectedSummaries.length > 0
-          ? `Add Selected to Print List (${selectedSummaries.length})`
-          : "Add Selected to Print List"}
-      </button>
     </div>
   );
 }
