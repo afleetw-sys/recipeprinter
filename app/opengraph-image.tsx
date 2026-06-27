@@ -64,7 +64,7 @@ export default function OpengraphImage() {
             maxWidth: "900px",
           }}
         >
-          Print any recipe without the clutter.
+          Print the recipes worth making again.
         </div>
 
         <div
@@ -77,7 +77,7 @@ export default function OpengraphImage() {
             maxWidth: "920px",
           }}
         >
-          Paste a URL, photo, or text to get a clean, printable recipe with no ads. Save as PDF.
+          Turn recipe URLs into printable recipe cards and PDFs.
         </div>
       </div>
     ),
