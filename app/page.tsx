@@ -31,10 +31,10 @@ export default function Home() {
           <div className="rp-landing-hero w-full">
             <div className="max-w-[46rem]">
               <h1 className="text-[clamp(2rem,5vw,2.75rem)] font-extrabold tracking-[-0.04em] leading-[1.05]">
-                Print only the recipe.
+                Print the recipes worth making again.
               </h1>
               <p className="mt-cp-3 text-ink-soft text-[1.02rem] leading-relaxed">
-                Clean, printable recipes for your kitchen, binder, or cookbook.
+                Turn any recipe into printable recipe card for your kitchen.
               </p>
             </div>
           </div>
