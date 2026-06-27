@@ -20,7 +20,6 @@ export default function FaqPage() {
       />
 
       <PageHeader
-        eyebrow="FAQ"
         title="Frequently asked questions"
         lede="Everything people usually want to know about turning online recipes into clean, printable pages."
       />
