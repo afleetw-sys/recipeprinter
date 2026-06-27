@@ -16,7 +16,7 @@ export const metadata: Metadata = pageMetadata({
   path: "/how-it-works",
 });
 
-type Source = {
+type Source = { 
   icon: ComponentType<{ size?: number }>;
   label: string;
   body: string;
