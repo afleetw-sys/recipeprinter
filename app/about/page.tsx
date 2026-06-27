@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { PageShell, PageHeader, StartPrintingCta } from "@/components/PageShell";
-import { pageMetadata, PUBLISHER } from "@/lib/seo";
+import { pageMetadata } from "@/lib/seo";
 
 export const metadata: Metadata = pageMetadata({
   title: "About RecipePrinter",
@@ -48,15 +48,15 @@ export default function AboutPage() {
             RecipePrinter fixes that.
           </span>{" "}
           Paste a recipe URL, upload a screenshot or photo, paste recipe text,
-          or import directly from CookPilot and we'll turn it into a clean
+          or import directly from CookPilot and we&apos;ll turn it into a clean
           printable recipe card, recipe page, or PDF containing just the recipe:
           title, ingredients, instructions, and notes.
         </p>
 
         <p>
-          Print it for tonight's dinner, save it as a PDF, add it to a recipe
-          binder, share it with family, or collect your favorites into a family
-          cookbook over time.
+          Print it for tonight&apos;s dinner, save it as a PDF, add it to a
+          recipe binder, share it with family, or collect your favorites into a
+          family cookbook over time.
         </p>
 
         <p>
@@ -72,9 +72,9 @@ export default function AboutPage() {
         </p>
 
         <p>
-          RecipePrinter isn't a recipe database, meal planner, grocery app, or
-          social network. It exists for what happens after you've found a recipe
-          worth making again.
+          RecipePrinter isn&apos;t a recipe database, meal planner, grocery app,
+          or social network. It exists for what happens after you&apos;ve found
+          a recipe worth making again.
         </p>
       </div>
 
