@@ -4,10 +4,9 @@ import { PageShell, PageHeader, StartPrintingCta } from "@/components/PageShell"
 import { pageMetadata, PUBLISHER } from "@/lib/seo";
 
 export const metadata: Metadata = pageMetadata({
-  title: "About",
+  title: "About RecipePrinter",
   description:
-    "Why we built RecipePrinter: a free, no-clutter way to print recipes from the web, " +
-    "made by the team behind the CookPilot cooking app.",
+    "Learn why I built RecipePrinter, a free tool for printing recipes from websites as clean recipe cards and PDFs without ads, clutter, or wasted pages.",
   path: "/about",
 });
 
