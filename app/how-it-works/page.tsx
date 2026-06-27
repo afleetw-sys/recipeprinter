@@ -41,7 +41,6 @@ export default function HowItWorksPage() {
   return (
     <PageShell>
       <PageHeader
-        eyebrow="How it works"
         title="From a cluttered web page to a clean printed recipe"
         lede="RecipePrinter does one thing well: it takes a recipe from wherever it lives online and gives you a tidy page you can cook from. Here's exactly what happens between paste and print."
       />
