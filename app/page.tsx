@@ -29,7 +29,7 @@ export default function Home() {
         <div className="max-w-content mx-auto flex flex-col gap-cp-7 pt-cp-6 sm:pt-cp-7 pb-cp-7">
           {/* Hero: what it does and why it's useful, in two sentences. */}
           <div className="rp-landing-hero w-full">
-            <div className="max-w-[46rem]">
+            <div className="max-w-[48rem]">
               <h1 className="text-[clamp(2rem,5vw,2.75rem)] font-extrabold tracking-[-0.04em] leading-[1.05]">
                 Print the recipes worth making again.
               </h1>
