@@ -49,7 +49,6 @@ export default function HowItWorksPage() {
   return (
     <PageShell>
       <PageHeader
-        eyebrow="How it works"
         title="From recipe link to printed recipe card"
         lede="RecipePrinter turns recipes from websites, screenshots, photos, and text into clean printable recipe cards and PDFs you can actually cook from."
       />
