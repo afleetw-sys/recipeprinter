@@ -21,8 +21,7 @@ export default function AboutPage() {
 
       <div className="flex flex-col gap-cp-5 text-ink-soft leading-relaxed">
         <p>
-          I built RecipePrinter after building CookPilot, my recipe app for
-          saving and organizing recipes.
+          I built RecipePrinter after building CookPilot, my app for making recipes fit real life.
         </p>
 
         <p>
