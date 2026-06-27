@@ -20,17 +20,14 @@ export function PageShell({ children }: { children: React.ReactNode }) {
 
 /** Page header: an eyebrow, the page <h1>, and a short lede. */
 export function PageHeader({
-  eyebrow,
   title,
   lede,
 }: {
-  eyebrow: string;
   title: string;
   lede: string;
 }) {
   return (
     <header className="mb-cp-7">
-      <p className="eyebrow">{eyebrow}</p>
       <h1 className="mt-cp-2 text-[clamp(1.9rem,4.5vw,2.5rem)] font-extrabold tracking-[-0.04em] leading-[1.08]">
         {title}
       </h1>
