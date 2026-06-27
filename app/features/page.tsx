@@ -58,7 +58,6 @@ export default function FeaturesPage() {
   return (
     <PageShell>
       <PageHeader
-        eyebrow="Features"
         title="A recipe printer built to do one job really well"
         lede="RecipePrinter is free, needs no account, and keeps nothing on a server. It exists to turn cluttered online recipes into pages you can actually cook from. Here's what it does."
       />
