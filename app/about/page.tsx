@@ -13,7 +13,10 @@ export const metadata: Metadata = pageMetadata({
 export default function AboutPage() {
   return (
     <PageShell>
-
+<PageHeader
+        title="Why I made RecipePrinter"
+        lede="A simple tool for turning recipes from websites, screenshots, and text into clean printable recipe cards and PDFs."
+      />
       <div className="flex flex-col gap-cp-5 text-ink-soft leading-relaxed">
         <p>
           I built RecipePrinter after building CookPilot, my app for making recipes fit real life.
