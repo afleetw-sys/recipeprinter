@@ -3,7 +3,7 @@ import Image from "next/image";
 import { FeedbackButton } from "@/components/FeedbackButton";
 import { NAV_LINKS, PUBLISHER, SITE_NAME } from "@/lib/seo";
 
-const COFFEE_URL = "https://buymeacoffee.com/ameliagps";
+const COFFEE_URL = "https://buymeacoffee.com/recipeprinter";
 const COFFEE_LOGO_SRC = "/images/buy-me-a-coffee-logo.png";
 
 // Shared footer + primary site navigation. Keeping the deeper pages here (rather
@@ -41,7 +41,7 @@ export function SiteFooter() {
               height={20}
               className="h-5 w-5 rounded-full"
             />
-            Support the maker
+            Support RecipePrinter
           </a>
         </nav>
         <div className="flex flex-wrap items-center justify-between gap-cp-3 text-[0.8rem] text-ink-soft">

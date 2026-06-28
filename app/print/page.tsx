@@ -1,18 +1,21 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import Link from "next/link";
+import { SiteHeader } from "@/components/SiteHeader";
+import { LogoImage } from "@/components/Logo";
 import RecipeCardPrint, {
   PRINT_CARD_SIZE_OPTIONS,
   RECIPE_PRINT_TEMPLATE_OPTIONS,
   type PrintCardSize,
   type RecipePrintTemplate,
 } from "@/components/RecipeCardPrint";
-import { LogoMark, Wordmark } from "@/components/Logo";
 import { CrownIcon, PrintIcon } from "@/components/icons";
 import { readCurrentPrintJobIds, readPrintJobIds, readQueue } from "@/lib/queue";
 import type { QueueItem } from "@/types/recipe";
+
+const COFFEE_URL = "https://buymeacoffee.com/recipeprinter";
 
 function isPrintCardSize(value: string | null): value is PrintCardSize {
   return PRINT_CARD_SIZE_OPTIONS.some((option) => option.id === value);
@@ -44,8 +47,15 @@ export default function PrintPage() {
   );
   const [doubleSided, setDoubleSided] = useState(true);
   const [showCutLines, setShowCutLines] = useState(true);
+  const [showDonateDialog, setShowDonateDialog] = useState(false);
+  const printRequestedRef = useRef(false);
 
   const selectedSize = PRINT_CARD_SIZE_OPTIONS.find((option) => option.id === cardSize);
+
+  function handlePrint() {
+    printRequestedRef.current = true;
+    window.print();
+  }
 
   useEffect(() => {
     const queue = readQueue();
@@ -66,28 +76,45 @@ export default function PrintPage() {
   // Auto-open the print dialog when the user chose Print instead of Preview.
   useEffect(() => {
     if (shouldPrint && items && items.length > 0) {
-      const t = window.setTimeout(() => window.print(), 350);
+      const t = window.setTimeout(() => handlePrint(), 350);
       return () => window.clearTimeout(t);
     }
   }, [items, shouldPrint]);
 
+  useEffect(() => {
+    function handleAfterPrint() {
+      if (!printRequestedRef.current) return;
+      printRequestedRef.current = false;
+      window.setTimeout(() => setShowDonateDialog(true), 150);
+    }
+
+    window.addEventListener("afterprint", handleAfterPrint);
+    return () => window.removeEventListener("afterprint", handleAfterPrint);
+  }, []);
+
   if (items === null) {
     return (
-      <div className="min-h-screen grid place-items-center text-ink-soft">Preparing…</div>
+      <div className="min-h-screen flex flex-col">
+        <SiteHeader backHref="/" compact sticky />
+        <div className="flex-1 grid place-items-center text-ink-soft">Preparing…</div>
+      </div>
     );
   }
 
   if (items.length === 0) {
     return (
-      <div className="min-h-screen flex flex-col items-center justify-center gap-cp-4 text-center px-cp-6">
-        <p className="font-bold text-[1.1rem]">Nothing to print</p>
-        <p className="text-ink-soft max-w-sm">
-          We couldn&apos;t find those recipes. They may have been removed, or this page was
-          opened directly.
-        </p>
-        <Link href="/" className="btn btn-primary">
-          Back to your recipes
-        </Link>
+      <div className="min-h-screen flex flex-col">
+        <SiteHeader backHref="/" compact sticky />
+        <div className="flex-1 flex flex-col items-center justify-center gap-cp-4 text-center px-cp-6">
+          <p className="font-bold text-[1.1rem]">Nothing to print</p>
+          <p className="text-ink-soft max-w-sm">
+            We couldn&apos;t find those recipes. They may have been removed, or this page was
+            opened directly.
+          </p>
+          <Link href="/" className="btn btn-primary">
+            Back to your recipes
+          </Link>
+        </div>
       </div>
     );
   }
@@ -95,23 +122,22 @@ export default function PrintPage() {
   return (
     <div className="min-h-screen">
       {/* Toolbar, hidden when printing */}
-      <header className="no-print sticky top-0 z-10 flex items-center justify-between gap-cp-4 px-cp-6 py-cp-3 min-h-[62px] bg-page border-b border-line flex-wrap">
-        <Link href="/" className="flex items-center gap-cp-3 group">
-          <span className="text-ink-soft group-hover:text-ink transition-colors">←</span>
-          <LogoMark size={26} />
-          <Wordmark className="text-[1.05rem]" />
-        </Link>
-
-        <div className="flex items-center gap-cp-3 flex-wrap justify-end">
-          <span className="text-[0.85rem] text-ink-soft hidden sm:inline">
-            {items.length} {items.length === 1 ? "recipe" : "recipes"}
-          </span>
-          <button onClick={() => window.print()} className="btn btn-primary btn-compact">
-            <PrintIcon size={16} />
-            Print
-          </button>
-        </div>
-      </header>
+      <SiteHeader
+        backHref="/"
+        compact
+        sticky
+        actions={
+          <>
+            <span className="text-[0.85rem] text-ink-soft hidden sm:inline">
+              {items.length} {items.length === 1 ? "recipe" : "recipes"}
+            </span>
+            <button onClick={handlePrint} className="btn btn-primary btn-compact">
+              <PrintIcon size={16} />
+              Print
+            </button>
+          </>
+        }
+      />
 
       {/* Print preview / printed content */}
       <main className="recipe-print-shell px-cp-6 py-cp-7 print:p-0">
@@ -235,6 +261,53 @@ export default function PrintPage() {
           </div>
         </div>
       </main>
+
+      {showDonateDialog && (
+        <div
+          className="print-success-dialog no-print"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="print-success-title"
+        >
+          <div className="print-success-dialog__backdrop" aria-hidden />
+          <div className="print-success-dialog__panel">
+            <button
+              type="button"
+              className="print-success-dialog__close"
+              aria-label="Close"
+              onClick={() => setShowDonateDialog(false)}
+            >
+              ×
+            </button>
+            <div className="print-success-dialog__icon" aria-hidden>
+              <LogoImage size={58} />
+            </div>
+            <p className="print-success-dialog__eyebrow">Print sent</p>
+            <h2 id="print-success-title">Hope those recipes turn out beautifully.</h2>
+            <p>
+              If RecipePrinter saved you a little time today, a coffee helps keep it free
+              and improving.
+            </p>
+            <div className="print-success-dialog__actions">
+              <a
+                href={COFFEE_URL}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="btn btn-primary"
+              >
+                Buy me a coffee
+              </a>
+              <button
+                type="button"
+                className="btn btn-ghost"
+                onClick={() => setShowDonateDialog(false)}
+              >
+                Maybe later
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

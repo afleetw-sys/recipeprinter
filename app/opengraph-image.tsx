@@ -1,7 +1,12 @@
+import { readFileSync } from "node:fs";
+import { join } from "node:path";
 import { ImageResponse } from "next/og";
 import { SITE_NAME, SITE_TAGLINE } from "@/lib/seo";
 
-// A branded 1200×630 social card, generated at build time. Using next/og keeps
+const logoData = readFileSync(join(process.cwd(), "public/images/recipeprinter-logo.png"));
+const logoUrl = `data:image/png;base64,${logoData.toString("base64")}`;
+
+// A branded 1200x630 social card, generated at build time. Using next/og keeps
 // it in sync with the product name/tagline and avoids shipping a binary asset.
 // Next serves this for both og:image and (as a fallback) twitter:image.
 
@@ -25,7 +30,6 @@ export default function OpengraphImage() {
           fontFamily: "sans-serif",
         }}
       >
-        {/* Printer glyph in a rounded card, echoing the app logo mark */}
         <div
           style={{
             display: "flex",
@@ -44,12 +48,19 @@ export default function OpengraphImage() {
               borderRadius: "26px",
               background: "rgba(255,255,255,0.16)",
               border: "2px solid rgba(255,255,255,0.5)",
-              fontSize: "60px",
             }}
           >
-            🖨️
+            <img
+              src={logoUrl}
+              alt=""
+              width="82"
+              height="82"
+              style={{
+                objectFit: "contain",
+              }}
+            />
           </div>
-          <div style={{ display: "flex", fontSize: "52px", fontWeight: 800, letterSpacing: "-2px" }}>
+          <div style={{ display: "flex", fontSize: "52px", fontWeight: 800, letterSpacing: "0" }}>
             {SITE_NAME}
           </div>
         </div>
@@ -60,7 +71,7 @@ export default function OpengraphImage() {
             fontSize: "76px",
             fontWeight: 800,
             lineHeight: 1.05,
-            letterSpacing: "-3px",
+            letterSpacing: "0",
             maxWidth: "900px",
           }}
         >

@@ -9,7 +9,7 @@ import { PrintIcon } from "@/components/icons";
 export function PageShell({ children }: { children: React.ReactNode }) {
   return (
     <div className="min-h-screen flex flex-col">
-      <SiteHeader />
+      <SiteHeader backHref="/" />
       <main className="flex-1 px-cp-6">
         <article className="max-w-[720px] mx-auto pt-cp-6 sm:pt-cp-7 pb-cp-7">{children}</article>
       </main>
