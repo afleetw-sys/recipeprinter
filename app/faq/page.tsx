@@ -75,7 +75,6 @@ export default function FaqPage() {
       />
 
       <PageHeader
-        eyebrow="FAQ"
         title="Frequently asked questions"
         lede="Answers about printing recipes from websites, screenshots, photos, and text without the ads, clutter, or wasted pages."
       />

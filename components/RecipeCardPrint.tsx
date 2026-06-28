@@ -17,7 +17,7 @@ export const PRINT_CARD_SIZE_OPTIONS: Array<{
   { id: "card-6x4", label: "6 x 4 card", detail: "Landscape recipe card" },
 ];
 
-export type RecipePrintTemplate = "classic" | "editorial" | "market" | "minimal";
+export type RecipePrintTemplate = "classic" | "heirloom" | "bistro" | "pantry" | "counter";
 
 export const RECIPE_PRINT_TEMPLATE_OPTIONS: Array<{
   id: RecipePrintTemplate;
@@ -25,9 +25,10 @@ export const RECIPE_PRINT_TEMPLATE_OPTIONS: Array<{
   detail: string;
 }> = [
   { id: "classic", label: "Classic", detail: "Bright blue, clean cookbook card" },
-  { id: "editorial", label: "Editorial", detail: "Warm serif, magazine-style layout" },
-  { id: "market", label: "Market", detail: "Fresh green, recipe box energy" },
-  { id: "minimal", label: "Minimal", detail: "Sharp black and white kitchen note" },
+  { id: "heirloom", label: "Heirloom", detail: "Cream stock, red utensil keepsake" },
+  { id: "bistro", label: "Bistro", detail: "Blue checks, tomato red, playful kitchen card" },
+  { id: "pantry", label: "Pantry", detail: "Fine ruled lines with small ingredient sketches" },
+  { id: "counter", label: "Counter", detail: "Black-and-white notes with tiny counter details" },
 ];
 
 const FRONT_SECTION_BUDGET: Record<
@@ -64,14 +65,10 @@ interface SplitRecipeResult {
 }
 
 function sourceLabel(recipe: Recipe): string | null {
-  if (recipe.sourceName) return recipe.sourceName;
   if (recipe.sourceUrl) {
-    try {
-      return new URL(recipe.sourceUrl).hostname.replace(/^www\./, "");
-    } catch {
-      return recipe.sourceUrl;
-    }
+    return recipe.sourceUrl;
   }
+  if (recipe.sourceName) return recipe.sourceName;
   return null;
 }
 
@@ -105,10 +102,15 @@ function splitByBudget<T>(
   const front: T[] = [];
   const back: T[] = [];
   let used = 0;
+  let overflowStarted = false;
 
   for (const item of items) {
     const cost = textCost(label(item));
-    if (front.length > 0 && (front.length >= maxFrontItems || used + cost > budget)) {
+    if (
+      overflowStarted ||
+      (front.length > 0 && (front.length >= maxFrontItems || used + cost > budget))
+    ) {
+      overflowStarted = true;
       back.push(item);
     } else {
       front.push(item);
@@ -248,13 +250,7 @@ function RecipeCardFace({
             </p>
           )}
         </header>
-      ) : (
-        <header className="recipe-card__header recipe-card__header--continued">
-          <p className="recipe-card__continued">
-            Continued <span>{recipe.title}</span>
-          </p>
-        </header>
-      )}
+      ) : null}
 
       <div
         className={`recipe-card__cols ${
@@ -269,9 +265,7 @@ function RecipeCardFace({
               ingredientsOnly || stackedLayout ? "recipe-card__ingredients--wide" : ""
             }`}
           >
-            <h2 className="recipe-card__label">
-              Ingredients{side === "back" ? " continued" : ""}
-            </h2>
+            <h2 className="recipe-card__label">Ingredients</h2>
             <ul>
               {ingredients.map((ing, i) => (
                 <li key={i}>{ingredientText(ing)}</li>
@@ -287,7 +281,14 @@ function RecipeCardFace({
             }`}
           >
             <h2 className="recipe-card__label">
-              Steps{side === "back" ? " continued" : ""}
+              Steps
+              {side === "front" && hasBackFace ? (
+                <span className="recipe-card__continued-inline"> (continued on back)</span>
+              ) : side === "back" ? (
+                " continued"
+              ) : (
+                ""
+              )}
             </h2>
             <ol>
               {instructions.map((step) => (
@@ -303,7 +304,6 @@ function RecipeCardFace({
 
       <footer className="recipe-card__footer">
         <span>Printed with RecipePrinter</span>
-        {recipe.sourceUrl && <span className="recipe-card__footer-src">{recipe.sourceUrl}</span>}
       </footer>
     </article>
   );

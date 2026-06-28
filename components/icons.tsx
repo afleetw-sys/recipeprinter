@@ -129,6 +129,13 @@ export const CheckIcon = (p: IconProps) => (
   </Base>
 );
 
+export const CrownIcon = (p: IconProps) => (
+  <Base {...p}>
+    <path d="M5 18h14" />
+    <path d="M6 15l1-8 4 4 3-6 3 6 4-4 1 8H6z" />
+  </Base>
+);
+
 export const RefreshIcon = (p: IconProps) => (
   <Base {...p}>
     <path d="M4 12a8 8 0 0114-5.3L21 9" />

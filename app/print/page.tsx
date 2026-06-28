@@ -10,7 +10,7 @@ import RecipeCardPrint, {
   type RecipePrintTemplate,
 } from "@/components/RecipeCardPrint";
 import { LogoMark, Wordmark } from "@/components/Logo";
-import { PrintIcon } from "@/components/icons";
+import { CrownIcon, PrintIcon } from "@/components/icons";
 import { readCurrentPrintJobIds, readPrintJobIds, readQueue } from "@/lib/queue";
 import type { QueueItem } from "@/types/recipe";
 
@@ -126,7 +126,7 @@ export default function PrintPage() {
             </label>
             <select
               id="recipe-print-size"
-              className="field !min-h-[38px] !py-0 !pl-3 !pr-8 text-[0.85rem] font-semibold"
+              className="field recipe-size-select !min-h-[38px] !py-0 !pl-3 text-[0.85rem] font-semibold"
               value={cardSize}
               onChange={(event) => setCardSize(event.target.value as PrintCardSize)}
             >
@@ -178,16 +178,31 @@ export default function PrintPage() {
                     template === option.id ? "is-active" : ""
                   }`}
                   aria-pressed={template === option.id}
+                  aria-label={option.label}
                   onClick={() => setTemplate(option.id)}
                 >
+                  {option.id !== "classic" && (
+                    <span className="recipe-template-option__premium" aria-label="Premium">
+                      <CrownIcon size={12} />
+                    </span>
+                  )}
                   <span className="recipe-template-option__preview" aria-hidden>
-                    <span />
-                    <span />
-                    <span />
-                  </span>
-                  <span className="recipe-template-option__copy">
-                    <span>{option.label}</span>
-                    <small>{option.detail}</small>
+                    <span className="recipe-template-option__sample-title">Lemon Pasta</span>
+                    <span className="recipe-template-option__sample-meta">25 min · Serves 4</span>
+                    <span className="recipe-template-option__sample-grid">
+                      <span>
+                        <strong>Ingredients</strong>
+                        <i>Spaghetti</i>
+                        <i>Lemon</i>
+                        <i>Parmesan</i>
+                      </span>
+                      <span>
+                        <strong>Steps</strong>
+                        <i>Boil pasta.</i>
+                        <i>Toss with sauce.</i>
+                        <i>Finish warm.</i>
+                      </span>
+                    </span>
                   </span>
                 </button>
               ))}
