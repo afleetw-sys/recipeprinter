@@ -12,14 +12,14 @@ const FEEDBACK_OPTIONS: { value: FeedbackType; label: string }[] = [
 ];
 
 const MESSAGE_PROMPTS: Record<FeedbackType, string> = {
-  idea: "What would you love RecipePrinter to do next?",
+  idea: "What should we do next?",
   bug: "What went wrong? A few details about what you expected and what happened helps a lot.",
   print_issue: "What looked off when you printed? Layout, missing text, page breaks, or anything else you noticed.",
   other: "What's on your mind?",
 };
 
 const EMAIL_HELP_TEXT: Record<FeedbackType, string> = {
-  idea: "We'll only use this to ask a quick follow-up or let you know if your idea gets added.",
+  idea: "We'll only use this to follow up or let you know if your idea gets added.",
   bug: "We'll only use this if we need more detail or want to let you know the bug was fixed.",
   print_issue:
     "We'll only use this if we need a little more detail about the print problem or have a fix to share.",

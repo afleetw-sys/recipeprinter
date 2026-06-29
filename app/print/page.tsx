@@ -347,16 +347,30 @@ export default function PrintPage() {
 
   // Centre the active page when the deck is first laid out or rescaled.
   useEffect(() => {
-    slideRefs.current[activeSheetIndex]?.scrollIntoView({ block: "center" });
+    centerSlide(activeSheetIndex);
     // Only re-centre on structural / size changes, not on every selection.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [sheets.length, deckScale, cardSize]);
 
   const activeSheet = sheets[activeSheetIndex] ?? sheets[0] ?? null;
 
+  function centerSlide(index: number, behavior: ScrollBehavior = "auto") {
+    const deck = deckRef.current;
+    const slide = slideRefs.current[index];
+    if (!deck || !slide) return;
+
+    const targetTop = slide.offsetTop - (deck.clientHeight - slide.offsetHeight) / 2;
+    const maxTop = deck.scrollHeight - deck.clientHeight;
+    deck.scrollTo({
+      top: Math.max(0, Math.min(targetTop, maxTop)),
+      behavior,
+    });
+  }
+
   function goToSlide(index: number) {
+    const behavior = Math.abs(index - activeSheetIndex) <= 3 ? "smooth" : "auto";
     setActiveSheetIndex(index);
-    slideRefs.current[index]?.scrollIntoView({ behavior: "smooth", block: "center" });
+    centerSlide(index, behavior);
   }
 
   const selectedPremiumTemplate = isPremiumTemplate(template) ? template : null;
@@ -609,7 +623,7 @@ export default function PrintPage() {
       <SiteHeader backHref="/" compact sticky />
 
       {/* Print preview / printed content */}
-      <main className="recipe-print-shell px-cp-6 py-cp-7 print:p-0">
+      <main className="recipe-print-shell px-cp-6 print:p-0">
         {/* Left: page navigator rail (PowerPoint-style) */}
         <nav
           className={`recipe-page-rail recipe-page-rail--${cardSize} no-print`}
