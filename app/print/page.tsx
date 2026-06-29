@@ -4,7 +4,6 @@ import { useEffect, useRef, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { SiteHeader } from "@/components/SiteHeader";
-import { LogoImage } from "@/components/Logo";
 import RecipeCardPrint, {
   PRINT_CARD_SIZE_OPTIONS,
   RECIPE_PRINT_TEMPLATE_OPTIONS,
@@ -280,9 +279,13 @@ export default function PrintPage() {
               ×
             </button>
             <div className="print-success-dialog__icon" aria-hidden>
-              <LogoImage size={58} />
+              <img
+                src="/images/recipeprinter-logo.png"
+                alt=""
+                className="print-success-dialog__logo"
+              />
             </div>
-            <h2 id="print-success-title">Ready for the counter, binder, or fridge door.</h2>
+            <h2 id="print-success-title">Ready for your counter, binder, or fridge door.</h2>
             <p>
               If RecipePrinter helped today, consider supporting the site and future
               improvements.

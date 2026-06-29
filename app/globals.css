@@ -1429,6 +1429,12 @@
   animation: print-success-bounce 600ms ease-out 100ms both;
 }
 
+.print-success-dialog__logo {
+  width: 58px;
+  height: 58px;
+  object-fit: contain;
+}
+
 .print-success-dialog__eyebrow {
   margin-bottom: 6px;
   color: var(--cp-blue);
