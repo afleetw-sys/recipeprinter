@@ -361,6 +361,10 @@
       box-shadow: none;
     }
 
+    .rp-import-panel--workspace.rp-import-panel--cookpilot {
+      padding-bottom: 0;
+    }
+
     .rp-import-panel--workspace .mode-toggle {
       display: grid;
       grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) 40px;
@@ -1181,17 +1185,7 @@
   border-color: rgba(47, 47, 47, 0.18);
 }
 .recipe-template-option--counter .recipe-template-option__preview::before {
-  top: auto;
-  right: 11px;
-  bottom: 8px;
-  left: auto;
-  width: 30px;
-  height: 11px;
-  background:
-    radial-gradient(circle at 14% 52%, #e8845b 0 2px, transparent 2.3px),
-    radial-gradient(circle at 48% 56%, #e9b85f 0 1.8px, transparent 2.1px),
-    radial-gradient(circle at 78% 50%, #6f9b75 0 1.7px, transparent 2px),
-    linear-gradient(#2f2f2f, #2f2f2f) 0 100% / 100% 2px no-repeat;
+  content: none;
 }
 .recipe-template-option--counter .recipe-template-option__sample-title,
 .recipe-template-option--counter .recipe-template-option__sample-grid strong {
@@ -1645,15 +1639,7 @@
 }
 
 .recipe-template--counter .recipe-card::before {
-  right: 0.18in;
-  bottom: 0.16in;
-  width: 0.58in;
-  height: 0.2in;
-  border-bottom: 2pt solid #2f2f2f;
-  background:
-    radial-gradient(circle at 12% 60%, #e8845b 0 0.035in, transparent 0.038in),
-    radial-gradient(circle at 36% 64%, #e9b85f 0 0.032in, transparent 0.035in),
-    radial-gradient(circle at 60% 58%, #6f9b75 0 0.03in, transparent 0.033in);
+  content: none;
 }
 
 .recipe-template--counter .recipe-card__accent {

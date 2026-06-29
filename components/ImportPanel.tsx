@@ -181,7 +181,7 @@ export function ImportPanel({
     <section
       className={`rp-import-panel panel p-cp-5 sm:p-cp-6 animate-fade-up ${
         workspace ? "rp-import-panel--workspace" : ""
-      }`}
+      } ${mode === "cookpilot" ? "rp-import-panel--cookpilot" : ""}`}
       aria-labelledby={workspace ? "rp-import-heading" : undefined}
       aria-label={workspace ? undefined : "Import recipes"}
     >
@@ -325,7 +325,7 @@ export function ImportPanel({
             </label>
             <textarea
               id="rp-text"
-              className="field"
+              className="field min-h-56"
               placeholder={"Paste a full recipe with the title, ingredients, and steps.\n\nGrandma's Banana Bread\n\n2 cups flour\n3 ripe bananas\n…"}
               value={text}
               onChange={(e) => {

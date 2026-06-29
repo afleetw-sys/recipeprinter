@@ -23,6 +23,7 @@ import {
   CheckIcon,
   ClockIcon,
   CookPilotLogoIcon,
+  ExternalIcon,
   SearchIcon,
   SpinnerIcon,
   UsersIcon,
@@ -460,7 +461,16 @@ function SignedInCookPilotImport({
         <div className="text-center py-cp-7 px-cp-5 rounded-2xl border border-dashed border-line-strong">
           <p className="font-bold text-[1.02rem]">No recipes yet</p>
           <p className="text-ink-soft text-[0.88rem] mt-1.5">
-            Recipes you save in CookPilot will show up here to import.
+            Import from{" "}
+            <a
+              href="https://cookpilotapp.com"
+              target="_blank"
+              rel="noreferrer"
+              className="inline-flex items-center gap-1 font-bold text-ink underline decoration-line-strong underline-offset-2 hover:text-ink-soft"
+            >
+              CookPilot
+              <ExternalIcon size={13} />
+            </a>
           </p>
         </div>
       )}
