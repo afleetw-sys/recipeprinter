@@ -249,6 +249,7 @@ export function RecipeCardFace({
   hasBackFace,
   previewHidden = false,
   blank = false,
+  showImage = false,
 }: {
   recipe: Recipe;
   ingredients: Recipe["ingredients"];
@@ -259,12 +260,18 @@ export function RecipeCardFace({
   hasBackFace: boolean;
   previewHidden?: boolean;
   blank?: boolean;
+  showImage?: boolean;
 }) {
   const source = sourceLabel(recipe);
   const meta = metaBits(recipe);
   const ingredientsOnly = ingredients.length > 0 && instructions.length === 0;
   const methodOnly = instructions.length > 0 && ingredients.length === 0;
   const stackedLayout = layout === "stacked";
+  // The photo only rides along on the front face (where the header lives). If
+  // the source image 404s or is hotlink-blocked we drop it rather than print a
+  // broken-image box.
+  const [imageFailed, setImageFailed] = useState(false);
+  const showPhoto = showImage && showHeader && Boolean(recipe.image) && !imageFailed;
 
   if (blank) {
     return (
@@ -285,14 +292,32 @@ export function RecipeCardFace({
       <div className="recipe-card__accent" aria-hidden />
 
       {showHeader ? (
-        <header className="recipe-card__header">
-          <h1 className="recipe-card__title">{recipe.title}</h1>
-          {(meta.length > 0 || source) && (
-            <p className="recipe-card__meta">
-              {meta.join("  ·  ")}
-              {meta.length > 0 && source ? "  ·  " : ""}
-              {source && <span className="recipe-card__source">{source}</span>}
-            </p>
+        <header
+          className={`recipe-card__header ${
+            showPhoto ? "recipe-card__header--with-photo" : ""
+          }`}
+        >
+          <div className="recipe-card__headline">
+            <h1 className="recipe-card__title">{recipe.title}</h1>
+            {(meta.length > 0 || source) && (
+              <p className="recipe-card__meta">
+                {meta.join("  ·  ")}
+                {meta.length > 0 && source ? "  ·  " : ""}
+                {source && <span className="recipe-card__source">{source}</span>}
+              </p>
+            )}
+          </div>
+          {showPhoto && (
+            <span className="recipe-card__photo" aria-hidden>
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                className="recipe-card__photo-img"
+                src={recipe.image}
+                alt=""
+                decoding="async"
+                onError={() => setImageFailed(true)}
+              />
+            </span>
           )}
         </header>
       ) : null}
@@ -360,12 +385,14 @@ export default function RecipeCardPrint({
   template,
   doubleSided,
   isLast,
+  showImage = false,
 }: {
   recipe: Recipe;
   size: PrintCardSize;
   template: RecipePrintTemplate;
   doubleSided: boolean;
   isLast?: boolean;
+  showImage?: boolean;
 }) {
   const [previewSide, setPreviewSide] = useState<"front" | "back">("front");
   const {
@@ -418,6 +445,7 @@ export default function RecipeCardPrint({
         layout={frontLayout}
         hasBackFace={hasBack}
         previewHidden={showSideNav && previewSide !== "front"}
+        showImage={showImage}
       />
       {needsPrintBack &&
         (hasBack ? (

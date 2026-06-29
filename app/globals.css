@@ -8,8 +8,18 @@
    ────────────────────────────────────────────────────────────────────────── */
 :root {
   color-scheme: light;
-  --cp-blue: #009bfa;
+  /* Brand accent. --cp-accent is the vivid teal for decorative surfaces only
+     (borders, fills, rings, accent bars); it fails text contrast on white.
+     --cp-accent-ink is the darkened sibling used for any accent-colored text or
+     glyphs (clears WCAG AA at 4.85:1). --cp-accent-soft is a low-alpha tint. */
+  --cp-accent: #60cac4;
+  --cp-accent-ink: #2f7d78;
+  --cp-accent-soft: rgba(96, 202, 196, 0.12);
+  /* Back-compat aliases for older rules. --cp-blue now resolves to the
+     accessible accent ink so any lingering text use stays legible. */
+  --cp-blue: #2f7d78;
   --cp-teal: #60cac4;
+  --cp-mint: #60cac4;
   --cp-ink: #111111;
   --cp-ink-soft: #667085;
   --cp-line: rgba(17, 17, 17, 0.08);
@@ -107,7 +117,7 @@
     color: var(--cp-ink-soft);
   }
   .field:focus {
-    border-color: rgba(0, 155, 250, 0.45);
+    border-color: color-mix(in srgb, var(--cp-accent) 70%, var(--cp-line));
     background: var(--cp-card);
   }
   textarea.field {
@@ -166,9 +176,9 @@
   }
   .mode-toggle__item.is-active {
     background: var(--cp-card);
-    border-color: var(--cp-blue);
+    border-color: var(--cp-accent);
     color: var(--cp-blue);
-    box-shadow: 0 0 0 1px var(--cp-blue);
+    box-shadow: 0 0 0 1px var(--cp-accent);
   }
   .mode-toggle__item--icon {
     padding: 0;
@@ -194,14 +204,26 @@
   }
   .mode-toggle-menu__item {
     @apply flex w-full items-center gap-2 rounded text-left font-bold transition-colors;
-    min-height: 38px;
-    padding: 0 10px;
+    min-height: 44px;
+    padding: 0 14px;
+    font-size: 0.9rem;
     color: var(--cp-ink);
+  }
+  .mode-toggle-menu__item svg,
+  .mode-toggle-menu__item img {
+    flex: 0 0 auto;
+    width: 18px;
+    height: 18px;
   }
   .mode-toggle-menu__item:hover,
   .mode-toggle-menu__item.is-active {
-    background: color-mix(in srgb, var(--cp-blue) 8%, var(--cp-card));
+    background: color-mix(in srgb, var(--cp-accent) 8%, var(--cp-card));
     color: var(--cp-blue);
+  }
+  .mode-toggle-menu--compact .mode-toggle-menu__item {
+    min-height: 40px;
+    padding: 0 10px;
+    font-size: 0.82rem;
   }
   .mode-toggle-arrow {
     position: absolute;
@@ -254,8 +276,8 @@
   }
   .dropzone:hover,
   .dropzone.is-dragging {
-    border-color: color-mix(in srgb, var(--cp-blue) 58%, var(--cp-line));
-    background: color-mix(in srgb, var(--cp-blue) 9%, var(--cp-card));
+    border-color: color-mix(in srgb, var(--cp-accent) 58%, var(--cp-line));
+    background: color-mix(in srgb, var(--cp-accent) 9%, var(--cp-card));
   }
   .dropzone.is-dragging {
     transform: translateY(-1px);
@@ -265,8 +287,8 @@
   .state {
     @apply flex flex-col gap-cp-1 rounded-lg;
     padding: 16px;
-    border: 1px solid rgba(0, 155, 250, 0.12);
-    background: rgba(0, 155, 250, 0.05);
+    border: 1px solid color-mix(in srgb, var(--cp-accent) 28%, transparent);
+    background: var(--cp-accent-soft);
   }
   .state--error {
     border-color: rgba(197, 63, 63, 0.16);
@@ -361,7 +383,7 @@
       box-shadow: none;
     }
 
-    .rp-import-panel--workspace.rp-import-panel--cookpilot {
+    .rp-import-panel--workspace.rp-import-panel--cookpilot:has(.cookpilot-recipe-list) {
       padding-bottom: 0;
     }
 
@@ -444,6 +466,7 @@
   --recipe-card-step-size: 7.8pt;
   --recipe-card-step-gap: 4.2pt;
   --recipe-card-ingredient-gap: 1.8pt;
+  --recipe-card-photo-size: 0.92in;
 }
 
 .recipe-print-shell {
@@ -466,6 +489,10 @@
   .recipe-print-page .recipe-print-shell {
     height: 100%;
     min-height: 0;
+    /* Constrain the single grid row to the shell's height so the columns
+       stretch to the viewport (not to their taller content), letting the
+       config panel scroll internally and pin its print button. */
+    grid-template-rows: minmax(0, 1fr);
     align-items: stretch;
     overflow: hidden;
   }
@@ -532,8 +559,8 @@
 }
 
 .recipe-page-rail__item.is-active {
-  border-color: var(--cp-blue);
-  box-shadow: 0 0 0 1px var(--cp-blue);
+  border-color: var(--cp-accent);
+  box-shadow: 0 0 0 1px var(--cp-accent);
 }
 
 .recipe-page-rail__num {
@@ -578,7 +605,7 @@
 .recipe-page-rail__badge {
   padding: 1px 6px;
   border-radius: 999px;
-  background: color-mix(in srgb, var(--cp-blue) 12%, var(--cp-card));
+  background: color-mix(in srgb, var(--cp-accent) 12%, var(--cp-card));
   color: var(--cp-blue);
   font-size: 0.6rem;
   font-weight: 800;
@@ -707,9 +734,9 @@
 }
 
 .rp-queue-item--focused > button:first-of-type {
-  border-color: var(--cp-blue);
+  border-color: var(--cp-accent);
   box-shadow:
-    0 0 0 3px color-mix(in srgb, var(--cp-blue) 18%, transparent),
+    0 0 0 3px color-mix(in srgb, var(--cp-accent) 18%, transparent),
     0 14px 34px rgba(15, 23, 42, 0.12);
 }
 
@@ -740,6 +767,18 @@
     max-height: none;
   }
 
+  /* The flip control is absolutely positioned within the canvas; without a
+     positioning context it escapes to the page top (behind the header) and
+     vanishes on desktop. Keep the canvas as the offset parent. */
+  .recipe-page-canvas {
+    position: relative;
+  }
+
+  /* A touch of breathing room above the floating flip control on desktop. */
+  .recipe-page-canvas__flip {
+    top: 12px;
+  }
+
   .recipe-config-panel {
     height: calc(100% - 32px);
   }
@@ -766,6 +805,14 @@
   margin-top: 12px;
   padding-top: 14px;
   border-top: 1px solid var(--cp-line);
+}
+
+.recipe-print-tip {
+  margin: 0 0 12px;
+  color: var(--cp-ink-soft);
+  font-size: 0.78rem;
+  font-weight: 600;
+  line-height: 1.35;
 }
 
 .recipe-print-button {
@@ -825,8 +872,8 @@
 }
 
 .recipe-toggle input:checked {
-  border-color: var(--cp-blue);
-  background: var(--cp-blue);
+  border-color: var(--cp-accent);
+  background: var(--cp-accent);
 }
 
 .recipe-toggle input:checked::after {
@@ -836,7 +883,8 @@
   top: 2px;
   width: 6px;
   height: 11px;
-  border: solid #fff;
+  /* Dark tick on the vivid teal fill — white would only hit 1.95:1. */
+  border: solid #0c3a37;
   border-width: 0 3px 3px 0;
   transform: rotate(45deg);
 }
@@ -886,8 +934,8 @@
 }
 
 .recipe-template-option.is-active {
-  border-color: var(--cp-blue);
-  box-shadow: 0 0 0 1px var(--cp-blue);
+  border-color: var(--cp-accent);
+  box-shadow: 0 0 0 1px var(--cp-accent);
 }
 
 .recipe-template-option__preview {
@@ -911,7 +959,7 @@
   position: absolute;
   inset: 0 0 auto;
   height: 4px;
-  background: linear-gradient(90deg, #009bfa, #60cac4);
+  background: linear-gradient(90deg, #2f7d78, #60cac4);
 }
 
 .recipe-template-option__preview::after {
@@ -1223,9 +1271,43 @@
   margin-top: 0;
 }
 
+/* The "show full preview" control only exists on phones; desktop always shows
+   the deck, so the button stays hidden there. */
+.recipe-page-canvas__toggle {
+  display: none;
+}
+
 @media (max-width: 820px) {
   .recipe-print-shell {
     grid-template-columns: 1fr;
+    gap: 14px;
+  }
+
+  .recipe-page-canvas__toggle {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    width: 100%;
+    min-height: 44px;
+    padding: 0 16px;
+    border: 1px solid var(--cp-line-strong);
+    border-radius: 12px;
+    background: var(--cp-card);
+    color: var(--cp-ink);
+    font-size: 0.86rem;
+    font-weight: 700;
+  }
+
+  /* Collapsed: the rail strip above is the preview; the full deck and its
+     flip control fold away so print setup is the next thing in reach. */
+  .recipe-page-canvas[data-mobile-open="false"] .recipe-page-deck,
+  .recipe-page-canvas[data-mobile-open="false"] .recipe-page-canvas__flip {
+    display: none;
+  }
+
+  .recipe-page-canvas[data-mobile-open="true"] .recipe-page-deck {
+    margin-top: 2px;
   }
 
   .recipe-page-rail {
@@ -1311,16 +1393,19 @@
   --recipe-card-step-size: 9.6pt;
   --recipe-card-step-gap: 5.2pt;
   --recipe-card-ingredient-gap: 3.2pt;
+  --recipe-card-photo-size: 1.7in;
 }
 
 .recipe-card-set {
   --recipe-bg: #ffffff;
   --recipe-ink: #1a1a1a;
   --recipe-muted: #6b7280;
-  --recipe-accent: #009bfa;
+  /* Classic card: accent is the accessible teal-ink for printed labels/text;
+     accent-2 is the vivid brand teal for dots, rules, and the header bar. */
+  --recipe-accent: #2f7d78;
   --recipe-accent-2: #60cac4;
   --recipe-line: rgba(17, 17, 17, 0.12);
-  --recipe-step-bg: rgba(0, 155, 250, 0.1);
+  --recipe-step-bg: rgba(96, 202, 196, 0.18);
   --recipe-footer: #aaa;
   --recipe-radius: 14px;
   --recipe-title-font: var(--font-playfair), Georgia, serif;
@@ -1353,7 +1438,7 @@
   height: 26px;
   border: 0;
   border-radius: 999px;
-  background: color-mix(in srgb, var(--cp-blue) 10%, var(--cp-card));
+  background: color-mix(in srgb, var(--cp-accent) 10%, var(--cp-card));
   color: var(--cp-blue);
   font-weight: 900;
   line-height: 1;
@@ -1682,6 +1767,123 @@
   margin-top: 3px;
   padding-bottom: 5px;
   border-bottom: 1px solid var(--recipe-line);
+}
+
+/* When a recipe photo is shown, the title/meta share the header row with a
+   square thumbnail tucked into the otherwise-empty top-right corner. */
+.recipe-card__header--with-photo {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--recipe-card-gap);
+}
+
+.recipe-card__headline {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+/* The photo wrapper is a positioned frame so each template can dress the image
+   in its own way (mats, tape, tilt, tonal treatment) via the rules below — the
+   image is never the same object twice. The base here is intentionally plain;
+   every template overrides it. */
+.recipe-card__photo {
+  box-sizing: border-box;
+  position: relative;
+  flex: 0 0 auto;
+  width: var(--recipe-card-photo-size);
+  height: var(--recipe-card-photo-size);
+  margin-top: 1px;
+}
+
+.recipe-card__photo-img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  -webkit-print-color-adjust: exact;
+  print-color-adjust: exact;
+}
+
+/* ── Classic: a crisp, modern cookbook print — white mat, teal hairline ───── */
+.recipe-template--classic .recipe-card__photo {
+  padding: 3px;
+  background: #fff;
+  border: 1px solid color-mix(in srgb, var(--recipe-accent-2) 55%, var(--recipe-line));
+  border-radius: 10px;
+  box-shadow: 0 4px 12px rgba(17, 17, 17, 0.1);
+}
+.recipe-template--classic .recipe-card__photo-img {
+  border-radius: 7px;
+}
+
+/* ── Heirloom: a sepia keepsake snapshot tipped into the page, Polaroid mat ── */
+.recipe-template--heirloom .recipe-card__photo {
+  padding: 5px 5px 15px;
+  background: #fffdf7;
+  border: 1px solid rgba(92, 64, 55, 0.22);
+  border-radius: 1px;
+  transform: rotate(2.4deg);
+  box-shadow: 0 3px 10px rgba(92, 64, 55, 0.2);
+}
+.recipe-template--heirloom .recipe-card__photo-img {
+  border-radius: 0;
+  filter: sepia(0.22) saturate(0.9) contrast(0.98);
+}
+
+/* ── Bistro: a bold blue-framed menu snapshot with a playful offset & tilt ─── */
+.recipe-template--bistro .recipe-card__photo {
+  padding: 4px;
+  background: #fff;
+  border: 2px solid var(--recipe-accent-2);
+  border-radius: 4px;
+  transform: rotate(-2.2deg);
+  box-shadow: 3px 3px 0 rgba(20, 67, 105, 0.2);
+}
+.recipe-template--bistro .recipe-card__photo-img {
+  border-radius: 2px;
+}
+
+/* ── Pantry: a square print taped onto the ruled notebook page ────────────── */
+.recipe-template--pantry .recipe-card__photo {
+  border-radius: 0;
+  transform: rotate(-1.6deg);
+}
+.recipe-template--pantry .recipe-card__photo-img {
+  border: 1px solid rgba(91, 104, 115, 0.28);
+  border-radius: 0;
+  filter: contrast(0.96) brightness(1.02);
+}
+/* Strips of amber masking tape pinning the top corners to the page. */
+.recipe-template--pantry .recipe-card__photo::before,
+.recipe-template--pantry .recipe-card__photo::after {
+  content: "";
+  position: absolute;
+  top: -7px;
+  width: 36px;
+  height: 14px;
+  background: rgba(215, 169, 76, 0.32);
+  border: 1px solid rgba(215, 169, 76, 0.45);
+  -webkit-print-color-adjust: exact;
+  print-color-adjust: exact;
+}
+.recipe-template--pantry .recipe-card__photo::before {
+  left: -9px;
+  transform: rotate(-28deg);
+}
+.recipe-template--pantry .recipe-card__photo::after {
+  right: -9px;
+  transform: rotate(27deg);
+}
+
+/* ── Counter: a high-contrast black-and-white photocopy in a hard ink box ─── */
+.recipe-template--counter .recipe-card__photo {
+  border: 2px solid var(--recipe-ink);
+  border-radius: 0;
+}
+.recipe-template--counter .recipe-card__photo-img {
+  border-radius: 0;
+  filter: grayscale(1) contrast(1.18);
 }
 
 .recipe-card__title {

@@ -4,7 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { ImportPanel } from "@/components/ImportPanel";
 import { PrintQueue } from "@/components/PrintQueue";
-import { MoreVerticalIcon, PrintIcon } from "@/components/icons";
+import { CheckIcon, MoreVerticalIcon, PrintIcon, TrashIcon, XIcon } from "@/components/icons";
 import { createCurrentPrintJob, useQueue } from "@/lib/queue";
 
 // The interactive heart of RecipePrinter: importing recipes and managing the
@@ -118,7 +118,7 @@ export function PrinterWorkspace() {
                 </button>
 
                 {menuOpen && (
-                  <div className="mode-toggle-menu" role="menu" aria-label="Recipe list actions">
+                  <div className="mode-toggle-menu mode-toggle-menu--compact" role="menu" aria-label="Recipe list actions">
                     <button
                       type="button"
                       role="menuitem"
@@ -128,6 +128,7 @@ export function PrinterWorkspace() {
                         setMenuOpen(false);
                       }}
                     >
+                      {allSelected ? <XIcon size={18} /> : <CheckIcon size={18} />}
                       {allSelected ? "Deselect all" : "Select all"}
                     </button>
                     <button
@@ -139,6 +140,7 @@ export function PrinterWorkspace() {
                         setMenuOpen(false);
                       }}
                     >
+                      <TrashIcon size={18} />
                       Clear all
                     </button>
                   </div>

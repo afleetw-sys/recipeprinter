@@ -51,7 +51,7 @@ export function SiteFooter() {
               href={PUBLISHER.url}
               target="_blank"
               rel="noopener noreferrer"
-              className="text-brand hover:underline font-semibold"
+              className="text-brand-ink hover:underline font-semibold"
             >
               {PUBLISHER.name}
             </a>{" "}

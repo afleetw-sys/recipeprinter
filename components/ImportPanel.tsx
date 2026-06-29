@@ -232,7 +232,7 @@ export function ImportPanel({
               </button>
 
               {overflowOpen && (
-                <div className="mode-toggle-menu" role="menu" aria-label="More import options">
+                <div className="mode-toggle-menu mode-toggle-menu--compact" role="menu" aria-label="More import options">
                   {OVERFLOW_MODES.map(({ id, label, icon: Icon }) => (
                     <button
                       key={id}
@@ -242,7 +242,7 @@ export function ImportPanel({
                       className={`mode-toggle-menu__item ${mode === id ? "is-active" : ""}`}
                       onClick={() => chooseMode(id)}
                     >
-                      <Icon size={17} />
+                      <Icon size={18} />
                       <span>{label}</span>
                     </button>
                   ))}

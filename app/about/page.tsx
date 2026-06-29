@@ -81,7 +81,7 @@ export default function AboutPage() {
 
         <Link
           href="/how-it-works"
-          className="text-[0.9rem] font-semibold text-brand hover:underline"
+          className="text-[0.9rem] font-semibold text-brand-ink hover:underline"
         >
           See how it works →
         </Link>

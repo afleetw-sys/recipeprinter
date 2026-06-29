@@ -97,7 +97,7 @@ function RecipeCardItem({
 
           {/* Selection check */}
           {selected && (
-            <span className="absolute bottom-2 right-2 grid place-items-center w-7 h-7 rounded-full bg-brand text-white">
+            <span className="absolute bottom-2 right-2 grid place-items-center w-7 h-7 rounded-full bg-brand text-ink">
               <CheckIcon size={16} />
             </span>
           )}
@@ -154,7 +154,7 @@ function RecipeCardItem({
             <button
               type="button"
               onClick={onRetry}
-              className="btn-ghost btn-compact text-brand flex-shrink-0 -mt-1.5"
+              className="btn-ghost btn-compact text-brand-ink flex-shrink-0 -mt-1.5"
             >
               <RefreshIcon size={14} />
               Retry

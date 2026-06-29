@@ -23,7 +23,7 @@ import RecipeCardPrint, {
   type RecipeFace,
   type RecipePrintTemplate,
 } from "@/components/RecipeCardPrint";
-import { CheckIcon, CrownIcon, PrintIcon, SpinnerIcon, XIcon } from "@/components/icons";
+import { CheckIcon, ChevronDownIcon, CrownIcon, PrintIcon, SpinnerIcon, XIcon } from "@/components/icons";
 import { getFirebaseAuth } from "@/lib/firebase/client";
 import {
   isPremiumTemplate,
@@ -86,6 +86,7 @@ function ScaledPage({
   size,
   template,
   doubleSided,
+  showImage,
 }: {
   sheet: PageSheet;
   side: "front" | "back";
@@ -93,6 +94,7 @@ function ScaledPage({
   size: PrintCardSize;
   template: RecipePrintTemplate;
   doubleSided: boolean;
+  showImage: boolean;
 }) {
   const dims = PAGE_DIMS[size];
   const face = side === "back" && sheet.back ? sheet.back : sheet.front;
@@ -124,6 +126,7 @@ function ScaledPage({
               showHeader={!isBackContent}
               layout={face.layout}
               hasBackFace={sheet.hasBack}
+              showImage={showImage}
             />
           </div>
         </div>
@@ -203,6 +206,7 @@ export default function PrintPage() {
   );
   const [doubleSided, setDoubleSided] = useState(true);
   const [showCutLines, setShowCutLines] = useState(true);
+  const [showPhoto, setShowPhoto] = useState(true);
   const [showDonateDialog, setShowDonateDialog] = useState(false);
   const [showFeedbackDialog, setShowFeedbackDialog] = useState(false);
   const [authReady, setAuthReady] = useState(false);
@@ -223,6 +227,9 @@ export default function PrintPage() {
   const hasRecipeBackSide =
     items?.some((item) => item.recipe && recipeNeedsBackSide(item.recipe, cardSize)) ?? false;
   const continueOnBack = hasRecipeBackSide && doubleSided;
+  const anyRecipeHasImage =
+    items?.some((item) => Boolean(item.recipe?.image)) ?? false;
+  const photosOn = showPhoto && anyRecipeHasImage;
 
   // The physical sheets the printer will produce, in order. Two-sided sheets
   // keep a flippable front+back; single-sided overflow becomes its own sheet.
@@ -280,9 +287,18 @@ export default function PrintPage() {
 
   const [activeSheetIndex, setActiveSheetIndex] = useState(0);
   const [canvasSide, setCanvasSide] = useState<"front" | "back">("front");
+  // On phones the full-size preview is collapsed by default so the print
+  // controls sit within reach; the page rail above stays as a compact preview.
+  // Desktop ignores this entirely (CSS only acts on it below 820px).
+  const [mobilePreviewOpen, setMobilePreviewOpen] = useState(false);
   const deckRef = useRef<HTMLDivElement>(null);
   const slideRefs = useRef<(HTMLDivElement | null)[]>([]);
   const [deckScale, setDeckScale] = useState(0.5);
+  // While we scroll the deck programmatically (after a click), ignore the
+  // scroll-driven selection so it doesn't yank the outline back to whichever
+  // page is momentarily centred mid-animation.
+  const suppressScrollSyncRef = useRef(false);
+  const scrollSyncTimerRef = useRef<number | undefined>(undefined);
 
   // Keep the active sheet valid as the page list changes (size / two-sided).
   useEffect(() => {
@@ -321,6 +337,7 @@ export default function PrintPage() {
     if (!el) return;
     let raf = 0;
     const onScroll = () => {
+      if (suppressScrollSyncRef.current) return;
       cancelAnimationFrame(raf);
       raf = requestAnimationFrame(() => {
         const mid = el.scrollTop + el.clientHeight / 2;
@@ -369,6 +386,16 @@ export default function PrintPage() {
 
   function goToSlide(index: number) {
     const behavior = Math.abs(index - activeSheetIndex) <= 3 ? "smooth" : "auto";
+    // Hold off the scroll listener until the animation settles, otherwise it
+    // overwrites our selection with the page that's centred partway through.
+    suppressScrollSyncRef.current = true;
+    window.clearTimeout(scrollSyncTimerRef.current);
+    scrollSyncTimerRef.current = window.setTimeout(
+      () => {
+        suppressScrollSyncRef.current = false;
+      },
+      behavior === "smooth" ? 500 : 120,
+    );
     setActiveSheetIndex(index);
     centerSlide(index, behavior);
   }
@@ -648,6 +675,7 @@ export default function PrintPage() {
                   size={cardSize}
                   template={template}
                   doubleSided={continueOnBack}
+                  showImage={photosOn}
                 />
               </span>
               <span className="recipe-page-rail__label">
@@ -664,7 +692,27 @@ export default function PrintPage() {
         </nav>
 
         {/* Center: large preview of the selected page */}
-        <section className="recipe-page-canvas no-print" aria-label="Selected page">
+        <section
+          className="recipe-page-canvas no-print"
+          aria-label="Selected page"
+          data-mobile-open={mobilePreviewOpen ? "true" : "false"}
+        >
+          <button
+            type="button"
+            className="recipe-page-canvas__toggle"
+            aria-expanded={mobilePreviewOpen}
+            aria-controls="recipe-page-deck"
+            onClick={() => setMobilePreviewOpen((open) => !open)}
+          >
+            {mobilePreviewOpen ? "Hide full preview" : "Show full preview"}
+            <ChevronDownIcon
+              size={16}
+              style={{
+                transform: mobilePreviewOpen ? "rotate(180deg)" : "none",
+                transition: "transform 150ms ease",
+              }}
+            />
+          </button>
           {activeSheet?.flip && (
             <div className="recipe-card-side-nav recipe-page-canvas__flip" aria-label="Sheet sides">
               <button
@@ -688,7 +736,7 @@ export default function PrintPage() {
               </button>
             </div>
           )}
-          <div className="recipe-page-deck" ref={deckRef}>
+          <div className="recipe-page-deck" id="recipe-page-deck" ref={deckRef}>
             {sheets.map((sheet, index) => (
               <div
                 key={sheet.id}
@@ -717,6 +765,7 @@ export default function PrintPage() {
                   size={cardSize}
                   template={template}
                   doubleSided={continueOnBack}
+                  showImage={photosOn}
                 />
               </div>
             ))}
@@ -775,6 +824,22 @@ export default function PrintPage() {
                 <span>
                   <strong>Cut lines</strong>
                   <small>Show dashed guides on printed 6 x 4 cards.</small>
+                </span>
+              </label>
+            </div>
+          )}
+
+          {anyRecipeHasImage && (
+            <div className="recipe-config-section">
+              <label className="recipe-toggle">
+                <input
+                  type="checkbox"
+                  checked={showPhoto}
+                  onChange={(event) => setShowPhoto(event.target.checked)}
+                />
+                <span>
+                  <strong>Recipe photo</strong>
+                  <small>Add the recipe&apos;s photo to the card header when one is available.</small>
                 </span>
               </label>
             </div>
@@ -845,6 +910,9 @@ export default function PrintPage() {
           </div>
 
           <div className="recipe-config-panel__footer">
+            <p className="recipe-print-tip">
+              Print one recipe first to check layout and two-sided alignment before running the full batch.
+            </p>
             <button
               onClick={() => void handlePrint()}
               className="btn btn-primary recipe-print-button"
@@ -872,6 +940,7 @@ export default function PrintPage() {
                 template={template}
                 doubleSided={continueOnBack}
                 isLast={index === items.length - 1}
+                showImage={photosOn}
               />
             ))}
           </div>

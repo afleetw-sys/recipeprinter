@@ -16,13 +16,17 @@ const config: Config = {
           soft: "#667085",
         },
         brand: {
-          // CookPilot's primary accent blue
-          DEFAULT: "#009bfa",
-          50: "#eaf6ff",
-          100: "#cfeaff",
+          // RecipePrinter accent. #60cac4 is the vivid brand teal, used for
+          // decorative surfaces only (borders, fills, rings, accent bars) — it
+          // fails text contrast on white (1.95:1). For accent-colored *text* use
+          // `brand.ink`, a darkened sibling that clears WCAG AA (4.85:1).
+          DEFAULT: "#60cac4",
+          ink: "#2f7d78",
+          50: "#eef9f8",
+          100: "#d6f0ee",
         },
         teal: {
-          // CookPilot's secondary accent
+          // Alias of the brand accent (kept for existing references).
           DEFAULT: "#60cac4",
           50: "#eefaf9",
         },

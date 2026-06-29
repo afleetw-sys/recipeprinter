@@ -25,7 +25,9 @@ export default function OpengraphImage() {
           flexDirection: "column",
           justifyContent: "center",
           padding: "80px",
-          background: "linear-gradient(135deg, #009bfa 0%, #60cac4 100%)",
+          // Darkened teal so the white card text stays legible (vivid #60CAC4
+          // would only hit ~1.95:1 against white).
+          background: "linear-gradient(135deg, #2f7d78 0%, #1f6b66 100%)",
           color: "#ffffff",
           fontFamily: "sans-serif",
         }}

@@ -68,7 +68,7 @@ export default function FeaturesPage() {
       <ul className="grid gap-cp-4 sm:grid-cols-2">
         {FEATURES.map(({ icon: Icon, title, body }) => (
           <li key={title} className="card p-cp-5 flex flex-col gap-cp-3">
-            <span className="text-brand">
+            <span className="text-brand-ink">
               <Icon size={22} />
             </span>
             <h2 className="font-extrabold tracking-[-0.02em] text-[1.05rem]">

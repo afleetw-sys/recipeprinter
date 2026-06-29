@@ -74,6 +74,12 @@ export const ChevronRightIcon = (p: IconProps) => (
   </Base>
 );
 
+export const ChevronDownIcon = (p: IconProps) => (
+  <Base {...p}>
+    <path d="M6 9l6 6 6-6" />
+  </Base>
+);
+
 export const MoreVerticalIcon = (p: IconProps) => (
   <Base {...p}>
     <circle cx="12" cy="5" r="1.4" fill="currentColor" stroke="none" />
@@ -120,6 +126,13 @@ export const TrashIcon = (p: IconProps) => (
     <path d="M4 7h16" />
     <path d="M9 7V5a1 1 0 011-1h4a1 1 0 011 1v2" />
     <path d="M6 7l1 13a1 1 0 001 1h8a1 1 0 001-1l1-13" />
+  </Base>
+);
+
+export const RemoveIcon = (p: IconProps) => (
+  <Base {...p}>
+    <circle cx="12" cy="12" r="8.5" />
+    <path d="M8 12h8" />
   </Base>
 );
 
