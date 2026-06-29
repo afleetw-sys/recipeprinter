@@ -282,11 +282,10 @@ export default function PrintPage() {
             <div className="print-success-dialog__icon" aria-hidden>
               <LogoImage size={58} />
             </div>
-            <p className="print-success-dialog__eyebrow">Print sent</p>
-            <h2 id="print-success-title">Hope those recipes turn out beautifully.</h2>
+            <h2 id="print-success-title">Ready for the counter, binder, or fridge door.</h2>
             <p>
-              If RecipePrinter saved you a little time today, a coffee helps keep it free
-              and improving.
+              If RecipePrinter helped today, consider supporting the site and future
+              improvements.
             </p>
             <div className="print-success-dialog__actions">
               <a
@@ -295,7 +294,7 @@ export default function PrintPage() {
                 rel="noopener noreferrer"
                 className="btn btn-primary"
               >
-                Buy me a coffee
+                Support RecipePrinter
               </a>
               <button
                 type="button"
