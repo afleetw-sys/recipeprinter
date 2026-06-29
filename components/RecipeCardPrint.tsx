@@ -47,10 +47,13 @@ const BACK_SECTION_BUDGET: Record<
   "card-6x4": { ingredients: 900, instructions: 1200 },
 };
 
+// Hard item caps guard against many-but-tiny steps overflowing the fixed card
+// height (the length-aware budget above handles the usual case). Keep these
+// loose so short recipes stay on one side instead of spilling onto the back.
 const FRONT_SECTION_LIMITS: Partial<
   Record<PrintCardSize, { ingredients: number; instructions: number }>
 > = {
-  "card-6x4": { ingredients: 12, instructions: 5 },
+  "card-6x4": { ingredients: 12, instructions: 9 },
 };
 
 type CardSectionLayout = "standard" | "stacked";
@@ -199,7 +202,44 @@ export function recipeNeedsBackSide(recipe: Recipe, size: PrintCardSize): boolea
   return backIngredients.length > 0 || backInstructions.length > 0;
 }
 
-function RecipeCardFace({
+export interface RecipeFace {
+  ingredients: Recipe["ingredients"];
+  instructions: Recipe["instructions"];
+  layout: CardSectionLayout;
+}
+
+export interface RecipeFaces {
+  front: RecipeFace;
+  back: RecipeFace | null;
+  hasBack: boolean;
+}
+
+/**
+ * The front/back faces a recipe splits into at a given size. The on-screen page
+ * navigator uses this to mirror exactly what `RecipeCardPrint` will print.
+ */
+export function getRecipeFaces(recipe: Recipe, size: PrintCardSize): RecipeFaces {
+  const split = splitRecipe(recipe, size);
+  const hasBack =
+    split.backIngredients.length > 0 || split.backInstructions.length > 0;
+  return {
+    front: {
+      ingredients: split.frontIngredients,
+      instructions: split.frontInstructions,
+      layout: split.frontLayout,
+    },
+    back: hasBack
+      ? {
+          ingredients: split.backIngredients,
+          instructions: split.backInstructions,
+          layout: split.backLayout,
+        }
+      : null,
+    hasBack,
+  };
+}
+
+export function RecipeCardFace({
   recipe,
   ingredients,
   instructions,

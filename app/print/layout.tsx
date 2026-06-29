@@ -1,6 +1,5 @@
 import { Suspense } from "react";
 import type { Metadata } from "next";
-import { SiteFooter } from "@/components/SiteFooter";
 
 // The print preview is a per-session, query-string-driven view of recipes the
 // user just imported, there's no stable, standalone content to index here.
@@ -21,7 +20,6 @@ export default function PrintLayout({ children }: { children: React.ReactNode })
   return (
     <div className="min-h-screen flex flex-col">
       <Suspense fallback={<PrintLoading />}>{children}</Suspense>
-      <SiteFooter />
     </div>
   );
 }

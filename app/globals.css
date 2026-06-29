@@ -444,13 +444,263 @@
 
 .recipe-print-shell {
   display: grid;
-  grid-template-columns: minmax(230px, 300px) minmax(0, 1fr);
+  grid-template-columns: 172px minmax(0, 1fr) minmax(230px, 290px);
   align-items: start;
-  gap: clamp(18px, 3vw, 34px);
+  gap: clamp(16px, 2.4vw, 30px);
+}
+
+/* Desktop: the page itself never scrolls — only the rail, deck, and setup
+   panel scroll within their own bounds, each filling the full height. */
+@media (min-width: 821px) {
+  .recipe-print-page {
+    height: 100vh;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .recipe-print-page .recipe-print-shell {
+    flex: 1;
+    min-height: 0;
+    align-items: stretch;
+    overflow: hidden;
+    padding-top: 16px;
+    padding-bottom: 16px;
+  }
+
+  .recipe-page-rail {
+    position: static;
+    max-height: none;
+    height: 100%;
+  }
+
+  .recipe-page-canvas {
+    position: relative;
+    top: auto;
+    height: 100%;
+  }
+
+  .recipe-page-deck {
+    height: 100%;
+  }
+
+  .recipe-config-panel {
+    position: static;
+    max-height: none;
+    height: 100%;
+  }
 }
 
 .recipe-print-stage {
   min-width: 0;
+}
+
+/* ── Page navigator (PowerPoint-style) ─────────────────────────────────── */
+.recipe-page-rail {
+  position: sticky;
+  top: 86px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  max-height: calc(100vh - 110px);
+  padding: 4px;
+  overflow-y: auto;
+}
+
+.recipe-page-rail__item {
+  display: grid;
+  grid-template-columns: 16px 1fr;
+  align-items: center;
+  gap: 8px;
+  padding: 8px;
+  border: 1px solid var(--cp-line);
+  border-radius: 12px;
+  background: var(--cp-card);
+  text-align: left;
+  transition:
+    border-color 150ms ease,
+    box-shadow 150ms ease,
+    transform 150ms ease;
+}
+
+.recipe-page-rail__item:hover {
+  border-color: var(--cp-line-strong);
+  transform: translateY(-1px);
+}
+
+.recipe-page-rail__item.is-active {
+  border-color: var(--cp-blue);
+  box-shadow: 0 0 0 1px var(--cp-blue);
+}
+
+.recipe-page-rail__num {
+  align-self: start;
+  color: var(--cp-ink-soft);
+  font-size: 0.74rem;
+  font-weight: 800;
+}
+
+.recipe-page-rail__thumb {
+  grid-column: 2;
+  display: block;
+}
+
+.recipe-page-rail__label {
+  grid-column: 2;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.recipe-page-rail__title {
+  overflow: hidden;
+  color: var(--cp-ink);
+  font-size: 0.78rem;
+  font-weight: 700;
+  line-height: 1.2;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.recipe-page-rail__meta {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--cp-ink-soft);
+  font-size: 0.68rem;
+  font-weight: 600;
+}
+
+.recipe-page-rail__badge {
+  padding: 1px 6px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--cp-blue) 12%, var(--cp-card));
+  color: var(--cp-blue);
+  font-size: 0.6rem;
+  font-weight: 800;
+  letter-spacing: 0.02em;
+}
+
+.recipe-page-canvas {
+  position: sticky;
+  top: 86px;
+  min-width: 0;
+}
+
+/* Vertical deck of pages: the centred one is selected, neighbours peek in. */
+.recipe-page-deck {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 22px;
+  height: calc(100vh - 132px);
+  padding: 44vh 0;
+  overflow-y: auto;
+  scroll-snap-type: y mandatory;
+  scrollbar-width: none;
+}
+
+.recipe-page-deck::-webkit-scrollbar {
+  display: none;
+}
+
+.recipe-page-slide {
+  flex: 0 0 auto;
+  scroll-snap-align: center;
+  cursor: pointer;
+  opacity: 0.4;
+  transition:
+    opacity 200ms ease,
+    transform 200ms ease;
+}
+
+.recipe-page-slide:not(.is-active):hover {
+  opacity: 0.7;
+}
+
+.recipe-page-slide.is-active {
+  opacity: 1;
+  cursor: default;
+}
+
+/* Flip control floats above the deck for the active two-sided sheet. */
+.recipe-page-canvas__flip {
+  position: absolute;
+  top: 0;
+  left: 50%;
+  z-index: 3;
+  transform: translateX(-50%);
+}
+
+/* Render a real-size card and scale it down so previews look like the paper. */
+.recipe-page-scaler {
+  position: relative;
+  width: calc(var(--page-w) * var(--page-scale));
+  height: calc(var(--page-h) * var(--page-scale));
+  overflow: hidden;
+  border: 1px solid var(--cp-line);
+  border-radius: 8px;
+  background: #fff;
+  box-shadow: 0 10px 30px rgba(15, 23, 42, 0.1);
+}
+
+.recipe-page-rail__thumb .recipe-page-scaler {
+  border-radius: 5px;
+  box-shadow: 0 4px 12px rgba(15, 23, 42, 0.08);
+}
+
+/* Full-page (letter) thumbnails are very tall; crop the bottom and fade it
+   out so the rail stays compact while still showing the top of each page. */
+.recipe-page-rail--letter .recipe-page-rail__thumb .recipe-page-scaler {
+  height: 116px;
+  /* Square the cut edge so the page reads as cropped, not as a card. */
+  border-bottom: 0;
+  border-bottom-left-radius: 0;
+  border-bottom-right-radius: 0;
+}
+
+.recipe-page-rail--letter .recipe-page-rail__thumb .recipe-page-scaler::after {
+  content: "";
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  height: 30px;
+  background: linear-gradient(to bottom, transparent, #fff);
+  pointer-events: none;
+}
+
+.recipe-page-scaler__inner {
+  width: var(--page-w);
+  transform: scale(var(--page-scale));
+  transform-origin: top left;
+}
+
+.recipe-page-scaler .recipe-print-preview {
+  display: block;
+}
+
+.recipe-page-scaler .recipe-card {
+  width: var(--page-w);
+  height: var(--page-h);
+  min-height: var(--page-h);
+  max-width: none;
+  margin: 0;
+  border: 0;
+  border-radius: 0;
+  box-shadow: none;
+  overflow: hidden;
+}
+
+.recipe-page-scaler .recipe-card-side-nav {
+  display: none;
+}
+
+/* The print source is never shown on screen; print reveals it. */
+.recipe-print-source {
+  display: none;
 }
 
 .rp-queue-item--focused > button:first-of-type {
@@ -465,7 +715,7 @@
   top: 86px;
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  max-height: calc(100vh - 104px);
   padding: 16px;
   border: 1px solid var(--cp-line);
   border-radius: 18px;
@@ -475,8 +725,31 @@
 }
 
 .recipe-config-panel__header {
+  flex: 0 0 auto;
   padding-bottom: 12px;
   border-bottom: 1px solid var(--cp-line);
+}
+
+.recipe-config-panel__scroll {
+  flex: 1 1 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  min-height: 0;
+  padding-top: 16px;
+  overflow-y: auto;
+}
+
+.recipe-config-panel__footer {
+  flex: 0 0 auto;
+  margin-top: 12px;
+  padding-top: 14px;
+  border-top: 1px solid var(--cp-line);
+}
+
+.recipe-print-button {
+  width: 100%;
+  justify-content: center;
 }
 
 .recipe-config-section {
@@ -648,7 +921,7 @@
 
 .recipe-template-option__sample-meta {
   margin: 0 9px;
-  color: var(--cp-blue);
+  color: #6b7280;
   font-size: 0.33rem;
   font-weight: 800;
   letter-spacing: 0.04em;
@@ -664,6 +937,7 @@
   gap: 8px;
   align-items: start;
   margin: 0 9px 9px;
+  text-align: left;
 }
 
 .recipe-template-option__sample-grid span {
@@ -784,30 +1058,29 @@
   border-color: rgba(156, 38, 47, 0.2);
 }
 .recipe-template-option--heirloom .recipe-template-option__preview::before {
-  top: 20px;
-  right: 0;
-  left: 0;
-  height: 21px;
+  top: 33px;
+  right: 9px;
+  left: 9px;
+  height: 16px;
   border: 0;
   border-radius: 0;
   clip-path: none;
   background:
-    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='132' height='21' viewBox='0 0 132 21' fill='none'%3E%3Cg stroke='%239c262f' stroke-width='1.3' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M8 2v17M5 2v7M8 2v7M11 2v7M5 9h6'/%3E%3Cpath d='M30 17c7-3 8-11 1-13-7 2-6 10 1 13Zm1-13v13'/%3E%3Cpath d='M56 10h18M54 7h4v6h-4zM72 7h4v6h-4z'/%3E%3Cpath d='M99 3v16M94 6c2-4 8-4 10 0 2 5-2 8-5 11-3-3-7-6-5-11Z'/%3E%3Cpath d='M121 5v11M118 5h6M118 16h6'/%3E%3C/g%3E%3C/svg%3E") center / 132px 21px repeat-x,
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='132' height='21' viewBox='0 0 132 21' fill='none'%3E%3Cg stroke='%239c262f' stroke-width='1.3' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M8 2v17M5 2v7M8 2v7M11 2v7M5 9h6'/%3E%3Cpath d='M30 17c7-3 8-11 1-13-7 2-6 10 1 13Zm1-13v13'/%3E%3Cpath d='M56 10h18M54 7h4v6h-4zM72 7h4v6h-4z'/%3E%3Cpath d='M99 3v16M94 6c2-4 8-4 10 0 2 5-2 8-5 11-3-3-7-6-5-11Z'/%3E%3Cpath d='M121 5v11M118 5h6M118 16h6'/%3E%3C/g%3E%3C/svg%3E") center / 100px 16px repeat-x,
     #fffaf0;
 }
 .recipe-template-option--heirloom .recipe-template-option__sample-title {
   color: #9c262f;
   font-size: 0.58rem;
-  letter-spacing: 0.05em;
+  letter-spacing: 0.02em;
   line-height: 1;
-  text-transform: uppercase;
 }
 .recipe-template-option--heirloom .recipe-template-option__sample-meta {
   color: #8f756a;
-  margin-top: 22px;
+  margin-top: 3px;
 }
 .recipe-template-option--heirloom .recipe-template-option__sample-grid {
-  padding-top: 1px;
+  margin-top: 21px;
 }
 .recipe-template-option--heirloom .recipe-template-option__sample-grid strong {
   color: #9c262f;
@@ -820,7 +1093,15 @@
   border-color: rgba(20, 67, 105, 0.18);
 }
 .recipe-template-option--bistro .recipe-template-option__preview::before {
-  content: none;
+  top: auto;
+  right: 8px;
+  bottom: 7px;
+  left: auto;
+  height: 34px;
+  width: 38px;
+  border-radius: 0;
+  background: url("/images/bistro-cherries.png") right bottom / contain no-repeat;
+  opacity: 0.4;
 }
 .recipe-template-option--bistro .recipe-template-option__preview::after {
   inset: 0 auto 0 0;
@@ -859,7 +1140,7 @@
     #ffffff;
 }
 .recipe-template-option--pantry .recipe-template-option__preview::before {
-  top: 12px;
+  top: 40px;
   right: auto;
   bottom: auto;
   left: 5px;
@@ -868,21 +1149,26 @@
   border-radius: 999px;
   background: #d8e0e5;
   box-shadow:
-    0 18px 0 #d8e0e5,
-    0 36px 0 #d8e0e5;
+    0 52px 0 #d8e0e5,
+    0 104px 0 #d8e0e5;
+}
+.recipe-template-option--pantry .recipe-template-option__preview::after {
+  inset: 0 auto 0 12px;
+  width: 1px;
+  background: rgba(215, 169, 76, 0.55);
 }
 .recipe-template-option--pantry .recipe-template-option__sample-title {
-  margin-left: 16px;
+  margin-left: 20px;
   color: #26323a;
   font-family: var(--font-manrope), system-ui, sans-serif;
   font-size: 0.5rem;
 }
 .recipe-template-option--pantry .recipe-template-option__sample-meta {
-  margin-left: 16px;
+  margin-left: 20px;
   color: rgba(91, 104, 115, 0.78);
 }
 .recipe-template-option--pantry .recipe-template-option__sample-grid {
-  margin-left: 16px;
+  margin-left: 20px;
 }
 .recipe-template-option--pantry .recipe-template-option__sample-grid strong {
   color: #596873;
@@ -920,7 +1206,7 @@
   text-transform: uppercase;
 }
 .recipe-template-option--counter .recipe-template-option__sample-meta {
-  color: #e8845b;
+  color: #64615b;
 }
 .recipe-template-option--counter .recipe-template-option__sample-grid {
   margin-top: 0;
@@ -931,8 +1217,65 @@
     grid-template-columns: 1fr;
   }
 
+  .recipe-page-rail {
+    position: static;
+    flex-direction: row;
+    gap: 10px;
+    max-height: none;
+    padding-bottom: 8px;
+    overflow-x: auto;
+    overflow-y: hidden;
+  }
+
+  .recipe-page-rail__item {
+    flex: 0 0 auto;
+    width: 172px;
+    grid-template-columns: 1fr;
+  }
+
+  .recipe-page-rail__num {
+    display: none;
+  }
+
+  .recipe-page-rail__thumb,
+  .recipe-page-rail__label {
+    grid-column: 1;
+  }
+
+  /* On phones, show only the selected page; the rail switches between them. */
+  .recipe-page-canvas {
+    position: static;
+  }
+
+  .recipe-page-deck {
+    height: auto;
+    padding: 0;
+    overflow: visible;
+    scroll-snap-type: none;
+  }
+
+  .recipe-page-slide {
+    opacity: 1;
+    cursor: default;
+  }
+
+  .recipe-page-slide:not(.is-active) {
+    display: none;
+  }
+
+  .recipe-page-canvas__flip {
+    position: static;
+    margin: 0 auto 10px;
+    transform: none;
+  }
+
   .recipe-config-panel {
     position: static;
+    max-height: none;
+  }
+
+  .recipe-config-panel__scroll {
+    overflow-y: visible;
   }
 
   .recipe-template-list {
@@ -1167,11 +1510,24 @@
 }
 
 .recipe-template--bistro .recipe-card {
-  background:
-    radial-gradient(circle at calc(100% - 0.28in) calc(100% - 0.34in), #d95f4f 0 0.1in, transparent 0.105in),
-    radial-gradient(circle at calc(100% - 0.44in) calc(100% - 0.28in), #e2745f 0 0.085in, transparent 0.09in),
-    radial-gradient(circle at calc(100% - 0.31in) calc(100% - 0.49in), #2f8d55 0 0.032in, transparent 0.035in),
-    var(--recipe-bg);
+  /* Keep the content clear of the checkerboard spine on the left edge. */
+  padding-left: calc(var(--recipe-card-padding-x) + 0.18in);
+  background: var(--recipe-bg);
+}
+
+/* Watercolor cherries watermark in the bottom-right corner. */
+.recipe-template--bistro .recipe-card::after {
+  content: "";
+  position: absolute;
+  right: 0.28in;
+  bottom: 0.26in;
+  width: 1.5in;
+  height: 1.5in;
+  background: url("/images/bistro-cherries.png") right bottom / contain no-repeat;
+  opacity: 0.16;
+  pointer-events: none;
+  -webkit-print-color-adjust: exact;
+  print-color-adjust: exact;
 }
 
 .recipe-template--bistro .recipe-card::before {
@@ -1469,7 +1825,7 @@
   margin-top: 5px;
   padding-top: 3px;
   border-top: 1px solid var(--recipe-line);
-  font-size: 5.5pt;
+  font-size: 7pt;
   color: var(--recipe-footer);
 }
 
@@ -1648,6 +2004,10 @@
 @media print {
   .no-print {
     display: none !important;
+  }
+
+  .recipe-print-source {
+    display: block !important;
   }
 
   html,

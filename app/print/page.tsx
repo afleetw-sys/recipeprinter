@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState, type FormEvent } from "react";
+import { useEffect, useMemo, useRef, useState, type CSSProperties, type FormEvent } from "react";
 import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 import {
@@ -16,8 +16,11 @@ import { friendlyAuthError, friendlyPurchaseSetupError } from "@/lib/friendlyErr
 import RecipeCardPrint, {
   PRINT_CARD_SIZE_OPTIONS,
   RECIPE_PRINT_TEMPLATE_OPTIONS,
+  RecipeCardFace,
+  getRecipeFaces,
   recipeNeedsBackSide,
   type PrintCardSize,
+  type RecipeFace,
   type RecipePrintTemplate,
 } from "@/components/RecipeCardPrint";
 import { CheckIcon, CrownIcon, PrintIcon, SpinnerIcon, XIcon } from "@/components/icons";
@@ -33,7 +36,7 @@ import {
   purchaseRecipePrinterTemplate,
 } from "@/lib/recipePrinterPurchases";
 import { readCurrentPrintJobIds, readPrintJobIds, readQueue } from "@/lib/queue";
-import type { QueueItem } from "@/types/recipe";
+import type { QueueItem, Recipe } from "@/types/recipe";
 import type { CustomerInfo } from "@revenuecat/purchases-js";
 
 const COFFEE_URL = "https://buymeacoffee.com/recipeprinter";
@@ -42,6 +45,92 @@ const POST_PRINT_DIALOG_INTERVAL_MS = 7 * 24 * 60 * 60 * 1000;
 const EMAIL_LINK_STORAGE_KEY = "recipeprinter:purchase-email-link:v1";
 const PENDING_PRINT_STORAGE_KEY = "recipeprinter:pending-premium-print:v1";
 const PRICE_LOOKUP_USER_STORAGE_KEY = "recipeprinter:price-lookup-user:v1";
+
+// Real printed page dimensions in CSS px (96px per inch). The page navigator
+// renders each card at this true size and scales it down with a transform, so
+// thumbnails and the canvas look exactly like the paper, just smaller.
+const PAGE_DIMS: Record<PrintCardSize, { w: number; h: number }> = {
+  letter: { w: 8.5 * 96, h: 11 * 96 },
+  "card-6x4": { w: 6 * 96, h: 4 * 96 },
+};
+
+// Rail thumbnails target a fixed width so they always fit the rail column,
+// regardless of page aspect ratio (letter portrait vs. 6x4 landscape).
+const RAIL_THUMB_WIDTH = 112;
+const RAIL_SCALE: Record<PrintCardSize, number> = {
+  letter: RAIL_THUMB_WIDTH / PAGE_DIMS.letter.w,
+  "card-6x4": RAIL_THUMB_WIDTH / PAGE_DIMS["card-6x4"].w,
+};
+
+// One physical sheet of paper in the navigator. A two-sided sheet keeps a
+// front+back pair (flip to see the back); a single-sided continuation is its
+// own sheet.
+interface PageSheet {
+  id: string;
+  recipe: Recipe;
+  label: string;
+  pageLabel: string;
+  front: RecipeFace;
+  back: RecipeFace | null;
+  flip: boolean;
+  hasBack: boolean;
+  twoSided: boolean;
+  isContinuation: boolean;
+}
+
+/** A single recipe face rendered at true page size, scaled down by `scale`. */
+function ScaledPage({
+  sheet,
+  side,
+  scale,
+  size,
+  template,
+  doubleSided,
+}: {
+  sheet: PageSheet;
+  side: "front" | "back";
+  scale: number;
+  size: PrintCardSize;
+  template: RecipePrintTemplate;
+  doubleSided: boolean;
+}) {
+  const dims = PAGE_DIMS[size];
+  const face = side === "back" && sheet.back ? sheet.back : sheet.front;
+  const isBackContent = sheet.isContinuation || (side === "back" && sheet.back !== null);
+  return (
+    <div
+      className="recipe-page-scaler"
+      style={
+        {
+          "--page-scale": scale,
+          "--page-w": `${dims.w}px`,
+          "--page-h": `${dims.h}px`,
+        } as CSSProperties
+      }
+    >
+      <div className="recipe-page-scaler__inner">
+        <div
+          className={`recipe-print-preview recipe-print-preview--${size}`}
+          data-double-sided={doubleSided ? "true" : "false"}
+        >
+          <div
+            className={`recipe-card-set recipe-card-set--${size} recipe-template--${template}`}
+          >
+            <RecipeCardFace
+              recipe={sheet.recipe}
+              ingredients={face.ingredients}
+              instructions={face.instructions}
+              side={isBackContent ? "back" : "front"}
+              showHeader={!isBackContent}
+              layout={face.layout}
+              hasBackFace={sheet.hasBack}
+            />
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
 
 function shouldShowPostPrintDialog() {
   try {
@@ -131,11 +220,145 @@ export default function PrintPage() {
   const printRequestedRef = useRef(false);
   const autoPrintAttemptedRef = useRef(false);
 
-  const selectedSize = PRINT_CARD_SIZE_OPTIONS.find((option) => option.id === cardSize);
-  const selectedTemplateOption = RECIPE_PRINT_TEMPLATE_OPTIONS.find((option) => option.id === template);
   const hasRecipeBackSide =
     items?.some((item) => item.recipe && recipeNeedsBackSide(item.recipe, cardSize)) ?? false;
   const continueOnBack = hasRecipeBackSide && doubleSided;
+
+  // The physical sheets the printer will produce, in order. Two-sided sheets
+  // keep a flippable front+back; single-sided overflow becomes its own sheet.
+  const sheets = useMemo<PageSheet[]>(() => {
+    const out: PageSheet[] = [];
+    for (const item of items ?? []) {
+      if (!item.recipe) continue;
+      const recipe = item.recipe;
+      const title = recipe.title || "Recipe";
+      const faces = getRecipeFaces(recipe, cardSize);
+      if (continueOnBack) {
+        out.push({
+          id: `${item.id}-sheet`,
+          recipe,
+          label: title,
+          pageLabel: faces.hasBack ? "Front & back" : "One side",
+          front: faces.front,
+          back: faces.back,
+          flip: faces.hasBack,
+          hasBack: faces.hasBack,
+          twoSided: faces.hasBack,
+          isContinuation: false,
+        });
+      } else {
+        out.push({
+          id: `${item.id}-front`,
+          recipe,
+          label: title,
+          pageLabel: faces.hasBack ? "Page 1" : "One page",
+          front: faces.front,
+          back: null,
+          flip: false,
+          hasBack: faces.hasBack,
+          twoSided: false,
+          isContinuation: false,
+        });
+        if (faces.hasBack && faces.back) {
+          out.push({
+            id: `${item.id}-back`,
+            recipe,
+            label: title,
+            pageLabel: "Page 2 · continued",
+            front: faces.back,
+            back: null,
+            flip: false,
+            hasBack: faces.hasBack,
+            twoSided: false,
+            isContinuation: true,
+          });
+        }
+      }
+    }
+    return out;
+  }, [items, cardSize, continueOnBack]);
+
+  const [activeSheetIndex, setActiveSheetIndex] = useState(0);
+  const [canvasSide, setCanvasSide] = useState<"front" | "back">("front");
+  const deckRef = useRef<HTMLDivElement>(null);
+  const slideRefs = useRef<(HTMLDivElement | null)[]>([]);
+  const [deckScale, setDeckScale] = useState(0.5);
+
+  // Keep the active sheet valid as the page list changes (size / two-sided).
+  useEffect(() => {
+    setActiveSheetIndex((index) => Math.min(index, Math.max(0, sheets.length - 1)));
+  }, [sheets.length]);
+
+  // Always start a freshly selected sheet on its front face.
+  useEffect(() => {
+    setCanvasSide("front");
+  }, [activeSheetIndex, continueOnBack]);
+
+  // Scale each deck page to fit the available width while leaving room above
+  // and below so the previous / next pages peek in (implying you can scroll).
+  useEffect(() => {
+    const el = deckRef.current;
+    if (!el) return;
+    const { w: pageW, h: pageH } = PAGE_DIMS[cardSize];
+    const update = () => {
+      const availW = el.clientWidth - 40;
+      const availH = el.clientHeight;
+      if (availW > 0 && availH > 0) {
+        const widthScale = availW / pageW;
+        const heightScale = (availH * 0.74) / pageH;
+        setDeckScale(Math.max(0.12, Math.min(1.05, widthScale, heightScale)));
+      }
+    };
+    update();
+    const observer = new ResizeObserver(update);
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, [cardSize, sheets.length]);
+
+  // Scrolling the deck selects whichever page is closest to the centre.
+  useEffect(() => {
+    const el = deckRef.current;
+    if (!el) return;
+    let raf = 0;
+    const onScroll = () => {
+      cancelAnimationFrame(raf);
+      raf = requestAnimationFrame(() => {
+        const mid = el.scrollTop + el.clientHeight / 2;
+        let best = 0;
+        let bestDist = Number.POSITIVE_INFINITY;
+        slideRefs.current.forEach((slide, index) => {
+          if (!slide) return;
+          const center = slide.offsetTop + slide.offsetHeight / 2;
+          const dist = Math.abs(center - mid);
+          if (dist < bestDist) {
+            bestDist = dist;
+            best = index;
+          }
+        });
+        setActiveSheetIndex(best);
+      });
+    };
+    el.addEventListener("scroll", onScroll, { passive: true });
+    return () => {
+      el.removeEventListener("scroll", onScroll);
+      cancelAnimationFrame(raf);
+    };
+  }, [sheets.length]);
+
+  // Centre the active page when the deck is first laid out or rescaled.
+  useEffect(() => {
+    slideRefs.current[activeSheetIndex]?.scrollIntoView({ block: "center" });
+    // Only re-centre on structural / size changes, not on every selection.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [sheets.length, deckScale, cardSize]);
+
+  const activeSheet = sheets[activeSheetIndex] ?? sheets[0] ?? null;
+
+  function goToSlide(index: number) {
+    setActiveSheetIndex(index);
+    slideRefs.current[index]?.scrollIntoView({ behavior: "smooth", block: "center" });
+  }
+
   const selectedPremiumTemplate = isPremiumTemplate(template) ? template : null;
   const selectedTemplateLocked =
     selectedPremiumTemplate !== null &&
@@ -381,36 +604,118 @@ export default function PrintPage() {
   }
 
   return (
-    <div className="min-h-screen">
+    <div className="min-h-screen recipe-print-page">
       {/* Toolbar, hidden when printing */}
-      <SiteHeader
-        backHref="/"
-        compact
-        sticky
-        actions={
-          <>
-            <span className="text-[0.85rem] text-ink-soft hidden sm:inline">
-              {items.length} {items.length === 1 ? "recipe" : "recipes"}
-            </span>
-            <button
-              onClick={() => void handlePrint()}
-              className="btn btn-primary btn-compact"
-              disabled={purchaseBusy}
-            >
-              {purchaseBusy ? <SpinnerIcon size={16} /> : <PrintIcon size={16} />}
-              {selectedTemplateLocked ? "Unlock & Print" : "Print"}
-            </button>
-          </>
-        }
-      />
+      <SiteHeader backHref="/" compact sticky />
 
       {/* Print preview / printed content */}
       <main className="recipe-print-shell px-cp-6 py-cp-7 print:p-0">
+        {/* Left: page navigator rail (PowerPoint-style) */}
+        <nav
+          className={`recipe-page-rail recipe-page-rail--${cardSize} no-print`}
+          aria-label="Pages"
+        >
+          {sheets.map((sheet, index) => (
+            <button
+              key={sheet.id}
+              type="button"
+              className={`recipe-page-rail__item ${
+                index === activeSheetIndex ? "is-active" : ""
+              }`}
+              aria-current={index === activeSheetIndex}
+              onClick={() => goToSlide(index)}
+            >
+              <span className="recipe-page-rail__num">{index + 1}</span>
+              <span className="recipe-page-rail__thumb">
+                <ScaledPage
+                  sheet={sheet}
+                  side="front"
+                  scale={RAIL_SCALE[cardSize]}
+                  size={cardSize}
+                  template={template}
+                  doubleSided={continueOnBack}
+                />
+              </span>
+              <span className="recipe-page-rail__label">
+                <span className="recipe-page-rail__title">{sheet.label}</span>
+                <span className="recipe-page-rail__meta">
+                  {sheet.pageLabel}
+                  {sheet.twoSided && (
+                    <span className="recipe-page-rail__badge">2-sided</span>
+                  )}
+                </span>
+              </span>
+            </button>
+          ))}
+        </nav>
+
+        {/* Center: large preview of the selected page */}
+        <section className="recipe-page-canvas no-print" aria-label="Selected page">
+          {activeSheet?.flip && (
+            <div className="recipe-card-side-nav recipe-page-canvas__flip" aria-label="Sheet sides">
+              <button
+                type="button"
+                className="recipe-card-side-nav__button"
+                aria-label="Show front"
+                disabled={canvasSide === "front"}
+                onClick={() => setCanvasSide("front")}
+              >
+                ←
+              </button>
+              <span>{canvasSide === "front" ? "Front" : "Back"}</span>
+              <button
+                type="button"
+                className="recipe-card-side-nav__button"
+                aria-label="Show back"
+                disabled={canvasSide === "back"}
+                onClick={() => setCanvasSide("back")}
+              >
+                →
+              </button>
+            </div>
+          )}
+          <div className="recipe-page-deck" ref={deckRef}>
+            {sheets.map((sheet, index) => (
+              <div
+                key={sheet.id}
+                ref={(el) => {
+                  slideRefs.current[index] = el;
+                }}
+                className={`recipe-page-slide ${
+                  index === activeSheetIndex ? "is-active" : ""
+                }`}
+                onClick={() => goToSlide(index)}
+                role="button"
+                tabIndex={0}
+                aria-current={index === activeSheetIndex}
+                aria-label={`${sheet.label} (${sheet.pageLabel})`}
+                onKeyDown={(event) => {
+                  if (event.key === "Enter" || event.key === " ") {
+                    event.preventDefault();
+                    goToSlide(index);
+                  }
+                }}
+              >
+                <ScaledPage
+                  sheet={sheet}
+                  side={index === activeSheetIndex ? canvasSide : "front"}
+                  scale={deckScale}
+                  size={cardSize}
+                  template={template}
+                  doubleSided={continueOnBack}
+                />
+              </div>
+            ))}
+          </div>
+        </section>
+
+        {/* Right: print setup */}
         <aside className="recipe-config-panel no-print" aria-label="Recipe print settings">
           <div className="recipe-config-panel__header">
             <h2 className="text-[0.95rem] font-extrabold tracking-[-0.02em]">Print setup</h2>
           </div>
 
+          <div className="recipe-config-panel__scroll">
           <div className="recipe-config-section">
             <label className="recipe-config-label" htmlFor="recipe-print-size">
               Size
@@ -523,14 +828,22 @@ export default function PrintPage() {
               })}
             </div>
           </div>
+          </div>
+
+          <div className="recipe-config-panel__footer">
+            <button
+              onClick={() => void handlePrint()}
+              className="btn btn-primary recipe-print-button"
+              disabled={purchaseBusy}
+            >
+              {purchaseBusy ? <SpinnerIcon size={16} /> : <PrintIcon size={16} />}
+              {selectedTemplateLocked ? "Unlock & Print" : "Print"}
+            </button>
+          </div>
         </aside>
 
-        <div className="recipe-print-stage">
-          {shouldPrint && (
-            <p className="no-print text-center text-[0.8rem] text-ink-soft mb-cp-6">
-              The print dialog opens automatically. Each recipe prints as its own {selectedSize?.label ?? "recipe card"}.
-            </p>
-          )}
+        {/* Hidden source that produces the actual printed pages. */}
+        <div className="recipe-print-source" aria-hidden>
           <div
             className={`recipe-print-preview recipe-print-preview--${cardSize} ${
               showCutLines ? "recipe-print-preview--cut-lines" : ""
@@ -620,7 +933,7 @@ export default function PrintPage() {
             >
               <XIcon size={16} />
             </button>
-            <h2 id="recipeprinter-unlock-title">Unlock {selectedTemplateOption?.label ?? "this template"}?</h2>
+            <h2 id="recipeprinter-unlock-title">Unlock this template?</h2>
             <p>
               You&apos;re logged in as <strong>{accountLabelFor(user)}</strong>. This purchase will
               be saved to that account so you can print with this template again.
