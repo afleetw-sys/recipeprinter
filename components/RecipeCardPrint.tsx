@@ -25,10 +25,10 @@ export const RECIPE_PRINT_TEMPLATE_OPTIONS: Array<{
   detail: string;
 }> = [
   { id: "classic", label: "Classic", detail: "Bright blue, clean cookbook card" },
-  { id: "heirloom", label: "Heirloom", detail: "Cream stock, red utensil keepsake" },
-  { id: "bistro", label: "Bistro", detail: "Blue checks, tomato red, playful kitchen card" },
   { id: "pantry", label: "Pantry", detail: "Fine ruled lines with small ingredient sketches" },
   { id: "counter", label: "Counter", detail: "Black-and-white notes with tiny counter details" },
+  { id: "heirloom", label: "Heirloom", detail: "Cream stock, red utensil keepsake" },
+  { id: "bistro", label: "Bistro", detail: "Blue checks, tomato red, playful kitchen card" },
 ];
 
 const FRONT_SECTION_BUDGET: Record<
@@ -192,6 +192,11 @@ function splitRecipe(recipe: Recipe, size: PrintCardSize): SplitRecipeResult {
     frontLayout: "standard",
     backLayout: "standard",
   };
+}
+
+export function recipeNeedsBackSide(recipe: Recipe, size: PrintCardSize): boolean {
+  const { backIngredients, backInstructions } = splitRecipe(recipe, size);
+  return backIngredients.length > 0 || backInstructions.length > 0;
 }
 
 function RecipeCardFace({

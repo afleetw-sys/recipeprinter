@@ -9,6 +9,7 @@ import {
   type User,
 } from "firebase/auth";
 import { getFirebaseAuth } from "@/lib/firebase/client";
+import { friendlyAuthError, friendlyRecipeLibraryError } from "@/lib/friendlyErrors";
 import {
   cookPilotQueueId,
   filterCookPilotSummaries,
@@ -81,7 +82,7 @@ function LoginDialog({
       await signInWithPopup(getFirebaseAuth(), googleProvider);
       onClose();
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Couldn't sign in with Google.");
+      setError(friendlyAuthError(err, "We couldn't sign in with Google. Please try again."));
     } finally {
       setBusy(false);
     }
@@ -102,12 +103,7 @@ function LoginDialog({
       await signInWithEmailAndPassword(getFirebaseAuth(), normalizedEmail, password);
       onClose();
     } catch (err) {
-      const code = (err as { code?: string }).code ?? "";
-      if (code.includes("invalid-credential") || code.includes("wrong-password")) {
-        setError("That email or password didn't match a CookPilot account.");
-      } else {
-        setError(err instanceof Error ? err.message : "Couldn't sign in.");
-      }
+      setError(friendlyAuthError(err, "We couldn't sign in. Please try again."));
     } finally {
       setBusy(false);
     }
@@ -360,7 +356,7 @@ function SignedInCookPilotImport({
       })
       .catch((err) => {
         if (alive) {
-          setError(err instanceof Error ? err.message : "Couldn't load your recipes.");
+          setError(friendlyRecipeLibraryError(err, "Couldn't load your recipes."));
         }
       })
       .finally(() => {
@@ -384,7 +380,7 @@ function SignedInCookPilotImport({
       const queueItems = await loadCookPilotQueueItems(user.uid, [summary]);
       onAddRecipes(queueItems);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Couldn't add that recipe.");
+      setError(friendlyRecipeLibraryError(err, "Couldn't add that recipe."));
     } finally {
       setAddingIds((current) => {
         const next = new Set(current);
@@ -407,7 +403,7 @@ function SignedInCookPilotImport({
       const queueItems = await loadCookPilotQueueItems(user.uid, visibleNotAdded);
       onAddRecipes(queueItems);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Couldn't add those recipes.");
+      setError(friendlyRecipeLibraryError(err, "Couldn't add those recipes."));
     } finally {
       setBulkBusy(false);
     }

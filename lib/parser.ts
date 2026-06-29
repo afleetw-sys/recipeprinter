@@ -50,6 +50,9 @@ function friendlyError(err: unknown, fallback: string): Error {
   if (code.includes("deadline-exceeded")) {
     return new Error("The parser timed out. Please try again.");
   }
+  if (/firebase|functions\/|app check|appcheck|auth\/|permission-denied|internal|stack|api key/i.test(message)) {
+    return new Error(fallback);
+  }
   return new Error(message || fallback);
 }
 

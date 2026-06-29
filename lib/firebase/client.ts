@@ -32,9 +32,7 @@ let appInstance: FirebaseApp | null = null;
 export function getFirebaseApp(): FirebaseApp {
   if (appInstance) return appInstance;
   if (!firebaseConfigured()) {
-    throw new Error(
-      "Firebase isn't configured. Set the NEXT_PUBLIC_FIREBASE_* env vars to use CookPilot features.",
-    );
+    throw new Error("Recipe import and account features are temporarily unavailable.");
   }
   appInstance = getApps().length > 0 ? getApp() : initializeApp(firebaseConfig);
   return appInstance;
