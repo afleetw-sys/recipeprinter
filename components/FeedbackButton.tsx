@@ -40,9 +40,14 @@ function pageContext() {
   };
 }
 
-export function FeedbackButton() {
-  const [open, setOpen] = useState(false);
-  const [type, setType] = useState<FeedbackType>("idea");
+type FeedbackDialogProps = {
+  open: boolean;
+  onClose: () => void;
+  initialType?: FeedbackType;
+};
+
+export function FeedbackDialog({ open, onClose, initialType = "idea" }: FeedbackDialogProps) {
+  const [type, setType] = useState<FeedbackType>(initialType);
   const [message, setMessage] = useState("");
   const [email, setEmail] = useState("");
   const [busy, setBusy] = useState(false);
@@ -56,16 +61,24 @@ export function FeedbackButton() {
     if (!open) return;
 
     function onKeyDown(event: KeyboardEvent) {
-      if (event.key === "Escape") setOpen(false);
+      if (event.key === "Escape") onClose();
     }
 
     document.addEventListener("keydown", onKeyDown);
     return () => document.removeEventListener("keydown", onKeyDown);
-  }, [open]);
+  }, [onClose, open]);
+
+  useEffect(() => {
+    if (!open) return;
+
+    setSent(false);
+    setError(null);
+    setType(initialType);
+  }, [initialType, open]);
 
   function close() {
     if (busy) return;
-    setOpen(false);
+    onClose();
   }
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
@@ -91,7 +104,7 @@ export function FeedbackButton() {
       setSent(true);
       setMessage("");
       setEmail("");
-      setType("idea");
+      setType(initialType);
     } catch {
       setError("Couldn't send feedback. Please try again in a minute.");
     } finally {
@@ -101,18 +114,6 @@ export function FeedbackButton() {
 
   return (
     <>
-      <button
-        type="button"
-        className="text-[0.9rem] font-semibold text-ink-soft hover:text-ink transition-colors"
-        onClick={() => {
-          setOpen(true);
-          setSent(false);
-          setError(null);
-        }}
-      >
-        Give feedback
-      </button>
-
       {open && (
         <div
           className="fixed inset-0 z-50 flex items-center justify-center bg-ink/30 px-cp-4 py-cp-6"
@@ -216,6 +217,30 @@ export function FeedbackButton() {
           </div>
         </div>
       )}
+    </>
+  );
+}
+
+type FeedbackButtonProps = {
+  label?: string;
+  className?: string;
+  initialType?: FeedbackType;
+};
+
+export function FeedbackButton({
+  label = "Give feedback",
+  className = "text-[0.9rem] font-semibold text-ink-soft hover:text-ink transition-colors",
+  initialType,
+}: FeedbackButtonProps) {
+  const [open, setOpen] = useState(false);
+
+  return (
+    <>
+      <button type="button" className={className} onClick={() => setOpen(true)}>
+        {label}
+      </button>
+
+      <FeedbackDialog open={open} onClose={() => setOpen(false)} initialType={initialType} />
     </>
   );
 }

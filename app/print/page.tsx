@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { SiteHeader } from "@/components/SiteHeader";
+import { FeedbackDialog } from "@/components/FeedbackButton";
 import RecipeCardPrint, {
   PRINT_CARD_SIZE_OPTIONS,
   RECIPE_PRINT_TEMPLATE_OPTIONS,
@@ -15,6 +16,25 @@ import { readCurrentPrintJobIds, readPrintJobIds, readQueue } from "@/lib/queue"
 import type { QueueItem } from "@/types/recipe";
 
 const COFFEE_URL = "https://buymeacoffee.com/recipeprinter";
+const POST_PRINT_DIALOG_STORAGE_KEY = "recipeprinter:post-print-dialog:last-shown:v1";
+const POST_PRINT_DIALOG_INTERVAL_MS = 7 * 24 * 60 * 60 * 1000;
+
+function shouldShowPostPrintDialog() {
+  try {
+    const lastShown = Number(window.localStorage.getItem(POST_PRINT_DIALOG_STORAGE_KEY));
+    return !lastShown || Date.now() - lastShown >= POST_PRINT_DIALOG_INTERVAL_MS;
+  } catch {
+    return true;
+  }
+}
+
+function markPostPrintDialogShown() {
+  try {
+    window.localStorage.setItem(POST_PRINT_DIALOG_STORAGE_KEY, String(Date.now()));
+  } catch {
+    /* Ignore storage failures; the dialog can still be dismissed normally. */
+  }
+}
 
 function isPrintCardSize(value: string | null): value is PrintCardSize {
   return PRINT_CARD_SIZE_OPTIONS.some((option) => option.id === value);
@@ -47,6 +67,7 @@ export default function PrintPage() {
   const [doubleSided, setDoubleSided] = useState(true);
   const [showCutLines, setShowCutLines] = useState(true);
   const [showDonateDialog, setShowDonateDialog] = useState(false);
+  const [showFeedbackDialog, setShowFeedbackDialog] = useState(false);
   const printRequestedRef = useRef(false);
 
   const selectedSize = PRINT_CARD_SIZE_OPTIONS.find((option) => option.id === cardSize);
@@ -84,6 +105,9 @@ export default function PrintPage() {
     function handleAfterPrint() {
       if (!printRequestedRef.current) return;
       printRequestedRef.current = false;
+      if (!shouldShowPostPrintDialog()) return;
+
+      markPostPrintDialogShown();
       window.setTimeout(() => setShowDonateDialog(true), 150);
     }
 
@@ -287,8 +311,7 @@ export default function PrintPage() {
             </div>
             <h2 id="print-success-title">Ready for your counter, binder, or fridge door.</h2>
             <p>
-              If RecipePrinter helped today, consider supporting the site and future
-              improvements.
+              Support and feedback help me make RecipePrinter better.
             </p>
             <div className="print-success-dialog__actions">
               <a
@@ -302,14 +325,22 @@ export default function PrintPage() {
               <button
                 type="button"
                 className="btn btn-ghost"
-                onClick={() => setShowDonateDialog(false)}
+                onClick={() => {
+                  setShowDonateDialog(false);
+                  setShowFeedbackDialog(true);
+                }}
               >
-                Maybe later
+                Leave feedback
               </button>
             </div>
           </div>
         </div>
       )}
+      <FeedbackDialog
+        open={showFeedbackDialog}
+        onClose={() => setShowFeedbackDialog(false)}
+        initialType="print_issue"
+      />
     </div>
   );
 }
