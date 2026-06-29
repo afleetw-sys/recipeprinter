@@ -88,7 +88,7 @@ export default function OpengraphImage() {
             maxWidth: "920px",
           }}
         >
-          Turn recipe URLs into printable recipe cards and PDFs.
+          Turn web and social recipe links into printable recipe cards and PDFs.
         </div>
       </div>
     ),

@@ -21,17 +21,17 @@ export const SITE_URL = (
 export const SITE_NAME = "RecipePrinter";
 
 /** The phrase we most want to own. Used in titles and the WebApplication name. */
-export const SITE_TAGLINE = "Print any recipe without the clutter";
+export const SITE_TAGLINE = "Print recipes from web and social URLs";
 
 /**
  * Primary meta description. Written to read naturally to a human in a search
- * result while covering the core intents: print a recipe from a website/URL,
- * turn online recipes into a clean printable page/PDF, no ads.
+ * result while covering the core intents: print a recipe from a website,
+ * blog, or social URL; turn online recipes into a clean printable page/PDF;
+ * no ads.
  */
 export const SITE_DESCRIPTION =
-  "RecipePrinter turns any online recipe into a clean, printable page in seconds. " +
-  "Paste a recipe URL, upload a photo, or paste recipe text and print it without ads, " +
-  "pop-ups, or life stories. You can also save it as a PDF. Print multiple recipes at once.";
+  "Paste a recipe URL from a website, blog, or social post and RecipePrinter turns it " +
+  "into a clean printable recipe card, page, or PDF without ads, pop-ups, or clutter.";
 
 /**
  * Search intents we want the product to be the natural answer for. These are
@@ -44,6 +44,10 @@ export const SITE_KEYWORDS = [
   "print recipe online",
   "print recipe from website",
   "print recipe from URL",
+  "print recipe from social media",
+  "print recipe from social URL",
+  "print recipe from Instagram",
+  "print recipe from TikTok",
   "convert online recipes to printable",
   "printable recipe",
   "print recipe without ads",
@@ -133,9 +137,10 @@ export const FAQ: FaqItem[] = [
   {
     question: "How do I print an online recipe without ads?",
     answer:
-      "Paste the recipe's web address into RecipePrinter and we pull out just the title, " +
-      "ingredients, and steps, leaving behind the ads, pop-ups, comments, and the long " +
-      "story above the recipe. You get a clean, letter-size page you can print or save as a PDF.",
+      "Paste the recipe's web or social URL into RecipePrinter and we pull out just the " +
+      "title, ingredients, and steps, leaving behind the ads, pop-ups, comments, and the " +
+      "long story above the recipe. You get a clean, letter-size page you can print or " +
+      "save as a PDF.",
   },
   {
     question: "Can I print recipes from any website?",
@@ -143,6 +148,13 @@ export const FAQ: FaqItem[] = [
       "Yes. RecipePrinter works with recipes from across the web: paste the URL from almost " +
       "any cooking site and we convert the online recipe into a printable page. If a site is " +
       "unusual, you can also paste the recipe text directly or upload a photo of it.",
+  },
+  {
+    question: "Can I print recipes from social media links?",
+    answer:
+      "Yes. Paste a recipe URL from a website, food blog, or supported social post and " +
+      "RecipePrinter will try to turn it into a clean printable recipe card or page. If " +
+      "a link does not import cleanly, you can paste the recipe text or upload a screenshot instead.",
   },
   {
     question: "Can I print multiple recipes at once?",
@@ -196,7 +208,8 @@ export function webApplicationJsonLd() {
       priceCurrency: "USD",
     },
     featureList: [
-      "Print recipes from a website URL",
+      "Print recipes from web and social URLs",
+      "Turn recipe links into printable recipe cards and PDFs",
       "Convert online recipes to a clean printable page",
       "Print recipes without ads or pop-ups",
       "Save recipes as a PDF",

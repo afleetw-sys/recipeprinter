@@ -6,7 +6,12 @@ const FAQ = [
   {
     question: "Can I print recipes from any website?",
     answer:
-      "Usually, yes. Paste a recipe URL from a recipe website or food blog and RecipePrinter will turn it into a clean printable recipe card or page. If a site does not import cleanly, you can paste the recipe text directly or upload a screenshot instead.",
+      "Usually, yes. Paste a recipe URL from a recipe website, food blog, or supported social post and RecipePrinter will turn it into a clean printable recipe card or page. If a site does not import cleanly, you can paste the recipe text directly or upload a screenshot instead.",
+  },
+  {
+    question: "Can I print recipes from social media links?",
+    answer:
+      "Yes. Paste a recipe URL from a website, food blog, or supported social post and RecipePrinter will try to turn it into a clean printable recipe card or page. If a link does not import cleanly, you can paste the recipe text or upload a screenshot instead.",
   },
   {
     question: "Can I print recipes without ads?",
@@ -62,7 +67,7 @@ const FAQ = [
 export const metadata: Metadata = pageMetadata({
   title: "FAQ",
   description:
-    "Answers about printing recipes from websites, removing ads, saving recipes as PDFs, printing from screenshots and photos, using CookPilot, and RecipePrinter privacy.",
+    "Answers about printing recipes from web and social URLs, removing ads, saving recipes as PDFs, screenshots, photos, CookPilot, and RecipePrinter privacy.",
   path: "/faq",
 });
 
@@ -76,7 +81,7 @@ export default function FaqPage() {
 
       <PageHeader
         title="Frequently asked questions"
-        lede="Answers about printing recipes from websites, screenshots, photos, and text without the ads, clutter, or wasted pages."
+        lede="Answers about printing recipes from web and social URLs, screenshots, photos, and text without the ads, clutter, or wasted pages."
       />
 
       <dl className="flex flex-col gap-cp-4">

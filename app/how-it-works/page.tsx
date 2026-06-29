@@ -12,7 +12,7 @@ import { pageMetadata } from "@/lib/seo";
 export const metadata: Metadata = pageMetadata({
   title: "How RecipePrinter Works",
   description:
-    "Print recipes from websites, screenshots, photos, or pasted text. RecipePrinter turns recipe URLs into clean printable recipe cards and PDFs with no ads or clutter.",
+    "Paste a recipe URL from a website, blog, or social post. RecipePrinter turns it into a clean printable recipe card or PDF with no ads or clutter.",
   path: "/how-it-works",
 });
 
@@ -26,7 +26,7 @@ const SOURCES: Source[] = [
   {
     icon: LinkIcon,
     label: "Paste a recipe URL",
-    body: "Paste a link from a recipe website or food blog and RecipePrinter pulls out the recipe so you can print it without the ads, pop-ups, or extra pages.",
+    body: "Paste a link from a recipe website, food blog, or supported social post and RecipePrinter pulls out the recipe so you can print it without the ads, pop-ups, or extra pages.",
   },
   {
     icon: ImageIcon,
@@ -50,7 +50,7 @@ export default function HowItWorksPage() {
     <PageShell>
       <PageHeader
         title="From recipe link to printed recipe card"
-        lede="RecipePrinter turns recipes from websites, screenshots, photos, and text into clean printable recipe cards and PDFs you can actually cook from."
+        lede="RecipePrinter turns recipes from web and social URLs, screenshots, photos, and text into clean printable recipe cards and PDFs you can actually cook from."
       />
 
       <div className="flex flex-col gap-cp-7">

@@ -6,16 +6,16 @@ import { pageMetadata } from "@/lib/seo";
 export const metadata: Metadata = pageMetadata({
   title: "About RecipePrinter",
   description:
-    "Learn why I built RecipePrinter, a free tool for printing recipes from websites as clean recipe cards and PDFs without ads, clutter, or wasted pages.",
+    "Learn why I built RecipePrinter, a free tool for printing recipes from web and social URLs as clean recipe cards and PDFs without ads or clutter.",
   path: "/about",
 });
 
 export default function AboutPage() {
   return (
     <PageShell>
-<PageHeader
+      <PageHeader
         title="Why I made RecipePrinter"
-        lede="A simple tool for turning recipes from websites, screenshots, and text into clean printable recipe cards and PDFs."
+        lede="A simple tool for turning recipes from web and social URLs, screenshots, and text into clean printable recipe cards and PDFs."
       />
       <div className="flex flex-col gap-cp-5 text-ink-soft leading-relaxed">
         <p>
@@ -44,10 +44,11 @@ export default function AboutPage() {
           <span className="font-semibold text-ink">
             RecipePrinter fixes that.
           </span>{" "}
-          Paste a recipe URL, upload a screenshot or photo, paste recipe text,
-          or import directly from CookPilot and we&apos;ll turn it into a clean
-          printable recipe card, recipe page, or PDF containing just the recipe:
-          title, ingredients, instructions, and notes.
+          Paste a recipe URL from a website, blog, or supported social post,
+          upload a screenshot or photo, paste recipe text, or import directly
+          from CookPilot and we&apos;ll turn it into a clean printable recipe
+          card, recipe page, or PDF containing just the recipe: title,
+          ingredients, instructions, and notes.
         </p>
 
         <p>

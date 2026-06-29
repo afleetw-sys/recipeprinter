@@ -34,7 +34,7 @@ export default function Home() {
                 Print the recipes worth making again.
               </h1>
               <p className="mt-cp-3 text-ink-soft text-[1.02rem] leading-relaxed">
-                Turn any recipe into printable recipe card for your kitchen.
+                Turn web and social recipe links into printable recipe cards for your kitchen.
               </p>
             </div>
           </div>

@@ -14,7 +14,7 @@ import { pageMetadata } from "@/lib/seo";
 export const metadata: Metadata = pageMetadata({
   title: "Features",
   description:
-    "Print recipes from websites, photos, screenshots, and pasted text. RecipePrinter turns recipes into clean printable recipe cards, pages, and PDFs with no ads or clutter.",
+    "Print recipes from web and social URLs, photos, screenshots, and pasted text. RecipePrinter turns recipes into clean printable cards, pages, and PDFs with no ads or clutter.",
   path: "/features",
 });
 
@@ -27,8 +27,8 @@ type Feature = {
 const FEATURES: Feature[] = [
   {
     icon: LinkIcon,
-    title: "Print recipes from websites",
-    body: "Paste a recipe URL from a food blog or recipe website and RecipePrinter turns it into a clean printable recipe card or page without the ads, pop-ups, or extra clutter.",
+    title: "Print recipes from web and social URLs",
+    body: "Paste a recipe URL from a food blog, recipe website, or supported social post and RecipePrinter turns it into a clean printable recipe card or page without the ads, pop-ups, or extra clutter.",
   },
   {
     icon: ImageIcon,
@@ -62,7 +62,7 @@ export default function FeaturesPage() {
     <PageShell>
       <PageHeader
         title="Everything you need to print recipes worth keeping"
-        lede="RecipePrinter turns recipe URLs, photos, screenshots, and text into clean printable recipe cards, recipe pages, and PDFs you can actually cook from."
+        lede="RecipePrinter turns web and social recipe links, photos, screenshots, and text into clean printable recipe cards, recipe pages, and PDFs you can actually cook from."
       />
 
       <ul className="grid gap-cp-4 sm:grid-cols-2">
