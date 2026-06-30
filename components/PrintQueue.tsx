@@ -97,7 +97,7 @@ function RecipeCardItem({
 
           {/* Selection check */}
           {selected && (
-            <span className="absolute bottom-2 right-2 grid place-items-center w-7 h-7 rounded-full bg-brand text-ink">
+            <span className="absolute bottom-2 right-2 grid place-items-center w-7 h-7 rounded-full bg-brand-100 text-brand-ink">
               <CheckIcon size={16} />
             </span>
           )}

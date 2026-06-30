@@ -261,7 +261,7 @@ function RecipeRow({
       }
       className={`group flex w-full items-center gap-cp-3 rounded-xl border p-cp-2 text-left transition-colors ${
         added
-          ? "border-emerald-200 bg-emerald-50/40"
+          ? "border-brand bg-brand-50/60"
           : "border-line bg-card hover:border-line-strong"
       }`}
     >
@@ -301,7 +301,7 @@ function RecipeRow({
       </div>
 
       {added ? (
-        <span className="inline-flex flex-shrink-0 items-center justify-center rounded-lg bg-emerald-50 px-2.5 py-1.5 text-emerald-700">
+        <span className="inline-flex flex-shrink-0 items-center justify-center rounded-lg bg-brand-50 px-2.5 py-1.5 text-brand-ink">
           <CheckIcon size={16} />
         </span>
       ) : (

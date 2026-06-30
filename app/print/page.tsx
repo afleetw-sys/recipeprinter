@@ -547,8 +547,12 @@ export default function PrintPage() {
 
   useEffect(() => {
     if (!user) return;
+    // Background refresh: prime entitlements so owned templates show as owned.
+    // Failures here are silent on purpose — the user only needs to hear about a
+    // problem if they actually try to unlock/print a premium template, which is
+    // handled with a clear toast in unlockTemplateAndPrint.
     refreshCustomerInfo(user).catch((error) => {
-      showToast(friendlyPurchaseError(error));
+      console.warn("RecipePrinter: could not refresh customer info", error);
     });
   }, [user?.uid]);
 
@@ -839,7 +843,6 @@ export default function PrintPage() {
                 />
                 <span>
                   <strong>Recipe photo</strong>
-                  <small>Add the recipe&apos;s photo to the card header when one is available.</small>
                 </span>
               </label>
             </div>
@@ -911,7 +914,7 @@ export default function PrintPage() {
 
           <div className="recipe-config-panel__footer">
             <p className="recipe-print-tip">
-              Print one recipe first to check layout and two-sided alignment before running the full batch.
+              Tip: print one recipe first to check the layout.
             </p>
             <button
               onClick={() => void handlePrint()}
