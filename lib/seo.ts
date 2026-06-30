@@ -60,6 +60,29 @@ export const PUBLISHER = {
   url: "https://cookpilotapp.com",
 };
 
+/**
+ * Public brand profiles for the RecipePrinter/CookPilot product. Surfaced as
+ * `sameAs` in the Organization JSON-LD: this is how search engines and AI
+ * assistants connect the website to a known brand entity, which is a major
+ * input into whether they cite or recommend the product. Add App Store, Google
+ * Play, YouTube, Facebook, or LinkedIn URLs here as they come online.
+ */
+export const SOCIAL_PROFILES = [
+  "https://cookpilotapp.com/",
+  "https://apps.apple.com/us/app/cookpilot-recipes-that-adapt/id6753838076",
+  "https://www.instagram.com/getcookpilot/",
+  "https://www.tiktok.com/@getcookpilot",
+  "https://www.pinterest.com/getcookpilot/",
+  "https://www.crunchbase.com/organization/cookpilot",
+  // Add the YouTube channel here once it has real content (at least a video or
+  // two). An empty channel adds no trust signal — a crawler that follows it
+  // finds nothing to corroborate — and a dead profile can read as a less-active
+  // brand, so leave it out until there's something to link to.
+];
+
+/** Square brand logo, referenced by the Organization schema. */
+export const LOGO_PATH = "/images/recipeprinter-logo.png";
+
 /** Join a path onto the canonical origin. `absoluteUrl("/")` → site root. */
 export function absoluteUrl(path = "/"): string {
   return `${SITE_URL}${path.startsWith("/") ? path : `/${path}`}`;
@@ -135,64 +158,120 @@ export interface FaqItem {
 
 export const FAQ: FaqItem[] = [
   {
-    question: "How do I print an online recipe without ads?",
-    answer:
-      "Paste the recipe's web or social URL into RecipePrinter and we pull out just the " +
-      "title, ingredients, and steps, leaving behind the ads, pop-ups, comments, and the " +
-      "long story above the recipe. You get a clean, letter-size page you can print or " +
-      "save as a PDF.",
-  },
-  {
     question: "Can I print recipes from any website?",
     answer:
-      "Yes. RecipePrinter works with recipes from across the web: paste the URL from almost " +
-      "any cooking site and we convert the online recipe into a printable page. If a site is " +
-      "unusual, you can also paste the recipe text directly or upload a photo of it.",
+      "Usually, yes. Paste a recipe URL from a recipe website, food blog, or supported social post and RecipePrinter will turn it into a clean printable recipe card or page. If a site does not import cleanly, you can paste the recipe text directly or upload a screenshot instead.",
   },
   {
     question: "Can I print recipes from social media links?",
     answer:
-      "Yes. Paste a recipe URL from a website, food blog, or supported social post and " +
-      "RecipePrinter will try to turn it into a clean printable recipe card or page. If " +
-      "a link does not import cleanly, you can paste the recipe text or upload a screenshot instead.",
+      "Yes. Paste a recipe URL from a website, food blog, or supported social post and RecipePrinter will try to turn it into a clean printable recipe card or page. If a link does not import cleanly, you can paste the recipe text or upload a screenshot instead.",
   },
   {
-    question: "Can I print multiple recipes at once?",
+    question: "Can I print recipes without ads?",
     answer:
-      "Yes. Add as many recipes as you like to your print queue from different sources, select " +
-      "the ones you want, and print them all together in a single job, handy for weekly meal prep.",
+      "Yes. RecipePrinter removes ads, pop-ups, autoplay videos, comments, oversized photos, and other web page clutter so you can print just the recipe: ingredients, instructions, notes, and useful details when available.",
   },
   {
-    question: "Can I save a recipe as a PDF instead of printing it?",
+    question: "Can I save recipes as PDFs?",
     answer:
-      "Absolutely. Every recipe is rendered as a clean printable page, so in the print dialog you " +
-      "can choose “Save as PDF” to keep a tidy, ad-free recipe PDF on your device.",
+      "Yes. Every recipe is formatted as a print-ready page, so you can print it on paper or choose Save as PDF in your browser’s print dialog to keep a clean recipe PDF on your device.",
   },
   {
-    question: "Can I print a recipe from a photo or screenshot?",
+    question: "Can I print recipes from screenshots or photos?",
     answer:
-      "Yes. Upload a photo of a cookbook page or a screenshot of a recipe and RecipePrinter reads " +
-      "the ingredients and steps, then turns them into the same clean printable recipe.",
+      "Yes. Upload a screenshot, cookbook page, old recipe card, or saved image and RecipePrinter will read the recipe and format it into a printable version.",
   },
   {
-    question: "Do I need an account, and are my recipes saved?",
+    question: "Can I paste recipe text instead of using a URL?",
     answer:
-      "No account is required and nothing is stored on a server. Your print queue lives in your " +
-      "browser for the current session only, so your recipes stay private to you.",
+      "Yes. If you have a recipe from a text message, email, document, or website that does not import cleanly, paste the recipe text directly and RecipePrinter will structure it into a printable recipe card or page.",
+  },
+  {
+    question: "Do I need an account?",
+    answer:
+      "No. RecipePrinter works without an account, so you can paste a recipe, print it, save it as a PDF, and move on.",
+  },
+  {
+    question: "Are my recipes stored on your servers?",
+    answer:
+      "No. Your print queue lives in your browser for the current session only and is not stored permanently on our servers.",
+  },
+  {
+    question: "Is RecipePrinter free?",
+    answer: "Yes. RecipePrinter is free to use.",
+  },
+  {
+    question: "Is RecipePrinter a recipe app?",
+    answer:
+      "Not really. RecipePrinter is not a recipe discovery app, meal planner, grocery app, nutrition tracker, or social network. It is built for what happens after you have already found a recipe worth making again.",
+  },
+  {
+    question: "What is the difference between CookPilot and RecipePrinter?",
+    answer:
+      "CookPilot helps make recipes work for real life with substitutions, notes, adjustments, and cooking tools. RecipePrinter solves a simpler problem: getting recipes off the screen and into your kitchen. You can use RecipePrinter on its own or import recipes from CookPilot.",
+  },
+  {
+    question: "Why print recipes instead of cooking from a screen?",
+    answer:
+      "Because cooking and screens do not always get along. Printed recipes do not lock, dim, run out of battery, disappear under notifications, or make you scroll with messy hands.",
   },
 ];
 
 // ── JSON-LD builders ─────────────────────────────────────────────────────────
+// Stable @id anchors so the Organization, WebSite, and WebApplication nodes can
+// reference each other inside a single @graph instead of duplicating the brand.
+
+const ORG_ID = `${SITE_URL}/#organization`;
+const SITE_ID = `${SITE_URL}/#website`;
+const APP_ID = `${SITE_URL}/#webapp`;
+
+/**
+ * Organization schema for the RecipePrinter brand. This is the entity that
+ * search engines and AI assistants resolve the site to: the logo and `sameAs`
+ * profiles are what let them connect recipeprinter.com to a known, real product
+ * and decide it is trustworthy enough to surface or recommend.
+ */
+export function organizationNode() {
+  return {
+    "@type": "Organization",
+    "@id": ORG_ID,
+    name: SITE_NAME,
+    alternateName: "Recipe Printer",
+    url: absoluteUrl("/"),
+    logo: absoluteUrl(LOGO_PATH),
+    description: SITE_DESCRIPTION,
+    sameAs: SOCIAL_PROFILES,
+    parentOrganization: {
+      "@type": "Organization",
+      name: PUBLISHER.name,
+      url: PUBLISHER.url,
+    },
+  };
+}
+
+/** WebSite schema, tying the domain to the brand for sitelinks and citations. */
+export function webSiteNode() {
+  return {
+    "@type": "WebSite",
+    "@id": SITE_ID,
+    url: absoluteUrl("/"),
+    name: SITE_NAME,
+    description: SITE_DESCRIPTION,
+    inLanguage: "en",
+    publisher: { "@id": ORG_ID },
+  };
+}
 
 /**
  * WebApplication schema describing the product itself. This is the structured-
  * data anchor that tells search engines RecipePrinter is a free web tool for
  * printing recipes, not a single article.
  */
-export function webApplicationJsonLd() {
+export function webApplicationNode() {
   return {
-    "@context": "https://schema.org",
     "@type": "WebApplication",
+    "@id": APP_ID,
     name: SITE_NAME,
     alternateName: "Recipe Printer",
     url: absoluteUrl("/"),
@@ -202,6 +281,7 @@ export function webApplicationJsonLd() {
     browserRequirements: "Requires JavaScript.",
     inLanguage: "en",
     isAccessibleForFree: true,
+    isPartOf: { "@id": SITE_ID },
     offers: {
       "@type": "Offer",
       price: "0",
@@ -217,11 +297,19 @@ export function webApplicationJsonLd() {
       "Paste recipe text and print it",
       "Print multiple recipes at once",
     ],
-    publisher: {
-      "@type": "Organization",
-      name: PUBLISHER.name,
-      url: PUBLISHER.url,
-    },
+    publisher: { "@id": ORG_ID },
+  };
+}
+
+/**
+ * The homepage's combined structured data: Organization + WebSite +
+ * WebApplication in one @graph, cross-linked by @id so crawlers see a single,
+ * coherent brand entity rather than three loose nodes.
+ */
+export function homeJsonLd() {
+  return {
+    "@context": "https://schema.org",
+    "@graph": [organizationNode(), webSiteNode(), webApplicationNode()],
   };
 }
 

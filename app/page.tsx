@@ -1,7 +1,7 @@
 import { SiteHeader } from "@/components/SiteHeader";
 import { SiteFooter } from "@/components/SiteFooter";
 import { PrinterWorkspace } from "@/components/PrinterWorkspace";
-import { webApplicationJsonLd } from "@/lib/seo";
+import { homeJsonLd } from "@/lib/seo";
 
 // The homepage is a focused utility: understand what RecipePrinter does and
 // start printing without scrolling past marketing. Deeper explanations and the
@@ -13,7 +13,7 @@ export default function Home() {
       {/* Structured data describing the product itself. */}
       <script
         type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(webApplicationJsonLd()) }}
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(homeJsonLd()) }}
       />
 
       <a

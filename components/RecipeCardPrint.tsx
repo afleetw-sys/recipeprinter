@@ -348,12 +348,12 @@ export function RecipeCardFace({
             )}
           </div>
           {showPhoto && (
-            <span className="recipe-card__photo" aria-hidden>
+            <span className="recipe-card__photo">
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
                 className="recipe-card__photo-img"
                 src={recipe.image}
-                alt=""
+                alt={recipe.title ? `Photo of ${recipe.title}` : "Recipe photo"}
                 decoding="async"
                 onError={() => setImageFailed(true)}
               />
