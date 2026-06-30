@@ -813,38 +813,6 @@ export default function PrintPage() {
             </select>
           </div>
 
-          {hasRecipeBackSide && (
-            <div className="recipe-config-section">
-              <label className="recipe-toggle">
-                <input
-                  type="checkbox"
-                  checked={doubleSided}
-                  onChange={(event) => setDoubleSided(event.target.checked)}
-                />
-                <span>
-                  <strong>Two-sided</strong>
-                  <small>Longer recipes continue onto the back.</small>
-                </span>
-              </label>
-            </div>
-          )}
-
-          {cardSize === "card-6x4" && (
-            <div className="recipe-config-section">
-              <label className="recipe-toggle">
-                <input
-                  type="checkbox"
-                  checked={showCutLines}
-                  onChange={(event) => setShowCutLines(event.target.checked)}
-                />
-                <span>
-                  <strong>Cut lines</strong>
-                  <small>Show dashed guides on printed 6 x 4 cards.</small>
-                </span>
-              </label>
-            </div>
-          )}
-
           {anyRecipeHasImage && (
             <div className="recipe-config-section">
               <label className="recipe-toggle">
@@ -857,6 +825,38 @@ export default function PrintPage() {
                   <strong>Recipe photo</strong>
                 </span>
               </label>
+            </div>
+          )}
+
+          {(hasRecipeBackSide || cardSize === "card-6x4") && (
+            <div className="recipe-config-section">
+              <h3 className="recipe-config-label">Print settings</h3>
+              {hasRecipeBackSide && (
+                <label className="recipe-toggle">
+                  <input
+                    type="checkbox"
+                    checked={doubleSided}
+                    onChange={(event) => setDoubleSided(event.target.checked)}
+                  />
+                  <span>
+                    <strong>Two-sided</strong>
+                    <small>Longer recipes continue onto the back.</small>
+                  </span>
+                </label>
+              )}
+              {cardSize === "card-6x4" && (
+                <label className="recipe-toggle">
+                  <input
+                    type="checkbox"
+                    checked={showCutLines}
+                    onChange={(event) => setShowCutLines(event.target.checked)}
+                  />
+                  <span>
+                    <strong>Cut lines</strong>
+                    <small>Show dashed guides on printed 6 x 4 cards.</small>
+                  </span>
+                </label>
+              )}
             </div>
           )}
 

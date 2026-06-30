@@ -32,29 +32,24 @@ export const RECIPE_PRINT_TEMPLATE_OPTIONS: Array<{
 ];
 
 // How much ingredient/instruction text fits on the front before it must
-// continue on the back, in `textCost` units. Calibrated to the real printed
-// page capacity (letter instructions render at ~0.79px per cost unit, so a
-// letter front holds ~1100 cost) with a small safety margin so the tail flows
-// to the back rather than clipping at the page edge.
+// continue on the back, in `textCost` units. Photo and no-photo fronts have
+// separate capacities because the rendered image consumes real vertical space.
 const FRONT_SECTION_BUDGET: Record<
   PrintCardSize,
-  { ingredients: number; instructions: number }
-> = {
-  letter: { ingredients: 1000, instructions: 1050 },
-  "card-6x4": { ingredients: 760, instructions: 980 },
-};
-
-// Showing the recipe photo pushes the columns down, so the front holds less
-// text. Letter leads with a tall banner above the title on the templates that
-// support it (classic/counter); every other case tucks a smaller thumbnail
-// beside the title. These are the budget units to reclaim from the front when a
-// photo renders, matched to how much vertical space each treatment consumes.
-function photoFrontReduction(size: PrintCardSize, template: RecipePrintTemplate): number {
-  if (size === "letter") {
-    return template === "classic" || template === "counter" ? 270 : 120;
+  {
+    withoutPhoto: { ingredients: number; instructions: number };
+    withPhoto: { ingredients: number; instructions: number };
   }
-  return 110;
-}
+> = {
+  letter: {
+    withoutPhoto: { ingredients: 820, instructions: 820 },
+    withPhoto: { ingredients: 690, instructions: 690 },
+  },
+  "card-6x4": {
+    withoutPhoto: { ingredients: 760, instructions: 980 },
+    withPhoto: { ingredients: 560, instructions: 720 },
+  },
+};
 
 interface SplitOptions {
   hasPhoto?: boolean;
@@ -73,9 +68,18 @@ const BACK_SECTION_BUDGET: Record<
 // height (the length-aware budget above handles the usual case). Keep these
 // loose so short recipes stay on one side instead of spilling onto the back.
 const FRONT_SECTION_LIMITS: Partial<
-  Record<PrintCardSize, { ingredients: number; instructions: number }>
+  Record<
+    PrintCardSize,
+    {
+      withoutPhoto: { ingredients: number; instructions: number };
+      withPhoto: { ingredients: number; instructions: number };
+    }
+  >
 > = {
-  "card-6x4": { ingredients: 12, instructions: 9 },
+  "card-6x4": {
+    withoutPhoto: { ingredients: 12, instructions: 9 },
+    withPhoto: { ingredients: 10, instructions: 6 },
+  },
 };
 
 type CardSectionLayout = "standard" | "stacked";
@@ -90,11 +94,14 @@ interface SplitRecipeResult {
 }
 
 function sourceLabel(recipe: Recipe): string | null {
-  if (recipe.sourceUrl) {
-    return recipe.sourceUrl;
+  if (!recipe.sourceUrl || !/^https?:\/\//i.test(recipe.sourceUrl)) return null;
+  try {
+    const url = new URL(recipe.sourceUrl);
+    url.hash = "";
+    return url.toString().replace(/\/$/, "");
+  } catch {
+    return recipe.sourceUrl.split("#")[0].replace(/\/$/, "");
   }
-  if (recipe.sourceName) return recipe.sourceName;
-  return null;
 }
 
 function metaBits(recipe: Recipe): string[] {
@@ -146,14 +153,21 @@ function splitByBudget<T>(
   return { front, back };
 }
 
-function splitIngredientHeavyCard(recipe: Recipe): SplitRecipeResult {
+function splitIngredientHeavyCard(
+  recipe: Recipe,
+  instructionBudget: number,
+  maxFrontInstructions: number,
+): SplitRecipeResult {
   const ingredientRows = Math.ceil(recipe.ingredients.length / 2);
-  const instructionBudget = Math.max(260, 880 - ingredientRows * 46);
+  const availableInstructionBudget = Math.max(
+    180,
+    instructionBudget - ingredientRows * 46,
+  );
   const instructions = splitByBudget(
     recipe.instructions,
-    instructionBudget,
+    availableInstructionBudget,
     (step) => step.text,
-    4,
+    maxFrontInstructions,
   );
 
   return {
@@ -171,14 +185,13 @@ function splitRecipe(
   size: PrintCardSize,
   options: SplitOptions = {},
 ): SplitRecipeResult {
-  const { hasPhoto = false, template = "classic" } = options;
-  const baseBudget = FRONT_SECTION_BUDGET[size];
-  const reduction = hasPhoto ? photoFrontReduction(size, template) : 0;
-  const frontBudget = {
-    ingredients: Math.max(120, baseBudget.ingredients - reduction),
-    instructions: Math.max(160, baseBudget.instructions - reduction),
-  };
-  const frontLimits = FRONT_SECTION_LIMITS[size];
+  const { hasPhoto = false } = options;
+  const frontBudget = hasPhoto
+    ? FRONT_SECTION_BUDGET[size].withPhoto
+    : FRONT_SECTION_BUDGET[size].withoutPhoto;
+  const frontLimits = hasPhoto
+    ? FRONT_SECTION_LIMITS[size]?.withPhoto
+    : FRONT_SECTION_LIMITS[size]?.withoutPhoto;
   const ingredients = splitByBudget(
     recipe.ingredients,
     frontBudget.ingredients,
@@ -193,7 +206,11 @@ function splitRecipe(
   );
 
   if (size === "card-6x4" && ingredients.back.length > 0) {
-    return splitIngredientHeavyCard(recipe);
+    return splitIngredientHeavyCard(
+      recipe,
+      frontBudget.instructions,
+      hasPhoto ? 3 : 4,
+    );
   }
 
   if (ingredients.back.length === 0 && instructions.back.length === 0) {
