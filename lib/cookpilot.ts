@@ -26,11 +26,23 @@ function hostnameOf(url: string): string | undefined {
   }
 }
 
+function sectionTitle(section: AnyRecord): string | undefined {
+  return (
+    asString(section.title) ??
+    asString(section.name) ??
+    asString(section.heading) ??
+    asString(section.label)
+  );
+}
+
 function flattenIngredients(sections: unknown): RecipeIngredient[] {
   if (!Array.isArray(sections)) return [];
   const out: RecipeIngredient[] = [];
   for (const section of sections) {
-    const list = (section as AnyRecord)?.ingredients;
+    if (!section || typeof section !== "object") continue;
+    const sectionNode = section as AnyRecord;
+    const title = sectionTitle(sectionNode);
+    const list = sectionNode?.ingredients;
     if (!Array.isArray(list)) continue;
     for (const ing of list) {
       const i = ing as AnyRecord;
@@ -41,6 +53,7 @@ function flattenIngredients(sections: unknown): RecipeIngredient[] {
         unit: asString(i.unit),
         name,
         note: asString(i.notes) ?? asString(i.note),
+        section: title,
       });
     }
   }
@@ -52,12 +65,15 @@ function flattenInstructions(sections: unknown): RecipeInstruction[] {
   const out: RecipeInstruction[] = [];
   let step = 1;
   for (const section of sections) {
-    const list = (section as AnyRecord)?.instructions;
+    if (!section || typeof section !== "object") continue;
+    const sectionNode = section as AnyRecord;
+    const title = sectionTitle(sectionNode);
+    const list = sectionNode?.instructions;
     if (!Array.isArray(list)) continue;
     for (const ins of list) {
       const text = asString((ins as AnyRecord).text);
       if (!text) continue;
-      out.push({ step: step++, text });
+      out.push({ step: step++, text, section: title });
     }
   }
   return out;

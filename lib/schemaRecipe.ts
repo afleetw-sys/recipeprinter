@@ -123,23 +123,23 @@ function durationFrom(value: unknown): string | undefined {
   return parts.length > 0 ? parts.join(" ") : raw;
 }
 
-function instructionText(value: unknown): string[] {
+function instructionItems(value: unknown, section?: string): Array<{ text: string; section?: string }> {
   const text = asString(value);
-  if (text) return [text];
+  if (text) return [{ text, section }];
 
-  if (Array.isArray(value)) return value.flatMap(instructionText);
+  if (Array.isArray(value)) return value.flatMap((item) => instructionItems(item, section));
 
   const node = asRecord(value);
   if (!node) return [];
 
   if (typeMatches(node, "HowToSection")) {
-    return instructionText(node.itemListElement);
+    return instructionItems(node.itemListElement, asString(node.name) ?? section);
   }
 
   const direct = asString(node.text) ?? asString(node.name);
-  if (direct) return [direct];
+  if (direct) return [{ text: direct, section }];
 
-  return instructionText(node.itemListElement);
+  return instructionItems(node.itemListElement, section);
 }
 
 function nutritionFrom(value: unknown): RecipeNutrition | undefined {
@@ -171,10 +171,11 @@ export function recipeFromJsonLd(value: unknown, sourceUrl: string): Recipe | nu
     name: raw,
     raw,
   }));
-  const instructions: RecipeInstruction[] = instructionText(recipeNode.recipeInstructions).map(
-    (text, index) => ({
+  const instructions: RecipeInstruction[] = instructionItems(recipeNode.recipeInstructions).map(
+    (item, index) => ({
       step: index + 1,
-      text,
+      text: item.text,
+      section: item.section,
     }),
   );
 

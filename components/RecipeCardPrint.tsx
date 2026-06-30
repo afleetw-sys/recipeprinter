@@ -42,8 +42,8 @@ const FRONT_SECTION_BUDGET: Record<
   }
 > = {
   letter: {
-    withoutPhoto: { ingredients: 820, instructions: 820 },
-    withPhoto: { ingredients: 690, instructions: 690 },
+    withoutPhoto: { ingredients: 1400, instructions: 1700 },
+    withPhoto: { ingredients: 1100, instructions: 1350 },
   },
   "card-6x4": {
     withoutPhoto: { ingredients: 760, instructions: 980 },
@@ -117,6 +117,20 @@ function ingredientText(ing: Recipe["ingredients"][number]): string {
   if (ing.raw) return ing.raw;
   const amount = [ing.amount, ing.unit].filter(Boolean).join(" ");
   return [amount, ing.name].filter(Boolean).join(" ") + (ing.note ? `, ${ing.note}` : "");
+}
+
+function sectionGroups<T extends { section?: string }>(items: T[]) {
+  const groups: Array<{ title?: string; items: T[] }> = [];
+  for (const item of items) {
+    const title = item.section?.trim() || undefined;
+    const previous = groups[groups.length - 1];
+    if (previous && previous.title === title) {
+      previous.items.push(item);
+    } else {
+      groups.push({ title, items: [item] });
+    }
+  }
+  return groups;
 }
 
 function textCost(value: string): number {
@@ -324,6 +338,8 @@ export function RecipeCardFace({
   const ingredientsOnly = ingredients.length > 0 && instructions.length === 0;
   const methodOnly = instructions.length > 0 && ingredients.length === 0;
   const stackedLayout = layout === "stacked";
+  const ingredientGroups = sectionGroups(ingredients);
+  const instructionGroups = sectionGroups(instructions);
   // The photo only rides along on the front face (where the header lives). If
   // the source image 404s or is hotlink-blocked we drop it rather than print a
   // broken-image box.
@@ -393,11 +409,23 @@ export function RecipeCardFace({
             }`}
           >
             <h2 className="recipe-card__label">Ingredients</h2>
-            <ul>
-              {ingredients.map((ing, i) => (
-                <li key={i}>{ingredientText(ing)}</li>
+            <div className="recipe-card__section-groups">
+              {ingredientGroups.map((group, groupIndex) => (
+                <div
+                  className="recipe-card__section-group"
+                  key={`${group.title ?? "ingredients"}-${groupIndex}`}
+                >
+                  {group.title && (
+                    <h3 className="recipe-card__section-title">{group.title}</h3>
+                  )}
+                  <ul>
+                    {group.items.map((ing, i) => (
+                      <li key={`${groupIndex}-${i}`}>{ingredientText(ing)}</li>
+                    ))}
+                  </ul>
+                </div>
               ))}
-            </ul>
+            </div>
           </section>
         )}
 
@@ -417,14 +445,26 @@ export function RecipeCardFace({
                 ""
               )}
             </h2>
-            <ol>
-              {instructions.map((step) => (
-                <li key={`${step.step}-${step.text.slice(0, 24)}`}>
-                  <span className="recipe-card__step-number">{step.step}</span>
-                  <span>{step.text}</span>
-                </li>
+            <div className="recipe-card__section-groups">
+              {instructionGroups.map((group, groupIndex) => (
+                <div
+                  className="recipe-card__section-group"
+                  key={`${group.title ?? "steps"}-${groupIndex}`}
+                >
+                  {group.title && (
+                    <h3 className="recipe-card__section-title">{group.title}</h3>
+                  )}
+                  <ol>
+                    {group.items.map((step) => (
+                      <li key={`${step.step}-${step.text.slice(0, 24)}`}>
+                        <span className="recipe-card__step-number">{step.step}</span>
+                        <span>{step.text}</span>
+                      </li>
+                    ))}
+                  </ol>
+                </div>
               ))}
-            </ol>
+            </div>
           </section>
         )}
       </div>

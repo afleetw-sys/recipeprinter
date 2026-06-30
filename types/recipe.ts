@@ -4,11 +4,13 @@ export interface RecipeIngredient {
   name: string;
   note?: string;
   raw?: string;
+  section?: string;
 }
 
 export interface RecipeInstruction {
   step: number;
   text: string;
+  section?: string;
 }
 
 export interface RecipeNutrition {

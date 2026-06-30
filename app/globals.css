@@ -1137,9 +1137,24 @@
   border-radius: 0;
   clip-path: none;
   opacity: 0.34;
-  background:
-    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='176' height='28' viewBox='0 0 176 28' fill='none'%3E%3Cg stroke='%239c262f' stroke-width='1.25' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M13 25V13M13 13C5 8 6 3 13 5M13 13c8-5 7-10 0-8M13 13C9 7 10 3 13 5M13 13c4-6 3-10 0-8'/%3E%3Cpath d='M47 25V13M41 4h12v8c0 3-12 3-12 0V4Z'/%3E%3Cpath d='M81 25V14M73 4h16l-2 10H75L73 4ZM78 6v6M82 6v6M86 6v6'/%3E%3Cpath d='M116 25C110 16 108 9 112 4M122 25c6-9 8-16 4-21M112 4h5M121 4h5'/%3E%3Cpath d='M154 25V11M154 11c-8 0-10-7 0-7s8 7 0 7Z'/%3E%3C/g%3E%3C/svg%3E") center / 88px 14px repeat-x,
-    transparent;
+  background-image:
+    url("/images/heirloom-whisk.svg"),
+    url("/images/heirloom-spatula.svg"),
+    url("/images/heirloom-turner.svg"),
+    url("/images/heirloom-tongs.svg"),
+    url("/images/heirloom-ladle.svg"),
+    url("/images/heirloom-whisk.svg"),
+    url("/images/heirloom-spatula.svg");
+  background-position:
+    10% center,
+    23% center,
+    36% center,
+    50% center,
+    64% center,
+    77% center,
+    90% center;
+  background-repeat: no-repeat;
+  background-size: 9px 13px;
 }
 .recipe-template-option--heirloom .recipe-template-option__sample-title {
   color: #9c262f;
@@ -1581,16 +1596,41 @@
   border-color: rgba(92, 64, 55, 0.14);
 }
 
+.recipe-template--heirloom .recipe-card > * {
+  position: relative;
+  z-index: 1;
+}
+
 .recipe-template--heirloom .recipe-card::before {
   content: "";
   position: absolute;
+  z-index: 0;
   right: 0;
   bottom: 0.18in;
   left: 0;
   height: 0.2in;
-  background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='176' height='28' viewBox='0 0 176 28' fill='none'%3E%3Cg stroke='%239c262f' stroke-width='1.25' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M13 25V13M13 13C5 8 6 3 13 5M13 13c8-5 7-10 0-8M13 13C9 7 10 3 13 5M13 13c4-6 3-10 0-8'/%3E%3Cpath d='M47 25V13M41 4h12v8c0 3-12 3-12 0V4Z'/%3E%3Cpath d='M81 25V14M73 4h16l-2 10H75L73 4ZM78 6v6M82 6v6M86 6v6'/%3E%3Cpath d='M116 25C110 16 108 9 112 4M122 25c6-9 8-16 4-21M112 4h5M121 4h5'/%3E%3Cpath d='M154 25V11M154 11c-8 0-10-7 0-7s8 7 0 7Z'/%3E%3C/g%3E%3C/svg%3E") center / 176px 18px repeat-x;
-  opacity: 0.22;
+  opacity: 0.2;
   pointer-events: none;
+  background-image:
+    url("/images/heirloom-whisk.svg"),
+    url("/images/heirloom-spatula.svg"),
+    url("/images/heirloom-turner.svg"),
+    url("/images/heirloom-tongs.svg"),
+    url("/images/heirloom-ladle.svg"),
+    url("/images/heirloom-whisk.svg"),
+    url("/images/heirloom-spatula.svg"),
+    url("/images/heirloom-turner.svg");
+  background-position:
+    8% center,
+    20% center,
+    32% center,
+    44% center,
+    56% center,
+    68% center,
+    80% center,
+    92% center;
+  background-repeat: no-repeat;
+  background-size: 0.12in 0.18in;
 }
 
 .recipe-template--heirloom .recipe-card__header {
@@ -1804,6 +1844,13 @@
   margin-top: 0;
 }
 
+.recipe-print-preview--card-6x4 .recipe-template--heirloom .recipe-card__header--with-photo .recipe-card__photo {
+  width: 0.78in;
+  height: 0.78in;
+  padding: 4px 4px 10px;
+  margin-top: 0;
+}
+
 /* When a recipe photo is shown, the title/meta share the header row with a
    square thumbnail tucked into the otherwise-empty top-right corner. */
 .recipe-card__header--with-photo {
@@ -1955,6 +2002,21 @@
   --recipe-card-padding-top: 0.42in;
 }
 
+.recipe-print-preview--letter .recipe-template--heirloom .recipe-card__header--with-photo,
+.recipe-print-preview--letter .recipe-template--bistro .recipe-card__header--with-photo,
+.recipe-print-preview--letter .recipe-template--pantry .recipe-card__header--with-photo {
+  align-items: center;
+}
+
+.recipe-print-preview--letter .recipe-template--heirloom .recipe-card__header--with-photo .recipe-card__headline,
+.recipe-print-preview--letter .recipe-template--bistro .recipe-card__header--with-photo .recipe-card__headline,
+.recipe-print-preview--letter .recipe-template--pantry .recipe-card__header--with-photo .recipe-card__headline {
+  align-self: stretch;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
 .recipe-card__title {
   font-family: var(--recipe-title-font);
   font-size: var(--recipe-card-title-size);
@@ -2004,6 +2066,14 @@
   margin-top: 10px;
 }
 
+.recipe-print-preview--letter .recipe-card__cols {
+  padding-top: 10px;
+}
+
+.recipe-print-preview--letter .recipe-card__cols--stacked .recipe-card__method {
+  margin-top: 14px;
+}
+
 .recipe-card__label {
   font-size: var(--recipe-card-label-size);
   font-weight: 800;
@@ -2019,6 +2089,30 @@
   font-size: calc(var(--recipe-card-label-size) * 0.9);
   font-weight: 750;
   letter-spacing: 0.06em;
+}
+
+.recipe-card__section-groups {
+  display: flex;
+  flex-direction: column;
+  gap: calc(var(--recipe-card-step-gap) * 0.95);
+}
+
+.recipe-print-preview--letter .recipe-card__section-groups {
+  gap: calc(var(--recipe-card-step-gap) * 1.2);
+}
+
+.recipe-card__section-group {
+  break-inside: avoid;
+}
+
+.recipe-card__section-title {
+  margin: 0 0 2.4pt;
+  color: var(--recipe-accent);
+  font-size: calc(var(--recipe-card-label-size) * 0.9);
+  font-weight: 850;
+  line-height: 1.1;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
 }
 
 .recipe-card__ingredients ul {
@@ -2085,6 +2179,11 @@
 
 .recipe-card__ingredients--wide ul,
 .recipe-card__method--wide ol {
+  display: block;
+}
+
+.recipe-card__ingredients--wide .recipe-card__section-groups,
+.recipe-card__method--wide .recipe-card__section-groups {
   display: block;
   column-count: 2;
   column-gap: calc(var(--recipe-card-gap) * 0.9);
