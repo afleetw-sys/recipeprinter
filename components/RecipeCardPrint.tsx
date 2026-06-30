@@ -31,13 +31,35 @@ export const RECIPE_PRINT_TEMPLATE_OPTIONS: Array<{
   { id: "bistro", label: "Bistro", detail: "Blue checks, tomato red, playful kitchen card" },
 ];
 
+// How much ingredient/instruction text fits on the front before it must
+// continue on the back, in `textCost` units. Calibrated to the real printed
+// page capacity (letter instructions render at ~0.79px per cost unit, so a
+// letter front holds ~1100 cost) with a small safety margin so the tail flows
+// to the back rather than clipping at the page edge.
 const FRONT_SECTION_BUDGET: Record<
   PrintCardSize,
   { ingredients: number; instructions: number }
 > = {
-  letter: { ingredients: 2200, instructions: 3400 },
+  letter: { ingredients: 1000, instructions: 1050 },
   "card-6x4": { ingredients: 760, instructions: 980 },
 };
+
+// Showing the recipe photo pushes the columns down, so the front holds less
+// text. Letter leads with a tall banner above the title on the templates that
+// support it (classic/counter); every other case tucks a smaller thumbnail
+// beside the title. These are the budget units to reclaim from the front when a
+// photo renders, matched to how much vertical space each treatment consumes.
+function photoFrontReduction(size: PrintCardSize, template: RecipePrintTemplate): number {
+  if (size === "letter") {
+    return template === "classic" || template === "counter" ? 270 : 120;
+  }
+  return 110;
+}
+
+interface SplitOptions {
+  hasPhoto?: boolean;
+  template?: RecipePrintTemplate;
+}
 
 const BACK_SECTION_BUDGET: Record<
   PrintCardSize,
@@ -144,8 +166,18 @@ function splitIngredientHeavyCard(recipe: Recipe): SplitRecipeResult {
   };
 }
 
-function splitRecipe(recipe: Recipe, size: PrintCardSize): SplitRecipeResult {
-  const frontBudget = FRONT_SECTION_BUDGET[size];
+function splitRecipe(
+  recipe: Recipe,
+  size: PrintCardSize,
+  options: SplitOptions = {},
+): SplitRecipeResult {
+  const { hasPhoto = false, template = "classic" } = options;
+  const baseBudget = FRONT_SECTION_BUDGET[size];
+  const reduction = hasPhoto ? photoFrontReduction(size, template) : 0;
+  const frontBudget = {
+    ingredients: Math.max(120, baseBudget.ingredients - reduction),
+    instructions: Math.max(160, baseBudget.instructions - reduction),
+  };
   const frontLimits = FRONT_SECTION_LIMITS[size];
   const ingredients = splitByBudget(
     recipe.ingredients,
@@ -197,8 +229,12 @@ function splitRecipe(recipe: Recipe, size: PrintCardSize): SplitRecipeResult {
   };
 }
 
-export function recipeNeedsBackSide(recipe: Recipe, size: PrintCardSize): boolean {
-  const { backIngredients, backInstructions } = splitRecipe(recipe, size);
+export function recipeNeedsBackSide(
+  recipe: Recipe,
+  size: PrintCardSize,
+  options?: SplitOptions,
+): boolean {
+  const { backIngredients, backInstructions } = splitRecipe(recipe, size, options);
   return backIngredients.length > 0 || backInstructions.length > 0;
 }
 
@@ -218,8 +254,12 @@ export interface RecipeFaces {
  * The front/back faces a recipe splits into at a given size. The on-screen page
  * navigator uses this to mirror exactly what `RecipeCardPrint` will print.
  */
-export function getRecipeFaces(recipe: Recipe, size: PrintCardSize): RecipeFaces {
-  const split = splitRecipe(recipe, size);
+export function getRecipeFaces(
+  recipe: Recipe,
+  size: PrintCardSize,
+  options?: SplitOptions,
+): RecipeFaces {
+  const split = splitRecipe(recipe, size, options);
   const hasBack =
     split.backIngredients.length > 0 || split.backInstructions.length > 0;
   return {
@@ -402,7 +442,10 @@ export default function RecipeCardPrint({
     backInstructions,
     frontLayout,
     backLayout,
-  } = splitRecipe(recipe, size);
+  } = splitRecipe(recipe, size, {
+    hasPhoto: showImage && Boolean(recipe.image),
+    template,
+  });
   const hasBack = backIngredients.length > 0 || backInstructions.length > 0;
   const needsPrintBack = hasBack || (doubleSided && !isLast);
   const showSideNav = doubleSided && hasBack;

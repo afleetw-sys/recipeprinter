@@ -1770,6 +1770,12 @@
   border-bottom: 1px solid var(--recipe-line);
 }
 
+/* The 6x4 classic card is tight — drop the header divider so the title sits
+   closer to the ingredients and steps. */
+.recipe-print-preview--card-6x4 .recipe-template--classic .recipe-card__header {
+  border-bottom: 0;
+}
+
 /* When a recipe photo is shown, the title/meta share the header row with a
    square thumbnail tucked into the otherwise-empty top-right corner. */
 .recipe-card__header--with-photo {

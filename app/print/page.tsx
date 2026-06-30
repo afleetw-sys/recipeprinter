@@ -224,12 +224,21 @@ export default function PrintPage() {
   const printRequestedRef = useRef(false);
   const autoPrintAttemptedRef = useRef(false);
 
-  const hasRecipeBackSide =
-    items?.some((item) => item.recipe && recipeNeedsBackSide(item.recipe, cardSize)) ?? false;
-  const continueOnBack = hasRecipeBackSide && doubleSided;
   const anyRecipeHasImage =
     items?.some((item) => Boolean(item.recipe?.image)) ?? false;
   const photosOn = showPhoto && anyRecipeHasImage;
+  // The photo reserves vertical space, so the split must know whether one will
+  // render — otherwise content overflows the page instead of flowing to the back.
+  const hasRecipeBackSide =
+    items?.some(
+      (item) =>
+        item.recipe &&
+        recipeNeedsBackSide(item.recipe, cardSize, {
+          hasPhoto: photosOn && Boolean(item.recipe.image),
+          template,
+        }),
+    ) ?? false;
+  const continueOnBack = hasRecipeBackSide && doubleSided;
 
   // The physical sheets the printer will produce, in order. Two-sided sheets
   // keep a flippable front+back; single-sided overflow becomes its own sheet.
@@ -239,7 +248,10 @@ export default function PrintPage() {
       if (!item.recipe) continue;
       const recipe = item.recipe;
       const title = recipe.title || "Recipe";
-      const faces = getRecipeFaces(recipe, cardSize);
+      const faces = getRecipeFaces(recipe, cardSize, {
+        hasPhoto: photosOn && Boolean(recipe.image),
+        template,
+      });
       if (continueOnBack) {
         out.push({
           id: `${item.id}-sheet`,
@@ -283,7 +295,7 @@ export default function PrintPage() {
       }
     }
     return out;
-  }, [items, cardSize, continueOnBack]);
+  }, [items, cardSize, continueOnBack, photosOn, template]);
 
   const [activeSheetIndex, setActiveSheetIndex] = useState(0);
   const [canvasSide, setCanvasSide] = useState<"front" | "back">("front");
