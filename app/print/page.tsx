@@ -389,13 +389,17 @@ export default function PrintPage() {
   }, [sheets.length, deckScale, cardSize]);
 
   const activeSheet = sheets[activeSheetIndex] ?? sheets[0] ?? null;
+  const singleRecipePrintView =
+    (items?.filter((item) => Boolean(item.recipe)).length ?? 0) === 1;
 
   function centerSlide(index: number, behavior: ScrollBehavior = "auto") {
     const deck = deckRef.current;
     const slide = slideRefs.current[index];
     if (!deck || !slide) return;
 
-    const targetTop = slide.offsetTop - (deck.clientHeight - slide.offsetHeight) / 2;
+    const targetTop = singleRecipePrintView
+      ? slide.offsetTop
+      : slide.offsetTop - (deck.clientHeight - slide.offsetHeight) / 2;
     const maxTop = deck.scrollHeight - deck.clientHeight;
     deck.scrollTo({
       top: Math.max(0, Math.min(targetTop, maxTop)),
@@ -723,6 +727,8 @@ export default function PrintPage() {
           className="recipe-page-canvas no-print"
           aria-label="Selected page"
           data-mobile-open={mobilePreviewOpen ? "true" : "false"}
+          data-single-recipe={singleRecipePrintView ? "true" : "false"}
+          data-active-flip={activeSheet?.flip ? "true" : "false"}
         >
           <button
             type="button"
@@ -1092,10 +1098,11 @@ export default function PrintPage() {
             >
               <XIcon size={16} />
             </button>
-            <h2 id="recipeprinter-sign-in-title">Sign in to unlock this template.</h2>
+            <h2 id="recipeprinter-sign-in-title">
+              Sign in so you can reuse this template forever.
+            </h2>
             <p>
-              Use the email for your CookPilot account if you have one. RecipePrinter
-              will remember purchased templates there.
+              Use your CookPilot login email if you have one.
             </p>
             <label className="field-label text-left mt-cp-4" htmlFor="recipeprinter-purchase-email">
               Email

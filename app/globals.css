@@ -633,6 +633,14 @@
   scrollbar-width: none;
 }
 
+.recipe-page-canvas[data-single-recipe="true"] .recipe-page-deck {
+  padding-top: 0;
+}
+
+.recipe-page-canvas[data-single-recipe="true"][data-active-flip="true"] .recipe-page-deck {
+  padding-top: 42px;
+}
+
 .recipe-page-deck::-webkit-scrollbar {
   display: none;
 }
@@ -645,6 +653,10 @@
   transition:
     opacity 200ms ease,
     transform 200ms ease;
+}
+
+.recipe-page-canvas[data-single-recipe="true"] .recipe-page-slide {
+  scroll-snap-align: start;
 }
 
 .recipe-page-slide:not(.is-active):hover {
@@ -1631,6 +1643,12 @@
     92% center;
   background-repeat: no-repeat;
   background-size: 0.12in 0.18in;
+}
+
+.recipe-print-preview--letter .recipe-template--heirloom .recipe-card::before {
+  bottom: 0.16in;
+  height: 0.36in;
+  background-size: 0.22in 0.32in;
 }
 
 .recipe-template--heirloom .recipe-card__header {
