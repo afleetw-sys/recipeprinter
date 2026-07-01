@@ -16,6 +16,12 @@ export const PREMIUM_TEMPLATE_PACKAGE_IDS = {
   counter: "counter",
 } as const satisfies Partial<Record<RecipePrintTemplate, string>>;
 
+export const PREMIUM_TEMPLATE_PRODUCT_IDS = {
+  heirloom: "heirloom",
+  bistro: "bistro",
+  counter: "counter",
+} as const satisfies Partial<Record<RecipePrintTemplate, string>>;
+
 export type PremiumRecipePrintTemplate = keyof typeof PREMIUM_TEMPLATE_ENTITLEMENTS;
 
 export function isPremiumTemplate(
@@ -34,4 +40,8 @@ export function entitlementForTemplate(template: PremiumRecipePrintTemplate): st
 
 export function packageIdForTemplate(template: PremiumRecipePrintTemplate): string {
   return PREMIUM_TEMPLATE_PACKAGE_IDS[template];
+}
+
+export function productIdForTemplate(template: PremiumRecipePrintTemplate): string {
+  return PREMIUM_TEMPLATE_PRODUCT_IDS[template];
 }

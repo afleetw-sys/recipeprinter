@@ -218,7 +218,16 @@ function SignedOutCookPilotImport({
         <CookPilotLogoIcon size={24} />
       </div>
       <h3 className="font-extrabold tracking-[-0.02em] text-[1.05rem] mt-cp-4">
-        Import from CookPilot
+        Import from{" "}
+        <a
+          href="https://app.cookpilotapp.com"
+          target="_blank"
+          rel="noreferrer"
+          className="inline-flex items-center gap-1 text-current underline decoration-line-strong underline-offset-4 hover:decoration-ink"
+        >
+          CookPilot
+          <ExternalIcon size={14} />
+        </a>
       </h3>
       <p className="text-[0.88rem] text-ink-soft mt-1 max-w-sm mx-auto">
         Sign in to add your saved CookPilot recipes straight to this print list.

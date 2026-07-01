@@ -40,6 +40,7 @@ import type { QueueItem, Recipe } from "@/types/recipe";
 import type { CustomerInfo } from "@revenuecat/purchases-js";
 
 const COFFEE_URL = "https://buymeacoffee.com/recipeprinter";
+const COFFEE_LOGO_SRC = "/images/buy-me-a-coffee-logo.png";
 const POST_PRINT_DIALOG_STORAGE_KEY = "recipeprinter:post-print-dialog:last-shown:v1";
 const POST_PRINT_DIALOG_INTERVAL_MS = 7 * 24 * 60 * 60 * 1000;
 const EMAIL_LINK_STORAGE_KEY = "recipeprinter:purchase-email-link:v1";
@@ -122,11 +123,12 @@ function ScaledPage({
               recipe={sheet.recipe}
               ingredients={face.ingredients}
               instructions={face.instructions}
-              side={isBackContent ? "back" : "front"}
+              side={side}
               showHeader={!isBackContent}
               layout={face.layout}
               hasBackFace={sheet.hasBack}
               showImage={showImage}
+              continued={isBackContent}
             />
           </div>
         </div>
@@ -253,45 +255,50 @@ export default function PrintPage() {
         template,
       });
       if (continueOnBack) {
-        out.push({
-          id: `${item.id}-sheet`,
-          recipe,
-          label: title,
-          pageLabel: faces.hasBack ? "Front & back" : "One side",
-          front: faces.front,
-          back: faces.back,
-          flip: faces.hasBack,
-          hasBack: faces.hasBack,
-          twoSided: faces.hasBack,
-          isContinuation: false,
-        });
-      } else {
-        out.push({
-          id: `${item.id}-front`,
-          recipe,
-          label: title,
-          pageLabel: faces.hasBack ? "Page 1" : "One page",
-          front: faces.front,
-          back: null,
-          flip: false,
-          hasBack: faces.hasBack,
-          twoSided: false,
-          isContinuation: false,
-        });
-        if (faces.hasBack && faces.back) {
+        for (let pageIndex = 0; pageIndex < faces.pages.length; pageIndex += 2) {
+          const front = faces.pages[pageIndex];
+          const back = faces.pages[pageIndex + 1] ?? null;
+          const isContinuation = pageIndex > 0;
           out.push({
-            id: `${item.id}-back`,
+            id: `${item.id}-sheet-${pageIndex / 2 + 1}`,
             recipe,
             label: title,
-            pageLabel: "Page 2 · continued",
-            front: faces.back,
+            pageLabel:
+              pageIndex === 0
+                ? back
+                  ? "Front & back"
+                  : "One side"
+                : back
+                  ? `Continued ${pageIndex + 1}-${pageIndex + 2}`
+                  : `Continued ${pageIndex + 1}`,
+            front,
+            back,
+            flip: back !== null,
+            hasBack: faces.hasBack,
+            twoSided: back !== null,
+            isContinuation,
+          });
+        }
+      } else {
+        faces.pages.forEach((face, pageIndex) => {
+          out.push({
+            id: `${item.id}-page-${pageIndex + 1}`,
+            recipe,
+            label: title,
+            pageLabel:
+              pageIndex === 0
+                ? faces.hasBack
+                  ? "Page 1"
+                  : "One page"
+                : `Page ${pageIndex + 1} · continued`,
+            front: face,
             back: null,
             flip: false,
             hasBack: faces.hasBack,
             twoSided: false,
-            isContinuation: true,
+            isContinuation: pageIndex > 0,
           });
-        }
+        });
       }
     }
     return out;
@@ -413,6 +420,10 @@ export default function PrintPage() {
   }
 
   const selectedPremiumTemplate = isPremiumTemplate(template) ? template : null;
+  const selectedTemplateOption = RECIPE_PRINT_TEMPLATE_OPTIONS.find(
+    (option) => option.id === template,
+  );
+  const selectedTemplateLabel = selectedTemplateOption?.label ?? "this";
   const selectedTemplateLocked =
     selectedPremiumTemplate !== null &&
     !hasTemplateEntitlement(customerInfo, selectedPremiumTemplate);
@@ -822,7 +833,7 @@ export default function PrintPage() {
                   onChange={(event) => setShowPhoto(event.target.checked)}
                 />
                 <span>
-                  <strong>Recipe photo</strong>
+                  <strong>Include recipe photo</strong>
                 </span>
               </label>
             </div>
@@ -997,6 +1008,12 @@ export default function PrintPage() {
                 rel="noopener noreferrer"
                 className="btn btn-primary"
               >
+                <img
+                  src={COFFEE_LOGO_SRC}
+                  alt=""
+                  aria-hidden="true"
+                  className="h-5 w-5 rounded-full"
+                />
                 Support RecipePrinter
               </a>
               <button
@@ -1031,7 +1048,7 @@ export default function PrintPage() {
             >
               <XIcon size={16} />
             </button>
-            <h2 id="recipeprinter-unlock-title">Unlock this template?</h2>
+            <h2 id="recipeprinter-unlock-title">Unlock {selectedTemplateLabel} template?</h2>
             <p>
               You&apos;re logged in as <strong>{accountLabelFor(user)}</strong>. This purchase will
               be saved to that account so you can print with this template again.

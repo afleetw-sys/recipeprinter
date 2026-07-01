@@ -8,6 +8,7 @@ import {
   entitlementForTemplate,
   packageIdForTemplate,
   PREMIUM_TEMPLATE_PACKAGE_IDS,
+  productIdForTemplate,
   RECIPEPRINTER_OFFERING_ID,
   type PremiumRecipePrintTemplate,
 } from "@/lib/premiumTemplates";
@@ -69,11 +70,15 @@ async function packageForTemplate(
   const offerings = await purchases.getOfferings();
   const offering = offerings.all[RECIPEPRINTER_OFFERING_ID] ?? offerings.current;
   const packageId = packageIdForTemplate(template);
+  const productId = productIdForTemplate(template);
   const rcPackage =
+    offering?.availablePackages.find(
+      (candidate) => candidate.webBillingProduct.identifier === productId,
+    ) ??
     offering?.packagesById[packageId] ??
     offering?.availablePackages.find((candidate) => candidate.identifier === packageId);
 
-  if (!rcPackage) {
+  if (!rcPackage || rcPackage.webBillingProduct.identifier !== productId) {
     throw new Error("This template isn't ready to buy yet.");
   }
 
@@ -90,11 +95,18 @@ export async function loadRecipePrinterTemplatePrices(
   if (!offering) return {};
 
   return Object.fromEntries(
-    Object.entries(PREMIUM_TEMPLATE_PACKAGE_IDS)
+    (Object.entries(PREMIUM_TEMPLATE_PACKAGE_IDS) as Array<[PremiumRecipePrintTemplate, string]>)
       .map(([template, packageId]) => {
+        const productId = productIdForTemplate(template);
         const rcPackage =
+          offering.availablePackages.find(
+            (candidate) => candidate.webBillingProduct.identifier === productId,
+          ) ??
           offering.packagesById[packageId] ??
           offering.availablePackages.find((candidate) => candidate.identifier === packageId);
+        if (rcPackage?.webBillingProduct.identifier !== productId) {
+          return [template, undefined] as const;
+        }
         return [template, rcPackage?.webBillingProduct.price.formattedPrice] as const;
       })
       .filter((entry): entry is [PremiumRecipePrintTemplate, string] => Boolean(entry[1])),

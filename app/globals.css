@@ -1945,8 +1945,7 @@
   border: 1px solid rgba(91, 104, 115, 0.28);
   border-radius: 0;
 }
-/* Subtle translucent drafting tape pinning the top corners to the page. */
-.recipe-template--pantry .recipe-card__photo::before,
+/* Subtle translucent drafting tape pinning the top-right corner to the page. */
 .recipe-template--pantry .recipe-card__photo::after {
   content: "";
   position: absolute;
@@ -1954,13 +1953,9 @@
   width: 32px;
   height: 9px;
   background: rgba(91, 104, 115, 0.14);
-  border: 1px solid rgba(91, 104, 115, 0.2);
+  border: 1px solid rgba(91, 104, 115, 0.1);
   -webkit-print-color-adjust: exact;
   print-color-adjust: exact;
-}
-.recipe-template--pantry .recipe-card__photo::before {
-  left: -7px;
-  transform: rotate(-24deg);
 }
 .recipe-template--pantry .recipe-card__photo::after {
   right: -7px;
@@ -2071,7 +2066,7 @@
 }
 
 .recipe-print-preview--letter .recipe-card__cols--stacked .recipe-card__method {
-  margin-top: 14px;
+  margin-top: 17px;
 }
 
 .recipe-card__label {
@@ -2094,11 +2089,11 @@
 .recipe-card__section-groups {
   display: flex;
   flex-direction: column;
-  gap: calc(var(--recipe-card-step-gap) * 0.95);
+  gap: calc(var(--recipe-card-step-gap) * 0.3);
 }
 
 .recipe-print-preview--letter .recipe-card__section-groups {
-  gap: calc(var(--recipe-card-step-gap) * 1.2);
+  gap: calc(var(--recipe-card-step-gap) * 1.5);
 }
 
 .recipe-card__section-group {
@@ -2107,12 +2102,29 @@
 
 .recipe-card__section-title {
   margin: 0 0 2.4pt;
+  /* Breathing room above each section header so it reads as a new block rather
+     than crowding the items above it. Pairs with the smaller inter-group gap so
+     total spacing stays controlled on the tight 6x4 card. */
+  padding-top: 2pt;
   color: var(--recipe-accent);
   font-size: calc(var(--recipe-card-label-size) * 0.9);
   font-weight: 850;
   line-height: 1.1;
   text-transform: uppercase;
   letter-spacing: 0.08em;
+}
+
+.recipe-card__section-group:first-child .recipe-card__section-title {
+  padding-top: 0;
+}
+
+.recipe-print-preview--letter .recipe-card__section-title {
+  margin-bottom: 3.4pt;
+  padding-top: 5pt;
+}
+
+.recipe-print-preview--letter .recipe-card__section-group:first-child .recipe-card__section-title {
+  padding-top: 0;
 }
 
 .recipe-card__ingredients ul {
@@ -2156,18 +2168,19 @@
   display: flex;
   align-items: flex-start;
   gap: 5pt;
-  padding-left: 15pt;
   font-size: var(--recipe-card-step-size);
   line-height: 1.28;
 }
 
+/* The step number is a normal flex child (not absolutely positioned) so it
+   always travels with its step. Absolutely-positioned elements inside a CSS
+   multi-column flow can render in the wrong column, which detached the number
+   from its text. */
 .recipe-card__step-number {
-  position: absolute;
-  left: 0;
-  top: 0.5pt;
   display: grid;
   place-items: center;
   flex: 0 0 auto;
+  margin-top: 0.5pt;
   width: 11pt;
   height: 11pt;
   border-radius: 50%;
@@ -2177,16 +2190,34 @@
   font-weight: 800;
 }
 
-.recipe-card__ingredients--wide ul,
-.recipe-card__method--wide ol {
-  display: block;
-}
-
+/* Flow the whole list as two newspaper columns: read straight down the left
+   column, then continue at the top of the right. The column flow lives on the
+   container (not each section's list) so a section keeps reading top-to-bottom
+   and only wraps to the next column when it runs out of room — section headers
+   ride along in the flow exactly like the items do. */
 .recipe-card__ingredients--wide .recipe-card__section-groups,
 .recipe-card__method--wide .recipe-card__section-groups {
   display: block;
   column-count: 2;
   column-gap: calc(var(--recipe-card-gap) * 0.9);
+}
+
+.recipe-card__ingredients--wide .recipe-card__section-group,
+.recipe-card__method--wide .recipe-card__section-group {
+  break-inside: auto;
+}
+
+.recipe-card__ingredients--wide ul,
+.recipe-card__method--wide ol {
+  display: block;
+}
+
+/* Keep a header attached to the items beneath it so it never strands itself at
+   the foot of a column. */
+.recipe-card__ingredients--wide .recipe-card__section-title,
+.recipe-card__method--wide .recipe-card__section-title {
+  break-after: avoid;
+  break-inside: avoid;
 }
 
 .recipe-card__ingredients--wide li,
@@ -2203,6 +2234,10 @@
   color: var(--recipe-footer);
 }
 
+.recipe-print-preview--card-6x4 .recipe-card__footer {
+  display: none;
+}
+
 .recipe-template--heirloom .recipe-card__footer,
 .recipe-template--bistro .recipe-card__footer,
 .recipe-template--counter .recipe-card__footer {
@@ -2213,7 +2248,8 @@
   border-top: 0;
 }
 
-.recipe-card--back .recipe-card__footer {
+.recipe-card--back .recipe-card__footer,
+.recipe-card--continued .recipe-card__footer {
   display: none;
 }
 

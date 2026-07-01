@@ -18,6 +18,7 @@ export const PRINT_CARD_SIZE_OPTIONS: Array<{
 ];
 
 export type RecipePrintTemplate = "classic" | "heirloom" | "bistro" | "pantry" | "counter";
+type CardSectionLayout = "standard" | "stacked";
 
 export const RECIPE_PRINT_TEMPLATE_OPTIONS: Array<{
   id: RecipePrintTemplate;
@@ -42,12 +43,50 @@ const FRONT_SECTION_BUDGET: Record<
   }
 > = {
   letter: {
-    withoutPhoto: { ingredients: 1400, instructions: 1700 },
-    withPhoto: { ingredients: 1100, instructions: 1350 },
+    withoutPhoto: { ingredients: 1400, instructions: 2400 },
+    withPhoto: { ingredients: 1100, instructions: 1900 },
   },
   "card-6x4": {
     withoutPhoto: { ingredients: 760, instructions: 980 },
     withPhoto: { ingredients: 560, instructions: 720 },
+  },
+};
+
+// `ingredients` is the share an ingredient section gets when it splits the
+// front with steps; `ingredientsOnly` is how far ingredients may run when they
+// won't finish on the front (steps wait for the next face), so the lower half
+// of the page fills with ingredients instead of sitting blank.
+const STACKED_FRONT_BUDGET: Record<
+  PrintCardSize,
+  {
+    withoutPhoto: { total: number; ingredients: number; ingredientsOnly: number; instructions: number };
+    withPhoto: { total: number; ingredients: number; ingredientsOnly: number; instructions: number };
+  }
+> = {
+  letter: {
+    withoutPhoto: { total: 3200, ingredients: 1700, ingredientsOnly: 3600, instructions: 3100 },
+    withPhoto: { total: 2200, ingredients: 1350, ingredientsOnly: 2600, instructions: 2150 },
+  },
+  "card-6x4": {
+    withoutPhoto: { total: 720, ingredients: 760, ingredientsOnly: 1320, instructions: 700 },
+    withPhoto: { total: 520, ingredients: 620, ingredientsOnly: 1060, instructions: 520 },
+  },
+};
+
+const STACKED_FRONT_LIMITS: Record<
+  PrintCardSize,
+  {
+    withoutPhoto: { ingredients: number; instructions: number };
+    withPhoto: { ingredients: number; instructions: number };
+  }
+> = {
+  letter: {
+    withoutPhoto: { ingredients: 34, instructions: 22 },
+    withPhoto: { ingredients: 26, instructions: 15 },
+  },
+  "card-6x4": {
+    withoutPhoto: { ingredients: 24, instructions: 14 },
+    withPhoto: { ingredients: 20, instructions: 12 },
   },
 };
 
@@ -56,12 +95,51 @@ interface SplitOptions {
   template?: RecipePrintTemplate;
 }
 
-const BACK_SECTION_BUDGET: Record<
+const CONTINUATION_FLOW_BUDGET: Record<
   PrintCardSize,
-  { ingredients: number; instructions: number }
+  Record<
+    CardSectionLayout,
+    {
+      total: number;
+      ingredients: number;
+      ingredientsOnly: number;
+      instructions: number;
+      instructionsOnly: number;
+    }
+  >
 > = {
-  letter: { ingredients: 2500, instructions: 3800 },
-  "card-6x4": { ingredients: 900, instructions: 1200 },
+  letter: {
+    standard: {
+      total: 3600,
+      ingredients: 1900,
+      ingredientsOnly: 3400,
+      instructions: 3200,
+      instructionsOnly: 5600,
+    },
+    stacked: {
+      total: 4200,
+      ingredients: 2600,
+      ingredientsOnly: 4400,
+      instructions: 3400,
+      instructionsOnly: 6000,
+    },
+  },
+  "card-6x4": {
+    standard: {
+      total: 1250,
+      ingredients: 760,
+      ingredientsOnly: 1280,
+      instructions: 980,
+      instructionsOnly: 2150,
+    },
+    stacked: {
+      total: 1150,
+      ingredients: 760,
+      ingredientsOnly: 1240,
+      instructions: 860,
+      instructionsOnly: 2050,
+    },
+  },
 };
 
 // Hard item caps guard against many-but-tiny steps overflowing the fixed card
@@ -81,8 +159,6 @@ const FRONT_SECTION_LIMITS: Partial<
     withPhoto: { ingredients: 10, instructions: 6 },
   },
 };
-
-type CardSectionLayout = "standard" | "stacked";
 
 interface SplitRecipeResult {
   frontIngredients: Recipe["ingredients"];
@@ -137,11 +213,45 @@ function textCost(value: string): number {
   return value.length + Math.max(0, value.split(/\s+/).length - 1) * 2;
 }
 
+function totalTextCost<T>(items: T[], label: (item: T) => string): number {
+  return items.reduce((total, item) => total + textCost(label(item)), 0);
+}
+
+function ingredientLayoutCost(
+  ingredients: Recipe["ingredients"],
+  layout: CardSectionLayout,
+): number {
+  const columnDivisor = layout === "stacked" ? 2 : 1;
+  return (
+    totalTextCost(ingredients, ingredientText) / columnDivisor +
+    sectionGroups(ingredients).length * 36
+  );
+}
+
+// A rendered section header (the `<h3>` between groups) costs vertical space the
+// raw text length doesn't capture, so charge it when an item opens a new section
+// on a face. Without this, a face that lands on several section boundaries (e.g.
+// "Prep" then "Cook" steps) silently overflows. The charge is in the same units
+// as the size's instruction budget, so it scales with the card: a letter step is
+// far bigger than a 6x4 step, so its header reserve is bigger too.
+const SECTION_HEADER_COST: Record<PrintCardSize, number> = {
+  letter: 320,
+  "card-6x4": 130,
+};
+
 function splitByBudget<T>(
   items: T[],
   budget: number,
   label: (item: T) => string,
   maxFrontItems = Number.POSITIVE_INFINITY,
+  sectionOf?: (item: T) => string | undefined,
+  sectionCost = 0,
+  // By default the first item is always placed so callers that loop (e.g.
+  // continuation faces) keep making progress even when one item exceeds the
+  // budget. Front faces pass `strict` so a section that doesn't fit isn't forced
+  // on — it can simply start on the next face — which avoids a lone overflowing
+  // item that gets clipped.
+  strict = false,
 ) {
   if (!Number.isFinite(budget)) return { front: items, back: [] };
 
@@ -149,57 +259,54 @@ function splitByBudget<T>(
   const back: T[] = [];
   let used = 0;
   let overflowStarted = false;
+  let frontSection: string | undefined;
 
   for (const item of items) {
-    const cost = textCost(label(item));
-    if (
-      overflowStarted ||
-      (front.length > 0 && (front.length >= maxFrontItems || used + cost > budget))
-    ) {
+    const section = sectionOf?.(item)?.trim() || undefined;
+    const opensSection = sectionOf !== undefined && section !== frontSection;
+    const cost = textCost(label(item)) + (opensSection ? sectionCost : 0);
+    const tooMany = front.length >= maxFrontItems;
+    const tooBig = used + cost > budget && (strict || front.length > 0);
+    if (overflowStarted || tooMany || tooBig) {
       overflowStarted = true;
       back.push(item);
     } else {
       front.push(item);
       used += cost;
+      frontSection = section;
     }
   }
 
   return { front, back };
 }
 
-function splitIngredientHeavyCard(
-  recipe: Recipe,
-  instructionBudget: number,
-  maxFrontInstructions: number,
-): SplitRecipeResult {
-  const ingredientRows = Math.ceil(recipe.ingredients.length / 2);
-  const availableInstructionBudget = Math.max(
-    180,
-    instructionBudget - ingredientRows * 46,
-  );
-  const instructions = splitByBudget(
-    recipe.instructions,
-    availableInstructionBudget,
-    (step) => step.text,
-    maxFrontInstructions,
-  );
+function splitInstructionsByAvailableSpace(
+  instructions: Recipe["instructions"],
+  budget: number,
+  size: PrintCardSize,
+  maxFrontItems = Number.POSITIVE_INFINITY,
+  strict = false,
+) {
+  if (budget < 160) {
+    return { front: [] as Recipe["instructions"], back: instructions };
+  }
 
-  return {
-    frontIngredients: recipe.ingredients,
-    frontInstructions: instructions.front,
-    backIngredients: [] as Recipe["ingredients"],
-    backInstructions: instructions.back,
-    frontLayout: "stacked",
-    backLayout: "standard",
-  };
+  return splitByBudget(
+    instructions,
+    budget,
+    (step) => step.text,
+    maxFrontItems,
+    (step) => step.section,
+    SECTION_HEADER_COST[size],
+    strict,
+  );
 }
 
-function splitRecipe(
+function splitStandardFront(
   recipe: Recipe,
   size: PrintCardSize,
-  options: SplitOptions = {},
+  hasPhoto: boolean,
 ): SplitRecipeResult {
-  const { hasPhoto = false } = options;
   const frontBudget = hasPhoto
     ? FRONT_SECTION_BUDGET[size].withPhoto
     : FRONT_SECTION_BUDGET[size].withoutPhoto;
@@ -212,52 +319,114 @@ function splitRecipe(
     ingredientText,
     frontLimits?.ingredients,
   );
-  const instructions = splitByBudget(
+  const instructions = splitInstructionsByAvailableSpace(
     recipe.instructions,
     frontBudget.instructions,
-    (step) => step.text,
+    size,
     frontLimits?.instructions,
+    true,
   );
+  const ingredientsOverflow = ingredients.back.length > 0;
 
-  if (size === "card-6x4" && ingredients.back.length > 0) {
-    return splitIngredientHeavyCard(
-      recipe,
-      frontBudget.instructions,
-      hasPhoto ? 3 : 4,
-    );
-  }
+  return {
+    frontIngredients: ingredients.front,
+    frontInstructions: ingredientsOverflow ? ([] as Recipe["instructions"]) : instructions.front,
+    backIngredients: ingredients.back,
+    backInstructions: ingredientsOverflow ? recipe.instructions : instructions.back,
+    frontLayout: "standard",
+    backLayout: "standard",
+  };
+}
 
-  if (ingredients.back.length === 0 && instructions.back.length === 0) {
+function splitStackedFront(
+  recipe: Recipe,
+  size: PrintCardSize,
+  hasPhoto: boolean,
+): SplitRecipeResult {
+  const frontBudget = hasPhoto
+    ? STACKED_FRONT_BUDGET[size].withPhoto
+    : STACKED_FRONT_BUDGET[size].withoutPhoto;
+  const frontLimits = hasPhoto
+    ? STACKED_FRONT_LIMITS[size].withPhoto
+    : STACKED_FRONT_LIMITS[size].withoutPhoto;
+
+  // Ingredients only reserve their smaller share when they finish on the front
+  // and leave room for steps to begin. If they overflow that share they won't
+  // finish here anyway — and steps must wait until ingredients end — so let them
+  // run to the fuller `ingredientsOnly` budget rather than wrap early and strand
+  // the lower half of the page.
+  const shared = splitByBudget(
+    recipe.ingredients,
+    frontBudget.ingredients,
+    ingredientText,
+    frontLimits.ingredients,
+  );
+  const ingredients =
+    shared.back.length > 0
+      ? splitByBudget(
+          recipe.ingredients,
+          frontBudget.ingredientsOnly,
+          ingredientText,
+          frontLimits.ingredients,
+        )
+      : shared;
+
+  if (ingredients.back.length > 0) {
+    // Ingredients spill past the front, so every step continues on later faces.
     return {
       frontIngredients: ingredients.front,
-      frontInstructions: instructions.front,
-      backIngredients: [] as Recipe["ingredients"],
-      backInstructions: [] as Recipe["instructions"],
-      frontLayout: "standard",
-      backLayout: "standard",
+      frontInstructions: [] as Recipe["instructions"],
+      backIngredients: ingredients.back,
+      backInstructions: recipe.instructions,
+      frontLayout: "stacked",
+      backLayout: "stacked",
     };
   }
 
-  const backBudget = BACK_SECTION_BUDGET[size];
-  const backIngredients = splitByBudget(
-    ingredients.back,
-    backBudget.ingredients,
-    ingredientText,
+  const ingredientHeightCost = ingredientLayoutCost(ingredients.front, "stacked");
+  const remainingInstructionBudget = Math.min(
+    frontBudget.instructions,
+    frontBudget.total - ingredientHeightCost,
   );
-  const backInstructions = splitByBudget(
-    instructions.back,
-    backBudget.instructions,
-    (step) => step.text,
+  const instructions = splitInstructionsByAvailableSpace(
+    recipe.instructions,
+    remainingInstructionBudget,
+    size,
+    frontLimits.instructions,
+    true,
   );
 
   return {
     frontIngredients: ingredients.front,
     frontInstructions: instructions.front,
-    backIngredients: [...backIngredients.front, ...backIngredients.back],
-    backInstructions: [...backInstructions.front, ...backInstructions.back],
-    frontLayout: "standard",
-    backLayout: "standard",
+    backIngredients: [] as Recipe["ingredients"],
+    backInstructions: instructions.back,
+    frontLayout: "stacked",
+    backLayout: "stacked",
   };
+}
+
+function splitRecipe(
+  recipe: Recipe,
+  size: PrintCardSize,
+  options: SplitOptions = {},
+): SplitRecipeResult {
+  const { hasPhoto = false } = options;
+  const standardSplit = splitStandardFront(recipe, size, hasPhoto);
+
+  // Side-by-side is only used when the whole recipe fits on the front. The
+  // moment anything spills onto another side, switch to the stacked layout
+  // (full-width ingredients, then steps) so every face fills top-to-bottom.
+  // Continuing a side-by-side split leaves a tall column beside a short one,
+  // which is where the awkward half-empty pages came from.
+  const fitsOnFront =
+    standardSplit.backIngredients.length === 0 &&
+    standardSplit.backInstructions.length === 0;
+  if (fitsOnFront) {
+    return standardSplit;
+  }
+
+  return splitStackedFront(recipe, size, hasPhoto);
 }
 
 export function recipeNeedsBackSide(
@@ -278,7 +447,62 @@ export interface RecipeFace {
 export interface RecipeFaces {
   front: RecipeFace;
   back: RecipeFace | null;
+  pages: RecipeFace[];
   hasBack: boolean;
+}
+
+function continuationFaces(
+  ingredients: Recipe["ingredients"],
+  instructions: Recipe["instructions"],
+  size: PrintCardSize,
+  layout: CardSectionLayout,
+): RecipeFace[] {
+  const budget = CONTINUATION_FLOW_BUDGET[size][layout];
+  const pages: RecipeFace[] = [];
+  let remainingIngredients = ingredients;
+  let remainingInstructions = instructions;
+
+  while (remainingIngredients.length > 0 || remainingInstructions.length > 0) {
+    // Ingredients share a face with steps only when they finish on it; the
+    // smaller `ingredients` share keeps room for steps below. If they overflow
+    // that share (or no steps remain), give them the fuller `ingredientsOnly`
+    // budget so the face fills instead of wrapping ingredients early.
+    const shared = splitByBudget(
+      remainingIngredients,
+      budget.ingredients,
+      ingredientText,
+    );
+    const ingredientPage =
+      shared.back.length > 0 || remainingInstructions.length === 0
+        ? splitByBudget(remainingIngredients, budget.ingredientsOnly, ingredientText)
+        : shared;
+    const hasMoreIngredients = ingredientPage.back.length > 0;
+    const ingredientHeightCost = ingredientLayoutCost(ingredientPage.front, layout);
+    const instructionBudget =
+      hasMoreIngredients
+        ? 0
+        : ingredientPage.front.length === 0
+          ? budget.instructionsOnly
+          : Math.min(budget.instructions, budget.total - ingredientHeightCost);
+    const instructionPage = hasMoreIngredients
+      ? { front: [] as Recipe["instructions"], back: remainingInstructions }
+      : splitInstructionsByAvailableSpace(
+          remainingInstructions,
+          instructionBudget,
+          size,
+        );
+
+    pages.push({
+      ingredients: ingredientPage.front,
+      instructions: instructionPage.front,
+      layout,
+    });
+
+    remainingIngredients = ingredientPage.back;
+    remainingInstructions = instructionPage.back;
+  }
+
+  return pages;
 }
 
 /**
@@ -291,21 +515,23 @@ export function getRecipeFaces(
   options?: SplitOptions,
 ): RecipeFaces {
   const split = splitRecipe(recipe, size, options);
-  const hasBack =
-    split.backIngredients.length > 0 || split.backInstructions.length > 0;
+  const front = {
+    ingredients: split.frontIngredients,
+    instructions: split.frontInstructions,
+    layout: split.frontLayout,
+  };
+  const continuations = continuationFaces(
+    split.backIngredients,
+    split.backInstructions,
+    size,
+    split.backLayout,
+  );
+  const pages = [front, ...continuations];
+  const hasBack = continuations.length > 0;
   return {
-    front: {
-      ingredients: split.frontIngredients,
-      instructions: split.frontInstructions,
-      layout: split.frontLayout,
-    },
-    back: hasBack
-      ? {
-          ingredients: split.backIngredients,
-          instructions: split.backInstructions,
-          layout: split.backLayout,
-        }
-      : null,
+    front,
+    back: continuations[0] ?? null,
+    pages,
     hasBack,
   };
 }
@@ -321,6 +547,7 @@ export function RecipeCardFace({
   previewHidden = false,
   blank = false,
   showImage = false,
+  continued = false,
 }: {
   recipe: Recipe;
   ingredients: Recipe["ingredients"];
@@ -332,6 +559,7 @@ export function RecipeCardFace({
   previewHidden?: boolean;
   blank?: boolean;
   showImage?: boolean;
+  continued?: boolean;
 }) {
   const source = sourceLabel(recipe);
   const meta = metaBits(recipe);
@@ -358,7 +586,9 @@ export function RecipeCardFace({
 
   return (
     <article
-      className={`recipe-card recipe-card--${side}`}
+      className={`recipe-card recipe-card--${side} ${
+        continued ? "recipe-card--continued" : ""
+      }`}
       data-has-back={hasBackFace ? "true" : undefined}
       data-preview-hidden={previewHidden ? "true" : undefined}
     >
@@ -437,9 +667,9 @@ export function RecipeCardFace({
           >
             <h2 className="recipe-card__label">
               Steps
-              {side === "front" && hasBackFace ? (
+              {side === "front" && hasBackFace && !continued ? (
                 <span className="recipe-card__continued-inline"> (continued on back)</span>
-              ) : side === "back" ? (
+              ) : side === "back" || continued ? (
                 " continued"
               ) : (
                 ""
@@ -492,18 +722,13 @@ export default function RecipeCardPrint({
   showImage?: boolean;
 }) {
   const [previewSide, setPreviewSide] = useState<"front" | "back">("front");
-  const {
-    frontIngredients,
-    frontInstructions,
-    backIngredients,
-    backInstructions,
-    frontLayout,
-    backLayout,
-  } = splitRecipe(recipe, size, {
+  const faces = getRecipeFaces(recipe, size, {
     hasPhoto: showImage && Boolean(recipe.image),
     template,
   });
-  const hasBack = backIngredients.length > 0 || backInstructions.length > 0;
+  const pages = faces.pages;
+  const [frontPage, backPage] = pages;
+  const hasBack = faces.hasBack;
   const needsPrintBack = hasBack || (doubleSided && !isLast);
   const showSideNav = doubleSided && hasBack;
 
@@ -538,11 +763,11 @@ export default function RecipeCardPrint({
       )}
       <RecipeCardFace
         recipe={recipe}
-        ingredients={frontIngredients}
-        instructions={frontInstructions}
+        ingredients={frontPage.ingredients}
+        instructions={frontPage.instructions}
         side="front"
         showHeader
-        layout={frontLayout}
+        layout={frontPage.layout}
         hasBackFace={hasBack}
         previewHidden={showSideNav && previewSide !== "front"}
         showImage={showImage}
@@ -551,13 +776,14 @@ export default function RecipeCardPrint({
         (hasBack ? (
           <RecipeCardFace
             recipe={recipe}
-            ingredients={backIngredients}
-            instructions={backInstructions}
+            ingredients={backPage.ingredients}
+            instructions={backPage.instructions}
             side="back"
             showHeader={false}
-            layout={backLayout}
+            layout={backPage.layout}
             hasBackFace={hasBack}
             previewHidden={doubleSided && previewSide !== "back"}
+            continued
           />
         ) : (
           <RecipeCardFace
@@ -571,6 +797,34 @@ export default function RecipeCardPrint({
             blank
           />
         ))}
+      {pages.slice(2).map((page, index) => {
+        const physicalSide = doubleSided && index % 2 === 1 ? "back" : "front";
+        return (
+          <RecipeCardFace
+            key={`continued-${index}`}
+            recipe={recipe}
+            ingredients={page.ingredients}
+            instructions={page.instructions}
+            side={physicalSide}
+            showHeader={false}
+            layout={page.layout}
+            hasBackFace={hasBack}
+            continued
+          />
+        );
+      })}
+      {doubleSided && pages.length > 2 && pages.length % 2 === 1 && !isLast && (
+        <RecipeCardFace
+          recipe={recipe}
+          ingredients={[]}
+          instructions={[]}
+          side="back"
+          showHeader={false}
+          layout="standard"
+          hasBackFace={false}
+          blank
+        />
+      )}
     </div>
   );
 }
