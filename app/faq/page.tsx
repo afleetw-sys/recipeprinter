@@ -3,9 +3,9 @@ import { PageShell, PageHeader, StartPrintingCta } from "@/components/PageShell"
 import { FAQ, faqJsonLd, pageMetadata } from "@/lib/seo";
 
 export const metadata: Metadata = pageMetadata({
-  title: "FAQ",
+  title: "Recipe Printer FAQ",
   description:
-    "Answers about printing recipes from web and social URLs, removing ads, saving recipes as PDFs, screenshots, photos, CookPilot, and RecipePrinter privacy.",
+    "Answers about printing recipes from websites, URLs, Pinterest, Instagram, TikTok, PDFs, recipe cards, binders, and privacy.",
   path: "/faq",
 });
 
@@ -19,7 +19,7 @@ export default function FaqPage() {
 
       <PageHeader
         title="Frequently asked questions"
-        lede="Answers about printing recipes from web and social URLs, screenshots, photos, and text without the ads, clutter, or wasted pages."
+        lede="Answers about printing recipes from websites, URLs, social posts, screenshots, photos, and text as printable cards, pages, and PDFs."
       />
 
       <dl className="flex flex-col gap-cp-4">

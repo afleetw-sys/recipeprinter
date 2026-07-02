@@ -6,7 +6,7 @@ import { pageMetadata } from "@/lib/seo";
 export const metadata: Metadata = pageMetadata({
   title: "About RecipePrinter",
   description:
-    "Learn why I built RecipePrinter, a free tool for printing recipes from web and social URLs as clean recipe cards and PDFs without ads or clutter.",
+    "Learn why I built RecipePrinter, a tool for turning recipes from the internet into printable cards, pages, PDFs, and collections worth keeping.",
   path: "/about",
 });
 
@@ -15,7 +15,7 @@ export default function AboutPage() {
     <PageShell>
       <PageHeader
         title="Why I made RecipePrinter"
-        lede="A simple tool for turning recipes from web and social URLs, screenshots, and text into clean printable recipe cards and PDFs."
+        lede="A simple tool for turning recipes from the internet into printable recipe cards, pages, PDFs, and collections worth keeping."
       />
       <div className="flex flex-col gap-cp-5 text-ink-soft leading-relaxed">
         <p>
@@ -33,11 +33,16 @@ export default function AboutPage() {
         </p>
 
         <p>
+          The internet is where recipes are discovered. The kitchen is where
+          they belong.
+        </p>
+
+        <p>
           If you cook from the internet, you probably know the routine: a recipe
-          buried beneath ads, autoplay videos, pop-ups, giant photos, and pages
-          of story before you finally reach the ingredients. Try printing it and
-          you often get all of that on paper too, spread across several wasted
-          pages.
+          saved in one tab, a social post in another, a screenshot in your camera
+          roll, and a favorite you can never quite find when you need it. Try
+          printing directly from the web and you often get the whole page on
+          paper, spread across several wasted pages.
         </p>
 
         <p>
@@ -46,9 +51,9 @@ export default function AboutPage() {
           </span>{" "}
           Paste a recipe URL from a website, blog, or supported social post,
           upload a screenshot or photo, paste recipe text, or import directly
-          from CookPilot and we&apos;ll turn it into a clean printable recipe
-          card, recipe page, or PDF containing just the recipe: title,
-          ingredients, instructions, and notes.
+          from CookPilot and we&apos;ll turn it into a printable recipe card,
+          recipe page, or PDF containing the recipe details you need: title,
+          ingredients, instructions, notes, and timing when available.
         </p>
 
         <p>
@@ -64,9 +69,8 @@ export default function AboutPage() {
         </p>
 
         <p>
-          No ads. No clutter. No account required. Nothing stored on our
-          servers. Just clean printable recipes designed for real kitchens
-          instead of web browsers.
+          No account required. Nothing stored on our servers. Just printable
+          recipes designed for real kitchens instead of web browsers.
         </p>
 
         <p>

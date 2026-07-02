@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import type { ComponentType } from "react";
+import Link from "next/link";
 import { PageShell, PageHeader, StartPrintingCta } from "@/components/PageShell";
 import {
   CheckIcon,
@@ -10,11 +11,12 @@ import {
   ClockIcon,
 } from "@/components/icons";
 import { pageMetadata } from "@/lib/seo";
+import { SEO_LANDING_PAGES } from "@/lib/seoLandingPages";
 
 export const metadata: Metadata = pageMetadata({
-  title: "Features",
+  title: "Recipe Printing Tool for Recipes Worth Keeping",
   description:
-    "Print recipes from web and social URLs, photos, screenshots, and pasted text. RecipePrinter turns recipes into clean printable cards, pages, and PDFs with no ads or clutter.",
+    "A recipe printing tool for turning links, photos, screenshots, and text into printable recipe cards, pages, PDFs, and collections.",
   path: "/features",
 });
 
@@ -27,8 +29,8 @@ type Feature = {
 const FEATURES: Feature[] = [
   {
     icon: LinkIcon,
-    title: "Print recipes from web and social URLs",
-    body: "Paste a recipe URL from a food blog, recipe website, or supported social post and RecipePrinter turns it into a clean printable recipe card or page without the ads, pop-ups, or extra clutter.",
+    title: "Print recipes from websites and social links",
+    body: "Paste a recipe URL from a food blog, recipe website, Pinterest, Instagram, TikTok, or another supported social post and RecipePrinter turns it into a printable recipe card or page.",
   },
   {
     icon: ImageIcon,
@@ -42,13 +44,13 @@ const FEATURES: Feature[] = [
   },
   {
     icon: CheckIcon,
-    title: "Remove ads and recipe page clutter",
-    body: "RecipePrinter keeps the title, ingredients, instructions, notes, prep time, cook time, servings, and other useful details when available. The rest stays off the page.",
+    title: "Keep the recipe, leave the web page behind",
+    body: "RecipePrinter keeps the title, ingredients, instructions, notes, prep time, cook time, servings, and other useful details when available. Ads, pop-ups, comments, and extra page clutter stay off the printed recipe.",
   },
   {
     icon: PrintIcon,
     title: "Create recipe cards, pages, and PDFs",
-    body: "Print a recipe card for your kitchen, a letter-size recipe page for your binder, or choose Save as PDF to keep a clean recipe copy on your device.",
+    body: "Print a recipe card for your kitchen, a letter-size recipe page for your binder, or choose Save as PDF to keep a recipe copy on your device.",
   },
   {
     icon: ClockIcon,
@@ -57,12 +59,16 @@ const FEATURES: Feature[] = [
   },
 ];
 
+const UTILITY_GUIDES = SEO_LANDING_PAGES.filter(
+  (page) => page.intent === "Utility SEO",
+);
+
 export default function FeaturesPage() {
   return (
     <PageShell>
       <PageHeader
-        title="Everything you need to print recipes worth keeping"
-        lede="RecipePrinter turns web and social recipe links, photos, screenshots, and text into clean printable recipe cards, recipe pages, and PDFs you can actually cook from."
+        title="A recipe printing tool for recipes worth keeping"
+        lede="RecipePrinter turns websites, social links, photos, screenshots, and text into printable recipe cards, pages, PDFs, and batches you can cook from, save, and collect."
       />
 
       <ul className="grid gap-cp-4 sm:grid-cols-2">
@@ -80,6 +86,30 @@ export default function FeaturesPage() {
           </li>
         ))}
       </ul>
+
+      <section aria-labelledby="printing-guides-heading" className="mt-cp-7">
+        <h2
+          id="printing-guides-heading"
+          className="font-extrabold tracking-[-0.02em] text-[1.1rem]"
+        >
+          Choose how you found the recipe
+        </h2>
+        <p className="mt-cp-2 text-ink-soft text-[0.95rem] leading-relaxed">
+          Start with the way you found the recipe, then turn it into something
+          easier to cook from and keep.
+        </p>
+        <div className="mt-cp-4 grid gap-cp-3 sm:grid-cols-2">
+          {UTILITY_GUIDES.map((page) => (
+            <Link
+              key={page.slug}
+              href={`/${page.slug}`}
+              className="card p-cp-4 text-[0.92rem] font-bold text-ink hover:border-line-strong transition-colors"
+            >
+              {page.title}
+            </Link>
+          ))}
+        </div>
+      </section>
 
       <section
         aria-labelledby="privacy-heading"
@@ -100,7 +130,7 @@ export default function FeaturesPage() {
         <p className="mt-cp-3 text-ink-soft text-[0.95rem] leading-relaxed">
           No account required. Nothing saved to our servers. Your print queue
           lives in your browser for the current session only, so the recipes you
-          print stay yours.
+          print, save, and collect stay yours.
         </p>
       </section>
 

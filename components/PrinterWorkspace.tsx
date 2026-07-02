@@ -6,12 +6,19 @@ import { ImportPanel } from "@/components/ImportPanel";
 import { PrintQueue } from "@/components/PrintQueue";
 import { CheckIcon, MoreVerticalIcon, PrintIcon, TrashIcon, XIcon } from "@/components/icons";
 import { createCurrentPrintJob, useQueue } from "@/lib/queue";
+import type { ImportMethod } from "@/types/recipe";
 
 // The interactive heart of RecipePrinter: importing recipes and managing the
 // print queue. Split out from the homepage so the page itself can stay a server
 // component, all the marketing, FAQ, and structured-data content around this
 // renders as static HTML for search engines and a fast first paint.
-export function PrinterWorkspace() {
+export function PrinterWorkspace({
+  initialImportMode = "url",
+  importSubmitLabel,
+}: {
+  initialImportMode?: ImportMethod;
+  importSubmitLabel?: string;
+}) {
   const router = useRouter();
   const {
     items,
@@ -81,6 +88,8 @@ export function PrinterWorkspace() {
         <ImportPanel
           items={items}
           workspace
+          initialMode={initialImportMode}
+          submitLabel={importSubmitLabel}
           onAddUrl={addUrl}
           onAddImages={addImages}
           onAddText={addText}

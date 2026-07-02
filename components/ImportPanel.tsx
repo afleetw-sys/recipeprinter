@@ -74,6 +74,8 @@ function imageLabel(files: File[]): string {
 export function ImportPanel({
   items,
   workspace = false,
+  initialMode = "url",
+  submitLabel = "Create printable recipe",
   onAddUrl,
   onAddImages,
   onAddText,
@@ -82,13 +84,15 @@ export function ImportPanel({
 }: {
   items: QueueItem[];
   workspace?: boolean;
+  initialMode?: ImportMethod;
+  submitLabel?: string;
   onAddUrl: (url: string) => void;
   onAddImages: (images: string[], label: string) => void;
   onAddText: (text: string) => void;
   onAddCookPilotRecipes: (recipes: QueueItem[]) => number;
   onRemoveRecipe: (id: string) => void;
 }) {
-  const [mode, setMode] = useState<ImportMethod>("url");
+  const [mode, setMode] = useState<ImportMethod>(initialMode);
   const [url, setUrl] = useState("");
   const [text, setText] = useState("");
   const [imageFiles, setImageFiles] = useState<File[]>([]);
@@ -338,7 +342,7 @@ export function ImportPanel({
 
         <button type="submit" className="btn btn-primary w-full" disabled={busy}>
           {busy ? <UploadIcon size={18} /> : <span className="text-lg leading-none">+</span>}
-          Create printable recipe
+          {submitLabel}
           </button>
       </form>
       )}

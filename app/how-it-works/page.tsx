@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import type { ComponentType } from "react";
+import Link from "next/link";
 import { PageShell, PageHeader, StartPrintingCta } from "@/components/PageShell";
 import {
   LinkIcon,
@@ -8,11 +9,12 @@ import {
   CookPilotLogoIcon,
 } from "@/components/icons";
 import { pageMetadata } from "@/lib/seo";
+import { SEO_LANDING_PAGES } from "@/lib/seoLandingPages";
 
 export const metadata: Metadata = pageMetadata({
-  title: "How RecipePrinter Works",
+  title: "How Recipe Printer Works",
   description:
-    "Paste a recipe URL from a website, blog, or social post. RecipePrinter turns it into a clean printable recipe card or PDF with no ads or clutter.",
+    "See how Recipe Printer turns recipes from links, screenshots, photos, and text into printable recipe cards, pages, and PDFs.",
   path: "/how-it-works",
 });
 
@@ -45,12 +47,22 @@ const SOURCES: Source[] = [
   },
 ];
 
+const RELATED_GUIDES = [
+  "print-recipe-from-website",
+  "print-recipe-from-url",
+  "convert-recipe-to-pdf",
+  "printable-recipe-card-generator",
+  "recipe-binder",
+]
+  .map((slug) => SEO_LANDING_PAGES.find((page) => page.slug === slug))
+  .filter((page): page is NonNullable<typeof page> => Boolean(page));
+
 export default function HowItWorksPage() {
   return (
     <PageShell>
       <PageHeader
         title="From recipe link to printed recipe card"
-        lede="RecipePrinter turns recipes from web and social URLs, screenshots, photos, and text into clean printable recipe cards and PDFs you can actually cook from."
+        lede="RecipePrinter turns recipes from websites, social links, screenshots, photos, and text into printable recipe cards, pages, and PDFs you can cook from and keep."
       />
 
       <div className="flex flex-col gap-cp-7">
@@ -59,13 +71,13 @@ export default function HowItWorksPage() {
             id="step-1"
             className="text-[1.4rem] font-extrabold tracking-[-0.03em]"
           >
-            1. Add a recipe from wherever you found it
+            1. Add a recipe link, photo, screenshot, or text
           </h2>
 
           <p className="mt-cp-3 text-ink-soft leading-relaxed">
-            Start with a recipe you already want to keep. RecipePrinter
-            isn&apos;t a recipe discovery app or meal planner. It starts after
-            you&apos;ve found something worth making again.
+            Start with a recipe you already want to keep. RecipePrinter begins
+            after discovery: when a recipe has earned a place on paper, in your
+            kitchen, or in your collection.
           </p>
 
           <ul className="mt-cp-4 grid gap-cp-3 sm:grid-cols-2">
@@ -91,20 +103,19 @@ export default function HowItWorksPage() {
             id="step-2"
             className="text-[1.4rem] font-extrabold tracking-[-0.03em]"
           >
-            2. RecipePrinter keeps just the recipe
+            2. Turn the recipe into a printable card or page
           </h2>
 
           <p className="mt-cp-3 text-ink-soft leading-relaxed">
-            Recipe websites are made for screens, not printers. RecipePrinter
-            removes the ads, pop-ups, autoplay videos, comments, oversized
-            photos, and extra web page clutter so you can print the part you
-            came for.
+            Recipe websites and social posts are made for screens, not kitchen
+            counters. RecipePrinter keeps the useful recipe details and formats
+            them into something readable on paper.
           </p>
 
           <p className="mt-cp-3 text-ink-soft leading-relaxed">
-            You get a clean recipe with the title, ingredients, instructions,
-            notes, prep time, cook time, servings, and other useful details when
-            they&apos;re available.
+            You get a printable recipe with the title, ingredients,
+            instructions, notes, prep time, cook time, servings, and other
+            useful details when they&apos;re available.
           </p>
         </section>
 
@@ -113,7 +124,7 @@ export default function HowItWorksPage() {
             id="step-3"
             className="text-[1.4rem] font-extrabold tracking-[-0.03em]"
           >
-            3. Print it, save it, or keep a batch for later
+            3. Print it, save it as a PDF, or add it to your binder
           </h2>
 
           <p className="mt-cp-3 text-ink-soft leading-relaxed">
@@ -130,10 +141,30 @@ export default function HowItWorksPage() {
           </p>
 
           <p className="mt-cp-3 text-ink-soft leading-relaxed">
-            No account required. No ads. No clutter. Nothing saved to our
-            servers. Just clean printable recipes designed for real kitchens
-            instead of web browsers.
+            No account required. Nothing saved to our servers. Just printable
+            recipes designed for real kitchens instead of open browser tabs.
           </p>
+        </section>
+
+        <section aria-labelledby="related-guides-heading">
+          <h2
+            id="related-guides-heading"
+            className="text-[1.4rem] font-extrabold tracking-[-0.03em]"
+          >
+            More ways to use RecipePrinter
+          </h2>
+
+          <div className="mt-cp-4 grid gap-cp-3 sm:grid-cols-2">
+            {RELATED_GUIDES.map((page) => (
+              <Link
+                key={page.slug}
+                href={`/${page.slug}`}
+                className="card p-cp-4 text-[0.92rem] font-bold text-ink hover:border-line-strong transition-colors"
+              >
+                {page.title}
+              </Link>
+            ))}
+          </div>
         </section>
 
         <div className="pt-cp-2">
