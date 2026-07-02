@@ -542,8 +542,9 @@
   display: grid;
   grid-template-columns: 16px 1fr;
   align-items: center;
-  gap: 8px;
-  padding: 8px;
+  column-gap: 8px;
+  row-gap: 8px;
+  padding: 10px;
   border: 1px solid var(--cp-line);
   border-radius: 12px;
   background: var(--cp-card);
@@ -601,16 +602,7 @@
   color: var(--cp-ink-soft);
   font-size: 0.68rem;
   font-weight: 600;
-}
-
-.recipe-page-rail__badge {
-  padding: 1px 6px;
-  border-radius: 999px;
-  background: color-mix(in srgb, var(--cp-accent) 12%, var(--cp-card));
-  color: var(--cp-blue);
-  font-size: 0.6rem;
-  font-weight: 800;
-  letter-spacing: 0.02em;
+  line-height: 1.18;
 }
 
 .recipe-page-canvas {
@@ -634,11 +626,7 @@
 }
 
 .recipe-page-canvas[data-single-recipe="true"] .recipe-page-deck {
-  padding-top: 0;
-}
-
-.recipe-page-canvas[data-single-recipe="true"][data-active-flip="true"] .recipe-page-deck {
-  padding-top: 42px;
+  padding-top: 16px;
 }
 
 .recipe-page-deck::-webkit-scrollbar {
@@ -646,6 +634,7 @@
 }
 
 .recipe-page-slide {
+  position: relative;
   flex: 0 0 auto;
   scroll-snap-align: center;
   cursor: pointer;
@@ -668,13 +657,17 @@
   cursor: default;
 }
 
-/* Flip control floats above the deck for the active two-sided sheet. */
 .recipe-page-canvas__flip {
   position: absolute;
-  top: 0;
+  bottom: calc(100% + 16px);
   left: 50%;
   z-index: 3;
   transform: translateX(-50%);
+}
+
+.recipe-page-canvas[data-single-recipe="true"] .recipe-page-canvas__flip {
+  top: 16px;
+  bottom: auto;
 }
 
 /* Render a real-size card and scale it down so previews look like the paper. */
@@ -697,7 +690,7 @@
 /* Full-page (letter) thumbnails are very tall; crop the bottom and fade it
    out so the rail stays compact while still showing the top of each page. */
 .recipe-page-rail--letter .recipe-page-rail__thumb .recipe-page-scaler {
-  height: 116px;
+  height: 74px;
   /* Square the cut edge so the page reads as cropped, not as a card. */
   border-bottom: 0;
   border-bottom-left-radius: 0;
@@ -780,16 +773,8 @@
     max-height: none;
   }
 
-  /* The flip control is absolutely positioned within the canvas; without a
-     positioning context it escapes to the page top (behind the header) and
-     vanishes on desktop. Keep the canvas as the offset parent. */
   .recipe-page-canvas {
     position: relative;
-  }
-
-  /* A touch of breathing room above the floating flip control on desktop. */
-  .recipe-page-canvas__flip {
-    top: 12px;
   }
 
   .recipe-config-panel {
@@ -1378,6 +1363,10 @@
     scroll-snap-type: none;
   }
 
+  .recipe-page-canvas[data-single-recipe="true"] .recipe-page-deck {
+    padding-top: 0;
+  }
+
   .recipe-page-slide {
     opacity: 1;
     cursor: default;
@@ -1388,9 +1377,7 @@
   }
 
   .recipe-page-canvas__flip {
-    position: static;
-    margin: 0 auto 10px;
-    transform: none;
+    margin: 0;
   }
 
   .recipe-config-panel {

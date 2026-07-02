@@ -46,6 +46,7 @@ const POST_PRINT_DIALOG_INTERVAL_MS = 7 * 24 * 60 * 60 * 1000;
 const EMAIL_LINK_STORAGE_KEY = "recipeprinter:purchase-email-link:v1";
 const PENDING_PRINT_STORAGE_KEY = "recipeprinter:pending-premium-print:v1";
 const PRICE_LOOKUP_USER_STORAGE_KEY = "recipeprinter:price-lookup-user:v1";
+const SINGLE_RECIPE_DECK_TOP_PADDING = 16;
 
 // Real printed page dimensions in CSS px (96px per inch). The page navigator
 // renders each card at this true size and scales it down with a transform, so
@@ -266,8 +267,8 @@ export default function PrintPage() {
             pageLabel:
               pageIndex === 0
                 ? back
-                  ? "Front & back"
-                  : "One side"
+                  ? "Two-sided"
+                  : "One-sided"
                 : back
                   ? `Continued ${pageIndex + 1}-${pageIndex + 2}`
                   : `Continued ${pageIndex + 1}`,
@@ -388,7 +389,6 @@ export default function PrintPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [sheets.length, deckScale, cardSize]);
 
-  const activeSheet = sheets[activeSheetIndex] ?? sheets[0] ?? null;
   const singleRecipePrintView =
     (items?.filter((item) => Boolean(item.recipe)).length ?? 0) === 1;
 
@@ -398,7 +398,7 @@ export default function PrintPage() {
     if (!deck || !slide) return;
 
     const targetTop = singleRecipePrintView
-      ? slide.offsetTop
+      ? slide.offsetTop - SINGLE_RECIPE_DECK_TOP_PADDING
       : slide.offsetTop - (deck.clientHeight - slide.offsetHeight) / 2;
     const maxTop = deck.scrollHeight - deck.clientHeight;
     deck.scrollTo({
@@ -711,12 +711,7 @@ export default function PrintPage() {
               </span>
               <span className="recipe-page-rail__label">
                 <span className="recipe-page-rail__title">{sheet.label}</span>
-                <span className="recipe-page-rail__meta">
-                  {sheet.pageLabel}
-                  {sheet.twoSided && (
-                    <span className="recipe-page-rail__badge">2-sided</span>
-                  )}
-                </span>
+                <span className="recipe-page-rail__meta">{sheet.pageLabel}</span>
               </span>
             </button>
           ))}
@@ -728,7 +723,6 @@ export default function PrintPage() {
           aria-label="Selected page"
           data-mobile-open={mobilePreviewOpen ? "true" : "false"}
           data-single-recipe={singleRecipePrintView ? "true" : "false"}
-          data-active-flip={activeSheet?.flip ? "true" : "false"}
         >
           <button
             type="button"
@@ -746,29 +740,6 @@ export default function PrintPage() {
               }}
             />
           </button>
-          {activeSheet?.flip && (
-            <div className="recipe-card-side-nav recipe-page-canvas__flip" aria-label="Sheet sides">
-              <button
-                type="button"
-                className="recipe-card-side-nav__button"
-                aria-label="Show front"
-                disabled={canvasSide === "front"}
-                onClick={() => setCanvasSide("front")}
-              >
-                ←
-              </button>
-              <span>{canvasSide === "front" ? "Front" : "Back"}</span>
-              <button
-                type="button"
-                className="recipe-card-side-nav__button"
-                aria-label="Show back"
-                disabled={canvasSide === "back"}
-                onClick={() => setCanvasSide("back")}
-              >
-                →
-              </button>
-            </div>
-          )}
           <div className="recipe-page-deck" id="recipe-page-deck" ref={deckRef}>
             {sheets.map((sheet, index) => (
               <div
@@ -791,6 +762,35 @@ export default function PrintPage() {
                   }
                 }}
               >
+                {index === activeSheetIndex && sheet.flip && (
+                  <div className="recipe-card-side-nav recipe-page-canvas__flip" aria-label="Sheet sides">
+                    <button
+                      type="button"
+                      className="recipe-card-side-nav__button"
+                      aria-label="Show front"
+                      disabled={canvasSide === "front"}
+                      onClick={(event) => {
+                        event.stopPropagation();
+                        setCanvasSide("front");
+                      }}
+                    >
+                      ←
+                    </button>
+                    <span>{canvasSide === "front" ? "Front" : "Back"}</span>
+                    <button
+                      type="button"
+                      className="recipe-card-side-nav__button"
+                      aria-label="Show back"
+                      disabled={canvasSide === "back"}
+                      onClick={(event) => {
+                        event.stopPropagation();
+                        setCanvasSide("back");
+                      }}
+                    >
+                      →
+                    </button>
+                  </div>
+                )}
                 <ScaledPage
                   sheet={sheet}
                   side={index === activeSheetIndex ? canvasSide : "front"}

@@ -130,14 +130,14 @@ const CONTINUATION_FLOW_BUDGET: Record<
       ingredients: 760,
       ingredientsOnly: 1280,
       instructions: 980,
-      instructionsOnly: 2150,
+      instructionsOnly: 2400,
     },
     stacked: {
       total: 1150,
       ingredients: 760,
       ingredientsOnly: 1240,
       instructions: 860,
-      instructionsOnly: 2050,
+      instructionsOnly: 2350,
     },
   },
 };
