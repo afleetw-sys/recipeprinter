@@ -61,48 +61,48 @@ function pageJsonLd(page: (typeof SEO_LANDING_PAGES)[number]) {
 
 function RecipePageVisual() {
   return (
-    <div className="relative mx-auto w-full max-w-[920px] overflow-hidden rounded-xl border border-line bg-card p-cp-5 shadow-sm">
-      <div className="absolute right-4 top-4 opacity-20" aria-hidden>
+    <div className="relative mx-auto w-full max-w-[820px] overflow-hidden rounded-xl border border-line bg-card p-cp-4 shadow-sm">
+      <div className="absolute right-4 top-4 opacity-15" aria-hidden>
         <Image
           src="/images/heirloom-whisk.svg"
           alt=""
-          width={92}
-          height={92}
-          className="h-[92px] w-[92px]"
+          width={76}
+          height={76}
+          className="h-[76px] w-[76px]"
         />
       </div>
 
-      <div className="relative grid gap-cp-4">
+      <div className="relative grid gap-cp-3">
         <div>
           <p className="text-[0.72rem] font-extrabold uppercase tracking-[0.12em] text-brand-ink">
             Recipe Printer output
           </p>
-          <h2 className="mt-cp-2 text-[1.2rem] font-extrabold tracking-[-0.03em]">
+          <h2 className="mt-cp-1 text-[1.1rem] font-extrabold tracking-[-0.03em]">
             A printable recipe you can cook from
           </h2>
         </div>
 
-        <div className="rounded border border-line bg-white p-cp-5">
-          <div className="flex items-start justify-between gap-cp-4 border-b border-line pb-cp-3">
+        <div className="rounded border border-line bg-white p-cp-4">
+          <div className="flex items-start justify-between gap-cp-4 border-b border-line pb-cp-2">
             <div>
-              <p className="font-serif text-[1.45rem] leading-tight text-ink">
+              <p className="font-serif text-[1.28rem] leading-tight text-ink">
                 Lemon Sunday Pasta
               </p>
               <p className="mt-1 text-[0.8rem] font-semibold text-ink-soft">
                 25 min · Serves 4 · Saved from a recipe link
               </p>
             </div>
-            <span className="grid h-10 w-10 shrink-0 place-items-center rounded bg-brand-50 text-brand-ink">
-              <PrintIcon size={20} />
+            <span className="grid h-9 w-9 shrink-0 place-items-center rounded bg-brand-50 text-brand-ink">
+              <PrintIcon size={18} />
             </span>
           </div>
 
-          <div className="mt-cp-4 grid gap-cp-4 sm:grid-cols-[0.8fr_1fr]">
+          <div className="mt-cp-3 grid gap-cp-4 sm:grid-cols-[0.8fr_1fr]">
             <div>
               <p className="text-[0.75rem] font-extrabold uppercase tracking-[0.1em] text-brand-ink">
                 Ingredients
               </p>
-              <ul className="mt-cp-2 space-y-1 text-[0.86rem] text-ink-soft">
+              <ul className="mt-cp-2 space-y-0.5 text-[0.84rem] text-ink-soft">
                 <li>Spaghetti</li>
                 <li>Lemon zest</li>
                 <li>Parmesan</li>
@@ -113,7 +113,7 @@ function RecipePageVisual() {
               <p className="text-[0.75rem] font-extrabold uppercase tracking-[0.1em] text-brand-ink">
                 Steps
               </p>
-              <ol className="mt-cp-2 space-y-1 text-[0.86rem] text-ink-soft">
+              <ol className="mt-cp-2 space-y-0.5 text-[0.84rem] text-ink-soft">
                 <li>Boil pasta until tender.</li>
                 <li>Toss warm with lemon and cheese.</li>
                 <li>Print, mark up, and keep.</li>
@@ -122,7 +122,7 @@ function RecipePageVisual() {
           </div>
         </div>
 
-        <div className="grid gap-cp-2 text-[0.9rem] font-semibold text-ink-soft sm:grid-cols-3">
+        <div className="grid gap-cp-2 text-[0.86rem] font-semibold text-ink-soft sm:grid-cols-3">
           <span className="inline-flex items-center gap-2">
             <CheckIcon size={16} /> Cards
           </span>
@@ -195,7 +195,7 @@ export default function SeoLandingPage({ params }: PageProps) {
       />
 
       <main className="flex-1 px-cp-6">
-        <div className="max-w-content mx-auto flex flex-col gap-cp-8 pt-cp-6 sm:pt-cp-7 pb-cp-7">
+        <div className="max-w-content mx-auto flex flex-col gap-[52px] pt-cp-6 sm:pt-cp-7 pb-cp-7">
           <section
             className="relative overflow-hidden py-cp-7 sm:py-cp-8"
             aria-labelledby="landing-heading"
@@ -248,8 +248,8 @@ export default function SeoLandingPage({ params }: PageProps) {
 
           <RecipePageVisual />
 
-          <section aria-labelledby="steps-heading">
-            <div className="max-w-[720px]">
+          <section aria-labelledby="steps-heading" className="mx-auto w-full max-w-[1040px]">
+            <div className="max-w-[680px]">
               <h2
                 id="steps-heading"
                 className="text-[1.4rem] font-extrabold tracking-[-0.03em]"
@@ -263,11 +263,11 @@ export default function SeoLandingPage({ params }: PageProps) {
             </div>
             <ol className="mt-cp-4 grid gap-cp-3 md:grid-cols-3">
               {page.steps.map((step, index) => (
-                <li key={step} className="card p-cp-5">
+                <li key={step} className="card p-cp-4">
                   <span className="grid h-8 w-8 place-items-center rounded-full bg-brand-50 text-[0.9rem] font-extrabold text-brand-ink">
                     {index + 1}
                   </span>
-                  <p className="mt-cp-3 text-ink-soft text-[0.95rem] leading-relaxed">
+                  <p className="mt-cp-3 text-ink-soft text-[0.92rem] leading-relaxed">
                     {step}
                   </p>
                 </li>
@@ -275,7 +275,7 @@ export default function SeoLandingPage({ params }: PageProps) {
             </ol>
           </section>
 
-          <section aria-label="Recipe Printer benefits" className="grid gap-cp-4 md:grid-cols-2">
+          <section aria-label="Recipe Printer benefits" className="mx-auto grid w-full max-w-[1040px] gap-cp-4 md:grid-cols-2">
             {page.sections.map((section) => (
               <div key={section.h2} className="card p-cp-5">
                 <h2 className="text-[1.08rem] font-extrabold tracking-[-0.02em]">
@@ -290,7 +290,7 @@ export default function SeoLandingPage({ params }: PageProps) {
 
           <section
             aria-labelledby="cta-heading"
-            className="rounded-xl bg-brand-50 px-cp-5 py-cp-6 sm:px-cp-7"
+            className="mx-auto w-full max-w-[1040px] rounded-xl bg-brand-50 px-cp-5 py-cp-6 sm:px-cp-7"
           >
             <div className="flex flex-col gap-cp-4 sm:flex-row sm:items-center sm:justify-between">
               <div>
@@ -308,7 +308,7 @@ export default function SeoLandingPage({ params }: PageProps) {
             </div>
           </section>
 
-          <section aria-labelledby="faq-heading" className="max-w-[760px]">
+          <section aria-labelledby="faq-heading" className="mx-auto w-full max-w-[760px]">
             <h2
               id="faq-heading"
               className="text-[1.35rem] font-extrabold tracking-[-0.03em]"
@@ -327,7 +327,7 @@ export default function SeoLandingPage({ params }: PageProps) {
             </dl>
           </section>
 
-          <section aria-labelledby="related-heading">
+          <section aria-labelledby="related-heading" className="mx-auto w-full max-w-[1040px]">
             <h2
               id="related-heading"
               className="text-[1.1rem] font-extrabold tracking-[-0.02em]"
