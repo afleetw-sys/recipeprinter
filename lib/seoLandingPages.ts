@@ -34,9 +34,9 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
     intent: "Utility SEO",
     eyebrow: "Recipe printing tool",
     initialImportMode: "url",
-    title: "Print a Recipe from a Website",
+    title: "Free Recipe Printer for Websites",
     description:
-      "Paste a recipe website link and turn it into a printable recipe card, page, or PDF for cooking, saving, and keeping.",
+      "Paste a recipe website link and turn it into a printable recipe card, page, or PDF. Free, no account required.",
     h1: "Print a recipe from a website",
     lede:
       "Found a recipe online that you want to cook from paper? Paste the website link into Recipe Printer and turn it into a clean printable recipe card, full page, or PDF.",
@@ -88,9 +88,9 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
     intent: "Utility SEO",
     eyebrow: "Recipe printing tool",
     initialImportMode: "url",
-    title: "Print a Recipe from a URL",
+    title: "Free Recipe URL Printer",
     description:
-      "Paste a recipe URL and make a printable recipe card, full-page recipe, or PDF you can cook from and keep.",
+      "Paste a recipe URL and make a printable recipe card, page, or PDF you can cook from and keep. Free, no account required.",
     h1: "Print a recipe from a URL",
     lede:
       "Recipe Printer turns a recipe link into a printable recipe card or page, so the recipe can move from a browser tab to your kitchen.",
@@ -142,9 +142,9 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
     intent: "Utility SEO",
     eyebrow: "Recipe PDF tool",
     initialImportMode: "url",
-    title: "Convert a Recipe to PDF",
+    title: "Free Recipe to PDF Converter",
     description:
-      "Turn recipes from links, photos, screenshots, or text into clean printable PDFs for saving, sharing, and cooking.",
+      "Turn recipes from links, photos, screenshots, or text into printable PDFs for saving, sharing, and cooking.",
     h1: "Convert a recipe to PDF",
     lede:
       "Recipe Printer helps you turn online recipes into print-ready pages that can be saved as PDFs and kept with the rest of your recipe collection.",
@@ -197,7 +197,7 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
     eyebrow: "Recipe card maker",
     initialImportMode: "url",
     importSubmitLabel: "Make printable recipe card",
-    title: "Printable Recipe Card Generator",
+    title: "Free Printable Recipe Card Maker",
     description:
       "Make printable recipe cards from website links, photos, screenshots, or pasted text, then print or save them.",
     h1: "Printable recipe card generator",
@@ -251,9 +251,9 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
     intent: "Utility SEO",
     eyebrow: "Social recipe printer",
     initialImportMode: "url",
-    title: "Print Pinterest Recipes",
+    title: "Free Pinterest Recipe Printer",
     description:
-      "Turn Pinterest recipe links, screenshots, or saved recipe text into printable cards, pages, and PDFs.",
+      "Turn Pinterest recipe links, screenshots, or saved recipe text into printable recipe cards, pages, and PDFs.",
     h1: "Print Pinterest recipes",
     lede:
       "Pinterest is a great place to find recipes. Recipe Printer helps move the ones you want to make from a saved pin into a printable recipe you can cook from.",
@@ -305,9 +305,9 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
     intent: "Utility SEO",
     eyebrow: "Social recipe printer",
     initialImportMode: "text",
-    title: "Print Instagram Recipes",
+    title: "Free Instagram Recipe Printer",
     description:
-      "Turn Instagram recipe links, captions, screenshots, or pasted text into printable recipes you can cook from.",
+      "Turn Instagram recipe captions, screenshots, links, or pasted text into printable recipes you can cook from.",
     h1: "Print Instagram recipes",
     lede:
       "Instagram recipes are easy to save and hard to cook from. Recipe Printer helps turn recipe posts, captions, and screenshots into printable cards or pages.",
@@ -359,9 +359,9 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
     intent: "Utility SEO",
     eyebrow: "Social recipe printer",
     initialImportMode: "text",
-    title: "Print TikTok Recipes",
+    title: "Free TikTok Recipe Printer",
     description:
-      "Turn TikTok recipe links, captions, screenshots, or pasted text into printable recipe cards, pages, and PDFs.",
+      "Turn TikTok recipe captions, screenshots, links, or pasted text into printable recipe cards, pages, and PDFs.",
     h1: "Print TikTok recipes",
     lede:
       "TikTok is good for finding quick recipe ideas. Recipe Printer helps turn the recipes you want to repeat into something stable enough to cook from.",
@@ -414,7 +414,7 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
     eyebrow: "Recipe organization guide",
     title: "Organize Recipes from the Internet",
     description:
-      "Turn scattered online recipes into printable cards, PDFs, binders, and collections you can actually use.",
+      "Turn scattered online recipes into printable cards, PDFs, binders, and collections you can cook from and keep.",
     h1: "Organize recipes from the internet",
     lede:
       "Recipe Printer helps turn scattered links, screenshots, saved posts, and copied text into a recipe collection you can cook from and keep.",
@@ -467,7 +467,7 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
     eyebrow: "Recipe binder guide",
     title: "Recipe Binder Ideas for Online Recipes",
     description:
-      "Build a recipe binder from online recipes, printed recipe cards, PDFs, screenshots, and family favorites.",
+      "Build a recipe binder from online recipes, printable recipe cards, PDFs, screenshots, and family favorites.",
     h1: "Recipe binder ideas for recipes you find online",
     lede:
       "A recipe binder is still one of the simplest ways to keep favorite recipes close. Recipe Printer helps turn online recipes into pages and cards that fit the system.",

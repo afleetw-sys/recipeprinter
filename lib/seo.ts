@@ -30,8 +30,8 @@ export const SITE_TAGLINE = "Print recipes worth keeping";
  * no ads.
  */
 export const SITE_DESCRIPTION =
-  "Turn recipes from websites, social links, photos, or text into printable " +
-  "recipe cards, pages, and PDFs worth keeping.";
+  "Paste recipes from websites, social links, photos, or text and turn them " +
+  "into printable recipe cards, pages, and PDFs worth keeping.";
 
 /**
  * Search intents we want the product to be the natural answer for. These are

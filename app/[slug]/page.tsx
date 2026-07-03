@@ -1,10 +1,10 @@
 import { notFound } from "next/navigation";
 import type { Metadata } from "next";
+import Image from "next/image";
 import Link from "next/link";
-import { PageShell, StartPrintingCta } from "@/components/PageShell";
-import { PrinterWorkspace } from "@/components/PrinterWorkspace";
 import { SiteFooter } from "@/components/SiteFooter";
 import { SiteHeader } from "@/components/SiteHeader";
+import { CheckIcon, PrintIcon } from "@/components/icons";
 import {
   SEO_LANDING_PAGE_MAP,
   SEO_LANDING_PAGES,
@@ -15,6 +15,8 @@ import { absoluteUrl } from "@/lib/seo";
 type PageProps = {
   params: { slug: string };
 };
+
+const APP_CTA_HREF = "/#rp-main";
 
 export function generateStaticParams() {
   return SEO_LANDING_PAGES.map((page) => ({ slug: page.slug }));
@@ -57,209 +59,293 @@ function pageJsonLd(page: (typeof SEO_LANDING_PAGES)[number]) {
   };
 }
 
+function RecipePageVisual() {
+  return (
+    <div className="relative mx-auto w-full max-w-[920px] overflow-hidden rounded-xl border border-line bg-card p-cp-5 shadow-sm">
+      <div className="absolute right-4 top-4 opacity-20" aria-hidden>
+        <Image
+          src="/images/heirloom-whisk.svg"
+          alt=""
+          width={92}
+          height={92}
+          className="h-[92px] w-[92px]"
+        />
+      </div>
+
+      <div className="relative grid gap-cp-4">
+        <div>
+          <p className="text-[0.72rem] font-extrabold uppercase tracking-[0.12em] text-brand-ink">
+            Recipe Printer output
+          </p>
+          <h2 className="mt-cp-2 text-[1.2rem] font-extrabold tracking-[-0.03em]">
+            A printable recipe you can cook from
+          </h2>
+        </div>
+
+        <div className="rounded border border-line bg-white p-cp-5">
+          <div className="flex items-start justify-between gap-cp-4 border-b border-line pb-cp-3">
+            <div>
+              <p className="font-serif text-[1.45rem] leading-tight text-ink">
+                Lemon Sunday Pasta
+              </p>
+              <p className="mt-1 text-[0.8rem] font-semibold text-ink-soft">
+                25 min · Serves 4 · Saved from a recipe link
+              </p>
+            </div>
+            <span className="grid h-10 w-10 shrink-0 place-items-center rounded bg-brand-50 text-brand-ink">
+              <PrintIcon size={20} />
+            </span>
+          </div>
+
+          <div className="mt-cp-4 grid gap-cp-4 sm:grid-cols-[0.8fr_1fr]">
+            <div>
+              <p className="text-[0.75rem] font-extrabold uppercase tracking-[0.1em] text-brand-ink">
+                Ingredients
+              </p>
+              <ul className="mt-cp-2 space-y-1 text-[0.86rem] text-ink-soft">
+                <li>Spaghetti</li>
+                <li>Lemon zest</li>
+                <li>Parmesan</li>
+                <li>Olive oil</li>
+              </ul>
+            </div>
+            <div>
+              <p className="text-[0.75rem] font-extrabold uppercase tracking-[0.1em] text-brand-ink">
+                Steps
+              </p>
+              <ol className="mt-cp-2 space-y-1 text-[0.86rem] text-ink-soft">
+                <li>Boil pasta until tender.</li>
+                <li>Toss warm with lemon and cheese.</li>
+                <li>Print, mark up, and keep.</li>
+              </ol>
+            </div>
+          </div>
+        </div>
+
+        <div className="grid gap-cp-2 text-[0.9rem] font-semibold text-ink-soft sm:grid-cols-3">
+          <span className="inline-flex items-center gap-2">
+            <CheckIcon size={16} /> Cards
+          </span>
+          <span className="inline-flex items-center gap-2">
+            <CheckIcon size={16} /> Pages
+          </span>
+          <span className="inline-flex items-center gap-2">
+            <CheckIcon size={16} /> PDFs
+          </span>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function heroChips(page: (typeof SEO_LANDING_PAGES)[number]) {
+  if (page.slug.includes("pinterest")) {
+    return ["Pinterest link", "Recipe screenshot", "Printable card", "Save as PDF"];
+  }
+  if (page.slug.includes("instagram")) {
+    return ["Instagram caption", "Recipe screenshot", "Paste text", "Print card"];
+  }
+  if (page.slug.includes("tiktok")) {
+    return ["TikTok caption", "Recipe notes", "Screenshots", "Save as PDF"];
+  }
+  if (page.slug.includes("pdf")) {
+    return ["Recipe URL", "Photo", "Screenshot", "Save as PDF"];
+  }
+  if (page.slug.includes("card")) {
+    return ["Website link", "Recipe text", "6 x 4 card", "Recipe binder"];
+  }
+  if (page.intent === "Utility SEO") {
+    return ["Website link", "Social recipe", "Photo or text", "Print or PDF"];
+  }
+  if (page.slug.includes("binder") || page.slug.includes("organize")) {
+    return ["Printed pages", "Recipe cards", "PDF copies", "Family favorites"];
+  }
+  return ["Old cards", "Recipe photos", "Printed keepsakes", "Family cookbook"];
+}
+
+function LandingCta({
+  label = "Start printing recipes",
+  variant = "primary",
+}: {
+  label?: string;
+  variant?: "primary" | "secondary";
+}) {
+  return (
+    <Link href={APP_CTA_HREF} className={`btn ${variant === "primary" ? "btn-primary" : "btn-secondary"}`}>
+      <PrintIcon size={18} />
+      {label}
+    </Link>
+  );
+}
+
 export default function SeoLandingPage({ params }: PageProps) {
   const page = SEO_LANDING_PAGE_MAP.get(params.slug);
   if (!page) notFound();
 
-  if (page.intent === "Utility SEO") {
-    return (
-      <div className="min-h-screen flex flex-col">
-        <script
-          type="application/ld+json"
-          dangerouslySetInnerHTML={{ __html: JSON.stringify(pageJsonLd(page)) }}
-        />
-
-        <SiteHeader backHref="/" />
-
-        <main className="flex-1 px-cp-6">
-          <div className="max-w-content mx-auto flex flex-col gap-cp-7 pt-cp-6 sm:pt-cp-7 pb-cp-7">
-            <header className="max-w-[48rem]">
-              <p className="eyebrow">{page.eyebrow}</p>
-              <h1 className="mt-cp-2 text-[clamp(2rem,5vw,2.75rem)] font-extrabold tracking-[-0.04em] leading-[1.05]">
-                {page.h1}
-              </h1>
-              <p className="mt-cp-3 text-ink-soft text-[1.02rem] leading-relaxed">
-                {page.lede}
-              </p>
-            </header>
-
-            <PrinterWorkspace
-              initialImportMode={page.initialImportMode}
-              importSubmitLabel={page.importSubmitLabel}
-            />
-
-            <div className="max-w-[720px] flex flex-col gap-cp-7">
-              <section aria-labelledby="steps-heading">
-                <h2
-                  id="steps-heading"
-                  className="text-[1.35rem] font-extrabold tracking-[-0.03em]"
-                >
-                  {page.stepsTitle}
-                </h2>
-                <ol className="mt-cp-4 grid gap-cp-3 sm:grid-cols-3">
-                  {page.steps.map((step, index) => (
-                    <li key={step} className="card p-cp-4">
-                      <span className="grid h-8 w-8 place-items-center rounded-full bg-brand-50 text-[0.9rem] font-extrabold text-brand-ink">
-                        {index + 1}
-                      </span>
-                      <p className="mt-cp-3 text-ink-soft text-[0.92rem] leading-relaxed">
-                        {step}
-                      </p>
-                    </li>
-                  ))}
-                </ol>
-              </section>
-
-              {page.sections.map((section) => (
-                <section key={section.h2} aria-labelledby={`${page.slug}-${section.h2}`}>
-                  <h2
-                    id={`${page.slug}-${section.h2}`}
-                    className="text-[1.35rem] font-extrabold tracking-[-0.03em]"
-                  >
-                    {section.h2}
-                  </h2>
-                  <p className="mt-cp-3 text-ink-soft leading-relaxed">
-                    {section.body}
-                  </p>
-                </section>
-              ))}
-
-              <section aria-labelledby="faq-heading">
-                <h2
-                  id="faq-heading"
-                  className="text-[1.35rem] font-extrabold tracking-[-0.03em]"
-                >
-                  Questions people ask
-                </h2>
-                <dl className="mt-cp-4 flex flex-col gap-cp-3">
-                  {page.faqs.map((item) => (
-                    <div key={item.question} className="card p-cp-5">
-                      <dt className="font-extrabold tracking-[-0.02em]">
-                        {item.question}
-                      </dt>
-                      <dd className="mt-cp-2 text-ink-soft text-[0.95rem] leading-relaxed">
-                        {item.answer}
-                      </dd>
-                    </div>
-                  ))}
-                </dl>
-              </section>
-
-              <section aria-labelledby="related-heading">
-                <h2
-                  id="related-heading"
-                  className="text-[1.1rem] font-extrabold tracking-[-0.02em]"
-                >
-                  Related Recipe Printer tools
-                </h2>
-                <div className="mt-cp-3 flex flex-wrap gap-cp-3">
-                  {page.links.map((link) => (
-                    <Link
-                      key={link.href}
-                      href={link.href}
-                      className="btn btn-secondary btn-compact"
-                    >
-                      {link.label}
-                    </Link>
-                  ))}
-                </div>
-              </section>
-            </div>
-          </div>
-        </main>
-
-        <SiteFooter />
-      </div>
-    );
-  }
-
   return (
-    <PageShell>
+    <div className="min-h-screen flex flex-col">
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(pageJsonLd(page)) }}
       />
 
-      <header className="mb-cp-7">
-        <p className="eyebrow">{page.eyebrow}</p>
-        <h1 className="mt-cp-2 text-[clamp(1.9rem,4.5vw,2.5rem)] font-extrabold tracking-[-0.04em] leading-[1.08]">
-          {page.h1}
-        </h1>
-        <p className="mt-cp-4 text-ink-soft text-[1.05rem] leading-relaxed">
-          {page.lede}
-        </p>
-        <div className="mt-cp-5">
-          <StartPrintingCta label="Start with a recipe" />
-        </div>
-      </header>
+      <SiteHeader
+        backHref="/"
+        actions={<LandingCta label="Go to printer" />}
+      />
 
-      <div className="flex flex-col gap-cp-7">
-        <section aria-labelledby="steps-heading">
-          <h2
-            id="steps-heading"
-            className="text-[1.35rem] font-extrabold tracking-[-0.03em]"
+      <main className="flex-1 px-cp-6">
+        <div className="max-w-content mx-auto flex flex-col gap-cp-8 pt-cp-6 sm:pt-cp-7 pb-cp-7">
+          <section
+            className="relative overflow-hidden py-cp-7 sm:py-cp-8"
+            aria-labelledby="landing-heading"
           >
-            {page.stepsTitle}
-          </h2>
-          <ol className="mt-cp-4 grid gap-cp-3">
-            {page.steps.map((step, index) => (
-              <li key={step} className="card p-cp-5 flex gap-cp-4">
-                <span className="grid h-8 w-8 shrink-0 place-items-center rounded-full bg-brand-50 text-[0.9rem] font-extrabold text-brand-ink">
-                  {index + 1}
-                </span>
-                <p className="text-ink-soft leading-relaxed">{step}</p>
-              </li>
-            ))}
-          </ol>
-        </section>
+            <Image
+              src="/images/heirloom-ladle.svg"
+              alt=""
+              width={150}
+              height={150}
+              className="absolute bottom-4 right-6 hidden opacity-10 sm:block"
+              aria-hidden
+            />
+            <div className="relative mx-auto flex max-w-[920px] flex-col items-center text-center">
+              <div className="max-w-[760px]">
+                <p className="eyebrow">{page.eyebrow}</p>
+                <h1
+                  id="landing-heading"
+                  className="mt-cp-2 text-[clamp(2.15rem,6vw,4rem)] font-extrabold tracking-[-0.04em] leading-[1.02]"
+                >
+                  {page.h1}
+                </h1>
+                <p className="mx-auto mt-cp-4 max-w-[42rem] text-ink-soft text-[1.08rem] leading-relaxed">
+                  {page.lede}
+                </p>
+                <div className="mt-cp-5 flex flex-wrap items-center justify-center gap-cp-3">
+                  <LandingCta
+                    label={page.importSubmitLabel ?? "Start printing recipes"}
+                  />
+                  <Link href="/how-it-works" className="btn btn-secondary">
+                    See how it works
+                  </Link>
+                </div>
+                <p className="mt-cp-3 text-[0.88rem] font-semibold text-ink-soft">
+                  Free to use. No account required.
+                </p>
+              </div>
 
-        {page.sections.map((section) => (
-          <section key={section.h2} aria-labelledby={`${page.slug}-${section.h2}`}>
-            <h2
-              id={`${page.slug}-${section.h2}`}
-              className="text-[1.35rem] font-extrabold tracking-[-0.03em]"
-            >
-              {section.h2}
-            </h2>
-            <p className="mt-cp-3 text-ink-soft leading-relaxed">{section.body}</p>
+              <div className="mt-cp-5 flex flex-wrap justify-center gap-cp-2">
+                {heroChips(page).map((chip) => (
+                  <span
+                    key={chip}
+                    className="inline-flex min-h-[34px] items-center rounded-full bg-card px-cp-3 text-[0.84rem] font-bold text-ink-soft shadow-sm ring-1 ring-line"
+                  >
+                    {chip}
+                  </span>
+                ))}
+              </div>
+            </div>
           </section>
-        ))}
 
-        <section aria-labelledby="faq-heading">
-          <h2
-            id="faq-heading"
-            className="text-[1.35rem] font-extrabold tracking-[-0.03em]"
-          >
-            Questions people ask
-          </h2>
-          <dl className="mt-cp-4 flex flex-col gap-cp-3">
-            {page.faqs.map((item) => (
-              <div key={item.question} className="card p-cp-5">
-                <dt className="font-extrabold tracking-[-0.02em]">{item.question}</dt>
-                <dd className="mt-cp-2 text-ink-soft text-[0.95rem] leading-relaxed">
-                  {item.answer}
-                </dd>
+          <RecipePageVisual />
+
+          <section aria-labelledby="steps-heading">
+            <div className="max-w-[720px]">
+              <h2
+                id="steps-heading"
+                className="text-[1.4rem] font-extrabold tracking-[-0.03em]"
+              >
+                {page.stepsTitle}
+              </h2>
+              <p className="mt-cp-2 text-ink-soft leading-relaxed">
+                Recipe Printer keeps the path short: add the recipe, review the
+                printable version, then print or save it.
+              </p>
+            </div>
+            <ol className="mt-cp-4 grid gap-cp-3 md:grid-cols-3">
+              {page.steps.map((step, index) => (
+                <li key={step} className="card p-cp-5">
+                  <span className="grid h-8 w-8 place-items-center rounded-full bg-brand-50 text-[0.9rem] font-extrabold text-brand-ink">
+                    {index + 1}
+                  </span>
+                  <p className="mt-cp-3 text-ink-soft text-[0.95rem] leading-relaxed">
+                    {step}
+                  </p>
+                </li>
+              ))}
+            </ol>
+          </section>
+
+          <section aria-label="Recipe Printer benefits" className="grid gap-cp-4 md:grid-cols-2">
+            {page.sections.map((section) => (
+              <div key={section.h2} className="card p-cp-5">
+                <h2 className="text-[1.08rem] font-extrabold tracking-[-0.02em]">
+                  {section.h2}
+                </h2>
+                <p className="mt-cp-2 text-ink-soft text-[0.95rem] leading-relaxed">
+                  {section.body}
+                </p>
               </div>
             ))}
-          </dl>
-        </section>
+          </section>
 
-        <section aria-labelledby="related-heading">
-          <h2
-            id="related-heading"
-            className="text-[1.1rem] font-extrabold tracking-[-0.02em]"
+          <section
+            aria-labelledby="cta-heading"
+            className="rounded-xl bg-brand-50 px-cp-5 py-cp-6 sm:px-cp-7"
           >
-            Related Recipe Printer guides
-          </h2>
-          <div className="mt-cp-3 flex flex-wrap gap-cp-3">
-            {page.links.map((link) => (
-              <Link key={link.href} href={link.href} className="btn btn-secondary btn-compact">
-                {link.label}
-              </Link>
-            ))}
-          </div>
-        </section>
-      </div>
-    </PageShell>
+            <div className="flex flex-col gap-cp-4 sm:flex-row sm:items-center sm:justify-between">
+              <div>
+                <h2 id="cta-heading" className="text-[1.25rem] font-extrabold tracking-[-0.03em]">
+                  Ready to turn it into a printable recipe?
+                </h2>
+                <p className="mt-cp-2 text-ink-soft leading-relaxed">
+                  Open the Recipe Printer tool, add your recipe, and make a card,
+                  page, or PDF worth keeping.
+                </p>
+              </div>
+              <div className="shrink-0">
+                <LandingCta label="Go to Recipe Printer" />
+              </div>
+            </div>
+          </section>
+
+          <section aria-labelledby="faq-heading" className="max-w-[760px]">
+            <h2
+              id="faq-heading"
+              className="text-[1.35rem] font-extrabold tracking-[-0.03em]"
+            >
+              Questions people ask
+            </h2>
+            <dl className="mt-cp-4 flex flex-col gap-cp-3">
+              {page.faqs.map((item) => (
+                <div key={item.question} className="card p-cp-5">
+                  <dt className="font-extrabold tracking-[-0.02em]">{item.question}</dt>
+                  <dd className="mt-cp-2 text-ink-soft text-[0.95rem] leading-relaxed">
+                    {item.answer}
+                  </dd>
+                </div>
+              ))}
+            </dl>
+          </section>
+
+          <section aria-labelledby="related-heading">
+            <h2
+              id="related-heading"
+              className="text-[1.1rem] font-extrabold tracking-[-0.02em]"
+            >
+              More ways to use Recipe Printer
+            </h2>
+            <div className="mt-cp-3 flex flex-wrap gap-cp-3">
+              {page.links.map((link) => (
+                <Link key={link.href} href={link.href} className="btn btn-secondary btn-compact">
+                  {link.label}
+                </Link>
+              ))}
+            </div>
+          </section>
+        </div>
+      </main>
+
+      <SiteFooter />
+    </div>
   );
 }
