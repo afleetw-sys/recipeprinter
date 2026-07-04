@@ -35,6 +35,10 @@ export interface CookPilotRecipeSummary {
 interface CookPilotRecipeDetail {
   schemaVersion?: number;
   description?: string | null;
+  imageURL?: string | null;
+  imageUrl?: string | null;
+  image?: unknown;
+  images?: unknown;
   prepTime?: string | null;
   cookTime?: string | null;
   ingredientSections: unknown[];
@@ -160,7 +164,12 @@ function recipeFromStoredDocuments(
     cookTime: detail?.cookTime ?? null,
     ingredientSections: detail?.ingredientSections ?? [],
     instructionSections: detail?.instructionSections ?? [],
-    imageURL: summary.imageURL ?? null,
+    imageURL:
+      detail?.imageURL ??
+      detail?.imageUrl ??
+      summary.imageURL ??
+      null,
+    image: detail?.image ?? detail?.images,
     tags: summary.tags,
     systemTags: summary.systemTags,
     nutrition: detail?.nutrition,

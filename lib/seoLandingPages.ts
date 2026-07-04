@@ -613,6 +613,113 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
       { href: "/organize-recipes", label: "Organize recipes" },
     ],
   },
+  {
+    slug: "just-the-recipe-alternative",
+    primaryKeyword: "Just the Recipe alternative",
+    secondaryKeywords: [
+      "recipe printer alternative",
+      "print recipe without ads",
+      "print recipe from website",
+      "clean printable recipes",
+    ],
+    intent: "Utility SEO",
+    eyebrow: "Recipe tool alternative",
+    initialImportMode: "url",
+    title: "Just the Recipe Alternative",
+    description:
+      "Looking for a Just the Recipe alternative? Recipe Printer turns online recipes into printable cards, pages, and PDFs worth keeping.",
+    h1: "A Just the Recipe alternative for printable recipes",
+    lede:
+      "Recipe Printer is for cooks who want more than ingredients on a screen. Paste a recipe link and turn it into a printable card, page, or PDF for your kitchen.",
+    stepsTitle: "How Recipe Printer works",
+    steps: [
+      "Paste a recipe URL from a website, blog, or supported social post.",
+      "Review the printable recipe card or letter-size page.",
+      "Print it for your counter, save it as a PDF, or add it to your recipe binder.",
+    ],
+    sections: [
+      {
+        h2: "Built around printing, not just extraction",
+        body:
+          "Recipe Printer keeps the useful recipe details and turns them into a format that belongs on paper: recipe cards, full pages, and PDFs you can cook from.",
+      },
+      {
+        h2: "For recipes worth keeping",
+        body:
+          "Use Recipe Printer when a recipe has earned a place beyond a browser tab: weeknight favorites, baking notes, family dishes, and recipes you want in a binder.",
+      },
+    ],
+    faqs: [
+      {
+        question: "How is Recipe Printer different from Just the Recipe?",
+        answer:
+          "Recipe Printer focuses on turning recipes from links, photos, screenshots, and text into printable recipe cards, pages, and PDFs for cooking, saving, and collecting.",
+      },
+      {
+        question: "Can Recipe Printer print recipes without page clutter?",
+        answer:
+          "Yes. Recipe Printer formats the recipe itself for paper, so ads, pop-ups, comments, and extra web page clutter stay off the printed recipe.",
+      },
+    ],
+    links: [
+      { href: "/print-recipe-from-website", label: "Print a recipe from a website" },
+      { href: "/convert-recipe-to-pdf", label: "Convert a recipe to PDF" },
+      { href: "/printable-recipe-card-generator", label: "Make printable recipe cards" },
+    ],
+  },
+  {
+    slug: "reciscan-alternative",
+    primaryKeyword: "ReciScan alternative",
+    secondaryKeywords: [
+      "recipe scanner alternative",
+      "recipe card maker",
+      "preserve family recipes",
+      "family recipe book ideas",
+    ],
+    intent: "Preservation and Gift SEO",
+    eyebrow: "Recipe preservation alternative",
+    title: "ReciScan Alternative",
+    description:
+      "Looking for a ReciScan alternative? Recipe Printer turns links, screenshots, photos, and text into printable recipe pages and cards.",
+    h1: "A ReciScan alternative for printable recipe collections",
+    lede:
+      "Recipe Printer helps you turn recipes from the internet, old cards, screenshots, and text into printable pages, cards, and PDFs you can cook from and keep.",
+    stepsTitle: "Start a printable recipe collection",
+    steps: [
+      "Add a recipe from a website, screenshot, photo, or pasted text.",
+      "Print a clean recipe card or full-page recipe.",
+      "Save it in a binder, recipe box, family collection, or future cookbook project.",
+    ],
+    sections: [
+      {
+        h2: "A bridge from online recipes to paper",
+        body:
+          "Recipe Printer is strongest when recipes start online but belong somewhere physical: on your counter, in a binder, or in a family collection.",
+      },
+      {
+        h2: "Useful before a cookbook project",
+        body:
+          "Before you make a full family cookbook, Recipe Printer can help you print, test, annotate, and organize the individual recipes people actually use.",
+      },
+    ],
+    faqs: [
+      {
+        question: "How is Recipe Printer different from ReciScan?",
+        answer:
+          "Recipe Printer is a web-based recipe printing tool focused on turning recipe links, screenshots, photos, and pasted text into printable cards, pages, and PDFs.",
+      },
+      {
+        question: "Can Recipe Printer help preserve family recipes?",
+        answer:
+          "Yes. You can upload a photo of an old recipe card or paste recipe text, then print a clean copy for cooking, sharing, or adding to a family collection.",
+      },
+    ],
+    links: [
+      { href: "/preserve-family-recipes", label: "Preserve family recipes" },
+      { href: "/recipe-binder", label: "Build a recipe binder" },
+      { href: "/family-recipe-book", label: "Family recipe book ideas" },
+    ],
+  },
 ];
 
 export const SEO_LANDING_PAGE_MAP = new Map(

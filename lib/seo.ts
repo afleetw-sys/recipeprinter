@@ -59,6 +59,8 @@ export const SITE_KEYWORDS = [
   "convert recipe to PDF",
   "organize recipes",
   "recipe binder",
+  "Just the Recipe alternative",
+  "ReciScan alternative",
 ];
 
 /** The team behind RecipePrinter, used as publisher/provider in JSON-LD. */

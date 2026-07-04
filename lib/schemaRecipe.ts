@@ -1,4 +1,5 @@
 import type { Recipe, RecipeInstruction, RecipeNutrition } from "@/types/recipe";
+import { bestRecipeImageFrom } from "@/lib/recipeImages";
 
 type AnyRecord = Record<string, unknown>;
 
@@ -89,16 +90,7 @@ function findRecipeNode(value: unknown, seen = new WeakSet<object>()): AnyRecord
 }
 
 function imageFrom(value: unknown): string | undefined {
-  if (typeof value === "string") return asString(value);
-  if (Array.isArray(value)) {
-    for (const item of value) {
-      const image = imageFrom(item);
-      if (image) return image;
-    }
-    return undefined;
-  }
-  const node = asRecord(value);
-  return node ? asString(node.url) ?? asString(node.contentUrl) : undefined;
+  return bestRecipeImageFrom(value);
 }
 
 function nameFrom(value: unknown): string | undefined {

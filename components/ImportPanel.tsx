@@ -41,11 +41,7 @@ const CookPilotImportSource = dynamic(
   () => import("@/components/CookPilotRecipePicker").then((mod) => mod.CookPilotImportSource),
   {
     ssr: false,
-    loading: () => (
-      <div className="h-40 grid place-items-center text-ink-soft rounded-2xl border border-dashed border-line-strong">
-        Loading CookPilot
-      </div>
-    ),
+    loading: () => null,
   },
 );
 

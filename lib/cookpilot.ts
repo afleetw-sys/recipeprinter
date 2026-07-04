@@ -1,4 +1,5 @@
 import type { Recipe, RecipeIngredient, RecipeInstruction } from "@/types/recipe";
+import { bestRecipeImageFrom } from "@/lib/recipeImages";
 
 /* ──────────────────────────────────────────────────────────────────────────
    CookPilot is the parsing backend. RecipePrinter never re-implements a parser;
@@ -104,9 +105,11 @@ export function adaptCookPilotRecipe(body: unknown, sourceUrl?: string): Recipe 
   // Already flat (RecipePrinter shape)?
   if (Array.isArray(data.ingredients) || Array.isArray(data.instructions)) {
     const flat = data as unknown as Recipe;
+    const flatNode = data as AnyRecord;
     return {
       ...flat,
       title: asString(flat.title) ?? "Untitled recipe",
+      image: bestRecipeImageFrom(flatNode.imageURL, flatNode.imageUrl, flatNode.image, flatNode.images),
       sourceUrl: flat.sourceUrl ?? sourceUrl,
       sourceName: flat.sourceName ?? (sourceUrl ? hostnameOf(sourceUrl) : undefined),
       ingredients: Array.isArray(flat.ingredients) ? flat.ingredients : [],
@@ -125,7 +128,7 @@ export function adaptCookPilotRecipe(body: unknown, sourceUrl?: string): Recipe 
   return {
     title: asString(data.title) ?? "Untitled recipe",
     description: asString(data.description),
-    image: asString(data.imageURL) ?? asString(data.image),
+    image: bestRecipeImageFrom(data.imageURL, data.imageUrl, data.image, data.images),
     sourceUrl,
     sourceName: sourceUrl ? hostnameOf(sourceUrl) : undefined,
     prepTime: asString(data.prepTime),

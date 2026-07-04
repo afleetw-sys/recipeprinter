@@ -209,7 +209,7 @@ export default function PrintPage() {
   );
   const [doubleSided, setDoubleSided] = useState(true);
   const [showCutLines, setShowCutLines] = useState(true);
-  const [showPhoto, setShowPhoto] = useState(true);
+  const [showPhoto, setShowPhoto] = useState(false);
   const [showDonateDialog, setShowDonateDialog] = useState(false);
   const [showFeedbackDialog, setShowFeedbackDialog] = useState(false);
   const [authReady, setAuthReady] = useState(false);
