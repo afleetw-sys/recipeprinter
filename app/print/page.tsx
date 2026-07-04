@@ -307,7 +307,7 @@ export default function PrintPage() {
 
   const [activeSheetIndex, setActiveSheetIndex] = useState(0);
   const [canvasSide, setCanvasSide] = useState<"front" | "back">("front");
-  const [mobileDrawer, setMobileDrawer] = useState<"template" | "settings" | null>(null);
+  const [mobileDrawer, setMobileDrawer] = useState<"template" | null>(null);
   const deckRef = useRef<HTMLDivElement>(null);
   const slideRefs = useRef<(HTMLDivElement | null)[]>([]);
   const [deckScale, setDeckScale] = useState(0.5);
@@ -342,7 +342,7 @@ export default function PrintPage() {
       const availH = el.clientHeight;
       if (availW > 0 && availH > 0) {
         const widthScale = availW / pageW;
-        const heightScale = (availH * (mobile ? 0.92 : 0.74)) / pageH;
+        const heightScale = (availH * (mobile ? 0.86 : 0.74)) / pageH;
         setDeckScale(Math.max(0.12, Math.min(1.05, widthScale, heightScale)));
       }
     };
@@ -770,17 +770,46 @@ export default function PrintPage() {
               aria-pressed={mobileDrawer === "template"}
               onClick={() => setMobileDrawer("template")}
             >
-              Template
-            </button>
-            <button
-              type="button"
-              className={`recipe-mobile-toolbar__btn ${mobileDrawer === "settings" ? "is-active" : ""}`}
-              aria-pressed={mobileDrawer === "settings"}
-              onClick={() => setMobileDrawer("settings")}
-            >
-              Settings
+              Change template
             </button>
           </div>
+          {(anyRecipeHasImage || hasRecipeBackSide || cardSize === "card-6x4") && (
+            <div className="recipe-mobile-chip-scroll no-print">
+              {anyRecipeHasImage && (
+                <button
+                  type="button"
+                  className={`recipe-setting-chip ${showPhoto ? "is-active" : ""}`}
+                  aria-pressed={showPhoto}
+                  onClick={() => setShowPhoto((value) => !value)}
+                >
+                  {showPhoto && <CheckIcon size={13} />}
+                  Recipe photo
+                </button>
+              )}
+              {hasRecipeBackSide && (
+                <button
+                  type="button"
+                  className={`recipe-setting-chip ${doubleSided ? "is-active" : ""}`}
+                  aria-pressed={doubleSided}
+                  onClick={() => setDoubleSided((value) => !value)}
+                >
+                  {doubleSided && <CheckIcon size={13} />}
+                  Two-sided
+                </button>
+              )}
+              {cardSize === "card-6x4" && (
+                <button
+                  type="button"
+                  className={`recipe-setting-chip ${showCutLines ? "is-active" : ""}`}
+                  aria-pressed={showCutLines}
+                  onClick={() => setShowCutLines((value) => !value)}
+                >
+                  {showCutLines && <CheckIcon size={13} />}
+                  Cut lines
+                </button>
+              )}
+            </div>
+          )}
           <div className="recipe-page-deck" id="recipe-page-deck" ref={deckRef}>
             {sheets.map((sheet, index) => (
               <div
@@ -866,11 +895,7 @@ export default function PrintPage() {
         >
           <div className="recipe-config-panel__header">
             <h2 className="text-[0.95rem] font-extrabold tracking-[-0.02em]">
-              {mobileDrawer === "template"
-                ? "Templates"
-                : mobileDrawer === "settings"
-                  ? "Print settings"
-                  : "Print setup"}
+              {mobileDrawer === "template" ? "Templates" : "Print setup"}
             </h2>
             <button
               type="button"
@@ -901,41 +926,50 @@ export default function PrintPage() {
             </select>
           </div>
 
-          {(anyRecipeHasImage || hasRecipeBackSide || cardSize === "card-6x4") && (
+          {anyRecipeHasImage && (
+            <div className="recipe-config-section recipe-config-section--settings">
+              <label className="recipe-toggle">
+                <input
+                  type="checkbox"
+                  checked={showPhoto}
+                  onChange={(event) => setShowPhoto(event.target.checked)}
+                />
+                <span>
+                  <strong>Include recipe photo</strong>
+                </span>
+              </label>
+            </div>
+          )}
+
+          {(hasRecipeBackSide || cardSize === "card-6x4") && (
             <div className="recipe-config-section recipe-config-section--settings">
               <h3 className="recipe-config-label">Print settings</h3>
-              <div className="recipe-setting-chip-row">
-                {anyRecipeHasImage && (
-                  <button
-                    type="button"
-                    className={`recipe-setting-chip ${showPhoto ? "is-active" : ""}`}
-                    aria-pressed={showPhoto}
-                    onClick={() => setShowPhoto((value) => !value)}
-                  >
-                    Recipe photo
-                  </button>
-                )}
-                {hasRecipeBackSide && (
-                  <button
-                    type="button"
-                    className={`recipe-setting-chip ${doubleSided ? "is-active" : ""}`}
-                    aria-pressed={doubleSided}
-                    onClick={() => setDoubleSided((value) => !value)}
-                  >
-                    Two-sided
-                  </button>
-                )}
-                {cardSize === "card-6x4" && (
-                  <button
-                    type="button"
-                    className={`recipe-setting-chip ${showCutLines ? "is-active" : ""}`}
-                    aria-pressed={showCutLines}
-                    onClick={() => setShowCutLines((value) => !value)}
-                  >
-                    Cut lines
-                  </button>
-                )}
-              </div>
+              {hasRecipeBackSide && (
+                <label className="recipe-toggle">
+                  <input
+                    type="checkbox"
+                    checked={doubleSided}
+                    onChange={(event) => setDoubleSided(event.target.checked)}
+                  />
+                  <span>
+                    <strong>Two-sided</strong>
+                    <small>Longer recipes continue onto the back.</small>
+                  </span>
+                </label>
+              )}
+              {cardSize === "card-6x4" && (
+                <label className="recipe-toggle">
+                  <input
+                    type="checkbox"
+                    checked={showCutLines}
+                    onChange={(event) => setShowCutLines(event.target.checked)}
+                  />
+                  <span>
+                    <strong>Cut lines</strong>
+                    <small>Show dashed guides on printed 6 x 4 cards.</small>
+                  </span>
+                </label>
+              )}
             </div>
           )}
 

@@ -197,7 +197,7 @@ export function PrintQueue({
   return (
     <div className="flex flex-col gap-cp-4">
       {/* Card grid */}
-      <ul className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-cp-4 items-start">
+      <ul className="grid grid-cols-2 lg:grid-cols-3 gap-cp-4 items-start">
         {items.map((item) => (
           <RecipeCardItem
             key={item.id}
