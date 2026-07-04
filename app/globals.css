@@ -385,7 +385,7 @@
     }
 
     .rp-import-panel--workspace.rp-import-panel--cookpilot:has(.cookpilot-recipe-list) {
-      padding-bottom: 0;
+      padding-bottom: 24px;
     }
 
     .rp-import-panel--workspace .mode-toggle {

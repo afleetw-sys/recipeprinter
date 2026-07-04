@@ -280,18 +280,65 @@ function splitByBudget<T>(
   return { front, back };
 }
 
+function balancedColumnCost(costs: number[]): number {
+  if (costs.length === 0) return 0;
+  const total = costs.reduce((sum, cost) => sum + cost, 0);
+  return Math.max(Math.max(...costs), total / 2);
+}
+
+function splitByBalancedColumnBudget<T>(
+  items: T[],
+  budget: number,
+  label: (item: T) => string,
+  maxFrontItems = Number.POSITIVE_INFINITY,
+  sectionOf?: (item: T) => string | undefined,
+  sectionCost = 0,
+  strict = false,
+) {
+  if (!Number.isFinite(budget)) return { front: items, back: [] };
+
+  const front: T[] = [];
+  const back: T[] = [];
+  const costs: number[] = [];
+  let overflowStarted = false;
+  let frontSection: string | undefined;
+
+  for (const item of items) {
+    const section = sectionOf?.(item)?.trim() || undefined;
+    const opensSection = sectionOf !== undefined && section !== frontSection;
+    const cost = textCost(label(item)) + (opensSection ? sectionCost : 0);
+    const tooMany = front.length >= maxFrontItems;
+    const tooBig =
+      balancedColumnCost([...costs, cost]) > budget && (strict || front.length > 0);
+
+    if (overflowStarted || tooMany || tooBig) {
+      overflowStarted = true;
+      back.push(item);
+    } else {
+      front.push(item);
+      costs.push(cost);
+      frontSection = section;
+    }
+  }
+
+  return { front, back };
+}
+
 function splitInstructionsByAvailableSpace(
   instructions: Recipe["instructions"],
   budget: number,
   size: PrintCardSize,
   maxFrontItems = Number.POSITIVE_INFINITY,
   strict = false,
+  twoColumn = false,
 ) {
   if (budget < 160) {
     return { front: [] as Recipe["instructions"], back: instructions };
   }
 
-  return splitByBudget(
+  const split = twoColumn ? splitByBalancedColumnBudget : splitByBudget;
+
+  return split(
     instructions,
     budget,
     (step) => step.text,
@@ -394,6 +441,7 @@ function splitStackedFront(
     size,
     frontLimits.instructions,
     true,
+    true,
   );
 
   return {
@@ -484,12 +532,17 @@ function continuationFaces(
         : ingredientPage.front.length === 0
           ? budget.instructionsOnly
           : Math.min(budget.instructions, budget.total - ingredientHeightCost);
+    const instructionsRenderInColumns =
+      layout === "stacked" || ingredientPage.front.length === 0;
     const instructionPage = hasMoreIngredients
       ? { front: [] as Recipe["instructions"], back: remainingInstructions }
       : splitInstructionsByAvailableSpace(
           remainingInstructions,
           instructionBudget,
           size,
+          Number.POSITIVE_INFINITY,
+          false,
+          instructionsRenderInColumns,
         );
 
     pages.push({
