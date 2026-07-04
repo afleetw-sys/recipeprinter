@@ -23,7 +23,7 @@ import RecipeCardPrint, {
   type RecipeFace,
   type RecipePrintTemplate,
 } from "@/components/RecipeCardPrint";
-import { CheckIcon, ChevronDownIcon, CrownIcon, PrintIcon, SpinnerIcon, XIcon } from "@/components/icons";
+import { CheckIcon, ChevronLeftIcon, CrownIcon, PrintIcon, SpinnerIcon, XIcon } from "@/components/icons";
 import { getFirebaseAuth } from "@/lib/firebase/client";
 import {
   isPremiumTemplate,
@@ -307,10 +307,7 @@ export default function PrintPage() {
 
   const [activeSheetIndex, setActiveSheetIndex] = useState(0);
   const [canvasSide, setCanvasSide] = useState<"front" | "back">("front");
-  // On phones the full-size preview is collapsed by default so the print
-  // controls sit within reach; the page rail above stays as a compact preview.
-  // Desktop ignores this entirely (CSS only acts on it below 820px).
-  const [mobilePreviewOpen, setMobilePreviewOpen] = useState(false);
+  const [mobileDrawer, setMobileDrawer] = useState<"template" | "settings" | null>(null);
   const deckRef = useRef<HTMLDivElement>(null);
   const slideRefs = useRef<(HTMLDivElement | null)[]>([]);
   const [deckScale, setDeckScale] = useState(0.5);
@@ -337,11 +334,15 @@ export default function PrintPage() {
     if (!el) return;
     const { w: pageW, h: pageH } = PAGE_DIMS[cardSize];
     const update = () => {
-      const availW = el.clientWidth - 40;
+      const mobile = window.matchMedia("(max-width: 820px)").matches;
+      // On mobile each slide is narrower than the deck itself (100vw - 96px)
+      // so neighbouring pages peek in on both sides; the scale must fit that
+      // slide width, not the full deck width, or the card overflows its slot.
+      const availW = el.clientWidth - (mobile ? 96 : 40);
       const availH = el.clientHeight;
       if (availW > 0 && availH > 0) {
         const widthScale = availW / pageW;
-        const heightScale = (availH * 0.74) / pageH;
+        const heightScale = (availH * (mobile ? 0.92 : 0.74)) / pageH;
         setDeckScale(Math.max(0.12, Math.min(1.05, widthScale, heightScale)));
       }
     };
@@ -360,12 +361,15 @@ export default function PrintPage() {
       if (suppressScrollSyncRef.current) return;
       cancelAnimationFrame(raf);
       raf = requestAnimationFrame(() => {
-        const mid = el.scrollTop + el.clientHeight / 2;
+        const mobile = window.matchMedia("(max-width: 820px)").matches;
+        const mid = mobile ? el.scrollLeft + el.clientWidth / 2 : el.scrollTop + el.clientHeight / 2;
         let best = 0;
         let bestDist = Number.POSITIVE_INFINITY;
         slideRefs.current.forEach((slide, index) => {
           if (!slide) return;
-          const center = slide.offsetTop + slide.offsetHeight / 2;
+          const center = mobile
+            ? slide.offsetLeft + slide.offsetWidth / 2
+            : slide.offsetTop + slide.offsetHeight / 2;
           const dist = Math.abs(center - mid);
           if (dist < bestDist) {
             bestDist = dist;
@@ -396,6 +400,16 @@ export default function PrintPage() {
     const deck = deckRef.current;
     const slide = slideRefs.current[index];
     if (!deck || !slide) return;
+
+    if (window.matchMedia("(max-width: 820px)").matches) {
+      const targetLeft = slide.offsetLeft - (deck.clientWidth - slide.offsetWidth) / 2;
+      const maxLeft = deck.scrollWidth - deck.clientWidth;
+      deck.scrollTo({
+        left: Math.max(0, Math.min(targetLeft, maxLeft)),
+        behavior,
+      });
+      return;
+    }
 
     const targetTop = singleRecipePrintView
       ? slide.offsetTop - SINGLE_RECIPE_DECK_TOP_PADDING
@@ -508,6 +522,11 @@ export default function PrintPage() {
       return;
     }
     printNow();
+  }
+
+  function handleMobilePrint() {
+    setMobileDrawer(null);
+    void handlePrint();
   }
 
   async function handleSignInSubmit(event: FormEvent<HTMLFormElement>) {
@@ -721,25 +740,47 @@ export default function PrintPage() {
         <section
           className="recipe-page-canvas no-print"
           aria-label="Selected page"
-          data-mobile-open={mobilePreviewOpen ? "true" : "false"}
           data-single-recipe={singleRecipePrintView ? "true" : "false"}
         >
-          <button
-            type="button"
-            className="recipe-page-canvas__toggle"
-            aria-expanded={mobilePreviewOpen}
-            aria-controls="recipe-page-deck"
-            onClick={() => setMobilePreviewOpen((open) => !open)}
-          >
-            {mobilePreviewOpen ? "Hide full preview" : "Show full preview"}
-            <ChevronDownIcon
-              size={16}
-              style={{
-                transform: mobilePreviewOpen ? "rotate(180deg)" : "none",
-                transition: "transform 150ms ease",
-              }}
-            />
-          </button>
+          <div className="recipe-mobile-topbar no-print">
+            <Link href="/" className="recipe-mobile-back-button" aria-label="Back to recipes">
+              <ChevronLeftIcon size={18} />
+              <span>Back</span>
+            </Link>
+            <div className="recipe-mobile-page-count" aria-live="polite">
+              {activeSheetIndex + 1} of {sheets.length}
+            </div>
+          </div>
+          <div className="recipe-mobile-toolbar no-print">
+            <select
+              className="recipe-mobile-toolbar__size-select"
+              aria-label="Card size"
+              value={cardSize}
+              onChange={(event) => setCardSize(event.target.value as PrintCardSize)}
+            >
+              {PRINT_CARD_SIZE_OPTIONS.map((option) => (
+                <option key={option.id} value={option.id}>
+                  {option.label}
+                </option>
+              ))}
+            </select>
+            <button
+              type="button"
+              className={`recipe-mobile-toolbar__btn ${mobileDrawer === "template" ? "is-active" : ""}`}
+              aria-pressed={mobileDrawer === "template"}
+              onClick={() => setMobileDrawer("template")}
+            >
+              Template
+            </button>
+            <button
+              type="button"
+              className={`recipe-mobile-toolbar__btn ${mobileDrawer === "settings" ? "is-active" : ""}`}
+              aria-pressed={mobileDrawer === "settings"}
+              onClick={() => setMobileDrawer("settings")}
+            >
+              Settings
+            </button>
+          </div>
           <div className="recipe-page-deck" id="recipe-page-deck" ref={deckRef}>
             {sheets.map((sheet, index) => (
               <div
@@ -806,13 +847,43 @@ export default function PrintPage() {
         </section>
 
         {/* Right: print setup */}
-        <aside className="recipe-config-panel no-print" aria-label="Recipe print settings">
+        {mobileDrawer && (
+          <button
+            type="button"
+            className="recipe-mobile-settings-backdrop no-print"
+            aria-label="Close print settings"
+            onClick={() => setMobileDrawer(null)}
+          />
+        )}
+
+        <aside
+          className={`recipe-config-panel no-print ${
+            mobileDrawer ? "is-mobile-open" : ""
+          }`}
+          aria-label="Recipe print settings"
+          aria-modal={mobileDrawer ? "true" : undefined}
+          data-mobile-drawer={mobileDrawer ?? undefined}
+        >
           <div className="recipe-config-panel__header">
-            <h2 className="text-[0.95rem] font-extrabold tracking-[-0.02em]">Print setup</h2>
+            <h2 className="text-[0.95rem] font-extrabold tracking-[-0.02em]">
+              {mobileDrawer === "template"
+                ? "Templates"
+                : mobileDrawer === "settings"
+                  ? "Print settings"
+                  : "Print setup"}
+            </h2>
+            <button
+              type="button"
+              className="recipe-config-panel__close"
+              aria-label="Close print settings"
+              onClick={() => setMobileDrawer(null)}
+            >
+              <XIcon size={16} />
+            </button>
           </div>
 
           <div className="recipe-config-panel__scroll">
-          <div className="recipe-config-section">
+          <div className="recipe-config-section recipe-config-section--size">
             <label className="recipe-config-label" htmlFor="recipe-print-size">
               Size
             </label>
@@ -830,54 +901,45 @@ export default function PrintPage() {
             </select>
           </div>
 
-          {anyRecipeHasImage && (
-            <div className="recipe-config-section">
-              <label className="recipe-toggle">
-                <input
-                  type="checkbox"
-                  checked={showPhoto}
-                  onChange={(event) => setShowPhoto(event.target.checked)}
-                />
-                <span>
-                  <strong>Include recipe photo</strong>
-                </span>
-              </label>
-            </div>
-          )}
-
-          {(hasRecipeBackSide || cardSize === "card-6x4") && (
-            <div className="recipe-config-section">
+          {(anyRecipeHasImage || hasRecipeBackSide || cardSize === "card-6x4") && (
+            <div className="recipe-config-section recipe-config-section--settings">
               <h3 className="recipe-config-label">Print settings</h3>
-              {hasRecipeBackSide && (
-                <label className="recipe-toggle">
-                  <input
-                    type="checkbox"
-                    checked={doubleSided}
-                    onChange={(event) => setDoubleSided(event.target.checked)}
-                  />
-                  <span>
-                    <strong>Two-sided</strong>
-                    <small>Longer recipes continue onto the back.</small>
-                  </span>
-                </label>
-              )}
-              {cardSize === "card-6x4" && (
-                <label className="recipe-toggle">
-                  <input
-                    type="checkbox"
-                    checked={showCutLines}
-                    onChange={(event) => setShowCutLines(event.target.checked)}
-                  />
-                  <span>
-                    <strong>Cut lines</strong>
-                    <small>Show dashed guides on printed 6 x 4 cards.</small>
-                  </span>
-                </label>
-              )}
+              <div className="recipe-setting-chip-row">
+                {anyRecipeHasImage && (
+                  <button
+                    type="button"
+                    className={`recipe-setting-chip ${showPhoto ? "is-active" : ""}`}
+                    aria-pressed={showPhoto}
+                    onClick={() => setShowPhoto((value) => !value)}
+                  >
+                    Recipe photo
+                  </button>
+                )}
+                {hasRecipeBackSide && (
+                  <button
+                    type="button"
+                    className={`recipe-setting-chip ${doubleSided ? "is-active" : ""}`}
+                    aria-pressed={doubleSided}
+                    onClick={() => setDoubleSided((value) => !value)}
+                  >
+                    Two-sided
+                  </button>
+                )}
+                {cardSize === "card-6x4" && (
+                  <button
+                    type="button"
+                    className={`recipe-setting-chip ${showCutLines ? "is-active" : ""}`}
+                    aria-pressed={showCutLines}
+                    onClick={() => setShowCutLines((value) => !value)}
+                  >
+                    Cut lines
+                  </button>
+                )}
+              </div>
             </div>
           )}
 
-          <div className="recipe-config-section">
+          <div className="recipe-config-section recipe-config-section--template">
             <h3 className="recipe-config-label">Templates</h3>
             <div className="recipe-template-list">
               {RECIPE_PRINT_TEMPLATE_OPTIONS.map((option) => {
@@ -955,6 +1017,18 @@ export default function PrintPage() {
             </button>
           </div>
         </aside>
+
+        <div className="recipe-mobile-actions no-print">
+          <button
+            type="button"
+            className="btn btn-primary recipe-mobile-print-button"
+            onClick={handleMobilePrint}
+            disabled={purchaseBusy}
+          >
+            {purchaseBusy ? <SpinnerIcon size={18} /> : <PrintIcon size={18} />}
+            {selectedTemplateLocked ? "Unlock & Print" : "Print"}
+          </button>
+        </div>
 
         {/* Hidden source that produces the actual printed pages. */}
         <div className="recipe-print-source" aria-hidden>
