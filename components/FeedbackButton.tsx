@@ -136,8 +136,8 @@ export function FeedbackDialog({ open, onClose, initialType = "idea" }: Feedback
             </button>
 
             <div className="pr-cp-7">
-              <h3 className="font-extrabold text-[1.05rem]">Give feedback</h3>
-              <p className="text-[0.86rem] text-ink-soft mt-1">
+              <h3 className="font-extrabold text-cp-h2">Give feedback</h3>
+              <p className="text-cp-small text-ink-soft mt-1">
                 Share what would make RecipePrinter better.
               </p>
             </div>
@@ -196,7 +196,7 @@ export function FeedbackDialog({ open, onClose, initialType = "idea" }: Feedback
                     onChange={(event) => setEmail(event.target.value)}
                     disabled={busy}
                   />
-                  <p className="mt-2 text-[0.82rem] leading-relaxed text-ink-soft">
+                  <p className="mt-2 text-cp-caption leading-relaxed text-ink-soft">
                     {EMAIL_HELP_TEXT[type]}
                   </p>
                 </div>
@@ -229,7 +229,7 @@ type FeedbackButtonProps = {
 
 export function FeedbackButton({
   label = "Give feedback",
-  className = "text-[0.9rem] font-semibold text-ink-soft hover:text-ink transition-colors",
+  className = "text-cp-small font-semibold text-ink-soft hover:text-ink transition-colors",
   initialType,
 }: FeedbackButtonProps) {
   const [open, setOpen] = useState(false);

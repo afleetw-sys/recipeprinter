@@ -85,7 +85,7 @@ function RecipeCardItem({
             <div className="absolute inset-0 grid place-items-center bg-card/90">
               <div className="flex flex-col items-center gap-2 text-ink-soft">
                 <SpinnerIcon size={22} />
-                <span className="text-[0.78rem] font-semibold">Getting recipe…</span>
+                <span className="text-cp-caption font-semibold">Getting recipe…</span>
               </div>
             </div>
           )}
@@ -105,11 +105,11 @@ function RecipeCardItem({
 
         {/* Body */}
         <div className="p-cp-4">
-          <h4 className="font-bold tracking-[-0.02em] leading-snug line-clamp-2 min-h-[2.4em]">
+          <h4 className="text-cp-body font-bold tracking-[-0.02em] leading-snug line-clamp-2 min-h-[2.4em]">
             {item.title}
           </h4>
 
-          <div className="flex items-center flex-wrap gap-x-cp-4 gap-y-1 mt-2 text-[0.8rem] text-ink-soft min-h-[1.25rem]">
+          <div className="flex items-center flex-wrap gap-x-cp-4 gap-y-1 mt-2 text-cp-caption text-ink-soft min-h-[1.25rem]">
             {ready && time && (
               <span className="inline-flex items-center gap-1.5">
                 <ClockIcon size={14} />
@@ -148,7 +148,7 @@ function RecipeCardItem({
 
       {/* Error detail + retry */}
       {item.status === "error" && (
-        <div className="mt-2 flex items-start gap-2 text-[0.78rem]">
+        <div className="mt-2 flex items-start gap-2 text-cp-caption">
           <p className="text-error flex-1 leading-snug">{item.error}</p>
           {canRetry && (
             <button
@@ -186,8 +186,8 @@ export function PrintQueue({
   if (items.length === 0) {
     return (
       <div className="text-center py-cp-7 px-cp-5 rounded-2xl border border-dashed border-line-strong">
-        <p className="font-bold text-[1.05rem]">No recipes yet</p>
-        <p className="text-ink-soft text-[0.9rem] mt-1.5 max-w-xs mx-auto">
+        <p className="font-bold text-cp-h2">No recipes yet</p>
+        <p className="text-ink-soft text-cp-small mt-1.5 max-w-xs mx-auto">
           Add a recipe and it&apos;ll appear here, ready to print.
         </p>
       </div>

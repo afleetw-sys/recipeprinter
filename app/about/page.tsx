@@ -17,7 +17,7 @@ export default function AboutPage() {
         title="Why I made RecipePrinter"
         lede="A simple tool for turning recipes from the internet into printable recipe cards, pages, PDFs, and collections worth keeping."
       />
-      <div className="flex flex-col gap-cp-5 text-ink-soft leading-relaxed">
+      <div className="flex flex-col gap-cp-5 text-ink-soft text-cp-body leading-relaxed">
         <p>
           I built RecipePrinter after building CookPilot, an app for making recipes fit real life.
         </p>
@@ -85,7 +85,7 @@ export default function AboutPage() {
 
         <Link
           href="/how-it-works"
-          className="text-[0.9rem] font-semibold text-brand-ink hover:underline"
+          className="text-cp-body font-semibold text-brand-ink hover:underline"
         >
           See how it works →
         </Link>

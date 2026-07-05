@@ -187,7 +187,7 @@ export function ImportPanel({
     >
       {workspace && (
         <div className="hidden lg:block mb-cp-4">
-          <h2 id="rp-import-heading" className="text-[1.06rem] font-extrabold tracking-[-0.02em]">
+          <h2 id="rp-import-heading" className="text-cp-h2 font-extrabold tracking-[-0.02em]">
             Import
           </h2>
         </div>
@@ -310,8 +310,8 @@ export function ImportPanel({
                 }}
               />
               <UploadIcon size={26} />
-              <span className="text-[0.92rem]">{imageLabel(imageFiles)}</span>
-              <span className="text-[0.78rem] font-medium text-ink-soft">
+              <span className="text-cp-body">{imageLabel(imageFiles)}</span>
+              <span className="text-cp-caption font-medium text-ink-soft">
                 Snap a cookbook page or screenshot, or drop multiple for one recipe
               </span>
             </label>

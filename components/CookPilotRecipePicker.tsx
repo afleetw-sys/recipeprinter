@@ -128,10 +128,10 @@ function LoginDialog({
         </button>
 
         <div className="pr-cp-7">
-          <h3 className="font-extrabold tracking-[-0.02em] text-[1.05rem]">
+          <h3 className="font-extrabold tracking-[-0.02em] text-cp-h2">
             Log in to CookPilot
           </h3>
-          <p className="text-[0.86rem] text-ink-soft mt-1">
+          <p className="text-cp-small text-ink-soft mt-1">
             Use an existing account to choose recipes for this print list.
           </p>
         </div>
@@ -217,7 +217,7 @@ function SignedOutCookPilotImport({
       <div className="mx-auto w-12 h-12 rounded-xl bg-page grid place-items-center text-ink">
         <CookPilotLogoIcon size={24} />
       </div>
-      <h3 className="font-extrabold tracking-[-0.02em] text-[1.05rem] mt-cp-4">
+      <h3 className="font-extrabold tracking-[-0.02em] text-cp-h2 mt-cp-4">
         Import from{" "}
         <a
           href="https://app.cookpilotapp.com"
@@ -229,7 +229,7 @@ function SignedOutCookPilotImport({
           <ExternalIcon size={14} />
         </a>
       </h3>
-      <p className="text-[0.88rem] text-ink-soft mt-1 max-w-sm mx-auto">
+      <p className="text-cp-small text-ink-soft mt-1 max-w-sm mx-auto">
         Sign in to add your saved CookPilot recipes straight to this print list.
       </p>
       <div className="flex flex-col sm:flex-row justify-center gap-cp-3 mt-cp-5">
@@ -290,9 +290,9 @@ function RecipeRow({
       </div>
 
       <div className="min-w-0 flex-1">
-        <p className="font-bold leading-snug line-clamp-1">{summary.title}</p>
+        <p className="text-cp-body font-bold leading-snug line-clamp-1">{summary.title}</p>
         {(time || servings) && (
-          <p className="mt-0.5 flex flex-wrap items-center gap-x-cp-3 gap-y-0.5 text-[0.78rem] text-ink-soft">
+          <p className="mt-0.5 flex flex-wrap items-center gap-x-cp-3 gap-y-0.5 text-cp-caption text-ink-soft">
             {time && (
               <span className="inline-flex items-center gap-1">
                 <ClockIcon size={13} />
@@ -468,8 +468,8 @@ function SignedInCookPilotImport({
 
       {!loading && !error && summaries.length === 0 && (
         <div className="text-center py-cp-7 px-cp-5 rounded-2xl border border-dashed border-line-strong">
-          <p className="font-bold text-[1.02rem]">No recipes yet</p>
-          <p className="text-ink-soft text-[0.88rem] mt-1.5">
+          <p className="font-bold text-cp-h2">No recipes yet</p>
+          <p className="text-ink-soft text-cp-small mt-1.5">
             Import from{" "}
             <a
               href="https://cookpilotapp.com"
@@ -486,8 +486,8 @@ function SignedInCookPilotImport({
 
       {!loading && !error && summaries.length > 0 && visibleSummaries.length === 0 && (
         <div className="text-center py-cp-7 px-cp-5 rounded-2xl border border-dashed border-line-strong">
-          <p className="font-bold text-[1.02rem]">No matches</p>
-          <p className="text-ink-soft text-[0.88rem] mt-1.5">
+          <p className="font-bold text-cp-h2">No matches</p>
+          <p className="text-ink-soft text-cp-small mt-1.5">
             Try a different title, tag, or ingredient.
           </p>
         </div>

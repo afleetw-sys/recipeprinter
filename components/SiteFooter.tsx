@@ -21,7 +21,7 @@ export function SiteFooter() {
             <Link
               key={href}
               href={href}
-              className="text-[0.9rem] font-semibold text-ink-soft hover:text-ink transition-colors"
+              className="text-cp-small font-semibold text-ink-soft hover:text-ink transition-colors"
             >
               {label}
             </Link>
@@ -31,7 +31,7 @@ export function SiteFooter() {
             href={COFFEE_URL}
             target="_blank"
             rel="noopener noreferrer"
-            className="ml-auto inline-flex min-h-[34px] items-center gap-2 rounded-full border border-[#ffdd00]/70 bg-white px-cp-3 text-[0.82rem] font-bold text-ink shadow-sm transition-colors hover:border-[#ffdd00] hover:bg-[#fff9d8]"
+            className="ml-auto inline-flex min-h-[34px] items-center gap-2 rounded-full border border-[#ffdd00]/70 bg-white px-cp-3 text-cp-caption font-bold text-ink shadow-sm transition-colors hover:border-[#ffdd00] hover:bg-[#fff9d8]"
           >
             <Image
               src={COFFEE_LOGO_SRC}
@@ -44,7 +44,7 @@ export function SiteFooter() {
             Support RecipePrinter
           </a>
         </nav>
-        <div className="flex flex-wrap items-center justify-between gap-cp-3 text-[0.8rem] text-ink-soft">
+        <div className="flex flex-wrap items-center justify-between gap-cp-3 text-cp-caption text-ink-soft">
           <span>
             {SITE_NAME} is a{" "}
             <a

@@ -43,6 +43,21 @@ const config: Config = {
         sans: ["var(--font-manrope)", "system-ui", "sans-serif"],
         serif: ["var(--font-playfair)", "Georgia", "serif"],
       },
+      fontSize: {
+        // One shared type scale (see --cp-fs-* in globals.css :root) so
+        // titles, buttons, and body copy stay consistent across the site
+        // instead of every component picking its own nearby rem value.
+        "cp-label": "var(--cp-fs-label)",
+        "cp-caption": "var(--cp-fs-caption)",
+        "cp-small": "var(--cp-fs-small)",
+        "cp-body": "var(--cp-fs-body)",
+        "cp-body-lg": "var(--cp-fs-body-lg)",
+        "cp-h2": "var(--cp-fs-h2)",
+        "cp-h2-lg": "var(--cp-fs-h2-lg)",
+        "cp-hero-sm": "var(--cp-fs-hero-sm)",
+        "cp-hero": "var(--cp-fs-hero)",
+        "cp-hero-lg": "var(--cp-fs-hero-lg)",
+      },
       borderRadius: {
         // CookPilot radius scale: sm 10 / md 14 / lg 18 / xl 24 / 2xl 28.
         // Controls (buttons, inputs, toggles) use 12px.

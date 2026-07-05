@@ -69,12 +69,12 @@ export default function HowItWorksPage() {
         <section aria-labelledby="step-1">
           <h2
             id="step-1"
-            className="text-[1.4rem] font-extrabold tracking-[-0.03em]"
+            className="text-cp-h2-lg font-extrabold tracking-[-0.03em]"
           >
             1. Add a recipe link, photo, screenshot, or text
           </h2>
 
-          <p className="mt-cp-3 text-ink-soft leading-relaxed">
+          <p className="mt-cp-3 text-ink-soft text-cp-body leading-relaxed">
             Start with a recipe you already want to keep. RecipePrinter begins
             after discovery: when a recipe has earned a place on paper, in your
             kitchen, or in your collection.
@@ -88,8 +88,8 @@ export default function HowItWorksPage() {
                 </span>
 
                 <div>
-                  <h3 className="font-bold text-[0.98rem]">{label}</h3>
-                  <p className="mt-cp-1 text-ink-soft text-[0.9rem] leading-relaxed">
+                  <h3 className="font-bold text-cp-h2">{label}</h3>
+                  <p className="mt-cp-1 text-ink-soft text-cp-body leading-relaxed">
                     {body}
                   </p>
                 </div>
@@ -101,18 +101,18 @@ export default function HowItWorksPage() {
         <section aria-labelledby="step-2">
           <h2
             id="step-2"
-            className="text-[1.4rem] font-extrabold tracking-[-0.03em]"
+            className="text-cp-h2-lg font-extrabold tracking-[-0.03em]"
           >
             2. Turn the recipe into a printable card or page
           </h2>
 
-          <p className="mt-cp-3 text-ink-soft leading-relaxed">
+          <p className="mt-cp-3 text-ink-soft text-cp-body leading-relaxed">
             Recipe websites and social posts are made for screens, not kitchen
             counters. RecipePrinter keeps the useful recipe details and formats
             them into something readable on paper.
           </p>
 
-          <p className="mt-cp-3 text-ink-soft leading-relaxed">
+          <p className="mt-cp-3 text-ink-soft text-cp-body leading-relaxed">
             You get a printable recipe with the title, ingredients,
             instructions, notes, prep time, cook time, servings, and other
             useful details when they&apos;re available.
@@ -122,25 +122,25 @@ export default function HowItWorksPage() {
         <section aria-labelledby="step-3">
           <h2
             id="step-3"
-            className="text-[1.4rem] font-extrabold tracking-[-0.03em]"
+            className="text-cp-h2-lg font-extrabold tracking-[-0.03em]"
           >
             3. Print it, save it as a PDF, or add it to your binder
           </h2>
 
-          <p className="mt-cp-3 text-ink-soft leading-relaxed">
+          <p className="mt-cp-3 text-ink-soft text-cp-body leading-relaxed">
             Preview your recipe as a clean printable recipe card or letter-size
             recipe page, then send it to your printer. You can also choose{" "}
             <span className="font-semibold text-ink">Save as PDF</span> in the
             print dialog to keep a clean recipe PDF on your device.
           </p>
 
-          <p className="mt-cp-3 text-ink-soft leading-relaxed">
+          <p className="mt-cp-3 text-ink-soft text-cp-body leading-relaxed">
             Printing several recipes? Add them to your print queue and print the
             whole batch at once. It works well for a recipe binder, a week of
             dinners, a family cookbook, or the recipes you keep coming back to.
           </p>
 
-          <p className="mt-cp-3 text-ink-soft leading-relaxed">
+          <p className="mt-cp-3 text-ink-soft text-cp-body leading-relaxed">
             No account required. Nothing saved to our servers. Just printable
             recipes designed for real kitchens instead of open browser tabs.
           </p>
@@ -149,7 +149,7 @@ export default function HowItWorksPage() {
         <section aria-labelledby="related-guides-heading">
           <h2
             id="related-guides-heading"
-            className="text-[1.4rem] font-extrabold tracking-[-0.03em]"
+            className="text-cp-h2-lg font-extrabold tracking-[-0.03em]"
           >
             More ways to use RecipePrinter
           </h2>
@@ -159,7 +159,7 @@ export default function HowItWorksPage() {
               <Link
                 key={page.slug}
                 href={`/${page.slug}`}
-                className="card p-cp-4 text-[0.92rem] font-bold text-ink hover:border-line-strong transition-colors"
+                className="card p-cp-4 text-cp-body font-bold text-ink hover:border-line-strong transition-colors"
               >
                 {page.title}
               </Link>

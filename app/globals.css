@@ -28,6 +28,27 @@
   --cp-card: #ffffff;
   --cp-error: #c53f3f;
   --cp-body-background: #f5f7fb;
+
+  /* ── Font-size scale ──────────────────────────────────────────────────────
+     One shared type scale so titles, buttons, labels, and body copy read as
+     consistent sizes site-wide instead of each component picking its own
+     nearby rem value. Display sizes (hero/h2-lg) use clamp() so they scale
+     smoothly between mobile and desktop off one declaration; UI text
+     (label/caption/small/body/button) is deliberately a single fixed size
+     at every width — that IS the mobile-responsive behavior, since the bugs
+     this scale replaces were UI text with no mobile value at all, falling
+     back to the browser's larger default. Use via the matching Tailwind
+     utilities (text-cp-label, text-cp-body, etc.), not the vars directly. */
+  --cp-fs-label: 0.74rem; /* uppercase eyebrows, section labels */
+  --cp-fs-caption: 0.8rem; /* smallest meta/helper text, compact chips */
+  --cp-fs-small: 0.86rem; /* secondary copy, footer links, small buttons */
+  --cp-fs-body: 0.92rem; /* standard paragraph copy, primary buttons */
+  --cp-fs-body-lg: 1.02rem; /* lede/intro paragraphs under a heading */
+  --cp-fs-h2: 1.1rem; /* section headings, dialog/card titles */
+  --cp-fs-h2-lg: clamp(1.2rem, 1rem + 1vw, 1.4rem); /* step numbers, emphasis headings */
+  --cp-fs-hero-sm: clamp(1.9rem, 1.5rem + 2vw, 2.5rem); /* article page H1 (features/about/faq/how-it-works) */
+  --cp-fs-hero: clamp(2rem, 1.1rem + 4vw, 2.75rem); /* app/home page H1 */
+  --cp-fs-hero-lg: clamp(2.15rem, 0.9rem + 6vw, 4rem); /* marketing landing page H1 */
 }
 
 @layer base {
@@ -52,7 +73,7 @@
   /* ── Buttons (mirrors .cp-button) ─────────────────────────────────────── */
   .btn {
     @apply inline-flex items-center justify-center gap-2 whitespace-nowrap
-           rounded font-semibold text-[0.9rem]
+           rounded font-semibold text-cp-body
            transition-transform duration-150 select-none;
     min-height: 40px;
     padding: 0 18px;
@@ -97,12 +118,12 @@
   .btn-compact {
     min-height: 34px;
     padding: 0 14px;
-    @apply text-[0.85rem];
+    @apply text-cp-small;
   }
 
   /* ── Fields (mirrors .cp-field__control) ──────────────────────────────── */
   .field-label {
-    @apply block text-[0.82rem] font-bold tracking-wide mb-2;
+    @apply block text-cp-caption font-bold tracking-wide mb-2;
   }
   .field {
     @apply w-full rounded transition-[border-color,background-color] duration-150;
@@ -141,7 +162,7 @@
   /* Eyebrow (mirrors .cp-eyebrow) */
   .eyebrow {
     color: var(--cp-blue);
-    @apply text-[0.74rem] font-bold uppercase;
+    @apply text-cp-label font-bold uppercase;
     letter-spacing: 0.12em;
   }
 
@@ -169,7 +190,7 @@
     border: 1px solid var(--cp-line-strong);
     background: #fff;
     color: var(--cp-ink);
-    font-size: 0.86rem;
+    font-size: var(--cp-fs-small);
     cursor: pointer;
   }
   .mode-toggle__item:hover:not(.is-active):not(:disabled) {
@@ -208,7 +229,7 @@
     @apply flex w-full items-center gap-2 rounded text-left font-bold transition-colors;
     min-height: 44px;
     padding: 0 14px;
-    font-size: 0.9rem;
+    font-size: var(--cp-fs-body);
     color: var(--cp-ink);
   }
   .mode-toggle-menu__item svg,
@@ -225,7 +246,7 @@
   .mode-toggle-menu--compact .mode-toggle-menu__item {
     min-height: 40px;
     padding: 0 10px;
-    font-size: 0.82rem;
+    font-size: var(--cp-fs-caption);
   }
   .mode-toggle-arrow {
     position: absolute;
@@ -297,16 +318,16 @@
     background: rgba(197, 63, 63, 0.06);
   }
   .state h4 {
-    @apply text-[0.95rem] font-bold;
+    @apply text-cp-body font-bold;
   }
   .state p {
     color: var(--cp-ink-soft);
-    @apply text-[0.84rem] leading-relaxed;
+    @apply text-cp-small leading-relaxed;
   }
 
   /* "or" divider (mirrors .cp-import-divider) */
   .or-divider {
-    @apply flex items-center gap-cp-3 text-[0.82rem] font-medium;
+    @apply flex items-center gap-cp-3 text-cp-caption font-medium;
     color: var(--cp-ink-soft);
   }
   .or-divider::before,
@@ -319,7 +340,7 @@
 
   /* Small status / method pill */
   .pill {
-    @apply inline-flex items-center gap-1.5 rounded-full text-[0.72rem] font-semibold;
+    @apply inline-flex items-center gap-1.5 rounded-full text-cp-label font-semibold;
     padding: 3px 10px;
   }
 
@@ -403,7 +424,7 @@
     .rp-import-panel--workspace .mode-toggle__item {
       min-height: 40px;
       padding: 0 10px;
-      font-size: 0.82rem;
+      font-size: var(--cp-fs-caption);
       background: rgba(255, 255, 255, 0.72);
     }
 
@@ -569,7 +590,7 @@
 .recipe-page-rail__num {
   align-self: start;
   color: var(--cp-ink-soft);
-  font-size: 0.74rem;
+  font-size: var(--cp-fs-label);
   font-weight: 800;
 }
 
@@ -589,7 +610,7 @@
 .recipe-page-rail__title {
   overflow: hidden;
   color: var(--cp-ink);
-  font-size: 0.78rem;
+  font-size: var(--cp-fs-caption);
   font-weight: 700;
   line-height: 1.2;
   text-overflow: ellipsis;
@@ -809,7 +830,7 @@
 .recipe-print-tip {
   margin: 0 0 12px;
   color: var(--cp-ink-soft);
-  font-size: 0.78rem;
+  font-size: var(--cp-fs-caption);
   font-weight: 600;
   line-height: 1.35;
 }
@@ -827,7 +848,7 @@
 
 .recipe-config-label {
   color: var(--cp-ink-soft);
-  font-size: 0.74rem;
+  font-size: var(--cp-fs-label);
   font-weight: 800;
   letter-spacing: 0.08em;
   text-transform: uppercase;
@@ -852,7 +873,7 @@
   border-radius: 999px;
   background: var(--cp-card);
   color: var(--cp-ink);
-  font-size: 0.82rem;
+  font-size: var(--cp-fs-caption);
   font-weight: 700;
   transition:
     border-color 150ms ease,
@@ -919,13 +940,13 @@
 }
 
 .recipe-toggle strong {
-  font-size: 0.86rem;
+  font-size: var(--cp-fs-small);
   line-height: 1.25;
 }
 
 .recipe-toggle small {
   color: var(--cp-ink-soft);
-  font-size: 0.72rem;
+  font-size: var(--cp-fs-label);
   line-height: 1.3;
 }
 
@@ -1101,7 +1122,7 @@
 .recipe-template-note {
   margin-top: 8px;
   color: var(--cp-ink-soft);
-  font-size: 0.74rem;
+  font-size: var(--cp-fs-caption);
   line-height: 1.35;
 }
 
@@ -1124,7 +1145,7 @@
 
 .recipe-toast span {
   min-width: 0;
-  font-size: 0.86rem;
+  font-size: var(--cp-fs-small);
   font-weight: 700;
   line-height: 1.35;
 }
@@ -1359,7 +1380,7 @@
     align-items: center;
     gap: 2px;
     color: var(--cp-ink);
-    font-size: 0.86rem;
+    font-size: var(--cp-fs-small);
     font-weight: 800;
     line-height: 1;
   }
@@ -1368,7 +1389,7 @@
     display: inline-flex;
     align-items: center;
     color: var(--cp-ink-soft);
-    font-size: 0.82rem;
+    font-size: var(--cp-fs-caption);
     font-weight: 700;
     line-height: 1;
   }
@@ -1425,7 +1446,7 @@
     background-repeat: no-repeat;
     background-size: 15px 15px;
     color: var(--cp-ink);
-    font-size: 0.8rem;
+    font-size: var(--cp-fs-caption);
     font-weight: 800;
   }
 
@@ -1440,7 +1461,7 @@
     border-radius: 10px;
     background: var(--cp-card);
     color: var(--cp-ink);
-    font-size: 0.8rem;
+    font-size: var(--cp-fs-caption);
     font-weight: 800;
     line-height: 1;
   }
@@ -1656,7 +1677,7 @@
   border-radius: 999px;
   background: var(--cp-card);
   color: var(--cp-ink-soft);
-  font-size: 0.76rem;
+  font-size: var(--cp-fs-caption);
   font-weight: 800;
   box-shadow: 0 8px 24px rgba(15, 23, 42, 0.06);
 }
@@ -2560,7 +2581,7 @@
 .print-success-dialog__eyebrow {
   margin-bottom: 6px;
   color: var(--cp-blue);
-  font-size: 0.74rem;
+  font-size: var(--cp-fs-label);
   font-weight: 800;
   letter-spacing: 0.08em;
   text-transform: uppercase;
@@ -2568,6 +2589,9 @@
 
 .print-success-dialog h2 {
   margin: 0;
+  /* Fixed, not the vw-based --cp-fs-h2-lg: this heading lives in a
+     fixed-width modal (390px max), not full page width, so it shouldn't
+     track viewport size. */
   font-size: 1.24rem;
   line-height: 1.18;
   font-weight: 850;
@@ -2576,7 +2600,7 @@
 .print-success-dialog p {
   margin-top: 10px;
   color: var(--cp-ink-soft);
-  font-size: 0.94rem;
+  font-size: var(--cp-fs-body);
   line-height: 1.5;
 }
 

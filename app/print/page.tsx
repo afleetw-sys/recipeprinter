@@ -681,7 +681,7 @@ export default function PrintPage() {
       <div className="min-h-screen flex flex-col">
         <SiteHeader backHref="/" compact sticky />
         <div className="flex-1 flex flex-col items-center justify-center gap-cp-4 text-center px-cp-6">
-          <p className="font-bold text-[1.1rem]">Nothing to print</p>
+          <p className="font-bold text-cp-h2">Nothing to print</p>
           <p className="text-ink-soft max-w-sm">
             We couldn&apos;t find those recipes. They may have been removed, or this page was
             opened directly.
@@ -894,7 +894,7 @@ export default function PrintPage() {
           data-mobile-drawer={mobileDrawer ?? undefined}
         >
           <div className="recipe-config-panel__header">
-            <h2 className="text-[0.95rem] font-extrabold tracking-[-0.02em]">
+            <h2 className="text-cp-h2 font-extrabold tracking-[-0.02em]">
               {mobileDrawer === "template" ? "Templates" : "Print setup"}
             </h2>
             <button
@@ -914,7 +914,7 @@ export default function PrintPage() {
             </label>
             <select
               id="recipe-print-size"
-              className="field recipe-size-select !min-h-[38px] !py-0 !pl-3 text-[0.85rem] font-semibold"
+              className="field recipe-size-select !min-h-[38px] !py-0 !pl-3 text-cp-small font-semibold"
               value={cardSize}
               onChange={(event) => setCardSize(event.target.value as PrintCardSize)}
             >

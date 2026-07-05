@@ -26,11 +26,11 @@ export default function FaqPage() {
         {FAQ.map(({ question, answer }) => (
           <div key={question} className="card p-cp-5">
             <dt>
-              <h2 className="font-extrabold tracking-[-0.02em] text-[1.08rem]">
+              <h2 className="font-extrabold tracking-[-0.02em] text-cp-h2">
                 {question}
               </h2>
             </dt>
-            <dd className="mt-cp-2 text-ink-soft text-[0.95rem] leading-relaxed">
+            <dd className="mt-cp-2 text-ink-soft text-cp-body leading-relaxed">
               {answer}
             </dd>
           </div>

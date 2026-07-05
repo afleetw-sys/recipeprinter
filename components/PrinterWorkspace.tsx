@@ -107,7 +107,7 @@ export function PrinterWorkspace({
           <div>
             <h2
               id="rp-queue-heading"
-              className="text-[1.06rem] font-extrabold tracking-[-0.02em]"
+              className="text-cp-h2 font-extrabold tracking-[-0.02em]"
             >
               Recipes to print{hydrated && items.length > 0 ? ` (${items.length})` : ""}
             </h2>

@@ -77,10 +77,10 @@ export default function FeaturesPage() {
             <span className="text-brand-ink">
               <Icon size={22} />
             </span>
-            <h2 className="font-extrabold tracking-[-0.02em] text-[1.05rem]">
+            <h2 className="font-extrabold tracking-[-0.02em] text-cp-h2">
               {title}
             </h2>
-            <p className="text-ink-soft text-[0.92rem] leading-relaxed">
+            <p className="text-ink-soft text-cp-body leading-relaxed">
               {body}
             </p>
           </li>
@@ -90,11 +90,11 @@ export default function FeaturesPage() {
       <section aria-labelledby="printing-guides-heading" className="mt-cp-7">
         <h2
           id="printing-guides-heading"
-          className="font-extrabold tracking-[-0.02em] text-[1.1rem]"
+          className="font-extrabold tracking-[-0.02em] text-cp-h2"
         >
           Choose how you found the recipe
         </h2>
-        <p className="mt-cp-2 text-ink-soft text-[0.95rem] leading-relaxed">
+        <p className="mt-cp-2 text-ink-soft text-cp-body leading-relaxed">
           Start with the way you found the recipe, then turn it into something
           easier to cook from and keep.
         </p>
@@ -103,7 +103,7 @@ export default function FeaturesPage() {
             <Link
               key={page.slug}
               href={`/${page.slug}`}
-              className="card p-cp-4 text-[0.92rem] font-bold text-ink hover:border-line-strong transition-colors"
+              className="card p-cp-4 text-cp-body font-bold text-ink hover:border-line-strong transition-colors"
             >
               {page.title}
             </Link>
@@ -117,17 +117,17 @@ export default function FeaturesPage() {
       >
         <h2
           id="privacy-heading"
-          className="font-extrabold tracking-[-0.02em] text-[1.1rem]"
+          className="font-extrabold tracking-[-0.02em] text-cp-h2"
         >
           Built for real kitchens, not web browsers
         </h2>
-        <p className="mt-cp-2 text-ink-soft text-[0.95rem] leading-relaxed">
+        <p className="mt-cp-2 text-ink-soft text-cp-body leading-relaxed">
           RecipePrinter is not a recipe discovery app, meal planner, grocery
           app, or social network. It exists for what happens after you&apos;ve
           found a recipe worth making again and want it somewhere easier to use
           than an open browser tab.
         </p>
-        <p className="mt-cp-3 text-ink-soft text-[0.95rem] leading-relaxed">
+        <p className="mt-cp-3 text-ink-soft text-cp-body leading-relaxed">
           No account required. Nothing saved to our servers. Your print queue
           lives in your browser for the current session only, so the recipes you
           print, save, and collect stay yours.

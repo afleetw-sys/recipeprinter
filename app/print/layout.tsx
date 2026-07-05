@@ -11,7 +11,7 @@ export const metadata: Metadata = {
 function PrintLoading() {
   return (
     <div className="min-h-screen flex-1 grid place-items-center px-cp-6 text-center text-ink-soft">
-      <p className="text-[0.95rem] font-semibold">Preparing print preview…</p>
+      <p className="text-cp-body-lg font-semibold">Preparing print preview…</p>
     </div>
   );
 }

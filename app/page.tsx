@@ -30,10 +30,10 @@ export default function Home() {
           {/* Hero: what it does and why it's useful, in two sentences. */}
           <div className="rp-landing-hero w-full">
             <div className="max-w-[48rem]">
-              <h1 className="text-[clamp(2rem,5vw,2.75rem)] font-extrabold tracking-[-0.04em] leading-[1.05]">
+              <h1 className="text-cp-hero font-extrabold tracking-[-0.04em] leading-[1.05]">
                 Print the recipes worth making again.
               </h1>
-              <p className="mt-cp-3 text-ink-soft text-[1.02rem] leading-relaxed">
+              <p className="mt-cp-3 text-ink-soft text-cp-body-lg leading-relaxed">
                 Turn web and social recipe links into printable recipe cards for your kitchen.
               </p>
             </div>

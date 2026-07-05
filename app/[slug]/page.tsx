@@ -74,10 +74,10 @@ function RecipePageVisual() {
 
       <div className="relative grid gap-cp-3">
         <div>
-          <p className="text-[0.72rem] font-extrabold uppercase tracking-[0.12em] text-brand-ink">
+          <p className="text-cp-label font-extrabold uppercase tracking-[0.12em] text-brand-ink">
             Recipe Printer output
           </p>
-          <h2 className="mt-cp-1 text-[1.1rem] font-extrabold tracking-[-0.03em]">
+          <h2 className="mt-cp-1 text-cp-h2 font-extrabold tracking-[-0.03em]">
             A printable recipe you can cook from
           </h2>
         </div>
@@ -88,7 +88,7 @@ function RecipePageVisual() {
               <p className="font-serif text-[1.28rem] leading-tight text-ink">
                 Lemon Sunday Pasta
               </p>
-              <p className="mt-1 text-[0.8rem] font-semibold text-ink-soft">
+              <p className="mt-1 text-cp-caption font-semibold text-ink-soft">
                 25 min · Serves 4 · Saved from a recipe link
               </p>
             </div>
@@ -99,10 +99,10 @@ function RecipePageVisual() {
 
           <div className="mt-cp-3 grid gap-cp-4 sm:grid-cols-[0.8fr_1fr]">
             <div>
-              <p className="text-[0.75rem] font-extrabold uppercase tracking-[0.1em] text-brand-ink">
+              <p className="text-cp-label font-extrabold uppercase tracking-[0.1em] text-brand-ink">
                 Ingredients
               </p>
-              <ul className="mt-cp-2 space-y-0.5 text-[0.84rem] text-ink-soft">
+              <ul className="mt-cp-2 space-y-0.5 text-cp-small text-ink-soft">
                 <li>Spaghetti</li>
                 <li>Lemon zest</li>
                 <li>Parmesan</li>
@@ -110,10 +110,10 @@ function RecipePageVisual() {
               </ul>
             </div>
             <div>
-              <p className="text-[0.75rem] font-extrabold uppercase tracking-[0.1em] text-brand-ink">
+              <p className="text-cp-label font-extrabold uppercase tracking-[0.1em] text-brand-ink">
                 Steps
               </p>
-              <ol className="mt-cp-2 space-y-0.5 text-[0.84rem] text-ink-soft">
+              <ol className="mt-cp-2 space-y-0.5 text-cp-small text-ink-soft">
                 <li>Boil pasta until tender.</li>
                 <li>Toss warm with lemon and cheese.</li>
                 <li>Print, mark up, and keep.</li>
@@ -122,7 +122,7 @@ function RecipePageVisual() {
           </div>
         </div>
 
-        <div className="grid gap-cp-2 text-[0.86rem] font-semibold text-ink-soft sm:grid-cols-3">
+        <div className="grid gap-cp-2 text-cp-small font-semibold text-ink-soft sm:grid-cols-3">
           <span className="inline-flex items-center gap-2">
             <CheckIcon size={16} /> Cards
           </span>
@@ -213,11 +213,11 @@ export default function SeoLandingPage({ params }: PageProps) {
                 <p className="eyebrow">{page.eyebrow}</p>
                 <h1
                   id="landing-heading"
-                  className="mt-cp-2 text-[clamp(2.15rem,6vw,4rem)] font-extrabold tracking-[-0.04em] leading-[1.02]"
+                  className="mt-cp-2 text-cp-hero-lg font-extrabold tracking-[-0.04em] leading-[1.02]"
                 >
                   {page.h1}
                 </h1>
-                <p className="mx-auto mt-cp-4 max-w-[42rem] text-ink-soft text-[1.08rem] leading-relaxed">
+                <p className="mx-auto mt-cp-4 max-w-[42rem] text-ink-soft text-cp-body-lg leading-relaxed">
                   {page.lede}
                 </p>
                 <div className="mt-cp-5 flex flex-wrap items-center justify-center gap-cp-3">
@@ -228,7 +228,7 @@ export default function SeoLandingPage({ params }: PageProps) {
                     See how it works
                   </Link>
                 </div>
-                <p className="mt-cp-3 text-[0.88rem] font-semibold text-ink-soft">
+                <p className="mt-cp-3 text-cp-small font-semibold text-ink-soft">
                   Free to use. No account required.
                 </p>
               </div>
@@ -237,7 +237,7 @@ export default function SeoLandingPage({ params }: PageProps) {
                 {heroChips(page).map((chip) => (
                   <span
                     key={chip}
-                    className="inline-flex min-h-[34px] items-center rounded-full bg-card px-cp-3 text-[0.84rem] font-bold text-ink-soft shadow-sm ring-1 ring-line"
+                    className="inline-flex min-h-[34px] items-center rounded-full bg-card px-cp-3 text-cp-small font-bold text-ink-soft shadow-sm ring-1 ring-line"
                   >
                     {chip}
                   </span>
@@ -252,11 +252,11 @@ export default function SeoLandingPage({ params }: PageProps) {
             <div className="max-w-[680px]">
               <h2
                 id="steps-heading"
-                className="text-[1.4rem] font-extrabold tracking-[-0.03em]"
+                className="text-cp-h2-lg font-extrabold tracking-[-0.03em]"
               >
                 {page.stepsTitle}
               </h2>
-              <p className="mt-cp-2 text-ink-soft leading-relaxed">
+              <p className="mt-cp-2 text-ink-soft text-cp-body leading-relaxed">
                 Recipe Printer keeps the path short: add the recipe, review the
                 printable version, then print or save it.
               </p>
@@ -264,10 +264,10 @@ export default function SeoLandingPage({ params }: PageProps) {
             <ol className="mt-cp-4 grid gap-cp-3 md:grid-cols-3">
               {page.steps.map((step, index) => (
                 <li key={step} className="card p-cp-4">
-                  <span className="grid h-8 w-8 place-items-center rounded-full bg-brand-50 text-[0.9rem] font-extrabold text-brand-ink">
+                  <span className="grid h-8 w-8 place-items-center rounded-full bg-brand-50 text-cp-body font-extrabold text-brand-ink">
                     {index + 1}
                   </span>
-                  <p className="mt-cp-3 text-ink-soft text-[0.92rem] leading-relaxed">
+                  <p className="mt-cp-3 text-ink-soft text-cp-body leading-relaxed">
                     {step}
                   </p>
                 </li>
@@ -278,10 +278,10 @@ export default function SeoLandingPage({ params }: PageProps) {
           <section aria-label="Recipe Printer benefits" className="mx-auto grid w-full max-w-[1040px] gap-cp-4 md:grid-cols-2">
             {page.sections.map((section) => (
               <div key={section.h2} className="card p-cp-5">
-                <h2 className="text-[1.08rem] font-extrabold tracking-[-0.02em]">
+                <h2 className="text-cp-h2 font-extrabold tracking-[-0.02em]">
                   {section.h2}
                 </h2>
-                <p className="mt-cp-2 text-ink-soft text-[0.95rem] leading-relaxed">
+                <p className="mt-cp-2 text-ink-soft text-cp-body leading-relaxed">
                   {section.body}
                 </p>
               </div>
@@ -294,10 +294,10 @@ export default function SeoLandingPage({ params }: PageProps) {
           >
             <div className="flex flex-col gap-cp-4 sm:flex-row sm:items-center sm:justify-between">
               <div>
-                <h2 id="cta-heading" className="text-[1.25rem] font-extrabold tracking-[-0.03em]">
+                <h2 id="cta-heading" className="text-cp-h2-lg font-extrabold tracking-[-0.03em]">
                   Ready to turn it into a printable recipe?
                 </h2>
-                <p className="mt-cp-2 text-ink-soft leading-relaxed">
+                <p className="mt-cp-2 text-ink-soft text-cp-body leading-relaxed">
                   Open the Recipe Printer tool, add your recipe, and make a card,
                   page, or PDF worth keeping.
                 </p>
@@ -311,7 +311,7 @@ export default function SeoLandingPage({ params }: PageProps) {
           <section aria-labelledby="faq-heading" className="mx-auto w-full max-w-[760px]">
             <h2
               id="faq-heading"
-              className="text-[1.35rem] font-extrabold tracking-[-0.03em]"
+              className="text-cp-h2-lg font-extrabold tracking-[-0.03em]"
             >
               Questions people ask
             </h2>
@@ -319,7 +319,7 @@ export default function SeoLandingPage({ params }: PageProps) {
               {page.faqs.map((item) => (
                 <div key={item.question} className="card p-cp-5">
                   <dt className="font-extrabold tracking-[-0.02em]">{item.question}</dt>
-                  <dd className="mt-cp-2 text-ink-soft text-[0.95rem] leading-relaxed">
+                  <dd className="mt-cp-2 text-ink-soft text-cp-body leading-relaxed">
                     {item.answer}
                   </dd>
                 </div>
@@ -330,7 +330,7 @@ export default function SeoLandingPage({ params }: PageProps) {
           <section aria-labelledby="related-heading" className="mx-auto w-full max-w-[1040px]">
             <h2
               id="related-heading"
-              className="text-[1.1rem] font-extrabold tracking-[-0.02em]"
+              className="text-cp-h2 font-extrabold tracking-[-0.02em]"
             >
               More ways to use Recipe Printer
             </h2>
