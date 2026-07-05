@@ -2,6 +2,18 @@
 // to echo the weight of CookPilot's Phosphor icons.
 import type { SVGProps } from "react";
 
+// Shared icon-size scale so nearby components land on the same value instead
+// of each picking its own close-enough number (this replaced e.g. XIcon
+// close buttons at both 16 and 17, and meta icons split between 13 and 14).
+// Icons that intentionally stand out on their own — empty-state graphics,
+// the upload dropzone glyph — size themselves directly instead of using this.
+export const ICON_SIZE = {
+  xs: 12, // micro badges, inline chip checkmarks
+  sm: 14, // meta icons (clock/servings/external-link) next to small text
+  md: 16, // buttons, close icons, standard controls
+  lg: 18, // default size — nav/toolbar icons, matches Base's own default
+} as const;
+
 type IconProps = SVGProps<SVGSVGElement> & { size?: number };
 
 function Base({ size = 18, children, ...props }: IconProps & { children: React.ReactNode }) {

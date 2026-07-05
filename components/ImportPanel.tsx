@@ -179,7 +179,7 @@ export function ImportPanel({
 
   return (
     <section
-      className={`rp-import-panel panel p-cp-5 sm:p-cp-6 animate-fade-up ${
+      className={`rp-import-panel panel p-0 lg:p-cp-6 animate-fade-up ${
         workspace ? "rp-import-panel--workspace" : ""
       } ${mode === "cookpilot" ? "rp-import-panel--cookpilot" : ""}`}
       aria-labelledby={workspace ? "rp-import-heading" : undefined}

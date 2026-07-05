@@ -4,7 +4,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { SiteFooter } from "@/components/SiteFooter";
 import { SiteHeader } from "@/components/SiteHeader";
-import { CheckIcon, PrintIcon } from "@/components/icons";
+import { CheckIcon, ICON_SIZE, PrintIcon } from "@/components/icons";
 import {
   SEO_LANDING_PAGE_MAP,
   SEO_LANDING_PAGES,
@@ -93,7 +93,7 @@ function RecipePageVisual() {
               </p>
             </div>
             <span className="grid h-9 w-9 shrink-0 place-items-center rounded bg-brand-50 text-brand-ink">
-              <PrintIcon size={18} />
+              <PrintIcon size={ICON_SIZE.md} />
             </span>
           </div>
 
@@ -172,7 +172,7 @@ function LandingCta({
 }) {
   return (
     <Link href={APP_CTA_HREF} className={`btn ${variant === "primary" ? "btn-primary" : "btn-secondary"}`}>
-      <PrintIcon size={18} />
+      <PrintIcon size={ICON_SIZE.md} />
       {label}
     </Link>
   );

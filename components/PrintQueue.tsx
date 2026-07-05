@@ -5,6 +5,7 @@ import { type QueueItem, type Recipe } from "@/types/recipe";
 import {
   CheckIcon,
   ClockIcon,
+  ICON_SIZE,
   PlateIcon,
   RefreshIcon,
   SpinnerIcon,
@@ -98,7 +99,7 @@ function RecipeCardItem({
           {/* Selection check */}
           {selected && (
             <span className="absolute bottom-2 right-2 grid place-items-center w-7 h-7 rounded-full bg-brand-100 text-brand-ink">
-              <CheckIcon size={16} />
+              <CheckIcon size={ICON_SIZE.md} />
             </span>
           )}
         </div>
@@ -112,13 +113,13 @@ function RecipeCardItem({
           <div className="flex items-center flex-wrap gap-x-cp-4 gap-y-1 mt-2 text-cp-caption text-ink-soft min-h-[1.25rem]">
             {ready && time && (
               <span className="inline-flex items-center gap-1.5">
-                <ClockIcon size={14} />
+                <ClockIcon size={ICON_SIZE.sm} />
                 {time}
               </span>
             )}
             {ready && servings && (
               <span className="inline-flex items-center gap-1.5">
-                <UsersIcon size={14} />
+                <UsersIcon size={ICON_SIZE.sm} />
                 {String(servings)}
               </span>
             )}
@@ -143,7 +144,7 @@ function RecipeCardItem({
         title="Remove"
         className="absolute top-2 right-2 grid place-items-center w-8 h-8 rounded-full bg-card/90 border border-line text-ink-soft hover:text-error transition-colors"
       >
-        <TrashIcon size={15} />
+        <TrashIcon size={ICON_SIZE.md} />
       </button>
 
       {/* Error detail + retry */}
@@ -156,7 +157,7 @@ function RecipeCardItem({
               onClick={onRetry}
               className="btn-ghost btn-compact text-brand-ink flex-shrink-0 -mt-1.5"
             >
-              <RefreshIcon size={14} />
+              <RefreshIcon size={ICON_SIZE.sm} />
               Retry
             </button>
           )}

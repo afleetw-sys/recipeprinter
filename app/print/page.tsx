@@ -23,7 +23,15 @@ import RecipeCardPrint, {
   type RecipeFace,
   type RecipePrintTemplate,
 } from "@/components/RecipeCardPrint";
-import { CheckIcon, ChevronLeftIcon, CrownIcon, PrintIcon, SpinnerIcon, XIcon } from "@/components/icons";
+import {
+  CheckIcon,
+  ChevronLeftIcon,
+  CrownIcon,
+  ICON_SIZE,
+  PrintIcon,
+  SpinnerIcon,
+  XIcon,
+} from "@/components/icons";
 import { getFirebaseAuth } from "@/lib/firebase/client";
 import {
   isPremiumTemplate,
@@ -744,7 +752,7 @@ export default function PrintPage() {
         >
           <div className="recipe-mobile-topbar no-print">
             <Link href="/" className="recipe-mobile-back-button" aria-label="Back to recipes">
-              <ChevronLeftIcon size={18} />
+              <ChevronLeftIcon size={ICON_SIZE.lg} />
               <span>Back</span>
             </Link>
             <div className="recipe-mobile-page-count" aria-live="polite">
@@ -782,7 +790,7 @@ export default function PrintPage() {
                   aria-pressed={showPhoto}
                   onClick={() => setShowPhoto((value) => !value)}
                 >
-                  {showPhoto && <CheckIcon size={13} />}
+                  {showPhoto && <CheckIcon size={ICON_SIZE.xs} />}
                   Recipe photo
                 </button>
               )}
@@ -793,7 +801,7 @@ export default function PrintPage() {
                   aria-pressed={doubleSided}
                   onClick={() => setDoubleSided((value) => !value)}
                 >
-                  {doubleSided && <CheckIcon size={13} />}
+                  {doubleSided && <CheckIcon size={ICON_SIZE.xs} />}
                   Two-sided
                 </button>
               )}
@@ -804,7 +812,7 @@ export default function PrintPage() {
                   aria-pressed={showCutLines}
                   onClick={() => setShowCutLines((value) => !value)}
                 >
-                  {showCutLines && <CheckIcon size={13} />}
+                  {showCutLines && <CheckIcon size={ICON_SIZE.xs} />}
                   Cut lines
                 </button>
               )}
@@ -899,11 +907,11 @@ export default function PrintPage() {
             </h2>
             <button
               type="button"
-              className="recipe-config-panel__close"
+              className="recipe-config-panel__close icon-close-btn"
               aria-label="Close print settings"
               onClick={() => setMobileDrawer(null)}
             >
-              <XIcon size={16} />
+              <XIcon size={ICON_SIZE.md} />
             </button>
           </div>
 
@@ -1001,7 +1009,7 @@ export default function PrintPage() {
                   >
                     {locked && (
                       <span className="recipe-template-option__premium" aria-label="Premium">
-                        <CrownIcon size={12} />
+                        <CrownIcon size={ICON_SIZE.xs} />
                         {premiumTemplate && templatePrices[premiumTemplate] ? (
                           <span>{templatePrices[premiumTemplate]}</span>
                         ) : null}
@@ -1009,7 +1017,7 @@ export default function PrintPage() {
                     )}
                     {owned && (
                       <span className="recipe-template-option__owned" aria-label="Owned">
-                        <CheckIcon size={12} />
+                        <CheckIcon size={ICON_SIZE.xs} />
                       </span>
                     )}
                     <span className="recipe-template-option__preview" aria-hidden>
@@ -1046,7 +1054,7 @@ export default function PrintPage() {
               className="btn btn-primary recipe-print-button"
               disabled={purchaseBusy}
             >
-              {purchaseBusy ? <SpinnerIcon size={16} /> : <PrintIcon size={16} />}
+              {purchaseBusy ? <SpinnerIcon size={ICON_SIZE.md} /> : <PrintIcon size={ICON_SIZE.md} />}
               {selectedTemplateLocked ? "Unlock & Print" : "Print"}
             </button>
           </div>
@@ -1059,7 +1067,7 @@ export default function PrintPage() {
             onClick={handleMobilePrint}
             disabled={purchaseBusy}
           >
-            {purchaseBusy ? <SpinnerIcon size={18} /> : <PrintIcon size={18} />}
+            {purchaseBusy ? <SpinnerIcon size={ICON_SIZE.md} /> : <PrintIcon size={ICON_SIZE.md} />}
             {selectedTemplateLocked ? "Unlock & Print" : "Print"}
           </button>
         </div>
@@ -1098,11 +1106,11 @@ export default function PrintPage() {
           <div className="print-success-dialog__panel">
             <button
               type="button"
-              className="print-success-dialog__close"
+              className="print-success-dialog__close icon-close-btn"
               aria-label="Close"
               onClick={() => setShowDonateDialog(false)}
             >
-              ×
+              <XIcon size={ICON_SIZE.md} />
             </button>
             <div className="print-success-dialog__icon" aria-hidden>
               <img
@@ -1155,12 +1163,12 @@ export default function PrintPage() {
           <div className="print-success-dialog__panel">
             <button
               type="button"
-              className="print-success-dialog__close"
+              className="print-success-dialog__close icon-close-btn"
               aria-label="Close"
               onClick={() => setShowUnlockDialog(false)}
               disabled={purchaseBusy}
             >
-              <XIcon size={16} />
+              <XIcon size={ICON_SIZE.md} />
             </button>
             <h2 id="recipeprinter-unlock-title">Unlock {selectedTemplateLabel} template?</h2>
             <p>
@@ -1174,7 +1182,7 @@ export default function PrintPage() {
                 disabled={purchaseBusy}
                 onClick={() => void unlockTemplateAndPrint(selectedPremiumTemplate)}
               >
-                {purchaseBusy ? <SpinnerIcon size={16} /> : <CrownIcon size={16} />}
+                {purchaseBusy ? <SpinnerIcon size={ICON_SIZE.md} /> : <CrownIcon size={ICON_SIZE.md} />}
                 Unlock & Print
               </button>
               <button
@@ -1200,11 +1208,11 @@ export default function PrintPage() {
           <form className="print-success-dialog__panel" onSubmit={handleSignInSubmit}>
             <button
               type="button"
-              className="print-success-dialog__close"
+              className="print-success-dialog__close icon-close-btn"
               aria-label="Close"
               onClick={() => setShowSignInDialog(false)}
             >
-              <XIcon size={16} />
+              <XIcon size={ICON_SIZE.md} />
             </button>
             <h2 id="recipeprinter-sign-in-title">
               Sign in so you can reuse this template forever.
@@ -1227,7 +1235,7 @@ export default function PrintPage() {
             {signInMessage && <p className="recipe-template-note">{signInMessage}</p>}
             <div className="print-success-dialog__actions">
               <button type="submit" className="btn btn-primary" disabled={signInBusy}>
-                {signInBusy ? <SpinnerIcon size={16} /> : null}
+                {signInBusy ? <SpinnerIcon size={ICON_SIZE.md} /> : null}
                 Send sign-in link
               </button>
               <button
@@ -1250,7 +1258,7 @@ export default function PrintPage() {
         <div className="recipe-toast no-print" role="status" aria-live="polite">
           <span>{toastMessage}</span>
           <button type="button" aria-label="Dismiss" onClick={() => setToastMessage(null)}>
-            <XIcon size={14} />
+            <XIcon size={ICON_SIZE.sm} />
           </button>
         </div>
       )}

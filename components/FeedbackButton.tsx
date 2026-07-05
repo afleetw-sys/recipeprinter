@@ -2,7 +2,7 @@
 
 import { useEffect, useId, useState, type FormEvent } from "react";
 import { submitPrinterFeedback, type FeedbackType } from "@/lib/feedback";
-import { SpinnerIcon, XIcon } from "@/components/icons";
+import { ICON_SIZE, SpinnerIcon, XIcon } from "@/components/icons";
 
 const FEEDBACK_OPTIONS: { value: FeedbackType; label: string }[] = [
   { value: "idea", label: "Idea" },
@@ -124,15 +124,15 @@ export function FeedbackDialog({ open, onClose, initialType = "idea" }: Feedback
             if (event.target === event.currentTarget) close();
           }}
         >
-          <div className="panel w-full max-w-[460px] p-cp-5 flex flex-col gap-cp-4 relative">
+          <div className="panel panel--modal w-full max-w-[460px] p-cp-5 flex flex-col gap-cp-4 relative">
             <button
               type="button"
-              className="absolute right-3 top-3 btn-ghost btn-compact"
+              className="absolute right-3 top-3 icon-close-btn"
               onClick={close}
               aria-label="Close"
               disabled={busy}
             >
-              <XIcon size={17} />
+              <XIcon size={ICON_SIZE.md} />
             </button>
 
             <div className="pr-cp-7">
@@ -202,7 +202,7 @@ export function FeedbackDialog({ open, onClose, initialType = "idea" }: Feedback
                 </div>
 
                 <button type="submit" className="btn btn-primary w-full" disabled={busy}>
-                  {busy ? <SpinnerIcon size={16} /> : null}
+                  {busy ? <SpinnerIcon size={ICON_SIZE.md} /> : null}
                   Send feedback
                 </button>
               </form>

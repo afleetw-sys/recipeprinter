@@ -4,7 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { ImportPanel } from "@/components/ImportPanel";
 import { PrintQueue } from "@/components/PrintQueue";
-import { CheckIcon, MoreVerticalIcon, PrintIcon, TrashIcon, XIcon } from "@/components/icons";
+import { CheckIcon, ICON_SIZE, MoreVerticalIcon, PrintIcon, TrashIcon, XIcon } from "@/components/icons";
 import { createCurrentPrintJob, useQueue } from "@/lib/queue";
 import type { ImportMethod } from "@/types/recipe";
 
@@ -123,7 +123,7 @@ export function PrinterWorkspace({
                   className="btn-ghost btn-compact"
                   onClick={() => setMenuOpen((open) => !open)}
                 >
-                  <MoreVerticalIcon size={18} />
+                  <MoreVerticalIcon size={ICON_SIZE.lg} />
                 </button>
 
                 {menuOpen && (
@@ -137,7 +137,7 @@ export function PrinterWorkspace({
                         setMenuOpen(false);
                       }}
                     >
-                      {allSelected ? <XIcon size={18} /> : <CheckIcon size={18} />}
+                      {allSelected ? <XIcon size={ICON_SIZE.lg} /> : <CheckIcon size={ICON_SIZE.lg} />}
                       {allSelected ? "Deselect all" : "Select all"}
                     </button>
                     <button
@@ -149,7 +149,7 @@ export function PrinterWorkspace({
                         setMenuOpen(false);
                       }}
                     >
-                      <TrashIcon size={18} />
+                      <TrashIcon size={ICON_SIZE.lg} />
                       Clear all
                     </button>
                   </div>
@@ -163,7 +163,7 @@ export function PrinterWorkspace({
               disabled={selectedRecipeIds.length === 0}
               onClick={() => handlePrint(selectedRecipeIds)}
             >
-              <PrintIcon size={16} />
+              <PrintIcon size={ICON_SIZE.md} />
               {selectedRecipeIds.length > 0 ? `Print (${selectedRecipeIds.length})` : "Print"}
             </button>
           </div>

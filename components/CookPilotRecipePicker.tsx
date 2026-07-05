@@ -24,6 +24,7 @@ import {
   ClockIcon,
   CookPilotLogoIcon,
   ExternalIcon,
+  ICON_SIZE,
   SearchIcon,
   SpinnerIcon,
   UsersIcon,
@@ -117,14 +118,14 @@ function LoginDialog({
       aria-modal="true"
       aria-label="Log in to CookPilot"
     >
-      <div className="panel w-full max-w-[420px] p-cp-5 flex flex-col gap-cp-4 relative">
+      <div className="panel panel--modal w-full max-w-[420px] p-cp-5 flex flex-col gap-cp-4 relative">
         <button
           type="button"
-          className="absolute right-3 top-3 btn-ghost btn-compact"
+          className="absolute right-3 top-3 icon-close-btn"
           onClick={onClose}
           aria-label="Close"
         >
-          <XIcon size={17} />
+          <XIcon size={ICON_SIZE.md} />
         </button>
 
         <div className="pr-cp-7">
@@ -143,7 +144,7 @@ function LoginDialog({
             onClick={handleGoogle}
             disabled={busy}
           >
-            {busy && !showEmail ? <SpinnerIcon size={16} /> : null}
+            {busy && !showEmail ? <SpinnerIcon size={ICON_SIZE.md} /> : null}
             Continue with Google
           </button>
         )}
@@ -190,7 +191,7 @@ function LoginDialog({
               />
             </div>
             <button type="submit" className="btn btn-primary w-full" disabled={busy}>
-              {busy ? <SpinnerIcon size={16} /> : null}
+              {busy ? <SpinnerIcon size={ICON_SIZE.md} /> : null}
               Sign in
             </button>
           </form>
@@ -226,7 +227,7 @@ function SignedOutCookPilotImport({
           className="inline-flex items-center gap-1 text-current underline decoration-line-strong underline-offset-4 hover:decoration-ink"
         >
           CookPilot
-          <ExternalIcon size={14} />
+          <ExternalIcon size={ICON_SIZE.sm} />
         </a>
       </h3>
       <p className="text-cp-small text-ink-soft mt-1 max-w-sm mx-auto">
@@ -295,13 +296,13 @@ function RecipeRow({
           <p className="mt-0.5 flex flex-wrap items-center gap-x-cp-3 gap-y-0.5 text-cp-caption text-ink-soft">
             {time && (
               <span className="inline-flex items-center gap-1">
-                <ClockIcon size={13} />
+                <ClockIcon size={ICON_SIZE.sm} />
                 {time}
               </span>
             )}
             {servings && (
               <span className="inline-flex items-center gap-1">
-                <UsersIcon size={13} />
+                <UsersIcon size={ICON_SIZE.sm} />
                 Serves {servings}
               </span>
             )}
@@ -311,11 +312,11 @@ function RecipeRow({
 
       {added ? (
         <span className="inline-flex flex-shrink-0 items-center justify-center rounded-lg bg-brand-50 px-2.5 py-1.5 text-brand-ink">
-          <CheckIcon size={16} />
+          <CheckIcon size={ICON_SIZE.md} />
         </span>
       ) : (
         <span className="btn btn-secondary btn-compact flex-shrink-0 pointer-events-none transition-colors group-hover:border-line-strong group-hover:bg-[rgba(127,127,127,0.08)]">
-          {adding ? <SpinnerIcon size={15} /> : <span className="text-base leading-none">+</span>}
+          {adding ? <SpinnerIcon size={ICON_SIZE.md} /> : <span className="text-base leading-none">+</span>}
           Add
         </span>
       )}
@@ -432,14 +433,14 @@ function SignedInCookPilotImport({
             onClick={handleAddAll}
             disabled={bulkBusy}
           >
-            {bulkBusy ? <SpinnerIcon size={14} /> : null}
+            {bulkBusy ? <SpinnerIcon size={ICON_SIZE.sm} /> : null}
             {allVisibleAdded ? "Deselect all" : "Add all"}
           </button>
         )}
       </div>
 
       <div className="relative">
-        <SearchIcon size={17} className="absolute left-4 top-1/2 -translate-y-1/2 text-ink-soft" />
+        <SearchIcon size={ICON_SIZE.lg} className="absolute left-4 top-1/2 -translate-y-1/2 text-ink-soft" />
         <input
           id="cookpilot-search"
           className="field !pl-11"
@@ -453,7 +454,7 @@ function SignedInCookPilotImport({
       {loading && (
         <div className="h-40 grid place-items-center text-ink-soft rounded-2xl border border-dashed border-line-strong">
           <span className="inline-flex items-center gap-2">
-            <SpinnerIcon size={18} />
+            <SpinnerIcon size={ICON_SIZE.lg} />
             Loading your recipes
           </span>
         </div>
@@ -478,7 +479,7 @@ function SignedInCookPilotImport({
               className="inline-flex items-center gap-1 font-bold text-ink underline decoration-line-strong underline-offset-2 hover:text-ink-soft"
             >
               CookPilot
-              <ExternalIcon size={13} />
+              <ExternalIcon size={ICON_SIZE.sm} />
             </a>
           </p>
         </div>
@@ -528,7 +529,7 @@ export function CookPilotImportSource({
       {!ready && (
         <div className="h-40 grid place-items-center text-ink-soft rounded-2xl border border-dashed border-line-strong">
           <span className="inline-flex items-center gap-2">
-            <SpinnerIcon size={18} />
+            <SpinnerIcon size={ICON_SIZE.lg} />
             Checking CookPilot
           </span>
         </div>

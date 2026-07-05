@@ -133,6 +133,28 @@
     @apply text-cp-small;
   }
 
+  /* Round icon-only close button (mirrors the shape used by the mobile print
+     drawer and the print-success dialogs) — one shared style instead of
+     mixing a bordered circle in some modals with a plain ghost button in
+     others. */
+  .icon-close-btn {
+    display: grid;
+    place-items: center;
+    width: 34px;
+    height: 34px;
+    border: 1px solid var(--cp-line);
+    border-radius: 999px;
+    background: var(--cp-card);
+    color: var(--cp-ink-soft);
+    transition:
+      color 150ms ease,
+      border-color 150ms ease;
+  }
+  .icon-close-btn:hover {
+    color: var(--cp-ink);
+    border-color: var(--cp-line-strong);
+  }
+
   /* ── Fields (mirrors .cp-field__control) ──────────────────────────────── */
   .field-label {
     @apply block text-cp-caption font-bold tracking-wide mb-2;
@@ -169,6 +191,13 @@
     background: var(--cp-card);
     border: 1px solid var(--cp-line);
     @apply rounded-2xl;
+  }
+
+  /* .panel doubles as the import panel's surface on the homepage, so the
+     modal lift can't live on .panel itself — this modifier is what the
+     Feedback/CookPilot login dialogs add for that. */
+  .panel--modal {
+    box-shadow: var(--cp-shadow-xl);
   }
 
   /* Eyebrow (mirrors .cp-eyebrow) */
@@ -370,6 +399,23 @@
   .rp-workspace-import,
   .rp-workspace-project {
     min-width: 0;
+  }
+
+  /* Below the two-column desktop layout, "Recipes to print" already sits
+     directly on the page with no card around it — drop the Import panel's
+     card treatment too so the two sections read the same, and add a hairline
+     divider in its place so the boundary between them doesn't disappear. */
+  @media (max-width: 1023px) {
+    .rp-import-panel {
+      border: 0;
+      border-radius: 0;
+      background: transparent;
+    }
+
+    .rp-workspace-import {
+      padding-bottom: 20px;
+      border-bottom: 1px solid var(--cp-line);
+    }
   }
 
   @media (min-width: 1024px) {
@@ -1578,14 +1624,9 @@
   }
 
   .recipe-config-panel__close {
+    /* Visual style lives on the shared .icon-close-btn class; this override
+       only needs to undo the default-hidden display: none on mobile. */
     display: grid;
-    place-items: center;
-    width: 34px;
-    height: 34px;
-    border: 1px solid var(--cp-line);
-    border-radius: 999px;
-    background: var(--cp-card);
-    color: var(--cp-ink);
   }
 
   .recipe-config-panel__scroll {
@@ -2544,7 +2585,9 @@
   width: min(100%, 390px);
   padding: 28px;
   border: 1px solid color-mix(in srgb, var(--cp-line) 72%, transparent);
-  border-radius: 18px;
+  /* Matches .panel's rounded-2xl (28px) so every centered modal shares the
+     same corner radius instead of each picking its own. */
+  border-radius: 28px;
   background: var(--cp-card);
   color: var(--cp-ink);
   text-align: center;
@@ -2553,24 +2596,11 @@
 }
 
 .print-success-dialog__close {
+  /* Visual style lives on the shared .icon-close-btn class; this override
+     only needs to position it inside the dialog panel. */
   position: absolute;
   top: 12px;
   right: 12px;
-  display: grid;
-  place-items: center;
-  width: 32px;
-  height: 32px;
-  border: 1px solid var(--cp-line);
-  border-radius: 999px;
-  background: #fff;
-  color: var(--cp-ink-soft);
-  font-size: 1.2rem;
-  line-height: 1;
-}
-
-.print-success-dialog__close:hover {
-  color: var(--cp-ink);
-  border-color: var(--cp-line-strong);
 }
 
 .print-success-dialog__icon {
