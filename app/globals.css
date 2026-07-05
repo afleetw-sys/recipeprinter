@@ -169,6 +169,7 @@
     border: 1px solid var(--cp-line-strong);
     background: #fff;
     color: var(--cp-ink);
+    font-size: 0.86rem;
     cursor: pointer;
   }
   .mode-toggle__item:hover:not(.is-active):not(:disabled) {
