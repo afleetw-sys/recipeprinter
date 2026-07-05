@@ -171,7 +171,10 @@ export function recipeFromJsonLd(value: unknown, sourceUrl: string): Recipe | nu
     }),
   );
 
-  if (ingredients.length === 0 && instructions.length === 0) return null;
+  // A usable recipe needs both; a partial JSON-LD hit (e.g. ingredients but no
+  // instructions) should fall through to CookPilot's full parser rather than
+  // being returned as-is.
+  if (ingredients.length === 0 || instructions.length === 0) return null;
 
   const yieldValues = asStringArray(recipeNode.recipeYield);
   const tags = asStringArray(recipeNode.keywords)

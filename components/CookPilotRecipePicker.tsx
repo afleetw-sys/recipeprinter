@@ -2,13 +2,17 @@
 
 import { useEffect, useMemo, useState, type FormEvent } from "react";
 import {
+  EmailAuthProvider,
   GoogleAuthProvider,
   onAuthStateChanged,
+  signInAnonymously,
   signInWithEmailAndPassword,
   signInWithPopup,
   type User,
 } from "firebase/auth";
+import { httpsCallable } from "firebase/functions";
 import { getFirebaseAuth } from "@/lib/firebase/client";
+import { getFns } from "@/lib/firebase/functions";
 import { friendlyAuthError, friendlyRecipeLibraryError } from "@/lib/friendlyErrors";
 import {
   cookPilotQueueId,
@@ -33,8 +37,6 @@ import {
 
 const googleProvider = new GoogleAuthProvider();
 
-type LoginMode = "google" | "email";
-
 function useCookPilotAuth() {
   const [user, setUser] = useState<User | null>(null);
   const [ready, setReady] = useState(false);
@@ -56,18 +58,34 @@ function useCookPilotAuth() {
   return { user, ready };
 }
 
-function LoginDialog({
-  initialMode,
-  onClose,
-}: {
-  initialMode: LoginMode;
-  onClose: () => void;
-}) {
-  const [showEmail, setShowEmail] = useState(initialMode === "email");
+/** Which sign-in providers an email is already registered with, from CookPilot's own
+ * `checkUserProviders` callable (Firebase Auth's provider list isn't usable here since
+ * the project has email-enumeration protection on). Mirrors the iOS app's
+ * `AuthFlowLogic.stepAfterEmailSubmit`. */
+async function checkEmailProviders(email: string): Promise<string[]> {
+  const auth = getFirebaseAuth();
+  await auth.authStateReady();
+  if (!auth.currentUser) {
+    // checkUserProviders just requires *some* signed-in uid; an anonymous
+    // session is enough, same as CookPilot's ensureAnonymousUserIfNeeded.
+    // Scoped to this login flow only, not the shared parser call path.
+    await signInAnonymously(auth);
+  }
+  const checkUserProviders = httpsCallable<{ email: string }, { providers: string[] | null }>(
+    getFns(),
+    "checkUserProviders",
+  );
+  const { data } = await checkUserProviders({ email });
+  return data.providers ?? [];
+}
+
+function LoginDialog({ onClose }: { onClose: () => void }) {
+  const [step, setStep] = useState<"email" | "password">("email");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [notice, setNotice] = useState<string | null>(null);
 
   useEffect(() => {
     function onKeyDown(event: KeyboardEvent) {
@@ -77,32 +95,64 @@ function LoginDialog({
     return () => window.removeEventListener("keydown", onKeyDown);
   }, [onClose]);
 
-  async function handleGoogle() {
+  async function handleEmailContinue(event: FormEvent) {
+    event.preventDefault();
+    if (busy) return;
+    const normalizedEmail = email.trim().toLowerCase();
+    if (!normalizedEmail) {
+      setError("Enter the email for your CookPilot account.");
+      return;
+    }
+
     setBusy(true);
     setError(null);
+    setNotice(null);
     try {
-      await signInWithPopup(getFirebaseAuth(), googleProvider);
-      onClose();
+      const providers = await checkEmailProviders(normalizedEmail);
+
+      if (
+        providers.includes(GoogleAuthProvider.PROVIDER_ID) &&
+        !providers.includes(EmailAuthProvider.PROVIDER_ID)
+      ) {
+        // This account only has Google sign-in set up, so a password will
+        // never work for it. Send them straight into the Google flow, the
+        // same redirect the iOS app does for this case.
+        await signInWithPopup(getFirebaseAuth(), googleProvider);
+        onClose();
+        return;
+      }
+
+      if (
+        providers.includes("apple.com") &&
+        !providers.includes(GoogleAuthProvider.PROVIDER_ID) &&
+        !providers.includes(EmailAuthProvider.PROVIDER_ID)
+      ) {
+        setNotice(
+          "This account uses Sign in with Apple, which isn't available on the web yet. Import your recipes from the CookPilot app instead.",
+        );
+        return;
+      }
+
+      setStep("password");
     } catch (err) {
-      setError(friendlyAuthError(err, "We couldn't sign in with Google. Please try again."));
+      setError(friendlyAuthError(err, "We couldn't verify that email. Please try again."));
     } finally {
       setBusy(false);
     }
   }
 
-  async function handleEmailSubmit(event: FormEvent) {
+  async function handlePasswordSubmit(event: FormEvent) {
     event.preventDefault();
     if (busy) return;
-    const normalizedEmail = email.trim().toLowerCase();
-    if (!normalizedEmail || !password) {
-      setError("Enter the email and password for your CookPilot account.");
+    if (!password) {
+      setError("Enter the password for your CookPilot account.");
       return;
     }
 
     setBusy(true);
     setError(null);
     try {
-      await signInWithEmailAndPassword(getFirebaseAuth(), normalizedEmail, password);
+      await signInWithEmailAndPassword(getFirebaseAuth(), email.trim().toLowerCase(), password);
       onClose();
     } catch (err) {
       setError(friendlyAuthError(err, "We couldn't sign in. Please try again."));
@@ -137,32 +187,8 @@ function LoginDialog({
           </p>
         </div>
 
-        {initialMode === "google" && (
-          <button
-            type="button"
-            className="btn btn-primary w-full"
-            onClick={handleGoogle}
-            disabled={busy}
-          >
-            {busy && !showEmail ? <SpinnerIcon size={ICON_SIZE.md} /> : null}
-            Continue with Google
-          </button>
-        )}
-
-        {initialMode === "google" && !showEmail ? (
-          <button
-            type="button"
-            className="btn-ghost btn-compact w-full"
-            onClick={() => {
-              setShowEmail(true);
-              setError(null);
-            }}
-            disabled={busy}
-          >
-            Use email instead
-          </button>
-        ) : (
-          <form className="flex flex-col gap-cp-3" onSubmit={handleEmailSubmit}>
+        {step === "email" ? (
+          <form className="flex flex-col gap-cp-3" onSubmit={handleEmailContinue}>
             <div>
               <label className="field-label" htmlFor="cookpilot-email">
                 Email
@@ -177,15 +203,23 @@ function LoginDialog({
                 onChange={(event) => setEmail(event.target.value)}
               />
             </div>
+            <button type="submit" className="btn btn-primary w-full" disabled={busy}>
+              {busy ? <SpinnerIcon size={ICON_SIZE.md} /> : null}
+              Continue
+            </button>
+          </form>
+        ) : (
+          <form className="flex flex-col gap-cp-3" onSubmit={handlePasswordSubmit}>
             <div>
               <label className="field-label" htmlFor="cookpilot-password">
-                Password
+                Password for {email.trim()}
               </label>
               <input
                 id="cookpilot-password"
                 className="field"
                 type="password"
                 autoComplete="current-password"
+                autoFocus
                 value={password}
                 onChange={(event) => setPassword(event.target.value)}
               />
@@ -194,7 +228,25 @@ function LoginDialog({
               {busy ? <SpinnerIcon size={ICON_SIZE.md} /> : null}
               Sign in
             </button>
+            <button
+              type="button"
+              className="btn-ghost btn-compact w-full"
+              onClick={() => {
+                setStep("email");
+                setPassword("");
+                setError(null);
+              }}
+              disabled={busy}
+            >
+              Use a different email
+            </button>
           </form>
+        )}
+
+        {notice && (
+          <div className="state" role="status">
+            <p>{notice}</p>
+          </div>
         )}
 
         {error && (
@@ -209,10 +261,25 @@ function LoginDialog({
 }
 
 function SignedOutCookPilotImport({
-  onLogin,
+  onEmailLogin,
 }: {
-  onLogin: (mode: LoginMode) => void;
+  onEmailLogin: () => void;
 }) {
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  async function handleGoogle() {
+    setBusy(true);
+    setError(null);
+    try {
+      await signInWithPopup(getFirebaseAuth(), googleProvider);
+    } catch (err) {
+      setError(friendlyAuthError(err, "We couldn't sign in with Google. Please try again."));
+    } finally {
+      setBusy(false);
+    }
+  }
+
   return (
     <div className="rounded-2xl border border-dashed border-line-strong p-cp-6 text-center bg-card">
       <div className="mx-auto w-12 h-12 rounded-xl bg-page grid place-items-center text-ink">
@@ -234,13 +301,20 @@ function SignedOutCookPilotImport({
         Sign in to add your saved CookPilot recipes straight to this print list.
       </p>
       <div className="flex flex-col sm:flex-row justify-center gap-cp-3 mt-cp-5">
-        <button type="button" className="btn btn-primary" onClick={() => onLogin("google")}>
+        <button type="button" className="btn btn-primary" onClick={handleGoogle} disabled={busy}>
+          {busy ? <SpinnerIcon size={ICON_SIZE.md} /> : null}
           Continue with Google
         </button>
-        <button type="button" className="btn btn-secondary" onClick={() => onLogin("email")}>
+        <button type="button" className="btn btn-secondary" onClick={onEmailLogin} disabled={busy}>
           Continue with Email
         </button>
       </div>
+      {error && (
+        <div className="state state--error mt-cp-4 text-left" role="alert">
+          <h4>Couldn't sign in</h4>
+          <p>{error}</p>
+        </div>
+      )}
     </div>
   );
 }
@@ -522,7 +596,7 @@ export function CookPilotImportSource({
   onRemoveRecipe: (id: string) => void;
 }) {
   const { user, ready } = useCookPilotAuth();
-  const [loginMode, setLoginMode] = useState<LoginMode | null>(null);
+  const [showEmailLogin, setShowEmailLogin] = useState(false);
 
   return (
     <div className="flex flex-col gap-cp-4">
@@ -535,7 +609,9 @@ export function CookPilotImportSource({
         </div>
       )}
 
-      {ready && !user && <SignedOutCookPilotImport onLogin={setLoginMode} />}
+      {ready && !user && (
+        <SignedOutCookPilotImport onEmailLogin={() => setShowEmailLogin(true)} />
+      )}
 
       {ready && user && (
         <SignedInCookPilotImport
@@ -546,8 +622,8 @@ export function CookPilotImportSource({
         />
       )}
 
-      {loginMode && !user && (
-        <LoginDialog initialMode={loginMode} onClose={() => setLoginMode(null)} />
+      {showEmailLogin && !user && (
+        <LoginDialog onClose={() => setShowEmailLogin(false)} />
       )}
     </div>
   );

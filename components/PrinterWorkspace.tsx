@@ -112,7 +112,7 @@ export function PrinterWorkspace({
               Recipes to print{hydrated && items.length > 0 ? ` (${items.length})` : ""}
             </h2>
           </div>
-          <div className="flex items-center gap-cp-2">
+          <div className="flex items-center gap-cp-2 ml-auto">
             {hasProject && (
               <div ref={menuRef} className="relative">
                 <button

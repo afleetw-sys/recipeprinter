@@ -3,6 +3,7 @@
 import { useEffect, useId, useState, type FormEvent } from "react";
 import { submitPrinterFeedback, type FeedbackType } from "@/lib/feedback";
 import { ICON_SIZE, SpinnerIcon, XIcon } from "@/components/icons";
+import { Select } from "@/components/Select";
 
 const FEEDBACK_OPTIONS: { value: FeedbackType; label: string }[] = [
   { value: "idea", label: "Idea" },
@@ -137,9 +138,6 @@ export function FeedbackDialog({ open, onClose, initialType = "idea" }: Feedback
 
             <div className="pr-cp-7">
               <h3 className="font-extrabold text-cp-h2">Give feedback</h3>
-              <p className="text-cp-small text-ink-soft mt-1">
-                Share what would make RecipePrinter better.
-              </p>
             </div>
 
             {sent ? (
@@ -153,7 +151,7 @@ export function FeedbackDialog({ open, onClose, initialType = "idea" }: Feedback
                   <label className="field-label" htmlFor={typeId}>
                     Type
                   </label>
-                  <select
+                  <Select
                     id={typeId}
                     className="field"
                     value={type}
@@ -165,7 +163,7 @@ export function FeedbackDialog({ open, onClose, initialType = "idea" }: Feedback
                         {option.label}
                       </option>
                     ))}
-                  </select>
+                  </Select>
                 </div>
 
                 <div>

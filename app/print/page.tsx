@@ -12,6 +12,7 @@ import {
 } from "firebase/auth";
 import { SiteHeader } from "@/components/SiteHeader";
 import { FeedbackDialog } from "@/components/FeedbackButton";
+import { Select } from "@/components/Select";
 import { friendlyAuthError, friendlyPurchaseSetupError } from "@/lib/friendlyErrors";
 import RecipeCardPrint, {
   PRINT_CARD_SIZE_OPTIONS,
@@ -760,7 +761,7 @@ export default function PrintPage() {
             </div>
           </div>
           <div className="recipe-mobile-toolbar no-print">
-            <select
+            <Select
               className="recipe-mobile-toolbar__size-select"
               aria-label="Card size"
               value={cardSize}
@@ -771,7 +772,7 @@ export default function PrintPage() {
                   {option.label}
                 </option>
               ))}
-            </select>
+            </Select>
             <button
               type="button"
               className={`recipe-mobile-toolbar__btn ${mobileDrawer === "template" ? "is-active" : ""}`}
@@ -920,9 +921,9 @@ export default function PrintPage() {
             <label className="recipe-config-label" htmlFor="recipe-print-size">
               Size
             </label>
-            <select
+            <Select
               id="recipe-print-size"
-              className="field recipe-size-select !min-h-[38px] !py-0 !pl-3 text-cp-small font-semibold"
+              className="field !min-h-[38px] !py-0 !pl-3 text-cp-small font-semibold"
               value={cardSize}
               onChange={(event) => setCardSize(event.target.value as PrintCardSize)}
             >
@@ -931,7 +932,7 @@ export default function PrintPage() {
                   {option.label}
                 </option>
               ))}
-            </select>
+            </Select>
           </div>
 
           {anyRecipeHasImage && (
