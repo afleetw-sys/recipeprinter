@@ -113,12 +113,12 @@ function LoginDialog({
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-ink/30 px-cp-4 py-cp-6"
+      className="fixed inset-0 z-50 flex items-stretch sm:items-center justify-center bg-ink/30 p-0 sm:px-cp-4 sm:py-cp-6"
       role="dialog"
       aria-modal="true"
       aria-label="Log in to CookPilot"
     >
-      <div className="panel panel--modal w-full max-w-[420px] p-cp-5 flex flex-col gap-cp-4 relative">
+      <div className="panel panel--modal w-full sm:max-w-[420px] h-full sm:h-auto rounded-none border-0 sm:rounded-2xl sm:border p-cp-5 flex flex-col gap-cp-4 relative overflow-y-auto">
         <button
           type="button"
           className="absolute right-3 top-3 icon-close-btn"
