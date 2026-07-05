@@ -203,12 +203,14 @@ export function recipeFromJsonLd(value: unknown, sourceUrl: string): Recipe | nu
 
 export function jsonLdBlocksFromHtml(html: string): unknown[] {
   const blocks: unknown[] = [];
+  // Attribute values are sometimes left unquoted (e.g. Yoast SEO emits
+  // `type=application/ld+json`), so the quotes around the type value are optional.
   const scriptPattern =
-    /<script\b[^>]*type=["']application\/ld\+json["'][^>]*>([\s\S]*?)<\/script>/gi;
+    /<script\b[^>]*type=(["']?)application\/ld\+json\1[^>]*>([\s\S]*?)<\/script>/gi;
 
   let match = scriptPattern.exec(html);
   while (match) {
-    const raw = match[1]?.trim();
+    const raw = match[2]?.trim();
     if (raw) {
       try {
         blocks.push(JSON.parse(raw));
@@ -229,7 +231,7 @@ export function jsonLdBlocksFromHtml(html: string): unknown[] {
 export function jsonDataBlocksFromHtml(html: string): unknown[] {
   const blocks: unknown[] = [];
   const scriptPattern =
-    /<script\b(?=[^>]*type=["']application\/json["'])[^>]*>([\s\S]*?)<\/script>/gi;
+    /<script\b(?=[^>]*type=["']?application\/json["']?)[^>]*>([\s\S]*?)<\/script>/gi;
 
   let match = scriptPattern.exec(html);
   while (match) {

@@ -13,18 +13,10 @@ interface LocalParseOutcome {
 // `lib/cookpilot/functions.ts`). RecipePrinter calls them directly, same
 // backend, no duplicated parser.
 async function callCookPilotParser(name: string, data: unknown): Promise<unknown> {
-  const [{ httpsCallable }, { getFns }, { getFirebaseAuth }, { signInAnonymously }] = await Promise.all([
+  const [{ httpsCallable }, { getFns }] = await Promise.all([
     import("firebase/functions"),
     import("@/lib/firebase/functions"),
-    import("@/lib/firebase/client"),
-    import("firebase/auth"),
   ]);
-
-  const auth = getFirebaseAuth();
-  await auth.authStateReady();
-  if (!auth.currentUser) {
-    await signInAnonymously(auth);
-  }
 
   const callable = httpsCallable(getFns(), name);
   const res = await callable(data);
