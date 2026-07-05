@@ -49,6 +49,18 @@
   --cp-fs-hero-sm: clamp(1.9rem, 1.5rem + 2vw, 2.5rem); /* article page H1 (features/about/faq/how-it-works) */
   --cp-fs-hero: clamp(2rem, 1.1rem + 4vw, 2.75rem); /* app/home page H1 */
   --cp-fs-hero-lg: clamp(2.15rem, 0.9rem + 6vw, 4rem); /* marketing landing page H1 */
+
+  /* ── Elevation (box-shadow) scale ────────────────────────────────────────
+     Same idea as the font-size scale: this replaced a dozen near-duplicate
+     one-off shadows (some tinted rgba(15,23,42,*), some rgba(17,17,17,*),
+     with arbitrary blur/opacity) that were all doing "floating element
+     depth" at slightly different values. One tint (a dark navy-ink, close
+     to but distinct from --cp-ink) and four depth steps. */
+  --cp-shadow-xs: 0 2px 8px rgba(15, 23, 42, 0.08); /* micro badges (owned/premium markers) */
+  --cp-shadow-sm: 0 4px 12px rgba(15, 23, 42, 0.08); /* thumbnails, small floating controls */
+  --cp-shadow-md: 0 10px 30px rgba(15, 23, 42, 0.1); /* cards, page previews, focus lift */
+  --cp-shadow-lg: 0 18px 48px rgba(15, 23, 42, 0.18); /* toasts, dropdown menus */
+  --cp-shadow-xl: 0 24px 80px rgba(15, 23, 42, 0.22); /* modal dialogs */
 }
 
 @layer base {
@@ -223,7 +235,7 @@
     border: 1px solid var(--cp-line);
     border-radius: 12px;
     background: var(--cp-card);
-    box-shadow: 0 12px 28px rgba(17, 17, 17, 0.12);
+    box-shadow: var(--cp-shadow-lg);
   }
   .mode-toggle-menu__item {
     @apply flex w-full items-center gap-2 rounded text-left font-bold transition-colors;
@@ -257,7 +269,7 @@
     display: grid;
     place-items: center;
     border: 1px solid var(--cp-line);
-    border-radius: 9999px;
+    border-radius: 999px;
     background: rgba(255, 255, 255, 0.92);
     color: var(--cp-ink-soft);
     transform: translateY(-50%);
@@ -701,12 +713,12 @@
   border: 1px solid var(--cp-line);
   border-radius: 8px;
   background: #fff;
-  box-shadow: 0 10px 30px rgba(15, 23, 42, 0.1);
+  box-shadow: var(--cp-shadow-md);
 }
 
 .recipe-page-rail__thumb .recipe-page-scaler {
   border-radius: 5px;
-  box-shadow: 0 4px 12px rgba(15, 23, 42, 0.08);
+  box-shadow: var(--cp-shadow-sm);
 }
 
 /* Full-page (letter) thumbnails are very tall; crop the bottom and fade it
@@ -765,7 +777,7 @@
   border-color: var(--cp-accent);
   box-shadow:
     0 0 0 3px color-mix(in srgb, var(--cp-accent) 18%, transparent),
-    0 14px 34px rgba(15, 23, 42, 0.12);
+    var(--cp-shadow-md);
 }
 
 .recipe-config-panel {
@@ -1100,7 +1112,7 @@
   font-size: 0.58rem;
   font-weight: 900;
   line-height: 1;
-  box-shadow: 0 2px 8px rgba(17, 17, 17, 0.1);
+  box-shadow: var(--cp-shadow-xs);
 }
 
 .recipe-template-option__owned {
@@ -1116,7 +1128,7 @@
   border-radius: 999px;
   background: #eefaf9;
   color: #267c77;
-  box-shadow: 0 2px 8px rgba(17, 17, 17, 0.08);
+  box-shadow: var(--cp-shadow-xs);
 }
 
 .recipe-template-note {
@@ -1140,7 +1152,7 @@
   border-radius: 12px;
   background: var(--cp-card);
   color: var(--cp-ink);
-  box-shadow: 0 18px 48px rgba(15, 23, 42, 0.18);
+  box-shadow: var(--cp-shadow-lg);
 }
 
 .recipe-toast span {
@@ -1679,7 +1691,7 @@
   color: var(--cp-ink-soft);
   font-size: var(--cp-fs-caption);
   font-weight: 800;
-  box-shadow: 0 8px 24px rgba(15, 23, 42, 0.06);
+  box-shadow: var(--cp-shadow-sm);
 }
 
 .recipe-card-side-nav__button {
@@ -2536,7 +2548,7 @@
   background: var(--cp-card);
   color: var(--cp-ink);
   text-align: center;
-  box-shadow: 0 24px 80px rgba(15, 23, 42, 0.22);
+  box-shadow: var(--cp-shadow-xl);
   animation: print-success-pop 260ms cubic-bezier(0.2, 0.8, 0.2, 1) both;
 }
 
