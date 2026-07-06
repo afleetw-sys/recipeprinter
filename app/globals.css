@@ -2762,6 +2762,12 @@
     display: block !important;
     height: auto !important;
     padding: 0 !important;
+    /* `gap` still applies to block containers in current engines, so the
+       on-screen 22px breathing room between slides survived the switch to
+       `display: block` above and was adding just enough extra height after
+       an already page-sized `.recipe-card` to bleed a near-empty fragment
+       of it onto a second page. */
+    gap: 0 !important;
     overflow: visible !important;
   }
 
