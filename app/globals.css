@@ -738,6 +738,16 @@
   padding-top: 16px;
 }
 
+/* On tall/portrait tablets the 44vh top padding (there to let the first page
+   scroll into true vertical centre) leaves a huge dead zone above small
+   cards like 6x4 — the viewport is much taller than any single card needs.
+   Top-align instead. */
+@media (min-width: 821px) and (orientation: portrait) {
+  .recipe-page-deck {
+    padding-top: 24px;
+  }
+}
+
 .recipe-page-deck::-webkit-scrollbar {
   display: none;
 }
