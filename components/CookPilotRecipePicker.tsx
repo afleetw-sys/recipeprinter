@@ -269,30 +269,31 @@ function SignedOutCookPilotImport({
 }: {
   onEmailLogin: () => void;
 }) {
-  const [busy, setBusy] = useState(false);
+  const [busyProvider, setBusyProvider] = useState<"google" | "apple" | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const busy = busyProvider !== null;
 
   async function handleGoogle() {
-    setBusy(true);
+    setBusyProvider("google");
     setError(null);
     try {
       await signInWithPopup(getFirebaseAuth(), googleProvider);
     } catch (err) {
       setError(friendlyAuthError(err, "We couldn't sign in with Google. Please try again."));
     } finally {
-      setBusy(false);
+      setBusyProvider(null);
     }
   }
 
   async function handleApple() {
-    setBusy(true);
+    setBusyProvider("apple");
     setError(null);
     try {
       await signInWithPopup(getFirebaseAuth(), appleProvider);
     } catch (err) {
       setError(friendlyAuthError(err, "We couldn't sign in with Apple. Please try again."));
     } finally {
-      setBusy(false);
+      setBusyProvider(null);
     }
   }
 
@@ -321,11 +322,11 @@ function SignedOutCookPilotImport({
           Continue with Email
         </button>
         <button type="button" className="btn btn-secondary" onClick={handleGoogle} disabled={busy}>
-          {busy ? <SpinnerIcon size={ICON_SIZE.md} /> : null}
+          {busyProvider === "google" ? <SpinnerIcon size={ICON_SIZE.md} /> : null}
           Continue with Google
         </button>
         <button type="button" className="btn btn-secondary" onClick={handleApple} disabled={busy}>
-          {busy ? <SpinnerIcon size={ICON_SIZE.md} /> : null}
+          {busyProvider === "apple" ? <SpinnerIcon size={ICON_SIZE.md} /> : null}
           Continue with Apple
         </button>
       </div>
