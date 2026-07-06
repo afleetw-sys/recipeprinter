@@ -9,9 +9,6 @@ interface LocalParseOutcome {
   status?: number;
 }
 
-// These are the exact callables CookPilot's web app uses (see CookPilot
-// `lib/cookpilot/functions.ts`). RecipePrinter calls them directly, same
-// backend, no duplicated parser.
 async function callCookPilotParser(name: string, data: unknown): Promise<unknown> {
   const [{ httpsCallable }, { getFns }] = await Promise.all([
     import("firebase/functions"),
@@ -91,18 +88,7 @@ export async function parseUrl(rawUrl: string): Promise<Recipe> {
   const url = normalizeImportURL(rawUrl);
   const localRecipe = await parseUrlLocally(url);
   if (localRecipe.recipe) return localRecipe.recipe;
-
-  try {
-    const data = await callCookPilotParser("parseRecipeFromURL", { url });
-    const recipe = adaptCookPilotRecipe(data, url);
-    if (!recipe) throw new Error("No recipe could be found at that URL.");
-    return recipe;
-  } catch (err) {
-    if (shouldUseLocalError(localRecipe, err)) {
-      throw new Error(localRecipe.error ?? "We couldn't import a recipe from that URL.");
-    }
-    throw friendlyError(err, "We couldn't import a recipe from that URL.");
-  }
+  throw new Error(localRecipe.error ?? "We couldn't import a recipe from that URL.");
 }
 
 /** Image import, CookPilot's `parseRecipeFromImages` (expects data-URL strings). */

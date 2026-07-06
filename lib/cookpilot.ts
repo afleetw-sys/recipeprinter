@@ -49,16 +49,30 @@ function flattenIngredients(sections: unknown): RecipeIngredient[] {
       const i = ing as AnyRecord;
       const name = asString(i.name);
       if (!name) continue;
+      const amount = asString(i.amount);
+      const unit = asString(i.unit);
+      const note = asString(i.notes) ?? asString(i.note);
       out.push({
-        amount: asString(i.amount),
-        unit: asString(i.unit),
+        amount,
+        unit,
         name,
-        note: asString(i.notes) ?? asString(i.note),
+        note,
+        raw: ingredientRawLine(amount, unit, name, note),
         section: title,
       });
     }
   }
   return out;
+}
+
+function ingredientRawLine(
+  amount: string | undefined,
+  unit: string | undefined,
+  name: string,
+  note: string | undefined,
+): string {
+  const quantity = [amount, unit].filter(Boolean).join(" ");
+  return [quantity, name].filter(Boolean).join(" ") + (note ? `, ${note}` : "");
 }
 
 function flattenInstructions(sections: unknown): RecipeInstruction[] {

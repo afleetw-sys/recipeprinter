@@ -280,13 +280,28 @@ function splitByBudget<T>(
   return { front, back };
 }
 
-function balancedColumnCost(costs: number[]): number {
+function flowedColumnCost(costs: number[], budget: number): number {
   if (costs.length === 0) return 0;
-  const total = costs.reduce((sum, cost) => sum + cost, 0);
-  return Math.max(Math.max(...costs), total / 2);
+
+  const columnCount = 2;
+  const columns = [0];
+
+  for (const cost of costs) {
+    const lastIndex = columns.length - 1;
+    const last = columns[lastIndex];
+
+    if (last > 0 && last + cost > budget) {
+      if (columns.length >= columnCount) return budget + cost;
+      columns.push(cost);
+    } else {
+      columns[lastIndex] += cost;
+    }
+  }
+
+  return Math.max(...columns);
 }
 
-function splitByBalancedColumnBudget<T>(
+function splitByFlowedColumnBudget<T>(
   items: T[],
   budget: number,
   label: (item: T) => string,
@@ -309,7 +324,7 @@ function splitByBalancedColumnBudget<T>(
     const cost = textCost(label(item)) + (opensSection ? sectionCost : 0);
     const tooMany = front.length >= maxFrontItems;
     const tooBig =
-      balancedColumnCost([...costs, cost]) > budget && (strict || front.length > 0);
+      flowedColumnCost([...costs, cost], budget) > budget && (strict || front.length > 0);
 
     if (overflowStarted || tooMany || tooBig) {
       overflowStarted = true;
@@ -336,7 +351,7 @@ function splitInstructionsByAvailableSpace(
     return { front: [] as Recipe["instructions"], back: instructions };
   }
 
-  const split = twoColumn ? splitByBalancedColumnBudget : splitByBudget;
+  const split = twoColumn ? splitByFlowedColumnBudget : splitByBudget;
 
   return split(
     instructions,

@@ -2507,6 +2507,7 @@
 .recipe-card__method--wide .recipe-card__section-groups {
   display: block;
   column-count: 2;
+  column-fill: auto;
   column-gap: calc(var(--recipe-card-gap) * 0.9);
 }
 

@@ -2,8 +2,8 @@ import { lookup } from "node:dns/promises";
 import { isIP } from "node:net";
 import { NextResponse } from "next/server";
 import { jsonDataBlocksFromHtml, jsonLdBlocksFromHtml, recipeFromJsonLd } from "@/lib/schemaRecipe";
-import { normalizeImportURL } from "@/lib/cookpilot";
-import type { ParseResponse } from "@/types/recipe";
+import { adaptCookPilotRecipe, normalizeImportURL } from "@/lib/cookpilot";
+import type { ParseResponse, Recipe } from "@/types/recipe";
 
 export const runtime = "nodejs";
 
@@ -148,6 +148,47 @@ async function readHtmlWithLimit(response: Response): Promise<string> {
   return html + decoder.decode();
 }
 
+async function parseWithCookPilotServer(url: string): Promise<Recipe | null> {
+  const endpoint = process.env.COOKPILOT_RECIPE_PARSER_URL?.trim();
+  const secret = process.env.RECIPEPRINTER_PARSER_SECRET?.trim();
+  if (!endpoint || !secret) return null;
+
+  const response = await fetch(endpoint, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      "X-RecipePrinter-Parser-Secret": secret,
+    },
+    body: JSON.stringify({ url }),
+    signal: AbortSignal.timeout(55000),
+  });
+
+  const data = (await response.json().catch(() => null)) as unknown;
+  if (response.ok) {
+    const recipe = adaptCookPilotRecipe(data, url);
+    if (recipe) return recipe;
+    throw new ParseHttpError("No recipe could be found on that page.", 422);
+  }
+
+  const message =
+    data &&
+    typeof data === "object" &&
+    "error" in data &&
+    typeof (data as { error?: unknown }).error === "string"
+      ? (data as { error: string }).error
+      : "";
+  if (response.status === 401 || response.status === 403) {
+    throw new ParseHttpError("Recipe import is temporarily unavailable.", 503);
+  }
+  if (response.status === 429) {
+    throw new ParseHttpError(message || "Recipe import is busy. Please try again later.", 429);
+  }
+  if (response.status >= 500 || response.status === 504) {
+    throw new ParseHttpError(message || "The recipe page took too long to respond.", response.status);
+  }
+  return null;
+}
+
 export async function POST(request: Request) {
   let url: URL;
 
@@ -162,6 +203,11 @@ export async function POST(request: Request) {
   }
 
   try {
+    const cookPilotRecipe = await parseWithCookPilotServer(url.toString());
+    if (cookPilotRecipe) {
+      return NextResponse.json({ success: true, recipe: cookPilotRecipe } satisfies ParseResponse);
+    }
+
     const response = await fetchPublicHtml(url);
 
     if (!response.ok) {
