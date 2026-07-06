@@ -5,6 +5,7 @@ import { createPortal } from "react-dom";
 import {
   EmailAuthProvider,
   GoogleAuthProvider,
+  OAuthProvider,
   onAuthStateChanged,
   signInAnonymously,
   signInWithEmailAndPassword,
@@ -37,6 +38,9 @@ import {
 } from "@/components/icons";
 
 const googleProvider = new GoogleAuthProvider();
+const appleProvider = new OAuthProvider("apple.com");
+appleProvider.addScope("email");
+appleProvider.addScope("name");
 
 function useCookPilotAuth() {
   const [user, setUser] = useState<User | null>(null);
@@ -128,9 +132,7 @@ function LoginDialog({ onClose }: { onClose: () => void }) {
         !providers.includes(GoogleAuthProvider.PROVIDER_ID) &&
         !providers.includes(EmailAuthProvider.PROVIDER_ID)
       ) {
-        setNotice(
-          "This account uses Sign in with Apple, which isn't available on the web yet. Import your recipes from the CookPilot app instead.",
-        );
+        setNotice("This account uses Sign in with Apple. Close this and tap Continue with Apple instead.");
         return;
       }
 
@@ -282,6 +284,18 @@ function SignedOutCookPilotImport({
     }
   }
 
+  async function handleApple() {
+    setBusy(true);
+    setError(null);
+    try {
+      await signInWithPopup(getFirebaseAuth(), appleProvider);
+    } catch (err) {
+      setError(friendlyAuthError(err, "We couldn't sign in with Apple. Please try again."));
+    } finally {
+      setBusy(false);
+    }
+  }
+
   return (
     <div className="rounded-2xl border border-dashed border-line-strong p-cp-6 text-center bg-card">
       <div className="mx-auto w-12 h-12 rounded-xl bg-page grid place-items-center text-ink">
@@ -306,6 +320,10 @@ function SignedOutCookPilotImport({
         <button type="button" className="btn btn-primary" onClick={handleGoogle} disabled={busy}>
           {busy ? <SpinnerIcon size={ICON_SIZE.md} /> : null}
           Continue with Google
+        </button>
+        <button type="button" className="btn btn-primary" onClick={handleApple} disabled={busy}>
+          {busy ? <SpinnerIcon size={ICON_SIZE.md} /> : null}
+          Continue with Apple
         </button>
         <button type="button" className="btn btn-secondary" onClick={onEmailLogin} disabled={busy}>
           Continue with Email
