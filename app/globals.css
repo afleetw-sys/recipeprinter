@@ -2808,8 +2808,20 @@
     page: rp-letter;
   }
 
+  /* `display:block` (not the on-screen flex column) for print: `.recipe-card`
+     is a fixed-height box (one physical page) with `.recipe-card__cols` set
+     to `flex: 1` so it grows to fill the space above a footer pinned to the
+     bottom — but flex containers aren't reliable fragmentation contexts for
+     print in most engines, so `break-inside: avoid-page` below goes
+     unhonoured and a short recipe's footer detaches onto its own mostly
+     blank second page instead of sitting right under the content. Block
+     layout keeps the same header → cols → footer stacking order (plain
+     document flow, not flex, is what actually determines that here) while
+     letting the page fragment normally; the only visible change is that the
+     footer now sits directly under short content instead of pinned to the
+     bottom of the page. */
   .recipe-card {
-    display: flex !important;
+    display: block !important;
     width: var(--recipe-card-width);
     max-width: none !important;
     height: var(--recipe-card-min-height);
