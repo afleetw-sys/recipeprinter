@@ -188,7 +188,7 @@ export function ImportPanel({
       {workspace && (
         <div className="hidden lg:block mb-cp-4">
           <h2 id="rp-import-heading" className="text-cp-h2 font-extrabold tracking-[-0.02em]">
-            Import
+            Add recipes
           </h2>
         </div>
       )}

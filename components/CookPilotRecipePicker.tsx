@@ -406,8 +406,9 @@ function RecipeRow({
       </div>
 
       {added ? (
-        <span className="inline-flex flex-shrink-0 items-center justify-center rounded-lg bg-brand-50 px-2.5 py-1.5 text-brand-ink">
-          <CheckIcon size={ICON_SIZE.md} />
+        <span className="inline-flex flex-shrink-0 items-center justify-center gap-1 rounded-lg bg-brand-50 px-2.5 py-1.5 text-cp-caption font-bold text-brand-ink">
+          <CheckIcon size={ICON_SIZE.sm} />
+          Added
         </span>
       ) : (
         <span className="btn btn-secondary btn-compact flex-shrink-0 pointer-events-none transition-colors group-hover:border-line-strong group-hover:bg-[rgba(127,127,127,0.08)]">
@@ -529,7 +530,7 @@ function SignedInCookPilotImport({
             disabled={bulkBusy}
           >
             {bulkBusy ? <SpinnerIcon size={ICON_SIZE.sm} /> : null}
-            {allVisibleAdded ? "Deselect all" : "Add all"}
+            {allVisibleAdded ? "Remove all" : "Add all"}
           </button>
         )}
       </div>

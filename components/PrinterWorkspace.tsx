@@ -4,7 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { ImportPanel } from "@/components/ImportPanel";
 import { PrintQueue } from "@/components/PrintQueue";
-import { CheckIcon, ICON_SIZE, MoreVerticalIcon, PrintIcon, TrashIcon, XIcon } from "@/components/icons";
+import { ICON_SIZE, MoreVerticalIcon, PrintIcon, TrashIcon } from "@/components/icons";
 import { createCurrentPrintJob, useQueue } from "@/lib/queue";
 import type { ImportMethod } from "@/types/recipe";
 
@@ -32,15 +32,11 @@ export function PrinterWorkspace({
     retry,
     canRetry,
     remove,
-    toggleSelected,
-    setAllSelected,
     clear,
   } = useQueue();
   const readyItems = items.filter((it) => it.status === "ready");
-  const selectedRecipeIds = readyItems.filter((it) => it.selected).map((it) => it.id);
+  const readyRecipeIds = readyItems.map((it) => it.id);
   const hasProject = hydrated && items.length > 0;
-  const allSelected =
-    readyItems.length > 0 && selectedRecipeIds.length === readyItems.length;
 
   const [menuOpen, setMenuOpen] = useState(false);
   const [hasShownEmptyState, setHasShownEmptyState] = useState(false);
@@ -109,7 +105,7 @@ export function PrinterWorkspace({
               id="rp-queue-heading"
               className="text-cp-h2 font-extrabold tracking-[-0.02em]"
             >
-              Recipes to print{hydrated && items.length > 0 ? ` (${items.length})` : ""}
+              Ready to print{hydrated && readyItems.length > 0 ? ` (${readyItems.length})` : ""}
             </h2>
           </div>
           <div className="flex items-center gap-cp-2 ml-auto">
@@ -133,18 +129,6 @@ export function PrinterWorkspace({
                       role="menuitem"
                       className="mode-toggle-menu__item"
                       onClick={() => {
-                        setAllSelected(!allSelected);
-                        setMenuOpen(false);
-                      }}
-                    >
-                      {allSelected ? <XIcon size={ICON_SIZE.lg} /> : <CheckIcon size={ICON_SIZE.lg} />}
-                      {allSelected ? "Deselect all" : "Select all"}
-                    </button>
-                    <button
-                      type="button"
-                      role="menuitem"
-                      className="mode-toggle-menu__item"
-                      onClick={() => {
                         clear();
                         setMenuOpen(false);
                       }}
@@ -160,11 +144,11 @@ export function PrinterWorkspace({
             <button
               type="button"
               className="btn btn-primary btn-compact"
-              disabled={selectedRecipeIds.length === 0}
-              onClick={() => handlePrint(selectedRecipeIds)}
+              disabled={readyRecipeIds.length === 0}
+              onClick={() => handlePrint(readyRecipeIds)}
             >
               <PrintIcon size={ICON_SIZE.md} />
-              {selectedRecipeIds.length > 0 ? `Print (${selectedRecipeIds.length})` : "Print"}
+              {readyRecipeIds.length > 0 ? `Print (${readyRecipeIds.length})` : "Print"}
             </button>
           </div>
         </div>
@@ -173,7 +157,6 @@ export function PrinterWorkspace({
           <PrintQueue
             items={items}
             canRetry={canRetry}
-            onToggle={toggleSelected}
             onRetry={retry}
             onRemove={remove}
             animateItems={!skipProjectIntro}

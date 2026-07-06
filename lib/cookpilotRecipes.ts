@@ -221,7 +221,6 @@ async function loadCookPilotQueueItem(
     status: "ready" as const,
     title: recipe.title || summary.title || "Untitled recipe",
     recipe,
-    selected: true,
     addedAt: Date.now(),
   } satisfies QueueItem;
 }

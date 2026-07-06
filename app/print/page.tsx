@@ -573,12 +573,12 @@ export default function PrintPage() {
     const idsFromUrl = idsParam.split(",").map((s) => s.trim()).filter(Boolean);
     const ids =
       (idsFromUrl.length > 0 ? idsFromUrl : readCurrentPrintJobIds()) ??
-      queue.filter((it) => it.status === "ready" && it.selected).map((it) => it.id);
-    // Preserve the order the user selected them in.
-    const selected = ids
+      queue.filter((it) => it.status === "ready").map((it) => it.id);
+    // Preserve the order from the current print job.
+    const printItems = ids
       .map((id) => byId.get(id))
       .filter((it): it is QueueItem => Boolean(it && it.status === "ready" && it.recipe));
-    setItems(selected);
+    setItems(printItems);
   }, [idsParam]);
 
   // Auto-open the print dialog when the user chose Print instead of Preview.

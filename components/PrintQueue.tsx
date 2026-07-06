@@ -3,7 +3,6 @@
 import { useEffect, useRef } from "react";
 import { type QueueItem, type Recipe } from "@/types/recipe";
 import {
-  CheckIcon,
   ClockIcon,
   ICON_SIZE,
   PlateIcon,
@@ -21,7 +20,6 @@ function totalTime(recipe?: Recipe): string | null {
 function RecipeCardItem({
   item,
   canRetry,
-  onToggle,
   onRetry,
   onRemove,
   animate,
@@ -29,7 +27,6 @@ function RecipeCardItem({
 }: {
   item: QueueItem;
   canRetry: boolean;
-  onToggle: () => void;
   onRetry: () => void;
   onRemove: () => void;
   animate: boolean;
@@ -38,7 +35,6 @@ function RecipeCardItem({
   const itemRef = useRef<HTMLLIElement | null>(null);
   const ready = item.status === "ready";
   const recipe = item.recipe;
-  const selected = ready && item.selected;
   const time = totalTime(recipe);
   const servings = recipe?.servings ?? recipe?.yield;
 
@@ -54,16 +50,7 @@ function RecipeCardItem({
         focused ? "rp-queue-item--focused" : ""
       }`}
     >
-      {/* Whole card toggles selection when the recipe is ready to print */}
-      <button
-        type="button"
-        onClick={ready ? onToggle : undefined}
-        aria-pressed={selected}
-        disabled={!ready}
-        className={`block w-full text-left rounded-xl overflow-hidden bg-card border transition-colors ${
-          ready ? "cursor-pointer hover:border-line-strong" : "cursor-default"
-        } ${selected ? "border-brand" : "border-line"}`}
-      >
+      <div className="block w-full text-left rounded-xl overflow-hidden bg-card border border-line">
         {/* Cover */}
         <div className="relative aspect-[3/2] bg-page overflow-hidden">
           {recipe?.image ? (
@@ -94,13 +81,6 @@ function RecipeCardItem({
           {/* Error overlay tint */}
           {item.status === "error" && (
             <div className="absolute inset-0 bg-[rgba(197,63,63,0.06)]" />
-          )}
-
-          {/* Selection check */}
-          {selected && (
-            <span className="absolute bottom-2 right-2 grid place-items-center w-7 h-7 rounded-full bg-brand-100 text-brand-ink">
-              <CheckIcon size={ICON_SIZE.md} />
-            </span>
           )}
         </div>
 
@@ -134,7 +114,7 @@ function RecipeCardItem({
             )}
           </div>
         </div>
-      </button>
+      </div>
 
       {/* Remove (overlay, above the toggle button) */}
       <button
@@ -170,7 +150,6 @@ function RecipeCardItem({
 export function PrintQueue({
   items,
   canRetry,
-  onToggle,
   onRetry,
   onRemove,
   animateItems = true,
@@ -178,7 +157,6 @@ export function PrintQueue({
 }: {
   items: QueueItem[];
   canRetry: (item: QueueItem) => boolean;
-  onToggle: (id: string) => void;
   onRetry: (id: string) => void;
   onRemove: (id: string) => void;
   animateItems?: boolean;
@@ -204,7 +182,6 @@ export function PrintQueue({
             key={item.id}
             item={item}
             canRetry={canRetry(item)}
-            onToggle={() => onToggle(item.id)}
             onRetry={() => onRetry(item.id)}
             onRemove={() => onRemove(item.id)}
             animate={animateItems}

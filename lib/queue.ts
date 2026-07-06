@@ -136,12 +136,9 @@ export function useQueue() {
     (id: string) => {
       const existing = itemsRef.current.find((it) => it.id === id);
       if (!existing) return;
-      if (existing.status === "ready" && !existing.selected) {
-        commit(itemsRef.current.map((it) => (it.id === id ? { ...it, selected: true } : it)));
-      }
       setFocusedItemId(id);
     },
-    [commit],
+    [],
   );
 
   const patch = useCallback(
@@ -204,7 +201,6 @@ export function useQueue() {
         originalUrl: normalizedUrl,
         status: "parsing",
         title: hostnameOf(normalizedUrl),
-        selected: true,
         addedAt: Date.now(),
       };
       commit([...itemsRef.current, item]);
@@ -223,7 +219,6 @@ export function useQueue() {
         source: label,
         status: "parsing",
         title: label,
-        selected: true,
         addedAt: Date.now(),
       };
       commit([...itemsRef.current, item]);
@@ -245,7 +240,6 @@ export function useQueue() {
         source: "Pasted text",
         status: "parsing",
         title: firstLine.slice(0, 60),
-        selected: true,
         addedAt: Date.now(),
       };
       textPayloads.current.set(id, trimmed);
@@ -297,26 +291,6 @@ export function useQueue() {
     [commit],
   );
 
-  const toggleSelected = useCallback(
-    (id: string) =>
-      commit(
-        itemsRef.current.map((it) =>
-          it.id === id ? { ...it, selected: !it.selected } : it,
-        ),
-      ),
-    [commit],
-  );
-
-  const setAllSelected = useCallback(
-    (selected: boolean) =>
-      commit(
-        itemsRef.current.map((it) =>
-          it.status === "ready" ? { ...it, selected } : it,
-        ),
-      ),
-    [commit],
-  );
-
   const clear = useCallback(() => {
     textPayloads.current.clear();
     setFocusedItemId(null);
@@ -335,8 +309,6 @@ export function useQueue() {
     retry,
     canRetry,
     remove,
-    toggleSelected,
-    setAllSelected,
     clear,
     focusItem,
   };

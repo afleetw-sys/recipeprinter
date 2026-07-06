@@ -84,8 +84,6 @@ export interface QueueItem {
   title: string;
   recipe?: Recipe;
   error?: string;
-  /** Whether the item is included in the next print run. */
-  selected: boolean;
   addedAt: number;
 }
 
