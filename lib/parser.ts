@@ -58,15 +58,6 @@ function isAuthOrAppCheckError(err: unknown): boolean {
   );
 }
 
-function shouldUseLocalError(local: LocalParseOutcome, fallbackError: unknown): boolean {
-  if (!local.error) return false;
-  if (isAuthOrAppCheckError(fallbackError)) return true;
-
-  // A precise local fetch/parse result is more useful than a generic callable
-  // failure, especially for unsupported pages and HTTP responses.
-  return Boolean(local.status && local.status >= 400 && local.status < 500);
-}
-
 async function parseUrlLocally(url: string): Promise<LocalParseOutcome> {
   try {
     const response = await fetch("/api/parse", {

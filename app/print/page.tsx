@@ -1,8 +1,9 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState, type CSSProperties, type FormEvent } from "react";
+import { memo, useEffect, useMemo, useRef, useState, type CSSProperties, type FormEvent } from "react";
 import { useSearchParams } from "next/navigation";
 import Link from "next/link";
+import dynamic from "next/dynamic";
 import {
   isSignInWithEmailLink,
   onAuthStateChanged,
@@ -44,12 +45,15 @@ import {
   loadRecipePrinterTemplatePrices,
   purchaseRecipePrinterTemplate,
 } from "@/lib/recipePrinterPurchases";
-import { readCurrentPrintJobIds, readPrintJobIds, readQueue } from "@/lib/queue";
+import { readCurrentPrintJobIds, readQueue } from "@/lib/queue";
 import type { QueueItem, Recipe } from "@/types/recipe";
 import type { CustomerInfo } from "@revenuecat/purchases-js";
 
-const COFFEE_URL = "https://buymeacoffee.com/recipeprinter";
-const COFFEE_LOGO_SRC = "/images/buy-me-a-coffee-logo.png";
+const PrintDialogs = dynamic(
+  () => import("@/components/PrintDialogs").then((mod) => mod.PrintDialogs),
+  { ssr: false, loading: () => null },
+);
+
 const POST_PRINT_DIALOG_STORAGE_KEY = "recipeprinter:post-print-dialog:last-shown:v1";
 const POST_PRINT_DIALOG_INTERVAL_MS = 7 * 24 * 60 * 60 * 1000;
 const EMAIL_LINK_STORAGE_KEY = "recipeprinter:purchase-email-link:v1";
@@ -90,7 +94,7 @@ interface PageSheet {
 }
 
 /** A single recipe face rendered at true page size, scaled down by `scale`. */
-function ScaledPage({
+const ScaledPage = memo(function ScaledPage({
   sheet,
   side,
   scale,
@@ -145,7 +149,7 @@ function ScaledPage({
       </div>
     </div>
   );
-}
+});
 
 function shouldShowPostPrintDialog() {
   try {
@@ -190,10 +194,6 @@ function friendlyPurchaseError(error: unknown): string {
   return friendlyPurchaseSetupError(error);
 }
 
-function accountLabelFor(user: User): string {
-  return user.email || user.displayName || "your CookPilot account";
-}
-
 function priceLookupUserId(): string {
   if (typeof window === "undefined") return "recipeprinter-price-preview";
   const stored = window.localStorage.getItem(PRICE_LOOKUP_USER_STORAGE_KEY);
@@ -206,7 +206,6 @@ function priceLookupUserId(): string {
 
 export default function PrintPage() {
   const params = useSearchParams();
-  const jobParam = params.get("job") ?? "";
   const idsParam = params.get("ids") ?? "";
   const shouldPrint = params.get("print") === "1";
   const [items, setItems] = useState<QueueItem[] | null>(null);
@@ -241,15 +240,18 @@ export default function PrintPage() {
   const photosOn = showPhoto && anyRecipeHasImage;
   // The photo reserves vertical space, so the split must know whether one will
   // render — otherwise content overflows the page instead of flowing to the back.
-  const hasRecipeBackSide =
-    items?.some(
-      (item) =>
-        item.recipe &&
-        recipeNeedsBackSide(item.recipe, cardSize, {
-          hasPhoto: photosOn && Boolean(item.recipe.image),
-          template,
-        }),
-    ) ?? false;
+  const hasRecipeBackSide = useMemo(
+    () =>
+      items?.some(
+        (item) =>
+          item.recipe &&
+          recipeNeedsBackSide(item.recipe, cardSize, {
+            hasPhoto: photosOn && Boolean(item.recipe.image),
+            template,
+          }),
+      ) ?? false,
+    [items, cardSize, photosOn, template],
+  );
   const continueOnBack = hasRecipeBackSide && doubleSided;
 
   // The physical sheets the printer will produce, in order. Two-sided sheets
@@ -568,10 +570,8 @@ export default function PrintPage() {
   useEffect(() => {
     const queue = readQueue();
     const byId = new Map(queue.map((it) => [it.id, it]));
-    const jobIds = jobParam ? readPrintJobIds(jobParam) : null;
     const idsFromUrl = idsParam.split(",").map((s) => s.trim()).filter(Boolean);
     const ids =
-      jobIds ??
       (idsFromUrl.length > 0 ? idsFromUrl : readCurrentPrintJobIds()) ??
       queue.filter((it) => it.status === "ready" && it.selected).map((it) => it.id);
     // Preserve the order the user selected them in.
@@ -579,7 +579,7 @@ export default function PrintPage() {
       .map((id) => byId.get(id))
       .filter((it): it is QueueItem => Boolean(it && it.status === "ready" && it.recipe));
     setItems(selected);
-  }, [idsParam, jobParam]);
+  }, [idsParam]);
 
   // Auto-open the print dialog when the user chose Print instead of Preview.
   useEffect(() => {
@@ -1096,160 +1096,25 @@ export default function PrintPage() {
         </div>
       </main>
 
-      {showDonateDialog && (
-        <div
-          className="print-success-dialog no-print"
-          role="dialog"
-          aria-modal="true"
-          aria-labelledby="print-success-title"
-        >
-          <div className="print-success-dialog__backdrop" aria-hidden />
-          <div className="print-success-dialog__panel">
-            <button
-              type="button"
-              className="print-success-dialog__close icon-close-btn"
-              aria-label="Close"
-              onClick={() => setShowDonateDialog(false)}
-            >
-              <XIcon size={ICON_SIZE.md} />
-            </button>
-            <div className="print-success-dialog__icon" aria-hidden>
-              <img
-                src="/images/recipeprinter-logo.png"
-                alt=""
-                className="print-success-dialog__logo"
-              />
-            </div>
-            <h2 id="print-success-title">Ready for your counter, binder, or fridge door.</h2>
-            <p>
-              Support and feedback help me make RecipePrinter better.
-            </p>
-            <div className="print-success-dialog__actions">
-              <a
-                href={COFFEE_URL}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="btn btn-primary"
-              >
-                <img
-                  src={COFFEE_LOGO_SRC}
-                  alt=""
-                  aria-hidden="true"
-                  className="h-5 w-5 rounded-full"
-                />
-                Support RecipePrinter
-              </a>
-              <button
-                type="button"
-                className="btn btn-ghost"
-                onClick={() => {
-                  setShowDonateDialog(false);
-                  setShowFeedbackDialog(true);
-                }}
-              >
-                Leave feedback
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-      {showUnlockDialog && selectedPremiumTemplate && user && (
-        <div
-          className="print-success-dialog no-print"
-          role="dialog"
-          aria-modal="true"
-          aria-labelledby="recipeprinter-unlock-title"
-        >
-          <div className="print-success-dialog__backdrop" aria-hidden />
-          <div className="print-success-dialog__panel">
-            <button
-              type="button"
-              className="print-success-dialog__close icon-close-btn"
-              aria-label="Close"
-              onClick={() => setShowUnlockDialog(false)}
-              disabled={purchaseBusy}
-            >
-              <XIcon size={ICON_SIZE.md} />
-            </button>
-            <h2 id="recipeprinter-unlock-title">Unlock {selectedTemplateLabel} template?</h2>
-            <p>
-              You&apos;re logged in as <strong>{accountLabelFor(user)}</strong>. This purchase will
-              be saved to that account so you can print with this template again.
-            </p>
-            <div className="print-success-dialog__actions">
-              <button
-                type="button"
-                className="btn btn-primary"
-                disabled={purchaseBusy}
-                onClick={() => void unlockTemplateAndPrint(selectedPremiumTemplate)}
-              >
-                {purchaseBusy ? <SpinnerIcon size={ICON_SIZE.md} /> : <CrownIcon size={ICON_SIZE.md} />}
-                Unlock & Print
-              </button>
-              <button
-                type="button"
-                className="btn btn-ghost"
-                onClick={() => setShowUnlockDialog(false)}
-                disabled={purchaseBusy}
-              >
-                Not now
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-      {showSignInDialog && (
-        <div
-          className="print-success-dialog no-print"
-          role="dialog"
-          aria-modal="true"
-          aria-labelledby="recipeprinter-sign-in-title"
-        >
-          <div className="print-success-dialog__backdrop" aria-hidden />
-          <form className="print-success-dialog__panel" onSubmit={handleSignInSubmit}>
-            <button
-              type="button"
-              className="print-success-dialog__close icon-close-btn"
-              aria-label="Close"
-              onClick={() => setShowSignInDialog(false)}
-            >
-              <XIcon size={ICON_SIZE.md} />
-            </button>
-            <h2 id="recipeprinter-sign-in-title">
-              Sign in so you can reuse this template forever.
-            </h2>
-            <p>
-              Use your CookPilot login email if you have one.
-            </p>
-            <label className="field-label text-left mt-cp-4" htmlFor="recipeprinter-purchase-email">
-              Email
-            </label>
-            <input
-              id="recipeprinter-purchase-email"
-              className="field"
-              type="email"
-              autoComplete="email"
-              value={signInEmail}
-              onChange={(event) => setSignInEmail(event.target.value)}
-              disabled={signInBusy}
-            />
-            {signInMessage && <p className="recipe-template-note">{signInMessage}</p>}
-            <div className="print-success-dialog__actions">
-              <button type="submit" className="btn btn-primary" disabled={signInBusy}>
-                {signInBusy ? <SpinnerIcon size={ICON_SIZE.md} /> : null}
-                Send sign-in link
-              </button>
-              <button
-                type="button"
-                className="btn btn-ghost"
-                onClick={() => setShowSignInDialog(false)}
-              >
-                Not now
-              </button>
-            </div>
-          </form>
-        </div>
-      )}
+      <PrintDialogs
+        showDonateDialog={showDonateDialog}
+        onCloseDonateDialog={() => setShowDonateDialog(false)}
+        onOpenFeedbackDialog={() => setShowFeedbackDialog(true)}
+        showUnlockDialog={showUnlockDialog}
+        onCloseUnlockDialog={() => setShowUnlockDialog(false)}
+        selectedPremiumTemplate={selectedPremiumTemplate}
+        selectedTemplateLabel={selectedTemplateLabel}
+        user={user}
+        purchaseBusy={purchaseBusy}
+        onUnlockTemplate={(premiumTemplate) => void unlockTemplateAndPrint(premiumTemplate)}
+        showSignInDialog={showSignInDialog}
+        onCloseSignInDialog={() => setShowSignInDialog(false)}
+        onSignInSubmit={handleSignInSubmit}
+        signInEmail={signInEmail}
+        onSignInEmailChange={setSignInEmail}
+        signInBusy={signInBusy}
+        signInMessage={signInMessage}
+      />
       <FeedbackDialog
         open={showFeedbackDialog}
         onClose={() => setShowFeedbackDialog(false)}

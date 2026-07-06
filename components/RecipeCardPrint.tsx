@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { memo, useEffect, useMemo, useState } from "react";
 import type { Recipe } from "@/types/recipe";
 
 // Printable recipe layouts. Compact cards keep readable text and move overflow
@@ -604,7 +604,7 @@ export function getRecipeFaces(
   };
 }
 
-export function RecipeCardFace({
+export const RecipeCardFace = memo(function RecipeCardFace({
   recipe,
   ingredients,
   instructions,
@@ -772,9 +772,9 @@ export function RecipeCardFace({
       </footer>
     </article>
   );
-}
+});
 
-export default function RecipeCardPrint({
+const RecipeCardPrint = memo(function RecipeCardPrint({
   recipe,
   size,
   template,
@@ -790,10 +790,14 @@ export default function RecipeCardPrint({
   showImage?: boolean;
 }) {
   const [previewSide, setPreviewSide] = useState<"front" | "back">("front");
-  const faces = getRecipeFaces(recipe, size, {
-    hasPhoto: showImage && Boolean(recipe.image),
-    template,
-  });
+  const faces = useMemo(
+    () =>
+      getRecipeFaces(recipe, size, {
+        hasPhoto: showImage && Boolean(recipe.image),
+        template,
+      }),
+    [recipe, size, showImage, template],
+  );
   const pages = faces.pages;
   const [frontPage, backPage] = pages;
   const hasBack = faces.hasBack;
@@ -895,4 +899,6 @@ export default function RecipeCardPrint({
       )}
     </div>
   );
-}
+});
+
+export default RecipeCardPrint;

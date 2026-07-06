@@ -307,44 +307,6 @@
     padding: 0 10px;
     font-size: var(--cp-fs-caption);
   }
-  .mode-toggle-arrow {
-    position: absolute;
-    top: 50%;
-    z-index: 2;
-    width: 28px;
-    height: 28px;
-    display: grid;
-    place-items: center;
-    border: 1px solid var(--cp-line);
-    border-radius: 999px;
-    background: rgba(255, 255, 255, 0.92);
-    color: var(--cp-ink-soft);
-    transform: translateY(-50%);
-  }
-  .mode-toggle-arrow--left {
-    left: -8px;
-  }
-  .mode-toggle-arrow--right {
-    right: -8px;
-  }
-  .mode-toggle-arrow--left::after,
-  .mode-toggle-arrow--right::after {
-    content: "";
-    position: absolute;
-    top: -10px;
-    bottom: -10px;
-    width: 34px;
-    pointer-events: none;
-  }
-  .mode-toggle-arrow--left::after {
-    left: 100%;
-    background: linear-gradient(90deg, rgba(255, 255, 255, 0.75), transparent);
-  }
-  .mode-toggle-arrow--right::after {
-    right: 100%;
-    background: linear-gradient(270deg, rgba(255, 255, 255, 0.75), transparent);
-  }
-
   /* ── Image dropzone (mirrors .cp-image-import__button) ────────────────── */
   .dropzone {
     @apply flex flex-col items-center justify-center gap-2.5 rounded text-center font-bold
@@ -382,25 +344,6 @@
   .state p {
     color: var(--cp-ink-soft);
     @apply text-cp-small leading-relaxed;
-  }
-
-  /* "or" divider (mirrors .cp-import-divider) */
-  .or-divider {
-    @apply flex items-center gap-cp-3 text-cp-caption font-medium;
-    color: var(--cp-ink-soft);
-  }
-  .or-divider::before,
-  .or-divider::after {
-    content: "";
-    @apply flex-1;
-    height: 1px;
-    background: var(--cp-line);
-  }
-
-  /* Small status / method pill */
-  .pill {
-    @apply inline-flex items-center gap-1.5 rounded-full text-cp-label font-semibold;
-    padding: 3px 10px;
   }
 
   /* The import panel always lives on the left. On desktop both columns always
@@ -523,10 +466,6 @@
       padding: 0;
     }
 
-    .rp-import-panel--workspace .mode-toggle-arrow {
-      display: none;
-    }
-
     .rp-import-panel--workspace .field {
       min-height: 44px;
       padding: 12px 14px;
@@ -628,10 +567,6 @@
     max-height: none;
     height: 100%;
   }
-}
-
-.recipe-print-stage {
-  min-width: 0;
 }
 
 /* ── Page navigator (PowerPoint-style) ─────────────────────────────────── */
@@ -2673,15 +2608,6 @@
   width: 58px;
   height: 58px;
   object-fit: contain;
-}
-
-.print-success-dialog__eyebrow {
-  margin-bottom: 6px;
-  color: var(--cp-blue);
-  font-size: var(--cp-fs-label);
-  font-weight: 800;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
 }
 
 .print-success-dialog h2 {

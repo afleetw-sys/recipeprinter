@@ -30,10 +30,6 @@ export function isPremiumTemplate(
   return template in PREMIUM_TEMPLATE_ENTITLEMENTS;
 }
 
-export function isFreeTemplate(template: RecipePrintTemplate): boolean {
-  return (FREE_TEMPLATE_IDS as readonly RecipePrintTemplate[]).includes(template);
-}
-
 export function entitlementForTemplate(template: PremiumRecipePrintTemplate): string {
   return PREMIUM_TEMPLATE_ENTITLEMENTS[template];
 }
