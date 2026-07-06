@@ -1,6 +1,6 @@
 "use client";
 
-import { memo, useEffect, useMemo, useState } from "react";
+import { memo, useState } from "react";
 import type { Recipe } from "@/types/recipe";
 
 // Printable recipe layouts. Compact cards keep readable text and move overflow
@@ -69,7 +69,7 @@ const STACKED_FRONT_BUDGET: Record<
   },
   "card-6x4": {
     withoutPhoto: { total: 720, ingredients: 760, ingredientsOnly: 1320, instructions: 700 },
-    withPhoto: { total: 520, ingredients: 620, ingredientsOnly: 1060, instructions: 520 },
+    withPhoto: { total: 760, ingredients: 620, ingredientsOnly: 1060, instructions: 520 },
   },
 };
 
@@ -93,7 +93,18 @@ const STACKED_FRONT_LIMITS: Record<
 interface SplitOptions {
   hasPhoto?: boolean;
   template?: RecipePrintTemplate;
+  showSourceUrl?: boolean;
 }
+
+// The source link adds a second, wrapped line to the front face's footer.
+// Charged against the front budget (in the same `textCost` units as the
+// ingredient/instruction budgets above) so a recipe that was packed right up
+// to the fixed card height spills onto the back instead of having its footer
+// silently clipped off by print's `overflow: hidden`.
+const SOURCE_URL_FOOTER_RESERVE: Record<PrintCardSize, number> = {
+  letter: 170,
+  "card-6x4": 90,
+};
 
 const CONTINUATION_FLOW_BUDGET: Record<
   PrintCardSize,
@@ -239,45 +250,8 @@ const SECTION_HEADER_COST: Record<PrintCardSize, number> = {
   "card-6x4": 130,
 };
 
-function splitByBudget<T>(
-  items: T[],
-  budget: number,
-  label: (item: T) => string,
-  maxFrontItems = Number.POSITIVE_INFINITY,
-  sectionOf?: (item: T) => string | undefined,
-  sectionCost = 0,
-  // By default the first item is always placed so callers that loop (e.g.
-  // continuation faces) keep making progress even when one item exceeds the
-  // budget. Front faces pass `strict` so a section that doesn't fit isn't forced
-  // on — it can simply start on the next face — which avoids a lone overflowing
-  // item that gets clipped.
-  strict = false,
-) {
-  if (!Number.isFinite(budget)) return { front: items, back: [] };
-
-  const front: T[] = [];
-  const back: T[] = [];
-  let used = 0;
-  let overflowStarted = false;
-  let frontSection: string | undefined;
-
-  for (const item of items) {
-    const section = sectionOf?.(item)?.trim() || undefined;
-    const opensSection = sectionOf !== undefined && section !== frontSection;
-    const cost = textCost(label(item)) + (opensSection ? sectionCost : 0);
-    const tooMany = front.length >= maxFrontItems;
-    const tooBig = used + cost > budget && (strict || front.length > 0);
-    if (overflowStarted || tooMany || tooBig) {
-      overflowStarted = true;
-      back.push(item);
-    } else {
-      front.push(item);
-      used += cost;
-      frontSection = section;
-    }
-  }
-
-  return { front, back };
+function linearCost(costs: number[]): number {
+  return costs.reduce((sum, cost) => sum + cost, 0);
 }
 
 function flowedColumnCost(costs: number[], budget: number): number {
@@ -301,13 +275,24 @@ function flowedColumnCost(costs: number[], budget: number): number {
   return Math.max(...columns);
 }
 
-function splitByFlowedColumnBudget<T>(
+// Shared engine behind `splitByBudget` (single running total) and
+// `splitByFlowedColumnBudget` (two-column newspaper flow) — both walk the
+// same list once, charging each item's text cost plus a section-header
+// surcharge when it opens a new section, and differ only in how "does this
+// still fit" is measured against the budget.
+function splitByCostBudget<T>(
   items: T[],
   budget: number,
   label: (item: T) => string,
+  costOf: (costs: number[]) => number,
   maxFrontItems = Number.POSITIVE_INFINITY,
   sectionOf?: (item: T) => string | undefined,
   sectionCost = 0,
+  // By default the first item is always placed so callers that loop (e.g.
+  // continuation faces) keep making progress even when one item exceeds the
+  // budget. Front faces pass `strict` so a section that doesn't fit isn't forced
+  // on — it can simply start on the next face — which avoids a lone overflowing
+  // item that gets clipped.
   strict = false,
 ) {
   if (!Number.isFinite(budget)) return { front: items, back: [] };
@@ -320,12 +305,10 @@ function splitByFlowedColumnBudget<T>(
 
   for (const item of items) {
     const section = sectionOf?.(item)?.trim() || undefined;
-    const opensSection = sectionOf !== undefined && section !== frontSection;
+    const opensSection = sectionOf !== undefined && section !== undefined && section !== frontSection;
     const cost = textCost(label(item)) + (opensSection ? sectionCost : 0);
     const tooMany = front.length >= maxFrontItems;
-    const tooBig =
-      flowedColumnCost([...costs, cost], budget) > budget && (strict || front.length > 0);
-
+    const tooBig = costOf([...costs, cost]) > budget && (strict || front.length > 0);
     if (overflowStarted || tooMany || tooBig) {
       overflowStarted = true;
       back.push(item);
@@ -337,6 +320,39 @@ function splitByFlowedColumnBudget<T>(
   }
 
   return { front, back };
+}
+
+function splitByBudget<T>(
+  items: T[],
+  budget: number,
+  label: (item: T) => string,
+  maxFrontItems = Number.POSITIVE_INFINITY,
+  sectionOf?: (item: T) => string | undefined,
+  sectionCost = 0,
+  strict = false,
+) {
+  return splitByCostBudget(items, budget, label, linearCost, maxFrontItems, sectionOf, sectionCost, strict);
+}
+
+function splitByFlowedColumnBudget<T>(
+  items: T[],
+  budget: number,
+  label: (item: T) => string,
+  maxFrontItems = Number.POSITIVE_INFINITY,
+  sectionOf?: (item: T) => string | undefined,
+  sectionCost = 0,
+  strict = false,
+) {
+  return splitByCostBudget(
+    items,
+    budget,
+    label,
+    (costs) => flowedColumnCost(costs, budget),
+    maxFrontItems,
+    sectionOf,
+    sectionCost,
+    strict,
+  );
 }
 
 function splitInstructionsByAvailableSpace(
@@ -364,14 +380,27 @@ function splitInstructionsByAvailableSpace(
   );
 }
 
+// The source-link footer reserve (see `SOURCE_URL_FOOTER_RESERVE`) is charged
+// against every field of a front budget the same way, so both front-splitting
+// functions borrow this instead of repeating the per-field subtraction.
+function applyReserve<T extends Record<string, number>>(budget: T, reserve: number): T {
+  const result = {} as T;
+  for (const key of Object.keys(budget) as Array<keyof T>) {
+    result[key] = Math.max(0, budget[key] - reserve) as T[keyof T];
+  }
+  return result;
+}
+
 function splitStandardFront(
   recipe: Recipe,
   size: PrintCardSize,
   hasPhoto: boolean,
+  hasSourceUrl: boolean,
 ): SplitRecipeResult {
-  const frontBudget = hasPhoto
+  const baseBudget = hasPhoto
     ? FRONT_SECTION_BUDGET[size].withPhoto
     : FRONT_SECTION_BUDGET[size].withoutPhoto;
+  const frontBudget = applyReserve(baseBudget, hasSourceUrl ? SOURCE_URL_FOOTER_RESERVE[size] : 0);
   const frontLimits = hasPhoto
     ? FRONT_SECTION_LIMITS[size]?.withPhoto
     : FRONT_SECTION_LIMITS[size]?.withoutPhoto;
@@ -404,10 +433,12 @@ function splitStackedFront(
   recipe: Recipe,
   size: PrintCardSize,
   hasPhoto: boolean,
+  hasSourceUrl: boolean,
 ): SplitRecipeResult {
-  const frontBudget = hasPhoto
+  const baseBudget = hasPhoto
     ? STACKED_FRONT_BUDGET[size].withPhoto
     : STACKED_FRONT_BUDGET[size].withoutPhoto;
+  const frontBudget = applyReserve(baseBudget, hasSourceUrl ? SOURCE_URL_FOOTER_RESERVE[size] : 0);
   const frontLimits = hasPhoto
     ? STACKED_FRONT_LIMITS[size].withPhoto
     : STACKED_FRONT_LIMITS[size].withoutPhoto;
@@ -474,8 +505,9 @@ function splitRecipe(
   size: PrintCardSize,
   options: SplitOptions = {},
 ): SplitRecipeResult {
-  const { hasPhoto = false } = options;
-  const standardSplit = splitStandardFront(recipe, size, hasPhoto);
+  const { hasPhoto = false, showSourceUrl = false } = options;
+  const hasSourceUrl = showSourceUrl && Boolean(sourceLabel(recipe));
+  const standardSplit = splitStandardFront(recipe, size, hasPhoto, hasSourceUrl);
 
   // Side-by-side is only used when the whole recipe fits on the front. The
   // moment anything spills onto another side, switch to the stacked layout
@@ -489,7 +521,7 @@ function splitRecipe(
     return standardSplit;
   }
 
-  return splitStackedFront(recipe, size, hasPhoto);
+  return splitStackedFront(recipe, size, hasPhoto, hasSourceUrl);
 }
 
 export function recipeNeedsBackSide(
@@ -574,8 +606,9 @@ function continuationFaces(
 }
 
 /**
- * The front/back faces a recipe splits into at a given size. The on-screen page
- * navigator uses this to mirror exactly what `RecipeCardPrint` will print.
+ * The front/back faces a recipe splits into at a given size. The print page's
+ * on-screen navigator renders these faces directly and is also what prints
+ * (via `@media print`), so there's no separate print-only render to drift.
  */
 export function getRecipeFaces(
   recipe: Recipe,
@@ -615,6 +648,7 @@ export const RecipeCardFace = memo(function RecipeCardFace({
   previewHidden = false,
   blank = false,
   showImage = false,
+  showSourceUrl = false,
   continued = false,
 }: {
   recipe: Recipe;
@@ -627,6 +661,7 @@ export const RecipeCardFace = memo(function RecipeCardFace({
   previewHidden?: boolean;
   blank?: boolean;
   showImage?: boolean;
+  showSourceUrl?: boolean;
   continued?: boolean;
 }) {
   const source = sourceLabel(recipe);
@@ -670,13 +705,7 @@ export const RecipeCardFace = memo(function RecipeCardFace({
         >
           <div className="recipe-card__headline">
             <h1 className="recipe-card__title">{recipe.title}</h1>
-            {(meta.length > 0 || source) && (
-              <p className="recipe-card__meta">
-                {meta.join("  ·  ")}
-                {meta.length > 0 && source ? "  ·  " : ""}
-                {source && <span className="recipe-card__source">{source}</span>}
-              </p>
-            )}
+            {meta.length > 0 && <p className="recipe-card__meta">{meta.join("  ·  ")}</p>}
           </div>
           {showPhoto && (
             <span className="recipe-card__photo">
@@ -768,137 +797,12 @@ export const RecipeCardFace = memo(function RecipeCardFace({
       </div>
 
       <footer className="recipe-card__footer">
-        <span>Printed with RecipePrinter</span>
+        <span className="recipe-card__footer-brand">Printed with RecipePrinter</span>
+        {showSourceUrl && showHeader && source && (
+          <span className="recipe-card__footer-source">{source}</span>
+        )}
       </footer>
     </article>
   );
 });
 
-const RecipeCardPrint = memo(function RecipeCardPrint({
-  recipe,
-  size,
-  template,
-  doubleSided,
-  isLast,
-  showImage = false,
-}: {
-  recipe: Recipe;
-  size: PrintCardSize;
-  template: RecipePrintTemplate;
-  doubleSided: boolean;
-  isLast?: boolean;
-  showImage?: boolean;
-}) {
-  const [previewSide, setPreviewSide] = useState<"front" | "back">("front");
-  const faces = useMemo(
-    () =>
-      getRecipeFaces(recipe, size, {
-        hasPhoto: showImage && Boolean(recipe.image),
-        template,
-      }),
-    [recipe, size, showImage, template],
-  );
-  const pages = faces.pages;
-  const [frontPage, backPage] = pages;
-  const hasBack = faces.hasBack;
-  const needsPrintBack = hasBack || (doubleSided && !isLast);
-  const showSideNav = doubleSided && hasBack;
-
-  useEffect(() => {
-    if (!doubleSided) setPreviewSide("front");
-  }, [doubleSided]);
-
-  return (
-    <div className={`recipe-card-set recipe-card-set--${size} recipe-template--${template}`}>
-      {showSideNav && (
-        <div className="recipe-card-side-nav no-print" aria-label={`${recipe.title} sides`}>
-          <button
-            type="button"
-            className="recipe-card-side-nav__button"
-            aria-label="Show front"
-            disabled={previewSide === "front"}
-            onClick={() => setPreviewSide("front")}
-          >
-            ←
-          </button>
-          <span>{previewSide === "front" ? "Front" : "Back"}</span>
-          <button
-            type="button"
-            className="recipe-card-side-nav__button"
-            aria-label="Show back"
-            disabled={previewSide === "back"}
-            onClick={() => setPreviewSide("back")}
-          >
-            →
-          </button>
-        </div>
-      )}
-      <RecipeCardFace
-        recipe={recipe}
-        ingredients={frontPage.ingredients}
-        instructions={frontPage.instructions}
-        side="front"
-        showHeader
-        layout={frontPage.layout}
-        hasBackFace={hasBack}
-        previewHidden={showSideNav && previewSide !== "front"}
-        showImage={showImage}
-      />
-      {needsPrintBack &&
-        (hasBack ? (
-          <RecipeCardFace
-            recipe={recipe}
-            ingredients={backPage.ingredients}
-            instructions={backPage.instructions}
-            side="back"
-            showHeader={false}
-            layout={backPage.layout}
-            hasBackFace={hasBack}
-            previewHidden={doubleSided && previewSide !== "back"}
-            continued
-          />
-        ) : (
-          <RecipeCardFace
-            recipe={recipe}
-            ingredients={[]}
-            instructions={[]}
-            side="back"
-            showHeader={false}
-            layout="standard"
-            hasBackFace={false}
-            blank
-          />
-        ))}
-      {pages.slice(2).map((page, index) => {
-        const physicalSide = doubleSided && index % 2 === 1 ? "back" : "front";
-        return (
-          <RecipeCardFace
-            key={`continued-${index}`}
-            recipe={recipe}
-            ingredients={page.ingredients}
-            instructions={page.instructions}
-            side={physicalSide}
-            showHeader={false}
-            layout={page.layout}
-            hasBackFace={hasBack}
-            continued
-          />
-        );
-      })}
-      {doubleSided && pages.length > 2 && pages.length % 2 === 1 && !isLast && (
-        <RecipeCardFace
-          recipe={recipe}
-          ingredients={[]}
-          instructions={[]}
-          side="back"
-          showHeader={false}
-          layout="standard"
-          hasBackFace={false}
-          blank
-        />
-      )}
-    </div>
-  );
-});
-
-export default RecipeCardPrint;

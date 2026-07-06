@@ -15,7 +15,7 @@ import { SiteHeader } from "@/components/SiteHeader";
 import { FeedbackDialog } from "@/components/FeedbackButton";
 import { Select } from "@/components/Select";
 import { friendlyAuthError, friendlyPurchaseSetupError } from "@/lib/friendlyErrors";
-import RecipeCardPrint, {
+import {
   PRINT_CARD_SIZE_OPTIONS,
   RECIPE_PRINT_TEMPLATE_OPTIONS,
   RecipeCardFace,
@@ -93,27 +93,37 @@ interface PageSheet {
   isContinuation: boolean;
 }
 
-/** A single recipe face rendered at true page size, scaled down by `scale`. */
+/**
+ * A recipe sheet rendered at true page size, scaled down by `scale` on screen.
+ * Both faces are always in the DOM — whichever one isn't `activeSide` is
+ * hidden with `data-preview-hidden`, a screen-only rule — so this is also the
+ * literal content that gets printed (via `@media print` un-scaling it), not a
+ * separate copy. One tree, so preview and print can't drift apart.
+ */
 const ScaledPage = memo(function ScaledPage({
   sheet,
-  side,
+  activeSide,
   scale,
   size,
   template,
   doubleSided,
   showImage,
+  showSourceUrl,
+  showCutLines,
+  needsBackSpacer,
 }: {
   sheet: PageSheet;
-  side: "front" | "back";
+  activeSide: "front" | "back";
   scale: number;
   size: PrintCardSize;
   template: RecipePrintTemplate;
   doubleSided: boolean;
   showImage: boolean;
+  showSourceUrl: boolean;
+  showCutLines: boolean;
+  needsBackSpacer: boolean;
 }) {
   const dims = PAGE_DIMS[size];
-  const face = side === "back" && sheet.back ? sheet.back : sheet.front;
-  const isBackContent = sheet.isContinuation || (side === "back" && sheet.back !== null);
   return (
     <div
       className="recipe-page-scaler"
@@ -127,7 +137,9 @@ const ScaledPage = memo(function ScaledPage({
     >
       <div className="recipe-page-scaler__inner">
         <div
-          className={`recipe-print-preview recipe-print-preview--${size}`}
+          className={`recipe-print-preview recipe-print-preview--${size} ${
+            showCutLines ? "recipe-print-preview--cut-lines" : ""
+          }`}
           data-double-sided={doubleSided ? "true" : "false"}
         >
           <div
@@ -135,15 +147,41 @@ const ScaledPage = memo(function ScaledPage({
           >
             <RecipeCardFace
               recipe={sheet.recipe}
-              ingredients={face.ingredients}
-              instructions={face.instructions}
-              side={side}
-              showHeader={!isBackContent}
-              layout={face.layout}
+              ingredients={sheet.front.ingredients}
+              instructions={sheet.front.instructions}
+              side="front"
+              showHeader={!sheet.isContinuation}
+              layout={sheet.front.layout}
               hasBackFace={sheet.hasBack}
               showImage={showImage}
-              continued={isBackContent}
+              showSourceUrl={showSourceUrl}
+              continued={sheet.isContinuation}
+              previewHidden={activeSide !== "front"}
             />
+            {sheet.back ? (
+              <RecipeCardFace
+                recipe={sheet.recipe}
+                ingredients={sheet.back.ingredients}
+                instructions={sheet.back.instructions}
+                side="back"
+                showHeader={false}
+                layout={sheet.back.layout}
+                hasBackFace={sheet.hasBack}
+                continued
+                previewHidden={activeSide !== "back"}
+              />
+            ) : needsBackSpacer ? (
+              <RecipeCardFace
+                recipe={sheet.recipe}
+                ingredients={[]}
+                instructions={[]}
+                side="back"
+                showHeader={false}
+                layout="standard"
+                hasBackFace={false}
+                blank
+              />
+            ) : null}
           </div>
         </div>
       </div>
@@ -218,6 +256,7 @@ export default function PrintPage() {
   const [doubleSided, setDoubleSided] = useState(true);
   const [showCutLines, setShowCutLines] = useState(true);
   const [showPhoto, setShowPhoto] = useState(false);
+  const [showSourceUrl, setShowSourceUrl] = useState(false);
   const [showDonateDialog, setShowDonateDialog] = useState(false);
   const [showFeedbackDialog, setShowFeedbackDialog] = useState(false);
   const [authReady, setAuthReady] = useState(false);
@@ -237,7 +276,10 @@ export default function PrintPage() {
 
   const anyRecipeHasImage =
     items?.some((item) => Boolean(item.recipe?.image)) ?? false;
+  const anyRecipeHasSourceUrl =
+    items?.some((item) => Boolean(item.recipe?.sourceUrl)) ?? false;
   const photosOn = showPhoto && anyRecipeHasImage;
+  const sourceUrlOn = showSourceUrl && anyRecipeHasSourceUrl;
   // The photo reserves vertical space, so the split must know whether one will
   // render — otherwise content overflows the page instead of flowing to the back.
   const hasRecipeBackSide = useMemo(
@@ -247,10 +289,11 @@ export default function PrintPage() {
           item.recipe &&
           recipeNeedsBackSide(item.recipe, cardSize, {
             hasPhoto: photosOn && Boolean(item.recipe.image),
+            showSourceUrl: sourceUrlOn,
             template,
           }),
       ) ?? false,
-    [items, cardSize, photosOn, template],
+    [items, cardSize, photosOn, sourceUrlOn, template],
   );
   const continueOnBack = hasRecipeBackSide && doubleSided;
 
@@ -264,6 +307,7 @@ export default function PrintPage() {
       const title = recipe.title || "Recipe";
       const faces = getRecipeFaces(recipe, cardSize, {
         hasPhoto: photosOn && Boolean(recipe.image),
+        showSourceUrl: sourceUrlOn,
         template,
       });
       if (continueOnBack) {
@@ -314,7 +358,7 @@ export default function PrintPage() {
       }
     }
     return out;
-  }, [items, cardSize, continueOnBack, photosOn, template]);
+  }, [items, cardSize, continueOnBack, photosOn, sourceUrlOn, template]);
 
   const [activeSheetIndex, setActiveSheetIndex] = useState(0);
   const [canvasSide, setCanvasSide] = useState<"front" | "back">("front");
@@ -729,12 +773,15 @@ export default function PrintPage() {
               <span className="recipe-page-rail__thumb">
                 <ScaledPage
                   sheet={sheet}
-                  side="front"
+                  activeSide="front"
                   scale={RAIL_SCALE[cardSize]}
                   size={cardSize}
                   template={template}
                   doubleSided={continueOnBack}
                   showImage={photosOn}
+                  showSourceUrl={sourceUrlOn}
+                  showCutLines={showCutLines}
+                  needsBackSpacer={false}
                 />
               </span>
               <span className="recipe-page-rail__label">
@@ -747,7 +794,7 @@ export default function PrintPage() {
 
         {/* Center: large preview of the selected page */}
         <section
-          className="recipe-page-canvas no-print"
+          className="recipe-page-canvas"
           aria-label="Selected page"
           data-single-recipe={singleRecipePrintView ? "true" : "false"}
         >
@@ -782,7 +829,7 @@ export default function PrintPage() {
               Change template
             </button>
           </div>
-          {(anyRecipeHasImage || hasRecipeBackSide || cardSize === "card-6x4") && (
+          {(anyRecipeHasImage || anyRecipeHasSourceUrl || hasRecipeBackSide || cardSize === "card-6x4") && (
             <div className="recipe-mobile-chip-scroll no-print">
               {anyRecipeHasImage && (
                 <button
@@ -793,6 +840,17 @@ export default function PrintPage() {
                 >
                   {showPhoto && <CheckIcon size={ICON_SIZE.xs} />}
                   Recipe photo
+                </button>
+              )}
+              {anyRecipeHasSourceUrl && (
+                <button
+                  type="button"
+                  className={`recipe-setting-chip ${showSourceUrl ? "is-active" : ""}`}
+                  aria-pressed={showSourceUrl}
+                  onClick={() => setShowSourceUrl((value) => !value)}
+                >
+                  {showSourceUrl && <CheckIcon size={ICON_SIZE.xs} />}
+                  Source link
                 </button>
               )}
               {hasRecipeBackSide && (
@@ -843,7 +901,10 @@ export default function PrintPage() {
                 }}
               >
                 {index === activeSheetIndex && sheet.flip && (
-                  <div className="recipe-card-side-nav recipe-page-canvas__flip" aria-label="Sheet sides">
+                  <div
+                    className="recipe-card-side-nav recipe-page-canvas__flip no-print"
+                    aria-label="Sheet sides"
+                  >
                     <button
                       type="button"
                       className="recipe-card-side-nav__button"
@@ -873,12 +934,17 @@ export default function PrintPage() {
                 )}
                 <ScaledPage
                   sheet={sheet}
-                  side={index === activeSheetIndex ? canvasSide : "front"}
+                  activeSide={index === activeSheetIndex ? canvasSide : "front"}
                   scale={deckScale}
                   size={cardSize}
                   template={template}
                   doubleSided={continueOnBack}
                   showImage={photosOn}
+                  showSourceUrl={sourceUrlOn}
+                  showCutLines={showCutLines}
+                  needsBackSpacer={
+                    continueOnBack && sheet.back === null && index !== sheets.length - 1
+                  }
                 />
               </div>
             ))}
@@ -936,18 +1002,33 @@ export default function PrintPage() {
             </Select>
           </div>
 
-          {anyRecipeHasImage && (
+          {(anyRecipeHasImage || anyRecipeHasSourceUrl) && (
             <div className="recipe-config-section recipe-config-section--settings">
-              <label className="recipe-toggle">
-                <input
-                  type="checkbox"
-                  checked={showPhoto}
-                  onChange={(event) => setShowPhoto(event.target.checked)}
-                />
-                <span>
-                  <strong>Include recipe photo</strong>
-                </span>
-              </label>
+              {anyRecipeHasImage && (
+                <label className="recipe-toggle">
+                  <input
+                    type="checkbox"
+                    checked={showPhoto}
+                    onChange={(event) => setShowPhoto(event.target.checked)}
+                  />
+                  <span>
+                    <strong>Include recipe photo</strong>
+                  </span>
+                </label>
+              )}
+              {anyRecipeHasSourceUrl && (
+                <label className="recipe-toggle">
+                  <input
+                    type="checkbox"
+                    checked={showSourceUrl}
+                    onChange={(event) => setShowSourceUrl(event.target.checked)}
+                  />
+                  <span>
+                    <strong>Include source link</strong>
+                    <small>Prints the original recipe&apos;s URL in the footer.</small>
+                  </span>
+                </label>
+              )}
             </div>
           )}
 
@@ -1072,28 +1153,6 @@ export default function PrintPage() {
             {purchaseBusy ? <SpinnerIcon size={ICON_SIZE.md} /> : <PrintIcon size={ICON_SIZE.md} />}
             {selectedTemplateLocked ? "Unlock & Print" : "Print"}
           </button>
-        </div>
-
-        {/* Hidden source that produces the actual printed pages. */}
-        <div className="recipe-print-source" aria-hidden>
-          <div
-            className={`recipe-print-preview recipe-print-preview--${cardSize} ${
-              showCutLines ? "recipe-print-preview--cut-lines" : ""
-            } flex flex-col items-center gap-cp-6 print:block`}
-            data-double-sided={continueOnBack ? "true" : "false"}
-          >
-            {items.map((item, index) => (
-              <RecipeCardPrint
-                key={item.id}
-                recipe={item.recipe!}
-                size={cardSize}
-                template={template}
-                doubleSided={continueOnBack}
-                isLast={index === items.length - 1}
-                showImage={photosOn}
-              />
-            ))}
-          </div>
         </div>
       </main>
 

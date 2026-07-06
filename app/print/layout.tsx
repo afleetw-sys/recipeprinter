@@ -18,7 +18,7 @@ function PrintLoading() {
 
 export default function PrintLayout({ children }: { children: React.ReactNode }) {
   return (
-    <div className="h-dvh overflow-hidden flex flex-col">
+    <div className="h-dvh overflow-hidden flex flex-col print:h-auto print:overflow-visible">
       <Suspense fallback={<PrintLoading />}>{children}</Suspense>
     </div>
   );

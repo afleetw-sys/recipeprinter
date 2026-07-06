@@ -33,12 +33,10 @@
      One shared type scale so titles, buttons, labels, and body copy read as
      consistent sizes site-wide instead of each component picking its own
      nearby rem value. Display sizes (hero/h2-lg) use clamp() so they scale
-     smoothly between mobile and desktop off one declaration; UI text
-     (label/caption/small/body/button) is deliberately a single fixed size
-     at every width — that IS the mobile-responsive behavior, since the bugs
-     this scale replaces were UI text with no mobile value at all, falling
-     back to the browser's larger default. Use via the matching Tailwind
-     utilities (text-cp-label, text-cp-body, etc.), not the vars directly. */
+     smoothly between mobile and desktop off one declaration; prominent page
+     text gets additional tablet/phone steps below so headings and ledes relax
+     with the available width. Use via the matching Tailwind utilities
+     (text-cp-label, text-cp-body, etc.), not the vars directly. */
   --cp-fs-label: 0.74rem; /* uppercase eyebrows, section labels */
   --cp-fs-caption: 0.8rem; /* smallest meta/helper text, compact chips */
   --cp-fs-small: 0.86rem; /* secondary copy, footer links, small buttons */
@@ -49,6 +47,8 @@
   --cp-fs-hero-sm: clamp(1.9rem, 1.5rem + 2vw, 2.5rem); /* article page H1 (features/about/faq/how-it-works) */
   --cp-fs-hero: clamp(2rem, 1.1rem + 4vw, 2.75rem); /* app/home page H1 */
   --cp-fs-hero-lg: clamp(2.15rem, 0.9rem + 6vw, 4rem); /* marketing landing page H1 */
+  --cp-fs-wordmark: 1.2rem;
+  --cp-fs-wordmark-compact: 1.05rem;
 
   /* ── Elevation (box-shadow) scale ────────────────────────────────────────
      Same idea as the font-size scale: this replaced a dozen near-duplicate
@@ -61,6 +61,28 @@
   --cp-shadow-md: 0 10px 30px rgba(15, 23, 42, 0.1); /* cards, page previews, focus lift */
   --cp-shadow-lg: 0 18px 48px rgba(15, 23, 42, 0.18); /* toasts, dropdown menus */
   --cp-shadow-xl: 0 24px 80px rgba(15, 23, 42, 0.22); /* modal dialogs */
+}
+
+@media (max-width: 768px) {
+  :root {
+    --cp-fs-body-lg: 0.98rem;
+    --cp-fs-hero-sm: clamp(1.7rem, 1.3rem + 2vw, 2.15rem);
+    --cp-fs-hero: clamp(1.82rem, 1.25rem + 3vw, 2.35rem);
+    --cp-fs-hero-lg: clamp(2rem, 1.25rem + 4.8vw, 3.1rem);
+    --cp-fs-wordmark: 1.1rem;
+    --cp-fs-wordmark-compact: 1rem;
+  }
+}
+
+@media (max-width: 480px) {
+  :root {
+    --cp-fs-body-lg: 0.94rem;
+    --cp-fs-hero-sm: clamp(1.52rem, 1.2rem + 1.8vw, 1.75rem);
+    --cp-fs-hero: clamp(1.62rem, 1.15rem + 2.5vw, 1.95rem);
+    --cp-fs-hero-lg: clamp(1.78rem, 1.1rem + 4vw, 2.3rem);
+    --cp-fs-wordmark: 0.98rem;
+    --cp-fs-wordmark-compact: 0.94rem;
+  }
 }
 
 @layer base {
@@ -526,7 +548,12 @@
 }
 
 /* Desktop: the page itself never scrolls — only the rail, deck, and setup
-   panel scroll within their own bounds, each filling the full height. */
+   panel scroll within their own bounds, each filling the full height. The
+   rail/canvas/panel are repositioned from sticky to static further down
+   (see the comment near `.recipe-config-panel`), not here — a rule placed
+   here would be overridden by their un-media-gated base rules later in the
+   file regardless of this media query matching, since plain cascade order
+   (not media-query nesting) decides ties of equal specificity. */
 @media (min-width: 821px) {
   .recipe-print-page {
     height: 100dvh;
@@ -544,28 +571,6 @@
     grid-template-rows: minmax(0, 1fr);
     align-items: stretch;
     overflow: hidden;
-  }
-
-  .recipe-page-rail {
-    position: static;
-    max-height: none;
-    height: 100%;
-  }
-
-  .recipe-page-canvas {
-    position: relative;
-    top: auto;
-    height: 100%;
-  }
-
-  .recipe-page-deck {
-    height: 100%;
-  }
-
-  .recipe-config-panel {
-    position: static;
-    max-height: none;
-    height: 100%;
   }
 }
 
@@ -808,19 +813,6 @@
   display: none;
 }
 
-/* The print source is never shown on screen; print reveals it. Kept in
-   normal layout (not display:none) so its widths/CSS custom properties are
-   already resolved before printing starts — some WebKit print engines (iOS
-   Safari/AirPrint) don't reliably recompute custom-property-driven layout
-   for a subtree that only becomes display:block inside @media print. */
-.recipe-print-source {
-  position: absolute;
-  top: -99999px;
-  left: -99999px;
-  visibility: hidden;
-  pointer-events: none;
-}
-
 .rp-queue-item--focused > button:first-of-type {
   border-color: var(--cp-accent);
   box-shadow:
@@ -843,8 +835,12 @@
     color-mix(in srgb, var(--cp-page) 88%, var(--cp-card));
 }
 
-/* Keep desktop print columns inside the main grid row. These overrides live
-   after the base sticky rules so the columns do not inherit the 86px offset. */
+/* Keep desktop print columns inside the main grid row. This is the only place
+   the rail/canvas/panel switch from sticky to static — it must come after
+   their own base sticky rules above (`.recipe-page-rail`, `.recipe-page-canvas`,
+   `.recipe-config-panel`) so cascade order lets this win, rather than being
+   silently shadowed by them the way an earlier attempt near the top of the
+   file (before those base rules) was. */
 @media (min-width: 821px) {
   .recipe-page-rail,
   .recipe-page-canvas,
@@ -1837,10 +1833,30 @@
   --recipe-card-padding-bottom: 0.14in;
 }
 
-/* `data-preview-hidden` only ever applies inside the off-screen print source
-   (nothing on-screen shows those faces), so it must stay screen-only — hiding
-   it during print, too, would drop back faces and duplex spacer pages from
-   the actual printed output. */
+.recipe-print-preview--card-6x4 .recipe-template--counter .recipe-card--back {
+  --recipe-card-padding-top: 0.32in;
+}
+
+.recipe-card--back .recipe-card__cols {
+  padding-top: 9px;
+}
+
+/* Cut lines toggle: replace the decorative corner motif with a dashed cut
+   guide, on screen and in print alike, so the preview matches what prints. */
+.recipe-print-preview--cut-lines.recipe-print-preview--card-6x4 .recipe-card:not(.recipe-card--duplex-spacer)::after {
+  content: none;
+}
+
+.recipe-print-preview--cut-lines.recipe-print-preview--card-6x4 .recipe-card:not(.recipe-card--duplex-spacer) {
+  outline: 0.75pt dashed rgba(90, 90, 90, 0.72);
+  outline-offset: -0.06in;
+}
+
+/* Every face (front, back, blank duplex spacer) lives in the same DOM node
+   that gets printed — `data-preview-hidden` just keeps the on-screen deck
+   showing one side at a time. It must stay screen-only: hiding it during
+   print too would drop back faces and duplex spacer pages from the actual
+   printed output. */
 @media screen {
   .recipe-card[data-preview-hidden="true"] {
     display: none;
@@ -2322,13 +2338,6 @@
   color: var(--recipe-muted);
 }
 
-.recipe-card__source {
-  color: var(--recipe-accent);
-  text-transform: none;
-  letter-spacing: 0;
-  overflow-wrap: anywhere;
-}
-
 .recipe-card__cols {
   display: grid;
   grid-template-columns: var(--recipe-card-columns);
@@ -2483,17 +2492,17 @@
   font-weight: 800;
 }
 
-/* Flow the whole list as two newspaper columns: read straight down the left
-   column, then continue at the top of the right. The column flow lives on the
-   container (not each section's list) so a section keeps reading top-to-bottom
-   and only wraps to the next column when it runs out of room — section headers
-   ride along in the flow exactly like the items do. */
+/* Flow wide sections as two balanced newspaper columns. The column flow lives
+   on the container (not each section's list) so section headers ride along with
+   their items; balancing is important because these print cards do not give the
+   column container a fixed height, so `column-fill: auto` never starts column 2
+   before the card clips. */
 .recipe-card__ingredients--wide .recipe-card__section-groups,
 .recipe-card__method--wide .recipe-card__section-groups {
   display: block;
   column-count: 2;
-  column-fill: auto;
   column-gap: calc(var(--recipe-card-gap) * 0.9);
+  column-fill: balance;
 }
 
 .recipe-card__ingredients--wide .recipe-card__section-group,
@@ -2521,6 +2530,9 @@
 }
 
 .recipe-card__footer {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
   margin-top: 5px;
   padding-top: 3px;
   border-top: 1px solid var(--recipe-line);
@@ -2528,13 +2540,38 @@
   color: var(--recipe-footer);
 }
 
-.recipe-print-preview--card-6x4 .recipe-card__footer {
+.recipe-card__footer-source {
+  overflow-wrap: anywhere;
+}
+
+/* Card-6x4 and a few templates skip the "Printed with RecipePrinter" line —
+   there's no room, or it clashes with the template's own footer treatment.
+   The source link is still worth showing there when the user turns it on,
+   just on its own rather than alongside branding that was never designed in. */
+:is(
+  .recipe-print-preview--card-6x4,
+  .recipe-template--heirloom,
+  .recipe-template--bistro,
+  .recipe-template--counter
+) .recipe-card__footer {
   display: none;
 }
 
-.recipe-template--heirloom .recipe-card__footer,
-.recipe-template--bistro .recipe-card__footer,
-.recipe-template--counter .recipe-card__footer {
+:is(
+  .recipe-print-preview--card-6x4,
+  .recipe-template--heirloom,
+  .recipe-template--bistro,
+  .recipe-template--counter
+) .recipe-card__footer:has(.recipe-card__footer-source) {
+  display: flex;
+}
+
+:is(
+  .recipe-print-preview--card-6x4,
+  .recipe-template--heirloom,
+  .recipe-template--bistro,
+  .recipe-template--counter
+) .recipe-card__footer-brand {
   display: none;
 }
 
@@ -2711,30 +2748,56 @@
     display: none !important;
   }
 
-  .recipe-print-source {
+  /* The on-screen deck is the print source: every sheet already renders here
+     (just scaled down and, for the inactive side of a flip, hidden), so
+     printing just has to un-scale it and let it flow instead of scroll. */
+  .recipe-page-canvas {
     position: static !important;
     top: auto !important;
-    left: auto !important;
-    grid-column: 1 / -1 !important;
-    width: 100% !important;
-    visibility: visible !important;
-    pointer-events: auto !important;
+    height: auto !important;
+    overflow: visible !important;
   }
 
-  /* Belt-and-suspenders on top of the `print:block` utility class: forced
-     page breaks between recipes don't fragment reliably when their common
-     ancestor is a flex container (many browsers, notably WebKit/Safari,
-     don't paginate flex children), so every recipe crams onto one sheet
-     instead of starting a fresh page. Written explicitly with !important so
-     it can't lose a cascade tie-break to the unprefixed `flex` utility. */
-  .recipe-print-source .recipe-print-preview {
+  .recipe-page-deck {
     display: block !important;
+    height: auto !important;
+    padding: 0 !important;
+    overflow: visible !important;
+  }
+
+  .recipe-page-slide {
+    display: block !important;
+    opacity: 1 !important;
+  }
+
+  .recipe-page-scaler {
+    width: auto !important;
+    height: auto !important;
+    overflow: visible !important;
+    border: 0 !important;
+    border-radius: 0 !important;
+    box-shadow: none !important;
+  }
+
+  .recipe-page-scaler__inner {
+    width: auto !important;
+    transform: none !important;
   }
 
   html,
   body {
     background: #fff !important;
     color: #1a1a1a !important;
+    height: auto !important;
+    overflow: visible !important;
+  }
+
+  .recipe-print-page,
+  .recipe-print-shell {
+    display: block !important;
+    height: auto !important;
+    min-height: 0 !important;
+    overflow: visible !important;
   }
 
   .recipe-print-preview--card-6x4 .recipe-card {
@@ -2748,6 +2811,7 @@
   .recipe-card {
     display: flex !important;
     width: var(--recipe-card-width);
+    max-width: none !important;
     height: var(--recipe-card-min-height);
     min-height: 0;
     margin: 0 !important;
@@ -2781,15 +2845,6 @@
     margin-left: 0 !important;
   }
 
-  .recipe-print-preview--cut-lines.recipe-print-preview--card-6x4 .recipe-card:not(.recipe-card--duplex-spacer)::after {
-    content: none;
-  }
-
-  .recipe-print-preview--cut-lines.recipe-print-preview--card-6x4 .recipe-card:not(.recipe-card--duplex-spacer) {
-    outline: 0.75pt dashed rgba(90, 90, 90, 0.72);
-    outline-offset: -0.06in;
-  }
-
   .recipe-template--classic .recipe-card__accent {
     display: block;
     top: 0;
@@ -2807,24 +2862,13 @@
     background: linear-gradient(270deg, var(--recipe-accent), var(--recipe-accent-2));
   }
 
-  .recipe-print-preview--card-6x4 .recipe-card--back {
-    --recipe-card-padding-top: 0.16in;
-  }
-
-  .recipe-print-preview--card-6x4 .recipe-template--counter .recipe-card--back {
-    --recipe-card-padding-top: 0.32in;
-  }
-
-  .recipe-card--back .recipe-card__cols {
-    padding-top: 9px;
-  }
-
   .recipe-card-set {
     display: block;
     gap: 0;
+    max-width: none;
   }
 
-  .recipe-card-set:last-child .recipe-card:last-child {
+  .recipe-page-deck > .recipe-page-slide:last-child .recipe-card:last-child {
     break-after: auto;
     page-break-after: auto;
   }
