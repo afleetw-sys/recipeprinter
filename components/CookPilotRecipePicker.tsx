@@ -317,16 +317,16 @@ function SignedOutCookPilotImport({
         Sign in to add your saved CookPilot recipes straight to this print list.
       </p>
       <div className="flex flex-wrap justify-center gap-cp-3 mt-cp-5">
-        <button type="button" className="btn btn-primary" onClick={handleGoogle} disabled={busy}>
+        <button type="button" className="btn btn-primary" onClick={onEmailLogin} disabled={busy}>
+          Continue with Email
+        </button>
+        <button type="button" className="btn btn-secondary" onClick={handleGoogle} disabled={busy}>
           {busy ? <SpinnerIcon size={ICON_SIZE.md} /> : null}
           Continue with Google
         </button>
-        <button type="button" className="btn btn-primary" onClick={handleApple} disabled={busy}>
+        <button type="button" className="btn btn-secondary" onClick={handleApple} disabled={busy}>
           {busy ? <SpinnerIcon size={ICON_SIZE.md} /> : null}
           Continue with Apple
-        </button>
-        <button type="button" className="btn btn-secondary" onClick={onEmailLogin} disabled={busy}>
-          Continue with Email
         </button>
       </div>
       {error && (
