@@ -466,6 +466,17 @@
       top: 24px;
     }
 
+    /* Tall, narrow viewports (portrait tablets) still get the two-column
+       layout above but have much less spare width to give it than a landscape
+       desktop. Tighten the gap so the Import column — and its CookPilot
+       toggle — isn't squeezed as hard. */
+    @media (orientation: portrait) {
+      .rp-printer-workspace--landing,
+      .rp-printer-workspace--active {
+        gap: clamp(12px, 1.5vw, 20px);
+      }
+    }
+
     .rp-workspace-project {
       overflow: hidden;
       padding: 24px;
