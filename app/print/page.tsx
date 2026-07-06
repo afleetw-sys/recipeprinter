@@ -829,6 +829,7 @@ export default function PrintPage() {
                 className={`recipe-page-slide ${
                   index === activeSheetIndex ? "is-active" : ""
                 }`}
+                data-first={index === 0 ? "true" : undefined}
                 onClick={() => goToSlide(index)}
                 role="button"
                 tabIndex={0}
