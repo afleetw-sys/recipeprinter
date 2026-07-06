@@ -711,17 +711,19 @@
   cursor: default;
 }
 
-.recipe-page-canvas__flip {
-  position: absolute;
-  bottom: calc(100% + 16px);
-  left: 50%;
-  z-index: 3;
-  transform: translateX(-50%);
-}
-
-.recipe-page-canvas[data-single-recipe="true"] .recipe-page-canvas__flip {
-  top: 16px;
-  bottom: auto;
+/* In normal flow (not absolutely positioned) so the flip control takes up its
+   own space above the card and pushes the card down, rather than floating
+   over whatever's above it — including, at the top of the deck, the sticky
+   site header. The compound selector (rather than `.recipe-page-canvas__flip`
+   alone) out-specifies `.recipe-card-side-nav`'s own `display: inline-flex`,
+   which otherwise wins the tie-break by coming later in the stylesheet.
+   `display:flex` (a block-level flex box, not inline-flex) is what lets the
+   auto margins actually centre this instead of needing text-align on an
+   ancestor, which would leak into the card's own text. */
+.recipe-card-side-nav.recipe-page-canvas__flip {
+  display: flex;
+  width: fit-content;
+  margin: 0 auto 16px;
 }
 
 /* Render a real-size card and scale it down so previews look like the paper. */
@@ -1524,9 +1526,7 @@
     justify-content: flex-start;
     gap: 16px;
     min-height: 0;
-    /* Extra top room so the front/back flip control can sit above the card
-       instead of overlapping its content. */
-    padding: 54px 40px 18px;
+    padding: 18px 40px;
     overflow-x: auto;
     overflow-y: hidden;
     scroll-padding-inline: 40px;
@@ -1535,9 +1535,13 @@
     scrollbar-width: none;
   }
 
+  /* The flip control (when present) is an in-flow child stacked above the
+     card, so the slide is a column rather than a single centred cell. */
   .recipe-page-slide {
-    display: grid;
-    place-items: center;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
     /* Leaves ~40px of the neighbouring slide peeking in on each side, so it
        reads as a horizontally scrollable deck rather than a single page. */
     flex: 0 0 calc(100vw - 96px);
@@ -1547,17 +1551,8 @@
   }
 
   .recipe-page-slide:not(.is-active) {
-    display: grid;
+    display: flex;
     opacity: 0.72;
-  }
-
-  .recipe-page-canvas__flip {
-    top: auto;
-    right: auto;
-    bottom: calc(100% + 10px);
-    left: 50%;
-    z-index: 6;
-    transform: translateX(-50%);
   }
 
   .recipe-config-panel {
@@ -1814,8 +1809,14 @@
   --recipe-card-padding-bottom: 0.14in;
 }
 
-.recipe-card[data-preview-hidden="true"] {
-  display: none;
+/* `data-preview-hidden` only ever applies inside the off-screen print source
+   (nothing on-screen shows those faces), so it must stay screen-only — hiding
+   it during print, too, would drop back faces and duplex spacer pages from
+   the actual printed output. */
+@media screen {
+  .recipe-card[data-preview-hidden="true"] {
+    display: none;
+  }
 }
 
 .recipe-card--blank {
@@ -2668,6 +2669,7 @@
 }
 
 @page rp-card-6x4 {
+  size: 6in 4in;
   margin: 0;
 }
 
@@ -2685,8 +2687,20 @@
     position: static !important;
     top: auto !important;
     left: auto !important;
+    grid-column: 1 / -1 !important;
+    width: 100% !important;
     visibility: visible !important;
     pointer-events: auto !important;
+  }
+
+  /* Belt-and-suspenders on top of the `print:block` utility class: forced
+     page breaks between recipes don't fragment reliably when their common
+     ancestor is a flex container (many browsers, notably WebKit/Safari,
+     don't paginate flex children), so every recipe crams onto one sheet
+     instead of starting a fresh page. Written explicitly with !important so
+     it can't lose a cascade tie-break to the unprefixed `flex` utility. */
+  .recipe-print-source .recipe-print-preview {
+    display: block !important;
   }
 
   html,

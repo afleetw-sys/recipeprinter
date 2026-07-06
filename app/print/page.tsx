@@ -1078,7 +1078,7 @@ export default function PrintPage() {
           <div
             className={`recipe-print-preview recipe-print-preview--${cardSize} ${
               showCutLines ? "recipe-print-preview--cut-lines" : ""
-            } flex flex-col items-center gap-cp-6 print:gap-0 print:items-stretch`}
+            } flex flex-col items-center gap-cp-6 print:block`}
             data-double-sided={continueOnBack ? "true" : "false"}
           >
             {items.map((item, index) => (
