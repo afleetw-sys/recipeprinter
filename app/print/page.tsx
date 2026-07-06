@@ -678,7 +678,7 @@ export default function PrintPage() {
 
   if (items === null) {
     return (
-      <div className="min-h-screen flex flex-col">
+      <div className="h-full flex flex-col">
         <SiteHeader backHref="/" compact sticky />
         <div className="flex-1 grid place-items-center text-ink-soft">Preparing…</div>
       </div>
@@ -687,7 +687,7 @@ export default function PrintPage() {
 
   if (items.length === 0) {
     return (
-      <div className="min-h-screen flex flex-col">
+      <div className="h-full flex flex-col">
         <SiteHeader backHref="/" compact sticky />
         <div className="flex-1 flex flex-col items-center justify-center gap-cp-4 text-center px-cp-6">
           <p className="font-bold text-cp-h2">Nothing to print</p>
@@ -704,7 +704,7 @@ export default function PrintPage() {
   }
 
   return (
-    <div className="min-h-screen recipe-print-page">
+    <div className="h-dvh recipe-print-page">
       {/* Toolbar, hidden when printing */}
       <SiteHeader backHref="/" compact sticky />
 

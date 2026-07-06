@@ -10,7 +10,7 @@ export const metadata: Metadata = {
 
 function PrintLoading() {
   return (
-    <div className="min-h-screen flex-1 grid place-items-center px-cp-6 text-center text-ink-soft">
+    <div className="flex-1 grid place-items-center px-cp-6 text-center text-ink-soft">
       <p className="text-cp-body-lg font-semibold">Preparing print preview…</p>
     </div>
   );
@@ -18,7 +18,7 @@ function PrintLoading() {
 
 export default function PrintLayout({ children }: { children: React.ReactNode }) {
   return (
-    <div className="min-h-screen flex flex-col">
+    <div className="h-dvh overflow-hidden flex flex-col">
       <Suspense fallback={<PrintLoading />}>{children}</Suspense>
     </div>
   );
