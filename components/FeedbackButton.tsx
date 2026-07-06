@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useId, useState, type FormEvent } from "react";
+import { createPortal } from "react-dom";
 import { submitPrinterFeedback, type FeedbackType } from "@/lib/feedback";
 import { ICON_SIZE, SpinnerIcon, XIcon } from "@/components/icons";
 import { Select } from "@/components/Select";
@@ -113,109 +114,108 @@ export function FeedbackDialog({ open, onClose, initialType = "idea" }: Feedback
     }
   }
 
-  return (
-    <>
-      {open && (
-        <div
-          className="fixed inset-0 z-50 flex items-stretch sm:items-center justify-center bg-ink/30 p-0 sm:px-cp-4 sm:py-cp-6"
-          role="dialog"
-          aria-modal="true"
-          aria-label="Give feedback"
-          onMouseDown={(event) => {
-            if (event.target === event.currentTarget) close();
-          }}
-        >
-          <div className="panel panel--modal w-full sm:max-w-[460px] h-full sm:h-auto rounded-none border-0 sm:rounded-2xl sm:border p-cp-5 flex flex-col gap-cp-4 relative overflow-y-auto">
-            <button
-              type="button"
-              className="absolute right-3 top-3 icon-close-btn"
-              onClick={close}
-              aria-label="Close"
-              disabled={busy}
-            >
-              <XIcon size={ICON_SIZE.md} />
-            </button>
+  if (!open) return null;
 
-            <div className="pr-cp-7">
-              <h3 className="font-extrabold text-cp-h2">Give feedback</h3>
+  return createPortal(
+    <div
+      className="fixed inset-0 z-50 flex items-stretch sm:items-center justify-center bg-ink/30 p-0 sm:px-cp-4 sm:py-cp-6"
+      role="dialog"
+      aria-modal="true"
+      aria-label="Give feedback"
+      onMouseDown={(event) => {
+        if (event.target === event.currentTarget) close();
+      }}
+    >
+      <div className="panel panel--modal w-full sm:max-w-[460px] h-full sm:h-auto rounded-none border-0 sm:rounded-2xl sm:border p-cp-5 flex flex-col gap-cp-4 relative overflow-y-auto">
+        <button
+          type="button"
+          className="absolute right-3 top-3 icon-close-btn"
+          onClick={close}
+          aria-label="Close"
+          disabled={busy}
+        >
+          <XIcon size={ICON_SIZE.md} />
+        </button>
+
+        <div className="pr-cp-7">
+          <h3 className="font-extrabold text-cp-h2">Give feedback</h3>
+        </div>
+
+        {sent ? (
+          <div className="state state--success" role="status">
+            <h4>Feedback sent</h4>
+            <p>Thank you. This helps shape what gets improved next.</p>
+          </div>
+        ) : (
+          <form className="flex flex-col gap-cp-3" onSubmit={handleSubmit}>
+            <div>
+              <label className="field-label" htmlFor={typeId}>
+                Type
+              </label>
+              <Select
+                id={typeId}
+                className="field"
+                value={type}
+                onChange={(event) => setType(event.target.value as FeedbackType)}
+                disabled={busy}
+              >
+                {FEEDBACK_OPTIONS.map((option) => (
+                  <option key={option.value} value={option.value}>
+                    {option.label}
+                  </option>
+                ))}
+              </Select>
             </div>
 
-            {sent ? (
-              <div className="state state--success" role="status">
-                <h4>Feedback sent</h4>
-                <p>Thank you. This helps shape what gets improved next.</p>
-              </div>
-            ) : (
-              <form className="flex flex-col gap-cp-3" onSubmit={handleSubmit}>
-                <div>
-                  <label className="field-label" htmlFor={typeId}>
-                    Type
-                  </label>
-                  <Select
-                    id={typeId}
-                    className="field"
-                    value={type}
-                    onChange={(event) => setType(event.target.value as FeedbackType)}
-                    disabled={busy}
-                  >
-                    {FEEDBACK_OPTIONS.map((option) => (
-                      <option key={option.value} value={option.value}>
-                        {option.label}
-                      </option>
-                    ))}
-                  </Select>
-                </div>
+            <div>
+              <label className="field-label" htmlFor={messageId}>
+                Message
+              </label>
+              <textarea
+                id={messageId}
+                className="field"
+                value={message}
+                onChange={(event) => setMessage(event.target.value)}
+                placeholder={MESSAGE_PROMPTS[type]}
+                disabled={busy}
+                autoFocus
+              />
+            </div>
 
-                <div>
-                  <label className="field-label" htmlFor={messageId}>
-                    Message
-                  </label>
-                  <textarea
-                    id={messageId}
-                    className="field"
-                    value={message}
-                    onChange={(event) => setMessage(event.target.value)}
-                    placeholder={MESSAGE_PROMPTS[type]}
-                    disabled={busy}
-                    autoFocus
-                  />
-                </div>
+            <div>
+              <label className="field-label" htmlFor={emailId}>
+                Email (optional)
+              </label>
+              <input
+                id={emailId}
+                className="field"
+                type="email"
+                autoComplete="email"
+                value={email}
+                onChange={(event) => setEmail(event.target.value)}
+                disabled={busy}
+              />
+              <p className="mt-2 text-cp-caption leading-relaxed text-ink-soft">
+                {EMAIL_HELP_TEXT[type]}
+              </p>
+            </div>
 
-                <div>
-                  <label className="field-label" htmlFor={emailId}>
-                    Email (optional)
-                  </label>
-                  <input
-                    id={emailId}
-                    className="field"
-                    type="email"
-                    autoComplete="email"
-                    value={email}
-                    onChange={(event) => setEmail(event.target.value)}
-                    disabled={busy}
-                  />
-                  <p className="mt-2 text-cp-caption leading-relaxed text-ink-soft">
-                    {EMAIL_HELP_TEXT[type]}
-                  </p>
-                </div>
+            <button type="submit" className="btn btn-primary w-full" disabled={busy}>
+              {busy ? <SpinnerIcon size={ICON_SIZE.md} /> : null}
+              Send feedback
+            </button>
+          </form>
+        )}
 
-                <button type="submit" className="btn btn-primary w-full" disabled={busy}>
-                  {busy ? <SpinnerIcon size={ICON_SIZE.md} /> : null}
-                  Send feedback
-                </button>
-              </form>
-            )}
-
-            {error && (
-              <div className="state state--error" role="alert">
-                <h4>Feedback wasn't sent</h4>
-                <p>{error}</p>
-              </div>
-            )}
+        {error && (
+          <div className="state state--error" role="alert">
+            <h4>Feedback wasn't sent</h4>
+            <p>{error}</p>
           </div>
-        </div>
-      )}
-    </>
+        )}
+      </div>
+    </div>,
+    document.body,
   );
 }
 

@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState, type FormEvent } from "react";
+import { createPortal } from "react-dom";
 import {
   EmailAuthProvider,
   GoogleAuthProvider,
@@ -161,7 +162,7 @@ function LoginDialog({ onClose }: { onClose: () => void }) {
     }
   }
 
-  return (
+  return createPortal(
     <div
       className="fixed inset-0 z-50 flex items-stretch sm:items-center justify-center bg-ink/30 p-0 sm:px-cp-4 sm:py-cp-6"
       role="dialog"
@@ -256,7 +257,8 @@ function LoginDialog({ onClose }: { onClose: () => void }) {
           </div>
         )}
       </div>
-    </div>
+    </div>,
+    document.body,
   );
 }
 
@@ -300,7 +302,7 @@ function SignedOutCookPilotImport({
       <p className="text-cp-small text-ink-soft mt-1 max-w-sm mx-auto">
         Sign in to add your saved CookPilot recipes straight to this print list.
       </p>
-      <div className="flex flex-col sm:flex-row justify-center gap-cp-3 mt-cp-5">
+      <div className="flex flex-wrap justify-center gap-cp-3 mt-cp-5">
         <button type="button" className="btn btn-primary" onClick={handleGoogle} disabled={busy}>
           {busy ? <SpinnerIcon size={ICON_SIZE.md} /> : null}
           Continue with Google
