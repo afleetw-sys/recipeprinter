@@ -6,7 +6,7 @@ import { pageMetadata } from "@/lib/seo";
 export const metadata: Metadata = pageMetadata({
   title: "About RecipePrinter",
   description:
-    "Learn why I built RecipePrinter, a tool for turning recipes from the internet into printable cards, pages, PDFs, and collections worth keeping.",
+    "Learn why I built RecipePrinter, a free tool for printing recipes from websites as clean recipe cards and PDFs without ads, clutter, or wasted pages.",
   path: "/about",
 });
 
@@ -14,12 +14,15 @@ export default function AboutPage() {
   return (
     <PageShell>
       <PageHeader
+        eyebrow="About"
         title="Why I made RecipePrinter"
-        lede="A simple tool for turning recipes from the internet into printable recipe cards, pages, PDFs, and collections worth keeping."
+        lede="A simple tool for turning recipes from websites, screenshots, and text into clean printable recipe cards and PDFs."
       />
-      <div className="flex flex-col gap-cp-5 text-ink-soft text-cp-body leading-relaxed">
+
+      <div className="flex flex-col gap-cp-5 text-ink-soft leading-relaxed">
         <p>
-          I built RecipePrinter after building CookPilot, an app for making recipes fit real life.
+          I built RecipePrinter after building CookPilot, my recipe app for
+          saving and organizing recipes.
         </p>
 
         <p>
@@ -33,27 +36,21 @@ export default function AboutPage() {
         </p>
 
         <p>
-          The internet is where recipes are discovered. The kitchen is where
-          they belong.
-        </p>
-
-        <p>
           If you cook from the internet, you probably know the routine: a recipe
-          saved in one tab, a social post in another, a screenshot in your camera
-          roll, and a favorite you can never quite find when you need it. Try
-          printing directly from the web and you often get the whole page on
-          paper, spread across several wasted pages.
+          buried beneath ads, autoplay videos, pop-ups, giant photos, and pages
+          of story before you finally reach the ingredients. Try printing it and
+          you often get all of that on paper too, spread across several wasted
+          pages.
         </p>
 
         <p>
           <span className="font-semibold text-ink">
             RecipePrinter fixes that.
           </span>{" "}
-          Paste a recipe URL from a website, blog, or supported social post,
-          upload a screenshot or photo, paste recipe text, or import directly
-          from CookPilot and we&apos;ll turn it into a printable recipe card,
-          recipe page, or PDF containing the recipe details you need: title,
-          ingredients, instructions, notes, and timing when available.
+          Paste a recipe URL, upload a screenshot or photo, paste recipe text,
+          or import directly from CookPilot and we&apos;ll turn it into a clean
+          printable recipe card, recipe page, or PDF containing just the recipe:
+          title, ingredients, instructions, and notes.
         </p>
 
         <p>
@@ -69,8 +66,9 @@ export default function AboutPage() {
         </p>
 
         <p>
-          No account required. Nothing stored on our servers. Just printable
-          recipes designed for real kitchens instead of web browsers.
+          No ads. No clutter. No account required. Nothing stored on our
+          servers. Just clean printable recipes designed for real kitchens
+          instead of web browsers.
         </p>
 
         <p>
@@ -85,7 +83,7 @@ export default function AboutPage() {
 
         <Link
           href="/how-it-works"
-          className="text-cp-body font-semibold text-brand-ink hover:underline"
+          className="text-[0.9rem] font-semibold text-brand hover:underline"
         >
           See how it works →
         </Link>
