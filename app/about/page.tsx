@@ -21,13 +21,13 @@ export default function AboutPage() {
 
       <div className="flex flex-col gap-cp-5 text-ink-soft leading-relaxed">
         <p>
-          I built RecipePrinter after building CookPilot, my recipe app for
-          saving and organizing recipes.
+          I built RecipePrinter after building CookPilot, my app for making
+          recipes work for real life with substitutions, notes, and adjustments.
         </p>
 
         <p>
-          CookPilot solved one half of my problem: it gave me a place to keep
-          recipes I wanted to remember.
+          CookPilot solved one half of my problem: making recipes easier to cook
+          from.
         </p>
 
         <p>
@@ -60,9 +60,8 @@ export default function AboutPage() {
         </p>
 
         <p>
-          Some recipes stay bookmarks. The good ones eventually end up in a
-          kitchen drawer with handwritten notes, substitutions, and stains in
-          the margins.
+          I noticed that the recipes I cooked most often always seemed to end up
+          on paper eventually.
         </p>
 
         <p>
