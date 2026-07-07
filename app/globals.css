@@ -2981,8 +2981,13 @@
   margin: 0;
 }
 
+/* No explicit `size` here either, for the same reason as rp-card-6x4 above:
+   requesting a specific size/orientation can fight whatever the printer or
+   OS print dialog actually resolves to, leaving our fixed-size .recipe-card
+   mismatched against the real page instead of filling it. Only the card's
+   own width/height (8.5in x 11in) dictate its size; the page is whatever the
+   user's printer uses. */
 @page rp-letter {
-  size: letter portrait;
   margin: 0;
 }
 
