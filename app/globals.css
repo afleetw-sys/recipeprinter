@@ -2101,6 +2101,15 @@
   border-bottom: 0;
 }
 
+/* The card's own left padding is pushed in by 0.18in to clear the
+   checkerboard spine (see `.recipe-template--bistro .recipe-card` above),
+   but the footer's `left` isn't derived from that padding — it's positioned
+   independently off the card edge — so without this it sits flush with the
+   spine instead of lining up with the rest of the content. */
+.recipe-template--bistro .recipe-card__footer {
+  left: calc(var(--recipe-card-padding-x) + 0.18in);
+}
+
 .recipe-template--bistro .recipe-card__title {
   color: var(--recipe-accent);
   font-weight: 900;
@@ -2594,7 +2603,7 @@
 }
 
 .recipe-card__cols--stacked .recipe-card__method {
-  margin-top: 10px;
+  margin-top: 14px;
 }
 
 .recipe-print-preview--letter .recipe-card__cols {
@@ -2602,7 +2611,7 @@
 }
 
 .recipe-print-preview--letter .recipe-card__cols--stacked .recipe-card__method {
-  margin-top: 17px;
+  margin-top: 21px;
 }
 
 .recipe-card__label {
@@ -2837,6 +2846,8 @@
 
 .recipe-template--keepsake .recipe-card__footer {
   display: none;
+  left: calc(var(--recipe-card-padding-x) + 0.06in);
+  right: calc(var(--recipe-card-padding-x) + 0.06in);
   border-top: 0;
   margin-top: 0;
   padding-top: 0;
