@@ -18,6 +18,9 @@ export default function AboutPage() {
   lede="RecipePrinter started with a simple frustration: printing recipes from the internet was still a terrible experience."
 />
 
+      <div className="mt-cp-5 flex justify-center">
+  <div className="h-px w-16 rounded-full bg-brand" />
+</div>
       <div className="flex flex-col gap-cp-5 text-ink-soft leading-relaxed">
         <p>
           I built RecipePrinter after building CookPilot, a recipe app for
