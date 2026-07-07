@@ -76,7 +76,7 @@ const STACKED_FRONT_BUDGET: Record<
   },
   "card-6x4": {
     withoutPhoto: { total: 720, ingredients: 760, ingredientsOnly: 1320, instructions: 700 },
-    withPhoto: { total: 760, ingredients: 620, ingredientsOnly: 1060, instructions: 520 },
+    withPhoto: { total: 560, ingredients: 620, ingredientsOnly: 1060, instructions: 520 },
   },
 };
 
