@@ -226,8 +226,10 @@ const ScaledPage = memo(function ScaledPage({
                 }`}
                 data-preview-hidden={activeSide !== "back" ? "true" : undefined}
               >
-                {sheet.slots.map((slot, slotIndex) =>
-                  slot?.back ? (
+                {sheet.slots.map((slot, slotIndex) => {
+                  if (!slot) return null;
+
+                  return slot.back ? (
                     <RecipeCardFace
                       key={`back-${slotIndex}`}
                       recipe={slot.recipe}
@@ -243,7 +245,7 @@ const ScaledPage = memo(function ScaledPage({
                   ) : (
                     <RecipeCardFace
                       key={`back-blank-${slotIndex}`}
-                      recipe={slot?.recipe ?? anySlot.recipe}
+                      recipe={slot.recipe}
                       ingredients={[]}
                       instructions={[]}
                       side="back"
@@ -252,8 +254,8 @@ const ScaledPage = memo(function ScaledPage({
                       hasBackFace={false}
                       blank
                     />
-                  ),
-                )}
+                  );
+                })}
               </div>
             )}
           </div>

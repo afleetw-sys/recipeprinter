@@ -2790,6 +2790,7 @@
 }
 
 .recipe-template--pantry .recipe-card__footer {
+  left: calc(var(--recipe-card-padding-x) + var(--pantry-content-gutter));
   border-top: 0;
 }
 
@@ -3013,6 +3014,10 @@
     opacity: 1 !important;
   }
 
+  .recipe-page-slide.no-print {
+    display: none !important;
+  }
+
   .recipe-page-scaler {
     width: auto !important;
     height: auto !important;
@@ -3075,6 +3080,9 @@
 
   .recipe-print-preview--card-6x4 .recipe-card-page {
     padding-top: 0.6in;
+    width: max-content !important;
+    margin-left: auto !important;
+    margin-right: auto !important;
   }
 
   .recipe-print-preview--card-6x4 .recipe-card + .recipe-card {
