@@ -15,19 +15,20 @@ export default function AboutPage() {
     <PageShell>
       <PageHeader
         eyebrow="About"
-        title="Why I made RecipePrinter"
-        lede="A simple tool for turning recipes from websites, screenshots, and text into clean printable recipe cards and PDFs."
+        title="About RecipePrinter"
+        lede="Why I built a simple way to turn recipes from websites, screenshots, photos, and text into clean printable recipe cards and PDFs."
       />
 
       <div className="flex flex-col gap-cp-5 text-ink-soft leading-relaxed">
         <p>
-          I built RecipePrinter after building CookPilot, my app for making
-          recipes work for real life with substitutions, notes, and adjustments.
+          I built RecipePrinter after building CookPilot, a recipe app for
+          saving and organizing recipes.
         </p>
 
+        <p>CookPilot solved one half of my problem.</p>
+
         <p>
-          CookPilot solved one half of my problem: making recipes easier to cook
-          from.
+          It gave me a place to keep recipes I wanted to remember.
         </p>
 
         <p>
@@ -36,44 +37,45 @@ export default function AboutPage() {
         </p>
 
         <p>
-          If you cook from the internet, you probably know the routine: a recipe
-          buried beneath ads, autoplay videos, pop-ups, giant photos, and pages
-          of story before you finally reach the ingredients. Try printing it and
-          you often get all of that on paper too, spread across several wasted
-          pages.
+          Not every recipe deserves a place in a binder or kitchen drawer, but
+          the good ones eventually get there anyway. They&apos;re the meals you
+          make over and over, the recipes your family asks for by name, and the
+          dishes that slowly collect notes, substitutions, and stains in the
+          margins.
         </p>
 
         <p>
-          <span className="font-semibold text-ink">
-            RecipePrinter fixes that.
-          </span>{" "}
-          Paste a recipe URL, upload a screenshot or photo, paste recipe text,
-          or import directly from CookPilot and we&apos;ll turn it into a clean
-          printable recipe card, recipe page, or PDF containing just the recipe:
-          title, ingredients, instructions, and notes.
+          The problem was that printing recipes from the internet was still
+          awful.
         </p>
 
         <p>
-          Print it for tonight&apos;s dinner, save it as a PDF, add it to a
-          recipe binder, share it with family, or collect your favorites into a
-          family cookbook over time.
+          Recipe websites are designed for browsers, not printers. You end up
+          with ads, pop-ups, giant photos, and five-page printouts when all you
+          really wanted was the ingredients and instructions.
+        </p>
+
+        <p>So I built RecipePrinter.</p>
+
+        <p>
+          Paste a recipe URL, upload a screenshot or photo, paste recipe text, or
+          import directly from CookPilot and RecipePrinter turns it into a clean
+          printable recipe card or PDF designed for real kitchens.
         </p>
 
         <p>
-          I noticed that the recipes I cooked most often always seemed to end up
-          on paper eventually.
+          You can print recipes from websites, save recipes as PDFs, organize a
+          recipe binder, build a family cookbook, or simply keep your favorites
+          somewhere easier to use than an open browser tab.
         </p>
 
-        <p>
-          No ads. No clutter. No account required. Nothing stored on our
-          servers. Just clean printable recipes designed for real kitchens
-          instead of web browsers.
-        </p>
+        <p>No ads. No clutter. No wasted paper. Just the recipe.</p>
+
+        <p>CookPilot helps people collect recipes.</p>
 
         <p>
-          RecipePrinter isn&apos;t a recipe database, meal planner, grocery app,
-          or social network. It exists for what happens after you&apos;ve found
-          a recipe worth making again.
+          RecipePrinter exists for the recipes that have earned a place outside
+          the screen.
         </p>
       </div>
 
