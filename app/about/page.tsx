@@ -19,7 +19,7 @@ export default function AboutPage() {
 />
 
       <div className="mt-cp-5 flex justify-center">
-<div className="mt-cp-6 mb-cp-6 h-px w-full bg-border" />
+<div className="my-cp-6 h-px w-full bg-slate-200" />
       </div>
       
       <div className="flex flex-col gap-cp-5 text-ink-soft leading-relaxed">
