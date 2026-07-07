@@ -1749,7 +1749,13 @@
   --recipe-accent: #2f7d78;
   --recipe-accent-2: #60cac4;
   --recipe-line: rgba(17, 17, 17, 0.12);
-  --recipe-step-bg: rgba(96, 202, 196, 0.18);
+  /* Opaque, not the translucent rgba this used to be: low-alpha fills on the
+     step-number badge would wash out to white on some physical printers
+     (their ink-saving thresholding drops faint fills but keeps edges/borders,
+     leaving a hollow ring instead of a filled circle) even though the same
+     page renders correctly to PDF or on screen. Flattened against
+     --recipe-bg so it looks identical but survives print. */
+  --recipe-step-bg: #e2f5f4;
   --recipe-footer: #aaa;
   --recipe-radius: 14px;
   --recipe-title-font: var(--font-playfair), Georgia, serif;
@@ -1817,7 +1823,9 @@
   --recipe-accent: #9c262f;
   --recipe-accent-2: #9c262f;
   --recipe-line: rgba(92, 64, 55, 0.18);
-  --recipe-step-bg: rgba(156, 38, 47, 0.1);
+  /* Opaque equivalent of the old translucent fill — see the classic template's
+     --recipe-step-bg comment above. */
+  --recipe-step-bg: #f5e5dd;
   --recipe-footer: #9a867d;
   --recipe-radius: 2px;
 }
@@ -1829,7 +1837,9 @@
   --recipe-accent: #d55c49;
   --recipe-accent-2: #1479c9;
   --recipe-line: rgba(20, 67, 105, 0.18);
-  --recipe-step-bg: rgba(213, 92, 73, 0.12);
+  /* Opaque equivalent of the old translucent fill — see the classic template's
+     --recipe-step-bg comment above. */
+  --recipe-step-bg: #f4ebe8;
   --recipe-footer: #767f8b;
   --recipe-radius: 4px;
   --recipe-title-font: var(--font-manrope), system-ui, sans-serif;
@@ -1842,7 +1852,9 @@
   --recipe-accent: #596873;
   --recipe-accent-2: #d7a94c;
   --recipe-line: rgba(91, 104, 115, 0.2);
-  --recipe-step-bg: rgba(215, 169, 76, 0.18);
+  /* Opaque equivalent of the old translucent fill — see the classic template's
+     --recipe-step-bg comment above. */
+  --recipe-step-bg: #f8f0df;
   --recipe-footer: #8e9aa1;
   --recipe-radius: 3px;
   --recipe-title-font: var(--font-manrope), system-ui, sans-serif;
@@ -1872,7 +1884,11 @@
   --recipe-accent: #6e352b;
   --recipe-accent-2: #7b4c36;
   --recipe-line: rgba(102, 78, 48, 0.24);
-  --recipe-step-bg: rgba(123, 76, 54, 0.12);
+  /* Opaque equivalent of the old translucent fill — see the classic template's
+     --recipe-step-bg comment above. Unused by the step-number badge itself,
+     which has its own even-lower-alpha override below; kept in sync in case
+     anything else picks up the variable. */
+  --recipe-step-bg: #e9dbc5;
   --recipe-footer: #897662;
   --recipe-radius: 0.2in;
 }
@@ -2259,9 +2275,14 @@
 }
 
 .recipe-template--keepsake .recipe-card__step-number {
-  background: rgba(123, 76, 54, 0.055);
+  /* Opaque flattened equivalents of what used to be a 5.5%-alpha fill next to
+     a 44%-alpha border. On screen/PDF that reads as a faint filled circle,
+     but on some physical printers the near-invisible fill gets thresholded
+     away entirely while the much more opaque border survives — printing as a
+     hollow ring instead of a filled badge. */
+  background: #f1e6d0;
   color: var(--recipe-accent-2);
-  border: 1.2px solid rgba(123, 76, 54, 0.44);
+  border: 1.2px solid #c1a791;
   font-weight: 850;
 }
 
@@ -2682,6 +2703,8 @@
   height: 11pt;
   border-radius: 50%;
   background: var(--recipe-step-bg);
+  -webkit-print-color-adjust: exact;
+  print-color-adjust: exact;
   color: var(--recipe-accent);
   font-size: 6.5pt;
   font-weight: 800;
