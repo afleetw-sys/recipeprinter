@@ -19,6 +19,8 @@ let purchasesModulePromise: Promise<PurchasesModule> | null = null;
 let purchasesInstance: Purchases | null = null;
 let configuredUserId: string | null = null;
 
+const RECIPEPRINTER_CUSTOMER_STORAGE_KEY = "recipeprinter:revenuecat-user-id:v1";
+
 function revenueCatApiKey(): string {
   const apiKey = process.env.NEXT_PUBLIC_REVENUECAT_WEB_API_KEY;
   if (!apiKey) {
@@ -30,6 +32,24 @@ function revenueCatApiKey(): string {
 async function loadPurchasesModule(): Promise<PurchasesModule> {
   purchasesModulePromise ??= import("@revenuecat/purchases-js");
   return purchasesModulePromise;
+}
+
+export async function recipePrinterCustomerId(): Promise<string> {
+  const { Purchases } = await loadPurchasesModule();
+  if (typeof window === "undefined") {
+    return Purchases.generateRevenueCatAnonymousAppUserId();
+  }
+
+  try {
+    const stored = window.localStorage.getItem(RECIPEPRINTER_CUSTOMER_STORAGE_KEY);
+    if (stored) return stored;
+
+    const next = Purchases.generateRevenueCatAnonymousAppUserId();
+    window.localStorage.setItem(RECIPEPRINTER_CUSTOMER_STORAGE_KEY, next);
+    return next;
+  } catch {
+    return Purchases.generateRevenueCatAnonymousAppUserId();
+  }
 }
 
 async function getPurchases(userId: string): Promise<Purchases> {
@@ -61,6 +81,23 @@ export async function loadRecipePrinterCustomerInfo(
   userId: string,
 ): Promise<CustomerInfo> {
   return getPurchases(userId).then((purchases) => purchases.getCustomerInfo());
+}
+
+export async function syncRecipePrinterCustomerAttributes({
+  userId,
+  email,
+  displayName,
+}: {
+  userId: string;
+  email?: string | null;
+  displayName?: string | null;
+}): Promise<void> {
+  const purchases = await getPurchases(userId);
+  await purchases.setAttributes({
+    recipeprinter_customer_id: userId,
+    ...(email ? { $email: email } : {}),
+    ...(displayName ? { $displayName: displayName } : {}),
+  });
 }
 
 async function packageForTemplate(

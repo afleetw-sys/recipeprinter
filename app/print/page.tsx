@@ -1,21 +1,13 @@
 "use client";
 
-import { memo, useEffect, useMemo, useRef, useState, type CSSProperties, type FormEvent } from "react";
-import { flushSync } from "react-dom";
+import { memo, useEffect, useMemo, useRef, useState, type CSSProperties } from "react";
 import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 import dynamic from "next/dynamic";
-import {
-  isSignInWithEmailLink,
-  onAuthStateChanged,
-  sendSignInLinkToEmail,
-  signInWithEmailLink,
-  type User,
-} from "firebase/auth";
 import { SiteHeader } from "@/components/SiteHeader";
 import { FeedbackDialog } from "@/components/FeedbackButton";
 import { Select } from "@/components/Select";
-import { friendlyAuthError, friendlyPurchaseSetupError } from "@/lib/friendlyErrors";
+import { friendlyPurchaseSetupError } from "@/lib/friendlyErrors";
 import {
   PRINT_CARD_SIZE_OPTIONS,
   RECIPE_PRINT_TEMPLATE_OPTIONS,
@@ -35,7 +27,6 @@ import {
   SpinnerIcon,
   XIcon,
 } from "@/components/icons";
-import { getFirebaseAuth } from "@/lib/firebase/client";
 import {
   isPremiumTemplate,
   type PremiumRecipePrintTemplate,
@@ -45,6 +36,8 @@ import {
   loadRecipePrinterCustomerInfo,
   loadRecipePrinterTemplatePrices,
   purchaseRecipePrinterTemplate,
+  recipePrinterCustomerId,
+  syncRecipePrinterCustomerAttributes,
 } from "@/lib/recipePrinterPurchases";
 import { readCurrentPrintJobIds, readQueue } from "@/lib/queue";
 import type { QueueItem, Recipe } from "@/types/recipe";
@@ -57,9 +50,6 @@ const PrintDialogs = dynamic(
 
 const POST_PRINT_DIALOG_STORAGE_KEY = "recipeprinter:post-print-dialog:last-shown:v1";
 const POST_PRINT_DIALOG_INTERVAL_MS = 7 * 24 * 60 * 60 * 1000;
-const EMAIL_LINK_STORAGE_KEY = "recipeprinter:purchase-email-link:v1";
-const PENDING_PRINT_STORAGE_KEY = "recipeprinter:pending-premium-print:v1";
-const PRICE_LOOKUP_USER_STORAGE_KEY = "recipeprinter:price-lookup-user:v1";
 const SINGLE_RECIPE_DECK_TOP_PADDING = 16;
 
 // Real card dimensions in CSS px (96px per inch), used only to size the
@@ -306,24 +296,8 @@ function initialRecipePrintTemplate(value: string | null): RecipePrintTemplate {
   return isRecipePrintTemplate(value) ? value : "classic";
 }
 
-function pendingPrintTemplate(): RecipePrintTemplate | null {
-  if (typeof window === "undefined") return null;
-  const value = window.localStorage.getItem(PENDING_PRINT_STORAGE_KEY);
-  return isRecipePrintTemplate(value) ? value : null;
-}
-
 function friendlyPurchaseError(error: unknown): string {
   return friendlyPurchaseSetupError(error);
-}
-
-function priceLookupUserId(): string {
-  if (typeof window === "undefined") return "recipeprinter-price-preview";
-  const stored = window.localStorage.getItem(PRICE_LOOKUP_USER_STORAGE_KEY);
-  if (stored) return stored;
-
-  const next = `recipeprinter-price-${crypto.randomUUID()}`;
-  window.localStorage.setItem(PRICE_LOOKUP_USER_STORAGE_KEY, next);
-  return next;
 }
 
 export default function PrintPage() {
@@ -340,21 +314,14 @@ export default function PrintPage() {
   const [doubleSided, setDoubleSided] = useState(true);
   const [showPhoto, setShowPhoto] = useState(false);
   const [showSourceUrl, setShowSourceUrl] = useState(false);
-  const [isPrinting, setIsPrinting] = useState(false);
   const [showDonateDialog, setShowDonateDialog] = useState(false);
   const [showFeedbackDialog, setShowFeedbackDialog] = useState(false);
-  const [authReady, setAuthReady] = useState(false);
-  const [user, setUser] = useState<User | null>(null);
+  const [revenueCatUserId, setRevenueCatUserId] = useState<string | null>(null);
   const [customerInfo, setCustomerInfo] = useState<CustomerInfo | null>(null);
-  const [showSignInDialog, setShowSignInDialog] = useState(false);
   const [showUnlockDialog, setShowUnlockDialog] = useState(false);
-  const [signInEmail, setSignInEmail] = useState("");
-  const [signInBusy, setSignInBusy] = useState(false);
-  const [signInMessage, setSignInMessage] = useState<string | null>(null);
   const [purchaseBusy, setPurchaseBusy] = useState(false);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
   const [templatePrices, setTemplatePrices] = useState<Partial<Record<PremiumRecipePrintTemplate, string>>>({});
-  const [resumePrintAfterSignIn, setResumePrintAfterSignIn] = useState(false);
   const printRequestedRef = useRef(false);
   const autoPrintAttemptedRef = useRef(false);
 
@@ -693,24 +660,28 @@ export default function PrintPage() {
     setToastMessage(message);
   }
 
-  async function refreshCustomerInfo(nextUser = user): Promise<CustomerInfo | null> {
-    if (!nextUser || nextUser.isAnonymous) return null;
-    const info = await loadRecipePrinterCustomerInfo(nextUser.uid);
+  async function refreshCustomerInfo(userId = revenueCatUserId): Promise<CustomerInfo | null> {
+    if (!userId) return null;
+    const info = await loadRecipePrinterCustomerInfo(userId);
+    syncRecipePrinterCustomerAttributes({
+      userId,
+    }).catch((error) => {
+      console.warn("RecipePrinter: could not sync RevenueCat customer attributes", error);
+    });
     setCustomerInfo(info);
     return info;
   }
 
   async function unlockTemplateAndPrint(premiumTemplate: PremiumRecipePrintTemplate) {
-    if (!user || user.isAnonymous) {
-      window.localStorage.setItem(PENDING_PRINT_STORAGE_KEY, premiumTemplate);
-      setShowSignInDialog(true);
+    if (!revenueCatUserId) {
+      showToast("Purchase service is still getting ready. Try Print again in a moment.");
       return;
     }
 
     setPurchaseBusy(true);
     setToastMessage(null);
     try {
-      const latestInfo = customerInfo ?? (await refreshCustomerInfo(user));
+      const latestInfo = customerInfo ?? (await refreshCustomerInfo(revenueCatUserId));
       if (hasTemplateEntitlement(latestInfo, premiumTemplate)) {
         setShowUnlockDialog(false);
         printNow();
@@ -718,8 +689,7 @@ export default function PrintPage() {
       }
 
       const result = await purchaseRecipePrinterTemplate({
-        userId: user.uid,
-        email: user.email,
+        userId: revenueCatUserId,
         template: premiumTemplate,
       });
       setCustomerInfo(result.customerInfo);
@@ -734,7 +704,6 @@ export default function PrintPage() {
         return;
       }
 
-      window.localStorage.removeItem(PENDING_PRINT_STORAGE_KEY);
       setShowUnlockDialog(false);
       printNow();
     } catch (error) {
@@ -748,11 +717,6 @@ export default function PrintPage() {
     if (purchaseBusy) return;
     if (selectedPremiumTemplate) {
       if (selectedTemplateLocked) {
-        if (!user) {
-          window.localStorage.setItem(PENDING_PRINT_STORAGE_KEY, selectedPremiumTemplate);
-          setShowSignInDialog(true);
-          return;
-        }
         setShowUnlockDialog(true);
         return;
       }
@@ -765,33 +729,6 @@ export default function PrintPage() {
   function handleMobilePrint() {
     setMobileDrawer(null);
     void handlePrint();
-  }
-
-  async function handleSignInSubmit(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    const normalizedEmail = signInEmail.trim().toLowerCase();
-    if (!normalizedEmail) {
-      setSignInMessage("Enter the email you want to use for RecipePrinter purchases.");
-      return;
-    }
-
-    setSignInBusy(true);
-    setSignInMessage(null);
-    try {
-      window.localStorage.setItem(EMAIL_LINK_STORAGE_KEY, normalizedEmail);
-      if (selectedPremiumTemplate) {
-        window.localStorage.setItem(PENDING_PRINT_STORAGE_KEY, selectedPremiumTemplate);
-      }
-      await sendSignInLinkToEmail(getFirebaseAuth(), normalizedEmail, {
-        url: window.location.href,
-        handleCodeInApp: true,
-      });
-      setSignInMessage("Check your email for the sign-in link, then come back here to finish printing.");
-    } catch (error) {
-      setSignInMessage(friendlyAuthError(error, "We couldn't send that sign-in link. Please try again."));
-    } finally {
-      setSignInBusy(false);
-    }
   }
 
   useEffect(() => {
@@ -810,84 +747,56 @@ export default function PrintPage() {
 
   // Auto-open the print dialog when the user chose Print instead of Preview.
   useEffect(() => {
-    if (shouldPrint && authReady && items && items.length > 0 && !autoPrintAttemptedRef.current) {
+    if (
+      shouldPrint &&
+      items &&
+      items.length > 0 &&
+      (!selectedPremiumTemplate || revenueCatUserId) &&
+      !autoPrintAttemptedRef.current
+    ) {
       autoPrintAttemptedRef.current = true;
       const t = window.setTimeout(() => void handlePrint(), 350);
       return () => window.clearTimeout(t);
     }
-  }, [authReady, items, shouldPrint, template, customerInfo]);
+  }, [items, revenueCatUserId, selectedPremiumTemplate, shouldPrint, template, customerInfo]);
 
   useEffect(() => {
-    return onAuthStateChanged(getFirebaseAuth(), (nextUser) => {
-      setUser(nextUser && !nextUser.isAnonymous ? nextUser : null);
-      setAuthReady(true);
-      if (!nextUser || nextUser.isAnonymous) {
-        setCustomerInfo(null);
-      }
-    });
+    let cancelled = false;
+    recipePrinterCustomerId()
+      .then((userId) => {
+        if (!cancelled) setRevenueCatUserId(userId);
+      })
+      .catch((error) => {
+        console.warn("RecipePrinter: could not initialize RevenueCat customer", error);
+      });
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
   useEffect(() => {
-    if (!user) return;
+    if (!revenueCatUserId) return;
     // Background refresh: prime entitlements so owned templates show as owned.
     // Failures here are silent on purpose — the user only needs to hear about a
     // problem if they actually try to unlock/print a premium template, which is
     // handled with a clear toast in unlockTemplateAndPrint.
-    refreshCustomerInfo(user).catch((error) => {
+    refreshCustomerInfo(revenueCatUserId).catch((error) => {
       console.warn("RecipePrinter: could not refresh customer info", error);
     });
-  }, [user?.uid]);
+  }, [revenueCatUserId]);
 
   useEffect(() => {
-    if (!authReady) return;
-    const priceUserId = user?.uid ?? priceLookupUserId();
-    loadRecipePrinterTemplatePrices(priceUserId)
+    if (!revenueCatUserId) return;
+    loadRecipePrinterTemplatePrices(revenueCatUserId)
       .then(setTemplatePrices)
       .catch(() => setTemplatePrices({}));
-  }, [authReady, user?.uid]);
+  }, [revenueCatUserId]);
 
   useEffect(() => {
     if (!toastMessage) return;
     const timeout = window.setTimeout(() => setToastMessage(null), 5200);
     return () => window.clearTimeout(timeout);
   }, [toastMessage]);
-
-  useEffect(() => {
-    const auth = getFirebaseAuth();
-    if (!isSignInWithEmailLink(auth, window.location.href)) return;
-
-    const storedEmail = window.localStorage.getItem(EMAIL_LINK_STORAGE_KEY);
-    if (!storedEmail) {
-      setShowSignInDialog(true);
-      setSignInMessage("Enter your email and open the link from the same browser to finish signing in.");
-      return;
-    }
-
-    setSignInBusy(true);
-    signInWithEmailLink(auth, storedEmail, window.location.href)
-      .then(() => {
-        window.localStorage.removeItem(EMAIL_LINK_STORAGE_KEY);
-        setShowSignInDialog(false);
-        setResumePrintAfterSignIn(Boolean(pendingPrintTemplate()));
-      })
-      .catch((error) => {
-        setShowSignInDialog(true);
-        setSignInMessage(friendlyAuthError(error, "That sign-in link didn't work. Send yourself a new one and try again."));
-      })
-      .finally(() => setSignInBusy(false));
-  }, []);
-
-  useEffect(() => {
-    if (!resumePrintAfterSignIn || !user || !items || items.length === 0) return;
-    const pendingTemplate = pendingPrintTemplate();
-    if (!pendingTemplate || pendingTemplate !== template) {
-      setResumePrintAfterSignIn(false);
-      return;
-    }
-
-    setResumePrintAfterSignIn(false);
-    void handlePrint();
-  }, [resumePrintAfterSignIn, user, items, template, customerInfo]);
 
   useEffect(() => {
     function handleAfterPrint() {
@@ -901,29 +810,6 @@ export default function PrintPage() {
 
     window.addEventListener("afterprint", handleAfterPrint);
     return () => window.removeEventListener("afterprint", handleAfterPrint);
-  }, []);
-
-  // The rail, settings panel, and mobile chrome are already `.no-print`
-  // (display: none in print media) — this is a belt-and-suspenders backup
-  // that removes them from the DOM outright the moment printing starts, in
-  // case a hidden-but-still-present element is contributing to a persistent
-  // extra trailing page some print pipelines have shown despite that CSS.
-  // `flushSync` forces the DOM change to land before `beforeprint` returns,
-  // since the print pipeline doesn't wait for a React state update that
-  // hasn't actually committed yet.
-  useEffect(() => {
-    function handleBeforePrint() {
-      flushSync(() => setIsPrinting(true));
-    }
-    function handleAfterPrintCleanup() {
-      setIsPrinting(false);
-    }
-    window.addEventListener("beforeprint", handleBeforePrint);
-    window.addEventListener("afterprint", handleAfterPrintCleanup);
-    return () => {
-      window.removeEventListener("beforeprint", handleBeforePrint);
-      window.removeEventListener("afterprint", handleAfterPrintCleanup);
-    };
   }, []);
 
   if (items === null) {
@@ -955,54 +841,46 @@ export default function PrintPage() {
 
   return (
     <div className="h-dvh recipe-print-page">
-      {/* Toolbar, hidden when printing */}
-      {!isPrinting && <SiteHeader backHref="/" compact sticky />}
+      <SiteHeader backHref="/" compact sticky />
 
       {/* Print preview / printed content */}
       <main className="recipe-print-shell px-cp-6 print:p-0">
-        {/* Left: page navigator rail (PowerPoint-style). Already `.no-print`
-            (hidden via CSS), and also fully removed from the DOM the moment
-            printing starts (see the isPrinting effect above) rather than
-            just left display:none, in case a hidden-but-present element was
-            contributing to a persistent extra trailing printed page. */}
-        {!isPrinting && (
-          <nav
-            className={`recipe-page-rail recipe-page-rail--${cardSize} no-print`}
-            aria-label="Pages"
-          >
-            {navItems.map((navItem, index) => (
-              <button
-                key={`${sheets[navItem.sheetIndex]?.id}-${navItem.slotIndex}`}
-                type="button"
-                className={`recipe-page-rail__item ${
-                  index === activeNavIndex ? "is-active" : ""
-                }`}
-                aria-current={index === activeNavIndex}
-                onClick={() => goToSlide(index)}
-              >
-                <span className="recipe-page-rail__num">{index + 1}</span>
-                <span className="recipe-page-rail__thumb">
-                  <ScaledPage
-                    sheet={sheets[navItem.sheetIndex]}
-                    isLastSheet={navItem.sheetIndex === sheets.length - 1}
-                    activeSlotIndex={navItem.slotIndex}
-                    activeSide="front"
-                    scale={RAIL_SCALE[cardSize]}
-                    size={cardSize}
-                    template={template}
-                    doubleSided={continueOnBack}
-                    showImage={photosOn}
-                    showSourceUrl={sourceUrlOn}
-                  />
-                </span>
-                <span className="recipe-page-rail__label">
-                  <span className="recipe-page-rail__title">{navItem.label}</span>
-                  <span className="recipe-page-rail__meta">{navItem.pageLabel}</span>
-                </span>
-              </button>
-            ))}
-          </nav>
-        )}
+        <nav
+          className={`recipe-page-rail recipe-page-rail--${cardSize} no-print`}
+          aria-label="Pages"
+        >
+          {navItems.map((navItem, index) => (
+            <button
+              key={`${sheets[navItem.sheetIndex]?.id}-${navItem.slotIndex}`}
+              type="button"
+              className={`recipe-page-rail__item ${
+                index === activeNavIndex ? "is-active" : ""
+              }`}
+              aria-current={index === activeNavIndex}
+              onClick={() => goToSlide(index)}
+            >
+              <span className="recipe-page-rail__num">{index + 1}</span>
+              <span className="recipe-page-rail__thumb">
+                <ScaledPage
+                  sheet={sheets[navItem.sheetIndex]}
+                  isLastSheet={navItem.sheetIndex === sheets.length - 1}
+                  activeSlotIndex={navItem.slotIndex}
+                  activeSide="front"
+                  scale={RAIL_SCALE[cardSize]}
+                  size={cardSize}
+                  template={template}
+                  doubleSided={continueOnBack}
+                  showImage={photosOn}
+                  showSourceUrl={sourceUrlOn}
+                />
+              </span>
+              <span className="recipe-page-rail__label">
+                <span className="recipe-page-rail__title">{navItem.label}</span>
+                <span className="recipe-page-rail__meta">{navItem.pageLabel}</span>
+              </span>
+            </button>
+          ))}
+        </nav>
 
         {/* Center: large preview of the selected page */}
         <section
@@ -1010,7 +888,6 @@ export default function PrintPage() {
           aria-label="Selected page"
           data-single-recipe={singleRecipePrintView ? "true" : "false"}
         >
-          {!isPrinting && (
           <div className="recipe-mobile-topbar no-print">
             <Link href="/" className="recipe-mobile-back-button" aria-label="Back to recipes">
               <ChevronLeftIcon size={ICON_SIZE.lg} />
@@ -1020,8 +897,6 @@ export default function PrintPage() {
               {activeNavIndex + 1} of {navItems.length}
             </div>
           </div>
-          )}
-          {!isPrinting && (
           <div className="recipe-mobile-toolbar no-print">
             <Select
               className="recipe-mobile-toolbar__size-select"
@@ -1044,8 +919,7 @@ export default function PrintPage() {
               Change template
             </button>
           </div>
-          )}
-          {!isPrinting && (anyRecipeHasImage || anyRecipeHasSourceUrl || hasRecipeBackSide) && (
+          {(anyRecipeHasImage || anyRecipeHasSourceUrl || hasRecipeBackSide) && (
             <div className="recipe-mobile-chip-scroll no-print">
               {anyRecipeHasImage && (
                 <button
@@ -1119,7 +993,7 @@ export default function PrintPage() {
                     goToSlide(index);
                   }}
                 >
-                  {!isPrinting && isActive && navItem.flip && (
+                  {isActive && navItem.flip && (
                     <div
                       className="recipe-card-side-nav recipe-page-canvas__flip no-print"
                       aria-label="Sheet sides"
@@ -1170,7 +1044,7 @@ export default function PrintPage() {
         </section>
 
         {/* Right: print setup */}
-        {!isPrinting && mobileDrawer && (
+        {mobileDrawer && (
           <button
             type="button"
             className="recipe-mobile-settings-backdrop no-print"
@@ -1179,7 +1053,6 @@ export default function PrintPage() {
           />
         )}
 
-        {!isPrinting && (
         <aside
           className={`recipe-config-panel no-print ${
             mobileDrawer ? "is-mobile-open" : ""
@@ -1345,21 +1218,18 @@ export default function PrintPage() {
             </button>
           </div>
         </aside>
-        )}
 
-        {!isPrinting && (
-          <div className="recipe-mobile-actions no-print">
-            <button
-              type="button"
-              className="btn btn-primary recipe-mobile-print-button"
-              onClick={handleMobilePrint}
-              disabled={purchaseBusy}
-            >
-              {purchaseBusy ? <SpinnerIcon size={ICON_SIZE.md} /> : <PrintIcon size={ICON_SIZE.md} />}
-              {selectedTemplateLocked ? "Unlock & Print" : "Print"}
-            </button>
-          </div>
-        )}
+        <div className="recipe-mobile-actions no-print">
+          <button
+            type="button"
+            className="btn btn-primary recipe-mobile-print-button"
+            onClick={handleMobilePrint}
+            disabled={purchaseBusy}
+          >
+            {purchaseBusy ? <SpinnerIcon size={ICON_SIZE.md} /> : <PrintIcon size={ICON_SIZE.md} />}
+            {selectedTemplateLocked ? "Unlock & Print" : "Print"}
+          </button>
+        </div>
       </main>
 
       <PrintDialogs
@@ -1370,16 +1240,8 @@ export default function PrintPage() {
         onCloseUnlockDialog={() => setShowUnlockDialog(false)}
         selectedPremiumTemplate={selectedPremiumTemplate}
         selectedTemplateLabel={selectedTemplateLabel}
-        user={user}
         purchaseBusy={purchaseBusy}
         onUnlockTemplate={(premiumTemplate) => void unlockTemplateAndPrint(premiumTemplate)}
-        showSignInDialog={showSignInDialog}
-        onCloseSignInDialog={() => setShowSignInDialog(false)}
-        onSignInSubmit={handleSignInSubmit}
-        signInEmail={signInEmail}
-        onSignInEmailChange={setSignInEmail}
-        signInBusy={signInBusy}
-        signInMessage={signInMessage}
       />
       <FeedbackDialog
         open={showFeedbackDialog}
