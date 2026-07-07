@@ -6,10 +6,12 @@ import {
   EmailAuthProvider,
   GoogleAuthProvider,
   OAuthProvider,
+  deleteUser,
   onAuthStateChanged,
   signInAnonymously,
   signInWithEmailAndPassword,
   signInWithPopup,
+  signOut,
   type User,
 } from "firebase/auth";
 import { httpsCallable } from "firebase/functions";
@@ -43,6 +45,16 @@ appleProvider.addScope("name");
 
 const COOKPILOT_SIGNED_IN_STORAGE_KEY = "recipeprinter:cookpilot-was-signed-in:v1";
 
+// `checkEmailProviders` briefly signs in anonymously just to authorize its
+// `checkUserProviders` call, then deletes that session itself once done (see
+// below). This flag stops the auth listener's purge from racing that in-flight
+// call and deleting the session out from under it before the callable resolves.
+let checkingEmailProviders = false;
+
+async function purgeAnonymousUser(user: User) {
+  await deleteUser(user).catch(() => signOut(getFirebaseAuth()).catch(() => {}));
+}
+
 function readCookPilotWasSignedIn(): boolean {
   if (typeof window === "undefined") return true;
   try {
@@ -71,9 +83,16 @@ function useCookPilotAuth() {
 
   useEffect(() => {
     return onAuthStateChanged(getFirebaseAuth(), (nextUser) => {
-      // Parser imports use anonymous auth for CookPilot callables. That should
-      // not count as being logged in to a CookPilot recipe library.
+      // RecipePrinter has no use for anonymous accounts, and they don't count
+      // as being logged in to a CookPilot recipe library. `checkEmailProviders`
+      // creates one briefly to authorize a callable and cleans it up itself;
+      // skip purging here while that's in flight so we don't race it. Anything
+      // else anonymous restored from a stale session gets purged on sight
+      // instead of just hidden, so it doesn't linger as an orphaned user.
       if (nextUser?.isAnonymous) {
+        if (!checkingEmailProviders) {
+          purgeAnonymousUser(nextUser);
+        }
         rememberCookPilotSignedIn(false);
         setUser(null);
         setReady(true);
@@ -95,19 +114,29 @@ function useCookPilotAuth() {
 async function checkEmailProviders(email: string): Promise<string[]> {
   const auth = getFirebaseAuth();
   await auth.authStateReady();
-  if (!auth.currentUser) {
-    // checkUserProviders just requires *some* signed-in uid; an anonymous
-    // session is enough, same as CookPilot's ensureAnonymousUserIfNeeded.
-    // Scoped to this login flow only, not the shared parser call path.
-    await signInAnonymously(auth);
+  checkingEmailProviders = true;
+  try {
+    if (!auth.currentUser) {
+      // checkUserProviders just requires *some* signed-in uid; an anonymous
+      // session is enough, same as CookPilot's ensureAnonymousUserIfNeeded.
+      // Scoped to this login flow only, not the shared parser call path.
+      await signInAnonymously(auth);
+    }
+    const { getFns } = await import("@/lib/firebase/functions");
+    const checkUserProviders = httpsCallable<{ email: string }, { providers: string[] | null }>(
+      getFns(),
+      "checkUserProviders",
+    );
+    const { data } = await checkUserProviders({ email });
+    return data.providers ?? [];
+  } finally {
+    checkingEmailProviders = false;
+    // This anonymous session exists only to authorize the call above; purge it
+    // now rather than leaving it as an orphaned user in Firebase Auth.
+    if (auth.currentUser?.isAnonymous) {
+      await purgeAnonymousUser(auth.currentUser);
+    }
   }
-  const { getFns } = await import("@/lib/firebase/functions");
-  const checkUserProviders = httpsCallable<{ email: string }, { providers: string[] | null }>(
-    getFns(),
-    "checkUserProviders",
-  );
-  const { data } = await checkUserProviders({ email });
-  return data.providers ?? [];
 }
 
 function LoginDialog({ onClose }: { onClose: () => void }) {
