@@ -143,6 +143,7 @@ interface NavItem {
  */
 const ScaledPage = memo(function ScaledPage({
   sheet,
+  isLastSheet,
   activeSlotIndex,
   activeSide,
   scale,
@@ -154,6 +155,7 @@ const ScaledPage = memo(function ScaledPage({
   showCutLines,
 }: {
   sheet: PageSheet;
+  isLastSheet: boolean;
   activeSlotIndex: number;
   activeSide: "front" | "back";
   scale: number;
@@ -167,6 +169,16 @@ const ScaledPage = memo(function ScaledPage({
   const dims = PAGE_DIMS[size];
   const anySlot = sheet.slots.find((slot): slot is SheetSlot => slot !== null) ?? null;
   if (!anySlot) return null;
+
+  // The very last physical page of the whole print job shouldn't request a
+  // page break after itself — otherwise the print pipeline can add a
+  // trailing blank page. Rather than lean on a CSS `:last-child` selector to
+  // work out which page that is (which depends on the print engine
+  // correctly matching a structural pseudo-selector — not something we've
+  // been able to rely on), the page that's actually last is passed down and
+  // marked directly: the back group if this sheet prints one, else the front.
+  const lastGroupIsBack = isLastSheet && sheet.backGroupNeeded;
+  const lastGroupIsFront = isLastSheet && !sheet.backGroupNeeded;
 
   return (
     <div
@@ -190,7 +202,9 @@ const ScaledPage = memo(function ScaledPage({
             className={`recipe-card-set recipe-card-set--${size} recipe-template--${template}`}
           >
             <div
-              className="recipe-card-page recipe-card-page--front"
+              className={`recipe-card-page recipe-card-page--front ${
+                lastGroupIsFront ? "recipe-card-page--no-break" : ""
+              }`}
               data-preview-hidden={activeSide !== "front" ? "true" : undefined}
             >
               {sheet.slots.map((slot, slotIndex) =>
@@ -220,7 +234,9 @@ const ScaledPage = memo(function ScaledPage({
             </div>
             {sheet.backGroupNeeded && (
               <div
-                className="recipe-card-page recipe-card-page--back"
+                className={`recipe-card-page recipe-card-page--back ${
+                  lastGroupIsBack ? "recipe-card-page--no-break" : ""
+                }`}
                 data-preview-hidden={activeSide !== "back" ? "true" : undefined}
               >
                 {sheet.slots.map((slot, slotIndex) =>
@@ -610,6 +626,21 @@ export default function PrintPage() {
   const singleRecipePrintView =
     (items?.filter((item) => Boolean(item.recipe)).length ?? 0) === 1;
 
+  function scrollDeckTo(deck: HTMLDivElement, options: ScrollToOptions) {
+    if (options.behavior === "smooth") {
+      // scroll-snap-type: mandatory fights a smooth scrollTo() that spans
+      // multiple snap points — the deck stops at an intermediate slide
+      // instead of the requested one. Suspend snapping for the animation.
+      deck.style.scrollSnapType = "none";
+      const restore = () => {
+        deck.style.scrollSnapType = "";
+      };
+      deck.addEventListener("scrollend", restore, { once: true });
+      window.setTimeout(restore, 600);
+    }
+    deck.scrollTo(options);
+  }
+
   function centerSlide(index: number, behavior: ScrollBehavior = "auto") {
     const deck = deckRef.current;
     const slide = slideRefs.current[index];
@@ -618,7 +649,7 @@ export default function PrintPage() {
     if (window.matchMedia("(max-width: 820px)").matches) {
       const targetLeft = slide.offsetLeft - (deck.clientWidth - slide.offsetWidth) / 2;
       const maxLeft = deck.scrollWidth - deck.clientWidth;
-      deck.scrollTo({
+      scrollDeckTo(deck, {
         left: Math.max(0, Math.min(targetLeft, maxLeft)),
         behavior,
       });
@@ -629,7 +660,7 @@ export default function PrintPage() {
       ? slide.offsetTop - SINGLE_RECIPE_DECK_TOP_PADDING
       : slide.offsetTop - (deck.clientHeight - slide.offsetHeight) / 2;
     const maxTop = deck.scrollHeight - deck.clientHeight;
-    deck.scrollTo({
+    scrollDeckTo(deck, {
       top: Math.max(0, Math.min(targetTop, maxTop)),
       behavior,
     });
@@ -938,6 +969,7 @@ export default function PrintPage() {
               <span className="recipe-page-rail__thumb">
                 <ScaledPage
                   sheet={sheets[navItem.sheetIndex]}
+                  isLastSheet={navItem.sheetIndex === sheets.length - 1}
                   activeSlotIndex={navItem.slotIndex}
                   activeSide="front"
                   scale={RAIL_SCALE[cardSize]}
@@ -1108,6 +1140,7 @@ export default function PrintPage() {
                   )}
                   <ScaledPage
                     sheet={sheet}
+                    isLastSheet={index === sheets.length - 1}
                     activeSlotIndex={isActiveSheet ? activeSlotIndex : 0}
                     activeSide={isActiveSheet ? canvasSide : "front"}
                     scale={deckScale}

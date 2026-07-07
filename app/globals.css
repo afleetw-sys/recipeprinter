@@ -3146,9 +3146,14 @@
     max-width: none;
   }
 
-  .recipe-page-deck > .recipe-page-slide:last-child .recipe-card-page:last-child {
-    break-after: auto;
-    page-break-after: auto;
+  /* Which page is actually last is computed in JS and marked directly with
+     this class (see ScaledPage in app/print/page.tsx) instead of relying on
+     a `:last-child` selector to work it out — the print pipeline not fully
+     honouring that structural match is the suspected cause of a persistent
+     trailing blank page. */
+  .recipe-card-page--no-break {
+    break-after: auto !important;
+    page-break-after: auto !important;
   }
 
   a {
