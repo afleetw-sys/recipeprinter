@@ -63,7 +63,7 @@
   --cp-shadow-xl: 0 24px 80px rgba(15, 23, 42, 0.22); /* modal dialogs */
 }
 
-@media (max-width: 768px) {
+@media screen and (max-width: 768px) {
   :root {
     --cp-fs-body-lg: 0.98rem;
     --cp-fs-hero-sm: clamp(1.7rem, 1.3rem + 2vw, 2.15rem);
@@ -74,7 +74,7 @@
   }
 }
 
-@media (max-width: 480px) {
+@media screen and (max-width: 480px) {
   :root {
     --cp-fs-body-lg: 0.94rem;
     --cp-fs-hero-sm: clamp(1.52rem, 1.2rem + 1.8vw, 1.75rem);
@@ -553,7 +553,7 @@
    here would be overridden by their un-media-gated base rules later in the
    file regardless of this media query matching, since plain cascade order
    (not media-query nesting) decides ties of equal specificity. */
-@media (min-width: 821px) {
+@media screen and (min-width: 821px) {
   .recipe-print-page {
     height: 100dvh;
     overflow: hidden;
@@ -681,7 +681,7 @@
    scroll into true vertical centre) leaves a huge dead zone above small
    cards like 6x4 — the viewport is much taller than any single card needs.
    Top-align instead. */
-@media (min-width: 821px) and (orientation: portrait) {
+@media screen and (min-width: 821px) and (orientation: portrait) {
   .recipe-page-deck {
     padding-top: 24px;
   }
@@ -738,7 +738,7 @@
    block-level flex box, not inline-flex) is what lets the auto margins
    actually centre it instead of needing text-align on an ancestor, which
    would leak into the card's own text. */
-@media (min-width: 821px) {
+@media screen and (min-width: 821px) {
   .recipe-page-slide[data-first="true"] .recipe-card-side-nav.recipe-page-canvas__flip {
     position: static;
     display: flex;
@@ -842,7 +842,7 @@
    `.recipe-config-panel`) so cascade order lets this win, rather than being
    silently shadowed by them the way an earlier attempt near the top of the
    file (before those base rules) was. */
-@media (min-width: 821px) {
+@media screen and (min-width: 821px) {
   .recipe-page-rail,
   .recipe-page-canvas,
   .recipe-config-panel {
@@ -1439,7 +1439,7 @@
   display: none;
 }
 
-@media (max-width: 820px) {
+@media screen and (max-width: 820px) {
   .recipe-print-page {
     height: 100dvh;
     overflow: hidden;
@@ -3109,7 +3109,14 @@
     max-width: none !important;
     height: var(--recipe-card-min-height);
     min-height: 0;
-    margin: 0 auto !important;
+    /* Not `margin: 0 auto` — auto-centering only comes out to zero when the
+       real resolved page width happens to exactly match --recipe-card-width.
+       Since @page no longer requests an exact size (see the rp-letter and
+       rp-card-6x4 notes above), that match isn't guaranteed, and centering a
+       fixed-width box in a slightly different-width page turns any mismatch
+       into a visible gap on both sides instead of the card just sitting
+       flush at the top-left corner it's actually sized for. */
+    margin: 0 !important;
     border: 0 !important;
     border-radius: 0 !important;
     box-shadow: none !important;
