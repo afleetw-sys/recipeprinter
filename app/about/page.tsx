@@ -18,7 +18,7 @@ export default function AboutPage() {
   lede="RecipePrinter started with a simple frustration: printing recipes from the internet was still a terrible experience."
 />
 
-      <div className="mt-cp-5 flex justify-center">
+      <div className="flex justify-center">
 <div className="my-cp-6 h-px w-full bg-slate-200" />
       </div>
       
