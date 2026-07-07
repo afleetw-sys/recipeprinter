@@ -1,6 +1,7 @@
 "use client";
 
 import { memo, useEffect, useMemo, useRef, useState, type CSSProperties, type FormEvent } from "react";
+import { flushSync } from "react-dom";
 import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 import dynamic from "next/dynamic";
@@ -344,6 +345,7 @@ export default function PrintPage() {
   const [showCutLines, setShowCutLines] = useState(true);
   const [showPhoto, setShowPhoto] = useState(false);
   const [showSourceUrl, setShowSourceUrl] = useState(false);
+  const [isPrinting, setIsPrinting] = useState(false);
   const [showDonateDialog, setShowDonateDialog] = useState(false);
   const [showFeedbackDialog, setShowFeedbackDialog] = useState(false);
   const [authReady, setAuthReady] = useState(false);
@@ -916,6 +918,29 @@ export default function PrintPage() {
     return () => window.removeEventListener("afterprint", handleAfterPrint);
   }, []);
 
+  // The rail, settings panel, and mobile chrome are already `.no-print`
+  // (display: none in print media) — this is a belt-and-suspenders backup
+  // that removes them from the DOM outright the moment printing starts, in
+  // case a hidden-but-still-present element is contributing to a persistent
+  // extra trailing page some print pipelines have shown despite that CSS.
+  // `flushSync` forces the DOM change to land before `beforeprint` returns,
+  // since the print pipeline doesn't wait for a React state update that
+  // hasn't actually committed yet.
+  useEffect(() => {
+    function handleBeforePrint() {
+      flushSync(() => setIsPrinting(true));
+    }
+    function handleAfterPrintCleanup() {
+      setIsPrinting(false);
+    }
+    window.addEventListener("beforeprint", handleBeforePrint);
+    window.addEventListener("afterprint", handleAfterPrintCleanup);
+    return () => {
+      window.removeEventListener("beforeprint", handleBeforePrint);
+      window.removeEventListener("afterprint", handleAfterPrintCleanup);
+    };
+  }, []);
+
   if (items === null) {
     return (
       <div className="h-full flex flex-col">
@@ -946,48 +971,54 @@ export default function PrintPage() {
   return (
     <div className="h-dvh recipe-print-page">
       {/* Toolbar, hidden when printing */}
-      <SiteHeader backHref="/" compact sticky />
+      {!isPrinting && <SiteHeader backHref="/" compact sticky />}
 
       {/* Print preview / printed content */}
       <main className="recipe-print-shell px-cp-6 print:p-0">
-        {/* Left: page navigator rail (PowerPoint-style) */}
-        <nav
-          className={`recipe-page-rail recipe-page-rail--${cardSize} no-print`}
-          aria-label="Pages"
-        >
-          {navItems.map((navItem, index) => (
-            <button
-              key={`${sheets[navItem.sheetIndex]?.id}-${navItem.slotIndex}`}
-              type="button"
-              className={`recipe-page-rail__item ${
-                index === activeNavIndex ? "is-active" : ""
-              }`}
-              aria-current={index === activeNavIndex}
-              onClick={() => goToSlide(index)}
-            >
-              <span className="recipe-page-rail__num">{index + 1}</span>
-              <span className="recipe-page-rail__thumb">
-                <ScaledPage
-                  sheet={sheets[navItem.sheetIndex]}
-                  isLastSheet={navItem.sheetIndex === sheets.length - 1}
-                  activeSlotIndex={navItem.slotIndex}
-                  activeSide="front"
-                  scale={RAIL_SCALE[cardSize]}
-                  size={cardSize}
-                  template={template}
-                  doubleSided={continueOnBack}
-                  showImage={photosOn}
-                  showSourceUrl={sourceUrlOn}
-                  showCutLines={showCutLines}
-                />
-              </span>
-              <span className="recipe-page-rail__label">
-                <span className="recipe-page-rail__title">{navItem.label}</span>
-                <span className="recipe-page-rail__meta">{navItem.pageLabel}</span>
-              </span>
-            </button>
-          ))}
-        </nav>
+        {/* Left: page navigator rail (PowerPoint-style). Already `.no-print`
+            (hidden via CSS), and also fully removed from the DOM the moment
+            printing starts (see the isPrinting effect above) rather than
+            just left display:none, in case a hidden-but-present element was
+            contributing to a persistent extra trailing printed page. */}
+        {!isPrinting && (
+          <nav
+            className={`recipe-page-rail recipe-page-rail--${cardSize} no-print`}
+            aria-label="Pages"
+          >
+            {navItems.map((navItem, index) => (
+              <button
+                key={`${sheets[navItem.sheetIndex]?.id}-${navItem.slotIndex}`}
+                type="button"
+                className={`recipe-page-rail__item ${
+                  index === activeNavIndex ? "is-active" : ""
+                }`}
+                aria-current={index === activeNavIndex}
+                onClick={() => goToSlide(index)}
+              >
+                <span className="recipe-page-rail__num">{index + 1}</span>
+                <span className="recipe-page-rail__thumb">
+                  <ScaledPage
+                    sheet={sheets[navItem.sheetIndex]}
+                    isLastSheet={navItem.sheetIndex === sheets.length - 1}
+                    activeSlotIndex={navItem.slotIndex}
+                    activeSide="front"
+                    scale={RAIL_SCALE[cardSize]}
+                    size={cardSize}
+                    template={template}
+                    doubleSided={continueOnBack}
+                    showImage={photosOn}
+                    showSourceUrl={sourceUrlOn}
+                    showCutLines={showCutLines}
+                  />
+                </span>
+                <span className="recipe-page-rail__label">
+                  <span className="recipe-page-rail__title">{navItem.label}</span>
+                  <span className="recipe-page-rail__meta">{navItem.pageLabel}</span>
+                </span>
+              </button>
+            ))}
+          </nav>
+        )}
 
         {/* Center: large preview of the selected page */}
         <section
@@ -995,6 +1026,7 @@ export default function PrintPage() {
           aria-label="Selected page"
           data-single-recipe={singleRecipePrintView ? "true" : "false"}
         >
+          {!isPrinting && (
           <div className="recipe-mobile-topbar no-print">
             <Link href="/" className="recipe-mobile-back-button" aria-label="Back to recipes">
               <ChevronLeftIcon size={ICON_SIZE.lg} />
@@ -1004,6 +1036,8 @@ export default function PrintPage() {
               {activeNavIndex + 1} of {navItems.length}
             </div>
           </div>
+          )}
+          {!isPrinting && (
           <div className="recipe-mobile-toolbar no-print">
             <Select
               className="recipe-mobile-toolbar__size-select"
@@ -1026,7 +1060,8 @@ export default function PrintPage() {
               Change template
             </button>
           </div>
-          {(anyRecipeHasImage || anyRecipeHasSourceUrl || hasRecipeBackSide || cardSize === "card-6x4") && (
+          )}
+          {!isPrinting && (anyRecipeHasImage || anyRecipeHasSourceUrl || hasRecipeBackSide || cardSize === "card-6x4") && (
             <div className="recipe-mobile-chip-scroll no-print">
               {anyRecipeHasImage && (
                 <button
@@ -1106,7 +1141,7 @@ export default function PrintPage() {
                     if (firstNavIndex !== -1) goToSlide(firstNavIndex);
                   }}
                 >
-                  {isActiveSheet && activeNavItem?.flip && (
+                  {!isPrinting && isActiveSheet && activeNavItem?.flip && (
                     <div
                       className="recipe-card-side-nav recipe-page-canvas__flip no-print"
                       aria-label="Sheet sides"
@@ -1158,7 +1193,7 @@ export default function PrintPage() {
         </section>
 
         {/* Right: print setup */}
-        {mobileDrawer && (
+        {!isPrinting && mobileDrawer && (
           <button
             type="button"
             className="recipe-mobile-settings-backdrop no-print"
@@ -1167,6 +1202,7 @@ export default function PrintPage() {
           />
         )}
 
+        {!isPrinting && (
         <aside
           className={`recipe-config-panel no-print ${
             mobileDrawer ? "is-mobile-open" : ""
@@ -1347,18 +1383,21 @@ export default function PrintPage() {
             </button>
           </div>
         </aside>
+        )}
 
-        <div className="recipe-mobile-actions no-print">
-          <button
-            type="button"
-            className="btn btn-primary recipe-mobile-print-button"
-            onClick={handleMobilePrint}
-            disabled={purchaseBusy}
-          >
-            {purchaseBusy ? <SpinnerIcon size={ICON_SIZE.md} /> : <PrintIcon size={ICON_SIZE.md} />}
-            {selectedTemplateLocked ? "Unlock & Print" : "Print"}
-          </button>
-        </div>
+        {!isPrinting && (
+          <div className="recipe-mobile-actions no-print">
+            <button
+              type="button"
+              className="btn btn-primary recipe-mobile-print-button"
+              onClick={handleMobilePrint}
+              disabled={purchaseBusy}
+            >
+              {purchaseBusy ? <SpinnerIcon size={ICON_SIZE.md} /> : <PrintIcon size={ICON_SIZE.md} />}
+              {selectedTemplateLocked ? "Unlock & Print" : "Print"}
+            </button>
+          </div>
+        )}
       </main>
 
       <PrintDialogs
