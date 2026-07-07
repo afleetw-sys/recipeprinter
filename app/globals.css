@@ -1927,6 +1927,19 @@
   --recipe-card-padding-bottom: 0.14in;
 }
 
+/* Cut lines toggle: a dashed guide flush against the card's true edge, not
+   overlapping card content, so the preview matches what prints. Flush
+   (zero offset), not a gap outside it — any gap here is paper that cutting
+   along the line would leave behind as a white border once trimmed away,
+   which would pull edge-to-edge card art (like the classic template's top
+   accent bar) in from the cut edge instead of the piece just being smaller.
+   Only offered on 6x4, where the card is smaller than the physical sheet
+   it's centered on and there's blank margin around it to draw into. */
+.recipe-print-preview--cut-lines.recipe-print-preview--card-6x4 .recipe-card:not(.recipe-card--duplex-spacer) {
+  outline: 0.75pt dashed rgba(90, 90, 90, 0.72);
+  outline-offset: 0;
+}
+
 .recipe-print-preview--card-6x4 .recipe-template--counter .recipe-card--back {
   --recipe-card-padding-top: 0.32in;
 }
@@ -1963,6 +1976,19 @@
   right: 0;
   height: 5px;
   background: linear-gradient(90deg, var(--recipe-accent), var(--recipe-accent-2));
+  -webkit-print-color-adjust: exact;
+  print-color-adjust: exact;
+}
+
+/* Real SVG rects (not a tiled CSS gradient) so the checkerboard stays crisp
+   vector fill when printed/exported, instead of a rasterized bitmap. */
+.recipe-card__checker {
+  position: absolute;
+  display: none;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  width: 0.24in;
   -webkit-print-color-adjust: exact;
   print-color-adjust: exact;
 }
@@ -2061,23 +2087,8 @@
   print-color-adjust: exact;
 }
 
-.recipe-template--bistro .recipe-card::before {
-  top: 0;
-  bottom: 0;
-  left: 0;
-  width: 0.24in;
-  background:
-    linear-gradient(45deg, #1479c9 25%, transparent 25% 75%, #1479c9 75%),
-    linear-gradient(45deg, #1479c9 25%, transparent 25% 75%, #1479c9 75%),
-    #f8fffe;
-  background-position:
-    0 0,
-    0.12in 0.12in,
-    0 0;
-  background-size:
-    0.24in 0.24in,
-    0.24in 0.24in,
-    auto;
+.recipe-template--bistro .recipe-card__checker {
+  display: block;
 }
 
 .recipe-template--bistro .recipe-card__accent {
@@ -3106,6 +3117,30 @@
     width: max-content !important;
     margin-left: auto !important;
     margin-right: auto !important;
+  }
+
+  /* The cut-lines outline sits 0.1in outside each card, but the page
+     container above is shrink-wrapped tight to its content on every side
+     (`width: max-content` here, `height: auto` from the shared
+     `.recipe-card-page` rule above) with zero slack on the left, right, and
+     bottom. Without padding there, the always-on `overflow: hidden` on the
+     `.recipe-page-scaler .recipe-card-page` wrapper clips the outline
+     anywhere it has no slack to extend into: the left/right edges of every
+     card, and the bottom edge of the last card on the page (cards above it
+     get slack for free from the next card's margin-top gap). Padding on
+     those three sides fixes the clipping without affecting centering, since
+     the horizontal padding is symmetric and the page break already accounts
+     for whatever trails after the last card. The base rule's `padding-top:
+     0.6in` is unrelated — sized to give the stacked pair breathing room from
+     the physical page's top edge generally — and is far more than the cut
+     line needs, leaving a visibly bigger gap above the top card than the
+     tight 0.1in margin on the other three sides. Overriding it down to match
+     keeps the cut-line frame uniform. */
+  .recipe-print-preview--cut-lines.recipe-print-preview--card-6x4 .recipe-card-page {
+    padding-top: 0.15in;
+    padding-left: 0.15in;
+    padding-right: 0.15in;
+    padding-bottom: 0.15in;
   }
 
   .recipe-print-preview--card-6x4 .recipe-card + .recipe-card {

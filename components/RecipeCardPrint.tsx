@@ -1,6 +1,6 @@
 "use client";
 
-import { memo, useState } from "react";
+import { memo, useId, useState } from "react";
 import type { Recipe } from "@/types/recipe";
 
 // Printable recipe layouts. Compact cards keep readable text and move overflow
@@ -724,6 +724,10 @@ export const RecipeCardFace = memo(function RecipeCardFace({
   // broken-image box.
   const [imageFailed, setImageFailed] = useState(false);
   const showPhoto = showImage && showHeader && Boolean(recipe.image) && !imageFailed;
+  // Real SVG rects instead of a tiled CSS gradient — Chrome rasterizes tiny
+  // repeating gradients at screen resolution when printing/exporting, which
+  // turns this checkerboard blocky. Vector rects stay crisp at any print DPI.
+  const checkerPatternId = useId();
 
   if (blank) {
     return (
@@ -744,6 +748,25 @@ export const RecipeCardFace = memo(function RecipeCardFace({
       data-preview-hidden={previewHidden ? "true" : undefined}
     >
       <div className="recipe-card__accent" aria-hidden />
+      <div className="recipe-card__checker" aria-hidden>
+        <svg width="100%" height="100%" focusable="false">
+          <defs>
+            <pattern
+              id={checkerPatternId}
+              patternUnits="userSpaceOnUse"
+              width="0.24in"
+              height="0.24in"
+            >
+              <rect width="0.24in" height="0.24in" fill="#f8fffe" />
+              <rect x="0.12in" y="0" width="0.12in" height="0.12in" fill="#1479c9" />
+              <rect x="0" y="0.12in" width="0.12in" height="0.12in" fill="#1479c9" />
+              <line x1="0.12in" y1="0" x2="0.24in" y2="0.12in" stroke="#5fb0e6" strokeWidth="0.003in" />
+              <line x1="0" y1="0.12in" x2="0.12in" y2="0.24in" stroke="#5fb0e6" strokeWidth="0.003in" />
+            </pattern>
+          </defs>
+          <rect width="100%" height="100%" fill={`url(#${checkerPatternId})`} />
+        </svg>
+      </div>
 
       {showHeader ? (
         <header

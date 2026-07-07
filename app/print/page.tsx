@@ -143,6 +143,7 @@ const ScaledPage = memo(function ScaledPage({
   doubleSided,
   showImage,
   showSourceUrl,
+  showCutLines,
 }: {
   sheet: PageSheet;
   isLastSheet: boolean;
@@ -154,6 +155,7 @@ const ScaledPage = memo(function ScaledPage({
   doubleSided: boolean;
   showImage: boolean;
   showSourceUrl: boolean;
+  showCutLines: boolean;
 }) {
   const dims = PAGE_DIMS[size];
   const anySlot = sheet.slots.find((slot): slot is SheetSlot => slot !== null) ?? null;
@@ -182,7 +184,9 @@ const ScaledPage = memo(function ScaledPage({
     >
       <div className="recipe-page-scaler__inner">
         <div
-          className={`recipe-print-preview recipe-print-preview--${size}`}
+          className={`recipe-print-preview recipe-print-preview--${size} ${
+            showCutLines ? "recipe-print-preview--cut-lines" : ""
+          }`}
           data-double-sided={doubleSided ? "true" : "false"}
         >
           <div
@@ -314,6 +318,7 @@ export default function PrintPage() {
     initialRecipePrintTemplate(params.get("template")),
   );
   const [doubleSided, setDoubleSided] = useState(true);
+  const [showCutLines, setShowCutLines] = useState(false);
   const [showPhoto, setShowPhoto] = useState(false);
   const [showSourceUrl, setShowSourceUrl] = useState(false);
   const [showDonateDialog, setShowDonateDialog] = useState(false);
@@ -874,6 +879,7 @@ export default function PrintPage() {
                   doubleSided={continueOnBack}
                   showImage={photosOn}
                   showSourceUrl={sourceUrlOn}
+                  showCutLines={false}
                 />
               </span>
               <span className="recipe-page-rail__label">
@@ -921,7 +927,7 @@ export default function PrintPage() {
               Change template
             </button>
           </div>
-          {(anyRecipeHasImage || anyRecipeHasSourceUrl || hasRecipeBackSide) && (
+          {(anyRecipeHasImage || anyRecipeHasSourceUrl || hasRecipeBackSide || cardSize === "card-6x4") && (
             <div className="recipe-mobile-chip-scroll no-print">
               {anyRecipeHasImage && (
                 <button
@@ -954,6 +960,17 @@ export default function PrintPage() {
                 >
                   {doubleSided && <CheckIcon size={ICON_SIZE.xs} />}
                   Two-sided
+                </button>
+              )}
+              {cardSize === "card-6x4" && (
+                <button
+                  type="button"
+                  className={`recipe-setting-chip ${showCutLines ? "is-active" : ""}`}
+                  aria-pressed={showCutLines}
+                  onClick={() => setShowCutLines((value) => !value)}
+                >
+                  {showCutLines && <CheckIcon size={ICON_SIZE.xs} />}
+                  Cut lines
                 </button>
               )}
             </div>
@@ -1038,6 +1055,7 @@ export default function PrintPage() {
                     doubleSided={continueOnBack}
                     showImage={photosOn}
                     showSourceUrl={sourceUrlOn}
+                    showCutLines={showCutLines && cardSize === "card-6x4"}
                   />
                 </div>
               );
@@ -1125,20 +1143,34 @@ export default function PrintPage() {
             </div>
           )}
 
-          {hasRecipeBackSide && (
+          {(hasRecipeBackSide || cardSize === "card-6x4") && (
             <div className="recipe-config-section recipe-config-section--settings">
               <h3 className="recipe-config-label">Print settings</h3>
-              <label className="recipe-toggle">
-                <input
-                  type="checkbox"
-                  checked={doubleSided}
-                  onChange={(event) => setDoubleSided(event.target.checked)}
-                />
-                <span>
-                  <strong>Two-sided</strong>
-                  <small>Longer recipes continue onto the back.</small>
-                </span>
-              </label>
+              {hasRecipeBackSide && (
+                <label className="recipe-toggle">
+                  <input
+                    type="checkbox"
+                    checked={doubleSided}
+                    onChange={(event) => setDoubleSided(event.target.checked)}
+                  />
+                  <span>
+                    <strong>Two-sided</strong>
+                    <small>Longer recipes continue onto the back.</small>
+                  </span>
+                </label>
+              )}
+              {cardSize === "card-6x4" && (
+                <label className="recipe-toggle">
+                  <input
+                    type="checkbox"
+                    checked={showCutLines}
+                    onChange={(event) => setShowCutLines(event.target.checked)}
+                  />
+                  <span>
+                    <strong>Cut lines</strong>
+                  </span>
+                </label>
+              )}
             </div>
           )}
 
