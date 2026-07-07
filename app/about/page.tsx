@@ -19,8 +19,9 @@ export default function AboutPage() {
 />
 
       <div className="mt-cp-5 flex justify-center">
-  <div className="h-px w-16 rounded-full bg-brand" />
-</div>
+<div className="mt-cp-6 mb-cp-6 h-px w-full bg-border" />
+      </div>
+      
       <div className="flex flex-col gap-cp-5 text-ink-soft leading-relaxed">
         <p>
           I built RecipePrinter after building CookPilot, a recipe app for
