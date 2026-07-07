@@ -14,10 +14,9 @@ export default function AboutPage() {
   return (
     <PageShell>
       <PageHeader
-        eyebrow="About"
-        title="About RecipePrinter"
-        lede="Why I built a simple way to turn recipes from websites, screenshots, photos, and text into clean printable recipe cards and PDFs."
-      />
+  title="About RecipePrinter"
+  lede="Why I built a simple way to turn recipes from websites, screenshots, photos, and text into clean printable recipe cards and PDFs."
+/>
 
       <div className="flex flex-col gap-cp-5 text-ink-soft leading-relaxed">
         <p>
