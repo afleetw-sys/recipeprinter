@@ -17,7 +17,13 @@ export const PRINT_CARD_SIZE_OPTIONS: Array<{
   { id: "card-6x4", label: "6 x 4 card", detail: "Landscape recipe card" },
 ];
 
-export type RecipePrintTemplate = "classic" | "heirloom" | "bistro" | "pantry" | "counter";
+export type RecipePrintTemplate =
+  | "classic"
+  | "heirloom"
+  | "bistro"
+  | "pantry"
+  | "counter"
+  | "keepsake";
 type CardSectionLayout = "standard" | "stacked";
 
 export const RECIPE_PRINT_TEMPLATE_OPTIONS: Array<{
@@ -29,6 +35,7 @@ export const RECIPE_PRINT_TEMPLATE_OPTIONS: Array<{
   { id: "pantry", label: "Pantry", detail: "Fine ruled lines with small ingredient sketches" },
   { id: "counter", label: "Counter", detail: "Black-and-white notes with tiny counter details" },
   { id: "heirloom", label: "Heirloom", detail: "Cream stock, red utensil keepsake" },
+  { id: "keepsake", label: "Keepsake", detail: "Cream recipe-box card with classic family style" },
   { id: "bistro", label: "Bistro", detail: "Blue checks, tomato red, playful kitchen card" },
 ];
 
@@ -90,6 +97,29 @@ const STACKED_FRONT_LIMITS: Record<
   },
 };
 
+const TEMPLATE_STACKED_FRONT_LIMIT_OVERRIDES: Partial<
+  Record<
+    RecipePrintTemplate,
+    Partial<
+      Record<
+        PrintCardSize,
+        Partial<{
+          withoutPhoto: Partial<{ ingredients: number; instructions: number }>;
+          withPhoto: Partial<{ ingredients: number; instructions: number }>;
+        }>
+      >
+    >
+  >
+> = {
+  counter: {
+    "card-6x4": {
+      // Counter spends extra vertical space on the checker band and large
+      // photo header, so long two-column step lists need to continue sooner.
+      withPhoto: { instructions: 4 },
+    },
+  },
+};
+
 interface SplitOptions {
   hasPhoto?: boolean;
   template?: RecipePrintTemplate;
@@ -102,8 +132,8 @@ interface SplitOptions {
 // to the fixed card height spills onto the back instead of having its footer
 // silently clipped off by print's `overflow: hidden`.
 const SOURCE_URL_FOOTER_RESERVE: Record<PrintCardSize, number> = {
-  letter: 170,
-  "card-6x4": 90,
+  letter: 260,
+  "card-6x4": 240,
 };
 
 const CONTINUATION_FLOW_BUDGET: Record<
@@ -391,6 +421,25 @@ function applyReserve<T extends Record<string, number>>(budget: T, reserve: numb
   return result;
 }
 
+function mergeNumberRecord<T extends Record<string, number>>(
+  base: T,
+  override: Partial<T> | undefined,
+): T {
+  return { ...base, ...override };
+}
+
+function stackedFrontLimitsFor(
+  size: PrintCardSize,
+  hasPhoto: boolean,
+  template?: RecipePrintTemplate,
+) {
+  const photoKey = hasPhoto ? "withPhoto" : "withoutPhoto";
+  return mergeNumberRecord(
+    STACKED_FRONT_LIMITS[size][photoKey],
+    TEMPLATE_STACKED_FRONT_LIMIT_OVERRIDES[template ?? "classic"]?.[size]?.[photoKey],
+  );
+}
+
 function splitStandardFront(
   recipe: Recipe,
   size: PrintCardSize,
@@ -434,14 +483,13 @@ function splitStackedFront(
   size: PrintCardSize,
   hasPhoto: boolean,
   hasSourceUrl: boolean,
+  template?: RecipePrintTemplate,
 ): SplitRecipeResult {
   const baseBudget = hasPhoto
     ? STACKED_FRONT_BUDGET[size].withPhoto
     : STACKED_FRONT_BUDGET[size].withoutPhoto;
   const frontBudget = applyReserve(baseBudget, hasSourceUrl ? SOURCE_URL_FOOTER_RESERVE[size] : 0);
-  const frontLimits = hasPhoto
-    ? STACKED_FRONT_LIMITS[size].withPhoto
-    : STACKED_FRONT_LIMITS[size].withoutPhoto;
+  const frontLimits = stackedFrontLimitsFor(size, hasPhoto, template);
 
   // Ingredients only reserve their smaller share when they finish on the front
   // and leave room for steps to begin. If they overflow that share they won't
@@ -505,7 +553,7 @@ function splitRecipe(
   size: PrintCardSize,
   options: SplitOptions = {},
 ): SplitRecipeResult {
-  const { hasPhoto = false, showSourceUrl = false } = options;
+  const { hasPhoto = false, showSourceUrl = false, template } = options;
   const hasSourceUrl = showSourceUrl && Boolean(sourceLabel(recipe));
   const standardSplit = splitStandardFront(recipe, size, hasPhoto, hasSourceUrl);
 
@@ -521,7 +569,7 @@ function splitRecipe(
     return standardSplit;
   }
 
-  return splitStackedFront(recipe, size, hasPhoto, hasSourceUrl);
+  return splitStackedFront(recipe, size, hasPhoto, hasSourceUrl, template);
 }
 
 export function recipeNeedsBackSide(
@@ -805,4 +853,3 @@ export const RecipeCardFace = memo(function RecipeCardFace({
     </article>
   );
 });
-

@@ -8,18 +8,21 @@ export const PREMIUM_TEMPLATE_ENTITLEMENTS = {
   heirloom: "template_heirloom",
   bistro: "template_bistro",
   counter: "template_counter",
+  keepsake: "template_keepsake",
 } as const satisfies Partial<Record<RecipePrintTemplate, string>>;
 
 export const PREMIUM_TEMPLATE_PACKAGE_IDS = {
   heirloom: "heirloom",
   bistro: "bistro",
   counter: "counter",
+  keepsake: "keepsake",
 } as const satisfies Partial<Record<RecipePrintTemplate, string>>;
 
 export const PREMIUM_TEMPLATE_PRODUCT_IDS = {
   heirloom: "heirloom",
   bistro: "bistro",
   counter: "counter",
+  keepsake: "keepsake",
 } as const satisfies Partial<Record<RecipePrintTemplate, string>>;
 
 export type PremiumRecipePrintTemplate = keyof typeof PREMIUM_TEMPLATE_ENTITLEMENTS;

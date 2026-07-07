@@ -521,8 +521,8 @@
    instead of stretching one design until it breaks.
    ────────────────────────────────────────────────────────────────────────── */
 .recipe-print-preview {
-  --recipe-paper-width: 8.5in;
-  --recipe-paper-height: 11in;
+  --recipe-paper-width: 6in;
+  --recipe-paper-height: 4in;
   --recipe-card-width: 6in;
   --recipe-card-min-height: 4in;
   --recipe-card-padding-x: 0.32in;
@@ -538,6 +538,7 @@
   --recipe-card-step-gap: 4.2pt;
   --recipe-card-ingredient-gap: 1.8pt;
   --recipe-card-photo-size: 0.92in;
+  --recipe-card-footer-reserve: 0.28in;
 }
 
 .recipe-print-shell {
@@ -1379,6 +1380,54 @@
   margin-top: 0;
 }
 
+.recipe-template-option--keepsake .recipe-template-option__preview {
+  gap: 4px;
+  background:
+    radial-gradient(circle at 22% 28%, rgba(98, 77, 50, 0.028) 0 1px, transparent 1.4px),
+    radial-gradient(circle at 78% 68%, rgba(98, 77, 50, 0.022) 0 1px, transparent 1.4px),
+    #f8efd9;
+  background-size: 19px 19px, 23px 23px, auto;
+  border: 1px solid rgba(102, 78, 48, 0.34);
+  border-radius: 14px;
+  box-shadow: inset 0 0 0 3px rgba(139, 63, 51, 0.22);
+}
+.recipe-template-option--keepsake .recipe-template-option__preview::before {
+  top: 9px;
+  right: 8px;
+  left: auto;
+  width: 25px;
+  height: 25px;
+  border: 1px solid rgba(102, 78, 48, 0.2);
+  border-radius: 7px;
+  background:
+    linear-gradient(135deg, rgba(255, 255, 255, 0.26), transparent 54%),
+    #e7d1a7;
+  box-shadow: inset 0 0 0 3px #fff7e6;
+}
+.recipe-template-option--keepsake .recipe-template-option__preview::after {
+  content: none;
+}
+.recipe-template-option--keepsake .recipe-template-option__sample-title {
+  margin: 14px 42px 0 12px;
+  color: #6e352b;
+  font-size: 0.52rem;
+  letter-spacing: 0;
+}
+.recipe-template-option--keepsake .recipe-template-option__sample-meta {
+  margin-right: 42px;
+  margin-left: 12px;
+  color: #796a58;
+}
+.recipe-template-option--keepsake .recipe-template-option__sample-grid {
+  margin: 5px 12px 11px;
+}
+.recipe-template-option--keepsake .recipe-template-option__sample-grid strong {
+  color: #7b4c36;
+}
+.recipe-template-option--keepsake .recipe-template-option__sample-grid i {
+  color: #3a2d24;
+}
+
 .recipe-mobile-topbar,
 .recipe-mobile-page-count,
 .recipe-mobile-back-button,
@@ -1674,6 +1723,8 @@
 }
 
 .recipe-print-preview--letter {
+  --recipe-paper-width: 8.5in;
+  --recipe-paper-height: 11in;
   --recipe-card-width: 8.5in;
   --recipe-card-min-height: 11in;
   --recipe-card-padding-x: 0.58in;
@@ -1797,6 +1848,18 @@
   --recipe-footer: #7a756c;
   --recipe-radius: 0;
   --recipe-title-font: var(--font-manrope), system-ui, sans-serif;
+}
+
+.recipe-template--keepsake {
+  --recipe-bg: #f8efd9;
+  --recipe-ink: #332820;
+  --recipe-muted: #796a58;
+  --recipe-accent: #6e352b;
+  --recipe-accent-2: #7b4c36;
+  --recipe-line: rgba(102, 78, 48, 0.24);
+  --recipe-step-bg: rgba(123, 76, 54, 0.12);
+  --recipe-footer: #897662;
+  --recipe-radius: 0.2in;
 }
 
 .recipe-card {
@@ -2113,6 +2176,90 @@
   text-transform: uppercase;
 }
 
+.recipe-template--keepsake .recipe-card {
+  padding: calc(var(--recipe-card-padding-top) + 0.04in)
+    calc(var(--recipe-card-padding-x) + 0.06in)
+    calc(var(--recipe-card-padding-bottom) + 0.04in);
+  background:
+    radial-gradient(circle at 14% 18%, rgba(98, 77, 50, 0.028) 0 1px, transparent 1.4px) 0 0 /
+      0.2in 0.2in,
+    radial-gradient(circle at 78% 74%, rgba(98, 77, 50, 0.022) 0 1px, transparent 1.4px) 0.04in 0.03in /
+      0.24in 0.24in,
+    linear-gradient(180deg, rgba(255, 252, 242, 0.66), rgba(248, 239, 217, 0) 1.35in),
+    var(--recipe-bg);
+  border-color: rgba(102, 78, 48, 0.32);
+  box-shadow:
+    inset 0 0 0 0.055in rgba(123, 76, 54, 0.24),
+    inset 0 0 0 0.068in rgba(255, 251, 239, 0.72);
+}
+
+.recipe-template--keepsake .recipe-card > * {
+  position: relative;
+  z-index: 1;
+}
+
+.recipe-template--keepsake .recipe-card::before {
+  top: 0.12in;
+  right: 0.12in;
+  bottom: 0.12in;
+  left: 0.12in;
+  z-index: 0;
+  height: auto;
+  border: 1px solid rgba(123, 76, 54, 0.18);
+  border-radius: calc(var(--recipe-radius) - 0.045in);
+  box-shadow: none;
+}
+
+.recipe-template--keepsake .recipe-card::after {
+  content: none;
+}
+
+.recipe-template--keepsake .recipe-card__header {
+  margin-top: 0.04in;
+  padding-bottom: 0.15in;
+  border-bottom: 0;
+}
+
+.recipe-template--keepsake .recipe-card__title {
+  color: var(--recipe-accent);
+  font-weight: 700;
+  letter-spacing: 0;
+}
+
+.recipe-template--keepsake .recipe-card__meta {
+  color: var(--recipe-muted);
+  letter-spacing: 0.08em;
+}
+
+.recipe-template--keepsake .recipe-card__cols {
+  gap: calc(var(--recipe-card-gap) * 1.12);
+  padding-top: 8px;
+}
+
+.recipe-template--keepsake .recipe-card__label,
+.recipe-template--keepsake .recipe-card__section-title {
+  color: var(--recipe-accent-2);
+}
+
+.recipe-template--keepsake .recipe-card__label {
+  margin-bottom: 8px;
+  letter-spacing: 0.12em;
+}
+
+.recipe-template--keepsake .recipe-card__ingredients li::before {
+  top: 4.2pt;
+  width: 2.8pt;
+  height: 2.8pt;
+  background: rgba(123, 76, 54, 0.62);
+}
+
+.recipe-template--keepsake .recipe-card__step-number {
+  background: rgba(123, 76, 54, 0.055);
+  color: var(--recipe-accent-2);
+  border: 1.2px solid rgba(123, 76, 54, 0.44);
+  font-weight: 850;
+}
+
 .recipe-card__header {
   margin-top: 3px;
   padding-bottom: 5px;
@@ -2153,10 +2300,21 @@
   margin-top: 0;
 }
 
+.recipe-print-preview--card-6x4 .recipe-template--counter .recipe-card__header--with-photo .recipe-card__photo {
+  width: 0.78in;
+  height: 0.78in;
+}
+
 .recipe-print-preview--card-6x4 .recipe-template--heirloom .recipe-card__header--with-photo .recipe-card__photo {
   width: 0.78in;
   height: 0.78in;
   padding: 4px 4px 10px;
+  margin-top: 0;
+}
+
+.recipe-print-preview--card-6x4 .recipe-template--keepsake .recipe-card__header--with-photo .recipe-card__photo {
+  width: 0.72in;
+  height: 0.72in;
   margin-top: 0;
 }
 
@@ -2219,6 +2377,36 @@
 }
 .recipe-template--heirloom .recipe-card__photo-img {
   border-radius: 0;
+}
+
+/* ── Keepsake: a small inset photo window built into the recipe card ─────── */
+.recipe-template--keepsake .recipe-card__header--with-photo {
+  align-items: center;
+}
+
+.recipe-template--keepsake .recipe-card__header--with-photo .recipe-card__headline {
+  align-self: stretch;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+.recipe-template--keepsake .recipe-card__photo {
+  padding: 2px;
+  overflow: hidden;
+  background: rgba(255, 250, 236, 0.64);
+  border: 1px solid rgba(102, 78, 48, 0.12);
+  border-radius: 8px;
+  box-shadow:
+    inset 0 0 0 1px rgba(248, 239, 217, 0.68),
+    0 0.5px 1px rgba(102, 78, 48, 0.08);
+}
+.recipe-template--keepsake .recipe-card__photo::before,
+.recipe-template--keepsake .recipe-card__photo::after {
+  content: none;
+}
+.recipe-template--keepsake .recipe-card__photo-img {
+  border-radius: 6px;
 }
 
 /* ── Bistro: a bold blue-framed menu snapshot with a playful offset & tilt ─── */
@@ -2308,13 +2496,15 @@
 
 .recipe-print-preview--letter .recipe-template--heirloom .recipe-card__header--with-photo,
 .recipe-print-preview--letter .recipe-template--bistro .recipe-card__header--with-photo,
-.recipe-print-preview--letter .recipe-template--pantry .recipe-card__header--with-photo {
+.recipe-print-preview--letter .recipe-template--pantry .recipe-card__header--with-photo,
+.recipe-print-preview--letter .recipe-template--keepsake .recipe-card__header--with-photo {
   align-items: center;
 }
 
 .recipe-print-preview--letter .recipe-template--heirloom .recipe-card__header--with-photo .recipe-card__headline,
 .recipe-print-preview--letter .recipe-template--bistro .recipe-card__header--with-photo .recipe-card__headline,
-.recipe-print-preview--letter .recipe-template--pantry .recipe-card__header--with-photo .recipe-card__headline {
+.recipe-print-preview--letter .recipe-template--pantry .recipe-card__header--with-photo .recipe-card__headline,
+.recipe-print-preview--letter .recipe-template--keepsake .recipe-card__header--with-photo .recipe-card__headline {
   align-self: stretch;
   display: flex;
   flex-direction: column;
@@ -2530,10 +2720,13 @@
 }
 
 .recipe-card__footer {
+  position: absolute;
+  left: var(--recipe-card-padding-x);
+  right: var(--recipe-card-padding-x);
+  bottom: var(--recipe-card-padding-bottom);
   display: flex;
   flex-direction: column;
   gap: 1px;
-  margin-top: 5px;
   padding-top: 3px;
   border-top: 1px solid var(--recipe-line);
   font-size: 7pt;
@@ -2544,6 +2737,19 @@
   overflow-wrap: anywhere;
 }
 
+/* The footer is pinned to the bottom of the fixed-size card (see
+   `.recipe-card__footer`'s `position: absolute` above) so content must leave
+   room for it instead of running underneath. Reserved only where the footer
+   actually renders: letter's classic/pantry always show the brand line, and
+   any face with a source link re-shows the footer regardless of size or
+   template — both mirror the display-toggling rules below. Back/continued
+   faces never show a footer, so they get the full card to themselves. */
+.recipe-print-preview--letter .recipe-template--classic .recipe-card:not(.recipe-card--back):not(.recipe-card--continued) .recipe-card__cols,
+.recipe-print-preview--letter .recipe-template--pantry .recipe-card:not(.recipe-card--back):not(.recipe-card--continued) .recipe-card__cols,
+.recipe-card:has(.recipe-card__footer-source) .recipe-card__cols {
+  padding-bottom: var(--recipe-card-footer-reserve);
+}
+
 /* Card-6x4 and a few templates skip the "Printed with RecipePrinter" line —
    there's no room, or it clashes with the template's own footer treatment.
    The source link is still worth showing there when the user turns it on,
@@ -2552,7 +2758,8 @@
   .recipe-print-preview--card-6x4,
   .recipe-template--heirloom,
   .recipe-template--bistro,
-  .recipe-template--counter
+  .recipe-template--counter,
+  .recipe-template--keepsake
 ) .recipe-card__footer {
   display: none;
 }
@@ -2561,7 +2768,8 @@
   .recipe-print-preview--card-6x4,
   .recipe-template--heirloom,
   .recipe-template--bistro,
-  .recipe-template--counter
+  .recipe-template--counter,
+  .recipe-template--keepsake
 ) .recipe-card__footer:has(.recipe-card__footer-source) {
   display: flex;
 }
@@ -2570,13 +2778,26 @@
   .recipe-print-preview--card-6x4,
   .recipe-template--heirloom,
   .recipe-template--bistro,
-  .recipe-template--counter
+  .recipe-template--counter,
+  .recipe-template--keepsake
 ) .recipe-card__footer-brand {
   display: none;
 }
 
 .recipe-template--pantry .recipe-card__footer {
   border-top: 0;
+}
+
+.recipe-template--keepsake .recipe-card__footer {
+  display: none;
+  border-top: 0;
+  margin-top: 0;
+  padding-top: 0;
+}
+
+.recipe-template--keepsake .recipe-card__footer:has(.recipe-card__footer-source) {
+  display: flex;
+  margin-top: 5px;
 }
 
 .recipe-card--back .recipe-card__footer,
@@ -2870,10 +3091,6 @@
     right: 0;
     height: 5px;
     background: linear-gradient(90deg, var(--recipe-accent), var(--recipe-accent-2));
-  }
-
-  .recipe-template--classic .recipe-card {
-    overflow: visible;
   }
 
   .recipe-print-preview[data-double-sided="true"] .recipe-template--classic .recipe-card--back .recipe-card__accent {

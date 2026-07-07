@@ -1024,8 +1024,7 @@ export default function PrintPage() {
                     onChange={(event) => setShowSourceUrl(event.target.checked)}
                   />
                   <span>
-                    <strong>Include source link</strong>
-                    <small>Prints the original recipe&apos;s URL in the footer.</small>
+                    <strong>Include link</strong>
                   </span>
                 </label>
               )}

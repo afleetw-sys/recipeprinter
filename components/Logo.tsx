@@ -40,7 +40,10 @@ export function LogoImage({
 
 export function Wordmark({ className = "" }: { className?: string }) {
   return (
-    <span className={`font-extrabold ${className}`} style={{ letterSpacing: 0 }}>
+    <span
+      className={`inline-flex items-center leading-none font-extrabold ${className}`}
+      style={{ letterSpacing: 0 }}
+    >
       RecipePrinter
     </span>
   );

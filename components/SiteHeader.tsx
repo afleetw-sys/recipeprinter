@@ -33,7 +33,13 @@ export function SiteHeader({
           </span>
         )}
         <LogoMark size={compact ? 26 : 30} rounded={0} />
-        <Wordmark className={`${compact ? "text-[1.05rem]" : "text-[1.2rem]"} text-ink`} />
+        <Wordmark
+          className={`${
+            compact
+              ? "text-[length:var(--cp-fs-wordmark-compact)]"
+              : "text-[length:var(--cp-fs-wordmark)]"
+          } text-ink`}
+        />
       </Link>
       {actions && (
         <div className="flex items-center gap-cp-3 flex-wrap justify-end">{actions}</div>

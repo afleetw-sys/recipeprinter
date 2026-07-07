@@ -14,7 +14,6 @@ import {
 } from "firebase/auth";
 import { httpsCallable } from "firebase/functions";
 import { getFirebaseAuth } from "@/lib/firebase/client";
-import { getFns } from "@/lib/firebase/functions";
 import { friendlyAuthError, friendlyRecipeLibraryError } from "@/lib/friendlyErrors";
 import {
   cookPilotQueueId,
@@ -42,19 +41,45 @@ const appleProvider = new OAuthProvider("apple.com");
 appleProvider.addScope("email");
 appleProvider.addScope("name");
 
+const COOKPILOT_SIGNED_IN_STORAGE_KEY = "recipeprinter:cookpilot-was-signed-in:v1";
+
+function readCookPilotWasSignedIn(): boolean {
+  if (typeof window === "undefined") return true;
+  try {
+    return window.localStorage.getItem(COOKPILOT_SIGNED_IN_STORAGE_KEY) === "true";
+  } catch {
+    return true;
+  }
+}
+
+function rememberCookPilotSignedIn(signedIn: boolean) {
+  if (typeof window === "undefined") return;
+  try {
+    if (signedIn) {
+      window.localStorage.setItem(COOKPILOT_SIGNED_IN_STORAGE_KEY, "true");
+    } else {
+      window.localStorage.removeItem(COOKPILOT_SIGNED_IN_STORAGE_KEY);
+    }
+  } catch {
+    /* localStorage can be unavailable; Firebase auth remains the source of truth. */
+  }
+}
+
 function useCookPilotAuth() {
   const [user, setUser] = useState<User | null>(null);
-  const [ready, setReady] = useState(false);
+  const [ready, setReady] = useState(() => !readCookPilotWasSignedIn());
 
   useEffect(() => {
     return onAuthStateChanged(getFirebaseAuth(), (nextUser) => {
       // Parser imports use anonymous auth for CookPilot callables. That should
       // not count as being logged in to a CookPilot recipe library.
       if (nextUser?.isAnonymous) {
+        rememberCookPilotSignedIn(false);
         setUser(null);
         setReady(true);
         return;
       }
+      rememberCookPilotSignedIn(Boolean(nextUser));
       setUser(nextUser ?? null);
       setReady(true);
     });
@@ -76,6 +101,7 @@ async function checkEmailProviders(email: string): Promise<string[]> {
     // Scoped to this login flow only, not the shared parser call path.
     await signInAnonymously(auth);
   }
+  const { getFns } = await import("@/lib/firebase/functions");
   const checkUserProviders = httpsCallable<{ email: string }, { providers: string[] | null }>(
     getFns(),
     "checkUserProviders",
