@@ -521,8 +521,6 @@
    instead of stretching one design until it breaks.
    ────────────────────────────────────────────────────────────────────────── */
 .recipe-print-preview {
-  --recipe-paper-width: 6in;
-  --recipe-paper-height: 4in;
   --recipe-card-width: 6in;
   --recipe-card-min-height: 4in;
   --recipe-card-padding-x: 0.32in;
@@ -798,16 +796,18 @@
   display: block;
 }
 
-.recipe-page-scaler .recipe-card {
+.recipe-page-scaler .recipe-card-page {
   width: var(--page-w);
   height: var(--page-h);
-  min-height: var(--page-h);
   max-width: none;
+  overflow: hidden;
+}
+
+.recipe-page-scaler .recipe-card {
   margin: 0;
   border: 0;
   border-radius: 0;
   box-shadow: none;
-  overflow: hidden;
 }
 
 .recipe-page-scaler .recipe-card-side-nav {
@@ -1723,8 +1723,6 @@
 }
 
 .recipe-print-preview--letter {
-  --recipe-paper-width: 8.5in;
-  --recipe-paper-height: 11in;
   --recipe-card-width: 8.5in;
   --recipe-card-min-height: 11in;
   --recipe-card-padding-x: 0.58in;
@@ -1760,6 +1758,23 @@
   align-items: center;
   gap: 24px;
   max-width: 100%;
+}
+
+/* One physical page's worth of card slots. Letter has a single slot that
+   fills the page; 6x4 has up to two, stacked and centered so the page can be
+   whatever size the printer actually uses (see the `@page rp-card-6x4` note)
+   instead of the page being sized to the cards. */
+.recipe-card-page {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+}
+
+.recipe-print-preview--card-6x4 .recipe-card-page {
+  gap: 0.3in;
 }
 
 .recipe-card-side-nav {
@@ -1916,12 +1931,13 @@
 }
 
 /* Every face (front, back, blank duplex spacer) lives in the same DOM node
-   that gets printed — `data-preview-hidden` just keeps the on-screen deck
-   showing one side at a time. It must stay screen-only: hiding it during
-   print too would drop back faces and duplex spacer pages from the actual
-   printed output. */
+   that gets printed — `data-preview-hidden` (set on the whole front/back
+   `.recipe-card-page` group, or on an individual blank card) just keeps the
+   on-screen deck showing one side at a time. It must stay screen-only: hiding
+   it during print too would drop back faces and duplex spacer pages from the
+   actual printed output. */
 @media screen {
-  .recipe-card[data-preview-hidden="true"] {
+  [data-preview-hidden="true"] {
     display: none;
   }
 }
@@ -2954,8 +2970,14 @@
   }
 }
 
+/* No explicit `size` here on purpose: most printers don't have a 6x4 media
+   loaded, and requesting one anyway made Chrome fall back to a mismatched
+   default (e.g. Letter portrait) while still trying to lay out a landscape
+   6x4 region within it. Leaving size unset lets the printer's own default
+   page (whatever the user has selected) apply; only the .recipe-card itself
+   is fixed at 6in x 4in, and up to two are centered per page — see
+   .recipe-card-page below. */
 @page rp-card-6x4 {
-  size: 6in 4in;
   margin: 0;
 }
 
@@ -3027,33 +3049,62 @@
     overflow: visible !important;
   }
 
-  .recipe-print-preview--card-6x4 .recipe-card {
+  .recipe-print-preview--card-6x4 .recipe-card-page {
     page: rp-card-6x4;
   }
 
-  .recipe-print-preview--letter .recipe-card {
+  .recipe-print-preview--letter .recipe-card-page {
     page: rp-letter;
   }
 
+  /* `.recipe-card-page` (one letter card, or up to two 6x4 cards) is the
+     fragmentation unit that breaks pages now, not the individual
+     `.recipe-card` — a sheet's cards need to stay together on one page, and
+     only the group as a whole moves to the next. Block layout, not the
+     on-screen flex centering: a flex `.recipe-card-page` with `vh`-based
+     sizing measured against the browser viewport, not the actual printed
+     page, so two 6x4 cards that fit fine on one physical page were fragmented
+     across two anyway. Plain block flow (each card's own fixed height,
+     `margin: 0 auto` from `.recipe-card` for horizontal centering, a
+     margin-top gap between two stacked cards below) puts sizing back in
+     units the print engine gets right, at the cost of the pair sitting near
+     the top of the page instead of perfectly vertically centered. */
+  .recipe-card-page {
+    display: block !important;
+    width: 100% !important;
+    height: auto !important;
+    break-inside: avoid-page;
+    page-break-inside: avoid;
+    break-after: page;
+    page-break-after: always;
+  }
+
+  .recipe-print-preview--card-6x4 .recipe-card-page {
+    padding-top: 0.6in;
+  }
+
+  .recipe-print-preview--card-6x4 .recipe-card + .recipe-card {
+    margin-top: 0.3in !important;
+  }
+
   /* `display:block` (not the on-screen flex column) for print: `.recipe-card`
-     is a fixed-height box (one physical page) with `.recipe-card__cols` set
-     to `flex: 1` so it grows to fill the space above a footer pinned to the
-     bottom — but flex containers aren't reliable fragmentation contexts for
-     print in most engines, so `break-inside: avoid-page` below goes
-     unhonoured and a short recipe's footer detaches onto its own mostly
-     blank second page instead of sitting right under the content. Block
-     layout keeps the same header → cols → footer stacking order (plain
-     document flow, not flex, is what actually determines that here) while
-     letting the page fragment normally; the only visible change is that the
-     footer now sits directly under short content instead of pinned to the
-     bottom of the page. */
+     has `.recipe-card__cols` set to `flex: 1` so it grows to fill the space
+     above a footer pinned to the bottom — but flex containers aren't
+     reliable fragmentation contexts for print in most engines, so
+     `break-inside: avoid-page` below goes unhonoured and a short recipe's
+     footer detaches onto its own mostly blank second page instead of sitting
+     right under the content. Block layout keeps the same header → cols →
+     footer stacking order (plain document flow, not flex, is what actually
+     determines that here) while letting the page fragment normally; the only
+     visible change is that the footer now sits directly under short content
+     instead of pinned to the bottom of the page. */
   .recipe-card {
     display: block !important;
     width: var(--recipe-card-width);
     max-width: none !important;
     height: var(--recipe-card-min-height);
     min-height: 0;
-    margin: 0 !important;
+    margin: 0 auto !important;
     border: 0 !important;
     border-radius: 0 !important;
     box-shadow: none !important;
@@ -3062,26 +3113,6 @@
     print-color-adjust: exact;
     break-inside: avoid-page;
     page-break-inside: avoid;
-    break-after: page;
-    page-break-after: always;
-  }
-
-  .recipe-print-preview--letter .recipe-card {
-    margin: 0 !important;
-  }
-
-  .recipe-print-preview--card-6x4 .recipe-card {
-    margin: 0 !important;
-  }
-
-  .recipe-print-preview--card-6x4[data-double-sided="true"] .recipe-card--back {
-    margin-top: calc(var(--recipe-paper-height) - var(--recipe-card-min-height)) !important;
-    margin-left: 0 !important;
-  }
-
-  .recipe-print-preview--card-6x4[data-double-sided="true"] .recipe-card--front {
-    margin-top: 0 !important;
-    margin-left: 0 !important;
   }
 
   .recipe-template--classic .recipe-card__accent {
@@ -3103,7 +3134,7 @@
     max-width: none;
   }
 
-  .recipe-page-deck > .recipe-page-slide:last-child .recipe-card:last-child {
+  .recipe-page-deck > .recipe-page-slide:last-child .recipe-card-page:last-child {
     break-after: auto;
     page-break-after: auto;
   }

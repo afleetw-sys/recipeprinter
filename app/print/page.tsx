@@ -61,12 +61,25 @@ const PENDING_PRINT_STORAGE_KEY = "recipeprinter:pending-premium-print:v1";
 const PRICE_LOOKUP_USER_STORAGE_KEY = "recipeprinter:price-lookup-user:v1";
 const SINGLE_RECIPE_DECK_TOP_PADDING = 16;
 
-// Real printed page dimensions in CSS px (96px per inch). The page navigator
-// renders each card at this true size and scales it down with a transform, so
-// thumbnails and the canvas look exactly like the paper, just smaller.
+// Real card dimensions in CSS px (96px per inch), used only to size the
+// on-screen scaler/thumbnails so a card looks true-to-size, just smaller. The
+// navigator still browses and previews one recipe's card at a time (see
+// NavItem below) even for 6x4, where two cards end up sharing a physical
+// printed page — so this stays the size of a single card, not the (assumed,
+// unknown) physical sheet. The print-time page assumption lives entirely in
+// the `.recipe-card-page` print CSS in globals.css and never touches this.
 const PAGE_DIMS: Record<PrintCardSize, { w: number; h: number }> = {
   letter: { w: 8.5 * 96, h: 11 * 96 },
   "card-6x4": { w: 6 * 96, h: 4 * 96 },
+};
+
+// How many recipe-card slots share one physical page. Letter cards are the
+// size of the page, so there's only ever one; 6x4 cards are small enough to
+// fit two per sheet (stacked), which is also the most that should share a
+// page even if more would technically fit.
+const SLOTS_PER_SHEET: Record<PrintCardSize, number> = {
+  letter: 1,
+  "card-6x4": 2,
 };
 
 // Rail thumbnails target a fixed width so they always fit the rail column,
@@ -77,31 +90,60 @@ const RAIL_SCALE: Record<PrintCardSize, number> = {
   "card-6x4": RAIL_THUMB_WIDTH / PAGE_DIMS["card-6x4"].w,
 };
 
-// One physical sheet of paper in the navigator. A two-sided sheet keeps a
-// front+back pair (flip to see the back); a single-sided continuation is its
-// own sheet.
-interface PageSheet {
-  id: string;
+// One card-sized slot on a physical sheet: a recipe's front (and, once it's
+// paired up during the back pass below, its back/continuation). `null` means
+// the slot is unused — the sheet ran out of recipes before filling every slot.
+interface SheetSlot {
   recipe: Recipe;
   label: string;
-  pageLabel: string;
   front: RecipeFace;
   back: RecipeFace | null;
-  flip: boolean;
   hasBack: boolean;
-  twoSided: boolean;
   isContinuation: boolean;
 }
 
+// One physical sheet of paper that will actually come out of the printer.
+// Letter sheets have a single slot (the card is the page); 6x4 sheets have up
+// to two slots side by side on the same page. `backGroupNeeded` covers both
+// cases where a back side must print: real back content in any slot, or (for
+// duplex jobs) a fully blank back so a later sheet's front doesn't land on
+// this sheet's back.
+interface PageSheet {
+  id: string;
+  slots: (SheetSlot | null)[];
+  backGroupNeeded: boolean;
+}
+
+// The unit the on-screen navigator (rail + deck) browses by: one recipe face
+// at a time, exactly like before 6x4 pages started sharing sheets with a
+// second recipe. Several `NavItem`s can point at the same sheet/slotIndex —
+// that's what lets two recipes that will print on one physical page still
+// browse and flip independently on screen.
+interface NavItem {
+  sheetIndex: number;
+  slotIndex: number;
+  label: string;
+  pageLabel: string;
+  flip: boolean;
+}
+
 /**
- * A recipe sheet rendered at true page size, scaled down by `scale` on screen.
- * Both faces are always in the DOM — whichever one isn't `activeSide` is
- * hidden with `data-preview-hidden`, a screen-only rule — so this is also the
- * literal content that gets printed (via `@media print` un-scaling it), not a
- * separate copy. One tree, so preview and print can't drift apart.
+ * A physical sheet rendered at true page size, scaled down by `scale` on
+ * screen. Every face for every slot is always in the DOM — for print (via
+ * `@media print` un-scaling it) that's the whole point, since up to two
+ * slots' worth of cards share one printed page. On screen, though, browsing
+ * still happens one recipe at a time like it always has: `data-preview-hidden`
+ * (a screen-only rule) hides the whole front/back group that isn't
+ * `activeSide` — otherwise its declared page-sized height still pushes the
+ * flex column taller even with its cards individually hidden, shoving the
+ * side you want to see out of the scaler's clipped viewport — and, within
+ * whichever group is showing, hides every card except the one matching
+ * `activeSlotIndex`. One tree, so preview and print can't drift apart even
+ * though they show different amounts of it at once.
  */
 const ScaledPage = memo(function ScaledPage({
   sheet,
+  activeSlotIndex,
   activeSide,
   scale,
   size,
@@ -110,9 +152,9 @@ const ScaledPage = memo(function ScaledPage({
   showImage,
   showSourceUrl,
   showCutLines,
-  needsBackSpacer,
 }: {
   sheet: PageSheet;
+  activeSlotIndex: number;
   activeSide: "front" | "back";
   scale: number;
   size: PrintCardSize;
@@ -121,9 +163,11 @@ const ScaledPage = memo(function ScaledPage({
   showImage: boolean;
   showSourceUrl: boolean;
   showCutLines: boolean;
-  needsBackSpacer: boolean;
 }) {
   const dims = PAGE_DIMS[size];
+  const anySlot = sheet.slots.find((slot): slot is SheetSlot => slot !== null) ?? null;
+  if (!anySlot) return null;
+
   return (
     <div
       className="recipe-page-scaler"
@@ -145,43 +189,70 @@ const ScaledPage = memo(function ScaledPage({
           <div
             className={`recipe-card-set recipe-card-set--${size} recipe-template--${template}`}
           >
-            <RecipeCardFace
-              recipe={sheet.recipe}
-              ingredients={sheet.front.ingredients}
-              instructions={sheet.front.instructions}
-              side="front"
-              showHeader={!sheet.isContinuation}
-              layout={sheet.front.layout}
-              hasBackFace={sheet.hasBack}
-              showImage={showImage}
-              showSourceUrl={showSourceUrl}
-              continued={sheet.isContinuation}
-              previewHidden={activeSide !== "front"}
-            />
-            {sheet.back ? (
-              <RecipeCardFace
-                recipe={sheet.recipe}
-                ingredients={sheet.back.ingredients}
-                instructions={sheet.back.instructions}
-                side="back"
-                showHeader={false}
-                layout={sheet.back.layout}
-                hasBackFace={sheet.hasBack}
-                continued
-                previewHidden={activeSide !== "back"}
-              />
-            ) : needsBackSpacer ? (
-              <RecipeCardFace
-                recipe={sheet.recipe}
-                ingredients={[]}
-                instructions={[]}
-                side="back"
-                showHeader={false}
-                layout="standard"
-                hasBackFace={false}
-                blank
-              />
-            ) : null}
+            <div
+              className="recipe-card-page recipe-card-page--front"
+              data-preview-hidden={activeSide !== "front" ? "true" : undefined}
+            >
+              {sheet.slots.map((slot, slotIndex) =>
+                // An empty front slot just means the queue ran out of
+                // recipes (an odd count leaves the last sheet's second slot
+                // unfilled) — leave it empty rather than printing a blank
+                // card. Blank cards are only for the back side, to keep a
+                // duplex job's physical page count in sync (see
+                // `backGroupNeeded`), not for the front.
+                slot ? (
+                  <RecipeCardFace
+                    key={`front-${slotIndex}`}
+                    recipe={slot.recipe}
+                    ingredients={slot.front.ingredients}
+                    instructions={slot.front.instructions}
+                    side="front"
+                    showHeader={!slot.isContinuation}
+                    layout={slot.front.layout}
+                    hasBackFace={slot.hasBack}
+                    showImage={showImage}
+                    showSourceUrl={showSourceUrl}
+                    continued={slot.isContinuation}
+                    previewHidden={slotIndex !== activeSlotIndex || activeSide !== "front"}
+                  />
+                ) : null,
+              )}
+            </div>
+            {sheet.backGroupNeeded && (
+              <div
+                className="recipe-card-page recipe-card-page--back"
+                data-preview-hidden={activeSide !== "back" ? "true" : undefined}
+              >
+                {sheet.slots.map((slot, slotIndex) =>
+                  slot?.back ? (
+                    <RecipeCardFace
+                      key={`back-${slotIndex}`}
+                      recipe={slot.recipe}
+                      ingredients={slot.back.ingredients}
+                      instructions={slot.back.instructions}
+                      side="back"
+                      showHeader={false}
+                      layout={slot.back.layout}
+                      hasBackFace={slot.hasBack}
+                      continued
+                      previewHidden={slotIndex !== activeSlotIndex || activeSide !== "back"}
+                    />
+                  ) : (
+                    <RecipeCardFace
+                      key={`back-blank-${slotIndex}`}
+                      recipe={slot?.recipe ?? anySlot.recipe}
+                      ingredients={[]}
+                      instructions={[]}
+                      side="back"
+                      showHeader={false}
+                      layout="standard"
+                      hasBackFace={false}
+                      blank
+                    />
+                  ),
+                )}
+              </div>
+            )}
           </div>
         </div>
       </div>
@@ -297,70 +368,147 @@ export default function PrintPage() {
   );
   const continueOnBack = hasRecipeBackSide && doubleSided;
 
-  // The physical sheets the printer will produce, in order. Two-sided sheets
-  // keep a flippable front+back; single-sided overflow becomes its own sheet.
+  // The physical sheets the printer will produce, in order. Each sheet fills
+  // its `SLOTS_PER_SHEET[cardSize]` slots by walking an ordered queue of
+  // recipes: a slot keeps consuming its current recipe's faces (front, then
+  // continuations) until that recipe runs out, then picks up the next one —
+  // so short recipes interleave two-to-a-page around a long one that needs
+  // several sheets to itself. For two-sided jobs the same slots are filled a
+  // second time for the back, so a slot's front and back always belong to the
+  // same recipe and land on opposite faces of one sheet.
   const sheets = useMemo<PageSheet[]>(() => {
-    const out: PageSheet[] = [];
+    const slotCount = SLOTS_PER_SHEET[cardSize];
+
+    interface Column {
+      recipe: Recipe;
+      label: string;
+      faces: RecipeFace[];
+      hasBack: boolean;
+      idx: number;
+    }
+
+    const queue: Column[] = [];
     for (const item of items ?? []) {
       if (!item.recipe) continue;
       const recipe = item.recipe;
-      const title = recipe.title || "Recipe";
       const faces = getRecipeFaces(recipe, cardSize, {
         hasPhoto: photosOn && Boolean(recipe.image),
         showSourceUrl: sourceUrlOn,
         template,
       });
+      queue.push({
+        recipe,
+        label: recipe.title || "Recipe",
+        faces: faces.pages,
+        hasBack: faces.hasBack,
+        idx: 0,
+      });
+    }
+
+    const columns: (Column | null)[] = new Array(slotCount).fill(null);
+
+    function fillColumn(slotIndex: number): Column | null {
+      let column = columns[slotIndex];
+      if (!column || column.idx >= column.faces.length) {
+        column = queue.shift() ?? null;
+      }
+      columns[slotIndex] = column;
+      return column;
+    }
+
+    function takeFace(slotIndex: number) {
+      const column = fillColumn(slotIndex);
+      if (!column) return null;
+      const faceIndex = column.idx;
+      const face = column.faces[faceIndex];
+      column.idx += 1;
+      return { column, face, faceIndex };
+    }
+
+    const out: PageSheet[] = [];
+    let sheetNum = 0;
+
+    while (queue.length > 0 || columns.some((column) => column && column.idx < column.faces.length)) {
+      const takes = Array.from({ length: slotCount }, (_, slotIndex) => takeFace(slotIndex));
+      if (takes.every((take) => take === null)) break;
+      sheetNum += 1;
+
+      const slots: (SheetSlot | null)[] = takes.map((take) =>
+        take
+          ? {
+              recipe: take.column.recipe,
+              label: take.column.label,
+              front: take.face,
+              back: null,
+              hasBack: take.column.hasBack,
+              isContinuation: take.faceIndex > 0,
+            }
+          : null,
+      );
+
+      let anyBack = false;
       if (continueOnBack) {
-        for (let pageIndex = 0; pageIndex < faces.pages.length; pageIndex += 2) {
-          const front = faces.pages[pageIndex];
-          const back = faces.pages[pageIndex + 1] ?? null;
-          const isContinuation = pageIndex > 0;
-          out.push({
-            id: `${item.id}-sheet-${pageIndex / 2 + 1}`,
-            recipe,
-            label: title,
-            pageLabel:
-              pageIndex === 0
-                ? back
-                  ? "Two-sided"
-                  : "One-sided"
-                : back
-                  ? `Continued ${pageIndex + 1}-${pageIndex + 2}`
-                  : `Continued ${pageIndex + 1}`,
-            front,
-            back,
-            flip: back !== null,
-            hasBack: faces.hasBack,
-            twoSided: back !== null,
-            isContinuation,
-          });
-        }
-      } else {
-        faces.pages.forEach((face, pageIndex) => {
-          out.push({
-            id: `${item.id}-page-${pageIndex + 1}`,
-            recipe,
-            label: title,
-            pageLabel:
-              pageIndex === 0
-                ? faces.hasBack
-                  ? "Page 1"
-                  : "One page"
-                : `Page ${pageIndex + 1} · continued`,
-            front: face,
-            back: null,
-            flip: false,
-            hasBack: faces.hasBack,
-            twoSided: false,
-            isContinuation: pageIndex > 0,
-          });
+        takes.forEach((take, slotIndex) => {
+          if (!take) return;
+          const column = take.column;
+          if (column.idx < column.faces.length) {
+            slots[slotIndex]!.back = column.faces[column.idx];
+            column.idx += 1;
+            anyBack = true;
+          }
         });
       }
+
+      out.push({
+        id: `sheet-${sheetNum}`,
+        slots,
+        backGroupNeeded: anyBack,
+      });
     }
+
+    // A duplex job needs every sheet but the last to emit a back side — even
+    // a fully blank one — so the physical page count stays in sync and a
+    // later sheet's front doesn't land on the back of an earlier one.
+    if (continueOnBack) {
+      out.forEach((sheet, index) => {
+        sheet.backGroupNeeded = sheet.backGroupNeeded || index !== out.length - 1;
+      });
+    }
+
     return out;
   }, [items, cardSize, continueOnBack, photosOn, sourceUrlOn, template]);
 
-  const [activeSheetIndex, setActiveSheetIndex] = useState(0);
+  // What the rail and deck actually browse: one recipe face per item, in the
+  // same order recipes were queued, regardless of which physical sheet (and
+  // slot on it) they end up sharing for print.
+  const navItems = useMemo<NavItem[]>(() => {
+    const out: NavItem[] = [];
+    sheets.forEach((sheet, sheetIndex) => {
+      sheet.slots.forEach((slot, slotIndex) => {
+        if (!slot) return;
+        out.push({
+          sheetIndex,
+          slotIndex,
+          label: slot.label,
+          pageLabel: !continueOnBack
+            ? slot.isContinuation
+              ? "Continued"
+              : slot.hasBack
+                ? "Page 1"
+                : "One page"
+            : slot.isContinuation
+              ? "Continued"
+              : slot.back
+                ? "Two-sided"
+                : "One-sided",
+          flip: slot.back !== null,
+        });
+      });
+    });
+    return out;
+  }, [sheets, continueOnBack]);
+
+  const [activeNavIndex, setActiveNavIndex] = useState(0);
   const [canvasSide, setCanvasSide] = useState<"front" | "back">("front");
   const [mobileDrawer, setMobileDrawer] = useState<"template" | null>(null);
   const deckRef = useRef<HTMLDivElement>(null);
@@ -372,15 +520,19 @@ export default function PrintPage() {
   const suppressScrollSyncRef = useRef(false);
   const scrollSyncTimerRef = useRef<number | undefined>(undefined);
 
-  // Keep the active sheet valid as the page list changes (size / two-sided).
-  useEffect(() => {
-    setActiveSheetIndex((index) => Math.min(index, Math.max(0, sheets.length - 1)));
-  }, [sheets.length]);
+  const activeNavItem = navItems[activeNavIndex] ?? null;
+  const activeSheetIndex = activeNavItem?.sheetIndex ?? 0;
+  const activeSlotIndex = activeNavItem?.slotIndex ?? 0;
 
-  // Always start a freshly selected sheet on its front face.
+  // Keep the active recipe valid as the page list changes (size / two-sided).
+  useEffect(() => {
+    setActiveNavIndex((index) => Math.min(index, Math.max(0, navItems.length - 1)));
+  }, [navItems.length]);
+
+  // Always start a freshly selected recipe on its front face.
   useEffect(() => {
     setCanvasSide("front");
-  }, [activeSheetIndex, continueOnBack]);
+  }, [activeNavIndex, continueOnBack]);
 
   // Scale each deck page to fit the available width while leaving room above
   // and below so the previous / next pages peek in (implying you can scroll).
@@ -407,7 +559,10 @@ export default function PrintPage() {
     return () => observer.disconnect();
   }, [cardSize, sheets.length]);
 
-  // Scrolling the deck selects whichever page is closest to the centre.
+  // Scrolling the deck selects whichever page is closest to the centre. A
+  // sheet can hold two recipes' worth of nav items; scrolling to it keeps
+  // whichever one is already active if that's this sheet, so nudging the
+  // scroll position doesn't yank you back to the sheet's first slot.
   useEffect(() => {
     const el = deckRef.current;
     if (!el) return;
@@ -418,7 +573,7 @@ export default function PrintPage() {
       raf = requestAnimationFrame(() => {
         const mobile = window.matchMedia("(max-width: 820px)").matches;
         const mid = mobile ? el.scrollLeft + el.clientWidth / 2 : el.scrollTop + el.clientHeight / 2;
-        let best = 0;
+        let bestSheet = 0;
         let bestDist = Number.POSITIVE_INFINITY;
         slideRefs.current.forEach((slide, index) => {
           if (!slide) return;
@@ -428,10 +583,14 @@ export default function PrintPage() {
           const dist = Math.abs(center - mid);
           if (dist < bestDist) {
             bestDist = dist;
-            best = index;
+            bestSheet = index;
           }
         });
-        setActiveSheetIndex(best);
+        setActiveNavIndex((current) => {
+          if (navItems[current]?.sheetIndex === bestSheet) return current;
+          const firstForSheet = navItems.findIndex((item) => item.sheetIndex === bestSheet);
+          return firstForSheet === -1 ? current : firstForSheet;
+        });
       });
     };
     el.addEventListener("scroll", onScroll, { passive: true });
@@ -439,7 +598,7 @@ export default function PrintPage() {
       el.removeEventListener("scroll", onScroll);
       cancelAnimationFrame(raf);
     };
-  }, [sheets.length]);
+  }, [sheets.length, navItems]);
 
   // Centre the active page when the deck is first laid out or rescaled.
   useEffect(() => {
@@ -476,20 +635,26 @@ export default function PrintPage() {
     });
   }
 
-  function goToSlide(index: number) {
-    const behavior = Math.abs(index - activeSheetIndex) <= 3 ? "smooth" : "auto";
-    // Hold off the scroll listener until the animation settles, otherwise it
-    // overwrites our selection with the page that's centred partway through.
-    suppressScrollSyncRef.current = true;
-    window.clearTimeout(scrollSyncTimerRef.current);
-    scrollSyncTimerRef.current = window.setTimeout(
-      () => {
-        suppressScrollSyncRef.current = false;
-      },
-      behavior === "smooth" ? 500 : 120,
-    );
-    setActiveSheetIndex(index);
-    centerSlide(index, behavior);
+  function goToSlide(navIndex: number) {
+    const targetSheetIndex = navItems[navIndex]?.sheetIndex ?? 0;
+    // Two nav items sharing a sheet (a 6x4 page with two recipes) don't need
+    // the deck to scroll at all — the sheet is already centred, only which
+    // recipe's card is visible on it changes.
+    if (targetSheetIndex !== activeSheetIndex) {
+      const behavior = Math.abs(targetSheetIndex - activeSheetIndex) <= 3 ? "smooth" : "auto";
+      // Hold off the scroll listener until the animation settles, otherwise it
+      // overwrites our selection with the page that's centred partway through.
+      suppressScrollSyncRef.current = true;
+      window.clearTimeout(scrollSyncTimerRef.current);
+      scrollSyncTimerRef.current = window.setTimeout(
+        () => {
+          suppressScrollSyncRef.current = false;
+        },
+        behavior === "smooth" ? 500 : 120,
+      );
+      centerSlide(targetSheetIndex, behavior);
+    }
+    setActiveNavIndex(navIndex);
   }
 
   const selectedPremiumTemplate = isPremiumTemplate(template) ? template : null;
@@ -759,20 +924,21 @@ export default function PrintPage() {
           className={`recipe-page-rail recipe-page-rail--${cardSize} no-print`}
           aria-label="Pages"
         >
-          {sheets.map((sheet, index) => (
+          {navItems.map((navItem, index) => (
             <button
-              key={sheet.id}
+              key={`${sheets[navItem.sheetIndex]?.id}-${navItem.slotIndex}`}
               type="button"
               className={`recipe-page-rail__item ${
-                index === activeSheetIndex ? "is-active" : ""
+                index === activeNavIndex ? "is-active" : ""
               }`}
-              aria-current={index === activeSheetIndex}
+              aria-current={index === activeNavIndex}
               onClick={() => goToSlide(index)}
             >
               <span className="recipe-page-rail__num">{index + 1}</span>
               <span className="recipe-page-rail__thumb">
                 <ScaledPage
-                  sheet={sheet}
+                  sheet={sheets[navItem.sheetIndex]}
+                  activeSlotIndex={navItem.slotIndex}
                   activeSide="front"
                   scale={RAIL_SCALE[cardSize]}
                   size={cardSize}
@@ -781,12 +947,11 @@ export default function PrintPage() {
                   showImage={photosOn}
                   showSourceUrl={sourceUrlOn}
                   showCutLines={showCutLines}
-                  needsBackSpacer={false}
                 />
               </span>
               <span className="recipe-page-rail__label">
-                <span className="recipe-page-rail__title">{sheet.label}</span>
-                <span className="recipe-page-rail__meta">{sheet.pageLabel}</span>
+                <span className="recipe-page-rail__title">{navItem.label}</span>
+                <span className="recipe-page-rail__meta">{navItem.pageLabel}</span>
               </span>
             </button>
           ))}
@@ -804,7 +969,7 @@ export default function PrintPage() {
               <span>Back</span>
             </Link>
             <div className="recipe-mobile-page-count" aria-live="polite">
-              {activeSheetIndex + 1} of {sheets.length}
+              {activeNavIndex + 1} of {navItems.length}
             </div>
           </div>
           <div className="recipe-mobile-toolbar no-print">
@@ -878,76 +1043,84 @@ export default function PrintPage() {
             </div>
           )}
           <div className="recipe-page-deck" id="recipe-page-deck" ref={deckRef}>
-            {sheets.map((sheet, index) => (
-              <div
-                key={sheet.id}
-                ref={(el) => {
-                  slideRefs.current[index] = el;
-                }}
-                className={`recipe-page-slide ${
-                  index === activeSheetIndex ? "is-active" : ""
-                }`}
-                data-first={index === 0 ? "true" : undefined}
-                onClick={() => goToSlide(index)}
-                role="button"
-                tabIndex={0}
-                aria-current={index === activeSheetIndex}
-                aria-label={`${sheet.label} (${sheet.pageLabel})`}
-                onKeyDown={(event) => {
-                  if (event.key === "Enter" || event.key === " ") {
+            {sheets.map((sheet, index) => {
+              const isActiveSheet = index === activeSheetIndex;
+              const sheetLabel = sheet.slots
+                .filter((slot): slot is SheetSlot => slot !== null)
+                .map((slot) => slot.label)
+                .join(" and ");
+              return (
+                <div
+                  key={sheet.id}
+                  ref={(el) => {
+                    slideRefs.current[index] = el;
+                  }}
+                  className={`recipe-page-slide ${isActiveSheet ? "is-active" : ""}`}
+                  data-first={index === 0 ? "true" : undefined}
+                  onClick={() => {
+                    if (isActiveSheet) return;
+                    const firstNavIndex = navItems.findIndex((item) => item.sheetIndex === index);
+                    if (firstNavIndex !== -1) goToSlide(firstNavIndex);
+                  }}
+                  role="button"
+                  tabIndex={0}
+                  aria-current={isActiveSheet}
+                  aria-label={sheetLabel}
+                  onKeyDown={(event) => {
+                    if (event.key !== "Enter" && event.key !== " ") return;
                     event.preventDefault();
-                    goToSlide(index);
-                  }
-                }}
-              >
-                {index === activeSheetIndex && sheet.flip && (
-                  <div
-                    className="recipe-card-side-nav recipe-page-canvas__flip no-print"
-                    aria-label="Sheet sides"
-                  >
-                    <button
-                      type="button"
-                      className="recipe-card-side-nav__button"
-                      aria-label="Show front"
-                      disabled={canvasSide === "front"}
-                      onClick={(event) => {
-                        event.stopPropagation();
-                        setCanvasSide("front");
-                      }}
+                    if (isActiveSheet) return;
+                    const firstNavIndex = navItems.findIndex((item) => item.sheetIndex === index);
+                    if (firstNavIndex !== -1) goToSlide(firstNavIndex);
+                  }}
+                >
+                  {isActiveSheet && activeNavItem?.flip && (
+                    <div
+                      className="recipe-card-side-nav recipe-page-canvas__flip no-print"
+                      aria-label="Sheet sides"
                     >
-                      ←
-                    </button>
-                    <span>{canvasSide === "front" ? "Front" : "Back"}</span>
-                    <button
-                      type="button"
-                      className="recipe-card-side-nav__button"
-                      aria-label="Show back"
-                      disabled={canvasSide === "back"}
-                      onClick={(event) => {
-                        event.stopPropagation();
-                        setCanvasSide("back");
-                      }}
-                    >
-                      →
-                    </button>
-                  </div>
-                )}
-                <ScaledPage
-                  sheet={sheet}
-                  activeSide={index === activeSheetIndex ? canvasSide : "front"}
-                  scale={deckScale}
-                  size={cardSize}
-                  template={template}
-                  doubleSided={continueOnBack}
-                  showImage={photosOn}
-                  showSourceUrl={sourceUrlOn}
-                  showCutLines={showCutLines}
-                  needsBackSpacer={
-                    continueOnBack && sheet.back === null && index !== sheets.length - 1
-                  }
-                />
-              </div>
-            ))}
+                      <button
+                        type="button"
+                        className="recipe-card-side-nav__button"
+                        aria-label="Show front"
+                        disabled={canvasSide === "front"}
+                        onClick={(event) => {
+                          event.stopPropagation();
+                          setCanvasSide("front");
+                        }}
+                      >
+                        ←
+                      </button>
+                      <span>{canvasSide === "front" ? "Front" : "Back"}</span>
+                      <button
+                        type="button"
+                        className="recipe-card-side-nav__button"
+                        aria-label="Show back"
+                        disabled={canvasSide === "back"}
+                        onClick={(event) => {
+                          event.stopPropagation();
+                          setCanvasSide("back");
+                        }}
+                      >
+                        →
+                      </button>
+                    </div>
+                  )}
+                  <ScaledPage
+                    sheet={sheet}
+                    activeSlotIndex={isActiveSheet ? activeSlotIndex : 0}
+                    activeSide={isActiveSheet ? canvasSide : "front"}
+                    scale={deckScale}
+                    size={cardSize}
+                    template={template}
+                    doubleSided={continueOnBack}
+                    showImage={photosOn}
+                    showSourceUrl={sourceUrlOn}
+                    showCutLines={showCutLines}
+                  />
+                </div>
+              );
+            })}
           </div>
         </section>
 
