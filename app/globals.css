@@ -2531,6 +2531,13 @@
   --recipe-card-padding-top: 0.42in;
 }
 
+/* Without a photo, that trimmed padding leaves the title sitting right under
+   the checkerboard band with barely any breathing room. Give the header
+   more room to clear it when there's no photo pushing things down instead. */
+.recipe-print-preview--letter .recipe-template--counter .recipe-card__header:not(.recipe-card__header--with-photo) {
+  margin-top: 0.5in;
+}
+
 .recipe-print-preview--letter .recipe-template--heirloom .recipe-card__header--with-photo,
 .recipe-print-preview--letter .recipe-template--bistro .recipe-card__header--with-photo,
 .recipe-print-preview--letter .recipe-template--pantry .recipe-card__header--with-photo,
