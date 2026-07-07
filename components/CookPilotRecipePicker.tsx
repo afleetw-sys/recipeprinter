@@ -224,9 +224,10 @@ function LoginDialog({ onClose }: { onClose: () => void }) {
               </label>
               <input
                 id="cookpilot-email"
+                name="username"
                 className="field"
                 type="email"
-                autoComplete="email"
+                autoComplete="username"
                 autoFocus
                 value={email}
                 onChange={(event) => setEmail(event.target.value)}
@@ -239,12 +240,23 @@ function LoginDialog({ onClose }: { onClose: () => void }) {
           </form>
         ) : (
           <form className="flex flex-col gap-cp-3" onSubmit={handlePasswordSubmit}>
+            <input
+              className="sr-only"
+              type="email"
+              name="username"
+              autoComplete="username"
+              value={email.trim().toLowerCase()}
+              readOnly
+              tabIndex={-1}
+              aria-hidden="true"
+            />
             <div>
               <label className="field-label" htmlFor="cookpilot-password">
                 Password for {email.trim()}
               </label>
               <input
                 id="cookpilot-password"
+                name="password"
                 className="field"
                 type="password"
                 autoComplete="current-password"

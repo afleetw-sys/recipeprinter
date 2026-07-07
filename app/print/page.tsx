@@ -153,7 +153,6 @@ const ScaledPage = memo(function ScaledPage({
   doubleSided,
   showImage,
   showSourceUrl,
-  showCutLines,
 }: {
   sheet: PageSheet;
   isLastSheet: boolean;
@@ -165,7 +164,6 @@ const ScaledPage = memo(function ScaledPage({
   doubleSided: boolean;
   showImage: boolean;
   showSourceUrl: boolean;
-  showCutLines: boolean;
 }) {
   const dims = PAGE_DIMS[size];
   const anySlot = sheet.slots.find((slot): slot is SheetSlot => slot !== null) ?? null;
@@ -194,9 +192,7 @@ const ScaledPage = memo(function ScaledPage({
     >
       <div className="recipe-page-scaler__inner">
         <div
-          className={`recipe-print-preview recipe-print-preview--${size} ${
-            showCutLines ? "recipe-print-preview--cut-lines" : ""
-          }`}
+          className={`recipe-print-preview recipe-print-preview--${size}`}
           data-double-sided={doubleSided ? "true" : "false"}
         >
           <div
@@ -342,7 +338,6 @@ export default function PrintPage() {
     initialRecipePrintTemplate(params.get("template")),
   );
   const [doubleSided, setDoubleSided] = useState(true);
-  const [showCutLines, setShowCutLines] = useState(true);
   const [showPhoto, setShowPhoto] = useState(false);
   const [showSourceUrl, setShowSourceUrl] = useState(false);
   const [isPrinting, setIsPrinting] = useState(false);
@@ -538,10 +533,6 @@ export default function PrintPage() {
   const suppressScrollSyncRef = useRef(false);
   const scrollSyncTimerRef = useRef<number | undefined>(undefined);
 
-  const activeNavItem = navItems[activeNavIndex] ?? null;
-  const activeSheetIndex = activeNavItem?.sheetIndex ?? 0;
-  const activeSlotIndex = activeNavItem?.slotIndex ?? 0;
-
   // Keep the active recipe valid as the page list changes (size / two-sided).
   useEffect(() => {
     setActiveNavIndex((index) => Math.min(index, Math.max(0, navItems.length - 1)));
@@ -577,10 +568,9 @@ export default function PrintPage() {
     return () => observer.disconnect();
   }, [cardSize, sheets.length]);
 
-  // Scrolling the deck selects whichever page is closest to the centre. A
-  // sheet can hold two recipes' worth of nav items; scrolling to it keeps
-  // whichever one is already active if that's this sheet, so nudging the
-  // scroll position doesn't yank you back to the sheet's first slot.
+  // Scrolling the deck selects whichever slide is closest to the centre.
+  // Every nav item — including a second recipe sharing a sheet with the
+  // first — has its own slide, so this is a direct index lookup.
   useEffect(() => {
     const el = deckRef.current;
     if (!el) return;
@@ -591,7 +581,7 @@ export default function PrintPage() {
       raf = requestAnimationFrame(() => {
         const mobile = window.matchMedia("(max-width: 820px)").matches;
         const mid = mobile ? el.scrollLeft + el.clientWidth / 2 : el.scrollTop + el.clientHeight / 2;
-        let bestSheet = 0;
+        let bestIndex = 0;
         let bestDist = Number.POSITIVE_INFINITY;
         slideRefs.current.forEach((slide, index) => {
           if (!slide) return;
@@ -601,14 +591,10 @@ export default function PrintPage() {
           const dist = Math.abs(center - mid);
           if (dist < bestDist) {
             bestDist = dist;
-            bestSheet = index;
+            bestIndex = index;
           }
         });
-        setActiveNavIndex((current) => {
-          if (navItems[current]?.sheetIndex === bestSheet) return current;
-          const firstForSheet = navItems.findIndex((item) => item.sheetIndex === bestSheet);
-          return firstForSheet === -1 ? current : firstForSheet;
-        });
+        setActiveNavIndex(bestIndex);
       });
     };
     el.addEventListener("scroll", onScroll, { passive: true });
@@ -616,14 +602,14 @@ export default function PrintPage() {
       el.removeEventListener("scroll", onScroll);
       cancelAnimationFrame(raf);
     };
-  }, [sheets.length, navItems]);
+  }, [navItems.length]);
 
   // Centre the active page when the deck is first laid out or rescaled.
   useEffect(() => {
-    centerSlide(activeSheetIndex);
+    centerSlide(activeNavIndex);
     // Only re-centre on structural / size changes, not on every selection.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [sheets.length, deckScale, cardSize]);
+  }, [navItems.length, deckScale, cardSize]);
 
   const singleRecipePrintView =
     (items?.filter((item) => Boolean(item.recipe)).length ?? 0) === 1;
@@ -669,12 +655,11 @@ export default function PrintPage() {
   }
 
   function goToSlide(navIndex: number) {
-    const targetSheetIndex = navItems[navIndex]?.sheetIndex ?? 0;
-    // Two nav items sharing a sheet (a 6x4 page with two recipes) don't need
-    // the deck to scroll at all — the sheet is already centred, only which
-    // recipe's card is visible on it changes.
-    if (targetSheetIndex !== activeSheetIndex) {
-      const behavior = Math.abs(targetSheetIndex - activeSheetIndex) <= 3 ? "smooth" : "auto";
+    // Every nav item has its own slide now (see the deck render below), even
+    // when two recipes share a physical sheet, so this is always a real
+    // scroll rather than just a same-sheet slot swap.
+    if (navIndex !== activeNavIndex) {
+      const behavior = Math.abs(navIndex - activeNavIndex) <= 3 ? "smooth" : "auto";
       // Hold off the scroll listener until the animation settles, otherwise it
       // overwrites our selection with the page that's centred partway through.
       suppressScrollSyncRef.current = true;
@@ -685,7 +670,7 @@ export default function PrintPage() {
         },
         behavior === "smooth" ? 500 : 120,
       );
-      centerSlide(targetSheetIndex, behavior);
+      centerSlide(navIndex, behavior);
     }
     setActiveNavIndex(navIndex);
   }
@@ -1008,7 +993,6 @@ export default function PrintPage() {
                     doubleSided={continueOnBack}
                     showImage={photosOn}
                     showSourceUrl={sourceUrlOn}
-                    showCutLines={showCutLines}
                   />
                 </span>
                 <span className="recipe-page-rail__label">
@@ -1061,7 +1045,7 @@ export default function PrintPage() {
             </button>
           </div>
           )}
-          {!isPrinting && (anyRecipeHasImage || anyRecipeHasSourceUrl || hasRecipeBackSide || cardSize === "card-6x4") && (
+          {!isPrinting && (anyRecipeHasImage || anyRecipeHasSourceUrl || hasRecipeBackSide) && (
             <div className="recipe-mobile-chip-scroll no-print">
               {anyRecipeHasImage && (
                 <button
@@ -1096,52 +1080,46 @@ export default function PrintPage() {
                   Two-sided
                 </button>
               )}
-              {cardSize === "card-6x4" && (
-                <button
-                  type="button"
-                  className={`recipe-setting-chip ${showCutLines ? "is-active" : ""}`}
-                  aria-pressed={showCutLines}
-                  onClick={() => setShowCutLines((value) => !value)}
-                >
-                  {showCutLines && <CheckIcon size={ICON_SIZE.xs} />}
-                  Cut lines
-                </button>
-              )}
             </div>
           )}
           <div className="recipe-page-deck" id="recipe-page-deck" ref={deckRef}>
-            {sheets.map((sheet, index) => {
-              const isActiveSheet = index === activeSheetIndex;
-              const sheetLabel = sheet.slots
-                .filter((slot): slot is SheetSlot => slot !== null)
-                .map((slot) => slot.label)
-                .join(" and ");
+            {navItems.map((navItem, index) => {
+              const sheet = sheets[navItem.sheetIndex];
+              if (!sheet) return null;
+              const isActive = index === activeNavIndex;
+              // Only the first nav item for a given sheet renders the markup
+              // that actually prints (the whole sheet, both slots). A second
+              // recipe sharing that sheet gets its own on-screen-only slide
+              // (`.no-print`) so scrolling can reach it like any other
+              // recipe, without the sheet printing twice.
+              const isFirstOnSheet =
+                navItems.findIndex((item) => item.sheetIndex === navItem.sheetIndex) === index;
               return (
                 <div
-                  key={sheet.id}
+                  key={`${sheet.id}-${navItem.slotIndex}`}
                   ref={(el) => {
                     slideRefs.current[index] = el;
                   }}
-                  className={`recipe-page-slide ${isActiveSheet ? "is-active" : ""}`}
+                  className={`recipe-page-slide ${isActive ? "is-active" : ""} ${
+                    isFirstOnSheet ? "" : "no-print"
+                  }`}
                   data-first={index === 0 ? "true" : undefined}
                   onClick={() => {
-                    if (isActiveSheet) return;
-                    const firstNavIndex = navItems.findIndex((item) => item.sheetIndex === index);
-                    if (firstNavIndex !== -1) goToSlide(firstNavIndex);
+                    if (isActive) return;
+                    goToSlide(index);
                   }}
                   role="button"
                   tabIndex={0}
-                  aria-current={isActiveSheet}
-                  aria-label={sheetLabel}
+                  aria-current={isActive}
+                  aria-label={navItem.label}
                   onKeyDown={(event) => {
                     if (event.key !== "Enter" && event.key !== " ") return;
                     event.preventDefault();
-                    if (isActiveSheet) return;
-                    const firstNavIndex = navItems.findIndex((item) => item.sheetIndex === index);
-                    if (firstNavIndex !== -1) goToSlide(firstNavIndex);
+                    if (isActive) return;
+                    goToSlide(index);
                   }}
                 >
-                  {!isPrinting && isActiveSheet && activeNavItem?.flip && (
+                  {!isPrinting && isActive && navItem.flip && (
                     <div
                       className="recipe-card-side-nav recipe-page-canvas__flip no-print"
                       aria-label="Sheet sides"
@@ -1175,16 +1153,15 @@ export default function PrintPage() {
                   )}
                   <ScaledPage
                     sheet={sheet}
-                    isLastSheet={index === sheets.length - 1}
-                    activeSlotIndex={isActiveSheet ? activeSlotIndex : 0}
-                    activeSide={isActiveSheet ? canvasSide : "front"}
+                    isLastSheet={navItem.sheetIndex === sheets.length - 1}
+                    activeSlotIndex={navItem.slotIndex}
+                    activeSide={isActive ? canvasSide : "front"}
                     scale={deckScale}
                     size={cardSize}
                     template={template}
                     doubleSided={continueOnBack}
                     showImage={photosOn}
                     showSourceUrl={sourceUrlOn}
-                    showCutLines={showCutLines}
                   />
                 </div>
               );
@@ -1273,35 +1250,20 @@ export default function PrintPage() {
             </div>
           )}
 
-          {(hasRecipeBackSide || cardSize === "card-6x4") && (
+          {hasRecipeBackSide && (
             <div className="recipe-config-section recipe-config-section--settings">
               <h3 className="recipe-config-label">Print settings</h3>
-              {hasRecipeBackSide && (
-                <label className="recipe-toggle">
-                  <input
-                    type="checkbox"
-                    checked={doubleSided}
-                    onChange={(event) => setDoubleSided(event.target.checked)}
-                  />
-                  <span>
-                    <strong>Two-sided</strong>
-                    <small>Longer recipes continue onto the back.</small>
-                  </span>
-                </label>
-              )}
-              {cardSize === "card-6x4" && (
-                <label className="recipe-toggle">
-                  <input
-                    type="checkbox"
-                    checked={showCutLines}
-                    onChange={(event) => setShowCutLines(event.target.checked)}
-                  />
-                  <span>
-                    <strong>Cut lines</strong>
-                    <small>Show dashed guides on printed 6 x 4 cards.</small>
-                  </span>
-                </label>
-              )}
+              <label className="recipe-toggle">
+                <input
+                  type="checkbox"
+                  checked={doubleSided}
+                  onChange={(event) => setDoubleSided(event.target.checked)}
+                />
+                <span>
+                  <strong>Two-sided</strong>
+                  <small>Longer recipes continue onto the back.</small>
+                </span>
+              </label>
             </div>
           )}
 

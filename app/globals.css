@@ -1919,17 +1919,6 @@
   padding-top: 9px;
 }
 
-/* Cut lines toggle: replace the decorative corner motif with a dashed cut
-   guide, on screen and in print alike, so the preview matches what prints. */
-.recipe-print-preview--cut-lines.recipe-print-preview--card-6x4 .recipe-card:not(.recipe-card--duplex-spacer)::after {
-  content: none;
-}
-
-.recipe-print-preview--cut-lines.recipe-print-preview--card-6x4 .recipe-card:not(.recipe-card--duplex-spacer) {
-  outline: 0.75pt dashed rgba(90, 90, 90, 0.72);
-  outline-offset: -0.06in;
-}
-
 /* Every face (front, back, blank duplex spacer) lives in the same DOM node
    that gets printed — `data-preview-hidden` (set on the whole front/back
    `.recipe-card-page` group, or on an individual blank card) just keeps the
