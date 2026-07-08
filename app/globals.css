@@ -1547,6 +1547,9 @@
 .recipe-mobile-back-button,
 .recipe-mobile-toolbar,
 .recipe-mobile-settings-backdrop,
+.recipe-mobile-size-menu-backdrop,
+.recipe-mobile-size-menu,
+.recipe-mobile-settings-menu,
 .recipe-mobile-actions,
 .recipe-config-panel__close {
   display: none;
@@ -1575,9 +1578,9 @@
   .recipe-mobile-topbar {
     position: relative;
     z-index: 6;
-    display: grid;
-    grid-template-columns: auto 1fr auto;
+    display: flex;
     align-items: center;
+    justify-content: space-between;
     gap: 12px;
     padding: max(10px, env(safe-area-inset-top)) 16px 10px;
     background: var(--cp-card);
@@ -1586,31 +1589,75 @@
   .recipe-mobile-back-button {
     display: inline-flex;
     align-items: center;
-    justify-self: start;
     margin: -6px;
     padding: 6px;
     color: var(--cp-ink);
     line-height: 1;
   }
 
-  .recipe-mobile-page-count {
-    display: inline-flex;
+  .recipe-mobile-topbar__actions {
+    display: flex;
     align-items: center;
-    justify-self: center;
+    gap: 10px;
+  }
+
+  .recipe-mobile-topbar__icon-btn {
+    display: grid;
+    place-items: center;
+    width: 40px;
+    height: 40px;
+    border: 1px solid var(--cp-line);
+    border-radius: 999px;
+    background: var(--cp-card);
+    color: var(--cp-ink);
+    transition:
+      background 150ms ease,
+      border-color 150ms ease,
+      color 150ms ease;
+  }
+
+  .recipe-mobile-topbar__icon-btn.is-active {
+    border-color: var(--cp-accent);
+    background: var(--cp-accent-soft);
+    color: var(--cp-accent-ink);
+  }
+
+  .recipe-mobile-settings-menu {
+    position: absolute;
+    top: calc(100% + 10px);
+    right: 0;
+    z-index: 77;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    min-width: 190px;
+    padding: 14px;
+    border: 1px solid var(--cp-line);
+    border-radius: 14px;
+    background: var(--cp-card);
+    box-shadow: 0 16px 32px rgba(15, 23, 42, 0.18);
+  }
+
+  .recipe-mobile-page-count {
+    display: flex;
+    flex: 0 0 auto;
+    align-items: center;
+    justify-content: center;
+    padding: 8px 16px 4px;
     color: var(--cp-ink-soft);
     font-size: var(--cp-fs-caption);
     font-weight: 700;
     line-height: 1;
   }
 
-  .recipe-mobile-topbar__print {
-    justify-self: end;
-  }
-
   .recipe-mobile-toolbar {
     display: flex;
     flex: 0 0 auto;
     justify-content: space-evenly;
+  }
+
+  .recipe-mobile-toolbar__btn-wrap {
+    position: relative;
   }
 
   .recipe-mobile-toolbar__btn {
@@ -1662,6 +1709,55 @@
     background: var(--cp-ink-soft);
     opacity: 0.55;
     transform: translateY(-50%) rotate(-40deg);
+  }
+
+  .recipe-mobile-size-menu-backdrop {
+    position: fixed;
+    inset: 0;
+    /* Below .recipe-mobile-topbar (z-index 6) and .recipe-mobile-actions
+       (z-index 75) — each is its own stacking context, so this only needs to
+       clear plain page content, not out-rank them, for the popovers nested
+       inside those bars to still receive clicks over the backdrop. */
+    z-index: 5;
+    display: block;
+    border: 0;
+    background: transparent;
+  }
+
+  .recipe-mobile-size-menu {
+    position: absolute;
+    bottom: calc(100% + 10px);
+    left: 0;
+    z-index: 77;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    min-width: 168px;
+    padding: 6px;
+    border: 1px solid var(--cp-line);
+    border-radius: 14px;
+    background: var(--cp-card);
+    box-shadow: 0 16px 32px rgba(15, 23, 42, 0.18);
+  }
+
+  .recipe-mobile-size-menu__option {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    padding: 10px 12px;
+    border: 0;
+    border-radius: 10px;
+    background: transparent;
+    color: var(--cp-ink);
+    font-size: var(--cp-fs-caption);
+    font-weight: 700;
+    text-align: left;
+  }
+
+  .recipe-mobile-size-menu__option.is-active {
+    background: var(--cp-accent-soft);
+    color: var(--cp-accent-ink);
   }
 
   .recipe-page-rail {
@@ -1727,15 +1823,18 @@
 
   .recipe-config-panel {
     position: fixed;
-    inset: 0;
+    top: auto;
+    right: 0;
+    bottom: 0;
+    left: 0;
     z-index: 70;
-    max-height: none;
-    height: 100dvh;
+    max-height: min(70vh, 560px);
+    height: auto;
     margin: 0;
-    padding: max(16px, env(safe-area-inset-top)) 16px max(18px, env(safe-area-inset-bottom));
+    padding: 16px 16px max(18px, env(safe-area-inset-bottom));
     border: 0;
-    border-radius: 0;
-    box-shadow: none;
+    border-radius: 20px 20px 0 0;
+    box-shadow: 0 -16px 40px rgba(15, 23, 42, 0.16);
     visibility: hidden;
     pointer-events: none;
     transform: translateY(100%);
@@ -1788,12 +1887,10 @@
     display: flex;
   }
 
-  .recipe-config-panel[data-mobile-drawer="size"] .recipe-config-section--size {
-    display: flex;
-  }
-
-  .recipe-config-panel[data-mobile-drawer="settings"] .recipe-config-section--printsettings {
-    display: flex;
+  /* The drawer header already reads "Templates"; the section's own label
+     would just repeat it. */
+  .recipe-config-panel[data-mobile-drawer="template"] .recipe-config-section--template > .recipe-config-label {
+    display: none;
   }
 
   .recipe-template-list {
