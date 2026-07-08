@@ -2341,14 +2341,20 @@
 .recipe-print-preview--card-6x4 .recipe-template--classic .recipe-card__header--with-photo .recipe-card__photo,
 .recipe-print-preview--card-6x4 .recipe-template--counter .recipe-card__header--with-photo .recipe-card__photo {
   order: -1;
-  width: 0.95in;
-  height: 0.95in;
+  width: 0.82in;
+  height: 0.82in;
   margin-top: 0;
 }
 
 .recipe-print-preview--card-6x4 .recipe-template--counter .recipe-card__header--with-photo .recipe-card__photo {
-  width: 0.78in;
-  height: 0.78in;
+  width: 0.68in;
+  height: 0.68in;
+}
+
+.recipe-print-preview--card-6x4 .recipe-template--pantry .recipe-card__header--with-photo .recipe-card__photo,
+.recipe-print-preview--card-6x4 .recipe-template--bistro .recipe-card__header--with-photo .recipe-card__photo {
+  width: 0.8in;
+  height: 0.8in;
 }
 
 .recipe-print-preview--card-6x4 .recipe-template--heirloom .recipe-card__header--with-photo .recipe-card__photo {
@@ -2650,7 +2656,7 @@
   /* Breathing room above each section header so it reads as a new block rather
      than crowding the items above it. Pairs with the smaller inter-group gap so
      total spacing stays controlled on the tight 6x4 card. */
-  padding-top: 2pt;
+  padding-top: 5pt;
   color: var(--recipe-accent);
   font-size: calc(var(--recipe-card-label-size) * 0.9);
   font-weight: 850;
@@ -2665,7 +2671,7 @@
 
 .recipe-print-preview--letter .recipe-card__section-title {
   margin-bottom: 3.4pt;
-  padding-top: 5pt;
+  padding-top: 9pt;
 }
 
 .recipe-print-preview--letter .recipe-card__section-group:first-child .recipe-card__section-title {
