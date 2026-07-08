@@ -1709,7 +1709,7 @@
     left: 11px;
     right: 11px;
     top: 50%;
-    height: 2.5px;
+    height: 1.7px;
     border-radius: 999px;
     background: var(--cp-ink);
     transform: translateY(-50%) rotate(-45deg);
