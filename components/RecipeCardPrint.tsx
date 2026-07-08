@@ -1,6 +1,7 @@
 "use client";
 
 import { Fragment, memo, useState } from "react";
+import { formatRecipeTime } from "@/lib/time";
 import type { Recipe } from "@/types/recipe";
 
 // Printable recipe layouts. Compact cards keep readable text and move overflow
@@ -223,7 +224,7 @@ function sourceLabel(recipe: Recipe): string | null {
 
 function metaBits(recipe: Recipe): string[] {
   const bits: string[] = [];
-  const time = recipe.totalTime || recipe.cookTime || recipe.prepTime;
+  const time = formatRecipeTime(recipe.totalTime || recipe.cookTime || recipe.prepTime);
   if (time) bits.push(time);
   const serves = recipe.servings ?? recipe.yield;
   if (serves) bits.push(`Serves ${serves}`);

@@ -43,6 +43,8 @@ export function PrinterWorkspace({
   const readyItems = items.filter((it) => it.status === "ready");
   const readyRecipeIds = readyItems.map((it) => it.id);
   const hasProject = hydrated && items.length > 0;
+  const readyToPrintLabel =
+    hydrated && readyItems.length > 0 ? `Ready to print (${readyItems.length})` : "Ready to print";
 
   const [menuOpen, setMenuOpen] = useState(false);
   const [mobileQueueOpen, setMobileQueueOpen] = useState(false);
@@ -116,7 +118,7 @@ export function PrinterWorkspace({
               id="rp-queue-heading"
               className="text-cp-h2 font-extrabold tracking-[-0.02em]"
             >
-              Ready to print{hydrated && readyItems.length > 0 ? ` (${readyItems.length})` : ""}
+              {readyToPrintLabel}
             </h2>
           </div>
           <div className="flex items-center gap-cp-2 ml-auto">
@@ -194,15 +196,13 @@ export function PrinterWorkspace({
               >
                 <span>
                   <span id="rp-mobile-queue-heading" className="rp-mobile-print-tray__title">
-                    Ready to print
+                    {readyToPrintLabel}
                   </span>
-                  <span className="rp-mobile-print-tray__meta">
-                    {readyItems.length > 0
-                      ? `${readyItems.length} ready`
-                      : items.length > 0
-                        ? `${items.length} added`
-                        : "No recipes yet"}
-                  </span>
+                  {readyItems.length === 0 && (
+                    <span className="rp-mobile-print-tray__meta">
+                      {items.length > 0 ? `${items.length} added` : "No recipes yet"}
+                    </span>
+                  )}
                 </span>
                 <ChevronDownIcon size={ICON_SIZE.lg} className="rp-mobile-print-tray__chevron" />
               </button>

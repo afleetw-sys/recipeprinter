@@ -17,6 +17,7 @@ import {
 import { httpsCallable } from "firebase/functions";
 import { getFirebaseAuth } from "@/lib/firebase/client";
 import { friendlyAuthError, friendlyRecipeLibraryError } from "@/lib/friendlyErrors";
+import { formatRecipeTime } from "@/lib/time";
 import {
   cookPilotQueueId,
   filterCookPilotSummaries,
@@ -418,7 +419,7 @@ function RecipeRow({
   adding: boolean;
   onToggle: () => void;
 }) {
-  const time = summary.totalTimeMinutes ? `${summary.totalTimeMinutes} min` : null;
+  const time = formatRecipeTime(summary.totalTimeMinutes);
   const servings = summary.preferredServings ?? summary.servings;
 
   return (

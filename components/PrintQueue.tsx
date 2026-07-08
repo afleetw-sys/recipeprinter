@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef } from "react";
+import { formatRecipeTime } from "@/lib/time";
 import { type QueueItem, type Recipe } from "@/types/recipe";
 import {
   ClockIcon,
@@ -14,7 +15,7 @@ import {
 
 function totalTime(recipe?: Recipe): string | null {
   if (!recipe) return null;
-  return recipe.totalTime || recipe.cookTime || recipe.prepTime || null;
+  return formatRecipeTime(recipe.totalTime || recipe.cookTime || recipe.prepTime);
 }
 
 function RecipeCardItem({
