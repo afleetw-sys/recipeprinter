@@ -265,15 +265,15 @@ export function ImportPanel({
       ) : (
       <form className="flex flex-col gap-cp-4 mt-cp-4" onSubmit={handleSubmit}>
         {mode === "url" && (
-          <div className="flex flex-col gap-cp-4 lg:flex-row lg:items-end lg:gap-cp-2">
-            <div className="flex-1">
-              <label className="field-label" htmlFor="rp-url">
-                Recipe URL
-              </label>
+          <div className="flex flex-col">
+            <label className="field-label" htmlFor="rp-url">
+              Recipe URL
+            </label>
+            <div className="flex flex-col gap-cp-4 lg:flex-row lg:items-center lg:gap-cp-2">
               <input
                 id="rp-url"
                 type="url"
-                className="field"
+                className="field flex-1"
                 placeholder="Paste recipe URL here"
                 value={url}
                 autoFocus
@@ -282,15 +282,15 @@ export function ImportPanel({
                   resetError();
                 }}
               />
+              <button
+                type="submit"
+                className="btn btn-primary rp-import-submit w-full lg:w-auto"
+                disabled={busy}
+              >
+                {busy ? <UploadIcon size={18} /> : <PlusIcon size={18} />}
+                {submitLabel}
+              </button>
             </div>
-            <button
-              type="submit"
-              className="btn btn-primary rp-import-submit w-full lg:w-auto"
-              disabled={busy}
-            >
-              {busy ? <UploadIcon size={18} /> : <PlusIcon size={18} />}
-              {submitLabel}
-            </button>
           </div>
         )}
 

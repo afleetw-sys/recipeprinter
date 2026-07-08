@@ -84,7 +84,7 @@ const config: Config = {
         panel: "560px",
         queue: "860px",
         recipe: "720px",
-        content: "1180px",
+        content: "1240px",
       },
       keyframes: {
         "fade-up": {
