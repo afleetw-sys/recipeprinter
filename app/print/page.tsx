@@ -1171,9 +1171,6 @@ export default function PrintPage() {
               );
             })}
           </div>
-          <div className="recipe-mobile-page-count no-print" aria-live="polite">
-            {activeNavIndex + 1} of {navItems.length}
-          </div>
         </section>
 
         {/* Right: print setup */}

@@ -1558,7 +1558,6 @@
 }
 
 .recipe-mobile-topbar,
-.recipe-mobile-page-count,
 .recipe-mobile-back-button,
 .recipe-mobile-toolbar,
 .recipe-mobile-settings-backdrop,
@@ -1651,18 +1650,6 @@
     border-radius: 14px;
     background: var(--cp-card);
     box-shadow: 0 16px 32px rgba(15, 23, 42, 0.18);
-  }
-
-  .recipe-mobile-page-count {
-    display: flex;
-    flex: 0 0 auto;
-    align-items: center;
-    justify-content: center;
-    padding: 8px 16px 4px;
-    color: var(--cp-ink-soft);
-    font-size: var(--cp-fs-caption);
-    font-weight: 700;
-    line-height: 1;
   }
 
   .recipe-mobile-toolbar {
@@ -1793,16 +1780,13 @@
     display: flex;
     flex: 1 1 auto;
     flex-direction: row;
-    /* Bottom-aligned (not centered) so the card sits flush against the page
-       counter directly below it instead of floating with slack on both
-       sides. */
-    align-items: flex-end;
+    align-items: center;
     justify-content: flex-start;
     gap: 16px;
     min-height: 0;
     /* Extra top room so the front/back flip control can sit above the card
        instead of overlapping its content. */
-    padding: 54px 40px 4px;
+    padding: 54px 40px 18px;
     overflow-x: auto;
     overflow-y: hidden;
     scroll-padding-inline: 40px;
