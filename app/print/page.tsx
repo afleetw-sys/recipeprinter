@@ -52,6 +52,40 @@ const POST_PRINT_DIALOG_STORAGE_KEY = "recipeprinter:post-print-dialog:last-show
 const POST_PRINT_DIALOG_INTERVAL_MS = 7 * 24 * 60 * 60 * 1000;
 const SINGLE_RECIPE_DECK_TOP_PADDING = 16;
 
+// Layout preferences carry over across visits (device-local, no account/sync)
+// so going back to add another recipe doesn't reset the print setup.
+const PRINT_SETTINGS_STORAGE_KEY = "recipeprinter:print-settings:v1";
+
+interface StoredPrintSettings {
+  cardSize?: string;
+  template?: string;
+  doubleSided?: boolean;
+  showCutLines?: boolean;
+  showPhoto?: boolean;
+  showSourceUrl?: boolean;
+}
+
+function readPrintSettings(): StoredPrintSettings | null {
+  if (typeof window === "undefined") return null;
+  try {
+    const raw = window.localStorage.getItem(PRINT_SETTINGS_STORAGE_KEY);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw);
+    return parsed && typeof parsed === "object" ? (parsed as StoredPrintSettings) : null;
+  } catch {
+    return null;
+  }
+}
+
+function writePrintSettings(settings: Required<StoredPrintSettings>) {
+  if (typeof window === "undefined") return;
+  try {
+    window.localStorage.setItem(PRINT_SETTINGS_STORAGE_KEY, JSON.stringify(settings));
+  } catch {
+    /* localStorage may be unavailable (private mode); settings stay in memory */
+  }
+}
+
 // Real card dimensions in CSS px (96px per inch), used only to size the
 // on-screen scaler/thumbnails so a card looks true-to-size, just smaller. The
 // navigator still browses and previews one recipe's card at a time (see
@@ -331,6 +365,7 @@ export default function PrintPage() {
   const [templatePrices, setTemplatePrices] = useState<Partial<Record<PremiumRecipePrintTemplate, string>>>({});
   const printRequestedRef = useRef(false);
   const autoPrintAttemptedRef = useRef(false);
+  const didMountSettingsRef = useRef(false);
 
   const anyRecipeHasImage =
     items?.some((item) => Boolean(item.recipe?.image)) ?? false;
@@ -751,6 +786,36 @@ export default function PrintPage() {
       .filter((it): it is QueueItem => Boolean(it && it.status === "ready" && it.recipe));
     setItems(printItems);
   }, [idsParam]);
+
+  // Hydrate stored layout preferences on mount (client only). Explicit URL
+  // params (for deep links) still win over whatever was last saved.
+  useEffect(() => {
+    const stored = readPrintSettings();
+    if (!stored) return;
+    if (!params.get("size") && stored.cardSize && isPrintCardSize(stored.cardSize)) {
+      setCardSize(stored.cardSize);
+    }
+    if (!params.get("template") && stored.template && isRecipePrintTemplate(stored.template)) {
+      setTemplate(stored.template);
+    }
+    if (typeof stored.doubleSided === "boolean") setDoubleSided(stored.doubleSided);
+    if (typeof stored.showCutLines === "boolean") setShowCutLines(stored.showCutLines);
+    if (typeof stored.showPhoto === "boolean") setShowPhoto(stored.showPhoto);
+    if (typeof stored.showSourceUrl === "boolean") setShowSourceUrl(stored.showSourceUrl);
+    // Runs once on mount; the settings above are the ones being hydrated here.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // Persist layout preferences whenever they change. Skip the very first run
+  // so this doesn't clobber a stored value with defaults before the hydration
+  // effect above has a chance to apply it.
+  useEffect(() => {
+    if (!didMountSettingsRef.current) {
+      didMountSettingsRef.current = true;
+      return;
+    }
+    writePrintSettings({ cardSize, template, doubleSided, showCutLines, showPhoto, showSourceUrl });
+  }, [cardSize, template, doubleSided, showCutLines, showPhoto, showSourceUrl]);
 
   // Auto-open the print dialog when the user chose Print instead of Preview.
   useEffect(() => {

@@ -489,6 +489,23 @@
       min-width: 112px;
     }
 
+    /* Once there's something to print, let it outrank "Add recipe" as the
+       primary action — accent fill instead of the ink-black shared by every
+       other primary button. */
+    .rp-mobile-print-tray__print--ready {
+      background: var(--cp-accent-ink);
+      color: var(--cp-card);
+    }
+
+    /* Add recipe stays the primary-styled call to action even after items
+       exist, instead of fading to the secondary/outlined treatment it uses
+       on desktop, so Print (above) reads as the one that pulls focus. */
+    .rp-import-submit.btn-secondary {
+      background: var(--cp-ink) !important;
+      color: var(--cp-card);
+      border: none;
+    }
+
     .rp-mobile-print-tray__content {
       display: none;
       max-height: calc(100dvh - 124px);

@@ -209,7 +209,9 @@ export function PrinterWorkspace({
 
               <button
                 type="button"
-                className="btn btn-primary btn-compact rp-mobile-print-tray__print"
+                className={`btn btn-primary btn-compact rp-mobile-print-tray__print ${
+                  readyRecipeIds.length > 0 ? "rp-mobile-print-tray__print--ready" : ""
+                }`}
                 disabled={readyRecipeIds.length === 0}
                 onClick={() => handlePrint(readyRecipeIds)}
               >

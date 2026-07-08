@@ -337,7 +337,7 @@ export function ImportPanel({
           </div>
         )}
 
-        <button type="submit" className={`btn ${submitButtonStyle} w-full`} disabled={busy}>
+        <button type="submit" className={`btn ${submitButtonStyle} rp-import-submit w-full`} disabled={busy}>
           {busy ? <UploadIcon size={18} /> : <span className="text-lg leading-none">+</span>}
           {submitLabel}
           </button>
