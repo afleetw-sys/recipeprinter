@@ -384,11 +384,19 @@
     min-width: 0;
   }
 
+  .rp-mobile-print-tray {
+    display: none;
+  }
+
   /* Below the two-column desktop layout, "Recipes to print" already sits
      directly on the page with no card around it — drop the Import panel's
      card treatment too so the two sections read the same, and add a hairline
      divider in its place so the boundary between them doesn't disappear. */
   @media (max-width: 1023px) {
+    .rp-printer-workspace--active {
+      padding-bottom: 96px;
+    }
+
     .rp-import-panel {
       border: 0;
       border-radius: 0;
@@ -398,6 +406,123 @@
     .rp-workspace-import {
       padding-bottom: 20px;
       border-bottom: 1px solid var(--cp-line);
+    }
+
+    .rp-workspace-project {
+      display: none !important;
+    }
+
+    .rp-mobile-print-tray {
+      position: fixed;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      z-index: 40;
+      display: block;
+      padding: 0 12px calc(10px + env(safe-area-inset-bottom));
+      pointer-events: none;
+    }
+
+    .rp-mobile-print-tray__panel {
+      max-width: 42rem;
+      margin: 0 auto;
+      overflow: hidden;
+      border: 1px solid var(--cp-line-strong);
+      border-radius: 18px;
+      background: rgba(255, 255, 255, 0.96);
+      box-shadow: var(--cp-shadow-lg);
+      pointer-events: auto;
+      backdrop-filter: blur(14px);
+    }
+
+    .rp-mobile-print-tray__bar {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      align-items: center;
+      gap: 10px;
+      padding: 10px;
+    }
+
+    .rp-mobile-print-tray__toggle {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) 22px;
+      align-items: center;
+      gap: 8px;
+      min-width: 0;
+      min-height: 44px;
+      padding: 0 4px 0 8px;
+      text-align: left;
+      color: var(--cp-ink);
+    }
+
+    .rp-mobile-print-tray__title,
+    .rp-mobile-print-tray__meta {
+      display: block;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .rp-mobile-print-tray__title {
+      font-size: var(--cp-fs-body);
+      font-weight: 800;
+      letter-spacing: 0;
+    }
+
+    .rp-mobile-print-tray__meta {
+      margin-top: 1px;
+      color: var(--cp-ink-soft);
+      font-size: var(--cp-fs-caption);
+      font-weight: 700;
+    }
+
+    .rp-mobile-print-tray__chevron {
+      color: var(--cp-ink-soft);
+      transition: transform 180ms ease;
+    }
+
+    .rp-mobile-print-tray.is-open .rp-mobile-print-tray__chevron {
+      transform: rotate(180deg);
+    }
+
+    .rp-mobile-print-tray__print {
+      min-width: 112px;
+    }
+
+    .rp-mobile-print-tray__content {
+      display: none;
+      max-height: calc(100dvh - 124px);
+      padding: 0 10px 12px;
+      overflow-y: auto;
+      overscroll-behavior: contain;
+      border-top: 1px solid var(--cp-line);
+    }
+
+    .rp-mobile-print-tray.is-open .rp-mobile-print-tray__content {
+      display: block;
+    }
+
+    .rp-mobile-print-tray__actions {
+      display: flex;
+      justify-content: flex-end;
+      padding: 8px 0;
+    }
+
+    .rp-mobile-print-tray .grid {
+      gap: 10px;
+    }
+
+    .rp-mobile-print-tray .rounded-xl {
+      border-radius: 12px;
+    }
+
+    .rp-mobile-print-tray li > .mt-2 {
+      flex-direction: column;
+      align-items: flex-start;
+    }
+
+    .rp-mobile-print-tray li > .mt-2 .btn-ghost {
+      margin-top: 0;
     }
   }
 

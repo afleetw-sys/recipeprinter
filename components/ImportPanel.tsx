@@ -71,7 +71,7 @@ export function ImportPanel({
   items,
   workspace = false,
   initialMode = "url",
-  submitLabel = "Create printable recipe",
+  submitLabel = "Add recipe",
   onAddUrl,
   onAddImages,
   onAddText,
@@ -101,6 +101,7 @@ export function ImportPanel({
   // While the print list is empty, surface every import option so people learn
   // what's available; once a recipe is added, tuck the extras into the overflow.
   const expanded = items.length === 0;
+  const submitButtonStyle = items.length > 0 ? "btn-secondary" : "btn-primary";
 
   useEffect(() => {
     function onPointerDown(event: PointerEvent) {
@@ -186,7 +187,7 @@ export function ImportPanel({
       aria-label={workspace ? undefined : "Import recipes"}
     >
       {workspace && (
-        <div className="hidden lg:block mb-cp-4">
+        <div className="mb-cp-4">
           <h2 id="rp-import-heading" className="text-cp-h2 font-extrabold tracking-[-0.02em]">
             Add recipes
           </h2>
@@ -336,7 +337,7 @@ export function ImportPanel({
           </div>
         )}
 
-        <button type="submit" className="btn btn-primary w-full" disabled={busy}>
+        <button type="submit" className={`btn ${submitButtonStyle} w-full`} disabled={busy}>
           {busy ? <UploadIcon size={18} /> : <span className="text-lg leading-none">+</span>}
           {submitLabel}
           </button>

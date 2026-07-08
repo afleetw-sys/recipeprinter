@@ -4,7 +4,13 @@ import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { ImportPanel } from "@/components/ImportPanel";
 import { PrintQueue } from "@/components/PrintQueue";
-import { ICON_SIZE, MoreVerticalIcon, PrintIcon, TrashIcon } from "@/components/icons";
+import {
+  ChevronDownIcon,
+  ICON_SIZE,
+  MoreVerticalIcon,
+  PrintIcon,
+  TrashIcon,
+} from "@/components/icons";
 import { createCurrentPrintJob, useQueue } from "@/lib/queue";
 import type { ImportMethod } from "@/types/recipe";
 
@@ -39,6 +45,7 @@ export function PrinterWorkspace({
   const hasProject = hydrated && items.length > 0;
 
   const [menuOpen, setMenuOpen] = useState(false);
+  const [mobileQueueOpen, setMobileQueueOpen] = useState(false);
   const [hasShownEmptyState, setHasShownEmptyState] = useState(false);
   const menuRef = useRef<HTMLDivElement | null>(null);
   const skipProjectIntro = hydratedWithItems && hasProject && !hasShownEmptyState;
@@ -46,6 +53,10 @@ export function PrinterWorkspace({
   useEffect(() => {
     if (hydrated && items.length === 0) setHasShownEmptyState(true);
   }, [hydrated, items.length]);
+
+  useEffect(() => {
+    if (!hasProject) setMobileQueueOpen(false);
+  }, [hasProject]);
 
   useEffect(() => {
     function onPointerDown(event: PointerEvent) {
@@ -166,6 +177,68 @@ export function PrinterWorkspace({
           <div className="h-24 rounded-2xl border border-dashed border-line-strong" />
         )}
       </section>
+
+      {hasProject && (
+        <section
+          className={`rp-mobile-print-tray ${mobileQueueOpen ? "is-open" : ""}`}
+          aria-labelledby="rp-mobile-queue-heading"
+        >
+          <div className="rp-mobile-print-tray__panel">
+            <div className="rp-mobile-print-tray__bar">
+              <button
+                type="button"
+                className="rp-mobile-print-tray__toggle"
+                aria-expanded={mobileQueueOpen}
+                aria-controls="rp-mobile-queue-content"
+                onClick={() => setMobileQueueOpen((open) => !open)}
+              >
+                <span>
+                  <span id="rp-mobile-queue-heading" className="rp-mobile-print-tray__title">
+                    Ready to print
+                  </span>
+                  <span className="rp-mobile-print-tray__meta">
+                    {readyItems.length > 0
+                      ? `${readyItems.length} ready`
+                      : `${items.length} added`}
+                  </span>
+                </span>
+                <ChevronDownIcon size={ICON_SIZE.lg} className="rp-mobile-print-tray__chevron" />
+              </button>
+
+              <button
+                type="button"
+                className="btn btn-primary btn-compact rp-mobile-print-tray__print"
+                disabled={readyRecipeIds.length === 0}
+                onClick={() => handlePrint(readyRecipeIds)}
+              >
+                <PrintIcon size={ICON_SIZE.md} />
+                {readyRecipeIds.length > 0 ? `Print (${readyRecipeIds.length})` : "Print"}
+              </button>
+            </div>
+
+            <div id="rp-mobile-queue-content" className="rp-mobile-print-tray__content">
+              <div className="rp-mobile-print-tray__actions">
+                <button
+                  type="button"
+                  className="btn-ghost btn-compact"
+                  onClick={clear}
+                >
+                  <TrashIcon size={ICON_SIZE.md} />
+                  Clear all
+                </button>
+              </div>
+              <PrintQueue
+                items={items}
+                canRetry={canRetry}
+                onRetry={retry}
+                onRemove={remove}
+                animateItems={!skipProjectIntro}
+                focusedItemId={focusedItemId}
+              />
+            </div>
+          </div>
+        </section>
+      )}
     </div>
   );
 }
