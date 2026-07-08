@@ -393,7 +393,7 @@
      card treatment too so the two sections read the same, and add a hairline
      divider in its place so the boundary between them doesn't disappear. */
   @media (max-width: 1023px) {
-    .rp-printer-workspace--active {
+    .rp-printer-workspace {
       padding-bottom: 96px;
     }
 
@@ -478,6 +478,7 @@
 
     .rp-mobile-print-tray__chevron {
       color: var(--cp-ink-soft);
+      transform: rotate(0deg);
       transition: transform 180ms ease;
     }
 
@@ -514,6 +515,11 @@
 
     .rp-mobile-print-tray .rounded-xl {
       border-radius: 12px;
+    }
+
+    .rp-mobile-print-tray .rp-print-queue-empty {
+      margin: 10px 0 2px;
+      padding: 32px 18px 34px;
     }
 
     .rp-mobile-print-tray li > .mt-2 {

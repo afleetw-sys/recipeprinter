@@ -178,7 +178,7 @@ export function PrinterWorkspace({
         )}
       </section>
 
-      {hasProject && (
+      {hydrated && (
         <section
           className={`rp-mobile-print-tray ${mobileQueueOpen ? "is-open" : ""}`}
           aria-labelledby="rp-mobile-queue-heading"
@@ -199,7 +199,9 @@ export function PrinterWorkspace({
                   <span className="rp-mobile-print-tray__meta">
                     {readyItems.length > 0
                       ? `${readyItems.length} ready`
-                      : `${items.length} added`}
+                      : items.length > 0
+                        ? `${items.length} added`
+                        : "No recipes yet"}
                   </span>
                 </span>
                 <ChevronDownIcon size={ICON_SIZE.lg} className="rp-mobile-print-tray__chevron" />
@@ -217,16 +219,18 @@ export function PrinterWorkspace({
             </div>
 
             <div id="rp-mobile-queue-content" className="rp-mobile-print-tray__content">
-              <div className="rp-mobile-print-tray__actions">
-                <button
-                  type="button"
-                  className="btn-ghost btn-compact"
-                  onClick={clear}
-                >
-                  <TrashIcon size={ICON_SIZE.md} />
-                  Clear all
-                </button>
-              </div>
+              {hasProject && (
+                <div className="rp-mobile-print-tray__actions">
+                  <button
+                    type="button"
+                    className="btn-ghost btn-compact"
+                    onClick={clear}
+                  >
+                    <TrashIcon size={ICON_SIZE.md} />
+                    Clear all
+                  </button>
+                </div>
+              )}
               <PrintQueue
                 items={items}
                 canRetry={canRetry}
