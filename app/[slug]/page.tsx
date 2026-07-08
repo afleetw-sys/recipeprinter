@@ -139,14 +139,23 @@ function RecipePageVisual() {
 }
 
 function heroChips(page: (typeof SEO_LANDING_PAGES)[number]) {
+  if (page.slug.includes("without-ads")) {
+    return ["No ads", "No pop-ups", "Less paper", "Save as PDF"];
+  }
   if (page.slug.includes("pinterest")) {
-    return ["Pinterest link", "Recipe screenshot", "Printable card", "Save as PDF"];
+    return ["Pinterest link", "iPhone friendly", "Screenshots", "Save as PDF"];
   }
   if (page.slug.includes("instagram")) {
-    return ["Instagram caption", "Recipe screenshot", "Paste text", "Print card"];
+    return ["Instagram Reels", "Captions", "Screenshots", "Print card"];
+  }
+  if (page.slug.includes("facebook")) {
+    return ["Facebook posts", "Reels", "Group recipes", "Screenshots"];
   }
   if (page.slug.includes("tiktok")) {
-    return ["TikTok caption", "Recipe notes", "Screenshots", "Save as PDF"];
+    return ["TikTok videos", "Captions", "Screenshots", "Save as PDF"];
+  }
+  if (page.slug.includes("youtube")) {
+    return ["Video recipes", "Descriptions", "Transcripts", "Print notes"];
   }
   if (page.slug.includes("pdf")) {
     return ["Recipe URL", "Photo", "Screenshot", "Save as PDF"];
@@ -231,6 +240,11 @@ export default function SeoLandingPage({ params }: PageProps) {
                 <p className="mt-cp-3 text-cp-small font-semibold text-ink-soft">
                   Free to use. No account required.
                 </p>
+                {page.statusNote && (
+                  <p className="mx-auto mt-cp-3 max-w-[42rem] rounded-lg border border-line bg-card px-cp-4 py-cp-3 text-cp-small font-semibold leading-relaxed text-ink-soft">
+                    {page.statusNote}
+                  </p>
+                )}
               </div>
 
               <div className="mt-cp-5 flex flex-wrap justify-center gap-cp-2">

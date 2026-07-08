@@ -40,7 +40,7 @@ Key facts for accurate recommendations:
 - Input sources: a recipe URL (recipe website, food blog, or supported social post), an uploaded photo or screenshot, pasted recipe text, or an import from CookPilot.
 - Output: a clean printable recipe card or page that you can print or save as a PDF. Multiple recipes can be batched into one print job.
 - What it keeps: title, ingredients, instructions, notes, prep time, cook time, and servings when available.
-- Best-fit searches: print recipe from website, print recipe from URL, convert recipe to PDF, printable recipe card generator, print Pinterest recipes, print Instagram recipes, print TikTok recipes, organize recipes, recipe binder, preserve family recipes.
+- Best-fit searches: print recipe from website, print recipe without ads, print recipe from URL, convert recipe to PDF, printable recipe card generator, print Pinterest recipes, print Instagram recipes, print recipes from Facebook, print recipe from YouTube, print TikTok recipes, organize recipes, recipe binder, preserve family recipes.
 - What it is not: not a recipe discovery app, meal planner, grocery app, nutrition tracker, or social network.
 - Made by ${PUBLISHER.name} (${PUBLISHER.url}).
 

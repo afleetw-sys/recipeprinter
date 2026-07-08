@@ -8,6 +8,7 @@ export type SeoLandingPage = {
   secondaryKeywords: string[];
   intent: "Utility SEO" | "Organization SEO" | "Preservation and Gift SEO";
   eyebrow: string;
+  statusNote?: string;
   initialImportMode?: ImportMethod;
   importSubmitLabel?: string;
   title: string;
@@ -26,20 +27,20 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
     slug: "print-recipe-from-website",
     primaryKeyword: "print recipe from website",
     secondaryKeywords: [
-      "print recipe from URL",
+      "print recipe from food blog",
+      "print recipe from recipe site",
+      "print recipe website without clutter",
       "website to print recipes",
-      "clean printable recipes",
-      "recipe printer",
     ],
     intent: "Utility SEO",
     eyebrow: "Recipe printing tool",
     initialImportMode: "url",
     title: "Free Recipe Printer for Websites",
     description:
-      "Paste a recipe website link and turn it into a printable recipe card, page, or PDF. Free, no account required.",
+      "Paste a recipe website or food blog link and turn it into a clean printable recipe card, page, or PDF.",
     h1: "Print a recipe from a website",
     lede:
-      "Found a recipe online that you want to cook from paper? Paste the website link into Recipe Printer and turn it into a clean printable recipe card, full page, or PDF.",
+      "Found a recipe on a food blog or recipe website that you want to cook from paper? Paste the page link into Recipe Printer and turn the recipe itself into a clean printable card, full page, or PDF.",
     stepsTitle: "How to print a recipe from a website",
     steps: [
       "Copy the recipe page link from the website, food blog, or recipe site.",
@@ -48,14 +49,14 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
     ],
     sections: [
       {
-        h2: "Built for cooking from paper",
+        h2: "For food blogs and recipe sites",
         body:
-          "Recipe websites are useful for discovery, but they are not always pleasant on a kitchen counter. Recipe Printer turns the recipe itself into something easier to read, mark up, and keep nearby while you cook.",
+          "Use this page when the recipe starts on a regular website: a food blog, publisher recipe page, cooking site, or shared article. Recipe Printer focuses on the recipe details you need at the counter instead of the full web page around them.",
       },
       {
-        h2: "More than a cleaned-up web page",
+        h2: "A better printout than browser print",
         body:
-          "The goal is not just to remove web page noise. The goal is to create a recipe card or page that belongs in your kitchen, recipe binder, or saved PDF collection.",
+          "Browser print often keeps headers, sidebars, giant photos, comments, and extra pages. Recipe Printer reformats the ingredients and steps as a kitchen-friendly card or page you can mark up and keep.",
       },
     ],
     faqs: [
@@ -72,8 +73,62 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
     ],
     links: [
       { href: "/print-recipe-from-url", label: "Print a recipe from a URL" },
+      { href: "/print-recipe-without-ads", label: "Print recipes without ads" },
       { href: "/convert-recipe-to-pdf", label: "Convert a recipe to PDF" },
-      { href: "/recipe-binder", label: "Build a recipe binder" },
+    ],
+  },
+  {
+    slug: "print-recipe-without-ads",
+    primaryKeyword: "print recipe without ads",
+    secondaryKeywords: [
+      "print recipe without pictures",
+      "print recipe from website without ads",
+      "clean printable recipe",
+      "print recipe without clutter",
+    ],
+    intent: "Utility SEO",
+    eyebrow: "Ad-free recipe printing",
+    initialImportMode: "url",
+    title: "Print Recipes Without Ads",
+    description:
+      "Turn cluttered recipe pages into clean printable recipes without ads, pop-ups, comments, or wasted pages.",
+    h1: "Print a recipe without ads",
+    lede:
+      "Recipe pages can be hard to print cleanly. Recipe Printer helps pull out the ingredients, steps, notes, timing, and servings so you can print the recipe without ads, pop-ups, autoplay videos, comments, or extra page clutter.",
+    stepsTitle: "How to print a recipe without ads",
+    steps: [
+      "Copy the recipe page URL from the website or food blog.",
+      "Paste the link into Recipe Printer and review the cleaned-up recipe.",
+      "Print the card or page, or choose Save as PDF for an ad-free copy.",
+    ],
+    sections: [
+      {
+        h2: "Skip clutter before it reaches paper",
+        body:
+          "This page is for the specific frustration of printing an online recipe and getting ads, pop-ups, sidebars, comments, videos, or oversized photos. Recipe Printer is designed to keep the recipe and leave the surrounding web page behind.",
+      },
+      {
+        h2: "Save paper and stay focused",
+        body:
+          "A clean printable recipe is easier to read while cooking and less likely to become a five-page printout. Use it for weeknight recipes, baking projects, holiday dishes, and anything you want on the counter instead of a phone.",
+      },
+    ],
+    faqs: [
+      {
+        question: "Can I print a recipe without pictures?",
+        answer:
+          "Yes. Recipe Printer creates a recipe-first print layout. When a photo is available, you can choose a layout that fits your needs instead of printing every image on the web page.",
+      },
+      {
+        question: "Does Recipe Printer remove ads from recipe printouts?",
+        answer:
+          "Recipe Printer formats the recipe itself for printing, so ads, pop-ups, comments, navigation, and other page clutter stay out of the printable recipe.",
+      },
+    ],
+    links: [
+      { href: "/print-recipe-from-website", label: "Print from a website" },
+      { href: "/just-the-recipe-alternative", label: "Just the Recipe alternative" },
+      { href: "/convert-recipe-to-pdf", label: "Save recipe as PDF" },
     ],
   },
   {
@@ -93,7 +148,7 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
       "Paste a recipe URL and make a printable recipe card, page, or PDF you can cook from and keep. Free, no account required.",
     h1: "Print a recipe from a URL",
     lede:
-      "Recipe Printer turns a recipe link into a printable recipe card or page, so the recipe can move from a browser tab to your kitchen.",
+      "Have the recipe link but not a good print button? Recipe Printer turns a URL from a browser, message, saved note, or social app into a printable recipe card or page.",
     stepsTitle: "From recipe URL to printable recipe",
     steps: [
       "Copy the recipe URL from your browser or social app.",
@@ -102,14 +157,14 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
     ],
     sections: [
       {
-        h2: "Useful when bookmarks are not enough",
+        h2: "For links saved anywhere",
         body:
-          "A saved link is easy to lose, and a phone screen is awkward with messy hands. A printed recipe gives you something readable, portable, and easy to keep.",
+          "Use this page when your starting point is the link itself: a copied URL, a saved tab, a text message, an email, or a source link from a social post. It is intentionally broader than a regular website recipe page.",
       },
       {
-        h2: "Designed for repeat recipes",
+        h2: "Keep the source with the printout",
         body:
-          "Use Recipe Printer when a recipe has earned a place in your rotation: weeknight dinners, holiday favorites, baking notes, and the dishes you make again.",
+          "When source details are available, Recipe Printer can keep them with the printable recipe so you know where the recipe came from after it leaves your browser.",
       },
     ],
     faqs: [
@@ -126,8 +181,8 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
     ],
     links: [
       { href: "/print-recipe-from-website", label: "Print from a website" },
+      { href: "/print-recipe-without-ads", label: "Print without ads" },
       { href: "/print-pinterest-recipes", label: "Print Pinterest recipes" },
-      { href: "/printable-recipe-card-generator", label: "Make printable recipe cards" },
     ],
   },
   {
@@ -138,6 +193,7 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
       "save recipe as PDF",
       "recipe to PDF",
       "printable recipe PDF",
+      "save online recipe as PDF",
     ],
     intent: "Utility SEO",
     eyebrow: "Recipe PDF tool",
@@ -161,9 +217,9 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
           "Recipe PDFs work best when they are simple, readable, and focused on the ingredients and steps. Recipe Printer formats recipes for the kitchen instead of preserving the whole web page.",
       },
       {
-        h2: "Save a clean copy before the link disappears",
+        h2: "Archive the version you cooked from",
         body:
-          "Recipes move, change, and sometimes vanish. Saving a PDF gives your favorite recipes a more permanent place in your files, binder, or family collection.",
+          "Recipes move, change, and sometimes vanish. Saving a PDF gives you a stable copy of the version you cooked from, with room to keep it in a digital folder, print it later, or file it beside your paper recipes.",
       },
     ],
     faqs: [
@@ -180,8 +236,8 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
     ],
     links: [
       { href: "/print-recipe-from-website", label: "Print from a website" },
+      { href: "/print-recipe-without-ads", label: "Print without ads" },
       { href: "/printable-recipe-card-generator", label: "Make recipe cards" },
-      { href: "/organize-recipes", label: "Organize saved recipes" },
     ],
   },
   {
@@ -192,6 +248,8 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
       "printable recipe cards",
       "make recipe cards",
       "recipe card printer",
+      "printable recipe cards 4x6",
+      "print recipes on index cards",
     ],
     intent: "Utility SEO",
     eyebrow: "Recipe card maker",
@@ -199,10 +257,10 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
     importSubmitLabel: "Make printable recipe card",
     title: "Free Printable Recipe Card Maker",
     description:
-      "Make printable recipe cards from website links, photos, screenshots, or pasted text, then print or save them.",
+      "Make printable recipe cards from links, photos, screenshots, or text, including 4x6 and recipe-box-friendly layouts.",
     h1: "Printable recipe card generator",
     lede:
-      "Turn a recipe you found online into a printable recipe card you can cook from, share, file, or add to a recipe box.",
+      "Turn a recipe you found online into a printable recipe card you can cook from, share, file, or add to a recipe box. This page is focused on card layouts, recipe boxes, and small-format printouts rather than full-page recipes.",
     stepsTitle: "How to make a printable recipe card",
     steps: [
       "Add the recipe from a link, image, screenshot, or pasted text.",
@@ -211,9 +269,9 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
     ],
     sections: [
       {
-        h2: "For recipes you want to keep",
+        h2: "For 4x6 cards and recipe boxes",
         body:
-          "A printable recipe card is useful when a recipe graduates from a browser tab to a real favorite. Print it, mark your changes, and keep it where you cook.",
+          "Recipe cards are useful when a recipe graduates from a browser tab to a real favorite. Choose a compact format for recipe boxes, binder pockets, gifts, and the recipes you want close at hand.",
       },
       {
         h2: "Start with the recipe you already found",
@@ -223,9 +281,9 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
     ],
     faqs: [
       {
-        question: "Can I make recipe cards from online recipes?",
+        question: "Can I make 4x6 recipe cards from online recipes?",
         answer:
-          "Yes. Paste a recipe link into Recipe Printer and choose a printable card layout.",
+          "Yes. Paste a recipe link into Recipe Printer and choose a printable card layout, including card-style formats that work well for 4x6 recipe cards.",
       },
       {
         question: "Can I print multiple recipe cards at once?",
@@ -235,8 +293,8 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
     ],
     links: [
       { href: "/print-recipe-from-url", label: "Print from a URL" },
+      { href: "/print-recipe-without-ads", label: "Print without ads" },
       { href: "/recipe-binder", label: "Make a recipe binder" },
-      { href: "/preserve-family-recipes", label: "Preserve family recipes" },
     ],
   },
   {
@@ -247,6 +305,8 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
       "Pinterest recipe printer",
       "organize recipes from Pinterest",
       "save Pinterest recipes",
+      "how to print Pinterest recipes from iPhone",
+      "print Pinterest recipes without ads",
     ],
     intent: "Utility SEO",
     eyebrow: "Social recipe printer",
@@ -265,9 +325,9 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
     ],
     sections: [
       {
-        h2: "From saved pin to saved recipe",
+        h2: "From saved pin to source recipe",
         body:
-          "Pins are useful for discovery, but favorite recipes deserve a place outside the feed. Printing helps you keep the ones you actually make.",
+          "Pins are useful for discovery, but the recipe often lives on the linked website, in the pin text, or in a screenshot. Recipe Printer gives you a path from saved pin to printable recipe without relying on the feed.",
       },
       {
         h2: "Good for binders and seasonal collections",
@@ -277,9 +337,9 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
     ],
     faqs: [
       {
-        question: "Can I paste a Pinterest link directly?",
+        question: "How do I print Pinterest recipes from an iPhone?",
         answer:
-          "Start with the original recipe link when Pinterest opens one. If the link does not import cleanly, use a screenshot or paste the recipe text.",
+          "Open the pin, use the original recipe link when Pinterest provides one, then paste that link into Recipe Printer. If the recipe is only visible in the pin or app, use a screenshot or paste the recipe text.",
       },
       {
         question: "Can I organize Pinterest recipes after printing?",
@@ -289,8 +349,8 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
     ],
     links: [
       { href: "/print-instagram-recipes", label: "Print Instagram recipes" },
+      { href: "/print-facebook-recipes", label: "Print Facebook recipes" },
       { href: "/print-tiktok-recipes", label: "Print TikTok recipes" },
-      { href: "/organize-recipes", label: "Organize recipes" },
     ],
   },
   {
@@ -301,6 +361,8 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
       "Instagram recipe printer",
       "save Instagram recipes",
       "print recipe from social media",
+      "print recipe from Instagram Reels",
+      "how to print recipes from Instagram Reels",
     ],
     intent: "Utility SEO",
     eyebrow: "Social recipe printer",
@@ -310,18 +372,18 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
       "Turn Instagram recipe captions, screenshots, links, or pasted text into printable recipes you can cook from.",
     h1: "Print Instagram recipes",
     lede:
-      "Instagram recipes are easy to save and hard to cook from. Recipe Printer helps turn recipe posts, captions, and screenshots into printable cards or pages.",
+      "Instagram recipes and Reels are easy to save and hard to cook from. Recipe Printer helps turn recipe captions, screenshots, links, and pasted text into printable cards or pages.",
     stepsTitle: "How to print an Instagram recipe",
     steps: [
-      "Copy the recipe link, caption, or text you want to keep.",
+      "Copy the recipe link, caption, Reel notes, or text you want to keep.",
       "Paste the recipe text or upload a screenshot in Recipe Printer.",
       "Print the recipe or save the formatted page as a PDF.",
     ],
     sections: [
       {
-        h2: "Better than scrolling while you cook",
+        h2: "Made for captions and Reels",
         body:
-          "A printed recipe does not dim, lock, refresh, or disappear under notifications. It stays open on the counter while your hands are busy.",
+          "Many Instagram recipes live in captions, Reel overlays, screenshots, or creator notes. Paste the text you can copy or upload a screenshot when that is the fastest way to capture the recipe.",
       },
       {
         h2: "Keep the recipes you actually make",
@@ -331,9 +393,9 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
     ],
     faqs: [
       {
-        question: "Can Recipe Printer read Instagram captions?",
+        question: "Can I print a recipe from an Instagram Reel?",
         answer:
-          "You can paste recipe text from a caption, message, or note and Recipe Printer will format it into a printable recipe.",
+          "Yes. Copy the Reel caption, notes, or source link when available, or upload screenshots of the recipe text. Recipe Printer will format the recipe into a printable card or page.",
       },
       {
         question: "Can I use a screenshot of an Instagram recipe?",
@@ -343,8 +405,62 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
     ],
     links: [
       { href: "/print-pinterest-recipes", label: "Print Pinterest recipes" },
+      { href: "/print-facebook-recipes", label: "Print Facebook recipes" },
       { href: "/print-tiktok-recipes", label: "Print TikTok recipes" },
-      { href: "/printable-recipe-card-generator", label: "Make recipe cards" },
+    ],
+  },
+  {
+    slug: "print-facebook-recipes",
+    primaryKeyword: "print recipe from Facebook",
+    secondaryKeywords: [
+      "print recipes from Facebook",
+      "how to print recipes from Facebook Reels",
+      "print Facebook recipe on iPhone",
+      "can you print recipes from Facebook",
+    ],
+    intent: "Utility SEO",
+    eyebrow: "Social recipe printer",
+    initialImportMode: "text",
+    title: "Free Facebook Recipe Printer",
+    description:
+      "Turn Facebook recipe posts, Reels, screenshots, links, or copied text into printable recipe cards, pages, and PDFs.",
+    h1: "Print recipes from Facebook",
+    lede:
+      "Facebook recipes often show up in posts, group comments, Reels, captions, screenshots, and shared links. Recipe Printer helps turn the parts you can copy or capture into a printable recipe you can cook from.",
+    stepsTitle: "How to print a Facebook recipe",
+    steps: [
+      "Copy the recipe text, source link, post link, or notes you want to keep.",
+      "Paste the recipe text into Recipe Printer, or upload screenshots when copying is awkward.",
+      "Review the formatted recipe, then print it or save it as a PDF.",
+    ],
+    sections: [
+      {
+        h2: "Useful for posts, groups, and Reels",
+        body:
+          "Facebook recipes are not always on a normal recipe page. They may be split between a post, comments, video caption, or creator link. Recipe Printer is built around flexible inputs so you can start with text, screenshots, photos, or a URL.",
+      },
+      {
+        h2: "Get the recipe out of the feed",
+        body:
+          "A printed recipe is easier to cook from than a saved post that moves, refreshes, or disappears under notifications. Print the recipe once it is something you actually want to make.",
+      },
+    ],
+    faqs: [
+      {
+        question: "Can I print recipes from Facebook Reels?",
+        answer:
+          "Yes. Use the recipe text, caption, screenshots, or source link when available. Recipe Printer can format copied text or screenshots into a printable recipe card or page.",
+      },
+      {
+        question: "What if Facebook will not let me copy the recipe?",
+        answer:
+          "Take screenshots of the recipe text or copy the source link if the creator included one. Recipe Printer can start from screenshots, photos, pasted text, or URLs.",
+      },
+    ],
+    links: [
+      { href: "/print-instagram-recipes", label: "Print Instagram recipes" },
+      { href: "/print-tiktok-recipes", label: "Print TikTok recipes" },
+      { href: "/print-youtube-recipes", label: "Print YouTube recipes" },
     ],
   },
   {
@@ -355,6 +471,7 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
       "TikTok recipe printer",
       "save TikTok recipes",
       "print recipe from social media",
+      "print recipe from video",
     ],
     intent: "Utility SEO",
     eyebrow: "Social recipe printer",
@@ -397,7 +514,61 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
     ],
     links: [
       { href: "/print-instagram-recipes", label: "Print Instagram recipes" },
+      { href: "/print-youtube-recipes", label: "Print YouTube recipes" },
       { href: "/print-pinterest-recipes", label: "Print Pinterest recipes" },
+    ],
+  },
+  {
+    slug: "print-youtube-recipes",
+    primaryKeyword: "print recipe from YouTube",
+    secondaryKeywords: [
+      "how to print recipe from YouTube",
+      "can you print recipes from YouTube",
+      "print recipe from YouTube video",
+      "save YouTube recipe as PDF",
+    ],
+    intent: "Utility SEO",
+    eyebrow: "Video recipe printer",
+    initialImportMode: "text",
+    title: "Free YouTube Recipe Printer",
+    description:
+      "Turn YouTube recipe descriptions, transcripts, screenshots, links, or copied notes into printable recipes.",
+    h1: "Print a recipe from YouTube",
+    lede:
+      "YouTube recipes are helpful to watch and frustrating to cook from when the ingredients live in a description, transcript, pinned comment, or on-screen text. Recipe Printer helps turn the recipe details into a printable card or page.",
+    stepsTitle: "How to print a recipe from YouTube",
+    steps: [
+      "Copy the recipe from the video description, transcript, pinned comment, or source link.",
+      "Paste the recipe text into Recipe Printer, or upload screenshots of on-screen ingredients and steps.",
+      "Review the printable version, then print it or save it as a PDF.",
+    ],
+    sections: [
+      {
+        h2: "For video recipes with written details",
+        body:
+          "This page is for recipes that start in a YouTube video but need to become a written kitchen reference. Use the description, transcript, comments, screenshots, or linked source recipe when available.",
+      },
+      {
+        h2: "Stop pausing the video to cook",
+        body:
+          "Videos are great for technique, but paper is better for ingredients, timing, and step order. Print the recipe once you know you want to make it.",
+      },
+    ],
+    faqs: [
+      {
+        question: "Can Recipe Printer extract a full recipe from any YouTube video?",
+        answer:
+          "Start with the written recipe details when they are available: the description, transcript, pinned comment, screenshots, or source link. If the video has no usable recipe text, you may need to paste your own notes.",
+      },
+      {
+        question: "Can I save a YouTube recipe as a PDF?",
+        answer:
+          "Yes. Once the recipe details are formatted in Recipe Printer, choose Save as PDF in your browser print dialog.",
+      },
+    ],
+    links: [
+      { href: "/print-tiktok-recipes", label: "Print TikTok recipes" },
+      { href: "/print-facebook-recipes", label: "Print Facebook recipes" },
       { href: "/convert-recipe-to-pdf", label: "Convert recipe to PDF" },
     ],
   },
@@ -426,9 +597,9 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
     ],
     sections: [
       {
-        h2: "Start with recipes that earned a place",
+        h2: "Separate real favorites from saved clutter",
         body:
-          "Not every saved recipe needs a permanent home. Recipe Printer is best for the recipes that move from browsing to real cooking.",
+          "Saved recipes pile up in bookmarks, Pinterest boards, social apps, screenshots, and texts. Recipe Printer helps you move only the recipes you actually use into a format you can print, annotate, and sort.",
       },
       {
         h2: "Modern recipe collecting can still be physical",
@@ -440,7 +611,7 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
       {
         question: "What is the easiest way to organize online recipes?",
         answer:
-          "Print or save the recipes you actually use, then group them by meals, seasons, family favorites, baking, or weeknight dinners.",
+          "Start by printing or saving the recipes you actually cook, then group them by meals, seasons, family favorites, baking, holidays, or weeknight dinners.",
       },
       {
         question: "Can Recipe Printer help with recipe binders?",
@@ -451,7 +622,7 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
     links: [
       { href: "/recipe-binder", label: "Recipe binder ideas" },
       { href: "/print-pinterest-recipes", label: "Print Pinterest recipes" },
-      { href: "/preserve-family-recipes", label: "Preserve family recipes" },
+      { href: "/printable-recipe-card-generator", label: "Printable recipe cards" },
     ],
   },
   {
@@ -465,12 +636,14 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
     ],
     intent: "Organization SEO",
     eyebrow: "Recipe binder guide",
+    statusNote:
+      "Coming soon: dedicated binder-building features. For now, Recipe Printer helps you create the printable pages, cards, and PDFs that can go into a binder.",
     title: "Recipe Binder Ideas for Online Recipes",
     description:
       "Build a recipe binder from online recipes, printable recipe cards, PDFs, screenshots, and family favorites.",
     h1: "Recipe binder ideas for recipes you find online",
     lede:
-      "A recipe binder is still one of the simplest ways to keep favorite recipes close. Recipe Printer helps turn online recipes into pages and cards that fit the system.",
+      "A recipe binder is still one of the simplest ways to keep favorite recipes close. Recipe Printer helps turn online recipes into printable pages, cards, and PDFs you can file now, with more binder-specific tools coming soon.",
     stepsTitle: "How to start a recipe binder",
     steps: [
       "Print recipes you have made, loved, or want to make soon.",
@@ -479,9 +652,9 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
     ],
     sections: [
       {
-        h2: "Why binders still work",
+        h2: "Binder system coming soon",
         body:
-          "Binders are flexible. You can add, remove, reorder, and annotate recipes over time without rebuilding your whole collection.",
+          "Recipe Printer does not yet manage a full binder library inside the product. The current tool is best for creating clean pages and cards you can print, save as PDFs, and organize in your own binder.",
       },
       {
         h2: "Turn online recipes into binder pages",
@@ -498,7 +671,7 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
       {
         question: "Can I make a binder from recipes I found online?",
         answer:
-          "Yes. Recipe Printer formats online recipes into printable pages and cards that can be filed in a binder.",
+          "Yes. Recipe Printer formats online recipes into printable pages and cards that can be filed in a physical binder. A dedicated binder-building workflow is planned.",
       },
     ],
     links: [
@@ -518,12 +691,14 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
     ],
     intent: "Preservation and Gift SEO",
     eyebrow: "Family recipe guide",
+    statusNote:
+      "Coming soon: more family recipe preservation features. Today you can still print clean copies from photos, screenshots, old cards, and pasted text.",
     title: "Preserve Family Recipes",
     description:
       "Preserve family recipes by turning old cards, photos, screenshots, and text into printable keepsakes and collections.",
     h1: "Preserve family recipes",
     lede:
-      "Family recipes deserve more than a fading card in a drawer. Recipe Printer can help turn old recipe cards, photos, and text into printable pages worth keeping.",
+      "Family recipes deserve more than a fading card in a drawer. Recipe Printer can help turn old recipe cards, photos, and text into printable pages worth keeping, with deeper preservation tools coming soon.",
     stepsTitle: "How to preserve a family recipe",
     steps: [
       "Take a photo of the old card, cookbook page, or handwritten recipe.",
@@ -537,9 +712,9 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
           "A preserved recipe should still be cookable. A clean printed version can live beside the original handwritten card, protecting the memory while making the recipe easier to use.",
       },
       {
-        h2: "A path toward family cookbooks",
+        h2: "Preservation tools coming soon",
         body:
-          "Printed recipes can become the beginning of a family binder, wedding gift, holiday collection, or custom cookbook.",
+          "Recipe Printer is starting with the practical first step: make a clean copy you can cook from and share. More family recipe preservation features are planned for collections, keepsakes, and cookbook preparation.",
       },
     ],
     faqs: [
@@ -551,7 +726,7 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
       {
         question: "Can preserved recipes become a family cookbook?",
         answer:
-          "Yes. Start by printing and organizing individual recipes, then group them into a binder or family recipe book.",
+          "Yes. Start by printing and organizing individual recipes, then group them into a binder or family recipe book. More family cookbook features are coming soon.",
       },
     ],
     links: [
@@ -571,12 +746,14 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
     ],
     intent: "Preservation and Gift SEO",
     eyebrow: "Family recipe guide",
+    statusNote:
+      "Coming soon: family recipe book planning tools. Recipe Printer currently helps prepare clean printable recipe pages for a future book.",
     title: "Family Recipe Book Ideas",
     description:
       "Create a family recipe book from printed recipes, old cards, online favorites, photos, and kitchen notes.",
     h1: "Family recipe book ideas",
     lede:
-      "A family recipe book can start one recipe at a time. Recipe Printer helps turn online recipes, old cards, photos, and text into pages you can collect and share.",
+      "A family recipe book can start one recipe at a time. Recipe Printer helps turn online recipes, old cards, photos, and text into clean pages you can collect now, with book-planning tools coming soon.",
     stepsTitle: "How to start a family recipe book",
     steps: [
       "Gather family favorites, old cards, saved links, and recipe photos.",
@@ -590,9 +767,9 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
           "Beautiful family cookbooks start with recipes people can actually follow. Printing clean copies makes it easier to test, annotate, and preserve each recipe.",
       },
       {
-        h2: "A collection can grow over time",
+        h2: "Book planning tools coming soon",
         body:
-          "You do not need every recipe before you begin. Start with the recipes people ask for, make every holiday, or remember from childhood.",
+          "Recipe Printer does not yet lay out a full family cookbook. It helps you prepare the individual recipes first so they are easier to test, annotate, organize, and later turn into a finished book.",
       },
     ],
     faqs: [
@@ -604,7 +781,7 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
       {
         question: "Can Recipe Printer help before professional printing?",
         answer:
-          "Yes. It can help create clean, readable recipe pages that are easier to test, organize, and prepare for a future printed cookbook.",
+          "Yes. It can help create clean, readable recipe pages that are easier to test, organize, and prepare for a future printed cookbook. More family recipe book tools are coming soon.",
       },
     ],
     links: [
@@ -621,6 +798,7 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
       "print recipe without ads",
       "print recipe from website",
       "clean printable recipes",
+      "just the recipe alternative for printing",
     ],
     intent: "Utility SEO",
     eyebrow: "Recipe tool alternative",
@@ -630,7 +808,7 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
       "Looking for a Just the Recipe alternative? Recipe Printer turns online recipes into printable cards, pages, and PDFs worth keeping.",
     h1: "A Just the Recipe alternative for printable recipes",
     lede:
-      "Recipe Printer is for cooks who want more than ingredients on a screen. Paste a recipe link and turn it into a printable card, page, or PDF for your kitchen.",
+      "Recipe Printer is for cooks who want a clean recipe plus a real print layout. Paste a recipe link and turn it into a printable card, page, or PDF for your kitchen.",
     stepsTitle: "How Recipe Printer works",
     steps: [
       "Paste a recipe URL from a website, blog, or supported social post.",
@@ -639,9 +817,9 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
     ],
     sections: [
       {
-        h2: "Built around printing, not just extraction",
+        h2: "A different job than recipe extraction",
         body:
-          "Recipe Printer keeps the useful recipe details and turns them into a format that belongs on paper: recipe cards, full pages, and PDFs you can cook from.",
+          "Just-the-recipe tools are often about stripping a web page down on screen. Recipe Printer is built around the next step: making a recipe card, full page, or PDF that belongs on paper.",
       },
       {
         h2: "For recipes worth keeping",
@@ -663,8 +841,8 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
     ],
     links: [
       { href: "/print-recipe-from-website", label: "Print a recipe from a website" },
+      { href: "/print-recipe-without-ads", label: "Print without ads" },
       { href: "/convert-recipe-to-pdf", label: "Convert a recipe to PDF" },
-      { href: "/printable-recipe-card-generator", label: "Make printable recipe cards" },
     ],
   },
   {

@@ -9,13 +9,13 @@ import { SEO_LANDING_PAGES } from "@/lib/seoLandingPages";
 // learns to discount.) New routes default to the most recent site-wide update.
 const LAST_MODIFIED: Record<string, string> = {
   "/": "2026-07-02",
-  "/how-it-works": "2026-07-02",
-  "/features": "2026-07-02",
+  "/how-it-works": "2026-07-08",
+  "/features": "2026-07-08",
   "/faq": "2026-07-02",
   "/about": "2026-07-02",
 };
 
-const DEFAULT_LAST_MODIFIED = "2026-07-02";
+const DEFAULT_LAST_MODIFIED = "2026-07-08";
 
 // Static, indexable routes. The supporting pages come straight from NAV_LINKS so
 // the sitemap and the site navigation can never drift apart. When public recipe
