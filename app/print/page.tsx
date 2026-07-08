@@ -125,6 +125,7 @@ interface SheetSlot {
   back: RecipeFace | null;
   hasBack: boolean;
   isContinuation: boolean;
+  queueIndex: number;
 }
 
 // One physical sheet of paper that will actually come out of the printer.
@@ -407,6 +408,7 @@ export default function PrintPage() {
       faces: RecipeFace[];
       hasBack: boolean;
       idx: number;
+      queueIndex: number;
     }
 
     const queue: Column[] = [];
@@ -424,6 +426,7 @@ export default function PrintPage() {
         faces: faces.pages,
         hasBack: faces.hasBack,
         idx: 0,
+        queueIndex: queue.length,
       });
     }
 
@@ -464,6 +467,7 @@ export default function PrintPage() {
               back: null,
               hasBack: take.column.hasBack,
               isContinuation: take.faceIndex > 0,
+              queueIndex: take.column.queueIndex,
             }
           : null,
       );
@@ -502,13 +506,19 @@ export default function PrintPage() {
 
   // What the rail and deck actually browse: one recipe face per item, in the
   // same order recipes were queued, regardless of which physical sheet (and
-  // slot on it) they end up sharing for print.
+  // slot on it) they end up sharing for print. A recipe that needs more faces
+  // than fit in one front/back pair (long recipes on 6x4, mostly) spends an
+  // extra sheet sharing its slot's continuation with whatever the *other*
+  // slot on that sheet is doing — scanning sheets in physical order would
+  // then interleave that recipe's later faces with its sheet-mate's, so each
+  // recipe's items are grouped together (by `queueIndex`) after the scan,
+  // keeping this array itself in physical order otherwise unchanged.
   const navItems = useMemo<NavItem[]>(() => {
-    const out: NavItem[] = [];
+    const groups = new Map<number, NavItem[]>();
     sheets.forEach((sheet, sheetIndex) => {
       sheet.slots.forEach((slot, slotIndex) => {
         if (!slot) return;
-        out.push({
+        const navItem: NavItem = {
           sheetIndex,
           slotIndex,
           label: slot.label,
@@ -524,10 +534,15 @@ export default function PrintPage() {
                 ? "Two-sided"
                 : "One-sided",
           flip: slot.back !== null,
-        });
+        };
+        const group = groups.get(slot.queueIndex);
+        if (group) group.push(navItem);
+        else groups.set(slot.queueIndex, [navItem]);
       });
     });
-    return out;
+    return Array.from(groups.keys())
+      .sort((a, b) => a - b)
+      .flatMap((queueIndex) => groups.get(queueIndex)!);
   }, [sheets, continueOnBack]);
 
   const [activeNavIndex, setActiveNavIndex] = useState(0);
@@ -963,83 +978,21 @@ export default function PrintPage() {
         >
           <div className="recipe-mobile-topbar no-print">
             <Link href="/" className="recipe-mobile-back-button" aria-label="Back to recipes">
-              <ChevronLeftIcon size={ICON_SIZE.lg} />
-              <span>Back</span>
+              <ChevronLeftIcon size={28} />
             </Link>
             <div className="recipe-mobile-page-count" aria-live="polite">
               {activeNavIndex + 1} of {navItems.length}
             </div>
-          </div>
-          <div className="recipe-mobile-toolbar no-print">
-            <Select
-              className="recipe-mobile-toolbar__size-select"
-              aria-label="Card size"
-              value={cardSize}
-              onChange={(event) => setCardSize(event.target.value as PrintCardSize)}
-            >
-              {PRINT_CARD_SIZE_OPTIONS.map((option) => (
-                <option key={option.id} value={option.id}>
-                  {option.label}
-                </option>
-              ))}
-            </Select>
             <button
               type="button"
-              className={`recipe-mobile-toolbar__btn ${mobileDrawer === "template" ? "is-active" : ""}`}
-              aria-pressed={mobileDrawer === "template"}
-              onClick={() => setMobileDrawer("template")}
+              className="btn btn-primary btn-compact recipe-mobile-topbar__print"
+              onClick={handleMobilePrint}
+              disabled={purchaseBusy}
             >
-              Change template
+              {purchaseBusy ? <SpinnerIcon size={ICON_SIZE.md} /> : <PrintIcon size={ICON_SIZE.md} />}
+              {selectedTemplateLocked ? "Unlock & Print" : "Print"}
             </button>
           </div>
-          {(anyRecipeHasImage || anyRecipeHasSourceUrl || hasRecipeBackSide || cardSize === "card-6x4") && (
-            <div className="recipe-mobile-chip-scroll no-print">
-              {anyRecipeHasImage && (
-                <button
-                  type="button"
-                  className={`recipe-setting-chip ${showPhoto ? "is-active" : ""}`}
-                  aria-pressed={showPhoto}
-                  onClick={() => setShowPhoto((value) => !value)}
-                >
-                  {showPhoto && <CheckIcon size={ICON_SIZE.xs} />}
-                  Recipe photo
-                </button>
-              )}
-              {anyRecipeHasSourceUrl && (
-                <button
-                  type="button"
-                  className={`recipe-setting-chip ${showSourceUrl ? "is-active" : ""}`}
-                  aria-pressed={showSourceUrl}
-                  onClick={() => setShowSourceUrl((value) => !value)}
-                >
-                  {showSourceUrl && <CheckIcon size={ICON_SIZE.xs} />}
-                  Source link
-                </button>
-              )}
-              {hasRecipeBackSide && (
-                <button
-                  type="button"
-                  className={`recipe-setting-chip ${doubleSided ? "is-active" : ""}`}
-                  aria-pressed={doubleSided}
-                  onClick={() => setDoubleSided((value) => !value)}
-                >
-                  {doubleSided && <CheckIcon size={ICON_SIZE.xs} />}
-                  Two-sided
-                </button>
-              )}
-              {cardSize === "card-6x4" && (
-                <button
-                  type="button"
-                  className={`recipe-setting-chip ${showCutLines ? "is-active" : ""}`}
-                  aria-pressed={showCutLines}
-                  onClick={() => setShowCutLines((value) => !value)}
-                >
-                  {showCutLines && <CheckIcon size={ICON_SIZE.xs} />}
-                  Cut lines
-                </button>
-              )}
-            </div>
-          )}
           <div className="recipe-page-deck" id="recipe-page-deck" ref={deckRef}>
             {navItems.map((navItem, index) => {
               const sheet = sheets[navItem.sheetIndex];
@@ -1319,15 +1272,76 @@ export default function PrintPage() {
         </aside>
 
         <div className="recipe-mobile-actions no-print">
-          <button
-            type="button"
-            className="btn btn-primary recipe-mobile-print-button"
-            onClick={handleMobilePrint}
-            disabled={purchaseBusy}
-          >
-            {purchaseBusy ? <SpinnerIcon size={ICON_SIZE.md} /> : <PrintIcon size={ICON_SIZE.md} />}
-            {selectedTemplateLocked ? "Unlock & Print" : "Print"}
-          </button>
+          <div className="recipe-mobile-toolbar">
+            <Select
+              className="recipe-mobile-toolbar__size-select"
+              aria-label="Card size"
+              value={cardSize}
+              onChange={(event) => setCardSize(event.target.value as PrintCardSize)}
+            >
+              {PRINT_CARD_SIZE_OPTIONS.map((option) => (
+                <option key={option.id} value={option.id}>
+                  {option.label}
+                </option>
+              ))}
+            </Select>
+            <button
+              type="button"
+              className={`recipe-mobile-toolbar__btn ${mobileDrawer === "template" ? "is-active" : ""}`}
+              aria-pressed={mobileDrawer === "template"}
+              onClick={() => setMobileDrawer("template")}
+            >
+              Change template
+            </button>
+          </div>
+          {(anyRecipeHasImage || anyRecipeHasSourceUrl || hasRecipeBackSide || cardSize === "card-6x4") && (
+            <div className="recipe-mobile-chip-scroll">
+              {anyRecipeHasImage && (
+                <button
+                  type="button"
+                  className={`recipe-setting-chip ${showPhoto ? "is-active" : ""}`}
+                  aria-pressed={showPhoto}
+                  onClick={() => setShowPhoto((value) => !value)}
+                >
+                  {showPhoto && <CheckIcon size={ICON_SIZE.xs} />}
+                  Recipe photo
+                </button>
+              )}
+              {anyRecipeHasSourceUrl && (
+                <button
+                  type="button"
+                  className={`recipe-setting-chip ${showSourceUrl ? "is-active" : ""}`}
+                  aria-pressed={showSourceUrl}
+                  onClick={() => setShowSourceUrl((value) => !value)}
+                >
+                  {showSourceUrl && <CheckIcon size={ICON_SIZE.xs} />}
+                  Source link
+                </button>
+              )}
+              {hasRecipeBackSide && (
+                <button
+                  type="button"
+                  className={`recipe-setting-chip ${doubleSided ? "is-active" : ""}`}
+                  aria-pressed={doubleSided}
+                  onClick={() => setDoubleSided((value) => !value)}
+                >
+                  {doubleSided && <CheckIcon size={ICON_SIZE.xs} />}
+                  Two-sided
+                </button>
+              )}
+              {cardSize === "card-6x4" && (
+                <button
+                  type="button"
+                  className={`recipe-setting-chip ${showCutLines ? "is-active" : ""}`}
+                  aria-pressed={showCutLines}
+                  onClick={() => setShowCutLines((value) => !value)}
+                >
+                  {showCutLines && <CheckIcon size={ICON_SIZE.xs} />}
+                  Cut lines
+                </button>
+              )}
+            </div>
+          )}
         </div>
       </main>
 

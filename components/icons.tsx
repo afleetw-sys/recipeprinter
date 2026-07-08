@@ -74,6 +74,13 @@ export const XIcon = (p: IconProps) => (
   </Base>
 );
 
+export const PlusIcon = (p: IconProps) => (
+  <Base {...p}>
+    <path d="M12 5v14" />
+    <path d="M5 12h14" />
+  </Base>
+);
+
 export const ChevronLeftIcon = (p: IconProps) => (
   <Base {...p}>
     <path d="M15 6l-6 6 6 6" />
@@ -198,6 +205,23 @@ export const PlateIcon = (p: IconProps) => (
   <Base {...p}>
     <circle cx="12" cy="12" r="8.5" />
     <circle cx="12" cy="12" r="4" />
+  </Base>
+);
+
+export const SizeIcon = (p: IconProps) => (
+  <Base {...p}>
+    <path d="M4 9V4h5" />
+    <path d="M20 9V4h-5" />
+    <path d="M4 15v5h5" />
+    <path d="M20 15v5h-5" />
+  </Base>
+);
+
+export const TemplateIcon = (p: IconProps) => (
+  <Base {...p}>
+    <rect x="3.5" y="3.5" width="17" height="17" rx="2.5" />
+    <path d="M3.5 9.5h17" />
+    <path d="M9.7 9.5v11" />
   </Base>
 );
 

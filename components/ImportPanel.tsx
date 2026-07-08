@@ -16,6 +16,7 @@ import {
   ImageIcon,
   LinkIcon,
   MoreVerticalIcon,
+  PlusIcon,
   TextIcon,
   UploadIcon,
 } from "@/components/icons";
@@ -71,7 +72,7 @@ export function ImportPanel({
   items,
   workspace = false,
   initialMode = "url",
-  submitLabel = "Add recipe",
+  submitLabel = "Add",
   onAddUrl,
   onAddImages,
   onAddText,
@@ -101,7 +102,6 @@ export function ImportPanel({
   // While the print list is empty, surface every import option so people learn
   // what's available; once a recipe is added, tuck the extras into the overflow.
   const expanded = items.length === 0;
-  const submitButtonStyle = items.length > 0 ? "btn-secondary" : "btn-primary";
 
   useEffect(() => {
     function onPointerDown(event: PointerEvent) {
@@ -265,22 +265,32 @@ export function ImportPanel({
       ) : (
       <form className="flex flex-col gap-cp-4 mt-cp-4" onSubmit={handleSubmit}>
         {mode === "url" && (
-          <div>
-            <label className="field-label" htmlFor="rp-url">
-              Recipe URL
-            </label>
-            <input
-              id="rp-url"
-              type="url"
-              className="field"
-              placeholder="Paste recipe URL here"
-              value={url}
-              autoFocus
-              onChange={(e) => {
-                setUrl(e.target.value);
-                resetError();
-              }}
-            />
+          <div className="flex flex-col gap-cp-4 lg:flex-row lg:items-end lg:gap-cp-2">
+            <div className="flex-1">
+              <label className="field-label" htmlFor="rp-url">
+                Recipe URL
+              </label>
+              <input
+                id="rp-url"
+                type="url"
+                className="field"
+                placeholder="Paste recipe URL here"
+                value={url}
+                autoFocus
+                onChange={(e) => {
+                  setUrl(e.target.value);
+                  resetError();
+                }}
+              />
+            </div>
+            <button
+              type="submit"
+              className="btn btn-primary rp-import-submit w-full lg:w-auto"
+              disabled={busy}
+            >
+              {busy ? <UploadIcon size={18} /> : <PlusIcon size={18} />}
+              {submitLabel}
+            </button>
           </div>
         )}
 
@@ -337,10 +347,12 @@ export function ImportPanel({
           </div>
         )}
 
-        <button type="submit" className={`btn ${submitButtonStyle} rp-import-submit w-full`} disabled={busy}>
-          {busy ? <UploadIcon size={18} /> : <span className="text-lg leading-none">+</span>}
-          {submitLabel}
+        {mode !== "url" && (
+          <button type="submit" className="btn btn-primary rp-import-submit w-full" disabled={busy}>
+            {busy ? <UploadIcon size={18} /> : <PlusIcon size={18} />}
+            {submitLabel}
           </button>
+        )}
       </form>
       )}
 

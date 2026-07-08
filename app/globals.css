@@ -497,15 +497,6 @@
       color: var(--cp-card);
     }
 
-    /* Add recipe stays the primary-styled call to action even after items
-       exist, instead of fading to the secondary/outlined treatment it uses
-       on desktop, so Print (above) reads as the one that pulls focus. */
-    .rp-import-submit.btn-secondary {
-      background: var(--cp-ink) !important;
-      color: var(--cp-card);
-      border: none;
-    }
-
     .rp-mobile-print-tray__content {
       display: none;
       max-height: calc(100dvh - 124px);
@@ -1601,7 +1592,7 @@
     grid-template-columns: 1fr;
     grid-template-rows: minmax(0, 1fr);
     height: 100dvh;
-    padding: 10px 0 88px !important;
+    padding: 10px 0 132px !important;
     gap: 0;
     overflow: hidden;
   }
@@ -1609,10 +1600,9 @@
   .recipe-mobile-topbar {
     position: relative;
     z-index: 6;
-    display: flex;
-    flex: 0 0 auto;
+    display: grid;
+    grid-template-columns: auto 1fr auto;
     align-items: center;
-    justify-content: space-between;
     gap: 12px;
     padding: max(10px, env(safe-area-inset-top)) 16px 10px;
     background: var(--cp-page);
@@ -1621,49 +1611,38 @@
   .recipe-mobile-back-button {
     display: inline-flex;
     align-items: center;
-    gap: 2px;
+    justify-self: start;
+    margin: -6px;
+    padding: 6px;
     color: var(--cp-ink);
-    font-size: var(--cp-fs-small);
-    font-weight: 800;
     line-height: 1;
   }
 
   .recipe-mobile-page-count {
     display: inline-flex;
     align-items: center;
+    justify-self: center;
     color: var(--cp-ink-soft);
     font-size: var(--cp-fs-caption);
     font-weight: 700;
     line-height: 1;
   }
 
+  .recipe-mobile-topbar__print {
+    justify-self: end;
+  }
+
   .recipe-mobile-toolbar {
-    position: relative;
-    z-index: 6;
     display: flex;
     flex: 0 0 auto;
     gap: 8px;
-    padding: 0 16px 12px;
-    border-bottom: 1px solid var(--cp-line);
-    background: var(--cp-page);
-  }
-
-  /* When a chip row follows, it owns the divider so we don't stack two. */
-  .recipe-mobile-toolbar:has(+ .recipe-mobile-chip-scroll) {
-    border-bottom: 0;
-    padding-bottom: 10px;
   }
 
   .recipe-mobile-chip-scroll {
-    position: relative;
-    z-index: 6;
     display: flex;
     flex: 0 0 auto;
     gap: 8px;
-    padding: 0 16px 12px;
     overflow-x: auto;
-    border-bottom: 1px solid var(--cp-line);
-    background: var(--cp-page);
     scrollbar-width: none;
   }
 
@@ -1858,14 +1837,12 @@
     bottom: 0;
     left: 0;
     z-index: 75;
-    display: block;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
     padding: 10px 16px max(10px, env(safe-area-inset-bottom));
     border-top: 1px solid var(--cp-line);
     background: var(--cp-page);
-  }
-
-  .recipe-mobile-print-button {
-    width: 100%;
   }
 }
 
