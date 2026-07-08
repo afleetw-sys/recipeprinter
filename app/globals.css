@@ -1022,12 +1022,27 @@
   border-top: 1px solid var(--cp-line);
 }
 
-.recipe-print-tip {
-  margin: 0 0 12px;
+.recipe-cookpilot-account {
+  margin-top: 10px;
+  padding-top: 10px;
+  border-top: 1px solid var(--cp-line);
+}
+
+.recipe-cookpilot-account__signed-in {
+  color: var(--cp-ink-soft);
+  font-size: var(--cp-fs-caption);
+}
+
+.recipe-cookpilot-account__link {
   color: var(--cp-ink-soft);
   font-size: var(--cp-fs-caption);
   font-weight: 600;
-  line-height: 1.35;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.recipe-cookpilot-account__link:hover {
+  color: var(--cp-ink);
 }
 
 .recipe-print-button {
@@ -1778,13 +1793,16 @@
     display: flex;
     flex: 1 1 auto;
     flex-direction: row;
-    align-items: center;
+    /* Bottom-aligned (not centered) so the card sits flush against the page
+       counter directly below it instead of floating with slack on both
+       sides. */
+    align-items: flex-end;
     justify-content: flex-start;
     gap: 16px;
     min-height: 0;
     /* Extra top room so the front/back flip control can sit above the card
        instead of overlapping its content. */
-    padding: 54px 40px 18px;
+    padding: 54px 40px 4px;
     overflow-x: auto;
     overflow-y: hidden;
     scroll-padding-inline: 40px;

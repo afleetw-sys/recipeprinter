@@ -38,12 +38,16 @@ import {
 } from "@/lib/premiumTemplates";
 import {
   hasTemplateEntitlement,
+  identifyRecipePrinterCustomer,
   loadRecipePrinterCustomerInfo,
   loadRecipePrinterTemplatePrices,
   purchaseRecipePrinterTemplate,
   recipePrinterCustomerId,
   syncRecipePrinterCustomerAttributes,
 } from "@/lib/recipePrinterPurchases";
+import { CookPilotLoginDialog, useCookPilotAuth } from "@/components/CookPilotAuth";
+import { getFirebaseAuth } from "@/lib/firebase/client";
+import { signOut } from "firebase/auth";
 import { readCurrentPrintJobIds, readQueue } from "@/lib/queue";
 import type { QueueItem, Recipe } from "@/types/recipe";
 import type { CustomerInfo } from "@revenuecat/purchases-js";
@@ -369,6 +373,9 @@ export default function PrintPage() {
   const [purchaseBusy, setPurchaseBusy] = useState(false);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
   const [templatePrices, setTemplatePrices] = useState<Partial<Record<PremiumRecipePrintTemplate, string>>>({});
+  const { user: cookPilotUser } = useCookPilotAuth();
+  const [showCookPilotLogin, setShowCookPilotLogin] = useState(false);
+  const linkedCookPilotUidRef = useRef<string | null>(null);
   const printRequestedRef = useRef(false);
   const autoPrintAttemptedRef = useRef(false);
   const didMountSettingsRef = useRef(false);
@@ -869,6 +876,29 @@ export default function PrintPage() {
   }, []);
 
   useEffect(() => {
+    // Runs once per CookPilot login: aliases whatever this browser already
+    // purchased anonymously into the CookPilot account, then switches this
+    // session to that identity so future purchases stay tied to it too.
+    if (!cookPilotUser || linkedCookPilotUidRef.current === cookPilotUser.uid) return;
+    linkedCookPilotUidRef.current = cookPilotUser.uid;
+    identifyRecipePrinterCustomer(cookPilotUser.uid)
+      .then(({ customerInfo: linkedInfo }) => {
+        setRevenueCatUserId(cookPilotUser.uid);
+        setCustomerInfo(linkedInfo);
+        const hasAnyPremium = Object.keys(linkedInfo.entitlements.active).length > 0;
+        showToast(
+          hasAnyPremium
+            ? "Signed in — restored your purchased templates."
+            : "Signed in — no prior purchases found on this account.",
+        );
+      })
+      .catch((error) => {
+        console.warn("RecipePrinter: could not link CookPilot account to purchases", error);
+        showToast("Signed in, but we couldn't check your purchases. Try again in a moment.");
+      });
+  }, [cookPilotUser]);
+
+  useEffect(() => {
     if (!revenueCatUserId) return;
     // Background refresh: prime entitlements so owned templates show as owned.
     // Failures here are silent on purpose — the user only needs to hear about a
@@ -1055,9 +1085,6 @@ export default function PrintPage() {
               </button>
             </div>
           </div>
-          <div className="recipe-mobile-page-count no-print" aria-live="polite">
-            {activeNavIndex + 1} of {navItems.length}
-          </div>
           <div className="recipe-page-deck" id="recipe-page-deck" ref={deckRef}>
             {navItems.map((navItem, index) => {
               const sheet = sheets[navItem.sheetIndex];
@@ -1143,6 +1170,9 @@ export default function PrintPage() {
                 </div>
               );
             })}
+          </div>
+          <div className="recipe-mobile-page-count no-print" aria-live="polite">
+            {activeNavIndex + 1} of {navItems.length}
           </div>
         </section>
 
@@ -1318,13 +1348,33 @@ export default function PrintPage() {
                 );
               })}
             </div>
+            <div className="recipe-cookpilot-account">
+              {cookPilotUser ? (
+                <p className="recipe-cookpilot-account__signed-in">
+                  Signed in as {cookPilotUser.email ?? "your CookPilot account"}
+                  {" · "}
+                  <button
+                    type="button"
+                    className="recipe-cookpilot-account__link"
+                    onClick={() => void signOut(getFirebaseAuth())}
+                  >
+                    Sign out
+                  </button>
+                </p>
+              ) : (
+                <button
+                  type="button"
+                  className="recipe-cookpilot-account__link"
+                  onClick={() => setShowCookPilotLogin(true)}
+                >
+                  Already purchased? Log in
+                </button>
+              )}
+            </div>
           </div>
           </div>
 
           <div className="recipe-config-panel__footer">
-            <p className="recipe-print-tip">
-              Tip: print one recipe first to check the layout.
-            </p>
             <button
               onClick={() => void handlePrint()}
               className="btn btn-primary recipe-print-button"
@@ -1446,6 +1496,9 @@ export default function PrintPage() {
         onClose={() => setShowFeedbackDialog(false)}
         initialType="print_issue"
       />
+      {showCookPilotLogin && !cookPilotUser && (
+        <CookPilotLoginDialog onClose={() => setShowCookPilotLogin(false)} />
+      )}
       {toastMessage && (
         <div className="recipe-toast no-print" role="status" aria-live="polite">
           <span>{toastMessage}</span>

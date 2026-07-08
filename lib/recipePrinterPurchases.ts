@@ -83,6 +83,29 @@ export async function loadRecipePrinterCustomerInfo(
   return getPurchases(userId).then((purchases) => purchases.getCustomerInfo());
 }
 
+/**
+ * Links the current RevenueCat customer to a CookPilot account after login.
+ *
+ * Unlike `changeUser` (a plain identity switch), `identifyUser` aliases the
+ * current anonymous customer's purchase history into `uid` when the current
+ * identity is anonymous — this is what recovers a template bought before the
+ * user ever logged in. `wasCreated` tells the caller whether `uid` already
+ * had a RevenueCat customer record (i.e. purchases made under this account
+ * elsewhere) versus being brand new.
+ */
+export async function identifyRecipePrinterCustomer(
+  uid: string,
+): Promise<{ customerInfo: CustomerInfo; wasCreated: boolean }> {
+  if (!purchasesInstance) {
+    const purchases = await getPurchases(uid);
+    return { customerInfo: await purchases.getCustomerInfo(), wasCreated: false };
+  }
+
+  const result = await purchasesInstance.identifyUser(uid);
+  configuredUserId = uid;
+  return result;
+}
+
 export async function syncRecipePrinterCustomerAttributes({
   userId,
   email,
