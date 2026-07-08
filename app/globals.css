@@ -1049,30 +1049,6 @@
   text-transform: uppercase;
 }
 
-.recipe-setting-chip {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  min-height: 36px;
-  padding: 0 14px;
-  border: 1px solid var(--cp-line-strong);
-  border-radius: 999px;
-  background: var(--cp-card);
-  color: var(--cp-ink);
-  font-size: var(--cp-fs-caption);
-  font-weight: 700;
-  transition:
-    border-color 150ms ease,
-    background 150ms ease,
-    color 150ms ease;
-}
-
-.recipe-setting-chip.is-active {
-  border-color: var(--cp-accent);
-  background: var(--cp-accent-soft);
-  color: var(--cp-accent-ink);
-}
-
 .recipe-toggle {
   display: grid;
   grid-template-columns: 20px 1fr;
@@ -1570,7 +1546,6 @@
 .recipe-mobile-page-count,
 .recipe-mobile-back-button,
 .recipe-mobile-toolbar,
-.recipe-mobile-chip-scroll,
 .recipe-mobile-settings-backdrop,
 .recipe-mobile-actions,
 .recipe-config-panel__close {
@@ -1592,7 +1567,7 @@
     grid-template-columns: 1fr;
     grid-template-rows: minmax(0, 1fr);
     height: 100dvh;
-    padding: 10px 0 132px !important;
+    padding: 0 0 132px !important;
     gap: 0;
     overflow: hidden;
   }
@@ -1605,7 +1580,7 @@
     align-items: center;
     gap: 12px;
     padding: max(10px, env(safe-area-inset-top)) 16px 10px;
-    background: var(--cp-page);
+    background: var(--cp-card);
   }
 
   .recipe-mobile-back-button {
@@ -1635,62 +1610,58 @@
   .recipe-mobile-toolbar {
     display: flex;
     flex: 0 0 auto;
-    gap: 8px;
-  }
-
-  .recipe-mobile-chip-scroll {
-    display: flex;
-    flex: 0 0 auto;
-    gap: 8px;
-    overflow-x: auto;
-    scrollbar-width: none;
-  }
-
-  .recipe-mobile-chip-scroll::-webkit-scrollbar {
-    display: none;
-  }
-
-  .recipe-mobile-chip-scroll .recipe-setting-chip {
-    flex: 0 0 auto;
-    white-space: nowrap;
-  }
-
-  .recipe-mobile-toolbar .select-shell {
-    flex: 1 1 0;
-  }
-
-  .recipe-mobile-toolbar__size-select {
-    width: 100%;
-    min-height: 36px;
-    padding: 0 12px;
-    border: 1px solid var(--cp-line);
-    border-radius: 10px;
-    background-color: var(--cp-card);
-    color: var(--cp-ink);
-    font-size: var(--cp-fs-caption);
-    font-weight: 800;
+    justify-content: space-evenly;
   }
 
   .recipe-mobile-toolbar__btn {
-    flex: 1 1 0;
-    display: inline-flex;
+    display: flex;
+    flex-direction: column;
     align-items: center;
-    justify-content: center;
-    min-height: 36px;
-    padding: 0 10px;
-    border: 1px solid var(--cp-line);
-    border-radius: 10px;
-    background: var(--cp-card);
-    color: var(--cp-ink);
+    gap: 4px;
+    min-width: 52px;
+    padding: 0;
+    border: 0;
+    background: transparent;
+    color: var(--cp-ink-soft);
     font-size: var(--cp-fs-caption);
-    font-weight: 800;
+    font-weight: 700;
     line-height: 1;
   }
 
+  .recipe-mobile-toolbar__btn-icon {
+    position: relative;
+    display: grid;
+    place-items: center;
+    width: 46px;
+    height: 46px;
+    border-radius: 14px;
+    color: var(--cp-ink);
+    transition:
+      background 150ms ease,
+      color 150ms ease;
+  }
+
   .recipe-mobile-toolbar__btn.is-active {
-    border-color: var(--cp-ink);
-    background: var(--cp-ink);
-    color: #fff;
+    color: var(--cp-ink);
+  }
+
+  .recipe-mobile-toolbar__btn.is-active .recipe-mobile-toolbar__btn-icon {
+    background: var(--cp-accent-soft);
+    color: var(--cp-accent-ink);
+  }
+
+  /* An off/excluded toggle keeps its plain icon but gets a diagonal strike
+     through it, rather than swapping in a separate "disabled" icon asset. */
+  .recipe-mobile-toolbar__btn-icon--off::after {
+    content: "";
+    position: absolute;
+    left: 13px;
+    right: 13px;
+    top: 50%;
+    height: 1.5px;
+    background: var(--cp-ink-soft);
+    opacity: 0.55;
+    transform: translateY(-50%) rotate(-40deg);
   }
 
   .recipe-page-rail {
@@ -1814,6 +1785,14 @@
   }
 
   .recipe-config-panel[data-mobile-drawer="template"] .recipe-config-section--template {
+    display: flex;
+  }
+
+  .recipe-config-panel[data-mobile-drawer="size"] .recipe-config-section--size {
+    display: flex;
+  }
+
+  .recipe-config-panel[data-mobile-drawer="settings"] .recipe-config-section--printsettings {
     display: flex;
   }
 

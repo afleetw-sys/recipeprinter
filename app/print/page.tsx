@@ -23,8 +23,13 @@ import {
   ChevronLeftIcon,
   CrownIcon,
   ICON_SIZE,
+  ImageIcon,
+  LinkIcon,
   PrintIcon,
+  SettingsIcon,
+  SizeIcon,
   SpinnerIcon,
+  TemplateIcon,
   XIcon,
 } from "@/components/icons";
 import {
@@ -547,7 +552,7 @@ export default function PrintPage() {
 
   const [activeNavIndex, setActiveNavIndex] = useState(0);
   const [canvasSide, setCanvasSide] = useState<"front" | "back">("front");
-  const [mobileDrawer, setMobileDrawer] = useState<"template" | null>(null);
+  const [mobileDrawer, setMobileDrawer] = useState<"size" | "template" | "settings" | null>(null);
   const deckRef = useRef<HTMLDivElement>(null);
   const slideRefs = useRef<(HTMLDivElement | null)[]>([]);
   const [deckScale, setDeckScale] = useState(0.5);
@@ -1101,7 +1106,13 @@ export default function PrintPage() {
         >
           <div className="recipe-config-panel__header">
             <h2 className="text-cp-h2 font-extrabold tracking-[-0.02em]">
-              {mobileDrawer === "template" ? "Templates" : "Print setup"}
+              {mobileDrawer === "template"
+                ? "Templates"
+                : mobileDrawer === "size"
+                  ? "Card size"
+                  : mobileDrawer === "settings"
+                    ? "Print settings"
+                    : "Print setup"}
             </h2>
             <button
               type="button"
@@ -1162,7 +1173,7 @@ export default function PrintPage() {
           )}
 
           {(hasRecipeBackSide || cardSize === "card-6x4") && (
-            <div className="recipe-config-section recipe-config-section--settings">
+            <div className="recipe-config-section recipe-config-section--printsettings">
               <h3 className="recipe-config-label">Print settings</h3>
               {hasRecipeBackSide && (
                 <label className="recipe-toggle">
@@ -1273,75 +1284,76 @@ export default function PrintPage() {
 
         <div className="recipe-mobile-actions no-print">
           <div className="recipe-mobile-toolbar">
-            <Select
-              className="recipe-mobile-toolbar__size-select"
-              aria-label="Card size"
-              value={cardSize}
-              onChange={(event) => setCardSize(event.target.value as PrintCardSize)}
+            <button
+              type="button"
+              className={`recipe-mobile-toolbar__btn ${mobileDrawer === "size" ? "is-active" : ""}`}
+              aria-pressed={mobileDrawer === "size"}
+              onClick={() => setMobileDrawer((drawer) => (drawer === "size" ? null : "size"))}
             >
-              {PRINT_CARD_SIZE_OPTIONS.map((option) => (
-                <option key={option.id} value={option.id}>
-                  {option.label}
-                </option>
-              ))}
-            </Select>
+              <span className="recipe-mobile-toolbar__btn-icon">
+                <SizeIcon size={ICON_SIZE.lg} />
+              </span>
+              Size
+            </button>
             <button
               type="button"
               className={`recipe-mobile-toolbar__btn ${mobileDrawer === "template" ? "is-active" : ""}`}
               aria-pressed={mobileDrawer === "template"}
-              onClick={() => setMobileDrawer("template")}
+              onClick={() => setMobileDrawer((drawer) => (drawer === "template" ? null : "template"))}
             >
-              Change template
+              <span className="recipe-mobile-toolbar__btn-icon">
+                <TemplateIcon size={ICON_SIZE.lg} />
+              </span>
+              Template
             </button>
+            {anyRecipeHasImage && (
+              <button
+                type="button"
+                className={`recipe-mobile-toolbar__btn ${showPhoto ? "is-active" : ""}`}
+                aria-pressed={showPhoto}
+                onClick={() => setShowPhoto((value) => !value)}
+              >
+                <span
+                  className={`recipe-mobile-toolbar__btn-icon ${
+                    showPhoto ? "" : "recipe-mobile-toolbar__btn-icon--off"
+                  }`}
+                >
+                  <ImageIcon size={ICON_SIZE.lg} />
+                </span>
+                Photo
+              </button>
+            )}
+            {anyRecipeHasSourceUrl && (
+              <button
+                type="button"
+                className={`recipe-mobile-toolbar__btn ${showSourceUrl ? "is-active" : ""}`}
+                aria-pressed={showSourceUrl}
+                onClick={() => setShowSourceUrl((value) => !value)}
+              >
+                <span
+                  className={`recipe-mobile-toolbar__btn-icon ${
+                    showSourceUrl ? "" : "recipe-mobile-toolbar__btn-icon--off"
+                  }`}
+                >
+                  <LinkIcon size={ICON_SIZE.lg} />
+                </span>
+                Link
+              </button>
+            )}
+            {(hasRecipeBackSide || cardSize === "card-6x4") && (
+              <button
+                type="button"
+                className={`recipe-mobile-toolbar__btn ${mobileDrawer === "settings" ? "is-active" : ""}`}
+                aria-pressed={mobileDrawer === "settings"}
+                onClick={() => setMobileDrawer((drawer) => (drawer === "settings" ? null : "settings"))}
+              >
+                <span className="recipe-mobile-toolbar__btn-icon">
+                  <SettingsIcon size={ICON_SIZE.lg} />
+                </span>
+                Settings
+              </button>
+            )}
           </div>
-          {(anyRecipeHasImage || anyRecipeHasSourceUrl || hasRecipeBackSide || cardSize === "card-6x4") && (
-            <div className="recipe-mobile-chip-scroll">
-              {anyRecipeHasImage && (
-                <button
-                  type="button"
-                  className={`recipe-setting-chip ${showPhoto ? "is-active" : ""}`}
-                  aria-pressed={showPhoto}
-                  onClick={() => setShowPhoto((value) => !value)}
-                >
-                  {showPhoto && <CheckIcon size={ICON_SIZE.xs} />}
-                  Recipe photo
-                </button>
-              )}
-              {anyRecipeHasSourceUrl && (
-                <button
-                  type="button"
-                  className={`recipe-setting-chip ${showSourceUrl ? "is-active" : ""}`}
-                  aria-pressed={showSourceUrl}
-                  onClick={() => setShowSourceUrl((value) => !value)}
-                >
-                  {showSourceUrl && <CheckIcon size={ICON_SIZE.xs} />}
-                  Source link
-                </button>
-              )}
-              {hasRecipeBackSide && (
-                <button
-                  type="button"
-                  className={`recipe-setting-chip ${doubleSided ? "is-active" : ""}`}
-                  aria-pressed={doubleSided}
-                  onClick={() => setDoubleSided((value) => !value)}
-                >
-                  {doubleSided && <CheckIcon size={ICON_SIZE.xs} />}
-                  Two-sided
-                </button>
-              )}
-              {cardSize === "card-6x4" && (
-                <button
-                  type="button"
-                  className={`recipe-setting-chip ${showCutLines ? "is-active" : ""}`}
-                  aria-pressed={showCutLines}
-                  onClick={() => setShowCutLines((value) => !value)}
-                >
-                  {showCutLines && <CheckIcon size={ICON_SIZE.xs} />}
-                  Cut lines
-                </button>
-              )}
-            </div>
-          )}
         </div>
       </main>
 
