@@ -1700,17 +1700,19 @@
   }
 
   /* An off/excluded toggle keeps its plain icon but gets a diagonal strike
-     through it, rather than swapping in a separate "disabled" icon asset. */
+     through it, rather than swapping in a separate "disabled" icon asset.
+     Bold and full-contrast (not a faint hairline) so "off" reads at a
+     glance, the way iOS's camera toggles strike out a disabled control. */
   .recipe-mobile-toolbar__btn-icon--off::after {
     content: "";
     position: absolute;
-    left: 13px;
-    right: 13px;
+    left: 11px;
+    right: 11px;
     top: 50%;
-    height: 1.5px;
-    background: var(--cp-ink-soft);
-    opacity: 0.55;
-    transform: translateY(-50%) rotate(-40deg);
+    height: 2.5px;
+    border-radius: 999px;
+    background: var(--cp-ink);
+    transform: translateY(-50%) rotate(-45deg);
   }
 
   .recipe-mobile-size-menu-backdrop {
