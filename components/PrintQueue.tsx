@@ -6,12 +6,12 @@ import { type QueueItem, type Recipe } from "@/types/recipe";
 import {
   ClockIcon,
   ICON_SIZE,
-  PlateIcon,
   RefreshIcon,
   SpinnerIcon,
   TrashIcon,
   UsersIcon,
 } from "@/components/icons";
+import { LogoImage } from "@/components/Logo";
 
 function totalTime(recipe?: Recipe): string | null {
   if (!recipe) return null;
@@ -64,8 +64,8 @@ function RecipeCardItem({
               className="w-full h-full object-cover"
             />
           ) : (
-            <div className="w-full h-full grid place-items-center text-brand/40">
-              <PlateIcon size={40} />
+            <div className="w-full h-full grid place-items-center opacity-40">
+              <LogoImage size={40} />
             </div>
           )}
 

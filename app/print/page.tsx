@@ -14,6 +14,8 @@ import {
   RecipeCardFace,
   getRecipeFaces,
   recipeNeedsBackSide,
+  type RecipeCardInlineEdit,
+  type RecipeCardEditTarget,
   type PrintCardSize,
   type RecipeFace,
   type RecipePrintTemplate,
@@ -53,7 +55,7 @@ import {
 } from "@/lib/recipePrinterFreeTemplateClaim";
 import { getFirebaseAuth } from "@/lib/firebase/client";
 import { signOut } from "firebase/auth";
-import { readCurrentPrintJobIds, readQueue } from "@/lib/queue";
+import { printableRecipe, readCurrentPrintJobIds, readQueue, updateQueuedRecipe } from "@/lib/queue";
 import type { QueueItem, Recipe } from "@/types/recipe";
 import type { CustomerInfo } from "@revenuecat/purchases-js";
 
@@ -133,6 +135,7 @@ const RAIL_SCALE: Record<PrintCardSize, number> = {
 // paired up during the back pass below, its back/continuation). `null` means
 // the slot is unused — the sheet ran out of recipes before filling every slot.
 interface SheetSlot {
+  recipeId: string;
   recipe: Recipe;
   label: string;
   front: RecipeFace;
@@ -160,6 +163,7 @@ interface PageSheet {
 // that's what lets two recipes that will print on one physical page still
 // browse and flip independently on screen.
 interface NavItem {
+  recipeId: string;
   sheetIndex: number;
   slotIndex: number;
   label: string;
@@ -193,6 +197,7 @@ const ScaledPage = memo(function ScaledPage({
   showImage,
   showSourceUrl,
   showCutLines,
+  inlineEdit,
 }: {
   sheet: PageSheet;
   isLastSheet: boolean;
@@ -205,6 +210,7 @@ const ScaledPage = memo(function ScaledPage({
   showImage: boolean;
   showSourceUrl: boolean;
   showCutLines: boolean;
+  inlineEdit?: RecipeCardInlineEdit;
 }) {
   const dims = PAGE_DIMS[size];
   const anySlot = sheet.slots.find((slot): slot is SheetSlot => slot !== null) ?? null;
@@ -268,6 +274,12 @@ const ScaledPage = memo(function ScaledPage({
                     showSourceUrl={showSourceUrl}
                     continued={slot.isContinuation}
                     previewHidden={slotIndex !== activeSlotIndex || activeSide !== "front"}
+                    inlineEdit={
+                      activeSide === "front" &&
+                      slotIndex === activeSlotIndex
+                        ? inlineEdit
+                        : undefined
+                    }
                   />
                 ) : null,
               )}
@@ -294,6 +306,12 @@ const ScaledPage = memo(function ScaledPage({
                       hasBackFace={slot.hasBack}
                       continued
                       previewHidden={slotIndex !== activeSlotIndex || activeSide !== "back"}
+                      inlineEdit={
+                        activeSide === "back" &&
+                        slotIndex === activeSlotIndex
+                          ? inlineEdit
+                          : undefined
+                      }
                     />
                   ) : (
                     <RecipeCardFace
@@ -353,6 +371,25 @@ function initialRecipePrintTemplate(value: string | null): RecipePrintTemplate {
 
 function friendlyPurchaseError(error: unknown): string {
   return friendlyPurchaseSetupError(error);
+}
+
+interface RecipeEditSelection {
+  recipeId: string;
+  target: RecipeCardEditTarget;
+}
+
+function ingredientLine(ingredient: Recipe["ingredients"][number]): string {
+  if (ingredient.raw) return ingredient.raw;
+  const amount = [ingredient.amount, ingredient.unit].filter(Boolean).join(" ");
+  return [amount, ingredient.name].filter(Boolean).join(" ") + (ingredient.note ? `, ${ingredient.note}` : "");
+}
+
+function stripStepPrefix(value: string): string {
+  return value
+    .trim()
+    .replace(/^[-*]\s+/, "")
+    .replace(/^\d+[\).:-]\s*/, "")
+    .trim();
 }
 
 export default function PrintPage() {
@@ -423,6 +460,7 @@ export default function PrintPage() {
     const slotCount = SLOTS_PER_SHEET[cardSize];
 
     interface Column {
+      recipeId: string;
       recipe: Recipe;
       label: string;
       faces: RecipeFace[];
@@ -441,6 +479,7 @@ export default function PrintPage() {
         template,
       });
       queue.push({
+        recipeId: item.id,
         recipe,
         label: recipe.title || "Recipe",
         faces: faces.pages,
@@ -481,6 +520,7 @@ export default function PrintPage() {
       const slots: (SheetSlot | null)[] = takes.map((take) =>
         take
           ? {
+              recipeId: take.column.recipeId,
               recipe: take.column.recipe,
               label: take.column.label,
               front: take.face,
@@ -539,6 +579,7 @@ export default function PrintPage() {
       sheet.slots.forEach((slot, slotIndex) => {
         if (!slot) return;
         const navItem: NavItem = {
+          recipeId: slot.recipeId,
           sheetIndex,
           slotIndex,
           label: slot.label,
@@ -568,6 +609,9 @@ export default function PrintPage() {
   const [activeNavIndex, setActiveNavIndex] = useState(0);
   const [canvasSide, setCanvasSide] = useState<"front" | "back">("front");
   const [mobileDrawer, setMobileDrawer] = useState<"template" | null>(null);
+  const [selectedEdit, setSelectedEdit] = useState<RecipeEditSelection | null>(null);
+  const [editingEdit, setEditingEdit] = useState<RecipeEditSelection | null>(null);
+  const [editValue, setEditValue] = useState("");
   const [sizeMenuOpen, setSizeMenuOpen] = useState(false);
   const [settingsMenuOpen, setSettingsMenuOpen] = useState(false);
   const deckRef = useRef<HTMLDivElement>(null);
@@ -659,6 +703,15 @@ export default function PrintPage() {
 
   const singleRecipePrintView =
     (items?.filter((item) => Boolean(item.recipe)).length ?? 0) === 1;
+  const activeRecipeId = navItems[activeNavIndex]?.recipeId ?? null;
+  const activeRecipeItem =
+    activeRecipeId && items
+      ? items.find((item) => item.id === activeRecipeId && item.recipe)
+      : null;
+  const editingRecipeItem =
+    editingEdit?.recipeId && items
+      ? items.find((item) => item.id === editingEdit.recipeId && item.recipe)
+      : null;
 
   function scrollDeckTo(deck: HTMLDivElement, options: ScrollToOptions) {
     if (options.behavior === "smooth") {
@@ -842,6 +895,97 @@ export default function PrintPage() {
     void handlePrint();
   }
 
+  function selectEditTarget(target: RecipeCardEditTarget) {
+    if (!activeRecipeItem?.recipe) return;
+    setSelectedEdit({ recipeId: activeRecipeItem.id, target });
+    setEditingEdit(null);
+    setEditValue("");
+    setSizeMenuOpen(false);
+    setSettingsMenuOpen(false);
+  }
+
+  function startEditTarget(target: RecipeCardEditTarget, value: string) {
+    if (!activeRecipeItem?.recipe) return;
+    setSelectedEdit({ recipeId: activeRecipeItem.id, target });
+    setEditingEdit({ recipeId: activeRecipeItem.id, target });
+    setEditValue(value);
+  }
+
+  function cancelEditTarget() {
+    setEditingEdit(null);
+    setEditValue("");
+  }
+
+  function applyRecipeTargetEdit(recipe: Recipe, target: RecipeCardEditTarget, value: string): Recipe {
+    const trimmed = value.trim();
+    if (target.kind === "title") {
+      return printableRecipe({ ...recipe, title: trimmed || recipe.title || "Untitled recipe" });
+    }
+    if (target.kind === "cookTime") {
+      return printableRecipe({
+        ...recipe,
+        cookTime: trimmed || undefined,
+        totalTime: trimmed || undefined,
+      });
+    }
+    if (target.kind === "servings") {
+      return printableRecipe({
+        ...recipe,
+        servings: trimmed || undefined,
+      });
+    }
+    if (target.kind === "image") {
+      return printableRecipe({
+        ...recipe,
+        image: trimmed || undefined,
+      });
+    }
+    if (target.kind === "ingredient") {
+      if (!trimmed) return printableRecipe(recipe);
+      return printableRecipe({
+        ...recipe,
+        ingredients: recipe.ingredients.map((ingredient, index) =>
+          index === target.index
+            ? {
+                ...ingredient,
+                amount: undefined,
+                unit: undefined,
+                name: trimmed,
+                note: undefined,
+                raw: trimmed,
+              }
+            : ingredient,
+        ),
+      });
+    }
+    const text = stripStepPrefix(trimmed);
+    if (!text) return printableRecipe(recipe);
+    return printableRecipe({
+      ...recipe,
+      instructions: recipe.instructions.map((step, index) =>
+        index === target.index ? { ...step, text } : step,
+      ),
+    });
+  }
+
+  function commitEditTarget(value = editValue, options: { clearSelection?: boolean } = {}) {
+    if (!editingEdit || !editingRecipeItem?.recipe) return;
+    const nextRecipe = applyRecipeTargetEdit(editingRecipeItem.recipe, editingEdit.target, value);
+    updateQueuedRecipe(editingRecipeItem.id, nextRecipe);
+    setItems((current) =>
+      current?.map((item) =>
+        item.id === editingRecipeItem.id
+          ? { ...item, recipe: nextRecipe, title: nextRecipe.title || "Untitled recipe" }
+        : item,
+      ) ?? current,
+    );
+    setSelectedEdit(
+      options.clearSelection ? null : { recipeId: editingRecipeItem.id, target: editingEdit.target },
+    );
+    setEditingEdit(null);
+    setEditValue("");
+  }
+
   useEffect(() => {
     const queue = readQueue();
     const byId = new Map(queue.map((it) => [it.id, it]));
@@ -855,6 +999,47 @@ export default function PrintPage() {
       .filter((it): it is QueueItem => Boolean(it && it.status === "ready" && it.recipe));
     setItems(printItems);
   }, [idsParam]);
+
+  useEffect(() => {
+    const hasSelected = selectedEdit
+      ? items?.some((item) => item.id === selectedEdit.recipeId && item.recipe)
+      : true;
+    const hasEditing = editingEdit
+      ? items?.some((item) => item.id === editingEdit.recipeId && item.recipe)
+      : true;
+    if (!hasSelected) {
+      setSelectedEdit(null);
+    }
+    if (!hasEditing) {
+      setEditingEdit(null);
+      setEditValue("");
+    }
+  }, [editingEdit, items, selectedEdit]);
+
+  useEffect(() => {
+    function onPointerDown(event: PointerEvent) {
+      const target = event.target;
+      if (!(target instanceof Element)) return;
+      if (target.closest(".recipe-card__inline-input, .recipe-card__inline-textarea")) {
+        return;
+      }
+      if (target.closest(".recipe-card__line-edit-button, .recipe-card__photo-edit, .recipe-card__photo-remove")) {
+        return;
+      }
+      if (target.closest(".recipe-card__editable-target")) {
+        if (editingEdit) commitEditTarget(editValue);
+        return;
+      }
+      if (editingEdit) {
+        commitEditTarget(editValue, { clearSelection: true });
+        return;
+      }
+      setSelectedEdit(null);
+    }
+
+    document.addEventListener("pointerdown", onPointerDown);
+    return () => document.removeEventListener("pointerdown", onPointerDown);
+  }, [editingEdit, editValue, editingRecipeItem]);
 
   // Hydrate stored layout preferences on mount (client only). Explicit URL
   // params (for deep links) still win over whatever was last saved.
@@ -1178,42 +1363,59 @@ export default function PrintPage() {
                   aria-current={isActive}
                   aria-label={navItem.label}
                   onKeyDown={(event) => {
+                    if (
+                      event.target instanceof HTMLInputElement ||
+                      event.target instanceof HTMLTextAreaElement ||
+                      event.target instanceof HTMLButtonElement
+                    ) {
+                      return;
+                    }
                     if (event.key !== "Enter" && event.key !== " ") return;
                     event.preventDefault();
                     if (isActive) return;
                     goToSlide(index);
                   }}
                 >
-                  {isActive && navItem.flip && (
+                  {isActive && (
                     <div
-                      className="recipe-card-side-nav recipe-page-canvas__flip no-print"
-                      aria-label="Sheet sides"
+                      className="recipe-page-canvas__controls no-print"
+                      style={
+                        {
+                          "--preview-w": `${PAGE_DIMS[cardSize].w * deckScale}px`,
+                        } as CSSProperties
+                      }
                     >
-                      <button
-                        type="button"
-                        className="recipe-card-side-nav__button"
-                        aria-label="Show front"
-                        disabled={canvasSide === "front"}
-                        onClick={(event) => {
-                          event.stopPropagation();
-                          setCanvasSide("front");
-                        }}
-                      >
-                        ←
-                      </button>
-                      <span>{canvasSide === "front" ? "Front" : "Back"}</span>
-                      <button
-                        type="button"
-                        className="recipe-card-side-nav__button"
-                        aria-label="Show back"
-                        disabled={canvasSide === "back"}
-                        onClick={(event) => {
-                          event.stopPropagation();
-                          setCanvasSide("back");
-                        }}
-                      >
-                        →
-                      </button>
+                      <div className="recipe-page-canvas__controls-center">
+                        {navItem.flip && (
+                          <div className="recipe-card-side-nav" aria-label="Sheet sides">
+                            <button
+                              type="button"
+                              className="recipe-card-side-nav__button"
+                              aria-label="Show front"
+                              disabled={canvasSide === "front"}
+                              onClick={(event) => {
+                                event.stopPropagation();
+                                setCanvasSide("front");
+                              }}
+                            >
+                              ←
+                            </button>
+                            <span>{canvasSide === "front" ? "Front" : "Back"}</span>
+                            <button
+                              type="button"
+                              className="recipe-card-side-nav__button"
+                              aria-label="Show back"
+                              disabled={canvasSide === "back"}
+                              onClick={(event) => {
+                                event.stopPropagation();
+                                setCanvasSide("back");
+                              }}
+                            >
+                              →
+                            </button>
+                          </div>
+                        )}
+                      </div>
                     </div>
                   )}
                   <ScaledPage
@@ -1228,6 +1430,22 @@ export default function PrintPage() {
                     showImage={photosOn}
                     showSourceUrl={sourceUrlOn}
                     showCutLines={showCutLines && cardSize === "card-6x4"}
+                    inlineEdit={
+                      isActive && activeRecipeItem?.id === navItem.recipeId
+                        ? {
+                            selectedTarget:
+                              selectedEdit?.recipeId === navItem.recipeId ? selectedEdit.target : null,
+                            editingTarget:
+                              editingEdit?.recipeId === navItem.recipeId ? editingEdit.target : null,
+                            value: editValue,
+                            onSelectTarget: selectEditTarget,
+                            onStartEdit: startEditTarget,
+                            onValueChange: setEditValue,
+                            onCommit: commitEditTarget,
+                            onCancel: cancelEditTarget,
+                          }
+                        : undefined
+                    }
                   />
                 </div>
               );

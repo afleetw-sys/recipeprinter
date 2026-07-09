@@ -21,13 +21,48 @@ function uid(): string {
   return `${Date.now()}-${Math.random().toString(36).slice(2)}`;
 }
 
+export function printableRecipe(recipe: Recipe): Recipe {
+  return {
+    title: recipe.title || "Untitled recipe",
+    description: recipe.description,
+    image: recipe.image,
+    sourceUrl: recipe.sourceUrl,
+    sourceName: recipe.sourceName,
+    prepTime: recipe.prepTime,
+    cookTime: recipe.cookTime,
+    totalTime: recipe.totalTime,
+    servings: recipe.servings,
+    yield: recipe.yield,
+    ingredients: recipe.ingredients,
+    instructions: recipe.instructions,
+  };
+}
+
+function printableQueueItem(item: QueueItem): QueueItem {
+  if (!item.recipe) return item;
+  const recipe = printableRecipe(item.recipe);
+  return {
+    ...item,
+    title: recipe.title || "Untitled recipe",
+    recipe,
+  };
+}
+
+function printableQueue(items: QueueItem[]): QueueItem[] {
+  return items.map(printableQueueItem);
+}
+
 export function readQueue(): QueueItem[] {
   if (typeof window === "undefined") return [];
   try {
     const raw = window.sessionStorage.getItem(QUEUE_STORAGE_KEY);
     if (!raw) return [];
     const parsed = JSON.parse(raw);
-    return Array.isArray(parsed) ? (parsed as QueueItem[]) : [];
+    if (!Array.isArray(parsed)) return [];
+    const sanitized = printableQueue(parsed as QueueItem[]);
+    const sanitizedRaw = JSON.stringify(sanitized);
+    if (sanitizedRaw !== raw) writeSerializedQueue(sanitizedRaw);
+    return sanitized;
   } catch {
     return [];
   }
@@ -61,7 +96,7 @@ export function readCurrentPrintJobIds(): string[] | null {
 
 function serializeQueue(items: QueueItem[]): string | null {
   try {
-    return JSON.stringify(items);
+    return JSON.stringify(printableQueue(items));
   } catch {
     return null;
   }
@@ -74,6 +109,22 @@ function writeSerializedQueue(serialized: string) {
   } catch {
     /* sessionStorage may be unavailable (private mode); queue stays in memory */
   }
+}
+
+export function updateQueuedRecipe(id: string, recipe: Recipe): QueueItem[] {
+  const nextRecipe = printableRecipe(recipe);
+  const next = readQueue().map((item) =>
+    item.id === id
+      ? {
+          ...item,
+          recipe: nextRecipe,
+          title: nextRecipe.title || "Untitled recipe",
+        }
+      : item,
+  );
+  const serialized = serializeQueue(next);
+  if (serialized) writeSerializedQueue(serialized);
+  return next;
 }
 
 function hostnameOf(url: string): string {
