@@ -16,6 +16,9 @@ export function PrintDialogs({
   selectedTemplateLabel,
   purchaseBusy,
   onUnlockTemplate,
+  canClaimFree,
+  claimBusy,
+  onClaimTemplate,
 }: {
   showDonateDialog: boolean;
   onCloseDonateDialog: () => void;
@@ -26,6 +29,9 @@ export function PrintDialogs({
   selectedTemplateLabel: string;
   purchaseBusy: boolean;
   onUnlockTemplate: (template: PremiumRecipePrintTemplate) => void;
+  canClaimFree: boolean;
+  claimBusy: boolean;
+  onClaimTemplate: (template: PremiumRecipePrintTemplate) => void;
 }) {
   return (
     <>
@@ -113,10 +119,21 @@ export function PrintDialogs({
               RevenueCat checkout will ask for your email and save this template for this browser.
             </p>
             <div className="print-success-dialog__actions">
+              {canClaimFree && (
+                <button
+                  type="button"
+                  className="btn btn-primary"
+                  disabled={purchaseBusy || claimBusy}
+                  onClick={() => onClaimTemplate(selectedPremiumTemplate)}
+                >
+                  {claimBusy ? <SpinnerIcon size={ICON_SIZE.md} /> : <CrownIcon size={ICON_SIZE.md} />}
+                  Claim it — included with your CookPilot subscription
+                </button>
+              )}
               <button
                 type="button"
                 className="btn btn-primary"
-                disabled={purchaseBusy}
+                disabled={purchaseBusy || claimBusy}
                 onClick={() => onUnlockTemplate(selectedPremiumTemplate)}
               >
                 {purchaseBusy ? <SpinnerIcon size={ICON_SIZE.md} /> : <CrownIcon size={ICON_SIZE.md} />}
@@ -126,7 +143,7 @@ export function PrintDialogs({
                 type="button"
                 className="btn btn-ghost"
                 onClick={onCloseUnlockDialog}
-                disabled={purchaseBusy}
+                disabled={purchaseBusy || claimBusy}
               >
                 Not now
               </button>

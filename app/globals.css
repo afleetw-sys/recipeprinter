@@ -1064,6 +1064,37 @@
   text-transform: uppercase;
 }
 
+.recipe-free-template-banner {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 12px;
+  border: 1px solid color-mix(in srgb, var(--cp-accent) 28%, transparent);
+  background: var(--cp-accent-soft);
+  border-radius: 12px;
+  color: var(--cp-accent-ink);
+}
+
+.recipe-free-template-banner__copy {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  flex: 1 1 auto;
+  font-size: var(--cp-fs-small);
+}
+
+.recipe-free-template-banner__copy strong {
+  font-size: var(--cp-fs-body);
+}
+
+.recipe-free-template-banner__copy span {
+  color: var(--cp-ink-soft);
+}
+
+.recipe-free-template-banner__dismiss {
+  flex: 0 0 auto;
+}
+
 .recipe-toggle {
   display: grid;
   grid-template-columns: 20px 1fr;

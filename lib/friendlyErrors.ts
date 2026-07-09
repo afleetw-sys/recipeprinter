@@ -41,6 +41,26 @@ export function friendlyRecipeLibraryError(
   return fallback;
 }
 
+export function friendlyClaimError(error: unknown): string {
+  const code = (error as { code?: string })?.code ?? "";
+  const message = error instanceof Error ? error.message : String(error || "");
+
+  if (code.includes("already-exists")) {
+    return "You've already claimed your free template.";
+  }
+  if (code.includes("failed-precondition")) {
+    return "An active CookPilot subscription is required to claim a free template.";
+  }
+  if (code.includes("unauthenticated")) {
+    return "Please sign in with your CookPilot account to claim a free template.";
+  }
+  if (code.includes("deadline-exceeded") || code.includes("unavailable") || /network|timeout/i.test(message)) {
+    return "We couldn't connect to the claim service. Please try again in a moment.";
+  }
+
+  return "We couldn't claim that template right now. Please try again.";
+}
+
 export function friendlyPurchaseSetupError(error: unknown): string {
   const message = error instanceof Error ? error.message : String(error || "");
 

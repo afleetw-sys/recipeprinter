@@ -7,7 +7,7 @@ import dynamic from "next/dynamic";
 import { SiteHeader } from "@/components/SiteHeader";
 import { FeedbackDialog } from "@/components/FeedbackButton";
 import { Select } from "@/components/Select";
-import { friendlyPurchaseSetupError } from "@/lib/friendlyErrors";
+import { friendlyClaimError, friendlyPurchaseSetupError } from "@/lib/friendlyErrors";
 import {
   PRINT_CARD_SIZE_OPTIONS,
   RECIPE_PRINT_TEMPLATE_OPTIONS,
@@ -46,6 +46,11 @@ import {
   syncRecipePrinterCustomerAttributes,
 } from "@/lib/recipePrinterPurchases";
 import { CookPilotLoginDialog, useCookPilotAuth } from "@/components/CookPilotAuth";
+import {
+  claimFreeRecipePrinterTemplate,
+  loadFreeTemplateStatus,
+  type RecipePrinterFreeTemplateStatus,
+} from "@/lib/recipePrinterFreeTemplateClaim";
 import { getFirebaseAuth } from "@/lib/firebase/client";
 import { signOut } from "firebase/auth";
 import { readCurrentPrintJobIds, readQueue } from "@/lib/queue";
@@ -373,6 +378,9 @@ export default function PrintPage() {
   const [purchaseBusy, setPurchaseBusy] = useState(false);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
   const [templatePrices, setTemplatePrices] = useState<Partial<Record<PremiumRecipePrintTemplate, string>>>({});
+  const [freeTemplateStatus, setFreeTemplateStatus] = useState<RecipePrinterFreeTemplateStatus | null>(null);
+  const [claimBusy, setClaimBusy] = useState(false);
+  const [freeTemplateBannerDismissed, setFreeTemplateBannerDismissed] = useState(false);
   const { user: cookPilotUser } = useCookPilotAuth();
   const [showCookPilotLogin, setShowCookPilotLogin] = useState(false);
   const linkedCookPilotUidRef = useRef<string | null>(null);
@@ -721,6 +729,9 @@ export default function PrintPage() {
   const selectedTemplateLocked =
     selectedPremiumTemplate !== null &&
     !hasTemplateEntitlement(customerInfo, selectedPremiumTemplate);
+  const hasUnclaimedFreeTemplate =
+    Boolean(freeTemplateStatus?.cookPilotActive) && !freeTemplateStatus?.granted;
+  const canClaimSelectedTemplateFree = selectedTemplateLocked && hasUnclaimedFreeTemplate;
 
   function printNow() {
     printRequestedRef.current = true;
@@ -781,6 +792,35 @@ export default function PrintPage() {
       showToast(friendlyPurchaseError(error));
     } finally {
       setPurchaseBusy(false);
+    }
+  }
+
+  async function claimTemplateAndPrint(premiumTemplate: PremiumRecipePrintTemplate) {
+    if (!cookPilotUser) return;
+
+    setClaimBusy(true);
+    setToastMessage(null);
+    try {
+      await claimFreeRecipePrinterTemplate(premiumTemplate);
+      const [status] = await Promise.all([
+        loadFreeTemplateStatus(cookPilotUser.uid).then((result) => {
+          setFreeTemplateStatus(result);
+          return result;
+        }),
+        refreshCustomerInfo(),
+      ]);
+
+      if (!status.grantedConfirmed) {
+        showToast("Claim is finishing up — try Print again in a moment.");
+        return;
+      }
+
+      setShowUnlockDialog(false);
+      printNow();
+    } catch (error) {
+      showToast(friendlyClaimError(error));
+    } finally {
+      setClaimBusy(false);
     }
   }
 
@@ -896,6 +936,24 @@ export default function PrintPage() {
         console.warn("RecipePrinter: could not link CookPilot account to purchases", error);
         showToast("Signed in, but we couldn't check your purchases. Try again in a moment.");
       });
+  }, [cookPilotUser]);
+
+  useEffect(() => {
+    if (!cookPilotUser) {
+      setFreeTemplateStatus(null);
+      return;
+    }
+    let cancelled = false;
+    loadFreeTemplateStatus(cookPilotUser.uid)
+      .then((status) => {
+        if (!cancelled) setFreeTemplateStatus(status);
+      })
+      .catch((error) => {
+        console.warn("RecipePrinter: could not load free-template status", error);
+      });
+    return () => {
+      cancelled = true;
+    };
   }, [cookPilotUser]);
 
   useEffect(() => {
@@ -1285,6 +1343,23 @@ export default function PrintPage() {
           )}
 
           <div className="recipe-config-section recipe-config-section--template">
+            {hasUnclaimedFreeTemplate && !freeTemplateBannerDismissed && (
+              <div className="recipe-free-template-banner" role="status">
+                <CrownIcon size={ICON_SIZE.md} />
+                <div className="recipe-free-template-banner__copy">
+                  <strong>Thanks for being a CookPilot member!</strong>
+                  <span>Enjoy a free lifetime template, on us — pick any premium design below.</span>
+                </div>
+                <button
+                  type="button"
+                  className="recipe-free-template-banner__dismiss icon-close-btn"
+                  aria-label="Dismiss"
+                  onClick={() => setFreeTemplateBannerDismissed(true)}
+                >
+                  <XIcon size={ICON_SIZE.xs} />
+                </button>
+              </div>
+            )}
             <h3 className="recipe-config-label">Templates</h3>
             <div className="recipe-template-list">
               {RECIPE_PRINT_TEMPLATE_OPTIONS.map((option) => {
@@ -1487,6 +1562,9 @@ export default function PrintPage() {
         selectedTemplateLabel={selectedTemplateLabel}
         purchaseBusy={purchaseBusy}
         onUnlockTemplate={(premiumTemplate) => void unlockTemplateAndPrint(premiumTemplate)}
+        canClaimFree={canClaimSelectedTemplateFree}
+        claimBusy={claimBusy}
+        onClaimTemplate={(premiumTemplate) => void claimTemplateAndPrint(premiumTemplate)}
       />
       <FeedbackDialog
         open={showFeedbackDialog}
