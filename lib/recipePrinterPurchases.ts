@@ -18,6 +18,7 @@ type PurchasesModule = typeof import("@revenuecat/purchases-js");
 let purchasesModulePromise: Promise<PurchasesModule> | null = null;
 let purchasesInstance: Purchases | null = null;
 let configuredUserId: string | null = null;
+let configuringPromise: Promise<Purchases> | null = null;
 
 const RECIPEPRINTER_CUSTOMER_STORAGE_KEY = "recipeprinter:revenuecat-user-id:v1";
 
@@ -54,20 +55,36 @@ export async function recipePrinterCustomerId(): Promise<string> {
 
 async function getPurchases(userId: string): Promise<Purchases> {
   const { Purchases } = await loadPurchasesModule();
-  const apiKey = revenueCatApiKey();
 
-  if (!purchasesInstance) {
-    purchasesInstance = Purchases.configure({ apiKey, appUserId: userId });
-    configuredUserId = userId;
+  if (purchasesInstance) {
+    if (configuredUserId !== userId) {
+      await purchasesInstance.changeUser(userId);
+      configuredUserId = userId;
+    }
     return purchasesInstance;
   }
 
-  if (configuredUserId !== userId) {
-    await purchasesInstance.changeUser(userId);
-    configuredUserId = userId;
+  // Concurrent first-time callers (e.g. two effects both requesting the SDK
+  // on mount) must await the same configure() rather than each racing past
+  // the `!purchasesInstance` check above — Purchases.configure() does its
+  // own subscriber fetch, so a race here double-logs the customer to
+  // RevenueCat.
+  if (!configuringPromise) {
+    const apiKey = revenueCatApiKey();
+    configuringPromise = (async () => {
+      try {
+        const instance = Purchases.configure({ apiKey, appUserId: userId });
+        purchasesInstance = instance;
+        configuredUserId = userId;
+        return instance;
+      } catch (error) {
+        configuringPromise = null;
+        throw error;
+      }
+    })();
   }
 
-  return purchasesInstance;
+  return configuringPromise;
 }
 
 export function hasTemplateEntitlement(
