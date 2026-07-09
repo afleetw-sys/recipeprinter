@@ -51,6 +51,8 @@ export function PrinterWorkspace({
   const [hasShownEmptyState, setHasShownEmptyState] = useState(false);
   const menuRef = useRef<HTMLDivElement | null>(null);
   const skipProjectIntro = hydratedWithItems && hasProject && !hasShownEmptyState;
+  const hasAutoOpenedTrayRef = useRef(false);
+  const prevItemsLengthRef = useRef<number | null>(null);
 
   useEffect(() => {
     if (hydrated && items.length === 0) setHasShownEmptyState(true);
@@ -59,6 +61,21 @@ export function PrinterWorkspace({
   useEffect(() => {
     if (!hasProject) setMobileQueueOpen(false);
   }, [hasProject]);
+
+  // First-recipe nudge: briefly pop the sticky tray open so mobile users
+  // discover it's there and expandable, then close it on its own. Only fires
+  // on a genuine 0 -> 1 transition observed while mounted (not just "the
+  // queue happened to be non-empty when this page loaded").
+  useEffect(() => {
+    if (!hydrated) return;
+    const prevLength = prevItemsLengthRef.current;
+    prevItemsLengthRef.current = items.length;
+    if (prevLength !== 0 || items.length === 0 || hasAutoOpenedTrayRef.current) return;
+    hasAutoOpenedTrayRef.current = true;
+    setMobileQueueOpen(true);
+    const timeout = window.setTimeout(() => setMobileQueueOpen(false), 2000);
+    return () => window.clearTimeout(timeout);
+  }, [hydrated, items.length]);
 
   useEffect(() => {
     function onPointerDown(event: PointerEvent) {
@@ -161,7 +178,7 @@ export function PrinterWorkspace({
               onClick={() => handlePrint(readyRecipeIds)}
             >
               <PrintIcon size={ICON_SIZE.md} />
-              {readyRecipeIds.length > 0 ? `Print (${readyRecipeIds.length})` : "Print"}
+              {readyRecipeIds.length > 0 ? `Preview (${readyRecipeIds.length})` : "Preview"}
             </button>
           </div>
         </div>
@@ -180,59 +197,59 @@ export function PrinterWorkspace({
         )}
       </section>
 
-      {hydrated && (
-        <section
-          className={`rp-mobile-print-tray ${mobileQueueOpen ? "is-open" : ""}`}
-          aria-labelledby="rp-mobile-queue-heading"
-        >
-          <div className="rp-mobile-print-tray__panel">
-            <div className="rp-mobile-print-tray__bar">
-              <button
-                type="button"
-                className="rp-mobile-print-tray__toggle"
-                aria-expanded={mobileQueueOpen}
-                aria-controls="rp-mobile-queue-content"
-                onClick={() => setMobileQueueOpen((open) => !open)}
-              >
-                <span>
-                  <span id="rp-mobile-queue-heading" className="rp-mobile-print-tray__title">
-                    {readyToPrintLabel}
-                  </span>
-                  {readyItems.length === 0 && (
-                    <span className="rp-mobile-print-tray__meta">
-                      {items.length > 0 ? `${items.length} added` : "No recipes yet"}
-                    </span>
-                  )}
+      <section
+        className={`rp-mobile-print-tray ${mobileQueueOpen ? "is-open" : ""}`}
+        aria-labelledby="rp-mobile-queue-heading"
+      >
+        <div className="rp-mobile-print-tray__panel">
+          <div className="rp-mobile-print-tray__bar">
+            <button
+              type="button"
+              className="rp-mobile-print-tray__toggle"
+              aria-expanded={mobileQueueOpen}
+              aria-controls="rp-mobile-queue-content"
+              onClick={() => setMobileQueueOpen((open) => !open)}
+            >
+              <span>
+                <span id="rp-mobile-queue-heading" className="rp-mobile-print-tray__title">
+                  {readyToPrintLabel}
                 </span>
-                <ChevronDownIcon size={ICON_SIZE.lg} className="rp-mobile-print-tray__chevron" />
-              </button>
+                {readyItems.length === 0 && (
+                  <span className="rp-mobile-print-tray__meta">
+                    {items.length > 0 ? `${items.length} added` : "No recipes yet"}
+                  </span>
+                )}
+              </span>
+              <ChevronDownIcon size={ICON_SIZE.lg} className="rp-mobile-print-tray__chevron" />
+            </button>
 
-              <button
-                type="button"
-                className={`btn btn-primary btn-compact rp-mobile-print-tray__print ${
-                  readyRecipeIds.length > 0 ? "rp-mobile-print-tray__print--ready" : ""
-                }`}
-                disabled={readyRecipeIds.length === 0}
-                onClick={() => handlePrint(readyRecipeIds)}
-              >
-                <PrintIcon size={ICON_SIZE.md} />
-                {readyRecipeIds.length > 0 ? `Print (${readyRecipeIds.length})` : "Print"}
-              </button>
-            </div>
+            <button
+              type="button"
+              className={`btn btn-primary btn-compact rp-mobile-print-tray__print ${
+                readyRecipeIds.length > 0 ? "rp-mobile-print-tray__print--ready" : ""
+              }`}
+              disabled={readyRecipeIds.length === 0}
+              onClick={() => handlePrint(readyRecipeIds)}
+            >
+              <PrintIcon size={ICON_SIZE.md} />
+              {readyRecipeIds.length > 0 ? `Preview (${readyRecipeIds.length})` : "Preview"}
+            </button>
+          </div>
 
-            <div id="rp-mobile-queue-content" className="rp-mobile-print-tray__content">
-              {hasProject && (
-                <div className="rp-mobile-print-tray__actions">
-                  <button
-                    type="button"
-                    className="btn-ghost btn-compact"
-                    onClick={clear}
-                  >
-                    <TrashIcon size={ICON_SIZE.md} />
-                    Clear all
-                  </button>
-                </div>
-              )}
+          <div id="rp-mobile-queue-content" className="rp-mobile-print-tray__content">
+            {hasProject && (
+              <div className="rp-mobile-print-tray__actions">
+                <button
+                  type="button"
+                  className="btn-ghost btn-compact"
+                  onClick={clear}
+                >
+                  <TrashIcon size={ICON_SIZE.md} />
+                  Clear all
+                </button>
+              </div>
+            )}
+            {hydrated ? (
               <PrintQueue
                 items={items}
                 canRetry={canRetry}
@@ -241,10 +258,12 @@ export function PrinterWorkspace({
                 animateItems={!skipProjectIntro}
                 focusedItemId={focusedItemId}
               />
-            </div>
+            ) : (
+              <div className="h-24 rounded-2xl border border-dashed border-line-strong" />
+            )}
           </div>
-        </section>
-      )}
+        </div>
+      </section>
     </div>
   );
 }

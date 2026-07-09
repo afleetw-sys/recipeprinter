@@ -358,7 +358,7 @@ function SignedInCookPilotImport({
       )}
 
       {!loading && !error && visibleSummaries.length > 0 && (
-        <ul className="cookpilot-recipe-list flex flex-col gap-cp-2 max-h-[520px] overflow-y-auto pr-1">
+        <ul className="cookpilot-recipe-list flex flex-col gap-cp-2">
           {visibleSummaries.map((summary) => (
             <li key={summary.id}>
               <RecipeRow
