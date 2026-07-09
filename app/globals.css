@@ -1183,6 +1183,14 @@
   color: var(--cp-accent-ink);
 }
 
+.recipe-cards-per-page__hint {
+  display: block;
+  margin-top: 6px;
+  color: var(--cp-ink-soft);
+  font-size: var(--cp-fs-label);
+  line-height: 1.35;
+}
+
 .recipe-print-settings-banner {
   padding: 10px 12px;
   border: 1px solid color-mix(in srgb, var(--cp-accent) 28%, transparent);

@@ -449,6 +449,7 @@ export default function PrintPage() {
   const [showDonateDialog, setShowDonateDialog] = useState(false);
   const [showFeedbackDialog, setShowFeedbackDialog] = useState(false);
   const [showAddRecipeDialog, setShowAddRecipeDialog] = useState(false);
+  const [showDeleteRecipeDialog, setShowDeleteRecipeDialog] = useState(false);
   const [pendingFocusRecipeId, setPendingFocusRecipeId] = useState<string | null>(null);
   const queue = useQueue();
   const [revenueCatUserId, setRevenueCatUserId] = useState<string | null>(null);
@@ -828,6 +829,55 @@ export default function PrintPage() {
     editingEdit?.recipeId && items
       ? items.find((item) => item.id === editingEdit.recipeId && item.recipe)
       : null;
+
+  // Delete/Backspace on the selected recipe opens a confirm dialog rather
+  // than deleting immediately — but only when focus isn't inside an editable
+  // field (inline title/ingredient/step editing uses real inputs, where
+  // Backspace/Delete need to keep deleting characters) and no other dialog is
+  // already up.
+  useEffect(() => {
+    function onKeyDown(event: KeyboardEvent) {
+      if (event.key !== "Delete" && event.key !== "Backspace") return;
+      const target = event.target;
+      const isEditable =
+        target instanceof HTMLElement &&
+        (target.tagName === "INPUT" || target.tagName === "TEXTAREA" || target.isContentEditable);
+      if (isEditable) return;
+      if (!activeRecipeItem) return;
+      if (
+        showAddRecipeDialog ||
+        showDeleteRecipeDialog ||
+        showDonateDialog ||
+        showUnlockDialog ||
+        showFeedbackDialog ||
+        showCookPilotLogin
+      ) {
+        return;
+      }
+      event.preventDefault();
+      setShowDeleteRecipeDialog(true);
+    }
+    document.addEventListener("keydown", onKeyDown);
+    return () => document.removeEventListener("keydown", onKeyDown);
+  }, [
+    activeRecipeItem,
+    showAddRecipeDialog,
+    showDeleteRecipeDialog,
+    showDonateDialog,
+    showUnlockDialog,
+    showFeedbackDialog,
+    showCookPilotLogin,
+  ]);
+
+  function deleteActiveRecipe() {
+    if (!activeRecipeItem) return;
+    const id = activeRecipeItem.id;
+    const nextItems = (items ?? []).filter((item) => item.id !== id);
+    setItems(nextItems);
+    createCurrentPrintJob(nextItems.map((item) => item.id));
+    queue.remove(id);
+    setShowDeleteRecipeDialog(false);
+  }
 
   function scrollDeckTo(deck: HTMLDivElement, options: ScrollToOptions) {
     if (options.behavior === "smooth") {
@@ -1277,6 +1327,10 @@ export default function PrintPage() {
                 </button>
               ))}
             </div>
+            <small className="recipe-cards-per-page__hint">
+              2 needs a full sheet of paper (like Letter) to fit both cards. If you&apos;re
+              printing on individual precut 4x6 cards, choose 1.
+            </small>
           </div>
         )}
         {cardSize === "card-6x4" && cardsPerSheet === 2 && (
@@ -2128,6 +2182,10 @@ export default function PrintPage() {
         canClaimFree={canClaimSelectedTemplateFree}
         claimBusy={claimBusy}
         onClaimTemplate={(premiumTemplate) => void claimTemplateAndPrint(premiumTemplate)}
+        showDeleteRecipeDialog={showDeleteRecipeDialog}
+        deleteRecipeTitle={activeRecipeItem?.recipe?.title || activeRecipeItem?.title || "this recipe"}
+        onCancelDeleteRecipe={() => setShowDeleteRecipeDialog(false)}
+        onConfirmDeleteRecipe={deleteActiveRecipe}
       />
       <AddRecipeDialog
         open={showAddRecipeDialog}
