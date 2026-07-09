@@ -25,6 +25,7 @@ import {
   CheckIcon,
   ChevronLeftIcon,
   CrownIcon,
+  EditIcon,
   ICON_SIZE,
   ImageIcon,
   LinkIcon,
@@ -393,6 +394,26 @@ function stripStepPrefix(value: string): string {
     .trim();
 }
 
+// Section headers group consecutive ingredients/steps that share a `section`
+// value (see `sectionGroups` in RecipeCardPrint). Renaming one only touches
+// that consecutive run, starting at the group's first item, so a later group
+// that happens to reuse the same title text is left alone.
+function applySectionTitleEdit<T extends { section?: string }>(
+  items: T[],
+  startIndex: number,
+  newTitle: string,
+): T[] {
+  const originalTitle = items[startIndex]?.section?.trim() || undefined;
+  const trimmedNewTitle = newTitle.trim() || undefined;
+  const next = items.slice();
+  for (let i = startIndex; i < next.length; i++) {
+    const itemTitle = next[i].section?.trim() || undefined;
+    if (itemTitle !== originalTitle) break;
+    next[i] = { ...next[i], section: trimmedNewTitle };
+  }
+  return next;
+}
+
 export default function PrintPage() {
   const params = useSearchParams();
   const idsParam = params.get("ids") ?? "";
@@ -653,7 +674,7 @@ export default function PrintPage() {
   const [activeNavIndex, setActiveNavIndex] = useState(0);
   const [canvasSide, setCanvasSide] = useState<"front" | "back">("front");
   const [mobileDrawer, setMobileDrawer] = useState<"template" | null>(null);
-  const [selectedEdit, setSelectedEdit] = useState<RecipeEditSelection | null>(null);
+  const [pageEditMode, setPageEditMode] = useState(false);
   const [editingEdit, setEditingEdit] = useState<RecipeEditSelection | null>(null);
   const [editValue, setEditValue] = useState("");
   const [sizeMenuOpen, setSizeMenuOpen] = useState(false);
@@ -939,18 +960,8 @@ export default function PrintPage() {
     void handlePrint();
   }
 
-  function selectEditTarget(target: RecipeCardEditTarget) {
-    if (!activeRecipeItem?.recipe) return;
-    setSelectedEdit({ recipeId: activeRecipeItem.id, target });
-    setEditingEdit(null);
-    setEditValue("");
-    setSizeMenuOpen(false);
-    setSettingsMenuOpen(false);
-  }
-
   function startEditTarget(target: RecipeCardEditTarget, value: string) {
     if (!activeRecipeItem?.recipe) return;
-    setSelectedEdit({ recipeId: activeRecipeItem.id, target });
     setEditingEdit({ recipeId: activeRecipeItem.id, target });
     setEditValue(value);
   }
@@ -984,6 +995,12 @@ export default function PrintPage() {
         image: trimmed || undefined,
       });
     }
+    if (target.kind === "sourceUrl") {
+      return printableRecipe({
+        ...recipe,
+        sourceUrl: trimmed || undefined,
+      });
+    }
     if (target.kind === "ingredient") {
       if (!trimmed) {
         return printableRecipe({
@@ -1007,6 +1024,18 @@ export default function PrintPage() {
         ),
       });
     }
+    if (target.kind === "ingredientSection") {
+      return printableRecipe({
+        ...recipe,
+        ingredients: applySectionTitleEdit(recipe.ingredients, target.index, trimmed),
+      });
+    }
+    if (target.kind === "instructionSection") {
+      return printableRecipe({
+        ...recipe,
+        instructions: applySectionTitleEdit(recipe.instructions, target.index, trimmed),
+      });
+    }
     const text = stripStepPrefix(trimmed);
     if (!text) {
       return printableRecipe({
@@ -1024,17 +1053,9 @@ export default function PrintPage() {
     });
   }
 
-  function commitEditTarget(value = editValue, options: { clearSelection?: boolean } = {}) {
+  function commitEditTarget(value = editValue) {
     if (!editingEdit || !editingRecipeItem?.recipe) return;
     const target = editingEdit.target;
-    // Deleting an ingredient/step shifts every later index, so the prior
-    // selection would silently point at the wrong line if kept.
-    const lineDeleted =
-      target.kind === "ingredient"
-        ? value.trim() === ""
-        : target.kind === "step"
-          ? stripStepPrefix(value.trim()) === ""
-          : false;
     const nextRecipe = applyRecipeTargetEdit(editingRecipeItem.recipe, target, value);
     updateQueuedRecipe(editingRecipeItem.id, nextRecipe);
     setItems((current) =>
@@ -1043,9 +1064,6 @@ export default function PrintPage() {
           ? { ...item, recipe: nextRecipe, title: nextRecipe.title || "Untitled recipe" }
         : item,
       ) ?? current,
-    );
-    setSelectedEdit(
-      options.clearSelection || lineDeleted ? null : { recipeId: editingRecipeItem.id, target },
     );
     setEditingEdit(null);
     setEditValue("");
@@ -1066,45 +1084,32 @@ export default function PrintPage() {
   }, [idsParam]);
 
   useEffect(() => {
-    const hasSelected = selectedEdit
-      ? items?.some((item) => item.id === selectedEdit.recipeId && item.recipe)
-      : true;
     const hasEditing = editingEdit
       ? items?.some((item) => item.id === editingEdit.recipeId && item.recipe)
       : true;
-    if (!hasSelected) {
-      setSelectedEdit(null);
-    }
     if (!hasEditing) {
       setEditingEdit(null);
       setEditValue("");
     }
-  }, [editingEdit, items, selectedEdit]);
+  }, [editingEdit, items]);
 
+  // Editing is opt-in per recipe: leaving edit mode active while flipping to
+  // a different card in the deck would carry stray editing/placeholder state
+  // onto a recipe the user never asked to edit.
   useEffect(() => {
-    function onPointerDown(event: PointerEvent) {
-      const target = event.target;
-      if (!(target instanceof Element)) return;
-      if (target.closest(".recipe-card__inline-input, .recipe-card__inline-textarea")) {
-        return;
-      }
-      if (target.closest(".recipe-card__line-edit-button, .recipe-card__photo-edit, .recipe-card__photo-remove")) {
-        return;
-      }
-      if (target.closest(".recipe-card__editable-target")) {
-        if (editingEdit) commitEditTarget(editValue);
-        return;
-      }
-      if (editingEdit) {
-        commitEditTarget(editValue, { clearSelection: true });
-        return;
-      }
-      setSelectedEdit(null);
-    }
+    setPageEditMode(false);
+    setEditingEdit(null);
+    setEditValue("");
+  }, [activeRecipeId]);
 
-    document.addEventListener("pointerdown", onPointerDown);
-    return () => document.removeEventListener("pointerdown", onPointerDown);
-  }, [editingEdit, editValue, editingRecipeItem]);
+  function togglePageEditMode() {
+    if (pageEditMode && editingEdit) {
+      // Unmounting a focused field on toggle-off isn't guaranteed to fire a
+      // blur event in every browser, so commit explicitly before hiding it.
+      commitEditTarget(editValue);
+    }
+    setPageEditMode((mode) => !mode);
+  }
 
   // Hydrate stored layout preferences on mount (client only). Explicit URL
   // params (for deep links) still win over whatever was last saved.
@@ -1152,6 +1157,12 @@ export default function PrintPage() {
   }, [items, revenueCatUserId, selectedPremiumTemplate, shouldPrint, template, customerInfo]);
 
   useEffect(() => {
+    // Gated on having something to print: this only reads back the id an
+    // import already registered (see registerRevenueCatCustomer in
+    // lib/queue.ts). It still needs to run here too, since a direct
+    // page load resets the in-memory RevenueCat SDK state even though the
+    // id and queue persisted in storage.
+    if (!items || items.length === 0) return;
     let cancelled = false;
     recipePrinterCustomerId()
       .then((userId) => {
@@ -1163,7 +1174,7 @@ export default function PrintPage() {
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [items]);
 
   useEffect(() => {
     if (cookPilotRedirectError) showToast(cookPilotRedirectError);
@@ -1497,6 +1508,22 @@ export default function PrintPage() {
                           </div>
                         )}
                       </div>
+                      {activeRecipeItem?.recipe && (
+                        <div className="recipe-page-canvas__controls-right">
+                          <button
+                            type="button"
+                            className={`recipe-page-edit-toggle ${pageEditMode ? "is-active" : ""}`}
+                            aria-pressed={pageEditMode}
+                            onClick={(event) => {
+                              event.stopPropagation();
+                              togglePageEditMode();
+                            }}
+                          >
+                            <EditIcon size={ICON_SIZE.xs} />
+                            {pageEditMode ? "Done" : "Edit"}
+                          </button>
+                        </div>
+                      )}
                     </div>
                   )}
                   <ScaledPage
@@ -1512,15 +1539,12 @@ export default function PrintPage() {
                     showSourceUrl={sourceUrlOn}
                     showCutLines={showCutLines && cardSize === "card-6x4"}
                     inlineEdit={
-                      isActive && activeRecipeItem?.id === navItem.recipeId
+                      pageEditMode && isActive && activeRecipeItem?.id === navItem.recipeId
                         ? {
-                            selectedTarget:
-                              selectedEdit?.recipeId === navItem.recipeId ? selectedEdit.target : null,
                             editingTarget:
                               editingEdit?.recipeId === navItem.recipeId ? editingEdit.target : null,
                             value: editValue,
-                            onSelectTarget: selectEditTarget,
-                            onStartEdit: startEditTarget,
+                            onFocusTarget: startEditTarget,
                             onValueChange: setEditValue,
                             onCommit: commitEditTarget,
                             onCancel: cancelEditTarget,

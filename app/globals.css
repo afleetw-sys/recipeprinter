@@ -880,10 +880,35 @@
   min-height: 38px;
 }
 
+.recipe-page-canvas__controls-right {
+  grid-column: 3;
+  justify-self: end;
+}
+
 .recipe-page-canvas__controls .recipe-card-side-nav,
 .recipe-page-canvas__controls button,
 .recipe-page-canvas__controls label {
   pointer-events: auto;
+}
+
+.recipe-page-edit-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 5px 12px;
+  border: 1px solid var(--cp-line);
+  border-radius: 999px;
+  background: var(--cp-card);
+  color: var(--cp-ink-soft);
+  font-size: var(--cp-fs-caption);
+  font-weight: 800;
+  box-shadow: var(--cp-shadow-sm);
+}
+
+.recipe-page-edit-toggle.is-active {
+  border-color: var(--cp-accent);
+  background: color-mix(in srgb, var(--cp-accent) 12%, var(--cp-card));
+  color: var(--cp-accent);
 }
 
 /* The first slide has nothing above it, so on desktop/tablet (where slides
@@ -2883,12 +2908,13 @@
   letter-spacing: -0.01em;
 }
 
-/* The real form control never draws its own box — the box is faked entirely
-   by `.recipe-card__editable-target.is-selected`'s outline (below), which
-   stays mounted across the select <-> edit transition. Giving the input its
-   own border/background/padding here would draw a second box nested inside
-   that outline, and any size difference from the plain text it replaces
-   would shift surrounding content the moment editing starts. */
+/* Every field is a real, permanently-mounted input while page edit mode is
+   on (see togglePageEditMode in app/print/page.tsx) — there's no separate
+   select step, so the field itself never draws its own box; a focus outline
+   is the only visual change on entering/leaving a field, and outlines don't
+   take up layout space, so nothing shifts. Giving the input its own
+   border/background/padding here would also draw a visible box even when
+   idle, which would fight the plain-text look the rest of the card has. */
 .recipe-card__inline-input,
 .recipe-card__inline-textarea {
   width: 100%;
@@ -2904,35 +2930,17 @@
   box-sizing: border-box;
 }
 
-.recipe-card__editable-target {
-  position: relative;
-  border-radius: 4px;
-  cursor: text;
-}
-
-.recipe-card__editable-target.is-selected {
+.recipe-card__inline-input:focus,
+.recipe-card__inline-textarea:focus {
   outline: 1px solid color-mix(in srgb, var(--cp-accent) 58%, transparent);
   outline-offset: 2px;
+  border-radius: 3px;
 }
 
-.recipe-card__editable-line.is-selected {
-  padding-right: 0.22in;
-}
-
-.recipe-card__line-edit-button {
-  position: absolute;
-  top: -0.2in;
-  right: 0;
-  z-index: 4;
-  display: grid;
-  place-items: center;
-  width: 0.18in;
-  height: 0.18in;
-  border: 1px solid var(--cp-line-strong);
-  border-radius: 999px;
-  background: var(--cp-card);
-  color: var(--cp-ink);
-  box-shadow: var(--cp-shadow-xs);
+.recipe-card__inline-input::placeholder,
+.recipe-card__inline-textarea::placeholder {
+  color: var(--recipe-muted);
+  opacity: 0.7;
 }
 
 .recipe-card__inline-input--title {

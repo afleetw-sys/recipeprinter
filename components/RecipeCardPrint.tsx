@@ -2,7 +2,7 @@
 
 import { Fragment, memo, useState } from "react";
 import { formatRecipeTime } from "@/lib/time";
-import { EditIcon, ICON_SIZE, XIcon } from "@/components/icons";
+import { ICON_SIZE, XIcon } from "@/components/icons";
 import type { Recipe } from "@/types/recipe";
 
 // Printable recipe layouts. Compact cards keep readable text and move overflow
@@ -610,15 +610,16 @@ export type RecipeCardEditTarget =
   | { kind: "cookTime" }
   | { kind: "servings" }
   | { kind: "image" }
+  | { kind: "sourceUrl" }
   | { kind: "ingredient"; index: number }
-  | { kind: "step"; index: number };
+  | { kind: "step"; index: number }
+  | { kind: "ingredientSection"; index: number }
+  | { kind: "instructionSection"; index: number };
 
 export interface RecipeCardInlineEdit {
-  selectedTarget: RecipeCardEditTarget | null;
   editingTarget: RecipeCardEditTarget | null;
   value: string;
-  onSelectTarget: (target: RecipeCardEditTarget) => void;
-  onStartEdit: (target: RecipeCardEditTarget, value: string) => void;
+  onFocusTarget: (target: RecipeCardEditTarget, value: string) => void;
   onValueChange: (value: string) => void;
   onCommit: (value?: string) => void;
   onCancel: () => void;
@@ -767,19 +768,22 @@ export const RecipeCardFace = memo(function RecipeCardFace({
   const checkerBands = 48;
   const showPhoto = showHeader && !imageFailed && (showImage && Boolean(recipe.image));
 
+  // Whole-page edit mode means every field is a live input at once (see
+  // togglePageEditMode in app/print/page.tsx) — there's no separate
+  // select-then-edit step, so this only needs to tell the currently-focused
+  // field apart from the rest (to know whether to show the shared draft
+  // value or the field's live committed value).
   function sameTarget(a: RecipeCardEditTarget | null | undefined, b: RecipeCardEditTarget): boolean {
     if (!a || a.kind !== b.kind) return false;
     if (a.kind === "ingredient" && b.kind === "ingredient") return a.index === b.index;
     if (a.kind === "step" && b.kind === "step") return a.index === b.index;
-    return a.kind !== "ingredient" && a.kind !== "step";
-  }
-
-  function selectTarget(target: RecipeCardEditTarget) {
-    inlineEdit?.onSelectTarget(target);
+    if (a.kind === "ingredientSection" && b.kind === "ingredientSection") return a.index === b.index;
+    if (a.kind === "instructionSection" && b.kind === "instructionSection") return a.index === b.index;
+    return true;
   }
 
   function startEdit(target: RecipeCardEditTarget, value: string) {
-    inlineEdit?.onStartEdit(target, value);
+    inlineEdit?.onFocusTarget(target, value);
   }
 
   function commitEdit() {
@@ -790,16 +794,13 @@ export const RecipeCardFace = memo(function RecipeCardFace({
     if (event.key === "Escape") {
       event.preventDefault();
       inlineEdit?.onCancel();
+      event.currentTarget.blur();
       return;
     }
     if (event.key === "Enter" && !event.shiftKey) {
       event.preventDefault();
-      commitEdit();
+      event.currentTarget.blur();
     }
-  }
-
-  function stopEditorEvent(event: React.SyntheticEvent) {
-    event.stopPropagation();
   }
 
   function handleImageChange(event: React.ChangeEvent<HTMLInputElement>) {
@@ -813,22 +814,26 @@ export const RecipeCardFace = memo(function RecipeCardFace({
     reader.readAsDataURL(file);
   }
 
-  function editAdornment(target: RecipeCardEditTarget, value: string) {
-    if (!inlineEdit || !sameTarget(inlineEdit.selectedTarget, target) || sameTarget(inlineEdit.editingTarget, target)) {
-      return null;
+  function sectionTitle(
+    kind: "ingredientSection" | "instructionSection",
+    index: number,
+    title: string,
+  ) {
+    if (!canEdit || !inlineEdit) {
+      return <h3 className="recipe-card__section-title">{title}</h3>;
     }
+    const target: RecipeCardEditTarget = { kind, index };
+    const isEditingThis = sameTarget(inlineEdit.editingTarget, target);
     return (
-      <button
-        type="button"
-        className="recipe-card__line-edit-button no-print"
-        aria-label="Edit"
-        onClick={(event) => {
-          event.stopPropagation();
-          startEdit(target, value);
-        }}
-      >
-        <EditIcon size={ICON_SIZE.xs} />
-      </button>
+      <input
+        className="recipe-card__inline-input recipe-card__section-title"
+        value={isEditingThis ? inlineEdit.value : title}
+        aria-label="Section title"
+        onFocus={() => startEdit(target, title)}
+        onChange={(event) => inlineEdit.onValueChange(event.target.value)}
+        onBlur={commitEdit}
+        onKeyDown={handleEditKeyDown}
+      />
     );
   }
 
@@ -889,103 +894,63 @@ export const RecipeCardFace = memo(function RecipeCardFace({
           }`}
         >
           <div className="recipe-card__headline">
-            <div
-              className={`recipe-card__editable-target ${
-                inlineEdit && sameTarget(inlineEdit.selectedTarget, { kind: "title" })
-                  ? "is-selected"
-                  : ""
-              }`}
-              onClick={() => selectTarget({ kind: "title" })}
-            >
-              {canEdit && inlineEdit && sameTarget(inlineEdit.editingTarget, { kind: "title" }) ? (
-                <input
-                  autoFocus
-                  className="recipe-card__inline-input recipe-card__inline-input--title"
-                  value={inlineEdit.value}
-                  aria-label="Recipe title"
-                  onClick={stopEditorEvent}
-                  onMouseDown={stopEditorEvent}
-                  onChange={(event) => inlineEdit.onValueChange(event.target.value)}
-                  onKeyDown={handleEditKeyDown}
-                />
-              ) : (
-                <>
-                  <h1 className="recipe-card__title">{recipe.title}</h1>
-                  {editAdornment({ kind: "title" }, recipe.title)}
-                </>
-              )}
-            </div>
+            {canEdit && inlineEdit ? (
+              <input
+                className="recipe-card__inline-input recipe-card__inline-input--title"
+                value={sameTarget(inlineEdit.editingTarget, { kind: "title" }) ? inlineEdit.value : recipe.title}
+                aria-label="Recipe title"
+                onFocus={() => startEdit({ kind: "title" }, recipe.title)}
+                onChange={(event) => inlineEdit.onValueChange(event.target.value)}
+                onBlur={commitEdit}
+                onKeyDown={handleEditKeyDown}
+              />
+            ) : (
+              <h1 className="recipe-card__title">{recipe.title}</h1>
+            )}
             {canEdit && inlineEdit ? (
               <p className="recipe-card__meta recipe-card__meta--editable-targets">
-                <span
-                  className={`recipe-card__editable-target ${
-                    sameTarget(inlineEdit.selectedTarget, { kind: "cookTime" }) ? "is-selected" : ""
-                  }`}
-                  onClick={() => selectTarget({ kind: "cookTime" })}
-                >
-                  {sameTarget(inlineEdit.editingTarget, { kind: "cookTime" }) ? (
-                    <input
-                      autoFocus
-                      className="recipe-card__inline-input recipe-card__inline-input--meta"
-                      value={inlineEdit.value}
-                      aria-label="Cook time"
-                      onClick={stopEditorEvent}
-                      onMouseDown={stopEditorEvent}
-                      onChange={(event) => inlineEdit.onValueChange(event.target.value)}
-                      onKeyDown={handleEditKeyDown}
-                    />
-                  ) : (
-                    <>
-                      {formatRecipeTime(recipe.totalTime || recipe.cookTime || recipe.prepTime) || "Cook time"}
-                      {editAdornment(
-                        { kind: "cookTime" },
-                        recipe.totalTime || recipe.cookTime || recipe.prepTime || "",
-                      )}
-                    </>
-                  )}
-                </span>
+                <input
+                  className="recipe-card__inline-input recipe-card__inline-input--meta"
+                  value={
+                    sameTarget(inlineEdit.editingTarget, { kind: "cookTime" })
+                      ? inlineEdit.value
+                      : formatRecipeTime(recipe.totalTime || recipe.cookTime || recipe.prepTime) || ""
+                  }
+                  placeholder="Cook time"
+                  aria-label="Cook time"
+                  onFocus={() =>
+                    startEdit({ kind: "cookTime" }, recipe.totalTime || recipe.cookTime || recipe.prepTime || "")
+                  }
+                  onChange={(event) => inlineEdit.onValueChange(event.target.value)}
+                  onBlur={commitEdit}
+                  onKeyDown={handleEditKeyDown}
+                />
                 <span aria-hidden> · </span>
-                <span
-                  className={`recipe-card__editable-target ${
-                    sameTarget(inlineEdit.selectedTarget, { kind: "servings" }) ? "is-selected" : ""
-                  }`}
-                  onClick={() => selectTarget({ kind: "servings" })}
-                >
-                  {sameTarget(inlineEdit.editingTarget, { kind: "servings" }) ? (
-                    <input
-                      autoFocus
-                      className="recipe-card__inline-input recipe-card__inline-input--meta"
-                      value={inlineEdit.value}
-                      aria-label="Servings"
-                      onClick={stopEditorEvent}
-                      onMouseDown={stopEditorEvent}
-                      onChange={(event) => inlineEdit.onValueChange(event.target.value)}
-                      onKeyDown={handleEditKeyDown}
-                    />
-                  ) : (
-                    <>
-                      {recipe.servings ?? recipe.yield ? `Serves ${recipe.servings ?? recipe.yield}` : "Servings"}
-                      {editAdornment(
-                        { kind: "servings" },
-                        recipe.servings === undefined ? "" : String(recipe.servings),
-                      )}
-                    </>
-                  )}
-                </span>
+                <input
+                  className="recipe-card__inline-input recipe-card__inline-input--meta"
+                  value={
+                    sameTarget(inlineEdit.editingTarget, { kind: "servings" })
+                      ? inlineEdit.value
+                      : recipe.servings ?? recipe.yield
+                        ? `Serves ${recipe.servings ?? recipe.yield}`
+                        : ""
+                  }
+                  placeholder="Servings"
+                  aria-label="Servings"
+                  onFocus={() =>
+                    startEdit({ kind: "servings" }, recipe.servings === undefined ? "" : String(recipe.servings))
+                  }
+                  onChange={(event) => inlineEdit.onValueChange(event.target.value)}
+                  onBlur={commitEdit}
+                  onKeyDown={handleEditKeyDown}
+                />
               </p>
             ) : (
               meta.length > 0 && <p className="recipe-card__meta">{meta.join("  ·  ")}</p>
             )}
           </div>
           {showPhoto && (
-            <span
-              className={`recipe-card__photo ${
-                inlineEdit && sameTarget(inlineEdit.selectedTarget, { kind: "image" })
-                  ? "recipe-card__photo--editable"
-                  : ""
-              }`}
-              onClick={() => selectTarget({ kind: "image" })}
-            >
+            <span className={`recipe-card__photo ${canEdit ? "recipe-card__photo--editable" : ""}`}>
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
                 className="recipe-card__photo-img"
@@ -994,7 +959,7 @@ export const RecipeCardFace = memo(function RecipeCardFace({
                 decoding="async"
                 onError={() => setImageFailed(true)}
               />
-              {inlineEdit && sameTarget(inlineEdit.selectedTarget, { kind: "image" }) && (
+              {canEdit && inlineEdit && (
                 <>
                   <label className="recipe-card__photo-edit">
                     Upload
@@ -1009,10 +974,7 @@ export const RecipeCardFace = memo(function RecipeCardFace({
                     type="button"
                     className="recipe-card__photo-remove"
                     aria-label="Remove photo"
-                    onClick={(event) => {
-                      event.stopPropagation();
-                      inlineEdit.onCommit("");
-                    }}
+                    onClick={() => inlineEdit.onCommit("")}
                   >
                     <XIcon size={ICON_SIZE.xs} />
                   </button>
@@ -1043,41 +1005,34 @@ export const RecipeCardFace = memo(function RecipeCardFace({
                   className="recipe-card__section-group"
                   key={`${group.title ?? "ingredients"}-${groupIndex}`}
                 >
-                  {group.title && (
-                    <h3 className="recipe-card__section-title">{group.title}</h3>
-                  )}
+                  {group.title &&
+                    sectionTitle(
+                      "ingredientSection",
+                      recipe.ingredients.indexOf(group.items[0]),
+                      group.title,
+                    )}
                   <ul>
                     {group.items.map((ing, i) => {
                       const index = recipe.ingredients.indexOf(ing);
                       const target: RecipeCardEditTarget = { kind: "ingredient", index };
                       const text = ingredientText(ing);
-                      const selected = inlineEdit && sameTarget(inlineEdit.selectedTarget, target);
-                      const editing = inlineEdit && sameTarget(inlineEdit.editingTarget, target);
+                      const isEditingThis = inlineEdit && sameTarget(inlineEdit.editingTarget, target);
+                      const displayValue = isEditingThis ? inlineEdit!.value : text;
                       return (
-                        <li
-                          key={`${groupIndex}-${i}`}
-                          className={`recipe-card__editable-target recipe-card__editable-line ${
-                            selected ? "is-selected" : ""
-                          }`}
-                          onClick={() => selectTarget(target)}
-                        >
-                          {editing && inlineEdit ? (
+                        <li key={`${groupIndex}-${i}`} className="recipe-card__editable-line">
+                          {canEdit && inlineEdit ? (
                             <textarea
-                              autoFocus
                               className="recipe-card__inline-textarea recipe-card__inline-textarea--line"
-                              value={inlineEdit.value}
+                              value={displayValue}
                               aria-label="Ingredient"
-                              rows={Math.max(1, inlineEdit.value.split(/\r?\n/).length)}
-                              onClick={stopEditorEvent}
-                              onMouseDown={stopEditorEvent}
+                              rows={Math.max(1, displayValue.split(/\r?\n/).length)}
+                              onFocus={() => startEdit(target, text)}
                               onChange={(event) => inlineEdit.onValueChange(event.target.value)}
+                              onBlur={commitEdit}
                               onKeyDown={handleEditKeyDown}
                             />
                           ) : (
-                            <>
-                              {text}
-                              {editAdornment(target, text)}
-                            </>
+                            text
                           )}
                         </li>
                       );
@@ -1111,41 +1066,37 @@ export const RecipeCardFace = memo(function RecipeCardFace({
                   className="recipe-card__section-group"
                   key={`${group.title ?? "steps"}-${groupIndex}`}
                 >
-                  {group.title && (
-                    <h3 className="recipe-card__section-title">{group.title}</h3>
-                  )}
+                  {group.title &&
+                    sectionTitle(
+                      "instructionSection",
+                      recipe.instructions.indexOf(group.items[0]),
+                      group.title,
+                    )}
                   <ol>
                     {group.items.map((step) => {
                       const index = recipe.instructions.indexOf(step);
                       const target: RecipeCardEditTarget = { kind: "step", index };
-                      const selected = inlineEdit && sameTarget(inlineEdit.selectedTarget, target);
-                      const editing = inlineEdit && sameTarget(inlineEdit.editingTarget, target);
+                      const isEditingThis = inlineEdit && sameTarget(inlineEdit.editingTarget, target);
+                      const displayValue = isEditingThis ? inlineEdit!.value : step.text;
                       return (
                         <li
                           key={`${step.step}-${step.text.slice(0, 24)}`}
-                          className={`recipe-card__editable-target recipe-card__editable-line ${
-                            selected ? "is-selected" : ""
-                          }`}
-                          onClick={() => selectTarget(target)}
+                          className="recipe-card__editable-line"
                         >
                           <span className="recipe-card__step-number">{step.step}</span>
-                          {editing && inlineEdit ? (
+                          {canEdit && inlineEdit ? (
                             <textarea
-                              autoFocus
                               className="recipe-card__inline-textarea recipe-card__inline-textarea--line"
-                              value={inlineEdit.value}
+                              value={displayValue}
                               aria-label="Step"
-                              rows={Math.max(1, inlineEdit.value.split(/\r?\n/).length)}
-                              onClick={stopEditorEvent}
-                              onMouseDown={stopEditorEvent}
+                              rows={Math.max(1, displayValue.split(/\r?\n/).length)}
+                              onFocus={() => startEdit(target, step.text)}
                               onChange={(event) => inlineEdit.onValueChange(event.target.value)}
+                              onBlur={commitEdit}
                               onKeyDown={handleEditKeyDown}
                             />
                           ) : (
-                            <span>
-                              {step.text}
-                              {editAdornment(target, step.text)}
-                            </span>
+                            <span>{step.text}</span>
                           )}
                         </li>
                       );
@@ -1160,8 +1111,25 @@ export const RecipeCardFace = memo(function RecipeCardFace({
 
       <footer className="recipe-card__footer">
         <span className="recipe-card__footer-brand">Printed with RecipePrinter</span>
-        {showSourceUrl && showHeader && source && (
-          <span className="recipe-card__footer-source">{source}</span>
+        {showSourceUrl && showHeader && (
+          canEdit && inlineEdit ? (
+            <input
+              className="recipe-card__inline-input recipe-card__footer-source"
+              value={
+                sameTarget(inlineEdit.editingTarget, { kind: "sourceUrl" })
+                  ? inlineEdit.value
+                  : recipe.sourceUrl ?? ""
+              }
+              placeholder="Add link"
+              aria-label="Source link"
+              onFocus={() => startEdit({ kind: "sourceUrl" }, recipe.sourceUrl ?? "")}
+              onChange={(event) => inlineEdit.onValueChange(event.target.value)}
+              onBlur={commitEdit}
+              onKeyDown={handleEditKeyDown}
+            />
+          ) : (
+            source && <span className="recipe-card__footer-source">{source}</span>
+          )
         )}
       </footer>
     </article>

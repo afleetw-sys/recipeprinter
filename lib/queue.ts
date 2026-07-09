@@ -4,6 +4,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import type { QueueItem, Recipe } from "@/types/recipe";
 import { parseImages, parseText, parseUrl } from "@/lib/parser";
 import { normalizeImportURL } from "@/lib/cookpilot";
+import { ensureRecipePrinterCustomer } from "@/lib/recipePrinterPurchases";
 
 // The print queue is session-based for the MVP, no accounts, no saved library.
 // It survives navigation to /print (same tab) via sessionStorage.
@@ -12,6 +13,16 @@ const CURRENT_PRINT_JOB_STORAGE_KEY = "recipeprinter:print-job:current:v1";
 
 interface PrintJob {
   ids: string[];
+}
+
+// Registering with RevenueCat only makes sense once someone has actually
+// imported something — fire this from every add path (URL, image, text,
+// CookPilot) rather than eagerly on /print mount, so drive-by print-page
+// visits with nothing queued don't mint customer records.
+function registerRevenueCatCustomer() {
+  void ensureRecipePrinterCustomer().catch((error) => {
+    console.warn("RecipePrinter: could not initialize RevenueCat customer", error);
+  });
 }
 
 function uid(): string {
@@ -243,6 +254,7 @@ export function useQueue() {
         return;
       }
 
+      registerRevenueCatCustomer();
       const normalizedUrl = normalizeImportURL(url);
       const id = uid();
       const item: QueueItem = {
@@ -263,6 +275,7 @@ export function useQueue() {
   const addImages = useCallback(
     (images: string[], label: string) => {
       if (images.length === 0) return;
+      registerRevenueCatCustomer();
       const id = uid();
       const item: QueueItem = {
         id,
@@ -282,6 +295,7 @@ export function useQueue() {
     (text: string) => {
       const trimmed = text.trim();
       if (!trimmed) return;
+      registerRevenueCatCustomer();
       const id = uid();
       // Use the first non-empty line as a provisional title.
       const firstLine = trimmed.split("\n").map((l) => l.trim()).find(Boolean) ?? "Pasted recipe";
@@ -306,6 +320,7 @@ export function useQueue() {
       const existingIds = new Set(itemsRef.current.map((item) => item.id));
       const nextRecipes = recipes.filter((recipe) => !existingIds.has(recipe.id));
       if (nextRecipes.length === 0) return 0;
+      registerRevenueCatCustomer();
       commit([...itemsRef.current, ...nextRecipes]);
       return nextRecipes.length;
     },

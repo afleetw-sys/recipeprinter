@@ -87,6 +87,19 @@ async function getPurchases(userId: string): Promise<Purchases> {
   return configuringPromise;
 }
 
+/**
+ * Registers this browser as a RevenueCat customer. Called the moment a user
+ * imports a recipe (any path — URL, photo, pasted text, CookPilot), not on
+ * every page view: RevenueCat has no concept of "just looking," so eagerly
+ * configuring on mount was minting a customer record for every drive-by
+ * visit to the print page, including ones with nothing to print.
+ */
+export async function ensureRecipePrinterCustomer(): Promise<string> {
+  const userId = await recipePrinterCustomerId();
+  await getPurchases(userId);
+  return userId;
+}
+
 export function hasTemplateEntitlement(
   customerInfo: CustomerInfo | null,
   template: PremiumRecipePrintTemplate,
