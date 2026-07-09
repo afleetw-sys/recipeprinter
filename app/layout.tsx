@@ -1,6 +1,7 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Manrope, Playfair_Display } from "next/font/google";
 import "./globals.css";
+import { KeyboardInsetWatcher } from "@/components/KeyboardInsetWatcher";
 import {
   SITE_URL,
   SITE_NAME,
@@ -25,6 +26,16 @@ const playfair = Playfair_Display({
   variable: "--font-playfair",
   display: "swap",
 });
+
+// resizes-content: on-screen keyboards shrink the layout viewport instead of
+// overlaying it, so our `position: fixed; bottom: 0` bars land above the
+// keyboard rather than getting hidden behind it. Supported in Chrome and
+// Safari 17.4+; the VisualViewportInset watcher in the body covers the rest.
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+  interactiveWidget: "resizes-content",
+};
 
 export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),
@@ -84,7 +95,10 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en" className={`${manrope.variable} ${playfair.variable}`}>
-      <body>{children}</body>
+      <body>
+        <KeyboardInsetWatcher />
+        {children}
+      </body>
     </html>
   );
 }

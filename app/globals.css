@@ -61,6 +61,11 @@
   --cp-shadow-md: 0 10px 30px rgba(15, 23, 42, 0.1); /* cards, page previews, focus lift */
   --cp-shadow-lg: 0 18px 48px rgba(15, 23, 42, 0.18); /* toasts, dropdown menus */
   --cp-shadow-xl: 0 24px 80px rgba(15, 23, 42, 0.22); /* modal dialogs */
+
+  /* How much the on-screen keyboard currently covers, kept in sync by
+     KeyboardInsetWatcher. Fixed-position bottom bars sit above this instead
+     of `bottom: 0`, so the keyboard doesn't cover or scroll them away. */
+  --rp-keyboard-inset: 0px;
 }
 
 @media screen and (max-width: 768px) {
@@ -415,7 +420,7 @@
       position: fixed;
       left: 0;
       right: 0;
-      bottom: 0;
+      bottom: var(--rp-keyboard-inset, 0px);
       z-index: 40;
       display: block;
       padding: 0 12px calc(10px + env(safe-area-inset-bottom));
@@ -1860,7 +1865,7 @@
     position: fixed;
     top: auto;
     right: 0;
-    bottom: 0;
+    bottom: var(--rp-keyboard-inset, 0px);
     left: 0;
     z-index: 70;
     max-height: min(70vh, 560px);
@@ -1945,7 +1950,7 @@
   .recipe-mobile-actions {
     position: fixed;
     right: 0;
-    bottom: 0;
+    bottom: var(--rp-keyboard-inset, 0px);
     left: 0;
     z-index: 75;
     display: flex;

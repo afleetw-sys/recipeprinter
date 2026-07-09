@@ -62,10 +62,10 @@ export function PrinterWorkspace({
     if (!hasProject) setMobileQueueOpen(false);
   }, [hasProject]);
 
-  // First-recipe nudge: briefly pop the sticky tray open so mobile users
-  // discover it's there and expandable, then close it on its own. Only fires
-  // on a genuine 0 -> 1 transition observed while mounted (not just "the
-  // queue happened to be non-empty when this page loaded").
+  // First-recipe nudge: pop the sticky tray open so mobile users discover
+  // it's there and expandable, then leave it open. Only fires on a genuine
+  // 0 -> 1 transition observed while mounted (not just "the queue happened
+  // to be non-empty when this page loaded").
   useEffect(() => {
     if (!hydrated) return;
     const prevLength = prevItemsLengthRef.current;
@@ -73,8 +73,6 @@ export function PrinterWorkspace({
     if (prevLength !== 0 || items.length === 0 || hasAutoOpenedTrayRef.current) return;
     hasAutoOpenedTrayRef.current = true;
     setMobileQueueOpen(true);
-    const timeout = window.setTimeout(() => setMobileQueueOpen(false), 2000);
-    return () => window.clearTimeout(timeout);
   }, [hydrated, items.length]);
 
   useEffect(() => {
