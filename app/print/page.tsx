@@ -1184,12 +1184,19 @@ export default function PrintPage() {
     // Runs once per CookPilot login: aliases whatever this browser already
     // purchased anonymously into the CookPilot account, then switches this
     // session to that identity so future purchases stay tied to it too.
-    if (!cookPilotUser || linkedCookPilotUidRef.current === cookPilotUser.uid) return;
+    // Gated on having something to print, same as the anonymous-id effect
+    // above — no reason to touch RevenueCat on an empty/stale print page.
+    if (!cookPilotUser || !items || items.length === 0) return;
+    if (linkedCookPilotUidRef.current === cookPilotUser.uid) return;
     linkedCookPilotUidRef.current = cookPilotUser.uid;
     identifyRecipePrinterCustomer(cookPilotUser.uid)
-      .then(({ customerInfo: linkedInfo }) => {
+      .then(({ customerInfo: linkedInfo, alreadyLinked }) => {
         setRevenueCatUserId(cookPilotUser.uid);
         setCustomerInfo(linkedInfo);
+        // Already linked in a prior visit (this is a page refresh, not a
+        // fresh sign-in) — restoring entitlements silently is enough, the
+        // toast would just be noise every time the page reloads.
+        if (alreadyLinked) return;
         const hasAnyPremium = Object.keys(linkedInfo.entitlements.active).length > 0;
         showToast(
           hasAnyPremium
@@ -1201,7 +1208,7 @@ export default function PrintPage() {
         console.warn("RecipePrinter: could not link CookPilot account to purchases", error);
         showToast("Signed in, but we couldn't check your purchases. Try again in a moment.");
       });
-  }, [cookPilotUser]);
+  }, [cookPilotUser, items]);
 
   useEffect(() => {
     if (!cookPilotUser) {
@@ -1536,7 +1543,14 @@ export default function PrintPage() {
                     template={template}
                     doubleSided={continueOnBack}
                     showImage={photosOn}
-                    showSourceUrl={sourceUrlOn}
+                    // While actively editing, keep the link field visible even
+                    // if deleting it just made this the only recipe without
+                    // one (which flips the cross-recipe `sourceUrlOn` gate off)
+                    // — otherwise clearing it mid-edit hides the very field
+                    // that would let the user type it back in.
+                    showSourceUrl={
+                      sourceUrlOn || (pageEditMode && isActive && activeRecipeItem?.id === navItem.recipeId)
+                    }
                     showCutLines={showCutLines && cardSize === "card-6x4"}
                     inlineEdit={
                       pageEditMode && isActive && activeRecipeItem?.id === navItem.recipeId

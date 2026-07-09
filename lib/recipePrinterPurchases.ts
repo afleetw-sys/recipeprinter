@@ -21,6 +21,29 @@ let configuredUserId: string | null = null;
 let configuringPromise: Promise<Purchases> | null = null;
 
 const RECIPEPRINTER_CUSTOMER_STORAGE_KEY = "recipeprinter:revenuecat-user-id:v1";
+const RECIPEPRINTER_LINKED_UID_STORAGE_KEY = "recipeprinter:revenuecat-linked-uid:v1";
+
+// A page refresh always looks like "just signed in" to Firebase Auth (the
+// session rehydrates from storage a moment after mount), so without this
+// the alias call and its toast would fire on every reload for a signed-in
+// user instead of once per account per browser.
+function hasLinkedRecipePrinterCustomer(uid: string): boolean {
+  if (typeof window === "undefined") return false;
+  try {
+    return window.localStorage.getItem(RECIPEPRINTER_LINKED_UID_STORAGE_KEY) === uid;
+  } catch {
+    return false;
+  }
+}
+
+function markRecipePrinterCustomerLinked(uid: string): void {
+  if (typeof window === "undefined") return;
+  try {
+    window.localStorage.setItem(RECIPEPRINTER_LINKED_UID_STORAGE_KEY, uid);
+  } catch {
+    /* ignore */
+  }
+}
 
 function revenueCatApiKey(): string {
   const apiKey = process.env.NEXT_PUBLIC_REVENUECAT_WEB_API_KEY;
@@ -125,15 +148,19 @@ export async function loadRecipePrinterCustomerInfo(
  */
 export async function identifyRecipePrinterCustomer(
   uid: string,
-): Promise<{ customerInfo: CustomerInfo; wasCreated: boolean }> {
-  if (!purchasesInstance) {
+): Promise<{ customerInfo: CustomerInfo; wasCreated: boolean; alreadyLinked: boolean }> {
+  const alreadyLinked = hasLinkedRecipePrinterCustomer(uid);
+
+  if (alreadyLinked || !purchasesInstance) {
     const purchases = await getPurchases(uid);
-    return { customerInfo: await purchases.getCustomerInfo(), wasCreated: false };
+    markRecipePrinterCustomerLinked(uid);
+    return { customerInfo: await purchases.getCustomerInfo(), wasCreated: false, alreadyLinked };
   }
 
   const result = await purchasesInstance.identifyUser(uid);
   configuredUserId = uid;
-  return result;
+  markRecipePrinterCustomerLinked(uid);
+  return { ...result, alreadyLinked };
 }
 
 export async function syncRecipePrinterCustomerAttributes({
