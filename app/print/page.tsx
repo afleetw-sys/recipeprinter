@@ -1255,7 +1255,7 @@ export default function PrintPage() {
         >
           <div className="recipe-config-panel__header">
             <h2 className="text-cp-h2 font-extrabold tracking-[-0.02em]">
-              {mobileDrawer === "template" ? "Templates" : "Print setup"}
+              {mobileDrawer === "template" ? "Themes" : "Print setup"}
             </h2>
             <button
               type="button"
@@ -1364,7 +1364,7 @@ export default function PrintPage() {
                 </button>
               </div>
             )}
-            <h3 className="recipe-config-label">Templates</h3>
+            <h3 className="recipe-config-label">Themes</h3>
             <div className="recipe-template-list">
               {RECIPE_PRINT_TEMPLATE_OPTIONS.map((option) => {
                 const premiumTemplate = isPremiumTemplate(option.id) ? option.id : null;
@@ -1387,6 +1387,7 @@ export default function PrintPage() {
                     onClick={() => {
                       setTemplate(option.id);
                       setToastMessage(null);
+                      setMobileDrawer(null);
                     }}
                   >
                     {locked && (
@@ -1516,7 +1517,7 @@ export default function PrintPage() {
               <span className="recipe-mobile-toolbar__btn-icon">
                 <TemplateIcon size={ICON_SIZE.lg} />
               </span>
-              Template
+              Themes
             </button>
             {anyRecipeHasImage && (
               <button

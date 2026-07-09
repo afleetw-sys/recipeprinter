@@ -114,9 +114,9 @@ export function PrintDialogs({
             >
               <XIcon size={ICON_SIZE.md} />
             </button>
-            <h2 id="recipeprinter-unlock-title">Unlock {selectedTemplateLabel} template?</h2>
+            <h2 id="recipeprinter-unlock-title">Unlock {selectedTemplateLabel} theme?</h2>
             <p>
-              RevenueCat checkout will ask for your email and save this template for this browser.
+              RevenueCat checkout will ask for your email and save this theme for this browser.
             </p>
             <div className="print-success-dialog__actions">
               {canClaimFree && (
