@@ -20,6 +20,7 @@ import {
   type RecipeFace,
   type RecipePrintTemplate,
 } from "@/components/RecipeCardPrint";
+import { RecipeFaceMeasurer } from "@/components/RecipeFaceMeasurer";
 import {
   CheckIcon,
   ChevronLeftIcon,
@@ -448,6 +449,46 @@ export default function PrintPage() {
   );
   const continueOnBack = hasRecipeBackSide && doubleSided;
 
+  // `getRecipeFaces` below is a text-length budget guess, not a measurement of
+  // the recipe's actual rendered size — occasionally it guesses a face fits
+  // when it doesn't, and the fixed card height's `overflow: hidden` at print
+  // time silently truncates the extra content. `RecipeFaceMeasurer` renders
+  // each recipe's guessed faces off-screen at real size, corrects any that
+  // actually overflow, and reports the fixed-up pages here; `sheets` below
+  // prefers this measured result and only falls back to the raw guess for a
+  // recipe whose measurement hasn't settled yet (e.g. the instant it's
+  // added), so nothing ever waits on it to render.
+  const [measuredFaces, setMeasuredFaces] = useState<
+    Record<string, { recipe: Recipe; cardSize: PrintCardSize; template: RecipePrintTemplate; hasPhoto: boolean; sourceUrlOn: boolean; pages: RecipeFace[] }>
+  >({});
+
+  const measuredRecipeItems = useMemo(
+    () =>
+      (items ?? [])
+        .filter((item): item is QueueItem & { recipe: Recipe } => Boolean(item.recipe))
+        .map((item) => ({
+          id: item.id,
+          recipe: item.recipe,
+          hasPhoto: photosOn && Boolean(item.recipe.image),
+        })),
+    [items, photosOn],
+  );
+
+  function measuredFacesFor(id: string, recipe: Recipe, hasPhoto: boolean): RecipeFace[] | null {
+    const entry = measuredFaces[id];
+    if (
+      !entry ||
+      entry.recipe !== recipe ||
+      entry.cardSize !== cardSize ||
+      entry.template !== template ||
+      entry.hasPhoto !== hasPhoto ||
+      entry.sourceUrlOn !== sourceUrlOn
+    ) {
+      return null;
+    }
+    return entry.pages;
+  }
+
   // The physical sheets the printer will produce, in order. Each sheet fills
   // its `SLOTS_PER_SHEET[cardSize]` slots by walking an ordered queue of
   // recipes: a slot keeps consuming its current recipe's faces (front, then
@@ -473,17 +514,20 @@ export default function PrintPage() {
     for (const item of items ?? []) {
       if (!item.recipe) continue;
       const recipe = item.recipe;
-      const faces = getRecipeFaces(recipe, cardSize, {
-        hasPhoto: photosOn && Boolean(recipe.image),
-        showSourceUrl: sourceUrlOn,
-        template,
-      });
+      const hasPhoto = photosOn && Boolean(recipe.image);
+      const faces =
+        measuredFacesFor(item.id, recipe, hasPhoto) ??
+        getRecipeFaces(recipe, cardSize, {
+          hasPhoto,
+          showSourceUrl: sourceUrlOn,
+          template,
+        }).pages;
       queue.push({
         recipeId: item.id,
         recipe,
         label: recipe.title || "Recipe",
-        faces: faces.pages,
-        hasBack: faces.hasBack,
+        faces,
+        hasBack: faces.length > 1,
         idx: 0,
         queueIndex: queue.length,
       });
@@ -562,7 +606,7 @@ export default function PrintPage() {
     }
 
     return out;
-  }, [items, cardSize, continueOnBack, photosOn, sourceUrlOn, template]);
+  }, [items, cardSize, continueOnBack, photosOn, sourceUrlOn, template, measuredFaces]);
 
   // What the rail and deck actually browse: one recipe face per item, in the
   // same order recipes were queued, regardless of which physical sheet (and
@@ -941,7 +985,12 @@ export default function PrintPage() {
       });
     }
     if (target.kind === "ingredient") {
-      if (!trimmed) return printableRecipe(recipe);
+      if (!trimmed) {
+        return printableRecipe({
+          ...recipe,
+          ingredients: recipe.ingredients.filter((_, index) => index !== target.index),
+        });
+      }
       return printableRecipe({
         ...recipe,
         ingredients: recipe.ingredients.map((ingredient, index) =>
@@ -959,7 +1008,14 @@ export default function PrintPage() {
       });
     }
     const text = stripStepPrefix(trimmed);
-    if (!text) return printableRecipe(recipe);
+    if (!text) {
+      return printableRecipe({
+        ...recipe,
+        instructions: recipe.instructions
+          .filter((_, index) => index !== target.index)
+          .map((step, index) => ({ ...step, step: index + 1 })),
+      });
+    }
     return printableRecipe({
       ...recipe,
       instructions: recipe.instructions.map((step, index) =>
@@ -970,7 +1026,16 @@ export default function PrintPage() {
 
   function commitEditTarget(value = editValue, options: { clearSelection?: boolean } = {}) {
     if (!editingEdit || !editingRecipeItem?.recipe) return;
-    const nextRecipe = applyRecipeTargetEdit(editingRecipeItem.recipe, editingEdit.target, value);
+    const target = editingEdit.target;
+    // Deleting an ingredient/step shifts every later index, so the prior
+    // selection would silently point at the wrong line if kept.
+    const lineDeleted =
+      target.kind === "ingredient"
+        ? value.trim() === ""
+        : target.kind === "step"
+          ? stripStepPrefix(value.trim()) === ""
+          : false;
+    const nextRecipe = applyRecipeTargetEdit(editingRecipeItem.recipe, target, value);
     updateQueuedRecipe(editingRecipeItem.id, nextRecipe);
     setItems((current) =>
       current?.map((item) =>
@@ -980,7 +1045,7 @@ export default function PrintPage() {
       ) ?? current,
     );
     setSelectedEdit(
-      options.clearSelection ? null : { recipeId: editingRecipeItem.id, target: editingEdit.target },
+      options.clearSelection || lineDeleted ? null : { recipeId: editingRecipeItem.id, target },
     );
     setEditingEdit(null);
     setEditValue("");
@@ -1212,6 +1277,22 @@ export default function PrintPage() {
 
   return (
     <div className="h-dvh recipe-print-page">
+      {measuredRecipeItems.map(({ id, recipe, hasPhoto }) => (
+        <RecipeFaceMeasurer
+          key={`${id}-${cardSize}-${template}-${hasPhoto}-${sourceUrlOn}`}
+          recipe={recipe}
+          size={cardSize}
+          template={template}
+          hasPhoto={hasPhoto}
+          showSourceUrl={sourceUrlOn}
+          onSettled={(pages) =>
+            setMeasuredFaces((current) => ({
+              ...current,
+              [id]: { recipe, cardSize, template, hasPhoto, sourceUrlOn, pages },
+            }))
+          }
+        />
+      ))}
       <SiteHeader backHref="/" compact sticky />
 
       {/* Print preview / printed content */}

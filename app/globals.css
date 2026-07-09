@@ -2883,16 +2883,25 @@
   letter-spacing: -0.01em;
 }
 
+/* The real form control never draws its own box — the box is faked entirely
+   by `.recipe-card__editable-target.is-selected`'s outline (below), which
+   stays mounted across the select <-> edit transition. Giving the input its
+   own border/background/padding here would draw a second box nested inside
+   that outline, and any size difference from the plain text it replaces
+   would shift surrounding content the moment editing starts. */
 .recipe-card__inline-input,
 .recipe-card__inline-textarea {
   width: 100%;
   min-width: 0;
-  border: 1px solid color-mix(in srgb, var(--cp-accent) 42%, var(--cp-line));
-  border-radius: 5px;
-  background: rgba(255, 255, 255, 0.76);
+  margin: 0;
+  padding: 0;
+  border: none;
+  border-radius: 0;
+  background: transparent;
   color: inherit;
   font: inherit;
   outline: none;
+  box-sizing: border-box;
 }
 
 .recipe-card__editable-target {
@@ -2926,20 +2935,12 @@
   box-shadow: var(--cp-shadow-xs);
 }
 
-.recipe-card__inline-input:focus,
-.recipe-card__inline-textarea:focus {
-  border-color: var(--cp-accent);
-  background: #fff;
-  box-shadow: 0 0 0 2px color-mix(in srgb, var(--cp-accent) 18%, transparent);
-}
-
 .recipe-card__inline-input--title {
   font-family: var(--recipe-title-font);
   font-size: var(--recipe-card-title-size);
   line-height: 1.08;
   font-weight: 700;
   letter-spacing: -0.01em;
-  padding: 0.035in 0.05in;
 }
 
 .recipe-card__meta--editable-targets {
@@ -2950,7 +2951,6 @@
 
 .recipe-card__inline-input--meta {
   max-width: 1.05in;
-  padding: 0.025in 0.04in;
   font-size: var(--recipe-card-meta-size);
   line-height: 1.15;
   font-weight: 700;
@@ -2961,7 +2961,6 @@
   display: block;
   min-height: 0;
   resize: none;
-  padding: 0.045in 0.055in;
   overflow: hidden;
   field-sizing: content;
 }
@@ -2969,12 +2968,11 @@
 .recipe-card__inline-input--line,
 .recipe-card__inline-textarea--line {
   flex: 1 1 auto;
-  padding: 0.01in 0.035in;
   line-height: inherit;
 }
 
 .recipe-card__inline-textarea--line {
-  min-height: calc(1lh + 0.02in);
+  min-height: 1lh;
 }
 
 .recipe-card__meta {

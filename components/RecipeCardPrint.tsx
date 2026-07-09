@@ -26,7 +26,7 @@ export type RecipePrintTemplate =
   | "pantry"
   | "counter"
   | "keepsake";
-type CardSectionLayout = "standard" | "stacked";
+export type CardSectionLayout = "standard" | "stacked";
 
 export const RECIPE_PRINT_TEMPLATE_OPTIONS: Array<{
   id: RecipePrintTemplate;
@@ -126,6 +126,12 @@ interface SplitOptions {
   hasPhoto?: boolean;
   template?: RecipePrintTemplate;
   showSourceUrl?: boolean;
+  // Skips the side-by-side front entirely and starts from the stacked
+  // layout. Used by the measurement-based overflow correction: when reality
+  // disagrees with the budget heuristic and even the "everything fits on the
+  // front" guess overflows, the recipe needs the same stacked front a normal
+  // multi-face recipe gets, not a side-by-side layout with items missing.
+  forceStacked?: boolean;
 }
 
 // The source link adds a second, wrapped line to the front face's footer.
@@ -555,20 +561,23 @@ function splitRecipe(
   size: PrintCardSize,
   options: SplitOptions = {},
 ): SplitRecipeResult {
-  const { hasPhoto = false, showSourceUrl = false, template } = options;
+  const { hasPhoto = false, showSourceUrl = false, template, forceStacked = false } = options;
   const hasSourceUrl = showSourceUrl && Boolean(sourceLabel(recipe));
-  const standardSplit = splitStandardFront(recipe, size, hasPhoto, hasSourceUrl);
 
-  // Side-by-side is only used when the whole recipe fits on the front. The
-  // moment anything spills onto another side, switch to the stacked layout
-  // (full-width ingredients, then steps) so every face fills top-to-bottom.
-  // Continuing a side-by-side split leaves a tall column beside a short one,
-  // which is where the awkward half-empty pages came from.
-  const fitsOnFront =
-    standardSplit.backIngredients.length === 0 &&
-    standardSplit.backInstructions.length === 0;
-  if (fitsOnFront) {
-    return standardSplit;
+  if (!forceStacked) {
+    const standardSplit = splitStandardFront(recipe, size, hasPhoto, hasSourceUrl);
+
+    // Side-by-side is only used when the whole recipe fits on the front. The
+    // moment anything spills onto another side, switch to the stacked layout
+    // (full-width ingredients, then steps) so every face fills top-to-bottom.
+    // Continuing a side-by-side split leaves a tall column beside a short one,
+    // which is where the awkward half-empty pages came from.
+    const fitsOnFront =
+      standardSplit.backIngredients.length === 0 &&
+      standardSplit.backInstructions.length === 0;
+    if (fitsOnFront) {
+      return standardSplit;
+    }
   }
 
   return splitStackedFront(recipe, size, hasPhoto, hasSourceUrl, template);
@@ -880,83 +889,89 @@ export const RecipeCardFace = memo(function RecipeCardFace({
           }`}
         >
           <div className="recipe-card__headline">
-            {canEdit && inlineEdit && sameTarget(inlineEdit.editingTarget, { kind: "title" }) ? (
-              <input
-                autoFocus
-                className="recipe-card__inline-input recipe-card__inline-input--title"
-                value={inlineEdit.value}
-                aria-label="Recipe title"
-                onClick={stopEditorEvent}
-                onMouseDown={stopEditorEvent}
-                onChange={(event) => inlineEdit.onValueChange(event.target.value)}
-                onKeyDown={handleEditKeyDown}
-              />
-            ) : (
-              <div
-                className={`recipe-card__editable-target ${
-                  inlineEdit && sameTarget(inlineEdit.selectedTarget, { kind: "title" })
-                    ? "is-selected"
-                    : ""
-                }`}
-                onClick={() => selectTarget({ kind: "title" })}
-              >
-                <h1 className="recipe-card__title">{recipe.title}</h1>
-                {editAdornment({ kind: "title" }, recipe.title)}
-              </div>
-            )}
+            <div
+              className={`recipe-card__editable-target ${
+                inlineEdit && sameTarget(inlineEdit.selectedTarget, { kind: "title" })
+                  ? "is-selected"
+                  : ""
+              }`}
+              onClick={() => selectTarget({ kind: "title" })}
+            >
+              {canEdit && inlineEdit && sameTarget(inlineEdit.editingTarget, { kind: "title" }) ? (
+                <input
+                  autoFocus
+                  className="recipe-card__inline-input recipe-card__inline-input--title"
+                  value={inlineEdit.value}
+                  aria-label="Recipe title"
+                  onClick={stopEditorEvent}
+                  onMouseDown={stopEditorEvent}
+                  onChange={(event) => inlineEdit.onValueChange(event.target.value)}
+                  onKeyDown={handleEditKeyDown}
+                />
+              ) : (
+                <>
+                  <h1 className="recipe-card__title">{recipe.title}</h1>
+                  {editAdornment({ kind: "title" }, recipe.title)}
+                </>
+              )}
+            </div>
             {canEdit && inlineEdit ? (
               <p className="recipe-card__meta recipe-card__meta--editable-targets">
-                {sameTarget(inlineEdit.editingTarget, { kind: "cookTime" }) ? (
-                  <input
-                    autoFocus
-                    className="recipe-card__inline-input recipe-card__inline-input--meta"
-                    value={inlineEdit.value}
-                    aria-label="Cook time"
-                    onClick={stopEditorEvent}
-                    onMouseDown={stopEditorEvent}
-                    onChange={(event) => inlineEdit.onValueChange(event.target.value)}
-                    onKeyDown={handleEditKeyDown}
-                  />
-                ) : (
-                  <span
-                    className={`recipe-card__editable-target ${
-                      sameTarget(inlineEdit.selectedTarget, { kind: "cookTime" }) ? "is-selected" : ""
-                    }`}
-                    onClick={() => selectTarget({ kind: "cookTime" })}
-                  >
-                    {formatRecipeTime(recipe.totalTime || recipe.cookTime || recipe.prepTime) || "Cook time"}
-                    {editAdornment(
-                      { kind: "cookTime" },
-                      recipe.totalTime || recipe.cookTime || recipe.prepTime || "",
-                    )}
-                  </span>
-                )}
+                <span
+                  className={`recipe-card__editable-target ${
+                    sameTarget(inlineEdit.selectedTarget, { kind: "cookTime" }) ? "is-selected" : ""
+                  }`}
+                  onClick={() => selectTarget({ kind: "cookTime" })}
+                >
+                  {sameTarget(inlineEdit.editingTarget, { kind: "cookTime" }) ? (
+                    <input
+                      autoFocus
+                      className="recipe-card__inline-input recipe-card__inline-input--meta"
+                      value={inlineEdit.value}
+                      aria-label="Cook time"
+                      onClick={stopEditorEvent}
+                      onMouseDown={stopEditorEvent}
+                      onChange={(event) => inlineEdit.onValueChange(event.target.value)}
+                      onKeyDown={handleEditKeyDown}
+                    />
+                  ) : (
+                    <>
+                      {formatRecipeTime(recipe.totalTime || recipe.cookTime || recipe.prepTime) || "Cook time"}
+                      {editAdornment(
+                        { kind: "cookTime" },
+                        recipe.totalTime || recipe.cookTime || recipe.prepTime || "",
+                      )}
+                    </>
+                  )}
+                </span>
                 <span aria-hidden> · </span>
-                {sameTarget(inlineEdit.editingTarget, { kind: "servings" }) ? (
-                  <input
-                    autoFocus
-                    className="recipe-card__inline-input recipe-card__inline-input--meta"
-                    value={inlineEdit.value}
-                    aria-label="Servings"
-                    onClick={stopEditorEvent}
-                    onMouseDown={stopEditorEvent}
-                    onChange={(event) => inlineEdit.onValueChange(event.target.value)}
-                    onKeyDown={handleEditKeyDown}
-                  />
-                ) : (
-                  <span
-                    className={`recipe-card__editable-target ${
-                      sameTarget(inlineEdit.selectedTarget, { kind: "servings" }) ? "is-selected" : ""
-                    }`}
-                    onClick={() => selectTarget({ kind: "servings" })}
-                  >
-                    {recipe.servings ?? recipe.yield ? `Serves ${recipe.servings ?? recipe.yield}` : "Servings"}
-                    {editAdornment(
-                      { kind: "servings" },
-                      recipe.servings === undefined ? "" : String(recipe.servings),
-                    )}
-                  </span>
-                )}
+                <span
+                  className={`recipe-card__editable-target ${
+                    sameTarget(inlineEdit.selectedTarget, { kind: "servings" }) ? "is-selected" : ""
+                  }`}
+                  onClick={() => selectTarget({ kind: "servings" })}
+                >
+                  {sameTarget(inlineEdit.editingTarget, { kind: "servings" }) ? (
+                    <input
+                      autoFocus
+                      className="recipe-card__inline-input recipe-card__inline-input--meta"
+                      value={inlineEdit.value}
+                      aria-label="Servings"
+                      onClick={stopEditorEvent}
+                      onMouseDown={stopEditorEvent}
+                      onChange={(event) => inlineEdit.onValueChange(event.target.value)}
+                      onKeyDown={handleEditKeyDown}
+                    />
+                  ) : (
+                    <>
+                      {recipe.servings ?? recipe.yield ? `Serves ${recipe.servings ?? recipe.yield}` : "Servings"}
+                      {editAdornment(
+                        { kind: "servings" },
+                        recipe.servings === undefined ? "" : String(recipe.servings),
+                      )}
+                    </>
+                  )}
+                </span>
               </p>
             ) : (
               meta.length > 0 && <p className="recipe-card__meta">{meta.join("  ·  ")}</p>
