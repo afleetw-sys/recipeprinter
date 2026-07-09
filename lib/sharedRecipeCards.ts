@@ -91,13 +91,24 @@ export async function fetchSharedRecipeCard(slug: string): Promise<SharedRecipeC
 
 /* ── Admin writes (client SDK, auth-gated by Firestore rules) ───────────── */
 
+function isPermissionDeniedError(error: unknown): boolean {
+  return typeof error === "object" && error !== null && (error as { code?: unknown }).code === "permission-denied";
+}
+
 export async function slugAvailable(slug: string): Promise<boolean> {
   const [{ doc, getDoc }, { getDb }] = await Promise.all([
     import("firebase/firestore"),
     import("@/lib/firebase/db"),
   ]);
-  const snap = await getDoc(doc(getDb(), SHARED_RECIPE_CARDS_COLLECTION, slug));
-  return !snap.exists();
+  try {
+    const snap = await getDoc(doc(getDb(), SHARED_RECIPE_CARDS_COLLECTION, slug));
+    return !snap.exists();
+  } catch (error) {
+    // A denied read here means the doc exists but isn't publicly readable
+    // right now (e.g. deactivated) — either way, the slug is taken.
+    if (isPermissionDeniedError(error)) return false;
+    throw error;
+  }
 }
 
 export async function createSharedRecipeCard(
