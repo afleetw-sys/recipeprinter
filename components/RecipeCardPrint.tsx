@@ -139,9 +139,15 @@ interface SplitOptions {
 // ingredient/instruction budgets above) so a recipe that was packed right up
 // to the fixed card height spills onto the back instead of having its footer
 // silently clipped off by print's `overflow: hidden`.
+// card-6x4's budgets are already much smaller than letter's (hundreds vs.
+// thousands of textCost units), so the reserve has to shrink to match or it
+// eats a wildly disproportionate share of the front: 240 against a ~560-980
+// budget was 33-43%, vs. the footer's actual ~7% of the physical card height
+// (0.28in of 4in, see --recipe-card-footer-reserve), which tipped otherwise
+// comfortably-fitting recipes into a needless back side.
 const SOURCE_URL_FOOTER_RESERVE: Record<PrintCardSize, number> = {
   letter: 260,
-  "card-6x4": 240,
+  "card-6x4": 90,
 };
 
 const CONTINUATION_FLOW_BUDGET: Record<

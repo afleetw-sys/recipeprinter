@@ -7,6 +7,7 @@ import dynamic from "next/dynamic";
 import { SiteHeader } from "@/components/SiteHeader";
 import { FeedbackDialog } from "@/components/FeedbackButton";
 import { Select } from "@/components/Select";
+import { useModalFocus } from "@/components/useModalFocus";
 import { friendlyClaimError, friendlyPurchaseSetupError } from "@/lib/friendlyErrors";
 import {
   PRINT_CARD_SIZE_OPTIONS,
@@ -29,6 +30,7 @@ import {
   ICON_SIZE,
   ImageIcon,
   LinkIcon,
+  PlusIcon,
   PrintIcon,
   SettingsIcon,
   SizeIcon,
@@ -57,12 +59,23 @@ import {
 } from "@/lib/recipePrinterFreeTemplateClaim";
 import { getFirebaseAuth } from "@/lib/firebase/client";
 import { signOut } from "firebase/auth";
-import { printableRecipe, readCurrentPrintJobIds, readQueue, updateQueuedRecipe } from "@/lib/queue";
+import {
+  createCurrentPrintJob,
+  printableRecipe,
+  readCurrentPrintJobIds,
+  readQueue,
+  updateQueuedRecipe,
+  useQueue,
+} from "@/lib/queue";
 import type { QueueItem, Recipe } from "@/types/recipe";
 import type { CustomerInfo } from "@revenuecat/purchases-js";
 
 const PrintDialogs = dynamic(
   () => import("@/components/PrintDialogs").then((mod) => mod.PrintDialogs),
+  { ssr: false, loading: () => null },
+);
+const AddRecipeDialog = dynamic(
+  () => import("@/components/AddRecipeDialog").then((mod) => mod.AddRecipeDialog),
   { ssr: false, loading: () => null },
 );
 
@@ -81,6 +94,7 @@ interface StoredPrintSettings {
   showCutLines?: boolean;
   showPhoto?: boolean;
   showSourceUrl?: boolean;
+  cardsPerSheet?: number;
 }
 
 function readPrintSettings(): StoredPrintSettings | null {
@@ -119,7 +133,8 @@ const PAGE_DIMS: Record<PrintCardSize, { w: number; h: number }> = {
 // How many recipe-card slots share one physical page. Letter cards are the
 // size of the page, so there's only ever one; 6x4 cards are small enough to
 // fit two per sheet (stacked), which is also the most that should share a
-// page even if more would technically fit.
+// page even if more would technically fit. For 6x4 this is user-configurable
+// (see `cardsPerSheet` state); this is just the default/max.
 const SLOTS_PER_SHEET: Record<PrintCardSize, number> = {
   letter: 1,
   "card-6x4": 2,
@@ -427,10 +442,15 @@ export default function PrintPage() {
   );
   const [doubleSided, setDoubleSided] = useState(true);
   const [showCutLines, setShowCutLines] = useState(false);
+  const [cardsPerSheet, setCardsPerSheet] = useState<1 | 2>(2);
+  const [printSettingsOpen, setPrintSettingsOpen] = useState(false);
   const [showPhoto, setShowPhoto] = useState(false);
   const [showSourceUrl, setShowSourceUrl] = useState(false);
   const [showDonateDialog, setShowDonateDialog] = useState(false);
   const [showFeedbackDialog, setShowFeedbackDialog] = useState(false);
+  const [showAddRecipeDialog, setShowAddRecipeDialog] = useState(false);
+  const [pendingFocusRecipeId, setPendingFocusRecipeId] = useState<string | null>(null);
+  const queue = useQueue();
   const [revenueCatUserId, setRevenueCatUserId] = useState<string | null>(null);
   const [customerInfo, setCustomerInfo] = useState<CustomerInfo | null>(null);
   const [showUnlockDialog, setShowUnlockDialog] = useState(false);
@@ -446,6 +466,16 @@ export default function PrintPage() {
   const printRequestedRef = useRef(false);
   const autoPrintAttemptedRef = useRef(false);
   const didMountSettingsRef = useRef(false);
+  // Snapshot of every queue id that already existed when this print job was
+  // loaded, so the merge effect below can tell "pre-existing queue item the
+  // user didn't select for this job" apart from "just added via the Add
+  // recipe dialog" — only the latter should get pulled into the deck.
+  const initialQueueIdsRef = useRef<Set<string>>(new Set());
+  // Since the Add recipe dialog closes the moment you submit (parsing
+  // finishes later, in the background), a failed parse has no dialog left to
+  // show its error in — this tracks which failures have already surfaced as a
+  // toast so the same one doesn't repeat on every re-render.
+  const toastedErrorIdsRef = useRef<Set<string>>(new Set());
 
   const anyRecipeHasImage =
     items?.some((item) => Boolean(item.recipe?.image)) ?? false;
@@ -526,7 +556,7 @@ export default function PrintPage() {
   // second time for the back, so a slot's front and back always belong to the
   // same recipe and land on opposite faces of one sheet.
   const sheets = useMemo<PageSheet[]>(() => {
-    const slotCount = SLOTS_PER_SHEET[cardSize];
+    const slotCount = cardSize === "card-6x4" ? cardsPerSheet : SLOTS_PER_SHEET[cardSize];
 
     interface Column {
       recipeId: string;
@@ -634,7 +664,7 @@ export default function PrintPage() {
     }
 
     return out;
-  }, [items, cardSize, continueOnBack, photosOn, sourceUrlOn, template, measuredFacesFor]);
+  }, [items, cardSize, cardsPerSheet, continueOnBack, photosOn, sourceUrlOn, template, measuredFacesFor]);
 
   // What the rail and deck actually browse: one recipe face per item, in the
   // same order recipes were queued, regardless of which physical sheet (and
@@ -688,6 +718,7 @@ export default function PrintPage() {
   const [settingsMenuOpen, setSettingsMenuOpen] = useState(false);
   const deckRef = useRef<HTMLDivElement>(null);
   const slideRefs = useRef<(HTMLDivElement | null)[]>([]);
+  const printSettingsDialogRef = useRef<HTMLDivElement>(null);
   const [deckScale, setDeckScale] = useState(0.5);
   // While we scroll the deck programmatically (after a click), ignore the
   // scroll-driven selection so it doesn't yank the outline back to whichever
@@ -704,6 +735,19 @@ export default function PrintPage() {
   useEffect(() => {
     setCanvasSide("front");
   }, [activeNavIndex, continueOnBack]);
+
+  // Close the print-settings dialog if its trigger disappears (e.g. size
+  // switches to letter with no back side), so it doesn't reopen stale next
+  // time the trigger comes back.
+  useEffect(() => {
+    if (!hasRecipeBackSide && cardSize !== "card-6x4") {
+      setPrintSettingsOpen(false);
+    }
+  }, [hasRecipeBackSide, cardSize]);
+
+  useModalFocus(printSettingsDialogRef, () => setPrintSettingsOpen(false), {
+    disabled: !printSettingsOpen,
+  });
 
   // Scale each deck page to fit the available width while leaving room above
   // and below so the previous / next pages peek in (implying you can scroll).
@@ -845,6 +889,17 @@ export default function PrintPage() {
     }
     setActiveNavIndex(navIndex);
   }
+
+  // Jump to a just-added recipe once its page actually exists in the deck
+  // (mirrors PowerPoint landing on a freshly inserted slide).
+  useEffect(() => {
+    if (!pendingFocusRecipeId) return;
+    const index = navItems.findIndex((navItem) => navItem.recipeId === pendingFocusRecipeId);
+    if (index === -1) return;
+    goToSlide(index);
+    setPendingFocusRecipeId(null);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [pendingFocusRecipeId, navItems]);
 
   const selectedPremiumTemplate = isPremiumTemplate(template) ? template : null;
   const selectedTemplateOption = RECIPE_PRINT_TEMPLATE_OPTIONS.find(
@@ -1121,18 +1176,53 @@ export default function PrintPage() {
   }
 
   useEffect(() => {
-    const queue = readQueue();
-    const byId = new Map(queue.map((it) => [it.id, it]));
+    const fullQueue = readQueue();
+    initialQueueIdsRef.current = new Set(fullQueue.map((it) => it.id));
+    const byId = new Map(fullQueue.map((it) => [it.id, it]));
     const idsFromUrl = idsParam.split(",").map((s) => s.trim()).filter(Boolean);
     const ids =
       (idsFromUrl.length > 0 ? idsFromUrl : readCurrentPrintJobIds()) ??
-      queue.filter((it) => it.status === "ready").map((it) => it.id);
+      fullQueue.filter((it) => it.status === "ready").map((it) => it.id);
     // Preserve the order from the current print job.
     const printItems = ids
       .map((id) => byId.get(id))
       .filter((it): it is QueueItem => Boolean(it && it.status === "ready" && it.recipe));
     setItems(printItems);
   }, [idsParam]);
+
+  // Pulls recipes added via the Add recipe dialog into this print job once
+  // they finish parsing — keeps running even after the dialog closes, so a
+  // slow parse still lands here. `initialQueueIdsRef` excludes anything that
+  // was already queued (but not selected for this job) before the dialog was
+  // ever opened.
+  useEffect(() => {
+    const newlyReady = queue.items.filter(
+      (item) =>
+        item.status === "ready" &&
+        item.recipe &&
+        !initialQueueIdsRef.current.has(item.id) &&
+        !(items ?? []).some((existing) => existing.id === item.id),
+    );
+    if (newlyReady.length === 0) return;
+    const nextItems = [...(items ?? []), ...newlyReady];
+    setItems(nextItems);
+    createCurrentPrintJob(nextItems.map((item) => item.id));
+    setPendingFocusRecipeId((current) => current ?? newlyReady[0]!.id);
+  }, [queue.items, items]);
+
+  // Surfaces a parse failure for a dialog-added recipe as a toast, since the
+  // dialog that submitted it is already closed by the time parsing fails.
+  useEffect(() => {
+    const newlyErrored = queue.items.find(
+      (item) =>
+        item.status === "error" &&
+        !initialQueueIdsRef.current.has(item.id) &&
+        !toastedErrorIdsRef.current.has(item.id),
+    );
+    if (!newlyErrored) return;
+    toastedErrorIdsRef.current.add(newlyErrored.id);
+    setToastMessage(newlyErrored.error || "Couldn't add that recipe.");
+  }, [queue.items]);
 
   useEffect(() => {
     const hasEditing = editingEdit
@@ -1162,6 +1252,68 @@ export default function PrintPage() {
     setPageEditMode((mode) => !mode);
   }
 
+  // Shared between the desktop "Print settings" popover and the mobile
+  // settings menu, so both surfaces stay in sync rather than drifting into
+  // two separately-maintained lists of the same controls.
+  function renderPrintSettingsFields() {
+    return (
+      <>
+        {cardSize === "card-6x4" && (
+          <div className="recipe-config-section recipe-config-section--cards-per-page">
+            <span className="recipe-config-label">Cards per page</span>
+            <div className="recipe-cards-per-page" role="radiogroup" aria-label="Cards per page">
+              {([1, 2] as const).map((count) => (
+                <button
+                  key={count}
+                  type="button"
+                  role="radio"
+                  aria-checked={cardsPerSheet === count}
+                  className={`recipe-cards-per-page__option ${
+                    cardsPerSheet === count ? "is-active" : ""
+                  }`}
+                  onClick={() => setCardsPerSheet(count)}
+                >
+                  {count}
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+        {cardSize === "card-6x4" && cardsPerSheet === 2 && (
+          <label className="recipe-toggle">
+            <input
+              type="checkbox"
+              checked={showCutLines}
+              onChange={(event) => setShowCutLines(event.target.checked)}
+            />
+            <span>
+              <strong>Cut lines</strong>
+            </span>
+          </label>
+        )}
+        {hasRecipeBackSide && (
+          <label className="recipe-toggle">
+            <input
+              type="checkbox"
+              checked={doubleSided}
+              onChange={(event) => setDoubleSided(event.target.checked)}
+            />
+            <span>
+              <strong>Two-sided</strong>
+              <small>Longer recipes continue onto the back.</small>
+            </span>
+          </label>
+        )}
+        {hasRecipeBackSide && doubleSided && (
+          <p className="recipe-print-settings-banner" role="note">
+            Turn on two-sided printing in your printer&apos;s settings, flipped on the{" "}
+            <strong>long edge</strong>.
+          </p>
+        )}
+      </>
+    );
+  }
+
   // Hydrate stored layout preferences on mount (client only). Explicit URL
   // params (for deep links) still win over whatever was last saved.
   useEffect(() => {
@@ -1177,6 +1329,7 @@ export default function PrintPage() {
     if (typeof stored.showCutLines === "boolean") setShowCutLines(stored.showCutLines);
     if (typeof stored.showPhoto === "boolean") setShowPhoto(stored.showPhoto);
     if (typeof stored.showSourceUrl === "boolean") setShowSourceUrl(stored.showSourceUrl);
+    if (stored.cardsPerSheet === 1 || stored.cardsPerSheet === 2) setCardsPerSheet(stored.cardsPerSheet);
     // Runs once on mount; the settings above are the ones being hydrated here.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -1189,8 +1342,16 @@ export default function PrintPage() {
       didMountSettingsRef.current = true;
       return;
     }
-    writePrintSettings({ cardSize, template, doubleSided, showCutLines, showPhoto, showSourceUrl });
-  }, [cardSize, template, doubleSided, showCutLines, showPhoto, showSourceUrl]);
+    writePrintSettings({
+      cardSize,
+      template,
+      doubleSided,
+      showCutLines,
+      showPhoto,
+      showSourceUrl,
+      cardsPerSheet,
+    });
+  }, [cardSize, template, doubleSided, showCutLines, showPhoto, showSourceUrl, cardsPerSheet]);
 
   // Auto-open the print dialog when the user chose Print instead of Preview.
   useEffect(() => {
@@ -1403,6 +1564,14 @@ export default function PrintPage() {
               </span>
             </button>
           ))}
+          <button
+            type="button"
+            className="recipe-page-rail__add"
+            onClick={() => setShowAddRecipeDialog(true)}
+          >
+            <PlusIcon size={ICON_SIZE.md} />
+            Add recipe
+          </button>
         </nav>
 
         {/* Center: large preview of the selected page */}
@@ -1444,30 +1613,7 @@ export default function PrintPage() {
                   </button>
                   {settingsMenuOpen && (
                     <div className="recipe-mobile-settings-menu" role="menu" aria-label="Print settings">
-                      {hasRecipeBackSide && (
-                        <label className="recipe-toggle">
-                          <input
-                            type="checkbox"
-                            checked={doubleSided}
-                            onChange={(event) => setDoubleSided(event.target.checked)}
-                          />
-                          <span>
-                            <strong>Two-sided</strong>
-                          </span>
-                        </label>
-                      )}
-                      {cardSize === "card-6x4" && (
-                        <label className="recipe-toggle">
-                          <input
-                            type="checkbox"
-                            checked={showCutLines}
-                            onChange={(event) => setShowCutLines(event.target.checked)}
-                          />
-                          <span>
-                            <strong>Cut lines</strong>
-                          </span>
-                        </label>
-                      )}
+                      {renderPrintSettingsFields()}
                     </div>
                   )}
                 </div>
@@ -1595,15 +1741,18 @@ export default function PrintPage() {
                     template={template}
                     doubleSided={continueOnBack}
                     showImage={photosOn}
-                    // While actively editing, keep the link field visible even
-                    // if deleting it just made this the only recipe without
-                    // one (which flips the cross-recipe `sourceUrlOn` gate off)
-                    // — otherwise clearing it mid-edit hides the very field
-                    // that would let the user type it back in.
+                    // While actively editing with the checkbox on, keep the link
+                    // field visible even if deleting it just made this the only
+                    // recipe without one (which flips the cross-recipe
+                    // `sourceUrlOn` gate off) — otherwise clearing it mid-edit
+                    // hides the very field that would let the user type it back
+                    // in. Gated on the checkbox itself so Edit never shows a
+                    // link field the user has turned off.
                     showSourceUrl={
-                      sourceUrlOn || (pageEditMode && isActive && activeRecipeItem?.id === navItem.recipeId)
+                      sourceUrlOn ||
+                      (showSourceUrl && pageEditMode && isActive && activeRecipeItem?.id === navItem.recipeId)
                     }
-                    showCutLines={showCutLines && cardSize === "card-6x4"}
+                    showCutLines={showCutLines && cardSize === "card-6x4" && cardsPerSheet === 2}
                     inlineEdit={
                       pageEditMode && isActive && activeRecipeItem?.id === navItem.recipeId
                         ? {
@@ -1706,36 +1855,6 @@ export default function PrintPage() {
             </div>
           )}
 
-          {(hasRecipeBackSide || cardSize === "card-6x4") && (
-            <div className="recipe-config-section recipe-config-section--printsettings">
-              <h3 className="recipe-config-label">Print settings</h3>
-              {hasRecipeBackSide && (
-                <label className="recipe-toggle">
-                  <input
-                    type="checkbox"
-                    checked={doubleSided}
-                    onChange={(event) => setDoubleSided(event.target.checked)}
-                  />
-                  <span>
-                    <strong>Two-sided</strong>
-                    <small>Longer recipes continue onto the back.</small>
-                  </span>
-                </label>
-              )}
-              {cardSize === "card-6x4" && (
-                <label className="recipe-toggle">
-                  <input
-                    type="checkbox"
-                    checked={showCutLines}
-                    onChange={(event) => setShowCutLines(event.target.checked)}
-                  />
-                  <span>
-                    <strong>Cut lines</strong>
-                  </span>
-                </label>
-              )}
-            </div>
-          )}
 
           <div className="recipe-config-section recipe-config-section--template">
             {hasUnclaimedFreeTemplate && !freeTemplateBannerDismissed && (
@@ -1830,13 +1949,16 @@ export default function PrintPage() {
                   </button>
                 </p>
               ) : (
-                <button
-                  type="button"
-                  className="recipe-cookpilot-account__link"
-                  onClick={() => setShowCookPilotLogin(true)}
-                >
-                  Already purchased? Log in
-                </button>
+                <div className="recipe-cookpilot-account__prompt">
+                  <button
+                    type="button"
+                    className="recipe-cookpilot-account__link"
+                    onClick={() => setShowCookPilotLogin(true)}
+                  >
+                    Log in
+                  </button>
+                  <span className="recipe-cookpilot-account__hint">Already purchased?</span>
+                </div>
               )}
             </div>
           </div>
@@ -1851,11 +1973,56 @@ export default function PrintPage() {
               {purchaseBusy || !printLayoutReady ? <SpinnerIcon size={ICON_SIZE.md} /> : <PrintIcon size={ICON_SIZE.md} />}
               {selectedTemplateLocked ? "Unlock & Print" : "Print"}
             </button>
+            {(hasRecipeBackSide || cardSize === "card-6x4") && (
+              <button
+                type="button"
+                className="recipe-print-settings-link"
+                aria-haspopup="dialog"
+                onClick={() => setPrintSettingsOpen(true)}
+              >
+                Print settings
+              </button>
+            )}
           </div>
         </aside>
 
+        {printSettingsOpen && (
+          <div
+            ref={printSettingsDialogRef}
+            className="print-success-dialog no-print"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="print-settings-dialog-title"
+            tabIndex={-1}
+          >
+            <div className="print-success-dialog__backdrop" aria-hidden />
+            <div className="print-success-dialog__panel">
+              <button
+                type="button"
+                className="print-success-dialog__close icon-close-btn"
+                aria-label="Close"
+                onClick={() => setPrintSettingsOpen(false)}
+              >
+                <XIcon size={ICON_SIZE.md} />
+              </button>
+              <h2 id="print-settings-dialog-title">Print settings</h2>
+              <div className="print-settings-dialog__body">{renderPrintSettingsFields()}</div>
+            </div>
+          </div>
+        )}
+
         <div className="recipe-mobile-actions no-print">
           <div className="recipe-mobile-toolbar">
+            <button
+              type="button"
+              className="recipe-mobile-toolbar__btn"
+              onClick={() => setShowAddRecipeDialog(true)}
+            >
+              <span className="recipe-mobile-toolbar__btn-icon">
+                <PlusIcon size={ICON_SIZE.lg} />
+              </span>
+              Add
+            </button>
             <div className="recipe-mobile-toolbar__btn-wrap">
               <button
                 type="button"
@@ -1961,6 +2128,16 @@ export default function PrintPage() {
         canClaimFree={canClaimSelectedTemplateFree}
         claimBusy={claimBusy}
         onClaimTemplate={(premiumTemplate) => void claimTemplateAndPrint(premiumTemplate)}
+      />
+      <AddRecipeDialog
+        open={showAddRecipeDialog}
+        onClose={() => setShowAddRecipeDialog(false)}
+        items={queue.items}
+        onAddUrl={queue.addUrl}
+        onAddImages={queue.addImages}
+        onAddText={queue.addText}
+        onAddCookPilotRecipes={queue.addCookPilotRecipes}
+        onRemoveRecipe={queue.remove}
       />
       <FeedbackDialog
         open={showFeedbackDialog}

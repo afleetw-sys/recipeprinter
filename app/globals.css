@@ -796,6 +796,38 @@
   line-height: 1.18;
 }
 
+/* PowerPoint-style "new slide" tile: the last child of the already-scrolling
+   `.recipe-page-rail` (see its own `overflow-y: auto` above). `flex-shrink: 0`
+   plus `position: sticky; bottom: 0` means it just sits below the last
+   thumbnail when everything fits, but pins to the bottom of the visible rail
+   once the list overflows — no scroll-tracking JS needed. Needs its own
+   opaque background since thumbnails scroll underneath it once pinned. */
+.recipe-page-rail__add {
+  position: sticky;
+  bottom: 0;
+  z-index: 2;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 14px;
+  border: 1.5px dashed var(--cp-line-strong);
+  border-radius: 12px;
+  background: var(--cp-page);
+  color: var(--cp-ink-soft);
+  font-size: var(--cp-fs-caption);
+  font-weight: 700;
+  transition:
+    border-color 150ms ease,
+    color 150ms ease;
+}
+
+.recipe-page-rail__add:hover {
+  border-color: var(--cp-accent);
+  color: var(--cp-accent-ink);
+}
+
 .recipe-page-canvas {
   position: sticky;
   top: 86px;
@@ -1091,9 +1123,74 @@
   color: var(--cp-ink);
 }
 
+.recipe-cookpilot-account__prompt {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.recipe-cookpilot-account__hint {
+  color: var(--cp-ink-soft);
+  font-size: var(--cp-fs-caption);
+}
+
 .recipe-print-button {
   width: 100%;
   justify-content: center;
+}
+
+.recipe-print-settings-link {
+  display: block;
+  width: 100%;
+  margin-top: 10px;
+  text-align: center;
+  color: var(--cp-ink-soft);
+  font-size: var(--cp-fs-caption);
+  font-weight: 700;
+}
+
+.recipe-print-settings-link:hover {
+  color: var(--cp-ink);
+}
+
+.print-settings-dialog__body {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  margin-top: 18px;
+  text-align: left;
+}
+
+.recipe-cards-per-page {
+  display: flex;
+  gap: 6px;
+}
+
+.recipe-cards-per-page__option {
+  flex: 1 1 0;
+  padding: 8px;
+  border: 1px solid var(--cp-line);
+  border-radius: 10px;
+  background: var(--cp-card);
+  color: var(--cp-ink);
+  font-size: var(--cp-fs-small);
+  font-weight: 700;
+}
+
+.recipe-cards-per-page__option.is-active {
+  border-color: var(--cp-accent);
+  background: var(--cp-accent-soft);
+  color: var(--cp-accent-ink);
+}
+
+.recipe-print-settings-banner {
+  padding: 10px 12px;
+  border: 1px solid color-mix(in srgb, var(--cp-accent) 28%, transparent);
+  background: var(--cp-accent-soft);
+  border-radius: 12px;
+  color: var(--cp-accent-ink);
+  font-size: var(--cp-fs-label);
+  line-height: 1.4;
 }
 
 .recipe-config-section {
@@ -2203,7 +2300,12 @@
   print-color-adjust: exact;
 }
 
-.recipe-card--back {
+/* `--continued` (not just `--back`) so overflow front continuation cards —
+   the 3rd/4th+ cards in a group, which never carry the title/header — get
+   the same reclaimed top padding as a true back face; `--back` always
+   implies `--continued` (see RecipeCardFace's callers), so this doesn't
+   change back-face padding. */
+.recipe-card--continued {
   --recipe-card-padding-top: 0.16in;
   --recipe-card-padding-bottom: 0.14in;
 }
@@ -2221,11 +2323,11 @@
   outline-offset: 0;
 }
 
-.recipe-print-preview--card-6x4 .recipe-template--counter .recipe-card--back {
+.recipe-print-preview--card-6x4 .recipe-template--counter .recipe-card--continued {
   --recipe-card-padding-top: 0.32in;
 }
 
-.recipe-card--back .recipe-card__cols {
+.recipe-card--continued .recipe-card__cols {
   padding-top: 9px;
 }
 
@@ -2487,7 +2589,7 @@
   border-bottom: 0;
 }
 
-.recipe-template--counter .recipe-card--back {
+.recipe-template--counter .recipe-card--continued {
   --recipe-card-padding-top: 0.32in;
 }
 
@@ -3492,6 +3594,94 @@
   }
   100% {
     transform: scale(1);
+  }
+}
+
+/* Add-recipe dialog: same fixed/backdrop scaffold as .print-success-dialog,
+   just wider and taller since it hosts the full import form + queue grid
+   instead of a couple lines of copy. */
+.recipe-add-dialog {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+}
+
+.recipe-add-dialog__backdrop {
+  position: absolute;
+  inset: 0;
+  background: rgba(17, 24, 39, 0.34);
+  backdrop-filter: blur(5px);
+  animation: print-success-fade 180ms ease-out both;
+}
+
+.recipe-add-dialog__panel {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  width: min(100%, 480px);
+  max-height: 90vh;
+  border: 1px solid color-mix(in srgb, var(--cp-line) 72%, transparent);
+  border-radius: 28px;
+  background: var(--cp-card);
+  color: var(--cp-ink);
+  box-shadow: var(--cp-shadow-xl);
+  animation: print-success-pop 260ms cubic-bezier(0.2, 0.8, 0.2, 1) both;
+  overflow: hidden;
+}
+
+.recipe-add-dialog__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 18px 56px 14px 20px;
+  border-bottom: 1px solid var(--cp-line);
+}
+
+.recipe-add-dialog__header h2 {
+  margin: 0;
+  font-size: 1.1rem;
+  line-height: 1.18;
+  font-weight: 850;
+}
+
+.recipe-add-dialog__close {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+}
+
+.recipe-add-dialog__body {
+  padding: 20px;
+  overflow-y: auto;
+}
+
+/* The dialog panel above already provides the card surface (background,
+   border, radius) and padding, so the nested `ImportPanel` — normally a
+   standalone `.panel` card with its own `lg:p-cp-6` padding for the
+   homepage's two-column layout — would otherwise double up into a
+   box-within-a-box look. Strip its own chrome here. */
+.recipe-add-dialog__body .rp-import-panel {
+  padding: 0 !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+}
+
+@media (max-width: 639px) {
+  .recipe-add-dialog {
+    padding: 0;
+  }
+
+  .recipe-add-dialog__panel {
+    width: 100%;
+    max-height: 100%;
+    height: 100%;
+    border: 0;
+    border-radius: 0;
   }
 }
 
