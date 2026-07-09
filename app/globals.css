@@ -2377,8 +2377,6 @@
 }
 
 .recipe-template--bistro .recipe-card__header {
-  margin-left: 0.02in;
-  padding-left: 0.04in;
   border-bottom: 0;
 }
 
@@ -2915,8 +2913,14 @@
    take up layout space, so nothing shifts. Giving the input its own
    border/background/padding here would also draw a visible box even when
    idle, which would fight the plain-text look the rest of the card has. */
-.recipe-card__inline-input,
-.recipe-card__inline-textarea {
+/* Zero-specificity (`:where`) on purpose: this is a UA-default reset, not a
+   design decision, and it shares an element with real typography classes
+   like `.recipe-card__title`/`.recipe-card__section-title` — at equal
+   specificity, whichever rule happened to come later in the file would win,
+   which silently broke the base (non-template) title's font/weight since
+   this reset was added after it. Zero specificity means any single class
+   beats it regardless of source order. */
+:where(.recipe-card__inline-input, .recipe-card__inline-textarea) {
   width: 100%;
   min-width: 0;
   margin: 0;
@@ -2943,26 +2947,26 @@
   opacity: 0.7;
 }
 
-.recipe-card__inline-input--title {
-  font-family: var(--recipe-title-font);
-  font-size: var(--recipe-card-title-size);
-  line-height: 1.08;
-  font-weight: 700;
-  letter-spacing: -0.01em;
-}
-
 .recipe-card__meta--editable-targets {
   display: flex;
   align-items: center;
   gap: 0.04in;
 }
 
+/* Hugs its typed content instead of reserving a fixed-width box — a value
+   much shorter than `max-width` (e.g. "5 min") would otherwise leave a gap
+   before the separator dot that the plain text next to it never has.
+   `letter-spacing`/`text-transform` aren't part of the `font` shorthand the
+   base input rule inherits, and form controls don't reliably inherit them on
+   their own, so they're pulled from `.recipe-card__meta` explicitly to match
+   the surrounding "5 min · Serves 4" text exactly (including any template's
+   own override of that class). */
 .recipe-card__inline-input--meta {
+  width: auto;
   max-width: 1.05in;
-  font-size: var(--recipe-card-meta-size);
-  line-height: 1.15;
-  font-weight: 700;
-  letter-spacing: 0.03em;
+  field-sizing: content;
+  letter-spacing: inherit;
+  text-transform: inherit;
 }
 
 .recipe-card__inline-textarea {
@@ -3146,6 +3150,74 @@
   color: var(--recipe-accent);
   font-size: 6.5pt;
   font-weight: 800;
+}
+
+/* Sits absolutely inside the line above it and reaches down into the gap
+   below — never a real flex/list child, so it can't add to the `gap`
+   between real items and never shifts anything while idle. Only shown on
+   hover (or keyboard focus), and only in edit mode: `addLine()` in
+   RecipeCardPrint.tsx returns null unless `canEdit`, so this never mounts
+   for the plain print/view render. */
+.recipe-card__add-line {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: -9px;
+  height: 15px;
+  z-index: 5;
+  display: none;
+  align-items: center;
+  border: none;
+  background: none;
+  margin: 0;
+  padding: 0;
+  cursor: pointer;
+}
+
+.recipe-card__editable-line:hover > .recipe-card__add-line,
+.recipe-card__add-line:focus-visible {
+  display: flex;
+}
+
+.recipe-card__add-line::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 50%;
+  border-top: 1px dashed color-mix(in srgb, var(--recipe-accent) 55%, transparent);
+}
+
+.recipe-card__add-line-text {
+  position: relative;
+  padding-right: 5px;
+  background: var(--recipe-bg);
+  font-size: 6.5pt;
+  font-weight: 800;
+  color: var(--recipe-accent);
+  white-space: nowrap;
+}
+
+/* The permanent "nothing here yet" prompt for a section with zero items —
+   unlike the hover strip above, this one has to actually take up space,
+   since there's no existing line for it to hide inside of. */
+.recipe-card__add-line--empty {
+  position: static;
+  display: flex;
+  height: auto;
+}
+
+.recipe-card__add-line--empty::before {
+  content: none;
+}
+
+.recipe-card__add-line--empty .recipe-card__add-line-text {
+  padding: 0;
+  background: none;
+}
+
+.recipe-card__ingredients li:has(> .recipe-card__add-line--empty)::before {
+  content: none;
 }
 
 /* Flow wide sections as two balanced newspaper columns. The column flow lives
