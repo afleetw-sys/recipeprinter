@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { signInWithPopup, type User } from "firebase/auth";
+import { signInWithRedirect, type User } from "firebase/auth";
 import { getFirebaseAuth } from "@/lib/firebase/client";
 import { friendlyAuthError, friendlyRecipeLibraryError } from "@/lib/friendlyErrors";
 import { formatRecipeTime } from "@/lib/time";
@@ -33,8 +33,10 @@ import {
 
 function SignedOutCookPilotImport({
   onEmailLogin,
+  redirectError,
 }: {
   onEmailLogin: () => void;
+  redirectError: string | null;
 }) {
   const [busyProvider, setBusyProvider] = useState<"google" | "apple" | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -44,10 +46,9 @@ function SignedOutCookPilotImport({
     setBusyProvider("google");
     setError(null);
     try {
-      await signInWithPopup(getFirebaseAuth(), googleProvider);
+      await signInWithRedirect(getFirebaseAuth(), googleProvider);
     } catch (err) {
       setError(friendlyAuthError(err, "We couldn't sign in with Google. Please try again."));
-    } finally {
       setBusyProvider(null);
     }
   }
@@ -56,10 +57,9 @@ function SignedOutCookPilotImport({
     setBusyProvider("apple");
     setError(null);
     try {
-      await signInWithPopup(getFirebaseAuth(), appleProvider);
+      await signInWithRedirect(getFirebaseAuth(), appleProvider);
     } catch (err) {
       setError(friendlyAuthError(err, "We couldn't sign in with Apple. Please try again."));
-    } finally {
       setBusyProvider(null);
     }
   }
@@ -97,10 +97,10 @@ function SignedOutCookPilotImport({
           Continue with Apple
         </button>
       </div>
-      {error && (
+      {(error ?? redirectError) && (
         <div className="state state--error mt-cp-4 text-left" role="alert">
           <h4>Couldn't sign in</h4>
-          <p>{error}</p>
+          <p>{error ?? redirectError}</p>
         </div>
       )}
     </div>
@@ -384,7 +384,7 @@ export function CookPilotImportSource({
   onAddRecipes: (recipes: QueueItem[]) => number;
   onRemoveRecipe: (id: string) => void;
 }) {
-  const { user, ready } = useCookPilotAuth();
+  const { user, ready, redirectError } = useCookPilotAuth();
   const [showEmailLogin, setShowEmailLogin] = useState(false);
 
   return (
@@ -399,7 +399,10 @@ export function CookPilotImportSource({
       )}
 
       {ready && !user && (
-        <SignedOutCookPilotImport onEmailLogin={() => setShowEmailLogin(true)} />
+        <SignedOutCookPilotImport
+          onEmailLogin={() => setShowEmailLogin(true)}
+          redirectError={redirectError}
+        />
       )}
 
       {ready && user && (

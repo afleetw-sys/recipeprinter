@@ -381,7 +381,7 @@ export default function PrintPage() {
   const [freeTemplateStatus, setFreeTemplateStatus] = useState<RecipePrinterFreeTemplateStatus | null>(null);
   const [claimBusy, setClaimBusy] = useState(false);
   const [freeTemplateBannerDismissed, setFreeTemplateBannerDismissed] = useState(false);
-  const { user: cookPilotUser } = useCookPilotAuth();
+  const { user: cookPilotUser, redirectError: cookPilotRedirectError } = useCookPilotAuth();
   const [showCookPilotLogin, setShowCookPilotLogin] = useState(false);
   const linkedCookPilotUidRef = useRef<string | null>(null);
   const printRequestedRef = useRef(false);
@@ -914,6 +914,10 @@ export default function PrintPage() {
       cancelled = true;
     };
   }, []);
+
+  useEffect(() => {
+    if (cookPilotRedirectError) showToast(cookPilotRedirectError);
+  }, [cookPilotRedirectError]);
 
   useEffect(() => {
     // Runs once per CookPilot login: aliases whatever this browser already

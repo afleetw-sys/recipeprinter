@@ -7,10 +7,11 @@ import {
   GoogleAuthProvider,
   OAuthProvider,
   deleteUser,
+  getRedirectResult,
   onAuthStateChanged,
   signInAnonymously,
   signInWithEmailAndPassword,
-  signInWithPopup,
+  signInWithRedirect,
   signOut,
   type User,
 } from "firebase/auth";
@@ -69,6 +70,17 @@ function rememberCookPilotSignedIn(signedIn: boolean) {
 export function useCookPilotAuth() {
   const [user, setUser] = useState<User | null>(null);
   const [ready, setReady] = useState(() => !readCookPilotWasSignedIn());
+  const [redirectError, setRedirectError] = useState<string | null>(null);
+
+  useEffect(() => {
+    // Google/Apple sign-in uses a full-page redirect (see handleGoogle/handleApple
+    // below) rather than a popup, since popups are unreliable on mobile browsers
+    // and in-app browsers — they silently open a new tab that never hands control
+    // back to the opener. This resolves that redirect once the user lands back here.
+    getRedirectResult(getFirebaseAuth()).catch((err) => {
+      setRedirectError(friendlyAuthError(err, "We couldn't finish signing you in. Please try again."));
+    });
+  }, []);
 
   useEffect(() => {
     return onAuthStateChanged(getFirebaseAuth(), (nextUser) => {
@@ -93,7 +105,7 @@ export function useCookPilotAuth() {
     });
   }, []);
 
-  return { user, ready };
+  return { user, ready, redirectError };
 }
 
 /** Which sign-in providers an email is already registered with, from CookPilot's own
@@ -166,8 +178,7 @@ export function CookPilotLoginDialog({ onClose }: { onClose: () => void }) {
         // This account only has Google sign-in set up, so a password will
         // never work for it. Send them straight into the Google flow, the
         // same redirect the iOS app does for this case.
-        await signInWithPopup(getFirebaseAuth(), googleProvider);
-        onClose();
+        await signInWithRedirect(getFirebaseAuth(), googleProvider);
         return;
       }
 
@@ -212,11 +223,9 @@ export function CookPilotLoginDialog({ onClose }: { onClose: () => void }) {
     setBusy(true);
     setError(null);
     try {
-      await signInWithPopup(getFirebaseAuth(), googleProvider);
-      onClose();
+      await signInWithRedirect(getFirebaseAuth(), googleProvider);
     } catch (err) {
       setError(friendlyAuthError(err, "We couldn't sign in with Google. Please try again."));
-    } finally {
       setBusy(false);
     }
   }
@@ -225,11 +234,9 @@ export function CookPilotLoginDialog({ onClose }: { onClose: () => void }) {
     setBusy(true);
     setError(null);
     try {
-      await signInWithPopup(getFirebaseAuth(), appleProvider);
-      onClose();
+      await signInWithRedirect(getFirebaseAuth(), appleProvider);
     } catch (err) {
       setError(friendlyAuthError(err, "We couldn't sign in with Apple. Please try again."));
-    } finally {
       setBusy(false);
     }
   }
