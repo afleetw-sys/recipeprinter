@@ -1,0 +1,30 @@
+// NOT AUTO-DEPLOYED. This repo has no `firebase.json`/CLI project link, and
+// the live Firestore rules for this project (shared with CookPilot) are
+// managed outside this workspace. This file documents the rules the new
+// `sharedRecipeCards` collection needs — whoever manages the live rules for
+// this Firebase project must add this `match` block manually (Firebase
+// console, or the actual rules source of truth, wherever that is).
+//
+// sharedRecipeCards/{slug}: a RecipePrinter-authored share link (see
+// types/sharedRecipeCard.ts). Publicly readable only while published; only
+// an admin (users/{uid}.recipePrinterAdmin == true) may create or update one.
+// Deliberately separate from CookPilot's own `sharedRecipes` collection.
+
+rules_version = "2";
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    match /sharedRecipeCards/{slug} {
+      allow read: if resource.data.published == true;
+
+      allow create: if request.auth != null
+        && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.recipePrinterAdmin == true
+        && request.resource.data.createdBy == request.auth.uid;
+
+      allow update: if request.auth != null
+        && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.recipePrinterAdmin == true;
+
+      allow delete: if false;
+    }
+  }
+}

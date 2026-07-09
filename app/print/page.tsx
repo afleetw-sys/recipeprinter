@@ -57,6 +57,7 @@ import {
   loadFreeTemplateStatus,
   type RecipePrinterFreeTemplateStatus,
 } from "@/lib/recipePrinterFreeTemplateClaim";
+import { useIsRecipePrinterAdmin } from "@/lib/adminAuth";
 import { getFirebaseAuth } from "@/lib/firebase/client";
 import { signOut } from "firebase/auth";
 import {
@@ -76,6 +77,10 @@ const PrintDialogs = dynamic(
 );
 const AddRecipeDialog = dynamic(
   () => import("@/components/AddRecipeDialog").then((mod) => mod.AddRecipeDialog),
+  { ssr: false, loading: () => null },
+);
+const AdminShareLinkDialog = dynamic(
+  () => import("@/components/AdminShareLinkDialog").then((mod) => mod.AdminShareLinkDialog),
   { ssr: false, loading: () => null },
 );
 
@@ -449,6 +454,7 @@ export default function PrintPage() {
   const [showDonateDialog, setShowDonateDialog] = useState(false);
   const [showFeedbackDialog, setShowFeedbackDialog] = useState(false);
   const [showAddRecipeDialog, setShowAddRecipeDialog] = useState(false);
+  const [showShareDialog, setShowShareDialog] = useState(false);
   const [showDeleteRecipeDialog, setShowDeleteRecipeDialog] = useState(false);
   const [pendingFocusRecipeId, setPendingFocusRecipeId] = useState<string | null>(null);
   const queue = useQueue();
@@ -462,6 +468,7 @@ export default function PrintPage() {
   const [claimBusy, setClaimBusy] = useState(false);
   const [freeTemplateBannerDismissed, setFreeTemplateBannerDismissed] = useState(false);
   const { user: cookPilotUser, redirectError: cookPilotRedirectError } = useCookPilotAuth();
+  const isRecipePrinterAdmin = useIsRecipePrinterAdmin(cookPilotUser);
   const [showCookPilotLogin, setShowCookPilotLogin] = useState(false);
   const linkedCookPilotUidRef = useRef<string | null>(null);
   const printRequestedRef = useRef(false);
@@ -2027,6 +2034,16 @@ export default function PrintPage() {
               {purchaseBusy || !printLayoutReady ? <SpinnerIcon size={ICON_SIZE.md} /> : <PrintIcon size={ICON_SIZE.md} />}
               {selectedTemplateLocked ? "Unlock & Print" : "Print"}
             </button>
+            {isRecipePrinterAdmin && activeRecipeItem?.recipe && (
+              <button
+                type="button"
+                className="recipe-print-settings-link"
+                aria-haspopup="dialog"
+                onClick={() => setShowShareDialog(true)}
+              >
+                Save as share link
+              </button>
+            )}
             {(hasRecipeBackSide || cardSize === "card-6x4") && (
               <button
                 type="button"
@@ -2197,6 +2214,14 @@ export default function PrintPage() {
         onAddCookPilotRecipes={queue.addCookPilotRecipes}
         onRemoveRecipe={queue.remove}
       />
+      {showShareDialog && activeRecipeItem?.recipe && cookPilotUser && (
+        <AdminShareLinkDialog
+          recipe={activeRecipeItem.recipe}
+          settings={{ template, cardSize, cardsPerSheet, showPhoto, showSourceUrl, showCutLines, doubleSided }}
+          uid={cookPilotUser.uid}
+          onClose={() => setShowShareDialog(false)}
+        />
+      )}
       <FeedbackDialog
         open={showFeedbackDialog}
         onClose={() => setShowFeedbackDialog(false)}
