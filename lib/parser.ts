@@ -74,11 +74,31 @@ async function parseUrlLocally(url: string): Promise<LocalParseOutcome> {
   return { recipe: null };
 }
 
+function shouldTryUrlFallback(outcome: LocalParseOutcome): boolean {
+  if (outcome.recipe) return false;
+  if (outcome.status === undefined) return true;
+  return ![400, 413].includes(outcome.status);
+}
+
+async function parseUrlWithCookPilot(url: string, localError?: string): Promise<Recipe> {
+  try {
+    const data = await callCookPilotParser("parseRecipeFromURL", { url });
+    const recipe = adaptCookPilotRecipe(data, url);
+    if (!recipe) throw new Error(localError || "No recipe could be found on that page.");
+    return recipe;
+  } catch (err) {
+    throw friendlyError(err, localError || "We couldn't import a recipe from that URL.");
+  }
+}
+
 /** URL import, CookPilot's `parseRecipeFromURL`. */
 export async function parseUrl(rawUrl: string): Promise<Recipe> {
   const url = normalizeImportURL(rawUrl);
   const localRecipe = await parseUrlLocally(url);
   if (localRecipe.recipe) return localRecipe.recipe;
+  if (shouldTryUrlFallback(localRecipe)) {
+    return parseUrlWithCookPilot(url, localRecipe.error);
+  }
   throw new Error(localRecipe.error ?? "We couldn't import a recipe from that URL.");
 }
 

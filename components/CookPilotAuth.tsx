@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, type FormEvent } from "react";
+import { useEffect, useRef, useState, type FormEvent } from "react";
 import { createPortal } from "react-dom";
 import {
   EmailAuthProvider,
@@ -18,6 +18,7 @@ import {
 import { httpsCallable } from "firebase/functions";
 import { getFirebaseAuth } from "@/lib/firebase/client";
 import { friendlyAuthError } from "@/lib/friendlyErrors";
+import { useModalFocus } from "@/components/useModalFocus";
 import { ICON_SIZE, SpinnerIcon, XIcon } from "@/components/icons";
 
 /* ──────────────────────────────────────────────────────────────────────────
@@ -147,14 +148,9 @@ export function CookPilotLoginDialog({ onClose }: { onClose: () => void }) {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
+  const dialogRef = useRef<HTMLDivElement | null>(null);
 
-  useEffect(() => {
-    function onKeyDown(event: KeyboardEvent) {
-      if (event.key === "Escape") onClose();
-    }
-    window.addEventListener("keydown", onKeyDown);
-    return () => window.removeEventListener("keydown", onKeyDown);
-  }, [onClose]);
+  useModalFocus(dialogRef, onClose);
 
   async function handleEmailContinue(event: FormEvent) {
     event.preventDefault();
@@ -243,10 +239,12 @@ export function CookPilotLoginDialog({ onClose }: { onClose: () => void }) {
 
   return createPortal(
     <div
+      ref={dialogRef}
       className="fixed inset-0 z-50 flex items-stretch sm:items-center justify-center bg-ink/30 p-0 sm:px-cp-4 sm:py-cp-6"
       role="dialog"
       aria-modal="true"
       aria-label="Log in to CookPilot"
+      tabIndex={-1}
     >
       <div className="panel panel--modal w-full sm:max-w-[420px] h-full sm:h-auto rounded-none border-0 sm:rounded-2xl sm:border p-cp-5 flex flex-col gap-cp-4 relative overflow-y-auto">
         <button
@@ -354,7 +352,7 @@ export function CookPilotLoginDialog({ onClose }: { onClose: () => void }) {
 
         {error && (
           <div className="state state--error" role="alert">
-            <h4>Couldn't sign in</h4>
+            <h4>Couldn&apos;t sign in</h4>
             <p>{error}</p>
           </div>
         )}

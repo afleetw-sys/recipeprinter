@@ -1,6 +1,8 @@
 "use client";
 
+import { useRef } from "react";
 import { CrownIcon, ICON_SIZE, SpinnerIcon, XIcon } from "@/components/icons";
+import { useModalFocus } from "@/components/useModalFocus";
 import type { PremiumRecipePrintTemplate } from "@/lib/premiumTemplates";
 
 const COFFEE_URL = "https://buymeacoffee.com/recipeprinter";
@@ -33,14 +35,24 @@ export function PrintDialogs({
   claimBusy: boolean;
   onClaimTemplate: (template: PremiumRecipePrintTemplate) => void;
 }) {
+  const donateDialogRef = useRef<HTMLDivElement | null>(null);
+  const unlockDialogRef = useRef<HTMLDivElement | null>(null);
+  useModalFocus(donateDialogRef, onCloseDonateDialog, { disabled: !showDonateDialog });
+  useModalFocus(unlockDialogRef, onCloseUnlockDialog, {
+    disabled: !showUnlockDialog,
+    closeDisabled: purchaseBusy || claimBusy,
+  });
+
   return (
     <>
       {showDonateDialog && (
         <div
+          ref={donateDialogRef}
           className="print-success-dialog no-print"
           role="dialog"
           aria-modal="true"
           aria-labelledby="print-success-title"
+          tabIndex={-1}
         >
           <div className="print-success-dialog__backdrop" aria-hidden />
           <div className="print-success-dialog__panel">
@@ -98,10 +110,12 @@ export function PrintDialogs({
       )}
       {showUnlockDialog && selectedPremiumTemplate && (
         <div
+          ref={unlockDialogRef}
           className="print-success-dialog no-print"
           role="dialog"
           aria-modal="true"
           aria-labelledby="recipeprinter-unlock-title"
+          tabIndex={-1}
         >
           <div className="print-success-dialog__backdrop" aria-hidden />
           <div className="print-success-dialog__panel">

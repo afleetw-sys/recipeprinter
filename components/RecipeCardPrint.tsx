@@ -1,6 +1,6 @@
 "use client";
 
-import { Fragment, memo, useState } from "react";
+import { Fragment, memo, useEffect, useState } from "react";
 import { formatRecipeTime } from "@/lib/time";
 import { ICON_SIZE, XIcon } from "@/components/icons";
 import type { Recipe } from "@/types/recipe";
@@ -623,6 +623,8 @@ export interface RecipeCardInlineEdit {
   onValueChange: (value: string) => void;
   onCommit: (value?: string) => void;
   onCancel: () => void;
+  onInsertIngredient: (index: number) => void;
+  onInsertStep: (index: number) => void;
 }
 
 function continuationFaces(
@@ -748,8 +750,15 @@ export const RecipeCardFace = memo(function RecipeCardFace({
   const source = sourceLabel(recipe);
   const meta = metaBits(recipe);
   const canEdit = Boolean(inlineEdit);
-  const ingredientsOnly = ingredients.length > 0 && instructions.length === 0;
-  const methodOnly = instructions.length > 0 && ingredients.length === 0;
+  // While editing, a section with nothing in it yet still gets a slot (with
+  // just an "Add ingredient"/"Add step" prompt) so there's somewhere to
+  // start — otherwise an empty recipe would never get past its first field.
+  const showEmptyIngredients = canEdit && recipe.ingredients.length === 0;
+  const showEmptyInstructions = canEdit && recipe.instructions.length === 0;
+  const hasIngredientsSection = ingredients.length > 0 || showEmptyIngredients;
+  const hasInstructionsSection = instructions.length > 0 || showEmptyInstructions;
+  const ingredientsOnly = hasIngredientsSection && !hasInstructionsSection;
+  const methodOnly = hasInstructionsSection && !hasIngredientsSection;
   const stackedLayout = layout === "stacked";
   const ingredientGroups = sectionGroups(ingredients);
   const instructionGroups = sectionGroups(instructions);
@@ -757,6 +766,9 @@ export const RecipeCardFace = memo(function RecipeCardFace({
   // the source image 404s or is hotlink-blocked we drop it rather than print a
   // broken-image box.
   const [imageFailed, setImageFailed] = useState(false);
+  useEffect(() => {
+    setImageFailed(false);
+  }, [recipe.image]);
   // Individually-drawn rects, not an SVG <pattern> tile (and before that, a
   // tiled CSS gradient) — both of those get pre-rasterized to a fixed-DPI
   // bitmap by Chrome's print/PDF pipeline even though they render crisply
@@ -812,6 +824,52 @@ export const RecipeCardFace = memo(function RecipeCardFace({
       if (typeof reader.result === "string") inlineEdit?.onCommit(reader.result);
     };
     reader.readAsDataURL(file);
+  }
+
+  // A freshly-inserted blank line has nothing for the user to have clicked
+  // (it didn't exist a moment ago), so it never picks up real browser focus
+  // on its own — this ref callback claims it once, the moment its element
+  // mounts. `.focus()` on an already-focused element is a no-op, so reusing
+  // this on every render (including while the user types) is safe.
+  function focusIfEditing(target: RecipeCardEditTarget) {
+    return (el: HTMLInputElement | HTMLTextAreaElement | null) => {
+      if (el && inlineEdit && sameTarget(inlineEdit.editingTarget, target) && document.activeElement !== el) {
+        el.focus();
+      }
+    };
+  }
+
+  function insertIngredientAt(index: number) {
+    inlineEdit?.onInsertIngredient(index);
+  }
+
+  function insertStepAt(index: number) {
+    inlineEdit?.onInsertStep(index);
+  }
+
+  // Renders the click target that inserts a new blank ingredient/step.
+  // `variant: "hover"` sits absolutely inside the preceding line and only
+  // shows on hover (so it never affects layout when idle); `"empty"` is the
+  // permanent one shown in place of a section that has nothing in it yet.
+  function addLine(kind: "ingredient" | "step", index: number, variant: "hover" | "empty" = "hover") {
+    if (!canEdit || !inlineEdit) return null;
+    const label = kind === "ingredient" ? "Add ingredient" : "Add step";
+    return (
+      <button
+        type="button"
+        className={`recipe-card__add-line no-print ${
+          variant === "empty" ? "recipe-card__add-line--empty" : ""
+        }`}
+        aria-label={label}
+        onClick={(event) => {
+          event.stopPropagation();
+          if (kind === "ingredient") insertIngredientAt(index);
+          else insertStepAt(index);
+        }}
+      >
+        <span className="recipe-card__add-line-text">+ {label}</span>
+      </button>
+    );
   }
 
   function sectionTitle(
@@ -896,7 +954,7 @@ export const RecipeCardFace = memo(function RecipeCardFace({
           <div className="recipe-card__headline">
             {canEdit && inlineEdit ? (
               <input
-                className="recipe-card__inline-input recipe-card__inline-input--title"
+                className="recipe-card__inline-input recipe-card__title"
                 value={sameTarget(inlineEdit.editingTarget, { kind: "title" }) ? inlineEdit.value : recipe.title}
                 aria-label="Recipe title"
                 onFocus={() => startEdit({ kind: "title" }, recipe.title)}
@@ -987,12 +1045,12 @@ export const RecipeCardFace = memo(function RecipeCardFace({
 
       <div
         className={`recipe-card__cols ${
-          ingredients.length === 0 ? "recipe-card__cols--single" : ""
+          !hasIngredientsSection ? "recipe-card__cols--single" : ""
         } ${ingredientsOnly ? "recipe-card__cols--ingredients-only" : ""} ${
           methodOnly ? "recipe-card__cols--method-only" : ""
         } ${stackedLayout ? "recipe-card__cols--stacked" : ""}`}
       >
-        {ingredients.length > 0 && (
+        {hasIngredientsSection && (
           <section
             className={`recipe-card__ingredients ${
               ingredientsOnly || stackedLayout ? "recipe-card__ingredients--wide" : ""
@@ -1000,51 +1058,63 @@ export const RecipeCardFace = memo(function RecipeCardFace({
           >
             <h2 className="recipe-card__label">Ingredients</h2>
             <div className="recipe-card__section-groups">
-              {ingredientGroups.map((group, groupIndex) => (
-                <div
-                  className="recipe-card__section-group"
-                  key={`${group.title ?? "ingredients"}-${groupIndex}`}
-                >
-                  {group.title &&
-                    sectionTitle(
-                      "ingredientSection",
-                      recipe.ingredients.indexOf(group.items[0]),
-                      group.title,
-                    )}
-                  <ul>
-                    {group.items.map((ing, i) => {
-                      const index = recipe.ingredients.indexOf(ing);
-                      const target: RecipeCardEditTarget = { kind: "ingredient", index };
-                      const text = ingredientText(ing);
-                      const isEditingThis = inlineEdit && sameTarget(inlineEdit.editingTarget, target);
-                      const displayValue = isEditingThis ? inlineEdit!.value : text;
-                      return (
-                        <li key={`${groupIndex}-${i}`} className="recipe-card__editable-line">
-                          {canEdit && inlineEdit ? (
-                            <textarea
-                              className="recipe-card__inline-textarea recipe-card__inline-textarea--line"
-                              value={displayValue}
-                              aria-label="Ingredient"
-                              rows={Math.max(1, displayValue.split(/\r?\n/).length)}
-                              onFocus={() => startEdit(target, text)}
-                              onChange={(event) => inlineEdit.onValueChange(event.target.value)}
-                              onBlur={commitEdit}
-                              onKeyDown={handleEditKeyDown}
-                            />
-                          ) : (
-                            text
-                          )}
+              {ingredientGroups.length === 0
+                ? showEmptyIngredients && (
+                    <div className="recipe-card__section-group">
+                      <ul>
+                        <li className="recipe-card__editable-line">
+                          {addLine("ingredient", 0, "empty")}
                         </li>
-                      );
-                    })}
-                  </ul>
-                </div>
-              ))}
+                      </ul>
+                    </div>
+                  )
+                : ingredientGroups.map((group, groupIndex) => (
+                    <div
+                      className="recipe-card__section-group"
+                      key={`${group.title ?? "ingredients"}-${groupIndex}`}
+                    >
+                      {group.title &&
+                        sectionTitle(
+                          "ingredientSection",
+                          recipe.ingredients.indexOf(group.items[0]),
+                          group.title,
+                        )}
+                      <ul>
+                        {group.items.map((ing, i) => {
+                          const index = recipe.ingredients.indexOf(ing);
+                          const target: RecipeCardEditTarget = { kind: "ingredient", index };
+                          const text = ingredientText(ing);
+                          const isEditingThis = inlineEdit && sameTarget(inlineEdit.editingTarget, target);
+                          const displayValue = isEditingThis ? inlineEdit!.value : text;
+                          return (
+                            <li key={`${groupIndex}-${i}`} className="recipe-card__editable-line">
+                              {canEdit && inlineEdit ? (
+                                <textarea
+                                  ref={focusIfEditing(target)}
+                                  className="recipe-card__inline-textarea recipe-card__inline-textarea--line"
+                                  value={displayValue}
+                                  aria-label="Ingredient"
+                                  rows={Math.max(1, displayValue.split(/\r?\n/).length)}
+                                  onFocus={() => startEdit(target, text)}
+                                  onChange={(event) => inlineEdit.onValueChange(event.target.value)}
+                                  onBlur={commitEdit}
+                                  onKeyDown={handleEditKeyDown}
+                                />
+                              ) : (
+                                text
+                              )}
+                              {addLine("ingredient", index + 1)}
+                            </li>
+                          );
+                        })}
+                      </ul>
+                    </div>
+                  ))}
             </div>
           </section>
         )}
 
-        {instructions.length > 0 && (
+        {hasInstructionsSection && (
           <section
             className={`recipe-card__method ${
               methodOnly || stackedLayout ? "recipe-card__method--wide" : ""
@@ -1061,49 +1131,61 @@ export const RecipeCardFace = memo(function RecipeCardFace({
               )}
             </h2>
             <div className="recipe-card__section-groups">
-              {instructionGroups.map((group, groupIndex) => (
-                <div
-                  className="recipe-card__section-group"
-                  key={`${group.title ?? "steps"}-${groupIndex}`}
-                >
-                  {group.title &&
-                    sectionTitle(
-                      "instructionSection",
-                      recipe.instructions.indexOf(group.items[0]),
-                      group.title,
-                    )}
-                  <ol>
-                    {group.items.map((step) => {
-                      const index = recipe.instructions.indexOf(step);
-                      const target: RecipeCardEditTarget = { kind: "step", index };
-                      const isEditingThis = inlineEdit && sameTarget(inlineEdit.editingTarget, target);
-                      const displayValue = isEditingThis ? inlineEdit!.value : step.text;
-                      return (
-                        <li
-                          key={`${step.step}-${step.text.slice(0, 24)}`}
-                          className="recipe-card__editable-line"
-                        >
-                          <span className="recipe-card__step-number">{step.step}</span>
-                          {canEdit && inlineEdit ? (
-                            <textarea
-                              className="recipe-card__inline-textarea recipe-card__inline-textarea--line"
-                              value={displayValue}
-                              aria-label="Step"
-                              rows={Math.max(1, displayValue.split(/\r?\n/).length)}
-                              onFocus={() => startEdit(target, step.text)}
-                              onChange={(event) => inlineEdit.onValueChange(event.target.value)}
-                              onBlur={commitEdit}
-                              onKeyDown={handleEditKeyDown}
-                            />
-                          ) : (
-                            <span>{step.text}</span>
-                          )}
+              {instructionGroups.length === 0
+                ? showEmptyInstructions && (
+                    <div className="recipe-card__section-group">
+                      <ol>
+                        <li className="recipe-card__editable-line">
+                          {addLine("step", 0, "empty")}
                         </li>
-                      );
-                    })}
-                  </ol>
-                </div>
-              ))}
+                      </ol>
+                    </div>
+                  )
+                : instructionGroups.map((group, groupIndex) => (
+                    <div
+                      className="recipe-card__section-group"
+                      key={`${group.title ?? "steps"}-${groupIndex}`}
+                    >
+                      {group.title &&
+                        sectionTitle(
+                          "instructionSection",
+                          recipe.instructions.indexOf(group.items[0]),
+                          group.title,
+                        )}
+                      <ol>
+                        {group.items.map((step) => {
+                          const index = recipe.instructions.indexOf(step);
+                          const target: RecipeCardEditTarget = { kind: "step", index };
+                          const isEditingThis = inlineEdit && sameTarget(inlineEdit.editingTarget, target);
+                          const displayValue = isEditingThis ? inlineEdit!.value : step.text;
+                          return (
+                            <li
+                              key={`${step.step}-${step.text.slice(0, 24)}`}
+                              className="recipe-card__editable-line"
+                            >
+                              <span className="recipe-card__step-number">{step.step}</span>
+                              {canEdit && inlineEdit ? (
+                                <textarea
+                                  ref={focusIfEditing(target)}
+                                  className="recipe-card__inline-textarea recipe-card__inline-textarea--line"
+                                  value={displayValue}
+                                  aria-label="Step"
+                                  rows={Math.max(1, displayValue.split(/\r?\n/).length)}
+                                  onFocus={() => startEdit(target, step.text)}
+                                  onChange={(event) => inlineEdit.onValueChange(event.target.value)}
+                                  onBlur={commitEdit}
+                                  onKeyDown={handleEditKeyDown}
+                                />
+                              ) : (
+                                <span>{step.text}</span>
+                              )}
+                              {addLine("step", index + 1)}
+                            </li>
+                          );
+                        })}
+                      </ol>
+                    </div>
+                  ))}
             </div>
           </section>
         )}

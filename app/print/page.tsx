@@ -1,6 +1,6 @@
 "use client";
 
-import { memo, useEffect, useMemo, useRef, useState, type CSSProperties } from "react";
+import { memo, useCallback, useEffect, useMemo, useRef, useState, type CSSProperties } from "react";
 import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 import dynamic from "next/dynamic";
@@ -495,7 +495,7 @@ export default function PrintPage() {
     [items, photosOn],
   );
 
-  function measuredFacesFor(id: string, recipe: Recipe, hasPhoto: boolean): RecipeFace[] | null {
+  const measuredFacesFor = useCallback((id: string, recipe: Recipe, hasPhoto: boolean): RecipeFace[] | null => {
     const entry = measuredFaces[id];
     if (
       !entry ||
@@ -508,7 +508,14 @@ export default function PrintPage() {
       return null;
     }
     return entry.pages;
-  }
+  }, [cardSize, measuredFaces, sourceUrlOn, template]);
+
+  const printLayoutReady = useMemo(
+    () =>
+      measuredRecipeItems.length > 0 &&
+      measuredRecipeItems.every(({ id, recipe, hasPhoto }) => measuredFacesFor(id, recipe, hasPhoto) !== null),
+    [measuredRecipeItems, measuredFacesFor],
+  );
 
   // The physical sheets the printer will produce, in order. Each sheet fills
   // its `SLOTS_PER_SHEET[cardSize]` slots by walking an ordered queue of
@@ -627,7 +634,7 @@ export default function PrintPage() {
     }
 
     return out;
-  }, [items, cardSize, continueOnBack, photosOn, sourceUrlOn, template, measuredFaces]);
+  }, [items, cardSize, continueOnBack, photosOn, sourceUrlOn, template, measuredFacesFor]);
 
   // What the rail and deck actually browse: one recipe face per item, in the
   // same order recipes were queued, regardless of which physical sheet (and
@@ -944,6 +951,10 @@ export default function PrintPage() {
 
   async function handlePrint() {
     if (purchaseBusy) return;
+    if (!printLayoutReady) {
+      showToast("Preparing the print layout. Try again in a moment.");
+      return;
+    }
     if (selectedPremiumTemplate) {
       if (selectedTemplateLocked) {
         setShowUnlockDialog(true);
@@ -1069,6 +1080,46 @@ export default function PrintPage() {
     setEditValue("");
   }
 
+  // The new line inherits whichever section the item at (or just before,
+  // for an append at the end) that index belongs to, so inserting in the
+  // middle of a "For the sauce" group doesn't fork off an unlabeled group.
+  function sectionForInsertion<T extends { section?: string }>(items: T[], index: number): string | undefined {
+    return items[index]?.section ?? items[index - 1]?.section;
+  }
+
+  function insertIngredientAt(index: number) {
+    if (!activeRecipeItem?.recipe) return;
+    const recipe = activeRecipeItem.recipe;
+    const section = sectionForInsertion(recipe.ingredients, index);
+    const ingredients = recipe.ingredients.slice();
+    ingredients.splice(index, 0, { raw: "", name: "", section });
+    const nextRecipe = printableRecipe({ ...recipe, ingredients });
+    updateQueuedRecipe(activeRecipeItem.id, nextRecipe);
+    setItems((current) =>
+      current?.map((item) => (item.id === activeRecipeItem.id ? { ...item, recipe: nextRecipe } : item)) ??
+        current,
+    );
+    setEditingEdit({ recipeId: activeRecipeItem.id, target: { kind: "ingredient", index } });
+    setEditValue("");
+  }
+
+  function insertStepAt(index: number) {
+    if (!activeRecipeItem?.recipe) return;
+    const recipe = activeRecipeItem.recipe;
+    const section = sectionForInsertion(recipe.instructions, index);
+    const instructions = recipe.instructions.slice();
+    instructions.splice(index, 0, { step: 0, text: "", section });
+    const renumbered = instructions.map((step, i) => ({ ...step, step: i + 1 }));
+    const nextRecipe = printableRecipe({ ...recipe, instructions: renumbered });
+    updateQueuedRecipe(activeRecipeItem.id, nextRecipe);
+    setItems((current) =>
+      current?.map((item) => (item.id === activeRecipeItem.id ? { ...item, recipe: nextRecipe } : item)) ??
+        current,
+    );
+    setEditingEdit({ recipeId: activeRecipeItem.id, target: { kind: "step", index } });
+    setEditValue("");
+  }
+
   useEffect(() => {
     const queue = readQueue();
     const byId = new Map(queue.map((it) => [it.id, it]));
@@ -1147,6 +1198,7 @@ export default function PrintPage() {
       shouldPrint &&
       items &&
       items.length > 0 &&
+      printLayoutReady &&
       (!selectedPremiumTemplate || revenueCatUserId) &&
       !autoPrintAttemptedRef.current
     ) {
@@ -1154,7 +1206,7 @@ export default function PrintPage() {
       const t = window.setTimeout(() => void handlePrint(), 350);
       return () => window.clearTimeout(t);
     }
-  }, [items, revenueCatUserId, selectedPremiumTemplate, shouldPrint, template, customerInfo]);
+  }, [items, revenueCatUserId, selectedPremiumTemplate, shouldPrint, template, customerInfo, printLayoutReady]);
 
   useEffect(() => {
     // Gated on having something to print: this only reads back the id an
@@ -1424,9 +1476,9 @@ export default function PrintPage() {
                 type="button"
                 className="btn btn-primary btn-compact recipe-mobile-topbar__print"
                 onClick={handleMobilePrint}
-                disabled={purchaseBusy}
+                disabled={purchaseBusy || !printLayoutReady}
               >
-                {purchaseBusy ? <SpinnerIcon size={ICON_SIZE.md} /> : <PrintIcon size={ICON_SIZE.md} />}
+                {purchaseBusy || !printLayoutReady ? <SpinnerIcon size={ICON_SIZE.md} /> : <PrintIcon size={ICON_SIZE.md} />}
                 {selectedTemplateLocked ? "Unlock & Print" : "Print"}
               </button>
             </div>
@@ -1562,6 +1614,8 @@ export default function PrintPage() {
                             onValueChange: setEditValue,
                             onCommit: commitEditTarget,
                             onCancel: cancelEditTarget,
+                            onInsertIngredient: insertIngredientAt,
+                            onInsertStep: insertStepAt,
                           }
                         : undefined
                     }
@@ -1792,9 +1846,9 @@ export default function PrintPage() {
             <button
               onClick={() => void handlePrint()}
               className="btn btn-primary recipe-print-button"
-              disabled={purchaseBusy}
+              disabled={purchaseBusy || !printLayoutReady}
             >
-              {purchaseBusy ? <SpinnerIcon size={ICON_SIZE.md} /> : <PrintIcon size={ICON_SIZE.md} />}
+              {purchaseBusy || !printLayoutReady ? <SpinnerIcon size={ICON_SIZE.md} /> : <PrintIcon size={ICON_SIZE.md} />}
               {selectedTemplateLocked ? "Unlock & Print" : "Print"}
             </button>
           </div>

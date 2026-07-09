@@ -209,7 +209,7 @@ export function FeedbackDialog({ open, onClose, initialType = "idea" }: Feedback
 
         {error && (
           <div className="state state--error" role="alert">
-            <h4>Feedback wasn't sent</h4>
+            <h4>Feedback wasn&apos;t sent</h4>
             <p>{error}</p>
           </div>
         )}

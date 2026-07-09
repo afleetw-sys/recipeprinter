@@ -46,6 +46,14 @@ const CookPilotImportSource = dynamic(
   },
 );
 
+const MAX_IMAGE_FILES = 4;
+const MAX_IMAGE_FILE_BYTES = 12 * 1024 * 1024;
+const MAX_IMAGE_TOTAL_BYTES = 24 * 1024 * 1024;
+const MAX_IMAGE_DATA_URL_CHARS = 2_500_000;
+const MAX_IMAGE_DATA_URL_TOTAL_CHARS = 8_000_000;
+const MAX_IMAGE_DIMENSION = 1600;
+const IMAGE_JPEG_QUALITY = 0.82;
+
 function readImageAsDataURL(file: File): Promise<string> {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
@@ -58,6 +66,36 @@ function readImageAsDataURL(file: File): Promise<string> {
   });
 }
 
+function loadImageFromFile(file: File): Promise<HTMLImageElement> {
+  return new Promise((resolve, reject) => {
+    const url = URL.createObjectURL(file);
+    const image = new Image();
+    image.onload = () => {
+      URL.revokeObjectURL(url);
+      resolve(image);
+    };
+    image.onerror = () => {
+      URL.revokeObjectURL(url);
+      reject(new Error("Unable to load image"));
+    };
+    image.src = url;
+  });
+}
+
+async function imageAsCompressedDataURL(file: File): Promise<string> {
+  const image = await loadImageFromFile(file);
+  const scale = Math.min(1, MAX_IMAGE_DIMENSION / Math.max(image.naturalWidth, image.naturalHeight));
+  const width = Math.max(1, Math.round(image.naturalWidth * scale));
+  const height = Math.max(1, Math.round(image.naturalHeight * scale));
+  const canvas = document.createElement("canvas");
+  canvas.width = width;
+  canvas.height = height;
+  const context = canvas.getContext("2d");
+  if (!context) return readImageAsDataURL(file);
+  context.drawImage(image, 0, 0, width, height);
+  return canvas.toDataURL("image/jpeg", IMAGE_JPEG_QUALITY);
+}
+
 function imageFilesFrom(list: FileList | null): File[] {
   return Array.from(list ?? []).filter((f) => f.type.startsWith("image/"));
 }
@@ -66,6 +104,25 @@ function imageLabel(files: File[]): string {
   if (files.length === 0) return "Choose or drop photos";
   if (files.length === 1) return files[0].name;
   return `${files.length} photos selected`;
+}
+
+function validateImageFiles(files: File[]): string | null {
+  if (files.length > MAX_IMAGE_FILES) return `Choose up to ${MAX_IMAGE_FILES} photos at a time.`;
+  const oversized = files.find((file) => file.size > MAX_IMAGE_FILE_BYTES);
+  if (oversized) return `${oversized.name} is too large. Choose photos under 12 MB.`;
+  const totalBytes = files.reduce((total, file) => total + file.size, 0);
+  if (totalBytes > MAX_IMAGE_TOTAL_BYTES) return "Those photos are too large together. Choose fewer or smaller images.";
+  return null;
+}
+
+async function prepareImageDataUrls(files: File[]): Promise<string[]> {
+  const dataUrls = await Promise.all(files.map(imageAsCompressedDataURL));
+  const oversized = dataUrls.some((dataUrl) => dataUrl.length > MAX_IMAGE_DATA_URL_CHARS);
+  const totalChars = dataUrls.reduce((total, dataUrl) => total + dataUrl.length, 0);
+  if (oversized || totalChars > MAX_IMAGE_DATA_URL_TOTAL_CHARS) {
+    throw new Error("Those photos are still too large after resizing. Try fewer or smaller images.");
+  }
+  return dataUrls;
 }
 
 export function ImportPanel({
@@ -149,13 +206,15 @@ export function ImportPanel({
       setUrl("");
     } else if (mode === "image") {
       if (imageFiles.length === 0) return setError("Choose at least one photo.");
+      const validationError = validateImageFiles(imageFiles);
+      if (validationError) return setError(validationError);
       setBusy(true);
       try {
-        const dataUrls = await Promise.all(imageFiles.map(readImageAsDataURL));
+        const dataUrls = await prepareImageDataUrls(imageFiles);
         onAddImages(dataUrls, imageLabel(imageFiles));
         setImageFiles([]);
-      } catch {
-        setError("Couldn't read those images. Try different files.");
+      } catch (err) {
+        setError(err instanceof Error ? err.message : "Couldn't read those images. Try different files.");
       } finally {
         setBusy(false);
       }
@@ -173,6 +232,8 @@ export function ImportPanel({
     if (busy) return;
     const dropped = imageFilesFrom(e.dataTransfer.files);
     if (dropped.length) {
+      const validationError = validateImageFiles(dropped);
+      if (validationError) return setError(validationError);
       setImageFiles(dropped);
       resetError();
     }
@@ -198,15 +259,14 @@ export function ImportPanel({
       <div className="mode-toggle-shell">
         <div
           className={`mode-toggle ${expanded ? "mode-toggle--expanded" : ""}`}
-          role="tablist"
+          role="group"
           aria-label="Import source"
         >
           {(expanded ? MODES : PRIMARY_MODES).map(({ id, label, icon: Icon }) => (
             <button
               key={id}
               type="button"
-              role="tab"
-              aria-selected={mode === id}
+              aria-pressed={mode === id}
               disabled={busy}
               className={`mode-toggle__item ${mode === id ? "is-active" : ""}`}
               onClick={() => chooseMode(id)}
@@ -316,7 +376,14 @@ export function ImportPanel({
                 disabled={busy}
                 className="sr-only absolute h-px w-px overflow-hidden"
                 onChange={(e) => {
-                  setImageFiles(imageFilesFrom(e.target.files));
+                  const selected = imageFilesFrom(e.target.files);
+                  const validationError = validateImageFiles(selected);
+                  if (validationError) {
+                    setError(validationError);
+                    setImageFiles([]);
+                    return;
+                  }
+                  setImageFiles(selected);
                   resetError();
                 }}
               />

@@ -99,7 +99,7 @@ function SignedOutCookPilotImport({
       </div>
       {(error ?? redirectError) && (
         <div className="state state--error mt-cp-4 text-left" role="alert">
-          <h4>Couldn't sign in</h4>
+          <h4>Couldn&apos;t sign in</h4>
           <p>{error ?? redirectError}</p>
         </div>
       )}
@@ -325,7 +325,7 @@ function SignedInCookPilotImport({
 
       {!loading && error && (
         <div className="state state--error" role="alert">
-          <h4>Couldn't load recipes</h4>
+          <h4>Couldn&apos;t load recipes</h4>
           <p>{error}</p>
         </div>
       )}
