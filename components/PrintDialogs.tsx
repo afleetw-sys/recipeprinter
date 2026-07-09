@@ -1,7 +1,7 @@
 "use client";
 
-import { useRef } from "react";
-import { CrownIcon, ICON_SIZE, SpinnerIcon, XIcon } from "@/components/icons";
+import { useEffect, useRef } from "react";
+import { CrownIcon, ICON_SIZE, SpinnerIcon, TrashIcon, XIcon } from "@/components/icons";
 import { useModalFocus } from "@/components/useModalFocus";
 import type { PremiumRecipePrintTemplate } from "@/lib/premiumTemplates";
 
@@ -21,6 +21,10 @@ export function PrintDialogs({
   canClaimFree,
   claimBusy,
   onClaimTemplate,
+  showDeleteRecipeDialog,
+  deleteRecipeTitle,
+  onCancelDeleteRecipe,
+  onConfirmDeleteRecipe,
 }: {
   showDonateDialog: boolean;
   onCloseDonateDialog: () => void;
@@ -34,14 +38,27 @@ export function PrintDialogs({
   canClaimFree: boolean;
   claimBusy: boolean;
   onClaimTemplate: (template: PremiumRecipePrintTemplate) => void;
+  showDeleteRecipeDialog: boolean;
+  deleteRecipeTitle: string;
+  onCancelDeleteRecipe: () => void;
+  onConfirmDeleteRecipe: () => void;
 }) {
   const donateDialogRef = useRef<HTMLDivElement | null>(null);
   const unlockDialogRef = useRef<HTMLDivElement | null>(null);
+  const deleteDialogRef = useRef<HTMLDivElement | null>(null);
+  const deleteButtonRef = useRef<HTMLButtonElement | null>(null);
   useModalFocus(donateDialogRef, onCloseDonateDialog, { disabled: !showDonateDialog });
   useModalFocus(unlockDialogRef, onCloseUnlockDialog, {
     disabled: !showUnlockDialog,
     closeDisabled: purchaseBusy || claimBusy,
   });
+  useModalFocus(deleteDialogRef, onCancelDeleteRecipe, { disabled: !showDeleteRecipeDialog });
+  // Runs after useModalFocus's own mount-time focus (which grabs the first
+  // focusable element — the X close button) so Enter defaults to actually
+  // deleting rather than just closing, per the request that drove this dialog.
+  useEffect(() => {
+    if (showDeleteRecipeDialog) deleteButtonRef.current?.focus();
+  }, [showDeleteRecipeDialog]);
 
   return (
     <>
@@ -160,6 +177,44 @@ export function PrintDialogs({
                 disabled={purchaseBusy || claimBusy}
               >
                 Not now
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+      {showDeleteRecipeDialog && (
+        <div
+          ref={deleteDialogRef}
+          className="print-success-dialog no-print"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="recipe-delete-title"
+          tabIndex={-1}
+        >
+          <div className="print-success-dialog__backdrop" aria-hidden />
+          <div className="print-success-dialog__panel">
+            <button
+              type="button"
+              className="print-success-dialog__close icon-close-btn"
+              aria-label="Close"
+              onClick={onCancelDeleteRecipe}
+            >
+              <XIcon size={ICON_SIZE.md} />
+            </button>
+            <h2 id="recipe-delete-title">Delete {deleteRecipeTitle}?</h2>
+            <p>It&apos;ll be removed from your print list. This can&apos;t be undone.</p>
+            <div className="print-success-dialog__actions">
+              <button
+                ref={deleteButtonRef}
+                type="button"
+                className="btn btn-primary"
+                onClick={onConfirmDeleteRecipe}
+              >
+                <TrashIcon size={ICON_SIZE.md} />
+                Delete
+              </button>
+              <button type="button" className="btn btn-ghost" onClick={onCancelDeleteRecipe}>
+                Cancel
               </button>
             </div>
           </div>
