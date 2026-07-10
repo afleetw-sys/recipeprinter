@@ -63,7 +63,7 @@ export type ParseResponse = ParseResult | ParseError;
    RecipePrinter's primary object is a Print Queue, not a saved library.
    Each method mirrors one of CookPilot's supported import sources.            */
 
-export type ImportMethod = "url" | "image" | "text" | "cookpilot";
+export type ImportMethod = "url" | "image" | "text" | "cookpilot" | "shared";
 
 export type ParseRequest =
   | { method: "url"; url: string }
@@ -92,4 +92,5 @@ export const IMPORT_METHOD_LABEL: Record<ImportMethod, string> = {
   image: "Image",
   text: "Pasted text",
   cookpilot: "CookPilot",
+  shared: "Shared link",
 };

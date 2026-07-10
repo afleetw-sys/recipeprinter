@@ -68,6 +68,7 @@ import {
   updateQueuedRecipe,
   useQueue,
 } from "@/lib/queue";
+import { readPrintSettings, writePrintSettings } from "@/lib/printSettings";
 import type { QueueItem, Recipe } from "@/types/recipe";
 import type { CustomerInfo } from "@revenuecat/purchases-js";
 
@@ -88,40 +89,6 @@ const POST_PRINT_DIALOG_STORAGE_KEY = "recipeprinter:post-print-dialog:last-show
 const POST_PRINT_DIALOG_INTERVAL_MS = 7 * 24 * 60 * 60 * 1000;
 const SINGLE_RECIPE_DECK_TOP_PADDING = 16;
 
-// Layout preferences carry over across visits (device-local, no account/sync)
-// so going back to add another recipe doesn't reset the print setup.
-const PRINT_SETTINGS_STORAGE_KEY = "recipeprinter:print-settings:v1";
-
-interface StoredPrintSettings {
-  cardSize?: string;
-  template?: string;
-  doubleSided?: boolean;
-  showCutLines?: boolean;
-  showPhoto?: boolean;
-  showSourceUrl?: boolean;
-  cardsPerSheet?: number;
-}
-
-function readPrintSettings(): StoredPrintSettings | null {
-  if (typeof window === "undefined") return null;
-  try {
-    const raw = window.localStorage.getItem(PRINT_SETTINGS_STORAGE_KEY);
-    if (!raw) return null;
-    const parsed = JSON.parse(raw);
-    return parsed && typeof parsed === "object" ? (parsed as StoredPrintSettings) : null;
-  } catch {
-    return null;
-  }
-}
-
-function writePrintSettings(settings: Required<StoredPrintSettings>) {
-  if (typeof window === "undefined") return;
-  try {
-    window.localStorage.setItem(PRINT_SETTINGS_STORAGE_KEY, JSON.stringify(settings));
-  } catch {
-    /* localStorage may be unavailable (private mode); settings stay in memory */
-  }
-}
 
 // Real card dimensions in CSS px (96px per inch), used only to size the
 // on-screen scaler/thumbnails so a card looks true-to-size, just smaller. The
@@ -438,6 +405,10 @@ export default function PrintPage() {
   const params = useSearchParams();
   const idsParam = params.get("ids") ?? "";
   const shouldPrint = params.get("print") === "1";
+  // Set by the /print/[slug] loader after seeding a shared recipe into this
+  // session's queue — there's nothing behind this tab to go back to, so the
+  // header drops the back arrow (the logo still links home).
+  const cameFromSharedLink = params.get("shared") === "1";
   const [items, setItems] = useState<QueueItem[] | null>(null);
   const [cardSize, setCardSize] = useState<PrintCardSize>(() =>
     initialPrintCardSize(params.get("size")),
@@ -1543,7 +1514,7 @@ export default function PrintPage() {
   if (items === null) {
     return (
       <div className="h-full flex flex-col">
-        <SiteHeader backHref="/" compact sticky />
+        <SiteHeader backHref={cameFromSharedLink ? undefined : "/"} compact sticky />
         <div className="flex-1 grid place-items-center text-ink-soft">Preparing…</div>
       </div>
     );
@@ -1552,7 +1523,7 @@ export default function PrintPage() {
   if (items.length === 0) {
     return (
       <div className="h-full flex flex-col">
-        <SiteHeader backHref="/" compact sticky />
+        <SiteHeader backHref={cameFromSharedLink ? undefined : "/"} compact sticky />
         <div className="flex-1 flex flex-col items-center justify-center gap-cp-4 text-center px-cp-6">
           <p className="font-bold text-cp-h2">Nothing to print</p>
           <p className="text-ink-soft max-w-sm">
@@ -1585,7 +1556,7 @@ export default function PrintPage() {
           }
         />
       ))}
-      <SiteHeader backHref="/" compact sticky />
+      <SiteHeader backHref={cameFromSharedLink ? undefined : "/"} compact sticky />
 
       {/* Print preview / printed content */}
       <main className="recipe-print-shell px-cp-6 print:p-0">

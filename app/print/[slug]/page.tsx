@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { SiteHeader } from "@/components/SiteHeader";
-import { SharedRecipeCardView } from "@/components/SharedRecipeCardView";
+import { SharedRecipeCardRedirect } from "@/components/SharedRecipeCardRedirect";
 import { fetchSharedRecipeCard } from "@/lib/sharedRecipeCards";
 import { absoluteUrl, LOGO_PATH, SITE_NAME } from "@/lib/seo";
 
@@ -55,5 +55,5 @@ export default async function SharedPrintPage({ params }: PageProps) {
   const card = await fetchSharedRecipeCard(params.slug).catch(() => null);
   if (!card) return <NotFoundState />;
 
-  return <SharedRecipeCardView card={card} />;
+  return <SharedRecipeCardRedirect card={card} />;
 }

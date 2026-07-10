@@ -122,6 +122,30 @@ function writeSerializedQueue(serialized: string) {
   }
 }
 
+/**
+ * Seeds a fully-parsed recipe straight into this browser's session queue,
+ * status "ready" — no parsing step, used by the /print/[slug] loader to hand
+ * a shared recipe off to the real /print page. This is a local copy in the
+ * visitor's own session storage: editing it (via the normal print-page
+ * inline editor) only ever touches this copy, never the shared source doc.
+ */
+export function seedSharedQueueItem(recipe: Recipe, source: string): string {
+  const id = uid();
+  const item: QueueItem = {
+    id,
+    method: "shared",
+    source,
+    status: "ready",
+    title: recipe.title || "Untitled recipe",
+    recipe,
+    addedAt: Date.now(),
+  };
+  const next = [...readQueue(), item];
+  const serialized = serializeQueue(next);
+  if (serialized) writeSerializedQueue(serialized);
+  return id;
+}
+
 export function updateQueuedRecipe(id: string, recipe: Recipe): QueueItem[] {
   const nextRecipe = printableRecipe(recipe);
   const next = readQueue().map((item) =>

@@ -164,7 +164,7 @@ export async function setSharedRecipeCardPublished(slug: string, published: bool
 
 /**
  * Rough, best-effort visit counter — bumped once per browser page load (see
- * SharedRecipeCardView's mount effect), not a detailed analytics log. Uses a
+ * SharedRecipeCardRedirect's mount effect), not a detailed analytics log. Uses a
  * scoped Firestore rule that allows anyone to increment just this field by
  * exactly 1, so visitors never need to be signed in and can never touch
  * anything else on the doc.
