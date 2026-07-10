@@ -12,7 +12,7 @@ import type { User } from "firebase/auth";
  * sharing their own recipe) means changing this one check, not hunting for
  * scattered ones.
  */
-export async function isRecipePrinterAdmin(uid: string): Promise<boolean> {
+async function isRecipePrinterAdmin(uid: string): Promise<boolean> {
   const [{ doc, getDoc }, { getDb }] = await Promise.all([
     import("firebase/firestore"),
     import("@/lib/firebase/db"),

@@ -95,7 +95,7 @@ function isPermissionDeniedError(error: unknown): boolean {
   return typeof error === "object" && error !== null && (error as { code?: unknown }).code === "permission-denied";
 }
 
-export async function slugAvailable(slug: string): Promise<boolean> {
+async function slugAvailable(slug: string): Promise<boolean> {
   const [{ doc, getDoc }, { getDb }] = await Promise.all([
     import("firebase/firestore"),
     import("@/lib/firebase/db"),
