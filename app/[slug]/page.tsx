@@ -4,7 +4,8 @@ import Image from "next/image";
 import Link from "next/link";
 import { SiteFooter } from "@/components/SiteFooter";
 import { SiteHeader } from "@/components/SiteHeader";
-import { CheckIcon, ICON_SIZE, PrintIcon } from "@/components/icons";
+import { PrinterWorkspace } from "@/components/PrinterWorkspace";
+import { ICON_SIZE, PrintIcon } from "@/components/icons";
 import {
   SEO_LANDING_PAGE_MAP,
   SEO_LANDING_PAGES,
@@ -16,7 +17,7 @@ type PageProps = {
   params: { slug: string };
 };
 
-const APP_CTA_HREF = "/#rp-main";
+const APP_CTA_HREF = "#rp-tool";
 
 export function generateStaticParams() {
   return SEO_LANDING_PAGES.map((page) => ({ slug: page.slug }));
@@ -57,85 +58,6 @@ function pageJsonLd(page: (typeof SEO_LANDING_PAGES)[number]) {
       },
     ],
   };
-}
-
-function RecipePageVisual() {
-  return (
-    <div className="relative mx-auto w-full max-w-[820px] overflow-hidden rounded-xl border border-line bg-card p-cp-4 shadow-sm">
-      <div className="absolute right-4 top-4 opacity-15" aria-hidden>
-        <Image
-          src="/images/heirloom-whisk.svg"
-          alt=""
-          width={76}
-          height={76}
-          className="h-[76px] w-[76px]"
-        />
-      </div>
-
-      <div className="relative grid gap-cp-3">
-        <div>
-          <p className="text-cp-label font-extrabold uppercase tracking-[0.12em] text-brand-ink">
-            Recipe Printer output
-          </p>
-          <h2 className="mt-cp-1 text-cp-h2 font-extrabold tracking-[-0.03em]">
-            A printable recipe you can cook from
-          </h2>
-        </div>
-
-        <div className="rounded border border-line bg-white p-cp-4">
-          <div className="flex items-start justify-between gap-cp-4 border-b border-line pb-cp-2">
-            <div>
-              <p className="font-serif text-[1.28rem] leading-tight text-ink">
-                Lemon Sunday Pasta
-              </p>
-              <p className="mt-1 text-cp-caption font-semibold text-ink-soft">
-                25 min · Serves 4 · Saved from a recipe link
-              </p>
-            </div>
-            <span className="grid h-9 w-9 shrink-0 place-items-center rounded bg-brand-50 text-brand-ink">
-              <PrintIcon size={ICON_SIZE.md} />
-            </span>
-          </div>
-
-          <div className="mt-cp-3 grid gap-cp-4 sm:grid-cols-[0.8fr_1fr]">
-            <div>
-              <p className="text-cp-label font-extrabold uppercase tracking-[0.1em] text-brand-ink">
-                Ingredients
-              </p>
-              <ul className="mt-cp-2 space-y-0.5 text-cp-small text-ink-soft">
-                <li>Spaghetti</li>
-                <li>Lemon zest</li>
-                <li>Parmesan</li>
-                <li>Olive oil</li>
-              </ul>
-            </div>
-            <div>
-              <p className="text-cp-label font-extrabold uppercase tracking-[0.1em] text-brand-ink">
-                Steps
-              </p>
-              <ol className="mt-cp-2 space-y-0.5 text-cp-small text-ink-soft">
-                <li>Boil pasta until tender.</li>
-                <li>Toss warm with lemon and cheese.</li>
-                <li>Print, mark up, and keep.</li>
-              </ol>
-            </div>
-          </div>
-        </div>
-
-        <div className="grid gap-cp-2 text-cp-small font-semibold text-ink-soft sm:grid-cols-3">
-          <span className="inline-flex items-center gap-2">
-            <CheckIcon size={16} /> Cards
-          </span>
-          <span className="inline-flex items-center gap-2">
-            <CheckIcon size={16} /> Pages
-          </span>
-          <span className="inline-flex items-center gap-2">
-            <CheckIcon size={16} /> PDFs
-          </span>
-        </div>
-      </div>
-    </div>
-  );
 }
 
 function heroChips(page: (typeof SEO_LANDING_PAGES)[number]) {
@@ -260,7 +182,17 @@ export default function SeoLandingPage({ params }: PageProps) {
             </div>
           </section>
 
-          <RecipePageVisual />
+          <section id="rp-tool" className="scroll-mt-24">
+            <PrinterWorkspace
+              initialImportMode={page.initialImportMode}
+              importSubmitLabel={page.importSubmitLabel}
+            />
+            {page.importHint && (
+              <p className="mt-cp-3 text-center text-cp-small text-ink-soft">
+                {page.importHint}
+              </p>
+            )}
+          </section>
 
           <section aria-labelledby="steps-heading" className="mx-auto w-full max-w-[1040px]">
             <div className="max-w-[680px]">

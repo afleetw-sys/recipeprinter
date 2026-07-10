@@ -9,7 +9,7 @@ const COFFEE_LOGO_SRC = "/images/buy-me-a-coffee-logo.png";
 // Shared footer + primary site navigation. Keeping the deeper pages here (rather
 // than in the header) is what lets the homepage stay a clean utility while the
 // supporting content stays one click away and fully crawlable.
-export function SiteFooter() {
+export function SiteFooter({ isHome = false }: { isHome?: boolean }) {
   return (
     <footer className="no-print mt-cp-7 border-t border-line px-cp-6 py-cp-6">
       <div className="max-w-content mx-auto w-full flex flex-col gap-cp-5">
@@ -46,7 +46,15 @@ export function SiteFooter() {
         </nav>
         <div className="flex flex-wrap items-center justify-between gap-cp-3 text-cp-caption text-ink-soft">
           <span>
-            {SITE_NAME} is a{" "}
+            {SITE_NAME} is a free{" "}
+            {isHome ? (
+              "recipe printer"
+            ) : (
+              <Link href="/" className="text-brand-ink hover:underline font-semibold">
+                recipe printer
+              </Link>
+            )}{" "}
+            for websites, blogs, and social recipes — a{" "}
             <a
               href={PUBLISHER.url}
               target="_blank"

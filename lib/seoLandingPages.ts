@@ -11,6 +11,8 @@ export type SeoLandingPage = {
   statusNote?: string;
   initialImportMode?: ImportMethod;
   importSubmitLabel?: string;
+  /** Short hint shown under the embedded importer when the preselected mode needs a caveat. */
+  importHint?: string;
   title: string;
   description: string;
   h1: string;
@@ -35,7 +37,7 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
     intent: "Utility SEO",
     eyebrow: "Recipe printing tool",
     initialImportMode: "url",
-    title: "Free Recipe Printer for Websites",
+    title: "Print a Recipe from Any Website",
     description:
       "Paste a recipe website or food blog link and turn it into a clean printable recipe card, page, or PDF.",
     h1: "Print a recipe from a website",
@@ -311,6 +313,8 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
     intent: "Utility SEO",
     eyebrow: "Social recipe printer",
     initialImportMode: "url",
+    importHint:
+      "No clean recipe link on the pin? Paste the recipe text or upload a screenshot instead.",
     title: "Free Pinterest Recipe Printer",
     description:
       "Turn Pinterest recipe links, screenshots, or saved recipe text into printable recipe cards, pages, and PDFs.",

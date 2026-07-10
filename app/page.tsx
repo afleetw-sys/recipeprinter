@@ -44,7 +44,7 @@ export default function Home() {
         </div>
       </main>
 
-      <SiteFooter />
+      <SiteFooter isHome />
     </div>
   );
 }
