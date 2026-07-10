@@ -1444,11 +1444,9 @@ export default function PrintPage() {
         // toast would just be noise every time the page reloads.
         if (alreadyLinked) return;
         const hasAnyPremium = Object.keys(linkedInfo.entitlements.active).length > 0;
-        showToast(
-          hasAnyPremium
-            ? "Signed in — restored your purchased templates."
-            : "Signed in — no prior purchases found on this account.",
-        );
+        if (!hasAnyPremium) {
+          showToast("Signed in — no prior purchases found on this account.");
+        }
       })
       .catch((error) => {
         console.warn("RecipePrinter: could not link CookPilot account to purchases", error);
