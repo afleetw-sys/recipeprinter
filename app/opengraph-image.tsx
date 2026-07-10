@@ -1,7 +1,6 @@
-import { readFileSync } from "node:fs";
-import { join } from "node:path";
 import { ImageResponse } from "next/og";
 import { SITE_NAME, SITE_TAGLINE } from "@/lib/seo";
+import { OPENGRAPH_IMAGE_LOGO_BASE64 } from "@/app/opengraph-image-logo-base64";
 
 // A branded 1200x630 social card, generated at request time. Using next/og
 // keeps it in sync with the product name/tagline and avoids shipping a binary
@@ -9,16 +8,15 @@ import { SITE_NAME, SITE_TAGLINE } from "@/lib/seo";
 // on every route that doesn't set its own — including on-demand routes like
 // /[slug] and /print/[slug], which are never statically prerendered, so this
 // module gets imported fresh in Vercel's serverless function on every such
-// request. The logo is read from a copy co-located with this route (rather
-// than `public/images/recipeprinter-logo.png`) because `public/` is served
-// straight from Vercel's CDN and is NOT included in the serverless function's
-// filesystem at all — reading it with fs.readFileSync threw ENOENT in
-// production (though it worked fine locally, where the whole repo is on
-// disk), which took down every dynamic route on the site, not just this
-// image. Next's build tracing does bundle files under app/ that are read this
-// way, so this co-located copy resolves correctly at runtime.
-const logoData = readFileSync(join(process.cwd(), "app/opengraph-image-logo.png"));
-const logoUrl = `data:image/png;base64,${logoData.toString("base64")}`;
+// request. The logo is embedded as a base64 string constant rather than read
+// from disk at runtime: two earlier attempts (public/images/recipeprinter-
+// logo.png, then a co-located file read via fs.readFileSync) both threw
+// ENOENT specifically on Vercel — `public/` is never bundled into the
+// serverless function, and Next's build tracing didn't reliably include the
+// co-located file either — even though both worked fine locally. A string
+// constant has no such dependency, since it's just JS bundled with a module
+// that's already proven to load correctly.
+const logoUrl = `data:image/png;base64,${OPENGRAPH_IMAGE_LOGO_BASE64}`;
 
 export const alt = `${SITE_NAME}: ${SITE_TAGLINE}`;
 export const size = { width: 1200, height: 630 };
