@@ -3812,10 +3812,24 @@
   }
 
   .recipe-print-preview--card-6x4 .recipe-card-page {
-    padding-top: 0.6in;
     width: max-content !important;
     margin-left: auto !important;
     margin-right: auto !important;
+  }
+
+  /* Only the two-card stacked layout needs breathing room above the pair —
+     a lone precut 4x6 card (`cardsPerSheet: 1`) should fill its physical
+     page edge-to-edge, since the page IS the card at that point. Applying
+     this unconditionally pushed a single card's height (4in + this padding)
+     past a 4in-tall page whenever the printer actually resolved a page that
+     matched the card's footprint (e.g. landscape on real 4x6 media) —
+     spilling onto a second, mostly blank page. Portrait masked this because
+     the card's 6in width also exceeds a 4in-wide page, so the browser's own
+     scale-to-fit shrinks everything and absorbs the excess. `:has()` detects
+     the pair the same way the `.recipe-card + .recipe-card` gap rule below
+     does. */
+  .recipe-print-preview--card-6x4 .recipe-card-page:has(.recipe-card + .recipe-card) {
+    padding-top: 0.6in;
   }
 
   /* The cut-lines outline sits 0.1in outside each card, but the page
