@@ -7,40 +7,60 @@ import { LogoMark, Wordmark } from "@/components/Logo";
 // not a sprawling marketing site. Navigation lives in the footer.
 export function SiteHeader({
   backHref,
+  onBack,
   actions,
   compact = false,
   sticky = false,
 }: {
   backHref?: string;
+  /** When set, the logo becomes a real "go back" control (history.back()) instead of a fixed link to backHref/home. */
+  onBack?: () => void;
   actions?: ReactNode;
   compact?: boolean;
   sticky?: boolean;
 }) {
+  const logo = (
+    <>
+      {(backHref || onBack) && (
+        <span className="text-ink-soft group-hover:text-ink transition-colors" aria-hidden>
+          ←
+        </span>
+      )}
+      <LogoMark size={compact ? 26 : 30} rounded={0} />
+      <Wordmark
+        className={`${
+          compact
+            ? "text-[length:var(--cp-fs-wordmark-compact)]"
+            : "text-[length:var(--cp-fs-wordmark)]"
+        } text-ink`}
+      />
+    </>
+  );
+
   return (
     <header
       className={`no-print flex items-center justify-between gap-cp-4 px-cp-6 min-h-[62px] flex-wrap ${
         sticky ? "sticky top-0 z-10 bg-page border-b border-line py-cp-3" : ""
       }`}
     >
-      <Link
-        href={backHref ?? "/"}
-        className="flex items-center gap-cp-3 group"
-        aria-label="RecipePrinter home"
-      >
-        {backHref && (
-          <span className="text-ink-soft group-hover:text-ink transition-colors" aria-hidden>
-            ←
-          </span>
-        )}
-        <LogoMark size={compact ? 26 : 30} rounded={0} />
-        <Wordmark
-          className={`${
-            compact
-              ? "text-[length:var(--cp-fs-wordmark-compact)]"
-              : "text-[length:var(--cp-fs-wordmark)]"
-          } text-ink`}
-        />
-      </Link>
+      {onBack ? (
+        <button
+          type="button"
+          onClick={onBack}
+          className="flex items-center gap-cp-3 group bg-transparent border-0 p-0 cursor-pointer"
+          aria-label="Back"
+        >
+          {logo}
+        </button>
+      ) : (
+        <Link
+          href={backHref ?? "/"}
+          className="flex items-center gap-cp-3 group"
+          aria-label="RecipePrinter home"
+        >
+          {logo}
+        </Link>
+      )}
       {actions && (
         <div className="flex items-center gap-cp-3 flex-wrap justify-end">{actions}</div>
       )}

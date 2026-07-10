@@ -1,7 +1,7 @@
 "use client";
 
 import { memo, useCallback, useEffect, useMemo, useRef, useState, type CSSProperties } from "react";
-import { useSearchParams } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import dynamic from "next/dynamic";
 import { SiteHeader } from "@/components/SiteHeader";
@@ -402,6 +402,7 @@ function applySectionTitleEdit<T extends { section?: string }>(
 }
 
 export default function PrintPage() {
+  const router = useRouter();
   const params = useSearchParams();
   const idsParam = params.get("ids") ?? "";
   const shouldPrint = params.get("print") === "1";
@@ -1514,7 +1515,7 @@ export default function PrintPage() {
   if (items === null) {
     return (
       <div className="h-full flex flex-col">
-        <SiteHeader backHref={cameFromSharedLink ? undefined : "/"} compact sticky />
+        <SiteHeader onBack={cameFromSharedLink ? undefined : () => router.back()} compact sticky />
         <div className="flex-1 grid place-items-center text-ink-soft">Preparing…</div>
       </div>
     );
@@ -1523,7 +1524,7 @@ export default function PrintPage() {
   if (items.length === 0) {
     return (
       <div className="h-full flex flex-col">
-        <SiteHeader backHref={cameFromSharedLink ? undefined : "/"} compact sticky />
+        <SiteHeader onBack={cameFromSharedLink ? undefined : () => router.back()} compact sticky />
         <div className="flex-1 flex flex-col items-center justify-center gap-cp-4 text-center px-cp-6">
           <p className="font-bold text-cp-h2">Nothing to print</p>
           <p className="text-ink-soft max-w-sm">
@@ -1556,7 +1557,7 @@ export default function PrintPage() {
           }
         />
       ))}
-      <SiteHeader backHref={cameFromSharedLink ? undefined : "/"} compact sticky />
+      <SiteHeader onBack={cameFromSharedLink ? undefined : () => router.back()} compact sticky />
 
       {/* Print preview / printed content */}
       <main className="recipe-print-shell px-cp-6 print:p-0">
