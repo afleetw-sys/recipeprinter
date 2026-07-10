@@ -111,6 +111,25 @@ export async function slugAvailable(slug: string): Promise<boolean> {
   }
 }
 
+// Recipe/RecipeIngredient/RecipeInstruction have several optional fields
+// (yield, servings, image, per-ingredient amount/unit/note, ...). Firestore's
+// setDoc rejects a document containing an explicit `undefined` anywhere,
+// unlike JSON.stringify (which just drops it) — so an unset optional field on
+// the recipe being shared throws instead of silently omitting the key.
+function stripUndefined<T>(value: T): T {
+  if (Array.isArray(value)) {
+    return value.map((item) => stripUndefined(item)) as unknown as T;
+  }
+  if (value && typeof value === "object") {
+    return Object.fromEntries(
+      Object.entries(value as Record<string, unknown>)
+        .filter(([, v]) => v !== undefined)
+        .map(([k, v]) => [k, stripUndefined(v)]),
+    ) as T;
+  }
+  return value;
+}
+
 export async function createSharedRecipeCard(
   card: Omit<SharedRecipeCard, "createdAt" | "updatedAt" | "published">,
 ): Promise<void> {
@@ -122,7 +141,7 @@ export async function createSharedRecipeCard(
     throw new Error("That link is already taken. Try a different one.");
   }
   const now = Date.now();
-  const data: SharedRecipeCard = { ...card, createdAt: now, updatedAt: now, published: true };
+  const data = stripUndefined<SharedRecipeCard>({ ...card, createdAt: now, updatedAt: now, published: true });
   await setDoc(doc(getDb(), SHARED_RECIPE_CARDS_COLLECTION, card.slug), data);
 }
 
