@@ -25,8 +25,13 @@ service cloud.firestore {
         && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.recipePrinterAdmin == true
         && request.resource.data.createdBy == request.auth.uid;
 
-      allow update: if request.auth != null
-        && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.recipePrinterAdmin == true;
+      // Admins can update any field. Anyone else may only bump viewCount by
+      // exactly 1 and touch nothing else — a scoped opening for the public
+      // page-view counter that can't be used to rewrite the recipe.
+      allow update: if (request.auth != null
+          && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.recipePrinterAdmin == true)
+        || (request.resource.data.diff(resource.data).affectedKeys().hasOnly(["viewCount"])
+          && request.resource.data.viewCount == resource.data.get("viewCount", 0) + 1);
 
       allow delete: if false;
     }

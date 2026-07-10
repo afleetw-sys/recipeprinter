@@ -141,7 +141,13 @@ export async function createSharedRecipeCard(
     throw new Error("That link is already taken. Try a different one.");
   }
   const now = Date.now();
-  const data = stripUndefined<SharedRecipeCard>({ ...card, createdAt: now, updatedAt: now, published: true });
+  const data = stripUndefined<SharedRecipeCard>({
+    ...card,
+    createdAt: now,
+    updatedAt: now,
+    published: true,
+    viewCount: 0,
+  });
   await setDoc(doc(getDb(), SHARED_RECIPE_CARDS_COLLECTION, card.slug), data);
 }
 
@@ -153,5 +159,22 @@ export async function setSharedRecipeCardPublished(slug: string, published: bool
   await updateDoc(doc(getDb(), SHARED_RECIPE_CARDS_COLLECTION, slug), {
     published,
     updatedAt: Date.now(),
+  });
+}
+
+/**
+ * Rough, best-effort visit counter — bumped once per browser page load (see
+ * SharedRecipeCardView's mount effect), not a detailed analytics log. Uses a
+ * scoped Firestore rule that allows anyone to increment just this field by
+ * exactly 1, so visitors never need to be signed in and can never touch
+ * anything else on the doc.
+ */
+export async function incrementSharedRecipeCardViewCount(slug: string): Promise<void> {
+  const [{ doc, increment, updateDoc }, { getDb }] = await Promise.all([
+    import("firebase/firestore"),
+    import("@/lib/firebase/db"),
+  ]);
+  await updateDoc(doc(getDb(), SHARED_RECIPE_CARDS_COLLECTION, slug), {
+    viewCount: increment(1),
   });
 }

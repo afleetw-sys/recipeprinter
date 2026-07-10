@@ -21,6 +21,8 @@ export interface SharedRecipeCard {
   createdAt: number;
   updatedAt: number;
   published: boolean;
+  /** Rough visit count, bumped once per browser page load. Optional: docs created before this field existed don't have it — treat missing as 0. */
+  viewCount?: number;
 }
 
 const SLUG_PATTERN = /^[a-z0-9]+(-[a-z0-9]+)*$/;

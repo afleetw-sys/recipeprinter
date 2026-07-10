@@ -21,6 +21,7 @@ import {
   recipePrinterCustomerId,
 } from "@/lib/recipePrinterPurchases";
 import { friendlyPurchaseSetupError } from "@/lib/friendlyErrors";
+import { incrementSharedRecipeCardViewCount } from "@/lib/sharedRecipeCards";
 import type { SharedRecipeCard } from "@/types/sharedRecipeCard";
 
 const PrintDialogs = dynamic(
@@ -59,6 +60,14 @@ export function SharedRecipeCardView({ card }: { card: SharedRecipeCard }) {
 
   const scalerRef = useRef<HTMLDivElement | null>(null);
   const [scale, setScale] = useState(0.4);
+
+  // Rough visit count, not detailed analytics — fires once per real browser
+  // load (client-side, so link-preview bots that never run JS don't inflate
+  // it). Best-effort: failures are silently ignored, never block the page.
+  useEffect(() => {
+    incrementSharedRecipeCardViewCount(card.slug).catch(() => {});
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const selectedPremiumTemplate = isPremiumTemplate(template) ? template : null;
   const selectedTemplateOption = RECIPE_PRINT_TEMPLATE_OPTIONS.find((option) => option.id === template);
