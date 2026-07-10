@@ -194,46 +194,6 @@ export default function SeoLandingPage({ params }: PageProps) {
             )}
           </section>
 
-          <section aria-labelledby="steps-heading" className="mx-auto w-full max-w-[1040px]">
-            <div className="max-w-[680px]">
-              <h2
-                id="steps-heading"
-                className="text-cp-h2-lg font-extrabold tracking-[-0.03em]"
-              >
-                {page.stepsTitle}
-              </h2>
-              <p className="mt-cp-2 text-ink-soft text-cp-body leading-relaxed">
-                Recipe Printer keeps the path short: add the recipe, review the
-                printable version, then print or save it.
-              </p>
-            </div>
-            <ol className="mt-cp-4 grid gap-cp-3 md:grid-cols-3">
-              {page.steps.map((step, index) => (
-                <li key={step} className="card p-cp-4">
-                  <span className="grid h-8 w-8 place-items-center rounded-full bg-brand-50 text-cp-body font-extrabold text-brand-ink">
-                    {index + 1}
-                  </span>
-                  <p className="mt-cp-3 text-ink-soft text-cp-body leading-relaxed">
-                    {step}
-                  </p>
-                </li>
-              ))}
-            </ol>
-          </section>
-
-          <section aria-label="Recipe Printer benefits" className="mx-auto grid w-full max-w-[1040px] gap-cp-4 md:grid-cols-2">
-            {page.sections.map((section) => (
-              <div key={section.h2} className="card p-cp-5">
-                <h2 className="text-cp-h2 font-extrabold tracking-[-0.02em]">
-                  {section.h2}
-                </h2>
-                <p className="mt-cp-2 text-ink-soft text-cp-body leading-relaxed">
-                  {section.body}
-                </p>
-              </div>
-            ))}
-          </section>
-
           <section
             aria-labelledby="cta-heading"
             className="mx-auto w-full max-w-[1040px] rounded-xl bg-brand-50 px-cp-5 py-cp-6 sm:px-cp-7"
