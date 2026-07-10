@@ -122,6 +122,23 @@ const TEMPLATE_STACKED_FRONT_LIMIT_OVERRIDES: Partial<
   },
 };
 
+// Bistro and pantry both push the card's left padding in further to clear a
+// decorative spine (a checkerboard strip, a notebook rule-and-holes column —
+// see `.recipe-template--bistro`/`.recipe-template--pantry .recipe-card` in
+// globals.css), narrowing every two-column "wide" section's usable width.
+// The cost budgets above are calibrated against the unindented card, so
+// without this a step estimated to just barely fit can still overflow its
+// real (narrower) column — and since a single step is unbreakable, the
+// browser is forced to fragment it mid-sentence rather than defer it to the
+// back. Charged as a flat reserve (see `applyReserve`) against the stacked
+// front budget so borderline steps defer to the back face instead.
+const TEMPLATE_STACKED_FRONT_GUTTER_RESERVE: Partial<
+  Record<RecipePrintTemplate, Partial<Record<PrintCardSize, number>>>
+> = {
+  bistro: { "card-6x4": 25 },
+  pantry: { "card-6x4": 35 },
+};
+
 interface SplitOptions {
   hasPhoto?: boolean;
   template?: RecipePrintTemplate;
@@ -502,7 +519,11 @@ function splitStackedFront(
   const baseBudget = hasPhoto
     ? STACKED_FRONT_BUDGET[size].withPhoto
     : STACKED_FRONT_BUDGET[size].withoutPhoto;
-  const frontBudget = applyReserve(baseBudget, hasSourceUrl ? SOURCE_URL_FOOTER_RESERVE[size] : 0);
+  const gutterReserve = TEMPLATE_STACKED_FRONT_GUTTER_RESERVE[template ?? "classic"]?.[size] ?? 0;
+  const frontBudget = applyReserve(
+    baseBudget,
+    (hasSourceUrl ? SOURCE_URL_FOOTER_RESERVE[size] : 0) + gutterReserve,
+  );
   const frontLimits = stackedFrontLimitsFor(size, hasPhoto, template);
 
   // Ingredients only reserve their smaller share when they finish on the front
@@ -900,12 +921,31 @@ export const RecipeCardFace = memo(function RecipeCardFace({
     }
     const target: RecipeCardEditTarget = { kind, index };
     const isEditingThis = sameTarget(inlineEdit.editingTarget, target);
+    // Unlike ingredient/step lines (real inputs the whole time edit mode is
+    // on), this one only becomes a real <input> while it's the active field.
+    // A permanently-mounted <input> here — even one whose box is pixel-
+    // identical to the <h3> it replaces — throws off the browser's
+    // column-balance for the wide/stacked two-column layout below (a form
+    // control fragments differently than a heading, balance-height math and
+    // all), which is what was shifting ingredients/steps between columns
+    // just from opening Edit. Mounting it only on demand keeps every idle
+    // title a plain <h3>, identical to view mode.
+    if (!isEditingThis) {
+      return (
+        <h3
+          className="recipe-card__section-title recipe-card__section-title--editable"
+          onClick={() => startEdit(target, title)}
+        >
+          {title}
+        </h3>
+      );
+    }
     return (
       <input
+        ref={focusIfEditing(target)}
         className="recipe-card__inline-input recipe-card__section-title"
-        value={isEditingThis ? inlineEdit.value : title}
+        value={inlineEdit.value}
         aria-label="Section title"
-        onFocus={() => startEdit(target, title)}
         onChange={(event) => inlineEdit.onValueChange(event.target.value)}
         onBlur={commitEdit}
         onKeyDown={handleEditKeyDown}

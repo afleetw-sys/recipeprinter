@@ -1965,7 +1965,13 @@
     flex: 1 1 auto;
     flex-direction: row;
     align-items: center;
-    justify-content: flex-start;
+    /* `center`, not `flex-start`: when the deck's slides are narrower than
+       the viewport (one recipe, nothing to scroll to), flex-start left-aligns
+       them instead of centering, since all the leftover space collects on
+       one side. Overflowing (multi-page) decks are unaffected — center only
+       changes anything when there's slack to distribute, and `centerSlide()`
+       drives the actual scroll position for those regardless. */
+    justify-content: center;
     gap: 16px;
     min-height: 0;
     /* Extra top room so the front/back flip control can sit above the card
@@ -3196,6 +3202,16 @@
 
 .recipe-print-preview--letter .recipe-card__section-group:first-child .recipe-card__section-title {
   padding-top: 0;
+}
+
+.recipe-card__section-title--editable {
+  cursor: pointer;
+}
+
+.recipe-card__section-title--editable:hover {
+  outline: 1px solid color-mix(in srgb, var(--cp-accent) 40%, transparent);
+  outline-offset: 2px;
+  border-radius: 3px;
 }
 
 .recipe-card__ingredients ul {
