@@ -1204,6 +1204,52 @@ export default function PrintPage() {
     setEditValue("");
   }
 
+  // Enter mid-ingredient/mid-step splits the line at the cursor: the text
+  // before the cursor stays put, the text after becomes a new line right
+  // below it (focused, ready to keep typing) — like hitting Enter in any
+  // text editor, rather than committing the whole field.
+  function splitEditLine(target: RecipeCardEditTarget, before: string, after: string) {
+    if (!activeRecipeItem?.recipe) return;
+    const recipe = activeRecipeItem.recipe;
+    if (target.kind === "ingredient") {
+      const ingredients = recipe.ingredients.slice();
+      ingredients[target.index] = {
+        ...ingredients[target.index],
+        amount: undefined,
+        unit: undefined,
+        name: before,
+        note: undefined,
+        raw: before,
+      };
+      const section = sectionForInsertion(ingredients, target.index + 1);
+      ingredients.splice(target.index + 1, 0, { raw: after, name: after, section });
+      const nextRecipe = printableRecipe({ ...recipe, ingredients });
+      updateQueuedRecipe(activeRecipeItem.id, nextRecipe);
+      setItems((current) =>
+        current?.map((item) => (item.id === activeRecipeItem.id ? { ...item, recipe: nextRecipe } : item)) ??
+          current,
+      );
+      setEditingEdit({ recipeId: activeRecipeItem.id, target: { kind: "ingredient", index: target.index + 1 } });
+      setEditValue(after);
+      return;
+    }
+    if (target.kind === "step") {
+      const instructions = recipe.instructions.slice();
+      instructions[target.index] = { ...instructions[target.index], text: before };
+      const section = sectionForInsertion(instructions, target.index + 1);
+      instructions.splice(target.index + 1, 0, { step: 0, text: after, section });
+      const renumbered = instructions.map((step, i) => ({ ...step, step: i + 1 }));
+      const nextRecipe = printableRecipe({ ...recipe, instructions: renumbered });
+      updateQueuedRecipe(activeRecipeItem.id, nextRecipe);
+      setItems((current) =>
+        current?.map((item) => (item.id === activeRecipeItem.id ? { ...item, recipe: nextRecipe } : item)) ??
+          current,
+      );
+      setEditingEdit({ recipeId: activeRecipeItem.id, target: { kind: "step", index: target.index + 1 } });
+      setEditValue(after);
+    }
+  }
+
   useEffect(() => {
     const fullQueue = readQueue();
     initialQueueIdsRef.current = new Set(fullQueue.map((it) => it.id));
@@ -1796,6 +1842,7 @@ export default function PrintPage() {
                             onCancel: cancelEditTarget,
                             onInsertIngredient: insertIngredientAt,
                             onInsertStep: insertStepAt,
+                            onSplitLine: splitEditLine,
                           }
                         : undefined
                     }

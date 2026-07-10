@@ -631,6 +631,7 @@ export interface RecipeCardInlineEdit {
   onCancel: () => void;
   onInsertIngredient: (index: number) => void;
   onInsertStep: (index: number) => void;
+  onSplitLine: (target: RecipeCardEditTarget, before: string, after: string) => void;
 }
 
 function continuationFaces(
@@ -808,7 +809,10 @@ export const RecipeCardFace = memo(function RecipeCardFace({
     inlineEdit?.onCommit();
   }
 
-  function handleEditKeyDown(event: React.KeyboardEvent<HTMLInputElement | HTMLTextAreaElement>) {
+  function handleEditKeyDown(
+    event: React.KeyboardEvent<HTMLInputElement | HTMLTextAreaElement>,
+    target?: RecipeCardEditTarget,
+  ) {
     if (event.key === "Escape") {
       event.preventDefault();
       inlineEdit?.onCancel();
@@ -817,6 +821,14 @@ export const RecipeCardFace = memo(function RecipeCardFace({
     }
     if (event.key === "Enter" && !event.shiftKey) {
       event.preventDefault();
+      // Ingredients/steps split at the cursor instead of committing the
+      // whole field, so Enter behaves like it does in any text editor.
+      if (inlineEdit && target && (target.kind === "ingredient" || target.kind === "step")) {
+        const el = event.currentTarget;
+        const cursor = el.selectionStart ?? el.value.length;
+        inlineEdit.onSplitLine(target, el.value.slice(0, cursor), el.value.slice(cursor));
+        return;
+      }
       event.currentTarget.blur();
     }
   }
@@ -1104,7 +1116,7 @@ export const RecipeCardFace = memo(function RecipeCardFace({
                                   onFocus={() => startEdit(target, text)}
                                   onChange={(event) => inlineEdit.onValueChange(event.target.value)}
                                   onBlur={commitEdit}
-                                  onKeyDown={handleEditKeyDown}
+                                  onKeyDown={(event) => handleEditKeyDown(event, target)}
                                 />
                               ) : (
                                 text
@@ -1180,7 +1192,7 @@ export const RecipeCardFace = memo(function RecipeCardFace({
                                   onFocus={() => startEdit(target, step.text)}
                                   onChange={(event) => inlineEdit.onValueChange(event.target.value)}
                                   onBlur={commitEdit}
-                                  onKeyDown={handleEditKeyDown}
+                                  onKeyDown={(event) => handleEditKeyDown(event, target)}
                                 />
                               ) : (
                                 <span>{step.text}</span>
