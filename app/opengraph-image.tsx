@@ -3,12 +3,22 @@ import { join } from "node:path";
 import { ImageResponse } from "next/og";
 import { SITE_NAME, SITE_TAGLINE } from "@/lib/seo";
 
-const logoData = readFileSync(join(process.cwd(), "public/images/recipeprinter-logo.png"));
+// A branded 1200x630 social card, generated at request time. Using next/og
+// keeps it in sync with the product name/tagline and avoids shipping a binary
+// asset. Next serves this for both og:image and (as a fallback) twitter:image
+// on every route that doesn't set its own — including on-demand routes like
+// /[slug] and /print/[slug], which are never statically prerendered, so this
+// module gets imported fresh in Vercel's serverless function on every such
+// request. The logo is read from a copy co-located with this route (rather
+// than `public/images/recipeprinter-logo.png`) because `public/` is served
+// straight from Vercel's CDN and is NOT included in the serverless function's
+// filesystem at all — reading it with fs.readFileSync threw ENOENT in
+// production (though it worked fine locally, where the whole repo is on
+// disk), which took down every dynamic route on the site, not just this
+// image. Next's build tracing does bundle files under app/ that are read this
+// way, so this co-located copy resolves correctly at runtime.
+const logoData = readFileSync(join(process.cwd(), "app/opengraph-image-logo.png"));
 const logoUrl = `data:image/png;base64,${logoData.toString("base64")}`;
-
-// A branded 1200x630 social card, generated at build time. Using next/og keeps
-// it in sync with the product name/tagline and avoids shipping a binary asset.
-// Next serves this for both og:image and (as a fallback) twitter:image.
 
 export const alt = `${SITE_NAME}: ${SITE_TAGLINE}`;
 export const size = { width: 1200, height: 630 };
