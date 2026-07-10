@@ -2153,9 +2153,10 @@
 }
 
 /* One physical page's worth of card slots. Letter has a single slot that
-   fills the page; 6x4 has up to two, stacked and centered so the page can be
-   whatever size the printer actually uses (see the `@page rp-card-6x4` note)
-   instead of the page being sized to the cards. */
+   fills the page; 6x4 has up to two, stacked and centered on their own real
+   page (a true 6x4 sheet for one precut card, a full letter sheet to cut
+   apart for two — see the `@page rp-card-6x4` / `rp-card-6x4-sheet` notes
+   near the bottom of this file). */
 .recipe-card-page {
   display: flex;
   flex-direction: column;
@@ -3693,24 +3694,36 @@
   }
 }
 
-/* No explicit `size` here on purpose: most printers don't have a 6x4 media
-   loaded, and requesting one anyway made Chrome fall back to a mismatched
-   default (e.g. Letter portrait) while still trying to lay out a landscape
-   6x4 region within it. Leaving size unset lets the printer's own default
-   page (whatever the user has selected) apply; only the .recipe-card itself
-   is fixed at 6in x 4in, and up to two are centered per page — see
-   .recipe-card-page below. */
+/* Explicit `size` is what makes the selected format the real document page
+   size instead of a suggestion: without it, "Save as PDF" falls back to
+   Letter and a physical printer falls back to whatever paper it last used,
+   scaling/cropping our fixed-size .recipe-card to fit a page it wasn't laid
+   out for. 6in x 4in landscape, matching --recipe-card-width/-min-height
+   (see .recipe-print-preview above) — this is the single-precut-card sheet,
+   i.e. cardsPerSheet === 1 (see rp-card-6x4-sheet below for the other
+   cardsPerSheet option). */
 @page rp-card-6x4 {
+  size: 6in 4in;
   margin: 0;
 }
 
-/* No explicit `size` here either, for the same reason as rp-card-6x4 above:
-   requesting a specific size/orientation can fight whatever the printer or
-   OS print dialog actually resolves to, leaving our fixed-size .recipe-card
-   mismatched against the real page instead of filling it. Only the card's
-   own width/height (8.5in x 11in) dictate its size; the page is whatever the
-   user's printer uses. */
+/* cardsPerSheet === 2: two 6x4 cards are meant to be printed onto one full
+   sheet of paper and cut apart afterward (see the padding-top rule on
+   `.recipe-card-page:has(.recipe-card + .recipe-card)` below, which gives the
+   stacked pair breathing room on a page taller than either card) — so the
+   real page here is a full letter sheet, not a 6x4 one, even though the size
+   option is still "card-6x4". */
+@page rp-card-6x4-sheet {
+  size: 8.5in 11in;
+  margin: 0;
+}
+
+/* 8.5in x 11in portrait, matching the letter .recipe-card-width/-min-height
+   override (.recipe-print-preview--letter above) — same reasoning as
+   rp-card-6x4: an explicit `size` is required for both real print and PDF
+   export to actually use this page size instead of falling back to Letter. */
 @page rp-letter {
+  size: 8.5in 11in;
   margin: 0;
 }
 
@@ -3781,8 +3794,12 @@
     overflow: visible !important;
   }
 
-  .recipe-print-preview--card-6x4 .recipe-card-page {
+  .recipe-print-preview--card-6x4[data-cards-per-sheet="1"] .recipe-card-page {
     page: rp-card-6x4;
+  }
+
+  .recipe-print-preview--card-6x4[data-cards-per-sheet="2"] .recipe-card-page {
+    page: rp-card-6x4-sheet;
   }
 
   .recipe-print-preview--letter .recipe-card-page {
@@ -3877,13 +3894,14 @@
     max-width: none !important;
     height: var(--recipe-card-min-height);
     min-height: 0;
-    /* Not `margin: 0 auto` — auto-centering only comes out to zero when the
-       real resolved page width happens to exactly match --recipe-card-width.
-       Since @page no longer requests an exact size (see the rp-letter and
-       rp-card-6x4 notes above), that match isn't guaranteed, and centering a
-       fixed-width box in a slightly different-width page turns any mismatch
-       into a visible gap on both sides instead of the card just sitting
-       flush at the top-left corner it's actually sized for. */
+    /* Not `margin: 0 auto` — for letter and single-card-per-sheet 6x4, the
+       @page size (see rp-letter/rp-card-6x4 above) exactly matches
+       --recipe-card-width, so centering would be a no-op anyway. For the
+       6x4-on-a-full-sheet case (rp-card-6x4-sheet) the card is deliberately
+       narrower than the page, but centering happens one level up on
+       `.recipe-card-page` (`width: max-content` + auto margins, below) so two
+       stacked cards center as a pair — auto-centering here too would just
+       fight that. */
     margin: 0 !important;
     border: 0 !important;
     border-radius: 0 !important;

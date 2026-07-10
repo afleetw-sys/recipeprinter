@@ -181,6 +181,7 @@ const ScaledPage = memo(function ScaledPage({
   activeSide,
   scale,
   size,
+  cardsPerSheet,
   template,
   doubleSided,
   showImage,
@@ -194,6 +195,7 @@ const ScaledPage = memo(function ScaledPage({
   activeSide: "front" | "back";
   scale: number;
   size: PrintCardSize;
+  cardsPerSheet: 1 | 2;
   template: RecipePrintTemplate;
   doubleSided: boolean;
   showImage: boolean;
@@ -232,6 +234,7 @@ const ScaledPage = memo(function ScaledPage({
             showCutLines ? "recipe-print-preview--cut-lines" : ""
           }`}
           data-double-sided={doubleSided ? "true" : "false"}
+          data-cards-per-sheet={size === "card-6x4" ? cardsPerSheet : 1}
         >
           <div
             className={`recipe-card-set recipe-card-set--${size} recipe-template--${template}`}
@@ -1628,6 +1631,7 @@ export default function PrintPage() {
                   activeSide="front"
                   scale={RAIL_SCALE[cardSize]}
                   size={cardSize}
+                  cardsPerSheet={cardsPerSheet}
                   template={template}
                   doubleSided={continueOnBack}
                   showImage={photosOn}
@@ -1815,6 +1819,7 @@ export default function PrintPage() {
                     activeSide={isActive ? canvasSide : "front"}
                     scale={deckScale}
                     size={cardSize}
+                    cardsPerSheet={cardsPerSheet}
                     template={template}
                     doubleSided={continueOnBack}
                     showImage={photosOn}
