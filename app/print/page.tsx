@@ -19,6 +19,7 @@ import {
 } from "@/components/RecipeCardPrint";
 import { usePrintSheets, type NavItem, type PageSheet, type SheetSlot } from "@/lib/usePrintSheets";
 import { useRecipeInlineEditor } from "@/lib/useRecipeInlineEditor";
+import { useDeckScroller } from "@/lib/useDeckScroller";
 import {
   CheckIcon,
   ChevronLeftIcon,
@@ -86,7 +87,6 @@ const AdminShareLinkDialog = dynamic(
 
 const POST_PRINT_DIALOG_STORAGE_KEY = "recipeprinter:post-print-dialog:last-shown:v1";
 const POST_PRINT_DIALOG_INTERVAL_MS = 7 * 24 * 60 * 60 * 1000;
-const SINGLE_RECIPE_DECK_TOP_PADDING = 16;
 
 
 // Real card dimensions in CSS px (96px per inch), used only to size the
@@ -381,29 +381,10 @@ export default function PrintPage() {
   } = usePrintSheets({ items, cardSize, cardsPerSheet, doubleSided, photosOn, sourceUrlOn, template });
 
   const [activeNavIndex, setActiveNavIndex] = useState(0);
-  const [canvasSide, setCanvasSide] = useState<"front" | "back">("front");
   const [mobileDrawer, setMobileDrawer] = useState<"template" | null>(null);
   const [sizeMenuOpen, setSizeMenuOpen] = useState(false);
   const [settingsMenuOpen, setSettingsMenuOpen] = useState(false);
-  const deckRef = useRef<HTMLDivElement>(null);
-  const slideRefs = useRef<(HTMLDivElement | null)[]>([]);
   const printSettingsDialogRef = useRef<HTMLDivElement>(null);
-  const [deckScale, setDeckScale] = useState(0.5);
-  // While we scroll the deck programmatically (after a click), ignore the
-  // scroll-driven selection so it doesn't yank the outline back to whichever
-  // page is momentarily centred mid-animation.
-  const suppressScrollSyncRef = useRef(false);
-  const scrollSyncTimerRef = useRef<number | undefined>(undefined);
-
-  // Keep the active recipe valid as the page list changes (size / two-sided).
-  useEffect(() => {
-    setActiveNavIndex((index) => Math.min(index, Math.max(0, navItems.length - 1)));
-  }, [navItems.length]);
-
-  // Always start a freshly selected recipe on its front face.
-  useEffect(() => {
-    setCanvasSide("front");
-  }, [activeNavIndex, continueOnBack]);
 
   // Close the print-settings dialog if its trigger disappears (e.g. size
   // switches to letter with no back side), so it doesn't reopen stale next
@@ -418,76 +399,21 @@ export default function PrintPage() {
     disabled: !printSettingsOpen,
   });
 
-  // Scale each deck page to fit the available width while leaving room above
-  // and below so the previous / next pages peek in (implying you can scroll).
-  useEffect(() => {
-    const el = deckRef.current;
-    if (!el) return;
-    const { w: pageW, h: pageH } = PAGE_DIMS[cardSize];
-    const update = () => {
-      const mobile = window.matchMedia("(max-width: 820px)").matches;
-      // On mobile each slide is narrower than the deck itself (100vw - 96px)
-      // so neighbouring pages peek in on both sides; the scale must fit that
-      // slide width, not the full deck width, or the card overflows its slot.
-      const availW = el.clientWidth - (mobile ? 96 : 40);
-      const availH = el.clientHeight;
-      if (availW > 0 && availH > 0) {
-        const widthScale = availW / pageW;
-        const heightScale = (availH * (mobile ? 0.86 : 0.74)) / pageH;
-        setDeckScale(Math.max(0.12, Math.min(1.05, widthScale, heightScale)));
-      }
-    };
-    update();
-    const observer = new ResizeObserver(update);
-    observer.observe(el);
-    return () => observer.disconnect();
-  }, [cardSize, sheets.length]);
-
-  // Scrolling the deck selects whichever slide is closest to the centre.
-  // Every nav item — including a second recipe sharing a sheet with the
-  // first — has its own slide, so this is a direct index lookup.
-  useEffect(() => {
-    const el = deckRef.current;
-    if (!el) return;
-    let raf = 0;
-    const onScroll = () => {
-      if (suppressScrollSyncRef.current) return;
-      cancelAnimationFrame(raf);
-      raf = requestAnimationFrame(() => {
-        const mobile = window.matchMedia("(max-width: 820px)").matches;
-        const mid = mobile ? el.scrollLeft + el.clientWidth / 2 : el.scrollTop + el.clientHeight / 2;
-        let bestIndex = 0;
-        let bestDist = Number.POSITIVE_INFINITY;
-        slideRefs.current.forEach((slide, index) => {
-          if (!slide) return;
-          const center = mobile
-            ? slide.offsetLeft + slide.offsetWidth / 2
-            : slide.offsetTop + slide.offsetHeight / 2;
-          const dist = Math.abs(center - mid);
-          if (dist < bestDist) {
-            bestDist = dist;
-            bestIndex = index;
-          }
-        });
-        setActiveNavIndex(bestIndex);
-      });
-    };
-    el.addEventListener("scroll", onScroll, { passive: true });
-    return () => {
-      el.removeEventListener("scroll", onScroll);
-      cancelAnimationFrame(raf);
-    };
-  }, [navItems.length]);
-
-  // Centre the active page when the deck is first laid out or rescaled.
-  useEffect(() => {
-    centerSlide(activeNavIndex);
-    // Only re-centre on structural / size changes, not on every selection.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [navItems.length, deckScale, cardSize]);
-
   const singleRecipePrintView =
     (items?.filter((item) => Boolean(item.recipe)).length ?? 0) === 1;
+
+  const { canvasSide, setCanvasSide, deckScale, deckRef, slideRefs, goToSlide } = useDeckScroller({
+    activeNavIndex,
+    setActiveNavIndex,
+    navItemsLength: navItems.length,
+    cardSize,
+    sheetsLength: sheets.length,
+    continueOnBack,
+    singleRecipePrintView,
+    pageWidth: PAGE_DIMS[cardSize].w,
+    pageHeight: PAGE_DIMS[cardSize].h,
+  });
+
   const activeRecipeId = navItems[activeNavIndex]?.recipeId ?? null;
   const activeRecipeItem =
     activeRecipeId && items
@@ -548,67 +474,6 @@ export default function PrintPage() {
     createCurrentPrintJob(nextItems.map((item) => item.id));
     queue.remove(id);
     setShowDeleteRecipeDialog(false);
-  }
-
-  function scrollDeckTo(deck: HTMLDivElement, options: ScrollToOptions) {
-    if (options.behavior === "smooth") {
-      // scroll-snap-type: mandatory fights a smooth scrollTo() that spans
-      // multiple snap points — the deck stops at an intermediate slide
-      // instead of the requested one. Suspend snapping for the animation.
-      deck.style.scrollSnapType = "none";
-      const restore = () => {
-        deck.style.scrollSnapType = "";
-      };
-      deck.addEventListener("scrollend", restore, { once: true });
-      window.setTimeout(restore, 600);
-    }
-    deck.scrollTo(options);
-  }
-
-  function centerSlide(index: number, behavior: ScrollBehavior = "auto") {
-    const deck = deckRef.current;
-    const slide = slideRefs.current[index];
-    if (!deck || !slide) return;
-
-    if (window.matchMedia("(max-width: 820px)").matches) {
-      const targetLeft = slide.offsetLeft - (deck.clientWidth - slide.offsetWidth) / 2;
-      const maxLeft = deck.scrollWidth - deck.clientWidth;
-      scrollDeckTo(deck, {
-        left: Math.max(0, Math.min(targetLeft, maxLeft)),
-        behavior,
-      });
-      return;
-    }
-
-    const targetTop = singleRecipePrintView
-      ? slide.offsetTop - SINGLE_RECIPE_DECK_TOP_PADDING
-      : slide.offsetTop - (deck.clientHeight - slide.offsetHeight) / 2;
-    const maxTop = deck.scrollHeight - deck.clientHeight;
-    scrollDeckTo(deck, {
-      top: Math.max(0, Math.min(targetTop, maxTop)),
-      behavior,
-    });
-  }
-
-  function goToSlide(navIndex: number) {
-    // Every nav item has its own slide now (see the deck render below), even
-    // when two recipes share a physical sheet, so this is always a real
-    // scroll rather than just a same-sheet slot swap.
-    if (navIndex !== activeNavIndex) {
-      const behavior = Math.abs(navIndex - activeNavIndex) <= 3 ? "smooth" : "auto";
-      // Hold off the scroll listener until the animation settles, otherwise it
-      // overwrites our selection with the page that's centred partway through.
-      suppressScrollSyncRef.current = true;
-      window.clearTimeout(scrollSyncTimerRef.current);
-      scrollSyncTimerRef.current = window.setTimeout(
-        () => {
-          suppressScrollSyncRef.current = false;
-        },
-        behavior === "smooth" ? 500 : 120,
-      );
-      centerSlide(navIndex, behavior);
-    }
-    setActiveNavIndex(navIndex);
   }
 
   // Jump to a just-added recipe once its page actually exists in the deck
