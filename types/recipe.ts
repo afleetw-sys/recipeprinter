@@ -65,11 +65,6 @@ export type ParseResponse = ParseResult | ParseError;
 
 export type ImportMethod = "url" | "image" | "text" | "cookpilot" | "shared";
 
-export type ParseRequest =
-  | { method: "url"; url: string }
-  | { method: "image"; images: string[]; label?: string }
-  | { method: "text"; text: string };
-
 export type QueueItemStatus = "parsing" | "ready" | "error";
 
 export interface QueueItem {
@@ -86,11 +81,3 @@ export interface QueueItem {
   error?: string;
   addedAt: number;
 }
-
-export const IMPORT_METHOD_LABEL: Record<ImportMethod, string> = {
-  url: "URL",
-  image: "Image",
-  text: "Pasted text",
-  cookpilot: "CookPilot",
-  shared: "Shared link",
-};

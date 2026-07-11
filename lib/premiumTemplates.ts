@@ -2,8 +2,6 @@ import type { RecipePrintTemplate } from "@/components/RecipeCardPrint";
 
 export const RECIPEPRINTER_OFFERING_ID = "premium_templates";
 
-export const FREE_TEMPLATE_IDS = ["classic", "pantry"] satisfies RecipePrintTemplate[];
-
 export const PREMIUM_TEMPLATE_ENTITLEMENTS = {
   heirloom: "template_heirloom",
   bistro: "template_bistro",

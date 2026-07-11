@@ -5,6 +5,7 @@ import type { QueueItem, Recipe } from "@/types/recipe";
 import { parseImages, parseText, parseUrl } from "@/lib/parser";
 import { normalizeImportURL } from "@/lib/cookpilot";
 import { ensureRecipePrinterCustomer } from "@/lib/recipePrinterPurchases";
+import { hostnameOf as rawHostnameOf } from "@/lib/url";
 
 // The print queue is session-based for the MVP, no accounts, no saved library.
 // It survives navigation to /print (same tab) via sessionStorage.
@@ -163,11 +164,7 @@ export function updateQueuedRecipe(id: string, recipe: Recipe): QueueItem[] {
 }
 
 function hostnameOf(url: string): string {
-  try {
-    return new URL(normalizeImportURL(url)).hostname.replace(/^www\./, "");
-  } catch {
-    return url;
-  }
+  return rawHostnameOf(normalizeImportURL(url)) ?? url;
 }
 
 function canonicalUrl(rawUrl: string): string | null {

@@ -1,5 +1,7 @@
 import type { Recipe, RecipeInstruction, RecipeNutrition } from "@/types/recipe";
 import { bestRecipeImageFrom } from "@/lib/recipeImages";
+import { hostnameOf } from "@/lib/url";
+import { parseIsoDuration } from "@/lib/time";
 
 type AnyRecord = Record<string, unknown>;
 
@@ -31,14 +33,6 @@ function decodeEntities(value: string): string {
     .replace(/&gt;/gi, ">")
     .replace(/\s+/g, " ")
     .trim();
-}
-
-function hostnameOf(url: string): string | undefined {
-  try {
-    return new URL(url).hostname.replace(/^www\./, "");
-  } catch {
-    return undefined;
-  }
 }
 
 function typeMatches(node: AnyRecord, expected: string): boolean {
@@ -103,14 +97,13 @@ function durationFrom(value: unknown): string | undefined {
   const raw = asString(value);
   if (!raw) return undefined;
 
-  const match = raw.match(/^P(?:(\d+)D)?T?(?:(\d+)H)?(?:(\d+)M)?$/i);
-  if (!match) return raw;
+  const parsed = parseIsoDuration(raw);
+  if (!parsed) return raw;
 
-  const [, days, hours, minutes] = match;
   const parts = [
-    days ? `${days}d` : "",
-    hours ? `${hours}h` : "",
-    minutes ? `${minutes}m` : "",
+    parsed.days ? `${parsed.days}d` : "",
+    parsed.hours ? `${parsed.hours}h` : "",
+    parsed.minutes ? `${parsed.minutes}m` : "",
   ].filter(Boolean);
   return parts.length > 0 ? parts.join(" ") : raw;
 }

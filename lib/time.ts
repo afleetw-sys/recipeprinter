@@ -12,18 +12,26 @@ function formatMinutes(totalMinutes: number): string {
   return parts.join(" ") || `${rounded} min`;
 }
 
+export function parseIsoDuration(
+  value: string,
+): { days: number; hours: number; minutes: number } | null {
+  const match = value.match(/^P(?:(\d+(?:\.\d+)?)D)?T?(?:(\d+(?:\.\d+)?)H)?(?:(\d+(?:\.\d+)?)M)?$/i);
+  if (!match) return null;
+
+  return {
+    days: match[1] ? Number(match[1]) : 0,
+    hours: match[2] ? Number(match[2]) : 0,
+    minutes: match[3] ? Number(match[3]) : 0,
+  };
+}
+
 function minutesFromRecipeTime(value: string): number | null {
   const trimmed = value.trim();
   if (!trimmed) return null;
 
-  const iso = trimmed.match(
-    /^P(?:(\d+(?:\.\d+)?)D)?T?(?:(\d+(?:\.\d+)?)H)?(?:(\d+(?:\.\d+)?)M)?$/i,
-  );
+  const iso = parseIsoDuration(trimmed);
   if (iso) {
-    const days = iso[1] ? Number(iso[1]) : 0;
-    const hours = iso[2] ? Number(iso[2]) : 0;
-    const minutes = iso[3] ? Number(iso[3]) : 0;
-    const total = days * 24 * 60 + hours * 60 + minutes;
+    const total = iso.days * 24 * 60 + iso.hours * 60 + iso.minutes;
     return total > 0 ? total : null;
   }
 

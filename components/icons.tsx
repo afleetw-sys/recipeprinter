@@ -87,12 +87,6 @@ export const ChevronLeftIcon = (p: IconProps) => (
   </Base>
 );
 
-export const ChevronRightIcon = (p: IconProps) => (
-  <Base {...p}>
-    <path d="M9 6l6 6-6 6" />
-  </Base>
-);
-
 export const ChevronDownIcon = (p: IconProps) => (
   <Base {...p}>
     <path d="M6 9l6 6 6-6" />
@@ -148,13 +142,6 @@ export const TrashIcon = (p: IconProps) => (
   </Base>
 );
 
-export const RemoveIcon = (p: IconProps) => (
-  <Base {...p}>
-    <circle cx="12" cy="12" r="8.5" />
-    <path d="M8 12h8" />
-  </Base>
-);
-
 export const CheckIcon = (p: IconProps) => (
   <Base {...p}>
     <path d="M5 13l4 4L19 7" />
@@ -198,13 +185,6 @@ export const UsersIcon = (p: IconProps) => (
     <path d="M3.5 19a5.5 5.5 0 0111 0" />
     <path d="M16 5.5a3.2 3.2 0 010 6" />
     <path d="M17 14.5a5.5 5.5 0 013.5 4.5" />
-  </Base>
-);
-
-export const PlateIcon = (p: IconProps) => (
-  <Base {...p}>
-    <circle cx="12" cy="12" r="8.5" />
-    <circle cx="12" cy="12" r="4" />
   </Base>
 );
 

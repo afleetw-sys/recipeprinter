@@ -1,5 +1,6 @@
 import type { Recipe, RecipeIngredient, RecipeInstruction } from "@/types/recipe";
 import { bestRecipeImageFrom } from "@/lib/recipeImages";
+import { hostnameOf } from "@/lib/url";
 
 /* ──────────────────────────────────────────────────────────────────────────
    CookPilot is the parsing backend. RecipePrinter never re-implements a parser;
@@ -17,14 +18,6 @@ function asString(value: unknown): string | undefined {
   if (typeof value === "string" && value.trim()) return value.trim();
   if (typeof value === "number") return String(value);
   return undefined;
-}
-
-function hostnameOf(url: string): string | undefined {
-  try {
-    return new URL(url).hostname.replace(/^www\./, "");
-  } catch {
-    return undefined;
-  }
 }
 
 function sectionTitle(section: AnyRecord): string | undefined {
