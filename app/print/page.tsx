@@ -1163,6 +1163,7 @@ export default function PrintPage() {
                 </p>
               ) : (
                 <div className="recipe-cookpilot-account__prompt">
+                  <span className="recipe-cookpilot-account__hint">Already purchased?</span>
                   <button
                     type="button"
                     className="recipe-cookpilot-account__link"
@@ -1170,7 +1171,6 @@ export default function PrintPage() {
                   >
                     Log in
                   </button>
-                  <span className="recipe-cookpilot-account__hint">Already purchased?</span>
                 </div>
               )}
             </div>
