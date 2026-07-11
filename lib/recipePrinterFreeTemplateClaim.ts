@@ -14,19 +14,26 @@ export interface RecipePrinterFreeTemplateStatus {
 }
 
 /**
- * Reads free-template claim status off the shared CookPilot Firestore user
- * doc. Firestore rules already let a signed-in user read their own doc, so
- * this is a plain client read — no callable needed.
+ * Centralized RecipePrinter user-profile read: everything gated on the
+ * shared CookPilot `users/{uid}` Firestore doc (admin flag, free-template
+ * claim status) is derived from one `getDoc`, not one per gate — a signed-in
+ * `/print` visit used to fire two independent reads of this same doc.
  */
-export async function loadFreeTemplateStatus(
-  uid: string,
-): Promise<RecipePrinterFreeTemplateStatus> {
+export interface RecipePrinterUserProfile {
+  isAdmin: boolean;
+  freeTemplateStatus: RecipePrinterFreeTemplateStatus;
+}
+
+async function fetchRecipePrinterUserDoc(uid: string): Promise<Record<string, unknown>> {
   const [{ doc, getDoc }, { getDb }] = await Promise.all([
     import("firebase/firestore"),
     import("@/lib/firebase/db"),
   ]);
   const snap = await getDoc(doc(getDb(), "users", uid));
-  const data = snap.data() ?? {};
+  return snap.data() ?? {};
+}
+
+function deriveFreeTemplateStatus(data: Record<string, unknown>): RecipePrinterFreeTemplateStatus {
   const expiresAtMs = (data.plusExpiresAt as { toMillis?: () => number } | undefined)
     ?.toMillis?.() ?? null;
 
@@ -38,6 +45,29 @@ export async function loadFreeTemplateStatus(
         ? data.recipePrinterFreeTemplateGranted
         : null,
     grantedConfirmed: Boolean(data.recipePrinterFreeTemplateGrantedAt),
+  };
+}
+
+/**
+ * Reads free-template claim status off the shared CookPilot Firestore user
+ * doc. Firestore rules already let a signed-in user read their own doc, so
+ * this is a plain client read — no callable needed. Used on its own right
+ * after a claim, where a fresh read is the point; for the general-purpose
+ * page load, prefer `loadRecipePrinterUserProfile` so it isn't a second read
+ * of the same doc alongside the admin check.
+ */
+export async function loadFreeTemplateStatus(
+  uid: string,
+): Promise<RecipePrinterFreeTemplateStatus> {
+  return deriveFreeTemplateStatus(await fetchRecipePrinterUserDoc(uid));
+}
+
+/** Single read of `users/{uid}` powering both the admin gate and free-template status. */
+export async function loadRecipePrinterUserProfile(uid: string): Promise<RecipePrinterUserProfile> {
+  const data = await fetchRecipePrinterUserDoc(uid);
+  return {
+    isAdmin: data.recipePrinterAdmin === true,
+    freeTemplateStatus: deriveFreeTemplateStatus(data),
   };
 }
 

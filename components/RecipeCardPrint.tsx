@@ -760,6 +760,7 @@ export const RecipeCardFace = memo(function RecipeCardFace({
   showSourceUrl = false,
   continued = false,
   inlineEdit,
+  template,
 }: {
   recipe: Recipe;
   ingredients: Recipe["ingredients"];
@@ -774,6 +775,7 @@ export const RecipeCardFace = memo(function RecipeCardFace({
   showSourceUrl?: boolean;
   continued?: boolean;
   inlineEdit?: RecipeCardInlineEdit;
+  template?: RecipePrintTemplate;
 }) {
   const source = sourceLabel(recipe);
   const meta = metaBits(recipe);
@@ -972,36 +974,38 @@ export const RecipeCardFace = memo(function RecipeCardFace({
       data-preview-hidden={previewHidden ? "true" : undefined}
     >
       <div className="recipe-card__accent" aria-hidden />
-      <div className="recipe-card__checker" aria-hidden>
-        <svg width="100%" height="100%" focusable="false">
-          {Array.from({ length: checkerBands }, (_, band) => {
-            const y = band * 0.24;
-            return (
-              <Fragment key={band}>
-                <rect x="0" y={`${y}in`} width="0.24in" height="0.24in" fill="#f8fffe" />
-                <rect x="0.12in" y={`${y}in`} width="0.12in" height="0.12in" fill="#1479c9" />
-                <rect x="0" y={`${y + 0.12}in`} width="0.12in" height="0.12in" fill="#1479c9" />
-                <line
-                  x1="0.12in"
-                  y1={`${y}in`}
-                  x2="0.24in"
-                  y2={`${y + 0.12}in`}
-                  stroke="#5fb0e6"
-                  strokeWidth="0.003in"
-                />
-                <line
-                  x1="0"
-                  y1={`${y + 0.12}in`}
-                  x2="0.12in"
-                  y2={`${y + 0.24}in`}
-                  stroke="#5fb0e6"
-                  strokeWidth="0.003in"
-                />
-              </Fragment>
-            );
-          })}
-        </svg>
-      </div>
+      {template === "bistro" && (
+        <div className="recipe-card__checker" aria-hidden>
+          <svg width="100%" height="100%" focusable="false">
+            {Array.from({ length: checkerBands }, (_, band) => {
+              const y = band * 0.24;
+              return (
+                <Fragment key={band}>
+                  <rect x="0" y={`${y}in`} width="0.24in" height="0.24in" fill="#f8fffe" />
+                  <rect x="0.12in" y={`${y}in`} width="0.12in" height="0.12in" fill="#1479c9" />
+                  <rect x="0" y={`${y + 0.12}in`} width="0.12in" height="0.12in" fill="#1479c9" />
+                  <line
+                    x1="0.12in"
+                    y1={`${y}in`}
+                    x2="0.24in"
+                    y2={`${y + 0.12}in`}
+                    stroke="#5fb0e6"
+                    strokeWidth="0.003in"
+                  />
+                  <line
+                    x1="0"
+                    y1={`${y + 0.12}in`}
+                    x2="0.12in"
+                    y2={`${y + 0.24}in`}
+                    stroke="#5fb0e6"
+                    strokeWidth="0.003in"
+                  />
+                </Fragment>
+              );
+            })}
+          </svg>
+        </div>
+      )}
 
       {showHeader ? (
         <header

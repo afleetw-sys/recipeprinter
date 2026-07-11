@@ -221,6 +221,7 @@ export function RecipeFaceMeasurer({
               showImage={i === 0 && hasPhoto}
               showSourceUrl={showSourceUrl}
               continued={i > 0}
+              template={template}
             />
           </div>
         ))}
