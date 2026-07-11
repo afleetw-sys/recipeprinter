@@ -1,10 +1,11 @@
 "use client";
 
-import { useEffect, useId, useState, type FormEvent } from "react";
+import { useEffect, useId, useRef, useState, type FormEvent } from "react";
 import { createPortal } from "react-dom";
 import { submitPrinterFeedback, type FeedbackType } from "@/lib/feedback";
 import { ICON_SIZE, SpinnerIcon, XIcon } from "@/components/icons";
 import { Select } from "@/components/Select";
+import { useModalFocus } from "@/components/useModalFocus";
 
 const FEEDBACK_OPTIONS: { value: FeedbackType; label: string }[] = [
   { value: "idea", label: "Idea" },
@@ -58,17 +59,16 @@ export function FeedbackDialog({ open, onClose, initialType = "idea" }: Feedback
   const messageId = useId();
   const emailId = useId();
   const typeId = useId();
+  const dialogRef = useRef<HTMLDivElement | null>(null);
+  const messageRef = useRef<HTMLTextAreaElement | null>(null);
 
+  useModalFocus(dialogRef, onClose, { disabled: !open || busy });
+  // Runs after useModalFocus's own mount-time focus (which grabs the first
+  // focusable element — the X close button) so the message field gets focus
+  // instead, matching the previous autoFocus behavior.
   useEffect(() => {
-    if (!open) return;
-
-    function onKeyDown(event: KeyboardEvent) {
-      if (event.key === "Escape") onClose();
-    }
-
-    document.addEventListener("keydown", onKeyDown);
-    return () => document.removeEventListener("keydown", onKeyDown);
-  }, [onClose, open]);
+    if (open) messageRef.current?.focus();
+  }, [open]);
 
   useEffect(() => {
     if (!open) return;
@@ -118,10 +118,12 @@ export function FeedbackDialog({ open, onClose, initialType = "idea" }: Feedback
 
   return createPortal(
     <div
+      ref={dialogRef}
       className="fixed inset-0 z-50 flex items-stretch sm:items-center justify-center bg-ink/30 p-0 sm:px-cp-4 sm:py-cp-6"
       role="dialog"
       aria-modal="true"
       aria-label="Give feedback"
+      tabIndex={-1}
       onMouseDown={(event) => {
         if (event.target === event.currentTarget) close();
       }}
@@ -173,12 +175,12 @@ export function FeedbackDialog({ open, onClose, initialType = "idea" }: Feedback
               </label>
               <textarea
                 id={messageId}
+                ref={messageRef}
                 className="field"
                 value={message}
                 onChange={(event) => setMessage(event.target.value)}
                 placeholder={MESSAGE_PROMPTS[type]}
                 disabled={busy}
-                autoFocus
               />
             </div>
 
