@@ -77,9 +77,17 @@ function isSharedRecipeCard(data: Record<string, unknown> | null): boolean {
  * Returns `null` for a missing doc, an inactive (`published: false`) doc, or
  * malformed data — callers render one friendly "not found" state for all of
  * these rather than distinguishing them.
+ *
+ * `cache: "no-store"` is deliberate: an unadorned `fetch` in a Next.js Server
+ * Component defaults to `force-cache`, which would let an admin's "deactivate
+ * this link" go unnoticed by already-cached visitors until the route happens
+ * to revalidate. Share links are low-traffic (admin-curated, not viral), so
+ * the extra Firestore reads from always re-checking are cheap — correctness
+ * (a deactivated link actually stops working) matters more here than saving
+ * a handful of reads.
  */
 export async function fetchSharedRecipeCard(slug: string): Promise<SharedRecipeCard | null> {
-  const response = await fetch(firestoreDocumentUrl(slug));
+  const response = await fetch(firestoreDocumentUrl(slug), { cache: "no-store" });
   if (response.status === 404) return null;
   if (!response.ok) {
     throw new Error(`Firestore REST read failed: ${response.status}`);
