@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { signInWithRedirect, type User } from "firebase/auth";
 import { getFirebaseAuth } from "@/lib/firebase/client";
 import { friendlyAuthError, friendlyRecipeLibraryError } from "@/lib/friendlyErrors";
@@ -15,8 +15,11 @@ import {
   cookPilotQueueId,
   filterCookPilotSummaries,
   getCachedCookPilotSummaries,
+  hasMoreCookPilotSummaries,
+  loadAllCookPilotRecipeSummaries,
   loadCookPilotQueueItems,
   loadCookPilotRecipeSummaries,
+  loadMoreCookPilotRecipeSummaries,
   type CookPilotRecipeSummary,
 } from "@/lib/cookpilotRecipes";
 import type { QueueItem } from "@/types/recipe";
@@ -205,7 +208,11 @@ function SignedInCookPilotImport({
   const [addingIds, setAddingIds] = useState<Set<string>>(new Set());
   const [bulkBusy, setBulkBusy] = useState(false);
   const [loading, setLoading] = useState(() => getCachedCookPilotSummaries(user.uid) === null);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const [hasMore, setHasMore] = useState(() => hasMoreCookPilotSummaries(user.uid));
   const [error, setError] = useState<string | null>(null);
+  const sentinelRef = useRef<HTMLLIElement | null>(null);
+  const isSearching = queryText.trim().length > 0;
 
   const addedIds = useMemo(() => new Set(items.map((item) => item.id)), [items]);
   const visibleSummaries = useMemo(
@@ -226,7 +233,10 @@ function SignedInCookPilotImport({
     setError(null);
     loadCookPilotRecipeSummaries(user.uid)
       .then((nextSummaries) => {
-        if (alive) setSummaries(nextSummaries);
+        if (alive) {
+          setSummaries(nextSummaries);
+          setHasMore(hasMoreCookPilotSummaries(user.uid));
+        }
       })
       .catch((err) => {
         if (alive) {
@@ -240,6 +250,66 @@ function SignedInCookPilotImport({
       alive = false;
     };
   }, [user.uid]);
+
+  // Search needs to match the whole library, not just whatever's been
+  // scrolled into view so far — the first keystroke loads every remaining
+  // page in the background (subsequent keystrokes no-op once it's all in).
+  useEffect(() => {
+    if (!isSearching || !hasMoreCookPilotSummaries(user.uid)) return;
+    let alive = true;
+    setLoadingMore(true);
+    loadAllCookPilotRecipeSummaries(user.uid)
+      .then((all) => {
+        if (!alive) return;
+        setSummaries(all);
+        setHasMore(false);
+      })
+      .catch((err) => {
+        if (alive) setError(friendlyRecipeLibraryError(err, "Couldn't load more recipes."));
+      })
+      .finally(() => {
+        if (alive) setLoadingMore(false);
+      });
+    return () => {
+      alive = false;
+    };
+  }, [isSearching, user.uid]);
+
+  // Infinite scroll for normal browsing (not while search is loading the
+  // full library above) — loads the next page once the sentinel at the
+  // bottom of the list scrolls into view.
+  useEffect(() => {
+    if (isSearching || loading || loadingMore || !hasMore) return;
+    const node = sentinelRef.current;
+    if (!node) return;
+
+    let alive = true;
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (!entries[0]?.isIntersecting) return;
+        observer.disconnect();
+        setLoadingMore(true);
+        loadMoreCookPilotRecipeSummaries(user.uid)
+          .then((next) => {
+            if (!alive) return;
+            setSummaries(next);
+            setHasMore(hasMoreCookPilotSummaries(user.uid));
+          })
+          .catch((err) => {
+            if (alive) setError(friendlyRecipeLibraryError(err, "Couldn't load more recipes."));
+          })
+          .finally(() => {
+            if (alive) setLoadingMore(false);
+          });
+      },
+      { rootMargin: "200px" },
+    );
+    observer.observe(node);
+    return () => {
+      alive = false;
+      observer.disconnect();
+    };
+  }, [user.uid, isSearching, loading, loadingMore, hasMore]);
 
   async function handleToggle(summary: CookPilotRecipeSummary) {
     const queueId = cookPilotQueueId(summary.id);
@@ -270,11 +340,22 @@ function SignedInCookPilotImport({
       visibleSummaries.forEach((summary) => onRemoveRecipe(cookPilotQueueId(summary.id)));
       return;
     }
-    if (visibleNotAdded.length === 0) return;
     setError(null);
     setBulkBusy(true);
     try {
-      const queueItems = await loadCookPilotQueueItems(user.uid, visibleNotAdded);
+      // "Add all" means the whole library, not just whatever's been scrolled
+      // into view so far — load any remaining pages first if needed.
+      let allSummaries = summaries;
+      if (hasMoreCookPilotSummaries(user.uid)) {
+        allSummaries = await loadAllCookPilotRecipeSummaries(user.uid);
+        setSummaries(allSummaries);
+        setHasMore(false);
+      }
+      const targets = filterCookPilotSummaries(allSummaries, queryText).filter(
+        (summary) => !addedIds.has(cookPilotQueueId(summary.id)),
+      );
+      if (targets.length === 0) return;
+      const queueItems = await loadCookPilotQueueItems(user.uid, targets);
       onAddRecipes(queueItems);
     } catch (err) {
       setError(friendlyRecipeLibraryError(err, "Couldn't add those recipes."));
@@ -287,7 +368,10 @@ function SignedInCookPilotImport({
     <div className="flex flex-col gap-cp-4">
       <div className="flex items-center justify-between gap-cp-3">
         <h3 className="field-label mb-0">
-          CookPilot recipes{summaries.length > 0 ? ` (${summaries.length})` : ""}
+          CookPilot recipes
+          {summaries.length > 0
+            ? ` (${summaries.length}${!isSearching && hasMore ? "+" : ""})`
+            : ""}
         </h3>
         {!loading && !error && visibleSummaries.length > 0 && (
           <button
@@ -348,7 +432,7 @@ function SignedInCookPilotImport({
         </div>
       )}
 
-      {!loading && !error && summaries.length > 0 && visibleSummaries.length === 0 && (
+      {!loading && !error && !loadingMore && summaries.length > 0 && visibleSummaries.length === 0 && (
         <div className="text-center py-cp-7 px-cp-5 rounded-2xl border border-dashed border-line-strong">
           <p className="font-bold text-cp-h2">No matches</p>
           <p className="text-ink-soft text-cp-small mt-1.5">
@@ -369,7 +453,15 @@ function SignedInCookPilotImport({
               />
             </li>
           ))}
+          {!isSearching && hasMore && <li ref={sentinelRef} aria-hidden className="h-px" />}
         </ul>
+      )}
+
+      {!loading && loadingMore && (
+        <div className="flex items-center justify-center gap-2 py-cp-2 text-ink-soft text-cp-caption">
+          <SpinnerIcon size={ICON_SIZE.sm} />
+          Loading more recipes…
+        </div>
       )}
     </div>
   );

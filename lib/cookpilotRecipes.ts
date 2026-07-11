@@ -6,8 +6,10 @@ import {
   doc,
   getDoc,
   getDocs,
+  limit,
   orderBy,
   query,
+  startAfter,
   type DocumentData,
   type QueryDocumentSnapshot,
 } from "firebase/firestore";
@@ -99,27 +101,109 @@ export function cookPilotQueueId(recipeId: string): string {
   return `cookpilot:${recipeId}`;
 }
 
+// A library can grow large, so the picker fetches it a page at a time and
+// loads more as the user scrolls, rather than reading every recipe on tab
+// open. Search is the one exception (see loadAllCookPilotRecipeSummaries):
+// it needs to see the whole library, not just whatever's scrolled into view.
+const SUMMARY_PAGE_SIZE = 30;
+
+interface SummaryPageState {
+  summaries: CookPilotRecipeSummary[];
+  cursor: QueryDocumentSnapshot<DocumentData> | null;
+  hasMore: boolean;
+  // Dedupes overlapping calls (e.g. a fast scroll firing the intersection
+  // observer more than once before the previous page has resolved).
+  pending: Promise<CookPilotRecipeSummary[]> | null;
+}
+
 // Summaries rarely change within a session, and the picker unmounts every time
 // the import tab switches away. Cache per-user so coming back to the CookPilot
-// tab is instant instead of re-fetching the whole list each time.
-const summaryCache = new Map<string, CookPilotRecipeSummary[]>();
+// tab is instant instead of re-fetching from scratch each time.
+const summaryCache = new Map<string, SummaryPageState>();
 
 /** Synchronously read already-loaded summaries, or null if not yet fetched. */
 export function getCachedCookPilotSummaries(
   userId: string,
 ): CookPilotRecipeSummary[] | null {
-  return summaryCache.get(userId) ?? null;
+  return summaryCache.get(userId)?.summaries ?? null;
 }
 
+/** Whether there are more, not-yet-loaded summaries for this user. */
+export function hasMoreCookPilotSummaries(userId: string): boolean {
+  return summaryCache.get(userId)?.hasMore ?? true;
+}
+
+async function fetchSummaryPage(
+  userId: string,
+  cursor: QueryDocumentSnapshot<DocumentData> | null,
+): Promise<{
+  summaries: CookPilotRecipeSummary[];
+  cursor: QueryDocumentSnapshot<DocumentData> | null;
+  hasMore: boolean;
+}> {
+  const constraints = cursor
+    ? [orderBy("createdAt", "desc"), startAfter(cursor), limit(SUMMARY_PAGE_SIZE)]
+    : [orderBy("createdAt", "desc"), limit(SUMMARY_PAGE_SIZE)];
+  const snapshot = await getDocs(query(recipesCollection(userId), ...constraints));
+  return {
+    summaries: snapshot.docs.map(decodeSummary),
+    cursor: snapshot.docs[snapshot.docs.length - 1] ?? cursor,
+    hasMore: snapshot.docs.length === SUMMARY_PAGE_SIZE,
+  };
+}
+
+/** Loads the first page, or returns the cached one if already fetched. */
 export async function loadCookPilotRecipeSummaries(
   userId: string,
 ): Promise<CookPilotRecipeSummary[]> {
   const cached = summaryCache.get(userId);
-  if (cached) return cached;
-  const snapshot = await getDocs(query(recipesCollection(userId), orderBy("createdAt", "desc")));
-  const summaries = snapshot.docs.map(decodeSummary);
-  summaryCache.set(userId, summaries);
-  return summaries;
+  if (cached) return cached.summaries;
+  const page = await fetchSummaryPage(userId, null);
+  summaryCache.set(userId, {
+    summaries: page.summaries,
+    cursor: page.cursor,
+    hasMore: page.hasMore,
+    pending: null,
+  });
+  return page.summaries;
+}
+
+/** Fetches the next page and appends it to the cached list. No-ops past the end. */
+export async function loadMoreCookPilotRecipeSummaries(
+  userId: string,
+): Promise<CookPilotRecipeSummary[]> {
+  const cached = summaryCache.get(userId);
+  if (!cached || !cached.hasMore) return cached?.summaries ?? [];
+  if (cached.pending) return cached.pending;
+
+  const pending = fetchSummaryPage(userId, cached.cursor).then((page) => {
+    const current = summaryCache.get(userId) ?? cached;
+    const merged = {
+      summaries: [...current.summaries, ...page.summaries],
+      cursor: page.cursor,
+      hasMore: page.hasMore,
+      pending: null,
+    };
+    summaryCache.set(userId, merged);
+    return merged.summaries;
+  });
+  summaryCache.set(userId, { ...cached, pending });
+  return pending;
+}
+
+/**
+ * Loads every remaining page. Search needs to match against the whole
+ * library, not just whatever's been scrolled into view so far, so typing
+ * into the search box triggers this instead of the paginated loader above.
+ */
+export async function loadAllCookPilotRecipeSummaries(
+  userId: string,
+): Promise<CookPilotRecipeSummary[]> {
+  await loadCookPilotRecipeSummaries(userId);
+  while (hasMoreCookPilotSummaries(userId)) {
+    await loadMoreCookPilotRecipeSummaries(userId);
+  }
+  return summaryCache.get(userId)?.summaries ?? [];
 }
 
 function searchTextFor(summary: CookPilotRecipeSummary): string {
