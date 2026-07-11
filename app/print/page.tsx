@@ -65,7 +65,11 @@ import {
   updateQueuedRecipe,
   useQueue,
 } from "@/lib/queue";
-import { readPrintSettings, writePrintSettings } from "@/lib/printSettings";
+import {
+  isPrintCardSize,
+  isRecipePrintTemplate,
+  usePrintSettingsPersistence,
+} from "@/lib/printSettings";
 import type { QueueItem, Recipe } from "@/types/recipe";
 import type { CustomerInfo } from "@revenuecat/purchases-js";
 
@@ -295,16 +299,8 @@ function markPostPrintDialogShown() {
   }
 }
 
-function isPrintCardSize(value: string | null): value is PrintCardSize {
-  return PRINT_CARD_SIZE_OPTIONS.some((option) => option.id === value);
-}
-
 function initialPrintCardSize(value: string | null): PrintCardSize {
   return isPrintCardSize(value) ? value : "letter";
-}
-
-function isRecipePrintTemplate(value: string | null): value is RecipePrintTemplate {
-  return RECIPE_PRINT_TEMPLATE_OPTIONS.some((option) => option.id === value);
 }
 
 function initialRecipePrintTemplate(value: string | null): RecipePrintTemplate {
@@ -487,7 +483,6 @@ export default function PrintPage() {
   const linkedCookPilotUidRef = useRef<string | null>(null);
   const printRequestedRef = useRef(false);
   const autoPrintAttemptedRef = useRef(false);
-  const didMountSettingsRef = useRef(false);
   // Snapshot of every queue id that already existed when this print job was
   // loaded, so the merge effect below can tell "pre-existing queue item the
   // user didn't select for this job" apart from "just added via the Add
@@ -1178,44 +1173,22 @@ export default function PrintPage() {
     );
   }
 
-  // Hydrate stored layout preferences on mount (client only). Explicit URL
-  // params (for deep links) still win over whatever was last saved.
-  useEffect(() => {
-    const stored = readPrintSettings();
-    if (!stored) return;
-    if (!params.get("size") && stored.cardSize && isPrintCardSize(stored.cardSize)) {
-      setCardSize(stored.cardSize);
-    }
-    if (!params.get("template") && stored.template && isRecipePrintTemplate(stored.template)) {
-      setTemplate(stored.template);
-    }
-    if (typeof stored.doubleSided === "boolean") setDoubleSided(stored.doubleSided);
-    if (typeof stored.showCutLines === "boolean") setShowCutLines(stored.showCutLines);
-    if (typeof stored.showPhoto === "boolean") setShowPhoto(stored.showPhoto);
-    if (typeof stored.showSourceUrl === "boolean") setShowSourceUrl(stored.showSourceUrl);
-    if (stored.cardsPerSheet === 1 || stored.cardsPerSheet === 2) setCardsPerSheet(stored.cardsPerSheet);
-    // Runs once on mount; the settings above are the ones being hydrated here.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
-  // Persist layout preferences whenever they change. Skip the very first run
-  // so this doesn't clobber a stored value with defaults before the hydration
-  // effect above has a chance to apply it.
-  useEffect(() => {
-    if (!didMountSettingsRef.current) {
-      didMountSettingsRef.current = true;
-      return;
-    }
-    writePrintSettings({
-      cardSize,
-      template,
-      doubleSided,
-      showCutLines,
-      showPhoto,
-      showSourceUrl,
-      cardsPerSheet,
-    });
-  }, [cardSize, template, doubleSided, showCutLines, showPhoto, showSourceUrl, cardsPerSheet]);
+  usePrintSettingsPersistence(params, {
+    cardSize,
+    setCardSize,
+    template,
+    setTemplate,
+    doubleSided,
+    setDoubleSided,
+    showCutLines,
+    setShowCutLines,
+    showPhoto,
+    setShowPhoto,
+    showSourceUrl,
+    setShowSourceUrl,
+    cardsPerSheet,
+    setCardsPerSheet,
+  });
 
   // Auto-open the print dialog when the user chose Print instead of Preview.
   useEffect(() => {
