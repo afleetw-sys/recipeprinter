@@ -176,17 +176,23 @@ export async function loadMoreCookPilotRecipeSummaries(
   if (!cached || !cached.hasMore) return cached?.summaries ?? [];
   if (cached.pending) return cached.pending;
 
-  const pending = fetchSummaryPage(userId, cached.cursor).then((page) => {
-    const current = summaryCache.get(userId) ?? cached;
-    const merged = {
-      summaries: [...current.summaries, ...page.summaries],
-      cursor: page.cursor,
-      hasMore: page.hasMore,
-      pending: null,
-    };
-    summaryCache.set(userId, merged);
-    return merged.summaries;
-  });
+  const pending = fetchSummaryPage(userId, cached.cursor)
+    .then((page) => {
+      const current = summaryCache.get(userId) ?? cached;
+      const merged = {
+        summaries: [...current.summaries, ...page.summaries],
+        cursor: page.cursor,
+        hasMore: page.hasMore,
+        pending: null,
+      };
+      summaryCache.set(userId, merged);
+      return merged.summaries;
+    })
+    .catch((err) => {
+      const current = summaryCache.get(userId) ?? cached;
+      summaryCache.set(userId, { ...current, pending: null });
+      throw err;
+    });
   summaryCache.set(userId, { ...cached, pending });
   return pending;
 }

@@ -5,12 +5,14 @@ import { createPortal } from "react-dom";
 import {
   EmailAuthProvider,
   GoogleAuthProvider,
+  type AuthProvider,
   OAuthProvider,
   deleteUser,
   getRedirectResult,
   onAuthStateChanged,
   signInAnonymously,
   signInWithEmailAndPassword,
+  signInWithPopup,
   signInWithRedirect,
   signOut,
   type User,
@@ -41,6 +43,20 @@ const COOKPILOT_SIGNED_IN_STORAGE_KEY = "recipeprinter:cookpilot-was-signed-in:v
 // below). This flag stops the auth listener's purge from racing that in-flight
 // call and deleting the session out from under it before the callable resolves.
 let checkingEmailProviders = false;
+
+function shouldUseRedirectSignIn(): boolean {
+  if (typeof window === "undefined") return true;
+  return window.matchMedia("(max-width: 820px), (pointer: coarse)").matches;
+}
+
+export async function signInWithCookPilotProvider(provider: AuthProvider) {
+  const auth = getFirebaseAuth();
+  if (shouldUseRedirectSignIn()) {
+    await signInWithRedirect(auth, provider);
+    return;
+  }
+  await signInWithPopup(auth, provider);
+}
 
 export async function purgeAnonymousUser(user: User) {
   await deleteUser(user).catch(() => signOut(getFirebaseAuth()).catch(() => {}));
@@ -174,7 +190,7 @@ export function CookPilotLoginDialog({ onClose }: { onClose: () => void }) {
         // This account only has Google sign-in set up, so a password will
         // never work for it. Send them straight into the Google flow, the
         // same redirect the iOS app does for this case.
-        await signInWithRedirect(getFirebaseAuth(), googleProvider);
+        await signInWithCookPilotProvider(googleProvider);
         return;
       }
 
@@ -219,7 +235,7 @@ export function CookPilotLoginDialog({ onClose }: { onClose: () => void }) {
     setBusy(true);
     setError(null);
     try {
-      await signInWithRedirect(getFirebaseAuth(), googleProvider);
+      await signInWithCookPilotProvider(googleProvider);
     } catch (err) {
       setError(friendlyAuthError(err, "We couldn't sign in with Google. Please try again."));
       setBusy(false);
@@ -230,7 +246,7 @@ export function CookPilotLoginDialog({ onClose }: { onClose: () => void }) {
     setBusy(true);
     setError(null);
     try {
-      await signInWithRedirect(getFirebaseAuth(), appleProvider);
+      await signInWithCookPilotProvider(appleProvider);
     } catch (err) {
       setError(friendlyAuthError(err, "We couldn't sign in with Apple. Please try again."));
       setBusy(false);

@@ -1,14 +1,14 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
-import { signInWithRedirect, type User } from "firebase/auth";
-import { getFirebaseAuth } from "@/lib/firebase/client";
+import type { User } from "firebase/auth";
 import { friendlyAuthError, friendlyRecipeLibraryError } from "@/lib/friendlyErrors";
 import { formatRecipeTime } from "@/lib/time";
 import {
   appleProvider,
   CookPilotLoginDialog,
   googleProvider,
+  signInWithCookPilotProvider,
   useCookPilotAuth,
 } from "@/components/CookPilotAuth";
 import {
@@ -49,7 +49,7 @@ function SignedOutCookPilotImport({
     setBusyProvider("google");
     setError(null);
     try {
-      await signInWithRedirect(getFirebaseAuth(), googleProvider);
+      await signInWithCookPilotProvider(googleProvider);
     } catch (err) {
       setError(friendlyAuthError(err, "We couldn't sign in with Google. Please try again."));
       setBusyProvider(null);
@@ -60,7 +60,7 @@ function SignedOutCookPilotImport({
     setBusyProvider("apple");
     setError(null);
     try {
-      await signInWithRedirect(getFirebaseAuth(), appleProvider);
+      await signInWithCookPilotProvider(appleProvider);
     } catch (err) {
       setError(friendlyAuthError(err, "We couldn't sign in with Apple. Please try again."));
       setBusyProvider(null);
@@ -211,6 +211,7 @@ function SignedInCookPilotImport({
   const [loadingMore, setLoadingMore] = useState(false);
   const [hasMore, setHasMore] = useState(() => hasMoreCookPilotSummaries(user.uid));
   const [error, setError] = useState<string | null>(null);
+  const [loadMoreError, setLoadMoreError] = useState<string | null>(null);
   const sentinelRef = useRef<HTMLLIElement | null>(null);
   const isSearching = queryText.trim().length > 0;
 
@@ -231,6 +232,7 @@ function SignedInCookPilotImport({
     let alive = true;
     setLoading(true);
     setError(null);
+    setLoadMoreError(null);
     loadCookPilotRecipeSummaries(user.uid)
       .then((nextSummaries) => {
         if (alive) {
@@ -258,6 +260,7 @@ function SignedInCookPilotImport({
     if (!isSearching || !hasMoreCookPilotSummaries(user.uid)) return;
     let alive = true;
     setLoadingMore(true);
+    setLoadMoreError(null);
     loadAllCookPilotRecipeSummaries(user.uid)
       .then((all) => {
         if (!alive) return;
@@ -279,28 +282,32 @@ function SignedInCookPilotImport({
   // full library above) — loads the next page once the sentinel at the
   // bottom of the list scrolls into view.
   useEffect(() => {
-    if (isSearching || loading || loadingMore || !hasMore) return;
+    if (isSearching || loading || loadingMore || loadMoreError || !hasMore) return;
     const node = sentinelRef.current;
     if (!node) return;
 
     let alive = true;
+    function loadNextPage() {
+      setLoadingMore(true);
+      setLoadMoreError(null);
+      loadMoreCookPilotRecipeSummaries(user.uid)
+        .then((next) => {
+          if (!alive) return;
+          setSummaries(next);
+          setHasMore(hasMoreCookPilotSummaries(user.uid));
+        })
+        .catch((err) => {
+          if (alive) setLoadMoreError(friendlyRecipeLibraryError(err, "Couldn't load more recipes."));
+        })
+        .finally(() => {
+          if (alive) setLoadingMore(false);
+        });
+    }
     const observer = new IntersectionObserver(
       (entries) => {
         if (!entries[0]?.isIntersecting) return;
         observer.disconnect();
-        setLoadingMore(true);
-        loadMoreCookPilotRecipeSummaries(user.uid)
-          .then((next) => {
-            if (!alive) return;
-            setSummaries(next);
-            setHasMore(hasMoreCookPilotSummaries(user.uid));
-          })
-          .catch((err) => {
-            if (alive) setError(friendlyRecipeLibraryError(err, "Couldn't load more recipes."));
-          })
-          .finally(() => {
-            if (alive) setLoadingMore(false);
-          });
+        loadNextPage();
       },
       { rootMargin: "200px" },
     );
@@ -309,7 +316,22 @@ function SignedInCookPilotImport({
       alive = false;
       observer.disconnect();
     };
-  }, [user.uid, isSearching, loading, loadingMore, hasMore]);
+  }, [user.uid, isSearching, loading, loadingMore, loadMoreError, hasMore]);
+
+  function retryLoadMore() {
+    if (loadingMore) return;
+    setLoadingMore(true);
+    setLoadMoreError(null);
+    loadMoreCookPilotRecipeSummaries(user.uid)
+      .then((next) => {
+        setSummaries(next);
+        setHasMore(hasMoreCookPilotSummaries(user.uid));
+      })
+      .catch((err) => {
+        setLoadMoreError(friendlyRecipeLibraryError(err, "Couldn't load more recipes."));
+      })
+      .finally(() => setLoadingMore(false));
+  }
 
   async function handleToggle(summary: CookPilotRecipeSummary) {
     const queueId = cookPilotQueueId(summary.id);
@@ -461,6 +483,16 @@ function SignedInCookPilotImport({
         <div className="flex items-center justify-center gap-2 py-cp-2 text-ink-soft text-cp-caption">
           <SpinnerIcon size={ICON_SIZE.sm} />
           Loading more recipes…
+        </div>
+      )}
+
+      {!loading && !loadingMore && loadMoreError && (
+        <div className="state state--error" role="alert">
+          <h4>Couldn&apos;t load more recipes</h4>
+          <p>{loadMoreError}</p>
+          <button type="button" className="btn btn-secondary btn-compact mt-cp-3" onClick={retryLoadMore}>
+            Try again
+          </button>
         </div>
       )}
     </div>

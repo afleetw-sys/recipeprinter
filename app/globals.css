@@ -4142,6 +4142,7 @@
   color: var(--recipe-accent);
   font-size: 6.5pt;
   font-weight: 800;
+  text-shadow: none;
 }
 
 /* Sits absolutely inside the line above it and reaches down into the gap
@@ -4856,6 +4857,15 @@
     print-color-adjust: exact;
     break-inside: avoid-page;
     page-break-inside: avoid;
+  }
+
+  .recipe-print-preview--card-6x4 .recipe-card {
+    width: 6in !important;
+    min-width: 6in !important;
+    max-width: 6in !important;
+    height: 4in !important;
+    min-height: 4in !important;
+    max-height: 4in !important;
   }
 
   .recipe-template--classic .recipe-card__accent {

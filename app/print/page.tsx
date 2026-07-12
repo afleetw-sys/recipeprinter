@@ -177,7 +177,11 @@ const ScaledPage = memo(function ScaledPage({
         style={{ "--page-scale": scale, "--page-w": `${dims.w}px`, "--page-h": `${dims.h}px` } as CSSProperties}
       >
         <div className="recipe-page-scaler__inner">
-          <div className={`recipe-print-preview recipe-print-preview--${size}`}>
+          <div
+            className={`recipe-print-preview recipe-print-preview--${size}`}
+            data-cards-per-sheet={1}
+            data-double-sided="false"
+          >
             <div className={`recipe-card-set recipe-card-set--${size} recipe-template--${template}`}>
               <div className={`recipe-card-page recipe-card-page--front ${isLastSheet ? "recipe-card-page--no-break" : ""}`}>
                 {anySlot.kind === "divider" ? (
@@ -1736,15 +1740,6 @@ export default function PrintPage() {
               {cookPilotUser ? (
                 <p className="recipe-cookpilot-account__signed-in">
                   Signed in as {cookPilotUser.email ?? "your CookPilot account"}
-                  {" · "}
-                  <button
-                    type="button"
-                    className="recipe-cookpilot-account__link"
-                    disabled={projectSaveBusy}
-                    onClick={() => void handleSaveProject()}
-                  >
-                    {savedProjectId ? "Saved" : "Save project"}
-                  </button>
                   {" · "}
                   <button
                     type="button"
