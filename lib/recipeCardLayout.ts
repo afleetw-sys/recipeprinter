@@ -1,5 +1,5 @@
 import { formatRecipeTime } from "@/lib/time";
-import type { Recipe } from "@/types/recipe";
+import type { CoverConfig, Recipe } from "@/types/recipe";
 import type { CardSectionLayout, PrintCardSize, RecipePrintTemplate } from "@/components/RecipeCardPrint";
 
 // How much ingredient/instruction text fits on the front before it must
@@ -98,6 +98,7 @@ const TEMPLATE_STACKED_FRONT_GUTTER_RESERVE: Partial<
 > = {
   bistro: { "card-6x4": 25 },
   pantry: { "card-6x4": 35 },
+  cookout: { "card-6x4": 30 },
 };
 
 interface SplitOptions {
@@ -228,6 +229,40 @@ export function ingredientText(ing: Recipe["ingredients"][number]): string {
   return [amount, ing.name].filter(Boolean).join(" ") + (ing.note ? `, ${ing.note}` : "");
 }
 
+// Splits a flat, ordered sequence of real rendered heights into two newspaper
+// columns: column 1 gets items[0..k), column 2 gets items[k..n). This is a
+// balanced-bisection problem (find the single cut point whose prefix sum is
+// closest to half the total), not a bin-packing/greedy-interleave one — the
+// latter would scatter items across columns out of reading order (e.g. 1,3,5
+// in column 1 and 2,4,6 in column 2), which is wrong for content that reads
+// top-to-bottom-then-left-to-right. `heights` must already account for any
+// item that has to stay glued to what precedes it (e.g. a section title glued
+// to its first item) — glue it into one height before calling this.
+export function splitIntoColumns(heights: number[]): number {
+  const n = heights.length;
+  if (n === 0) return 0;
+
+  const total = heights.reduce((sum, h) => sum + h, 0);
+  const target = total / 2;
+
+  let prefix = 0;
+  let bestIndex = 1;
+  let bestDiff = Number.POSITIVE_INFINITY;
+  // Column 1 always gets at least one item (k starts at 1) — an empty first
+  // column below a full second one isn't a balance CSS's column-fill:balance
+  // would ever produce, and isn't better-balanced by any measure once there's
+  // real content to place.
+  for (let k = 1; k <= n; k++) {
+    prefix += heights[k - 1];
+    const diff = Math.abs(prefix - target);
+    if (diff < bestDiff) {
+      bestDiff = diff;
+      bestIndex = k;
+    }
+  }
+  return bestIndex;
+}
+
 export function sectionGroups<T extends { section?: string }>(items: T[]) {
   const groups: Array<{ title?: string; items: T[] }> = [];
   for (const item of items) {
@@ -240,6 +275,35 @@ export function sectionGroups<T extends { section?: string }>(items: T[]) {
     }
   }
   return groups;
+}
+
+export interface ColumnChunk<T> {
+  item: T;
+  /** Index into the original flat items array (e.g. recipe.ingredients). */
+  index: number;
+  /** Set only on a group's first item — the chunk `splitIntoColumns` should measure with its title glued on. */
+  groupTitle?: string;
+  /** Groups consecutive chunks that belong to the same section group, so a renderer knows where to open/close a group wrapper. */
+  groupId: number;
+}
+
+// Flattens `sectionGroups`' output back into one ordered sequence, one chunk
+// per item, tagging each group's first item with its title (the unit
+// `splitIntoColumns` should measure as one glued block) and every chunk with
+// a stable `groupId` (so a column renderer, walking its own slice of this
+// list, knows where one section group's wrapper ends and the next begins —
+// independent of which chunks a given column ends up holding).
+export function buildColumnChunks<T>(
+  groups: Array<{ title?: string; items: T[] }>,
+  indexOf: (item: T) => number,
+): ColumnChunk<T>[] {
+  const chunks: ColumnChunk<T>[] = [];
+  groups.forEach((group, groupId) => {
+    group.items.forEach((item, i) => {
+      chunks.push({ item, index: indexOf(item), groupTitle: i === 0 ? group.title : undefined, groupId });
+    });
+  });
+  return chunks;
 }
 
 function textCost(value: string): number {
@@ -591,6 +655,30 @@ export interface RecipeFaces {
   back: RecipeFace | null;
   pages: RecipeFace[];
   hasBack: boolean;
+}
+
+// Section dividers and covers are always exactly one physical page — unlike a
+// recipe, there's no content-length budget to split across faces — so these
+// sibling resolvers exist purely for naming symmetry with `getRecipeFaces`
+// and to give the divider/cover a distinct, tagged shape `usePrintSheets` can
+// dispatch on, rather than forcing them into `RecipeFace`'s ingredients/
+// instructions shape.
+
+export interface SectionDividerContent {
+  title: string;
+}
+
+export function dividerToFaces(title: string): SectionDividerContent {
+  return { title };
+}
+
+export interface CoverContent {
+  cover: CoverConfig;
+  side: "front" | "back";
+}
+
+export function coverToFaces(cover: CoverConfig, side: "front" | "back" = "front"): CoverContent {
+  return { cover, side };
 }
 
 export type RecipeCardEditTarget =

@@ -1,3 +1,5 @@
+import type { PrintCardSize, RecipePrintTemplate } from "@/components/RecipeCardPrint";
+
 export interface RecipeIngredient {
   amount?: string;
   unit?: string;
@@ -80,4 +82,60 @@ export interface QueueItem {
   recipe?: Recipe;
   error?: string;
   addedAt: number;
+}
+
+/* ── Print project ────────────────────────────────────────────────────────
+   The section-based document model that scales from a single recipe print
+   to a full cookbook without ever becoming a different object. A `Section`
+   holds `QueueItem`s (not a simplified recipe wrapper) so the existing
+   parsing/retry lifecycle in lib/queue.ts keeps working unchanged inside it.
+   See the "Document model: sections, not divider objects" section of the
+   implementation plan for the reasoning. */
+
+export interface Section {
+  id: string;
+  /** Untitled = no visible grouping in the UI, no divider page when printed. */
+  title?: string;
+  items: QueueItem[];
+}
+
+export type BookTrimSize = "letter-portrait" | "8x10-portrait" | "8.5x11-portrait";
+
+export interface CoverConfig {
+  title: string;
+  subtitle?: string;
+  author?: string;
+  imageUrl?: string;
+  template: RecipePrintTemplate;
+}
+
+export interface PrintProjectSettings {
+  cardSize: PrintCardSize;
+  template: RecipePrintTemplate;
+  cardsPerSheet: 1 | 2;
+  doubleSided: boolean;
+  showPhoto: boolean;
+  showSourceUrl: boolean;
+  showCutLines: boolean;
+  /** Book-only settings — stay undefined/off until "Make it a cookbook" has
+      been used to opt into the cookbook experience. */
+  cookbookMode?: boolean;
+  tableOfContents?: boolean;
+  sectionDividers?: boolean;
+  bookTrimSize?: BookTrimSize;
+}
+
+export interface PrintProject {
+  id: string;
+  /** Present only once the project has been saved to Firestore. */
+  ownerUid?: string;
+  /** Absent until a cover is added or a second named section is created. */
+  title?: string;
+  /** Always at least one section; a brand-new project is one untitled section. */
+  sections: Section[];
+  cover?: CoverConfig;
+  backCover?: CoverConfig;
+  settings: PrintProjectSettings;
+  createdAt: number;
+  updatedAt: number;
 }

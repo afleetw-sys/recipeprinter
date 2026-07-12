@@ -4,6 +4,7 @@ import { useCallback, useEffect, useRef, useState, type Dispatch, type SetStateA
 import type { PrintCardSize } from "@/components/RecipeCardPrint";
 
 const SINGLE_RECIPE_DECK_TOP_PADDING = 16;
+const PREVIEW_SELECTOR = ".recipe-page-scaler";
 
 interface UseDeckScrollerOptions {
   activeNavIndex: number;
@@ -19,9 +20,10 @@ interface UseDeckScrollerOptions {
 
 function scrollDeckTo(deck: HTMLDivElement, options: ScrollToOptions) {
   if (options.behavior === "smooth") {
-    // scroll-snap-type: mandatory fights a smooth scrollTo() that spans
-    // multiple snap points — the deck stops at an intermediate slide
-    // instead of the requested one. Suspend snapping for the animation.
+    // A snap-enabled smooth scrollTo() spanning multiple snap points can stop
+    // at an intermediate preview instead of the requested one. Suspend
+    // snapping for the programmatic animation, then restore normal wheel/touch
+    // snapping for the deck.
     deck.style.scrollSnapType = "none";
     const restore = () => {
       deck.style.scrollSnapType = "";
@@ -32,10 +34,32 @@ function scrollDeckTo(deck: HTMLDivElement, options: ScrollToOptions) {
   deck.scrollTo(options);
 }
 
+function getPreviewMetrics(deck: HTMLDivElement, slide: HTMLDivElement) {
+  const preview = slide.querySelector<HTMLElement>(PREVIEW_SELECTOR);
+  if (!preview) {
+    return {
+      top: slide.offsetTop,
+      left: slide.offsetLeft,
+      width: slide.offsetWidth,
+      height: slide.offsetHeight,
+    };
+  }
+
+  const deckRect = deck.getBoundingClientRect();
+  const previewRect = preview.getBoundingClientRect();
+  return {
+    top: previewRect.top - deckRect.top + deck.scrollTop,
+    left: previewRect.left - deckRect.left + deck.scrollLeft,
+    width: previewRect.width,
+    height: previewRect.height,
+  };
+}
+
 /**
  * Owns the print page's scrollable deck: which face (front/back) is showing,
  * the scale that fits each page to the viewport, and scrolling to a given
- * slide (by click or by the scroll position itself settling closest to one).
+ * slide. Native CSS scroll-snap owns wheel/touch settling; this hook keeps
+ * React state in sync and handles explicit nav clicks.
  * `deckRef`/`slideRefs` are returned for the page to attach to the actual
  * deck and slide DOM nodes it renders.
  */
@@ -85,7 +109,17 @@ export function useDeckScroller({
       if (availW > 0 && availH > 0) {
         const widthScale = availW / pageWidth;
         const heightScale = (availH * (mobile ? 0.86 : 0.74)) / pageHeight;
-        setDeckScale(Math.max(0.12, Math.min(1.05, widthScale, heightScale)));
+        const scale = Math.max(0.12, Math.min(1.05, widthScale, heightScale));
+        setDeckScale(scale);
+        // Give the CSS top padding (see `--deck-top-pad` in globals.css) the
+        // exact offset that centres the first slide, computed analytically
+        // from the same scale rather than measured post-render, so it's
+        // never a frame behind. That makes scrollTop:0 the first slide's own
+        // resting position, with no gap above it left to overscroll into.
+        if (!mobile) {
+          const topPad = Math.max(0, (availH - pageHeight * scale) / 2);
+          el.style.setProperty("--deck-top-pad", `${topPad}px`);
+        }
       }
     };
     update();
@@ -93,42 +127,6 @@ export function useDeckScroller({
     observer.observe(el);
     return () => observer.disconnect();
   }, [cardSize, sheetsLength, pageWidth, pageHeight]);
-
-  // Scrolling the deck selects whichever slide is closest to the centre.
-  // Every nav item — including a second recipe sharing a sheet with the
-  // first — has its own slide, so this is a direct index lookup.
-  useEffect(() => {
-    const el = deckRef.current;
-    if (!el) return;
-    let raf = 0;
-    const onScroll = () => {
-      if (suppressScrollSyncRef.current) return;
-      cancelAnimationFrame(raf);
-      raf = requestAnimationFrame(() => {
-        const mobile = window.matchMedia("(max-width: 820px)").matches;
-        const mid = mobile ? el.scrollLeft + el.clientWidth / 2 : el.scrollTop + el.clientHeight / 2;
-        let bestIndex = 0;
-        let bestDist = Number.POSITIVE_INFINITY;
-        slideRefs.current.forEach((slide, index) => {
-          if (!slide) return;
-          const center = mobile
-            ? slide.offsetLeft + slide.offsetWidth / 2
-            : slide.offsetTop + slide.offsetHeight / 2;
-          const dist = Math.abs(center - mid);
-          if (dist < bestDist) {
-            bestDist = dist;
-            bestIndex = index;
-          }
-        });
-        setActiveNavIndex(bestIndex);
-      });
-    };
-    el.addEventListener("scroll", onScroll, { passive: true });
-    return () => {
-      el.removeEventListener("scroll", onScroll);
-      cancelAnimationFrame(raf);
-    };
-  }, [navItemsLength, setActiveNavIndex]);
 
   const centerSlide = useCallback(
     (index: number, behavior: ScrollBehavior = "auto") => {
@@ -146,9 +144,10 @@ export function useDeckScroller({
         return;
       }
 
+      const preview = getPreviewMetrics(deck, slide);
       const targetTop = singleRecipePrintView
-        ? slide.offsetTop - SINGLE_RECIPE_DECK_TOP_PADDING
-        : slide.offsetTop - (deck.clientHeight - slide.offsetHeight) / 2;
+        ? preview.top - SINGLE_RECIPE_DECK_TOP_PADDING
+        : preview.top - (deck.clientHeight - preview.height) / 2;
       const maxTop = deck.scrollHeight - deck.clientHeight;
       scrollDeckTo(deck, {
         top: Math.max(0, Math.min(targetTop, maxTop)),
@@ -157,6 +156,66 @@ export function useDeckScroller({
     },
     [singleRecipePrintView],
   );
+
+  // Holds off the scroll listener until a programmatic scroll settles,
+  // otherwise it overwrites our selection with whichever slide is centred
+  // partway through the animation.
+  const suppressAndCenter = useCallback(
+    (index: number, behavior: ScrollBehavior) => {
+      suppressScrollSyncRef.current = true;
+      window.clearTimeout(scrollSyncTimerRef.current);
+      scrollSyncTimerRef.current = window.setTimeout(
+        () => {
+          suppressScrollSyncRef.current = false;
+        },
+        behavior === "smooth" ? 500 : 120,
+      );
+      centerSlide(index, behavior);
+    },
+    [centerSlide],
+  );
+
+  // Scrolling the deck selects whichever slide is closest to the centre.
+  // Every nav item — including a second recipe sharing a sheet with the
+  // first — has its own slide, so this is a direct index lookup.
+  useEffect(() => {
+    const el = deckRef.current;
+    if (!el) return;
+    let raf = 0;
+
+    const closestIndex = (mobile: boolean) => {
+      const mid = mobile ? el.scrollLeft + el.clientWidth / 2 : el.scrollTop + el.clientHeight / 2;
+      let bestIndex = 0;
+      let bestDist = Number.POSITIVE_INFINITY;
+      slideRefs.current.forEach((slide, index) => {
+        if (!slide) return;
+        const preview = mobile ? null : getPreviewMetrics(el, slide);
+        const center = mobile
+          ? slide.offsetLeft + slide.offsetWidth / 2
+          : preview!.top + preview!.height / 2;
+        const dist = Math.abs(center - mid);
+        if (dist < bestDist) {
+          bestDist = dist;
+          bestIndex = index;
+        }
+      });
+      return bestIndex;
+    };
+
+    const onScroll = () => {
+      if (suppressScrollSyncRef.current) return;
+      const mobile = window.matchMedia("(max-width: 820px)").matches;
+      cancelAnimationFrame(raf);
+      raf = requestAnimationFrame(() => {
+        setActiveNavIndex(closestIndex(mobile));
+      });
+    };
+    el.addEventListener("scroll", onScroll, { passive: true });
+    return () => {
+      el.removeEventListener("scroll", onScroll);
+      cancelAnimationFrame(raf);
+    };
+  }, [navItemsLength, setActiveNavIndex]);
 
   // Centre the active page when the deck is first laid out or rescaled.
   useEffect(() => {
@@ -172,21 +231,11 @@ export function useDeckScroller({
       // scroll rather than just a same-sheet slot swap.
       if (navIndex !== activeNavIndex) {
         const behavior = Math.abs(navIndex - activeNavIndex) <= 3 ? "smooth" : "auto";
-        // Hold off the scroll listener until the animation settles, otherwise it
-        // overwrites our selection with the page that's centred partway through.
-        suppressScrollSyncRef.current = true;
-        window.clearTimeout(scrollSyncTimerRef.current);
-        scrollSyncTimerRef.current = window.setTimeout(
-          () => {
-            suppressScrollSyncRef.current = false;
-          },
-          behavior === "smooth" ? 500 : 120,
-        );
-        centerSlide(navIndex, behavior);
+        suppressAndCenter(navIndex, behavior);
       }
       setActiveNavIndex(navIndex);
     },
-    [activeNavIndex, centerSlide, setActiveNavIndex],
+    [activeNavIndex, suppressAndCenter, setActiveNavIndex],
   );
 
   return {

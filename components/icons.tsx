@@ -155,6 +155,13 @@ export const CrownIcon = (p: IconProps) => (
   </Base>
 );
 
+export const BookIcon = (p: IconProps) => (
+  <Base {...p}>
+    <path d="M4 5.5C4 4.67 4.67 4 5.5 4H12v16H5.5A1.5 1.5 0 014 18.5v-13z" />
+    <path d="M20 5.5c0-.83-.67-1.5-1.5-1.5H12v16h6.5a1.5 1.5 0 001.5-1.5v-13z" />
+  </Base>
+);
+
 export const RefreshIcon = (p: IconProps) => (
   <Base {...p}>
     <path d="M4 12a8 8 0 0114-5.3L21 9" />

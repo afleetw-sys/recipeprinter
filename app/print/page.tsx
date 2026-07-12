@@ -12,16 +12,27 @@ import {
   PRINT_CARD_SIZE_OPTIONS,
   RECIPE_PRINT_TEMPLATE_OPTIONS,
   RecipeCardFace,
+  DividerFace,
+  CoverFace,
   type RecipeCardInlineEdit,
   type PrintCardSize,
   type RecipePrintTemplate,
 } from "@/components/RecipeCardPrint";
 import { usePrintSheets, type NavItem, type PageSheet, type SheetSlot } from "@/lib/usePrintSheets";
+import {
+  buildSections,
+  namedSectionCount,
+  useProjectMeta,
+} from "@/lib/project";
+import { createPrintProjectId, savePrintProject, assemblePrintProject } from "@/lib/printProjects";
 import { useRecipeInlineEditor } from "@/lib/useRecipeInlineEditor";
 import { useDeckScroller } from "@/lib/useDeckScroller";
 import { usePremiumTemplatePurchase } from "@/lib/usePremiumTemplatePurchase";
+import { useCookbookPurchase } from "@/lib/useCookbookPurchase";
 import {
+  BookIcon,
   CheckIcon,
+  ChevronDownIcon,
   ChevronLeftIcon,
   CrownIcon,
   EditIcon,
@@ -56,7 +67,7 @@ import {
   isRecipePrintTemplate,
   usePrintSettingsPersistence,
 } from "@/lib/printSettings";
-import type { QueueItem, Recipe } from "@/types/recipe";
+import type { CoverConfig, QueueItem, Recipe } from "@/types/recipe";
 
 const PrintDialogs = dynamic(
   () => import("@/components/PrintDialogs").then((mod) => mod.PrintDialogs),
@@ -123,6 +134,8 @@ const ScaledPage = memo(function ScaledPage({
   showSourceUrl,
   showCutLines,
   inlineEdit,
+  dividerEdit,
+  coverEdit,
 }: {
   sheet: PageSheet;
   isLastSheet: boolean;
@@ -137,10 +150,57 @@ const ScaledPage = memo(function ScaledPage({
   showSourceUrl: boolean;
   showCutLines: boolean;
   inlineEdit?: RecipeCardInlineEdit;
+  dividerEdit?: {
+    sectionId: string;
+    value: string;
+    onChange: (value: string) => void;
+    onCommit: () => void;
+    onCancel: () => void;
+  };
+  coverEdit?: {
+    side: "front" | "back";
+    cover: CoverConfig;
+    onChange: (cover: CoverConfig) => void;
+  };
 }) {
   const dims = PAGE_DIMS[size];
   const anySlot = sheet.slots.find((slot): slot is SheetSlot => slot !== null) ?? null;
   if (!anySlot) return null;
+
+  // Divider and cover sheets are always a single slot, single-sided, on their
+  // own dedicated page — render the whole sheet as one face rather than the
+  // front/back card-page structure below, which only recipes need.
+  if (anySlot.kind === "divider" || anySlot.kind === "cover") {
+    return (
+      <div
+        className="recipe-page-scaler"
+        style={{ "--page-scale": scale, "--page-w": `${dims.w}px`, "--page-h": `${dims.h}px` } as CSSProperties}
+      >
+        <div className="recipe-page-scaler__inner">
+          <div className={`recipe-print-preview recipe-print-preview--${size}`}>
+            <div className={`recipe-card-set recipe-card-set--${size} recipe-template--${template}`}>
+              <div className={`recipe-card-page recipe-card-page--front ${isLastSheet ? "recipe-card-page--no-break" : ""}`}>
+                {anySlot.kind === "divider" ? (
+                  <DividerFace
+                    title={anySlot.title}
+                    recipeTitles={anySlot.recipeTitles}
+                    template={template}
+                    inlineEdit={dividerEdit?.sectionId === anySlot.id ? dividerEdit : undefined}
+                  />
+                ) : (
+                  <CoverFace
+                    cover={anySlot.cover}
+                    side={anySlot.side}
+                    inlineEdit={coverEdit?.side === anySlot.side ? coverEdit : undefined}
+                  />
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   // The very last physical page of the whole print job shouldn't request a
   // page break after itself — otherwise the print pipeline can add a
@@ -187,7 +247,7 @@ const ScaledPage = memo(function ScaledPage({
                 // card. Blank cards are only for the back side, to keep a
                 // duplex job's physical page count in sync (see
                 // `backGroupNeeded`), not for the front.
-                slot ? (
+                slot && slot.kind === "recipe" ? (
                   <RecipeCardFace
                     key={`front-${slotIndex}`}
                     recipe={slot.recipe}
@@ -220,7 +280,7 @@ const ScaledPage = memo(function ScaledPage({
                 data-preview-hidden={activeSide !== "back" ? "true" : undefined}
               >
                 {sheet.slots.map((slot, slotIndex) => {
-                  if (!slot) return null;
+                  if (!slot || slot.kind !== "recipe") return null;
 
                   return slot.back ? (
                     <RecipeCardFace
@@ -314,12 +374,38 @@ export default function PrintPage() {
   const [showPhoto, setShowPhoto] = useState(false);
   const [showSourceUrl, setShowSourceUrl] = useState(false);
   const [showDonateDialog, setShowDonateDialog] = useState(false);
+  const [showCookbookOfferDialog, setShowCookbookOfferDialog] = useState(false);
   const [showFeedbackDialog, setShowFeedbackDialog] = useState(false);
   const [showAddRecipeDialog, setShowAddRecipeDialog] = useState(false);
   const [showShareDialog, setShowShareDialog] = useState(false);
-  const [showDeleteRecipeDialog, setShowDeleteRecipeDialog] = useState(false);
+  const [pendingDelete, setPendingDelete] = useState<
+    | { kind: "recipe"; id: string; title: string }
+    | { kind: "section"; id: string; title: string; recipeIds: string[] }
+    | { kind: "cover"; side: "front" | "back"; title: string }
+    | null
+  >(null);
   const [pendingFocusRecipeId, setPendingFocusRecipeId] = useState<string | null>(null);
+  const [pendingFocusNavId, setPendingFocusNavId] = useState<string | null>(null);
   const queue = useQueue();
+  const projectMeta = useProjectMeta();
+  // The section/cover/title organizational layer, joined against the working
+  // `items` snapshot below (see lib/project.ts) — recipe content itself stays
+  // owned by `items`/the queue, unchanged from today.
+  const sections = useMemo(() => buildSections(items ?? [], projectMeta.meta), [items, projectMeta.meta]);
+  useEffect(() => {
+    if (items) projectMeta.syncSections(sections);
+    // Only re-run when the computed sections actually change shape; syncSections
+    // itself is a stable no-op once meta already reflects `sections`.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [sections]);
+  const [editingSectionId, setEditingSectionId] = useState<string | null>(null);
+  const [editingSectionTitle, setEditingSectionTitle] = useState("");
+  const [editingCoverSide, setEditingCoverSide] = useState<"front" | "back" | null>(null);
+  const [addMenuOpen, setAddMenuOpen] = useState(false);
+  const [pendingAddSectionId, setPendingAddSectionId] = useState<string | null>(null);
+  const [projectSaveBusy, setProjectSaveBusy] = useState(false);
+  const [savedProjectId, setSavedProjectId] = useState<string | null>(null);
+  const projectIdRef = useRef<string>(createPrintProjectId());
   const [toastMessage, setToastMessage] = useState<string | null>(null);
   const [freeTemplateStatus, setFreeTemplateStatus] = useState<RecipePrinterFreeTemplateStatus | null>(null);
   const { user: cookPilotUser, redirectError: cookPilotRedirectError } = useCookPilotAuth();
@@ -352,7 +438,200 @@ export default function PrintPage() {
     sheets,
     navItems,
     measurers,
-  } = usePrintSheets({ items, cardSize, cardsPerSheet, doubleSided, photosOn, sourceUrlOn, template });
+  } = usePrintSheets({
+    sections,
+    cover: projectMeta.meta.cover,
+    backCover: projectMeta.meta.backCover,
+    sectionDividers: projectMeta.meta.sectionDividers,
+    cardSize,
+    cardsPerSheet,
+    doubleSided,
+    photosOn,
+    sourceUrlOn,
+    template,
+  });
+
+  // Section headers in the rail are an organizational grouping shown for any
+  // named section, independent of whether that section also gets a printed
+  // divider PAGE (`sectionDividers`) — when it does, the divider's own
+  // navItem already carries the title, so the synthetic header is skipped to
+  // avoid showing it twice.
+  const sectionTitleByItemId = useMemo(() => {
+    const map = new Map<string, string | undefined>();
+    sections.forEach((section) => section.items.forEach((item) => map.set(item.id, section.title)));
+    return map;
+  }, [sections]);
+
+  const railRows = useMemo(() => {
+    const rows: Array<{ header?: string; navItem: NavItem; index: number }> = [];
+    let lastSectionTitle: string | undefined = undefined;
+    let seenFirstRecipe = false;
+    navItems.forEach((navItem, index) => {
+      let header: string | undefined;
+      if (navItem.kind === "recipe") {
+        const title = sectionTitleByItemId.get(navItem.recipeId);
+        if (!projectMeta.meta.sectionDividers && title && (!seenFirstRecipe || title !== lastSectionTitle)) {
+          header = title;
+        }
+        lastSectionTitle = title;
+        seenFirstRecipe = true;
+      }
+      rows.push({ header, navItem, index });
+    });
+    return rows;
+  }, [navItems, sectionTitleByItemId, projectMeta.meta.sectionDividers]);
+
+  const [draggingItemId, setDraggingItemId] = useState<string | null>(null);
+
+  function sectionAndIndexForItem(itemId: string): { sectionId: string; index: number } | null {
+    for (const section of sections) {
+      const itemIndex = section.items.findIndex((item) => item.id === itemId);
+      if (itemIndex !== -1) return { sectionId: section.id, index: itemIndex };
+    }
+    return null;
+  }
+
+  function sectionForNavItem(navItem: NavItem | null): { id: string; index: number } | null {
+    if (!navItem) return null;
+    if (navItem.kind === "divider") {
+      const sectionIndex = sections.findIndex((section) => section.id === navItem.recipeId);
+      return sectionIndex === -1 ? null : { id: navItem.recipeId, index: sectionIndex };
+    }
+    if (navItem.kind === "recipe") {
+      const section = sectionAndIndexForItem(navItem.recipeId);
+      if (!section) return null;
+      const sectionIndex = sections.findIndex((candidate) => candidate.id === section.sectionId);
+      return sectionIndex === -1 ? null : { id: section.sectionId, index: sectionIndex };
+    }
+    return null;
+  }
+
+  const itemIdsForSection = useCallback((sectionId: string): string[] => {
+    return sections.find((section) => section.id === sectionId)?.items.map((item) => item.id) ?? [];
+  }, [sections]);
+
+  function handleDropIntoSection(sectionId: string, toIndex: number) {
+    if (!draggingItemId) return;
+    projectMeta.moveItem(draggingItemId, sectionId, toIndex);
+    setDraggingItemId(null);
+  }
+
+  function handleDropOnItem(targetItemId: string) {
+    if (!draggingItemId || draggingItemId === targetItemId) {
+      setDraggingItemId(null);
+      return;
+    }
+    const target = sectionAndIndexForItem(targetItemId);
+    if (target) projectMeta.moveItem(draggingItemId, target.sectionId, target.index);
+    setDraggingItemId(null);
+  }
+
+  const sectionTitleForId = useCallback((sectionId: string): string => {
+    return sections.find((section) => section.id === sectionId)?.title?.trim() || "section";
+  }, [sections]);
+
+  function startSectionEdit(sectionId: string) {
+    setEditingSectionId(sectionId);
+    setEditingSectionTitle(sectionTitleForId(sectionId));
+  }
+
+  function commitSectionEdit() {
+    if (!editingSectionId) return;
+    projectMeta.renameSection(editingSectionId, editingSectionTitle.trim() || undefined);
+    setEditingSectionId(null);
+    setEditingSectionTitle("");
+  }
+
+  function addSectionDivider() {
+    const title = "New section";
+    const sectionId = projectMeta.addSection(title);
+    projectMeta.setSectionDividers(true);
+    setEditingSectionId(sectionId);
+    setEditingSectionTitle(title);
+    setPendingFocusNavId(sectionId);
+  }
+
+  function coverSideFromNavItem(navItem: NavItem): "front" | "back" {
+    return navItem.recipeId === "cover-back" ? "back" : "front";
+  }
+
+  function defaultCover(): CoverConfig {
+    return { title: "Untitled Cookbook", template };
+  }
+
+  function coverForSide(side: "front" | "back"): CoverConfig | undefined {
+    return side === "back" ? projectMeta.meta.backCover : projectMeta.meta.cover;
+  }
+
+  function setCoverForSide(side: "front" | "back", cover: CoverConfig | undefined) {
+    if (side === "back") projectMeta.setBackCover(cover);
+    else projectMeta.setCover(cover);
+  }
+
+  function addCover() {
+    const cover = projectMeta.meta.cover ?? defaultCover();
+    projectMeta.setCover(cover);
+    setEditingCoverSide("front");
+    setPendingFocusNavId("cover-front");
+  }
+
+  const requestDeleteNavItem = useCallback((navItem: NavItem) => {
+    if (navItem.kind === "recipe") {
+      const item = items?.find((candidate) => candidate.id === navItem.recipeId && candidate.recipe);
+      setPendingDelete({
+        kind: "recipe",
+        id: navItem.recipeId,
+        title: item?.recipe?.title || item?.title || "this recipe",
+      });
+      return;
+    }
+    if (navItem.kind === "divider") {
+      setPendingDelete({
+        kind: "section",
+        id: navItem.recipeId,
+        title: sectionTitleForId(navItem.recipeId),
+        recipeIds: itemIdsForSection(navItem.recipeId),
+      });
+      return;
+    }
+    const side = coverSideFromNavItem(navItem);
+    setPendingDelete({
+      kind: "cover",
+      side,
+      title: navItem.label || (side === "front" ? "cover" : "back cover"),
+    });
+  }, [items, itemIdsForSection, sectionTitleForId]);
+
+  function confirmPendingDelete() {
+    if (!pendingDelete) return;
+    if (pendingDelete.kind === "recipe") {
+      const id = pendingDelete.id;
+      const nextItems = (items ?? []).filter((item) => item.id !== id);
+      setItems(nextItems);
+      createCurrentPrintJob(nextItems.map((item) => item.id));
+      queue.remove(id);
+    } else if (pendingDelete.kind === "section") {
+      projectMeta.deleteSection(pendingDelete.id);
+    } else if (pendingDelete.side === "back") {
+      projectMeta.setBackCover(undefined);
+      setEditingCoverSide((side) => (side === "back" ? null : side));
+    } else {
+      projectMeta.setCover(undefined);
+      setEditingCoverSide((side) => (side === "front" ? null : side));
+    }
+    setPendingDelete(null);
+  }
+
+  function confirmDeleteSectionRecipes() {
+    if (!pendingDelete || pendingDelete.kind !== "section") return;
+    const idsToRemove = new Set(pendingDelete.recipeIds);
+    const nextItems = (items ?? []).filter((item) => !idsToRemove.has(item.id));
+    setItems(nextItems);
+    createCurrentPrintJob(nextItems.map((item) => item.id));
+    pendingDelete.recipeIds.forEach((id) => queue.remove(id));
+    projectMeta.deleteSection(pendingDelete.id);
+    setPendingDelete(null);
+  }
 
   const [activeNavIndex, setActiveNavIndex] = useState(0);
   const [mobileDrawer, setMobileDrawer] = useState<"template" | null>(null);
@@ -389,6 +668,7 @@ export default function PrintPage() {
   });
 
   const activeRecipeId = navItems[activeNavIndex]?.recipeId ?? null;
+  const activeNavItem = navItems[activeNavIndex] ?? null;
   const activeRecipeItem =
     activeRecipeId && items
       ? items.find((item) => item.id === activeRecipeId && item.recipe)
@@ -410,6 +690,51 @@ export default function PrintPage() {
     setToastMessage(message);
   }
 
+  // Free for any signed-in CookPilot user, at any project size — not tied to
+  // payment. Persists a snapshot of the current sections/cover/title/settings
+  // so the project survives past this session and shows up on another device.
+  // There's no title field in the UI yet, so this just picks a sensible
+  // default (the cover's title if one exists, else the first recipe's) —
+  // renaming a saved project is a later phase's problem.
+  async function handleSaveProject() {
+    if (!cookPilotUser) return;
+    setProjectSaveBusy(true);
+    try {
+      const defaultTitle =
+        projectMeta.meta.cover?.title ||
+        items?.find((item) => item.recipe)?.recipe?.title ||
+        `Recipe cards — ${new Date().toLocaleDateString()}`;
+      const project = assemblePrintProject({
+        id: projectIdRef.current,
+        ownerUid: cookPilotUser.uid,
+        title: defaultTitle,
+        sections,
+        cover: projectMeta.meta.cover,
+        backCover: projectMeta.meta.backCover,
+        settings: {
+          cardSize,
+          template,
+          cardsPerSheet,
+          doubleSided,
+          showPhoto,
+          showSourceUrl,
+          showCutLines,
+          cookbookMode: projectMeta.meta.cookbookMode,
+          tableOfContents: projectMeta.meta.tableOfContents,
+          sectionDividers: projectMeta.meta.sectionDividers,
+        },
+      });
+      await savePrintProject(project);
+      setSavedProjectId(project.id);
+      showToast("Project saved");
+    } catch (error) {
+      console.warn("RecipePrinter: could not save project", error);
+      showToast("Couldn't save this project — try again in a moment.");
+    } finally {
+      setProjectSaveBusy(false);
+    }
+  }
+
   const {
     revenueCatUserId,
     customerInfo,
@@ -425,6 +750,7 @@ export default function PrintPage() {
     selectedTemplateLocked,
     hasUnclaimedFreeTemplate,
     canClaimSelectedTemplateFree,
+    refreshCustomerInfo,
     unlockTemplateAndPrint,
     claimTemplateAndPrint,
   } = usePremiumTemplatePurchase({
@@ -436,6 +762,23 @@ export default function PrintPage() {
     showToast,
     clearToast: () => setToastMessage(null),
     printNow,
+  });
+
+  const {
+    cookbookPrice,
+    cookbookLocked,
+    showCookbookUnlockDialog,
+    setShowCookbookUnlockDialog,
+    cookbookPurchaseBusy,
+    purchaseCookbookAndContinue,
+  } = useCookbookPurchase({
+    revenueCatUserId,
+    customerInfo,
+    cookPilotUser,
+    cookbookMode: Boolean(projectMeta.meta.cookbookMode),
+    refreshCustomerInfo,
+    showToast,
+    clearToast: () => setToastMessage(null),
   });
 
   // Delete/Backspace on the selected recipe opens a confirm dialog rather
@@ -451,10 +794,10 @@ export default function PrintPage() {
         target instanceof HTMLElement &&
         (target.tagName === "INPUT" || target.tagName === "TEXTAREA" || target.isContentEditable);
       if (isEditable) return;
-      if (!activeRecipeItem) return;
+      if (!activeNavItem) return;
       if (
         showAddRecipeDialog ||
-        showDeleteRecipeDialog ||
+        pendingDelete ||
         showDonateDialog ||
         showUnlockDialog ||
         showFeedbackDialog ||
@@ -463,45 +806,42 @@ export default function PrintPage() {
         return;
       }
       event.preventDefault();
-      setShowDeleteRecipeDialog(true);
+      requestDeleteNavItem(activeNavItem);
     }
     document.addEventListener("keydown", onKeyDown);
     return () => document.removeEventListener("keydown", onKeyDown);
   }, [
-    activeRecipeItem,
+    activeNavItem,
     showAddRecipeDialog,
-    showDeleteRecipeDialog,
+    pendingDelete,
     showDonateDialog,
     showUnlockDialog,
     showFeedbackDialog,
     showCookPilotLogin,
+    requestDeleteNavItem,
   ]);
-
-  function deleteActiveRecipe() {
-    if (!activeRecipeItem) return;
-    const id = activeRecipeItem.id;
-    const nextItems = (items ?? []).filter((item) => item.id !== id);
-    setItems(nextItems);
-    createCurrentPrintJob(nextItems.map((item) => item.id));
-    queue.remove(id);
-    setShowDeleteRecipeDialog(false);
-  }
 
   // Jump to a just-added recipe once its page actually exists in the deck
   // (mirrors PowerPoint landing on a freshly inserted slide).
   useEffect(() => {
-    if (!pendingFocusRecipeId) return;
-    const index = navItems.findIndex((navItem) => navItem.recipeId === pendingFocusRecipeId);
+    const pendingId = pendingFocusNavId ?? pendingFocusRecipeId;
+    if (!pendingId) return;
+    const index = navItems.findIndex((navItem) => navItem.recipeId === pendingId);
     if (index === -1) return;
     goToSlide(index);
-    setPendingFocusRecipeId(null);
+    if (pendingFocusNavId) setPendingFocusNavId(null);
+    if (pendingFocusRecipeId === pendingId) setPendingFocusRecipeId(null);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [pendingFocusRecipeId, navItems]);
+  }, [pendingFocusNavId, pendingFocusRecipeId, navItems]);
 
   async function handlePrint() {
-    if (purchaseBusy) return;
+    if (purchaseBusy || cookbookPurchaseBusy) return;
     if (!printLayoutReady) {
       showToast("Preparing the print layout. Try again in a moment.");
+      return;
+    }
+    if (cookbookLocked) {
+      setShowCookbookUnlockDialog(true);
       return;
     }
     if (selectedPremiumTemplate) {
@@ -519,6 +859,8 @@ export default function PrintPage() {
     setMobileDrawer(null);
     void handlePrint();
   }
+
+  const moveProjectItem = projectMeta.moveItem;
 
   useEffect(() => {
     const fullQueue = readQueue();
@@ -552,8 +894,14 @@ export default function PrintPage() {
     const nextItems = [...(items ?? []), ...newlyReady];
     setItems(nextItems);
     createCurrentPrintJob(nextItems.map((item) => item.id));
+    if (pendingAddSectionId && sections.some((section) => section.id === pendingAddSectionId)) {
+      const insertAt = itemIdsForSection(pendingAddSectionId).length;
+      newlyReady.forEach((item, offset) => {
+        moveProjectItem(item.id, pendingAddSectionId, insertAt + offset);
+      });
+    }
     setPendingFocusRecipeId((current) => current ?? newlyReady[0]!.id);
-  }, [queue.items, items]);
+  }, [queue.items, items, itemIdsForSection, moveProjectItem, pendingAddSectionId, sections]);
 
   // Surfaces a parse failure for a dialog-added recipe as a toast, since the
   // dialog that submitted it is already closed by the time parsing fails.
@@ -568,6 +916,17 @@ export default function PrintPage() {
     toastedErrorIdsRef.current.add(newlyErrored.id);
     setToastMessage(newlyErrored.error || "Couldn't add that recipe.");
   }, [queue.items]);
+
+  // Whether the "Print settings" trigger itself should be reachable at all —
+  // originally just card-format concerns (a back side to toggle, or 6x4's
+  // cards-per-sheet/cut-lines), now also true once book-only settings
+  // (section dividers, table of contents) become applicable. Without this, a
+  // sectioned letter-page project with no back-side content would have no way
+  // to reach those toggles even though renderPrintSettingsFields renders them.
+  const hasPrintSettingsFields =
+    hasRecipeBackSide ||
+    cardSize === "card-6x4" ||
+    (projectMeta.meta.cookbookMode && (namedSectionCount(sections) >= 1 || sections.length > 1));
 
   // Shared between the desktop "Print settings" popover and the mobile
   // settings menu, so both surfaces stay in sync rather than drifting into
@@ -631,6 +990,36 @@ export default function PrintPage() {
             <strong>long edge</strong>.
           </p>
         )}
+        {/* Book-only settings — hidden entirely outside cookbook mode, and
+            within cookbook mode simply don't render until they're
+            applicable. A plain print-cards project's settings panel stays
+            exactly as short as it is today. */}
+        {projectMeta.meta.cookbookMode && namedSectionCount(sections) >= 1 && (
+          <label className="recipe-toggle">
+            <input
+              type="checkbox"
+              checked={Boolean(projectMeta.meta.sectionDividers)}
+              onChange={(event) => projectMeta.setSectionDividers(event.target.checked)}
+            />
+            <span>
+              <strong>Section divider pages</strong>
+              <small>Give each named section its own page when printed.</small>
+            </span>
+          </label>
+        )}
+        {projectMeta.meta.cookbookMode && sections.length > 1 && (
+          <label className="recipe-toggle">
+            <input
+              type="checkbox"
+              checked={Boolean(projectMeta.meta.tableOfContents)}
+              onChange={(event) => projectMeta.setTableOfContents(event.target.checked)}
+            />
+            <span>
+              <strong>Table of contents</strong>
+              <small>Free, always — lists every recipe by section.</small>
+            </span>
+          </label>
+        )}
       </>
     );
   }
@@ -660,13 +1049,23 @@ export default function PrintPage() {
       items.length > 0 &&
       printLayoutReady &&
       (!selectedPremiumTemplate || revenueCatUserId) &&
+      (!projectMeta.meta.cookbookMode || revenueCatUserId) &&
       !autoPrintAttemptedRef.current
     ) {
       autoPrintAttemptedRef.current = true;
       const t = window.setTimeout(() => void handlePrint(), 350);
       return () => window.clearTimeout(t);
     }
-  }, [items, revenueCatUserId, selectedPremiumTemplate, shouldPrint, template, customerInfo, printLayoutReady]);
+  }, [
+    items,
+    revenueCatUserId,
+    selectedPremiumTemplate,
+    shouldPrint,
+    template,
+    customerInfo,
+    printLayoutReady,
+    projectMeta.meta.cookbookMode,
+  ]);
 
   useEffect(() => {
     if (cookPilotRedirectError) showToast(cookPilotRedirectError);
@@ -745,7 +1144,24 @@ export default function PrintPage() {
   return (
     <div className="h-dvh recipe-print-page">
       {measurers}
-      <SiteHeader onBack={cameFromSharedLink ? undefined : () => router.back()} compact sticky />
+      <SiteHeader
+        onBack={cameFromSharedLink ? undefined : () => router.back()}
+        compact
+        sticky
+        actions={
+          // Cookbook feature is hidden for now — not ready to launch yet.
+          false && !projectMeta.meta.cookbookMode && (
+            <button
+              type="button"
+              className="btn btn-ghost btn-compact recipe-make-cookbook-btn"
+              onClick={() => setShowCookbookOfferDialog(true)}
+            >
+              <BookIcon size={ICON_SIZE.md} />
+              Make it a cookbook
+            </button>
+          )
+        }
+      />
 
       {/* Print preview / printed content */}
       <main className="recipe-print-shell px-cp-6 print:p-0">
@@ -753,47 +1169,155 @@ export default function PrintPage() {
           className={`recipe-page-rail recipe-page-rail--${cardSize} no-print`}
           aria-label="Pages"
         >
-          {navItems.map((navItem, index) => (
+          {projectMeta.meta.cookbookMode && !projectMeta.meta.cover && (
             <button
-              key={`${sheets[navItem.sheetIndex]?.id}-${navItem.slotIndex}`}
               type="button"
-              className={`recipe-page-rail__item ${
-                index === activeNavIndex ? "is-active" : ""
-              }`}
-              aria-current={index === activeNavIndex}
-              onClick={() => goToSlide(index)}
+              className="recipe-page-rail__add-cover"
+              onClick={() => {
+                setAddMenuOpen(false);
+                addCover();
+              }}
             >
-              <span className="recipe-page-rail__num">{index + 1}</span>
-              <span className="recipe-page-rail__thumb">
-                <ScaledPage
-                  sheet={sheets[navItem.sheetIndex]}
-                  isLastSheet={navItem.sheetIndex === sheets.length - 1}
-                  activeSlotIndex={navItem.slotIndex}
-                  activeSide="front"
-                  scale={RAIL_SCALE[cardSize]}
-                  size={cardSize}
-                  cardsPerSheet={cardsPerSheet}
-                  template={template}
-                  doubleSided={continueOnBack}
-                  showImage={photosOn}
-                  showSourceUrl={sourceUrlOn}
-                  showCutLines={false}
-                />
-              </span>
-              <span className="recipe-page-rail__label">
-                <span className="recipe-page-rail__title">{navItem.label}</span>
-                <span className="recipe-page-rail__meta">{navItem.pageLabel}</span>
-              </span>
+              <PlusIcon size={ICON_SIZE.sm} />
+              Add cover
             </button>
-          ))}
-          <button
-            type="button"
-            className="recipe-page-rail__add"
-            onClick={() => setShowAddRecipeDialog(true)}
-          >
-            <PlusIcon size={ICON_SIZE.md} />
-            Add recipe
-          </button>
+          )}
+          {railRows.map(({ header, navItem, index }) => {
+            const headerSectionId =
+              header && navItem.kind === "recipe" ? sectionAndIndexForItem(navItem.recipeId)?.sectionId : null;
+            const currentSection = sectionForNavItem(navItem);
+            const nextSection = sectionForNavItem(railRows[index + 1]?.navItem ?? null);
+            const showSectionEndDrop =
+              Boolean(currentSection) && currentSection?.id !== nextSection?.id;
+            const isSectionChild =
+              projectMeta.meta.sectionDividers &&
+              navItem.kind === "recipe" &&
+              Boolean(currentSection && sectionTitleForId(currentSection.id) !== "section");
+            return (
+              <div
+                key={`${sheets[navItem.sheetIndex]?.id}-${navItem.slotIndex}`}
+                className={isSectionChild ? "recipe-page-rail__row recipe-page-rail__row--section-child" : "recipe-page-rail__row"}
+              >
+                {header && headerSectionId && (
+                  <div
+                    className="recipe-page-rail__section-header"
+                    onDragOver={(event) => {
+                      if (draggingItemId) event.preventDefault();
+                    }}
+                    onDrop={(event) => {
+                      event.preventDefault();
+                      handleDropIntoSection(headerSectionId, 0);
+                    }}
+                  >
+                    <span>{header}</span>
+                  </div>
+                )}
+                <div
+                  className={`recipe-page-rail__item ${
+                    index === activeNavIndex ? "is-active" : ""
+                  } ${draggingItemId === navItem.recipeId ? "is-dragging" : ""}`}
+                >
+                  <button
+                    type="button"
+                    draggable={navItem.kind === "recipe"}
+                    onDragStart={() => navItem.kind === "recipe" && setDraggingItemId(navItem.recipeId)}
+                    onDragOver={(event) => {
+                      if (draggingItemId && navItem.kind !== "cover") event.preventDefault();
+                    }}
+                    onDrop={(event) => {
+                      event.preventDefault();
+                      if (navItem.kind === "recipe") handleDropOnItem(navItem.recipeId);
+                      if (navItem.kind === "divider") handleDropIntoSection(navItem.recipeId, 0);
+                    }}
+                    onDragEnd={() => setDraggingItemId(null)}
+                    className="recipe-page-rail__item-main"
+                    aria-current={index === activeNavIndex}
+                    onClick={() => goToSlide(index)}
+                  >
+                    <span className="recipe-page-rail__num">{index + 1}</span>
+                    <span className="recipe-page-rail__thumb">
+                      <ScaledPage
+                        sheet={sheets[navItem.sheetIndex]}
+                        isLastSheet={navItem.sheetIndex === sheets.length - 1}
+                        activeSlotIndex={navItem.slotIndex}
+                        activeSide="front"
+                        scale={RAIL_SCALE[cardSize]}
+                        size={cardSize}
+                        cardsPerSheet={cardsPerSheet}
+                        template={template}
+                        doubleSided={continueOnBack}
+                        showImage={photosOn}
+                        showSourceUrl={sourceUrlOn}
+                        showCutLines={false}
+                      />
+                    </span>
+                    <span className="recipe-page-rail__label">
+                      <span className="recipe-page-rail__title">{navItem.label}</span>
+                      <span className="recipe-page-rail__meta">{navItem.pageLabel}</span>
+                    </span>
+                  </button>
+                </div>
+                {showSectionEndDrop && currentSection && (
+                  <div
+                    className="recipe-page-rail__section-drop"
+                    aria-label={`Drop at end of ${sectionTitleForId(currentSection.id)}`}
+                    onDragOver={(event) => {
+                      if (draggingItemId) event.preventDefault();
+                    }}
+                    onDrop={(event) => {
+                      event.preventDefault();
+                      handleDropIntoSection(currentSection.id, itemIdsForSection(currentSection.id).length);
+                    }}
+                  />
+                )}
+              </div>
+            );
+          })}
+
+          <div className="recipe-page-rail__add-row">
+            <button
+              type="button"
+              className={`recipe-page-rail__add recipe-page-rail__add-main ${
+                projectMeta.meta.cookbookMode ? "recipe-page-rail__add-main--paired" : ""
+              }`}
+              onClick={() => {
+                setAddMenuOpen(false);
+                setPendingAddSectionId(sectionForNavItem(activeNavItem)?.id ?? sections[0]?.id ?? null);
+                setShowAddRecipeDialog(true);
+              }}
+            >
+              <PlusIcon size={ICON_SIZE.md} />
+              Add recipe
+            </button>
+            {projectMeta.meta.cookbookMode && (
+              <>
+                <button
+                  type="button"
+                  className="recipe-page-rail__add-menu-trigger"
+                  aria-label="More add options"
+                  aria-haspopup="menu"
+                  aria-expanded={addMenuOpen}
+                  onClick={() => setAddMenuOpen((open) => !open)}
+                >
+                  <ChevronDownIcon size={ICON_SIZE.md} />
+                </button>
+                {addMenuOpen && (
+                  <div className="recipe-page-rail__add-menu" role="menu" aria-label="Add options">
+                    <button
+                      type="button"
+                      role="menuitem"
+                      onClick={() => {
+                        setAddMenuOpen(false);
+                        addSectionDivider();
+                      }}
+                    >
+                      Add section
+                    </button>
+                  </div>
+                )}
+              </>
+            )}
+          </div>
         </nav>
 
         {/* Center: large preview of the selected page */}
@@ -818,7 +1342,18 @@ export default function PrintPage() {
               <ChevronLeftIcon size={28} />
             </Link>
             <div className="recipe-mobile-topbar__actions">
-              {(hasRecipeBackSide || cardSize === "card-6x4") && (
+              {/* Cookbook feature is hidden for now — not ready to launch yet. */}
+              {false && !projectMeta.meta.cookbookMode && (
+                <button
+                  type="button"
+                  className="recipe-mobile-topbar__icon-btn"
+                  aria-label="Make it a cookbook"
+                  onClick={() => setShowCookbookOfferDialog(true)}
+                >
+                  <BookIcon size={ICON_SIZE.lg} />
+                </button>
+              )}
+              {hasPrintSettingsFields && (
                 <div className="recipe-mobile-toolbar__btn-wrap">
                   <button
                     type="button"
@@ -844,10 +1379,14 @@ export default function PrintPage() {
                 type="button"
                 className="btn btn-primary btn-compact recipe-mobile-topbar__print"
                 onClick={handleMobilePrint}
-                disabled={purchaseBusy || !printLayoutReady}
+                disabled={purchaseBusy || cookbookPurchaseBusy || !printLayoutReady}
               >
-                {purchaseBusy || !printLayoutReady ? <SpinnerIcon size={ICON_SIZE.md} /> : <PrintIcon size={ICON_SIZE.md} />}
-                {selectedTemplateLocked ? "Unlock & Print" : "Print"}
+                {purchaseBusy || cookbookPurchaseBusy || !printLayoutReady ? (
+                  <SpinnerIcon size={ICON_SIZE.md} />
+                ) : (
+                  <PrintIcon size={ICON_SIZE.md} />
+                )}
+                {cookbookLocked || selectedTemplateLocked ? "Unlock & Print" : "Print"}
               </button>
             </div>
           </div>
@@ -935,19 +1474,41 @@ export default function PrintPage() {
                           </div>
                         )}
                       </div>
-                      {activeRecipeItem?.recipe && (
+                      {activeNavItem && (
                         <div className="recipe-page-canvas__controls-right">
                           <button
                             type="button"
-                            className={`recipe-page-edit-toggle ${pageEditMode ? "is-active" : ""}`}
-                            aria-pressed={pageEditMode}
+                            className={`recipe-page-edit-toggle ${
+                              (activeNavItem.kind === "recipe" && pageEditMode) ||
+                              (activeNavItem.kind === "divider" && editingSectionId === activeNavItem.recipeId) ||
+                              (activeNavItem.kind === "cover" && editingCoverSide === coverSideFromNavItem(activeNavItem))
+                                ? "is-active"
+                                : ""
+                            }`}
+                            aria-pressed={
+                              (activeNavItem.kind === "recipe" && pageEditMode) ||
+                              (activeNavItem.kind === "divider" && editingSectionId === activeNavItem.recipeId) ||
+                              (activeNavItem.kind === "cover" && editingCoverSide === coverSideFromNavItem(activeNavItem))
+                            }
                             onClick={(event) => {
                               event.stopPropagation();
-                              togglePageEditMode();
+                              if (activeNavItem.kind === "recipe") {
+                                togglePageEditMode();
+                              } else if (activeNavItem.kind === "divider") {
+                                if (editingSectionId === activeNavItem.recipeId) commitSectionEdit();
+                                else startSectionEdit(activeNavItem.recipeId);
+                              } else {
+                                const side = coverSideFromNavItem(activeNavItem);
+                                setEditingCoverSide((current) => (current === side ? null : side));
+                              }
                             }}
                           >
                             <EditIcon size={ICON_SIZE.xs} />
-                            {pageEditMode ? "Done" : "Edit"}
+                            {(activeNavItem.kind === "recipe" && pageEditMode) ||
+                            (activeNavItem.kind === "divider" && editingSectionId === activeNavItem.recipeId) ||
+                            (activeNavItem.kind === "cover" && editingCoverSide === coverSideFromNavItem(activeNavItem))
+                              ? "Done"
+                              : "Edit"}
                           </button>
                         </div>
                       )}
@@ -979,6 +1540,29 @@ export default function PrintPage() {
                     inlineEdit={
                       pageEditMode && isActive && activeRecipeItem?.id === navItem.recipeId
                         ? activeInlineEdit
+                        : undefined
+                    }
+                    dividerEdit={
+                      isActive && navItem.kind === "divider" && editingSectionId === navItem.recipeId
+                        ? {
+                            sectionId: navItem.recipeId,
+                            value: editingSectionTitle,
+                            onChange: setEditingSectionTitle,
+                            onCommit: commitSectionEdit,
+                            onCancel: () => {
+                              setEditingSectionId(null);
+                              setEditingSectionTitle("");
+                            },
+                          }
+                        : undefined
+                    }
+                    coverEdit={
+                      isActive && navItem.kind === "cover" && editingCoverSide === coverSideFromNavItem(navItem)
+                        ? {
+                            side: coverSideFromNavItem(navItem),
+                            cover: coverForSide(coverSideFromNavItem(navItem)) ?? defaultCover(),
+                            onChange: (cover) => setCoverForSide(coverSideFromNavItem(navItem), cover),
+                          }
                         : undefined
                     }
                   />
@@ -1113,12 +1697,12 @@ export default function PrintPage() {
                       setMobileDrawer(null);
                     }}
                   >
+                    {/* Status only — no price here. The picker's job is "pick how it
+                        looks"; cost only ever appears at the moment printing this
+                        template is actually requested (see the Print button below). */}
                     {locked && (
                       <span className="recipe-template-option__premium" aria-label="Premium">
                         <CrownIcon size={ICON_SIZE.xs} />
-                        {premiumTemplate && templatePrices[premiumTemplate] ? (
-                          <span>{templatePrices[premiumTemplate]}</span>
-                        ) : null}
                       </span>
                     )}
                     {owned && (
@@ -1156,6 +1740,15 @@ export default function PrintPage() {
                   <button
                     type="button"
                     className="recipe-cookpilot-account__link"
+                    disabled={projectSaveBusy}
+                    onClick={() => void handleSaveProject()}
+                  >
+                    {savedProjectId ? "Saved" : "Save project"}
+                  </button>
+                  {" · "}
+                  <button
+                    type="button"
+                    className="recipe-cookpilot-account__link"
                     onClick={() => void signOut(getFirebaseAuth())}
                   >
                     Sign out
@@ -1181,10 +1774,14 @@ export default function PrintPage() {
             <button
               onClick={() => void handlePrint()}
               className="btn btn-primary recipe-print-button"
-              disabled={purchaseBusy || !printLayoutReady}
+              disabled={purchaseBusy || cookbookPurchaseBusy || !printLayoutReady}
             >
-              {purchaseBusy || !printLayoutReady ? <SpinnerIcon size={ICON_SIZE.md} /> : <PrintIcon size={ICON_SIZE.md} />}
-              {selectedTemplateLocked ? "Unlock & Print" : "Print"}
+              {purchaseBusy || cookbookPurchaseBusy || !printLayoutReady ? (
+                <SpinnerIcon size={ICON_SIZE.md} />
+              ) : (
+                <PrintIcon size={ICON_SIZE.md} />
+              )}
+              {cookbookLocked || selectedTemplateLocked ? "Unlock & Print" : "Print"}
             </button>
             {isRecipePrinterAdmin && activeRecipeItem?.recipe && (
               <button
@@ -1196,7 +1793,7 @@ export default function PrintPage() {
                 Save as share link
               </button>
             )}
-            {(hasRecipeBackSide || cardSize === "card-6x4") && (
+            {hasPrintSettingsFields && (
               <button
                 type="button"
                 className="recipe-print-settings-link"
@@ -1244,7 +1841,7 @@ export default function PrintPage() {
               <span className="recipe-mobile-toolbar__btn-icon">
                 <PlusIcon size={ICON_SIZE.lg} />
               </span>
-              Add
+              Add recipe
             </button>
             <div className="recipe-mobile-toolbar__btn-wrap">
               <button
@@ -1346,15 +1943,44 @@ export default function PrintPage() {
         onCloseUnlockDialog={() => setShowUnlockDialog(false)}
         selectedPremiumTemplate={selectedPremiumTemplate}
         selectedTemplateLabel={selectedTemplateLabel}
+        selectedTemplatePrice={selectedPremiumTemplate ? templatePrices[selectedPremiumTemplate] : undefined}
         purchaseBusy={purchaseBusy}
         onUnlockTemplate={(premiumTemplate) => void unlockTemplateAndPrint(premiumTemplate)}
         canClaimFree={canClaimSelectedTemplateFree}
         claimBusy={claimBusy}
         onClaimTemplate={(premiumTemplate) => void claimTemplateAndPrint(premiumTemplate)}
-        showDeleteRecipeDialog={showDeleteRecipeDialog}
-        deleteRecipeTitle={activeRecipeItem?.recipe?.title || activeRecipeItem?.title || "this recipe"}
-        onCancelDeleteRecipe={() => setShowDeleteRecipeDialog(false)}
-        onConfirmDeleteRecipe={deleteActiveRecipe}
+        showCookbookOfferDialog={showCookbookOfferDialog}
+        onCloseCookbookOfferDialog={() => setShowCookbookOfferDialog(false)}
+        onConfirmMakeCookbook={() => {
+          projectMeta.setCookbookMode(true);
+          addCover();
+          setShowCookbookOfferDialog(false);
+        }}
+        showCookbookUnlockDialog={showCookbookUnlockDialog}
+        onCloseCookbookUnlockDialog={() => setShowCookbookUnlockDialog(false)}
+        cookbookPrice={cookbookPrice}
+        cookbookPurchaseBusy={cookbookPurchaseBusy}
+        onUnlockCookbook={() => void purchaseCookbookAndContinue(() => void handlePrint())}
+        showDeleteRecipeDialog={pendingDelete !== null}
+        deleteItemTitle={pendingDelete?.title ?? "this item"}
+        deleteItemDescription={
+          pendingDelete?.kind === "section"
+            ? "The section page and grouping will be removed from this print project."
+            : pendingDelete?.kind === "cover"
+              ? "The cover page will be removed from this print project."
+              : "It'll be removed from your print list. This can't be undone."
+        }
+        deletePrimaryLabel={
+          pendingDelete?.kind === "section"
+            ? "Delete section"
+            : pendingDelete?.kind === "cover"
+              ? "Delete cover"
+              : "Delete recipe"
+        }
+        sectionRecipeCount={pendingDelete?.kind === "section" ? pendingDelete.recipeIds.length : undefined}
+        onCancelDeleteRecipe={() => setPendingDelete(null)}
+        onConfirmDeleteRecipe={confirmPendingDelete}
+        onConfirmDeleteSectionRecipes={confirmDeleteSectionRecipes}
       />
       <AddRecipeDialog
         open={showAddRecipeDialog}

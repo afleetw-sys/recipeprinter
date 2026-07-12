@@ -1,5 +1,5 @@
 import type { Metadata, Viewport } from "next";
-import { Manrope, Playfair_Display } from "next/font/google";
+import { Birthstone, Gochi_Hand, Manrope, Playfair_Display } from "next/font/google";
 import "./globals.css";
 import { KeyboardInsetWatcher } from "@/components/KeyboardInsetWatcher";
 import {
@@ -24,6 +24,20 @@ const manrope = Manrope({
 const playfair = Playfair_Display({
   subsets: ["latin"],
   variable: "--font-playfair",
+  display: "swap",
+});
+
+const birthstone = Birthstone({
+  subsets: ["latin"],
+  weight: "400",
+  variable: "--font-birthstone",
+  display: "swap",
+});
+
+const gochiHand = Gochi_Hand({
+  subsets: ["latin"],
+  weight: "400",
+  variable: "--font-gochi-hand",
   display: "swap",
 });
 
@@ -94,7 +108,10 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en" className={`${manrope.variable} ${playfair.variable}`}>
+    <html
+      lang="en"
+      className={`${manrope.variable} ${playfair.variable} ${birthstone.variable} ${gochiHand.variable}`}
+    >
       <body>
         <KeyboardInsetWatcher />
         {children}

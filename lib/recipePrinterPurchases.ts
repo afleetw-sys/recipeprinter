@@ -12,6 +12,12 @@ import {
   RECIPEPRINTER_OFFERING_ID,
   type PremiumRecipePrintTemplate,
 } from "@/lib/premiumTemplates";
+import {
+  RECIPEPRINTER_COOKBOOK_ENTITLEMENT_ID,
+  RECIPEPRINTER_COOKBOOK_OFFERING_ID,
+  RECIPEPRINTER_COOKBOOK_PACKAGE_ID,
+  RECIPEPRINTER_COOKBOOK_PRODUCT_ID,
+} from "@/lib/cookbookProduct";
 
 type PurchasesModule = typeof import("@revenuecat/purchases-js");
 
@@ -249,6 +255,74 @@ export async function purchaseRecipePrinterTemplate({
       metadata: {
         product: "recipeprinter",
         template,
+      },
+      skipSuccessPage: true,
+    });
+    return { customerInfo: result.customerInfo, cancelled: false };
+  } catch (error) {
+    const { ErrorCode } = await loadPurchasesModule();
+    if (isPurchasesError(error) && error.errorCode === ErrorCode.UserCancelledError) {
+      return { customerInfo: await purchases.getCustomerInfo(), cancelled: true };
+    }
+    throw error;
+  }
+}
+
+async function packageForCookbook(purchases: Purchases): Promise<Package> {
+  const offerings = await purchases.getOfferings();
+  const offering = offerings.all[RECIPEPRINTER_COOKBOOK_OFFERING_ID] ?? offerings.current;
+  const rcPackage =
+    offering?.availablePackages.find(
+      (candidate) => candidate.webBillingProduct.identifier === RECIPEPRINTER_COOKBOOK_PRODUCT_ID,
+    ) ??
+    offering?.packagesById[RECIPEPRINTER_COOKBOOK_PACKAGE_ID] ??
+    offering?.availablePackages.find((candidate) => candidate.identifier === RECIPEPRINTER_COOKBOOK_PACKAGE_ID);
+
+  if (!rcPackage || rcPackage.webBillingProduct.identifier !== RECIPEPRINTER_COOKBOOK_PRODUCT_ID) {
+    throw new Error("The cookbook upgrade isn't ready to buy yet.");
+  }
+
+  return rcPackage;
+}
+
+export function hasCookbookEntitlement(customerInfo: CustomerInfo | null): boolean {
+  return Boolean(customerInfo?.entitlements.active[RECIPEPRINTER_COOKBOOK_ENTITLEMENT_ID]);
+}
+
+export async function loadRecipePrinterCookbookPrice(userId: string): Promise<string | undefined> {
+  const purchases = await getPurchases(userId);
+  const offerings = await purchases.getOfferings();
+  const offering = offerings.all[RECIPEPRINTER_COOKBOOK_OFFERING_ID] ?? offerings.current;
+  if (!offering) return undefined;
+
+  const rcPackage =
+    offering.availablePackages.find(
+      (candidate) => candidate.webBillingProduct.identifier === RECIPEPRINTER_COOKBOOK_PRODUCT_ID,
+    ) ??
+    offering.packagesById[RECIPEPRINTER_COOKBOOK_PACKAGE_ID] ??
+    offering.availablePackages.find((candidate) => candidate.identifier === RECIPEPRINTER_COOKBOOK_PACKAGE_ID);
+
+  if (rcPackage?.webBillingProduct.identifier !== RECIPEPRINTER_COOKBOOK_PRODUCT_ID) return undefined;
+  return rcPackage.webBillingProduct.price.formattedPrice;
+}
+
+export async function purchaseRecipePrinterCookbook({
+  userId,
+  email,
+}: {
+  userId: string;
+  email?: string | null;
+}): Promise<{ customerInfo: CustomerInfo; cancelled: boolean }> {
+  const purchases = await getPurchases(userId);
+  const rcPackage = await packageForCookbook(purchases);
+
+  try {
+    const result = await purchases.purchase({
+      rcPackage,
+      customerEmail: email ?? undefined,
+      metadata: {
+        product: "recipeprinter",
+        offer: "cookbook",
       },
       skipSuccessPage: true,
     });

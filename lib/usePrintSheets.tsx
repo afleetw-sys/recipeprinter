@@ -4,7 +4,7 @@ import { useCallback, useMemo, useState } from "react";
 import { getRecipeFaces, recipeNeedsBackSide, type RecipeFace } from "@/lib/recipeCardLayout";
 import type { PrintCardSize, RecipePrintTemplate } from "@/components/RecipeCardPrint";
 import { RecipeFaceMeasurer } from "@/components/RecipeFaceMeasurer";
-import type { QueueItem, Recipe } from "@/types/recipe";
+import type { CoverConfig, QueueItem, Recipe, Section } from "@/types/recipe";
 
 // How many recipe-card slots share one physical page. Letter cards are the
 // size of the page, so there's only ever one; 6x4 cards are small enough to
@@ -19,7 +19,8 @@ const SLOTS_PER_SHEET: Record<PrintCardSize, number> = {
 // One card-sized slot on a physical sheet: a recipe's front (and, once it's
 // paired up during the back pass below, its back/continuation). `null` means
 // the slot is unused — the sheet ran out of recipes before filling every slot.
-export interface SheetSlot {
+export interface RecipeSheetSlot {
+  kind: "recipe";
   recipeId: string;
   recipe: Recipe;
   label: string;
@@ -30,24 +31,46 @@ export interface SheetSlot {
   queueIndex: number;
 }
 
+// Section dividers and covers are always alone on their own sheet (one slot,
+// never shared with a recipe) — a chapter break or a book cover doesn't share
+// a physical page the way two small 6x4 cards can.
+export interface DividerSheetSlot {
+  kind: "divider";
+  id: string;
+  title: string;
+  recipeTitles: string[];
+}
+
+export interface CoverSheetSlot {
+  kind: "cover";
+  id: string;
+  cover: CoverConfig;
+  side: "front" | "back";
+}
+
+export type SheetSlot = RecipeSheetSlot | DividerSheetSlot | CoverSheetSlot;
+
 // One physical sheet of paper that will actually come out of the printer.
 // Letter sheets have a single slot (the card is the page); 6x4 sheets have up
-// to two slots side by side on the same page. `backGroupNeeded` covers both
-// cases where a back side must print: real back content in any slot, or (for
-// duplex jobs) a fully blank back so a later sheet's front doesn't land on
-// this sheet's back.
+// to two slots side by side on the same page. Divider/cover sheets always
+// have exactly one slot. `backGroupNeeded` covers both cases where a back
+// side must print: real back content in any slot, or (for duplex jobs) a
+// fully blank back so a later sheet's front doesn't land on this sheet's back.
 export interface PageSheet {
   id: string;
   slots: (SheetSlot | null)[];
   backGroupNeeded: boolean;
 }
 
-// The unit the on-screen navigator (rail + deck) browses by: one recipe face
-// at a time, exactly like before 6x4 pages started sharing sheets with a
-// second recipe. Several `NavItem`s can point at the same sheet/slotIndex —
-// that's what lets two recipes that will print on one physical page still
-// browse and flip independently on screen.
+// The unit the on-screen navigator (rail + deck) browses by: one face at a
+// time. Several `NavItem`s can point at the same sheet/slotIndex for a
+// recipe's continuation pages — that's what lets a recipe's later faces still
+// browse and flip independently on screen even when interleaved with a
+// sheet-mate's on the physical sheet order.
 export interface NavItem {
+  kind: "recipe" | "divider" | "cover";
+  /** The underlying recipe/divider/cover id — named `recipeId` for recipes so
+      existing lookups by id keep working unchanged. */
   recipeId: string;
   sheetIndex: number;
   slotIndex: number;
@@ -57,7 +80,17 @@ export interface NavItem {
 }
 
 interface UsePrintSheetsOptions {
-  items: QueueItem[] | null | undefined;
+  /** Preferred input: section-grouped items, in the order they should print.
+      `items` is accepted for back-compat and is treated as a single
+      untitled section — existing single/multi-recipe callers don't need to
+      change to keep working exactly as before. */
+  sections?: Section[];
+  items?: QueueItem[] | null;
+  cover?: CoverConfig;
+  backCover?: CoverConfig;
+  /** Whether a named section gets its own divider page. Off (or a project
+      with no named sections) reproduces today's flat behavior exactly. */
+  sectionDividers?: boolean;
   cardSize: PrintCardSize;
   cardsPerSheet: 1 | 2;
   doubleSided: boolean;
@@ -67,16 +100,25 @@ interface UsePrintSheetsOptions {
 }
 
 /**
- * Packs the print queue into physical sheets/slots, and the flat rail/deck
- * navigation order derived from them. Also owns the measurement-correction
- * loop: `getRecipeFaces` is a text-length budget guess, not a measurement of
- * a recipe's actual rendered size, so `RecipeFaceMeasurer` (rendered
- * off-screen via the returned `measurers` element — drop it into the tree
- * once) corrects any face that actually overflows, and `sheets` prefers that
- * measured result over the raw guess once it's settled.
+ * Packs an ordered set of sections into physical sheets/slots, and the flat
+ * rail/deck navigation order derived from them. Also owns the measurement-
+ * correction loop: `getRecipeFaces` is a text-length budget guess, not a
+ * measurement of a recipe's actual rendered size, so `RecipeFaceMeasurer`
+ * (rendered off-screen via the returned `measurers` element — drop it into
+ * the tree once) corrects any face that actually overflows, and `sheets`
+ * prefers that measured result over the raw guess once it's settled.
+ *
+ * Each section's recipes are packed independently (a section boundary always
+ * starts a fresh sheet — recipes never share a physical sheet across a
+ * section, which is also the right behavior for a book with chapters), then
+ * concatenated with divider/cover sheets spliced in at the boundaries.
  */
 export function usePrintSheets({
+  sections: sectionsProp,
   items,
+  cover,
+  backCover,
+  sectionDividers,
   cardSize,
   cardsPerSheet,
   doubleSided,
@@ -84,11 +126,18 @@ export function usePrintSheets({
   sourceUrlOn,
   template,
 }: UsePrintSheetsOptions) {
+  const sections = useMemo<Section[]>(() => {
+    if (sectionsProp) return sectionsProp;
+    return [{ id: "__default", items: items ?? [] }];
+  }, [sectionsProp, items]);
+
+  const allItems = useMemo(() => sections.flatMap((section) => section.items), [sections]);
+
   // The photo reserves vertical space, so the split must know whether one will
   // render — otherwise content overflows the page instead of flowing to the back.
   const hasRecipeBackSide = useMemo(
     () =>
-      items?.some(
+      allItems.some(
         (item) =>
           item.recipe &&
           recipeNeedsBackSide(item.recipe, cardSize, {
@@ -96,8 +145,8 @@ export function usePrintSheets({
             showSourceUrl: sourceUrlOn,
             template,
           }),
-      ) ?? false,
-    [items, cardSize, photosOn, sourceUrlOn, template],
+      ),
+    [allItems, cardSize, photosOn, sourceUrlOn, template],
   );
   const continueOnBack = hasRecipeBackSide && doubleSided;
 
@@ -116,14 +165,14 @@ export function usePrintSheets({
 
   const measuredRecipeItems = useMemo(
     () =>
-      (items ?? [])
+      allItems
         .filter((item): item is QueueItem & { recipe: Recipe } => Boolean(item.recipe))
         .map((item) => ({
           id: item.id,
           recipe: item.recipe,
           hasPhoto: photosOn && Boolean(item.recipe.image),
         })),
-    [items, photosOn],
+    [allItems, photosOn],
   );
 
   const measuredFacesFor = useCallback((id: string, recipe: Recipe, hasPhoto: boolean): RecipeFace[] | null => {
@@ -148,14 +197,6 @@ export function usePrintSheets({
     [measuredRecipeItems, measuredFacesFor],
   );
 
-  // The physical sheets the printer will produce, in order. Each sheet fills
-  // its `SLOTS_PER_SHEET[cardSize]` slots by walking an ordered queue of
-  // recipes: a slot keeps consuming its current recipe's faces (front, then
-  // continuations) until that recipe runs out, then picks up the next one —
-  // so short recipes interleave two-to-a-page around a long one that needs
-  // several sheets to itself. For two-sided jobs the same slots are filled a
-  // second time for the back, so a slot's front and back always belong to the
-  // same recipe and land on opposite faces of one sheet.
   const sheets = useMemo<PageSheet[]>(() => {
     const slotCount = cardSize === "card-6x4" ? cardsPerSheet : SLOTS_PER_SHEET[cardSize];
 
@@ -169,147 +210,224 @@ export function usePrintSheets({
       queueIndex: number;
     }
 
-    const queue: Column[] = [];
-    for (const item of items ?? []) {
-      if (!item.recipe) continue;
-      const recipe = item.recipe;
-      const hasPhoto = photosOn && Boolean(recipe.image);
-      const faces =
-        measuredFacesFor(item.id, recipe, hasPhoto) ??
-        getRecipeFaces(recipe, cardSize, {
-          hasPhoto,
-          showSourceUrl: sourceUrlOn,
-          template,
-        }).pages;
-      queue.push({
-        recipeId: item.id,
-        recipe,
-        label: recipe.title || "Recipe",
-        faces,
-        hasBack: faces.length > 1,
-        idx: 0,
-        queueIndex: queue.length,
-      });
-    }
-
-    const columns: (Column | null)[] = new Array(slotCount).fill(null);
-
-    function fillColumn(slotIndex: number): Column | null {
-      let column = columns[slotIndex];
-      if (!column || column.idx >= column.faces.length) {
-        column = queue.shift() ?? null;
-      }
-      columns[slotIndex] = column;
-      return column;
-    }
-
-    function takeFace(slotIndex: number) {
-      const column = fillColumn(slotIndex);
-      if (!column) return null;
-      const faceIndex = column.idx;
-      const face = column.faces[faceIndex];
-      column.idx += 1;
-      return { column, face, faceIndex };
-    }
-
-    const out: PageSheet[] = [];
-    let sheetNum = 0;
-
-    while (queue.length > 0 || columns.some((column) => column && column.idx < column.faces.length)) {
-      const takes = Array.from({ length: slotCount }, (_, slotIndex) => takeFace(slotIndex));
-      if (takes.every((take) => take === null)) break;
-      sheetNum += 1;
-
-      const slots: (SheetSlot | null)[] = takes.map((take) =>
-        take
-          ? {
-              recipeId: take.column.recipeId,
-              recipe: take.column.recipe,
-              label: take.column.label,
-              front: take.face,
-              back: null,
-              hasBack: take.column.hasBack,
-              isContinuation: take.faceIndex > 0,
-              queueIndex: take.column.queueIndex,
-            }
-          : null,
-      );
-
-      let anyBack = false;
-      if (continueOnBack) {
-        takes.forEach((take, slotIndex) => {
-          if (!take) return;
-          const column = take.column;
-          if (column.idx < column.faces.length) {
-            slots[slotIndex]!.back = column.faces[column.idx];
-            column.idx += 1;
-            anyBack = true;
-          }
+    // Exactly today's single-list packing algorithm, scoped to one section's
+    // items — `queueIndexOffset` keeps the nav-grouping key monotonic across
+    // sections so recipe ordering stays correct end-to-end.
+    function buildSectionSheets(sectionItems: QueueItem[], queueIndexOffset: number, idPrefix: string): PageSheet[] {
+      const queue: Column[] = [];
+      for (const item of sectionItems) {
+        if (!item.recipe) continue;
+        const recipe = item.recipe;
+        const hasPhoto = photosOn && Boolean(recipe.image);
+        const faces =
+          measuredFacesFor(item.id, recipe, hasPhoto) ??
+          getRecipeFaces(recipe, cardSize, {
+            hasPhoto,
+            showSourceUrl: sourceUrlOn,
+            template,
+          }).pages;
+        queue.push({
+          recipeId: item.id,
+          recipe,
+          label: recipe.title || "Recipe",
+          faces,
+          hasBack: faces.length > 1,
+          idx: 0,
+          queueIndex: queueIndexOffset + queue.length,
         });
       }
 
+      const columns: (Column | null)[] = new Array(slotCount).fill(null);
+
+      function fillColumn(slotIndex: number): Column | null {
+        let column = columns[slotIndex];
+        if (!column || column.idx >= column.faces.length) {
+          column = queue.shift() ?? null;
+        }
+        columns[slotIndex] = column;
+        return column;
+      }
+
+      function takeFace(slotIndex: number) {
+        const column = fillColumn(slotIndex);
+        if (!column) return null;
+        const faceIndex = column.idx;
+        const face = column.faces[faceIndex];
+        column.idx += 1;
+        return { column, face, faceIndex };
+      }
+
+      const out: PageSheet[] = [];
+      let sheetNum = 0;
+
+      while (queue.length > 0 || columns.some((column) => column && column.idx < column.faces.length)) {
+        const takes = Array.from({ length: slotCount }, (_, slotIndex) => takeFace(slotIndex));
+        if (takes.every((take) => take === null)) break;
+        sheetNum += 1;
+
+        const slots: (SheetSlot | null)[] = takes.map((take) =>
+          take
+            ? {
+                kind: "recipe",
+                recipeId: take.column.recipeId,
+                recipe: take.column.recipe,
+                label: take.column.label,
+                front: take.face,
+                back: null,
+                hasBack: take.column.hasBack,
+                isContinuation: take.faceIndex > 0,
+                queueIndex: take.column.queueIndex,
+              }
+            : null,
+        );
+
+        let anyBack = false;
+        if (continueOnBack) {
+          takes.forEach((take, slotIndex) => {
+            if (!take) return;
+            const column = take.column;
+            if (column.idx < column.faces.length) {
+              (slots[slotIndex] as RecipeSheetSlot).back = column.faces[column.idx];
+              column.idx += 1;
+              anyBack = true;
+            }
+          });
+        }
+
+        out.push({
+          id: `sheet-${idPrefix}-${sheetNum}`,
+          slots,
+          backGroupNeeded: anyBack,
+        });
+      }
+
+      return out;
+    }
+
+    const out: PageSheet[] = [];
+
+    if (cover) {
       out.push({
-        id: `sheet-${sheetNum}`,
-        slots,
-        backGroupNeeded: anyBack,
+        id: "sheet-cover-front",
+        slots: [{ kind: "cover", id: "cover-front", cover, side: "front" }],
+        backGroupNeeded: false,
       });
     }
 
-    // A duplex job needs every sheet but the last to emit a back side — even
-    // a fully blank one — so the physical page count stays in sync and a
-    // later sheet's front doesn't land on the back of an earlier one.
+    let queueIndexCursor = 0;
+    sections.forEach((section) => {
+      if (sectionDividers && section.title?.trim()) {
+        out.push({
+          id: `sheet-divider-${section.id}`,
+          slots: [{
+            kind: "divider",
+            id: section.id,
+            title: section.title,
+            recipeTitles: section.items
+              .map((item) => item.recipe?.title?.trim() || item.title?.trim())
+              .filter((title): title is string => Boolean(title)),
+          }],
+          backGroupNeeded: false,
+        });
+      }
+      out.push(...buildSectionSheets(section.items, queueIndexCursor, section.id));
+      queueIndexCursor += section.items.filter((item) => item.recipe).length;
+    });
+
+    if (backCover) {
+      out.push({
+        id: "sheet-cover-back",
+        slots: [{ kind: "cover", id: "cover-back", cover: backCover, side: "back" }],
+        backGroupNeeded: false,
+      });
+    }
+
+    // A duplex job needs every recipe sheet but the last to emit a back side —
+    // even a fully blank one — so the physical page count stays in sync and a
+    // later sheet's front doesn't land on the back of an earlier one. Cover
+    // and divider sheets are always single-sided and sit outside this padding.
     if (continueOnBack) {
+      const isRecipeSheet = (sheet: PageSheet) => sheet.slots.some((slot) => slot?.kind === "recipe");
+      const lastRecipeSheetIndex = out.reduce(
+        (lastIndex, sheet, index) => (isRecipeSheet(sheet) ? index : lastIndex),
+        -1,
+      );
       out.forEach((sheet, index) => {
-        sheet.backGroupNeeded = sheet.backGroupNeeded || index !== out.length - 1;
+        if (!isRecipeSheet(sheet)) return;
+        sheet.backGroupNeeded = sheet.backGroupNeeded || index !== lastRecipeSheetIndex;
       });
     }
 
     return out;
-  }, [items, cardSize, cardsPerSheet, continueOnBack, photosOn, sourceUrlOn, template, measuredFacesFor]);
+  }, [sections, cover, backCover, sectionDividers, cardSize, cardsPerSheet, continueOnBack, photosOn, sourceUrlOn, template, measuredFacesFor]);
 
-  // What the rail and deck actually browse: one recipe face per item, in the
-  // same order recipes were queued, regardless of which physical sheet (and
-  // slot on it) they end up sharing for print. A recipe that needs more faces
-  // than fit in one front/back pair (long recipes on 6x4, mostly) spends an
-  // extra sheet sharing its slot's continuation with whatever the *other*
-  // slot on that sheet is doing — scanning sheets in physical order would
-  // then interleave that recipe's later faces with its sheet-mate's, so each
-  // recipe's items are grouped together (by `queueIndex`) after the scan,
-  // keeping this array itself in physical order otherwise unchanged.
+  // What the rail and deck actually browse: one face per item, in physical
+  // sheet order, except that a recipe's own faces (front + any continuations,
+  // which can end up sharing later sheets with a different sheet-mate) always
+  // stay grouped together at the position of that recipe's first appearance —
+  // a `Map` naturally preserves that: each key's position is fixed the first
+  // time it's seen, exactly what both recipe continuation-grouping and a
+  // divider/cover's simple single-entry order need.
   const navItems = useMemo<NavItem[]>(() => {
-    const groups = new Map<number, NavItem[]>();
+    const groups = new Map<string, NavItem[]>();
     sheets.forEach((sheet, sheetIndex) => {
       sheet.slots.forEach((slot, slotIndex) => {
         if (!slot) return;
-        const navItem: NavItem = {
-          recipeId: slot.recipeId,
-          sheetIndex,
-          slotIndex,
-          label: slot.label,
-          pageLabel: !continueOnBack
-            ? slot.isContinuation
-              ? "Continued"
-              : slot.hasBack
-                ? "Page 1"
-                : "One page"
-            : slot.isContinuation
-              ? "Continued"
-              : slot.back
-                ? "Two-sided"
-                : "One-sided",
-          flip: slot.back !== null,
-        };
-        const group = groups.get(slot.queueIndex);
-        if (group) group.push(navItem);
-        else groups.set(slot.queueIndex, [navItem]);
+        if (slot.kind === "recipe") {
+          const navItem: NavItem = {
+            kind: "recipe",
+            recipeId: slot.recipeId,
+            sheetIndex,
+            slotIndex,
+            label: slot.label,
+            pageLabel: !continueOnBack
+              ? slot.isContinuation
+                ? "Continued"
+                : slot.hasBack
+                  ? "Page 1"
+                  : "One page"
+              : slot.isContinuation
+                ? "Continued"
+                : slot.back
+                  ? "Two-sided"
+                  : "One-sided",
+            flip: slot.back !== null,
+          };
+          const key = `recipe:${slot.queueIndex}`;
+          const group = groups.get(key);
+          if (group) group.push(navItem);
+          else groups.set(key, [navItem]);
+        } else if (slot.kind === "divider") {
+          groups.set(`divider:${slot.id}`, [
+            {
+              kind: "divider",
+              recipeId: slot.id,
+              sheetIndex,
+              slotIndex,
+              label: slot.title,
+              pageLabel: "Section",
+              flip: false,
+            },
+          ]);
+        } else {
+          groups.set(`cover:${slot.id}`, [
+            {
+              kind: "cover",
+              recipeId: slot.id,
+              sheetIndex,
+              slotIndex,
+              label: slot.cover.title || (slot.side === "front" ? "Cover" : "Back cover"),
+              pageLabel: slot.side === "front" ? "Cover" : "Back cover",
+              flip: false,
+            },
+          ]);
+        }
       });
     });
-    return Array.from(groups.keys())
-      .sort((a, b) => a - b)
-      .flatMap((queueIndex) => groups.get(queueIndex)!);
+    return Array.from(groups.values()).flat();
   }, [sheets, continueOnBack]);
 
-  // Off-screen measurement pass for every recipe currently in the queue —
+  // Off-screen measurement pass for every recipe currently in the project —
   // drop this into the tree once; it never renders anything visible itself.
   const measurers = (
     <>
