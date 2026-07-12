@@ -95,9 +95,18 @@ async function getPurchases(userId: string): Promise<Purchases> {
 
   // Concurrent first-time callers (e.g. two effects both requesting the SDK
   // on mount) must await the same configure() rather than each racing past
-  // the `!purchasesInstance` check above — Purchases.configure() does its
-  // own subscriber fetch, so a race here double-logs the customer to
-  // RevenueCat.
+  // the `!purchasesInstance` check above. If the in-flight configure was for
+  // a different identity, switch before returning so entitlement reads don't
+  // accidentally use a stale anonymous customer while Firebase is logging in.
+  if (configuringPromise) {
+    const instance = await configuringPromise;
+    if (configuredUserId !== userId) {
+      await instance.changeUser(userId);
+      configuredUserId = userId;
+    }
+    return instance;
+  }
+
   if (!configuringPromise) {
     const apiKey = revenueCatApiKey();
     configuringPromise = (async () => {

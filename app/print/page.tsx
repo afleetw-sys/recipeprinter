@@ -412,7 +412,11 @@ export default function PrintPage() {
   const projectIdRef = useRef<string>(createPrintProjectId());
   const [toastMessage, setToastMessage] = useState<string | null>(null);
   const [freeTemplateStatus, setFreeTemplateStatus] = useState<RecipePrinterFreeTemplateStatus | null>(null);
-  const { user: cookPilotUser, redirectError: cookPilotRedirectError } = useCookPilotAuth();
+  const {
+    user: cookPilotUser,
+    ready: cookPilotAuthReady,
+    redirectError: cookPilotRedirectError,
+  } = useCookPilotAuth();
   const [isRecipePrinterAdmin, setIsRecipePrinterAdmin] = useState(false);
   const [showCookPilotLogin, setShowCookPilotLogin] = useState(false);
   const printRequestedRef = useRef(false);
@@ -760,6 +764,7 @@ export default function PrintPage() {
   } = usePremiumTemplatePurchase({
     items,
     cookPilotUser,
+    cookPilotAuthReady,
     template,
     freeTemplateStatus,
     setFreeTemplateStatus,

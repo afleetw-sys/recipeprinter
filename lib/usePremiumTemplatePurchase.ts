@@ -29,6 +29,7 @@ function friendlyPurchaseError(error: unknown): string {
 interface UsePremiumTemplatePurchaseOptions {
   items: QueueItem[] | null;
   cookPilotUser: User | null;
+  cookPilotAuthReady: boolean;
   template: RecipePrintTemplate;
   freeTemplateStatus: RecipePrinterFreeTemplateStatus | null;
   setFreeTemplateStatus: (status: RecipePrinterFreeTemplateStatus | null) => void;
@@ -47,6 +48,7 @@ interface UsePremiumTemplatePurchaseOptions {
 export function usePremiumTemplatePurchase({
   items,
   cookPilotUser,
+  cookPilotAuthReady,
   template,
   freeTemplateStatus,
   setFreeTemplateStatus,
@@ -62,6 +64,16 @@ export function usePremiumTemplatePurchase({
   const [claimBusy, setClaimBusy] = useState(false);
   const [freeTemplateBannerDismissed, setFreeTemplateBannerDismissed] = useState(false);
   const linkedCookPilotUidRef = useRef<string | null>(null);
+  const revenueCatUserIdRef = useRef<string | null>(null);
+  const identityRequestRef = useRef(0);
+
+  function setRevenueCatIdentity(userId: string) {
+    if (revenueCatUserIdRef.current !== userId) {
+      setCustomerInfo(null);
+    }
+    revenueCatUserIdRef.current = userId;
+    setRevenueCatUserId(userId);
+  }
 
   const selectedPremiumTemplate = isPremiumTemplate(template) ? template : null;
   const selectedTemplateOption = RECIPE_PRINT_TEMPLATE_OPTIONS.find(
@@ -83,7 +95,9 @@ export function usePremiumTemplatePurchase({
     }).catch((error) => {
       console.warn("RecipePrinter: could not sync RevenueCat customer attributes", error);
     });
-    setCustomerInfo(info);
+    if (revenueCatUserIdRef.current === userId) {
+      setCustomerInfo(info);
+    }
     return info;
   }
 
@@ -160,51 +174,59 @@ export function usePremiumTemplatePurchase({
   useEffect(() => {
     // Gated on having something to print: this only reads back the id an
     // import already registered (see registerRevenueCatCustomer in
-    // lib/queue.ts). It still needs to run here too, since a direct
-    // page load resets the in-memory RevenueCat SDK state even though the
-    // id and queue persisted in storage.
-    if (!items || items.length === 0) return;
-    let cancelled = false;
-    recipePrinterCustomerId()
-      .then((userId) => {
-        if (!cancelled) setRevenueCatUserId(userId);
-      })
-      .catch((error) => {
-        console.warn("RecipePrinter: could not initialize RevenueCat customer", error);
-      });
-    return () => {
-      cancelled = true;
-    };
-  }, [items]);
+    // lib/queue.ts). Wait for Firebase's initial auth restore first so a
+    // signed-in browser does not briefly load anonymous entitlements and mark
+    // owned templates as locked.
+    if (!items || items.length === 0 || !cookPilotAuthReady) return;
 
-  useEffect(() => {
+    const requestId = identityRequestRef.current + 1;
+    identityRequestRef.current = requestId;
+    let cancelled = false;
+
+    if (!cookPilotUser) {
+      recipePrinterCustomerId()
+        .then((userId) => {
+          if (cancelled || identityRequestRef.current !== requestId) return;
+          setRevenueCatIdentity(userId);
+        })
+        .catch((error) => {
+          console.warn("RecipePrinter: could not initialize RevenueCat customer", error);
+        });
+      return () => {
+        cancelled = true;
+      };
+    }
+
     // Runs once per CookPilot login: aliases whatever this browser already
     // purchased anonymously into the CookPilot account, then switches this
     // session to that identity so future purchases stay tied to it too.
-    // Gated on having something to print, same as the anonymous-id effect
-    // above — no reason to touch RevenueCat on an empty/stale print page.
-    if (!cookPilotUser || !items || items.length === 0) return;
-    if (linkedCookPilotUidRef.current === cookPilotUser.uid) return;
-    linkedCookPilotUidRef.current = cookPilotUser.uid;
-    identifyRecipePrinterCustomer(cookPilotUser.uid)
+    const uid = cookPilotUser.uid;
+    const alreadyLinkedInSession = linkedCookPilotUidRef.current === uid;
+    linkedCookPilotUidRef.current = uid;
+    identifyRecipePrinterCustomer(uid)
       .then(({ customerInfo: linkedInfo, alreadyLinked }) => {
-        setRevenueCatUserId(cookPilotUser.uid);
+        if (cancelled || identityRequestRef.current !== requestId) return;
+        setRevenueCatIdentity(uid);
         setCustomerInfo(linkedInfo);
         // Already linked in a prior visit (this is a page refresh, not a
         // fresh sign-in) — restoring entitlements silently is enough, the
         // toast would just be noise every time the page reloads.
-        if (alreadyLinked) return;
+        if (alreadyLinked || alreadyLinkedInSession) return;
         const hasAnyPremium = Object.keys(linkedInfo.entitlements.active).length > 0;
         if (!hasAnyPremium) {
           showToast("Signed in — no prior purchases found on this account.");
         }
       })
       .catch((error) => {
+        if (cancelled || identityRequestRef.current !== requestId) return;
         console.warn("RecipePrinter: could not link CookPilot account to purchases", error);
         showToast("Signed in, but we couldn't check your purchases. Try again in a moment.");
       });
+    return () => {
+      cancelled = true;
+    };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [cookPilotUser, items]);
+  }, [cookPilotAuthReady, cookPilotUser, items]);
 
   useEffect(() => {
     if (!revenueCatUserId) return;
