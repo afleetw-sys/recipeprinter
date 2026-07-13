@@ -214,6 +214,25 @@ function SignedInCookPilotImport({
   const [loadMoreError, setLoadMoreError] = useState<string | null>(null);
   const sentinelRef = useRef<HTMLLIElement | null>(null);
   const isSearching = queryText.trim().length > 0;
+  // True until the component actually unmounts (or switches users) — a
+  // component-level ref rather than a `let alive = true` local to each
+  // effect, because the infinite-scroll effect below depends on `loadingMore`
+  // (so it can re-arm the observer once a page finishes loading), and that
+  // same state is also what `loadNextPage` sets to *start* a fetch. With a
+  // per-invocation local, setting it flips that dependency, which reruns the
+  // effect and fires its cleanup — tearing down the very `alive` flag the
+  // in-flight fetch this just kicked off is still relying on. Its `.then()`
+  // and `.finally()` would see `alive === false` and silently skip applying
+  // the results and resetting `loadingMore`, leaving the list stuck on the
+  // spinner forever with nothing new loaded. A ref shared across the
+  // component's lifetime isn't affected by any single effect's own cleanup.
+  const aliveRef = useRef(true);
+  useEffect(() => {
+    aliveRef.current = true;
+    return () => {
+      aliveRef.current = false;
+    };
+  }, [user.uid]);
 
   const addedIds = useMemo(() => new Set(items.map((item) => item.id)), [items]);
   const visibleSummaries = useMemo(
@@ -229,28 +248,24 @@ function SignedInCookPilotImport({
   useEffect(() => {
     // Already cached from an earlier visit: state is seeded, skip the fetch.
     if (getCachedCookPilotSummaries(user.uid)) return;
-    let alive = true;
     setLoading(true);
     setError(null);
     setLoadMoreError(null);
     loadCookPilotRecipeSummaries(user.uid)
       .then((nextSummaries) => {
-        if (alive) {
+        if (aliveRef.current) {
           setSummaries(nextSummaries);
           setHasMore(hasMoreCookPilotSummaries(user.uid));
         }
       })
       .catch((err) => {
-        if (alive) {
+        if (aliveRef.current) {
           setError(friendlyRecipeLibraryError(err, "Couldn't load your recipes."));
         }
       })
       .finally(() => {
-        if (alive) setLoading(false);
+        if (aliveRef.current) setLoading(false);
       });
-    return () => {
-      alive = false;
-    };
   }, [user.uid]);
 
   // Search needs to match the whole library, not just whatever's been
@@ -258,49 +273,50 @@ function SignedInCookPilotImport({
   // page in the background (subsequent keystrokes no-op once it's all in).
   useEffect(() => {
     if (!isSearching || !hasMoreCookPilotSummaries(user.uid)) return;
-    let alive = true;
     setLoadingMore(true);
     setLoadMoreError(null);
     loadAllCookPilotRecipeSummaries(user.uid)
       .then((all) => {
-        if (!alive) return;
+        if (!aliveRef.current) return;
         setSummaries(all);
         setHasMore(false);
       })
       .catch((err) => {
-        if (alive) setError(friendlyRecipeLibraryError(err, "Couldn't load more recipes."));
+        if (aliveRef.current) setError(friendlyRecipeLibraryError(err, "Couldn't load more recipes."));
       })
       .finally(() => {
-        if (alive) setLoadingMore(false);
+        if (aliveRef.current) setLoadingMore(false);
       });
-    return () => {
-      alive = false;
-    };
   }, [isSearching, user.uid]);
 
   // Infinite scroll for normal browsing (not while search is loading the
   // full library above) — loads the next page once the sentinel at the
-  // bottom of the list scrolls into view.
+  // bottom of the list scrolls into view. Deliberately doesn't gate a fetch
+  // already in flight on `aliveRef` the way the effect cleanup below gates
+  // the observer — see `aliveRef`'s own comment above for why: this effect
+  // depends on `loadingMore` (needed to re-arm the observer once each page
+  // finishes), and `loadNextPage` is what sets `loadingMore` true, so tying
+  // its own completion to this effect's cleanup would tear down the very
+  // flag the fetch it just started depends on.
   useEffect(() => {
     if (isSearching || loading || loadingMore || loadMoreError || !hasMore) return;
     const node = sentinelRef.current;
     if (!node) return;
 
-    let alive = true;
     function loadNextPage() {
       setLoadingMore(true);
       setLoadMoreError(null);
       loadMoreCookPilotRecipeSummaries(user.uid)
         .then((next) => {
-          if (!alive) return;
+          if (!aliveRef.current) return;
           setSummaries(next);
           setHasMore(hasMoreCookPilotSummaries(user.uid));
         })
         .catch((err) => {
-          if (alive) setLoadMoreError(friendlyRecipeLibraryError(err, "Couldn't load more recipes."));
+          if (aliveRef.current) setLoadMoreError(friendlyRecipeLibraryError(err, "Couldn't load more recipes."));
         })
         .finally(() => {
-          if (alive) setLoadingMore(false);
+          if (aliveRef.current) setLoadingMore(false);
         });
     }
     const observer = new IntersectionObserver(
@@ -313,7 +329,6 @@ function SignedInCookPilotImport({
     );
     observer.observe(node);
     return () => {
-      alive = false;
       observer.disconnect();
     };
   }, [user.uid, isSearching, loading, loadingMore, loadMoreError, hasMore]);
