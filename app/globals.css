@@ -3120,10 +3120,6 @@
 }
 
 .recipe-template--counter .recipe-card {
-  background:
-    linear-gradient(90deg, rgba(47, 47, 47, 0.92) 50%, transparent 50%) 0.18in 0.08in / 0.16in 0.16in repeat-x,
-    linear-gradient(90deg, transparent 50%, rgba(47, 47, 47, 0.92) 50%) 0.18in 0.16in / 0.16in 0.16in repeat-x,
-    var(--recipe-bg);
   border-color: rgba(47, 47, 47, 0.32);
 }
 
@@ -3133,6 +3129,17 @@
 
 .recipe-template--counter .recipe-card__accent {
   display: none;
+}
+
+/* Real SVG rects (`CounterCheckerBand`), not a tiled CSS `background-image`
+   gradient — see that component's comment for why. */
+.recipe-card__counter-band {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 0.36in;
+  overflow: hidden;
 }
 
 .recipe-template--counter .recipe-card__header {
@@ -4658,31 +4665,29 @@
   }
 }
 
-/* No explicit `size` here on purpose — this is the single-precut-card sheet
-   (cardsPerSheet === 1; see rp-card-6x4-sheet below for the other option),
-   where the printer is loaded with actual 4x6 card stock that can go in
-   either way round. An explicit two-length `size` (e.g. `6in 4in`) pins the
-   page to that exact aspect ratio, which locks out the print dialog's own
-   paper-size and orientation controls (Chrome disables both once @page
-   fixes a non-square size) — so however the user actually loaded their
-   card, the print job would come out landscape regardless. Leaving `size`
-   unset keeps those controls live: whatever paper size/orientation the user
-   picks (matching how their card is fed) is just used as-is, with the
-   browser's normal fit-to-page scaling placing our fixed 6in x 4in
-   .recipe-card on it. `margin: 0` still removes the browser's default print
-   margins independent of that. */
+/* This is the single-precut-card sheet (cardsPerSheet === 1; see
+   rp-card-6x4-sheet below for the other option). Explicit `size` forces
+   every job to exactly 6in x 4in landscape, filling a real precut card edge
+   to edge — this does disable the print dialog's own paper-size/orientation
+   controls, but leaving `size` unset instead (so the dialog's Landscape/
+   Portrait toggle stays live) needs the page content to actually rotate to
+   match whatever the dialog resolves the page to, and that couldn't be
+   verified against real Chrome print behavior from this environment — it
+   shipped broken. Forcing the fixed orientation here is the version that's
+   actually confirmed working. */
 @page rp-card-6x4 {
+  size: 6in 4in;
   margin: 0;
 }
 
 /* cardsPerSheet === 2: two 6x4 cards are meant to be printed onto one full
    sheet of paper and cut apart afterward (see the padding-top rule on
    `.recipe-card-page:has(.recipe-card + .recipe-card)` below, which gives the
-   stacked pair breathing room on a page taller than either card) — so the
-   real page here is a full letter sheet, not a 6x4 one, even though the size
-   option is still "card-6x4". */
+   stacked pair breathing room on a page taller than either card). No
+   explicit `size` — that would force Letter portrait and lock out the print
+   dialog's own paper-size/orientation controls, so whatever the user
+   actually picks there for their loaded paper just applies as-is. */
 @page rp-card-6x4-sheet {
-  size: 8.5in 11in;
   margin: 0;
 }
 

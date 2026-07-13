@@ -167,6 +167,43 @@ function BistroCheckerSpine() {
   );
 }
 
+// Same reasoning as `BistroCheckerSpine` above: real vector rects instead of
+// the tiled CSS `background-image` gradient this used to be, which printed
+// crisply on screen but got pre-rasterized to a fixed, low DPI bitmap by
+// Chrome's print/PDF pipeline — the exact bug that made bistro's spine
+// blocky before it was switched to SVG. 60 teeth comfortably covers the
+// widest card (11in letter) at 0.16in per tooth; any extra is clipped by the
+// container's own `overflow: hidden`, sized to the card by CSS.
+const COUNTER_BAND_ROWS = 3;
+const COUNTER_BAND_COLS = 60;
+const COUNTER_BAND_CELL = 0.12;
+const COUNTER_BAND_COLOR = "#2f2f2f";
+
+function CounterCheckerBand() {
+  const cells: Array<{ row: number; col: number }> = [];
+  for (let row = 0; row < COUNTER_BAND_ROWS; row++) {
+    for (let col = 0; col < COUNTER_BAND_COLS; col++) {
+      if ((row + col) % 2 === 0) cells.push({ row, col });
+    }
+  }
+  return (
+    <div className="recipe-card__counter-band" aria-hidden>
+      <svg width="100%" height="100%" focusable="false">
+        {cells.map(({ row, col }) => (
+          <rect
+            key={`${row}-${col}`}
+            x={`${col * COUNTER_BAND_CELL}in`}
+            y={`${row * COUNTER_BAND_CELL}in`}
+            width={`${COUNTER_BAND_CELL}in`}
+            height={`${COUNTER_BAND_CELL}in`}
+            fill={COUNTER_BAND_COLOR}
+          />
+        ))}
+      </svg>
+    </div>
+  );
+}
+
 // `axis` says which direction this icon's edge runs, so `jitter` (always
 // "perpendicular to the strip") lands on the right transform axis: a
 // horizontal top/bottom strip jitters vertically, a vertical left/right one
@@ -574,6 +611,7 @@ export const RecipeCardFace = memo(function RecipeCardFace({
     >
       <div className="recipe-card__accent" aria-hidden />
       {template === "bistro" && <BistroCheckerSpine />}
+      {template === "counter" && <CounterCheckerBand />}
       {template === "cookout" && !continued && <CookoutBbqBorder withPhotoGap={showPhoto} />}
 
       {showHeader ? (
@@ -904,6 +942,7 @@ export const DividerFace = memo(function DividerFace({
     >
       <div className="recipe-card__accent" aria-hidden />
       {template === "bistro" && <BistroCheckerSpine />}
+      {template === "counter" && <CounterCheckerBand />}
       {template === "cookout" && <CookoutBbqBorder />}
       <div className="recipe-card__divider-content">
         <p className="recipe-card__divider-kicker">Section</p>
@@ -965,6 +1004,7 @@ export const CoverFace = memo(function CoverFace({ cover, side, previewHidden = 
     >
       <div className="recipe-card__accent" aria-hidden />
       {draft.template === "bistro" && <BistroCheckerSpine />}
+      {draft.template === "counter" && <CounterCheckerBand />}
       {draft.template === "cookout" && <CookoutBbqBorder />}
       {draft.imageUrl && (
         // eslint-disable-next-line @next/next/no-img-element
