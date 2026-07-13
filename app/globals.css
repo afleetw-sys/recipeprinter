@@ -2592,6 +2592,24 @@
   print-color-adjust: exact;
 }
 
+/* `RecipeFaceMeasurer` renders each guessed face off-screen to detect real
+   overflow (see its top-of-file comment) by comparing rendered content
+   against the card's bottom edge — but that only means anything if the card
+   actually stops at the physical page size the way print does. Everywhere
+   else `.recipe-card` above is deliberately just `min-height` + `overflow:
+   visible` (grows to fit its content instead of clipping it), which is
+   exactly wrong for this one purpose: an overflowing face simply grows
+   taller than 4in/11in and drags its `position: absolute` footer down with
+   it, so `colsOverflowPx` always measures ~0 and never finds anything to
+   correct. Capping the card here to its real fixed height with `overflow:
+   hidden`, matching what `@media print` and `.recipe-page-scaler` already do
+   for the card the user actually sees, is what makes the measurement real. */
+.recipe-face-measurer .recipe-card {
+  height: var(--recipe-card-min-height);
+  min-height: 0;
+  overflow: hidden;
+}
+
 .recipe-card::before {
   content: "";
   position: absolute;

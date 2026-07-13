@@ -216,16 +216,6 @@ export function RecipeFaceMeasurer({
   const forcedStackedRef = useRef(false);
   const settledRef = useRef(false);
   const cardRefs = useRef<Array<HTMLElement | null>>([]);
-  // A pull and a pop are each other's exact inverse (move one item between
-  // adjacent faces), and pulling can shift a wide section's whole 2-column
-  // split non-linearly — one more item can move several others between
-  // columns, not just add itself. So a pull that looked safe against this
-  // pass's real measurement can turn out, once actually laid out, to overflow
-  // after all; the pop path then reverses it, slack reappears, and it pulls
-  // right back — an A/B cycle that never settles on its own. Tracking every
-  // page-shape seen this recipe catches that: a repeat means keep the last
-  // known-good shape instead of oscillating forever.
-  const seenSignaturesRef = useRef<Set<string>>(new Set());
 
   // Any change to the recipe/settings invalidates whatever this had settled
   // on and starts a fresh measurement pass. `initialPages` is already
@@ -239,7 +229,6 @@ export function RecipeFaceMeasurer({
     passRef.current = 0;
     forcedStackedRef.current = false;
     settledRef.current = false;
-    seenSignaturesRef.current = new Set();
     setPages(initialPages);
   }
 
@@ -323,18 +312,21 @@ export function RecipeFaceMeasurer({
     if (changed) {
       // Drop any page a pop/pull left with nothing on it (its whole content
       // moved elsewhere) so a corrected recipe doesn't end with a blank side.
+      // A pull and a pop are each other's exact inverse, and pulling can
+      // shift a wide section's whole 2-column split non-linearly, so a state
+      // that looked safe can turn out not to be, and genuinely cycle A/B/A/B
+      // for a few passes before settling — that's fine, `MAX_REFLOW_PASSES`
+      // above is the backstop for it. This used to also bail out the moment
+      // any pruned shape repeated, on the theory that a repeat could only
+      // mean an unwinnable cycle — but the same signature also shows up when
+      // two effect invocations run back-to-back against the *same*,
+      // not-yet-rendered `pages` (React's dev-only Strict Mode double-invokes
+      // effects, so this isn't rare), and there it's not a cycle at all, just
+      // a duplicate computation of a pass that hasn't even had a chance to
+      // render yet. Bailing out there settles on a state whose own overflow
+      // was never checked, discarding this pass's real fix. Always applying
+      // the pass and letting the loop continue avoids the false positive.
       const pruned = next.filter((face, i) => i === 0 || !isEmptyFace(face));
-      const signature = pruned.map((face) => `${face.layout}:${face.ingredients.length}:${face.instructions.length}`).join("|");
-      if (seenSignaturesRef.current.has(signature)) {
-        // Seen this exact page shape before this recipe — a pull/pop cycle,
-        // not real progress. Settle on the current (already-rendered, known
-        // not to be actively overflowing past this point) state instead of
-        // oscillating until the pass cap.
-        settledRef.current = true;
-        onSettled(pages);
-        return;
-      }
-      seenSignaturesRef.current.add(signature);
       setPages(pruned);
       return;
     }
@@ -355,7 +347,7 @@ export function RecipeFaceMeasurer({
         pointerEvents: "none",
         zIndex: -1,
       }}
-      className={`recipe-print-preview recipe-print-preview--${size}`}
+      className={`recipe-print-preview recipe-print-preview--${size} recipe-face-measurer`}
     >
       <div className={`recipe-card-set recipe-template--${template}`}>
         {pages.map((page, i) => (
