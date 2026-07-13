@@ -94,16 +94,6 @@
   html {
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
-    /* Without this, mobile Safari/Chrome can silently inflate the *painted*
-       size of text sitting in a narrow block (its own automatic
-       "readability" boost for pages that aren't responsive) — invisible to
-       `getComputedStyle().fontSize`, which still reports the authored size,
-       so a paragraph can render visibly larger than its siblings with no
-       corresponding difference in the CSS. Pinning the adjustment to 100%
-       (i.e. off) keeps every element's rendered size matching what it's
-       actually styled at. */
-    -webkit-text-size-adjust: 100%;
-    text-size-adjust: 100%;
   }
 
   body {
@@ -1325,8 +1315,15 @@
   text-align: left;
 }
 
-.recipe-print-settings-banner {
+/* Both call sites (the desktop dialog and the mobile settings menu) nest this
+   inside `.print-success-dialog`, whose own `p` rule is otherwise more
+   specific (class + element beats a single class) and was overriding this
+   with its larger body-copy size — the two extra ancestor selectors below
+   restore precedence without resorting to `!important`. */
+.print-settings-dialog__body .recipe-print-settings-banner,
+.recipe-mobile-settings-menu .recipe-print-settings-banner {
   padding: 10px 12px;
+  margin-top: 0;
   border: 1px solid color-mix(in srgb, var(--cp-accent) 28%, transparent);
   background: var(--cp-accent-soft);
   border-radius: 12px;
