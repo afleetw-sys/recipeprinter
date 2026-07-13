@@ -22,7 +22,6 @@ export interface StoredPrintSettings {
   showCutLines?: boolean;
   showPhoto?: boolean;
   showSourceUrl?: boolean;
-  cardsPerSheet?: number;
 }
 
 export function readPrintSettings(): StoredPrintSettings | null {
@@ -67,8 +66,6 @@ interface PrintSettingsState {
   setShowPhoto: (value: boolean) => void;
   showSourceUrl: boolean;
   setShowSourceUrl: (value: boolean) => void;
-  cardsPerSheet: 1 | 2;
-  setCardsPerSheet: (value: 1 | 2) => void;
 }
 
 /**
@@ -94,8 +91,6 @@ export function usePrintSettingsPersistence(
     setShowPhoto,
     showSourceUrl,
     setShowSourceUrl,
-    cardsPerSheet,
-    setCardsPerSheet,
   } = state;
 
   // Hydrate stored layout preferences on mount (client only). Explicit URL
@@ -113,7 +108,6 @@ export function usePrintSettingsPersistence(
     if (typeof stored.showCutLines === "boolean") setShowCutLines(stored.showCutLines);
     if (typeof stored.showPhoto === "boolean") setShowPhoto(stored.showPhoto);
     if (typeof stored.showSourceUrl === "boolean") setShowSourceUrl(stored.showSourceUrl);
-    if (stored.cardsPerSheet === 1 || stored.cardsPerSheet === 2) setCardsPerSheet(stored.cardsPerSheet);
     // Runs once on mount; the settings above are the ones being hydrated here.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -133,7 +127,6 @@ export function usePrintSettingsPersistence(
       showCutLines,
       showPhoto,
       showSourceUrl,
-      cardsPerSheet,
     });
-  }, [cardSize, template, doubleSided, showCutLines, showPhoto, showSourceUrl, cardsPerSheet]);
+  }, [cardSize, template, doubleSided, showCutLines, showPhoto, showSourceUrl]);
 }

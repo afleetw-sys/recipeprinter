@@ -13,7 +13,6 @@ import type { Recipe } from "@/types/recipe";
 export interface ShareLinkPrintSettings {
   template: RecipePrintTemplate;
   cardSize: PrintCardSize;
-  cardsPerSheet: 1 | 2;
   showPhoto: boolean;
   showSourceUrl: boolean;
   showCutLines: boolean;
@@ -57,7 +56,6 @@ export function AdminShareLinkDialog({
         recipe: printableRecipe(recipe),
         template: settings.template,
         cardSize: settings.cardSize,
-        cardsPerSheet: settings.cardsPerSheet,
         showPhoto: settings.showPhoto,
         showSourceUrl: settings.showSourceUrl,
         showCutLines: settings.showCutLines,

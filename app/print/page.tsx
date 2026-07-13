@@ -109,16 +109,15 @@ const RAIL_SCALE: Record<PrintCardSize, number> = {
 /**
  * A physical sheet rendered at true page size, scaled down by `scale` on
  * screen. Every face for every slot is always in the DOM — for print (via
- * `@media print` un-scaling it) that's the whole point, since up to two
- * slots' worth of cards share one printed page. On screen, though, browsing
- * still happens one recipe at a time like it always has: `data-preview-hidden`
- * (a screen-only rule) hides the whole front/back group that isn't
- * `activeSide` — otherwise its declared page-sized height still pushes the
- * flex column taller even with its cards individually hidden, shoving the
- * side you want to see out of the scaler's clipped viewport — and, within
- * whichever group is showing, hides every card except the one matching
- * `activeSlotIndex`. One tree, so preview and print can't drift apart even
- * though they show different amounts of it at once.
+ * `@media print` un-scaling it) that's the whole point. On screen, though,
+ * browsing still happens one recipe at a time like it always has:
+ * `data-preview-hidden` (a screen-only rule) hides the whole front/back group
+ * that isn't `activeSide` — otherwise its declared page-sized height still
+ * pushes the flex column taller even with its cards individually hidden,
+ * shoving the side you want to see out of the scaler's clipped viewport —
+ * and, within whichever group is showing, hides every card except the one
+ * matching `activeSlotIndex`. One tree, so preview and print can't drift
+ * apart even though they show different amounts of it at once.
  */
 const ScaledPage = memo(function ScaledPage({
   sheet,
@@ -127,7 +126,6 @@ const ScaledPage = memo(function ScaledPage({
   activeSide,
   scale,
   size,
-  cardsPerSheet,
   template,
   doubleSided,
   showImage,
@@ -143,7 +141,6 @@ const ScaledPage = memo(function ScaledPage({
   activeSide: "front" | "back";
   scale: number;
   size: PrintCardSize;
-  cardsPerSheet: 1 | 2;
   template: RecipePrintTemplate;
   doubleSided: boolean;
   showImage: boolean;
@@ -179,7 +176,6 @@ const ScaledPage = memo(function ScaledPage({
         <div className="recipe-page-scaler__inner">
           <div
             className={`recipe-print-preview recipe-print-preview--${size}`}
-            data-cards-per-sheet={1}
             data-double-sided="false"
           >
             <div className={`recipe-card-set recipe-card-set--${size} recipe-template--${template}`}>
@@ -233,7 +229,6 @@ const ScaledPage = memo(function ScaledPage({
             showCutLines ? "recipe-print-preview--cut-lines" : ""
           }`}
           data-double-sided={doubleSided ? "true" : "false"}
-          data-cards-per-sheet={size === "card-6x4" ? cardsPerSheet : 1}
         >
           <div
             className={`recipe-card-set recipe-card-set--${size} recipe-template--${template}`}
@@ -245,12 +240,12 @@ const ScaledPage = memo(function ScaledPage({
               data-preview-hidden={activeSide !== "front" ? "true" : undefined}
             >
               {sheet.slots.map((slot, slotIndex) =>
-                // An empty front slot just means the queue ran out of
-                // recipes (an odd count leaves the last sheet's second slot
-                // unfilled) — leave it empty rather than printing a blank
-                // card. Blank cards are only for the back side, to keep a
-                // duplex job's physical page count in sync (see
-                // `backGroupNeeded`), not for the front.
+                // `slot` is only ever null here in principle (this branch's
+                // one recipe slot is always filled by the time a sheet
+                // exists) — kept as a guard rather than assumed. Blank cards
+                // are only for the back side, to keep a duplex job's
+                // physical page count in sync (see `backGroupNeeded`), not
+                // for the front.
                 slot && slot.kind === "recipe" ? (
                   <RecipeCardFace
                     key={`front-${slotIndex}`}
@@ -373,7 +368,6 @@ export default function PrintPage() {
   );
   const [doubleSided, setDoubleSided] = useState(true);
   const [showCutLines, setShowCutLines] = useState(false);
-  const [cardsPerSheet, setCardsPerSheet] = useState<1 | 2>(2);
   const [printSettingsOpen, setPrintSettingsOpen] = useState(false);
   const [showPhoto, setShowPhoto] = useState(false);
   const [showSourceUrl, setShowSourceUrl] = useState(false);
@@ -452,7 +446,6 @@ export default function PrintPage() {
     backCover: projectMeta.meta.backCover,
     sectionDividers: projectMeta.meta.sectionDividers,
     cardSize,
-    cardsPerSheet,
     doubleSided,
     photosOn,
     sourceUrlOn,
@@ -722,7 +715,6 @@ export default function PrintPage() {
         settings: {
           cardSize,
           template,
-          cardsPerSheet,
           doubleSided,
           showPhoto,
           showSourceUrl,
@@ -928,10 +920,10 @@ export default function PrintPage() {
 
   // Whether the "Print settings" trigger itself should be reachable at all —
   // originally just card-format concerns (a back side to toggle, or 6x4's
-  // cards-per-sheet/cut-lines), now also true once book-only settings
-  // (section dividers, table of contents) become applicable. Without this, a
-  // sectioned letter-page project with no back-side content would have no way
-  // to reach those toggles even though renderPrintSettingsFields renders them.
+  // cut lines), now also true once book-only settings (section dividers,
+  // table of contents) become applicable. Without this, a sectioned
+  // letter-page project with no back-side content would have no way to
+  // reach those toggles even though renderPrintSettingsFields renders them.
   const hasPrintSettingsFields =
     hasRecipeBackSide ||
     cardSize === "card-6x4" ||
@@ -944,31 +936,6 @@ export default function PrintPage() {
     return (
       <>
         {cardSize === "card-6x4" && (
-          <div className="recipe-config-section recipe-config-section--cards-per-page">
-            <span className="recipe-config-label">Cards per page</span>
-            <div className="recipe-cards-per-page" role="radiogroup" aria-label="Cards per page">
-              {([1, 2] as const).map((count) => (
-                <button
-                  key={count}
-                  type="button"
-                  role="radio"
-                  aria-checked={cardsPerSheet === count}
-                  className={`recipe-cards-per-page__option ${
-                    cardsPerSheet === count ? "is-active" : ""
-                  }`}
-                  onClick={() => setCardsPerSheet(count)}
-                >
-                  {count}
-                </button>
-              ))}
-            </div>
-            <small className="recipe-cards-per-page__hint">
-              2 needs a full sheet of paper (like Letter) to fit both cards. If you&apos;re
-              printing on individual precut 4x6 cards, choose 1.
-            </small>
-          </div>
-        )}
-        {cardSize === "card-6x4" && cardsPerSheet === 2 && (
           <label className="recipe-toggle">
             <input
               type="checkbox"
@@ -1046,8 +1013,6 @@ export default function PrintPage() {
     setShowPhoto,
     showSourceUrl,
     setShowSourceUrl,
-    cardsPerSheet,
-    setCardsPerSheet,
   });
 
   // Auto-open the print dialog when the user chose Print instead of Preview.
@@ -1252,7 +1217,6 @@ export default function PrintPage() {
                         activeSide="front"
                         scale={RAIL_SCALE[cardSize]}
                         size={cardSize}
-                        cardsPerSheet={cardsPerSheet}
                         template={template}
                         doubleSided={continueOnBack}
                         showImage={photosOn}
@@ -1530,7 +1494,6 @@ export default function PrintPage() {
                     activeSide={isActive ? canvasSide : "front"}
                     scale={deckScale}
                     size={cardSize}
-                    cardsPerSheet={cardsPerSheet}
                     template={template}
                     doubleSided={continueOnBack}
                     showImage={photosOn}
@@ -1545,7 +1508,7 @@ export default function PrintPage() {
                       sourceUrlOn ||
                       (showSourceUrl && pageEditMode && isActive && activeRecipeItem?.id === navItem.recipeId)
                     }
-                    showCutLines={showCutLines && cardSize === "card-6x4" && cardsPerSheet === 2}
+                    showCutLines={showCutLines && cardSize === "card-6x4"}
                     inlineEdit={
                       pageEditMode && isActive && activeRecipeItem?.id === navItem.recipeId
                         ? activeInlineEdit
@@ -1995,7 +1958,7 @@ export default function PrintPage() {
       {showShareDialog && activeRecipeItem?.recipe && cookPilotUser && (
         <AdminShareLinkDialog
           recipe={activeRecipeItem.recipe}
-          settings={{ template, cardSize, cardsPerSheet, showPhoto, showSourceUrl, showCutLines, doubleSided }}
+          settings={{ template, cardSize, showPhoto, showSourceUrl, showCutLines, doubleSided }}
           uid={cookPilotUser.uid}
           onClose={() => setShowShareDialog(false)}
         />

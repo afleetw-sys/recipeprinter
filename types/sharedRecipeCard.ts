@@ -12,7 +12,6 @@ export interface SharedRecipeCard {
   recipe: Recipe;
   template: RecipePrintTemplate;
   cardSize: PrintCardSize;
-  cardsPerSheet: 1 | 2;
   showPhoto: boolean;
   showSourceUrl: boolean;
   showCutLines: boolean;

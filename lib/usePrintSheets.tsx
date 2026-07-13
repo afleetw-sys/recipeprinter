@@ -6,15 +6,10 @@ import type { PrintCardSize, RecipePrintTemplate } from "@/components/RecipeCard
 import { RecipeFaceMeasurer } from "@/components/RecipeFaceMeasurer";
 import type { CoverConfig, QueueItem, Recipe, Section } from "@/types/recipe";
 
-// How many recipe-card slots share one physical page. Letter cards are the
-// size of the page, so there's only ever one; 6x4 cards are small enough to
-// fit two per sheet (stacked), which is also the most that should share a
-// page even if more would technically fit. For 6x4 this is user-configurable
-// (see `cardsPerSheet` state); this is just the default/max.
-const SLOTS_PER_SHEET: Record<PrintCardSize, number> = {
-  letter: 1,
-  "card-6x4": 2,
-};
+// Every physical sheet holds exactly one recipe-card slot, for every card
+// size: a letter card is the size of the page, and a 6x4 card gets its own
+// precut sheet rather than sharing one with another card.
+const SLOTS_PER_SHEET = 1;
 
 // One card-sized slot on a physical sheet: a recipe's front (and, once it's
 // paired up during the back pass below, its back/continuation). `null` means
@@ -31,9 +26,7 @@ export interface RecipeSheetSlot {
   queueIndex: number;
 }
 
-// Section dividers and covers are always alone on their own sheet (one slot,
-// never shared with a recipe) — a chapter break or a book cover doesn't share
-// a physical page the way two small 6x4 cards can.
+// Section dividers and covers are always alone on their own sheet.
 export interface DividerSheetSlot {
   kind: "divider";
   id: string;
@@ -51,11 +44,12 @@ export interface CoverSheetSlot {
 export type SheetSlot = RecipeSheetSlot | DividerSheetSlot | CoverSheetSlot;
 
 // One physical sheet of paper that will actually come out of the printer.
-// Letter sheets have a single slot (the card is the page); 6x4 sheets have up
-// to two slots side by side on the same page. Divider/cover sheets always
-// have exactly one slot. `backGroupNeeded` covers both cases where a back
-// side must print: real back content in any slot, or (for duplex jobs) a
-// fully blank back so a later sheet's front doesn't land on this sheet's back.
+// Every sheet has exactly one slot — the card is the page, for every size —
+// kept as a single-element array rather than a bare field so the rest of
+// this module (and its callers) can still iterate/index it uniformly.
+// `backGroupNeeded` covers both cases where a back side must print: real
+// back content in the slot, or (for duplex jobs) a fully blank back so a
+// later sheet's front doesn't land on this sheet's back.
 export interface PageSheet {
   id: string;
   slots: (SheetSlot | null)[];
@@ -65,8 +59,7 @@ export interface PageSheet {
 // The unit the on-screen navigator (rail + deck) browses by: one face at a
 // time. Several `NavItem`s can point at the same sheet/slotIndex for a
 // recipe's continuation pages — that's what lets a recipe's later faces still
-// browse and flip independently on screen even when interleaved with a
-// sheet-mate's on the physical sheet order.
+// browse and flip independently on screen.
 export interface NavItem {
   kind: "recipe" | "divider" | "cover";
   /** The underlying recipe/divider/cover id — named `recipeId` for recipes so
@@ -92,7 +85,6 @@ interface UsePrintSheetsOptions {
       with no named sections) reproduces today's flat behavior exactly. */
   sectionDividers?: boolean;
   cardSize: PrintCardSize;
-  cardsPerSheet: 1 | 2;
   doubleSided: boolean;
   photosOn: boolean;
   sourceUrlOn: boolean;
@@ -120,7 +112,6 @@ export function usePrintSheets({
   backCover,
   sectionDividers,
   cardSize,
-  cardsPerSheet,
   doubleSided,
   photosOn,
   sourceUrlOn,
@@ -198,7 +189,7 @@ export function usePrintSheets({
   );
 
   const sheets = useMemo<PageSheet[]>(() => {
-    const slotCount = cardSize === "card-6x4" ? cardsPerSheet : SLOTS_PER_SHEET[cardSize];
+    const slotCount = SLOTS_PER_SHEET;
 
     interface Column {
       recipeId: string;
@@ -359,15 +350,14 @@ export function usePrintSheets({
     }
 
     return out;
-  }, [sections, cover, backCover, sectionDividers, cardSize, cardsPerSheet, continueOnBack, photosOn, sourceUrlOn, template, measuredFacesFor]);
+  }, [sections, cover, backCover, sectionDividers, cardSize, continueOnBack, photosOn, sourceUrlOn, template, measuredFacesFor]);
 
   // What the rail and deck actually browse: one face per item, in physical
-  // sheet order, except that a recipe's own faces (front + any continuations,
-  // which can end up sharing later sheets with a different sheet-mate) always
-  // stay grouped together at the position of that recipe's first appearance —
-  // a `Map` naturally preserves that: each key's position is fixed the first
-  // time it's seen, exactly what both recipe continuation-grouping and a
-  // divider/cover's simple single-entry order need.
+  // sheet order, except that a recipe's own faces (front + any continuations)
+  // always stay grouped together at the position of that recipe's first
+  // appearance — a `Map` naturally preserves that: each key's position is
+  // fixed the first time it's seen, exactly what both recipe continuation-
+  // grouping and a divider/cover's simple single-entry order need.
   const navItems = useMemo<NavItem[]>(() => {
     const groups = new Map<string, NavItem[]>();
     sheets.forEach((sheet, sheetIndex) => {

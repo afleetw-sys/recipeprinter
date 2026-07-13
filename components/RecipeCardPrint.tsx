@@ -174,28 +174,52 @@ function BistroCheckerSpine() {
 // blocky before it was switched to SVG. 60 teeth comfortably covers the
 // widest card (11in letter) at 0.16in per tooth; any extra is clipped by the
 // container's own `overflow: hidden`, sized to the card by CSS.
-const COUNTER_BAND_ROWS = 3;
-const COUNTER_BAND_COLS = 60;
-const COUNTER_BAND_CELL = 0.12;
+// Matches `.recipe-template-option--counter .recipe-template-option__preview`
+// in globals.css — the small theme-picker mockup's gradient trick (a solid
+// dark bar with sawtooth teeth top and bottom, not a full checkerboard) at
+// screen scale, reproduced here as real geometry: a solid middle bar plus a
+// row of teeth above and below it, phase-offset by half a tooth from each
+// other. That mockup is screen-only decoration (never printed), so it never
+// hit the rasterization bug this component exists to avoid — but it's still
+// the actual design intent, and this card's motif should match it: the
+// mockup's three bands (top teeth, solid middle, bottom teeth) are equal
+// thirds, not a thick solid core with thin teeth — an earlier version here
+// made the solid third 3x taller than the teeth, which read as a much
+// heavier bar than the mockup it's supposed to match.
+const COUNTER_BAND_TEETH = 60;
+const COUNTER_BAND_TOOTH = 0.16;
+const COUNTER_BAND_THIRD = 0.08;
 const COUNTER_BAND_COLOR = "#2f2f2f";
 
 function CounterCheckerBand() {
-  const cells: Array<{ row: number; col: number }> = [];
-  for (let row = 0; row < COUNTER_BAND_ROWS; row++) {
-    for (let col = 0; col < COUNTER_BAND_COLS; col++) {
-      if ((row + col) % 2 === 0) cells.push({ row, col });
-    }
-  }
+  const teeth = Array.from({ length: COUNTER_BAND_TEETH }, (_, i) => i);
   return (
     <div className="recipe-card__counter-band" aria-hidden>
       <svg width="100%" height="100%" focusable="false">
-        {cells.map(({ row, col }) => (
+        <rect
+          x="0"
+          y={`${COUNTER_BAND_THIRD}in`}
+          width="100%"
+          height={`${COUNTER_BAND_THIRD}in`}
+          fill={COUNTER_BAND_COLOR}
+        />
+        {teeth.map((i) => (
           <rect
-            key={`${row}-${col}`}
-            x={`${col * COUNTER_BAND_CELL}in`}
-            y={`${row * COUNTER_BAND_CELL}in`}
-            width={`${COUNTER_BAND_CELL}in`}
-            height={`${COUNTER_BAND_CELL}in`}
+            key={`top-${i}`}
+            x={`${i * COUNTER_BAND_TOOTH}in`}
+            y="0"
+            width={`${COUNTER_BAND_TOOTH / 2}in`}
+            height={`${COUNTER_BAND_THIRD}in`}
+            fill={COUNTER_BAND_COLOR}
+          />
+        ))}
+        {teeth.map((i) => (
+          <rect
+            key={`bottom-${i}`}
+            x={`${COUNTER_BAND_TOOTH / 2 + i * COUNTER_BAND_TOOTH}in`}
+            y={`${COUNTER_BAND_THIRD * 2}in`}
+            width={`${COUNTER_BAND_TOOTH / 2}in`}
+            height={`${COUNTER_BAND_THIRD}in`}
             fill={COUNTER_BAND_COLOR}
           />
         ))}

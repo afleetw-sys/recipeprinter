@@ -1315,36 +1315,6 @@
   text-align: left;
 }
 
-.recipe-cards-per-page {
-  display: flex;
-  gap: 6px;
-}
-
-.recipe-cards-per-page__option {
-  flex: 1 1 0;
-  padding: 8px;
-  border: 1px solid var(--cp-line);
-  border-radius: 10px;
-  background: var(--cp-card);
-  color: var(--cp-ink);
-  font-size: var(--cp-fs-small);
-  font-weight: 700;
-}
-
-.recipe-cards-per-page__option.is-active {
-  border-color: var(--cp-accent);
-  background: var(--cp-accent-soft);
-  color: var(--cp-accent-ink);
-}
-
-.recipe-cards-per-page__hint {
-  display: block;
-  margin-top: 6px;
-  color: var(--cp-ink-soft);
-  font-size: var(--cp-fs-label);
-  line-height: 1.35;
-}
-
 .recipe-print-settings-banner {
   padding: 10px 12px;
   border: 1px solid color-mix(in srgb, var(--cp-accent) 28%, transparent);
@@ -2418,11 +2388,9 @@
   max-width: 100%;
 }
 
-/* One physical page's worth of card slots. Letter has a single slot that
-   fills the page; 6x4 has up to two, stacked and centered on their own real
-   page (a true 6x4 sheet for one precut card, a full letter sheet to cut
-   apart for two — see the `@page rp-card-6x4` / `rp-card-6x4-sheet` notes
-   near the bottom of this file). */
+/* One physical page's worth of card slots — always exactly one, centered on
+   its own real page (see the `@page rp-card-6x4` / `rp-letter` notes near
+   the bottom of this file). */
 .recipe-card-page {
   display: flex;
   flex-direction: column;
@@ -2634,8 +2602,11 @@
    along the line would leave behind as a white border once trimmed away,
    which would pull edge-to-edge card art (like the classic template's top
    accent bar) in from the cut edge instead of the piece just being smaller.
-   Only offered on 6x4, where the card is smaller than the physical sheet
-   it's centered on and there's blank margin around it to draw into. */
+   Only offered on 6x4 — on a real precut card it just retraces the card's
+   own edge (still useful as a visual reference when trimming isn't exact);
+   when the physical sheet ends up bigger than the card (see `@page
+   rp-card-6x4`'s `margin: auto`), it's the actual guide for cutting the
+   card out of that larger sheet. */
 .recipe-print-preview--cut-lines.recipe-print-preview--card-6x4 .recipe-card:not(.recipe-card--duplex-spacer) {
   outline: 0.75pt dashed rgba(90, 90, 90, 0.72);
   outline-offset: 0;
@@ -3138,7 +3109,7 @@
   top: 0;
   left: 0;
   right: 0;
-  height: 0.36in;
+  height: 0.24in;
   overflow: hidden;
 }
 
@@ -4665,30 +4636,24 @@
   }
 }
 
-/* This is the single-precut-card sheet (cardsPerSheet === 1; see
-   rp-card-6x4-sheet below for the other option). Explicit `size` forces
-   every job to exactly 6in x 4in landscape, filling a real precut card edge
-   to edge — this does disable the print dialog's own paper-size/orientation
-   controls, but leaving `size` unset instead (so the dialog's Landscape/
-   Portrait toggle stays live) needs the page content to actually rotate to
-   match whatever the dialog resolves the page to, and that couldn't be
-   verified against real Chrome print behavior from this environment — it
-   shipped broken. Forcing the fixed orientation here is the version that's
-   actually confirmed working. */
+/* Explicit `size` forces every 6x4 job to exactly 6in x 4in landscape,
+   filling a real precut card edge to edge. This does disable the print
+   dialog's own paper-size/orientation controls, but leaving `size` unset
+   instead needs the page content to actually rotate to match whatever the
+   dialog resolves the page to, and that couldn't be verified against real
+   Chrome print behavior from this environment — it shipped broken. Forcing
+   the fixed orientation here is the version that's actually confirmed
+   working. `margin: auto` (CSS Paged Media's spec-defined way to center a
+   page box that's smaller than the actual physical sheet) is for whenever
+   the loaded paper turns out bigger than 6in x 4in — no exact 4x6 stock
+   available, printed on Letter instead, etc. — so the card centers on that
+   sheet instead of anchoring to one corner. When the physical sheet does
+   match (the intended case), there's no slack to distribute either way, so
+   this is a no-op there — same as `margin: 0` — and only changes anything
+   in the mismatched-paper case. */
 @page rp-card-6x4 {
   size: 6in 4in;
-  margin: 0;
-}
-
-/* cardsPerSheet === 2: two 6x4 cards are meant to be printed onto one full
-   sheet of paper and cut apart afterward (see the padding-top rule on
-   `.recipe-card-page:has(.recipe-card + .recipe-card)` below, which gives the
-   stacked pair breathing room on a page taller than either card). No
-   explicit `size` — that would force Letter portrait and lock out the print
-   dialog's own paper-size/orientation controls, so whatever the user
-   actually picks there for their loaded paper just applies as-is. */
-@page rp-card-6x4-sheet {
-  margin: 0;
+  margin: auto;
 }
 
 /* 8.5in x 11in portrait, matching the letter .recipe-card-width/-min-height
@@ -4767,30 +4732,23 @@
     overflow: visible !important;
   }
 
-  .recipe-print-preview--card-6x4[data-cards-per-sheet="1"] .recipe-card-page {
+  .recipe-print-preview--card-6x4 .recipe-card-page {
     page: rp-card-6x4;
-  }
-
-  .recipe-print-preview--card-6x4[data-cards-per-sheet="2"] .recipe-card-page {
-    page: rp-card-6x4-sheet;
   }
 
   .recipe-print-preview--letter .recipe-card-page {
     page: rp-letter;
   }
 
-  /* `.recipe-card-page` (one letter card, or up to two 6x4 cards) is the
-     fragmentation unit that breaks pages now, not the individual
-     `.recipe-card` — a sheet's cards need to stay together on one page, and
-     only the group as a whole moves to the next. Block layout, not the
-     on-screen flex centering: a flex `.recipe-card-page` with `vh`-based
-     sizing measured against the browser viewport, not the actual printed
-     page, so two 6x4 cards that fit fine on one physical page were fragmented
-     across two anyway. Plain block flow (each card's own fixed height,
-     `margin: 0 auto` from `.recipe-card` for horizontal centering, a
-     margin-top gap between two stacked cards below) puts sizing back in
-     units the print engine gets right, at the cost of the pair sitting near
-     the top of the page instead of perfectly vertically centered. */
+  /* `.recipe-card-page` is the fragmentation unit that breaks pages now, not
+     `.recipe-card` itself. Block layout, not the on-screen flex centering: a
+     flex `.recipe-card-page` with `vh`-based sizing measured against the
+     browser viewport, not the actual printed page, fragmented content that
+     fit fine on one physical page anyway. Plain block flow (each card's own
+     fixed height, `margin: 0 auto` from `.recipe-card` for horizontal
+     centering) puts sizing back in units the print engine gets right, at the
+     cost of the card sitting near the top of the page instead of perfectly
+     vertically centered. */
   .recipe-card-page {
     display: block !important;
     width: 100% !important;
@@ -4801,53 +4759,16 @@
     page-break-after: always;
   }
 
-  .recipe-print-preview--card-6x4 .recipe-card-page {
-    width: max-content !important;
-    margin-left: auto !important;
-    margin-right: auto !important;
-  }
-
-  /* Only the two-card stacked layout needs breathing room above the pair —
-     a lone precut 4x6 card (`cardsPerSheet: 1`) should fill its physical
-     page edge-to-edge, since the page IS the card at that point. Applying
-     this unconditionally pushed a single card's height (4in + this padding)
-     past a 4in-tall page whenever the printer actually resolved a page that
-     matched the card's footprint (e.g. landscape on real 4x6 media) —
-     spilling onto a second, mostly blank page. Portrait masked this because
-     the card's 6in width also exceeds a 4in-wide page, so the browser's own
-     scale-to-fit shrinks everything and absorbs the excess. `:has()` detects
-     the pair the same way the `.recipe-card + .recipe-card` gap rule below
-     does. */
-  .recipe-print-preview--card-6x4 .recipe-card-page:has(.recipe-card + .recipe-card) {
-    padding-top: 0.6in;
-  }
-
-  /* The cut-lines outline sits 0.1in outside each card, but the page
-     container above is shrink-wrapped tight to its content on every side
-     (`width: max-content` here, `height: auto` from the shared
-     `.recipe-card-page` rule above) with zero slack on the left, right, and
-     bottom. Without padding there, the always-on `overflow: hidden` on the
-     `.recipe-page-scaler .recipe-card-page` wrapper clips the outline
-     anywhere it has no slack to extend into: the left/right edges of every
-     card, and the bottom edge of the last card on the page (cards above it
-     get slack for free from the next card's margin-top gap). Padding on
-     those three sides fixes the clipping without affecting centering, since
-     the horizontal padding is symmetric and the page break already accounts
-     for whatever trails after the last card. The base rule's `padding-top:
-     0.6in` is unrelated — sized to give the stacked pair breathing room from
-     the physical page's top edge generally — and is far more than the cut
-     line needs, leaving a visibly bigger gap above the top card than the
-     tight 0.1in margin on the other three sides. Overriding it down to match
-     keeps the cut-line frame uniform. */
+  /* The cut-lines outline sits flush against the card's true edge (see
+     `.recipe-print-preview--cut-lines...` above), but `.recipe-card-page`
+     here is shrink-wrapped tight to its content with zero slack on any
+     side, and the `.recipe-page-scaler .recipe-card-page` wrapper this same
+     class stack also matches has an always-on `overflow: hidden` — without
+     padding here, that clips the outline anywhere it has no slack to extend
+     into. Padding on all four sides fixes that without affecting centering,
+     since it's symmetric. */
   .recipe-print-preview--cut-lines.recipe-print-preview--card-6x4 .recipe-card-page {
-    padding-top: 0.15in;
-    padding-left: 0.15in;
-    padding-right: 0.15in;
-    padding-bottom: 0.15in;
-  }
-
-  .recipe-print-preview--card-6x4 .recipe-card + .recipe-card {
-    margin-top: 0.3in !important;
+    padding: 0.15in;
   }
 
   /* `display:block` (not the on-screen flex column) for print: `.recipe-card`
@@ -4867,14 +4788,9 @@
     max-width: none !important;
     height: var(--recipe-card-min-height);
     min-height: 0;
-    /* Not `margin: 0 auto` — for letter and single-card-per-sheet 6x4, the
-       @page size (see rp-letter/rp-card-6x4 above) exactly matches
-       --recipe-card-width, so centering would be a no-op anyway. For the
-       6x4-on-a-full-sheet case (rp-card-6x4-sheet) the card is deliberately
-       narrower than the page, but centering happens one level up on
-       `.recipe-card-page` (`width: max-content` + auto margins, below) so two
-       stacked cards center as a pair — auto-centering here too would just
-       fight that. */
+    /* Not `margin: 0 auto` — the @page size (see rp-letter/rp-card-6x4 above)
+       exactly matches --recipe-card-width for both sizes, so centering would
+       be a no-op anyway. */
     margin: 0 !important;
     border: 0 !important;
     border-radius: 0 !important;

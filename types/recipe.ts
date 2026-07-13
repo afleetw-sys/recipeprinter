@@ -112,7 +112,6 @@ export interface CoverConfig {
 export interface PrintProjectSettings {
   cardSize: PrintCardSize;
   template: RecipePrintTemplate;
-  cardsPerSheet: 1 | 2;
   doubleSided: boolean;
   showPhoto: boolean;
   showSourceUrl: boolean;

@@ -30,10 +30,9 @@ export function SharedRecipeCardRedirect({ card }: { card: SharedRecipeCard }) {
       cardSize: card.cardSize,
       template: card.template,
       doubleSided: card.doubleSided,
-      showCutLines: card.showCutLines,
       showPhoto: card.showPhoto,
       showSourceUrl: card.showSourceUrl,
-      cardsPerSheet: card.cardsPerSheet,
+      showCutLines: card.showCutLines,
     });
     router.replace(`/print?ids=${id}&shared=1`);
     // Runs once on mount with the card this component was given; re-seeding
