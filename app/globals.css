@@ -4640,16 +4640,20 @@
   }
 }
 
-/* Explicit `size` is what makes the selected format the real document page
-   size instead of a suggestion: without it, "Save as PDF" falls back to
-   Letter and a physical printer falls back to whatever paper it last used,
-   scaling/cropping our fixed-size .recipe-card to fit a page it wasn't laid
-   out for. 6in x 4in landscape, matching --recipe-card-width/-min-height
-   (see .recipe-print-preview above) — this is the single-precut-card sheet,
-   i.e. cardsPerSheet === 1 (see rp-card-6x4-sheet below for the other
-   cardsPerSheet option). */
+/* No explicit `size` here on purpose — this is the single-precut-card sheet
+   (cardsPerSheet === 1; see rp-card-6x4-sheet below for the other option),
+   where the printer is loaded with actual 4x6 card stock that can go in
+   either way round. An explicit two-length `size` (e.g. `6in 4in`) pins the
+   page to that exact aspect ratio, which locks out the print dialog's own
+   paper-size and orientation controls (Chrome disables both once @page
+   fixes a non-square size) — so however the user actually loaded their
+   card, the print job would come out landscape regardless. Leaving `size`
+   unset keeps those controls live: whatever paper size/orientation the user
+   picks (matching how their card is fed) is just used as-is, with the
+   browser's normal fit-to-page scaling placing our fixed 6in x 4in
+   .recipe-card on it. `margin: 0` still removes the browser's default print
+   margins independent of that. */
 @page rp-card-6x4 {
-  size: 6in 4in;
   margin: 0;
 }
 
