@@ -94,6 +94,16 @@
   html {
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
+    /* Without this, mobile Safari/Chrome can silently inflate the *painted*
+       size of text sitting in a narrow block (its own automatic
+       "readability" boost for pages that aren't responsive) — invisible to
+       `getComputedStyle().fontSize`, which still reports the authored size,
+       so a paragraph can render visibly larger than its siblings with no
+       corresponding difference in the CSS. Pinning the adjustment to 100%
+       (i.e. off) keeps every element's rendered size matching what it's
+       actually styled at. */
+    -webkit-text-size-adjust: 100%;
+    text-size-adjust: 100%;
   }
 
   body {
@@ -4757,18 +4767,6 @@
     page-break-inside: avoid;
     break-after: page;
     page-break-after: always;
-  }
-
-  /* The cut-lines outline sits flush against the card's true edge (see
-     `.recipe-print-preview--cut-lines...` above), but `.recipe-card-page`
-     here is shrink-wrapped tight to its content with zero slack on any
-     side, and the `.recipe-page-scaler .recipe-card-page` wrapper this same
-     class stack also matches has an always-on `overflow: hidden` — without
-     padding here, that clips the outline anywhere it has no slack to extend
-     into. Padding on all four sides fixes that without affecting centering,
-     since it's symmetric. */
-  .recipe-print-preview--cut-lines.recipe-print-preview--card-6x4 .recipe-card-page {
-    padding: 0.15in;
   }
 
   /* `display:block` (not the on-screen flex column) for print: `.recipe-card`
