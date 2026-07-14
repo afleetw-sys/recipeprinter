@@ -3110,10 +3110,13 @@
 }
 
 /* Real SVG rects (`CounterCheckerBand`), not a tiled CSS `background-image`
-   gradient — see that component's comment for why. */
+   gradient — see that component's comment for why. `top` isn't 0: the
+   theme-picker mockup (`.recipe-template-option--counter`'s gradient
+   `background-position`) sits a bit below the card's own top edge, not
+   flush against it, and the real card should match. */
 .recipe-card__counter-band {
   position: absolute;
-  top: 0;
+  top: 0.14in;
   left: 0;
   right: 0;
   height: 0.24in;
