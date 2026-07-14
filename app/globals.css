@@ -2868,10 +2868,15 @@
   font-size: 0.075in;
 }
 
+/* `top` isn't 0: flush against the card's true edge, this hairline strip is
+   the first thing real printers clip — even "borderless" print/PDF output
+   rarely reproduces true edge-to-edge, so anything sitting exactly at the
+   physical boundary risks being cut off entirely rather than just cropped a
+   little. A small inset keeps it inside the safely-printable area. */
 .recipe-card__accent {
   position: absolute;
   display: none;
-  top: 0;
+  top: 0.08in;
   left: 0;
   right: 0;
   height: 5px;
@@ -2881,14 +2886,18 @@
 }
 
 /* Real SVG rects (not a tiled CSS gradient) so the checkerboard stays crisp
-   vector fill when printed/exported, instead of a rasterized bitmap. */
+   vector fill when printed/exported, instead of a rasterized bitmap. `top`
+   and `left` are inset for the same real-printer edge-clipping reason as
+   `.recipe-card__accent` above; `width` is trimmed by that same 0.08in so
+   the spine's right edge — what `.recipe-template--bistro .recipe-card`'s
+   padding-left is actually calibrated to clear — doesn't move. */
 .recipe-card__checker {
   position: absolute;
   display: none;
-  top: 0;
+  top: 0.08in;
   bottom: 0;
-  left: 0;
-  width: 0.24in;
+  left: 0.08in;
+  width: 0.16in;
   -webkit-print-color-adjust: exact;
   print-color-adjust: exact;
 }
@@ -4750,10 +4759,8 @@
      always exactly one fixed-height card per page-unit, which also has its
      own `break-inside: avoid-page` below — a wrong `100vh` reading can at
      worst misjudge where this whole box sits (an extra blank page), not
-     split content inside it. Unverified against a real print dialog from
-     here; revert to `display: block !important; height: auto !important`
-     (dropping this rule's `height`/`align-items`/`justify-content`) if it
-     turns out wrong. */
+     split content inside it. Confirmed working in a real print/PDF test —
+     the card sits vertically centered as intended. */
   .recipe-card-page {
     display: flex !important;
     flex-direction: column !important;
