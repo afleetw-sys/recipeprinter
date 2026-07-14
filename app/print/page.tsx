@@ -87,15 +87,13 @@ const POST_PRINT_DIALOG_INTERVAL_MS = 7 * 24 * 60 * 60 * 1000;
 
 
 // Real card dimensions in CSS px (96px per inch), used only to size the
-// on-screen scaler/thumbnails so a card looks true-to-size, just smaller. The
-// navigator still browses and previews one recipe's card at a time (see
-// NavItem below) even for 6x4, where two cards end up sharing a physical
-// printed page — so this stays the size of a single card, not the (assumed,
-// unknown) physical sheet. The print-time page assumption lives entirely in
-// the `.recipe-card-page` print CSS in globals.css and never touches this.
+// on-screen scaler/thumbnails so a card looks true-to-size, just smaller.
+// Matches --recipe-card-width/-min-height in globals.css: 0.125in per side
+// smaller than the nominal "6x4"/"Letter" label, a safety margin for real
+// printers' hardware non-printable edge (see that variable's comment).
 const PAGE_DIMS: Record<PrintCardSize, { w: number; h: number }> = {
-  letter: { w: 8.5 * 96, h: 11 * 96 },
-  "card-6x4": { w: 6 * 96, h: 4 * 96 },
+  letter: { w: 8.25 * 96, h: 10.75 * 96 },
+  "card-6x4": { w: 5.75 * 96, h: 3.75 * 96 },
 };
 
 // Rail thumbnails target a fixed width so they always fit the rail column,

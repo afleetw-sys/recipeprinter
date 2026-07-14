@@ -663,9 +663,21 @@
    Recipe card print layouts. Each size gets its own dimensions and type scale
    instead of stretching one design until it breaks.
    ────────────────────────────────────────────────────────────────────────── */
+/* 5.75in x 3.75in, not the nominal 6in x 4in: real printers reserve a
+   hardware non-printable margin around the physical edge — commonly
+   0.1in-0.25in even in "borderless" modes, since paper-feed rollers and
+   grippers need some bare edge regardless of what the print job requests
+   (a `@page` margin of 0 is a request, not a guarantee; the printer can
+   still impose its own). 0.125in per side matches the standard bleed/safe
+   margin used for home-printed borderless designs, so anything at the
+   card's own edge (accent bars, checker spines) stays inside what
+   typical consumer printers can actually reproduce. This shrinks the
+   card everywhere — preview, editor, and print all read this same
+   variable — so what's previewed is exactly what prints, just slightly
+   smaller than the nominal "6x4"/"Letter" label. */
 .recipe-print-preview {
-  --recipe-card-width: 6in;
-  --recipe-card-min-height: 4in;
+  --recipe-card-width: 5.75in;
+  --recipe-card-min-height: 3.75in;
   --recipe-card-padding-x: 0.32in;
   --recipe-card-padding-top: 0.25in;
   --recipe-card-padding-bottom: 0.22in;
@@ -2351,9 +2363,11 @@
   }
 }
 
+/* Same 0.125in-per-side safety shrink as the base `.recipe-print-preview`
+   rule above, scaled to Letter's own nominal size. */
 .recipe-print-preview--letter {
-  --recipe-card-width: 8.5in;
-  --recipe-card-min-height: 11in;
+  --recipe-card-width: 8.25in;
+  --recipe-card-min-height: 10.75in;
   --recipe-card-padding-x: 0.58in;
   --recipe-card-padding-top: 0.6in;
   --recipe-card-padding-bottom: 0.5in;
@@ -4799,13 +4813,16 @@
     page-break-inside: avoid;
   }
 
+  /* Matches --recipe-card-width/-min-height above (5.75in x 3.75in, not the
+     nominal 6in x 4in) — same safety-margin reasoning, just restated in
+     absolute units here since this needs !important to win. */
   .recipe-print-preview--card-6x4 .recipe-card {
-    width: 6in !important;
-    min-width: 6in !important;
-    max-width: 6in !important;
-    height: 4in !important;
-    min-height: 4in !important;
-    max-height: 4in !important;
+    width: 5.75in !important;
+    min-width: 5.75in !important;
+    max-width: 5.75in !important;
+    height: 3.75in !important;
+    min-height: 3.75in !important;
+    max-height: 3.75in !important;
   }
 
   .recipe-template--classic .recipe-card__accent {
