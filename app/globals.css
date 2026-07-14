@@ -4643,24 +4643,15 @@
   }
 }
 
-/* Explicit `size` forces every 6x4 job to exactly 6in x 4in landscape,
-   filling a real precut card edge to edge. This does disable the print
-   dialog's own paper-size/orientation controls, but leaving `size` unset
-   instead needs the page content to actually rotate to match whatever the
-   dialog resolves the page to, and that couldn't be verified against real
-   Chrome print behavior from this environment — it shipped broken. Forcing
-   the fixed orientation here is the version that's actually confirmed
-   working. `margin: auto` (CSS Paged Media's spec-defined way to center a
-   page box that's smaller than the actual physical sheet) is for whenever
-   the loaded paper turns out bigger than 6in x 4in — no exact 4x6 stock
-   available, printed on Letter instead, etc. — so the card centers on that
-   sheet instead of anchoring to one corner. When the physical sheet does
-   match (the intended case), there's no slack to distribute either way, so
-   this is a no-op there — same as `margin: 0` — and only changes anything
-   in the mismatched-paper case. */
+/* No explicit `size` here on purpose: setting one locks the print dialog's
+   own paper-size/orientation controls to a fixed custom size, so the user
+   can't pick whatever paper is actually loaded (Letter, an actual 4x6 label
+   sheet, landscape or portrait — whatever they choose). Only `.recipe-card`
+   itself is fixed at 6in x 4in (see `.recipe-print-preview--card-6x4
+   .recipe-card` below); centering it on whatever page the dialog resolves
+   to is handled there via `margin: 0 auto`, not by constraining the page. */
 @page rp-card-6x4 {
-  size: 6in 4in;
-  margin: auto;
+  margin: 0;
 }
 
 /* 8.5in x 11in portrait, matching the letter .recipe-card-width/-min-height
@@ -4783,10 +4774,13 @@
     max-width: none !important;
     height: var(--recipe-card-min-height);
     min-height: 0;
-    /* Not `margin: 0 auto` — the @page size (see rp-letter/rp-card-6x4 above)
-       exactly matches --recipe-card-width for both sizes, so centering would
-       be a no-op anyway. */
-    margin: 0 !important;
+    /* `margin: 0 auto`, not `margin: 0`: letter's page always matches its
+       card's width exactly, so this is a no-op there, but 6x4 no longer
+       forces its own page size (see `@page rp-card-6x4` above) — whatever
+       paper the print dialog resolves to can be wider than the fixed 6in
+       card, and this centers it horizontally on that page instead of
+       leaving it flush left. */
+    margin: 0 auto !important;
     border: 0 !important;
     border-radius: 0 !important;
     box-shadow: none !important;
