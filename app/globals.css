@@ -2868,15 +2868,10 @@
   font-size: 0.075in;
 }
 
-/* `top` isn't 0: flush against the card's true edge, this hairline strip is
-   the first thing real printers clip — even "borderless" print/PDF output
-   rarely reproduces true edge-to-edge, so anything sitting exactly at the
-   physical boundary risks being cut off entirely rather than just cropped a
-   little. A small inset keeps it inside the safely-printable area. */
 .recipe-card__accent {
   position: absolute;
   display: none;
-  top: 0.08in;
+  top: 0;
   left: 0;
   right: 0;
   height: 5px;
@@ -2886,18 +2881,14 @@
 }
 
 /* Real SVG rects (not a tiled CSS gradient) so the checkerboard stays crisp
-   vector fill when printed/exported, instead of a rasterized bitmap. `top`
-   and `left` are inset for the same real-printer edge-clipping reason as
-   `.recipe-card__accent` above; `width` is trimmed by that same 0.08in so
-   the spine's right edge — what `.recipe-template--bistro .recipe-card`'s
-   padding-left is actually calibrated to clear — doesn't move. */
+   vector fill when printed/exported, instead of a rasterized bitmap. */
 .recipe-card__checker {
   position: absolute;
   display: none;
-  top: 0.08in;
+  top: 0;
   bottom: 0;
-  left: 0.08in;
-  width: 0.16in;
+  left: 0;
+  width: 0.24in;
   -webkit-print-color-adjust: exact;
   print-color-adjust: exact;
 }
@@ -4817,9 +4808,14 @@
     max-height: 4in !important;
   }
 
+  /* `top` isn't 0 here, unlike the shared on-screen rule above: flush
+     against the card's true edge, this hairline strip is the first thing
+     real printers clip — even "borderless" print/PDF output rarely
+     reproduces true edge-to-edge. The inset only applies at print time so
+     the on-screen preview keeps showing the design as authored. */
   .recipe-template--classic .recipe-card__accent {
     display: block;
-    top: 0;
+    top: 0.08in;
     left: 0;
     right: 0;
     height: 5px;
@@ -4828,6 +4824,17 @@
 
   .recipe-print-preview[data-double-sided="true"] .recipe-template--classic .recipe-card--back .recipe-card__accent {
     background: linear-gradient(270deg, var(--recipe-accent), var(--recipe-accent-2));
+  }
+
+  /* Same reasoning and print-only scoping as `.recipe-template--classic
+     .recipe-card__accent` above, for bistro's left checker spine. `width`
+     is trimmed by the same 0.08in so the spine's right edge — what
+     `.recipe-template--bistro .recipe-card`'s padding-left is actually
+     calibrated to clear — doesn't move. */
+  .recipe-template--bistro .recipe-card__checker {
+    top: 0.08in;
+    left: 0.08in;
+    width: 0.16in;
   }
 
   .recipe-card-set {
