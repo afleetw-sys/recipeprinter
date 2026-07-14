@@ -4739,18 +4739,25 @@
   }
 
   /* `.recipe-card-page` is the fragmentation unit that breaks pages now, not
-     `.recipe-card` itself. Block layout, not the on-screen flex centering: a
-     flex `.recipe-card-page` with `vh`-based sizing measured against the
-     browser viewport, not the actual printed page, fragmented content that
-     fit fine on one physical page anyway. Plain block flow (each card's own
-     fixed height, `margin: 0 auto` from `.recipe-card` for horizontal
-     centering) puts sizing back in units the print engine gets right, at the
-     cost of the card sitting near the top of the page instead of perfectly
-     vertically centered. */
+     `.recipe-card` itself — flex + `100vh` here once broke that (see git
+     history on this comment) back when a page could hold *two* stacked 6x4
+     cards that needed to stay together: `vh` under-measured the real page
+     against the on-screen viewport, so a pair that fit fine on one physical
+     page got split across two. That precondition is gone now that it's
+     always exactly one fixed-height card per page-unit, which also has its
+     own `break-inside: avoid-page` below — a wrong `100vh` reading can at
+     worst misjudge where this whole box sits (an extra blank page), not
+     split content inside it. Unverified against a real print dialog from
+     here; revert to `display: block !important; height: auto !important`
+     (dropping this rule's `height`/`align-items`/`justify-content`) if it
+     turns out wrong. */
   .recipe-card-page {
-    display: block !important;
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: center !important;
+    justify-content: center !important;
     width: 100% !important;
-    height: auto !important;
+    height: 100vh !important;
     break-inside: avoid-page;
     page-break-inside: avoid;
     break-after: page;
