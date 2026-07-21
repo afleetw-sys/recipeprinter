@@ -1,8 +1,5 @@
 "use client";
 
-import { addDoc, collection, serverTimestamp } from "firebase/firestore";
-import { getDb } from "@/lib/firebase/db";
-
 export type FeedbackType = "idea" | "bug" | "print_issue" | "other";
 
 export interface FeedbackInput {
@@ -18,6 +15,10 @@ export interface FeedbackInput {
 }
 
 export async function submitPrinterFeedback(input: FeedbackInput): Promise<void> {
+  const [{ addDoc, collection, serverTimestamp }, { getDb }] = await Promise.all([
+    import("firebase/firestore"),
+    import("@/lib/firebase/db"),
+  ]);
   await addDoc(collection(getDb(), "feedback-printer"), {
     ...input,
     email: input.email || null,

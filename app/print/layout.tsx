@@ -1,5 +1,6 @@
 import { Suspense } from "react";
 import type { Metadata } from "next";
+import "./print.css";
 
 // The print preview is a per-session, query-string-driven view of recipes the
 // user just imported, there's no stable, standalone content to index here.

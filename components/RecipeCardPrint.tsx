@@ -1,6 +1,16 @@
 "use client";
 
-import { Fragment, memo, useEffect, useMemo, useState, type CSSProperties, type ReactNode } from "react";
+import {
+  Fragment,
+  memo,
+  useEffect,
+  useLayoutEffect,
+  useMemo,
+  useRef,
+  useState,
+  type CSSProperties,
+  type ReactNode,
+} from "react";
 import { formatRecipeTime } from "@/lib/time";
 import { ICON_SIZE, XIcon } from "@/components/icons";
 import { useWideColumns } from "@/lib/measureHeights";
@@ -69,7 +79,8 @@ export const RECIPE_PRINT_TEMPLATE_OPTIONS: Array<{
   { id: "heirloom", label: "Heirloom", detail: "Cream stock, red utensil keepsake" },
   { id: "keepsake", label: "Keepsake", detail: "Cream recipe-box card with classic family style" },
   { id: "bistro", label: "Bistro", detail: "Blue checks, tomato red, playful kitchen card" },
-  // Fruit Stand and Cookout are hidden for now — not ready to launch yet.
+  { id: "fruit", label: "Fruit Stand", detail: "Sunny cream card with a summer-fruit corner" },
+  { id: "cookout", label: "Cookout", detail: "Warm BBQ card with a grilled-icon border" },
 ];
 
 // A BBQ-icon border for the cookout template, running continuously along
@@ -252,6 +263,75 @@ function BbqIconImg({ icon, axis, iconKey }: { icon: BbqIcon; axis: "x" | "y"; i
   );
 }
 
+// Target center-to-center spacing between border icons, in CSS inches (where
+// 1in === 96px, regardless of paper size or print DPI). Each edge's icon
+// *count* is derived from its own measured length against this, so the tall
+// letter card's long sides stay as densely filled as its short top/bottom
+// instead of stranding four lonely icons down an 11-inch run — while a short
+// 6x4 landscape side, measured the same way, simply gets fewer.
+const BBQ_ICON_SPACING_IN = 0.82;
+const CSS_PX_PER_IN = 96;
+
+// `typeof window` picks `useEffect` on the server so the layout-effect warning
+// never fires during SSR; on the client `useLayoutEffect` sets the real count
+// before paint, so the strip never flashes its unmeasured default first.
+const useIsomorphicLayoutEffect = typeof window !== "undefined" ? useLayoutEffect : useEffect;
+
+// Measures a strip's length and repeats the edge's base icon list (cycling
+// through it so rotation/flip/jitter keep varying) to fill it at roughly
+// `BBQ_ICON_SPACING_IN`. The strip is absolutely positioned and
+// `pointer-events: none`, so re-rendering more icons never touches the card's
+// content flow or the pagination measurement.
+function BbqEdge({
+  side,
+  base,
+}: {
+  side: "top" | "bottom" | "left" | "right";
+  base: BbqIcon[];
+}) {
+  const horizontal = side === "top" || side === "bottom";
+  const ref = useRef<HTMLDivElement | null>(null);
+  const [count, setCount] = useState(base.length);
+
+  useIsomorphicLayoutEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    const measure = () => {
+      // `offsetWidth`/`offsetHeight` (not `getBoundingClientRect`) so the count
+      // comes from the card's intrinsic print-space size, not its on-screen
+      // size: previews and thumbnails are the same full-size card shrunk with
+      // `transform: scale()`, which `getBoundingClientRect` would report at the
+      // scaled size — handing each a different icon count and making the
+      // preview diverge from the print. `offset*` ignores the transform, so
+      // every instance (thumbnail, preview, printed page) measures identically.
+      const lengthPx = horizontal ? el.offsetWidth : el.offsetHeight;
+      // 0 while the face is hidden (`display: none` decks) — leave the current
+      // count and let the ResizeObserver re-measure once it's actually shown.
+      if (lengthPx === 0) return;
+      const next = Math.round(lengthPx / CSS_PX_PER_IN / BBQ_ICON_SPACING_IN);
+      setCount(Math.max(3, next));
+    };
+    measure();
+    if (typeof ResizeObserver === "undefined") return;
+    const observer = new ResizeObserver(measure);
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, [horizontal]);
+
+  return (
+    <div ref={ref} className={`recipe-card__bbq-edge recipe-card__bbq-edge--${side}`}>
+      {Array.from({ length: count }, (_, i) => (
+        <BbqIconImg
+          key={`${side}-${i}`}
+          iconKey={`${side}-${i}`}
+          icon={base[i % base.length]}
+          axis={horizontal ? "y" : "x"}
+        />
+      ))}
+    </div>
+  );
+}
+
 // Shared by RecipeCardFace, DividerFace, and CoverFace so section dividers
 // and covers pick up the same cookout border instead of going bare.
 // `withPhotoGap` is only relevant on a recipe front face — it pulls the top
@@ -262,26 +342,10 @@ function CookoutBbqBorder({ withPhotoGap = false }: { withPhotoGap?: boolean }) 
       className={`recipe-card__bbq-border ${withPhotoGap ? "recipe-card__bbq-border--with-photo" : ""}`}
       aria-hidden
     >
-      <div className="recipe-card__bbq-edge recipe-card__bbq-edge--top">
-        {BBQ_EDGE_TOP.map((icon, i) => (
-          <BbqIconImg key={`top-${i}`} iconKey={`top-${i}`} icon={icon} axis="y" />
-        ))}
-      </div>
-      <div className="recipe-card__bbq-edge recipe-card__bbq-edge--bottom">
-        {BBQ_EDGE_BOTTOM.map((icon, i) => (
-          <BbqIconImg key={`bottom-${i}`} iconKey={`bottom-${i}`} icon={icon} axis="y" />
-        ))}
-      </div>
-      <div className="recipe-card__bbq-edge recipe-card__bbq-edge--left">
-        {BBQ_EDGE_LEFT.map((icon, i) => (
-          <BbqIconImg key={`left-${i}`} iconKey={`left-${i}`} icon={icon} axis="x" />
-        ))}
-      </div>
-      <div className="recipe-card__bbq-edge recipe-card__bbq-edge--right">
-        {BBQ_EDGE_RIGHT.map((icon, i) => (
-          <BbqIconImg key={`right-${i}`} iconKey={`right-${i}`} icon={icon} axis="x" />
-        ))}
-      </div>
+      <BbqEdge side="top" base={BBQ_EDGE_TOP} />
+      <BbqEdge side="bottom" base={BBQ_EDGE_BOTTOM} />
+      <BbqEdge side="left" base={BBQ_EDGE_LEFT} />
+      <BbqEdge side="right" base={BBQ_EDGE_RIGHT} />
     </div>
   );
 }
@@ -299,6 +363,7 @@ export const RecipeCardFace = memo(function RecipeCardFace({
   showImage = false,
   showSourceUrl = false,
   continued = false,
+  contentScale,
   inlineEdit,
   template,
 }: {
@@ -314,6 +379,8 @@ export const RecipeCardFace = memo(function RecipeCardFace({
   showImage?: boolean;
   showSourceUrl?: boolean;
   continued?: boolean;
+  /** Shrink-to-fit factor for this face's content — see `RecipeFace.contentScale`. */
+  contentScale?: number;
   inlineEdit?: RecipeCardInlineEdit;
   template?: RecipePrintTemplate;
 }) {
@@ -357,6 +424,23 @@ export const RecipeCardFace = memo(function RecipeCardFace({
     setImageFailed(false);
   }, [recipe.image]);
   const showPhoto = showHeader && !imageFailed && (showImage && Boolean(recipe.image));
+
+  // Shrink-to-fit for content pagination can't rescue (see
+  // `RecipeFace.contentScale`). Laid out at `1 / scale` of the normal width and
+  // then scaled back down, so text re-wraps at the wider measure and lands at
+  // the same visual width — a plain `transform` alone would just shrink the
+  // block and leave a gap down the side. Deliberately a transform on the whole
+  // content block rather than a smaller font-size: the type scale lives in
+  // print.css custom properties that every template overrides, so scaling one
+  // number here would silently desynchronise from a template's own sizing.
+  const shrinkStyle: CSSProperties | undefined =
+    contentScale && contentScale < 1
+      ? {
+          transform: `scale(${contentScale})`,
+          transformOrigin: "top left",
+          width: `${100 / contentScale}%`,
+        }
+      : undefined;
 
   // Whole-page edit mode means every field is a live input at once (see
   // togglePageEditMode in app/print/page.tsx) — there's no separate
@@ -743,6 +827,7 @@ export const RecipeCardFace = memo(function RecipeCardFace({
         } ${ingredientsOnly ? "recipe-card__cols--ingredients-only" : ""} ${
           methodOnly ? "recipe-card__cols--method-only" : ""
         } ${stackedLayout ? "recipe-card__cols--stacked" : ""}`}
+        style={shrinkStyle}
       >
         {hasIngredientsSection && (
           <section

@@ -5,6 +5,8 @@ node_modules/
 
 # next.js
 .next/
+# alternate dist dir used by the preview dev server (.claude/launch.json)
+.next-preview/
 out/
 
 # env — keep .env.local.example, never commit .env.local

@@ -1,11 +1,11 @@
 import { notFound } from "next/navigation";
 import type { Metadata } from "next";
-import Image from "next/image";
 import Link from "next/link";
 import { SiteFooter } from "@/components/SiteFooter";
 import { SiteHeader } from "@/components/SiteHeader";
 import { PrinterWorkspace } from "@/components/PrinterWorkspace";
 import { ICON_SIZE, PrintIcon } from "@/components/icons";
+import { LandingHeroVisual, type HeroVariant } from "@/components/seo/ProductMockup";
 import {
   SEO_LANDING_PAGE_MAP,
   SEO_LANDING_PAGES,
@@ -94,6 +94,26 @@ function heroChips(page: (typeof SEO_LANDING_PAGES)[number]) {
   return ["Old cards", "Recipe photos", "Printed keepsakes", "Family cookbook"];
 }
 
+// Which real printed-card photo(s) a page leads with, by intent, so no two
+// landing pages open with the same picture.
+function heroVisual(page: (typeof SEO_LANDING_PAGES)[number]): HeroVariant {
+  const { slug } = page;
+  if (slug.includes("pdf")) return "pdf";
+  if (slug.includes("card-generator") || slug.includes("card")) return "templates";
+  if (slug.includes("binder") || slug.includes("organize")) return "binder";
+  if (
+    slug.includes("pinterest") ||
+    slug.includes("instagram") ||
+    slug.includes("tiktok") ||
+    slug.includes("facebook") ||
+    slug.includes("youtube")
+  ) {
+    return "social";
+  }
+  if (page.intent === "Preservation and Gift SEO") return "keepsake";
+  return "transform";
+}
+
 function LandingCta({
   label = "Start printing recipes",
   variant = "primary",
@@ -113,6 +133,8 @@ export default function SeoLandingPage({ params }: PageProps) {
   const page = SEO_LANDING_PAGE_MAP.get(params.slug);
   if (!page) notFound();
 
+  const heroVariant = heroVisual(page);
+
   return (
     <div className="min-h-screen flex flex-col">
       <script
@@ -125,22 +147,14 @@ export default function SeoLandingPage({ params }: PageProps) {
         actions={<LandingCta label="Go to printer" />}
       />
 
-      <main className="flex-1 px-cp-6">
-        <div className="max-w-content mx-auto flex flex-col gap-[52px] pt-cp-6 sm:pt-cp-7 pb-cp-7">
+      <main className="flex-1 px-cp-6 sm:px-cp-7 lg:px-[40px]">
+        <div className="max-w-content mx-auto flex flex-col pt-cp-7 sm:pt-[44px] pb-[72px]">
           <section
-            className="relative overflow-hidden py-cp-7 sm:py-cp-8"
+            className="relative py-cp-4 sm:py-cp-5"
             aria-labelledby="landing-heading"
           >
-            <Image
-              src="/images/heirloom-ladle.svg"
-              alt=""
-              width={150}
-              height={150}
-              className="absolute bottom-4 right-6 hidden opacity-10 sm:block"
-              aria-hidden
-            />
-            <div className="relative mx-auto flex max-w-[920px] flex-col items-center text-center">
-              <div className="max-w-[760px]">
+            <div className="mx-auto grid max-w-content items-center gap-cp-6 lg:grid-cols-[minmax(0,1fr)_minmax(0,420px)] lg:gap-cp-8">
+              <div className="text-center lg:text-left">
                 <p className="eyebrow">{page.eyebrow}</p>
                 <h1
                   id="landing-heading"
@@ -148,10 +162,10 @@ export default function SeoLandingPage({ params }: PageProps) {
                 >
                   {page.h1}
                 </h1>
-                <p className="mx-auto mt-cp-4 max-w-[42rem] text-ink-soft text-cp-body-lg leading-relaxed">
+                <p className="mx-auto mt-cp-4 max-w-[42rem] text-ink-soft text-cp-body-lg leading-relaxed lg:mx-0">
                   {page.lede}
                 </p>
-                <div className="mt-cp-5 flex flex-wrap items-center justify-center gap-cp-3">
+                <div className="mt-cp-5 flex flex-wrap items-center justify-center gap-cp-3 lg:justify-start">
                   <LandingCta
                     label={page.importSubmitLabel ?? "Start printing recipes"}
                   />
@@ -163,26 +177,41 @@ export default function SeoLandingPage({ params }: PageProps) {
                   Free to use. No account required.
                 </p>
                 {page.statusNote && (
-                  <p className="mx-auto mt-cp-3 max-w-[42rem] rounded-lg border border-line bg-card px-cp-4 py-cp-3 text-cp-small font-semibold leading-relaxed text-ink-soft">
+                  <p className="mx-auto mt-cp-3 max-w-[42rem] rounded-lg border border-line bg-card px-cp-4 py-cp-3 text-cp-small font-semibold leading-relaxed text-ink-soft lg:mx-0">
                     {page.statusNote}
                   </p>
                 )}
+                <div className="mt-cp-5 flex flex-wrap justify-center gap-cp-2 lg:justify-start">
+                  {heroChips(page).map((chip) => (
+                    <span
+                      key={chip}
+                      className="inline-flex min-h-[34px] items-center rounded-full bg-card px-cp-3 text-cp-small font-bold text-ink-soft shadow-sm ring-1 ring-line"
+                    >
+                      {chip}
+                    </span>
+                  ))}
+                </div>
               </div>
 
-              <div className="mt-cp-5 flex flex-wrap justify-center gap-cp-2">
-                {heroChips(page).map((chip) => (
-                  <span
-                    key={chip}
-                    className="inline-flex min-h-[34px] items-center rounded-full bg-card px-cp-3 text-cp-small font-bold text-ink-soft shadow-sm ring-1 ring-line"
-                  >
-                    {chip}
-                  </span>
-                ))}
+              {/* Desktop: the photo sits beside the copy. On mobile it moves
+                  below the tool (see after #rp-tool) so the controls come first. */}
+              <div className="hidden lg:block">
+                <LandingHeroVisual variant={heroVariant} />
               </div>
             </div>
           </section>
 
-          <section id="rp-tool" className="scroll-mt-24">
+          <section
+            id="rp-tool"
+            aria-labelledby="get-started-heading"
+            className="mt-[44px] scroll-mt-24"
+          >
+            <h2
+              id="get-started-heading"
+              className="mb-cp-4 text-cp-h2-lg font-extrabold tracking-[-0.03em]"
+            >
+              Get started
+            </h2>
             <PrinterWorkspace
               initialImportMode={page.initialImportMode}
               importSubmitLabel={page.importSubmitLabel}
@@ -194,34 +223,20 @@ export default function SeoLandingPage({ params }: PageProps) {
             )}
           </section>
 
-          <section
-            aria-labelledby="cta-heading"
-            className="mx-auto w-full max-w-[1040px] rounded-xl bg-brand-50 px-cp-5 py-cp-6 sm:px-cp-7"
-          >
-            <div className="flex flex-col gap-cp-4 sm:flex-row sm:items-center sm:justify-between">
-              <div>
-                <h2 id="cta-heading" className="text-cp-h2-lg font-extrabold tracking-[-0.03em]">
-                  Ready to turn it into a printable recipe?
-                </h2>
-                <p className="mt-cp-2 text-ink-soft text-cp-body leading-relaxed">
-                  Open the Recipe Printer tool, add your recipe, and make a card,
-                  page, or PDF worth keeping.
-                </p>
-              </div>
-              <div className="shrink-0">
-                <LandingCta label="Go to Recipe Printer" />
-              </div>
-            </div>
-          </section>
+          {/* Mobile-only: the hero photo, shown after the tool so the controls
+              lead. On desktop the photo lives in the hero's right column. */}
+          <div className="mx-auto mt-[44px] w-full max-w-[420px] lg:hidden">
+            <LandingHeroVisual variant={heroVariant} />
+          </div>
 
-          <section aria-labelledby="faq-heading" className="mx-auto w-full max-w-[760px]">
+          <section aria-labelledby="faq-heading" className="mt-[68px] w-full">
             <h2
               id="faq-heading"
               className="text-cp-h2-lg font-extrabold tracking-[-0.03em]"
             >
               Questions people ask
             </h2>
-            <dl className="mt-cp-4 flex flex-col gap-cp-3">
+            <dl className="mt-cp-4 grid gap-cp-3 sm:grid-cols-2">
               {page.faqs.map((item) => (
                 <div key={item.question} className="card p-cp-5">
                   <dt className="font-extrabold tracking-[-0.02em]">{item.question}</dt>
@@ -233,7 +248,7 @@ export default function SeoLandingPage({ params }: PageProps) {
             </dl>
           </section>
 
-          <section aria-labelledby="related-heading" className="mx-auto w-full max-w-[1040px]">
+          <section aria-labelledby="related-heading" className="mt-[68px] w-full">
             <h2
               id="related-heading"
               className="text-cp-h2 font-extrabold tracking-[-0.02em]"

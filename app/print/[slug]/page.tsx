@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { SiteHeader } from "@/components/SiteHeader";
 import { SharedRecipeCardRedirect } from "@/components/SharedRecipeCardRedirect";
-import { fetchSharedRecipeCard } from "@/lib/sharedRecipeCards";
+import { fetchSharedRecipeCard } from "@/lib/sharedRecipeCards.server";
 import { absoluteUrl, LOGO_PATH, SITE_NAME } from "@/lib/seo";
 
 type PageProps = { params: { slug: string } };
