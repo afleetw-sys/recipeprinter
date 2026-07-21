@@ -124,23 +124,6 @@ export function usePrintSheets({
 
   const allItems = useMemo(() => sections.flatMap((section) => section.items), [sections]);
 
-  // The photo reserves vertical space, so the split must know whether one will
-  // render — otherwise content overflows the page instead of flowing to the back.
-  const hasRecipeBackSide = useMemo(
-    () =>
-      allItems.some(
-        (item) =>
-          item.recipe &&
-          recipeNeedsBackSide(item.recipe, cardSize, {
-            hasPhoto: photosOn && Boolean(item.recipe.image),
-            showSourceUrl: sourceUrlOn,
-            template,
-          }),
-      ),
-    [allItems, cardSize, photosOn, sourceUrlOn, template],
-  );
-  const continueOnBack = hasRecipeBackSide && doubleSided;
-
   // `getRecipeFaces` below is a text-length budget guess, not a measurement of
   // the recipe's actual rendered size — occasionally it guesses a face fits
   // when it doesn't, and the fixed card height's `overflow: hidden` at print
@@ -180,6 +163,30 @@ export function usePrintSheets({
     }
     return entry.pages;
   }, [cardSize, measuredFaces, sourceUrlOn, template]);
+
+  // Whether any recipe actually spills past its front, which decides if a
+  // recipe's overflow continues on the BACK of its own card or starts a whole
+  // new card. Read from the measured faces, not `recipeNeedsBackSide`'s
+  // character-budget guess: the two disagree on ~4% of layouts, and when the
+  // guess said "fits on one page" while the measurement needed two, this stayed
+  // false and the second face was pushed onto a separate card instead of the
+  // back of the same one — front/back silently stopped working for exactly the
+  // recipes near the boundary. Falls back to the guess only for a recipe whose
+  // measurement hasn't landed yet, and the preview is held blank until it has.
+  const hasRecipeBackSide = useMemo(
+    () =>
+      measuredRecipeItems.some(({ id, recipe, hasPhoto }) => {
+        const measured = measuredFacesFor(id, recipe, hasPhoto);
+        if (measured) return measured.length > 1;
+        return recipeNeedsBackSide(recipe, cardSize, {
+          hasPhoto,
+          showSourceUrl: sourceUrlOn,
+          template,
+        });
+      }),
+    [measuredRecipeItems, measuredFacesFor, cardSize, sourceUrlOn, template],
+  );
+  const continueOnBack = hasRecipeBackSide && doubleSided;
 
   const printLayoutReady = useMemo(
     () =>
