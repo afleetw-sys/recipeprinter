@@ -435,6 +435,7 @@ export default function PrintPage() {
     hasRecipeBackSide,
     continueOnBack,
     printLayoutReady,
+    measuredRecipeItems,
     sheets,
     navItems,
     measurers,
@@ -449,6 +450,16 @@ export default function PrintPage() {
     sourceUrlOn,
     template,
   });
+
+  // True while a recipe's real layout is still being measured. `sheets` falls
+  // back to `getRecipeFaces`' character-budget guess for anything unmeasured,
+  // and that guess routinely disagrees with the measured result — which is
+  // what produced the "it starts as two pages, then a second later reflows
+  // onto one" jump. The faces are kept in the tree (the rail, page counts and
+  // scroll positions all depend on them) but held visually blank until the
+  // measured layout is in, so the guess is never a thing the user sees. An
+  // empty project has nothing to measure and must not sit blank forever.
+  const previewMeasuring = measuredRecipeItems.length > 0 && !printLayoutReady;
 
   // Section headers in the rail are an organizational grouping shown for any
   // named section, independent of whether that section also gets a printed
@@ -1136,7 +1147,11 @@ export default function PrintPage() {
       />
 
       {/* Print preview / printed content */}
-      <main className="recipe-print-shell px-cp-6 print:p-0">
+      <main
+        className={`recipe-print-shell px-cp-6 print:p-0 ${
+          previewMeasuring ? "recipe-print-shell--measuring" : ""
+        }`}
+      >
         <nav
           className={`recipe-page-rail recipe-page-rail--${cardSize} no-print`}
           aria-label="Pages"

@@ -1,6 +1,6 @@
 "use client";
 
-import { useLayoutEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import {
   RecipeCardFace,
   getRecipeFaces,
@@ -8,6 +8,15 @@ import {
   type RecipeFace,
   type RecipePrintTemplate,
 } from "@/components/RecipeCardPrint";
+import {
+  INGREDIENT_ITEM_SELECTOR,
+  INSTRUCTION_ITEM_SELECTOR,
+  OVERFLOW_TOLERANCE_PX,
+  blankStackedFace,
+  colsOverflowPx,
+  isEmptyFace,
+  realItemHeights,
+} from "@/lib/faceMeasure";
 import type { Recipe } from "@/types/recipe";
 
 // getRecipeFaces' character-count budget is a guess, not a measurement, so it
@@ -24,74 +33,36 @@ import type { Recipe } from "@/types/recipe";
 // same pass), not assumed to fit. Settles once a pass makes no further
 // change.
 
-const MAX_REFLOW_PASSES = 60;
-const OVERFLOW_TOLERANCE_PX = 1;
+// A pass must not read geometry until the card has stopped moving. Each card
+// measures itself (`useWideColumns` picks its two-column split from a hidden
+// probe, then re-renders, and can land back on a single column), so an early
+// read sees a transient layout: one face reported 62px of slack that actually
+// overflowed by 32px once settled, the loop "fitted" it, and the content
+// clipped. Rather than guess a fixed delay — which silently depends on machine
+// speed — each pass polls the measured geometry and only proceeds once two
+// consecutive readings agree. Fast when the card settles immediately, patient
+// when it doesn't, and correct on any machine.
+const STABILITY_POLL_MS = 16;
+// 6, not a larger number: a card that is going to settle does so within a
+// poll or two, and one that never settles (bistable column split) will burn
+// the whole budget every pass without ever agreeing — so a high cap only adds
+// latency for the pathological case without changing its outcome.
+const MAX_STABILITY_POLLS = 6;
 
-const INGREDIENT_ITEM_SELECTOR = ".recipe-card__ingredients li";
-const INSTRUCTION_ITEM_SELECTOR = ".recipe-card__method li";
+// Hard ceiling on passes. Some content makes a card's own layout bistable — a
+// step tall enough to sit right at the two-column threshold flips the split
+// back and forth, so the geometry never stabilizes and every pass spends the
+// full poll budget. Such a recipe cannot be rescued by more pagination (it
+// needs smaller type — see the oversized case), and grinding on only delays
+// the result while `printLayoutReady` stays false and Print stays disabled.
+// Measured convergence for well-behaved recipes peaks around 8 passes, so this
+// budget never binds on them while guaranteeing the loop always terminates
+// promptly on the pathological ones.
+const MAX_SETTLE_PASSES = 12;
 
-function blankStackedFace(): RecipeFace {
-  return { ingredients: [], instructions: [], layout: "stacked" };
-}
-
-function isEmptyFace(face: RecipeFace): boolean {
-  return face.ingredients.length === 0 && face.instructions.length === 0;
-}
-
-// Positive = overflowing by this many px, negative = this much real slack.
-// Deliberately *not* `cardEl.scrollHeight` vs `minHeight`: the footer is
-// `position: absolute; bottom: ...`, anchored near the card's bottom
-// regardless of how much content sits above it, so the whole card's
-// scrollHeight always reads close to minHeight whether or not the content
-// actually fills that space — real for detecting overflow (content that
-// pushes past the footer's position genuinely extends scrollHeight further),
-// structurally blind to slack (an under-filled face still measures "full"
-// because the footer is still sitting right where it always sits).
-//
-// `.cols` itself is *also* a `flex: 1` child of the card (see globals.css),
-// so it has exactly the same problem: it always stretches to fill the space
-// between the header and the card's bottom edge regardless of how much (or
-// how little) is actually inside it, and `scrollHeight` reports that
-// stretched box, not the content. A face with little or no content — most
-// visibly one with zero ingredients/instructions, which a previous reflow
-// pass can genuinely produce — then measures as "full" (and can even read as
-// mildly *overflowing*, since the flex-allocated box runs a few px past the
-// footer's actual position) even though there's nothing rendered in it at
-// all, which used to send the reflow loop into a spiral: it would try to
-// relieve that phantom overflow, find nothing left to pop, and land the
-// whole recipe permanently stranded off the first page. Measuring the real
-// bottom edge of `.cols`' own children instead — 0 when it has none — reads
-// the actual content honestly regardless of how the flex box around it is
-// sized.
-function colsOverflowPx(cardEl: HTMLElement): number {
-  const cols = cardEl.querySelector<HTMLElement>(".recipe-card__cols");
-  const footer = cardEl.querySelector<HTMLElement>(".recipe-card__footer");
-  if (!cols) return 0;
-  const colsTop = cols.getBoundingClientRect().top;
-  let contentBottom = colsTop;
-  for (const child of Array.from(cols.children)) {
-    contentBottom = Math.max(contentBottom, child.getBoundingClientRect().bottom);
-  }
-  // Several templates (and every 6x4 card, regardless of template) hide the
-  // footer entirely via `display: none` when it has no source link to show
-  // — it still matches the selector, but its rect collapses to 0/0/0/0,
-  // which isn't a real "the footer starts at the top of the viewport"
-  // position. Falling back to the card's own padded bottom edge in that case
-  // (same as when the selector matches nothing at all) is what the footer's
-  // position would've reserved anyway, had it been rendered.
-  const footerRect = footer?.getBoundingClientRect();
-  const footerTop =
-    footerRect && (footerRect.width > 0 || footerRect.height > 0)
-      ? footerRect.top
-      : cardEl.getBoundingClientRect().bottom - (parseFloat(getComputedStyle(cardEl).paddingBottom) || 0);
-  return contentBottom - footerTop;
-}
-
-function realItemHeights(cardEl: HTMLElement, selector: string): number[] {
-  return Array.from(cardEl.querySelectorAll<HTMLElement>(selector)).map(
-    (el) => el.getBoundingClientRect().height,
-  );
-}
+// Extra room, beyond the line's own height, that a face must have spare before
+// the pull will move content up into it. See the pull site for why.
+const PULL_HYSTERESIS_PX = 12;
 
 interface PopResult {
   shrunk: RecipeFace;
@@ -160,6 +131,36 @@ interface PullResult {
   shrunkNext: RecipeFace;
 }
 
+// A face that gains its first ingredient/step also gains that section's label
+// ("INGREDIENTS" / "STEPS"), which costs real vertical space the moved item's
+// own height doesn't include. Without charging it, the pull would move a step
+// onto a steps-less face using slack that the new label then consumes, the
+// face would overflow, the pop would push it straight back, and the pair
+// oscillated until the loop gave up on the un-pulled arrangement — leaving
+// ~25-33px stranded (the label's height) on exactly the cards that looked
+// under-filled. Measured off the next face, which already renders the label.
+function sectionLabelCostPx(
+  face: RecipeFace,
+  kind: "instructions" | "ingredients",
+  nextCardEl: HTMLElement,
+): number {
+  const alreadyHasSection =
+    kind === "instructions" ? face.instructions.length > 0 : face.ingredients.length > 0;
+  if (alreadyHasSection) return 0;
+  const label = nextCardEl.querySelector<HTMLElement>(
+    kind === "instructions"
+      ? ".recipe-card__method .recipe-card__label"
+      : ".recipe-card__ingredients .recipe-card__label",
+  );
+  if (!label) return 0;
+  const style = getComputedStyle(label);
+  return (
+    label.getBoundingClientRect().height +
+    (parseFloat(style.marginTop) || 0) +
+    (parseFloat(style.marginBottom) || 0)
+  );
+}
+
 // The counterpart popTrailingItems never had: when a face has real slack and
 // the next face still has content, pull that content's leading items back.
 // Ingredients always finish before instructions start (continuationFaces'
@@ -170,7 +171,8 @@ interface PullResult {
 function pullLeadingItems(face: RecipeFace, nextFace: RecipeFace, slackPx: number, nextCardEl: HTMLElement): PullResult | null {
   if (face.instructions.length === 0 && nextFace.ingredients.length > 0) {
     const heights = realItemHeights(nextCardEl, INGREDIENT_ITEM_SELECTOR);
-    const taken = takeLeadingItems(nextFace.ingredients, slackPx, heights);
+    const budget = slackPx - sectionLabelCostPx(face, "ingredients", nextCardEl);
+    const taken = takeLeadingItems(nextFace.ingredients, budget, heights);
     if (taken.length === 0) return null;
     return {
       grown: { ...face, ingredients: [...face.ingredients, ...taken] },
@@ -180,7 +182,8 @@ function pullLeadingItems(face: RecipeFace, nextFace: RecipeFace, slackPx: numbe
 
   if (nextFace.instructions.length > 0 && (face.instructions.length > 0 || nextFace.ingredients.length === 0)) {
     const heights = realItemHeights(nextCardEl, INSTRUCTION_ITEM_SELECTOR);
-    const taken = takeLeadingItems(nextFace.instructions, slackPx, heights);
+    const budget = slackPx - sectionLabelCostPx(face, "instructions", nextCardEl);
+    const taken = takeLeadingItems(nextFace.instructions, budget, heights);
     if (taken.length === 0) return null;
     return {
       grown: { ...face, instructions: [...face.instructions, ...taken] },
@@ -216,6 +219,37 @@ export function RecipeFaceMeasurer({
   const forcedStackedRef = useRef(false);
   const settledRef = useRef(false);
   const cardRefs = useRef<Array<HTMLElement | null>>([]);
+  // The last measured page arrangement in which every face actually fit. The
+  // pop/pull loop can oscillate near a boundary (the pull re-grows a face the
+  // pop just relieved, because it sizes items by the *next* face's columns,
+  // which differ from where they land), and when that oscillation runs out the
+  // `MAX_SETTLE_PASSES` clock, the arrangement it happens to stop on can be an
+  // overflowing one — that was a direct cause of settled cards clipping. A
+  // fitting arrangement is always visited on the way (right after each pop), so
+  // remembering it and settling on it instead guarantees the reported result
+  // never clips whenever any fitting arrangement exists.
+  const bestFitRef = useRef<RecipeFace[] | null>(null);
+
+  // Don't measure until webfonts are loaded. Measuring in the fallback font —
+  // which is what happens if the first `useLayoutEffect` runs before the real
+  // font is ready — reads narrower/shorter text, so an overflowing face looks
+  // like it fits, the loop settles, and then the real font loads and pushes
+  // content past the fixed card height with no further pass to catch it. That
+  // is both a direct cause of clipped 6x4 cards and the "reflows a few seconds
+  // later" flash. `document.fonts.ready` resolves once faces are usable.
+  const [fontsReady, setFontsReady] = useState(
+    () => typeof document === "undefined" || !document.fonts || document.fonts.status === "loaded",
+  );
+  useEffect(() => {
+    if (fontsReady || typeof document === "undefined" || !document.fonts) return;
+    let cancelled = false;
+    document.fonts.ready.then(() => {
+      if (!cancelled) setFontsReady(true);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [fontsReady]);
 
   // Any change to the recipe/settings invalidates whatever this had settled
   // on and starts a fresh measurement pass. `initialPages` is already
@@ -229,21 +263,72 @@ export function RecipeFaceMeasurer({
     passRef.current = 0;
     forcedStackedRef.current = false;
     settledRef.current = false;
+    bestFitRef.current = null;
     setPages(initialPages);
   }
 
-  useLayoutEffect(() => {
+  // Deliberately a post-paint `useEffect` + macrotask, NOT `useLayoutEffect`.
+  // Each card does its own internal measuring (`useWideColumns` decides the
+  // two-column split from a hidden probe and then re-renders), and a layout
+  // effect runs before that has stabilized — so the loop was reading a
+  // transient DOM. It measured a back face at 62px of slack that, once the
+  // card settled, actually overflowed by 32px: the loop saw "fits", settled
+  // immediately, and the content clipped. Deferring by one macrotask lets the
+  // card reach its final geometry first, so every pass measures what really
+  // prints. This also removes the nested-update hazard the old synchronous
+  // loop had, since these updates are no longer nested inside a commit.
+  useEffect(() => {
     if (settledRef.current) return;
+    // Wait for real fonts before the first (and every) measurement pass — see
+    // `fontsReady` above. Once it flips true this effect re-runs and settles.
+    if (!fontsReady) return;
 
-    if (passRef.current >= MAX_REFLOW_PASSES) {
+    let cancelled = false;
+    let timer: ReturnType<typeof setTimeout>;
+    let lastSignature: string | null = null;
+    let polls = 0;
+
+    // Rounded per-face overflow — the geometry this pass is about to act on.
+    // Two identical readings in a row mean the cards have stopped reflowing.
+    const signature = () =>
+      pages
+        .map((_, i) => {
+          const el = cardRefs.current[i];
+          return el ? Math.round(colsOverflowPx(el)) : "x";
+        })
+        .join(",");
+
+    const tick = () => {
+      if (cancelled || settledRef.current) return;
+      const sig = signature();
+      if (sig !== lastSignature && polls < MAX_STABILITY_POLLS) {
+        lastSignature = sig;
+        polls += 1;
+        timer = setTimeout(tick, STABILITY_POLL_MS);
+        return;
+      }
+      runPass();
+    };
+
+    timer = setTimeout(tick, STABILITY_POLL_MS);
+    return () => {
+      cancelled = true;
+      clearTimeout(timer);
+    };
+
+    function runPass() {
+    if (passRef.current >= MAX_SETTLE_PASSES) {
       settledRef.current = true;
-      onSettled(pages);
+      // Prefer the best fitting arrangement seen over whatever oscillating
+      // state the pass clock happened to stop on (see `bestFitRef`).
+      onSettled(bestFitRef.current ?? pages);
       return;
     }
     passRef.current += 1;
 
     let changed = false;
     let restartStacked = false;
+    let anyOverflow = false;
     const next = pages.slice();
 
     // Relieve overflow first — never pull more onto a face that's already
@@ -254,6 +339,7 @@ export function RecipeFaceMeasurer({
 
       const overflowPx = colsOverflowPx(cardEl);
       if (overflowPx <= OVERFLOW_TOLERANCE_PX) continue;
+      anyOverflow = true;
 
       const page = next[i];
       if (page.layout === "standard") {
@@ -283,6 +369,13 @@ export function RecipeFaceMeasurer({
       return;
     }
 
+    // The pages measured this pass all fit — remember them as the fallback the
+    // MAX_SETTLE_PASSES guard settles on, so oscillation can never strand an
+    // overflowing arrangement as the final result.
+    if (!anyOverflow) {
+      bestFitRef.current = pages;
+    }
+
     // Only once nothing overflowed this round, look for slack to pull the
     // next face's leading content into — one pull per pass, so the next
     // pass always measures a fully-settled previous state rather than a
@@ -296,7 +389,17 @@ export function RecipeFaceMeasurer({
         const nextCardEl = cardRefs.current[i + 1];
         if (!cardEl || !nextCardEl) continue;
 
-        const slackPx = -colsOverflowPx(cardEl) - OVERFLOW_TOLERANCE_PX;
+        // Hysteresis, not a ban. The pull is the pop's exact inverse, so
+        // matching thresholds make them fight forever: a pop sheds a trailing
+        // item, the freed space reads as slack, the pull drags the same item
+        // straight back, and the face overflows again. Requiring the slack to
+        // exceed what the content needs by a clear margin breaks that cycle —
+        // a just-popped item frees roughly its own height, which is never
+        // enough to clear the margin — while still letting a genuinely
+        // under-filled face pull the next line up. (Banning the pull outright
+        // also stopped the cycle, but it stranded content on later faces and
+        // left cards half empty.)
+        const slackPx = -colsOverflowPx(cardEl) - OVERFLOW_TOLERANCE_PX - PULL_HYSTERESIS_PX;
         if (slackPx <= 0) continue;
 
         const pulled = pullLeadingItems(next[i], next[i + 1], slackPx, nextCardEl);
@@ -315,7 +418,7 @@ export function RecipeFaceMeasurer({
       // A pull and a pop are each other's exact inverse, and pulling can
       // shift a wide section's whole 2-column split non-linearly, so a state
       // that looked safe can turn out not to be, and genuinely cycle A/B/A/B
-      // for a few passes before settling — that's fine, `MAX_REFLOW_PASSES`
+      // for a few passes before settling — that's fine, `MAX_SETTLE_PASSES`
       // above is the backstop for it. This used to also bail out the moment
       // any pruned shape repeated, on the theory that a repeat could only
       // mean an unwinnable cycle — but the same signature also shows up when
@@ -333,8 +436,9 @@ export function RecipeFaceMeasurer({
 
     settledRef.current = true;
     onSettled(pages);
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [pages]);
+  }, [pages, fontsReady]);
 
   return (
     <div
