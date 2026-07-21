@@ -79,7 +79,11 @@ export const RECIPE_PRINT_TEMPLATE_OPTIONS: Array<{
   { id: "heirloom", label: "Heirloom", detail: "Cream stock, red utensil keepsake" },
   { id: "keepsake", label: "Keepsake", detail: "Cream recipe-box card with classic family style" },
   { id: "bistro", label: "Bistro", detail: "Blue checks, tomato red, playful kitchen card" },
-  { id: "fruit", label: "Fruit Stand", detail: "Sunny cream card with a summer-fruit corner" },
+  // Fruit Stand is withheld from the picker for now — not ready to launch.
+  // Only this list is gated: the `fruit` template id, its styles and its
+  // premium mapping all stay, so a project already saved on it keeps
+  // rendering (and printing) exactly as before instead of falling back to a
+  // different look. Re-launching is a one-line restore.
   { id: "cookout", label: "Cookout", detail: "Warm BBQ card with a grilled-icon border" },
 ];
 
