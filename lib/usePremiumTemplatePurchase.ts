@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import type { User } from "firebase/auth";
 import type { CustomerInfo } from "@revenuecat/purchases-js";
 import { RECIPE_PRINT_TEMPLATE_OPTIONS, type RecipePrintTemplate } from "@/components/RecipeCardPrint";
+import { track } from "@/lib/analytics";
 import { friendlyClaimError, friendlyPurchaseSetupError } from "@/lib/friendlyErrors";
 import { isPremiumTemplate, type PremiumRecipePrintTemplate } from "@/lib/premiumTemplates";
 import {
@@ -121,6 +122,7 @@ export function usePremiumTemplatePurchase({
         return;
       }
 
+      track("purchase_started", { product: "premium_template", template: premiumTemplate });
       const result = await purchaseRecipePrinterTemplate({
         userId: revenueCatUserId,
         template: premiumTemplate,
@@ -128,9 +130,12 @@ export function usePremiumTemplatePurchase({
       setCustomerInfo(result.customerInfo);
 
       if (result.cancelled) {
+        track("purchase_cancelled", { product: "premium_template", template: premiumTemplate });
         showToast("Purchase cancelled. Your recipe cards are still here when you're ready.");
         return;
       }
+
+      track("purchase_completed", { product: "premium_template", template: premiumTemplate });
 
       if (!hasTemplateEntitlement(result.customerInfo, premiumTemplate)) {
         showToast("Purchase finished, but the template is still syncing. Try Print again in a moment.");
@@ -165,6 +170,8 @@ export function usePremiumTemplatePurchase({
         showToast("Claim is finishing up — try Print again in a moment.");
         return;
       }
+
+      track("free_template_claimed", { template: premiumTemplate });
 
       setShowUnlockDialog(false);
       printNow();

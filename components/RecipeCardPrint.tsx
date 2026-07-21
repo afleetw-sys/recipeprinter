@@ -354,6 +354,43 @@ function CookoutBbqBorder({ withPhotoGap = false }: { withPhotoGap?: boolean }) 
   );
 }
 
+/**
+ * The template's decorative layer — the one part of a card that is pure
+ * ornament, and by far the most expensive: bistro's checker spine is 240 SVG
+ * nodes per face, cookout's border ~40 `<img>`s plus four ResizeObservers.
+ *
+ * `show={false}` drops it entirely, for the two places that render a full card
+ * but never display this layer:
+ *   - RecipeFaceMeasurer, which is `visibility: hidden` and only ever reads
+ *     `.recipe-card__cols` geometry (see lib/faceMeasure.ts) — decoration is
+ *     absolutely positioned and contributes nothing to what it measures.
+ *   - the rail thumbnails, drawn at ~1/11 scale where a 0.24in motif lands
+ *     under a pixel; print.css paints a flat stand-in there instead.
+ * Both used to pay full price for a layer neither one shows. Measured on a
+ * 60-recipe project in Bistro, that was 36,660 of 55,967 total DOM nodes.
+ *
+ * Centralized here rather than repeated at each of the three faces below so
+ * "which templates have a decorative layer" is stated once.
+ */
+function TemplateDecoration({
+  template,
+  show = true,
+  continued = false,
+  withPhotoGap = false,
+}: {
+  template?: RecipePrintTemplate;
+  show?: boolean;
+  /** Cookout's border is a front-face motif; continuation faces go without. */
+  continued?: boolean;
+  withPhotoGap?: boolean;
+}) {
+  if (!show) return null;
+  if (template === "bistro") return <BistroCheckerSpine />;
+  if (template === "counter") return <CounterCheckerBand />;
+  if (template === "cookout" && !continued) return <CookoutBbqBorder withPhotoGap={withPhotoGap} />;
+  return null;
+}
+
 export const RecipeCardFace = memo(function RecipeCardFace({
   recipe,
   ingredients,
@@ -370,6 +407,7 @@ export const RecipeCardFace = memo(function RecipeCardFace({
   contentScale,
   inlineEdit,
   template,
+  showDecoration = true,
 }: {
   recipe: Recipe;
   ingredients: Recipe["ingredients"];
@@ -387,6 +425,8 @@ export const RecipeCardFace = memo(function RecipeCardFace({
   contentScale?: number;
   inlineEdit?: RecipeCardInlineEdit;
   template?: RecipePrintTemplate;
+  /** See `TemplateDecoration` — false on surfaces that never show it. */
+  showDecoration?: boolean;
 }) {
   const source = sourceLabel(recipe);
   const meta = metaBits(recipe);
@@ -722,9 +762,12 @@ export const RecipeCardFace = memo(function RecipeCardFace({
       data-preview-hidden={previewHidden ? "true" : undefined}
     >
       <div className="recipe-card__accent" aria-hidden />
-      {template === "bistro" && <BistroCheckerSpine />}
-      {template === "counter" && <CounterCheckerBand />}
-      {template === "cookout" && !continued && <CookoutBbqBorder withPhotoGap={showPhoto} />}
+      <TemplateDecoration
+        template={template}
+        show={showDecoration}
+        continued={continued}
+        withPhotoGap={showPhoto}
+      />
 
       {showHeader ? (
         <header
@@ -1039,12 +1082,15 @@ export const DividerFace = memo(function DividerFace({
   previewHidden = false,
   inlineEdit,
   template,
+  showDecoration = true,
 }: {
   title: string;
   recipeTitles?: string[];
   previewHidden?: boolean;
   inlineEdit?: DividerCardInlineEdit;
   template?: RecipePrintTemplate;
+  /** See `TemplateDecoration` — false on surfaces that never show it. */
+  showDecoration?: boolean;
 }) {
   const recipeCount = recipeTitles.length;
 
@@ -1054,9 +1100,7 @@ export const DividerFace = memo(function DividerFace({
       data-preview-hidden={previewHidden ? "true" : undefined}
     >
       <div className="recipe-card__accent" aria-hidden />
-      {template === "bistro" && <BistroCheckerSpine />}
-      {template === "counter" && <CounterCheckerBand />}
-      {template === "cookout" && <CookoutBbqBorder />}
+      <TemplateDecoration template={template} show={showDecoration} />
       <div className="recipe-card__divider-content">
         <p className="recipe-card__divider-kicker">Section</p>
         {inlineEdit ? (
@@ -1097,10 +1141,18 @@ export interface CoverCardInlineEdit {
   onChange: (cover: CoverConfig) => void;
 }
 
-export const CoverFace = memo(function CoverFace({ cover, side, previewHidden = false, inlineEdit }: {
+export const CoverFace = memo(function CoverFace({
+  cover,
+  side,
+  previewHidden = false,
+  inlineEdit,
+  showDecoration = true,
+}: {
   cover: CoverConfig;
   side: "front" | "back";
   previewHidden?: boolean;
+  /** See `TemplateDecoration` — false on surfaces that never show it. */
+  showDecoration?: boolean;
   inlineEdit?: CoverCardInlineEdit;
 }) {
   const canEdit = Boolean(inlineEdit);
@@ -1116,9 +1168,7 @@ export const CoverFace = memo(function CoverFace({ cover, side, previewHidden = 
       data-preview-hidden={previewHidden ? "true" : undefined}
     >
       <div className="recipe-card__accent" aria-hidden />
-      {draft.template === "bistro" && <BistroCheckerSpine />}
-      {draft.template === "counter" && <CounterCheckerBand />}
-      {draft.template === "cookout" && <CookoutBbqBorder />}
+      <TemplateDecoration template={draft.template} show={showDecoration} />
       {draft.imageUrl && (
         // eslint-disable-next-line @next/next/no-img-element
         <img src={draft.imageUrl} alt="" className="recipe-card__cover-image" />

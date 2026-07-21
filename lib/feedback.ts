@@ -1,5 +1,7 @@
 "use client";
 
+import { track } from "@/lib/analytics";
+
 export type FeedbackType = "idea" | "bug" | "print_issue" | "other";
 
 export interface FeedbackInput {
@@ -26,4 +28,6 @@ export async function submitPrinterFeedback(input: FeedbackInput): Promise<void>
     source: "recipeprinter-footer",
     createdAt: serverTimestamp(),
   });
+  // Only the category — the message itself stays in Firestore, not analytics.
+  track("feedback_submitted", { type: input.type });
 }

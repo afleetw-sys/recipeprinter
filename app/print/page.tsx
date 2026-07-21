@@ -29,6 +29,8 @@ import { useRecipeInlineEditor } from "@/lib/useRecipeInlineEditor";
 import { useDeckScroller } from "@/lib/useDeckScroller";
 import { usePremiumTemplatePurchase } from "@/lib/usePremiumTemplatePurchase";
 import { useCookbookPurchase } from "@/lib/useCookbookPurchase";
+import { COOKBOOK_ENABLED } from "@/lib/cookbookProduct";
+import { track } from "@/lib/analytics";
 import {
   BookIcon,
   CheckIcon,
@@ -129,6 +131,7 @@ const ScaledPage = memo(function ScaledPage({
   showImage,
   showSourceUrl,
   showCutLines,
+  showDecoration = true,
   inlineEdit,
   dividerEdit,
   coverEdit,
@@ -144,6 +147,10 @@ const ScaledPage = memo(function ScaledPage({
   showImage: boolean;
   showSourceUrl: boolean;
   showCutLines: boolean;
+  /** False for the rail thumbnails, whose ~1/11 scale renders the templates'
+      decorative motifs sub-pixel — print.css paints a flat stand-in instead.
+      See `TemplateDecoration` in components/RecipeCardPrint.tsx. */
+  showDecoration?: boolean;
   inlineEdit?: RecipeCardInlineEdit;
   dividerEdit?: {
     sectionId: string;
@@ -183,12 +190,14 @@ const ScaledPage = memo(function ScaledPage({
                     title={anySlot.title}
                     recipeTitles={anySlot.recipeTitles}
                     template={template}
+                    showDecoration={showDecoration}
                     inlineEdit={dividerEdit?.sectionId === anySlot.id ? dividerEdit : undefined}
                   />
                 ) : (
                   <CoverFace
                     cover={anySlot.cover}
                     side={anySlot.side}
+                    showDecoration={showDecoration}
                     inlineEdit={coverEdit?.side === anySlot.side ? coverEdit : undefined}
                   />
                 )}
@@ -259,6 +268,7 @@ const ScaledPage = memo(function ScaledPage({
                     showSourceUrl={showSourceUrl}
                     continued={slot.isContinuation}
                     template={template}
+                    showDecoration={showDecoration}
                     previewHidden={slotIndex !== activeSlotIndex || activeSide !== "front"}
                     inlineEdit={
                       activeSide === "front" &&
@@ -292,6 +302,7 @@ const ScaledPage = memo(function ScaledPage({
                       contentScale={slot.back.contentScale}
                       hasBackFace={slot.hasBack}
                       template={template}
+                      showDecoration={showDecoration}
                       continued
                       previewHidden={slotIndex !== activeSlotIndex || activeSide !== "back"}
                       inlineEdit={
@@ -695,6 +706,13 @@ export default function PrintPage() {
 
   function printNow() {
     printRequestedRef.current = true;
+    track("print_started", {
+      template,
+      cardSize,
+      showPhoto,
+      doubleSided,
+      recipeCount: items?.filter((item) => item.recipe).length ?? 0,
+    });
     window.print();
   }
 
@@ -853,11 +871,16 @@ export default function PrintPage() {
       return;
     }
     if (cookbookLocked) {
+      track("paywall_shown", { product: "cookbook" });
       setShowCookbookUnlockDialog(true);
       return;
     }
     if (selectedPremiumTemplate) {
       if (selectedTemplateLocked) {
+        track("paywall_shown", {
+          product: "premium_template",
+          template: selectedPremiumTemplate,
+        });
         setShowUnlockDialog(true);
         return;
       }
@@ -938,7 +961,12 @@ export default function PrintPage() {
   const hasPrintSettingsFields =
     hasRecipeBackSide ||
     cardSize === "card-6x4" ||
-    (projectMeta.meta.cookbookMode && (namedSectionCount(sections) >= 1 || sections.length > 1));
+    // `|| sections.length > 1` used to be here for the table-of-contents
+    // toggle, which applied to any multi-section project, named or not. With
+    // that toggle gone the only book-only field left is section dividers, so
+    // keeping the clause would open a "Print settings" dialog with nothing in
+    // it for an unnamed multi-section project.
+    (projectMeta.meta.cookbookMode && namedSectionCount(sections) >= 1);
 
   // Shared between the desktop "Print settings" popover and the mobile
   // settings menu, so both surfaces stay in sync rather than drifting into
@@ -994,19 +1022,14 @@ export default function PrintPage() {
             </span>
           </label>
         )}
-        {projectMeta.meta.cookbookMode && sections.length > 1 && (
-          <label className="recipe-toggle">
-            <input
-              type="checkbox"
-              checked={Boolean(projectMeta.meta.tableOfContents)}
-              onChange={(event) => projectMeta.setTableOfContents(event.target.checked)}
-            />
-            <span>
-              <strong>Table of contents</strong>
-              <small>Free, always — lists every recipe by section.</small>
-            </span>
-          </label>
-        )}
+        {/* No table-of-contents toggle: nothing renders a TOC yet. It used to
+            sit here, fully wired to `projectMeta.tableOfContents` — persisted,
+            saved into the project, and with no effect whatsoever on what
+            printed. A control that remembers your choice and then ignores it is
+            worse than no control, so it's out until there's a TOC page behind
+            it. The stored flag itself is deliberately kept (see
+            ProjectMeta.tableOfContents) so already-saved projects still
+            round-trip. */}
       </>
     );
   }
@@ -1089,6 +1112,7 @@ export default function PrintPage() {
     function handleAfterPrint() {
       if (!printRequestedRef.current) return;
       printRequestedRef.current = false;
+      track("print_dialog_closed", { template, cardSize });
       if (!shouldShowPostPrintDialog()) return;
 
       markPostPrintDialogShown();
@@ -1097,7 +1121,9 @@ export default function PrintPage() {
 
     window.addEventListener("afterprint", handleAfterPrint);
     return () => window.removeEventListener("afterprint", handleAfterPrint);
-  }, []);
+    // template/cardSize are read inside the handler, so the listener has to be
+    // re-registered when they change or it would report a stale configuration.
+  }, [template, cardSize]);
 
   if (items === null) {
     return (
@@ -1134,8 +1160,7 @@ export default function PrintPage() {
         compact
         sticky
         actions={
-          // Cookbook feature is hidden for now — not ready to launch yet.
-          false && !projectMeta.meta.cookbookMode && (
+          COOKBOOK_ENABLED && !projectMeta.meta.cookbookMode && (
             <button
               type="button"
               className="btn btn-ghost btn-compact recipe-make-cookbook-btn"
@@ -1237,6 +1262,7 @@ export default function PrintPage() {
                         showImage={photosOn}
                         showSourceUrl={sourceUrlOn}
                         showCutLines={false}
+                        showDecoration={false}
                       />
                     </span>
                     <span className="recipe-page-rail__label">
@@ -1330,8 +1356,7 @@ export default function PrintPage() {
               <ChevronLeftIcon size={28} />
             </Link>
             <div className="recipe-mobile-topbar__actions">
-              {/* Cookbook feature is hidden for now — not ready to launch yet. */}
-              {false && !projectMeta.meta.cookbookMode && (
+              {COOKBOOK_ENABLED && !projectMeta.meta.cookbookMode && (
                 <button
                   type="button"
                   className="recipe-mobile-topbar__icon-btn"
@@ -1680,6 +1705,10 @@ export default function PrintPage() {
                     aria-label={`${option.label}${locked ? " premium" : owned ? " owned" : ""}`}
                     onClick={() => {
                       setTemplate(option.id);
+                      track("template_selected", {
+                        template: option.id,
+                        premium: premiumTemplate !== null,
+                      });
                       setToastMessage(null);
                       setMobileDrawer(null);
                     }}

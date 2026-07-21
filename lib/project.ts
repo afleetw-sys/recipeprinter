@@ -21,10 +21,15 @@ export const PROJECT_META_STORAGE_KEY = "recipeprinter:project-meta:v1";
 export interface ProjectMeta {
   cover?: CoverConfig;
   backCover?: CoverConfig;
+  /** Reserved. No TOC page exists yet, so nothing reads this and the settings
+      panel no longer offers a toggle for it (see renderPrintSettingsFields).
+      Kept in the shape — rather than dropped and re-added later — so projects
+      saved while the toggle existed still round-trip unchanged. */
   tableOfContents?: boolean;
   sectionDividers?: boolean;
-  /** Opted into the cookbook experience (cover/sections/TOC) via "Make it a
-      cookbook" — false/undefined means the plain print-cards UI. */
+  /** Opted into the cookbook experience (cover/sections) via "Make it a
+      cookbook" — false/undefined means the plain print-cards UI. Gated off at
+      the entry points for now; see COOKBOOK_ENABLED in lib/cookbookProduct.ts. */
   cookbookMode?: boolean;
   /** Section metadata only (id/title/order) — item ids, not recipe content. */
   sections: Array<{ id: string; title?: string; itemIds: string[] }>;
@@ -260,6 +265,10 @@ export function useProjectMeta() {
     [update],
   );
 
+  // No callers right now — the TOC toggle is gone until a TOC page exists (see
+  // `ProjectMeta.tableOfContents`). Left in place as part of this store's
+  // surface, alongside the field it writes, so building the feature is a
+  // matter of rendering a page rather than re-deriving the state plumbing.
   const setTableOfContents = useCallback(
     (value: boolean) => {
       update((current) => ({ ...current, tableOfContents: value }));

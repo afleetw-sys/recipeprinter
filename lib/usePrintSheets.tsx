@@ -424,26 +424,48 @@ export function usePrintSheets({
     return Array.from(groups.values()).flat();
   }, [sheets, continueOnBack]);
 
-  // Off-screen measurement pass for every recipe currently in the project —
-  // drop this into the tree once; it never renders anything visible itself.
+  // Off-screen measurement pass — drop this into the tree once; it never
+  // renders anything visible itself.
+  //
+  // Only recipes still awaiting a result get a measurer. A settled one used to
+  // stay mounted for the life of the session holding a full off-screen copy of
+  // every one of its faces, purely as a monument to work already finished (on a
+  // 60-recipe project: 18,240 DOM nodes that nothing would ever read again).
+  //
+  // `measuredFacesFor` is exactly the right predicate to mount on, because it
+  // already *is* the definition of "needs measuring": it returns null both for
+  // a recipe never measured and for one whose stored result no longer matches
+  // the current recipe/size/template/photo/link, which is precisely when a
+  // fresh pass is required. So a settled measurer unmounts, and any change that
+  // invalidates its result mounts a new one — with clean state, which is what a
+  // re-measure wants anyway.
+  //
+  // Note this can't loop: `onSettled` writes an entry built from the very same
+  // values `measuredFacesFor` compares against, so the recipe it just settled
+  // reads back as measured on the next render. RecipeFaceMeasurer's in-render
+  // reset still earns its keep for the other case — an edit landing *while* a
+  // measurer is mounted and mid-pass, where React reuses the instance because
+  // recipe content isn't part of the key below.
   const measurers = (
     <>
-      {measuredRecipeItems.map(({ id, recipe, hasPhoto }) => (
-        <RecipeFaceMeasurer
-          key={`${id}-${cardSize}-${template}-${hasPhoto}-${sourceUrlOn}`}
-          recipe={recipe}
-          size={cardSize}
-          template={template}
-          hasPhoto={hasPhoto}
-          showSourceUrl={sourceUrlOn}
-          onSettled={(pages) =>
-            setMeasuredFaces((current) => ({
-              ...current,
-              [id]: { recipe, cardSize, template, hasPhoto, sourceUrlOn, pages },
-            }))
-          }
-        />
-      ))}
+      {measuredRecipeItems
+        .filter(({ id, recipe, hasPhoto }) => measuredFacesFor(id, recipe, hasPhoto) === null)
+        .map(({ id, recipe, hasPhoto }) => (
+          <RecipeFaceMeasurer
+            key={`${id}-${cardSize}-${template}-${hasPhoto}-${sourceUrlOn}`}
+            recipe={recipe}
+            size={cardSize}
+            template={template}
+            hasPhoto={hasPhoto}
+            showSourceUrl={sourceUrlOn}
+            onSettled={(pages) =>
+              setMeasuredFaces((current) => ({
+                ...current,
+                [id]: { recipe, cardSize, template, hasPhoto, sourceUrlOn, pages },
+              }))
+            }
+          />
+        ))}
     </>
   );
 

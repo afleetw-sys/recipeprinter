@@ -5,6 +5,7 @@ import type { User } from "firebase/auth";
 import type { CustomerInfo } from "@revenuecat/purchases-js";
 import { COOKBOOK_PRICE_FALLBACK } from "@/lib/cookbookProduct";
 import { friendlyPurchaseSetupError } from "@/lib/friendlyErrors";
+import { track } from "@/lib/analytics";
 import {
   hasCookbookEntitlement,
   loadRecipePrinterCookbookPrice,
@@ -76,15 +77,19 @@ export function useCookbookPurchase({
         return;
       }
 
+      track("purchase_started", { product: "cookbook" });
       const result = await purchaseRecipePrinterCookbook({
         userId: revenueCatUserId,
         email: cookPilotUser?.email,
       });
 
       if (result.cancelled) {
+        track("purchase_cancelled", { product: "cookbook" });
         showToast("Purchase cancelled. Your cookbook is still here when you're ready.");
         return;
       }
+
+      track("purchase_completed", { product: "cookbook" });
 
       if (!hasCookbookEntitlement(result.customerInfo)) {
         showToast("Purchase finished, but it's still syncing. Try again in a moment.");

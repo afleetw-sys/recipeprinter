@@ -1,7 +1,8 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import type { QueueItem, Recipe } from "@/types/recipe";
+import type { ImportMethod, QueueItem, Recipe } from "@/types/recipe";
+import { track, truncateReason } from "@/lib/analytics";
 import { parseImages, parseText, parseUrl } from "@/lib/parser";
 import { normalizeImportURL } from "@/lib/cookpilot";
 import { hostnameOf as rawHostnameOf } from "@/lib/url";
@@ -233,17 +234,29 @@ export function useQueue() {
     [commit],
   );
 
+  // `origin` rides along purely for analytics: every import path funnels
+  // through here, so this is the one place that can report success and
+  // failure as a matched pair. Only the hostname is ever recorded, never the
+  // full URL — which site broke is useful, what someone is cooking is not
+  // ours to keep.
   const runParse = useCallback(
-    async (id: string, work: () => Promise<Recipe>) => {
+    async (
+      id: string,
+      origin: { source: ImportMethod; hostname?: string },
+      work: () => Promise<Recipe>,
+    ) => {
       patch(id, { status: "parsing", error: undefined });
+      track("recipe_import_started", origin);
       try {
         const recipe = await work();
         patch(id, { status: "ready", recipe, title: recipe.title || "Untitled recipe" });
+        track("recipe_imported", origin);
       } catch (err) {
         patch(id, {
           status: "error",
           error: err instanceof Error ? err.message : "Something went wrong while parsing.",
         });
+        track("recipe_import_failed", { ...origin, reason: truncateReason(err) });
       }
     },
     [patch],
@@ -276,7 +289,9 @@ export function useQueue() {
         addedAt: Date.now(),
       };
       commit([...itemsRef.current, item]);
-      void runParse(id, () => parseUrl(normalizedUrl));
+      void runParse(id, { source: "url", hostname: hostnameOf(normalizedUrl) }, () =>
+        parseUrl(normalizedUrl),
+      );
     },
     [commit, focusItem, runParse],
   );
@@ -294,7 +309,7 @@ export function useQueue() {
         addedAt: Date.now(),
       };
       commit([...itemsRef.current, item]);
-      void runParse(id, () => parseImages(images));
+      void runParse(id, { source: "image" }, () => parseImages(images));
     },
     [commit, runParse],
   );
@@ -316,7 +331,7 @@ export function useQueue() {
       };
       textPayloads.current.set(id, trimmed);
       commit([...itemsRef.current, item]);
-      void runParse(id, () => parseText(trimmed));
+      void runParse(id, { source: "text" }, () => parseText(trimmed));
     },
     [commit, runParse],
   );
@@ -328,6 +343,12 @@ export function useQueue() {
       const nextRecipes = recipes.filter((recipe) => !existingIds.has(recipe.id));
       if (nextRecipes.length === 0) return 0;
       commit([...itemsRef.current, ...nextRecipes]);
+      // These arrive already parsed, so they never touch runParse — count them
+      // here or the CookPilot path silently misses from every import total.
+      // No started/failed pair: there's no parse step that could fail.
+      nextRecipes.forEach((recipe) => {
+        track("recipe_imported", { source: recipe.method });
+      });
       return nextRecipes.length;
     },
     [commit],
@@ -346,10 +367,10 @@ export function useQueue() {
       if (!item) return;
       if (item.method === "url" && item.originalUrl) {
         const url = item.originalUrl;
-        void runParse(id, () => parseUrl(url));
+        void runParse(id, { source: "url", hostname: hostnameOf(url) }, () => parseUrl(url));
       } else if (item.method === "text") {
         const text = textPayloads.current.get(id);
-        if (text) void runParse(id, () => parseText(text));
+        if (text) void runParse(id, { source: "text" }, () => parseText(text));
       }
     },
     [runParse],

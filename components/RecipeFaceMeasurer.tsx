@@ -523,6 +523,11 @@ export function RecipeFaceMeasurer({
               continued={i > 0}
               contentScale={page.contentScale}
               template={template}
+              // This whole subtree is `visibility: hidden` and only ever read
+              // for `.recipe-card__cols` geometry (see lib/faceMeasure.ts).
+              // The decorative layer is absolutely positioned, so it changes
+              // nothing this measures — it was pure cost.
+              showDecoration={false}
             />
           </div>
         ))}

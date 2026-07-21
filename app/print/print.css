@@ -563,6 +563,52 @@
   pointer-events: none;
 }
 
+/* Flat stand-ins for the template decoration the rail thumbnails no longer
+   render (`showDecoration={false}` — see `TemplateDecoration` in
+   components/RecipeCardPrint.tsx). At the rail's ~1/11 scale a 0.24in
+   checkerboard is under a pixel and a 0.3in BBQ icon is illegible, so the real
+   motifs cost hundreds of nodes each to draw mush; what actually survives the
+   downscale is a bar of colour in the right place. These paint exactly that,
+   from the same colours and geometry as the real thing, so a template is still
+   recognizable at a glance in the rail.
+
+   Safe as gradients specifically because the rail is `.no-print`: the reason
+   the real motifs are SVG geometry at all is that Chrome's print pipeline
+   pre-rasterizes tiled gradients (see `BistroCheckerSpine`), and nothing here
+   is ever printed. */
+.recipe-page-rail__thumb .recipe-template--bistro .recipe-card::after,
+.recipe-page-rail__thumb .recipe-template--counter .recipe-card::after,
+.recipe-page-rail__thumb .recipe-template--cookout .recipe-card::after {
+  content: "";
+  position: absolute;
+  pointer-events: none;
+}
+
+/* Bistro: the checker spine down the left edge, as its blue. */
+.recipe-page-rail__thumb .recipe-template--bistro .recipe-card::after {
+  top: 0;
+  bottom: 0;
+  left: 0;
+  width: 0.24in;
+  background: #1479c9;
+}
+
+/* Counter: the sawtooth band, as its solid core bar. */
+.recipe-page-rail__thumb .recipe-template--counter .recipe-card::after {
+  top: 0.14in;
+  left: 0;
+  right: 0;
+  height: 0.24in;
+  background: #2f2f2f;
+}
+
+/* Cookout: the icon border, as the warm rule it reads as when shrunk. */
+.recipe-page-rail__thumb .recipe-template--cookout .recipe-card::after {
+  inset: 0.06in;
+  border: 0.05in solid #c4622d;
+  border-radius: 0.06in;
+}
+
 .recipe-page-scaler__inner {
   width: var(--page-w);
   transform: scale(var(--page-scale));
