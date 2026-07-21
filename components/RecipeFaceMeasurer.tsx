@@ -14,6 +14,7 @@ import {
   OVERFLOW_TOLERANCE_PX,
   blankStackedFace,
   colsOverflowPx,
+  faceMeasureDetail,
   isEmptyFace,
   realItemHeights,
 } from "@/lib/faceMeasure";
@@ -63,6 +64,13 @@ const MAX_SETTLE_PASSES = 12;
 // Extra room, beyond the line's own height, that a face must have spare before
 // the pull will move content up into it. See the pull site for why.
 const PULL_HYSTERESIS_PX = 12;
+
+// Floor on shrink-to-fit. A face whose single remaining item still overflows
+// can only be rescued by smaller type, but there's a point past which the card
+// stops being readable at arm's length on a kitchen counter — better to clip a
+// truly absurd step than to print something nobody can read. 0.75 buys back a
+// third of the height, which covers the realistic "one very long step" case.
+const MIN_CONTENT_SCALE = 0.75;
 
 interface PopResult {
   shrunk: RecipeFace;
@@ -316,12 +324,34 @@ export function RecipeFaceMeasurer({
       clearTimeout(timer);
     };
 
+    // Last-resort guarantee that nothing is ever reported clipped. Reached only
+    // when the pass budget ran out without any fully-fitting arrangement — in
+    // practice a card whose own column layout is bistable, so measurements
+    // disagree pass to pass and the split never converges. Pagination has
+    // demonstrably failed by this point, so shrink whatever still overflows
+    // until it fits. Cutting a step off mid-sentence is the one outcome that
+    // makes a printed card useless; slightly smaller type is not.
+    function shrinkOverflowingFaces(current: RecipeFace[]): RecipeFace[] {
+      return current.map((face, i) => {
+        const cardEl = cardRefs.current[i];
+        if (!cardEl) return face;
+        const overflowPx = colsOverflowPx(cardEl);
+        if (overflowPx <= OVERFLOW_TOLERANCE_PX) return face;
+        const { availableHeightPx } = faceMeasureDetail(cardEl);
+        const contentHeight = availableHeightPx + overflowPx;
+        if (availableHeightPx <= 0 || contentHeight <= 0) return face;
+        const needed = (availableHeightPx / contentHeight) * 0.98;
+        const scale = Math.max(MIN_CONTENT_SCALE, (face.contentScale ?? 1) * needed);
+        return scale < (face.contentScale ?? 1) ? { ...face, contentScale: scale } : face;
+      });
+    }
+
     function runPass() {
     if (passRef.current >= MAX_SETTLE_PASSES) {
       settledRef.current = true;
       // Prefer the best fitting arrangement seen over whatever oscillating
       // state the pass clock happened to stop on (see `bestFitRef`).
-      onSettled(bestFitRef.current ?? pages);
+      onSettled(bestFitRef.current ?? shrinkOverflowingFaces(pages));
       return;
     }
     passRef.current += 1;
@@ -351,6 +381,25 @@ export function RecipeFaceMeasurer({
           forcedStackedRef.current = true;
           restartStacked = true;
           break;
+        }
+        continue;
+      }
+
+      // A face down to a single item that still overflows is the one case
+      // pagination cannot win: popping it would empty this face and hand the
+      // same item to the next one, where it overflows identically — the loop
+      // would shuffle it forward forever. Shrink it to fit instead.
+      if (page.ingredients.length + page.instructions.length === 1) {
+        const { availableHeightPx } = faceMeasureDetail(cardEl);
+        const contentHeight = availableHeightPx + overflowPx;
+        if (availableHeightPx > 0 && contentHeight > 0) {
+          // 0.98 so it lands just inside the edge rather than exactly on it.
+          const needed = (availableHeightPx / contentHeight) * 0.98;
+          const nextScale = Math.max(MIN_CONTENT_SCALE, (page.contentScale ?? 1) * needed);
+          if (nextScale < (page.contentScale ?? 1)) {
+            next[i] = { ...page, contentScale: nextScale };
+            changed = true;
+          }
         }
         continue;
       }
@@ -472,6 +521,7 @@ export function RecipeFaceMeasurer({
               showImage={i === 0 && hasPhoto}
               showSourceUrl={showSourceUrl}
               continued={i > 0}
+              contentScale={page.contentScale}
               template={template}
             />
           </div>

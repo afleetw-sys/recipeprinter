@@ -648,6 +648,14 @@ export interface RecipeFace {
   ingredients: Recipe["ingredients"];
   instructions: Recipe["instructions"];
   layout: CardSectionLayout;
+  /**
+   * Shrink-to-fit factor for this face's content, 1 = unscaled. Set only by
+   * the measurement pass, and only for a face that pagination genuinely
+   * cannot rescue: one whose remaining content is a single unbreakable item
+   * still taller than the card. Moving that item to its own face doesn't help
+   * — it overflows there too — so the sole remaining lever is smaller type.
+   */
+  contentScale?: number;
 }
 
 export interface RecipeFaces {

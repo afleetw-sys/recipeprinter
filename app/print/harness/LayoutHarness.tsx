@@ -214,6 +214,7 @@ function FaceSetProbe({
               showImage={i === 0 && hasPhoto}
               showSourceUrl={showSourceUrl}
               continued={i > 0}
+              contentScale={page.contentScale}
               template={template}
             />
           </div>
@@ -318,7 +319,11 @@ function ComboRunner({
       }
       const inv7NoUnderfill = worstUnderfillPx <= UNDERFILL_TOLERANCE_PX;
       const settledShape = settled
-        .map((p, i) => `${p.ingredients.length}i/${p.instructions.length}s(${p.layout})@${round(details[i]?.overflowPx ?? 0)}`)
+        .map(
+          (p, i) =>
+            `${p.ingredients.length}i/${p.instructions.length}s(${p.layout})@${round(details[i]?.overflowPx ?? 0)}` +
+            (p.contentScale && p.contentScale < 1 ? `x${p.contentScale.toFixed(2)}` : ""),
+        )
         .join(" · ");
 
       onResult({

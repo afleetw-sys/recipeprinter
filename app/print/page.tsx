@@ -253,6 +253,7 @@ const ScaledPage = memo(function ScaledPage({
                     side="front"
                     showHeader={!slot.isContinuation}
                     layout={slot.front.layout}
+                    contentScale={slot.front.contentScale}
                     hasBackFace={slot.hasBack}
                     showImage={showImage}
                     showSourceUrl={showSourceUrl}
@@ -288,6 +289,7 @@ const ScaledPage = memo(function ScaledPage({
                       side="back"
                       showHeader={false}
                       layout={slot.back.layout}
+                      contentScale={slot.back.contentScale}
                       hasBackFace={slot.hasBack}
                       template={template}
                       continued
