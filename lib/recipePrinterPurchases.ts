@@ -12,6 +12,7 @@ import {
   RECIPEPRINTER_OFFERING_ID,
   type PremiumRecipePrintTemplate,
 } from "@/lib/premiumTemplates";
+import { isProductionRuntime } from "@/lib/appEnvironment";
 import {
   RECIPEPRINTER_COOKBOOK_ENTITLEMENT_ID,
   RECIPEPRINTER_COOKBOOK_OFFERING_ID,
@@ -27,6 +28,8 @@ let configuredUserId: string | null = null;
 let configuringPromise: Promise<Purchases> | null = null;
 
 const RECIPEPRINTER_CUSTOMER_STORAGE_KEY = "recipeprinter:revenuecat-user-id:v1";
+const RECIPEPRINTER_KNOWN_CUSTOMER_STORAGE_KEY =
+  "recipeprinter:revenuecat-known-customer:v1";
 const RECIPEPRINTER_LINKED_UID_STORAGE_KEY = "recipeprinter:revenuecat-linked-uid:v1";
 
 // A page refresh always looks like "just signed in" to Firebase Auth (the
@@ -46,6 +49,37 @@ function markRecipePrinterCustomerLinked(uid: string): void {
   if (typeof window === "undefined") return;
   try {
     window.localStorage.setItem(RECIPEPRINTER_LINKED_UID_STORAGE_KEY, uid);
+  } catch {
+    /* ignore */
+  }
+}
+
+/**
+ * Has this browser ever had a reason to exist in RevenueCat?
+ *
+ * RevenueCat is a billing ledger: a customer record should mean "someone with
+ * a purchase relationship", not "someone who opened the site". Calling
+ * `configure()` is what mints that record, so it's deferred until there is
+ * actually something to find — a purchase, a claimed free template, or a
+ * signed-in account that might own either. A first-time anonymous visitor has
+ * no entitlements *by definition*, so asking RevenueCat about them is a
+ * guaranteed empty answer bought with a permanent row in the customer list.
+ */
+function isKnownRecipePrinterCustomer(): boolean {
+  if (typeof window === "undefined") return false;
+  try {
+    return (
+      window.localStorage.getItem(RECIPEPRINTER_KNOWN_CUSTOMER_STORAGE_KEY) === "1"
+    );
+  } catch {
+    return false;
+  }
+}
+
+function markRecipePrinterCustomerKnown(): void {
+  if (typeof window === "undefined") return;
+  try {
+    window.localStorage.setItem(RECIPEPRINTER_KNOWN_CUSTOMER_STORAGE_KEY, "1");
   } catch {
     /* ignore */
   }
@@ -82,6 +116,17 @@ export async function recipePrinterCustomerId(): Promise<string> {
   }
 }
 
+/**
+ * Configures the SDK, creating the RevenueCat customer if it doesn't exist.
+ *
+ * Read that again before adding a caller: reaching this function is what puts
+ * a row in the customer list, permanently. It is only legitimate once the user
+ * has shown purchase intent, signed in, or already bought something. Loading
+ * anything "just to have it ready" on mount — prices, entitlements, offerings
+ * — turns every visitor into a customer record. That mistake has been made
+ * three separate times in this file's callers; `loadRecipePrinterCustomerInfo`
+ * exists precisely so the read-only path can't.
+ */
 async function getPurchases(userId: string): Promise<Purchases> {
   const { Purchases } = await loadPurchasesModule();
 
@@ -114,6 +159,11 @@ async function getPurchases(userId: string): Promise<Purchases> {
         const instance = Purchases.configure({ apiKey, appUserId: userId });
         purchasesInstance = instance;
         configuredUserId = userId;
+        // This call is what creates the customer record, so this is the
+        // honest moment to record that one now exists. Marking here rather
+        // than at each call site means every future path — purchase, login,
+        // price lookup — stays covered without having to remember.
+        markRecipePrinterCustomerKnown();
         return instance;
       } catch (error) {
         configuringPromise = null;
@@ -125,19 +175,6 @@ async function getPurchases(userId: string): Promise<Purchases> {
   return configuringPromise;
 }
 
-/**
- * Registers this browser as a RevenueCat customer. Called the moment a user
- * imports a recipe (any path — URL, photo, pasted text, CookPilot), not on
- * every page view: RevenueCat has no concept of "just looking," so eagerly
- * configuring on mount was minting a customer record for every drive-by
- * visit to the print page, including ones with nothing to print.
- */
-export async function ensureRecipePrinterCustomer(): Promise<string> {
-  const userId = await recipePrinterCustomerId();
-  await getPurchases(userId);
-  return userId;
-}
-
 export function hasTemplateEntitlement(
   customerInfo: CustomerInfo | null,
   template: PremiumRecipePrintTemplate,
@@ -145,9 +182,17 @@ export function hasTemplateEntitlement(
   return Boolean(customerInfo?.entitlements.active[entitlementForTemplate(template)]);
 }
 
+/**
+ * Entitlements for a customer we already know exists.
+ *
+ * Returns null — without configuring, and so without creating anything — when
+ * this browser has never purchased, claimed, or signed in. Callers treat null
+ * exactly as "owns nothing", which is what it means.
+ */
 export async function loadRecipePrinterCustomerInfo(
   userId: string,
-): Promise<CustomerInfo> {
+): Promise<CustomerInfo | null> {
+  if (!isKnownRecipePrinterCustomer()) return null;
   return getPurchases(userId).then((purchases) => purchases.getCustomerInfo());
 }
 
@@ -190,6 +235,9 @@ export async function syncRecipePrinterCustomerAttributes({
   const purchases = await getPurchases(userId);
   await purchases.setAttributes({
     recipeprinter_customer_id: userId,
+    // Lets a Customer List filter on environment in the dashboard, so any
+    // test record that slips through is findable without matching id strings.
+    environment: isProductionRuntime() ? "production" : "development",
     ...(email ? { $email: email } : {}),
     ...(displayName ? { $displayName: displayName } : {}),
   });

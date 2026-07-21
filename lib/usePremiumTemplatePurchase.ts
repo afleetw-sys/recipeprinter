@@ -90,6 +90,10 @@ export function usePremiumTemplatePurchase({
   async function refreshCustomerInfo(userId = revenueCatUserId): Promise<CustomerInfo | null> {
     if (!userId) return null;
     const info = await loadRecipePrinterCustomerInfo(userId);
+    // null means this browser has never bought, claimed, or signed in — so
+    // there is no customer to read or annotate, and creating one just to
+    // write attributes is the leak this gate exists to stop.
+    if (!info) return null;
     syncRecipePrinterCustomerAttributes({
       userId,
     }).catch((error) => {
@@ -172,11 +176,11 @@ export function usePremiumTemplatePurchase({
   }
 
   useEffect(() => {
-    // Gated on having something to print: this only reads back the id an
-    // import already registered (see registerRevenueCatCustomer in
-    // lib/queue.ts). Wait for Firebase's initial auth restore first so a
-    // signed-in browser does not briefly load anonymous entitlements and mark
-    // owned templates as locked.
+    // Gated on having something to print. This only reads (or mints locally)
+    // the anonymous id — it does not configure the SDK, so no RevenueCat
+    // customer exists until there's a purchase, a claim, or a login. Wait for
+    // Firebase's initial auth restore first so a signed-in browser does not
+    // briefly load anonymous entitlements and mark owned templates as locked.
     if (!items || items.length === 0 || !cookPilotAuthReady) return;
 
     const requestId = identityRequestRef.current + 1;
@@ -241,11 +245,15 @@ export function usePremiumTemplatePurchase({
   }, [revenueCatUserId]);
 
   useEffect(() => {
-    if (!revenueCatUserId) return;
+    // Prices come from RevenueCat offerings, and reading offerings means
+    // configuring the SDK — which mints the customer record. So this waits
+    // for the unlock dialog to actually open: the first unambiguous signal of
+    // purchase intent, and the only place a price is ever rendered.
+    if (!revenueCatUserId || !showUnlockDialog) return;
     loadRecipePrinterTemplatePrices(revenueCatUserId)
       .then(setTemplatePrices)
       .catch(() => setTemplatePrices({}));
-  }, [revenueCatUserId]);
+  }, [revenueCatUserId, showUnlockDialog]);
 
   return {
     revenueCatUserId,

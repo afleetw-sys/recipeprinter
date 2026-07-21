@@ -11,6 +11,9 @@ out/
 .env.local
 .env.*.local
 
+# audit/prune output — contains customer ids, never commit it
+revenuecat-*.csv
+
 # misc
 .DS_Store
 *.pem

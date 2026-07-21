@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from "next";
 import { Birthstone, Gochi_Hand, Manrope, Playfair_Display } from "next/font/google";
 import "./globals.css";
 import { KeyboardInsetWatcher } from "@/components/KeyboardInsetWatcher";
+import { AnalyticsProvider } from "@/components/AnalyticsProvider";
 import {
   SITE_URL,
   SITE_NAME,
@@ -21,10 +22,23 @@ const manrope = Manrope({
 
 // Playfair Display, reserved for printed recipe titles only, giving the
 // printed page a cookbook identity without touching CookPilot's sans-serif UI.
+//
+// preload: false on the three fonts below (Playfair + the two decorative
+// scripts). They're only ever painted inside recipe-card templates and the
+// template-picker samples — never in the marketing shell (header, hero,
+// landing copy, footer all use Manrope). Declaring them in the root layout
+// makes next/font treat them as "used" on every route and inject a
+// render-blocking <link rel="preload"> for each, so the homepage and every
+// SEO landing page (which carry the organic traffic and never show a card on
+// first paint) were downloading three extra font files in competition with
+// LCP. With preload off they still resolve via `display: swap` the instant a
+// card or sample first needs them; the marketing pages just stop paying for
+// them up front.
 const playfair = Playfair_Display({
   subsets: ["latin"],
   variable: "--font-playfair",
   display: "swap",
+  preload: false,
 });
 
 const birthstone = Birthstone({
@@ -32,6 +46,7 @@ const birthstone = Birthstone({
   weight: "400",
   variable: "--font-birthstone",
   display: "swap",
+  preload: false,
 });
 
 const gochiHand = Gochi_Hand({
@@ -39,6 +54,7 @@ const gochiHand = Gochi_Hand({
   weight: "400",
   variable: "--font-gochi-hand",
   display: "swap",
+  preload: false,
 });
 
 // resizes-content: on-screen keyboards shrink the layout viewport instead of
@@ -114,6 +130,7 @@ export default function RootLayout({
     >
       <body>
         <KeyboardInsetWatcher />
+        <AnalyticsProvider />
         {children}
       </body>
     </html>

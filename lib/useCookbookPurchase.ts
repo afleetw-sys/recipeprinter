@@ -47,11 +47,14 @@ export function useCookbookPurchase({
   const cookbookLocked = cookbookMode && !cookbookUnlocked;
 
   useEffect(() => {
-    if (!revenueCatUserId) return;
+    // Same rule as the template prices: reading offerings configures the SDK,
+    // which mints the customer record. Wait for the unlock dialog — the price
+    // is only rendered there, and opening it is real purchase intent.
+    if (!revenueCatUserId || !showCookbookUnlockDialog) return;
     loadRecipePrinterCookbookPrice(revenueCatUserId)
       .then(setCookbookPrice)
       .catch(() => setCookbookPrice(undefined));
-  }, [revenueCatUserId]);
+  }, [revenueCatUserId, showCookbookUnlockDialog]);
 
   /** Buys the cookbook entitlement, then hands control back to `onUnlocked`
       (typically re-running the export/print gate) rather than printing
