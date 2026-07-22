@@ -8,6 +8,7 @@ import { SiteHeader } from "@/components/SiteHeader";
 import { FeedbackDialog } from "@/components/FeedbackButton";
 import { Select } from "@/components/Select";
 import { Dialog } from "@/components/Dialog";
+import { useModalFocus } from "@/components/useModalFocus";
 import {
   PRINT_CARD_SIZE_OPTIONS,
   RECIPE_PRINT_TEMPLATE_OPTIONS,
@@ -661,6 +662,14 @@ export default function PrintPage() {
 
   const [activeNavIndex, setActiveNavIndex] = useState(0);
   const [mobileDrawer, setMobileDrawer] = useState<"template" | null>(null);
+  // The print-setup panel is a persistent sidebar on desktop and a modal
+  // drawer on mobile, so it can only claim to be a dialog in the second case.
+  // While it is one, it gets a real focus trap and Escape-to-close — it
+  // previously carried `aria-modal` on an `<aside>`, where the attribute is
+  // silently ignored (it's only honoured on role dialog/alertdialog), so the
+  // promise of modality was never actually kept for assistive tech.
+  const configPanelRef = useRef<HTMLElement>(null);
+  useModalFocus(configPanelRef, () => setMobileDrawer(null), { disabled: !mobileDrawer });
   const [sizeMenuOpen, setSizeMenuOpen] = useState(false);
   const [settingsMenuOpen, setSettingsMenuOpen] = useState(false);
 
@@ -894,6 +903,21 @@ export default function PrintPage() {
     void handlePrint();
   }
 
+  // Always the current `handlePrint`, for the auto-print effect below.
+  //
+  // That effect fires exactly once, on a 350ms timer, and `handlePrint` is a
+  // fresh closure every render over eight changing values. Listing it as a
+  // dependency — what the lint rule asks for — actively breaks the feature:
+  // the effect re-runs on the very next render, its cleanup clears the pending
+  // timeout, and `autoPrintAttemptedRef` (already true by then) stops it
+  // rescheduling, so the print dialog never opens at all. Reading the latest
+  // function off a ref instead means the effect depends only on the conditions
+  // that should actually re-trigger it, and still calls the current closure.
+  const handlePrintRef = useRef(handlePrint);
+  useEffect(() => {
+    handlePrintRef.current = handlePrint;
+  });
+
   const moveProjectItem = projectMeta.moveItem;
 
   useEffect(() => {
@@ -1060,7 +1084,7 @@ export default function PrintPage() {
       !autoPrintAttemptedRef.current
     ) {
       autoPrintAttemptedRef.current = true;
-      const t = window.setTimeout(() => void handlePrint(), 350);
+      const t = window.setTimeout(() => void handlePrintRef.current(), 350);
       return () => window.clearTimeout(t);
     }
   }, [
@@ -1594,11 +1618,14 @@ export default function PrintPage() {
         )}
 
         <aside
+          ref={configPanelRef}
           className={`recipe-config-panel no-print ${
             mobileDrawer ? "is-mobile-open" : ""
           }`}
           aria-label="Recipe print settings"
+          role={mobileDrawer ? "dialog" : undefined}
           aria-modal={mobileDrawer ? "true" : undefined}
+          tabIndex={mobileDrawer ? -1 : undefined}
           data-mobile-drawer={mobileDrawer ?? undefined}
         >
           <div className="recipe-config-panel__header">

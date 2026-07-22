@@ -60,6 +60,14 @@ export default function OpengraphImage() {
               border: "2px solid rgba(255,255,255,0.5)",
             }}
           >
+            {/* Not next/image, and the LCP advice the rule is giving doesn't
+                apply here: this tree is never rendered in a browser. Satori
+                rasterizes it to a PNG inside `ImageResponse`, and it supports
+                a small subset of HTML/CSS in which `next/image` — a React
+                client component — cannot run at all. `<img>` with a base64
+                data URI is the documented way to place an image in an OG
+                card. */}
+            {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
               src={logoUrl}
               alt=""
