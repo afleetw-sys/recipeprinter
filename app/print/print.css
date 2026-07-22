@@ -3085,9 +3085,16 @@
   print-color-adjust: exact;
 }
 
+/* Entering edit mode must not move the photo. `place-items: center` used to be
+   here to centre the "add a photo" placeholder, but it also stopped the real
+   image being stretched to the frame: `.recipe-card__photo-img`'s `height:
+   100%` fell back to the intrinsic aspect (a 240x180 source rendered 336x252
+   inside a 340x120 box), so `object-fit: cover` cropped from a different box
+   and the picture visibly jumped the moment Edit was clicked. The placeholder
+   sizes and centres itself (`width/height: 100%` plus its own grid), so it
+   never needed this — only `overflow: hidden` is doing real work, keeping the
+   image inside the frame's corners. */
 .recipe-card__photo--editable {
-  display: grid;
-  place-items: center;
   overflow: hidden;
 }
 
