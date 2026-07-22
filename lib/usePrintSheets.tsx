@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { getRecipeFaces, recipeNeedsBackSide, type RecipeFace } from "@/lib/recipeCardLayout";
 import type { PrintCardSize, RecipePrintTemplate } from "@/components/RecipeCardPrint";
 import { RecipeFaceMeasurer } from "@/components/RecipeFaceMeasurer";
@@ -469,13 +469,51 @@ export function usePrintSheets({
     </>
   );
 
+  // ── Double-buffering ──────────────────────────────────────────────────────
+  // The preview paints the last COMPLETE layout, never a half-finished one.
+  //
+  // `sheets` above falls back to `getRecipeFaces`' character-budget guess for
+  // anything not yet measured, and that guess visibly disagrees with the
+  // measured result — which is what used to make a card reflow in front of the
+  // user. Blanking the preview while measuring hid the reflow but replaced it
+  // with the whole preview vanishing on every settings change, which reads far
+  // worse: toggling one checkbox emptied the screen for a beat.
+  //
+  // So keep the previous layout on screen and swap the whole thing in one go
+  // once the new measurement lands, the way a drawing app keeps showing the
+  // last frame while it renders the next. Nothing here touches how layout is
+  // measured — it only decides which finished layout is on screen.
+  //
+  // The committed config travels WITH its sheets. Card size and template must
+  // not update ahead of the faces they belong to, or the card would briefly
+  // wear 6x4 chrome while still holding letter pagination — which is exactly
+  // the clipping this all exists to prevent.
+  const committedLayout = useMemo(
+    () => ({ sheets, navItems, cardSize, template, photosOn, sourceUrlOn, doubleSided }),
+    [sheets, navItems, cardSize, template, photosOn, sourceUrlOn, doubleSided],
+  );
+  type CommittedLayout = typeof committedLayout;
+  // `null` until the very first measurement lands. On a cold load there is no
+  // previous frame to hold, so the caller shows a placeholder — but only then.
+  const [displayedLayout, setDisplayedLayout] = useState<CommittedLayout | null>(null);
+  useEffect(() => {
+    if (printLayoutReady || measuredRecipeItems.length === 0) {
+      setDisplayedLayout(committedLayout);
+    }
+  }, [printLayoutReady, measuredRecipeItems.length, committedLayout]);
+
   return {
     hasRecipeBackSide,
     continueOnBack,
     measuredRecipeItems,
     printLayoutReady,
-    sheets,
-    navItems,
+    /** Sheets for the layout currently ON SCREEN (may lag by one measurement). */
+    sheets: displayedLayout?.sheets ?? [],
+    navItems: displayedLayout?.navItems ?? [],
+    /** The size/template/photo/link the displayed sheets were measured for. */
+    previewConfig: displayedLayout,
+    /** True only before the first layout has ever landed — nothing to show yet. */
+    awaitingFirstLayout: displayedLayout === null && measuredRecipeItems.length > 0,
     measurers,
   };
 }

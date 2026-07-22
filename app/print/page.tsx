@@ -30,6 +30,7 @@ import { useDeckScroller } from "@/lib/useDeckScroller";
 import { usePremiumTemplatePurchase } from "@/lib/usePremiumTemplatePurchase";
 import { useCookbookPurchase } from "@/lib/useCookbookPurchase";
 import { COOKBOOK_ENABLED } from "@/lib/cookbookProduct";
+import { localStore } from "@/lib/storage";
 import { track } from "@/lib/analytics";
 import {
   BookIcon,
@@ -337,20 +338,14 @@ const ScaledPage = memo(function ScaledPage({
 });
 
 function shouldShowPostPrintDialog() {
-  try {
-    const lastShown = Number(window.localStorage.getItem(POST_PRINT_DIALOG_STORAGE_KEY));
-    return !lastShown || Date.now() - lastShown >= POST_PRINT_DIALOG_INTERVAL_MS;
-  } catch {
-    return true;
-  }
+  // Unreadable or never shown both mean "show it" — the dialog is dismissible,
+  // so erring toward showing it is the cheap direction to be wrong in.
+  const lastShown = Number(localStore.get(POST_PRINT_DIALOG_STORAGE_KEY));
+  return !lastShown || Date.now() - lastShown >= POST_PRINT_DIALOG_INTERVAL_MS;
 }
 
 function markPostPrintDialogShown() {
-  try {
-    window.localStorage.setItem(POST_PRINT_DIALOG_STORAGE_KEY, String(Date.now()));
-  } catch {
-    /* Ignore storage failures; the dialog can still be dismissed normally. */
-  }
+  localStore.set(POST_PRINT_DIALOG_STORAGE_KEY, String(Date.now()));
 }
 
 function initialPrintCardSize(value: string | null): PrintCardSize {
@@ -451,6 +446,8 @@ export default function PrintPage() {
     measuredRecipeItems,
     sheets,
     navItems,
+    previewConfig,
+    awaitingFirstLayout,
     measurers,
   } = usePrintSheets({
     sections,
@@ -464,15 +461,21 @@ export default function PrintPage() {
     template,
   });
 
-  // True while a recipe's real layout is still being measured. `sheets` falls
-  // back to `getRecipeFaces`' character-budget guess for anything unmeasured,
-  // and that guess routinely disagrees with the measured result — which is
-  // what produced the "it starts as two pages, then a second later reflows
-  // onto one" jump. The faces are kept in the tree (the rail, page counts and
-  // scroll positions all depend on them) but held visually blank until the
-  // measured layout is in, so the guess is never a thing the user sees. An
-  // empty project has nothing to measure and must not sit blank forever.
-  const previewMeasuring = measuredRecipeItems.length > 0 && !printLayoutReady;
+  // The preview is double-buffered (see `usePrintSheets`): it keeps painting the
+  // last complete layout while a new one is measured, so a settings change no
+  // longer empties the screen. The placeholder is therefore only for a cold
+  // load, when there is genuinely no previous frame to hold.
+  const previewMeasuring = awaitingFirstLayout;
+
+  // Size/template/photo/link AS THE DISPLAYED SHEETS WERE MEASURED. Reading the
+  // live settings here instead would let the card change size a beat before its
+  // pagination caught up — 6x4 chrome around letter-paginated content, which is
+  // the clipping this whole system exists to prevent. Falls back to the live
+  // values only before the first layout lands, when nothing is drawn anyway.
+  const previewCardSize = previewConfig?.cardSize ?? cardSize;
+  const previewTemplate = previewConfig?.template ?? template;
+  const previewPhotosOn = previewConfig?.photosOn ?? photosOn;
+  const previewSourceUrlOn = previewConfig?.sourceUrlOn ?? sourceUrlOn;
 
   // Section headers in the rail are an organizational grouping shown for any
   // named section, independent of whether that section also gets a printed
@@ -682,12 +685,12 @@ export default function PrintPage() {
     activeNavIndex,
     setActiveNavIndex,
     navItemsLength: navItems.length,
-    cardSize,
+    cardSize: previewCardSize,
     sheetsLength: sheets.length,
     continueOnBack,
     singleRecipePrintView,
-    pageWidth: PAGE_DIMS[cardSize].w,
-    pageHeight: PAGE_DIMS[cardSize].h,
+    pageWidth: PAGE_DIMS[previewCardSize].w,
+    pageHeight: PAGE_DIMS[previewCardSize].h,
   });
 
   const activeRecipeId = navItems[activeNavIndex]?.recipeId ?? null;
@@ -1180,7 +1183,7 @@ export default function PrintPage() {
         }`}
       >
         <nav
-          className={`recipe-page-rail recipe-page-rail--${cardSize} no-print`}
+          className={`recipe-page-rail recipe-page-rail--${previewCardSize} no-print`}
           aria-label="Pages"
         >
           {projectMeta.meta.cookbookMode && !projectMeta.meta.cover && (
@@ -1256,11 +1259,11 @@ export default function PrintPage() {
                         activeSlotIndex={navItem.slotIndex}
                         activeSide="front"
                         scale={RAIL_SCALE[cardSize]}
-                        size={cardSize}
-                        template={template}
+                        size={previewCardSize}
+                        template={previewTemplate}
                         doubleSided={continueOnBack}
-                        showImage={photosOn}
-                        showSourceUrl={sourceUrlOn}
+                        showImage={previewPhotosOn}
+                        showSourceUrl={previewSourceUrlOn}
                         showCutLines={false}
                         showDecoration={false}
                       />
@@ -1452,7 +1455,7 @@ export default function PrintPage() {
                       className="recipe-page-canvas__controls no-print"
                       style={
                         {
-                          "--preview-w": `${PAGE_DIMS[cardSize].w * deckScale}px`,
+                          "--preview-w": `${PAGE_DIMS[previewCardSize].w * deckScale}px`,
                         } as CSSProperties
                       }
                     >
@@ -1533,10 +1536,10 @@ export default function PrintPage() {
                     activeSlotIndex={navItem.slotIndex}
                     activeSide={isActive ? canvasSide : "front"}
                     scale={deckScale}
-                    size={cardSize}
-                    template={template}
+                    size={previewCardSize}
+                    template={previewTemplate}
                     doubleSided={continueOnBack}
-                    showImage={photosOn}
+                    showImage={previewPhotosOn}
                     // While actively editing with the checkbox on, keep the link
                     // field visible even if deleting it just made this the only
                     // recipe without one (which flips the cross-recipe
