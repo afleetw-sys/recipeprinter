@@ -124,6 +124,30 @@ export function initAnalytics(): void {
     capture_pageview: false,
     // Keep the opt-out flag out of cookies, in keeping with the rest.
     opt_out_capturing_persistence_type: "localStorage",
+
+    // Everything below is PostHog's automatic capture, and every one of them
+    // defaults to ON. Left alone they produced ~60 events in a single browsing
+    // session — "clicked select", "right arrow", one per DOM interaction —
+    // which buries the dozen events we deliberately chose and burns the quota
+    // on noise nobody will ever query. The typed map above is the whole list
+    // of things worth recording; if we want a new one we add it there.
+    autocapture: false,
+    capture_heatmaps: false,
+    capture_dead_clicks: false,
+    // $web_vitals / network timing. Real data, but not what this is for.
+    capture_performance: false,
+    // surveys.js was being fetched and polled on every page load despite us
+    // having no surveys. Dead weight on a page whose whole selling point is
+    // printing quickly.
+    disable_surveys: true,
+
+    // Deliberately NOT disabled: $pageleave is one event per pageview and is
+    // what powers bounce rate and session duration in the Web Analytics
+    // dashboard. Turning it off would quietly break those numbers.
+    // capture_pageleave stays at its default.
+
+    // Session replay is off unless enabled in project settings; this just
+    // guarantees typed text is masked from the first recording if it ever is.
     session_recording: {
       maskAllInputs: true,
     },
