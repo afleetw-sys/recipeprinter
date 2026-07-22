@@ -7,7 +7,7 @@ import dynamic from "next/dynamic";
 import { SiteHeader } from "@/components/SiteHeader";
 import { FeedbackDialog } from "@/components/FeedbackButton";
 import { Select } from "@/components/Select";
-import { useModalFocus } from "@/components/useModalFocus";
+import { Dialog } from "@/components/Dialog";
 import {
   PRINT_CARD_SIZE_OPTIONS,
   RECIPE_PRINT_TEMPLATE_OPTIONS,
@@ -663,7 +663,6 @@ export default function PrintPage() {
   const [mobileDrawer, setMobileDrawer] = useState<"template" | null>(null);
   const [sizeMenuOpen, setSizeMenuOpen] = useState(false);
   const [settingsMenuOpen, setSettingsMenuOpen] = useState(false);
-  const printSettingsDialogRef = useRef<HTMLDivElement>(null);
 
   // Close the print-settings dialog if its trigger disappears (e.g. size
   // switches to letter with no back side), so it doesn't reopen stale next
@@ -674,9 +673,6 @@ export default function PrintPage() {
     }
   }, [hasRecipeBackSide, cardSize]);
 
-  useModalFocus(printSettingsDialogRef, () => setPrintSettingsOpen(false), {
-    disabled: !printSettingsOpen,
-  });
 
   const singleRecipePrintView =
     (items?.filter((item) => Boolean(item.recipe)).length ?? 0) === 1;
@@ -1816,30 +1812,25 @@ export default function PrintPage() {
           </div>
         </aside>
 
-        {printSettingsOpen && (
-          <div
-            ref={printSettingsDialogRef}
-            className="print-success-dialog no-print"
-            role="dialog"
-            aria-modal="true"
-            aria-labelledby="print-settings-dialog-title"
-            tabIndex={-1}
+        <Dialog
+          open={printSettingsOpen}
+          onClose={() => setPrintSettingsOpen(false)}
+          labelledBy="print-settings-dialog-title"
+          className="print-success-dialog no-print"
+          backdropClassName="print-success-dialog__backdrop"
+          panelClassName="print-success-dialog__panel"
+        >
+          <button
+            type="button"
+            className="print-success-dialog__close icon-close-btn"
+            aria-label="Close"
+            onClick={() => setPrintSettingsOpen(false)}
           >
-            <div className="print-success-dialog__backdrop" aria-hidden />
-            <div className="print-success-dialog__panel">
-              <button
-                type="button"
-                className="print-success-dialog__close icon-close-btn"
-                aria-label="Close"
-                onClick={() => setPrintSettingsOpen(false)}
-              >
-                <XIcon size={ICON_SIZE.md} />
-              </button>
-              <h2 id="print-settings-dialog-title">Print settings</h2>
-              <div className="print-settings-dialog__body">{renderPrintSettingsFields()}</div>
-            </div>
-          </div>
-        )}
+            <XIcon size={ICON_SIZE.md} />
+          </button>
+          <h2 id="print-settings-dialog-title">Print settings</h2>
+          <div className="print-settings-dialog__body">{renderPrintSettingsFields()}</div>
+        </Dialog>
 
         <div className="recipe-mobile-actions no-print">
           <div className="recipe-mobile-toolbar">

@@ -8,6 +8,7 @@ import {
   type PrintCardSize,
   type RecipePrintTemplate,
 } from "@/components/RecipeCardPrint";
+import { localStore } from "@/lib/storage";
 
 // Layout preferences carry over across visits (device-local, no account/sync)
 // so going back to add another recipe doesn't reset the print setup. Shared
@@ -25,24 +26,14 @@ export interface StoredPrintSettings {
 }
 
 export function readPrintSettings(): StoredPrintSettings | null {
-  if (typeof window === "undefined") return null;
-  try {
-    const raw = window.localStorage.getItem(PRINT_SETTINGS_STORAGE_KEY);
-    if (!raw) return null;
-    const parsed = JSON.parse(raw);
-    return parsed && typeof parsed === "object" ? (parsed as StoredPrintSettings) : null;
-  } catch {
-    return null;
-  }
+  const parsed = localStore.getJson<StoredPrintSettings>(PRINT_SETTINGS_STORAGE_KEY);
+  return parsed && typeof parsed === "object" ? parsed : null;
 }
 
 export function writePrintSettings(settings: Required<StoredPrintSettings>) {
-  if (typeof window === "undefined") return;
-  try {
-    window.localStorage.setItem(PRINT_SETTINGS_STORAGE_KEY, JSON.stringify(settings));
-  } catch {
-    /* localStorage may be unavailable (private mode); settings stay in memory */
-  }
+  // Survivable if it fails: settings stay correct for this session, they just
+  // won't carry over to the next visit.
+  localStore.setJson(PRINT_SETTINGS_STORAGE_KEY, settings);
 }
 
 export function isPrintCardSize(value: string | null): value is PrintCardSize {

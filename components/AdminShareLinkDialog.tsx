@@ -1,10 +1,9 @@
 "use client";
 
-import { useRef, useState, type FormEvent } from "react";
-import { createPortal } from "react-dom";
+import { useState, type FormEvent } from "react";
 import type { PrintCardSize, RecipePrintTemplate } from "@/components/RecipeCardPrint";
 import { ICON_SIZE, SpinnerIcon, XIcon } from "@/components/icons";
-import { useModalFocus } from "@/components/useModalFocus";
+import { Dialog } from "@/components/Dialog";
 import { createSharedRecipeCard, setSharedRecipeCardPublished } from "@/lib/sharedRecipeCards";
 import { printableRecipe } from "@/lib/queue";
 import { isValidSlug, slugify } from "@/types/sharedRecipeCard";
@@ -35,9 +34,6 @@ export function AdminShareLinkDialog({
   const [error, setError] = useState<string | null>(null);
   const [savedSlug, setSavedSlug] = useState<string | null>(null);
   const [deactivateBusy, setDeactivateBusy] = useState(false);
-  const dialogRef = useRef<HTMLDivElement | null>(null);
-
-  useModalFocus(dialogRef, onClose, { disabled: busy || deactivateBusy });
 
   async function handleSave(event: FormEvent) {
     event.preventDefault();
@@ -85,16 +81,15 @@ export function AdminShareLinkDialog({
 
   const shareUrl = savedSlug ? `${window.location.origin}/print/${savedSlug}` : null;
 
-  return createPortal(
-    <div
-      ref={dialogRef}
+  return (
+    <Dialog
+      onClose={onClose}
+      closeDisabled={busy || deactivateBusy}
+      label="Save as share link"
+      portal
       className="fixed inset-0 z-50 flex items-stretch sm:items-center justify-center bg-ink/30 p-0 sm:px-cp-4 sm:py-cp-6"
-      role="dialog"
-      aria-modal="true"
-      aria-label="Save as share link"
-      tabIndex={-1}
+      panelClassName="panel panel--modal w-full sm:max-w-[420px] h-full sm:h-auto rounded-none border-0 sm:rounded-2xl sm:border p-cp-5 flex flex-col gap-cp-4 relative overflow-y-auto"
     >
-      <div className="panel panel--modal w-full sm:max-w-[420px] h-full sm:h-auto rounded-none border-0 sm:rounded-2xl sm:border p-cp-5 flex flex-col gap-cp-4 relative overflow-y-auto">
         <button
           type="button"
           className="absolute right-3 top-3 icon-close-btn"
@@ -159,14 +154,12 @@ export function AdminShareLinkDialog({
           </form>
         )}
 
-        {error && (
-          <div className="state state--error" role="alert">
-            <h4>Couldn&apos;t save link</h4>
-            <p>{error}</p>
-          </div>
-        )}
-      </div>
-    </div>,
-    document.body,
+      {error && (
+        <div className="state state--error" role="alert">
+          <h4>Couldn&apos;t save link</h4>
+          <p>{error}</p>
+        </div>
+      )}
+    </Dialog>
   );
 }

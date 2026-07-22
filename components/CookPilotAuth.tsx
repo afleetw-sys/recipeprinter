@@ -20,7 +20,8 @@ import {
 import { httpsCallable } from "firebase/functions";
 import { getFirebaseAuth } from "@/lib/firebase/client";
 import { friendlyAuthError } from "@/lib/friendlyErrors";
-import { useModalFocus } from "@/components/useModalFocus";
+import { localStore } from "@/lib/storage";
+import { Dialog } from "@/components/Dialog";
 import { ICON_SIZE, SpinnerIcon, XIcon } from "@/components/icons";
 
 /* ──────────────────────────────────────────────────────────────────────────
@@ -63,25 +64,18 @@ export async function purgeAnonymousUser(user: User) {
 }
 
 function readCookPilotWasSignedIn(): boolean {
-  if (typeof window === "undefined") return true;
-  try {
-    return window.localStorage.getItem(COOKPILOT_SIGNED_IN_STORAGE_KEY) === "true";
-  } catch {
-    return true;
-  }
+  // Can't tell — assume they were. An absent key means "not signed in", but
+  // an *unreadable* one must not: guessing "signed out" here would flash a
+  // logged-out UI at someone whose Firebase session is about to rehydrate.
+  if (!localStore.available()) return true;
+  return localStore.get(COOKPILOT_SIGNED_IN_STORAGE_KEY) === "true";
 }
 
 function rememberCookPilotSignedIn(signedIn: boolean) {
-  if (typeof window === "undefined") return;
-  try {
-    if (signedIn) {
-      window.localStorage.setItem(COOKPILOT_SIGNED_IN_STORAGE_KEY, "true");
-    } else {
-      window.localStorage.removeItem(COOKPILOT_SIGNED_IN_STORAGE_KEY);
-    }
-  } catch {
-    /* localStorage can be unavailable; Firebase auth remains the source of truth. */
-  }
+  // Firebase auth remains the source of truth either way; this only decides
+  // whether the first paint waits for it.
+  if (signedIn) localStore.set(COOKPILOT_SIGNED_IN_STORAGE_KEY, "true");
+  else localStore.remove(COOKPILOT_SIGNED_IN_STORAGE_KEY);
 }
 
 export function useCookPilotAuth() {
@@ -164,9 +158,6 @@ export function CookPilotLoginDialog({ onClose }: { onClose: () => void }) {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
-  const dialogRef = useRef<HTMLDivElement | null>(null);
-
-  useModalFocus(dialogRef, onClose);
 
   async function handleEmailContinue(event: FormEvent) {
     event.preventDefault();
@@ -253,16 +244,15 @@ export function CookPilotLoginDialog({ onClose }: { onClose: () => void }) {
     }
   }
 
-  return createPortal(
-    <div
-      ref={dialogRef}
+  return (
+    <Dialog
+      onClose={onClose}
+      closeDisabled={busy}
+      label="Log in to CookPilot"
+      portal
       className="fixed inset-0 z-50 flex items-stretch sm:items-center justify-center bg-ink/30 p-0 sm:px-cp-4 sm:py-cp-6"
-      role="dialog"
-      aria-modal="true"
-      aria-label="Log in to CookPilot"
-      tabIndex={-1}
+      panelClassName="panel panel--modal w-full sm:max-w-[420px] h-full sm:h-auto rounded-none border-0 sm:rounded-2xl sm:border p-cp-5 flex flex-col gap-cp-4 relative overflow-y-auto"
     >
-      <div className="panel panel--modal w-full sm:max-w-[420px] h-full sm:h-auto rounded-none border-0 sm:rounded-2xl sm:border p-cp-5 flex flex-col gap-cp-4 relative overflow-y-auto">
         <button
           type="button"
           className="absolute right-3 top-3 icon-close-btn"
@@ -366,14 +356,12 @@ export function CookPilotLoginDialog({ onClose }: { onClose: () => void }) {
           </div>
         )}
 
-        {error && (
-          <div className="state state--error" role="alert">
-            <h4>Couldn&apos;t sign in</h4>
-            <p>{error}</p>
-          </div>
-        )}
-      </div>
-    </div>,
-    document.body,
+      {error && (
+        <div className="state state--error" role="alert">
+          <h4>Couldn&apos;t sign in</h4>
+          <p>{error}</p>
+        </div>
+      )}
+    </Dialog>
   );
 }

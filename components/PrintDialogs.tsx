@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { BookIcon, CheckIcon, CrownIcon, ICON_SIZE, SpinnerIcon, TrashIcon, XIcon } from "@/components/icons";
-import { useModalFocus } from "@/components/useModalFocus";
+import { Dialog } from "@/components/Dialog";
 import { COOKBOOK_BENEFITS } from "@/lib/cookbookProduct";
 import type { PremiumRecipePrintTemplate } from "@/lib/premiumTemplates";
 
@@ -83,29 +83,11 @@ export function PrintDialogs({
   onConfirmDeleteRecipe: () => void;
   onConfirmDeleteSectionRecipes?: () => void;
 }) {
-  const donateDialogRef = useRef<HTMLDivElement | null>(null);
-  const unlockDialogRef = useRef<HTMLDivElement | null>(null);
-  const cookbookOfferDialogRef = useRef<HTMLDivElement | null>(null);
-  const cookbookUnlockDialogRef = useRef<HTMLDivElement | null>(null);
-  const deleteDialogRef = useRef<HTMLDivElement | null>(null);
   const deleteButtonRef = useRef<HTMLButtonElement | null>(null);
   const [alsoDeleteSectionRecipes, setAlsoDeleteSectionRecipes] = useState(false);
   const showSectionRecipeCheckbox =
     sectionRecipeCount !== undefined && sectionRecipeCount > 0 && Boolean(onConfirmDeleteSectionRecipes);
-  useModalFocus(donateDialogRef, onCloseDonateDialog, { disabled: !showDonateDialog });
-  useModalFocus(unlockDialogRef, onCloseUnlockDialog, {
-    disabled: !showUnlockDialog,
-    closeDisabled: purchaseBusy || claimBusy,
-  });
-  useModalFocus(cookbookOfferDialogRef, onCloseCookbookOfferDialog, {
-    disabled: !showCookbookOfferDialog,
-  });
-  useModalFocus(cookbookUnlockDialogRef, onCloseCookbookUnlockDialog, {
-    disabled: !showCookbookUnlockDialog,
-    closeDisabled: cookbookPurchaseBusy,
-  });
-  useModalFocus(deleteDialogRef, onCancelDeleteRecipe, { disabled: !showDeleteRecipeDialog });
-  // Runs after useModalFocus's own mount-time focus (which grabs the first
+  // Runs after the Dialog's own mount-time focus (which grabs the first
   // focusable element — the X close button) so Enter defaults to actually
   // deleting rather than just closing, per the request that drove this dialog.
   useEffect(() => {
@@ -125,17 +107,14 @@ export function PrintDialogs({
 
   return (
     <>
-      {showDonateDialog && (
-        <div
-          ref={donateDialogRef}
-          className="print-success-dialog no-print"
-          role="dialog"
-          aria-modal="true"
-          aria-labelledby="print-success-title"
-          tabIndex={-1}
-        >
-          <div className="print-success-dialog__backdrop" aria-hidden />
-          <div className="print-success-dialog__panel">
+      <Dialog
+        open={showDonateDialog}
+        onClose={onCloseDonateDialog}
+        labelledBy="print-success-title"
+        className="print-success-dialog no-print"
+        backdropClassName="print-success-dialog__backdrop"
+        panelClassName="print-success-dialog__panel"
+      >
             <button
               type="button"
               className="print-success-dialog__close icon-close-btn"
@@ -185,20 +164,20 @@ export function PrintDialogs({
                 Leave feedback
               </button>
             </div>
-          </div>
-        </div>
-      )}
-      {showUnlockDialog && selectedPremiumTemplate && (
-        <div
-          ref={unlockDialogRef}
+      </Dialog>
+      {/* Guarded outside the Dialog rather than by `open`: the body below
+          reads `selectedPremiumTemplate` as non-null, and children are still
+          constructed even when a Dialog renders nothing. */}
+      {selectedPremiumTemplate && (
+        <Dialog
+          open={showUnlockDialog}
+          onClose={onCloseUnlockDialog}
+          closeDisabled={purchaseBusy || claimBusy}
+          labelledBy="recipeprinter-unlock-title"
           className="print-success-dialog no-print"
-          role="dialog"
-          aria-modal="true"
-          aria-labelledby="recipeprinter-unlock-title"
-          tabIndex={-1}
+          backdropClassName="print-success-dialog__backdrop"
+          panelClassName="print-success-dialog__panel"
         >
-          <div className="print-success-dialog__backdrop" aria-hidden />
-          <div className="print-success-dialog__panel">
             <button
               type="button"
               className="print-success-dialog__close icon-close-btn"
@@ -246,20 +225,16 @@ export function PrintDialogs({
                 Not now
               </button>
             </div>
-          </div>
-        </div>
+        </Dialog>
       )}
-      {showCookbookOfferDialog && (
-        <div
-          ref={cookbookOfferDialogRef}
-          className="print-success-dialog no-print"
-          role="dialog"
-          aria-modal="true"
-          aria-labelledby="cookbook-offer-title"
-          tabIndex={-1}
-        >
-          <div className="print-success-dialog__backdrop" aria-hidden />
-          <div className="print-success-dialog__panel">
+      <Dialog
+        open={showCookbookOfferDialog}
+        onClose={onCloseCookbookOfferDialog}
+        labelledBy="cookbook-offer-title"
+        className="print-success-dialog no-print"
+        backdropClassName="print-success-dialog__backdrop"
+        panelClassName="print-success-dialog__panel"
+      >
             <button
               type="button"
               className="print-success-dialog__close icon-close-btn"
@@ -288,20 +263,16 @@ export function PrintDialogs({
                 Not now
               </button>
             </div>
-          </div>
-        </div>
-      )}
-      {showCookbookUnlockDialog && (
-        <div
-          ref={cookbookUnlockDialogRef}
-          className="print-success-dialog no-print"
-          role="dialog"
-          aria-modal="true"
-          aria-labelledby="cookbook-unlock-title"
-          tabIndex={-1}
-        >
-          <div className="print-success-dialog__backdrop" aria-hidden />
-          <div className="print-success-dialog__panel">
+      </Dialog>
+      <Dialog
+        open={showCookbookUnlockDialog}
+        onClose={onCloseCookbookUnlockDialog}
+        closeDisabled={cookbookPurchaseBusy}
+        labelledBy="cookbook-unlock-title"
+        className="print-success-dialog no-print"
+        backdropClassName="print-success-dialog__backdrop"
+        panelClassName="print-success-dialog__panel"
+      >
             <button
               type="button"
               className="print-success-dialog__close icon-close-btn"
@@ -336,20 +307,15 @@ export function PrintDialogs({
                 Not now
               </button>
             </div>
-          </div>
-        </div>
-      )}
-      {showDeleteRecipeDialog && (
-        <div
-          ref={deleteDialogRef}
-          className="print-success-dialog no-print"
-          role="dialog"
-          aria-modal="true"
-          aria-labelledby="recipe-delete-title"
-          tabIndex={-1}
-        >
-          <div className="print-success-dialog__backdrop" aria-hidden />
-          <div className="print-success-dialog__panel">
+      </Dialog>
+      <Dialog
+        open={showDeleteRecipeDialog}
+        onClose={onCancelDeleteRecipe}
+        labelledBy="recipe-delete-title"
+        className="print-success-dialog no-print"
+        backdropClassName="print-success-dialog__backdrop"
+        panelClassName="print-success-dialog__panel"
+      >
             <button
               type="button"
               className="print-success-dialog__close icon-close-btn"
@@ -386,9 +352,7 @@ export function PrintDialogs({
                 Cancel
               </button>
             </div>
-          </div>
-        </div>
-      )}
+      </Dialog>
     </>
   );
 }

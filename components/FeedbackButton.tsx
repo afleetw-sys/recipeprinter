@@ -1,11 +1,10 @@
 "use client";
 
 import { useEffect, useId, useRef, useState, type FormEvent } from "react";
-import { createPortal } from "react-dom";
 import { submitPrinterFeedback, type FeedbackType } from "@/lib/feedback";
 import { ICON_SIZE, SpinnerIcon, XIcon } from "@/components/icons";
 import { Select } from "@/components/Select";
-import { useModalFocus } from "@/components/useModalFocus";
+import { Dialog } from "@/components/Dialog";
 
 const FEEDBACK_OPTIONS: { value: FeedbackType; label: string }[] = [
   { value: "idea", label: "Idea" },
@@ -59,11 +58,9 @@ export function FeedbackDialog({ open, onClose, initialType = "idea" }: Feedback
   const messageId = useId();
   const emailId = useId();
   const typeId = useId();
-  const dialogRef = useRef<HTMLDivElement | null>(null);
   const messageRef = useRef<HTMLTextAreaElement | null>(null);
 
-  useModalFocus(dialogRef, onClose, { disabled: !open || busy });
-  // Runs after useModalFocus's own mount-time focus (which grabs the first
+  // Runs after the Dialog's own mount-time focus (which grabs the first
   // focusable element — the X close button) so the message field gets focus
   // instead, matching the previous autoFocus behavior.
   useEffect(() => {
@@ -114,21 +111,17 @@ export function FeedbackDialog({ open, onClose, initialType = "idea" }: Feedback
     }
   }
 
-  if (!open) return null;
-
-  return createPortal(
-    <div
-      ref={dialogRef}
+  return (
+    <Dialog
+      open={open}
+      onClose={onClose}
+      closeDisabled={busy}
+      label="Give feedback"
+      dismissOnBackdropClick
+      portal
       className="fixed inset-0 z-50 flex items-stretch sm:items-center justify-center bg-ink/30 p-0 sm:px-cp-4 sm:py-cp-6"
-      role="dialog"
-      aria-modal="true"
-      aria-label="Give feedback"
-      tabIndex={-1}
-      onMouseDown={(event) => {
-        if (event.target === event.currentTarget) close();
-      }}
+      panelClassName="panel panel--modal w-full sm:max-w-[460px] h-full sm:h-auto rounded-none border-0 sm:rounded-2xl sm:border p-cp-5 flex flex-col gap-cp-4 relative overflow-y-auto"
     >
-      <div className="panel panel--modal w-full sm:max-w-[460px] h-full sm:h-auto rounded-none border-0 sm:rounded-2xl sm:border p-cp-5 flex flex-col gap-cp-4 relative overflow-y-auto">
         <button
           type="button"
           className="absolute right-3 top-3 icon-close-btn"
@@ -209,15 +202,13 @@ export function FeedbackDialog({ open, onClose, initialType = "idea" }: Feedback
           </form>
         )}
 
-        {error && (
-          <div className="state state--error" role="alert">
-            <h4>Feedback wasn&apos;t sent</h4>
-            <p>{error}</p>
-          </div>
-        )}
-      </div>
-    </div>,
-    document.body,
+      {error && (
+        <div className="state state--error" role="alert">
+          <h4>Feedback wasn&apos;t sent</h4>
+          <p>{error}</p>
+        </div>
+      )}
+    </Dialog>
   );
 }
 

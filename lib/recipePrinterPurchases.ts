@@ -1,5 +1,6 @@
 import type {
   CustomerInfo,
+  Offering,
   Package,
   Purchases,
   PurchasesError,
@@ -13,6 +14,7 @@ import {
   type PremiumRecipePrintTemplate,
 } from "@/lib/premiumTemplates";
 import { isProductionRuntime } from "@/lib/appEnvironment";
+import { localStore } from "@/lib/storage";
 import {
   RECIPEPRINTER_COOKBOOK_ENTITLEMENT_ID,
   RECIPEPRINTER_COOKBOOK_OFFERING_ID,
@@ -37,21 +39,11 @@ const RECIPEPRINTER_LINKED_UID_STORAGE_KEY = "recipeprinter:revenuecat-linked-ui
 // the alias call and its toast would fire on every reload for a signed-in
 // user instead of once per account per browser.
 function hasLinkedRecipePrinterCustomer(uid: string): boolean {
-  if (typeof window === "undefined") return false;
-  try {
-    return window.localStorage.getItem(RECIPEPRINTER_LINKED_UID_STORAGE_KEY) === uid;
-  } catch {
-    return false;
-  }
+  return localStore.get(RECIPEPRINTER_LINKED_UID_STORAGE_KEY) === uid;
 }
 
 function markRecipePrinterCustomerLinked(uid: string): void {
-  if (typeof window === "undefined") return;
-  try {
-    window.localStorage.setItem(RECIPEPRINTER_LINKED_UID_STORAGE_KEY, uid);
-  } catch {
-    /* ignore */
-  }
+  localStore.set(RECIPEPRINTER_LINKED_UID_STORAGE_KEY, uid);
 }
 
 /**
@@ -66,23 +58,14 @@ function markRecipePrinterCustomerLinked(uid: string): void {
  * guaranteed empty answer bought with a permanent row in the customer list.
  */
 function isKnownRecipePrinterCustomer(): boolean {
-  if (typeof window === "undefined") return false;
-  try {
-    return (
-      window.localStorage.getItem(RECIPEPRINTER_KNOWN_CUSTOMER_STORAGE_KEY) === "1"
-    );
-  } catch {
-    return false;
-  }
+  // Unreadable storage must answer "not known": the whole point is to avoid
+  // minting a customer record for someone who has never purchased, and a
+  // false positive here would do exactly that.
+  return localStore.get(RECIPEPRINTER_KNOWN_CUSTOMER_STORAGE_KEY) === "1";
 }
 
 function markRecipePrinterCustomerKnown(): void {
-  if (typeof window === "undefined") return;
-  try {
-    window.localStorage.setItem(RECIPEPRINTER_KNOWN_CUSTOMER_STORAGE_KEY, "1");
-  } catch {
-    /* ignore */
-  }
+  localStore.set(RECIPEPRINTER_KNOWN_CUSTOMER_STORAGE_KEY, "1");
 }
 
 function revenueCatApiKey(): string {
@@ -100,20 +83,16 @@ async function loadPurchasesModule(): Promise<PurchasesModule> {
 
 export async function recipePrinterCustomerId(): Promise<string> {
   const { Purchases } = await loadPurchasesModule();
-  if (typeof window === "undefined") {
-    return Purchases.generateRevenueCatAnonymousAppUserId();
-  }
 
-  try {
-    const stored = window.localStorage.getItem(RECIPEPRINTER_CUSTOMER_STORAGE_KEY);
-    if (stored) return stored;
+  const stored = localStore.get(RECIPEPRINTER_CUSTOMER_STORAGE_KEY);
+  if (stored) return stored;
 
-    const next = Purchases.generateRevenueCatAnonymousAppUserId();
-    window.localStorage.setItem(RECIPEPRINTER_CUSTOMER_STORAGE_KEY, next);
-    return next;
-  } catch {
-    return Purchases.generateRevenueCatAnonymousAppUserId();
-  }
+  // A fresh id either way. When the write fails (or we're on the server) the
+  // caller still gets a usable id for this call; it just won't be the same one
+  // next time, which is the unavoidable cost of having nowhere to remember it.
+  const next = Purchases.generateRevenueCatAnonymousAppUserId();
+  localStore.set(RECIPEPRINTER_CUSTOMER_STORAGE_KEY, next);
+  return next;
 }
 
 /**
@@ -243,25 +222,52 @@ export async function syncRecipePrinterCustomerAttributes({
   });
 }
 
+/** The named offering, falling back to whatever RevenueCat marks current. */
+async function offeringFor(purchases: Purchases, offeringId: string): Promise<Offering | null> {
+  const offerings = await purchases.getOfferings();
+  return offerings.all[offeringId] ?? offerings.current ?? null;
+}
+
+/**
+ * Resolves one purchasable package within an offering.
+ *
+ * Three lookups because RevenueCat dashboard configuration drifts: the product
+ * identifier is the reliable key, but packages have historically been reachable
+ * only by package id, so both are tried.
+ *
+ * The closing identity check is the part that matters, and the reason this is
+ * one function instead of four copies. The two fallbacks match by *package* id,
+ * which is a dashboard-side label — if it were ever pointed at a different
+ * product, they would happily return a package that charges for something else.
+ * Returning null unless the resolved package's product identifier is exactly
+ * the one asked for makes selling the wrong item structurally impossible, and
+ * having it in one place means it can't be forgotten at a fifth call site.
+ */
+function findPackage(
+  offering: Offering | null,
+  packageId: string,
+  productId: string,
+): Package | null {
+  const candidate =
+    offering?.availablePackages.find(
+      (option) => option.webBillingProduct.identifier === productId,
+    ) ??
+    offering?.packagesById[packageId] ??
+    offering?.availablePackages.find((option) => option.identifier === packageId);
+
+  return candidate?.webBillingProduct.identifier === productId ? candidate : null;
+}
+
 async function packageForTemplate(
   purchases: Purchases,
   template: PremiumRecipePrintTemplate,
 ): Promise<Package> {
-  const offerings = await purchases.getOfferings();
-  const offering = offerings.all[RECIPEPRINTER_OFFERING_ID] ?? offerings.current;
-  const packageId = packageIdForTemplate(template);
-  const productId = productIdForTemplate(template);
-  const rcPackage =
-    offering?.availablePackages.find(
-      (candidate) => candidate.webBillingProduct.identifier === productId,
-    ) ??
-    offering?.packagesById[packageId] ??
-    offering?.availablePackages.find((candidate) => candidate.identifier === packageId);
-
-  if (!rcPackage || rcPackage.webBillingProduct.identifier !== productId) {
-    throw new Error("This template isn't ready to buy yet.");
-  }
-
+  const rcPackage = findPackage(
+    await offeringFor(purchases, RECIPEPRINTER_OFFERING_ID),
+    packageIdForTemplate(template),
+    productIdForTemplate(template),
+  );
+  if (!rcPackage) throw new Error("This template isn't ready to buy yet.");
   return rcPackage;
 }
 
@@ -269,24 +275,13 @@ export async function loadRecipePrinterTemplatePrices(
   userId: string,
 ): Promise<Partial<Record<PremiumRecipePrintTemplate, string>>> {
   const purchases = await getPurchases(userId);
-  const offerings = await purchases.getOfferings();
-  const offering = offerings.all[RECIPEPRINTER_OFFERING_ID] ?? offerings.current;
-
+  const offering = await offeringFor(purchases, RECIPEPRINTER_OFFERING_ID);
   if (!offering) return {};
 
   return Object.fromEntries(
     (Object.entries(PREMIUM_TEMPLATE_PACKAGE_IDS) as Array<[PremiumRecipePrintTemplate, string]>)
       .map(([template, packageId]) => {
-        const productId = productIdForTemplate(template);
-        const rcPackage =
-          offering.availablePackages.find(
-            (candidate) => candidate.webBillingProduct.identifier === productId,
-          ) ??
-          offering.packagesById[packageId] ??
-          offering.availablePackages.find((candidate) => candidate.identifier === packageId);
-        if (rcPackage?.webBillingProduct.identifier !== productId) {
-          return [template, undefined] as const;
-        }
+        const rcPackage = findPackage(offering, packageId, productIdForTemplate(template));
         return [template, rcPackage?.webBillingProduct.price.formattedPrice] as const;
       })
       .filter((entry): entry is [PremiumRecipePrintTemplate, string] => Boolean(entry[1])),
@@ -326,19 +321,12 @@ export async function purchaseRecipePrinterTemplate({
 }
 
 async function packageForCookbook(purchases: Purchases): Promise<Package> {
-  const offerings = await purchases.getOfferings();
-  const offering = offerings.all[RECIPEPRINTER_COOKBOOK_OFFERING_ID] ?? offerings.current;
-  const rcPackage =
-    offering?.availablePackages.find(
-      (candidate) => candidate.webBillingProduct.identifier === RECIPEPRINTER_COOKBOOK_PRODUCT_ID,
-    ) ??
-    offering?.packagesById[RECIPEPRINTER_COOKBOOK_PACKAGE_ID] ??
-    offering?.availablePackages.find((candidate) => candidate.identifier === RECIPEPRINTER_COOKBOOK_PACKAGE_ID);
-
-  if (!rcPackage || rcPackage.webBillingProduct.identifier !== RECIPEPRINTER_COOKBOOK_PRODUCT_ID) {
-    throw new Error("The cookbook upgrade isn't ready to buy yet.");
-  }
-
+  const rcPackage = findPackage(
+    await offeringFor(purchases, RECIPEPRINTER_COOKBOOK_OFFERING_ID),
+    RECIPEPRINTER_COOKBOOK_PACKAGE_ID,
+    RECIPEPRINTER_COOKBOOK_PRODUCT_ID,
+  );
+  if (!rcPackage) throw new Error("The cookbook upgrade isn't ready to buy yet.");
   return rcPackage;
 }
 
@@ -348,19 +336,12 @@ export function hasCookbookEntitlement(customerInfo: CustomerInfo | null): boole
 
 export async function loadRecipePrinterCookbookPrice(userId: string): Promise<string | undefined> {
   const purchases = await getPurchases(userId);
-  const offerings = await purchases.getOfferings();
-  const offering = offerings.all[RECIPEPRINTER_COOKBOOK_OFFERING_ID] ?? offerings.current;
-  if (!offering) return undefined;
-
-  const rcPackage =
-    offering.availablePackages.find(
-      (candidate) => candidate.webBillingProduct.identifier === RECIPEPRINTER_COOKBOOK_PRODUCT_ID,
-    ) ??
-    offering.packagesById[RECIPEPRINTER_COOKBOOK_PACKAGE_ID] ??
-    offering.availablePackages.find((candidate) => candidate.identifier === RECIPEPRINTER_COOKBOOK_PACKAGE_ID);
-
-  if (rcPackage?.webBillingProduct.identifier !== RECIPEPRINTER_COOKBOOK_PRODUCT_ID) return undefined;
-  return rcPackage.webBillingProduct.price.formattedPrice;
+  const rcPackage = findPackage(
+    await offeringFor(purchases, RECIPEPRINTER_COOKBOOK_OFFERING_ID),
+    RECIPEPRINTER_COOKBOOK_PACKAGE_ID,
+    RECIPEPRINTER_COOKBOOK_PRODUCT_ID,
+  );
+  return rcPackage?.webBillingProduct.price.formattedPrice;
 }
 
 export async function purchaseRecipePrinterCookbook({

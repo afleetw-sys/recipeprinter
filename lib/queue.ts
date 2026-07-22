@@ -6,6 +6,8 @@ import { track, truncateReason } from "@/lib/analytics";
 import { parseImages, parseText, parseUrl } from "@/lib/parser";
 import { normalizeImportURL } from "@/lib/cookpilot";
 import { hostnameOf as rawHostnameOf } from "@/lib/url";
+import { uid } from "@/lib/ids";
+import { sessionStore } from "@/lib/storage";
 
 // The print queue is session-based for the MVP, no accounts, no saved library.
 // It survives navigation to /print (same tab) via sessionStorage.
@@ -14,13 +16,6 @@ const CURRENT_PRINT_JOB_STORAGE_KEY = "recipeprinter:print-job:current:v1";
 
 interface PrintJob {
   ids: string[];
-}
-
-function uid(): string {
-  if (typeof crypto !== "undefined" && "randomUUID" in crypto) {
-    return crypto.randomUUID();
-  }
-  return `${Date.now()}-${Math.random().toString(36).slice(2)}`;
 }
 
 export function printableRecipe(recipe: Recipe): Recipe {
@@ -55,45 +50,33 @@ function printableQueue(items: QueueItem[]): QueueItem[] {
 }
 
 export function readQueue(): QueueItem[] {
-  if (typeof window === "undefined") return [];
+  const raw = sessionStore.get(QUEUE_STORAGE_KEY);
+  if (raw === null) return [];
+  let parsed: unknown;
   try {
-    const raw = window.sessionStorage.getItem(QUEUE_STORAGE_KEY);
-    if (!raw) return [];
-    const parsed = JSON.parse(raw);
-    if (!Array.isArray(parsed)) return [];
-    const sanitized = printableQueue(parsed as QueueItem[]);
-    const sanitizedRaw = JSON.stringify(sanitized);
-    if (sanitizedRaw !== raw) writeSerializedQueue(sanitizedRaw);
-    return sanitized;
+    parsed = JSON.parse(raw);
   } catch {
     return [];
   }
+  if (!Array.isArray(parsed)) return [];
+  // Re-persist only when sanitizing actually changed something, so a normal
+  // read isn't a write. Compared against the raw string rather than the parsed
+  // value because that's what's already in storage.
+  const sanitized = printableQueue(parsed as QueueItem[]);
+  const sanitizedRaw = JSON.stringify(sanitized);
+  if (sanitizedRaw !== raw) writeSerializedQueue(sanitizedRaw);
+  return sanitized;
 }
 
 export function createCurrentPrintJob(ids: string[]): boolean {
-  if (typeof window === "undefined" || ids.length === 0) return false;
-  const job: PrintJob = { ids };
-  try {
-    window.sessionStorage.setItem(CURRENT_PRINT_JOB_STORAGE_KEY, JSON.stringify(job));
-    return true;
-  } catch {
-    return false;
-  }
-}
-
-function idsFromPrintJob(raw: string | null): string[] | null {
-  if (!raw) return null;
-  const parsed = JSON.parse(raw) as Partial<PrintJob>;
-  return Array.isArray(parsed.ids) ? parsed.ids.filter((value) => typeof value === "string") : null;
+  if (ids.length === 0) return false;
+  return sessionStore.setJson(CURRENT_PRINT_JOB_STORAGE_KEY, { ids } satisfies PrintJob);
 }
 
 export function readCurrentPrintJobIds(): string[] | null {
-  if (typeof window === "undefined") return null;
-  try {
-    return idsFromPrintJob(window.sessionStorage.getItem(CURRENT_PRINT_JOB_STORAGE_KEY));
-  } catch {
-    return null;
-  }
+  const job = sessionStore.getJson<Partial<PrintJob>>(CURRENT_PRINT_JOB_STORAGE_KEY);
+  if (!job || !Array.isArray(job.ids)) return null;
+  return job.ids.filter((value): value is string => typeof value === "string");
 }
 
 function serializeQueue(items: QueueItem[]): string | null {
@@ -105,12 +88,9 @@ function serializeQueue(items: QueueItem[]): string | null {
 }
 
 function writeSerializedQueue(serialized: string) {
-  if (typeof window === "undefined") return;
-  try {
-    window.sessionStorage.setItem(QUEUE_STORAGE_KEY, serialized);
-  } catch {
-    /* sessionStorage may be unavailable (private mode); queue stays in memory */
-  }
+  // A failed write is survivable: the queue stays correct in memory for this
+  // page, it just won't survive a navigation.
+  sessionStore.set(QUEUE_STORAGE_KEY, serialized);
 }
 
 /**

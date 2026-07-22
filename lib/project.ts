@@ -2,6 +2,8 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import type { CoverConfig, QueueItem, Section } from "@/types/recipe";
+import { uid } from "@/lib/ids";
+import { sessionStore } from "@/lib/storage";
 
 // The section/cover layer is purely organizational — which section each
 // queued recipe belongs to, plus section/cover metadata — kept separate from
@@ -37,33 +39,18 @@ export interface ProjectMeta {
 
 const EMPTY_META: ProjectMeta = { sections: [] };
 
-function uid(): string {
-  if (typeof crypto !== "undefined" && "randomUUID" in crypto) {
-    return crypto.randomUUID();
-  }
-  return `${Date.now()}-${Math.random().toString(36).slice(2)}`;
-}
-
 function readMeta(): ProjectMeta {
-  if (typeof window === "undefined") return EMPTY_META;
-  try {
-    const raw = window.sessionStorage.getItem(PROJECT_META_STORAGE_KEY);
-    if (!raw) return EMPTY_META;
-    const parsed = JSON.parse(raw);
-    if (!parsed || typeof parsed !== "object" || !Array.isArray(parsed.sections)) return EMPTY_META;
-    return parsed as ProjectMeta;
-  } catch {
-    return EMPTY_META;
-  }
+  const parsed = sessionStore.getJson<ProjectMeta>(PROJECT_META_STORAGE_KEY);
+  // `sections` is the one field the rest of this module indexes into
+  // unconditionally, so anything without it is treated as absent rather than
+  // trusted and allowed to throw later.
+  if (!parsed || typeof parsed !== "object" || !Array.isArray(parsed.sections)) return EMPTY_META;
+  return parsed;
 }
 
 function writeMeta(meta: ProjectMeta) {
-  if (typeof window === "undefined") return;
-  try {
-    window.sessionStorage.setItem(PROJECT_META_STORAGE_KEY, JSON.stringify(meta));
-  } catch {
-    /* sessionStorage may be unavailable (private mode); meta stays in memory */
-  }
+  // Survivable if it fails: meta stays correct in memory for this page.
+  sessionStore.setJson(PROJECT_META_STORAGE_KEY, meta);
 }
 
 /**

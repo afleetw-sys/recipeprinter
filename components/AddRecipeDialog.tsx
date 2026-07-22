@@ -1,9 +1,8 @@
 "use client";
 
-import { useRef } from "react";
 import { ImportPanel } from "@/components/ImportPanel";
 import { ICON_SIZE, XIcon } from "@/components/icons";
-import { useModalFocus } from "@/components/useModalFocus";
+import { Dialog } from "@/components/Dialog";
 import type { QueueItem } from "@/types/recipe";
 
 // A lighter, one-shot version of the homepage's import panel: no queue list
@@ -30,11 +29,6 @@ export function AddRecipeDialog({
   onAddCookPilotRecipes: (recipes: QueueItem[]) => number;
   onRemoveRecipe: (id: string) => void;
 }) {
-  const dialogRef = useRef<HTMLDivElement | null>(null);
-  useModalFocus(dialogRef, onClose, { disabled: !open });
-
-  if (!open) return null;
-
   function handleAddUrl(url: string) {
     onAddUrl(url);
     onClose();
@@ -51,38 +45,35 @@ export function AddRecipeDialog({
   }
 
   return (
-    <div
-      ref={dialogRef}
+    <Dialog
+      open={open}
+      onClose={onClose}
+      labelledBy="recipe-add-dialog-title"
       className="recipe-add-dialog no-print"
-      role="dialog"
-      aria-modal="true"
-      aria-labelledby="recipe-add-dialog-title"
-      tabIndex={-1}
+      backdropClassName="recipe-add-dialog__backdrop"
+      panelClassName="recipe-add-dialog__panel"
     >
-      <div className="recipe-add-dialog__backdrop" aria-hidden />
-      <div className="recipe-add-dialog__panel">
-        <div className="recipe-add-dialog__header">
-          <h2 id="recipe-add-dialog-title">Add recipe</h2>
-          <button
-            type="button"
-            className="recipe-add-dialog__close icon-close-btn"
-            aria-label="Close"
-            onClick={onClose}
-          >
-            <XIcon size={ICON_SIZE.md} />
-          </button>
-        </div>
-        <div className="recipe-add-dialog__body">
-          <ImportPanel
-            items={items}
-            onAddUrl={handleAddUrl}
-            onAddImages={handleAddImages}
-            onAddText={handleAddText}
-            onAddCookPilotRecipes={onAddCookPilotRecipes}
-            onRemoveRecipe={onRemoveRecipe}
-          />
-        </div>
+      <div className="recipe-add-dialog__header">
+        <h2 id="recipe-add-dialog-title">Add recipe</h2>
+        <button
+          type="button"
+          className="recipe-add-dialog__close icon-close-btn"
+          aria-label="Close"
+          onClick={onClose}
+        >
+          <XIcon size={ICON_SIZE.md} />
+        </button>
       </div>
-    </div>
+      <div className="recipe-add-dialog__body">
+        <ImportPanel
+          items={items}
+          onAddUrl={handleAddUrl}
+          onAddImages={handleAddImages}
+          onAddText={handleAddText}
+          onAddCookPilotRecipes={onAddCookPilotRecipes}
+          onRemoveRecipe={onRemoveRecipe}
+        />
+      </div>
+    </Dialog>
   );
 }
