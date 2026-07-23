@@ -81,16 +81,45 @@ async function loadPurchasesModule(): Promise<PurchasesModule> {
   return purchasesModulePromise;
 }
 
-export async function recipePrinterCustomerId(): Promise<string> {
-  const { Purchases } = await loadPurchasesModule();
+// RevenueCat's own anonymous-id format: the `$RCAnonymousID:` prefix followed
+// by a v4 UUID with the dashes stripped. This is a byte-for-byte replica of
+// `Purchases.generateRevenueCatAnonymousAppUserId()` (see purchases-js —
+// literally `\`$RCAnonymousID:${uuid().replace(/-/g,"")}\``), reproduced here so
+// an id can be minted WITHOUT loading the SDK. RevenueCat decides anonymity by
+// a prefix check (`appUserId.startsWith("$RCAnonymousID:")`), so an id made
+// here is indistinguishable from one the SDK would make, both to the SDK when
+// it later configures with it and to the backend.
+const REVENUECAT_ANONYMOUS_PREFIX = "$RCAnonymousID:";
 
+function generateAnonymousAppUserId(): string {
+  const hex =
+    typeof crypto !== "undefined" && "randomUUID" in crypto
+      ? crypto.randomUUID().replace(/-/g, "")
+      : Array.from({ length: 32 }, () => Math.floor(Math.random() * 16).toString(16)).join("");
+  return `${REVENUECAT_ANONYMOUS_PREFIX}${hex}`;
+}
+
+/**
+ * This browser's RevenueCat app-user id — read from storage, or minted locally.
+ *
+ * Deliberately does NOT load the purchases SDK. The identity effect on the
+ * print page calls this the moment there's something to print, and this used
+ * to `await loadPurchasesModule()` purely to call the SDK's id generator —
+ * pulling ~700KB of billing code onto every /print visit just to produce a
+ * string, which is exactly what the dynamic `import()` everywhere else in this
+ * file exists to avoid. The SDK now loads only when `getPurchases()` actually
+ * configures it, i.e. on a real purchase, claim, or login.
+ *
+ * Still async so its call sites don't change; it just no longer awaits anything.
+ */
+export async function recipePrinterCustomerId(): Promise<string> {
   const stored = localStore.get(RECIPEPRINTER_CUSTOMER_STORAGE_KEY);
   if (stored) return stored;
 
   // A fresh id either way. When the write fails (or we're on the server) the
   // caller still gets a usable id for this call; it just won't be the same one
   // next time, which is the unavoidable cost of having nowhere to remember it.
-  const next = Purchases.generateRevenueCatAnonymousAppUserId();
+  const next = generateAnonymousAppUserId();
   localStore.set(RECIPEPRINTER_CUSTOMER_STORAGE_KEY, next);
   return next;
 }
