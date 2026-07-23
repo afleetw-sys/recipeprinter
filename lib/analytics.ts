@@ -8,6 +8,33 @@ import type { FeedbackType } from "@/lib/feedback";
 type PurchasedProduct = "premium_template" | "cookbook";
 
 /**
+ * Why an import failed, as a small closed vocabulary rather than a free-text
+ * message. The raw message still rides along as `reason` for a human reading a
+ * single event, but only these buckets are groupable — so "how often does the
+ * photo parser find nothing" is a chart instead of a session-replay hunt.
+ *   - blocked / not_found: the source site refused us or 404'd (URL only).
+ *   - no_recipe: we reached the parser and it found no recipe in the input.
+ *   - no_files: the import was submitted with nothing usable selected — the
+ *     "Choose at least one photo" dead-end, tracked so that class of bug is a
+ *     number instead of a session replay.
+ *   - decode_failed: the browser couldn't even read the chosen image.
+ *   - too_large: the image was still over budget after resizing.
+ *   - backend_unavailable: auth / App Check / Functions config failure.
+ *   - timeout: the parser ran past its deadline.
+ *   - unknown: anything we didn't classify.
+ */
+export type ImportFailureCode =
+  | "blocked"
+  | "not_found"
+  | "no_recipe"
+  | "no_files"
+  | "decode_failed"
+  | "too_large"
+  | "backend_unavailable"
+  | "timeout"
+  | "unknown";
+
+/**
  * Every event RecipePrinter sends, with its required properties.
  *
  * Keeping this a closed map is the point: `track()` won't compile for an
@@ -27,8 +54,16 @@ type EventProps = {
   recipe_import_started: { source: ImportMethod; hostname?: string };
   /** Parsing produced a recipe. */
   recipe_imported: { source: ImportMethod; hostname?: string };
-  /** Parsing threw. `reason` is the raw parser message, truncated. */
-  recipe_import_failed: { source: ImportMethod; hostname?: string; reason: string };
+  /**
+   * Parsing threw. `reason` is the raw parser message, truncated; `category`
+   * is the groupable bucket it fell into.
+   */
+  recipe_import_failed: {
+    source: ImportMethod;
+    hostname?: string;
+    reason: string;
+    category: ImportFailureCode;
+  };
 
   // ---- Printing --------------------------------------------------------
   // Card size, photo and duplex are the axes the clipping bug lives on, so

@@ -11,6 +11,8 @@ import {
 import dynamic from "next/dynamic";
 import type { ImportMethod } from "@/types/recipe";
 import type { QueueItem } from "@/types/recipe";
+import { track, truncateReason, type ImportFailureCode } from "@/lib/analytics";
+import { ImportError } from "@/lib/parser";
 import {
   CookPilotLogoIcon,
   ImageIcon,
@@ -49,12 +51,19 @@ const CookPilotImportSource = dynamic(
 const MAX_IMAGE_FILES = 4;
 const MAX_IMAGE_FILE_BYTES = 12 * 1024 * 1024;
 const MAX_IMAGE_TOTAL_BYTES = 24 * 1024 * 1024;
-const MAX_IMAGE_DATA_URL_CHARS = 2_500_000;
-const MAX_IMAGE_DATA_URL_TOTAL_CHARS = 8_000_000;
-const MAX_IMAGE_DIMENSION = 1600;
+const MAX_IMAGE_DATA_URL_CHARS = 3_500_000;
+const MAX_IMAGE_DATA_URL_TOTAL_CHARS = 8_500_000;
+// A cookbook page or handwritten card is mostly small body text, and the
+// parser reads it with a vision model — downscale too hard and legible print
+// turns to mush, so a genuine recipe comes back as "no recipe". 2048px on the
+// long edge keeps that text readable while staying well under the callable's
+// payload ceiling (guarded by the char caps above). HEIC is transcoded to JPEG
+// first (see loadDecodableImage), so every image that reaches the canvas is
+// something it can draw.
+const MAX_IMAGE_DIMENSION = 2048;
 const IMAGE_JPEG_QUALITY = 0.82;
 
-function readImageAsDataURL(file: File): Promise<string> {
+function readImageAsDataURL(blob: Blob): Promise<string> {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
     reader.onload = () =>
@@ -62,13 +71,13 @@ function readImageAsDataURL(file: File): Promise<string> {
         ? resolve(reader.result)
         : reject(new Error("Unable to read image"));
     reader.onerror = () => reject(reader.error ?? new Error("Unable to read image"));
-    reader.readAsDataURL(file);
+    reader.readAsDataURL(blob);
   });
 }
 
-function loadImageFromFile(file: File): Promise<HTMLImageElement> {
+function loadImageFromBlob(blob: Blob): Promise<HTMLImageElement> {
   return new Promise((resolve, reject) => {
-    const url = URL.createObjectURL(file);
+    const url = URL.createObjectURL(blob);
     const image = new Image();
     image.onload = () => {
       URL.revokeObjectURL(url);
@@ -82,8 +91,31 @@ function loadImageFromFile(file: File): Promise<HTMLImageElement> {
   });
 }
 
+// heic2any wraps a ~1.5 MB libheif wasm build, so it's dynamically imported
+// and only pulled down when a file actually needs transcoding.
+async function heicToJpegBlob(file: File): Promise<Blob> {
+  const { default: heic2any } = await import("heic2any");
+  const converted = await heic2any({ blob: file, toType: "image/jpeg", quality: IMAGE_JPEG_QUALITY });
+  return Array.isArray(converted) ? converted[0] : converted;
+}
+
+// Safari can draw HEIC to a canvas natively; Chrome/Firefox/Android can't. So
+// try the native decode first (free, works for every normal JPG/PNG and for
+// HEIC on Apple devices) and only fall back to the wasm transcode when a HEIC
+// file fails that path. Non-HEIC decode failures propagate untouched so the
+// batch's allSettled can skip just that file.
+async function loadDecodableImage(file: File): Promise<{ image: HTMLImageElement; source: Blob }> {
+  try {
+    return { image: await loadImageFromBlob(file), source: file };
+  } catch (err) {
+    if (!isHeic(file)) throw err;
+    const jpeg = await heicToJpegBlob(file);
+    return { image: await loadImageFromBlob(jpeg), source: jpeg };
+  }
+}
+
 async function imageAsCompressedDataURL(file: File): Promise<string> {
-  const image = await loadImageFromFile(file);
+  const { image, source } = await loadDecodableImage(file);
   const scale = Math.min(1, MAX_IMAGE_DIMENSION / Math.max(image.naturalWidth, image.naturalHeight));
   const width = Math.max(1, Math.round(image.naturalWidth * scale));
   const height = Math.max(1, Math.round(image.naturalHeight * scale));
@@ -91,13 +123,36 @@ async function imageAsCompressedDataURL(file: File): Promise<string> {
   canvas.width = width;
   canvas.height = height;
   const context = canvas.getContext("2d");
-  if (!context) return readImageAsDataURL(file);
+  if (!context) return readImageAsDataURL(source);
   context.drawImage(image, 0, 0, width, height);
   return canvas.toDataURL("image/jpeg", IMAGE_JPEG_QUALITY);
 }
 
-function imageFilesFrom(list: FileList | null): File[] {
-  return Array.from(list ?? []).filter((f) => f.type.startsWith("image/"));
+// HEIC/HEIF is the iPhone camera default. Only Safari can draw it to a
+// <canvas>; elsewhere we transcode it to JPEG first (loadDecodableImage), and
+// this predicate is how both paths recognise it — by MIME type, or by extension
+// when the picker hands it over with an empty type.
+const HEIC_RE = /\.(heic|heif)$/i;
+
+function isHeic(file: File): boolean {
+  return file.type === "image/heic" || file.type === "image/heif" || HEIC_RE.test(file.name);
+}
+
+/**
+ * Splits a raw picker/drop selection into image candidates and a count of
+ * everything clearly-not-an-image (PDFs, video, docs). MIME type is a hint, not
+ * a gate: plenty of real photos arrive with an *empty* `file.type` (mobile
+ * share sheets, extension-less files, some cloud pickers), and dropping those
+ * silently is what leaves the user staring at "Choose at least one photo" after
+ * they definitely chose one. So anything with no type, or an `image/*` type, is
+ * kept and left for the canvas decoder to accept or reject; only a file that
+ * declares a non-image type is turned away. HEIC stays in `images` because we
+ * can transcode it.
+ */
+function partitionImageFiles(list: FileList | null): { images: File[]; rejected: number } {
+  const all = Array.from(list ?? []);
+  const images = all.filter((f) => !f.type || f.type.startsWith("image/") || isHeic(f));
+  return { images, rejected: all.length - images.length };
 }
 
 function imageLabel(files: File[]): string {
@@ -106,21 +161,51 @@ function imageLabel(files: File[]): string {
   return `${files.length} photos selected`;
 }
 
-function validateImageFiles(files: File[]): string | null {
-  if (files.length > MAX_IMAGE_FILES) return `Choose up to ${MAX_IMAGE_FILES} photos at a time.`;
+type ImageValidationError = { message: string; category: ImportFailureCode };
+
+function validateImageFiles(files: File[]): ImageValidationError | null {
+  if (files.length > MAX_IMAGE_FILES) {
+    return { message: `Choose up to ${MAX_IMAGE_FILES} photos at a time.`, category: "too_large" };
+  }
+  // Cloud pickers (iCloud, Drive) can hand back a 0-byte placeholder for a file
+  // that hasn't finished downloading. It would pass every size check and only
+  // die at decode — catch it here with something the user can act on.
+  if (files.some((file) => file.size === 0)) {
+    return {
+      message: "That photo hasn't finished downloading to this device yet. Save it locally, then choose it again.",
+      category: "decode_failed",
+    };
+  }
   const oversized = files.find((file) => file.size > MAX_IMAGE_FILE_BYTES);
-  if (oversized) return `${oversized.name} is too large. Choose photos under 12 MB.`;
+  if (oversized) {
+    return { message: `${oversized.name} is too large. Choose photos under 12 MB.`, category: "too_large" };
+  }
   const totalBytes = files.reduce((total, file) => total + file.size, 0);
-  if (totalBytes > MAX_IMAGE_TOTAL_BYTES) return "Those photos are too large together. Choose fewer or smaller images.";
+  if (totalBytes > MAX_IMAGE_TOTAL_BYTES) {
+    return { message: "Those photos are too large together. Choose fewer or smaller images.", category: "too_large" };
+  }
   return null;
 }
 
 async function prepareImageDataUrls(files: File[]): Promise<string[]> {
-  const dataUrls = await Promise.all(files.map(imageAsCompressedDataURL));
+  // One unreadable file shouldn't sink the whole batch — compress them
+  // independently and keep whatever decoded.
+  const settled = await Promise.allSettled(files.map(imageAsCompressedDataURL));
+  const dataUrls = settled
+    .filter((result): result is PromiseFulfilledResult<string> => result.status === "fulfilled")
+    .map((result) => result.value);
+
+  if (dataUrls.length === 0) {
+    throw new ImportError(
+      "We couldn't read those images. Try different files, or a JPG or PNG screenshot.",
+      "decode_failed",
+    );
+  }
+
   const oversized = dataUrls.some((dataUrl) => dataUrl.length > MAX_IMAGE_DATA_URL_CHARS);
   const totalChars = dataUrls.reduce((total, dataUrl) => total + dataUrl.length, 0);
   if (oversized || totalChars > MAX_IMAGE_DATA_URL_TOTAL_CHARS) {
-    throw new Error("Those photos are still too large after resizing. Try fewer or smaller images.");
+    throw new ImportError("Those photos are still too large after resizing. Try fewer or smaller images.", "too_large");
   }
   return dataUrls;
 }
@@ -205,15 +290,26 @@ export function ImportPanel({
       onAddUrl(trimmed);
       setUrl("");
     } else if (mode === "image") {
-      if (imageFiles.length === 0) return setError("Choose at least one photo.");
+      // A failed image import dies here in the browser, before a queue item
+      // exists — so unlike URL/text, the queue never gets to report it. Emit
+      // the started+failed pair ourselves so these don't vanish from the funnel
+      // (this is where "Choose at least one photo" was hiding).
+      if (imageFiles.length === 0) {
+        trackImageFailure("no_files", "no usable photo selected");
+        return setError("Choose at least one photo.");
+      }
       const validationError = validateImageFiles(imageFiles);
-      if (validationError) return setError(validationError);
+      if (validationError) {
+        trackImageFailure(validationError.category, validationError.message);
+        return setError(validationError.message);
+      }
       setBusy(true);
       try {
         const dataUrls = await prepareImageDataUrls(imageFiles);
         onAddImages(dataUrls, imageLabel(imageFiles));
         setImageFiles([]);
       } catch (err) {
+        trackImageFailure(err instanceof ImportError ? err.code : "decode_failed", truncateReason(err));
         setError(err instanceof Error ? err.message : "Couldn't read those images. Try different files.");
       } finally {
         setBusy(false);
@@ -226,17 +322,43 @@ export function ImportPanel({
     }
   }
 
+  // Client-side image failures never reach the queue's runParse, so they'd be
+  // invisible in analytics. Fire the started+failed pair here to keep the
+  // import funnel honest across the browser/queue boundary. Only the failure
+  // branch emits — a successful prep is counted by the queue instead, so no
+  // attempt is double-reported.
+  function trackImageFailure(category: ImportFailureCode, reason: string) {
+    track("recipe_import_started", { source: "image" });
+    track("recipe_import_failed", { source: "image", category, reason });
+  }
+
+  // Shared by the file picker and drag-and-drop: never silently swallow a
+  // selection. If the files aren't images, or the images don't validate, say so
+  // rather than leaving the dropzone looking untouched. (Selection-time
+  // problems aren't tracked — an import attempt only counts once the user hits
+  // Add, which handleSubmit reports.)
+  function selectImageFiles(list: FileList | null) {
+    const { images, rejected } = partitionImageFiles(list);
+    if (images.length === 0) {
+      setImageFiles([]);
+      if (rejected > 0) setError("Those files aren't photos we can read. Choose JPG or PNG images.");
+      return;
+    }
+    const validationError = validateImageFiles(images);
+    if (validationError) {
+      setImageFiles([]);
+      setError(validationError.message);
+      return;
+    }
+    setImageFiles(images);
+    resetError();
+  }
+
   function onDrop(e: DragEvent<HTMLLabelElement>) {
     e.preventDefault();
     setDragging(false);
     if (busy) return;
-    const dropped = imageFilesFrom(e.dataTransfer.files);
-    if (dropped.length) {
-      const validationError = validateImageFiles(dropped);
-      if (validationError) return setError(validationError);
-      setImageFiles(dropped);
-      resetError();
-    }
+    if (e.dataTransfer.files.length > 0) selectImageFiles(e.dataTransfer.files);
   }
 
   return (
@@ -376,15 +498,11 @@ export function ImportPanel({
                 disabled={busy}
                 className="sr-only absolute h-px w-px overflow-hidden"
                 onChange={(e) => {
-                  const selected = imageFilesFrom(e.target.files);
-                  const validationError = validateImageFiles(selected);
-                  if (validationError) {
-                    setError(validationError);
-                    setImageFiles([]);
-                    return;
-                  }
-                  setImageFiles(selected);
-                  resetError();
+                  selectImageFiles(e.target.files);
+                  // Clear the input so picking the SAME file again still fires
+                  // onChange — otherwise a retry after an error is a silent
+                  // no-op and the selection looks stuck at empty.
+                  e.target.value = "";
                 }}
               />
               <UploadIcon size={26} />

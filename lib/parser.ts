@@ -1,12 +1,28 @@
 "use client";
 
 import { adaptCookPilotRecipe, normalizeImportURL } from "@/lib/cookpilot";
+import type { ImportFailureCode } from "@/lib/analytics";
 import type { ParseResponse, Recipe } from "@/types/recipe";
 
 interface LocalParseOutcome {
   recipe: Recipe | null;
   error?: string;
   status?: number;
+}
+
+/**
+ * An import failure that already knows which bucket it belongs in, so the
+ * queue can report it to analytics without re-guessing from the message. The
+ * message stays user-facing; `code` is for us.
+ */
+export class ImportError extends Error {
+  constructor(
+    message: string,
+    readonly code: ImportFailureCode = "unknown",
+  ) {
+    super(message);
+    this.name = "ImportError";
+  }
 }
 
 async function callCookPilotParser(name: string, data: unknown): Promise<unknown> {
@@ -20,30 +36,38 @@ async function callCookPilotParser(name: string, data: unknown): Promise<unknown
   return res.data;
 }
 
-function friendlyError(err: unknown, fallback: string): Error {
+function friendlyError(err: unknown, fallback: string): ImportError {
+  // A failure that already carries a code (e.g. our own "no recipe found")
+  // keeps it — don't relabel it as unknown on the way out.
+  if (err instanceof ImportError) return err;
+
   const message = err instanceof Error ? err.message : String(err);
   // Firebase callables throw FunctionsError with a `.code` like "functions/...".
   const code = (err as { code?: string })?.code ?? "";
 
   // CookPilot surfaces the source site's HTTP status when a fetch is refused.
   if (/HTTP\s*(401|402|403|429)/.test(message)) {
-    return new Error("That site blocked the request. Try a different recipe URL, or paste the recipe text instead.");
+    return new ImportError(
+      "That site blocked the request. Try a different recipe URL, or paste the recipe text instead.",
+      "blocked",
+    );
   }
   if (/HTTP\s*404/.test(message)) {
-    return new Error("That page couldn't be found. Double-check the URL.");
+    return new ImportError("That page couldn't be found. Double-check the URL.", "not_found");
   }
   if (isAuthOrAppCheckError(err)) {
-    return new Error(
+    return new ImportError(
       "The fallback parser couldn't accept this request. Try a different recipe URL, or paste the recipe text instead.",
+      "backend_unavailable",
     );
   }
   if (code.includes("deadline-exceeded")) {
-    return new Error("The parser timed out. Please try again.");
+    return new ImportError("The parser timed out. Please try again.", "timeout");
   }
   if (/firebase|functions\/|app check|appcheck|auth\/|permission-denied|internal|stack|api key/i.test(message)) {
-    return new Error(fallback);
+    return new ImportError(fallback, "backend_unavailable");
   }
-  return new Error(message || fallback);
+  return new ImportError(message || fallback, "unknown");
 }
 
 function isAuthOrAppCheckError(err: unknown): boolean {
@@ -84,7 +108,7 @@ async function parseUrlWithCookPilot(url: string, localError?: string): Promise<
   try {
     const data = await callCookPilotParser("parseRecipeFromURL", { url });
     const recipe = adaptCookPilotRecipe(data, url);
-    if (!recipe) throw new Error(localError || "No recipe could be found on that page.");
+    if (!recipe) throw new ImportError(localError || "No recipe could be found on that page.", "no_recipe");
     return recipe;
   } catch (err) {
     throw friendlyError(err, localError || "We couldn't import a recipe from that URL.");
@@ -99,7 +123,10 @@ export async function parseUrl(rawUrl: string): Promise<Recipe> {
   if (shouldTryUrlFallback(localRecipe)) {
     return parseUrlWithCookPilot(url, localRecipe.error);
   }
-  throw new Error(localRecipe.error ?? "We couldn't import a recipe from that URL.");
+  throw new ImportError(
+    localRecipe.error ?? "We couldn't import a recipe from that URL.",
+    localRecipe.status === 413 ? "too_large" : "no_recipe",
+  );
 }
 
 /** Image import, CookPilot's `parseRecipeFromImages` (expects data-URL strings). */
@@ -107,7 +134,12 @@ export async function parseImages(images: string[]): Promise<Recipe> {
   try {
     const data = await callCookPilotParser("parseRecipeFromImages", { images });
     const recipe = adaptCookPilotRecipe(data);
-    if (!recipe) throw new Error("No recipe could be read from those photos.");
+    if (!recipe) {
+      throw new ImportError(
+        "We couldn't find a recipe in those photos. Make sure the whole recipe — title, ingredients, and steps — is in the shot and in focus, and add one recipe at a time.",
+        "no_recipe",
+      );
+    }
     return recipe;
   } catch (err) {
     throw friendlyError(err, "We couldn't read a recipe from those photos.");
@@ -123,7 +155,7 @@ export async function parseText(text: string): Promise<Recipe> {
       transcript: text,
     });
     const recipe = adaptCookPilotRecipe(data);
-    if (!recipe) throw new Error("No recipe could be read from that text.");
+    if (!recipe) throw new ImportError("No recipe could be read from that text.", "no_recipe");
     return recipe;
   } catch (err) {
     throw friendlyError(err, "We couldn't read a recipe from that text.");

@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import type { ImportMethod, QueueItem, Recipe } from "@/types/recipe";
 import { track, truncateReason } from "@/lib/analytics";
-import { parseImages, parseText, parseUrl } from "@/lib/parser";
+import { ImportError, parseImages, parseText, parseUrl } from "@/lib/parser";
 import { normalizeImportURL } from "@/lib/cookpilot";
 import { hostnameOf as rawHostnameOf } from "@/lib/url";
 import { uid } from "@/lib/ids";
@@ -236,7 +236,11 @@ export function useQueue() {
           status: "error",
           error: err instanceof Error ? err.message : "Something went wrong while parsing.",
         });
-        track("recipe_import_failed", { ...origin, reason: truncateReason(err) });
+        track("recipe_import_failed", {
+          ...origin,
+          reason: truncateReason(err),
+          category: err instanceof ImportError ? err.code : "unknown",
+        });
       }
     },
     [patch],
