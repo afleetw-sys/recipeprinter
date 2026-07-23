@@ -1,4 +1,4 @@
-import posthog from "posthog-js";
+import type { PostHog } from "posthog-js";
 import { isProductionRuntime } from "@/lib/appEnvironment";
 import type { PrintCardSize, RecipePrintTemplate } from "@/components/RecipeCardPrint";
 import type { ImportMethod } from "@/types/recipe";
@@ -118,7 +118,49 @@ export function truncateReason(value: unknown): string {
   return text.slice(0, 120);
 }
 
-let initialized = false;
+// The loaded PostHog singleton, or null until the deferred import resolves.
+// Everything reads through this rather than a module-level `import posthog`,
+// which is the whole point: posthog-js is ~220KB and used to be pulled into
+// the first-load bundle of every route — including the SEO landing pages,
+// which carry the organic traffic and never send anything but a pageview —
+// where it competed with LCP to record events nobody needs in the first
+// second. It's now dynamically imported, off the critical path (see
+// `initAnalytics`), and any event fired before it lands is queued below.
+let posthog: PostHog | null = null;
+let loadStarted = false;
+
+// Events that fired after `initAnalytics()` but before the posthog bundle
+// finished loading — most importantly the very first `$pageview`, which the
+// AnalyticsProvider sends on mount, well before an idle-scheduled import can
+// resolve. Replayed in order once posthog is ready. Bounded so a burst of
+// events during load can't grow it without limit; analytics is best-effort,
+// and dropping the oldest few under an unusual flood is the right failure.
+const MAX_PENDING_EVENTS = 50;
+const pending: Array<(client: PostHog) => void> = [];
+
+function enqueue(capture: (client: PostHog) => void): void {
+  if (posthog) {
+    capture(posthog);
+    return;
+  }
+  if (!loadStarted) return; // analytics disabled this session (see initAnalytics)
+  if (pending.length >= MAX_PENDING_EVENTS) pending.shift();
+  pending.push(capture);
+}
+
+// Defer the import to browser idle time so 220KB of analytics never sits in
+// front of first paint or interactivity. Falls back to a short timeout where
+// requestIdleCallback isn't available (older Safari). The `timeout` cap means
+// a page that never goes idle still loads it, just later.
+type IdleWindow = Window & {
+  requestIdleCallback?: (cb: () => void, opts?: { timeout: number }) => number;
+};
+
+function whenIdle(run: () => void): void {
+  const idle = (window as IdleWindow).requestIdleCallback;
+  if (idle) idle(run, { timeout: 4000 });
+  else window.setTimeout(run, 1200);
+}
 
 /** Reads a URL flag, treating a bare `?flag` and `?flag=1` the same. */
 function urlFlag(params: URLSearchParams, key: string): boolean | null {
@@ -143,12 +185,28 @@ function urlFlag(params: URLSearchParams, key: string): boolean | null {
  *      events are gone forever.
  */
 export function initAnalytics(): void {
-  if (initialized || typeof window === "undefined") return;
+  if (loadStarted || typeof window === "undefined") return;
 
   const key = process.env.NEXT_PUBLIC_POSTHOG_KEY;
   if (!key || !isProductionRuntime()) return;
 
-  posthog.init(key, {
+  // From here we are committed to loading. Set the flag synchronously (before
+  // the await) so events fired between now and the bundle arriving get queued
+  // rather than dropped, and so a second call can't start a second import.
+  loadStarted = true;
+  const search = window.location.search;
+
+  whenIdle(() => {
+    void import("posthog-js").then(({ default: loaded }) => {
+      bootPostHog(loaded, key, search);
+    });
+  });
+}
+
+/** Runs once the deferred posthog bundle has loaded: configures it, applies
+    the opt-out/internal flags, then replays anything captured while waiting. */
+function bootPostHog(client: PostHog, key: string, search: string): void {
+  client.init(key, {
     // Same-origin proxy (see next.config.mjs). Without it, ad blockers eat a
     // slice of real traffic — disproportionately the technical users.
     api_host: "/ingest",
@@ -188,30 +246,34 @@ export function initAnalytics(): void {
     },
   });
 
-  initialized = true;
-
-  const params = new URLSearchParams(window.location.search);
+  const params = new URLSearchParams(search);
 
   const optOut = urlFlag(params, "optout");
-  if (optOut === true) posthog.opt_out_capturing();
-  if (optOut === false) posthog.opt_in_capturing();
+  if (optOut === true) client.opt_out_capturing();
+  if (optOut === false) client.opt_in_capturing();
 
   const internal = urlFlag(params, "internal");
-  if (internal === true) posthog.register({ internal: true });
-  if (internal === false) posthog.unregister("internal");
+  if (internal === true) client.register({ internal: true });
+  if (internal === false) client.unregister("internal");
+
+  posthog = client;
+
+  // Replay events captured while the bundle was loading (the first pageview,
+  // and any imports/purchases a fast user triggered before it landed).
+  const queued = pending.splice(0, pending.length);
+  for (const capture of queued) capture(client);
 }
 
-/** Records one product event. No-ops when analytics never booted. */
+/** Records one product event. Queues until posthog loads; no-ops when
+    analytics never booted (non-production, missing key, or SSR). */
 export function track<K extends AnalyticsEventName>(
   name: K,
   props: EventProps[K],
 ): void {
-  if (!initialized) return;
-  posthog.capture(name, props);
+  enqueue((client) => client.capture(name, props));
 }
 
 /** App Router navigations don't reload the page, so pageviews are manual. */
 export function capturePageview(url: string): void {
-  if (!initialized) return;
-  posthog.capture("$pageview", { $current_url: url });
+  enqueue((client) => client.capture("$pageview", { $current_url: url }));
 }
