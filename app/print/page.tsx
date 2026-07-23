@@ -422,6 +422,13 @@ export default function PrintPage() {
   const [showCookPilotLogin, setShowCookPilotLogin] = useState(false);
   const printRequestedRef = useRef(false);
   const autoPrintAttemptedRef = useRef(false);
+  // A print the user asked for while the layout was still measuring. Rather
+  // than disable the Print button (dead for the ~2s a settings change takes to
+  // re-settle) or print the previous layout still on screen, the click is
+  // remembered and fired the instant the requested layout is ready — one
+  // click, correct result, no "try again". Cleared if the request resolves or
+  // the user navigates away from the intent.
+  const [printPending, setPrintPending] = useState(false);
   // Snapshot of every queue id that already existed when this print job was
   // loaded, so the merge effect below can tell "pre-existing queue item the
   // user didn't select for this job" apart from "just added via the Add
@@ -875,9 +882,12 @@ export default function PrintPage() {
   async function handlePrint() {
     if (purchaseBusy || cookbookPurchaseBusy) return;
     if (!printLayoutReady) {
-      showToast("Preparing the print layout. Try again in a moment.");
+      // Remember it and let the effect below fire once the layout settles,
+      // instead of turning them away — the button shows a spinner meanwhile.
+      setPrintPending(true);
       return;
     }
+    setPrintPending(false);
     if (cookbookLocked) {
       track("paywall_shown", { product: "cookbook" });
       setShowCookbookUnlockDialog(true);
@@ -903,6 +913,13 @@ export default function PrintPage() {
     void handlePrint();
   }
 
+  // The Print button is only truly *disabled* while a purchase is settling —
+  // there's a real async operation the click can't preempt. It is NOT disabled
+  // for a measuring layout: a click then is queued (see `printPending`), so the
+  // button stays live and just shows a spinner until the layout is ready.
+  const printBlocked = purchaseBusy || cookbookPurchaseBusy;
+  const printSpinner = printBlocked || printPending;
+
   // Always the current `handlePrint`, for the auto-print effect below.
   //
   // That effect fires exactly once, on a 350ms timer, and `handlePrint` is a
@@ -917,6 +934,16 @@ export default function PrintPage() {
   useEffect(() => {
     handlePrintRef.current = handlePrint;
   });
+
+  // Fire a print queued while the layout was still measuring, the moment it's
+  // ready. Guarded on `printPending` so it only runs for a click that's
+  // actually waiting, and `handlePrint` clears the flag as it proceeds so this
+  // fires once, not on every subsequent settle.
+  useEffect(() => {
+    if (printPending && printLayoutReady && !purchaseBusy && !cookbookPurchaseBusy) {
+      void handlePrintRef.current();
+    }
+  }, [printPending, printLayoutReady, purchaseBusy, cookbookPurchaseBusy]);
 
   const moveProjectItem = projectMeta.moveItem;
 
@@ -1415,9 +1442,9 @@ export default function PrintPage() {
                 type="button"
                 className="btn btn-primary btn-compact recipe-mobile-topbar__print"
                 onClick={handleMobilePrint}
-                disabled={purchaseBusy || cookbookPurchaseBusy || !printLayoutReady}
+                disabled={printBlocked}
               >
-                {purchaseBusy || cookbookPurchaseBusy || !printLayoutReady ? (
+                {printSpinner ? (
                   <SpinnerIcon size={ICON_SIZE.md} />
                 ) : (
                   <PrintIcon size={ICON_SIZE.md} />
@@ -1807,9 +1834,9 @@ export default function PrintPage() {
             <button
               onClick={() => void handlePrint()}
               className="btn btn-primary recipe-print-button"
-              disabled={purchaseBusy || cookbookPurchaseBusy || !printLayoutReady}
+              disabled={printBlocked}
             >
-              {purchaseBusy || cookbookPurchaseBusy || !printLayoutReady ? (
+              {printSpinner ? (
                 <SpinnerIcon size={ICON_SIZE.md} />
               ) : (
                 <PrintIcon size={ICON_SIZE.md} />
