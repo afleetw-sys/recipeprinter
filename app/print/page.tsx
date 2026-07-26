@@ -103,10 +103,115 @@ const PAGE_DIMS: Record<PrintCardSize, { w: number; h: number }> = {
 // Rail thumbnails target a fixed width so they always fit the rail column,
 // regardless of page aspect ratio (letter portrait vs. 6x4 landscape).
 const RAIL_THUMB_WIDTH = 112;
+// The rail thumbnail zooms past fit-to-width and crops (see the
+// `.recipe-page-rail__thumb .recipe-page-scaler` rule) so it reads as a real
+// mini card — the top-left of the page — rather than a whole card shrunk to a
+// stamp. Keep the crop box (74px) in sync with the CSS.
+const RAIL_THUMB_ZOOM = 1.7;
 const RAIL_SCALE: Record<PrintCardSize, number> = {
-  letter: RAIL_THUMB_WIDTH / PAGE_DIMS.letter.w,
-  "card-6x4": RAIL_THUMB_WIDTH / PAGE_DIMS["card-6x4"].w,
+  letter: (RAIL_THUMB_WIDTH / PAGE_DIMS.letter.w) * RAIL_THUMB_ZOOM,
+  "card-6x4": (RAIL_THUMB_WIDTH / PAGE_DIMS["card-6x4"].w) * RAIL_THUMB_ZOOM,
 };
+
+// A short, generic recipe used only to fill each theme's picker preview. Kept
+// intentionally small so it lays out as a clean single front face at 6x4.
+const THUMB_RECIPE: Recipe = {
+  title: "Lemon Pasta",
+  servings: 4,
+  totalTime: "25 min",
+  ingredients: [
+    { name: "12 oz spaghetti" },
+    { name: "2 lemons, zested and juiced" },
+    { name: "1 cup grated parmesan" },
+    { name: "3 tbsp olive oil" },
+    { name: "2 cloves garlic, minced" },
+    { name: "Fresh basil and black pepper" },
+  ],
+  instructions: [
+    { step: 1, text: "Boil the spaghetti until al dente, then drain." },
+    { step: 2, text: "Toss with olive oil, garlic, and lemon." },
+    { step: 3, text: "Finish with parmesan, basil, and pepper." },
+  ],
+};
+
+// The theme picker thumbnails render the *real* card (the same RecipeCardFace
+// the print output uses) shrunk to fit, rather than a hand-built HTML mockup
+// styled to approximate it. The mockups drifted from the real templates —
+// different spacing, stray image placeholders, a BBQ preview that didn't look
+// like the BBQ card — because nothing kept them in sync. A scaled real card
+// can't drift: it *is* the template.
+const TEMPLATE_THUMB_SIZE: PrintCardSize = "card-6x4";
+// A whole 6x4 card shrunk to a ~110px picker cell renders its type too small to
+// read. Instead the thumbnail zooms *past* fit-to-width (`ZOOM`) and crops to a
+// fixed height (`HEIGHT`, px) anchored at the card's top-left — so the preview
+// shows the header and first rows at a legible size, with the right/bottom
+// edges running off under a soft mask fade. Bumping ZOOM trades how much of the
+// card is visible for how large the type reads.
+const TEMPLATE_THUMB_ZOOM = 1.95;
+const TEMPLATE_THUMB_HEIGHT = 86;
+
+function TemplateThumbnail({ template }: { template: RecipePrintTemplate }) {
+  const dims = PAGE_DIMS[TEMPLATE_THUMB_SIZE];
+  const ref = useRef<HTMLDivElement | null>(null);
+  // Fit the fixed-size real card to whatever width the picker cell happens to
+  // be (it varies with panel/drawer width), the same transform-scale trick
+  // ScaledPage uses, then zoom in past that fit. Starts at a sensible guess so
+  // first paint is close; the observer sets the exact scale from the measured
+  // cell width.
+  const [scale, setScale] = useState(0.22 * TEMPLATE_THUMB_ZOOM);
+
+  useEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    const measure = () => {
+      const w = el.clientWidth;
+      if (w > 0) setScale((w / dims.w) * TEMPLATE_THUMB_ZOOM);
+    };
+    measure();
+    if (typeof ResizeObserver === "undefined") return;
+    const observer = new ResizeObserver(measure);
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, [dims.w]);
+
+  return (
+    <div ref={ref} className="recipe-template-option__thumb" aria-hidden>
+      <div
+        className="recipe-page-scaler recipe-template-option__scaler"
+        style={
+          {
+            "--page-scale": scale,
+            "--page-w": `${dims.w}px`,
+            "--page-h": `${dims.h}px`,
+            height: `${TEMPLATE_THUMB_HEIGHT}px`,
+          } as CSSProperties
+        }
+      >
+        <div className="recipe-page-scaler__inner">
+          <div className={`recipe-print-preview recipe-print-preview--${TEMPLATE_THUMB_SIZE}`}>
+            <div
+              className={`recipe-card-set recipe-card-set--${TEMPLATE_THUMB_SIZE} recipe-template--${template}`}
+            >
+              <div className="recipe-card-page recipe-card-page--front">
+                <RecipeCardFace
+                  recipe={THUMB_RECIPE}
+                  ingredients={THUMB_RECIPE.ingredients}
+                  instructions={THUMB_RECIPE.instructions}
+                  side="front"
+                  showHeader
+                  layout="standard"
+                  hasBackFace={false}
+                  showImage={false}
+                  template={template}
+                />
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
 
 /**
  * A physical sheet rendered at true page size, scaled down by `scale` on
@@ -1312,7 +1417,6 @@ export default function PrintPage() {
                         showImage={previewPhotosOn}
                         showSourceUrl={previewSourceUrlOn}
                         showCutLines={false}
-                        showDecoration={false}
                       />
                     </span>
                     <span className="recipe-page-rail__label">
@@ -1747,23 +1851,35 @@ export default function PrintPage() {
                   premiumTemplate !== null &&
                   hasTemplateEntitlement(customerInfo, premiumTemplate);
 
+                // A real card renders <div>s, which aren't valid inside a
+                // <button> (its content model is phrasing only) — so the option
+                // is a role="button" div with matching keyboard behavior.
+                const selectTemplate = () => {
+                  setTemplate(option.id);
+                  track("template_selected", {
+                    template: option.id,
+                    premium: premiumTemplate !== null,
+                  });
+                  setToastMessage(null);
+                  setMobileDrawer(null);
+                };
+
                 return (
-                  <button
+                  <div
                     key={option.id}
-                    type="button"
+                    role="button"
+                    tabIndex={0}
                     className={`recipe-template-option recipe-template-option--${option.id} ${
                       template === option.id ? "is-active" : ""
                     }`}
                     aria-pressed={template === option.id}
                     aria-label={`${option.label}${locked ? " premium" : owned ? " owned" : ""}`}
-                    onClick={() => {
-                      setTemplate(option.id);
-                      track("template_selected", {
-                        template: option.id,
-                        premium: premiumTemplate !== null,
-                      });
-                      setToastMessage(null);
-                      setMobileDrawer(null);
+                    onClick={selectTemplate}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter" || e.key === " ") {
+                        e.preventDefault();
+                        selectTemplate();
+                      }
                     }}
                   >
                     {/* Status only — no price here. The picker's job is "pick how it
@@ -1779,25 +1895,8 @@ export default function PrintPage() {
                         <CheckIcon size={ICON_SIZE.xs} />
                       </span>
                     )}
-                    <span className="recipe-template-option__preview" aria-hidden>
-                      <span className="recipe-template-option__sample-title">Lemon Pasta</span>
-                      <span className="recipe-template-option__sample-meta">25 min · Serves 4</span>
-                      <span className="recipe-template-option__sample-grid">
-                        <span>
-                          <strong>Ingredients</strong>
-                          <i>Spaghetti</i>
-                          <i>Lemon</i>
-                          <i>Parmesan</i>
-                        </span>
-                        <span>
-                          <strong>Steps</strong>
-                          <i>Boil pasta.</i>
-                          <i>Toss with sauce.</i>
-                          <i>Finish warm.</i>
-                        </span>
-                      </span>
-                    </span>
-                  </button>
+                    <TemplateThumbnail template={option.id} />
+                  </div>
                 );
               })}
             </div>
