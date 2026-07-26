@@ -2342,18 +2342,16 @@
   z-index: 1;
 }
 
-/* A hand-drawn-BBQ-icon border running continuously along all four edges —
-   `justify-content: space-evenly` so it actually reads as a full border
-   (icons spread edge to edge, no dead gaps at the corners) rather than a
-   handful of clusters with bare card between them. What keeps *that* from
-   reading as a mechanical, perfectly-repeating strip is everything about
-   each icon *except* its center-to-center spacing: size (`--icon-scale`,
-   set inline per icon in the CookoutBbqBorder component), rotation, an
-   occasional horizontal flip, and a small per-icon position jitter (also
-   inline, baked into the same `transform`) so icons sit slightly off the
-   strip's centerline instead of on an invisible ruler line. Rendered as
-   real <img> elements rather than stacked background-images because none of
-   that per-icon variation is expressible through background-position. */
+/* A hand-drawn-BBQ-icon border running along all four edges. The icons are
+   interleaved with flexible spacers (`.recipe-card__bbq-gap`, one before each
+   icon plus a trailing one) whose `flex-grow` is that icon's `gap` weight — so
+   flexbox shares the strip's leftover room out *unevenly*: the space before
+   every icon differs and 0-weight spacers collapse into deliberate clusters,
+   instead of the machine-even `space-evenly` grid this used to be. Size
+   (`--icon-scale`), rotation, an occasional flip, and a small perpendicular
+   jitter (all inline per icon in CookoutBbqBorder) vary on top of that.
+   Rendered as real <img> elements rather than background-images because none
+   of that per-icon variation is expressible through background-position. */
 .recipe-template--cookout .recipe-card__bbq-border {
   position: absolute;
   inset: 0;
@@ -2365,7 +2363,14 @@
 .recipe-template--cookout .recipe-card__bbq-edge {
   position: absolute;
   display: flex;
-  justify-content: space-evenly;
+  align-items: center;
+}
+
+/* Flexible gap between border icons; `flex-grow` is set inline per icon (its
+   `gap` weight), so all the spacing comes from that weight. */
+.recipe-template--cookout .recipe-card__bbq-gap {
+  flex-shrink: 0;
+  flex-basis: 0;
 }
 
 .recipe-template--cookout .recipe-card__bbq-edge--top,

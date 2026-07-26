@@ -102,55 +102,52 @@ interface BbqIcon {
   scale?: number;
   /** Perpendicular offset off the strip's centerline, in inches. */
   jitter?: number;
-  /** Offset *along* the strip, in inches — the icons are laid out on an even
-      grid (`justify-content: space-evenly`), and this nudges each one forward or
-      back off that grid so some drift together into clusters and others open a
-      gap, instead of the mechanical even strip the reference card isn't. */
-  slide?: number;
+  /** Relative weight of the flexible space *before* this icon. The strip's
+      leftover room is shared out to these weights, so the gap ahead of every
+      icon is genuinely different (not an even grid) — and a weight of 0 tucks
+      the icon right up against its neighbour to read as a deliberate cluster. */
+  gap?: number;
 }
 
-// The layout is deliberately *not* a tidy even strip. Icons sit on the even
-// `space-evenly` grid but each carries a `slide` that pulls it off that grid:
-// paired +/- slides on neighbours draw them together into a little cluster and
-// open a wider gap after, so the border reads hand-arranged (like the reference
-// card) rather than machine-spaced. Scales vary too, and no icon is pinned to a
-// corner — the strips just run edge to edge and whatever lands near a corner
-// lands there.
+// Every `gap` is a different weight so the space ahead of each icon differs —
+// no even grid. The 0s are deliberate clusters (two icons tucked together),
+// which is the "some go together, then a different gap" rhythm of the reference
+// card. Scales vary too, and nothing is pinned to a corner.
 const BBQ_EDGE_TOP: BbqIcon[] = [
-  { src: "/images/bbq-grill.svg", rotate: -9, scale: 1.05, jitter: 0.03, slide: 0.02 },
-  { src: "/images/bbq-steak.svg", rotate: 13, flip: true, scale: 0.8, jitter: -0.04, slide: 0.17 },
-  { src: "/images/bbq-kabob.svg", rotate: -7, scale: 0.72, jitter: 0.05, slide: -0.13 },
-  { src: "/images/bbq-tomato.svg", rotate: 11, scale: 0.78, jitter: -0.02, slide: 0.09 },
-  { src: "/images/bbq-tools.svg", rotate: 9, scale: 0.95, jitter: -0.03, slide: 0.16 },
-  { src: "/images/bbq-steak.svg", rotate: -13, flip: true, scale: 0.82, jitter: 0.03, slide: -0.15 },
-  { src: "/images/bbq-sauce.svg", rotate: 7, scale: 0.78, jitter: -0.03, slide: 0.05 },
-  { src: "/images/bbq-kabob.svg", rotate: -15, flip: true, scale: 0.7, jitter: 0.03, slide: -0.08 },
+  { src: "/images/bbq-grill.svg", rotate: -9, scale: 1.05, jitter: 0.03, gap: 0.5 },
+  { src: "/images/bbq-steak.svg", rotate: 13, flip: true, scale: 0.8, jitter: -0.04, gap: 0 },
+  { src: "/images/bbq-kabob.svg", rotate: -7, scale: 0.72, jitter: 0.05, gap: 1.9 },
+  { src: "/images/bbq-tomato.svg", rotate: 11, scale: 0.78, jitter: -0.02, gap: 1.1 },
+  { src: "/images/bbq-tools.svg", rotate: 9, scale: 0.95, jitter: -0.03, gap: 2.3 },
+  { src: "/images/bbq-steak.svg", rotate: -13, flip: true, scale: 0.82, jitter: 0.03, gap: 0 },
+  { src: "/images/bbq-sauce.svg", rotate: 7, scale: 0.78, jitter: -0.03, gap: 1.5 },
+  { src: "/images/bbq-kabob.svg", rotate: -15, flip: true, scale: 0.7, jitter: 0.03, gap: 0.8 },
 ];
 const BBQ_EDGE_BOTTOM: BbqIcon[] = [
-  { src: "/images/bbq-tools.svg", rotate: -12, flip: true, scale: 1.0, jitter: -0.03, slide: 0.03 },
-  { src: "/images/bbq-steak.svg", rotate: 10, scale: 0.82, jitter: 0.02, slide: 0.15 },
-  { src: "/images/bbq-kabob.svg", rotate: 14, scale: 0.7, jitter: 0.03, slide: -0.14 },
-  { src: "/images/bbq-tomato.svg", rotate: -9, scale: 0.78, jitter: -0.02, slide: 0.1 },
-  { src: "/images/bbq-grill.svg", rotate: 8, flip: true, scale: 1.02, jitter: 0.03, slide: 0.18 },
-  { src: "/images/bbq-steak.svg", rotate: 9, scale: 0.82, jitter: 0.02, slide: -0.16 },
-  { src: "/images/bbq-sauce.svg", rotate: -11, scale: 0.78, jitter: -0.02, slide: 0.06 },
-  { src: "/images/bbq-kabob.svg", rotate: -15, flip: true, scale: 0.7, jitter: -0.03, slide: -0.07 },
+  { src: "/images/bbq-tools.svg", rotate: -12, flip: true, scale: 1.0, jitter: -0.03, gap: 1.3 },
+  { src: "/images/bbq-steak.svg", rotate: 10, scale: 0.82, jitter: 0.02, gap: 2.1 },
+  { src: "/images/bbq-kabob.svg", rotate: 14, scale: 0.7, jitter: 0.03, gap: 0 },
+  { src: "/images/bbq-tomato.svg", rotate: -9, scale: 0.78, jitter: -0.02, gap: 1.7 },
+  { src: "/images/bbq-grill.svg", rotate: 8, flip: true, scale: 1.02, jitter: 0.03, gap: 0.9 },
+  { src: "/images/bbq-steak.svg", rotate: 9, scale: 0.82, jitter: 0.02, gap: 2.4 },
+  { src: "/images/bbq-sauce.svg", rotate: -11, scale: 0.78, jitter: -0.02, gap: 0 },
+  { src: "/images/bbq-kabob.svg", rotate: -15, flip: true, scale: 0.7, jitter: -0.03, gap: 1.4 },
 ];
 const BBQ_EDGE_LEFT: BbqIcon[] = [
-  { src: "/images/bbq-grill.svg", rotate: -9, scale: 1.02, jitter: 0.03, slide: 0.03 },
-  { src: "/images/bbq-steak.svg", rotate: 13, flip: true, scale: 0.82, jitter: -0.04, slide: 0.16 },
-  { src: "/images/bbq-kabob.svg", rotate: -7, scale: 0.72, jitter: 0.03, slide: -0.14 },
-  { src: "/images/bbq-tools.svg", rotate: 10, scale: 0.95, jitter: -0.03, slide: 0.12 },
-  { src: "/images/bbq-tomato.svg", rotate: 11, scale: 0.78, jitter: 0.03, slide: -0.09 },
-  { src: "/images/bbq-sauce.svg", rotate: 8, scale: 0.78, jitter: -0.04, slide: 0.06 },
+  { src: "/images/bbq-grill.svg", rotate: -9, scale: 1.02, jitter: 0.03, gap: 0.7 },
+  { src: "/images/bbq-steak.svg", rotate: 13, flip: true, scale: 0.82, jitter: -0.04, gap: 2.2 },
+  { src: "/images/bbq-kabob.svg", rotate: -7, scale: 0.72, jitter: 0.03, gap: 0 },
+  { src: "/images/bbq-tools.svg", rotate: 10, scale: 0.95, jitter: -0.03, gap: 1.6 },
+  { src: "/images/bbq-tomato.svg", rotate: 11, scale: 0.78, jitter: 0.03, gap: 1.0 },
+  { src: "/images/bbq-sauce.svg", rotate: 8, scale: 0.78, jitter: -0.04, gap: 2.0 },
 ];
 const BBQ_EDGE_RIGHT: BbqIcon[] = [
-  { src: "/images/bbq-steak.svg", rotate: 9, scale: 0.82, jitter: -0.03, slide: 0.03 },
-  { src: "/images/bbq-kabob.svg", rotate: -12, flip: true, scale: 0.72, jitter: 0.04, slide: 0.15 },
-  { src: "/images/bbq-grill.svg", rotate: 8, flip: true, scale: 1.02, jitter: -0.03, slide: -0.14 },
-  { src: "/images/bbq-tools.svg", rotate: 6, flip: true, scale: 0.95, jitter: -0.02, slide: 0.11 },
-  { src: "/images/bbq-tomato.svg", rotate: 10, scale: 0.78, jitter: -0.03, slide: -0.09 },
-  { src: "/images/bbq-sauce.svg", rotate: -8, flip: true, scale: 0.78, jitter: 0.02, slide: 0.05 },
+  { src: "/images/bbq-steak.svg", rotate: 9, scale: 0.82, jitter: -0.03, gap: 1.2 },
+  { src: "/images/bbq-kabob.svg", rotate: -12, flip: true, scale: 0.72, jitter: 0.04, gap: 0 },
+  { src: "/images/bbq-grill.svg", rotate: 8, flip: true, scale: 1.02, jitter: -0.03, gap: 2.3 },
+  { src: "/images/bbq-tools.svg", rotate: 6, flip: true, scale: 0.95, jitter: -0.02, gap: 0.9 },
+  { src: "/images/bbq-tomato.svg", rotate: 10, scale: 0.78, jitter: -0.03, gap: 1.8 },
+  { src: "/images/bbq-sauce.svg", rotate: -8, flip: true, scale: 0.78, jitter: 0.02, gap: 1.4 },
 ];
 
 // Individually-drawn rects, not an SVG <pattern> tile (and before that, a
@@ -258,12 +255,7 @@ function CounterCheckerBand() {
 // jitters horizontally.
 function BbqIconImg({ icon, axis, iconKey }: { icon: BbqIcon; axis: "x" | "y"; iconKey: string }) {
   const jitter = icon.jitter ?? 0;
-  const slide = icon.slide ?? 0;
-  // Perpendicular jitter (off the centerline) and along-strip slide (off the
-  // even grid) ride on opposite axes: a horizontal top/bottom strip jitters on
-  // Y and slides on X, a vertical left/right strip does the reverse.
-  const perp = axis === "y" ? `translateY(${jitter}in)` : `translateX(${jitter}in)`;
-  const along = axis === "y" ? `translateX(${slide}in)` : `translateY(${slide}in)`;
+  const translate = axis === "y" ? `translateY(${jitter}in)` : `translateX(${jitter}in)`;
   return (
     // eslint-disable-next-line @next/next/no-img-element
     <img
@@ -273,7 +265,7 @@ function BbqIconImg({ icon, axis, iconKey }: { icon: BbqIcon; axis: "x" | "y"; i
       alt=""
       style={
         {
-          transform: `${perp} ${along} rotate(${icon.rotate}deg)${icon.flip ? " scaleX(-1)" : ""}`,
+          transform: `${translate} rotate(${icon.rotate}deg)${icon.flip ? " scaleX(-1)" : ""}`,
           "--icon-scale": icon.scale ?? 1,
         } as CSSProperties
       }
@@ -296,10 +288,13 @@ const CSS_PX_PER_IN = 96;
 const useIsomorphicLayoutEffect = typeof window !== "undefined" ? useLayoutEffect : useEffect;
 
 // Measures a strip's length and repeats the edge's base icon list (cycling
-// through it so rotation/flip/jitter keep varying) to fill it at roughly
-// `BBQ_ICON_SPACING_IN`. The strip is absolutely positioned and
-// `pointer-events: none`, so re-rendering more icons never touches the card's
-// content flow or the pagination measurement.
+// through it so rotation/flip/jitter/gap keep varying) to fill it at roughly
+// `BBQ_ICON_SPACING_IN`. Between and around the icons sit flexible spacers
+// whose `flex-grow` is the upcoming icon's `gap` weight, so flexbox shares the
+// strip's leftover room out unevenly — the space before each icon genuinely
+// differs, and a 0-weight spacer collapses so two icons cluster. The strip is
+// absolutely positioned and `pointer-events: none`, so re-rendering more icons
+// never touches the card's content flow or the pagination measurement.
 function BbqEdge({
   side,
   base,
@@ -338,14 +333,17 @@ function BbqEdge({
 
   return (
     <div ref={ref} className={`recipe-card__bbq-edge recipe-card__bbq-edge--${side}`}>
-      {Array.from({ length: count }, (_, i) => (
-        <BbqIconImg
-          key={`${side}-${i}`}
-          iconKey={`${side}-${i}`}
-          icon={base[i % base.length]}
-          axis={horizontal ? "y" : "x"}
-        />
-      ))}
+      {Array.from({ length: count }, (_, i) => {
+        const icon = base[i % base.length];
+        return (
+          <Fragment key={`${side}-${i}`}>
+            <span className="recipe-card__bbq-gap" style={{ flexGrow: icon.gap ?? 1 }} />
+            <BbqIconImg iconKey={`${side}-${i}`} icon={icon} axis={horizontal ? "y" : "x"} />
+          </Fragment>
+        );
+      })}
+      {/* Trailing spacer so the last icon isn't jammed against the far corner. */}
+      <span className="recipe-card__bbq-gap" style={{ flexGrow: 1.3 }} />
     </div>
   );
 }
