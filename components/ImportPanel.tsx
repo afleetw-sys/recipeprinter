@@ -13,6 +13,7 @@ import type { ImportMethod } from "@/types/recipe";
 import type { QueueItem } from "@/types/recipe";
 import { track, truncateReason, type ImportFailureCode } from "@/lib/analytics";
 import { ImportError } from "@/lib/parser";
+import { captureFailedImportImages } from "@/lib/failedImageCapture";
 import {
   CookPilotLogoIcon,
   ImageIcon,
@@ -304,13 +305,24 @@ export function ImportPanel({
         return setError(validationError.message);
       }
       setBusy(true);
+      const files = imageFiles;
       try {
-        const dataUrls = await prepareImageDataUrls(imageFiles);
-        onAddImages(dataUrls, imageLabel(imageFiles));
+        const dataUrls = await prepareImageDataUrls(files);
+        onAddImages(dataUrls, imageLabel(files));
         setImageFiles([]);
       } catch (err) {
-        trackImageFailure(err instanceof ImportError ? err.code : "decode_failed", truncateReason(err));
+        const category = err instanceof ImportError ? err.code : "decode_failed";
+        const reason = truncateReason(err);
         setError(err instanceof Error ? err.message : "Couldn't read those images. Try different files.");
+        // The image never decoded, so there's no compressed payload — stash the
+        // *originals* (unless they were merely too large) so a decode/HEIC bug
+        // is reproducible. Best-effort; the failure log fires either way.
+        if (category === "too_large") {
+          trackImageFailure(category, reason);
+        } else {
+          const debugImagePath = await captureFailedImportImages(files, { source: "image", category, reason });
+          trackImageFailure(category, reason, debugImagePath ?? undefined);
+        }
       } finally {
         setBusy(false);
       }
@@ -327,9 +339,14 @@ export function ImportPanel({
   // import funnel honest across the browser/queue boundary. Only the failure
   // branch emits — a successful prep is counted by the queue instead, so no
   // attempt is double-reported.
-  function trackImageFailure(category: ImportFailureCode, reason: string) {
+  function trackImageFailure(category: ImportFailureCode, reason: string, debugImagePath?: string) {
     track("recipe_import_started", { source: "image" });
-    track("recipe_import_failed", { source: "image", category, reason });
+    track("recipe_import_failed", {
+      source: "image",
+      category,
+      reason,
+      ...(debugImagePath ? { debugImagePath } : {}),
+    });
   }
 
   // Shared by the file picker and drag-and-drop: never silently swallow a

@@ -63,6 +63,12 @@ type EventProps = {
     hostname?: string;
     reason: string;
     category: ImportFailureCode;
+    /**
+     * For image failures: the Firebase Storage folder the failed image bytes
+     * were stashed in for debugging (see lib/failedImageCapture.ts). Absent
+     * when there was nothing to capture or the capture didn't land.
+     */
+    debugImagePath?: string;
   };
 
   // ---- Printing --------------------------------------------------------
