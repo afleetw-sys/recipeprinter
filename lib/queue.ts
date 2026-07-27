@@ -4,6 +4,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import type { ImportMethod, QueueItem, Recipe } from "@/types/recipe";
 import { track, truncateReason } from "@/lib/analytics";
 import { ImportError, parseImages, parseText, parseUrl } from "@/lib/parser";
+import { captureFailedImportImages } from "@/lib/failedImageCapture";
 import { normalizeImportURL } from "@/lib/cookpilot";
 import { hostnameOf as rawHostnameOf } from "@/lib/url";
 import { uid } from "@/lib/ids";
@@ -224,6 +225,9 @@ export function useQueue() {
       id: string,
       origin: { source: ImportMethod; hostname?: string },
       work: () => Promise<Recipe>,
+      // For image imports: the exact compressed data-URLs sent to the parser,
+      // stashed for debugging if the parse fails (see lib/failedImageCapture.ts).
+      opts?: { failedImages?: string[] },
     ) => {
       patch(id, { status: "parsing", error: undefined });
       track("recipe_import_started", origin);
@@ -236,10 +240,22 @@ export function useQueue() {
           status: "error",
           error: err instanceof Error ? err.message : "Something went wrong while parsing.",
         });
+        const reason = truncateReason(err);
+        const category = err instanceof ImportError ? err.code : "unknown";
+        // Best-effort: stash the failed image(s) and link the event to them.
+        // `await` only to attach the path — capture never throws (see module).
+        const debugImagePath = opts?.failedImages?.length
+          ? await captureFailedImportImages(opts.failedImages, {
+              source: origin.source,
+              category,
+              reason,
+            })
+          : null;
         track("recipe_import_failed", {
           ...origin,
-          reason: truncateReason(err),
-          category: err instanceof ImportError ? err.code : "unknown",
+          reason,
+          category,
+          ...(debugImagePath ? { debugImagePath } : {}),
         });
       }
     },
@@ -293,7 +309,7 @@ export function useQueue() {
         addedAt: Date.now(),
       };
       commit([...itemsRef.current, item]);
-      void runParse(id, { source: "image" }, () => parseImages(images));
+      void runParse(id, { source: "image" }, () => parseImages(images), { failedImages: images });
     },
     [commit, runParse],
   );
