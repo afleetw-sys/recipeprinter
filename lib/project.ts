@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import type { CoverConfig, QueueItem, RecipePagePlacement, Section } from "@/types/recipe";
+import type { CookbookPresetId, CoverConfig, QueueItem, RecipePagePlacement, Section } from "@/types/recipe";
 import { uid } from "@/lib/ids";
 import { sessionStore } from "@/lib/storage";
 
@@ -44,6 +44,10 @@ export interface ProjectMeta {
       cookbook" — false/undefined means the plain print-cards UI. Gated off at
       the entry points for now; see COOKBOOK_ENABLED in lib/cookbookProduct.ts. */
   cookbookMode?: boolean;
+  /** The print-format preset this cookbook exports at (trim/bleed/margin/gutter
+      — see lib/cookbookPresets.ts). Absent = the default preset. Cookbook-only;
+      cleared by `exitCookbook`. */
+  cookbookPreset?: CookbookPresetId;
   /** Section metadata only (id/title/order/chapter-opener fields) — item ids,
       not recipe content. `photoUrl`/`intro` drive the cookbook chapter opener. */
   sections: Array<{ id: string; title?: string; photoUrl?: string; intro?: string; itemIds: string[] }>;
@@ -359,6 +363,15 @@ export function useProjectMeta() {
     [update],
   );
 
+  /** The cookbook's print-format preset (see lib/cookbookPresets.ts). Only the
+      physical export geometry changes; the recipe layout engine is untouched. */
+  const setCookbookPreset = useCallback(
+    (value: CookbookPresetId) => {
+      update((current) => ({ ...current, cookbookPreset: value }));
+    },
+    [update],
+  );
+
   /** Leaving cookbook mode strips every cookbook-only artifact — cover, back
       cover, chapters/dividers, table of contents, and per-recipe page layouts —
       back to a plain print job. The recipes themselves live in the queue and
@@ -437,6 +450,7 @@ export function useProjectMeta() {
     setTocTitle,
     setSectionDividers,
     setCookbookMode,
+    setCookbookPreset,
     exitCookbook,
     setItemPlacement,
     setItemPhotoMode,

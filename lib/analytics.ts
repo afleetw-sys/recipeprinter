@@ -1,7 +1,7 @@
 import type { PostHog } from "posthog-js";
 import { isProductionRuntime } from "@/lib/appEnvironment";
 import type { PrintCardSize, RecipePrintTemplate } from "@/components/RecipeCardPrint";
-import type { ImportMethod } from "@/types/recipe";
+import type { CookbookPresetId, ImportMethod } from "@/types/recipe";
 import type { FeedbackType } from "@/lib/feedback";
 
 /** What product a paywall or purchase refers to. */
@@ -83,13 +83,19 @@ type EventProps = {
     showPhoto: boolean;
     doubleSided: boolean;
     recipeCount: number;
+    /** The cookbook print-format preset, when exporting a cookbook. */
+    cookbookPreset?: CookbookPresetId;
   };
   /**
    * The browser's afterprint fired. Note this does NOT mean paper came out —
    * afterprint fires on cancel too, and no browser distinguishes them. It's
    * "they got as far as the OS dialog and dismissed it".
    */
-  print_dialog_closed: { template: RecipePrintTemplate; cardSize: PrintCardSize };
+  print_dialog_closed: {
+    template: RecipePrintTemplate;
+    cardSize: PrintCardSize;
+    cookbookPreset?: CookbookPresetId;
+  };
   /**
    * Card content overflowed its printable box — the recurring clip/reflow
    * bug, instrumented so it's a rate rather than a hunch.
@@ -112,6 +118,14 @@ type EventProps = {
   purchase_cancelled: { product: PurchasedProduct; template?: RecipePrintTemplate };
   /** Claimed via a CookPilot entitlement rather than paid for. */
   free_template_claimed: { template: RecipePrintTemplate };
+
+  // ---- Cookbook export format ------------------------------------------
+  /** The print-format preset picker was used to choose a format. */
+  cookbook_preset_selected: { preset: CookbookPresetId };
+  /** The post-export "Print your cookbook" screen was shown. */
+  cookbook_print_options_shown: { preset: CookbookPresetId };
+  /** A recommended print-shop link was opened from that screen. */
+  cookbook_printer_clicked: { preset: CookbookPresetId; printer: string };
 
   feedback_submitted: { type: FeedbackType };
 };

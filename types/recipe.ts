@@ -103,7 +103,10 @@ export interface Section {
   items: QueueItem[];
 }
 
-export type BookTrimSize = "letter-portrait" | "8x10-portrait" | "8.5x11-portrait";
+/** Which print-format preset a cookbook exports at. Each id maps to a full
+    page geometry (trim size, bleed, margin, binding gutter) in
+    `lib/cookbookPresets.ts`. Only meaningful in cookbook mode. */
+export type CookbookPresetId = "us-letter" | "hardcover-8x10";
 
 /** How a single recipe's (unchanged) card is placed on the cookbook page.
     `full` — one card per sheet (a cookbook always gives each recipe its own full
@@ -155,7 +158,10 @@ export interface PrintProjectSettings {
   cookbookMode?: boolean;
   tableOfContents?: boolean;
   sectionDividers?: boolean;
-  bookTrimSize?: BookTrimSize;
+  /** The print-format preset a cookbook was last exported at (see
+      `CookbookPresetId`). Undefined for plain-card projects and older cookbooks
+      saved before presets existed — those fall back to the default preset. */
+  bookPreset?: CookbookPresetId;
 }
 
 export interface PrintProject {

@@ -40,6 +40,17 @@ import { useDeckScroller } from "@/lib/useDeckScroller";
 import { usePremiumTemplatePurchase } from "@/lib/usePremiumTemplatePurchase";
 import { useCookbookPurchase } from "@/lib/useCookbookPurchase";
 import { COOKBOOK_ENABLED } from "@/lib/cookbookProduct";
+import {
+  DEFAULT_COOKBOOK_PRESET_ID,
+  getCookbookPreset,
+  gutterSideForRole,
+  presetArtScale,
+  presetCardScale,
+  presetInsets,
+  presetSheetDims,
+  type CookbookPreset,
+} from "@/lib/cookbookPresets";
+import { CookbookPresetPicker } from "@/components/CookbookPresetPicker";
 import { localStore } from "@/lib/storage";
 import { track } from "@/lib/analytics";
 import {
@@ -295,6 +306,8 @@ const ScaledPage = memo(function ScaledPage({
   tocKicker,
   tocTitle,
   tocEdit,
+  preset,
+  gutterSide = "none",
 }: {
   sheet: PageSheet;
   isLastSheet: boolean;
@@ -338,15 +351,51 @@ const ScaledPage = memo(function ScaledPage({
     onKickerChange: (value: string) => void;
     onTitleChange: (value: string) => void;
   };
+  /** Active cookbook print-format preset. When set, the page renders on the
+      preset's physical sheet (trim + bleed) with the Letter content scaled and
+      inset into the safe area; undefined = today's Letter / 6x4 behavior. */
+  preset?: CookbookPreset;
+  /** Which edge carries the binding gutter (verso→right, recto→left,
+      single/cover→none). */
+  gutterSide?: "left" | "right" | "none";
 }) {
   const dims = PAGE_DIMS[size];
   const anySlot = sheet.slots.find((slot): slot is SheetSlot => slot !== null) ?? null;
   if (!anySlot) return null;
 
+  // Cookbook preset geometry (presentation only — the measurement engine never
+  // sees this). The scaler grows from the Letter card to the preset's physical
+  // sheet, and the `--rp-*` vars + `--book-*` classes tell print.css how to
+  // scale/inset the Letter content into the safe area and bleed the artwork.
+  const sheetDims = preset ? presetSheetDims(preset) : null;
+  const pageW = sheetDims ? sheetDims.w : dims.w;
+  const pageH = sheetDims ? sheetDims.h : dims.h;
+  const presetInsetVars = preset ? presetInsets(preset) : null;
+  const presetStyle = (preset
+    ? {
+        "--rp-card-scale": presetCardScale(preset),
+        "--rp-art-scale": presetArtScale(preset),
+        "--rp-inset-block": presetInsetVars!.block,
+        "--rp-inset-outer": presetInsetVars!.outer,
+        "--rp-inset-bind": presetInsetVars!.bind,
+      }
+    : {}) as CSSProperties;
+  const gutterClass = !preset
+    ? ""
+    : gutterSide === "left"
+      ? "rp-bind-left"
+      : gutterSide === "right"
+        ? "rp-bind-right"
+        : "";
+  // Base class (paper bleed + binding side) plus the per-page bucket: `safe`
+  // scales text into the margins; `art` fills the sheet so covers/photos bleed.
+  const presetBaseClass = preset ? `recipe-print-preview--book-preset ${gutterClass}` : "";
+  const presetSafeClass = preset ? "recipe-print-preview--book-safe" : "";
+  const presetArtClass = preset ? "recipe-print-preview--book-art" : "";
+
   // ── Image-spread facing photo ────────────────────────────────────────────
   // A full-bleed photo alone on a letter page, facing the recipe's card page.
   if (sheet.layoutKind === "image") {
-    const letter = PAGE_DIMS.letter;
     const imageSlot = sheet.slots.find(
       (slot): slot is ImageSheetSlot => slot?.kind === "image",
     );
@@ -354,10 +403,14 @@ const ScaledPage = memo(function ScaledPage({
     return (
       <div
         className="recipe-page-scaler"
-        style={{ "--page-scale": scale, "--page-w": `${letter.w}px`, "--page-h": `${letter.h}px` } as CSSProperties}
+        style={{ "--page-scale": scale, "--page-w": `${pageW}px`, "--page-h": `${pageH}px` } as CSSProperties}
       >
         <div className="recipe-page-scaler__inner">
-          <div className="recipe-print-preview recipe-print-preview--letter" data-double-sided="false">
+          <div
+            className={`recipe-print-preview recipe-print-preview--letter ${presetBaseClass} ${presetArtClass}`}
+            style={presetStyle}
+            data-double-sided="false"
+          >
             <div className={`recipe-card-set recipe-card-set--letter recipe-template--${template}`}>
               <div
                 className={`recipe-card-page recipe-card-page--front recipe-card-page--image ${
@@ -378,14 +431,19 @@ const ScaledPage = memo(function ScaledPage({
   // own dedicated page — render the whole sheet as one face rather than the
   // front/back card-page structure below, which only recipes need.
   if (anySlot.kind === "divider" || anySlot.kind === "cover" || anySlot.kind === "toc") {
+    // A cover/back is art-dominant (fill the sheet, bleed the artwork); a TOC or
+    // text divider is text-dominant (scale into the safe area over bleeding
+    // paper).
+    const bucketClass = anySlot.kind === "cover" ? presetArtClass : presetSafeClass;
     return (
       <div
         className="recipe-page-scaler"
-        style={{ "--page-scale": scale, "--page-w": `${dims.w}px`, "--page-h": `${dims.h}px` } as CSSProperties}
+        style={{ "--page-scale": scale, "--page-w": `${pageW}px`, "--page-h": `${pageH}px` } as CSSProperties}
       >
         <div className="recipe-page-scaler__inner">
           <div
-            className={`recipe-print-preview recipe-print-preview--${size}`}
+            className={`recipe-print-preview recipe-print-preview--${size} ${presetBaseClass} ${bucketClass}`}
+            style={presetStyle}
             data-double-sided="false"
           >
             <div className={`recipe-card-set recipe-card-set--${size} recipe-template--${template}`}>
@@ -442,16 +500,17 @@ const ScaledPage = memo(function ScaledPage({
       style={
         {
           "--page-scale": scale,
-          "--page-w": `${dims.w}px`,
-          "--page-h": `${dims.h}px`,
+          "--page-w": `${pageW}px`,
+          "--page-h": `${pageH}px`,
         } as CSSProperties
       }
     >
       <div className="recipe-page-scaler__inner">
         <div
-          className={`recipe-print-preview recipe-print-preview--${size} ${
+          className={`recipe-print-preview recipe-print-preview--${size} ${presetBaseClass} ${presetSafeClass} ${
             showCutLines ? "recipe-print-preview--cut-lines" : ""
           }`}
+          style={presetStyle}
           data-double-sided={doubleSided ? "true" : "false"}
         >
           <div
@@ -609,6 +668,7 @@ export default function PrintPage() {
   const [showSourceUrl, setShowSourceUrl] = useState(false);
   const [showDonateDialog, setShowDonateDialog] = useState(false);
   const [showCookbookOfferDialog, setShowCookbookOfferDialog] = useState(false);
+  const [showCookbookPrintDialog, setShowCookbookPrintDialog] = useState(false);
   const [showExitCookbookConfirm, setShowExitCookbookConfirm] = useState(false);
   const [showFeedbackDialog, setShowFeedbackDialog] = useState(false);
   const [showAddRecipeDialog, setShowAddRecipeDialog] = useState(false);
@@ -680,6 +740,13 @@ export default function PrintPage() {
   const anyRecipeHasSourceUrl =
     items?.some((item) => Boolean(item.recipe?.sourceUrl)) ?? false;
   const cookbookMode = Boolean(projectMeta.meta.cookbookMode);
+  // The cookbook's print-format preset (US Letter / 8×10 hardcover). Only ever
+  // applied in cookbook mode — it changes the exported page geometry, not how
+  // recipes are measured. `activePreset` falls back to the default for older
+  // books; `presetForRender` is the value actually threaded into the pages
+  // (undefined outside cookbook mode, so plain-card output is untouched).
+  const activePreset = getCookbookPreset(projectMeta.meta.cookbookPreset);
+  const presetForRender: CookbookPreset | undefined = cookbookMode ? activePreset : undefined;
   // Cookbook photos are set book-wide via the 3-way "Photos" control
   // (`photoStyle`); plain card mode keeps its own header-photo checkbox
   // (`showPhoto`). Default "card" = a header photo in each recipe card.
@@ -920,6 +987,9 @@ export default function PrintPage() {
     // a bound cookbook rarely wants a URL under every recipe; the cook can turn
     // it on if they do.
     if (cardSize === "card-6x4") setCardSize("letter");
+    // Give the book a default print format (US Letter) so export geometry is
+    // set from the start; a returning book keeps whatever it chose.
+    if (!projectMeta.meta.cookbookPreset) projectMeta.setCookbookPreset(DEFAULT_COOKBOOK_PRESET_ID);
     setShowPhoto(true);
     // Book-wide photo default: a header photo in each card. Respected if the
     // cook already chose a style (e.g. came back into a book).
@@ -1121,7 +1191,10 @@ export default function PrintPage() {
   // spread (not a single page). `activeNavIndex` then indexes `spreads`, and the
   // controls/editing target a FOCUSED page within the active spread.
   const cookbookView = spreads.length > 0;
-  const spreadWidth = PAGE_DIMS.letter.w * 2;
+  // In cookbook mode the deck pages are the preset's physical sheet (trim +
+  // bleed), not the plain Letter card — so on-screen sizing keys off the sheet.
+  const previewDims = cookbookMode ? presetSheetDims(activePreset) : PAGE_DIMS[previewCardSize];
+  const spreadWidth = previewDims.w * 2;
   // Sheet index → its representative nav item index (the first nav item on it).
   const navIndexForSheet = useMemo(() => {
     const map = new Map<number, number>();
@@ -1140,7 +1213,7 @@ export default function PrintPage() {
     continueOnBack,
     singleRecipePrintView,
     pageWidth: cookbookView ? spreadWidth : PAGE_DIMS[previewCardSize].w,
-    pageHeight: PAGE_DIMS[previewCardSize].h,
+    pageHeight: cookbookView ? previewDims.h : PAGE_DIMS[previewCardSize].h,
   });
 
   // The page (sheet) inside the active spread the controls act on. Clicking a
@@ -1188,6 +1261,7 @@ export default function PrintPage() {
       showPhoto,
       doubleSided,
       recipeCount: items?.filter((item) => item.recipe).length ?? 0,
+      cookbookPreset: cookbookMode ? activePreset.id : undefined,
     });
     window.print();
   }
@@ -1235,6 +1309,7 @@ export default function PrintPage() {
           cookbookMode: projectMeta.meta.cookbookMode,
           tableOfContents: projectMeta.meta.tableOfContents,
           sectionDividers: projectMeta.meta.sectionDividers,
+          bookPreset: projectMeta.meta.cookbookPreset,
         },
         itemPlacements: materialized.itemPlacements,
       });
@@ -1368,18 +1443,31 @@ export default function PrintPage() {
       setShowCookbookUnlockDialog(true);
       return;
     }
-    if (selectedPremiumTemplate) {
-      if (templateLocked) {
-        track("paywall_shown", {
-          product: "premium_template",
-          template: selectedPremiumTemplate,
-        });
-        setShowUnlockDialog(true);
-        return;
-      }
-      printNow();
+    if (selectedPremiumTemplate && templateLocked) {
+      track("paywall_shown", {
+        product: "premium_template",
+        template: selectedPremiumTemplate,
+      });
+      setShowUnlockDialog(true);
       return;
     }
+    // An unlocked cookbook export lands on the "Print your cookbook" screen
+    // (format recap → Save as PDF → printer recommendations) rather than jumping
+    // straight to the OS dialog. Plain cards print immediately, as before.
+    if (cookbookMode) {
+      openCookbookPrintDialog();
+      return;
+    }
+    printNow();
+  }
+
+  function openCookbookPrintDialog() {
+    track("cookbook_print_options_shown", { preset: activePreset.id });
+    setShowCookbookPrintDialog(true);
+  }
+
+  function saveCookbookPdf() {
+    setShowCookbookPrintDialog(false);
     printNow();
   }
 
@@ -1567,7 +1655,15 @@ export default function PrintPage() {
   function renderBookSettings() {
     if (!projectMeta.meta.cookbookMode) return null;
     return (
-      <div className="recipe-config-section recipe-config-section--settings">
+      <>
+        <CookbookPresetPicker
+          value={activePreset.id}
+          onChange={(id) => {
+            projectMeta.setCookbookPreset(id);
+            track("cookbook_preset_selected", { preset: id });
+          }}
+        />
+        <div className="recipe-config-section recipe-config-section--settings">
         <span className="recipe-config-label">Book</span>
         <label className="recipe-toggle">
           <input
@@ -1592,7 +1688,8 @@ export default function PrintPage() {
             </span>
           </label>
         )}
-      </div>
+        </div>
+      </>
     );
   }
 
@@ -1674,7 +1771,16 @@ export default function PrintPage() {
     function handleAfterPrint() {
       if (!printRequestedRef.current) return;
       printRequestedRef.current = false;
-      track("print_dialog_closed", { template, cardSize });
+      track("print_dialog_closed", {
+        template,
+        cardSize,
+        cookbookPreset: cookbookMode ? activePreset.id : undefined,
+      });
+      // A cookbook's post-export screen is shown at purchase/print time, not
+      // here: afterprint fires whether the user saved, printed, or cancelled, so
+      // it can't stand in for "you exported a cookbook". Only plain-card prints
+      // get the donate/feedback nudge.
+      if (cookbookMode) return;
       if (!shouldShowPostPrintDialog()) return;
 
       markPostPrintDialogShown();
@@ -1683,9 +1789,10 @@ export default function PrintPage() {
 
     window.addEventListener("afterprint", handleAfterPrint);
     return () => window.removeEventListener("afterprint", handleAfterPrint);
-    // template/cardSize are read inside the handler, so the listener has to be
-    // re-registered when they change or it would report a stale configuration.
-  }, [template, cardSize]);
+    // template/cardSize/cookbook state are read inside the handler, so the
+    // listener has to be re-registered when they change or it would report a
+    // stale configuration.
+  }, [template, cardSize, cookbookMode, activePreset.id]);
 
   if (items === null) {
     return (
@@ -1809,7 +1916,12 @@ export default function PrintPage() {
 
   // One page's ScaledPage with all its edit wiring. `focused` = this is the page
   // the controls act on (drives the active side + which edit surface is live).
-  const renderDeckPage = (navItem: NavItem, sheet: PageSheet, focused: boolean) => (
+  const renderDeckPage = (
+    navItem: NavItem,
+    sheet: PageSheet,
+    focused: boolean,
+    role: "left" | "right" | "single" = "single",
+  ) => (
     <ScaledPage
       sheet={sheet}
       isLastSheet={navItem.sheetIndex === sheets.length - 1}
@@ -1819,6 +1931,8 @@ export default function PrintPage() {
       size={previewCardSize}
       template={previewTemplate}
       doubleSided={continueOnBack}
+      preset={presetForRender}
+      gutterSide={gutterSideForRole(role)}
       cookbookMode={Boolean(projectMeta.meta.cookbookMode)}
       showSourceUrl={
         sourceUrlOn ||
@@ -2155,13 +2269,30 @@ export default function PrintPage() {
             </div>
           </div>
           <div
-            className={`recipe-page-deck ${cookbookView ? "recipe-page-deck--book" : ""}`}
+            className={`recipe-page-deck ${cookbookView ? "recipe-page-deck--book" : ""} ${
+              cookbookMode ? activePreset.pageClass : ""
+            }`}
             id="recipe-page-deck"
             ref={deckRef}
           >
             {cookbookView
               ? spreads.map((spread, index) => {
                   const isActive = index === activeNavIndex;
+                  // A full-page-photo spread (image verso facing its recipe
+                  // recto) is ONE logical page even though it's two physical
+                  // pages: editing it edits the recipe, and its facing photo has
+                  // no controls of its own. So focus/outline treat the pair as a
+                  // unit — clicking either page focuses the recipe, and both get
+                  // the focus ring together.
+                  const leftSheet = spread.left != null ? sheets[spread.left] : null;
+                  const rightSheet = spread.right != null ? sheets[spread.right] : null;
+                  const isImageSpread =
+                    leftSheet?.layoutKind === "image" || rightSheet?.layoutKind === "image";
+                  const imageSpreadFocusSheet = isImageSpread
+                    ? leftSheet?.layoutKind === "image"
+                      ? spread.right
+                      : spread.left
+                    : null;
                   // `trailing` = a parity blank with no real page after it (the
                   // pad on the last spread when there's no back cover). It still
                   // holds the spread's layout on screen, but must NOT print — a
@@ -2171,29 +2302,42 @@ export default function PrintPage() {
                       className={`recipe-spread__blank ${trailing ? "recipe-spread__blank--trailing" : ""}`}
                       aria-hidden
                       style={{
-                        width: `${PAGE_DIMS.letter.w * deckScale}px`,
-                        height: `${PAGE_DIMS.letter.h * deckScale}px`,
+                        width: `${previewDims.w * deckScale}px`,
+                        height: `${previewDims.h * deckScale}px`,
                       }}
                     />
                   );
-                  const renderSide = (sheetIndex: number | null) => {
+                  const renderSide = (
+                    sheetIndex: number | null,
+                    role: "left" | "right" | "single",
+                  ) => {
                     if (sheetIndex === null) return renderBlank();
                     const pageSheet = sheets[sheetIndex];
                     if (!pageSheet) return renderBlank();
                     const ni = navIndexForSheet.get(sheetIndex);
                     const pageNav = ni != null ? navItems[ni] : null;
                     if (!pageNav) return renderBlank();
-                    const isFocused = isActive && focusedSheet === sheetIndex;
+                    // For an image spread, either page focused outlines both;
+                    // for a normal spread, only the specific page.
+                    const isFocused =
+                      isActive &&
+                      (isImageSpread
+                        ? focusedSheet === spread.left || focusedSheet === spread.right
+                        : focusedSheet === sheetIndex);
                     return (
                       <div
                         className={`recipe-spread__page ${isFocused ? "is-focused" : ""}`}
                         onClick={(event) => {
                           event.stopPropagation();
                           if (!isActive) goToSlide(index);
-                          setFocusedSheetIndex(sheetIndex);
+                          // Focus the recipe of an image spread no matter which
+                          // half was clicked, so its Edit controls are available.
+                          setFocusedSheetIndex(
+                            isImageSpread ? imageSpreadFocusSheet ?? sheetIndex : sheetIndex,
+                          );
                         }}
                       >
-                        {renderDeckPage(pageNav, pageSheet, isFocused)}
+                        {renderDeckPage(pageNav, pageSheet, isFocused, role)}
                       </div>
                     );
                   };
@@ -2215,15 +2359,23 @@ export default function PrintPage() {
                       aria-current={isActive}
                     >
                       {isActive && activeNavItem && renderActiveControls(activeNavItem, spreadWidth * deckScale)}
-                      <div className={`recipe-spread ${spread.single ? "recipe-spread--single" : ""}`}>
+                      <div
+                        className={`recipe-spread ${spread.single ? "recipe-spread--single" : ""} ${
+                          isImageSpread &&
+                          isActive &&
+                          (focusedSheet === spread.left || focusedSheet === spread.right)
+                            ? "recipe-spread--image-focused"
+                            : ""
+                        }`}
+                      >
                         {spread.single
-                          ? renderSide(spread.right ?? spread.left)
+                          ? renderSide(spread.right ?? spread.left, "single")
                           : (
                             <>
-                              {renderSide(spread.left)}
+                              {renderSide(spread.left, "left")}
                               {spread.right === null && index === spreads.length - 1
                                 ? renderBlank(true)
-                                : renderSide(spread.right)}
+                                : renderSide(spread.right, "right")}
                             </>
                           )}
                       </div>
@@ -2460,7 +2612,11 @@ export default function PrintPage() {
         >
           <div className="recipe-config-panel__header">
             <h2 className="text-cp-h2 font-extrabold tracking-[-0.02em]">
-              {mobileDrawer === "template" ? "Themes" : "Print setup"}
+              {mobileDrawer === "template"
+                ? "Themes"
+                : projectMeta.meta.cookbookMode
+                  ? "Book Settings"
+                  : "Print setup"}
             </h2>
             <button
               type="button"
@@ -2860,6 +3016,11 @@ export default function PrintPage() {
         cookbookPrice={cookbookPrice}
         cookbookPurchaseBusy={cookbookPurchaseBusy}
         onUnlockCookbook={() => void purchaseCookbookAndContinue(() => void handlePrint())}
+        cookbookPreset={activePreset}
+        onChangeFormat={() => setShowCookbookUnlockDialog(false)}
+        showCookbookPrintDialog={showCookbookPrintDialog}
+        onCloseCookbookPrintDialog={() => setShowCookbookPrintDialog(false)}
+        onSaveCookbookPdf={saveCookbookPdf}
         showDeleteRecipeDialog={pendingDelete !== null}
         deleteItemTitle={pendingDelete?.title ?? "this item"}
         deleteItemDescription={
