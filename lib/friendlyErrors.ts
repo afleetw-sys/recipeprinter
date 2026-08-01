@@ -61,6 +61,33 @@ export function friendlyClaimError(error: unknown): string {
   return "We couldn't claim that template right now. Please try again.";
 }
 
+export function friendlyPhotoUploadError(error: unknown): string {
+  const code = (error as { code?: string })?.code ?? "";
+  const message = error instanceof Error ? error.message : String(error || "");
+
+  // Thrown by lib/coverPhoto.ts when the browser can't decode the file — most
+  // often a HEIC or a corrupt image picked past the `accept="image/*"` filter.
+  if (/unable to load image|could not encode|canvas unavailable/i.test(message)) {
+    return "We couldn't read that image. Try a different photo — a JPG or PNG works best.";
+  }
+  // Firebase Storage error codes are `storage/unauthorized`, `storage/canceled`,
+  // `storage/quota-exceeded`, `storage/retry-limit-exceeded`, etc.
+  if (code.includes("unauthorized") || code.includes("unauthenticated") || code.includes("permission")) {
+    return "We couldn't save that photo. Please try again.";
+  }
+  if (code.includes("quota") || code.includes("retry-limit")) {
+    return "We couldn't save that photo right now. Please try again in a moment.";
+  }
+  if (code.includes("cancel")) {
+    return "That photo upload was cancelled.";
+  }
+  if (code.includes("network") || /network|timeout|failed to fetch|temporarily unavailable/i.test(message)) {
+    return "We couldn't connect to save that photo. Check your connection and try again.";
+  }
+
+  return "We couldn't add that photo. Please try again.";
+}
+
 export function friendlyPurchaseSetupError(error: unknown): string {
   const message = error instanceof Error ? error.message : String(error || "");
 

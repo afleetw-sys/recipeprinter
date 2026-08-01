@@ -12,6 +12,8 @@ import {
   type ReactNode,
 } from "react";
 import { formatRecipeTime } from "@/lib/time";
+import { uploadPhotoFile } from "@/lib/photoStorage";
+import { friendlyPhotoUploadError } from "@/lib/friendlyErrors";
 import { ICON_SIZE, XIcon } from "@/components/icons";
 import { useWideColumns } from "@/lib/measureHeights";
 import {
@@ -57,6 +59,13 @@ export const PRINT_CARD_SIZE_OPTIONS: Array<{
   { id: "card-6x4", label: "6 x 4 card", detail: "Landscape recipe card" },
 ];
 
+/** The `.recipe-print-preview--*` class for a card size — applied by anything
+    rendering a card (preview AND the off-screen measurer) so measurement matches
+    what prints. */
+export function previewSizeClass(size: PrintCardSize): string {
+  return `recipe-print-preview--${size}`;
+}
+
 export type RecipePrintTemplate =
   | "classic"
   | "heirloom"
@@ -79,12 +88,12 @@ export const RECIPE_PRINT_TEMPLATE_OPTIONS: Array<{
   { id: "heirloom", label: "Heirloom", detail: "Cream stock, red utensil keepsake" },
   { id: "keepsake", label: "Keepsake", detail: "Cream recipe-box card with classic family style" },
   { id: "bistro", label: "Bistro", detail: "Blue checks, tomato red, playful kitchen card" },
-  // Fruit Stand is withheld from the picker for now — not ready to launch.
-  // Only this list is gated: the `fruit` template id, its styles and its
-  // premium mapping all stay, so a project already saved on it keeps
+  // Fruit Stand and Cookout are withheld from the picker for now — not ready to
+  // launch. Only this list is gated: the `fruit`/`cookout` template ids, their
+  // styles and premium mappings all stay, so a project already saved on one keeps
   // rendering (and printing) exactly as before instead of falling back to a
-  // different look. Re-launching is a one-line restore.
-  { id: "cookout", label: "Cookout", detail: "Warm BBQ card with a grilled-icon border" },
+  // different look. Re-launching either is a one-line restore.
+  // { id: "cookout", label: "Cookout", detail: "Warm BBQ card with a grilled-icon border" },
 ];
 
 // A BBQ-icon border for the cookout template, running continuously along
@@ -424,6 +433,7 @@ export const RecipeCardFace = memo(function RecipeCardFace({
   inlineEdit,
   template,
   showDecoration = true,
+  cookbookMode = false,
 }: {
   recipe: Recipe;
   ingredients: Recipe["ingredients"];
@@ -443,6 +453,10 @@ export const RecipeCardFace = memo(function RecipeCardFace({
   template?: RecipePrintTemplate;
   /** See `TemplateDecoration` — false on surfaces that never show it. */
   showDecoration?: boolean;
+  /** Cookbook mode: the source link moves up under the title's meta line (so it
+      doesn't compete with the page-number folio), and the "Printed with
+      RecipePrinter" footer is dropped entirely — even on free templates. */
+  cookbookMode?: boolean;
 }) {
   const source = sourceLabel(recipe);
   const meta = metaBits(recipe);
@@ -480,6 +494,7 @@ export const RecipeCardFace = memo(function RecipeCardFace({
   // the source image 404s or is hotlink-blocked we drop it rather than print a
   // broken-image box.
   const [imageFailed, setImageFailed] = useState(false);
+  const [photoUploadError, setPhotoUploadError] = useState<string | null>(null);
   useEffect(() => {
     setImageFailed(false);
   }, [recipe.image]);
@@ -548,15 +563,21 @@ export const RecipeCardFace = memo(function RecipeCardFace({
     }
   }
 
-  function handleImageChange(event: React.ChangeEvent<HTMLInputElement>) {
+  async function handleImageChange(event: React.ChangeEvent<HTMLInputElement>) {
     const file = event.target.files?.[0];
     event.target.value = "";
     if (!file) return;
-    const reader = new FileReader();
-    reader.onload = () => {
-      if (typeof reader.result === "string") inlineEdit?.onCommit(reader.result);
-    };
-    reader.readAsDataURL(file);
+    // Downscale + store in Firebase Storage, then commit only the URL — never
+    // the base64 bytes (which would bloat sessionStorage and the saved doc).
+    setPhotoUploadError(null);
+    try {
+      inlineEdit?.onCommit(await uploadPhotoFile(file));
+    } catch (error) {
+      // Upload failed — leave the current photo untouched rather than commit a
+      // broken value, and tell the user rather than fail silently.
+      console.warn("RecipePrinter: recipe photo upload failed", error);
+      setPhotoUploadError(friendlyPhotoUploadError(error));
+    }
   }
 
   // A freshly-inserted blank line has nothing for the user to have clicked
@@ -847,6 +868,29 @@ export const RecipeCardFace = memo(function RecipeCardFace({
             ) : (
               meta.length > 0 && <p className="recipe-card__meta">{meta.join("  ·  ")}</p>
             )}
+            {/* Cookbook mode: the source link lives here, right under the meta
+                line, instead of in the footer where it competes with the page
+                folio. Same content/edit target as the footer version below. */}
+            {cookbookMode && showSourceUrl && showHeader && (
+              canEdit && inlineEdit ? (
+                <input
+                  className="recipe-card__inline-input recipe-card__source-line"
+                  value={
+                    sameTarget(inlineEdit.editingTarget, { kind: "sourceUrl" })
+                      ? inlineEdit.value
+                      : recipe.sourceUrl ?? ""
+                  }
+                  placeholder="Add link"
+                  aria-label="Source link"
+                  onFocus={() => startEdit({ kind: "sourceUrl" }, recipe.sourceUrl ?? "")}
+                  onChange={(event) => inlineEdit.onValueChange(event.target.value)}
+                  onBlur={commitEdit}
+                  onKeyDown={handleEditKeyDown}
+                />
+              ) : (
+                source && <p className="recipe-card__source-line">{source}</p>
+              )
+            )}
           </div>
           {showPhoto && (
             <span className={`recipe-card__photo ${canEdit ? "recipe-card__photo--editable" : ""}`}>
@@ -877,6 +921,11 @@ export const RecipeCardFace = memo(function RecipeCardFace({
                   >
                     <XIcon size={ICON_SIZE.xs} />
                   </button>
+                  {photoUploadError && (
+                    <p className="recipe-card__photo-error no-print" role="alert">
+                      {photoUploadError}
+                    </p>
+                  )}
                 </>
               )}
             </span>
@@ -1051,38 +1100,144 @@ export const RecipeCardFace = memo(function RecipeCardFace({
         )}
       </div>
 
-      <footer className="recipe-card__footer">
-        <span className="recipe-card__footer-brand">Printed with RecipePrinter</span>
-        {showSourceUrl && showHeader && (
-          canEdit && inlineEdit ? (
-            <input
-              className="recipe-card__inline-input recipe-card__footer-source"
-              value={
-                sameTarget(inlineEdit.editingTarget, { kind: "sourceUrl" })
-                  ? inlineEdit.value
-                  : recipe.sourceUrl ?? ""
-              }
-              placeholder="Add link"
-              aria-label="Source link"
-              onFocus={() => startEdit({ kind: "sourceUrl" }, recipe.sourceUrl ?? "")}
-              onChange={(event) => inlineEdit.onValueChange(event.target.value)}
-              onBlur={commitEdit}
-              onKeyDown={handleEditKeyDown}
-            />
-          ) : (
-            source && <span className="recipe-card__footer-source">{source}</span>
-          )
-        )}
-      </footer>
+      {/* No footer in cookbook mode: the "Printed with RecipePrinter" brand is
+          dropped for a bound book (even on free templates), and the source link
+          has moved up under the meta line above. */}
+      {!cookbookMode && (
+        <footer className="recipe-card__footer">
+          <span className="recipe-card__footer-brand">Printed with RecipePrinter</span>
+          {showSourceUrl && showHeader && (
+            canEdit && inlineEdit ? (
+              <input
+                className="recipe-card__inline-input recipe-card__footer-source"
+                value={
+                  sameTarget(inlineEdit.editingTarget, { kind: "sourceUrl" })
+                    ? inlineEdit.value
+                    : recipe.sourceUrl ?? ""
+                }
+                placeholder="Add link"
+                aria-label="Source link"
+                onFocus={() => startEdit({ kind: "sourceUrl" }, recipe.sourceUrl ?? "")}
+                onChange={(event) => inlineEdit.onValueChange(event.target.value)}
+                onBlur={commitEdit}
+                onKeyDown={handleEditKeyDown}
+              />
+            ) : (
+              source && <span className="recipe-card__footer-source">{source}</span>
+            )
+          )}
+        </footer>
+      )}
     </article>
   );
 });
+
+// A small edit-mode strip for choosing a cover/chapter photo: "None", the
+// book's recipe photos, and an upload. Screen-only (see `no-print`).
+function BookPhotoPicker({
+  current,
+  images,
+  onSelect,
+  gridActive = false,
+  onSelectGrid,
+}: {
+  current?: string;
+  images: string[];
+  onSelect: (url: string | undefined) => void;
+  /** When set, offers a "Grid" collage option (cover only). */
+  gridActive?: boolean;
+  onSelectGrid?: () => void;
+}) {
+  const [uploading, setUploading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  return (
+    <div className="recipe-card__cover-photopicker no-print" role="group" aria-label="Photo">
+      {onSelectGrid && (
+        <button
+          type="button"
+          className={`recipe-card__cover-photopicker-swatch recipe-card__cover-photopicker-swatch--none ${gridActive ? "is-active" : ""}`}
+          onClick={onSelectGrid}
+          aria-label="Photo grid"
+          aria-pressed={gridActive}
+        >
+          Grid
+        </button>
+      )}
+      <button
+        type="button"
+        className={`recipe-card__cover-photopicker-swatch recipe-card__cover-photopicker-swatch--none ${!current && !gridActive ? "is-active" : ""}`}
+        onClick={() => onSelect(undefined)}
+        aria-label="No photo"
+        aria-pressed={!current && !gridActive}
+      >
+        None
+      </button>
+      {images.map((image, index) => (
+        <button
+          key={`${image}-${index}`}
+          type="button"
+          className={`recipe-card__cover-photopicker-swatch ${current === image ? "is-active" : ""}`}
+          onClick={() => onSelect(image)}
+          aria-label={`Use recipe photo ${index + 1}`}
+          aria-pressed={current === image}
+        >
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src={image} alt="" />
+        </button>
+      ))}
+      <label
+        className={`recipe-card__cover-photopicker-swatch recipe-card__cover-photopicker-swatch--upload ${
+          uploading ? "is-uploading" : ""
+        }`}
+      >
+        {uploading ? "Uploading…" : "Upload"}
+        <input
+          type="file"
+          accept="image/*"
+          hidden
+          disabled={uploading}
+          onChange={async (event) => {
+            const file = event.target.files?.[0];
+            event.target.value = "";
+            if (!file) return;
+            // Store in Firebase Storage and keep only the URL — never the base64
+            // bytes (see lib/photoStorage.ts).
+            setError(null);
+            setUploading(true);
+            try {
+              onSelect(await uploadPhotoFile(file));
+            } catch (uploadError) {
+              // A failed upload/decode leaves the current photo untouched — and
+              // says so, rather than silently flipping "Uploading…" back to
+              // "Upload" with no explanation.
+              console.warn("RecipePrinter: cover photo upload failed", uploadError);
+              setError(friendlyPhotoUploadError(uploadError));
+            } finally {
+              setUploading(false);
+            }
+          }}
+        />
+      </label>
+      {error && (
+        <p className="recipe-card__cover-photopicker-error" role="alert">
+          {error}
+        </p>
+      )}
+    </div>
+  );
+}
 
 export interface DividerCardInlineEdit {
   value: string;
   onChange: (value: string) => void;
   onCommit: () => void;
   onCancel: () => void;
+  /** Chapter-opener intro line + photo, edited alongside the title. */
+  intro?: string;
+  onIntroChange?: (value: string) => void;
+  photoUrl?: string;
+  recipeImages?: string[];
+  onPhotoChange?: (url: string | undefined) => void;
 }
 
 // A section divider is always exactly one physical page — no ingredients/
@@ -1092,15 +1247,31 @@ export interface DividerCardInlineEdit {
 // `<h1>` it replaces (plus the shared `.recipe-card__inline-input` reset, see
 // its comment in globals.css) so the box is pixel-identical — editing swaps
 // the element, not the layout.
+// Spelled-out chapter ordinal for the opener eyebrow ("Chapter Two"), falling
+// back to the numeral past what's spelled so it never reads "Chapter undefined".
+const CHAPTER_WORDS = [
+  "One", "Two", "Three", "Four", "Five", "Six", "Seven", "Eight", "Nine", "Ten",
+  "Eleven", "Twelve",
+];
+function chapterWord(n: number): string {
+  return CHAPTER_WORDS[n - 1] ?? String(n);
+}
+
 export const DividerFace = memo(function DividerFace({
   title,
-  recipeTitles = [],
+  chapterNumber = 1,
+  photoUrl,
+  intro,
   previewHidden = false,
   inlineEdit,
   template,
   showDecoration = true,
 }: {
   title: string;
+  chapterNumber?: number;
+  photoUrl?: string;
+  intro?: string;
+  /** Kept for back-compat / TOC callers; the opener itself no longer lists them. */
   recipeTitles?: string[];
   previewHidden?: boolean;
   inlineEdit?: DividerCardInlineEdit;
@@ -1108,44 +1279,60 @@ export const DividerFace = memo(function DividerFace({
   /** See `TemplateDecoration` — false on surfaces that never show it. */
   showDecoration?: boolean;
 }) {
-  const recipeCount = recipeTitles.length;
-
   return (
     <article
-      className="recipe-card recipe-card--divider"
+      className="recipe-card recipe-card--divider recipe-card--chapter"
       data-preview-hidden={previewHidden ? "true" : undefined}
     >
-      <div className="recipe-card__accent" aria-hidden />
+      <div className="recipe-card__chapter-photo" aria-hidden>
+        {photoUrl && (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img src={photoUrl} alt="" className="recipe-card__chapter-image" />
+        )}
+      </div>
+      {inlineEdit?.onPhotoChange && (
+        <BookPhotoPicker
+          current={photoUrl}
+          images={inlineEdit.recipeImages ?? []}
+          onSelect={inlineEdit.onPhotoChange}
+        />
+      )}
+      <div className="recipe-card__chapter-frame" aria-hidden />
       <TemplateDecoration template={template} show={showDecoration} />
-      <div className="recipe-card__divider-content">
-        <p className="recipe-card__divider-kicker">Section</p>
+      <div className="recipe-card__chapter-body">
+        <span className="recipe-card__chapter-ornament" aria-hidden />
+        <p className="recipe-card__chapter-eyebrow">Chapter {chapterWord(chapterNumber)}</p>
         {inlineEdit ? (
-          <input
+          <textarea
             autoFocus
-            className="recipe-card__inline-input recipe-card__divider-title"
+            rows={1}
+            className="recipe-card__inline-textarea recipe-card__divider-title"
             value={inlineEdit.value}
-            aria-label="Section title"
+            aria-label="Chapter title"
             onChange={(event) => inlineEdit.onChange(event.target.value)}
             onBlur={inlineEdit.onCommit}
             onKeyDown={(event) => {
-              if (event.key === "Enter") event.currentTarget.blur();
+              if (event.key === "Enter") {
+                event.preventDefault();
+                event.currentTarget.blur();
+              }
               if (event.key === "Escape") inlineEdit.onCancel();
             }}
           />
         ) : (
           <h1 className="recipe-card__divider-title">{title}</h1>
         )}
-        {recipeCount > 0 && (
-          <div className="recipe-card__divider-recipes" aria-label="Recipes in this section">
-            <p className="recipe-card__divider-count">
-              {recipeCount} recipe{recipeCount === 1 ? "" : "s"}
-            </p>
-            <ol className="recipe-card__divider-recipe-list">
-              {recipeTitles.slice(0, 8).map((recipeTitle, index) => (
-                <li key={`${recipeTitle}-${index}`}>{recipeTitle}</li>
-              ))}
-            </ol>
-          </div>
+        {inlineEdit?.onIntroChange ? (
+          <textarea
+            rows={1}
+            className="recipe-card__inline-textarea recipe-card__chapter-intro"
+            value={inlineEdit.intro ?? ""}
+            placeholder="A short chapter intro…"
+            aria-label="Chapter intro"
+            onChange={(event) => inlineEdit.onIntroChange?.(event.target.value)}
+          />
+        ) : (
+          intro && <p className="recipe-card__chapter-intro">{intro}</p>
         )}
       </div>
     </article>
@@ -1155,6 +1342,8 @@ export const DividerFace = memo(function DividerFace({
 export interface CoverCardInlineEdit {
   cover: CoverConfig;
   onChange: (cover: CoverConfig) => void;
+  /** Candidate cover photos (the book's recipe images) offered in edit mode. */
+  recipeImages?: string[];
 }
 
 export const CoverFace = memo(function CoverFace({
@@ -1178,55 +1367,238 @@ export const CoverFace = memo(function CoverFace({
     inlineEdit?.onChange({ ...draft, ...patch });
   }
 
-  return (
-    <article
-      className={`recipe-card recipe-card--cover recipe-card--cover-${side}`}
-      data-preview-hidden={previewHidden ? "true" : undefined}
-    >
-      <div className="recipe-card__accent" aria-hidden />
-      <TemplateDecoration template={draft.template} show={showDecoration} />
-      {draft.imageUrl && (
-        // eslint-disable-next-line @next/next/no-img-element
-        <img src={draft.imageUrl} alt="" className="recipe-card__cover-image" />
-      )}
-      <div className="recipe-card__cover-content">
-        {side === "front" &&
-          (canEdit ? (
-            <input
-              autoFocus
-              className="recipe-card__inline-input recipe-card__cover-title"
-              value={draft.title}
-              placeholder="Cover title"
-              aria-label="Cover title"
-              onChange={(event) => set({ title: event.target.value })}
+  // Back cover: a quiet closing page on the template's own paper — a short
+  // blurb and a "from the kitchen of" line, centered. No photo/scrim.
+  if (side === "back") {
+    return (
+      <article
+        className="recipe-card recipe-card--cover recipe-card--cover-back"
+        data-preview-hidden={previewHidden ? "true" : undefined}
+      >
+        <div className="recipe-card__cover-photo recipe-card__cover-photo--paper" aria-hidden />
+        <TemplateDecoration template={draft.template} show={showDecoration} />
+        <div className="recipe-card__cover-band" aria-hidden />
+        <div className="recipe-card__cover-back-content">
+          {canEdit ? (
+            <textarea
+              className="recipe-card__inline-textarea recipe-card__cover-blurb"
+              value={draft.blurb ?? ""}
+              placeholder="A closing line…"
+              aria-label="Back cover blurb"
+              onChange={(event) => set({ blurb: event.target.value || undefined })}
             />
           ) : (
-            draft.title && <h1 className="recipe-card__cover-title">{draft.title}</h1>
-          ))}
-        {side === "front" &&
-          (canEdit ? (
-            <input
-              className="recipe-card__inline-input recipe-card__cover-subtitle"
-              value={draft.subtitle ?? ""}
-              placeholder="Subtitle"
-              aria-label="Cover subtitle"
-              onChange={(event) => set({ subtitle: event.target.value || undefined })}
-            />
-          ) : (
-            draft.subtitle && <p className="recipe-card__cover-subtitle">{draft.subtitle}</p>
-          ))}
-        {side === "front" &&
-          (canEdit ? (
-            <input
-              className="recipe-card__inline-input recipe-card__cover-author"
+            draft.blurb && <p className="recipe-card__cover-blurb">{draft.blurb}</p>
+          )}
+          {canEdit ? (
+            <textarea
+              rows={1}
+              className="recipe-card__inline-textarea recipe-card__cover-from"
               value={draft.author ?? ""}
-              placeholder="Author"
-              aria-label="Cover author"
+              placeholder="From the kitchen of…"
+              aria-label="Back cover credit"
               onChange={(event) => set({ author: event.target.value || undefined })}
             />
           ) : (
-            draft.author && <p className="recipe-card__cover-author">{draft.author}</p>
+            draft.author && <p className="recipe-card__cover-from">{draft.author}</p>
+          )}
+        </div>
+      </article>
+    );
+  }
+
+  // Front cover: a photo collage (default), a single photo, or — when there are
+  // no photos — a photo-free typographic cover on the template's paper. Never a
+  // placeholder fill. `coverMode` drives the styling (scrim + white lockup over
+  // photos; template-colored lockup on paper when there's no photo).
+  const gridImages = (draft.gridImages ?? []).filter(Boolean);
+  const coverMode = gridImages.length > 0 ? "grid" : draft.imageUrl ? "photo" : "none";
+  const gridColumns = gridImages.length <= 2 ? Math.max(1, gridImages.length) : 2;
+  const candidateImages = inlineEdit?.recipeImages ?? [];
+
+  return (
+    <article
+      className="recipe-card recipe-card--cover recipe-card--cover-front"
+      data-cover-mode={coverMode}
+      data-preview-hidden={previewHidden ? "true" : undefined}
+    >
+      <div
+        className={`recipe-card__cover-photo ${coverMode === "grid" ? "recipe-card__cover-photo--grid" : ""}`}
+        style={coverMode === "grid" ? ({ "--cover-grid-cols": gridColumns } as CSSProperties) : undefined}
+        aria-hidden
+      >
+        {coverMode === "grid" &&
+          gridImages.slice(0, 6).map((image, index) => (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img key={`${image}-${index}`} src={image} alt="" className="recipe-card__cover-grid-img" />
           ))}
+        {coverMode === "photo" && (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img src={draft.imageUrl} alt="" className="recipe-card__cover-image" />
+        )}
+      </div>
+      <div className="recipe-card__cover-scrim" aria-hidden />
+      <div className="recipe-card__cover-band" aria-hidden />
+      {canEdit && (
+        <BookPhotoPicker
+          current={draft.imageUrl}
+          gridActive={coverMode === "grid"}
+          images={candidateImages}
+          onSelect={(imageUrl) => set({ imageUrl, gridImages: undefined })}
+          onSelectGrid={
+            candidateImages.length >= 2
+              ? () => {
+                  const count =
+                    candidateImages.length >= 6 ? 6 : candidateImages.length >= 4 ? 4 : 2;
+                  set({ gridImages: candidateImages.slice(0, count), imageUrl: undefined });
+                }
+              : undefined
+          }
+        />
+      )}
+      {/* Decorative hooks the per-theme CSS turns on (frames/ornaments for
+          Heirloom, Keepsake, etc.); hidden by default on photo-forward themes. */}
+      <div className="recipe-card__cover-frame" aria-hidden />
+      <TemplateDecoration template={draft.template} show={showDecoration} />
+      <div className="recipe-card__cover-content">
+        <span className="recipe-card__cover-ornament" aria-hidden />
+        {canEdit ? (
+          <textarea
+            rows={1}
+            className="recipe-card__inline-textarea recipe-card__cover-subtitle"
+            value={draft.subtitle ?? ""}
+            placeholder="A family cookbook"
+            aria-label="Cover kicker"
+            onChange={(event) => set({ subtitle: event.target.value || undefined })}
+          />
+        ) : (
+          draft.subtitle && <p className="recipe-card__cover-subtitle">{draft.subtitle}</p>
+        )}
+        {canEdit ? (
+          <textarea
+            autoFocus
+            rows={1}
+            className="recipe-card__inline-textarea recipe-card__cover-title"
+            value={draft.title}
+            placeholder="Cover title"
+            aria-label="Cover title"
+            onChange={(event) => set({ title: event.target.value })}
+          />
+        ) : (
+          draft.title && <h1 className="recipe-card__cover-title">{draft.title}</h1>
+        )}
+        <div className="recipe-card__cover-rule" aria-hidden />
+        {canEdit ? (
+          <textarea
+            rows={1}
+            className="recipe-card__inline-textarea recipe-card__cover-author"
+            value={draft.author ?? ""}
+            placeholder="Author or byline"
+            aria-label="Cover author"
+            onChange={(event) => set({ author: event.target.value || undefined })}
+          />
+        ) : (
+          draft.author && <p className="recipe-card__cover-author">{draft.author}</p>
+        )}
+      </div>
+    </article>
+  );
+});
+
+export interface TableOfContentsEntry {
+  kind: "chapter" | "recipe";
+  title: string;
+  pageNumber?: number;
+  chapterNumber?: number;
+}
+
+export interface TableOfContentsInlineEdit {
+  kicker: string;
+  title: string;
+  onKickerChange: (value: string) => void;
+  onTitleChange: (value: string) => void;
+}
+
+// The contents page: chapters as headings, recipes indented beneath with dot
+// leaders and the printed page they land on. The heading is editable; the
+// entries themselves are generated from the sheet order in usePrintSheets and
+// are never hand-maintained (a note in edit mode says so).
+export const TableOfContentsFace = memo(function TableOfContentsFace({
+  entries,
+  kicker,
+  title,
+  template,
+  previewHidden = false,
+  showDecoration = true,
+  inlineEdit,
+}: {
+  entries: TableOfContentsEntry[];
+  kicker?: string;
+  title?: string;
+  template?: RecipePrintTemplate;
+  previewHidden?: boolean;
+  showDecoration?: boolean;
+  inlineEdit?: TableOfContentsInlineEdit;
+}) {
+  const kickerText = (inlineEdit ? inlineEdit.kicker : kicker) || "Contents";
+  const titleText = (inlineEdit ? inlineEdit.title : title) || "What's inside";
+  return (
+    <article
+      className="recipe-card recipe-card--toc"
+      data-preview-hidden={previewHidden ? "true" : undefined}
+    >
+      <TemplateDecoration template={template} show={showDecoration} />
+      <div className="recipe-card__toc-content">
+        {inlineEdit ? (
+          <textarea
+            rows={1}
+            className="recipe-card__inline-textarea recipe-card__toc-kicker"
+            value={inlineEdit.kicker}
+            placeholder="Contents"
+            aria-label="Contents label"
+            onChange={(event) => inlineEdit.onKickerChange(event.target.value)}
+          />
+        ) : (
+          <p className="recipe-card__toc-kicker">{kickerText}</p>
+        )}
+        {inlineEdit ? (
+          <textarea
+            rows={1}
+            className="recipe-card__inline-textarea recipe-card__toc-title"
+            value={inlineEdit.title}
+            placeholder="What's inside"
+            aria-label="Contents heading"
+            onChange={(event) => inlineEdit.onTitleChange(event.target.value)}
+          />
+        ) : (
+          <h1 className="recipe-card__toc-title">{titleText}</h1>
+        )}
+        <ol className="recipe-card__toc-list">
+          {entries.map((entry, index) =>
+            entry.kind === "chapter" ? (
+              <li key={`c-${index}`} className="recipe-card__toc-chapter">
+                <span className="recipe-card__toc-chapter-name">{entry.title}</span>
+                {entry.pageNumber !== undefined && (
+                  <span className="recipe-card__toc-pg">{entry.pageNumber}</span>
+                )}
+              </li>
+            ) : (
+              <li key={`r-${index}`} className="recipe-card__toc-recipe">
+                <span className="recipe-card__toc-recipe-name">{entry.title}</span>
+                <span className="recipe-card__toc-leader" aria-hidden />
+                {entry.pageNumber !== undefined && (
+                  <span className="recipe-card__toc-pg">{entry.pageNumber}</span>
+                )}
+              </li>
+            ),
+          )}
+        </ol>
+        {inlineEdit && (
+          <p className="recipe-card__toc-note no-print">
+            Chapters, recipes and page numbers are pulled from your pages — to change them,
+            edit a section or recipe.
+          </p>
+        )}
       </div>
     </article>
   );

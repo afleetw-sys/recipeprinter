@@ -15,7 +15,7 @@
  * says why, and makes relaunching a one-line change — same approach as the
  * Fruit Stand template's gate in components/RecipeCardPrint.tsx.
  */
-export const COOKBOOK_ENABLED = false;
+export const COOKBOOK_ENABLED = true;
 
 // A single one-time purchase that unlocks the cookbook layout (cover, section
 // dividers, etc.) for this browser/account — separate from per-template
@@ -34,8 +34,8 @@ export const COOKBOOK_PRICE_FALLBACK = "$19.99";
 // contents" was listed until it turned out nothing renders one; it comes back
 // the day a TOC page does, and not before.
 export const COOKBOOK_BENEFITS = [
-  "Personalized cover",
-  "Organized sections",
-  "Premium layouts throughout",
+  "A designed cover & back cover",
+  "Recipes organized into chapters",
+  "Auto table of contents & page numbers",
   "Ready to print or gift",
 ] as const;

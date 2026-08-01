@@ -132,6 +132,11 @@ interface UseRecipeInlineEditorOptions {
   setItems: Dispatch<SetStateAction<QueueItem[] | null>>;
   activeRecipeId: string | null;
   activeRecipeItem: QueueItem | null | undefined;
+  /** What a change of "which page you're on" is keyed to for the leave-edit-mode
+      reset. Defaults to `activeRecipeId`. On a half sheet the active recipe can
+      switch between the two cards without leaving the page, so the page passes a
+      per-SHEET key here — switching cards then keeps edit mode on. */
+  resetKey?: string | null;
 }
 
 /**
@@ -149,6 +154,7 @@ export function useRecipeInlineEditor({
   setItems,
   activeRecipeId,
   activeRecipeItem,
+  resetKey,
 }: UseRecipeInlineEditorOptions) {
   const [pageEditMode, setPageEditMode] = useState(false);
   const [editingEdit, setEditingEdit] = useState<RecipeEditSelection | null>(null);
@@ -322,14 +328,17 @@ export function useRecipeInlineEditor({
     }
   }, [editingEdit, items]);
 
-  // Editing is opt-in per recipe: leaving edit mode active while flipping to
-  // a different card in the deck would carry stray editing/placeholder state
-  // onto a recipe the user never asked to edit.
+  // Editing is opt-in per page: leaving edit mode active while flipping to a
+  // different page in the deck would carry stray editing/placeholder state onto
+  // a recipe the user never asked to edit. Keyed to `resetKey` (the page), not
+  // the active recipe, so switching between the two cards of one half sheet
+  // keeps edit mode on. Falls back to `activeRecipeId` when unset.
+  const resetOn = resetKey ?? activeRecipeId;
   useEffect(() => {
     setPageEditMode(false);
     setEditingEdit(null);
     setEditValue("");
-  }, [activeRecipeId]);
+  }, [resetOn]);
 
   function togglePageEditMode() {
     if (pageEditMode && editingEdit) {

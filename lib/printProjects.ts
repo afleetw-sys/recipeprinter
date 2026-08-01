@@ -1,6 +1,12 @@
 "use client";
 
-import type { CoverConfig, PrintProject, PrintProjectSettings, Section } from "@/types/recipe";
+import type {
+  CoverConfig,
+  PrintProject,
+  PrintProjectSettings,
+  RecipePagePlacement,
+  Section,
+} from "@/types/recipe";
 import { uid } from "@/lib/ids";
 
 const PRINT_PROJECTS_COLLECTION = "printProjects";
@@ -40,6 +46,7 @@ export function assemblePrintProject(params: {
   cover?: CoverConfig;
   backCover?: CoverConfig;
   settings: PrintProjectSettings;
+  itemPlacements?: Record<string, RecipePagePlacement>;
   createdAt?: number;
 }): PrintProject {
   const now = Date.now();
@@ -51,6 +58,7 @@ export function assemblePrintProject(params: {
     cover: params.cover,
     backCover: params.backCover,
     settings: params.settings,
+    itemPlacements: params.itemPlacements,
     createdAt: params.createdAt ?? now,
     updatedAt: now,
   };

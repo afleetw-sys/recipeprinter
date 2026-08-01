@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import type { CoverConfig, QueueItem, Section } from "@/types/recipe";
+import type { CoverConfig, QueueItem, RecipePagePlacement, Section } from "@/types/recipe";
 import { uid } from "@/lib/ids";
 import { sessionStore } from "@/lib/storage";
 
@@ -20,21 +20,38 @@ import { sessionStore } from "@/lib/storage";
 
 export const PROJECT_META_STORAGE_KEY = "recipeprinter:project-meta:v1";
 
+/** Book-wide default treatment for recipe photos (cookbook mode):
+    - `none` — no recipe photos anywhere;
+    - `card` — a header photo inside each recipe card;
+    - `full` — a full-page photo facing each recipe (image spread).
+    The per-page layout picker overrides individual recipes on top of this. */
+export type PhotoStyle = "none" | "card" | "full";
+
 export interface ProjectMeta {
   cover?: CoverConfig;
   backCover?: CoverConfig;
-  /** Reserved. No TOC page exists yet, so nothing reads this and the settings
-      panel no longer offers a toggle for it (see renderPrintSettingsFields).
-      Kept in the shape — rather than dropped and re-added later — so projects
-      saved while the toggle existed still round-trip unchanged. */
+  /** Book-wide recipe-photo default (cookbook). See PhotoStyle. Absent = the
+      plain-card default ("card") — a header photo in each recipe card. */
+  photoStyle?: PhotoStyle;
+  /** Whether the cookbook renders a table-of-contents page. */
   tableOfContents?: boolean;
+  /** Editable TOC heading text (the entries themselves are derived from the
+      pages). Default to "Contents"/"What's inside" when unset. */
+  tocKicker?: string;
+  tocTitle?: string;
   sectionDividers?: boolean;
   /** Opted into the cookbook experience (cover/sections) via "Make it a
       cookbook" — false/undefined means the plain print-cards UI. Gated off at
       the entry points for now; see COOKBOOK_ENABLED in lib/cookbookProduct.ts. */
   cookbookMode?: boolean;
-  /** Section metadata only (id/title/order) — item ids, not recipe content. */
-  sections: Array<{ id: string; title?: string; itemIds: string[] }>;
+  /** Section metadata only (id/title/order/chapter-opener fields) — item ids,
+      not recipe content. `photoUrl`/`intro` drive the cookbook chapter opener. */
+  sections: Array<{ id: string; title?: string; photoUrl?: string; intro?: string; itemIds: string[] }>;
+  /** Per-recipe cookbook page layout (full/half/image-spread), keyed by
+      `QueueItem.id`. Kept out of the section list so the import/parse/queue
+      lifecycle stays untouched by a book-only concern (see the type's comment).
+      Absent/`full` = one card per sheet, i.e. today's behavior. */
+  itemPlacements?: Record<string, RecipePagePlacement>;
 }
 
 const EMPTY_META: ProjectMeta = { sections: [] };
@@ -70,7 +87,13 @@ export function buildSections(items: QueueItem[], meta: ProjectMeta): Section[] 
         .map((id) => byId.get(id))
         .filter((item): item is QueueItem => Boolean(item));
       sectionItems.forEach((item) => assigned.add(item.id));
-      return { id: section.id, title: section.title, items: sectionItems };
+      return {
+        id: section.id,
+        title: section.title,
+        photoUrl: section.photoUrl,
+        intro: section.intro,
+        items: sectionItems,
+      };
     })
     .filter((section) => section.items.length > 0 || section.title);
 
@@ -110,6 +133,8 @@ function metaSectionsFromFull(sections: Section[]): ProjectMeta["sections"] {
   return sections.map((section) => ({
     id: section.id,
     title: section.title,
+    photoUrl: section.photoUrl,
+    intro: section.intro,
     itemIds: section.items.map((item) => item.id),
   }));
 }
@@ -186,6 +211,32 @@ export function useProjectMeta() {
     [update],
   );
 
+  /** Chapter-opener photo for a section (cookbook mode). Empty/undefined clears it. */
+  const setSectionPhoto = useCallback(
+    (sectionId: string, photoUrl: string | undefined) => {
+      update((current) => ({
+        ...current,
+        sections: current.sections.map((section) =>
+          section.id === sectionId ? { ...section, photoUrl: photoUrl || undefined } : section,
+        ),
+      }));
+    },
+    [update],
+  );
+
+  /** Chapter-opener intro line for a section (cookbook mode). */
+  const setSectionIntro = useCallback(
+    (sectionId: string, intro: string | undefined) => {
+      update((current) => ({
+        ...current,
+        sections: current.sections.map((section) =>
+          section.id === sectionId ? { ...section, intro: intro || undefined } : section,
+        ),
+      }));
+    },
+    [update],
+  );
+
   /** Removes a section, merging its items into the neighboring section (the
       one before it, or the one after if it was first) so recipes are never
       lost — collapsing structure is exactly as safe as creating it. */
@@ -238,6 +289,23 @@ export function useProjectMeta() {
     [update],
   );
 
+  /** Replaces the whole section list at once — used by the "Make it a cookbook"
+      scaffold to auto-group loose recipes into chapters. Fresh ids are minted
+      here so callers pass only titles + item ids. */
+  const replaceSections = useCallback(
+    (groups: Array<{ title?: string; itemIds: string[] }>) => {
+      update((current) => ({
+        ...current,
+        sections: groups.map((group) => ({
+          id: uid(),
+          title: group.title,
+          itemIds: group.itemIds,
+        })),
+      }));
+    },
+    [update],
+  );
+
   const setCover = useCallback(
     (cover: CoverConfig | undefined) => {
       update((current) => ({ ...current, cover }));
@@ -270,9 +338,82 @@ export function useProjectMeta() {
     [update],
   );
 
+  const setTocKicker = useCallback(
+    (value: string | undefined) => {
+      update((current) => ({ ...current, tocKicker: value || undefined }));
+    },
+    [update],
+  );
+
+  const setTocTitle = useCallback(
+    (value: string | undefined) => {
+      update((current) => ({ ...current, tocTitle: value || undefined }));
+    },
+    [update],
+  );
+
   const setCookbookMode = useCallback(
     (value: boolean) => {
       update((current) => ({ ...current, cookbookMode: value }));
+    },
+    [update],
+  );
+
+  /** Leaving cookbook mode strips every cookbook-only artifact — cover, back
+      cover, chapters/dividers, table of contents, and per-recipe page layouts —
+      back to a plain print job. The recipes themselves live in the queue and
+      are untouched; clearing `sections` collapses them into one implicit
+      untitled section (see `buildSections`). */
+  const exitCookbook = useCallback(() => {
+    commit({ sections: [] });
+  }, [commit]);
+
+  /** Sets (or, with `undefined`, clears back to the default `full`) a single
+      recipe's cookbook page layout. Merges into the existing placement so a
+      later heroImageUrl edit doesn't wipe the pageLayout and vice versa. */
+  const setItemPlacement = useCallback(
+    (itemId: string, placement: RecipePagePlacement | undefined) => {
+      update((current) => {
+        const next = { ...(current.itemPlacements ?? {}) };
+        const merged = { ...next[itemId], ...placement };
+        if (
+          !placement ||
+          (merged.pageLayout === undefined && merged.heroImageUrl === undefined)
+        ) {
+          delete next[itemId];
+        } else {
+          next[itemId] = merged;
+        }
+        return { ...current, itemPlacements: next };
+      });
+    },
+    [update],
+  );
+
+  /** Book-wide recipe-photo default (cookbook). See PhotoStyle. */
+  const setPhotoStyle = useCallback(
+    (value: PhotoStyle) => {
+      update((current) => ({ ...current, photoStyle: value }));
+    },
+    [update],
+  );
+
+  /** Per-recipe override of how ONE recipe shows its photo, using the same three
+      options as the book-wide `photoStyle`: `none` (no photo), `card` (a header
+      photo), `full` (a full-page facing photo / image-spread). Stored explicitly
+      as a placement so it overrides the book default; the caller clears the
+      placement (setItemPlacement with `undefined`) to fall back to the book. */
+  const setItemPhotoMode = useCallback(
+    (itemId: string, mode: PhotoStyle, heroImageUrl?: string) => {
+      update((current) => {
+        const map = { ...(current.itemPlacements ?? {}) };
+        if (mode === "full") {
+          map[itemId] = { pageLayout: "image-spread", ...(heroImageUrl ? { heroImageUrl } : {}) };
+        } else {
+          map[itemId] = { pageLayout: "full", showPhoto: mode === "card" };
+        }
+        return { ...current, itemPlacements: map };
+      });
     },
     [update],
   );
@@ -283,13 +424,22 @@ export function useProjectMeta() {
     syncSections,
     addSection,
     renameSection,
+    setSectionPhoto,
+    setSectionIntro,
     deleteSection,
     moveItem,
     reorderSections,
+    replaceSections,
     setCover,
     setBackCover,
     setTableOfContents,
+    setTocKicker,
+    setTocTitle,
     setSectionDividers,
     setCookbookMode,
+    exitCookbook,
+    setItemPlacement,
+    setItemPhotoMode,
+    setPhotoStyle,
   };
 }

@@ -1,8 +1,9 @@
 import { getFunctions, type Functions } from "firebase/functions";
 import { getFirebaseApp } from "./client";
-import "./appCheck";
 
 // Lazy, never initializes Functions during server prerender (see client.ts).
+// App Check is initialized inside getFirebaseApp(), so callable requests from
+// this instance carry an attestation token.
 let functionsInstance: Functions | null = null;
 export function getFns(): Functions {
   if (!functionsInstance) {

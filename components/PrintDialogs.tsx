@@ -52,6 +52,9 @@ export function PrintDialogs({
   onCancelDeleteRecipe,
   onConfirmDeleteRecipe,
   onConfirmDeleteSectionRecipes,
+  showExitCookbookDialog,
+  onCancelExitCookbook,
+  onConfirmExitCookbook,
 }: {
   showDonateDialog: boolean;
   onCloseDonateDialog: () => void;
@@ -82,6 +85,9 @@ export function PrintDialogs({
   onCancelDeleteRecipe: () => void;
   onConfirmDeleteRecipe: () => void;
   onConfirmDeleteSectionRecipes?: () => void;
+  showExitCookbookDialog: boolean;
+  onCancelExitCookbook: () => void;
+  onConfirmExitCookbook: () => void;
 }) {
   const deleteButtonRef = useRef<HTMLButtonElement | null>(null);
   const [alsoDeleteSectionRecipes, setAlsoDeleteSectionRecipes] = useState(false);
@@ -350,6 +356,40 @@ export function PrintDialogs({
               </button>
               <button type="button" className="btn btn-ghost" onClick={onCancelDeleteRecipe}>
                 Cancel
+              </button>
+            </div>
+      </Dialog>
+      {/* Leaving cookbook mode discards the whole book (cover, chapters, page
+          layouts) — a confirm guards it the way recipe deletion does. The
+          destructive button is intentionally NOT auto-focused, so Enter can't
+          wipe the book. */}
+      <Dialog
+        open={showExitCookbookDialog}
+        onClose={onCancelExitCookbook}
+        labelledBy="exit-cookbook-title"
+        className="print-success-dialog no-print"
+        backdropClassName="print-success-dialog__backdrop"
+        panelClassName="print-success-dialog__panel"
+      >
+            <button
+              type="button"
+              className="print-success-dialog__close icon-close-btn"
+              aria-label="Close"
+              onClick={onCancelExitCookbook}
+            >
+              <XIcon size={ICON_SIZE.md} />
+            </button>
+            <h2 id="exit-cookbook-title">Switch back to recipe cards?</h2>
+            <p>
+              This clears your cookbook&apos;s cover, chapters, and page layouts. Your recipes stay
+              in the queue, but you&apos;ll have to set the book up again to come back.
+            </p>
+            <div className="print-success-dialog__actions">
+              <button type="button" className="btn btn-ghost" onClick={onCancelExitCookbook}>
+                Keep my cookbook
+              </button>
+              <button type="button" className="btn btn-primary" onClick={onConfirmExitCookbook}>
+                Switch to recipe cards
               </button>
             </div>
       </Dialog>

@@ -64,11 +64,12 @@ type EventProps = {
     reason: string;
     category: ImportFailureCode;
     /**
-     * For image failures: the Firebase Storage folder the failed image bytes
-     * were stashed in for debugging (see lib/failedImageCapture.ts). Absent
-     * when there was nothing to capture or the capture didn't land.
+     * The Firebase Storage folder the failed input was stashed in for debugging
+     * — image bytes, pasted text, or the URL that wouldn't parse (see
+     * lib/failedImportCapture.ts). Absent when there was nothing to capture or
+     * the capture didn't land.
      */
-    debugImagePath?: string;
+    debugPath?: string;
   };
 
   // ---- Printing --------------------------------------------------------

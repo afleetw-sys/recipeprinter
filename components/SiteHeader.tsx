@@ -9,6 +9,7 @@ export function SiteHeader({
   backHref,
   onBack,
   actions,
+  centerActions = false,
   compact = false,
   sticky = false,
 }: {
@@ -16,6 +17,8 @@ export function SiteHeader({
   /** When set, the logo becomes a real "go back" control (history.back()) instead of a fixed link to backHref/home. */
   onBack?: () => void;
   actions?: ReactNode;
+  /** Center `actions` in the bar (absolute) rather than right-aligning them. */
+  centerActions?: boolean;
   compact?: boolean;
   sticky?: boolean;
 }) {
@@ -39,7 +42,7 @@ export function SiteHeader({
 
   return (
     <header
-      className={`no-print flex items-center justify-between gap-cp-4 px-cp-6 min-h-[62px] flex-wrap ${
+      className={`no-print relative flex items-center justify-between gap-cp-4 px-cp-6 min-h-[62px] flex-wrap ${
         sticky ? "sticky top-0 z-10 bg-page border-b border-line py-cp-3" : ""
       }`}
     >
@@ -61,9 +64,14 @@ export function SiteHeader({
           {logo}
         </Link>
       )}
-      {actions && (
-        <div className="flex items-center gap-cp-3 flex-wrap justify-end">{actions}</div>
-      )}
+      {actions &&
+        (centerActions ? (
+          <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 flex items-center gap-cp-3">
+            {actions}
+          </div>
+        ) : (
+          <div className="flex items-center gap-cp-3 flex-wrap justify-end">{actions}</div>
+        ))}
     </header>
   );
 }

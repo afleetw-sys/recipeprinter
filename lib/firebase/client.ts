@@ -6,6 +6,7 @@ import {
   initializeAuth,
   type Auth,
 } from "firebase/auth";
+import { ensureAppCheck } from "./appCheck";
 
 // Initializes the same Firebase project CookPilot uses, so RecipePrinter is a
 // genuine second client of CookPilot's backend rather than a reimplementation.
@@ -36,6 +37,10 @@ export function getFirebaseApp(): FirebaseApp {
     throw new Error("Recipe import and account features are temporarily unavailable.");
   }
   appInstance = getApps().length > 0 ? getApp() : initializeApp(firebaseConfig);
+  // Initialize App Check the moment the app exists, so EVERY service obtained
+  // from it — Auth, Firestore, Storage, Functions — has its requests attested.
+  // No-ops on the server and after the first call (see `ensureAppCheck`).
+  ensureAppCheck(appInstance);
   return appInstance;
 }
 

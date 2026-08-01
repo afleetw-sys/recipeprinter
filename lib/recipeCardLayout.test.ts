@@ -1,7 +1,15 @@
 import { describe, expect, it } from "vitest";
 import { HARNESS_RECIPES } from "@/lib/__fixtures__/harnessRecipes";
 import { checkPageInvariants } from "@/lib/faceMeasure";
-import { getRecipeFaces, splitIntoColumns } from "@/lib/recipeCardLayout";
+import {
+  assembleSpreads,
+  getRecipeFaces,
+  planCookbookSection,
+  splitIntoColumns,
+  type BookPageKind,
+  type CookbookPlanItem,
+  type CookbookPlanRecipeSlot,
+} from "@/lib/recipeCardLayout";
 import type { PrintCardSize, RecipePrintTemplate } from "@/components/RecipeCardPrint";
 
 /**
@@ -120,6 +128,120 @@ describe("getRecipeFaces page invariants", () => {
     expect(COMBOS.length).toBe(
       SIZES.length * TEMPLATES.length * PHOTO_OPTIONS.length * SOURCE_URL_OPTIONS.length,
     );
+  });
+});
+
+describe("planCookbookSection", () => {
+  // Phase 2b: how a section's recipes fall onto physical sheets given each
+  // recipe's resolved layout. A cookbook always gives each recipe its own full
+  // page; `image-spread` prepends a full-bleed facing photo page.
+  const item = (
+    id: string,
+    layout: CookbookPlanItem["layout"],
+    extra: Partial<CookbookPlanItem> = {},
+  ): CookbookPlanItem => ({ id, layout, faceCount: 1, ...extra });
+
+  const recipeSlots = (sheet: { slots: Array<CookbookPlanRecipeSlot | { kind: string } | null> }) =>
+    sheet.slots.filter((s): s is CookbookPlanRecipeSlot => s?.kind === "recipe");
+
+  it("gives each full recipe its own single-sided sheet (non-duplex)", () => {
+    const plan = planCookbookSection(
+      [item("a", "full"), item("b", "full"), item("c", "full")],
+      { continueOnBack: false },
+    );
+    expect(plan).toHaveLength(3);
+    for (const sheet of plan) {
+      expect(sheet.layoutKind).toBeUndefined();
+      expect(sheet.backGroupNeeded).toBe(false);
+      expect(recipeSlots(sheet)).toHaveLength(1);
+    }
+    // Reading order is preserved.
+    expect(plan.map((s) => (s.slots[0] as CookbookPlanRecipeSlot).itemId)).toEqual(["a", "b", "c"]);
+  });
+
+  it("continues a full recipe's overflow on its own back when duplex", () => {
+    const [sheet, ...rest] = planCookbookSection([item("a", "full", { faceCount: 2 })], { continueOnBack: true });
+    expect(rest).toHaveLength(0);
+    const slot = sheet.slots[0] as CookbookPlanRecipeSlot;
+    expect(slot.frontFace).toBe(0);
+    expect(slot.backFace).toBe(1);
+    expect(sheet.backGroupNeeded).toBe(true);
+  });
+
+  it("spreads a full recipe's overflow onto a second sheet when single-sided", () => {
+    const plan = planCookbookSection([item("a", "full", { faceCount: 2 })], { continueOnBack: false });
+    expect(plan).toHaveLength(2);
+    expect((plan[0].slots[0] as CookbookPlanRecipeSlot).frontFace).toBe(0);
+    expect((plan[1].slots[0] as CookbookPlanRecipeSlot).frontFace).toBe(1);
+    expect(plan.every((s) => s.backGroupNeeded === false)).toBe(true);
+  });
+
+  it("prepends a facing photo page for an image-spread recipe with a hero", () => {
+    const plan = planCookbookSection([item("a", "image-spread", { heroImageUrl: "hero.jpg" })], { continueOnBack: false });
+    expect(plan).toHaveLength(2);
+    expect(plan[0].layoutKind).toBe("image");
+    expect(plan[0].slots[0]).toMatchObject({ kind: "image", itemId: "a", heroImageUrl: "hero.jpg" });
+    expect(plan[1].layoutKind).toBeUndefined();
+    expect((plan[1].slots[0] as CookbookPlanRecipeSlot).itemId).toBe("a");
+  });
+
+  it("skips the photo page when an image-spread recipe has no hero image", () => {
+    const plan = planCookbookSection([item("a", "image-spread")], { continueOnBack: false });
+    expect(plan).toHaveLength(1);
+    expect(plan[0].layoutKind).toBeUndefined();
+    expect((plan[0].slots[0] as CookbookPlanRecipeSlot).itemId).toBe("a");
+  });
+
+});
+
+describe("assembleSpreads (book imposition)", () => {
+  // Cookbook "book view": pages group into two-page spreads with real parity —
+  // covers alone, chapter openers on a recto, image-spread photo on a verso.
+  const K = (...kinds: BookPageKind[]) => kinds;
+
+  it("stands the cover and back cover alone", () => {
+    const spreads = assembleSpreads(K("cover", "content", "content", "back"));
+    expect(spreads[0]).toEqual({ left: null, right: 0, single: true });
+    expect(spreads[spreads.length - 1]).toEqual({ left: 3, right: null, single: true });
+  });
+
+  it("pairs body pages left→right", () => {
+    // cover, [c1|c2], [c3|c4], back
+    const spreads = assembleSpreads(K("cover", "content", "content", "content", "content", "back"));
+    expect(spreads).toEqual([
+      { left: null, right: 0, single: true },
+      { left: 1, right: 2, single: false },
+      { left: 3, right: 4, single: false },
+      { left: 5, right: null, single: true },
+    ]);
+  });
+
+  it("forces a chapter opener onto a recto (right), inserting a blank verso", () => {
+    // After cover: content at verso(left), then chapter would land on recto — good.
+    // Here the chapter would land on a verso, so a blank is inserted before it.
+    const spreads = assembleSpreads(K("cover", "chapter", "content"));
+    // chapter is first body page -> would be verso -> blank inserted -> chapter on recto
+    expect(spreads[1]).toEqual({ left: null, right: 1, single: false });
+    expect(spreads[2]).toEqual({ left: 2, right: null, single: false });
+  });
+
+  it("keeps an image-spread photo on the verso facing its recipe on the recto", () => {
+    // pages: cover, content(1), image-photo(2), recipe(3)
+    // content -> verso; image-photo would be recto -> blank inserted -> photo verso, recipe recto
+    const spreads = assembleSpreads(K("cover", "content", "image-photo", "content"));
+    expect(spreads[1]).toEqual({ left: 1, right: null, single: false }); // content, blank
+    expect(spreads[2]).toEqual({ left: 2, right: 3, single: false }); // photo | recipe
+  });
+
+  it("leaves an already-aligned image-spread untouched", () => {
+    // cover, image-photo(1) at verso already, recipe(2) at recto
+    const spreads = assembleSpreads(K("cover", "image-photo", "content"));
+    expect(spreads[1]).toEqual({ left: 1, right: 2, single: false });
+  });
+
+  it("pads a trailing lone body page to a full spread", () => {
+    const spreads = assembleSpreads(K("cover", "content"));
+    expect(spreads[1]).toEqual({ left: 1, right: null, single: false });
   });
 });
 

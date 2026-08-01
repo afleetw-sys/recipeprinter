@@ -4,6 +4,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import {
   RecipeCardFace,
   getRecipeFaces,
+  previewSizeClass,
   type PrintCardSize,
   type RecipeFace,
   type RecipePrintTemplate,
@@ -208,6 +209,7 @@ export function RecipeFaceMeasurer({
   template,
   hasPhoto,
   showSourceUrl,
+  cookbookMode = false,
   onSettled,
 }: {
   recipe: Recipe;
@@ -215,6 +217,9 @@ export function RecipeFaceMeasurer({
   template: RecipePrintTemplate;
   hasPhoto: boolean;
   showSourceUrl: boolean;
+  /** Match the real card's cookbook layout (link in header, no footer) so the
+      off-screen measurement reflects what actually prints. */
+  cookbookMode?: boolean;
   onSettled: (pages: RecipeFace[]) => void;
 }) {
   const initialPages = useMemo(
@@ -500,7 +505,7 @@ export function RecipeFaceMeasurer({
         pointerEvents: "none",
         zIndex: -1,
       }}
-      className={`recipe-print-preview recipe-print-preview--${size} recipe-face-measurer`}
+      className={`recipe-print-preview ${previewSizeClass(size)} recipe-face-measurer`}
     >
       <div className={`recipe-card-set recipe-template--${template}`}>
         {pages.map((page, i) => (
@@ -523,6 +528,7 @@ export function RecipeFaceMeasurer({
               continued={i > 0}
               contentScale={page.contentScale}
               template={template}
+              cookbookMode={cookbookMode}
               // This whole subtree is `visibility: hidden` and only ever read
               // for `.recipe-card__cols` geometry (see lib/faceMeasure.ts).
               // The decorative layer is absolutely positioned, so it changes

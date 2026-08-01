@@ -13,7 +13,7 @@ import type { ImportMethod } from "@/types/recipe";
 import type { QueueItem } from "@/types/recipe";
 import { track, truncateReason, type ImportFailureCode } from "@/lib/analytics";
 import { ImportError } from "@/lib/parser";
-import { captureFailedImportImages } from "@/lib/failedImageCapture";
+import { captureFailedImportImages } from "@/lib/failedImportCapture";
 import {
   CookPilotLogoIcon,
   ImageIcon,
@@ -320,8 +320,8 @@ export function ImportPanel({
         if (category === "too_large") {
           trackImageFailure(category, reason);
         } else {
-          const debugImagePath = await captureFailedImportImages(files, { source: "image", category, reason });
-          trackImageFailure(category, reason, debugImagePath ?? undefined);
+          const debugPath = await captureFailedImportImages(files, { source: "image", category, reason });
+          trackImageFailure(category, reason, debugPath ?? undefined);
         }
       } finally {
         setBusy(false);
@@ -339,13 +339,13 @@ export function ImportPanel({
   // import funnel honest across the browser/queue boundary. Only the failure
   // branch emits — a successful prep is counted by the queue instead, so no
   // attempt is double-reported.
-  function trackImageFailure(category: ImportFailureCode, reason: string, debugImagePath?: string) {
+  function trackImageFailure(category: ImportFailureCode, reason: string, debugPath?: string) {
     track("recipe_import_started", { source: "image" });
     track("recipe_import_failed", {
       source: "image",
       category,
       reason,
-      ...(debugImagePath ? { debugImagePath } : {}),
+      ...(debugPath ? { debugPath } : {}),
     });
   }
 
