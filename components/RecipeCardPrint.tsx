@@ -933,6 +933,35 @@ export const RecipeCardFace = memo(function RecipeCardFace({
         </header>
       ) : null}
 
+      {/* Cookbook mode: an editorial headnote — the recipe's story or a family
+          note — sits between the header and the ingredients/steps, the way it
+          does in a real cookbook. Pre-fills from any imported description so a
+          book has warmth out of the box; the cook can replace it with a memory.
+          Only in cookbook mode and on the first face, so plain recipe cards and
+          continuation pages are unchanged. Measured like any other content
+          because the off-screen measurer renders this same read-only branch. */}
+      {cookbookMode && showHeader && (
+        canEdit && inlineEdit ? (
+          <textarea
+            rows={1}
+            className="recipe-card__inline-textarea recipe-card__headnote"
+            value={
+              sameTarget(inlineEdit.editingTarget, { kind: "description" })
+                ? inlineEdit.value
+                : recipe.description ?? ""
+            }
+            placeholder="Add a note or memory…"
+            aria-label="Recipe note"
+            onFocus={() => startEdit({ kind: "description" }, recipe.description ?? "")}
+            onChange={(event) => inlineEdit.onValueChange(event.target.value)}
+            onBlur={commitEdit}
+            onKeyDown={(event) => handleEditKeyDown(event, { kind: "description" })}
+          />
+        ) : (
+          recipe.description && <p className="recipe-card__headnote">{recipe.description}</p>
+        )
+      )}
+
       <div
         className={`recipe-card__cols ${
           !hasIngredientsSection ? "recipe-card__cols--single" : ""
@@ -1354,7 +1383,7 @@ export const CoverFace = memo(function CoverFace({
   showDecoration = true,
 }: {
   cover: CoverConfig;
-  side: "front" | "back";
+  side: "front" | "back" | "dedication";
   previewHidden?: boolean;
   /** See `TemplateDecoration` — false on surfaces that never show it. */
   showDecoration?: boolean;
@@ -1365,6 +1394,37 @@ export const CoverFace = memo(function CoverFace({
 
   function set(patch: Partial<CoverConfig>) {
     inlineEdit?.onChange({ ...draft, ...patch });
+  }
+
+  // Dedication: a quiet front-matter page on the template's own paper — a short,
+  // centered dedication line, no photo. Shares the back cover's paper treatment.
+  if (side === "dedication") {
+    return (
+      <article
+        className="recipe-card recipe-card--cover recipe-card--cover-back recipe-card--cover-dedication"
+        data-preview-hidden={previewHidden ? "true" : undefined}
+      >
+        <div className="recipe-card__cover-photo recipe-card__cover-photo--paper" aria-hidden />
+        <TemplateDecoration template={draft.template} show={showDecoration} />
+        <div className="recipe-card__cover-band" aria-hidden />
+        <div className="recipe-card__cover-back-content">
+          <p className="recipe-card__cover-dedication-label">Dedication</p>
+          {canEdit ? (
+            <textarea
+              className="recipe-card__inline-textarea recipe-card__cover-blurb recipe-card__cover-dedication-text"
+              value={draft.blurb ?? ""}
+              placeholder="For the ones who taught us to cook…"
+              aria-label="Dedication"
+              onChange={(event) => set({ blurb: event.target.value || undefined })}
+            />
+          ) : (
+            draft.blurb && (
+              <p className="recipe-card__cover-blurb recipe-card__cover-dedication-text">{draft.blurb}</p>
+            )
+          )}
+        </div>
+      </article>
+    );
   }
 
   // Back cover: a quiet closing page on the template's own paper — a short

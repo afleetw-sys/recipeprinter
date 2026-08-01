@@ -4,8 +4,9 @@ import { useEffect, useRef, useState } from "react";
 import { BookIcon, CheckIcon, CrownIcon, ICON_SIZE, SpinnerIcon, TrashIcon, XIcon } from "@/components/icons";
 import { Dialog } from "@/components/Dialog";
 import { COOKBOOK_BENEFITS } from "@/lib/cookbookProduct";
-import { PRINTERS, type CookbookPreset } from "@/lib/cookbookPresets";
+import { COOKBOOK_PRESETS, PRINTERS } from "@/lib/cookbookPresets";
 import { track } from "@/lib/analytics";
+import type { CookbookPresetId } from "@/types/recipe";
 import type { PremiumRecipePrintTemplate } from "@/lib/premiumTemplates";
 
 const COFFEE_URL = "https://buymeacoffee.com/recipeprinter";
@@ -46,11 +47,10 @@ export function PrintDialogs({
   cookbookPrice,
   cookbookPurchaseBusy,
   onUnlockCookbook,
-  cookbookPreset,
-  onChangeFormat,
   showCookbookPrintDialog,
+  cookbookJustPurchased,
   onCloseCookbookPrintDialog,
-  onSaveCookbookPdf,
+  onExportFormat,
   showDeleteRecipeDialog,
   deleteItemTitle,
   deleteItemDescription,
@@ -84,15 +84,14 @@ export function PrintDialogs({
   cookbookPrice: string;
   cookbookPurchaseBusy: boolean;
   onUnlockCookbook: () => void;
-  /** The chosen print-format preset — its label appears in the unlock summary
-      and the post-export screen, and it selects the recommended printers. */
-  cookbookPreset: CookbookPreset;
-  /** Dismisses the unlock dialog so the sidebar format picker can be used. */
-  onChangeFormat: () => void;
   showCookbookPrintDialog: boolean;
+  /** True the first time this screen opens right after purchase, so it leads
+      with a one-time celebration instead of the plain re-export framing. */
+  cookbookJustPurchased: boolean;
   onCloseCookbookPrintDialog: () => void;
-  /** Re-opens the browser print dialog (Save as PDF) at the chosen trim. */
-  onSaveCookbookPdf: () => void;
+  /** Export the cookbook at the chosen format — flips on that format's print
+      geometry and re-opens the browser Save-as-PDF dialog. */
+  onExportFormat: (presetId: CookbookPresetId) => void;
   showDeleteRecipeDialog: boolean;
   deleteItemTitle: string;
   deleteItemDescription: string;
@@ -313,20 +312,6 @@ export function PrintDialogs({
               to re-export forever. RevenueCat checkout will ask for your email.
             </p>
             <CookbookBenefitsList />
-            <div className="cookbook-format-summary">
-              <span className="cookbook-format-summary__label">Format</span>
-              <span className="cookbook-format-summary__value">
-                {cookbookPreset.productName} · {cookbookPreset.trimLabel}
-              </span>
-              <button
-                type="button"
-                className="cookbook-format-summary__change"
-                onClick={onChangeFormat}
-                disabled={cookbookPurchaseBusy}
-              >
-                Change format
-              </button>
-            </div>
             <div className="print-success-dialog__actions">
               <button
                 type="button"
@@ -349,9 +334,10 @@ export function PrintDialogs({
       </Dialog>
       {/* Shown right after purchase (and whenever an unlocked cookbook is
           exported) — NOT from `afterprint`, which can't tell whether the user
-          saved, printed, or cancelled. "Save as PDF" re-opens the browser print
-          dialog at the chosen trim; the printer links are recommendations only,
-          with no fulfillment or checkout. */}
+          saved, printed, or cancelled. The format is chosen HERE at download
+          time: the $19.99 unlocks every format forever, so each button exports
+          that format via the browser's Save-as-PDF. Printer links are
+          recommendations only, with no fulfillment or checkout. */}
       <Dialog
         open={showCookbookPrintDialog}
         onClose={onCloseCookbookPrintDialog}
@@ -371,55 +357,66 @@ export function PrintDialogs({
             <div className="print-success-dialog__icon" aria-hidden>
               <BookIcon size={30} />
             </div>
-            <h2 id="cookbook-print-title">Print your cookbook</h2>
-            <p>
-              Your {cookbookPreset.productName.toLowerCase()} is ready to print at{" "}
-              {cookbookPreset.trimLabel}.
-            </p>
-            <div className="print-success-dialog__actions">
-              <button type="button" className="btn btn-primary" onClick={onSaveCookbookPdf}>
-                <BookIcon size={ICON_SIZE.md} />
-                Save as PDF
-              </button>
+            {cookbookJustPurchased ? (
+              <>
+                <h2 id="cookbook-print-title">Your cookbook is ready 🎉</h2>
+                <p>
+                  Nicely done — it&apos;s unlocked and yours forever. Pick a format to save as a
+                  PDF; you can export every format, as many times as you like.
+                </p>
+              </>
+            ) : (
+              <>
+                <h2 id="cookbook-print-title">Print your cookbook</h2>
+                <p>Choose a format to save as a PDF — you have access to all of them, anytime.</p>
+              </>
+            )}
+            <div className="cookbook-print-dialog__formats">
+              {COOKBOOK_PRESETS.map((preset) => (
+                <button
+                  key={preset.id}
+                  type="button"
+                  className="cookbook-format-download"
+                  onClick={() => onExportFormat(preset.id)}
+                >
+                  <span className="cookbook-format-download__text">
+                    <span className="cookbook-format-download__name">{preset.productName}</span>
+                    <span className="cookbook-format-download__trim">
+                      {preset.trimLabel} · {preset.bestFor}
+                    </span>
+                  </span>
+                  <span className="cookbook-format-download__cta">Save as PDF</span>
+                </button>
+              ))}
             </div>
             <p className="cookbook-print-dialog__hint">
-              Save as PDF using your browser&apos;s default print settings.
+              Saves using your browser&apos;s default print settings — choose &ldquo;Save as
+              PDF&rdquo; as the destination.
             </p>
             <div className="cookbook-print-dialog__printers">
               <span className="cookbook-print-dialog__printers-label">
                 Places you can print your cookbook
               </span>
               <ul className="cookbook-print-dialog__printer-list">
-                {cookbookPreset.printerIds.map((id) => {
-                  const printer = PRINTERS[id];
-                  if (!printer) return null;
-                  return (
-                    <li key={id}>
-                      <a
-                        href={printer.url}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="cookbook-print-dialog__printer"
-                        onClick={() =>
-                          track("cookbook_printer_clicked", {
-                            preset: cookbookPreset.id,
-                            printer: id,
-                          })
-                        }
-                      >
-                        <span className="cookbook-print-dialog__printer-name">{printer.name}</span>
-                        <span className="cookbook-print-dialog__printer-note">{printer.note}</span>
-                      </a>
-                    </li>
-                  );
-                })}
+                {Object.values(PRINTERS).map((printer) => (
+                  <li key={printer.id}>
+                    <a
+                      href={printer.url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="cookbook-print-dialog__printer"
+                      onClick={() => track("cookbook_printer_clicked", { printer: printer.id })}
+                    >
+                      <span className="cookbook-print-dialog__printer-name">{printer.name}</span>
+                      <span className="cookbook-print-dialog__printer-note">{printer.note}</span>
+                    </a>
+                  </li>
+                ))}
               </ul>
               <p className="cookbook-print-dialog__disclaimer">
                 Popular printing services — not endorsed or certified partners, and each has its own
-                file requirements.
-                {cookbookPreset.id === "hardcover-8x10"
-                  ? " Hardcover print-on-demand usually needs a separate wraparound cover/spine file, which isn't part of this export yet."
-                  : ""}
+                file requirements. Hardcover print-on-demand usually needs a separate wraparound
+                cover/spine file, which isn&apos;t part of this export yet.
               </p>
             </div>
       </Dialog>

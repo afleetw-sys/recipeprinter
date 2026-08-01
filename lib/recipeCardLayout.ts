@@ -691,6 +691,7 @@ export function coverToFaces(cover: CoverConfig, side: "front" | "back" = "front
 
 export type RecipeCardEditTarget =
   | { kind: "title" }
+  | { kind: "description" }
   | { kind: "cookTime" }
   | { kind: "servings" }
   | { kind: "image" }
@@ -881,7 +882,7 @@ export function planCookbookSection(
    - An image-spread's photo is forced onto a VERSO (left) so its recipe page
      (which immediately follows) lands on the facing recto — the designed spread.
    - A trailing blank pads the final spread to two pages. */
-export type BookPageKind = "cover" | "back" | "chapter" | "image-photo" | "content";
+export type BookPageKind = "cover" | "dedication" | "back" | "chapter" | "image-photo" | "content";
 
 export interface BookSpread {
   /** Index (into the input array) of the left/verso page, or null for a blank. */
@@ -898,6 +899,12 @@ export function assembleSpreads(pages: BookPageKind[]): BookSpread[] {
   let end = pages.length;
 
   if (pages[start] === "cover") {
+    spreads.push({ left: null, right: start, single: true });
+    start += 1;
+  }
+  // A dedication is front matter on its own page, right after the cover — a
+  // standalone recto like the cover, not part of the facing-page body flow.
+  if (pages[start] === "dedication") {
     spreads.push({ left: null, right: start, single: true });
     start += 1;
   }

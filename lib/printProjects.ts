@@ -45,6 +45,7 @@ export function assemblePrintProject(params: {
   sections: Section[];
   cover?: CoverConfig;
   backCover?: CoverConfig;
+  dedication?: CoverConfig;
   settings: PrintProjectSettings;
   itemPlacements?: Record<string, RecipePagePlacement>;
   createdAt?: number;
@@ -57,6 +58,7 @@ export function assemblePrintProject(params: {
     sections: params.sections,
     cover: params.cover,
     backCover: params.backCover,
+    dedication: params.dedication,
     settings: params.settings,
     itemPlacements: params.itemPlacements,
     createdAt: params.createdAt ?? now,

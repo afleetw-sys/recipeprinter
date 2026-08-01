@@ -30,6 +30,10 @@ export type PhotoStyle = "none" | "card" | "full";
 export interface ProjectMeta {
   cover?: CoverConfig;
   backCover?: CoverConfig;
+  /** Optional dedication / front-matter page shown after the cover, before the
+      table of contents. A CoverConfig (like the back cover) whose `blurb` is the
+      dedication text; absent = no dedication page. */
+  dedication?: CoverConfig;
   /** Book-wide recipe-photo default (cookbook). See PhotoStyle. Absent = the
       plain-card default ("card") — a header photo in each recipe card. */
   photoStyle?: PhotoStyle;
@@ -324,6 +328,16 @@ export function useProjectMeta() {
     [update],
   );
 
+  // The optional dedication / front-matter page. Modeled as a CoverConfig (like
+  // the back cover — a quiet, template-skinned page) whose `blurb` holds the
+  // dedication text; `undefined` means no dedication page.
+  const setDedication = useCallback(
+    (dedication: CoverConfig | undefined) => {
+      update((current) => ({ ...current, dedication }));
+    },
+    [update],
+  );
+
   // No callers right now — the TOC toggle is gone until a TOC page exists (see
   // `ProjectMeta.tableOfContents`). Left in place as part of this store's
   // surface, alongside the field it writes, so building the feature is a
@@ -445,6 +459,7 @@ export function useProjectMeta() {
     replaceSections,
     setCover,
     setBackCover,
+    setDedication,
     setTableOfContents,
     setTocKicker,
     setTocTitle,

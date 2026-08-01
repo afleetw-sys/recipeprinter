@@ -122,6 +122,11 @@ export interface RecipePagePlacement {
   pageLayout?: RecipePageLayout;
   /** Facing-page image for the `image-spread` layout. */
   heroImageUrl?: string;
+  /** Focal point (CSS object-position, 0–100%) for the full-bleed image-spread
+      photo, so a cook can reposition the crop instead of always center-cutting.
+      Absent = 50/50 (centered). */
+  heroFocusX?: number;
+  heroFocusY?: number;
   /** Per-page override of the book-wide "Include recipe photo" default
       (cookbook mode). `undefined` = follow the global toggle; `true`/`false` =
       force this recipe's header photo on/off regardless. Ignored for
@@ -174,6 +179,8 @@ export interface PrintProject {
   sections: Section[];
   cover?: CoverConfig;
   backCover?: CoverConfig;
+  /** Optional dedication / front-matter page (cookbook mode). See ProjectMeta. */
+  dedication?: CoverConfig;
   settings: PrintProjectSettings;
   /** Per-recipe cookbook page layouts, keyed by `QueueItem.id` (see
       `RecipePagePlacement`). Absent for plain card projects. Kept alongside

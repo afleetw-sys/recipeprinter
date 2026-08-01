@@ -982,95 +982,61 @@
   color: var(--cp-selected-text);
 }
 
-/* ── Cookbook print-format picker (Book Settings sidebar) ─────────────────── */
-.cookbook-format {
+/* ── Format download buttons on the "Print your cookbook" screen ──────────── */
+.cookbook-print-dialog__formats {
   display: grid;
   gap: 8px;
+  margin-top: 6px;
+  text-align: left;
 }
 
-.cookbook-format__tile {
+.cookbook-format-download {
   display: flex;
-  flex-direction: column;
-  gap: 2px;
-  padding: 10px 12px;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  width: 100%;
+  padding: 12px 14px;
   border: 1px solid var(--cp-line);
   border-radius: 10px;
   background: var(--cp-card);
   cursor: pointer;
+  text-align: left;
 }
 
-.cookbook-format__tile.is-active {
+.cookbook-format-download:hover {
   border-color: var(--cp-selected-border);
   background: var(--cp-selected-fill);
-  box-shadow: var(--cp-selected-ring);
 }
 
-/* The real radio is sr-only, so surface keyboard focus on the visible tile. */
-.cookbook-format__tile:has(input:focus-visible) {
+.cookbook-format-download:focus-visible {
   outline: var(--cp-focus-ring);
   outline-offset: var(--cp-focus-ring-offset);
 }
 
-.cookbook-format__name {
+.cookbook-format-download__text {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.cookbook-format-download__name {
   font-size: var(--cp-fs-small);
   font-weight: 800;
   color: var(--cp-ink);
 }
 
-.cookbook-format__tile.is-active .cookbook-format__name {
+.cookbook-format-download__trim {
+  font-size: var(--cp-fs-caption);
+  color: var(--cp-ink-soft);
+}
+
+.cookbook-format-download__cta {
+  flex: none;
+  font-size: var(--cp-fs-caption);
+  font-weight: 800;
   color: var(--cp-selected-text);
-}
-
-.cookbook-format__trim {
-  font-size: var(--cp-fs-caption);
-  font-weight: 600;
-  color: var(--cp-ink-soft);
-}
-
-.cookbook-format__best {
-  font-size: var(--cp-fs-caption);
-  color: var(--cp-ink-soft);
-}
-
-/* ── Format summary shown in the cookbook unlock dialog ───────────────────── */
-.cookbook-format-summary {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  flex-wrap: wrap;
-  margin: 4px 0 2px;
-  padding: 8px 12px;
-  border: 1px solid var(--cp-line);
-  border-radius: 10px;
-  background: var(--cp-card);
-}
-
-.cookbook-format-summary__label {
-  font-size: var(--cp-fs-caption);
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
-  color: var(--cp-ink-soft);
-}
-
-.cookbook-format-summary__value {
-  font-size: var(--cp-fs-small);
-  font-weight: 700;
-  color: var(--cp-ink);
-}
-
-.cookbook-format-summary__change {
-  margin-left: auto;
-  font-size: var(--cp-fs-small);
-  font-weight: 700;
-  color: var(--cp-selected-text);
-  text-decoration: underline;
-  cursor: pointer;
-}
-
-.cookbook-format-summary__change:disabled {
-  opacity: 0.5;
-  cursor: default;
 }
 
 /* ── "Print your cookbook" post-export dialog ─────────────────────────────── */
@@ -1786,6 +1752,7 @@
    A full-bleed photo filling a letter page, facing the recipe's card page. */
 .recipe-card-page--image {
   padding: 0;
+  position: relative;
 }
 
 .recipe-image-spread__photo {
@@ -1793,6 +1760,33 @@
   height: 100%;
   object-fit: cover;
   display: block;
+}
+
+/* Drag-to-reposition affordance (screen only, on the focused photo). */
+.recipe-image-spread__photo--draggable {
+  cursor: grab;
+  /* Keep the drag from turning into a page scroll while repositioning. */
+  touch-action: none;
+}
+
+.recipe-image-spread__photo--draggable:active {
+  cursor: grabbing;
+}
+
+.recipe-image-spread__hint {
+  position: absolute;
+  left: 50%;
+  bottom: 0.5in;
+  transform: translateX(-50%);
+  padding: 0.06in 0.16in;
+  border-radius: 999px;
+  background: rgba(17, 24, 39, 0.72);
+  color: #fff;
+  font-size: 0.12in;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  pointer-events: none;
+  white-space: nowrap;
 }
 
 .recipe-card-side-nav {
@@ -2373,6 +2367,18 @@
   color: var(--recipe-muted);
   text-align: center;
   field-sizing: content;
+}
+
+/* Dedication front-matter page: a quiet eyebrow over the centered dedication
+   line (which reuses the back cover's italic `cover-blurb` treatment). */
+.recipe-card__cover-dedication-label {
+  margin: 0;
+  font-size: 0.11in;
+  font-weight: 700;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--recipe-muted);
+  text-align: center;
 }
 
 /* ── Per-theme cover & chapter furniture ──────────────────────────────────
@@ -5008,15 +5014,18 @@ textarea.recipe-card__toc-title {
 }
 
 /* ── Cookbook print-format presets ─────────────────────────────────────────
-   A preset changes only the physical sheet a cookbook exports on: the @page
-   size (trim + bleed) and where/how large the unchanged Letter page sits on
-   it. The recipe measurement/pagination engine is NEVER re-tuned — each page
-   is authored at Letter and only visually scaled + inset here (geometry math
-   in lib/cookbookPresets.ts). Art (covers, full-page photos, the paper
-   background) bleeds to the sheet edge; recipe/TOC/divider TEXT is scaled into
-   the safe box. These rules live outside @media print so the on-screen preview
-   is WYSIWYG; the `page:` bindings that pick the physical size are in the
-   @media print block below. */
+   A print FORMAT changes only the physical sheet a cookbook EXPORTS on: the
+   @page size (trim + bleed) and where/how large the unchanged Letter page sits
+   on it. It is applied ONLY at export time — the deck gets `.rp-exporting`
+   + the format's `rp-page-*` class + geometry vars for the moment `window.
+   print()` fires (see `exportPreset` in app/print/page.tsx). The on-screen book
+   always previews at plain Letter, and a plain Ctrl+P (no `.rp-exporting`)
+   prints Letter too. The recipe measurement/pagination engine is NEVER re-tuned
+   — each page is authored at Letter and only visually scaled + inset here
+   (geometry math in lib/cookbookPresets.ts). Art (covers, full-page photos, the
+   paper background) bleeds to the sheet edge; recipe/TOC/divider TEXT scales
+   into the safe box. All of it is gated under `.rp-exporting` inside @media
+   print below; the `@page` rules themselves are global. */
 @page rp-preset-us-letter {
   size: 8.5in 11in;
   margin: 0;
@@ -5025,43 +5034,6 @@ textarea.recipe-card__toc-title {
   /* 8×10 trim + 0.125in bleed per edge. */
   size: 8.25in 10.25in;
   margin: 0;
-}
-
-/* Full-bleed paper: painting the theme background on the sheet-sized page (not
-   only on the scaled card) means colored/warm paper reaches the physical edge
-   instead of leaving a white border around a centered card. */
-.recipe-print-preview--book-preset .recipe-card-page {
-  background: var(--recipe-bg, #fff);
-}
-
-/* Text-dominant pages (recipe, TOC, divider): center the Letter card in the
-   safe box (margin, plus the gutter on the binding side) and scale it to fit.
-   The card keeps its Letter layout; anything past the safe box is scaled away,
-   never re-measured, so a recipe that fit at Letter still fits here. */
-.recipe-print-preview--book-safe .recipe-card-page {
-  box-sizing: border-box;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: var(--rp-inset-block, 0) var(--rp-inset-outer, 0);
-}
-.recipe-print-preview--book-safe.rp-bind-left .recipe-card-page {
-  padding-left: var(--rp-inset-bind, var(--rp-inset-outer, 0));
-}
-.recipe-print-preview--book-safe.rp-bind-right .recipe-card-page {
-  padding-right: var(--rp-inset-bind, var(--rp-inset-outer, 0));
-}
-.recipe-print-preview--book-safe .recipe-card {
-  flex: 0 0 auto;
-  transform: scale(var(--rp-card-scale, 1));
-  transform-origin: center center;
-}
-
-/* Art-dominant pages (cover / back cover): scale the Letter page to FILL the
-   sheet so the artwork bleeds to the edge, cropping the overflow. */
-.recipe-print-preview--book-art .recipe-card {
-  transform: scale(var(--rp-art-scale, 1));
-  transform-origin: center center;
 }
 
 @media print {
@@ -5175,6 +5147,43 @@ textarea.recipe-card__toc-title {
   .recipe-page-deck.rp-page-hardcover-8x10 .recipe-card-page,
   .recipe-page-deck.rp-page-hardcover-8x10 .recipe-spread__blank {
     page: rp-preset-hardcover-8x10;
+  }
+
+  /* Format geometry — applied ONLY while a format is being exported (the deck
+     carries `.rp-exporting` + the geometry vars). Without it, a cookbook prints
+     at plain Letter exactly as before, so a bare Ctrl+P is unchanged.
+
+     Full-bleed paper: paint the theme background on the sheet-sized page (not
+     just the scaled card) so colored/warm paper reaches the physical edge
+     instead of leaving a white border around a centered card. */
+  .rp-exporting .recipe-print-preview--book-preset .recipe-card-page {
+    background: var(--recipe-bg, #fff);
+  }
+
+  /* Text-dominant pages (recipe, TOC, divider): center the Letter card in the
+     safe box (margin, plus the gutter on the binding side) and scale it to fit.
+     The card keeps its Letter layout; anything past the safe box is scaled
+     away, never re-measured, so a recipe that fit at Letter still fits here. */
+  .rp-exporting .recipe-print-preview--book-safe .recipe-card-page {
+    box-sizing: border-box;
+    padding: var(--rp-inset-block, 0) var(--rp-inset-outer, 0);
+  }
+  .rp-exporting .recipe-print-preview--book-safe.rp-bind-left .recipe-card-page {
+    padding-left: var(--rp-inset-bind, var(--rp-inset-outer, 0));
+  }
+  .rp-exporting .recipe-print-preview--book-safe.rp-bind-right .recipe-card-page {
+    padding-right: var(--rp-inset-bind, var(--rp-inset-outer, 0));
+  }
+  .rp-exporting .recipe-print-preview--book-safe .recipe-card {
+    transform: scale(var(--rp-card-scale, 1));
+    transform-origin: center center;
+  }
+
+  /* Art-dominant pages (cover / back cover): scale the Letter page to FILL the
+     sheet so the artwork bleeds to the edge, cropping the overflow. */
+  .rp-exporting .recipe-print-preview--book-art .recipe-card {
+    transform: scale(var(--rp-art-scale, 1));
+    transform-origin: center center;
   }
 
   /* `.recipe-card-page` is the fragmentation unit that breaks pages now, not

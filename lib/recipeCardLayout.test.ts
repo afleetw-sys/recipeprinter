@@ -205,6 +205,15 @@ describe("assembleSpreads (book imposition)", () => {
     expect(spreads[spreads.length - 1]).toEqual({ left: 3, right: null, single: true });
   });
 
+  it("stands a dedication page alone after the cover, before the body", () => {
+    // cover, dedication, then body pairs — front matter each gets its own page.
+    const spreads = assembleSpreads(K("cover", "dedication", "content", "content", "back"));
+    expect(spreads[0]).toEqual({ left: null, right: 0, single: true });
+    expect(spreads[1]).toEqual({ left: null, right: 1, single: true });
+    expect(spreads[2]).toEqual({ left: 2, right: 3, single: false });
+    expect(spreads[spreads.length - 1]).toEqual({ left: 4, right: null, single: true });
+  });
+
   it("pairs body pages left→right", () => {
     // cover, [c1|c2], [c3|c4], back
     const spreads = assembleSpreads(K("cover", "content", "content", "content", "content", "back"));

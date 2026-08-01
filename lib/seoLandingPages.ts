@@ -480,13 +480,13 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
     intent: "Preservation and Gift SEO",
     eyebrow: "Family recipe guide",
     statusNote:
-      "Coming soon: more family recipe preservation features. Today you can still print clean copies from photos, screenshots, old cards, and pasted text.",
+      "Turn old cards, photos, screenshots, and pasted text into clean recipe pages — then gather them into a keepsake cookbook with a cover, automatic table of contents, and chapters.",
     title: "Preserve Family Recipes",
     description:
-      "Preserve family recipes by turning old cards, photos, screenshots, and text into printable keepsakes and collections.",
+      "Preserve family recipes by turning old cards, photos, screenshots, and text into printable keepsakes and a bound family cookbook.",
     h1: "Preserve family recipes",
     lede:
-      "Family recipes deserve more than a fading card in a drawer. Recipe Printer can help turn old recipe cards, photos, and text into printable pages worth keeping, with deeper preservation tools coming soon.",
+      "Family recipes deserve more than a fading card in a drawer. Recipe Printer turns old recipe cards, photos, and text into printable pages worth keeping — and gathers them into a keepsake family cookbook.",
     faqs: [
       {
         question: "Can I print recipes from old handwritten cards?",
@@ -496,7 +496,7 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
       {
         question: "Can preserved recipes become a family cookbook?",
         answer:
-          "Yes. Start by printing and organizing individual recipes, then group them into a binder or family recipe book. More family cookbook features are coming soon.",
+          "Yes. Group them into chapters, add a cover and an automatic table of contents, and print the finished cookbook at home or through a professional printer.",
       },
     ],
     links: [
@@ -517,13 +517,13 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
     intent: "Preservation and Gift SEO",
     eyebrow: "Family recipe guide",
     statusNote:
-      "Coming soon: family recipe book planning tools. Recipe Printer currently helps prepare clean printable recipe pages for a future book.",
+      "Recipe Printer turns your recipes into a designed family cookbook — a cover, an automatic table of contents, and chapters — ready to print at home or send to a professional printer.",
     title: "Family Recipe Book Ideas",
     description:
       "Create a family recipe book from printed recipes, old cards, online favorites, photos, and kitchen notes.",
     h1: "Family recipe book ideas",
     lede:
-      "A family recipe book can start one recipe at a time. Recipe Printer helps turn online recipes, old cards, photos, and text into clean pages you can collect now, with book-planning tools coming soon.",
+      "A family recipe book can start one recipe at a time. Recipe Printer turns online recipes, old cards, photos, and text into clean pages — then binds them into a family cookbook with a cover, table of contents, and chapters.",
     faqs: [
       {
         question: "What should go in a family recipe book?",
@@ -533,7 +533,7 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
       {
         question: "Can Recipe Printer help before professional printing?",
         answer:
-          "Yes. It can help create clean, readable recipe pages that are easier to test, organize, and prepare for a future printed cookbook. More family recipe book tools are coming soon.",
+          "Yes. It creates clean, readable recipe pages and compiles them into a cookbook with a cover, an automatic table of contents, and chapters — ready to print at home or send to a professional printer.",
       },
     ],
     links: [

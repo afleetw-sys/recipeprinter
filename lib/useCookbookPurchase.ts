@@ -61,7 +61,7 @@ export function useCookbookPurchase({
       (typically re-running the export/print gate) rather than printing
       directly — the caller may still have a locked premium template to
       resolve after this purchase clears. */
-  async function purchaseCookbookAndContinue(onUnlocked: () => void) {
+  async function purchaseCookbookAndContinue(onUnlocked: (freshPurchase: boolean) => void) {
     if (!revenueCatUserId) {
       showToast("Purchase service is still getting ready. Try again in a moment.");
       return;
@@ -72,8 +72,9 @@ export function useCookbookPurchase({
     try {
       const latestInfo = customerInfo ?? (await refreshCustomerInfo(revenueCatUserId));
       if (hasCookbookEntitlement(latestInfo)) {
+        // Already owned — a re-export, not a fresh purchase.
         setShowCookbookUnlockDialog(false);
-        onUnlocked();
+        onUnlocked(false);
         return;
       }
 
@@ -97,7 +98,7 @@ export function useCookbookPurchase({
       }
 
       setShowCookbookUnlockDialog(false);
-      onUnlocked();
+      onUnlocked(true);
     } catch (error) {
       showToast(friendlyPurchaseSetupError(error));
     } finally {

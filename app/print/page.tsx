@@ -36,6 +36,7 @@ import {
 import { materializeProjectPhotos } from "@/lib/photoStorage";
 import { createPrintProjectId, savePrintProject, assemblePrintProject } from "@/lib/printProjects";
 import { useRecipeInlineEditor } from "@/lib/useRecipeInlineEditor";
+import { startFocalDrag } from "@/lib/focalDrag";
 import { useDeckScroller } from "@/lib/useDeckScroller";
 import { usePremiumTemplatePurchase } from "@/lib/usePremiumTemplatePurchase";
 import { useCookbookPurchase } from "@/lib/useCookbookPurchase";
@@ -47,10 +48,7 @@ import {
   presetArtScale,
   presetCardScale,
   presetInsets,
-  presetSheetDims,
-  type CookbookPreset,
 } from "@/lib/cookbookPresets";
-import { CookbookPresetPicker } from "@/components/CookbookPresetPicker";
 import { localStore } from "@/lib/storage";
 import { track } from "@/lib/analytics";
 import {
@@ -91,7 +89,7 @@ import {
   isRecipePrintTemplate,
   usePrintSettingsPersistence,
 } from "@/lib/printSettings";
-import type { CoverConfig, QueueItem, Recipe } from "@/types/recipe";
+import type { CookbookPresetId, CoverConfig, QueueItem, Recipe } from "@/types/recipe";
 
 const PrintDialogs = dynamic(
   () => import("@/components/PrintDialogs").then((mod) => mod.PrintDialogs),
@@ -303,10 +301,10 @@ const ScaledPage = memo(function ScaledPage({
   inlineEdit,
   dividerEdit,
   coverEdit,
+  imageEdit,
   tocKicker,
   tocTitle,
   tocEdit,
-  preset,
   gutterSide = "none",
 }: {
   sheet: PageSheet;
@@ -338,10 +336,17 @@ const ScaledPage = memo(function ScaledPage({
     onPhotoChange?: (url: string | undefined) => void;
   };
   coverEdit?: {
-    side: "front" | "back";
+    side: "front" | "back" | "dedication";
     cover: CoverConfig;
     onChange: (cover: CoverConfig) => void;
     recipeImages?: string[];
+  };
+  /** Present when the focused full-page image-spread photo is being edited —
+      enables drag-to-reposition, persisting the object-position focal point. */
+  imageEdit?: {
+    focusX: number;
+    focusY: number;
+    onChange: (focusX: number, focusY: number) => void;
   };
   tocKicker?: string;
   tocTitle?: string;
@@ -351,36 +356,21 @@ const ScaledPage = memo(function ScaledPage({
     onKickerChange: (value: string) => void;
     onTitleChange: (value: string) => void;
   };
-  /** Active cookbook print-format preset. When set, the page renders on the
-      preset's physical sheet (trim + bleed) with the Letter content scaled and
-      inset into the safe area; undefined = today's Letter / 6x4 behavior. */
-  preset?: CookbookPreset;
-  /** Which edge carries the binding gutter (verso→right, recto→left,
-      single/cover→none). */
+  /** Which edge carries the binding gutter, used only when an export applies a
+      format (verso→right, recto→left, single/cover→none). */
   gutterSide?: "left" | "right" | "none";
 }) {
   const dims = PAGE_DIMS[size];
   const anySlot = sheet.slots.find((slot): slot is SheetSlot => slot !== null) ?? null;
   if (!anySlot) return null;
 
-  // Cookbook preset geometry (presentation only — the measurement engine never
-  // sees this). The scaler grows from the Letter card to the preset's physical
-  // sheet, and the `--rp-*` vars + `--book-*` classes tell print.css how to
-  // scale/inset the Letter content into the safe area and bleed the artwork.
-  const sheetDims = preset ? presetSheetDims(preset) : null;
-  const pageW = sheetDims ? sheetDims.w : dims.w;
-  const pageH = sheetDims ? sheetDims.h : dims.h;
-  const presetInsetVars = preset ? presetInsets(preset) : null;
-  const presetStyle = (preset
-    ? {
-        "--rp-card-scale": presetCardScale(preset),
-        "--rp-art-scale": presetArtScale(preset),
-        "--rp-inset-block": presetInsetVars!.block,
-        "--rp-inset-outer": presetInsetVars!.outer,
-        "--rp-inset-bind": presetInsetVars!.bind,
-      }
-    : {}) as CSSProperties;
-  const gutterClass = !preset
+  // Cookbook print-format geometry is applied only at EXPORT time, never on
+  // screen: the book always PREVIEWS at plain Letter, and the chosen format is a
+  // pure export concern (see the `.rp-exporting` print-only rules + the deck's
+  // export vars in app/print/page.tsx / print.css). Each page still carries the
+  // static `--book-*` / `rp-bind-*` hooks so an export has something to act on;
+  // they're inert until a format is being exported. `--page-w/-h` stay Letter.
+  const gutterClass = !cookbookMode
     ? ""
     : gutterSide === "left"
       ? "rp-bind-left"
@@ -389,9 +379,9 @@ const ScaledPage = memo(function ScaledPage({
         : "";
   // Base class (paper bleed + binding side) plus the per-page bucket: `safe`
   // scales text into the margins; `art` fills the sheet so covers/photos bleed.
-  const presetBaseClass = preset ? `recipe-print-preview--book-preset ${gutterClass}` : "";
-  const presetSafeClass = preset ? "recipe-print-preview--book-safe" : "";
-  const presetArtClass = preset ? "recipe-print-preview--book-art" : "";
+  const presetBaseClass = cookbookMode ? `recipe-print-preview--book-preset ${gutterClass}` : "";
+  const presetSafeClass = cookbookMode ? "recipe-print-preview--book-safe" : "";
+  const presetArtClass = cookbookMode ? "recipe-print-preview--book-art" : "";
 
   // ── Image-spread facing photo ────────────────────────────────────────────
   // A full-bleed photo alone on a letter page, facing the recipe's card page.
@@ -403,12 +393,11 @@ const ScaledPage = memo(function ScaledPage({
     return (
       <div
         className="recipe-page-scaler"
-        style={{ "--page-scale": scale, "--page-w": `${pageW}px`, "--page-h": `${pageH}px` } as CSSProperties}
+        style={{ "--page-scale": scale, "--page-w": `${dims.w}px`, "--page-h": `${dims.h}px` } as CSSProperties}
       >
         <div className="recipe-page-scaler__inner">
           <div
             className={`recipe-print-preview recipe-print-preview--letter ${presetBaseClass} ${presetArtClass}`}
-            style={presetStyle}
             data-double-sided="false"
           >
             <div className={`recipe-card-set recipe-card-set--letter recipe-template--${template}`}>
@@ -418,7 +407,31 @@ const ScaledPage = memo(function ScaledPage({
                 }`}
               >
                 {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img className="recipe-image-spread__photo" src={imageSlot.imageUrl} alt="" />
+                <img
+                  className={`recipe-image-spread__photo ${
+                    imageEdit ? "recipe-image-spread__photo--draggable" : ""
+                  }`}
+                  src={imageSlot.imageUrl}
+                  alt=""
+                  style={{
+                    objectPosition: `${imageEdit?.focusX ?? imageSlot.focusX ?? 50}% ${
+                      imageEdit?.focusY ?? imageSlot.focusY ?? 50
+                    }%`,
+                  }}
+                  onPointerDown={
+                    imageEdit
+                      ? (event) =>
+                          startFocalDrag(
+                            event,
+                            { x: imageEdit.focusX, y: imageEdit.focusY },
+                            (point) => imageEdit.onChange(Math.round(point.x), Math.round(point.y)),
+                          )
+                      : undefined
+                  }
+                />
+                {imageEdit && (
+                  <span className="recipe-image-spread__hint no-print">Drag to reposition</span>
+                )}
               </div>
             </div>
           </div>
@@ -438,12 +451,11 @@ const ScaledPage = memo(function ScaledPage({
     return (
       <div
         className="recipe-page-scaler"
-        style={{ "--page-scale": scale, "--page-w": `${pageW}px`, "--page-h": `${pageH}px` } as CSSProperties}
+        style={{ "--page-scale": scale, "--page-w": `${dims.w}px`, "--page-h": `${dims.h}px` } as CSSProperties}
       >
         <div className="recipe-page-scaler__inner">
           <div
             className={`recipe-print-preview recipe-print-preview--${size} ${presetBaseClass} ${bucketClass}`}
-            style={presetStyle}
             data-double-sided="false"
           >
             <div className={`recipe-card-set recipe-card-set--${size} recipe-template--${template}`}>
@@ -500,8 +512,8 @@ const ScaledPage = memo(function ScaledPage({
       style={
         {
           "--page-scale": scale,
-          "--page-w": `${pageW}px`,
-          "--page-h": `${pageH}px`,
+          "--page-w": `${dims.w}px`,
+          "--page-h": `${dims.h}px`,
         } as CSSProperties
       }
     >
@@ -510,7 +522,6 @@ const ScaledPage = memo(function ScaledPage({
           className={`recipe-print-preview recipe-print-preview--${size} ${presetBaseClass} ${presetSafeClass} ${
             showCutLines ? "recipe-print-preview--cut-lines" : ""
           }`}
-          style={presetStyle}
           data-double-sided={doubleSided ? "true" : "false"}
         >
           <div
@@ -676,6 +687,10 @@ export default function PrintPage() {
   const [showDonateDialog, setShowDonateDialog] = useState(false);
   const [showCookbookOfferDialog, setShowCookbookOfferDialog] = useState(false);
   const [showCookbookPrintDialog, setShowCookbookPrintDialog] = useState(false);
+  // True only when the cookbook print dialog was reached via a fresh purchase
+  // (not a re-export), so it can lead with a one-time "your cookbook is ready"
+  // celebration instead of the plain "print your cookbook" framing.
+  const [cookbookJustPurchased, setCookbookJustPurchased] = useState(false);
   const [showExitCookbookConfirm, setShowExitCookbookConfirm] = useState(false);
   const [showFeedbackDialog, setShowFeedbackDialog] = useState(false);
   const [showAddRecipeDialog, setShowAddRecipeDialog] = useState(false);
@@ -683,7 +698,7 @@ export default function PrintPage() {
   const [pendingDelete, setPendingDelete] = useState<
     | { kind: "recipe"; id: string; title: string }
     | { kind: "section"; id: string; title: string; recipeIds: string[] }
-    | { kind: "cover"; side: "front" | "back"; title: string }
+    | { kind: "cover"; side: "front" | "back" | "dedication"; title: string }
     | null
   >(null);
   const [pendingFocusRecipeId, setPendingFocusRecipeId] = useState<string | null>(null);
@@ -702,7 +717,9 @@ export default function PrintPage() {
   }, [sections]);
   const [editingSectionId, setEditingSectionId] = useState<string | null>(null);
   const [editingSectionTitle, setEditingSectionTitle] = useState("");
-  const [editingCoverSide, setEditingCoverSide] = useState<"front" | "back" | null>(null);
+  const [editingCoverSide, setEditingCoverSide] = useState<
+    "front" | "back" | "dedication" | null
+  >(null);
   const [editingToc, setEditingToc] = useState(false);
   const [addMenuOpen, setAddMenuOpen] = useState(false);
   const [pendingAddSectionId, setPendingAddSectionId] = useState<string | null>(null);
@@ -719,6 +736,10 @@ export default function PrintPage() {
   const [isRecipePrinterAdmin, setIsRecipePrinterAdmin] = useState(false);
   const [showCookPilotLogin, setShowCookPilotLogin] = useState(false);
   const printRequestedRef = useRef(false);
+  // The document title becomes the browser's default "Save as PDF" filename, so
+  // a cookbook export is named after the book (e.g. "Grandma's Cookbook.pdf")
+  // rather than the generic page title. Stashed here and restored on afterprint.
+  const previousDocTitleRef = useRef<string | null>(null);
   const autoPrintAttemptedRef = useRef(false);
   // The cookbook offer is a one-time pitch PER PAGE VISIT: show it the first
   // time they make a cookbook here, then never again this session — flipping
@@ -747,13 +768,17 @@ export default function PrintPage() {
   const anyRecipeHasSourceUrl =
     items?.some((item) => Boolean(item.recipe?.sourceUrl)) ?? false;
   const cookbookMode = Boolean(projectMeta.meta.cookbookMode);
-  // The cookbook's print-format preset (US Letter / 8×10 hardcover). Only ever
-  // applied in cookbook mode — it changes the exported page geometry, not how
-  // recipes are measured. `activePreset` falls back to the default for older
-  // books; `presetForRender` is the value actually threaded into the pages
-  // (undefined outside cookbook mode, so plain-card output is untouched).
+  // The cookbook's remembered export format (US Letter / 8×10 hardcover). This
+  // is purely an EXPORT concern — it never changes how the book previews or how
+  // recipes are measured; it just seeds the format the "Print your cookbook"
+  // screen offers and rides along on analytics. `activePreset` falls back to the
+  // default for books that haven't exported yet.
   const activePreset = getCookbookPreset(projectMeta.meta.cookbookPreset);
-  const presetForRender: CookbookPreset | undefined = cookbookMode ? activePreset : undefined;
+  // The format currently being exported. Non-null only for the brief moment
+  // between choosing a format and `window.print()` firing — that's when the
+  // print-only geometry (see `.rp-exporting` in print.css) is switched on. Null
+  // the rest of the time, so the on-screen book and a plain Ctrl+P stay Letter.
+  const [exportPreset, setExportPreset] = useState<CookbookPresetId | null>(null);
   // Cookbook photos are set book-wide via the 3-way "Photos" control
   // (`photoStyle`); plain card mode keeps its own header-photo checkbox
   // (`showPhoto`). Default "card" = a header photo in each recipe card.
@@ -793,6 +818,7 @@ export default function PrintPage() {
     sections,
     cover: projectMeta.meta.cover,
     backCover: projectMeta.meta.backCover,
+    dedication: projectMeta.meta.cookbookMode ? projectMeta.meta.dedication : undefined,
     sectionDividers: projectMeta.meta.sectionDividers,
     tableOfContents: projectMeta.meta.cookbookMode ? projectMeta.meta.tableOfContents : false,
     bookTitle: projectMeta.meta.cover?.title,
@@ -936,8 +962,10 @@ export default function PrintPage() {
     setPendingFocusNavId(sectionId);
   }
 
-  function coverSideFromNavItem(navItem: NavItem): "front" | "back" {
-    return navItem.recipeId === "cover-back" ? "back" : "front";
+  function coverSideFromNavItem(navItem: NavItem): "front" | "back" | "dedication" {
+    if (navItem.recipeId === "cover-back") return "back";
+    if (navItem.recipeId === "cover-dedication") return "dedication";
+    return "front";
   }
 
   function defaultCover(): CoverConfig {
@@ -1094,12 +1122,18 @@ export default function PrintPage() {
     );
   };
 
-  function coverForSide(side: "front" | "back"): CoverConfig | undefined {
-    return side === "back" ? projectMeta.meta.backCover : projectMeta.meta.cover;
+  function coverForSide(side: "front" | "back" | "dedication"): CoverConfig | undefined {
+    if (side === "back") return projectMeta.meta.backCover;
+    if (side === "dedication") return projectMeta.meta.dedication;
+    return projectMeta.meta.cover;
   }
 
-  function setCoverForSide(side: "front" | "back", cover: CoverConfig | undefined) {
+  function setCoverForSide(
+    side: "front" | "back" | "dedication",
+    cover: CoverConfig | undefined,
+  ) {
     if (side === "back") projectMeta.setBackCover(cover);
+    else if (side === "dedication") projectMeta.setDedication(cover);
     else projectMeta.setCover(cover);
   }
 
@@ -1108,6 +1142,19 @@ export default function PrintPage() {
     projectMeta.setCover(cover);
     setEditingCoverSide("front");
     setPendingFocusNavId("cover-front");
+  }
+
+  /** Toggles the dedication front-matter page. Adding one seeds a quiet,
+      template-skinned page and jumps into editing it; removing clears it. */
+  function toggleDedication() {
+    if (projectMeta.meta.dedication) {
+      projectMeta.setDedication(undefined);
+      setEditingCoverSide((current) => (current === "dedication" ? null : current));
+      return;
+    }
+    projectMeta.setDedication({ title: "", template });
+    setEditingCoverSide("dedication");
+    setPendingFocusNavId("cover-dedication");
   }
 
   const requestDeleteNavItem = useCallback((navItem: NavItem) => {
@@ -1150,6 +1197,9 @@ export default function PrintPage() {
     } else if (pendingDelete.side === "back") {
       projectMeta.setBackCover(undefined);
       setEditingCoverSide((side) => (side === "back" ? null : side));
+    } else if (pendingDelete.side === "dedication") {
+      projectMeta.setDedication(undefined);
+      setEditingCoverSide((side) => (side === "dedication" ? null : side));
     } else {
       projectMeta.setCover(undefined);
       setEditingCoverSide((side) => (side === "front" ? null : side));
@@ -1198,10 +1248,25 @@ export default function PrintPage() {
   // spread (not a single page). `activeNavIndex` then indexes `spreads`, and the
   // controls/editing target a FOCUSED page within the active spread.
   const cookbookView = spreads.length > 0;
-  // In cookbook mode the deck pages are the preset's physical sheet (trim +
-  // bleed), not the plain Letter card — so on-screen sizing keys off the sheet.
-  const previewDims = cookbookMode ? presetSheetDims(activePreset) : PAGE_DIMS[previewCardSize];
+  // The book always previews at Letter — print format is applied only at export
+  // time, never in the deck (see `exportPreset`), so on-screen sizing is Letter.
+  const previewDims = PAGE_DIMS[previewCardSize];
   const spreadWidth = previewDims.w * 2;
+  // While a format is being exported, the deck carries that preset's @page class
+  // and geometry vars so the print-only `.rp-exporting` rules resize/inset/bleed
+  // the pages. Empty the rest of the time → a plain Letter deck and Letter print.
+  const exportPresetObj = exportPreset ? getCookbookPreset(exportPreset) : null;
+  const exportInsets = exportPresetObj ? presetInsets(exportPresetObj) : null;
+  const deckExportClass = exportPresetObj ? `rp-exporting ${exportPresetObj.pageClass}` : "";
+  const deckExportStyle = (exportPresetObj
+    ? {
+        "--rp-card-scale": presetCardScale(exportPresetObj),
+        "--rp-art-scale": presetArtScale(exportPresetObj),
+        "--rp-inset-block": exportInsets!.block,
+        "--rp-inset-outer": exportInsets!.outer,
+        "--rp-inset-bind": exportInsets!.bind,
+      }
+    : undefined) as CSSProperties | undefined;
   // Sheet index → its representative nav item index (the first nav item on it).
   const navIndexForSheet = useMemo(() => {
     const map = new Map<number, number>();
@@ -1268,8 +1333,18 @@ export default function PrintPage() {
       showPhoto,
       doubleSided,
       recipeCount: items?.filter((item) => item.recipe).length ?? 0,
-      cookbookPreset: cookbookMode ? activePreset.id : undefined,
+      cookbookPreset: exportPreset ?? undefined,
     });
+    // Name the exported PDF after the cookbook. The browser seeds the Save-as-PDF
+    // filename from document.title, so this is what turns the deliverable from
+    // "Print preview · RecipePrinter.pdf" into "The Smith Family Cookbook.pdf".
+    if (cookbookMode) {
+      const bookName = projectMeta.meta.cover?.title?.trim();
+      if (bookName) {
+        previousDocTitleRef.current = document.title;
+        document.title = bookName;
+      }
+    }
     window.print();
   }
 
@@ -1306,6 +1381,8 @@ export default function PrintPage() {
         sections: materialized.sections,
         cover: materialized.cover,
         backCover: materialized.backCover,
+        // Photo-free, so it needs no Storage eviction — save it as-is.
+        dedication: projectMeta.meta.dedication,
         settings: {
           cardSize,
           template,
@@ -1458,9 +1535,9 @@ export default function PrintPage() {
       setShowUnlockDialog(true);
       return;
     }
-    // An unlocked cookbook export lands on the "Print your cookbook" screen
-    // (format recap → Save as PDF → printer recommendations) rather than jumping
-    // straight to the OS dialog. Plain cards print immediately, as before.
+    // An unlocked cookbook export lands on the "Print your cookbook" screen,
+    // where the format is chosen at download time (the $19.99 unlocks every
+    // format forever). Plain cards print immediately, as before.
     if (cookbookMode) {
       openCookbookPrintDialog();
       return;
@@ -1473,9 +1550,14 @@ export default function PrintPage() {
     setShowCookbookPrintDialog(true);
   }
 
-  function saveCookbookPdf() {
-    setShowCookbookPrintDialog(false);
-    printNow();
+  // Chosen a format on the "Print your cookbook" screen: remember it, flip on
+  // that format's print-only geometry, and let the effect below fire the OS
+  // print dialog once the deck has the geometry committed. The dialog stays open
+  // so they can immediately export another format if they want.
+  function exportCookbookAs(presetId: CookbookPresetId) {
+    projectMeta.setCookbookPreset(presetId);
+    track("cookbook_preset_selected", { preset: presetId });
+    setExportPreset(presetId);
   }
 
   function handleMobilePrint() {
@@ -1514,6 +1596,19 @@ export default function PrintPage() {
       void handlePrintRef.current();
     }
   }, [printPending, printLayoutReady, purchaseBusy, cookbookPurchaseBusy]);
+
+  // Export a chosen cookbook format: this runs AFTER React has committed the
+  // deck's `.rp-exporting` class + geometry vars, so `window.print()` captures
+  // the page at that format. Clearing `exportPreset` right after drops the deck
+  // back to the plain Letter preview (the print snapshot is already taken). Only
+  // depends on `exportPreset`; `printNow` is read as a fresh closure each render,
+  // and the null guard makes a re-run a no-op.
+  useEffect(() => {
+    if (!exportPreset) return;
+    printNow();
+    setExportPreset(null);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [exportPreset]);
 
   const moveProjectItem = projectMeta.moveItem;
 
@@ -1661,16 +1756,11 @@ export default function PrintPage() {
   // chapter opener pages.
   function renderBookSettings() {
     if (!projectMeta.meta.cookbookMode) return null;
+    // Print FORMAT is intentionally NOT here — it's chosen at download time on
+    // the "Print your cookbook" screen, since the $19.99 unlocks every format
+    // and the book previews the same regardless.
     return (
-      <>
-        <CookbookPresetPicker
-          value={activePreset.id}
-          onChange={(id) => {
-            projectMeta.setCookbookPreset(id);
-            track("cookbook_preset_selected", { preset: id });
-          }}
-        />
-        <div className="recipe-config-section recipe-config-section--settings">
+      <div className="recipe-config-section recipe-config-section--settings">
         <span className="recipe-config-label">Book</span>
         <label className="recipe-toggle">
           <input
@@ -1680,6 +1770,17 @@ export default function PrintPage() {
           />
           <span>
             <strong>Table of contents</strong>
+          </span>
+        </label>
+        <label className="recipe-toggle">
+          <input
+            type="checkbox"
+            checked={Boolean(projectMeta.meta.dedication)}
+            onChange={toggleDedication}
+          />
+          <span>
+            <strong>Dedication page</strong>
+            <small>A short opening note after the cover.</small>
           </span>
         </label>
         {namedSectionCount(sections) >= 1 && (
@@ -1695,8 +1796,7 @@ export default function PrintPage() {
             </span>
           </label>
         )}
-        </div>
-      </>
+      </div>
     );
   }
 
@@ -1778,6 +1878,11 @@ export default function PrintPage() {
     function handleAfterPrint() {
       if (!printRequestedRef.current) return;
       printRequestedRef.current = false;
+      // Undo the cookbook filename override once the print dialog closes.
+      if (previousDocTitleRef.current !== null) {
+        document.title = previousDocTitleRef.current;
+        previousDocTitleRef.current = null;
+      }
       track("print_dialog_closed", {
         template,
         cardSize,
@@ -1938,7 +2043,6 @@ export default function PrintPage() {
       size={previewCardSize}
       template={previewTemplate}
       doubleSided={continueOnBack}
-      preset={presetForRender}
       gutterSide={gutterSideForRole(role)}
       cookbookMode={Boolean(projectMeta.meta.cookbookMode)}
       showSourceUrl={
@@ -1975,6 +2079,18 @@ export default function PrintPage() {
               cover: coverForSide(coverSideFromNavItem(navItem)) ?? defaultCover(),
               onChange: (cover) => setCoverForSide(coverSideFromNavItem(navItem), cover),
               recipeImages: coverPhotoCandidates,
+            }
+          : undefined
+      }
+      imageEdit={
+        // The photo is the whole page, so it's repositionable as soon as it's
+        // focused — no separate edit toggle (image pages have no other controls).
+        focused && navItem.kind === "image"
+          ? {
+              focusX: projectMeta.meta.itemPlacements?.[navItem.recipeId]?.heroFocusX ?? 50,
+              focusY: projectMeta.meta.itemPlacements?.[navItem.recipeId]?.heroFocusY ?? 50,
+              onChange: (focusX, focusY) =>
+                projectMeta.setItemPlacement(navItem.recipeId, { heroFocusX: focusX, heroFocusY: focusY }),
             }
           : undefined
       }
@@ -2281,9 +2397,8 @@ export default function PrintPage() {
             </div>
           </div>
           <div
-            className={`recipe-page-deck ${cookbookView ? "recipe-page-deck--book" : ""} ${
-              cookbookMode ? activePreset.pageClass : ""
-            }`}
+            className={`recipe-page-deck ${cookbookView ? "recipe-page-deck--book" : ""} ${deckExportClass}`}
+            style={deckExportStyle}
             id="recipe-page-deck"
             ref={deckRef}
           >
@@ -3027,12 +3142,19 @@ export default function PrintPage() {
         onCloseCookbookUnlockDialog={() => setShowCookbookUnlockDialog(false)}
         cookbookPrice={cookbookPrice}
         cookbookPurchaseBusy={cookbookPurchaseBusy}
-        onUnlockCookbook={() => void purchaseCookbookAndContinue(() => void handlePrint())}
-        cookbookPreset={activePreset}
-        onChangeFormat={() => setShowCookbookUnlockDialog(false)}
+        onUnlockCookbook={() =>
+          void purchaseCookbookAndContinue((freshPurchase) => {
+            if (freshPurchase) setCookbookJustPurchased(true);
+            void handlePrint();
+          })
+        }
         showCookbookPrintDialog={showCookbookPrintDialog}
-        onCloseCookbookPrintDialog={() => setShowCookbookPrintDialog(false)}
-        onSaveCookbookPdf={saveCookbookPdf}
+        cookbookJustPurchased={cookbookJustPurchased}
+        onCloseCookbookPrintDialog={() => {
+          setShowCookbookPrintDialog(false);
+          setCookbookJustPurchased(false);
+        }}
+        onExportFormat={exportCookbookAs}
         showDeleteRecipeDialog={pendingDelete !== null}
         deleteItemTitle={pendingDelete?.title ?? "this item"}
         deleteItemDescription={

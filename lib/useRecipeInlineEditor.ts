@@ -43,6 +43,9 @@ function applyRecipeTargetEdit(recipe: Recipe, target: RecipeCardEditTarget, val
   if (target.kind === "title") {
     return printableRecipe({ ...recipe, title: trimmed || recipe.title || "Untitled recipe" });
   }
+  if (target.kind === "description") {
+    return printableRecipe({ ...recipe, description: trimmed || undefined });
+  }
   if (target.kind === "cookTime") {
     return printableRecipe({
       ...recipe,

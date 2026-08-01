@@ -73,7 +73,8 @@ export interface CoverSheetSlot {
   kind: "cover";
   id: string;
   cover: CoverConfig;
-  side: "front" | "back";
+  /** `dedication` is a cover-like front-matter page after the front cover. */
+  side: "front" | "back" | "dedication";
 }
 
 // One line in the table of contents: a chapter heading or a recipe under it,
@@ -100,6 +101,11 @@ export interface ImageSheetSlot {
   recipeId: string;
   label: string;
   imageUrl: string;
+  /** Object-position focal point (0–100%) for the full-bleed crop; undefined =
+      centered. Carried on the slot so print/preview and the measurer all render
+      the same crop the cook set. */
+  focusX?: number;
+  focusY?: number;
   queueIndex: number;
 }
 
@@ -166,6 +172,9 @@ interface UsePrintSheetsOptions {
   items?: QueueItem[] | null;
   cover?: CoverConfig;
   backCover?: CoverConfig;
+  /** Optional dedication / front-matter page, placed after the front cover and
+      before the table of contents. A cover-like page whose `blurb` is the text. */
+  dedication?: CoverConfig;
   /** Whether a named section gets its own divider page. Off (or a project
       with no named sections) reproduces today's flat behavior exactly. */
   sectionDividers?: boolean;
@@ -209,6 +218,7 @@ export function usePrintSheets({
   items,
   cover,
   backCover,
+  dedication,
   sectionDividers,
   tableOfContents,
   bookTitle,
@@ -516,11 +526,14 @@ export function usePrintSheets({
           const entry = cookbookRecipeInfo.get(planSlot.itemId);
           if (!entry) return null;
           if (planSlot.kind === "image") {
+            const placement = itemPlacements?.[planSlot.itemId];
             return {
               kind: "image",
               recipeId: planSlot.itemId,
               label: entry.item.recipe.title || "Recipe",
               imageUrl: planSlot.heroImageUrl,
+              focusX: placement?.heroFocusX,
+              focusY: placement?.heroFocusY,
               queueIndex: entry.queueIndex,
             };
           }
@@ -558,6 +571,16 @@ export function usePrintSheets({
       out.push({
         id: "sheet-cover-front",
         slots: [{ kind: "cover", id: "cover-front", cover, side: "front" }],
+        backGroupNeeded: false,
+      });
+    }
+
+    // Front matter: a dedication page on its own sheet, right after the cover
+    // and before the TOC (spliced in below at an index that accounts for it).
+    if (dedication) {
+      out.push({
+        id: "sheet-cover-dedication",
+        slots: [{ kind: "cover", id: "cover-dedication", cover: dedication, side: "dedication" }],
         backGroupNeeded: false,
       });
     }
@@ -646,7 +669,9 @@ export function usePrintSheets({
           slots: [{ kind: "toc", id: "toc", entries: tocEntries }],
           backGroupNeeded: false,
         };
-        out.splice(cover ? 1 : 0, 0, tocSheet);
+        // Insert after the front-matter pages already emitted (cover, then
+        // dedication) so the order is cover → dedication → contents → chapters.
+        out.splice((cover ? 1 : 0) + (dedication ? 1 : 0), 0, tocSheet);
       }
     }
 
@@ -670,7 +695,7 @@ export function usePrintSheets({
     }
 
     return out;
-  }, [sections, allItems, cover, backCover, sectionDividers, tableOfContents, bookTitle, cardSize, continueOnBack, photoOnFor, sourceUrlOn, template, measuredFacesFor, cookbookLayouts, cookbookResolution, itemPlacements]);
+  }, [sections, allItems, cover, backCover, dedication, sectionDividers, tableOfContents, bookTitle, cardSize, continueOnBack, photoOnFor, sourceUrlOn, template, measuredFacesFor, cookbookLayouts, cookbookResolution, itemPlacements]);
 
   // What the rail and deck actually browse: one face per item, in physical
   // sheet order, except that a recipe's own faces (front + any continuations)
@@ -749,14 +774,16 @@ export function usePrintSheets({
           if (group) group.push(navItem);
           else groups.set(key, [navItem]);
         } else {
+          const coverLabel =
+            slot.side === "front" ? "Cover" : slot.side === "dedication" ? "Dedication" : "Back cover";
           groups.set(`cover:${slot.id}`, [
             {
               kind: "cover",
               recipeId: slot.id,
               sheetIndex,
               slotIndex,
-              label: slot.cover.title || (slot.side === "front" ? "Cover" : "Back cover"),
-              pageLabel: slot.side === "front" ? "Cover" : "Back cover",
+              label: slot.side === "dedication" ? coverLabel : slot.cover.title || coverLabel,
+              pageLabel: coverLabel,
               flip: false,
             },
           ]);
@@ -775,7 +802,11 @@ export function usePrintSheets({
     const kinds: BookPageKind[] = sheets.map((sheet) => {
       if (sheet.layoutKind === "image") return "image-photo";
       const slot = sheet.slots.find((s): s is SheetSlot => s !== null);
-      if (slot?.kind === "cover") return slot.side === "back" ? "back" : "cover";
+      if (slot?.kind === "cover") {
+        if (slot.side === "back") return "back";
+        if (slot.side === "dedication") return "dedication";
+        return "cover";
+      }
       if (slot?.kind === "divider") return "chapter";
       return "content";
     });
