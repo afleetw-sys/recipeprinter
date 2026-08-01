@@ -172,6 +172,9 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
     primaryKeyword: "printable recipe card generator",
     secondaryKeywords: [
       "recipe card maker",
+      "recipe card builder",
+      "recipe card creator",
+      "recipe card template",
       "printable recipe cards",
       "make recipe cards",
       "recipe card printer",
@@ -187,7 +190,7 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
       "Make printable recipe cards from links, photos, screenshots, or text, including 4x6 and recipe-box-friendly layouts.",
     h1: "Printable recipe card generator",
     lede:
-      "Turn a recipe you found online into a printable recipe card you can cook from, share, file, or add to a recipe box. This page is focused on card layouts, recipe boxes, and small-format printouts rather than full-page recipes.",
+      "Turn a recipe you found online into a printable recipe card you can cook from, share, file, or add to a recipe box. This page is focused on card layouts, recipe boxes, and small-format printouts rather than full-page recipes. Rather than build a card from a blank template, you start from a real recipe and choose the layout, so the design work is already done.",
     faqs: [
       {
         question: "Can I make 4x6 recipe cards from online recipes?",
