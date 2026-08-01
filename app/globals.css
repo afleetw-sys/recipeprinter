@@ -62,6 +62,20 @@
   --cp-shadow-lg: 0 18px 48px rgba(15, 23, 42, 0.18); /* toasts, dropdown menus */
   --cp-shadow-xl: 0 24px 80px rgba(15, 23, 42, 0.22); /* modal dialogs */
 
+  /* ── Interaction states ──────────────────────────────────────────────────
+     One recipe for "this option is selected" and one for keyboard focus, so
+     every single-select control (import toggle, photo/format/theme tiles,
+     layout & size pickers, page rail) reads the same instead of each picking
+     its own ring/fill/border/checkmark. Selected text always uses the AA-safe
+     accent ink, never the raw teal (which fails contrast). Focus is a single
+     accent outline shown only on keyboard nav (:focus-visible). */
+  --cp-selected-border: var(--cp-accent);
+  --cp-selected-fill: color-mix(in srgb, var(--cp-accent) 8%, var(--cp-card));
+  --cp-selected-ring: 0 0 0 1px var(--cp-accent);
+  --cp-selected-text: var(--cp-accent-ink);
+  --cp-focus-ring: 2px solid var(--cp-accent);
+  --cp-focus-ring-offset: 2px;
+
   /* How much the on-screen keyboard currently covers, kept in sync by
      KeyboardInsetWatcher. Fixed-position bottom bars sit above this instead
      of `bottom: 0`, so the keyboard doesn't cover or scroll them away. */
@@ -105,6 +119,16 @@
 
   a {
     color: var(--cp-blue);
+  }
+
+  /* One keyboard-focus indicator for every interactive control. Kept at zero
+     specificity via :where() so a component can still opt into its own focus
+     treatment, and scoped to :focus-visible so it only shows on keyboard nav,
+     never on mouse click. Controls that hide their real input off-screen
+     (sr-only radios) add a :has() supplement next to their own rules. */
+  :where(a, button, input, select, textarea, summary, [role="button"], [tabindex]:not([tabindex="-1"])):focus-visible {
+    outline: var(--cp-focus-ring);
+    outline-offset: var(--cp-focus-ring-offset);
   }
 }
 
@@ -160,6 +184,26 @@
     @apply text-cp-small;
   }
 
+  /* Destructive actions. Two tiers off the shared --cp-error token so an
+     irreversible action never reads with the same weight as a safe primary:
+     .btn-danger is the filled "commit" button in a confirm dialog (Delete,
+     discard cookbook); .btn-ghost--danger is the quiet inline/menu trigger
+     (Deactivate link, Clear all). */
+  .btn-danger {
+    background: var(--cp-error);
+    color: var(--cp-card);
+  }
+  .btn-danger:hover:not(:disabled) {
+    background: color-mix(in srgb, var(--cp-error) 88%, #000);
+  }
+  .btn-ghost--danger {
+    color: var(--cp-error);
+  }
+  .btn-ghost--danger:hover:not(:disabled) {
+    color: var(--cp-error);
+    background: color-mix(in srgb, var(--cp-error) 10%, transparent);
+  }
+
   /* Round icon-only close button (mirrors the shape used by the mobile print
      drawer and the print-success dialogs) — one shared style instead of
      mixing a bordered circle in some modals with a plain ghost button in
@@ -201,6 +245,10 @@
   .field:focus {
     border-color: color-mix(in srgb, var(--cp-accent) 70%, var(--cp-line));
     background: var(--cp-card);
+  }
+  .field:focus-visible {
+    outline: var(--cp-focus-ring);
+    outline-offset: var(--cp-focus-ring-offset);
   }
   textarea.field {
     min-height: 140px;
@@ -283,11 +331,13 @@
     background: #f6f8fa;
   }
   .mode-toggle__item.is-active {
-    /* Selected state reads through the teal outline/ring only — the label keeps
-       the default ink color so the text doesn't shift on toggle. */
-    background: var(--cp-card);
-    border-color: var(--cp-accent);
-    box-shadow: 0 0 0 1px var(--cp-accent);
+    /* Shared selected recipe: accent border + soft fill + 1px ring, label in
+       the AA-safe accent ink (a color shift, not a weight/size shift, so the
+       control doesn't reflow). */
+    background: var(--cp-selected-fill);
+    border-color: var(--cp-selected-border);
+    box-shadow: var(--cp-selected-ring);
+    color: var(--cp-selected-text);
   }
   .mode-toggle__item--icon {
     padding: 0;
@@ -326,8 +376,16 @@
   }
   .mode-toggle-menu__item:hover,
   .mode-toggle-menu__item.is-active {
-    background: color-mix(in srgb, var(--cp-accent) 8%, var(--cp-card));
-    color: var(--cp-blue);
+    background: var(--cp-selected-fill);
+    color: var(--cp-selected-text);
+  }
+  /* Destructive menu row (Clear all) — same --cp-error red as .btn-danger. */
+  .mode-toggle-menu__item--danger {
+    color: var(--cp-error);
+  }
+  .mode-toggle-menu__item--danger:hover {
+    color: var(--cp-error);
+    background: color-mix(in srgb, var(--cp-error) 10%, transparent);
   }
   .mode-toggle-menu--compact .mode-toggle-menu__item {
     min-height: 40px;

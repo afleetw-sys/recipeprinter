@@ -1373,8 +1373,11 @@
     align-items: center;
     margin: -6px;
     padding: 6px;
+    border: 0;
+    background: transparent;
     color: var(--cp-ink);
     line-height: 1;
+    cursor: pointer;
   }
 
   .recipe-mobile-topbar__actions {

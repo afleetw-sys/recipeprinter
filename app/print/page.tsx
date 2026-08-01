@@ -651,9 +651,16 @@ export default function PrintPage() {
   const idsParam = params.get("ids") ?? "";
   const shouldPrint = params.get("print") === "1";
   // Set by the /print/[slug] loader after seeding a shared recipe into this
-  // session's queue — there's nothing behind this tab to go back to, so the
-  // header drops the back arrow (the logo still links home).
+  // session's queue — there's nothing behind this tab to go back to.
   const cameFromSharedLink = params.get("shared") === "1";
+  // One back affordance for every viewport: desktop header and the mobile
+  // topbar both call this, so "back" always resolves to the same destination
+  // instead of desktop doing history.back() while mobile hard-linked to "/".
+  // A shared-link tab has no meaningful history, so it goes home instead.
+  const handleBack = () => {
+    if (cameFromSharedLink) router.push("/");
+    else router.back();
+  };
   const [items, setItems] = useState<QueueItem[] | null>(null);
   const [cardSize, setCardSize] = useState<PrintCardSize>(() =>
     initialPrintCardSize(params.get("size")),
@@ -1797,7 +1804,7 @@ export default function PrintPage() {
   if (items === null) {
     return (
       <div className="h-full flex flex-col">
-        <SiteHeader onBack={cameFromSharedLink ? undefined : () => router.back()} compact sticky />
+        <SiteHeader onBack={handleBack} compact sticky />
         <div className="flex-1 grid place-items-center text-ink-soft">Preparing…</div>
       </div>
     );
@@ -1806,7 +1813,7 @@ export default function PrintPage() {
   if (items.length === 0) {
     return (
       <div className="h-full flex flex-col">
-        <SiteHeader onBack={cameFromSharedLink ? undefined : () => router.back()} compact sticky />
+        <SiteHeader onBack={handleBack} compact sticky />
         <div className="flex-1 flex flex-col items-center justify-center gap-cp-4 text-center px-cp-6">
           <p className="font-bold text-cp-h2">Nothing to print</p>
           <p className="text-ink-soft max-w-sm">
@@ -1990,7 +1997,7 @@ export default function PrintPage() {
     <div className="h-dvh recipe-print-page">
       {measurers}
       <SiteHeader
-        onBack={cameFromSharedLink ? undefined : () => router.back()}
+        onBack={handleBack}
         compact
         sticky
         centerActions
@@ -2226,9 +2233,14 @@ export default function PrintPage() {
             />
           )}
           <div className="recipe-mobile-topbar no-print">
-            <Link href="/" className="recipe-mobile-back-button" aria-label="Back to recipes">
+            <button
+              type="button"
+              onClick={handleBack}
+              className="recipe-mobile-back-button"
+              aria-label="Back"
+            >
               <ChevronLeftIcon size={28} />
-            </Link>
+            </button>
             <div className="recipe-mobile-topbar__actions">
               {renderModeSwitch()}
               {hasPrintSettingsFields && (

@@ -121,7 +121,7 @@ export function AdminShareLinkDialog({
             </button>
             <button
               type="button"
-              className="btn-ghost btn-compact w-full"
+              className="btn-ghost btn-ghost--danger btn-compact w-full"
               onClick={handleDeactivate}
               disabled={deactivateBusy}
             >

@@ -454,17 +454,17 @@ export function PrintDialogs({
               </label>
             )}
             <div className="print-success-dialog__actions">
+              <button type="button" className="btn btn-ghost" onClick={onCancelDeleteRecipe}>
+                Cancel
+              </button>
               <button
                 ref={deleteButtonRef}
                 type="button"
-                className="btn btn-primary"
+                className="btn btn-danger"
                 onClick={confirmDelete}
               >
                 <TrashIcon size={ICON_SIZE.md} />
                 {deletePrimaryLabel ?? "Delete"}
-              </button>
-              <button type="button" className="btn btn-ghost" onClick={onCancelDeleteRecipe}>
-                Cancel
               </button>
             </div>
       </Dialog>
@@ -497,7 +497,7 @@ export function PrintDialogs({
               <button type="button" className="btn btn-ghost" onClick={onCancelExitCookbook}>
                 Keep my cookbook
               </button>
-              <button type="button" className="btn btn-primary" onClick={onConfirmExitCookbook}>
+              <button type="button" className="btn btn-danger" onClick={onConfirmExitCookbook}>
                 Switch to recipe cards
               </button>
             </div>

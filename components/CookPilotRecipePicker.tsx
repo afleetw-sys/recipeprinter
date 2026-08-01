@@ -136,7 +136,7 @@ function RecipeRow({
       }
       className={`group flex w-full items-center gap-cp-3 rounded-xl border p-cp-2 text-left transition-colors ${
         added
-          ? "border-brand bg-brand-50/60"
+          ? "border-brand bg-brand-50/60 shadow-[var(--cp-selected-ring)]"
           : "border-line bg-card hover:border-line-strong"
       }`}
     >

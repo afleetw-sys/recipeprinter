@@ -153,7 +153,7 @@ export default function SeoLandingPage({ params }: PageProps) {
             className="relative py-cp-4 sm:py-cp-5"
             aria-labelledby="landing-heading"
           >
-            <div className="mx-auto grid max-w-content items-center gap-cp-6 lg:grid-cols-[minmax(0,1fr)_minmax(0,420px)] lg:gap-cp-8">
+            <div className="mx-auto grid max-w-content items-center gap-cp-6 lg:grid-cols-[minmax(0,1fr)_minmax(0,420px)] lg:gap-cp-7">
               <div className="text-center lg:text-left">
                 <p className="eyebrow">{page.eyebrow}</p>
                 <h1
