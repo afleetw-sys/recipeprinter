@@ -81,7 +81,7 @@ function RecipeCardItem({
 
           {/* Error overlay tint */}
           {item.status === "error" && (
-            <div className="absolute inset-0 bg-[rgba(197,63,63,0.06)]" />
+            <div className="absolute inset-0 bg-[var(--cp-error-soft)]" />
           )}
         </div>
 

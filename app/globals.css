@@ -27,6 +27,11 @@
   --cp-page: #f5f7fb;
   --cp-card: #ffffff;
   --cp-error: #c53f3f;
+  /* Error surface tints, derived from --cp-error so the destructive red stays
+     one source of truth instead of the same rgba(197,63,63,…) being hand-typed
+     into every error block (.state--error, the queue-card parse error, etc.). */
+  --cp-error-soft: color-mix(in srgb, var(--cp-error) 6%, transparent);
+  --cp-error-border: color-mix(in srgb, var(--cp-error) 16%, transparent);
   --cp-body-background: #f5f7fb;
 
   /* ── Font-size scale ──────────────────────────────────────────────────────
@@ -255,6 +260,15 @@
     resize: vertical;
     line-height: 1.55;
   }
+  /* Compact field/select variant (e.g. the print-size dropdown) — one named
+     modifier instead of per-call !important overrides on .field. */
+  .field--compact {
+    min-height: 38px;
+    padding-top: 0;
+    padding-bottom: 0;
+    padding-left: 12px;
+    @apply text-cp-small font-semibold;
+  }
 
   /* ── Shared dropdown (Select component) ───────────────────────────────── */
   .select-shell {
@@ -420,8 +434,8 @@
     background: var(--cp-accent-soft);
   }
   .state--error {
-    border-color: rgba(197, 63, 63, 0.16);
-    background: rgba(197, 63, 63, 0.06);
+    border-color: var(--cp-error-border);
+    background: var(--cp-error-soft);
   }
   .state h4 {
     @apply text-cp-body font-bold;

@@ -1,6 +1,7 @@
 import Link from "next/link";
 import type { ReactNode } from "react";
 import { LogoMark, Wordmark } from "@/components/Logo";
+import { ChevronLeftIcon, ICON_SIZE } from "@/components/icons";
 
 // Minimal top bar shared across every page, mirrors CookPilot's cp-topbar.
 // The logo is a home link so the product always feels like one focused utility,
@@ -26,7 +27,7 @@ export function SiteHeader({
     <>
       {(backHref || onBack) && (
         <span className="text-ink-soft group-hover:text-ink transition-colors" aria-hidden>
-          ←
+          <ChevronLeftIcon size={ICON_SIZE.md} />
         </span>
       )}
       <LogoMark size={compact ? 26 : 30} rounded={0} />

@@ -185,7 +185,7 @@ export default function SeoLandingPage({ params }: PageProps) {
                   {heroChips(page).map((chip) => (
                     <span
                       key={chip}
-                      className="inline-flex min-h-[34px] items-center rounded-full bg-card px-cp-3 text-cp-small font-bold text-ink-soft shadow-sm ring-1 ring-line"
+                      className="inline-flex min-h-[34px] items-center rounded-full bg-card px-cp-3 text-cp-small font-bold text-ink-soft shadow-cp-xs ring-1 ring-line"
                     >
                       {chip}
                     </span>

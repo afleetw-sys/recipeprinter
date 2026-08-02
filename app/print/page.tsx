@@ -56,6 +56,7 @@ import {
   CheckIcon,
   ChevronDownIcon,
   ChevronLeftIcon,
+  ChevronRightIcon,
   CrownIcon,
   EditIcon,
   ICON_SIZE,
@@ -1955,7 +1956,7 @@ export default function PrintPage() {
                 setCanvasSide("front");
               }}
             >
-              ←
+              <ChevronLeftIcon size={ICON_SIZE.md} />
             </button>
             <span>{canvasSide === "front" ? "Front" : "Back"}</span>
             <button
@@ -1968,7 +1969,7 @@ export default function PrintPage() {
                 setCanvasSide("back");
               }}
             >
-              →
+              <ChevronRightIcon size={ICON_SIZE.md} />
             </button>
           </div>
         )}
@@ -2765,7 +2766,8 @@ export default function PrintPage() {
               </label>
               <Select
                 id="recipe-print-size"
-                className="field !min-h-[38px] !py-0 !pl-3 text-cp-small font-semibold"
+                className="field"
+                variant="compact"
                 value={cardSize}
                 onChange={(event) => setCardSize(event.target.value as PrintCardSize)}
               >

@@ -86,6 +86,16 @@ const config: Config = {
         recipe: "720px",
         content: "1240px",
       },
+      boxShadow: {
+        // Exposes the --cp-shadow-* elevation scale (globals.css :root) as
+        // utilities so JSX reaches for shadow-cp-* instead of Tailwind's default
+        // shadow-sm, whose thinner/cooler tint reads as a different depth system.
+        "cp-xs": "var(--cp-shadow-xs)",
+        "cp-sm": "var(--cp-shadow-sm)",
+        "cp-md": "var(--cp-shadow-md)",
+        "cp-lg": "var(--cp-shadow-lg)",
+        "cp-xl": "var(--cp-shadow-xl)",
+      },
       keyframes: {
         "fade-up": {
           from: { opacity: "0", transform: "translateY(6px)" },

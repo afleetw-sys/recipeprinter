@@ -29,6 +29,7 @@ import {
   CookPilotLogoIcon,
   ExternalIcon,
   ICON_SIZE,
+  PlusIcon,
   SearchIcon,
   SpinnerIcon,
   UsersIcon,
@@ -182,7 +183,7 @@ function RecipeRow({
         </span>
       ) : (
         <span className="btn btn-secondary btn-compact flex-shrink-0 pointer-events-none transition-colors group-hover:border-line-strong group-hover:bg-[rgba(127,127,127,0.08)]">
-          {adding ? <SpinnerIcon size={ICON_SIZE.md} /> : <span className="text-base leading-none">+</span>}
+          {adding ? <SpinnerIcon size={ICON_SIZE.md} /> : <PlusIcon size={ICON_SIZE.md} />}
           Add
         </span>
       )}

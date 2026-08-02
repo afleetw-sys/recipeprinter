@@ -16,10 +16,12 @@ import { ImportError } from "@/lib/parser";
 import { captureFailedImportImages } from "@/lib/failedImportCapture";
 import {
   CookPilotLogoIcon,
+  ICON_SIZE,
   ImageIcon,
   LinkIcon,
   MoreVerticalIcon,
   PlusIcon,
+  SpinnerIcon,
   TextIcon,
   UploadIcon,
 } from "@/components/icons";
@@ -486,7 +488,7 @@ export function ImportPanel({
                 className="btn btn-primary rp-import-submit w-full lg:w-auto"
                 disabled={busy}
               >
-                {busy ? <UploadIcon size={18} /> : <PlusIcon size={18} />}
+                {busy ? <SpinnerIcon size={ICON_SIZE.md} /> : <PlusIcon size={ICON_SIZE.md} />}
                 {submitLabel}
               </button>
             </div>
@@ -551,7 +553,7 @@ export function ImportPanel({
 
         {mode !== "url" && (
           <button type="submit" className="btn btn-primary rp-import-submit w-full" disabled={busy}>
-            {busy ? <UploadIcon size={18} /> : <PlusIcon size={18} />}
+            {busy ? <SpinnerIcon size={ICON_SIZE.md} /> : <PlusIcon size={ICON_SIZE.md} />}
             {submitLabel}
           </button>
         )}
