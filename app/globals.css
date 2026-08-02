@@ -426,6 +426,29 @@
     transform: translateY(-1px);
   }
 
+  /* ── Empty state (shared <EmptyState>) ────────────────────────────────── */
+  .rp-empty-state {
+    @apply flex flex-col items-center text-center rounded-2xl;
+    padding: 32px 20px;
+    border: 1px dashed var(--cp-line-strong);
+  }
+  .rp-empty-state__icon {
+    margin-bottom: 12px;
+    color: var(--cp-ink-soft);
+  }
+  .rp-empty-state__title {
+    @apply font-bold text-cp-h2;
+  }
+  .rp-empty-state__desc {
+    @apply text-cp-small;
+    margin-top: 6px;
+    max-width: 20rem;
+    color: var(--cp-ink-soft);
+  }
+  .rp-empty-state__action {
+    margin-top: 16px;
+  }
+
   /* ── State block (mirrors .cp-state) ──────────────────────────────────── */
   .state {
     @apply flex flex-col gap-cp-1 rounded-lg;

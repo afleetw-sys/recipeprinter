@@ -23,6 +23,7 @@ import {
   type CookPilotRecipeSummary,
 } from "@/lib/cookpilotRecipes";
 import type { QueueItem } from "@/types/recipe";
+import { EmptyState } from "@/components/EmptyState";
 import {
   CheckIcon,
   ClockIcon,
@@ -453,30 +454,30 @@ function SignedInCookPilotImport({
       )}
 
       {!loading && !error && summaries.length === 0 && (
-        <div className="text-center py-cp-7 px-cp-5 rounded-2xl border border-dashed border-line-strong">
-          <p className="font-bold text-cp-h2">No recipes yet</p>
-          <p className="text-ink-soft text-cp-small mt-1.5">
-            Import from{" "}
-            <a
-              href="https://cookpilotapp.com"
-              target="_blank"
-              rel="noreferrer"
-              className="inline-flex items-center gap-1 font-bold text-ink underline decoration-line-strong underline-offset-2 hover:text-ink-soft"
-            >
-              CookPilot
-              <ExternalIcon size={ICON_SIZE.sm} />
-            </a>
-          </p>
-        </div>
+        <EmptyState
+          title="No recipes yet"
+          description={
+            <>
+              Import from{" "}
+              <a
+                href="https://cookpilotapp.com"
+                target="_blank"
+                rel="noreferrer"
+                className="inline-flex items-center gap-1 font-bold text-ink underline decoration-line-strong underline-offset-2 hover:text-ink-soft"
+              >
+                CookPilot
+                <ExternalIcon size={ICON_SIZE.sm} />
+              </a>
+            </>
+          }
+        />
       )}
 
       {!loading && !error && !loadingMore && summaries.length > 0 && visibleSummaries.length === 0 && (
-        <div className="text-center py-cp-7 px-cp-5 rounded-2xl border border-dashed border-line-strong">
-          <p className="font-bold text-cp-h2">No matches</p>
-          <p className="text-ink-soft text-cp-small mt-1.5">
-            Try a different title, tag, or ingredient.
-          </p>
-        </div>
+        <EmptyState
+          title="No matches"
+          description="Try a different title, tag, or ingredient."
+        />
       )}
 
       {!loading && !error && visibleSummaries.length > 0 && (
