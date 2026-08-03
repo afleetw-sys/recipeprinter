@@ -8,6 +8,7 @@
     "start": "next start",
     "lint": "next lint",
     "test": "vitest run",
+    "test:rules": "npx firebase-tools@14.27.0 --config firebase.rules-test.json emulators:exec --only firestore,storage \"vitest run --config vitest.rules.config.ts\"",
     "test:watch": "vitest"
   },
   "dependencies": {
@@ -20,6 +21,7 @@
     "react-dom": "^18"
   },
   "devDependencies": {
+    "@firebase/rules-unit-testing": "^5.0.1",
     "@types/node": "^20",
     "@types/react": "^18",
     "@types/react-dom": "^18",

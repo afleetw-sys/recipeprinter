@@ -1,0 +1,73 @@
+rules_version = "2";
+
+service firebase.storage {
+  match /b/{bucket}/o {
+    function signedIn() {
+      return request.auth != null;
+    }
+
+    function validImage() {
+      return request.resource != null
+        && request.resource.size < 12 * 1024 * 1024
+        && request.resource.contentType.matches("image/.*");
+    }
+
+    function validDebugCapture() {
+      // Deliberately content-type agnostic. Failed imports include HEIC,
+      // empty-MIME and octet-stream inputs; filtering those would discard the
+      // exact failures this drop-box exists to preserve.
+      return request.resource != null
+        && request.resource.size < 12 * 1024 * 1024;
+    }
+
+    // ── Existing CookPilot storage ─────────────────────────────────────────
+    match /recipe-images/{userId}/{allPaths=**} {
+      allow read, write: if signedIn() && request.auth.uid == userId;
+    }
+
+    // ── Recipe Printer owner-isolated storage ──────────────────────────────
+    match /recipeprinter/photos/users/{uid}/{path=**} {
+      allow read: if true;
+      allow create, update: if signedIn()
+        && request.auth.uid == uid
+        && validImage();
+      allow delete: if signedIn() && request.auth.uid == uid;
+    }
+
+    match /recipeprinter/photos/anonymous/{anonymousOwnerId}/{path=**} {
+      allow read: if true;
+      allow create: if !signedIn()
+        && anonymousOwnerId.matches("[A-Za-z0-9_-]{20,64}")
+        && validImage();
+      allow update, delete: if false;
+    }
+
+    match /recipeprinter/debug/failed-imports/{path=**} {
+      allow read, update, delete: if false;
+      allow create: if validDebugCapture();
+    }
+
+    // ── Recipe Printer migration compatibility ─────────────────────────────
+    // Old app versions write photos as recipeprinter/photos/{uid}/... or
+    // recipeprinter/photos/anon/.... Excluding the reserved new roots is
+    // essential: overlapping Storage matches are ORed, so a broad legacy
+    // allow must not bypass the owner checks above.
+    match /recipeprinter/photos/{legacyOwner}/{allPaths=**} {
+      allow read: if true;
+      allow write: if legacyOwner != "users"
+        && legacyOwner != "anonymous"
+        && validImage();
+    }
+
+    // Historical failed-import captures stay private and old clients may keep
+    // writing here during the compatibility release.
+    match /debug/failed-imports/{allPaths=**} {
+      allow read: if false;
+      allow write: if validDebugCapture();
+    }
+
+    match /{path=**} {
+      allow read, write: if false;
+    }
+  }
+}

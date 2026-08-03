@@ -8,6 +8,7 @@ import {
   appleProvider,
   CookPilotLoginDialog,
   googleProvider,
+  prewarmCookPilotAuth,
   signInWithCookPilotProvider,
   useCookPilotAuth,
 } from "@/components/CookPilotAuth";
@@ -35,6 +36,13 @@ import {
   SpinnerIcon,
   UsersIcon,
 } from "@/components/icons";
+
+export async function prewarmCookPilotImport(): Promise<void> {
+  await Promise.all([
+    prewarmCookPilotAuth(),
+    import("@/lib/firebase/functions").then(() => undefined),
+  ]);
+}
 
 function SignedOutCookPilotImport({
   onEmailLogin,
@@ -262,7 +270,7 @@ function SignedInCookPilotImport({
       })
       .catch((err) => {
         if (aliveRef.current) {
-          setError(friendlyRecipeLibraryError(err, "Couldn't load your recipes."));
+          setError(friendlyRecipeLibraryError(err, "We couldn't load your recipes. Please try again."));
         }
       })
       .finally(() => {
@@ -284,7 +292,9 @@ function SignedInCookPilotImport({
         setHasMore(false);
       })
       .catch((err) => {
-        if (aliveRef.current) setError(friendlyRecipeLibraryError(err, "Couldn't load more recipes."));
+        if (aliveRef.current) {
+          setError(friendlyRecipeLibraryError(err, "We couldn't load more recipes. Please try again."));
+        }
       })
       .finally(() => {
         if (aliveRef.current) setLoadingMore(false);
@@ -315,7 +325,9 @@ function SignedInCookPilotImport({
           setHasMore(hasMoreCookPilotSummaries(user.uid));
         })
         .catch((err) => {
-          if (aliveRef.current) setLoadMoreError(friendlyRecipeLibraryError(err, "Couldn't load more recipes."));
+          if (aliveRef.current) {
+            setLoadMoreError(friendlyRecipeLibraryError(err, "We couldn't load more recipes. Please try again."));
+          }
         })
         .finally(() => {
           if (aliveRef.current) setLoadingMore(false);
@@ -345,7 +357,9 @@ function SignedInCookPilotImport({
         setHasMore(hasMoreCookPilotSummaries(user.uid));
       })
       .catch((err) => {
-        setLoadMoreError(friendlyRecipeLibraryError(err, "Couldn't load more recipes."));
+        setLoadMoreError(
+          friendlyRecipeLibraryError(err, "We couldn't load more recipes. Please try again."),
+        );
       })
       .finally(() => setLoadingMore(false));
   }
@@ -363,7 +377,7 @@ function SignedInCookPilotImport({
       const queueItems = await loadCookPilotQueueItems(user.uid, [summary]);
       onAddRecipes(queueItems);
     } catch (err) {
-      setError(friendlyRecipeLibraryError(err, "Couldn't add that recipe."));
+      setError(friendlyRecipeLibraryError(err, "We couldn't add that recipe. Please try again."));
     } finally {
       setAddingIds((current) => {
         const next = new Set(current);
@@ -397,7 +411,7 @@ function SignedInCookPilotImport({
       const queueItems = await loadCookPilotQueueItems(user.uid, targets);
       onAddRecipes(queueItems);
     } catch (err) {
-      setError(friendlyRecipeLibraryError(err, "Couldn't add those recipes."));
+      setError(friendlyRecipeLibraryError(err, "We couldn't add those recipes. Please try again."));
     } finally {
       setBulkBusy(false);
     }

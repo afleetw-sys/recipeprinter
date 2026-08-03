@@ -1,4 +1,5 @@
 import type { PremiumRecipePrintTemplate } from "@/lib/premiumTemplates";
+import { recipePrinterUserPath } from "@/lib/firebase/recipePrinterPaths";
 
 // Mirrors CookPilot's revenueCat.ts LIFETIME_EXPIRY_MS sentinel for a
 // non-expiring entitlement (Firestore Timestamps round-trip as millis here).
@@ -29,8 +30,12 @@ async function fetchRecipePrinterUserDoc(uid: string): Promise<Record<string, un
     import("firebase/firestore"),
     import("@/lib/firebase/db"),
   ]);
-  const snap = await getDoc(doc(getDb(), "users", uid));
-  return snap.data() ?? {};
+  const db = getDb();
+  const [namespaced, legacy] = await Promise.all([
+    getDoc(doc(db, ...recipePrinterUserPath(uid))).catch(() => null),
+    getDoc(doc(db, "users", uid)),
+  ]);
+  return { ...(legacy.data() ?? {}), ...(namespaced?.data() ?? {}) };
 }
 
 function deriveFreeTemplateStatus(data: Record<string, unknown>): RecipePrinterFreeTemplateStatus {

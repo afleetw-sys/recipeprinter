@@ -75,7 +75,7 @@ function isBlockedAddress(address: string): boolean {
 
 async function validatePublicHttpUrl(url: URL) {
   if (url.protocol !== "http:" && url.protocol !== "https:") {
-    throw new ParseHttpError("Only HTTP and HTTPS recipe URLs are supported.");
+    throw new ParseHttpError("Use a regular website link that starts with http:// or https://.");
   }
 
   const hostname = url.hostname.toLowerCase();
@@ -110,7 +110,12 @@ async function fetchPublicHtml(url: URL): Promise<Response> {
 
     if (response.status >= 300 && response.status < 400) {
       const location = response.headers.get("location");
-      if (!location) throw new ParseHttpError("That recipe page redirected unexpectedly.", 502);
+      if (!location) {
+        throw new ParseHttpError(
+          "We couldn't follow that recipe link. Try the original link or paste the recipe text instead.",
+          502,
+        );
+      }
       currentUrl = new URL(location, currentUrl);
       continue;
     }
@@ -118,7 +123,10 @@ async function fetchPublicHtml(url: URL): Promise<Response> {
     return response;
   }
 
-  throw new ParseHttpError("That recipe page redirected too many times.", 508);
+  throw new ParseHttpError(
+    "That link sent us through too many pages. Try the original link or paste the recipe text instead.",
+    508,
+  );
 }
 
 async function readHtmlWithLimit(response: Response): Promise<string> {
@@ -167,24 +175,29 @@ async function parseWithCookPilotServer(url: string): Promise<Recipe | null> {
   if (response.ok) {
     const recipe = adaptCookPilotRecipe(data, url);
     if (recipe) return recipe;
-    throw new ParseHttpError("No recipe could be found on that page.", 422);
+    throw new ParseHttpError(
+      "We couldn't find a complete recipe on that page. Try another link or paste the recipe text instead.",
+      422,
+    );
   }
 
-  const message =
-    data &&
-    typeof data === "object" &&
-    "error" in data &&
-    typeof (data as { error?: unknown }).error === "string"
-      ? (data as { error: string }).error
-      : "";
   if (response.status === 401 || response.status === 403) {
-    throw new ParseHttpError("Recipe import is temporarily unavailable.", 503);
+    throw new ParseHttpError(
+      "We couldn't import this link right now. Paste the recipe text or upload screenshots instead.",
+      503,
+    );
   }
   if (response.status === 429) {
-    throw new ParseHttpError(message || "Recipe import is busy. Please try again later.", 429);
+    throw new ParseHttpError(
+      "We're handling a lot of recipes right now. Wait a moment and try again.",
+      429,
+    );
   }
   if (response.status >= 500 || response.status === 504) {
-    throw new ParseHttpError(message || "The recipe page took too long to respond.", response.status);
+    throw new ParseHttpError(
+      "We couldn't read that recipe page right now. Try again, or paste the recipe text instead.",
+      response.status,
+    );
   }
   return null;
 }
@@ -211,7 +224,19 @@ export async function POST(request: Request) {
     const response = await fetchPublicHtml(url);
 
     if (!response.ok) {
-      return errorResponse(`That page returned HTTP ${response.status}.`, response.status);
+      if (response.status === 404) {
+        return errorResponse("We couldn't find that page. Check the link and try again.", 404);
+      }
+      if ([401, 402, 403, 429].includes(response.status)) {
+        return errorResponse(
+          "This website wouldn't let us read the recipe. Paste the recipe text or upload screenshots instead.",
+          response.status,
+        );
+      }
+      return errorResponse(
+        "We couldn't open that recipe page. Try again, or paste the recipe text instead.",
+        response.status,
+      );
     }
 
     const contentType = response.headers.get("content-type") ?? "";
@@ -225,7 +250,10 @@ export async function POST(request: Request) {
       .find(Boolean);
 
     if (!recipe) {
-      return errorResponse("No recipe could be found on that page.", 422);
+      return errorResponse(
+        "We couldn't find a complete recipe on that page. Try another link or paste the recipe text instead.",
+        422,
+      );
     }
 
     return NextResponse.json({ success: true, recipe } satisfies ParseResponse);
@@ -234,8 +262,14 @@ export async function POST(request: Request) {
       return errorResponse(err.message, err.status);
     }
     if (err instanceof Error && err.name === "TimeoutError") {
-      return errorResponse("The recipe page took too long to respond.", 504);
+      return errorResponse(
+        "That website took too long to respond. Try again, or paste the recipe text instead.",
+        504,
+      );
     }
-    return errorResponse("We couldn't import a recipe from that URL.", 500);
+    return errorResponse(
+      "We couldn't import that recipe. Try again, paste the recipe text, or upload screenshots.",
+      500,
+    );
   }
 }

@@ -44,8 +44,10 @@ export function startFocalDrag(
   function handleUp() {
     window.removeEventListener("pointermove", handleMove);
     window.removeEventListener("pointerup", handleUp);
+    window.removeEventListener("pointercancel", handleUp);
   }
 
   window.addEventListener("pointermove", handleMove);
   window.addEventListener("pointerup", handleUp);
+  window.addEventListener("pointercancel", handleUp);
 }

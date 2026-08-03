@@ -48,26 +48,32 @@ function friendlyError(err: unknown, fallback: string): ImportError {
   // CookPilot surfaces the source site's HTTP status when a fetch is refused.
   if (/HTTP\s*(401|402|403|429)/.test(message)) {
     return new ImportError(
-      "That site blocked the request. Try a different recipe URL, or paste the recipe text instead.",
+      "This website wouldn't let us read the recipe. Paste the recipe text or upload screenshots instead.",
       "blocked",
     );
   }
   if (/HTTP\s*404/.test(message)) {
-    return new ImportError("That page couldn't be found. Double-check the URL.", "not_found");
+    return new ImportError("We couldn't find that page. Check the link and try again.", "not_found");
   }
   if (isAuthOrAppCheckError(err)) {
     return new ImportError(
-      "The fallback parser couldn't accept this request. Try a different recipe URL, or paste the recipe text instead.",
+      "We couldn't import this link right now. Paste the recipe text or upload screenshots instead.",
       "backend_unavailable",
     );
   }
   if (code.includes("deadline-exceeded")) {
-    return new ImportError("The parser timed out. Please try again.", "timeout");
+    return new ImportError(
+      "That website took too long to respond. Try again, or paste the recipe text instead.",
+      "timeout",
+    );
   }
   if (/firebase|functions\/|app check|appcheck|auth\/|permission-denied|internal|stack|api key/i.test(message)) {
     return new ImportError(fallback, "backend_unavailable");
   }
-  return new ImportError(message || fallback, "unknown");
+  // Provider exceptions may contain function names, status codes, or setup
+  // details. Keep those in the logged exception; only approved copy reaches
+  // the recipe queue.
+  return new ImportError(fallback, "unknown");
 }
 
 function isAuthOrAppCheckError(err: unknown): boolean {
@@ -108,10 +114,20 @@ async function parseUrlWithCookPilot(url: string, localError?: string): Promise<
   try {
     const data = await callCookPilotParser("parseRecipeFromURL", { url });
     const recipe = adaptCookPilotRecipe(data, url);
-    if (!recipe) throw new ImportError(localError || "No recipe could be found on that page.", "no_recipe");
+    if (!recipe) {
+      throw new ImportError(
+        localError ||
+          "We couldn't find a complete recipe on that page. Try another link or paste the recipe text instead.",
+        "no_recipe",
+      );
+    }
     return recipe;
   } catch (err) {
-    throw friendlyError(err, localError || "We couldn't import a recipe from that URL.");
+    throw friendlyError(
+      err,
+      localError ||
+        "We couldn't import that recipe. Try the link again, paste the recipe text, or upload screenshots.",
+    );
   }
 }
 
@@ -124,7 +140,8 @@ export async function parseUrl(rawUrl: string): Promise<Recipe> {
     return parseUrlWithCookPilot(url, localRecipe.error);
   }
   throw new ImportError(
-    localRecipe.error ?? "We couldn't import a recipe from that URL.",
+    localRecipe.error ??
+      "We couldn't find a complete recipe on that page. Try another link or paste the recipe text instead.",
     localRecipe.status === 413 ? "too_large" : "no_recipe",
   );
 }
@@ -142,7 +159,10 @@ export async function parseImages(images: string[]): Promise<Recipe> {
     }
     return recipe;
   } catch (err) {
-    throw friendlyError(err, "We couldn't read a recipe from those photos.");
+    throw friendlyError(
+      err,
+      "We couldn't read a complete recipe from those photos. Make sure the title, ingredients, and directions are visible.",
+    );
   }
 }
 
@@ -155,9 +175,17 @@ export async function parseText(text: string): Promise<Recipe> {
       transcript: text,
     });
     const recipe = adaptCookPilotRecipe(data);
-    if (!recipe) throw new ImportError("No recipe could be read from that text.", "no_recipe");
+    if (!recipe) {
+      throw new ImportError(
+        "We couldn't find a complete recipe in that text. Include the title, ingredients, and directions.",
+        "no_recipe",
+      );
+    }
     return recipe;
   } catch (err) {
-    throw friendlyError(err, "We couldn't read a recipe from that text.");
+    throw friendlyError(
+      err,
+      "We couldn't read that recipe text. Check that it includes the title, ingredients, and directions.",
+    );
   }
 }

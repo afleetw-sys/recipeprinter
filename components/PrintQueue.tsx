@@ -112,7 +112,7 @@ function RecipeCardItem({
             )}
             {item.status === "parsing" && <span className="truncate">{item.source}</span>}
             {item.status === "error" && (
-              <span className="text-error font-semibold">Couldn&apos;t parse</span>
+              <span className="text-error font-semibold">Couldn&apos;t import</span>
             )}
           </div>
         </div>

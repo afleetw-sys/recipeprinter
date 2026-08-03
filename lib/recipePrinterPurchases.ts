@@ -21,6 +21,7 @@ import {
   RECIPEPRINTER_COOKBOOK_PACKAGE_ID,
   RECIPEPRINTER_COOKBOOK_PRODUCT_ID,
 } from "@/lib/cookbookProduct";
+import { revenueCatIdentityTransition } from "@/lib/purchaseAccess";
 
 type PurchasesModule = typeof import("@revenuecat/purchases-js");
 
@@ -97,6 +98,10 @@ function generateAnonymousAppUserId(): string {
       ? crypto.randomUUID().replace(/-/g, "")
       : Array.from({ length: 32 }, () => Math.floor(Math.random() * 16).toString(16)).join("");
   return `${REVENUECAT_ANONYMOUS_PREFIX}${hex}`;
+}
+
+function clearClaimedAnonymousCustomerId(): void {
+  localStore.remove(RECIPEPRINTER_CUSTOMER_STORAGE_KEY);
 }
 
 /**
@@ -219,7 +224,18 @@ export async function identifyRecipePrinterCustomer(
 ): Promise<{ customerInfo: CustomerInfo; wasCreated: boolean; alreadyLinked: boolean }> {
   const alreadyLinked = hasLinkedRecipePrinterCustomer(uid);
 
-  if (alreadyLinked || !purchasesInstance) {
+  // A reload clears the in-memory SDK instance but not the anonymous buyer ID.
+  // Configure that stored buyer first so signing in can still claim a purchase
+  // made before the reload instead of jumping straight to an empty account.
+  if (!purchasesInstance) {
+    const browserCustomerId = localStore.get(RECIPEPRINTER_CUSTOMER_STORAGE_KEY);
+    if (browserCustomerId?.startsWith(REVENUECAT_ANONYMOUS_PREFIX)) {
+      await getPurchases(browserCustomerId);
+    }
+  }
+
+  const transition = revenueCatIdentityTransition(configuredUserId, uid);
+  if (!purchasesInstance || transition !== "identify") {
     const purchases = await getPurchases(uid);
     markRecipePrinterCustomerLinked(uid);
     return { customerInfo: await purchases.getCustomerInfo(), wasCreated: false, alreadyLinked };
@@ -228,6 +244,9 @@ export async function identifyRecipePrinterCustomer(
   const result = await purchasesInstance.identifyUser(uid);
   configuredUserId = uid;
   markRecipePrinterCustomerLinked(uid);
+  // The just-claimed anonymous ID now belongs to this account. Prepare a new
+  // guest identity for any future signed-out purchase in this browser.
+  clearClaimedAnonymousCustomerId();
   return { ...result, alreadyLinked };
 }
 
@@ -376,9 +395,11 @@ export async function loadRecipePrinterCookbookPrice(userId: string): Promise<st
 export async function purchaseRecipePrinterCookbook({
   userId,
   email,
+  projectId,
 }: {
   userId: string;
   email?: string | null;
+  projectId: string;
 }): Promise<{ customerInfo: CustomerInfo; cancelled: boolean }> {
   const purchases = await getPurchases(userId);
   const rcPackage = await packageForCookbook(purchases);
@@ -390,6 +411,7 @@ export async function purchaseRecipePrinterCookbook({
       metadata: {
         product: "recipeprinter",
         offer: "cookbook",
+        cookbook_project_id: projectId,
       },
       skipSuccessPage: true,
     });

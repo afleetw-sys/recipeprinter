@@ -39,9 +39,6 @@ export function PrintDialogs({
   canClaimFree,
   claimBusy,
   onClaimTemplate,
-  showCookbookOfferDialog,
-  onCloseCookbookOfferDialog,
-  onConfirmMakeCookbook,
   showCookbookUnlockDialog,
   onCloseCookbookUnlockDialog,
   cookbookPrice,
@@ -76,9 +73,6 @@ export function PrintDialogs({
   canClaimFree: boolean;
   claimBusy: boolean;
   onClaimTemplate: (template: PremiumRecipePrintTemplate) => void;
-  showCookbookOfferDialog: boolean;
-  onCloseCookbookOfferDialog: () => void;
-  onConfirmMakeCookbook: () => void;
   showCookbookUnlockDialog: boolean;
   onCloseCookbookUnlockDialog: () => void;
   cookbookPrice: string;
@@ -213,8 +207,8 @@ export function PrintDialogs({
             </h2>
             <p>
               A one-time purchase — {selectedTemplateLabel} is yours to print with on every future
-              recipe, no separate charge later. RevenueCat checkout will ask for your email and save
-              this theme for this browser.
+              recipe, no separate charge later. Checkout will ask for your email, and afterward you
+              can protect access on other devices with a free account.
             </p>
             <div className="print-success-dialog__actions">
               {canClaimFree && (
@@ -249,46 +243,6 @@ export function PrintDialogs({
         </Dialog>
       )}
       <Dialog
-        open={showCookbookOfferDialog}
-        onClose={onCloseCookbookOfferDialog}
-        labelledBy="cookbook-offer-title"
-        className="print-success-dialog no-print"
-        backdropClassName="print-success-dialog__backdrop"
-        panelClassName="print-success-dialog__panel"
-      >
-            <button
-              type="button"
-              className="print-success-dialog__close icon-close-btn"
-              aria-label="Close"
-              onClick={onCloseCookbookOfferDialog}
-            >
-              <XIcon size={ICON_SIZE.md} />
-            </button>
-            <div className="print-success-dialog__icon" aria-hidden>
-              <BookIcon size={30} />
-            </div>
-            <h2 id="cookbook-offer-title">Turn your recipes into a real cookbook</h2>
-            <p>
-              In one step, your recipes become a professionally designed book — laid out, organized
-              into chapters, and ready to print or gift:
-            </p>
-            <CookbookBenefitsList />
-            <p className="cookbook-offer-dialog__closer">
-              A keepsake for your own kitchen, or a gift they&apos;ll actually use.
-            </p>
-            <p className="cookbook-offer-dialog__price">{cookbookPrice}</p>
-            <p className="cookbook-offer-dialog__price-note">One-time — only charged when you export.</p>
-            <div className="print-success-dialog__actions">
-              <button type="button" className="btn btn-primary" onClick={onConfirmMakeCookbook}>
-                <BookIcon size={ICON_SIZE.md} />
-                Make it a cookbook
-              </button>
-              <button type="button" className="btn btn-ghost" onClick={onCloseCookbookOfferDialog}>
-                Not now
-              </button>
-            </div>
-      </Dialog>
-      <Dialog
         open={showCookbookUnlockDialog}
         onClose={onCloseCookbookUnlockDialog}
         closeDisabled={cookbookPurchaseBusy}
@@ -306,10 +260,11 @@ export function PrintDialogs({
             >
               <XIcon size={ICON_SIZE.md} />
             </button>
-            <h2 id="cookbook-unlock-title">Unlock your cookbook — {cookbookPrice}</h2>
+            <h2 id="cookbook-unlock-title">Purchase your cookbook — {cookbookPrice}</h2>
             <p>
               A one-time purchase — your recipes become a professionally designed cookbook, yours
-              to re-export forever. RevenueCat checkout will ask for your email.
+              to re-export forever. Checkout will ask for your email, and afterward you can protect
+              access on other devices with a free account.
             </p>
             <CookbookBenefitsList />
             <div className="print-success-dialog__actions">
@@ -320,7 +275,7 @@ export function PrintDialogs({
                 onClick={onUnlockCookbook}
               >
                 {cookbookPurchaseBusy ? <SpinnerIcon size={ICON_SIZE.md} /> : <BookIcon size={ICON_SIZE.md} />}
-                Unlock & Export
+                Purchase & Export
               </button>
               <button
                 type="button"

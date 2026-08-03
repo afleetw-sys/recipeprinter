@@ -96,10 +96,16 @@ export interface Section {
   id: string;
   /** Untitled = no visible grouping in the UI, no divider page when printed. */
   title?: string;
+  /** Optional secondary line on a cookbook section opener. */
+  subtitle?: string;
   /** Chapter-opener photo (cookbook mode only). */
   photoUrl?: string;
   /** Short chapter intro line shown on the opener (cookbook mode only). */
   intro?: string;
+  /** Whether this named section receives a printed opener page. */
+  showOpener?: boolean;
+  /** Legacy books may retain explicit Chapter One/Two labels. */
+  numberAsChapter?: boolean;
   items: QueueItem[];
 }
 
@@ -138,6 +144,12 @@ export interface CoverConfig {
   title: string;
   subtitle?: string;
   author?: string;
+  /** Optional edition or year line, e.g. "2026 Family Edition". */
+  edition?: string;
+  /** How the author line is introduced. */
+  creditLabel?: "by" | "compiled-by";
+  /** Curated cookbook cover composition. */
+  layout?: "photo" | "collage" | "typographic";
   imageUrl?: string;
   /** A photo collage cover — the first few recipe photos in a grid. Takes
       precedence over `imageUrl`; empty/undefined falls back to a single
@@ -149,6 +161,12 @@ export interface CoverConfig {
   /** Front-cover treatment. `photo` (default) fills the page with the image and
       sets the title over a scrim; `band` puts the title on a solid lower band. */
   style?: "photo" | "band";
+}
+
+export interface CookbookFrontMatter {
+  kind: "dedication" | "introduction";
+  heading?: string;
+  body?: string;
 }
 
 export interface PrintProjectSettings {
@@ -167,10 +185,19 @@ export interface PrintProjectSettings {
       `CookbookPresetId`). Undefined for plain-card projects and older cookbooks
       saved before presets existed — those fall back to the default preset. */
   bookPreset?: CookbookPresetId;
+  /** The premium-workspace introduction has been completed for this project. */
+  cookbookWelcomeCompleted?: boolean;
+  tocKicker?: string;
+  tocTitle?: string;
+  photoStyle?: "none" | "card" | "full";
 }
 
 export interface PrintProject {
   id: string;
+  /** Distinguishes automatic cookbook persistence from opt-in card projects. */
+  kind?: "cookbook" | "printProject";
+  /** Optimistic-concurrency version. Legacy documents default to 0. */
+  revision?: number;
   /** Present only once the project has been saved to Firestore. */
   ownerUid?: string;
   /** Absent until a cover is added or a second named section is created. */
@@ -181,6 +208,8 @@ export interface PrintProject {
   backCover?: CoverConfig;
   /** Optional dedication / front-matter page (cookbook mode). See ProjectMeta. */
   dedication?: CoverConfig;
+  /** Typed replacement for the legacy dedication-as-cover representation. */
+  frontMatter?: CookbookFrontMatter;
   settings: PrintProjectSettings;
   /** Per-recipe cookbook page layouts, keyed by `QueueItem.id` (see
       `RecipePagePlacement`). Absent for plain card projects. Kept alongside

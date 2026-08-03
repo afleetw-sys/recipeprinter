@@ -43,11 +43,20 @@ const MODES: {
 const PRIMARY_MODES = MODES.filter((mode) => mode.id === "url" || mode.id === "cookpilot");
 const OVERFLOW_MODES = MODES.filter((mode) => mode.id === "image" || mode.id === "text");
 
+const loadCookPilotImport = () => import("@/components/CookPilotRecipePicker");
+
 const CookPilotImportSource = dynamic(
-  () => import("@/components/CookPilotRecipePicker").then((mod) => mod.CookPilotImportSource),
+  () => loadCookPilotImport().then((mod) => mod.CookPilotImportSource),
   {
     ssr: false,
-    loading: () => null,
+    loading: () => (
+      <div className="h-40 grid place-items-center text-ink-soft rounded-2xl border border-dashed border-line-strong">
+        <span className="inline-flex items-center gap-2">
+          <SpinnerIcon size={ICON_SIZE.lg} />
+          Opening CookPilot…
+        </span>
+      </div>
+    ),
   },
 );
 
@@ -234,6 +243,22 @@ export function ImportPanel({
   onAddCookPilotRecipes: (recipes: QueueItem[]) => number;
   onRemoveRecipe: (id: string) => void;
 }) {
+  useEffect(() => {
+    // CookPilot is a primary import option, but its Firebase/Auth code is large
+    // enough to keep out of the initial page bundle. Fetch and initialize it
+    // once the browser is idle so choosing CookPilot feels immediate without
+    // delaying first paint.
+    const prewarm = () => {
+      void loadCookPilotImport().then((mod) => mod.prewarmCookPilotImport());
+    };
+    if ("requestIdleCallback" in window) {
+      const idleId = window.requestIdleCallback(prewarm, { timeout: 1_500 });
+      return () => window.cancelIdleCallback(idleId);
+    }
+    const timer = globalThis.setTimeout(prewarm, 500);
+    return () => globalThis.clearTimeout(timer);
+  }, []);
+
   const [mode, setMode] = useState<ImportMethod>(initialMode);
   const [url, setUrl] = useState("");
   const [text, setText] = useState("");

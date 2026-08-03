@@ -195,8 +195,7 @@ describe("planCookbookSection", () => {
 });
 
 describe("assembleSpreads (book imposition)", () => {
-  // Cookbook "book view": pages group into two-page spreads with real parity —
-  // covers alone, chapter openers on a recto, image-spread photo on a verso.
+  // Cookbook "book view": pages group into two-page spreads in natural order.
   const K = (...kinds: BookPageKind[]) => kinds;
 
   it("stands the cover and back cover alone", () => {
@@ -205,12 +204,12 @@ describe("assembleSpreads (book imposition)", () => {
     expect(spreads[spreads.length - 1]).toEqual({ left: 3, right: null, single: true });
   });
 
-  it("stands a dedication page alone after the cover, before the body", () => {
-    // cover, dedication, then body pairs — front matter each gets its own page.
+  it("pairs dedication with the following interior page", () => {
+    // Only covers stand alone; front matter reads as an ordinary book spread.
     const spreads = assembleSpreads(K("cover", "dedication", "content", "content", "back"));
     expect(spreads[0]).toEqual({ left: null, right: 0, single: true });
-    expect(spreads[1]).toEqual({ left: null, right: 1, single: true });
-    expect(spreads[2]).toEqual({ left: 2, right: 3, single: false });
+    expect(spreads[1]).toEqual({ left: 1, right: 2, single: false });
+    expect(spreads[2]).toEqual({ left: 3, right: null, single: false });
     expect(spreads[spreads.length - 1]).toEqual({ left: 4, right: null, single: true });
   });
 
@@ -225,27 +224,35 @@ describe("assembleSpreads (book imposition)", () => {
     ]);
   });
 
-  it("forces a chapter opener onto a recto (right), inserting a blank verso", () => {
-    // After cover: content at verso(left), then chapter would land on recto — good.
-    // Here the chapter would land on a verso, so a blank is inserted before it.
+  it("lets a chapter opener flow naturally without inserting a blank", () => {
     const spreads = assembleSpreads(K("cover", "chapter", "content"));
-    // chapter is first body page -> would be verso -> blank inserted -> chapter on recto
-    expect(spreads[1]).toEqual({ left: null, right: 1, single: false });
-    expect(spreads[2]).toEqual({ left: 2, right: null, single: false });
+    expect(spreads[1]).toEqual({ left: 1, right: 2, single: false });
+    expect(spreads).toHaveLength(2);
   });
 
-  it("keeps an image-spread photo on the verso facing its recipe on the recto", () => {
-    // pages: cover, content(1), image-photo(2), recipe(3)
-    // content -> verso; image-photo would be recto -> blank inserted -> photo verso, recipe recto
+  it("keeps each full-page image on the left of its own recipe", () => {
     const spreads = assembleSpreads(K("cover", "content", "image-photo", "content"));
-    expect(spreads[1]).toEqual({ left: 1, right: null, single: false }); // content, blank
-    expect(spreads[2]).toEqual({ left: 2, right: 3, single: false }); // photo | recipe
+    expect(spreads[1]).toEqual({ left: 1, right: null, single: false });
+    expect(spreads[2]).toEqual({ left: 2, right: 3, single: false });
   });
 
   it("leaves an already-aligned image-spread untouched", () => {
     // cover, image-photo(1) at verso already, recipe(2) at recto
     const spreads = assembleSpreads(K("cover", "image-photo", "content"));
     expect(spreads[1]).toEqual({ left: 1, right: 2, single: false });
+  });
+
+  it("keeps successive recipe images attached to their matching recipes", () => {
+    const spreads = assembleSpreads(K(
+      "content",
+      "image-photo", "content",
+      "image-photo", "content",
+    ));
+    expect(spreads).toEqual([
+      { left: 0, right: null, single: false },
+      { left: 1, right: 2, single: false },
+      { left: 3, right: 4, single: false },
+    ]);
   });
 
   it("pads a trailing lone body page to a full spread", () => {

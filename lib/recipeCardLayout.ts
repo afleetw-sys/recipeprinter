@@ -702,11 +702,14 @@ export type RecipeCardEditTarget =
   | { kind: "instructionSection"; index: number };
 
 export interface RecipeCardInlineEdit {
+  /** Other photos already in this project, offered by the shared image picker. */
+  recipeImages?: string[];
   editingTarget: RecipeCardEditTarget | null;
   value: string;
   onFocusTarget: (target: RecipeCardEditTarget, value: string) => void;
   onValueChange: (value: string) => void;
   onCommit: (value?: string) => void;
+  onImageChange: (url: string) => void;
   onCancel: () => void;
   onInsertIngredient: (index: number) => void;
   onInsertStep: (index: number) => void;
@@ -877,11 +880,10 @@ export function planCookbookSection(
 
    Rules:
    - The front cover and back cover each stand alone (no facing page).
-   - Body pages fill left→right. A chapter opener is forced onto a RECTO (right)
-     — a blank filler is inserted before it if it would land on a verso.
-   - An image-spread's photo is forced onto a VERSO (left) so its recipe page
-     (which immediately follows) lands on the facing recto — the designed spread.
-   - A trailing blank pads the final spread to two pages. */
+   - Body pages fill left→right in their natural order.
+   - No blank sheets are inserted to force chapter, TOC, image, or recipe parity.
+   - A trailing null is preview-only presentation for an incomplete spread; it
+     never becomes a physical `PageSheet` or printed page. */
 export type BookPageKind = "cover" | "dedication" | "back" | "chapter" | "image-photo" | "content";
 
 export interface BookSpread {
@@ -902,31 +904,34 @@ export function assembleSpreads(pages: BookPageKind[]): BookSpread[] {
     spreads.push({ left: null, right: start, single: true });
     start += 1;
   }
-  // A dedication is front matter on its own page, right after the cover — a
-  // standalone recto like the cover, not part of the facing-page body flow.
-  if (pages[start] === "dedication") {
-    spreads.push({ left: null, right: start, single: true });
-    start += 1;
-  }
   let backSpread: BookSpread | null = null;
   if (end - 1 >= start && pages[end - 1] === "back") {
     backSpread = { left: end - 1, right: null, single: true };
     end -= 1;
   }
 
-  // Lay body pages into an alternating slot sequence (even index = verso/left,
-  // odd = recto/right); insert nulls to satisfy the parity rules above.
-  const slots: (number | null)[] = [];
-  const nextIsVerso = () => slots.length % 2 === 0;
-  for (let i = start; i < end; i += 1) {
-    const kind = pages[i];
-    if (kind === "chapter" && nextIsVerso()) slots.push(null); // bump opener to a recto
-    if (kind === "image-photo" && !nextIsVerso()) slots.push(null); // bump photo to a verso
-    slots.push(i);
-  }
-  if (slots.length % 2 === 1) slots.push(null);
-  for (let i = 0; i < slots.length; i += 2) {
-    spreads.push({ left: slots[i], right: slots[i + 1] ?? null, single: false });
+  // Keep a full-photo page and the recipe immediately following it as one
+  // atomic editorial spread. Other pages still flow naturally; a lone page
+  // before an image spread is merely presented by itself in the preview and
+  // does not create a printed padding sheet.
+  let cursor = start;
+  while (cursor < end) {
+    if (pages[cursor] === "image-photo" && pages[cursor + 1] === "content") {
+      spreads.push({ left: cursor, right: cursor + 1, single: false });
+      cursor += 2;
+      continue;
+    }
+    if (pages[cursor + 1] === "image-photo" && pages[cursor + 2] === "content") {
+      spreads.push({ left: cursor, right: null, single: false });
+      cursor += 1;
+      continue;
+    }
+    spreads.push({
+      left: cursor,
+      right: cursor + 1 < end ? cursor + 1 : null,
+      single: false,
+    });
+    cursor += 2;
   }
 
   if (backSpread) spreads.push(backSpread);

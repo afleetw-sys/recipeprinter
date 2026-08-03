@@ -124,8 +124,22 @@ type EventProps = {
   cookbook_preset_selected: { preset: CookbookPresetId };
   /** The post-export "Print your cookbook" screen was shown. */
   cookbook_print_options_shown: { preset: CookbookPresetId };
-  /** A recommended print-shop link was opened from that screen. */
-  cookbook_printer_clicked: { preset: CookbookPresetId; printer: string };
+  /** A recommended print-shop link was opened from the export screen. */
+  cookbook_printer_clicked: { printer: string; preset?: CookbookPresetId };
+  cookbook_welcome_shown: {};
+  cookbook_workspace_entered: {};
+  cookbook_onboarding_dismissed: {};
+  cookbook_cover_layout_selected: { layout: "photo" | "collage" | "typographic" };
+  cookbook_front_matter_enabled: { kind: "dedication" | "introduction" };
+  cookbook_section_opener_toggled: { enabled: boolean };
+  cookbook_ready_shown: { freshPurchase: boolean };
+  relayout_started: {};
+  relayout_method_selected: { method: "suggested" };
+  relayout_previewed: { sectionCount: number; uncategorizedCount: number };
+  relayout_applied: { sectionCount: number };
+  relayout_cancelled: {};
+  section_created: { source: "organize" };
+  section_opener_toggled: { enabled: boolean; source: "organize" };
 
   feedback_submitted: { type: FeedbackType };
 };

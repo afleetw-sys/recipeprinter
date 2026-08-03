@@ -8,6 +8,10 @@ import type {
   Section,
 } from "@/types/recipe";
 import { uid } from "@/lib/ids";
+import {
+  recipePrinterProjectPath,
+  recipePrinterProjectsPath,
+} from "@/lib/firebase/recipePrinterPaths";
 
 const PRINT_PROJECTS_COLLECTION = "printProjects";
 
@@ -46,19 +50,25 @@ export function assemblePrintProject(params: {
   cover?: CoverConfig;
   backCover?: CoverConfig;
   dedication?: CoverConfig;
+  frontMatter?: import("@/types/recipe").CookbookFrontMatter;
   settings: PrintProjectSettings;
   itemPlacements?: Record<string, RecipePagePlacement>;
   createdAt?: number;
+  revision?: number;
+  kind?: "cookbook" | "printProject";
 }): PrintProject {
   const now = Date.now();
   return {
     id: params.id,
+    kind: params.kind ?? (params.settings.cookbookMode ? "cookbook" : "printProject"),
+    revision: params.revision ?? 0,
     ownerUid: params.ownerUid,
     title: params.title,
     sections: params.sections,
     cover: params.cover,
     backCover: params.backCover,
     dedication: params.dedication,
+    frontMatter: params.frontMatter,
     settings: params.settings,
     itemPlacements: params.itemPlacements,
     createdAt: params.createdAt ?? now,
@@ -66,16 +76,44 @@ export function assemblePrintProject(params: {
   };
 }
 
-export async function savePrintProject(project: PrintProject): Promise<void> {
+export class PrintProjectConflictError extends Error {
+  constructor() {
+    super("This project was updated somewhere else.");
+    this.name = "PrintProjectConflictError";
+  }
+}
+
+export async function savePrintProject(project: PrintProject): Promise<PrintProject> {
   if (!project.ownerUid) {
     throw new Error("Saving a project requires being signed in.");
   }
-  const [{ doc, setDoc }, { getDb }] = await Promise.all([
+  const [{ doc, runTransaction }, { getDb }] = await Promise.all([
     import("firebase/firestore"),
     import("@/lib/firebase/db"),
   ]);
-  const ref = doc(getDb(), "users", project.ownerUid, PRINT_PROJECTS_COLLECTION, project.id);
-  await setDoc(ref, stripUndefined({ ...project, updatedAt: Date.now() }));
+  const db = getDb();
+  const ref = doc(db, ...recipePrinterProjectPath(project.ownerUid, project.id));
+  const saved = await runTransaction(db, async (transaction) => {
+    const existing = await transaction.get(ref);
+    const remoteRevision = existing.exists()
+      ? Number((existing.data() as Partial<PrintProject>).revision ?? 0)
+      : 0;
+    const expectedRevision = Number(project.revision ?? 0);
+    if (existing.exists() && remoteRevision !== expectedRevision) {
+      throw new PrintProjectConflictError();
+    }
+    const next = stripUndefined({
+      ...project,
+      revision: remoteRevision + 1,
+      createdAt: existing.exists()
+        ? Number((existing.data() as Partial<PrintProject>).createdAt ?? project.createdAt)
+        : project.createdAt,
+      updatedAt: Date.now(),
+    }) as PrintProject;
+    transaction.set(ref, next);
+    return next;
+  });
+  return saved;
 }
 
 export async function loadPrintProjects(ownerUid: string): Promise<PrintProject[]> {
@@ -83,10 +121,16 @@ export async function loadPrintProjects(ownerUid: string): Promise<PrintProject[
     import("firebase/firestore"),
     import("@/lib/firebase/db"),
   ]);
-  const snap = await getDocs(
-    query(collection(getDb(), "users", ownerUid, PRINT_PROJECTS_COLLECTION), orderBy("updatedAt", "desc")),
-  );
-  return snap.docs.map((docSnap) => docSnap.data() as PrintProject);
+  const db = getDb();
+  const [namespaced, legacy] = await Promise.all([
+    getDocs(query(collection(db, ...recipePrinterProjectsPath(ownerUid)), orderBy("updatedAt", "desc")))
+      .catch(() => null),
+    getDocs(query(collection(db, "users", ownerUid, PRINT_PROJECTS_COLLECTION), orderBy("updatedAt", "desc"))),
+  ]);
+  const byId = new Map<string, PrintProject>();
+  legacy.docs.forEach((snap) => byId.set(snap.id, snap.data() as PrintProject));
+  namespaced?.docs.forEach((snap) => byId.set(snap.id, snap.data() as PrintProject));
+  return Array.from(byId.values()).sort((a, b) => Number(b.updatedAt) - Number(a.updatedAt));
 }
 
 export async function loadPrintProject(ownerUid: string, projectId: string): Promise<PrintProject | null> {
@@ -94,8 +138,12 @@ export async function loadPrintProject(ownerUid: string, projectId: string): Pro
     import("firebase/firestore"),
     import("@/lib/firebase/db"),
   ]);
-  const snap = await getDoc(doc(getDb(), "users", ownerUid, PRINT_PROJECTS_COLLECTION, projectId));
-  return snap.exists() ? (snap.data() as PrintProject) : null;
+  const db = getDb();
+  const snap = await getDoc(doc(db, ...recipePrinterProjectPath(ownerUid, projectId))).catch(() => null);
+  if (snap?.exists()) return snap.data() as PrintProject;
+  // Temporary compatibility read. New writes are namespace-only.
+  const legacy = await getDoc(doc(db, "users", ownerUid, PRINT_PROJECTS_COLLECTION, projectId));
+  return legacy.exists() ? (legacy.data() as PrintProject) : null;
 }
 
 export async function deletePrintProject(ownerUid: string, projectId: string): Promise<void> {
@@ -103,5 +151,5 @@ export async function deletePrintProject(ownerUid: string, projectId: string): P
     import("firebase/firestore"),
     import("@/lib/firebase/db"),
   ]);
-  await deleteDoc(doc(getDb(), "users", ownerUid, PRINT_PROJECTS_COLLECTION, projectId));
+  await deleteDoc(doc(getDb(), ...recipePrinterProjectPath(ownerUid, projectId)));
 }

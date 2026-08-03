@@ -201,6 +201,20 @@ export function useRecipeInlineEditor({
     [editValue, editingEdit, editingRecipeItem, setItems],
   );
 
+  const changeRecipeImage = useCallback(
+    (url: string) => {
+      if (!activeRecipeItem?.recipe) return;
+      const nextRecipe = applyRecipeTargetEdit(activeRecipeItem.recipe, { kind: "image" }, url);
+      updateQueuedRecipe(activeRecipeItem.id, nextRecipe);
+      setItems((current) =>
+        current?.map((item) =>
+          item.id === activeRecipeItem.id ? { ...item, recipe: nextRecipe } : item,
+        ) ?? current,
+      );
+    },
+    [activeRecipeItem, setItems],
+  );
+
   const insertIngredientAt = useCallback(
     (index: number) => {
       if (!activeRecipeItem?.recipe) return;
@@ -303,6 +317,7 @@ export function useRecipeInlineEditor({
       onFocusTarget: startEditTarget,
       onValueChange: setEditValue,
       onCommit: commitEditTarget,
+      onImageChange: changeRecipeImage,
       onCancel: cancelEditTarget,
       onInsertIngredient: insertIngredientAt,
       onInsertStep: insertStepAt,
@@ -315,6 +330,7 @@ export function useRecipeInlineEditor({
     editValue,
     startEditTarget,
     commitEditTarget,
+    changeRecipeImage,
     cancelEditTarget,
     insertIngredientAt,
     insertStepAt,

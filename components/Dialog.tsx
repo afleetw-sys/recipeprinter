@@ -4,6 +4,31 @@ import { useEffect, useRef, useState, type ReactNode } from "react";
 import { createPortal } from "react-dom";
 import { useModalFocus } from "@/components/useModalFocus";
 
+let openDialogCount = 0;
+let previousBodyOverflow = "";
+let previousBodyPaddingRight = "";
+
+function lockPageScroll() {
+  if (openDialogCount === 0) {
+    previousBodyOverflow = document.body.style.overflow;
+    previousBodyPaddingRight = document.body.style.paddingRight;
+    const scrollbarWidth = window.innerWidth - document.documentElement.clientWidth;
+    document.body.style.overflow = "hidden";
+    if (scrollbarWidth > 0) {
+      document.body.style.paddingRight = `${scrollbarWidth}px`;
+    }
+  }
+  openDialogCount += 1;
+}
+
+function unlockPageScroll() {
+  openDialogCount = Math.max(0, openDialogCount - 1);
+  if (openDialogCount === 0) {
+    document.body.style.overflow = previousBodyOverflow;
+    document.body.style.paddingRight = previousBodyPaddingRight;
+  }
+}
+
 /**
  * The shared shell for every modal in the app.
  *
@@ -75,6 +100,11 @@ export function Dialog({
   // first hydration pass.
   const [mounted, setMounted] = useState(false);
   useEffect(() => setMounted(true), []);
+  useEffect(() => {
+    if (!open) return;
+    lockPageScroll();
+    return unlockPageScroll;
+  }, [open]);
 
   if (!open) return null;
 

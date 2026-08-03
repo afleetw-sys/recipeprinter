@@ -3,31 +3,48 @@ import { getFirebaseStorage } from "./firebase/storage";
 import { getFirebaseAuth, firebaseConfigured } from "./firebase/client";
 import { fileToCoverBlob } from "./coverPhoto";
 import type { CoverConfig, RecipePagePlacement, Section } from "@/types/recipe";
+import { localStore } from "@/lib/storage";
+import {
+  recipePrinterAnonymousPhotoRoot,
+  recipePrinterUserPhotoRoot,
+} from "./firebase/recipePrinterPaths";
 
 // Cookbook/recipe photos live in Firebase Storage, and only their download URL
 // is ever stored in the queue / project meta / saved Firestore doc — never the
 // base64 bytes. That's what keeps sessionStorage under its ~5MB cap while
 // editing and keeps a saved project's document under Firestore's 1MB limit.
 //
-// BACKEND RULE (CookPilot's shared Firebase project — not this repo): writes
-// under `recipeprinter/photos/**` are allowed for any image under 12MB, with
-// public read so the download URL works in the printed/exported book. Callers
-// still surface failures (see friendlyPhotoUploadError) in case that rule ever
-// regresses or a write is rejected mid-flight.
-const PHOTO_ROOT = "recipeprinter/photos";
+// Storage rules keep signed-in uploads under their UID and anonymous uploads
+// under a browser-owned capability prefix. Images remain publicly readable so
+// saved books and print/export URLs continue to render.
+export const ANONYMOUS_OWNER_STORAGE_KEY = "recipeprinter:anonymous-owner:v1";
 
-function currentScope(): string {
+export function anonymousOwnerId(): string {
+  const existing = localStore.get(ANONYMOUS_OWNER_STORAGE_KEY);
+  if (existing) return existing;
+  const next =
+    typeof crypto !== "undefined" && "randomUUID" in crypto
+      ? crypto.randomUUID()
+      : `${Date.now()}-${Math.random().toString(36).slice(2, 12)}`;
+  localStore.set(ANONYMOUS_OWNER_STORAGE_KEY, next);
+  return next;
+}
+
+function currentRoot(): string {
   try {
-    return getFirebaseAuth().currentUser?.uid ?? "anon";
+    const uid = getFirebaseAuth().currentUser?.uid;
+    return uid
+      ? recipePrinterUserPhotoRoot(uid)
+      : recipePrinterAnonymousPhotoRoot(anonymousOwnerId());
   } catch {
-    return "anon";
+    return recipePrinterAnonymousPhotoRoot(anonymousOwnerId());
   }
 }
 
 function newPhotoPath(): string {
   const stamp = Date.now();
   const rand = Math.random().toString(36).slice(2, 10);
-  return `${PHOTO_ROOT}/${currentScope()}/${stamp}-${rand}.jpg`;
+  return `${currentRoot()}/${stamp}-${rand}.jpg`;
 }
 
 async function uploadBlob(blob: Blob): Promise<string> {

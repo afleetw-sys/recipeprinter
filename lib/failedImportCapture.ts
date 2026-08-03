@@ -2,13 +2,15 @@ import { ref, uploadBytes } from "firebase/storage";
 import { getFirebaseStorage } from "./firebase/storage";
 import { getFirebaseAuth } from "./firebase/client";
 import { firebaseConfigured } from "./firebase/client";
+import { RECIPE_PRINTER_DEBUG_ROOT } from "./firebase/recipePrinterPaths";
 
 // When an import fails — the browser can't decode an image, or the parser can't
 // find a recipe in whatever it was handed — we stash the exact input that failed
 // so the failure is actually reproducible/debuggable, instead of only a PostHog
 // event saying "no_recipe" with no way to see what the user saw. Every source is
 // covered: image bytes, a pasted-text payload, or the URL that wouldn't parse.
-// Everything lands in Firebase Storage under `debug/failed-imports/<category>/…`,
+// Everything lands in Firebase Storage under
+// `recipeprinter/debug/failed-imports/<category>/…`,
 // each object carrying its failure reason etc. as metadata; the returned path is
 // attached to the `recipe_import_failed` event so a failed event links straight
 // to its input.
@@ -25,7 +27,7 @@ type FailedCaptureMeta = {
   reason: string;
 };
 
-const CAPTURE_ROOT = "debug/failed-imports";
+const CAPTURE_ROOT = RECIPE_PRINTER_DEBUG_ROOT;
 // A hard cap so a pathological upload can't balloon: skip anything over this.
 const MAX_CAPTURE_BYTES = 12 * 1024 * 1024;
 // Text is tiny next to images, but someone pasting an entire webpage shouldn't

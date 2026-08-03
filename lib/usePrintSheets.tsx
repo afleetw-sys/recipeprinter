@@ -64,7 +64,9 @@ export interface DividerSheetSlot {
   recipeTitles: string[];
   /** 1-based chapter ordinal among the sections that get an opener. */
   chapterNumber: number;
+  showChapterNumber?: boolean;
   /** Chapter-opener photo/intro (cookbook mode); undefined = none. */
+  subtitle?: string;
   photoUrl?: string;
   intro?: string;
 }
@@ -588,7 +590,8 @@ export function usePrintSheets({
     let queueIndexCursor = 0;
     let chapterNumber = 0;
     sections.forEach((section) => {
-      if (sectionDividers && section.title?.trim()) {
+      const showOpener = section.showOpener ?? Boolean(sectionDividers);
+      if (showOpener && section.title?.trim()) {
         chapterNumber += 1;
         out.push({
           id: `sheet-divider-${section.id}`,
@@ -597,6 +600,8 @@ export function usePrintSheets({
             id: section.id,
             title: section.title,
             chapterNumber,
+            showChapterNumber: Boolean(section.numberAsChapter),
+            subtitle: section.subtitle,
             photoUrl: section.photoUrl,
             intro: section.intro,
             recipeTitles: section.items

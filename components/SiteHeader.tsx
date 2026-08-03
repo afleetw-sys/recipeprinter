@@ -2,6 +2,7 @@ import Link from "next/link";
 import type { ReactNode } from "react";
 import { LogoMark, Wordmark } from "@/components/Logo";
 import { ChevronLeftIcon, ICON_SIZE } from "@/components/icons";
+import { AccountControl, type AccountSaveStatus } from "@/components/AccountControl";
 
 // Minimal top bar shared across every page, mirrors CookPilot's cp-topbar.
 // The logo is a home link so the product always feels like one focused utility,
@@ -13,6 +14,8 @@ export function SiteHeader({
   centerActions = false,
   compact = false,
   sticky = false,
+  saveStatus,
+  onRetrySave,
 }: {
   backHref?: string;
   /** When set, the logo becomes a real "go back" control (history.back()) instead of a fixed link to backHref/home. */
@@ -22,6 +25,8 @@ export function SiteHeader({
   centerActions?: boolean;
   compact?: boolean;
   sticky?: boolean;
+  saveStatus?: AccountSaveStatus | null;
+  onRetrySave?: () => void;
 }) {
   const logo = (
     <>
@@ -65,14 +70,15 @@ export function SiteHeader({
           {logo}
         </Link>
       )}
-      {actions &&
-        (centerActions ? (
+      {actions && centerActions && (
           <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 flex items-center gap-cp-3">
             {actions}
           </div>
-        ) : (
-          <div className="flex items-center gap-cp-3 flex-wrap justify-end">{actions}</div>
-        ))}
+      )}
+      <div className="flex items-center gap-cp-3 flex-wrap justify-end">
+        {actions && !centerActions ? actions : null}
+        <AccountControl saveStatus={saveStatus} onRetry={onRetrySave} />
+      </div>
     </header>
   );
 }

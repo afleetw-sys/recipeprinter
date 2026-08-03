@@ -239,7 +239,10 @@ export function useQueue() {
       } catch (err) {
         patch(id, {
           status: "error",
-          error: err instanceof Error ? err.message : "Something went wrong while parsing.",
+          error:
+            err instanceof ImportError
+              ? err.message
+              : "We couldn't import that recipe. Check the source and try again.",
         });
         const reason = truncateReason(err);
         const category = err instanceof ImportError ? err.code : "unknown";
@@ -395,6 +398,16 @@ export function useQueue() {
     commit([]);
   }, [commit]);
 
+  /** Replaces the browser queue when opening a saved account project. */
+  const replaceAll = useCallback(
+    (next: QueueItem[]) => {
+      textPayloads.current.clear();
+      setFocusedItemId(next[0]?.id ?? null);
+      commit(next);
+    },
+    [commit],
+  );
+
   return {
     items,
     focusedItemId,
@@ -408,6 +421,7 @@ export function useQueue() {
     canRetry,
     remove,
     clear,
+    replaceAll,
     focusItem,
   };
 }

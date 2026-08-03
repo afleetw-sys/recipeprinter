@@ -201,6 +201,13 @@ export const UsersIcon = (p: IconProps) => (
   </Base>
 );
 
+export const AccountIcon = (p: IconProps) => (
+  <Base {...p}>
+    <circle cx="12" cy="8" r="4" />
+    <path d="M4.5 21a7.5 7.5 0 0115 0" />
+  </Base>
+);
+
 export const SizeIcon = (p: IconProps) => (
   <Base {...p}>
     <path d="M4 9V4h5" />

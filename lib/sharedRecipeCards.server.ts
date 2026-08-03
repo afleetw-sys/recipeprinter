@@ -34,14 +34,17 @@ type FirestoreRestValue = {
 
 type FirestoreRestDocument = { fields?: Record<string, FirestoreRestValue> };
 
-function firestoreDocumentUrl(slug: string): string {
+function firestoreDocumentUrl(slug: string, legacy = false): string {
   const projectId = process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID ?? "";
   const apiKey = process.env.NEXT_PUBLIC_FIREBASE_API_KEY ?? "";
   if (!projectId || !apiKey) {
     throw new Error("Missing Firebase web configuration.");
   }
   const encodedSlug = encodeURIComponent(slug);
-  return `https://firestore.googleapis.com/v1/projects/${projectId}/databases/${FIRESTORE_DATABASE}/documents/${SHARED_RECIPE_CARDS_COLLECTION}/${encodedSlug}?key=${apiKey}`;
+  const path = legacy
+    ? `${SHARED_RECIPE_CARDS_COLLECTION}/${encodedSlug}`
+    : `products/recipePrinter/${SHARED_RECIPE_CARDS_COLLECTION}/${encodedSlug}`;
+  return `https://firestore.googleapis.com/v1/projects/${projectId}/databases/${FIRESTORE_DATABASE}/documents/${path}?key=${apiKey}`;
 }
 
 function decodeFirestoreValue(value: FirestoreRestValue | undefined): unknown {
@@ -105,7 +108,10 @@ function isSharedRecipeCard(data: Record<string, unknown> | null): boolean {
  */
 export const fetchSharedRecipeCard = cache(
   async (slug: string): Promise<SharedRecipeCard | null> => {
-    const response = await fetch(firestoreDocumentUrl(slug), { cache: "no-store" });
+    let response = await fetch(firestoreDocumentUrl(slug), { cache: "no-store" });
+    if (response.status === 403 || response.status === 404) {
+      response = await fetch(firestoreDocumentUrl(slug, true), { cache: "no-store" });
+    }
     if (response.status === 404) return null;
     if (!response.ok) {
       throw new Error(`Firestore REST read failed: ${response.status}`);

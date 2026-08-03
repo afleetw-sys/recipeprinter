@@ -17,9 +17,11 @@
  */
 export const COOKBOOK_ENABLED = true;
 
-// A single one-time purchase that unlocks the cookbook layout (cover, section
-// dividers, etc.) for this browser/account — separate from per-template
-// purchases, but resolved through the same RevenueCat project.
+// One purchase unlocks one stable cookbook project. The RevenueCat web product
+// behind this identifier must be configured as a repeat-purchasable consumable;
+// the permanent ownership record is our project-scoped unlock, not a global
+// cookbook entitlement. `RECIPEPRINTER_COOKBOOK_ENTITLEMENT_ID` remains only
+// for grandfathering customers who bought the former account-wide unlock.
 export const RECIPEPRINTER_COOKBOOK_OFFERING_ID = "cookbook";
 export const RECIPEPRINTER_COOKBOOK_PACKAGE_ID = "cookbook";
 export const RECIPEPRINTER_COOKBOOK_PRODUCT_ID = "cookbook";
