@@ -49,7 +49,7 @@ export function SiteHeader({
   return (
     <header
       className={`no-print relative flex items-center justify-between gap-cp-4 px-cp-6 min-h-[62px] flex-wrap ${
-        sticky ? "sticky top-0 z-10 bg-page border-b border-line py-cp-3" : ""
+        sticky ? "sticky top-0 z-10 bg-card border-b border-line py-cp-3" : ""
       }`}
     >
       {onBack ? (

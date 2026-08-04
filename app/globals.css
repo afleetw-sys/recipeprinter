@@ -89,11 +89,14 @@
 
 /* ── Cookbook premium workspace ───────────────────────────────────────── */
 .recipe-print-shell {
-  transition: opacity 220ms ease, transform 420ms cubic-bezier(.2,.8,.2,1);
+  transition: opacity 220ms ease;
 }
+/* Dim the workspace behind the cookbook offer/build overlay. Deliberately no
+   transform: translating/scaling the shell shifts the content visibly sideways
+   behind the (already backdrop-dimmed) dialog, which reads as a layout glitch.
+   Opacity alone recedes it without moving anything. */
 .recipe-print-shell--entering-cookbook {
   opacity: .34;
-  transform: translateX(-2.5rem) scale(.985);
 }
 
 .cookbook-build-reveal {
@@ -442,8 +445,12 @@
 .cookbook-welcome__copy {
   display: grid;
   align-content: center;
-  gap: 1.15rem;
-  padding: clamp(2rem, 4vw, 3.25rem);
+  gap: 1.35rem;
+  padding: clamp(2rem, 3.6vw, 3rem);
+}
+.cookbook-welcome__lede {
+  display: grid;
+  gap: .55rem;
 }
 .cookbook-welcome__visual {
   min-height: 570px;
@@ -471,13 +478,11 @@
   font-size: 1rem;
   line-height: 1.55;
 }
-.cookbook-feature-chips,
 .cookbook-ready__assurances {
   display: flex;
   flex-wrap: wrap;
   gap: .5rem;
 }
-.cookbook-feature-chips span,
 .cookbook-ready__assurances span {
   display: inline-flex;
   align-items: center;
@@ -490,24 +495,53 @@
   font-size: .78rem;
   font-weight: 750;
 }
+.cookbook-feature-chips {
+  display: grid;
+  gap: .55rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.cookbook-feature-chips li {
+  display: flex;
+  align-items: center;
+  gap: .55rem;
+  color: var(--cp-ink);
+  font-size: .95rem;
+  font-weight: 600;
+  line-height: 1.25;
+}
+.cookbook-feature-chips li svg {
+  flex: none;
+  color: var(--cp-accent);
+}
 .cookbook-welcome__price {
   display: grid;
-  gap: .28rem;
+  gap: .3rem;
   padding-left: 1rem;
   border-left: 3px solid var(--cp-accent);
   color: var(--cp-ink-soft);
+  font-size: .92rem;
+  line-height: 1.4;
 }
-.cookbook-welcome__price strong,
-.cookbook-welcome__price b {
+.cookbook-welcome__price strong {
   color: var(--cp-ink);
+  font-size: 1.02rem;
 }
 .cookbook-welcome__price b {
-  margin-top: .2rem;
+  margin-top: .25rem;
+  color: var(--cp-ink);
   font-size: 1.15rem;
+  line-height: 1.15;
 }
 .cookbook-welcome__actions {
   display: flex;
-  gap: .65rem;
+  align-items: center;
+  gap: .5rem;
+  margin-top: .1rem;
+}
+.cookbook-welcome__actions .btn-primary {
+  flex: 1;
 }
 
 .cookbook-mockup {
@@ -772,18 +806,17 @@
     max-height: 25vh;
   }
   .cookbook-welcome__copy {
-    gap: .7rem;
-    padding: 1.15rem;
+    gap: 1rem;
+    padding: 1.25rem;
   }
   .cookbook-welcome__copy h2 {
     font-size: 1.8rem;
   }
   .cookbook-feature-chips {
-    gap: .4rem;
+    gap: .45rem;
   }
-  .cookbook-feature-chips span {
-    padding: .4rem .58rem;
-    font-size: .72rem;
+  .cookbook-feature-chips li {
+    font-size: .88rem;
   }
   .cookbook-mockup {
     min-height: 280px;

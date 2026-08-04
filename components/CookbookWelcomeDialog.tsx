@@ -61,18 +61,20 @@ export function CookbookWelcomeDialog({
         <img src="/images/cookbook-onboarding-hero.png" alt="" />
       </div>
       <div className="cookbook-welcome__copy">
-        <h2 id="cookbook-welcome-title">Your favorite recipes, collected in one beautiful cookbook.</h2>
-        <p>Bring together the recipes you actually make in a cookbook you&apos;ll be proud to keep or give as a gift.</p>
-        <div className="cookbook-feature-chips">
-          {["Beautiful cover", "Organized chapters", "Print-ready layouts"].map((item) => (
-            <span key={item}><CheckIcon size={ICON_SIZE.xs} />{item}</span>
-          ))}
+        <div className="cookbook-welcome__lede">
+          <h2 id="cookbook-welcome-title">Your recipes, made into a cookbook worth keeping.</h2>
+          <p>Not just a PDF&mdash;a professionally designed keepsake you&apos;ll be proud to print, gift, and pass down.</p>
         </div>
+        <ul className="cookbook-feature-chips">
+          {["Looks professionally printed", "Automatically organized", "Ready for hardcover or spiral printing"].map((item) => (
+            <li key={item}><CheckIcon size={ICON_SIZE.sm} />{item}</li>
+          ))}
+        </ul>
         <div className="cookbook-welcome__price">
-          <strong>One purchase. Yours forever.</strong>
-          <span>Edit, update, and re-export this cookbook anytime.</span>
+          <strong>This cookbook is yours forever.</strong>
+          <span>Edit it, add recipes, and export updated versions anytime.</span>
           <b>{price} per cookbook</b>
-          <span>You&apos;ll only be charged if you decide to export.</span>
+          <span>You&apos;re only charged when you export.</span>
         </div>
         <div className="cookbook-welcome__actions">
           <button type="button" className="btn btn-primary" onClick={onStart}>Create my cookbook</button>

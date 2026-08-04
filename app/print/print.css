@@ -347,8 +347,10 @@
   z-index: 2;
   display: flex;
   gap: 0;
-  background: var(--cp-page);
-  padding-top: 2px;
+  margin-top: 4px;
+  padding-top: 12px;
+  border-top: 1px solid var(--cp-line);
+  background: var(--cp-card);
 }
 
 .recipe-page-rail__add-row .recipe-page-rail__add {
@@ -834,7 +836,7 @@
   .recipe-page-rail {
     padding: 16px;
     border-right: 1px solid var(--cp-line);
-    background: color-mix(in srgb, var(--cp-page) 92%, var(--cp-card));
+    background: var(--cp-card);
   }
 
   .recipe-config-panel {
@@ -865,6 +867,9 @@
 
 .recipe-config-panel__footer {
   flex: 0 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
   margin-top: 12px;
   padding-top: 14px;
   border-top: 1px solid var(--cp-line);
@@ -913,7 +918,6 @@
 .recipe-print-settings-link {
   display: block;
   width: 100%;
-  margin-top: 10px;
   text-align: center;
   color: var(--cp-ink-soft);
   font-size: var(--cp-fs-caption);

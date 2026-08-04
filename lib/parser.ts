@@ -1,6 +1,7 @@
 "use client";
 
 import { adaptCookPilotRecipe, normalizeImportURL } from "@/lib/cookpilot";
+import { anonymousOwnerId } from "@/lib/photoStorage";
 import type { ImportFailureCode } from "@/lib/analytics";
 import type { ParseResponse, Recipe } from "@/types/recipe";
 
@@ -25,6 +26,22 @@ export class ImportError extends Error {
   }
 }
 
+// A logged-out visitor has no Firebase user, so the CookPilot parser callables
+// (which rate-limit per caller) can't key on a uid. We attach the stable
+// browser-owned anonymousOwnerId as `rpAnonId` so each visitor gets their own
+// server-side quota without a Firebase Auth account ever being created. Signed-in
+// callers still authenticate normally — the backend prefers the uid and ignores
+// this field. Best-effort: if the id can't be read, we send the payload as-is and
+// the backend falls back to its shared public bucket rather than failing.
+function withAnonId(data: unknown): unknown {
+  if (!data || typeof data !== "object" || Array.isArray(data)) return data;
+  try {
+    return { ...(data as Record<string, unknown>), rpAnonId: anonymousOwnerId() };
+  } catch {
+    return data;
+  }
+}
+
 async function callCookPilotParser(name: string, data: unknown): Promise<unknown> {
   const [{ httpsCallable }, { getFns }] = await Promise.all([
     import("firebase/functions"),
@@ -32,7 +49,7 @@ async function callCookPilotParser(name: string, data: unknown): Promise<unknown
   ]);
 
   const callable = httpsCallable(getFns(), name);
-  const res = await callable(data);
+  const res = await callable(withAnonId(data));
   return res.data;
 }
 

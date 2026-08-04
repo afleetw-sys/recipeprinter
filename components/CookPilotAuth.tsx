@@ -22,6 +22,7 @@ import { httpsCallable } from "firebase/functions";
 import { getFirebaseAuth } from "@/lib/firebase/client";
 import { ensureRecipePrinterAccount } from "@/lib/firebase/recipePrinterAccount";
 import { friendlyAuthError } from "@/lib/friendlyErrors";
+import { identifyUser } from "@/lib/analytics";
 import { localStore } from "@/lib/storage";
 import { Dialog } from "@/components/Dialog";
 import { ICON_SIZE, SpinnerIcon, XIcon } from "@/components/icons";
@@ -131,6 +132,11 @@ export function useCookPilotAuth() {
       }
       rememberCookPilotSignedIn(Boolean(nextUser));
       if (nextUser) {
+        // The one place a real CookPilot account becomes known — identify the
+        // PostHog person here so first-/latest-touch attribution lands on the
+        // person. Idempotent per uid, so the several components that mount this
+        // hook don't re-identify. Uses the opaque Firebase uid, no PII.
+        identifyUser(nextUser.uid);
         // Account metadata is best-effort and must never hold the sign-in UI
         // hostage. Rules allow only these harmless timestamps; server-owned
         // purchases, entitlements, grants, and roles cannot be changed here.

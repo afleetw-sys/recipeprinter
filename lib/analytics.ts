@@ -1,5 +1,13 @@
 import type { PostHog } from "posthog-js";
 import { isProductionRuntime } from "@/lib/appEnvironment";
+import {
+  type Attribution,
+  type AttributionInput,
+  categoryOf,
+  isAiTraffic,
+  isExternalSource,
+  resolveAttribution,
+} from "@/lib/attribution";
 import type { PrintCardSize, RecipePrintTemplate } from "@/components/RecipeCardPrint";
 import type { CookbookPresetId, ImportMethod } from "@/types/recipe";
 import type { FeedbackType } from "@/lib/feedback";
@@ -231,16 +239,30 @@ export function initAnalytics(): void {
   loadStarted = true;
   const search = window.location.search;
 
+  // Capture the landing signals NOW, synchronously, before anything can
+  // navigate. posthog itself loads on idle (below) and by then this is still
+  // the same document, but reading them here makes "these are the values from
+  // the very first paint" a guarantee rather than a timing coincidence.
+  const attribution: AttributionInput = {
+    href: window.location.href,
+    referrer: document.referrer,
+  };
+
   whenIdle(() => {
     void import("posthog-js").then(({ default: loaded }) => {
-      bootPostHog(loaded, key, search);
+      bootPostHog(loaded, key, search, attribution);
     });
   });
 }
 
 /** Runs once the deferred posthog bundle has loaded: configures it, applies
     the opt-out/internal flags, then replays anything captured while waiting. */
-function bootPostHog(client: PostHog, key: string, search: string): void {
+function bootPostHog(
+  client: PostHog,
+  key: string,
+  search: string,
+  attribution: AttributionInput,
+): void {
   client.init(key, {
     // Same-origin proxy (see next.config.mjs). Without it, ad blockers eat a
     // slice of real traffic — disproportionately the technical users.
@@ -269,10 +291,13 @@ function bootPostHog(client: PostHog, key: string, search: string): void {
     // printing quickly.
     disable_surveys: true,
 
-    // Deliberately NOT disabled: $pageleave is one event per pageview and is
-    // what powers bounce rate and session duration in the Web Analytics
-    // dashboard. Turning it off would quietly break those numbers.
-    // capture_pageleave stays at its default.
+    // $pageleave is one event per pageview and is what powers bounce rate and
+    // session duration in the Web Analytics dashboard. It must be forced ON:
+    // posthog-js defaults capture_pageleave to "if_capture_pageview", and we
+    // send pageviews manually with capture_pageview:false — so at the default
+    // it never fires, which is exactly the "$pageleave not detected" warning
+    // PostHog shows. Setting it true captures pageleave independently.
+    capture_pageleave: true,
 
     // Session replay is off unless enabled in project settings; this just
     // guarantees typed text is masked from the first recording if it ever is.
@@ -291,12 +316,121 @@ function bootPostHog(client: PostHog, key: string, search: string): void {
   if (internal === true) client.register({ internal: true });
   if (internal === false) client.unregister("internal");
 
+  // Register attribution BEFORE flushing the queue so the very first replayed
+  // $pageview already carries the first_*/latest_* super properties.
+  applyTrafficAttribution(client, attribution);
+
   posthog = client;
 
   // Replay events captured while the bundle was loading (the first pageview,
   // and any imports/purchases a fast user triggered before it landed).
   const queued = pending.splice(0, pending.length);
   for (const capture of queued) capture(client);
+}
+
+// Session flag: set for the life of a tab. Its absence is how we tell a fresh
+// session (new tab / first load) from an in-tab reload, so "latest touch" and
+// the Landing Page event fire once per session, not once per page load.
+//
+// sessionStorage is per-tab by design, so "session" here means "tab": opening
+// the site in a second tab is a second Landing Page event with its own
+// referrer/landing. That's intentional — each tab genuinely is a distinct
+// entry — and it's the granularity PostHog's own $pageleave/session model uses
+// too. (It also means a duplicated tab inherits nothing, which is what we want:
+// the copy re-attributes from its own URL.)
+const LANDING_SESSION_FLAG = "rp_attribution_session";
+
+// The attribution resolved once at boot, kept so a later identify() can copy
+// it onto the person without re-reading the URL (which SPA navigation has by
+// then changed).
+let resolvedAttribution: Attribution | null = null;
+
+// The last distinct id we identified, so repeated auth callbacks (the auth
+// hook mounts in several components) don't re-identify on every render.
+let lastIdentifiedId: string | null = null;
+
+/** True exactly once per browser session; marks the session as seen. */
+function beginLandingSession(): boolean {
+  try {
+    if (window.sessionStorage.getItem(LANDING_SESSION_FLAG)) return false;
+    window.sessionStorage.setItem(LANDING_SESSION_FLAG, "1");
+    return true;
+  } catch {
+    // Storage blocked (private mode / cookie-less). Treat every load as a new
+    // session: at worst we register latest-touch and a Landing Page event once
+    // per page rather than once per session, which is a tolerable over-count.
+    return true;
+  }
+}
+
+/**
+ * The whole attribution side effect, in one place (requirements 1–5):
+ *   - first_* super properties via `register_once`, never overwritten.
+ *   - the rolling "latest known source" fields (`traffic_source`,
+ *     `traffic_source_category`, `latest_*`), which advance each new session
+ *     but ONLY on a real external source (see below).
+ *   - a "Landing Page" event once per session.
+ *
+ * Super properties (not `$set` person properties) are deliberate: the project
+ * runs `person_profiles: "identified_only"` and most visitors are anonymous, so
+ * `$set` would be dropped for them. Super properties attach to EVERY event —
+ * anonymous or identified — which is exactly "attach to all future events".
+ */
+function applyTrafficAttribution(client: PostHog, input: AttributionInput): void {
+  const a = resolveAttribution(input);
+  resolvedAttribution = a;
+
+  const category = categoryOf(a.source);
+  // The rolling "latest known source" fields, kept in one object so the
+  // register_once seed, the register advance, and identify() all agree.
+  const latest = {
+    traffic_source: a.source,
+    traffic_source_category: category,
+    is_ai_traffic: isAiTraffic(a.source),
+    latest_traffic_source: a.source,
+    latest_referrer: a.referrer,
+    latest_landing_page: a.landingPage,
+  };
+
+  // First-touch, plus a one-time seed of the rolling fields so a visitor who
+  // only ever arrives direct still has a `traffic_source`. register_once never
+  // overwrites, so real external sessions still advance the rolling fields via
+  // register() below.
+  client.register_once({
+    first_traffic_source: a.source,
+    first_traffic_source_category: category,
+    first_referrer: a.referrer,
+    first_landing_page: a.landingPage,
+    first_utm_source: a.utmSource,
+    first_utm_medium: a.utmMedium,
+    first_utm_campaign: a.utmCampaign,
+    first_gclid: a.gclid,
+    first_fbclid: a.fbclid,
+    ...latest,
+  });
+
+  // Latest-touch and the Landing Page event are per-session, not per-pageview.
+  if (!beginLandingSession()) return;
+
+  // Advance the rolling source only on a real external source: a new Direct
+  // session (including an internal recipeprinter.com referrer, which resolves
+  // to Direct) must not clobber the last known source the person came from.
+  if (isExternalSource(a.source)) client.register(latest);
+
+  // Captured directly (not through the typed `track()` map) because it's an
+  // internal boot event fired only from here. It records this session's ACTUAL
+  // source — Direct included — independent of the sticky rolling fields above.
+  client.capture("Landing Page", {
+    landing_page: a.landingPage,
+    traffic_source: a.source,
+    traffic_source_category: category,
+    referrer: a.referrer,
+    utm_source: a.utmSource,
+    utm_medium: a.utmMedium,
+    utm_campaign: a.utmCampaign,
+    gclid: a.gclid,
+    fbclid: a.fbclid,
+  });
 }
 
 /** Records one product event. Queues until posthog loads; no-ops when
@@ -306,6 +440,58 @@ export function track<K extends AnalyticsEventName>(
   props: EventProps[K],
 ): void {
   enqueue((client) => client.capture(name, props));
+}
+
+/**
+ * Ties this browser's events to a stable person (the CookPilot account uid) and
+ * copies the attribution onto the PostHog PERSON — first-touch via `$set_once`
+ * (never overwritten), latest-touch via `$set`. Super properties already put
+ * attribution on every event; this additionally makes it queryable per-person,
+ * which is what "person properties when a user is identified" needs given the
+ * project runs `person_profiles: "identified_only"` (no anonymous profiles).
+ *
+ * Idempotent per id and safe to call from an auth callback that fires on every
+ * mount — repeated calls with the same uid are ignored.
+ */
+export function identifyUser(distinctId: string): void {
+  if (!distinctId || distinctId === lastIdentifiedId) return;
+  lastIdentifiedId = distinctId;
+  enqueue((client) => {
+    const a = resolvedAttribution;
+    if (!a) {
+      client.identify(distinctId);
+      return;
+    }
+    const category = categoryOf(a.source);
+    const latest = {
+      traffic_source: a.source,
+      traffic_source_category: category,
+      is_ai_traffic: isAiTraffic(a.source),
+      latest_traffic_source: a.source,
+      latest_referrer: a.referrer,
+      latest_landing_page: a.landingPage,
+    };
+    client.identify(
+      distinctId,
+      // $set — advance latest only on a real external source, mirroring the
+      // super-property rule so a Direct session can't clobber the person's
+      // last known source.
+      isExternalSource(a.source) ? latest : undefined,
+      // $set_once — first-touch, plus a one-time seed of the rolling fields.
+      {
+        first_traffic_source: a.source,
+        first_traffic_source_category: category,
+        first_referrer: a.referrer,
+        first_landing_page: a.landingPage,
+        first_utm_source: a.utmSource,
+        first_utm_medium: a.utmMedium,
+        first_utm_campaign: a.utmCampaign,
+        first_gclid: a.gclid,
+        first_fbclid: a.fbclid,
+        ...latest,
+      },
+    );
+  });
 }
 
 /** App Router navigations don't reload the page, so pageviews are manual. */
