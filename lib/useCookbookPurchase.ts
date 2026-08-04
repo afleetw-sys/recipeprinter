@@ -11,6 +11,17 @@ import {
   loadRecipePrinterCookbookPrice,
   purchaseRecipePrinterCookbook,
 } from "@/lib/recipePrinterPurchases";
+import {
+  claimLegacyCookbookUnlock,
+  hasAnyCookbookProjectUnlock,
+  isCookbookProjectUnlocked,
+  loadCookbookProjectUnlock,
+  markCookbookProjectUnlockedLocal,
+  markCookbookUnlockPending,
+  markProjectScopedCookbookPurchase,
+  pendingCookbookUnlock,
+  persistCookbookProjectUnlock,
+} from "@/lib/cookbookUnlocks";
 
 interface UseCookbookPurchaseOptions {
   /** Shared with usePremiumTemplatePurchase so this doesn't re-run RevenueCat
@@ -19,9 +30,11 @@ interface UseCookbookPurchaseOptions {
   customerInfo: CustomerInfo | null;
   cookPilotUser: User | null;
   cookbookMode: boolean;
+  projectId: string;
   refreshCustomerInfo: (userId?: string | null) => Promise<CustomerInfo | null>;
   showToast: (message: string) => void;
   clearToast: () => void;
+  onFreshPurchase: () => void;
 }
 
 /**
@@ -36,16 +49,56 @@ export function useCookbookPurchase({
   customerInfo,
   cookPilotUser,
   cookbookMode,
+  projectId,
   refreshCustomerInfo,
   showToast,
   clearToast,
+  onFreshPurchase,
 }: UseCookbookPurchaseOptions) {
   const [cookbookPrice, setCookbookPrice] = useState<string | undefined>(undefined);
   const [showCookbookUnlockDialog, setShowCookbookUnlockDialog] = useState(false);
   const [cookbookPurchaseBusy, setCookbookPurchaseBusy] = useState(false);
+  const [projectUnlocked, setProjectUnlocked] = useState(() =>
+    isCookbookProjectUnlocked(projectId),
+  );
 
-  const cookbookUnlocked = hasCookbookEntitlement(customerInfo);
-  const cookbookLocked = cookbookMode && !cookbookUnlocked;
+  useEffect(() => {
+    setProjectUnlocked(isCookbookProjectUnlocked(projectId));
+    if (!cookPilotUser) return;
+    loadCookbookProjectUnlock(cookPilotUser.uid, projectId)
+      .then((unlocked) => setProjectUnlocked(unlocked))
+      .catch(() => undefined);
+  }, [cookPilotUser, projectId]);
+
+  // One-time compatibility bridge for customers who bought the legacy
+  // account-wide cookbook unlock before projects became individually owned.
+  useEffect(() => {
+    if (projectUnlocked || !hasCookbookEntitlement(customerInfo)) return;
+    const pending = pendingCookbookUnlock();
+    if (pending === projectId) {
+      markCookbookProjectUnlockedLocal(projectId);
+      setProjectUnlocked(true);
+      if (cookPilotUser) void persistCookbookProjectUnlock(cookPilotUser.uid, projectId);
+      return;
+    }
+    if (!cookPilotUser) {
+      if (claimLegacyCookbookUnlock(projectId)) setProjectUnlocked(true);
+      return;
+    }
+    let cancelled = false;
+    hasAnyCookbookProjectUnlock(cookPilotUser.uid)
+      .then((hasProjectUnlock) => {
+        if (cancelled || hasProjectUnlock || !claimLegacyCookbookUnlock(projectId)) return;
+        setProjectUnlocked(true);
+        void persistCookbookProjectUnlock(cookPilotUser.uid, projectId);
+      })
+      .catch(() => undefined);
+    return () => {
+      cancelled = true;
+    };
+  }, [cookPilotUser, customerInfo, projectId, projectUnlocked]);
+
+  const cookbookLocked = cookbookMode && !projectUnlocked;
 
   useEffect(() => {
     // Same rule as the template prices: reading offerings configures the SDK,
@@ -61,19 +114,19 @@ export function useCookbookPurchase({
       (typically re-running the export/print gate) rather than printing
       directly — the caller may still have a locked premium template to
       resolve after this purchase clears. */
-  async function purchaseCookbookAndContinue(onUnlocked: () => void) {
+  async function purchaseCookbookAndContinue(onUnlocked: (freshPurchase: boolean) => void) {
     if (!revenueCatUserId) {
-      showToast("Purchase service is still getting ready. Try again in a moment.");
+      showToast("Purchases aren't ready yet. Wait a moment, then try again.");
       return;
     }
 
     setCookbookPurchaseBusy(true);
     clearToast();
     try {
-      const latestInfo = customerInfo ?? (await refreshCustomerInfo(revenueCatUserId));
-      if (hasCookbookEntitlement(latestInfo)) {
+      if (isCookbookProjectUnlocked(projectId)) {
         setShowCookbookUnlockDialog(false);
-        onUnlocked();
+        setProjectUnlocked(true);
+        onUnlocked(false);
         return;
       }
 
@@ -81,6 +134,7 @@ export function useCookbookPurchase({
       const result = await purchaseRecipePrinterCookbook({
         userId: revenueCatUserId,
         email: cookPilotUser?.email,
+        projectId,
       });
 
       if (result.cancelled) {
@@ -91,13 +145,22 @@ export function useCookbookPurchase({
 
       track("purchase_completed", { product: "cookbook" });
 
-      if (!hasCookbookEntitlement(result.customerInfo)) {
-        showToast("Purchase finished, but it's still syncing. Try again in a moment.");
-        return;
+      markCookbookUnlockPending(projectId);
+      markProjectScopedCookbookPurchase(projectId);
+      markCookbookProjectUnlockedLocal(projectId);
+      setProjectUnlocked(true);
+      if (cookPilotUser) {
+        try {
+          await persistCookbookProjectUnlock(cookPilotUser.uid, projectId);
+        } catch {
+          // The local pending marker prevents another charge and the
+          // reconciliation effect retries on the next authenticated visit.
+        }
       }
 
       setShowCookbookUnlockDialog(false);
-      onUnlocked();
+      onFreshPurchase();
+      onUnlocked(true);
     } catch (error) {
       showToast(friendlyPurchaseSetupError(error));
     } finally {

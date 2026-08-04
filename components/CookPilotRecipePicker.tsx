@@ -8,6 +8,7 @@ import {
   appleProvider,
   CookPilotLoginDialog,
   googleProvider,
+  prewarmCookPilotAuth,
   signInWithCookPilotProvider,
   useCookPilotAuth,
 } from "@/components/CookPilotAuth";
@@ -23,16 +24,25 @@ import {
   type CookPilotRecipeSummary,
 } from "@/lib/cookpilotRecipes";
 import type { QueueItem } from "@/types/recipe";
+import { EmptyState } from "@/components/EmptyState";
 import {
   CheckIcon,
   ClockIcon,
   CookPilotLogoIcon,
   ExternalIcon,
   ICON_SIZE,
+  PlusIcon,
   SearchIcon,
   SpinnerIcon,
   UsersIcon,
 } from "@/components/icons";
+
+export async function prewarmCookPilotImport(): Promise<void> {
+  await Promise.all([
+    prewarmCookPilotAuth(),
+    import("@/lib/firebase/functions").then(() => undefined),
+  ]);
+}
 
 function SignedOutCookPilotImport({
   onEmailLogin,
@@ -136,7 +146,7 @@ function RecipeRow({
       }
       className={`group flex w-full items-center gap-cp-3 rounded-xl border p-cp-2 text-left transition-colors ${
         added
-          ? "border-brand bg-brand-50/60"
+          ? "border-brand bg-brand-50/60 shadow-[var(--cp-selected-ring)]"
           : "border-line bg-card hover:border-line-strong"
       }`}
     >
@@ -182,7 +192,7 @@ function RecipeRow({
         </span>
       ) : (
         <span className="btn btn-secondary btn-compact flex-shrink-0 pointer-events-none transition-colors group-hover:border-line-strong group-hover:bg-[rgba(127,127,127,0.08)]">
-          {adding ? <SpinnerIcon size={ICON_SIZE.md} /> : <span className="text-base leading-none">+</span>}
+          {adding ? <SpinnerIcon size={ICON_SIZE.md} /> : <PlusIcon size={ICON_SIZE.md} />}
           Add
         </span>
       )}
@@ -260,7 +270,7 @@ function SignedInCookPilotImport({
       })
       .catch((err) => {
         if (aliveRef.current) {
-          setError(friendlyRecipeLibraryError(err, "Couldn't load your recipes."));
+          setError(friendlyRecipeLibraryError(err, "We couldn't load your recipes. Please try again."));
         }
       })
       .finally(() => {
@@ -282,7 +292,9 @@ function SignedInCookPilotImport({
         setHasMore(false);
       })
       .catch((err) => {
-        if (aliveRef.current) setError(friendlyRecipeLibraryError(err, "Couldn't load more recipes."));
+        if (aliveRef.current) {
+          setError(friendlyRecipeLibraryError(err, "We couldn't load more recipes. Please try again."));
+        }
       })
       .finally(() => {
         if (aliveRef.current) setLoadingMore(false);
@@ -313,7 +325,9 @@ function SignedInCookPilotImport({
           setHasMore(hasMoreCookPilotSummaries(user.uid));
         })
         .catch((err) => {
-          if (aliveRef.current) setLoadMoreError(friendlyRecipeLibraryError(err, "Couldn't load more recipes."));
+          if (aliveRef.current) {
+            setLoadMoreError(friendlyRecipeLibraryError(err, "We couldn't load more recipes. Please try again."));
+          }
         })
         .finally(() => {
           if (aliveRef.current) setLoadingMore(false);
@@ -343,7 +357,9 @@ function SignedInCookPilotImport({
         setHasMore(hasMoreCookPilotSummaries(user.uid));
       })
       .catch((err) => {
-        setLoadMoreError(friendlyRecipeLibraryError(err, "Couldn't load more recipes."));
+        setLoadMoreError(
+          friendlyRecipeLibraryError(err, "We couldn't load more recipes. Please try again."),
+        );
       })
       .finally(() => setLoadingMore(false));
   }
@@ -361,7 +377,7 @@ function SignedInCookPilotImport({
       const queueItems = await loadCookPilotQueueItems(user.uid, [summary]);
       onAddRecipes(queueItems);
     } catch (err) {
-      setError(friendlyRecipeLibraryError(err, "Couldn't add that recipe."));
+      setError(friendlyRecipeLibraryError(err, "We couldn't add that recipe. Please try again."));
     } finally {
       setAddingIds((current) => {
         const next = new Set(current);
@@ -395,7 +411,7 @@ function SignedInCookPilotImport({
       const queueItems = await loadCookPilotQueueItems(user.uid, targets);
       onAddRecipes(queueItems);
     } catch (err) {
-      setError(friendlyRecipeLibraryError(err, "Couldn't add those recipes."));
+      setError(friendlyRecipeLibraryError(err, "We couldn't add those recipes. Please try again."));
     } finally {
       setBulkBusy(false);
     }
@@ -452,30 +468,30 @@ function SignedInCookPilotImport({
       )}
 
       {!loading && !error && summaries.length === 0 && (
-        <div className="text-center py-cp-7 px-cp-5 rounded-2xl border border-dashed border-line-strong">
-          <p className="font-bold text-cp-h2">No recipes yet</p>
-          <p className="text-ink-soft text-cp-small mt-1.5">
-            Import from{" "}
-            <a
-              href="https://cookpilotapp.com"
-              target="_blank"
-              rel="noreferrer"
-              className="inline-flex items-center gap-1 font-bold text-ink underline decoration-line-strong underline-offset-2 hover:text-ink-soft"
-            >
-              CookPilot
-              <ExternalIcon size={ICON_SIZE.sm} />
-            </a>
-          </p>
-        </div>
+        <EmptyState
+          title="No recipes yet"
+          description={
+            <>
+              Import from{" "}
+              <a
+                href="https://cookpilotapp.com"
+                target="_blank"
+                rel="noreferrer"
+                className="inline-flex items-center gap-1 font-bold text-ink underline decoration-line-strong underline-offset-2 hover:text-ink-soft"
+              >
+                CookPilot
+                <ExternalIcon size={ICON_SIZE.sm} />
+              </a>
+            </>
+          }
+        />
       )}
 
       {!loading && !error && !loadingMore && summaries.length > 0 && visibleSummaries.length === 0 && (
-        <div className="text-center py-cp-7 px-cp-5 rounded-2xl border border-dashed border-line-strong">
-          <p className="font-bold text-cp-h2">No matches</p>
-          <p className="text-ink-soft text-cp-small mt-1.5">
-            Try a different title, tag, or ingredient.
-          </p>
-        </div>
+        <EmptyState
+          title="No matches"
+          description="Try a different title, tag, or ingredient."
+        />
       )}
 
       {!loading && !error && visibleSummaries.length > 0 && (

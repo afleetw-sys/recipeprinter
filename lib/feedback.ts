@@ -1,6 +1,7 @@
 "use client";
 
 import { track } from "@/lib/analytics";
+import { RECIPE_PRINTER_FEEDBACK_PATH } from "@/lib/firebase/recipePrinterPaths";
 
 export type FeedbackType = "idea" | "bug" | "print_issue" | "other";
 
@@ -21,7 +22,7 @@ export async function submitPrinterFeedback(input: FeedbackInput): Promise<void>
     import("firebase/firestore"),
     import("@/lib/firebase/db"),
   ]);
-  await addDoc(collection(getDb(), "feedback-printer"), {
+  await addDoc(collection(getDb(), ...RECIPE_PRINTER_FEEDBACK_PATH), {
     ...input,
     email: input.email || null,
     status: "new",

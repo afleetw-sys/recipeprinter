@@ -1,5 +1,5 @@
 import { formatRecipeTime } from "@/lib/time";
-import type { CoverConfig, Recipe } from "@/types/recipe";
+import type { CoverConfig, Recipe, RecipePageLayout } from "@/types/recipe";
 import type { CardSectionLayout, PrintCardSize, RecipePrintTemplate } from "@/components/RecipeCardPrint";
 
 // How much ingredient/instruction text fits on the front before it must
@@ -691,6 +691,7 @@ export function coverToFaces(cover: CoverConfig, side: "front" | "back" = "front
 
 export type RecipeCardEditTarget =
   | { kind: "title" }
+  | { kind: "description" }
   | { kind: "cookTime" }
   | { kind: "servings" }
   | { kind: "image" }
@@ -701,11 +702,14 @@ export type RecipeCardEditTarget =
   | { kind: "instructionSection"; index: number };
 
 export interface RecipeCardInlineEdit {
+  /** Other photos already in this project, offered by the shared image picker. */
+  recipeImages?: string[];
   editingTarget: RecipeCardEditTarget | null;
   value: string;
   onFocusTarget: (target: RecipeCardEditTarget, value: string) => void;
   onValueChange: (value: string) => void;
   onCommit: (value?: string) => void;
+  onImageChange: (url: string) => void;
   onCancel: () => void;
   onInsertIngredient: (index: number) => void;
   onInsertStep: (index: number) => void;
@@ -769,6 +773,169 @@ function continuationFaces(
   }
 
   return pages;
+}
+
+/* ── Cookbook page-layout planning (Phase 2b) ──────────────────────────────
+   Pure planning of how a section's recipes fall onto physical sheets, given
+   each recipe's resolved page layout and its measured face COUNT. Kept DOM-free
+   and out of the `usePrintSheets` hook so the risky part — inserting photo
+   pages, keeping reading order — is unit-testable. The hook resolves each
+   `frontFace`/`backFace` index back to a real `RecipeFace` and attaches the
+   recipe/label/queueIndex.
+
+   Rules (a cookbook always gives each recipe its own full page):
+   - `full`/`image-spread` → one card per sheet; the card's overflow continues
+     on its own back only when the job is duplex (`continueOnBack`).
+   - `image-spread` prepends a full-bleed facing photo page (only if a hero
+     image exists), then the card page(s). */
+export interface CookbookPlanItem {
+  id: string;
+  layout: RecipePageLayout;
+  /** Number of measured faces at the recipe's effective size (>=1). */
+  faceCount: number;
+  /** Facing-page image for `image-spread`; absent = no photo page emitted. */
+  heroImageUrl?: string;
+}
+
+export interface CookbookPlanRecipeSlot {
+  kind: "recipe";
+  itemId: string;
+  /** Index into the recipe's face list for the front of this slot. */
+  frontFace: number;
+  /** Index for the duplex back, or null when this slot is single-sided. */
+  backFace: number | null;
+  /** Total faces the recipe has (so the renderer knows `hasBack`). */
+  faceCount: number;
+}
+
+export interface CookbookPlanImageSlot {
+  kind: "image";
+  itemId: string;
+  heroImageUrl: string;
+}
+
+export type CookbookPlanSlot = CookbookPlanRecipeSlot | CookbookPlanImageSlot;
+
+export interface CookbookPlanSheet {
+  slots: (CookbookPlanSlot | null)[];
+  /** `image` = a full-bleed facing photo page (image-spread). */
+  layoutKind?: "image";
+  backGroupNeeded: boolean;
+}
+
+function planFullRecipe(item: CookbookPlanItem, continueOnBack: boolean): CookbookPlanSheet[] {
+  const out: CookbookPlanSheet[] = [];
+  const faceCount = Math.max(1, item.faceCount);
+  let idx = 0;
+  while (idx < faceCount) {
+    const front = idx;
+    idx += 1;
+    let back: number | null = null;
+    if (continueOnBack && idx < faceCount) {
+      back = idx;
+      idx += 1;
+    }
+    out.push({
+      slots: [{ kind: "recipe", itemId: item.id, frontFace: front, backFace: back, faceCount }],
+      backGroupNeeded: back !== null,
+    });
+  }
+  return out;
+}
+
+export function planCookbookSection(
+  items: CookbookPlanItem[],
+  { continueOnBack }: { continueOnBack: boolean },
+): CookbookPlanSheet[] {
+  const out: CookbookPlanSheet[] = [];
+  let i = 0;
+  while (i < items.length) {
+    const item = items[i];
+
+    if (item.layout === "image-spread") {
+      if (item.heroImageUrl) {
+        out.push({
+          layoutKind: "image",
+          backGroupNeeded: false,
+          slots: [{ kind: "image", itemId: item.id, heroImageUrl: item.heroImageUrl }],
+        });
+      }
+      out.push(...planFullRecipe(item, continueOnBack));
+      i += 1;
+      continue;
+    }
+
+    out.push(...planFullRecipe(item, continueOnBack));
+    i += 1;
+  }
+  return out;
+}
+
+/* ── Book imposition — pages → two-page spreads (Phase 1) ───────────────────
+   Cookbook mode reads as an open book: one SPREAD (left/verso + right/recto) at
+   a time. This pure pass groups the ordered page list into spreads with real
+   book parity, so the on-screen deck can render two facing pages. It decides
+   grouping ONLY (which page sits left vs right, where a blank filler goes) — the
+   pages themselves are unchanged, and print still emits one page per sheet.
+
+   Rules:
+   - The front cover and back cover each stand alone (no facing page).
+   - Body pages fill left→right in their natural order.
+   - No blank sheets are inserted to force chapter, TOC, image, or recipe parity.
+   - A trailing null is preview-only presentation for an incomplete spread; it
+     never becomes a physical `PageSheet` or printed page. */
+export type BookPageKind = "cover" | "dedication" | "back" | "chapter" | "image-photo" | "content";
+
+export interface BookSpread {
+  /** Index (into the input array) of the left/verso page, or null for a blank. */
+  left: number | null;
+  /** Index of the right/recto page, or null for a blank. */
+  right: number | null;
+  /** A standalone cover/back-cover page — shown as one centered page, no facing. */
+  single: boolean;
+}
+
+export function assembleSpreads(pages: BookPageKind[]): BookSpread[] {
+  const spreads: BookSpread[] = [];
+  let start = 0;
+  let end = pages.length;
+
+  if (pages[start] === "cover") {
+    spreads.push({ left: null, right: start, single: true });
+    start += 1;
+  }
+  let backSpread: BookSpread | null = null;
+  if (end - 1 >= start && pages[end - 1] === "back") {
+    backSpread = { left: end - 1, right: null, single: true };
+    end -= 1;
+  }
+
+  // Keep a full-photo page and the recipe immediately following it as one
+  // atomic editorial spread. Other pages still flow naturally; a lone page
+  // before an image spread is merely presented by itself in the preview and
+  // does not create a printed padding sheet.
+  let cursor = start;
+  while (cursor < end) {
+    if (pages[cursor] === "image-photo" && pages[cursor + 1] === "content") {
+      spreads.push({ left: cursor, right: cursor + 1, single: false });
+      cursor += 2;
+      continue;
+    }
+    if (pages[cursor + 1] === "image-photo" && pages[cursor + 2] === "content") {
+      spreads.push({ left: cursor, right: null, single: false });
+      cursor += 1;
+      continue;
+    }
+    spreads.push({
+      left: cursor,
+      right: cursor + 1 < end ? cursor + 1 : null,
+      single: false,
+    });
+    cursor += 2;
+  }
+
+  if (backSpread) spreads.push(backSpread);
+  return spreads;
 }
 
 /**

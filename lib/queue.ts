@@ -4,7 +4,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import type { ImportMethod, QueueItem, Recipe } from "@/types/recipe";
 import { track, truncateReason } from "@/lib/analytics";
 import { ImportError, parseImages, parseText, parseUrl } from "@/lib/parser";
-import { captureFailedImportImages } from "@/lib/failedImageCapture";
+import { captureFailedImportImages, captureFailedImportText } from "@/lib/failedImportCapture";
 import { normalizeImportURL } from "@/lib/cookpilot";
 import { hostnameOf as rawHostnameOf } from "@/lib/url";
 import { uid } from "@/lib/ids";
@@ -225,9 +225,10 @@ export function useQueue() {
       id: string,
       origin: { source: ImportMethod; hostname?: string },
       work: () => Promise<Recipe>,
-      // For image imports: the exact compressed data-URLs sent to the parser,
-      // stashed for debugging if the parse fails (see lib/failedImageCapture.ts).
-      opts?: { failedImages?: string[] },
+      // The exact input handed to the parser, stashed for debugging if the parse
+      // fails (see lib/failedImportCapture.ts): the compressed data-URLs for an
+      // image import, or the pasted text / URL for the others.
+      opts?: { failedImages?: string[]; failedText?: string },
     ) => {
       patch(id, { status: "parsing", error: undefined });
       track("recipe_import_started", origin);
@@ -238,24 +239,26 @@ export function useQueue() {
       } catch (err) {
         patch(id, {
           status: "error",
-          error: err instanceof Error ? err.message : "Something went wrong while parsing.",
+          error:
+            err instanceof ImportError
+              ? err.message
+              : "We couldn't import that recipe. Check the source and try again.",
         });
         const reason = truncateReason(err);
         const category = err instanceof ImportError ? err.code : "unknown";
-        // Best-effort: stash the failed image(s) and link the event to them.
-        // `await` only to attach the path — capture never throws (see module).
-        const debugImagePath = opts?.failedImages?.length
-          ? await captureFailedImportImages(opts.failedImages, {
-              source: origin.source,
-              category,
-              reason,
-            })
-          : null;
+        // Best-effort: stash the failed input and link the event to it. `await`
+        // only to attach the path — capture never throws (see module).
+        const captureMeta = { source: origin.source, category, reason };
+        const debugPath = opts?.failedImages?.length
+          ? await captureFailedImportImages(opts.failedImages, captureMeta)
+          : opts?.failedText
+            ? await captureFailedImportText(opts.failedText, captureMeta)
+            : null;
         track("recipe_import_failed", {
           ...origin,
           reason,
           category,
-          ...(debugImagePath ? { debugImagePath } : {}),
+          ...(debugPath ? { debugPath } : {}),
         });
       }
     },
@@ -289,8 +292,11 @@ export function useQueue() {
         addedAt: Date.now(),
       };
       commit([...itemsRef.current, item]);
-      void runParse(id, { source: "url", hostname: hostnameOf(normalizedUrl) }, () =>
-        parseUrl(normalizedUrl),
+      void runParse(
+        id,
+        { source: "url", hostname: hostnameOf(normalizedUrl) },
+        () => parseUrl(normalizedUrl),
+        { failedText: normalizedUrl },
       );
     },
     [commit, focusItem, runParse],
@@ -331,7 +337,7 @@ export function useQueue() {
       };
       textPayloads.current.set(id, trimmed);
       commit([...itemsRef.current, item]);
-      void runParse(id, { source: "text" }, () => parseText(trimmed));
+      void runParse(id, { source: "text" }, () => parseText(trimmed), { failedText: trimmed });
     },
     [commit, runParse],
   );
@@ -367,10 +373,12 @@ export function useQueue() {
       if (!item) return;
       if (item.method === "url" && item.originalUrl) {
         const url = item.originalUrl;
-        void runParse(id, { source: "url", hostname: hostnameOf(url) }, () => parseUrl(url));
+        void runParse(id, { source: "url", hostname: hostnameOf(url) }, () => parseUrl(url), {
+          failedText: url,
+        });
       } else if (item.method === "text") {
         const text = textPayloads.current.get(id);
-        if (text) void runParse(id, { source: "text" }, () => parseText(text));
+        if (text) void runParse(id, { source: "text" }, () => parseText(text), { failedText: text });
       }
     },
     [runParse],
@@ -390,6 +398,16 @@ export function useQueue() {
     commit([]);
   }, [commit]);
 
+  /** Replaces the browser queue when opening a saved account project. */
+  const replaceAll = useCallback(
+    (next: QueueItem[]) => {
+      textPayloads.current.clear();
+      setFocusedItemId(next[0]?.id ?? null);
+      commit(next);
+    },
+    [commit],
+  );
+
   return {
     items,
     focusedItemId,
@@ -403,6 +421,7 @@ export function useQueue() {
     canRetry,
     remove,
     clear,
+    replaceAll,
     focusItem,
   };
 }

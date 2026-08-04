@@ -8,6 +8,7 @@ import { createSharedRecipeCard, setSharedRecipeCardPublished } from "@/lib/shar
 import { printableRecipe } from "@/lib/queue";
 import { isValidSlug, slugify } from "@/types/sharedRecipeCard";
 import type { Recipe } from "@/types/recipe";
+import { friendlyShareLinkError } from "@/lib/friendlyErrors";
 
 export interface ShareLinkPrintSettings {
   template: RecipePrintTemplate;
@@ -60,7 +61,8 @@ export function AdminShareLinkDialog({
       });
       setSavedSlug(trimmedSlug);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Couldn't save that link. Please try again.");
+      console.warn("RecipePrinter: could not create share link", err);
+      setError(friendlyShareLinkError(err));
     } finally {
       setBusy(false);
     }
@@ -72,8 +74,9 @@ export function AdminShareLinkDialog({
     try {
       await setSharedRecipeCardPublished(savedSlug, false);
       setSavedSlug(null);
-    } catch {
-      setError("Couldn't deactivate that link. Please try again.");
+    } catch (err) {
+      console.warn("RecipePrinter: could not deactivate share link", err);
+      setError("We couldn't turn off that link. Check your connection and try again.");
     } finally {
       setDeactivateBusy(false);
     }
@@ -121,7 +124,7 @@ export function AdminShareLinkDialog({
             </button>
             <button
               type="button"
-              className="btn-ghost btn-compact w-full"
+              className="btn-ghost btn-ghost--danger btn-compact w-full"
               onClick={handleDeactivate}
               disabled={deactivateBusy}
             >

@@ -12,6 +12,7 @@ import {
   UsersIcon,
 } from "@/components/icons";
 import { LogoImage } from "@/components/Logo";
+import { EmptyState } from "@/components/EmptyState";
 
 function totalTime(recipe?: Recipe): string | null {
   if (!recipe) return null;
@@ -81,7 +82,7 @@ function RecipeCardItem({
 
           {/* Error overlay tint */}
           {item.status === "error" && (
-            <div className="absolute inset-0 bg-[rgba(197,63,63,0.06)]" />
+            <div className="absolute inset-0 bg-[var(--cp-error-soft)]" />
           )}
         </div>
 
@@ -111,7 +112,7 @@ function RecipeCardItem({
             )}
             {item.status === "parsing" && <span className="truncate">{item.source}</span>}
             {item.status === "error" && (
-              <span className="text-error font-semibold">Couldn&apos;t parse</span>
+              <span className="text-error font-semibold">Couldn&apos;t import</span>
             )}
           </div>
         </div>
@@ -165,12 +166,11 @@ export function PrintQueue({
 }) {
   if (items.length === 0) {
     return (
-      <div className="rp-print-queue-empty text-center py-cp-7 px-cp-5 rounded-2xl border border-dashed border-line-strong">
-        <p className="font-bold text-cp-h2">No recipes yet</p>
-        <p className="text-ink-soft text-cp-small mt-1.5 max-w-xs mx-auto">
-          Add a recipe and it&apos;ll appear here, ready to print.
-        </p>
-      </div>
+      <EmptyState
+        className="rp-print-queue-empty"
+        title="No recipes yet"
+        description="Add a recipe and it'll appear here, ready to print."
+      />
     );
   }
 

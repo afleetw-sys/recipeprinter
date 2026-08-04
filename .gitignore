@@ -20,4 +20,5 @@ revenuecat-*.csv
 .DS_Store
 *.pem
 npm-debug.log*
+firestore-debug.log
 tsconfig.tsbuildinfo

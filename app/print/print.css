@@ -76,8 +76,11 @@
   }
 
   .recipe-print-page .recipe-print-shell {
+    grid-template-columns: 220px minmax(0, 1fr) minmax(260px, 310px);
+    gap: 0;
     height: 100%;
     min-height: 0;
+    padding-inline: 0 !important;
     /* Constrain the single grid row to the shell's height so the columns
        stretch to the viewport (not to their taller content), letting the
        config panel scroll internally and pin its print button. */
@@ -120,6 +123,33 @@
     color 150ms ease;
 }
 
+.recipe-page-rail__organize {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  align-self: flex-start;
+  margin-bottom: 2px;
+  padding: 6px 8px;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--cp-ink-soft);
+  font-size: var(--cp-fs-caption);
+  font-weight: 750;
+}
+
+.recipe-page-rail__organize:hover {
+  background: color-mix(in srgb, var(--cp-accent) 9%, transparent);
+  color: var(--cp-accent-ink);
+}
+
+.recipe-print-shell--organizing > .recipe-page-rail,
+.recipe-print-shell--organizing > .recipe-page-canvas,
+.recipe-print-shell--organizing > .recipe-config-panel,
+.recipe-print-shell--organizing > .recipe-mobile-settings-backdrop {
+  display: none;
+}
+
 .recipe-page-rail__add-cover:hover {
   border-color: color-mix(in srgb, var(--cp-accent) 46%, var(--cp-line));
   background: rgba(127, 127, 127, 0.08);
@@ -148,8 +178,9 @@
 }
 
 .recipe-page-rail__item.is-active {
-  border-color: var(--cp-accent);
-  box-shadow: 0 0 0 1px var(--cp-accent);
+  border-color: var(--cp-selected-border);
+  background: var(--cp-selected-fill);
+  box-shadow: var(--cp-selected-ring);
 }
 
 .recipe-page-rail__item-main {
@@ -251,6 +282,22 @@
   letter-spacing: 0.04em;
 }
 
+.recipe-page-rail__section-opener {
+  margin-left: auto;
+  padding: 3px 6px;
+  border-radius: 999px;
+  color: var(--cp-ink-soft);
+  font-size: 10px;
+  font-weight: 750;
+  white-space: nowrap;
+}
+
+.recipe-page-rail__section-opener:hover,
+.recipe-page-rail__section-opener[aria-pressed="true"] {
+  background: color-mix(in srgb, var(--cp-accent) 12%, transparent);
+  color: var(--cp-accent-ink);
+}
+
 .recipe-page-rail__item.is-dragging {
   opacity: 0.4;
 }
@@ -264,20 +311,30 @@
   background: var(--cp-accent-soft);
 }
 
-.recipe-page-rail__row--section-child {
+.recipe-page-rail__section-group {
   position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.recipe-page-rail__section-group--nested {
   padding-left: 12px;
 }
 
-.recipe-page-rail__row--section-child::before {
+.recipe-page-rail__section-group--nested::before {
   content: "";
   position: absolute;
-  top: -2px;
-  bottom: 8px;
+  top: 0;
+  bottom: 0;
   left: 3px;
   width: 2px;
   border-radius: 999px;
   background: color-mix(in srgb, var(--cp-accent) 24%, transparent);
+}
+
+.recipe-page-rail__row--section-child {
+  position: relative;
 }
 
 .recipe-page-rail__row--section-child .recipe-page-rail__item {
@@ -290,8 +347,10 @@
   z-index: 2;
   display: flex;
   gap: 0;
-  background: var(--cp-page);
-  padding-top: 2px;
+  margin-top: 4px;
+  padding-top: 12px;
+  border-top: 1px solid var(--cp-line);
+  background: var(--cp-card);
 }
 
 .recipe-page-rail__add-row .recipe-page-rail__add {
@@ -322,6 +381,27 @@
 }
 
 .recipe-page-rail__add-menu-trigger:hover {
+  border-color: var(--cp-accent);
+  color: var(--cp-accent-ink);
+}
+
+.recipe-page-rail__add-section {
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  padding: 0 12px;
+  border: 1.5px solid var(--cp-line-strong);
+  border-left: 0;
+  border-radius: 0 12px 12px 0;
+  background: var(--cp-card);
+  color: var(--cp-ink);
+  font-size: var(--cp-fs-caption);
+  font-weight: 750;
+}
+
+.recipe-page-rail__add-section:hover {
   border-color: var(--cp-accent);
   color: var(--cp-accent-ink);
 }
@@ -372,7 +452,14 @@
      previews rest in the centre. 44vh is only the pre-measure fallback. */
   padding: var(--deck-top-pad, 44vh) 0;
   overflow-y: auto;
-  scroll-snap-type: y proximity;
+  /* `mandatory`: the snap happens as part of the scroll's own deceleration, so
+     a hard flick flies several cards and lands cleanly on one — snapping while
+     you scroll, not a separate correction after. Safe because every card is
+     scaled to fit inside the viewport (see `deckScale`), so mandatory can never
+     trap a card taller than the screen. `useDeckScroller` briefly suspends this
+     during a click's programmatic scroll so it can't be pulled to an
+     intermediate card, then restores it the instant that scroll lands. */
+  scroll-snap-type: y mandatory;
   scrollbar-width: none;
 }
 
@@ -414,13 +501,64 @@
   cursor: default;
 }
 
+/* ── Cookbook book view: a slide is a two-page spread ──────────────────────
+   Left (verso) + right (recto) shown side by side with a center gutter, like an
+   open book. Cover/back are single centered pages. Print (below) breaks each
+   page onto its own sheet, so this is a screen-only grouping. */
+.recipe-spread {
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  gap: 12px;
+}
+
+.recipe-spread__page {
+  position: relative;
+  cursor: pointer;
+}
+
+/* Ring the focused page so it's clear which one the Edit controls act on. */
+.recipe-spread__page.is-focused .recipe-page-scaler {
+  outline: 2px solid var(--cp-accent);
+  outline-offset: 2px;
+}
+
+/* A full-page-photo spread is one logical page: ring the whole pair together
+   (photo + its recipe) rather than each half, so it reads as a single unit the
+   Edit controls act on. Suppress the per-page rings inside it. */
+.recipe-spread--image-focused {
+  outline: 2px solid var(--cp-accent);
+  outline-offset: 5px;
+  border-radius: 12px;
+}
+
+.recipe-spread--image-focused .recipe-spread__page.is-focused .recipe-page-scaler {
+  outline: none;
+}
+
+/* A parity blank — a real book page left intentionally empty. */
+.recipe-spread__blank {
+  flex: none;
+  border: 1px solid var(--cp-line);
+  border-radius: 8px;
+  background: #fff;
+}
+
+/* Snap the whole spread to center (the base rule snaps a lone `.recipe-page-
+   scaler`, which a spread slide doesn't have as a direct child). */
+@media screen and (min-width: 821px) {
+  .recipe-page-canvas:not([data-single-recipe="true"]) .recipe-page-deck--book > .recipe-page-slide--spread {
+    scroll-snap-align: center;
+  }
+}
+
 /* Floats above the card by default: for every slide but the first, there's
    already a previous card above it in the scroll list, so the overlap has
    somewhere safe to sit. */
 .recipe-page-canvas__controls {
   position: absolute;
   bottom: calc(100% + 16px);
-  left: 50%;
+  left: calc(50% + var(--preview-offset, 0px));
   z-index: 3;
   display: grid;
   grid-template-columns: 1fr auto 1fr;
@@ -439,6 +577,79 @@
 .recipe-page-canvas__controls-right {
   grid-column: 3;
   justify-self: end;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+/* Per-recipe page-layout picker (Phase 2b): a small segmented control shown
+   next to Edit in cookbook mode, with an optional feedback note below it. */
+.recipe-page-layout-control {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 4px;
+}
+
+.recipe-page-layout-picker {
+  display: inline-flex;
+  align-items: center;
+  padding: 3px;
+  border: 1px solid var(--cp-line);
+  border-radius: 999px;
+  background: var(--cp-card);
+  box-shadow: var(--cp-shadow-sm);
+}
+
+.recipe-spread__blank--designed {
+  overflow: hidden;
+  background: var(--recipe-bg, var(--cp-card));
+  -webkit-print-color-adjust: exact;
+  print-color-adjust: exact;
+}
+
+.recipe-spread__blank-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  grid-auto-rows: 1fr;
+  gap: 2px;
+  width: 100%;
+  height: 100%;
+  padding: 5%;
+}
+
+.recipe-spread__blank-grid img {
+  width: 100%;
+  height: 100%;
+  min-height: 0;
+  object-fit: cover;
+}
+
+.recipe-spread__blank-decoration {
+  width: 100%;
+  height: 100%;
+  background: var(--recipe-bg, var(--cp-card));
+}
+
+.recipe-page-layout-picker__btn {
+  padding: 3px 10px;
+  border: 0;
+  border-radius: 999px;
+  background: transparent;
+  color: var(--cp-ink-soft);
+  font-size: var(--cp-fs-caption);
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.recipe-page-layout-picker__btn.is-active {
+  background: var(--cp-selected-fill);
+  color: var(--cp-selected-text);
+}
+
+.recipe-page-layout-picker__btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
 }
 
 .recipe-page-canvas__controls .recipe-card-side-nav,
@@ -462,31 +673,24 @@
 }
 
 .recipe-page-edit-toggle.is-active {
-  border-color: var(--cp-accent);
-  background: color-mix(in srgb, var(--cp-accent) 12%, var(--cp-card));
-  color: var(--cp-accent);
+  border-color: var(--cp-selected-border);
+  background: var(--cp-selected-fill);
+  box-shadow: var(--cp-selected-ring);
+  color: var(--cp-selected-text);
 }
 
-/* The first slide has nothing above it, so on desktop/tablet (where slides
-   stack vertically) a floating flip control would sit under the sticky site
-   header instead. Take it out of the float and put it in normal flow so it
-   pushes the card down instead. Mobile stays floating even for the first
-   slide — it's a horizontal swipe deck, not a vertical stack, so there's no
-   header to collide with and nothing to push down. The compound selector
-   (rather than `.recipe-page-canvas__flip` alone) out-specifies
-   `.recipe-card-side-nav`'s own `display: inline-flex`, which otherwise wins
-   the tie-break by coming later in the stylesheet; `display:flex` (a
-   block-level flex box, not inline-flex) is what lets the auto margins
-   actually centre it instead of needing text-align on an ancestor, which
-   would leak into the card's own text. */
-@media screen and (min-width: 821px) {
-  .recipe-page-slide[data-first="true"] .recipe-page-canvas__controls {
-    position: static;
-    width: min(100%, var(--preview-w, 100%));
-    margin: 0 auto 16px;
-    transform: none;
-  }
-}
+/* The first slide's controls float above the card like every other slide's —
+   NOT pushed into normal flow. They used to be `position: static` for the first
+   slide, on the theory that it "has nothing above it" so a floating control
+   would sit under the sticky header. But `--deck-top-pad` now centres the first
+   card (leaving a full top-pad of room above it), so the floating control lands
+   well clear of the header anyway.
+   Static positioning also caused a real bug: the controls only render for the
+   ACTIVE slide, so making them in-flow meant the first slide grew/shrank by the
+   control's height as it gained/lost focus while scrolling. That shifted the
+   whole deck's scroll geometry mid-scroll, which read as glitchy snapping under
+   `scroll-snap-type: mandatory` (most visible on 6x4, whose two-sided cards
+   always carry a flip control). Keeping every slide's height constant fixes it. */
 
 /* While a recipe's real layout is still being measured, the deck and rail are
    showing `getRecipeFaces`' character-budget guess (see `previewMeasuring` in
@@ -626,10 +830,20 @@
 
   .recipe-page-canvas {
     position: relative;
+    padding-inline: clamp(16px, 2.4vw, 30px);
+  }
+
+  .recipe-page-rail {
+    padding: 16px;
+    border-right: 1px solid var(--cp-line);
+    background: var(--cp-card);
   }
 
   .recipe-config-panel {
-    height: calc(100% - 32px);
+    height: 100%;
+    margin: 0;
+    border-width: 0 0 0 1px;
+    border-radius: 0;
   }
 }
 
@@ -646,11 +860,16 @@
   gap: 20px;
   min-height: 0;
   padding-top: 16px;
+  padding-right: 8px;
   overflow-y: auto;
+  scrollbar-gutter: stable;
 }
 
 .recipe-config-panel__footer {
   flex: 0 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
   margin-top: 12px;
   padding-top: 14px;
   border-top: 1px solid var(--cp-line);
@@ -699,7 +918,6 @@
 .recipe-print-settings-link {
   display: block;
   width: 100%;
-  margin-top: 10px;
   text-align: center;
   color: var(--cp-ink-soft);
   font-size: var(--cp-fs-caption);
@@ -843,6 +1061,218 @@
   line-height: 1.3;
 }
 
+/* Book-wide "Photos" style (cookbook Print setup) — three visual tiles, each a
+   tiny page illustration so the choice reads at a glance. */
+.recipe-photo-style {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+}
+
+.recipe-photo-style__tile {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 7px;
+  padding: 10px 6px 8px;
+  border: 1px solid var(--cp-line);
+  border-radius: 10px;
+  background: var(--cp-card);
+  cursor: pointer;
+}
+
+.recipe-photo-style__tile.is-active {
+  border-color: var(--cp-selected-border);
+  background: var(--cp-selected-fill);
+  box-shadow: var(--cp-selected-ring);
+}
+
+/* The real radio is sr-only, so surface keyboard focus on the visible tile. */
+.recipe-photo-style__tile:has(input:focus-visible) {
+  outline: var(--cp-focus-ring);
+  outline-offset: var(--cp-focus-ring-offset);
+}
+
+.recipe-photo-style__tile-label {
+  font-size: var(--cp-fs-label);
+  font-weight: 700;
+  line-height: 1.2;
+  text-align: center;
+  color: var(--cp-ink);
+}
+
+.recipe-photo-style__tile.is-active .recipe-photo-style__tile-label {
+  color: var(--cp-selected-text);
+}
+
+/* ── Format download buttons on the "Print your cookbook" screen ──────────── */
+.cookbook-print-dialog__formats {
+  display: grid;
+  gap: 8px;
+  margin-top: 6px;
+  text-align: left;
+}
+
+.cookbook-format-download {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  width: 100%;
+  padding: 12px 14px;
+  border: 1px solid var(--cp-line);
+  border-radius: 10px;
+  background: var(--cp-card);
+  cursor: pointer;
+  text-align: left;
+}
+
+.cookbook-format-download:hover {
+  border-color: var(--cp-selected-border);
+  background: var(--cp-selected-fill);
+}
+
+.cookbook-format-download:focus-visible {
+  outline: var(--cp-focus-ring);
+  outline-offset: var(--cp-focus-ring-offset);
+}
+
+.cookbook-format-download__text {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.cookbook-format-download__name {
+  font-size: var(--cp-fs-small);
+  font-weight: 800;
+  color: var(--cp-ink);
+}
+
+.cookbook-format-download__trim {
+  font-size: var(--cp-fs-caption);
+  color: var(--cp-ink-soft);
+}
+
+.cookbook-format-download__cta {
+  flex: none;
+  font-size: var(--cp-fs-caption);
+  font-weight: 800;
+  color: var(--cp-selected-text);
+}
+
+/* ── "Print your cookbook" post-export dialog ─────────────────────────────── */
+.cookbook-print-dialog__hint {
+  font-size: var(--cp-fs-small);
+  color: var(--cp-ink-soft);
+  text-align: center;
+}
+
+.cookbook-print-dialog__printers {
+  margin-top: 8px;
+  text-align: left;
+}
+
+.cookbook-print-dialog__printers-label {
+  display: block;
+  margin-bottom: 8px;
+  font-size: var(--cp-fs-caption);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--cp-ink-soft);
+}
+
+.cookbook-print-dialog__printer-list {
+  display: grid;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.cookbook-print-dialog__printer {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px 12px;
+  border: 1px solid var(--cp-line);
+  border-radius: 10px;
+  background: var(--cp-card);
+  text-decoration: none;
+}
+
+.cookbook-print-dialog__printer:hover {
+  border-color: var(--cp-accent);
+}
+
+.cookbook-print-dialog__printer-name {
+  font-size: var(--cp-fs-small);
+  font-weight: 800;
+  color: var(--cp-ink);
+}
+
+.cookbook-print-dialog__printer-note {
+  font-size: var(--cp-fs-caption);
+  color: var(--cp-ink-soft);
+}
+
+.cookbook-print-dialog__disclaimer {
+  margin-top: 10px;
+  font-size: var(--cp-fs-caption);
+  line-height: 1.4;
+  color: var(--cp-ink-soft);
+}
+
+/* The mini page illustration inside a tile (also reusable elsewhere). */
+.recipe-photo-preview {
+  display: flex;
+  gap: 3px;
+  height: 42px;
+  align-items: stretch;
+  justify-content: center;
+}
+
+.recipe-photo-preview__page {
+  width: 30px;
+  border: 1px solid var(--cp-line-strong);
+  border-radius: 3px;
+  background: #fff;
+  padding: 4px;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  overflow: hidden;
+}
+
+.recipe-photo-preview--spread .recipe-photo-preview__page {
+  width: 21px;
+}
+
+.recipe-photo-preview__page--photo {
+  border-color: var(--cp-accent);
+  background: color-mix(in srgb, var(--cp-accent) 55%, #fff);
+}
+
+.recipe-photo-preview__photo {
+  height: 13px;
+  margin: -1px -1px 2px;
+  border-radius: 2px;
+  background: color-mix(in srgb, var(--cp-accent) 55%, #fff);
+}
+
+.recipe-photo-preview__line {
+  height: 2px;
+  border-radius: 1px;
+  background: color-mix(in srgb, var(--cp-ink-soft) 45%, transparent);
+}
+
+.recipe-photo-preview__line--short {
+  width: 65%;
+}
+
 .recipe-template-list {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -872,8 +1302,9 @@
 }
 
 .recipe-template-option.is-active {
-  border-color: var(--cp-accent);
-  box-shadow: 0 0 0 1px var(--cp-accent);
+  border-color: var(--cp-selected-border);
+  background: var(--cp-selected-fill);
+  box-shadow: var(--cp-selected-ring);
 }
 
 /* The picker preview is a live, scaled-down real card (see `TemplateThumbnail`
@@ -983,6 +1414,14 @@
   color: var(--cp-ink-soft);
 }
 
+.recipe-toast .recipe-toast__action {
+  width: auto;
+  padding: 0 10px;
+  color: var(--cp-accent-ink);
+  font-size: var(--cp-fs-caption);
+  font-weight: 800;
+}
+
 .recipe-mobile-topbar,
 .recipe-mobile-back-button,
 .recipe-mobile-toolbar,
@@ -991,6 +1430,8 @@
 .recipe-mobile-size-menu,
 .recipe-mobile-settings-menu,
 .recipe-mobile-actions,
+.recipe-structure-sheet,
+.recipe-structure-sheet__backdrop,
 .recipe-config-panel__close {
   display: none;
 }
@@ -1031,8 +1472,11 @@
     align-items: center;
     margin: -6px;
     padding: 6px;
+    border: 0;
+    background: transparent;
     color: var(--cp-ink);
     line-height: 1;
+    cursor: pointer;
   }
 
   .recipe-mobile-topbar__actions {
@@ -1057,9 +1501,35 @@
   }
 
   .recipe-mobile-topbar__icon-btn.is-active {
-    border-color: var(--cp-accent);
-    background: var(--cp-accent-soft);
-    color: var(--cp-accent-ink);
+    border-color: var(--cp-selected-border);
+    background: var(--cp-selected-fill);
+    box-shadow: var(--cp-selected-ring);
+    color: var(--cp-selected-text);
+  }
+
+  @media (max-width: 440px) {
+    .recipe-mobile-topbar {
+      gap: 8px;
+      padding-inline: 12px;
+    }
+    .recipe-mobile-topbar__actions {
+      min-width: 0;
+      gap: 7px;
+    }
+    .recipe-mobile-topbar__print {
+      display: grid;
+      place-items: center;
+      flex: 0 0 40px;
+      width: 40px;
+      height: 40px;
+      padding: 0;
+      overflow: hidden;
+      font-size: 0;
+    }
+    .recipe-mobile-topbar__print svg {
+      width: 18px;
+      height: 18px;
+    }
   }
 
   .recipe-mobile-settings-menu {
@@ -1121,8 +1591,8 @@
   }
 
   .recipe-mobile-toolbar__btn.is-active .recipe-mobile-toolbar__btn-icon {
-    background: var(--cp-accent-soft);
-    color: var(--cp-accent-ink);
+    background: var(--cp-selected-fill);
+    color: var(--cp-selected-text);
   }
 
   /* An off/excluded toggle keeps its plain icon but gets a diagonal strike
@@ -1186,12 +1656,294 @@
   }
 
   .recipe-mobile-size-menu__option.is-active {
-    background: var(--cp-accent-soft);
-    color: var(--cp-accent-ink);
+    background: var(--cp-selected-fill);
+    color: var(--cp-selected-text);
   }
 
   .recipe-page-rail {
     display: none;
+  }
+
+  /* Mobile structure sheet — the touch replacement for the drag-only rail.
+     A bottom sheet that slides up over the deck; the toolbar "Pages" button
+     toggles `.is-open`. */
+  .recipe-structure-sheet__backdrop {
+    position: fixed;
+    inset: 0;
+    z-index: 80;
+    display: block;
+    border: 0;
+    background: rgba(15, 23, 42, 0.4);
+  }
+
+  .recipe-structure-sheet {
+    position: fixed;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 81;
+    display: flex;
+    flex-direction: column;
+    max-height: 82dvh;
+    padding-bottom: env(safe-area-inset-bottom);
+    background: var(--cp-card);
+    border-top-left-radius: 20px;
+    border-top-right-radius: 20px;
+    box-shadow: 0 -18px 40px rgba(15, 23, 42, 0.22);
+    transform: translateY(100%);
+    transition: transform 240ms ease;
+  }
+
+  .recipe-structure-sheet.is-open {
+    transform: translateY(0);
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .recipe-structure-sheet {
+      transition: none;
+    }
+  }
+
+  .recipe-structure-sheet__grabber {
+    width: 40px;
+    height: 4px;
+    margin: 8px auto 0;
+    border-radius: 999px;
+    background: var(--cp-line);
+  }
+
+  .recipe-structure-sheet__header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 10px 16px 12px;
+    border-bottom: 1px solid var(--cp-line);
+  }
+
+  .recipe-structure-sheet__header h2 {
+    font-size: var(--cp-fs-h2);
+    font-weight: 800;
+    letter-spacing: -0.01em;
+  }
+
+  .recipe-structure-sheet__header span {
+    display: block;
+    margin-top: 2px;
+    color: var(--cp-ink-soft);
+    font-size: var(--cp-fs-caption);
+    font-weight: 600;
+  }
+
+  .recipe-structure-sheet__scroll {
+    flex: 1 1 auto;
+    min-height: 0;
+    overflow-y: auto;
+    padding: 8px 12px 4px;
+  }
+
+  .recipe-structure-sheet__settings {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    padding: 8px 4px 14px;
+  }
+
+  .recipe-structure-sheet__photos {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  /* Small caps eyebrow — same role as `.recipe-config-label` on desktop, sized
+     for the sheet. Doubles as the divider between the settings and the section
+     list. */
+  .recipe-structure-sheet__group-label {
+    display: block;
+    color: var(--cp-ink-soft);
+    font-size: var(--cp-fs-label);
+    font-weight: 800;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+  }
+
+  .recipe-structure-sheet__group-label--structure {
+    padding: 14px 4px 2px;
+    border-top: 1px solid var(--cp-line);
+  }
+
+  .recipe-structure-sheet__section {
+    padding: 8px 0 12px;
+  }
+
+  /* The first section already sits under the "Structure" eyebrow, so only
+     divide subsequent sections from one another. */
+  .recipe-structure-sheet__section + .recipe-structure-sheet__section {
+    border-top: 1px solid var(--cp-line);
+  }
+
+  .recipe-structure-sheet__section-head {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 4px;
+  }
+
+  .recipe-structure-sheet__section-title {
+    flex: 1 1 auto;
+    min-width: 0;
+    padding: 8px 10px;
+    border: 1px solid transparent;
+    border-radius: 10px;
+    background: var(--cp-page);
+    color: var(--cp-ink);
+    font-size: var(--cp-fs-body);
+    font-weight: 700;
+  }
+
+  .recipe-structure-sheet__section-title:focus-visible {
+    outline: none;
+    border-color: var(--cp-selected-border);
+    box-shadow: var(--cp-focus-ring);
+  }
+
+  .recipe-structure-sheet__opener {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 4px 6px 8px;
+    color: var(--cp-ink-soft);
+    font-size: var(--cp-fs-caption);
+    font-weight: 600;
+  }
+
+  /* Match the app's custom checkbox (see `.recipe-toggle input`) so the opener
+     toggle isn't a stray OS-blue box next to the teal Table-of-contents one. */
+  .recipe-structure-sheet__opener input {
+    position: relative;
+    flex: 0 0 auto;
+    width: 18px;
+    height: 18px;
+    margin: 0;
+    appearance: none;
+    border: 1px solid var(--cp-line-strong);
+    border-radius: 5px;
+    background: var(--cp-card);
+  }
+
+  .recipe-structure-sheet__opener input:checked {
+    border-color: var(--cp-accent);
+    background: var(--cp-accent);
+  }
+
+  .recipe-structure-sheet__opener input:checked::after {
+    content: "";
+    position: absolute;
+    left: 5px;
+    top: 2px;
+    width: 5px;
+    height: 10px;
+    border: solid #0c3a37;
+    border-width: 0 2.5px 2.5px 0;
+    transform: rotate(45deg);
+  }
+
+  .recipe-structure-sheet__recipes {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    list-style: none;
+    margin: 0;
+    padding: 0;
+  }
+
+  .recipe-structure-sheet__recipe {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px;
+    border: 1px solid var(--cp-line);
+    border-radius: 12px;
+    background: var(--cp-card);
+  }
+
+  .recipe-structure-sheet__recipe-open {
+    display: flex;
+    flex: 1 1 auto;
+    align-items: center;
+    gap: 10px;
+    min-width: 0;
+    padding: 4px;
+    border: 0;
+    background: transparent;
+    color: var(--cp-ink);
+    text-align: left;
+  }
+
+  .recipe-structure-sheet__recipe-num {
+    display: grid;
+    place-items: center;
+    flex: 0 0 26px;
+    width: 26px;
+    height: 26px;
+    border-radius: 8px;
+    background: var(--cp-selected-fill);
+    color: var(--cp-selected-text);
+    font-size: var(--cp-fs-caption);
+    font-weight: 800;
+  }
+
+  .recipe-structure-sheet__recipe-title {
+    flex: 1 1 auto;
+    min-width: 0;
+    overflow: hidden;
+    font-size: var(--cp-fs-body);
+    font-weight: 600;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .recipe-structure-sheet__empty {
+    padding: 10px 12px;
+    color: var(--cp-ink-soft);
+    font-size: var(--cp-fs-caption);
+  }
+
+  .recipe-structure-sheet__move {
+    display: flex;
+    flex: 0 0 auto;
+    gap: 4px;
+  }
+
+  .recipe-structure-sheet__move button {
+    display: grid;
+    place-items: center;
+    width: 38px;
+    height: 38px;
+    border: 1px solid var(--cp-line);
+    border-radius: 10px;
+    background: var(--cp-card);
+    color: var(--cp-ink);
+  }
+
+  .recipe-structure-sheet__move button:disabled {
+    opacity: 0.35;
+  }
+
+  .recipe-structure-sheet__move-up svg {
+    transform: rotate(180deg);
+  }
+
+  .recipe-structure-sheet__footer {
+    display: flex;
+    gap: 8px;
+    padding: 10px 16px calc(10px + env(safe-area-inset-bottom));
+    border-top: 1px solid var(--cp-line);
+  }
+
+  .recipe-structure-sheet__footer .btn {
+    flex: 1 1 auto;
+    justify-content: center;
   }
 
   .recipe-page-canvas {
@@ -1224,9 +1976,10 @@
     overflow-x: auto;
     overflow-y: hidden;
     scroll-padding-inline: 40px;
-    /* `proximity`, not `mandatory`, so a drag that doesn't release near a
-       slide isn't yanked to one mid-gesture. */
-    scroll-snap-type: x proximity;
+    /* `mandatory`, matching the desktop deck — a swipe snaps as it decelerates,
+       landing on a card rather than resting between two. Only acts at
+       gesture/momentum end, so it doesn't yank a card mid-drag. */
+    scroll-snap-type: x mandatory;
     -webkit-overflow-scrolling: touch;
     scrollbar-width: none;
   }
@@ -1420,6 +2173,60 @@
 
 .recipe-print-preview--card-6x4 .recipe-card-page {
   gap: 0.3in;
+}
+
+/* ── Image-spread facing photo (Phase 2b) ──────────────────────────────────
+   A full-bleed photo filling a letter page, facing the recipe's card page. */
+.recipe-card-page--image {
+  padding: 0;
+}
+
+.recipe-image-spread__photo {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+/* ── Image-spread facing photo (Phase 2b) ──────────────────────────────────
+   A full-bleed photo filling a letter page, facing the recipe's card page. */
+.recipe-card-page--image {
+  padding: 0;
+  position: relative;
+}
+
+.recipe-image-spread__photo {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+/* Drag-to-reposition affordance (screen only, on the focused photo). */
+.recipe-image-spread__photo--draggable {
+  cursor: grab;
+  /* Keep the drag from turning into a page scroll while repositioning. */
+  touch-action: none;
+}
+
+.recipe-image-spread__photo--draggable:active {
+  cursor: grabbing;
+}
+
+.recipe-image-spread__hint {
+  position: absolute;
+  left: 50%;
+  bottom: 0.5in;
+  transform: translateX(-50%);
+  padding: 0.06in 0.16in;
+  border-radius: 999px;
+  background: rgba(17, 24, 39, 0.72);
+  color: #fff;
+  font-size: 0.12in;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  pointer-events: none;
+  white-space: nowrap;
 }
 
 .recipe-card-side-nav {
@@ -1662,12 +2469,21 @@
    free page — centered content on the same card box, sized/skinned by the
    same --recipe-* variables as a recipe card so they read as part of one set
    rather than a bolted-on page type. */
-.recipe-card--divider,
-.recipe-card--cover {
+.recipe-card--divider {
   align-items: center;
   justify-content: center;
   text-align: center;
   overflow: hidden;
+}
+
+/* The cover is full-bleed and photo-forward — its own positioned layers fill
+   the card box, so it drops the card's padding and centered flow. */
+.recipe-card--cover {
+  display: block;
+  padding: 0;
+  overflow: hidden;
+  text-align: left;
+  position: relative;
 }
 
 .recipe-card__divider-content {
@@ -1756,92 +2572,1109 @@
   color: var(--recipe-accent);
 }
 
+/* ── Chapter opener ───────────────────────────────────────────────────────
+   A full-page section opener: a photo band up top, then the chapter eyebrow,
+   title and intro anchored in a left-aligned body band below. Replaces the old
+   centered "Section" divider card. */
+.recipe-card--chapter {
+  display: grid;
+  grid-template-rows: 56% 44%;
+  padding: 0;
+  overflow: hidden;
+  text-align: left;
+}
+
+.recipe-card__chapter-photo {
+  position: relative;
+  overflow: hidden;
+  background:
+    radial-gradient(80% 74% at 72% 24%, color-mix(in srgb, var(--recipe-accent-2) 58%, transparent), transparent 62%),
+    radial-gradient(70% 68% at 20% 82%, color-mix(in srgb, var(--recipe-accent) 40%, transparent), transparent 60%),
+    linear-gradient(150deg, color-mix(in srgb, var(--recipe-accent) 40%, var(--recipe-bg)), color-mix(in srgb, var(--recipe-accent-2) 26%, var(--recipe-bg)));
+  -webkit-print-color-adjust: exact;
+  print-color-adjust: exact;
+}
+
+.recipe-card__chapter-image {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  -webkit-print-color-adjust: exact;
+  print-color-adjust: exact;
+}
+
+.recipe-card__chapter-body {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: center;
+  gap: 0.1in;
+  padding: 0.7in 0.72in;
+  color: var(--recipe-ink);
+}
+
+.recipe-card__chapter-eyebrow {
+  margin: 0;
+  font-size: 0.14in;
+  font-weight: 850;
+  letter-spacing: 0.24em;
+  text-transform: uppercase;
+  color: var(--recipe-accent);
+}
+
+.recipe-card--chapter .recipe-card__divider-title {
+  margin: 0;
+  text-align: left;
+  font-size: calc(var(--recipe-card-title-size) * 1.55);
+  line-height: 1;
+}
+
+.recipe-card__chapter-intro {
+  margin: 0.04in 0 0;
+  max-width: 4.6in;
+  font-family: var(--recipe-title-font);
+  font-size: calc(var(--recipe-card-title-size) * 0.62);
+  line-height: 1.5;
+  font-style: italic;
+  color: var(--recipe-muted);
+}
+
+.recipe-print-preview--card-6x4 .recipe-card__chapter-body {
+  padding: 0.34in 0.4in;
+  gap: 0.07in;
+}
+
+/* Full-bleed photo field. When no cover image is set, a template-tinted
+   gradient stands in so the cover still reads as designed rather than blank. */
+.recipe-card__cover-photo {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  background:
+    radial-gradient(78% 62% at 62% 26%, color-mix(in srgb, var(--recipe-accent) 32%, transparent), transparent 68%),
+    radial-gradient(72% 66% at 22% 84%, color-mix(in srgb, var(--recipe-accent-2) 30%, transparent), transparent 64%),
+    linear-gradient(158deg, color-mix(in srgb, var(--recipe-accent) 15%, var(--recipe-bg)), color-mix(in srgb, var(--recipe-accent-2) 14%, var(--recipe-bg)));
+  -webkit-print-color-adjust: exact;
+  print-color-adjust: exact;
+}
+
+.recipe-card__cover-photo--paper {
+  background: var(--recipe-bg);
+}
+
 .recipe-card__cover-image {
   position: absolute;
   inset: 0;
   width: 100%;
   height: 100%;
   object-fit: cover;
-  filter: brightness(0.76) saturate(0.96);
+  filter: brightness(0.84) saturate(0.98);
   -webkit-print-color-adjust: exact;
   print-color-adjust: exact;
 }
 
-.recipe-card__cover-content {
-  position: relative;
+/* Scrim: dark at the bottom, where the title lockup sits, fading to clear so
+   the photo reads at the top. */
+.recipe-card__cover-scrim {
+  position: absolute;
+  inset: 0;
   z-index: 1;
+  background: linear-gradient(
+    to top,
+    rgba(12, 14, 16, 0.68) 0%,
+    rgba(12, 14, 16, 0.18) 44%,
+    rgba(12, 14, 16, 0.02) 68%
+  );
+}
+
+/* Template-color band along the top edge — the cover's motif hook. */
+.recipe-card__cover-band {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 0.16in;
+  z-index: 3;
+  background: var(--recipe-accent);
+  -webkit-print-color-adjust: exact;
+  print-color-adjust: exact;
+}
+
+/* Title lockup, anchored bottom-left over the scrim. */
+.recipe-card__cover-content {
+  position: absolute;
+  z-index: 4;
+  left: 0.72in;
+  right: 0.72in;
+  bottom: 0.72in;
   display: flex;
   flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  width: min(100%, 6.45in);
-  gap: 0.14in;
-  padding: 0.58in 0.66in;
-}
-
-.recipe-card--cover:has(.recipe-card__cover-image) .recipe-card__cover-content {
+  align-items: flex-start;
+  gap: 0.06in;
   color: #fff;
-  text-shadow: 0 1px 6px rgba(0, 0, 0, 0.45);
+  text-align: left;
 }
 
-/* Same shared-class trick as the divider title above: the read-mode
-   `<h1>`/`<p>` and their editing `<input>` use this one class, so nothing
-   about the box changes when a field becomes editable. */
+/* Same shared-class trick as the divider title: the read-mode `<h1>`/`<p>` and
+   their editing `<input>` use this one class, so nothing shifts on edit. */
 .recipe-card__cover-title {
   max-width: 100%;
+  margin: 0;
   font-family: var(--recipe-title-font);
-  font-size: calc(var(--recipe-card-title-size) * 1.48);
-  line-height: 1.02;
+  font-size: calc(var(--recipe-card-title-size) * 1.72);
+  line-height: 0.98;
   font-weight: 800;
-  letter-spacing: 0;
-  text-align: center;
+  letter-spacing: -0.01em;
+  color: #fff;
+  text-align: left;
+  text-shadow: 0 1px 22px rgba(0, 0, 0, 0.34);
   field-sizing: content;
 }
 
+/* Kicker above the title. */
 .recipe-card__cover-subtitle {
+  order: -1;
   max-width: 100%;
-  font-size: 0.18in;
-  line-height: 1.35;
-  color: var(--recipe-muted);
-  text-align: center;
+  margin: 0 0 0.04in;
+  font-size: 0.13in;
+  font-weight: 800;
+  letter-spacing: 0.26em;
+  text-transform: uppercase;
+  color: #fff;
+  opacity: 0.9;
+  text-align: left;
   field-sizing: content;
 }
 
-.recipe-card--cover:has(.recipe-card__cover-image) .recipe-card__cover-subtitle {
-  color: inherit;
-  opacity: 0.9;
+.recipe-card__cover-rule {
+  width: 0.9in;
+  height: 2px;
+  margin: 0.12in 0 0.08in;
+  background: #fff;
+  opacity: 0.85;
 }
 
 .recipe-card__cover-author {
   max-width: 100%;
-  margin-top: 0.08in;
-  font-size: 0.14in;
-  font-weight: 600;
-  letter-spacing: 0.08em;
+  margin: 0;
+  font-size: 0.125in;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: #fff;
+  opacity: 0.86;
+  text-align: left;
+  field-sizing: content;
+}
+
+/* Back cover: centered closing content on the template's own paper. */
+.recipe-card__cover-back-content {
+  position: absolute;
+  z-index: 4;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.22in;
+  padding: 1in 0.9in;
+  text-align: center;
+  color: var(--recipe-ink);
+}
+
+.recipe-card__cover-blurb {
+  max-width: 4.4in;
+  margin: 0;
+  font-family: var(--recipe-title-font);
+  font-size: calc(var(--recipe-card-title-size) * 0.92);
+  line-height: 1.5;
+  font-style: italic;
+  color: var(--recipe-ink);
+  text-align: center;
+  field-sizing: content;
+}
+
+.recipe-card__cover-from {
+  margin: 0;
+  font-size: 0.125in;
+  font-weight: 700;
+  letter-spacing: 0.14em;
   text-transform: uppercase;
   color: var(--recipe-muted);
   text-align: center;
   field-sizing: content;
 }
 
-.recipe-card--cover:has(.recipe-card__cover-image) .recipe-card__cover-author {
-  color: inherit;
-  opacity: 0.9;
+/* Dedication front-matter page: a quiet eyebrow over the centered dedication
+   line (which reuses the back cover's italic `cover-blurb` treatment). */
+.recipe-card__cover-dedication-label {
+  margin: 0;
+  font-size: 0.11in;
+  font-weight: 700;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--recipe-muted);
+  text-align: center;
 }
 
-.recipe-card--cover:has(.recipe-card__cover-image)::before {
+/* ── Per-theme cover & chapter furniture ──────────────────────────────────
+   The base cover/chapter above is Classic's photo-forward treatment. Each
+   template below reshapes that same markup into its own vibe — framed paper
+   for Heirloom/Keepsake, a checker band for Bistro, split blocks for Counter,
+   stripes for Cookout — using the decorative hook elements (frame, ornament)
+   that render hidden by default. */
+.recipe-card__cover-frame,
+.recipe-card__chapter-frame,
+.recipe-card__cover-ornament,
+.recipe-card__chapter-ornament {
+  display: none;
+}
+
+/* Shared "paper cover" recipe used by the framed, centered themes: no photo
+   scrim, title centered in template ink rather than white over a photo. */
+.recipe-template--heirloom .recipe-card__cover-photo,
+.recipe-template--keepsake .recipe-card__cover-photo {
+  background: var(--recipe-bg);
+}
+.recipe-template--heirloom .recipe-card__cover-scrim,
+.recipe-template--keepsake .recipe-card__cover-scrim,
+.recipe-template--heirloom .recipe-card__cover-band,
+.recipe-template--keepsake .recipe-card__cover-band {
+  display: none;
+}
+.recipe-template--heirloom .recipe-card__cover-content,
+.recipe-template--keepsake .recipe-card__cover-content,
+.recipe-template--heirloom .recipe-card__chapter-body,
+.recipe-template--keepsake .recipe-card__chapter-body {
   inset: 0;
-  z-index: 0;
-  background:
-    linear-gradient(180deg, rgba(0, 0, 0, 0.46), rgba(0, 0, 0, 0.1) 38%, rgba(0, 0, 0, 0.42)),
-    linear-gradient(90deg, rgba(0, 0, 0, 0.28), transparent 44%, rgba(0, 0, 0, 0.22));
+  left: auto;
+  right: auto;
+  bottom: auto;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: 1in 0.9in;
+  color: var(--recipe-accent);
+}
+.recipe-template--heirloom .recipe-card__cover-title,
+.recipe-template--keepsake .recipe-card__cover-title,
+.recipe-template--heirloom .recipe-card__cover-subtitle,
+.recipe-template--keepsake .recipe-card__cover-subtitle,
+.recipe-template--heirloom .recipe-card__cover-author,
+.recipe-template--keepsake .recipe-card__cover-author {
+  color: var(--recipe-accent);
+  text-align: center;
+  text-shadow: none;
+  opacity: 1;
+}
+.recipe-template--heirloom .recipe-card__cover-subtitle,
+.recipe-template--keepsake .recipe-card__cover-subtitle {
+  margin-bottom: 0.28in;
+}
+.recipe-template--heirloom .recipe-card__cover-author,
+.recipe-template--keepsake .recipe-card__cover-author {
+  color: var(--recipe-muted);
+  margin-top: 0.3in;
+}
+.recipe-template--heirloom .recipe-card__cover-rule,
+.recipe-template--keepsake .recipe-card__cover-rule {
+  background: var(--recipe-accent);
+  opacity: 1;
+  margin: 0.28in 0;
+}
+.recipe-template--heirloom .recipe-card__cover-ornament,
+.recipe-template--keepsake .recipe-card__cover-ornament,
+.recipe-template--heirloom .recipe-card__chapter-ornament,
+.recipe-template--keepsake .recipe-card__chapter-ornament {
+  display: block;
+  order: -2;
+  color: var(--recipe-accent);
+  line-height: 1;
+  margin-bottom: 0.24in;
 }
 
-.recipe-print-preview--card-6x4 .recipe-card__divider-content,
-.recipe-print-preview--card-6x4 .recipe-card__cover-content {
+/* Heirloom — a single hairline frame, ❧ ornament, red serif. */
+.recipe-template--heirloom .recipe-card__cover-frame {
+  display: block;
+  position: absolute;
+  inset: 0.55in;
+  z-index: 2;
+  border: 1px solid var(--recipe-accent);
+  box-shadow: 0 0 0 3px var(--recipe-bg), 0 0 0 4px var(--recipe-accent);
+}
+.recipe-template--heirloom .recipe-card__cover-ornament::before,
+.recipe-template--heirloom .recipe-card__chapter-ornament::before {
+  content: "\275E";
+  font-size: 0.44in;
+}
+
+/* Keepsake — double inset frame, ✷ ornament, brown serif. */
+.recipe-template--keepsake .recipe-card__cover-frame {
+  display: block;
+  position: absolute;
+  inset: 0.42in;
+  z-index: 2;
+  border: 2px solid var(--recipe-accent);
+  box-shadow:
+    inset 0 0 0 0.12in var(--recipe-bg),
+    inset 0 0 0 calc(0.12in + 1px) color-mix(in srgb, var(--recipe-accent) 55%, transparent);
+}
+.recipe-template--keepsake .recipe-card__cover-ornament::before,
+.recipe-template--keepsake .recipe-card__chapter-ornament::before {
+  content: "\2737";
+  font-size: 0.34in;
+  letter-spacing: 0.3em;
+}
+
+/* Bistro — checker band up top, title on a solid paper band below, coral bar. */
+.recipe-template--bistro .recipe-card__cover-band {
+  height: 0.32in;
+  background:
+    repeating-linear-gradient(90deg, var(--recipe-accent) 0 0.3in, var(--recipe-bg) 0.3in 0.6in);
+  background-size: 0.6in 100%;
+}
+.recipe-template--bistro .recipe-card__cover-scrim {
+  top: auto;
+  height: 42%;
+  background: var(--recipe-bg);
+}
+.recipe-template--bistro .recipe-card__cover-content {
+  color: var(--recipe-ink);
+}
+.recipe-template--bistro .recipe-card__cover-title,
+.recipe-template--bistro .recipe-card__cover-subtitle,
+.recipe-template--bistro .recipe-card__cover-author {
+  text-shadow: none;
+  opacity: 1;
+}
+.recipe-template--bistro .recipe-card__cover-title {
+  color: var(--recipe-accent-2);
+}
+.recipe-template--bistro .recipe-card__cover-subtitle {
+  color: var(--recipe-accent);
+}
+.recipe-template--bistro .recipe-card__cover-author {
+  color: var(--recipe-ink);
+}
+.recipe-template--bistro .recipe-card__cover-rule {
+  width: 100%;
+  height: 0.05in;
+  background: var(--recipe-accent);
+  opacity: 1;
+  margin-top: 0.2in;
+}
+
+/* Counter — hard split: solid dark top with an accent-2 disc, title on paper. */
+.recipe-template--counter .recipe-card__cover-photo {
+  background: linear-gradient(to bottom, var(--recipe-accent) 0 52%, var(--recipe-bg) 52% 100%);
+}
+.recipe-template--counter .recipe-card__cover-photo::after {
+  content: "";
+  position: absolute;
+  right: -0.4in;
+  top: 0.5in;
+  width: 2.6in;
+  height: 2.6in;
+  border-radius: 50%;
+  background: var(--recipe-accent-2);
+  -webkit-print-color-adjust: exact;
+  print-color-adjust: exact;
+}
+.recipe-template--counter .recipe-card__cover-scrim,
+.recipe-template--counter .recipe-card__cover-band {
+  display: none;
+}
+.recipe-template--counter .recipe-card__cover-content {
+  color: var(--recipe-ink);
+}
+.recipe-template--counter .recipe-card__cover-title,
+.recipe-template--counter .recipe-card__cover-author {
+  color: var(--recipe-ink);
+  text-shadow: none;
+  opacity: 1;
+  text-transform: uppercase;
+}
+.recipe-template--counter .recipe-card__cover-subtitle {
+  color: var(--recipe-accent-2);
+  opacity: 1;
+}
+.recipe-template--counter .recipe-card__cover-rule {
+  display: none;
+}
+
+/* Cookout — playful stripe band, dashed frame, big script title, centered. */
+.recipe-template--cookout .recipe-card__cover-band {
+  height: 0.4in;
+  background: repeating-linear-gradient(
+    90deg,
+    var(--recipe-accent) 0 0.4in,
+    var(--recipe-accent-2) 0.4in 0.8in
+  );
+}
+.recipe-template--cookout .recipe-card__cover-photo {
+  background: linear-gradient(
+    160deg,
+    color-mix(in srgb, var(--recipe-accent-2) 26%, var(--recipe-bg)),
+    color-mix(in srgb, var(--recipe-accent) 14%, var(--recipe-bg))
+  );
+}
+.recipe-template--cookout .recipe-card__cover-scrim {
+  display: none;
+}
+.recipe-template--cookout .recipe-card__cover-frame {
+  display: block;
+  position: absolute;
+  inset: 0.5in;
+  z-index: 2;
+  border: 3px dashed var(--recipe-accent);
+}
+.recipe-template--cookout .recipe-card__cover-content {
+  inset: 0.5in;
+  left: 0.5in;
+  right: 0.5in;
+  bottom: auto;
+  top: 0;
+  height: 100%;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  color: var(--recipe-accent);
+}
+.recipe-template--cookout .recipe-card__cover-title {
+  color: var(--recipe-accent);
+  text-shadow: none;
+  font-size: calc(var(--recipe-card-title-size) * 2.6);
+  line-height: 0.82;
+  text-align: center;
+}
+.recipe-template--cookout .recipe-card__cover-subtitle,
+.recipe-template--cookout .recipe-card__cover-author {
+  color: var(--recipe-muted);
+  text-shadow: none;
+  opacity: 1;
+  text-align: center;
+}
+.recipe-template--cookout .recipe-card__cover-rule {
+  display: none;
+}
+
+/* ── Per-theme chapter openers ────────────────────────────────────────────
+   Framed themes drop the photo band and center on paper (rules above); the
+   band themes restyle the top band to match their cover. */
+.recipe-template--heirloom .recipe-card__chapter-photo,
+.recipe-template--keepsake .recipe-card__chapter-photo {
+  display: none;
+}
+.recipe-template--heirloom .recipe-card--chapter,
+.recipe-template--keepsake .recipe-card--chapter {
+  display: block;
+}
+.recipe-template--heirloom .recipe-card--chapter .recipe-card__divider-title,
+.recipe-template--keepsake .recipe-card--chapter .recipe-card__divider-title {
+  text-align: center;
+  color: var(--recipe-accent);
+}
+.recipe-template--heirloom .recipe-card__chapter-eyebrow,
+.recipe-template--keepsake .recipe-card__chapter-eyebrow {
+  text-align: center;
+}
+.recipe-template--heirloom .recipe-card__chapter-intro,
+.recipe-template--keepsake .recipe-card__chapter-intro {
+  text-align: center;
+  margin-left: auto;
+  margin-right: auto;
+}
+/* Keepsake chapter also gets the inset frame. */
+.recipe-template--keepsake .recipe-card__chapter-frame {
+  display: block;
+  position: absolute;
+  inset: 0.5in;
+  z-index: 0;
+  border: 2px solid var(--recipe-accent);
+}
+
+/* Cookout chapter — dashed frame + script title, centered. */
+.recipe-template--cookout .recipe-card__chapter-photo {
+  display: none;
+}
+.recipe-template--cookout .recipe-card--chapter {
+  display: block;
+}
+.recipe-template--cookout .recipe-card__chapter-frame {
+  display: block;
+  position: absolute;
+  inset: 0.5in;
+  z-index: 0;
+  border: 3px dashed var(--recipe-accent);
+}
+.recipe-template--cookout .recipe-card__chapter-body {
+  position: absolute;
+  inset: 0.5in;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+}
+.recipe-template--cookout .recipe-card--chapter .recipe-card__divider-title {
+  text-align: center;
+  font-size: calc(var(--recipe-card-title-size) * 2.4);
+  line-height: 0.82;
+}
+.recipe-template--cookout .recipe-card__chapter-eyebrow,
+.recipe-template--cookout .recipe-card__chapter-intro {
+  text-align: center;
+}
+
+/* Bistro & Counter chapters keep the photo band but tint it to their palette
+   (handled by the base gradient reading their --recipe-accent vars); Counter
+   makes it a solid block to match its cover. */
+.recipe-template--counter .recipe-card__chapter-photo {
+  background: var(--recipe-accent);
+}
+
+/* ── Table of contents ────────────────────────────────────────────────────
+   Skinned by the same --recipe-* vars as every other page, so it matches the
+   chosen template. Chapters as headings, recipes indented with dot leaders. */
+.recipe-card--toc {
+  padding: 1.05in 0.85in;
+  overflow: hidden;
+}
+.recipe-card__toc-content {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+.recipe-card__toc-kicker {
+  margin: 0 0 0.08in;
+  font-size: 0.13in;
+  font-weight: 850;
+  letter-spacing: 0.28em;
+  text-transform: uppercase;
+  color: var(--recipe-accent);
+}
+.recipe-card__toc-title {
+  font-family: var(--recipe-title-font);
+  font-size: calc(var(--recipe-card-title-size) * 1.5);
+  line-height: 1;
+  margin: 0 0 0.46in;
+  color: var(--recipe-ink);
+  font-weight: 800;
+}
+.recipe-card__toc-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+.recipe-card__toc-chapter {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.2in;
+  margin: 0.3in 0 0.13in;
+}
+.recipe-card__toc-chapter:first-child {
+  margin-top: 0;
+}
+.recipe-card__toc-chapter-name {
+  font-family: var(--recipe-title-font);
+  font-size: 0.2in;
+  font-weight: 800;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+  color: var(--recipe-ink);
+}
+.recipe-card__toc-recipe {
+  display: flex;
+  align-items: baseline;
+  gap: 0.1in;
+  padding-left: 0.28in;
+  margin: 0.075in 0;
+  font-size: 0.155in;
+  color: var(--recipe-ink);
+}
+.recipe-card__toc-recipe-name {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  flex: 0 1 auto;
+}
+.recipe-card__toc-leader {
+  flex: 1 1 auto;
+  align-self: stretch;
+  border-bottom: 1px dotted var(--recipe-line);
+  transform: translateY(-0.03in);
+  min-width: 0.2in;
+}
+.recipe-card__toc-pg {
+  font-variant-numeric: tabular-nums;
+  color: var(--recipe-muted);
+  flex: 0 0 auto;
+}
+.recipe-card__toc-chapter .recipe-card__toc-pg {
+  color: var(--recipe-accent);
+  font-weight: 800;
+}
+
+/* ── Running header + page folio ──────────────────────────────────────────
+   Page furniture that sits over the recipe page in cookbook mode. Only renders
+   when a page number was assigned (see usePrintSheets), so plain card printing
+   is untouched. */
+.recipe-card-page {
+  position: relative;
+}
+/* Footer furniture: chapter/section name bottom-left, page number bottom-right,
+   sharing a baseline in the page's bottom margin so they never collide with the
+   recipe card's own content the way a top running head did. */
+.recipe-book-runhead {
+  position: absolute;
+  bottom: 0.24in;
+  left: 0.55in;
+  max-width: 4.5in;
+  z-index: 6;
+  text-align: left;
+  font-size: 0.095in;
+  font-weight: 700;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--recipe-muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  pointer-events: none;
+}
+.recipe-book-folio {
+  position: absolute;
+  bottom: 0.24in;
+  right: 0.55in;
+  z-index: 6;
+  text-align: right;
+  font-size: 0.115in;
+  font-weight: 700;
+  color: var(--recipe-muted);
+  font-variant-numeric: tabular-nums;
+  pointer-events: none;
+}
+
+/* Cookout's illustrated lower border is substantially taller than the other
+   themes. Keep cookbook furniture above the icons instead of printing the
+   section name and folio through them. */
+.recipe-card-page:has(.recipe-template--cookout) .recipe-book-runhead,
+.recipe-card-page:has(.recipe-template--cookout) .recipe-book-folio {
+  bottom: 0.68in;
+}
+
+/* Heirloom's utensil row occupies the lower decorative margin. Keep the
+   running footer as a distinct bar above it instead of laying text over art. */
+.recipe-card-page:has(.recipe-template--heirloom) .recipe-book-runhead,
+.recipe-card-page:has(.recipe-template--heirloom) .recipe-book-folio {
+  bottom: 0.62in;
+}
+
+.recipe-print-preview--card-6x4 .recipe-card__divider-content {
   width: min(100%, 5.3in);
   padding: 0.3in 0.42in;
   gap: 0.11in;
+}
+
+/* The cover is book-trim furniture; if it ever renders at 6x4, pull the lockup
+   insets in so it doesn't crowd the smaller card. */
+.recipe-print-preview--card-6x4 .recipe-card__cover-content {
+  left: 0.34in;
+  right: 0.34in;
+  bottom: 0.34in;
+}
+
+.recipe-print-preview--card-6x4 .recipe-card__cover-back-content {
+  padding: 0.5in 0.44in;
+  gap: 0.14in;
+}
+
+/* Shared photo-picker trigger. The choices live in a portal dialog so the
+   preview's clipping and scale never squeeze them into the artwork. */
+.recipe-card__cover-photopicker {
+  position: absolute;
+  top: 0.3in;
+  left: 0.4in;
+  z-index: 8;
+}
+.image-picker__trigger {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.07in;
+  min-height: 0.38in;
+  padding: 0.08in 0.13in;
+  border: 1px solid rgba(15, 118, 110, 0.34);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.94);
+  box-shadow: 0 0.04in 0.14in rgba(15, 23, 42, 0.16);
+  color: #276f6b;
+  font-size: 0.13in;
+  font-weight: 800;
+  line-height: 1;
+  cursor: pointer;
+}
+.image-picker__trigger:hover {
+  background: #fff;
+  border-color: #45b8b1;
+}
+.image-picker {
+  position: fixed;
+  inset: 0;
+  z-index: 200;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+}
+.image-picker__backdrop {
+  position: absolute;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.46);
+  backdrop-filter: blur(3px);
+}
+.image-picker__panel {
+  position: relative;
+  width: min(560px, 100%);
+  max-height: min(680px, calc(100vh - 48px));
+  overflow: auto;
+  padding: 24px;
+  border: 1px solid #dce7e6;
+  border-radius: 20px;
+  background: #fffdf9;
+  box-shadow: 0 24px 70px rgba(15, 23, 42, 0.24);
+  color: #243b3a;
+}
+.image-picker__heading {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 20px;
+}
+.image-picker__heading h2,
+.image-picker__existing h3 {
+  margin: 0;
+  font-family: inherit;
+  color: #173c3a;
+}
+.image-picker__heading h2 {
+  font-size: 21px;
+}
+.image-picker__heading p {
+  margin: 5px 0 0;
+  color: #667b79;
+  font-size: 14px;
+}
+.image-picker__close {
+  display: grid;
+  place-items: center;
+  width: 34px;
+  height: 34px;
+  border: 0;
+  border-radius: 50%;
+  background: #edf4f3;
+  color: #315e5b;
+  cursor: pointer;
+}
+.image-picker__choices {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+  margin-top: 22px;
+}
+.image-picker__choice {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 72px;
+  padding: 12px;
+  border: 1px solid #d7e3e2;
+  border-radius: 13px;
+  background: #f7faf9;
+  color: #315e5b;
+  font-size: 14px;
+  font-weight: 750;
+  cursor: pointer;
+}
+.image-picker__choice:hover,
+.image-picker__choice.is-active {
+  border-color: #4ebeb7;
+  background: #effaf9;
+}
+.image-picker__choice.is-busy {
+  opacity: 0.65;
+  cursor: wait;
+}
+.image-picker__grid-icon {
+  display: grid;
+  grid-template-columns: repeat(2, 7px);
+  gap: 2px;
+}
+.image-picker__grid-icon i {
+  width: 7px;
+  height: 7px;
+  border-radius: 1px;
+  background: currentColor;
+}
+.image-picker__none-icon {
+  width: 22px;
+  height: 22px;
+  border: 1.5px solid currentColor;
+  border-radius: 5px;
+  background: linear-gradient(135deg, transparent 46%, currentColor 47% 53%, transparent 54%);
+}
+.image-picker__existing {
+  margin-top: 24px;
+}
+.image-picker__existing h3 {
+  margin-bottom: 10px;
+  font-size: 14px;
+}
+.image-picker__grid {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 9px;
+}
+.image-picker__photo {
+  position: relative;
+  aspect-ratio: 1;
+  padding: 0;
+  overflow: hidden;
+  border: 2px solid transparent;
+  border-radius: 10px;
+  background: #edf2f1;
+  cursor: pointer;
+}
+.image-picker__photo:hover,
+.image-picker__photo.is-active {
+  border-color: #43b7b0;
+}
+.image-picker__photo img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+.image-picker__check {
+  position: absolute;
+  right: 5px;
+  bottom: 5px;
+  display: grid;
+  place-items: center;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: #2f938d;
+  color: white;
+}
+.image-picker__error {
+  margin: 14px 0 0;
+  color: #b42318;
+  font-size: 13px;
+  font-weight: 700;
+}
+@media (max-width: 520px) {
+  .image-picker {
+    align-items: end;
+    padding: 12px;
+  }
+  .image-picker__panel {
+    padding: 20px;
+    border-radius: 20px 20px 14px 14px;
+  }
+  .image-picker__choices {
+    grid-template-columns: 1fr;
+  }
+  .image-picker__choice {
+    min-height: 52px;
+  }
+  .image-picker__grid {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+}
+
+/* Photo-grid cover — a collage of the book's first recipe photos. */
+.recipe-card__cover-photo--grid {
+  display: grid;
+  grid-template-columns: repeat(var(--cover-grid-cols, 2), 1fr);
+  grid-auto-rows: 1fr;
+  gap: 0;
+}
+.recipe-card__cover-grid-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  -webkit-print-color-adjust: exact;
+  print-color-adjust: exact;
+}
+
+/* Photo-free cover — a proper typographic cover on the template's paper in its
+   own colors, NOT a placeholder fill: no scrim, title centered in the accent. */
+.recipe-card--cover-front[data-cover-mode="none"] .recipe-card__cover-photo {
+  background: var(--recipe-bg);
+}
+.recipe-card--cover-front[data-cover-mode="none"] .recipe-card__cover-scrim {
+  display: none;
+}
+.recipe-card--cover-front[data-cover-mode="none"] .recipe-card__cover-content {
+  inset: 0;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: 1in 0.85in;
+}
+.recipe-card--cover-front[data-cover-mode="none"] .recipe-card__cover-title {
+  color: var(--recipe-accent);
+  text-align: center;
+  text-shadow: none;
+}
+.recipe-card--cover-front[data-cover-mode="none"] .recipe-card__cover-subtitle {
+  color: var(--recipe-accent);
+  text-align: center;
+  opacity: 1;
+}
+.recipe-card--cover-front[data-cover-mode="none"] .recipe-card__cover-author {
+  color: var(--recipe-muted);
+  text-align: center;
+  opacity: 1;
+}
+.recipe-card--cover-front[data-cover-mode="none"] .recipe-card__cover-rule {
+  background: var(--recipe-accent);
+  margin-left: auto;
+  margin-right: auto;
+  opacity: 1;
+}
+
+/* ── Photo covers on the paper themes: readable title plate ────────────────
+   A grid/single-photo cover puts images behind the title. Classic and Pantry
+   keep their photo-forward gradient scrim + white title (readable as-is). The
+   paper-cover themes (counter, heirloom, keepsake, bistro) otherwise drop dark
+   title text straight onto the photos — unreadable — so for those, drop the
+   scrim and back the title lockup with a legible paper plate centered over the
+   photos. `:not(classic):not(pantry)` on the card-set excludes the two gradient
+   themes; the rest keep their frames, ornaments and type. */
+.recipe-card-set:not(.recipe-template--classic):not(.recipe-template--pantry) .recipe-card--cover-front[data-cover-mode="grid"] .recipe-card__cover-scrim,
+.recipe-card-set:not(.recipe-template--classic):not(.recipe-template--pantry) .recipe-card--cover-front[data-cover-mode="photo"] .recipe-card__cover-scrim {
+  display: none;
+}
+.recipe-card-set:not(.recipe-template--classic):not(.recipe-template--pantry) .recipe-card--cover-front[data-cover-mode="grid"] .recipe-card__cover-content,
+.recipe-card-set:not(.recipe-template--classic):not(.recipe-template--pantry) .recipe-card--cover-front[data-cover-mode="photo"] .recipe-card__cover-content {
+  inset: auto;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: max-content;
+  max-width: 74%;
+  align-items: center;
+  text-align: center;
+  gap: 0.04in;
+  padding: 0.42in 0.6in;
+  border-radius: 0.09in;
+  background: color-mix(in srgb, var(--recipe-bg) 92%, transparent);
+  box-shadow: 0 0.05in 0.3in rgba(0, 0, 0, 0.28);
+  color: var(--recipe-accent);
+  z-index: 4;
+}
+.recipe-card-set:not(.recipe-template--classic):not(.recipe-template--pantry) .recipe-card--cover-front[data-cover-mode="grid"] .recipe-card__cover-title,
+.recipe-card-set:not(.recipe-template--classic):not(.recipe-template--pantry) .recipe-card--cover-front[data-cover-mode="photo"] .recipe-card__cover-title,
+.recipe-card-set:not(.recipe-template--classic):not(.recipe-template--pantry) .recipe-card--cover-front[data-cover-mode="grid"] .recipe-card__cover-subtitle,
+.recipe-card-set:not(.recipe-template--classic):not(.recipe-template--pantry) .recipe-card--cover-front[data-cover-mode="photo"] .recipe-card__cover-subtitle {
+  color: var(--recipe-accent);
+  text-shadow: none;
+  text-align: center;
+  opacity: 1;
+}
+.recipe-card-set:not(.recipe-template--classic):not(.recipe-template--pantry) .recipe-card--cover-front[data-cover-mode="grid"] .recipe-card__cover-author,
+.recipe-card-set:not(.recipe-template--classic):not(.recipe-template--pantry) .recipe-card--cover-front[data-cover-mode="photo"] .recipe-card__cover-author {
+  color: var(--recipe-muted);
+  text-shadow: none;
+  text-align: center;
+  opacity: 1;
+}
+.recipe-card-set:not(.recipe-template--classic):not(.recipe-template--pantry) .recipe-card--cover-front[data-cover-mode="grid"] .recipe-card__cover-rule,
+.recipe-card-set:not(.recipe-template--classic):not(.recipe-template--pantry) .recipe-card--cover-front[data-cover-mode="photo"] .recipe-card__cover-rule {
+  background: var(--recipe-accent);
+  margin-left: auto;
+  margin-right: auto;
+  opacity: 1;
+}
+
+/* Counter's cover disc (the big accent-2 circle) belongs to its photo-FREE
+   "solid dark top" cover — over a photo grid it's just a random orange blob, so
+   drop it for photo covers. */
+.recipe-template--counter .recipe-card--cover-front[data-cover-mode="grid"] .recipe-card__cover-photo::after,
+.recipe-template--counter .recipe-card--cover-front[data-cover-mode="photo"] .recipe-card__cover-photo::after {
+  display: none;
+}
+
+/* Editable title/heading fields WRAP — an <input> can't, so these are
+   auto-growing <textarea>s; force full width + wrapping so typed text never
+   gets clipped horizontally. */
+textarea.recipe-card__cover-title,
+textarea.recipe-card__cover-subtitle,
+textarea.recipe-card__cover-author,
+textarea.recipe-card__cover-from,
+textarea.recipe-card__cover-blurb,
+textarea.recipe-card__divider-title,
+textarea.recipe-card__chapter-intro,
+textarea.recipe-card__toc-kicker,
+textarea.recipe-card__toc-title {
+  width: 100%;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  overflow: hidden;
+  resize: none;
+  field-sizing: content;
+}
+
+/* Recipe-cards ↔ Cookbook segmented switch (header + mobile top bar). */
+.recipe-mode-switch {
+  display: inline-flex;
+  gap: 2px;
+  padding: 3px;
+  background: var(--cp-accent-soft);
+  border-radius: 999px;
+}
+.recipe-mode-switch__option {
+  border: 0;
+  background: transparent;
+  color: var(--cp-ink-soft);
+  font-weight: 700;
+  font-size: var(--cp-fs-small);
+  line-height: 1;
+  padding: 7px 14px;
+  border-radius: 999px;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: color 0.15s ease, background 0.15s ease;
+}
+.recipe-mode-switch__option:hover {
+  color: var(--cp-ink);
+}
+.recipe-mode-switch__option.is-active {
+  background: var(--cp-card);
+  color: var(--cp-ink);
+  box-shadow: var(--cp-shadow-sm);
+  cursor: default;
+}
+.recipe-mode-switch__option:focus-visible {
+  outline: var(--cp-focus-ring);
+  outline-offset: var(--cp-focus-ring-offset);
+}
+
+/* Edit-mode hint on the contents page: the entries are generated, not typed. */
+.recipe-card__toc-note {
+  margin: 0.34in 0 0;
+  padding: 0.12in 0.16in;
+  border-radius: 0.08in;
+  background: var(--recipe-step-bg);
+  color: var(--recipe-muted);
+  font-size: 0.12in;
+  line-height: 1.4;
 }
 
 .recipe-print-preview--card-6x4 .recipe-card__divider-title,
@@ -1983,19 +3816,10 @@
   background: var(--recipe-bg);
 }
 
-/* Watercolor cherries watermark in the bottom-right corner. */
-.recipe-template--bistro .recipe-card::after {
-  content: "";
-  position: absolute;
-  right: 0.28in;
-  bottom: 0.26in;
-  width: 1.5in;
-  height: 1.5in;
-  background: url("/images/bistro-cherries.png") right bottom / contain no-repeat;
-  opacity: 0.16;
-  pointer-events: none;
-  -webkit-print-color-adjust: exact;
-  print-color-adjust: exact;
+/* Covers use the horizontal checker band above; the vertical recipe-card
+   spine is intentionally omitted so the photo/title composition stays clean. */
+.recipe-template--bistro .recipe-card--cover {
+  padding-left: 0;
 }
 
 .recipe-template--bistro .recipe-card__checker {
@@ -2340,6 +4164,23 @@
 .recipe-template--cookout .recipe-card > * {
   position: relative;
   z-index: 1;
+}
+
+/* The `.recipe-template--X .recipe-card > * { position: relative }` rules above
+   (heirloom/keepsake/fruit/cookout) exist to layer a RECIPE card's content above
+   its decorative `::before` background. They also catch the COVER's own
+   absolutely-positioned pieces, though, and collapse them into normal flow — a
+   grid-photo cover then sizes to its (square) images and shoves the title lockup
+   off the bottom of the page (fixed only by an edit-triggered reflow). Covers
+   manage their own stacking, so re-assert their pieces as absolute. Placed after
+   all four theme rules so it wins on source order at equal specificity. */
+.recipe-card--cover > .recipe-card__cover-photo,
+.recipe-card--cover > .recipe-card__cover-image,
+.recipe-card--cover > .recipe-card__cover-scrim,
+.recipe-card--cover > .recipe-card__cover-band,
+.recipe-card--cover > .recipe-card__cover-frame,
+.recipe-card--cover > .recipe-card__cover-content {
+  position: absolute;
 }
 
 /* A hand-drawn-BBQ-icon border running along all four edges. The icons are
@@ -2692,6 +4533,12 @@
   transform: translateX(-50%);
 }
 
+.recipe-card__photo-add {
+  align-self: flex-start;
+  flex: 0 0 auto;
+  margin-left: 0.12in;
+}
+
 .recipe-card__photo-remove {
   top: 0.04in;
   right: 0.04in;
@@ -2700,6 +4547,28 @@
   width: 0.18in;
   height: 0.18in;
   padding: 0;
+}
+
+/* Upload failure, anchored just below the (fixed-size) photo box so it can't
+   resize or be clipped by the card. Editing-only, so never printed. */
+.recipe-card__photo-error {
+  position: absolute;
+  z-index: 3;
+  top: calc(100% + 0.05in);
+  left: 50%;
+  transform: translateX(-50%);
+  width: max-content;
+  max-width: 1.9in;
+  margin: 0;
+  padding: 0.05in 0.07in;
+  border-radius: 0.06in;
+  background: rgba(255, 255, 255, 0.96);
+  box-shadow: 0 0.04in 0.14in rgba(0, 0, 0, 0.2);
+  color: #b42318;
+  font-size: 0.11in;
+  font-weight: 700;
+  line-height: 1.3;
+  text-align: center;
 }
 
 /* ── Classic: a crisp, modern cookbook print — white mat, teal hairline ───── */
@@ -3008,6 +4877,60 @@
   min-height: 1lh;
 }
 
+/* Cookbook description: an italic, muted lede directly below the title and
+   above cook time/servings. `pre-wrap` keeps the line breaks a cook types in
+   (Shift+Enter); the same class styles the read-only <p> and the editable
+   <textarea> so print and edit look identical. `max-width` keeps the measure
+   readable rather than running the full card width. */
+.recipe-card__headnote {
+  margin: 0.05in 0 0.03in;
+  max-width: 6.2in;
+  font-size: 10pt;
+  font-style: italic;
+  line-height: 1.4;
+  color: var(--recipe-muted);
+  white-space: pre-wrap;
+}
+
+/* Cookbook facts rely on typography and whitespace rather than app-like pills,
+   icons, boxes, or rules. Labels and values share one quiet horizontal line. */
+.recipe-card__facts {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0.22in;
+  width: fit-content;
+  margin-top: 0.08in;
+}
+
+.recipe-card__fact {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 0.06in;
+  color: var(--recipe-ink);
+  line-height: 1.15;
+  white-space: nowrap;
+}
+
+.recipe-card__fact-label {
+  font-size: 7.5pt;
+  font-weight: 800;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--recipe-muted);
+}
+
+.recipe-card__fact-value {
+  width: auto;
+  max-width: 1.15in;
+  field-sizing: content;
+  font-family: var(--recipe-title-font);
+  font-size: 10.5pt;
+  font-weight: 700;
+  letter-spacing: 0.01em;
+  color: var(--recipe-ink);
+}
+
 .recipe-card__meta {
   margin-top: 3px;
   font-size: var(--recipe-card-meta-size);
@@ -3015,6 +4938,18 @@
   letter-spacing: 0.06em;
   text-transform: uppercase;
   color: var(--recipe-muted);
+}
+
+/* Cookbook mode: the source link sits under the meta line (see RecipeCardFace)
+   instead of in a footer, so it doesn't compete with the page-number folio.
+   Quiet and un-uppercased so it reads as a citation, not a second meta row. */
+.recipe-card__source-line {
+  display: block;
+  margin-top: 2px;
+  font-size: var(--recipe-card-meta-size);
+  font-weight: 500;
+  color: var(--recipe-muted);
+  overflow-wrap: anywhere;
 }
 
 .recipe-card__cols {
@@ -3563,6 +5498,12 @@
   color: var(--cp-accent);
 }
 
+.cookbook-offer-dialog__closer {
+  margin-top: 14px;
+  font-weight: 650;
+  color: var(--cp-ink);
+}
+
 .cookbook-offer-dialog__price {
   margin-top: 14px;
   font-size: 1.6rem;
@@ -3715,6 +5656,29 @@
   margin: 0;
 }
 
+/* ── Cookbook print-format presets ─────────────────────────────────────────
+   A print FORMAT changes only the physical sheet a cookbook EXPORTS on: the
+   @page size (trim + bleed) and where/how large the unchanged Letter page sits
+   on it. It is applied ONLY at export time — the deck gets `.rp-exporting`
+   + the format's `rp-page-*` class + geometry vars for the moment `window.
+   print()` fires (see `exportPreset` in app/print/page.tsx). The on-screen book
+   always previews at plain Letter, and a plain Ctrl+P (no `.rp-exporting`)
+   prints Letter too. The recipe measurement/pagination engine is NEVER re-tuned
+   — each page is authored at Letter and only visually scaled + inset here
+   (geometry math in lib/cookbookPresets.ts). Art (covers, full-page photos, the
+   paper background) bleeds to the sheet edge; recipe/TOC/divider TEXT scales
+   into the safe box. All of it is gated under `.rp-exporting` inside @media
+   print below; the `@page` rules themselves are global. */
+@page rp-preset-us-letter {
+  size: 8.5in 11in;
+  margin: 0;
+}
+@page rp-preset-hardcover-8x10 {
+  /* 8×10 trim + 0.125in bleed per edge. */
+  size: 8.25in 10.25in;
+  margin: 0;
+}
+
 @media print {
 
   /* The on-screen deck is the print source: every sheet already renders here
@@ -3749,6 +5713,40 @@
     display: none !important;
   }
 
+  /* Book view is a screen-only grouping for layout, but the PAGE ORDER it
+     produces is the real book order: printing each page (and each parity blank)
+     on its own sheet, in DOM order, makes the bound book's facing pages line up
+     with the on-screen spreads — chapter openers land on a recto, an
+     image-spread's photo faces its recipe, etc. */
+  .recipe-spread {
+    display: block !important;
+  }
+
+  /* A parity blank is a real, intentionally-empty book page. */
+  .recipe-spread__blank {
+    display: block !important;
+    width: auto !important;
+    height: 100vh !important;
+    margin: 0 !important;
+    border: 0 !important;
+    border-radius: 0 !important;
+    background: #fff !important;
+    break-after: page;
+    page-break-after: always;
+    break-inside: avoid-page;
+    page: rp-letter;
+  }
+
+  /* …except a trailing pad blank (nothing follows it) — printing it would be a
+     stray empty last page. The preceding real page carries `--no-break`. */
+  .recipe-spread__blank--trailing {
+    display: none !important;
+  }
+
+  .recipe-spread__page.is-focused .recipe-page-scaler {
+    outline: none !important;
+  }
+
   .recipe-page-scaler {
     width: auto !important;
     height: auto !important;
@@ -3778,6 +5776,57 @@
 
   .recipe-print-preview--letter .recipe-card-page {
     page: rp-letter;
+  }
+
+  /* Preset pages (and their parity blanks) print at the preset's trim + bleed.
+     The `rp-page-*` class sits on the deck (an ancestor of both the real pages
+     and the blank fillers), so one class re-sizes the whole book. Placed after
+     the `--letter` binding above so it wins the same-specificity match in
+     cookbook mode (the preview still carries `--letter` for its typography). */
+  .recipe-page-deck.rp-page-us-letter .recipe-card-page,
+  .recipe-page-deck.rp-page-us-letter .recipe-spread__blank {
+    page: rp-preset-us-letter;
+  }
+  .recipe-page-deck.rp-page-hardcover-8x10 .recipe-card-page,
+  .recipe-page-deck.rp-page-hardcover-8x10 .recipe-spread__blank {
+    page: rp-preset-hardcover-8x10;
+  }
+
+  /* Format geometry — applied ONLY while a format is being exported (the deck
+     carries `.rp-exporting` + the geometry vars). Without it, a cookbook prints
+     at plain Letter exactly as before, so a bare Ctrl+P is unchanged.
+
+     Full-bleed paper: paint the theme background on the sheet-sized page (not
+     just the scaled card) so colored/warm paper reaches the physical edge
+     instead of leaving a white border around a centered card. */
+  .rp-exporting .recipe-print-preview--book-preset .recipe-card-page {
+    background: var(--recipe-bg, #fff);
+  }
+
+  /* Text-dominant pages (recipe, TOC, divider): center the Letter card in the
+     safe box (margin, plus the gutter on the binding side) and scale it to fit.
+     The card keeps its Letter layout; anything past the safe box is scaled
+     away, never re-measured, so a recipe that fit at Letter still fits here. */
+  .rp-exporting .recipe-print-preview--book-safe .recipe-card-page {
+    box-sizing: border-box;
+    padding: var(--rp-inset-block, 0) var(--rp-inset-outer, 0);
+  }
+  .rp-exporting .recipe-print-preview--book-safe.rp-bind-left .recipe-card-page {
+    padding-left: var(--rp-inset-bind, var(--rp-inset-outer, 0));
+  }
+  .rp-exporting .recipe-print-preview--book-safe.rp-bind-right .recipe-card-page {
+    padding-right: var(--rp-inset-bind, var(--rp-inset-outer, 0));
+  }
+  .rp-exporting .recipe-print-preview--book-safe .recipe-card {
+    transform: scale(var(--rp-card-scale, 1));
+    transform-origin: center center;
+  }
+
+  /* Art-dominant pages (cover / back cover): scale the Letter page to FILL the
+     sheet so the artwork bleeds to the edge, cropping the overflow. */
+  .rp-exporting .recipe-print-preview--book-art .recipe-card {
+    transform: scale(var(--rp-art-scale, 1));
+    transform-origin: center center;
   }
 
   /* `.recipe-card-page` is the fragmentation unit that breaks pages now, not

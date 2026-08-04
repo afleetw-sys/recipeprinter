@@ -13,13 +13,15 @@ import type { ImportMethod } from "@/types/recipe";
 import type { QueueItem } from "@/types/recipe";
 import { track, truncateReason, type ImportFailureCode } from "@/lib/analytics";
 import { ImportError } from "@/lib/parser";
-import { captureFailedImportImages } from "@/lib/failedImageCapture";
+import { captureFailedImportImages } from "@/lib/failedImportCapture";
 import {
   CookPilotLogoIcon,
+  ICON_SIZE,
   ImageIcon,
   LinkIcon,
   MoreVerticalIcon,
   PlusIcon,
+  SpinnerIcon,
   TextIcon,
   UploadIcon,
 } from "@/components/icons";
@@ -41,11 +43,20 @@ const MODES: {
 const PRIMARY_MODES = MODES.filter((mode) => mode.id === "url" || mode.id === "cookpilot");
 const OVERFLOW_MODES = MODES.filter((mode) => mode.id === "image" || mode.id === "text");
 
+const loadCookPilotImport = () => import("@/components/CookPilotRecipePicker");
+
 const CookPilotImportSource = dynamic(
-  () => import("@/components/CookPilotRecipePicker").then((mod) => mod.CookPilotImportSource),
+  () => loadCookPilotImport().then((mod) => mod.CookPilotImportSource),
   {
     ssr: false,
-    loading: () => null,
+    loading: () => (
+      <div className="h-40 grid place-items-center text-ink-soft rounded-2xl border border-dashed border-line-strong">
+        <span className="inline-flex items-center gap-2">
+          <SpinnerIcon size={ICON_SIZE.lg} />
+          Opening CookPilot…
+        </span>
+      </div>
+    ),
   },
 );
 
@@ -232,6 +243,22 @@ export function ImportPanel({
   onAddCookPilotRecipes: (recipes: QueueItem[]) => number;
   onRemoveRecipe: (id: string) => void;
 }) {
+  useEffect(() => {
+    // CookPilot is a primary import option, but its Firebase/Auth code is large
+    // enough to keep out of the initial page bundle. Fetch and initialize it
+    // once the browser is idle so choosing CookPilot feels immediate without
+    // delaying first paint.
+    const prewarm = () => {
+      void loadCookPilotImport().then((mod) => mod.prewarmCookPilotImport());
+    };
+    if ("requestIdleCallback" in window) {
+      const idleId = window.requestIdleCallback(prewarm, { timeout: 1_500 });
+      return () => window.cancelIdleCallback(idleId);
+    }
+    const timer = globalThis.setTimeout(prewarm, 500);
+    return () => globalThis.clearTimeout(timer);
+  }, []);
+
   const [mode, setMode] = useState<ImportMethod>(initialMode);
   const [url, setUrl] = useState("");
   const [text, setText] = useState("");
@@ -320,8 +347,8 @@ export function ImportPanel({
         if (category === "too_large") {
           trackImageFailure(category, reason);
         } else {
-          const debugImagePath = await captureFailedImportImages(files, { source: "image", category, reason });
-          trackImageFailure(category, reason, debugImagePath ?? undefined);
+          const debugPath = await captureFailedImportImages(files, { source: "image", category, reason });
+          trackImageFailure(category, reason, debugPath ?? undefined);
         }
       } finally {
         setBusy(false);
@@ -339,13 +366,13 @@ export function ImportPanel({
   // import funnel honest across the browser/queue boundary. Only the failure
   // branch emits — a successful prep is counted by the queue instead, so no
   // attempt is double-reported.
-  function trackImageFailure(category: ImportFailureCode, reason: string, debugImagePath?: string) {
+  function trackImageFailure(category: ImportFailureCode, reason: string, debugPath?: string) {
     track("recipe_import_started", { source: "image" });
     track("recipe_import_failed", {
       source: "image",
       category,
       reason,
-      ...(debugImagePath ? { debugImagePath } : {}),
+      ...(debugPath ? { debugPath } : {}),
     });
   }
 
@@ -486,7 +513,7 @@ export function ImportPanel({
                 className="btn btn-primary rp-import-submit w-full lg:w-auto"
                 disabled={busy}
               >
-                {busy ? <UploadIcon size={18} /> : <PlusIcon size={18} />}
+                {busy ? <SpinnerIcon size={ICON_SIZE.md} /> : <PlusIcon size={ICON_SIZE.md} />}
                 {submitLabel}
               </button>
             </div>
@@ -551,7 +578,7 @@ export function ImportPanel({
 
         {mode !== "url" && (
           <button type="submit" className="btn btn-primary rp-import-submit w-full" disabled={busy}>
-            {busy ? <UploadIcon size={18} /> : <PlusIcon size={18} />}
+            {busy ? <SpinnerIcon size={ICON_SIZE.md} /> : <PlusIcon size={ICON_SIZE.md} />}
             {submitLabel}
           </button>
         )}

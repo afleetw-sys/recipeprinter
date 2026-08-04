@@ -13,6 +13,7 @@ const LAST_MODIFIED: Record<string, string> = {
   "/features": "2026-07-08",
   "/faq": "2026-07-02",
   "/about": "2026-07-02",
+  "/printable-recipe-card-generator": "2026-08-01",
 };
 
 const DEFAULT_LAST_MODIFIED = "2026-07-08";

@@ -1,0 +1,27 @@
+{
+  "firestore": {
+    "rules": "firestore.rules"
+  },
+  "storage": [
+    {
+      "bucket": "cookpilot-bbecb.appspot.com",
+      "rules": "storage.rules"
+    },
+    {
+      "bucket": "cookpilot-bbecb.firebasestorage.app",
+      "rules": "storage.rules"
+    }
+  ],
+  "emulators": {
+    "firestore": {
+      "port": 8088
+    },
+    "storage": {
+      "port": 9198
+    },
+    "ui": {
+      "enabled": false
+    },
+    "singleProjectMode": true
+  }
+}

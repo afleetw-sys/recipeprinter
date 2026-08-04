@@ -37,6 +37,7 @@ interface UsePremiumTemplatePurchaseOptions {
   showToast: (message: string) => void;
   clearToast: () => void;
   printNow: () => void;
+  onFreshPurchase: () => void;
 }
 
 /**
@@ -56,6 +57,7 @@ export function usePremiumTemplatePurchase({
   showToast,
   clearToast,
   printNow,
+  onFreshPurchase,
 }: UsePremiumTemplatePurchaseOptions) {
   const [revenueCatUserId, setRevenueCatUserId] = useState<string | null>(null);
   const [customerInfo, setCustomerInfo] = useState<CustomerInfo | null>(null);
@@ -108,7 +110,7 @@ export function usePremiumTemplatePurchase({
 
   async function unlockTemplateAndPrint(premiumTemplate: PremiumRecipePrintTemplate) {
     if (!revenueCatUserId) {
-      showToast("Purchase service is still getting ready. Try Print again in a moment.");
+      showToast("Purchases aren't ready yet. Wait a moment, then try again.");
       return;
     }
 
@@ -125,6 +127,7 @@ export function usePremiumTemplatePurchase({
       track("purchase_started", { product: "premium_template", template: premiumTemplate });
       const result = await purchaseRecipePrinterTemplate({
         userId: revenueCatUserId,
+        email: cookPilotUser?.email,
         template: premiumTemplate,
       });
       setCustomerInfo(result.customerInfo);
@@ -138,11 +141,12 @@ export function usePremiumTemplatePurchase({
       track("purchase_completed", { product: "premium_template", template: premiumTemplate });
 
       if (!hasTemplateEntitlement(result.customerInfo, premiumTemplate)) {
-        showToast("Purchase finished, but the template is still syncing. Try Print again in a moment.");
+        showToast("Your purchase went through, but the template isn't ready yet. Wait a moment, then tap Print again.");
         return;
       }
 
       setShowUnlockDialog(false);
+      onFreshPurchase();
       printNow();
     } catch (error) {
       showToast(friendlyPurchaseError(error));
@@ -167,7 +171,7 @@ export function usePremiumTemplatePurchase({
       ]);
 
       if (!status.grantedConfirmed) {
-        showToast("Claim is finishing up — try Print again in a moment.");
+        showToast("Your template is almost ready. Wait a moment, then tap Print again.");
         return;
       }
 
@@ -231,7 +235,7 @@ export function usePremiumTemplatePurchase({
       .catch((error) => {
         if (cancelled || identityRequestRef.current !== requestId) return;
         console.warn("RecipePrinter: could not link CookPilot account to purchases", error);
-        showToast("Signed in, but we couldn't check your purchases. Try again in a moment.");
+        showToast("You're signed in, but we couldn't restore your purchases. Check your connection and try again.");
       });
     return () => {
       cancelled = true;

@@ -7,6 +7,7 @@ import {
   GoogleAuthProvider,
   type AuthProvider,
   OAuthProvider,
+  createUserWithEmailAndPassword,
   deleteUser,
   getRedirectResult,
   onAuthStateChanged,
@@ -19,13 +20,15 @@ import {
 } from "firebase/auth";
 import { httpsCallable } from "firebase/functions";
 import { getFirebaseAuth } from "@/lib/firebase/client";
+import { ensureRecipePrinterAccount } from "@/lib/firebase/recipePrinterAccount";
 import { friendlyAuthError } from "@/lib/friendlyErrors";
+import { identifyUser } from "@/lib/analytics";
 import { localStore } from "@/lib/storage";
 import { Dialog } from "@/components/Dialog";
 import { ICON_SIZE, SpinnerIcon, XIcon } from "@/components/icons";
 
 /* ──────────────────────────────────────────────────────────────────────────
-   Shared CookPilot login: same Firebase project, same providers, same
+   Shared Recipe Printer login: same Firebase project, same providers, same
    email-enumeration-safe provider check as CookPilotWeb's own auth. Used by
    both the CookPilot recipe importer and the print page's "Already
    purchased?" template-purchase recovery flow — one implementation so the
@@ -60,7 +63,24 @@ export async function signInWithCookPilotProvider(provider: AuthProvider) {
 }
 
 export async function purgeAnonymousUser(user: User) {
-  await deleteUser(user).catch(() => signOut(getFirebaseAuth()).catch(() => {}));
+  await deleteUser(user).catch(async () => {
+    // The user may have completed a real sign-in while best-effort anonymous
+    // cleanup was running. Never let cleanup sign that newer user back out.
+    const auth = getFirebaseAuth();
+    if (auth.currentUser?.uid === user.uid) {
+      await signOut(auth).catch(() => {});
+    }
+  });
+}
+
+let authReadyPromise: Promise<void> | null = null;
+
+/** Starts IndexedDB session restoration before a CookPilot surface needs it. */
+export function prewarmCookPilotAuth(): Promise<void> {
+  if (!authReadyPromise) {
+    authReadyPromise = getFirebaseAuth().authStateReady();
+  }
+  return authReadyPromise;
 }
 
 function readCookPilotWasSignedIn(): boolean {
@@ -111,6 +131,19 @@ export function useCookPilotAuth() {
         return;
       }
       rememberCookPilotSignedIn(Boolean(nextUser));
+      if (nextUser) {
+        // The one place a real CookPilot account becomes known — identify the
+        // PostHog person here so first-/latest-touch attribution lands on the
+        // person. Idempotent per uid, so the several components that mount this
+        // hook don't re-identify. Uses the opaque Firebase uid, no PII.
+        identifyUser(nextUser.uid);
+        // Account metadata is best-effort and must never hold the sign-in UI
+        // hostage. Rules allow only these harmless timestamps; server-owned
+        // purchases, entitlements, grants, and roles cannot be changed here.
+        void ensureRecipePrinterAccount(nextUser).catch((error) => {
+          console.warn("Could not initialize Recipe Printer account metadata.", error);
+        });
+      }
       setUser(nextUser ?? null);
       setReady(true);
     });
@@ -125,14 +158,16 @@ export function useCookPilotAuth() {
  * `AuthFlowLogic.stepAfterEmailSubmit`. */
 export async function checkEmailProviders(email: string): Promise<string[]> {
   const auth = getFirebaseAuth();
-  await auth.authStateReady();
+  await prewarmCookPilotAuth();
   checkingEmailProviders = true;
+  let temporaryUser: User | null = null;
   try {
     if (!auth.currentUser) {
       // checkUserProviders just requires *some* signed-in uid; an anonymous
       // session is enough, same as CookPilot's ensureAnonymousUserIfNeeded.
       // Scoped to this login flow only, not the shared parser call path.
-      await signInAnonymously(auth);
+      const credential = await signInAnonymously(auth);
+      temporaryUser = credential.user;
     }
     const { getFns } = await import("@/lib/firebase/functions");
     const checkUserProviders = httpsCallable<{ email: string }, { providers: string[] | null }>(
@@ -143,28 +178,43 @@ export async function checkEmailProviders(email: string): Promise<string[]> {
     return data.providers ?? [];
   } finally {
     checkingEmailProviders = false;
-    // This anonymous session exists only to authorize the call above; purge it
-    // now rather than leaving it as an orphaned user in Firebase Auth.
-    if (auth.currentUser?.isAnonymous) {
-      await purgeAnonymousUser(auth.currentUser);
+    // This session has already done its job. Cleanup must not hold the UI on a
+    // spinner before the password field appears.
+    if (temporaryUser?.isAnonymous) {
+      void purgeAnonymousUser(temporaryUser);
     }
   }
 }
 
-export function CookPilotLoginDialog({ onClose }: { onClose: () => void }) {
-  const [step, setStep] = useState<"email" | "password">("email");
+export function CookPilotLoginDialog({
+  onClose,
+  onAuthenticated,
+  reason = "default",
+}: {
+  onClose: () => void;
+  onAuthenticated?: () => void;
+  reason?: "default" | "purchase";
+}) {
+  const [step, setStep] = useState<"email" | "password" | "create">("email");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
 
+  useEffect(() => {
+    // Overlap the Functions chunk download with the time spent entering an
+    // email instead of starting it after Continue is pressed.
+    void import("@/lib/firebase/functions");
+    void prewarmCookPilotAuth();
+  }, []);
+
   async function handleEmailContinue(event: FormEvent) {
     event.preventDefault();
     if (busy) return;
     const normalizedEmail = email.trim().toLowerCase();
     if (!normalizedEmail) {
-      setError("Enter the email for your CookPilot account.");
+      setError("Enter your email address.");
       return;
     }
 
@@ -194,7 +244,7 @@ export function CookPilotLoginDialog({ onClose }: { onClose: () => void }) {
         return;
       }
 
-      setStep("password");
+      setStep(providers.length === 0 ? "create" : "password");
     } catch (err) {
       setError(friendlyAuthError(err, "We couldn't verify that email. Please try again."));
     } finally {
@@ -206,17 +256,32 @@ export function CookPilotLoginDialog({ onClose }: { onClose: () => void }) {
     event.preventDefault();
     if (busy) return;
     if (!password) {
-      setError("Enter the password for your CookPilot account.");
+      setError("Enter your password.");
       return;
     }
 
     setBusy(true);
     setError(null);
     try {
-      await signInWithEmailAndPassword(getFirebaseAuth(), email.trim().toLowerCase(), password);
-      onClose();
+      if (step === "create") {
+        await createUserWithEmailAndPassword(
+          getFirebaseAuth(),
+          email.trim().toLowerCase(),
+          password,
+        );
+      } else {
+        await signInWithEmailAndPassword(getFirebaseAuth(), email.trim().toLowerCase(), password);
+      }
+      (onAuthenticated ?? onClose)();
     } catch (err) {
-      setError(friendlyAuthError(err, "We couldn't sign in. Please try again."));
+      setError(
+        friendlyAuthError(
+          err,
+          step === "create"
+            ? "We couldn't create your account. Please try again."
+            : "We couldn't sign in. Please try again.",
+        ),
+      );
     } finally {
       setBusy(false);
     }
@@ -248,7 +313,7 @@ export function CookPilotLoginDialog({ onClose }: { onClose: () => void }) {
     <Dialog
       onClose={onClose}
       closeDisabled={busy}
-      label="Log in to CookPilot"
+      label={reason === "purchase" ? "Protect your purchase" : "Sign in to Recipe Printer"}
       portal
       className="fixed inset-0 z-50 flex items-stretch sm:items-center justify-center bg-ink/30 p-0 sm:px-cp-4 sm:py-cp-6"
       panelClassName="panel panel--modal w-full sm:max-w-[420px] h-full sm:h-auto rounded-none border-0 sm:rounded-2xl sm:border p-cp-5 flex flex-col gap-cp-4 relative overflow-y-auto"
@@ -264,10 +329,12 @@ export function CookPilotLoginDialog({ onClose }: { onClose: () => void }) {
 
         <div className="pr-cp-7">
           <h3 className="font-extrabold tracking-[-0.02em] text-cp-h2">
-            Log in to CookPilot
+            {reason === "purchase" ? "Don’t lose your purchase" : "Sign in to Recipe Printer"}
           </h3>
           <p className="text-cp-small text-ink-soft mt-1">
-            Use an existing account to continue.
+            {reason === "purchase"
+              ? "Create a free account or sign in so you can access your purchase on another device."
+              : "Your account saves cookbooks and restores templates across devices."}
           </p>
         </div>
 
@@ -287,6 +354,9 @@ export function CookPilotLoginDialog({ onClose }: { onClose: () => void }) {
                 value={email}
                 onChange={(event) => setEmail(event.target.value)}
               />
+              <p className="mt-1 text-[11px] leading-4 text-ink-soft">
+                Already use CookPilot? Sign in with the same account.
+              </p>
             </div>
             <button type="submit" className="btn btn-primary w-full" disabled={busy}>
               {busy ? <SpinnerIcon size={ICON_SIZE.md} /> : null}
@@ -318,14 +388,14 @@ export function CookPilotLoginDialog({ onClose }: { onClose: () => void }) {
             />
             <div>
               <label className="field-label" htmlFor="cookpilot-password">
-                Password for {email.trim()}
+                {step === "create" ? "Create a password for" : "Password for"} {email.trim()}
               </label>
               <input
                 id="cookpilot-password"
                 name="password"
                 className="field"
                 type="password"
-                autoComplete="current-password"
+                autoComplete={step === "create" ? "new-password" : "current-password"}
                 autoFocus
                 value={password}
                 onChange={(event) => setPassword(event.target.value)}
@@ -333,7 +403,7 @@ export function CookPilotLoginDialog({ onClose }: { onClose: () => void }) {
             </div>
             <button type="submit" className="btn btn-primary w-full" disabled={busy}>
               {busy ? <SpinnerIcon size={ICON_SIZE.md} /> : null}
-              Sign in
+              {step === "create" ? "Create account" : "Sign in"}
             </button>
             <button
               type="button"
@@ -358,7 +428,7 @@ export function CookPilotLoginDialog({ onClose }: { onClose: () => void }) {
 
       {error && (
         <div className="state state--error" role="alert">
-          <h4>Couldn&apos;t sign in</h4>
+          <h4>{step === "create" ? "Couldn’t create account" : "Couldn’t sign in"}</h4>
           <p>{error}</p>
         </div>
       )}

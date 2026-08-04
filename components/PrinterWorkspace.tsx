@@ -155,7 +155,7 @@ export function PrinterWorkspace({
                     <button
                       type="button"
                       role="menuitem"
-                      className="mode-toggle-menu__item"
+                      className="mode-toggle-menu__item mode-toggle-menu__item--danger"
                       onClick={() => {
                         clear();
                         setMenuOpen(false);
@@ -239,7 +239,7 @@ export function PrinterWorkspace({
               <div className="rp-mobile-print-tray__actions">
                 <button
                   type="button"
-                  className="btn-ghost btn-compact"
+                  className="btn-ghost btn-ghost--danger btn-compact"
                   onClick={clear}
                 >
                   <TrashIcon size={ICON_SIZE.md} />

@@ -1,6 +1,8 @@
 import Link from "next/link";
 import type { ReactNode } from "react";
 import { LogoMark, Wordmark } from "@/components/Logo";
+import { ChevronLeftIcon, ICON_SIZE } from "@/components/icons";
+import { AccountControl, type AccountSaveStatus } from "@/components/AccountControl";
 
 // Minimal top bar shared across every page, mirrors CookPilot's cp-topbar.
 // The logo is a home link so the product always feels like one focused utility,
@@ -9,21 +11,28 @@ export function SiteHeader({
   backHref,
   onBack,
   actions,
+  centerActions = false,
   compact = false,
   sticky = false,
+  saveStatus,
+  onRetrySave,
 }: {
   backHref?: string;
   /** When set, the logo becomes a real "go back" control (history.back()) instead of a fixed link to backHref/home. */
   onBack?: () => void;
   actions?: ReactNode;
+  /** Center `actions` in the bar (absolute) rather than right-aligning them. */
+  centerActions?: boolean;
   compact?: boolean;
   sticky?: boolean;
+  saveStatus?: AccountSaveStatus | null;
+  onRetrySave?: () => void;
 }) {
   const logo = (
     <>
       {(backHref || onBack) && (
         <span className="text-ink-soft group-hover:text-ink transition-colors" aria-hidden>
-          ←
+          <ChevronLeftIcon size={ICON_SIZE.md} />
         </span>
       )}
       <LogoMark size={compact ? 26 : 30} rounded={0} />
@@ -39,8 +48,8 @@ export function SiteHeader({
 
   return (
     <header
-      className={`no-print flex items-center justify-between gap-cp-4 px-cp-6 min-h-[62px] flex-wrap ${
-        sticky ? "sticky top-0 z-10 bg-page border-b border-line py-cp-3" : ""
+      className={`no-print relative flex items-center justify-between gap-cp-4 px-cp-6 min-h-[62px] flex-wrap ${
+        sticky ? "sticky top-0 z-10 bg-card border-b border-line py-cp-3" : ""
       }`}
     >
       {onBack ? (
@@ -61,9 +70,15 @@ export function SiteHeader({
           {logo}
         </Link>
       )}
-      {actions && (
-        <div className="flex items-center gap-cp-3 flex-wrap justify-end">{actions}</div>
+      {actions && centerActions && (
+          <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 flex items-center gap-cp-3">
+            {actions}
+          </div>
       )}
+      <div className="flex items-center gap-cp-3 flex-wrap justify-end">
+        {actions && !centerActions ? actions : null}
+        <AccountControl saveStatus={saveStatus} onRetry={onRetrySave} />
+      </div>
     </header>
   );
 }

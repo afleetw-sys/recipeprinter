@@ -1,4 +1,5 @@
 import type { SharedRecipeCard } from "@/types/sharedRecipeCard";
+import { RECIPE_PRINTER_SHARED_CARDS_PATH } from "@/lib/firebase/recipePrinterPaths";
 
 const SHARED_RECIPE_CARDS_COLLECTION = "sharedRecipeCards";
 
@@ -19,8 +20,12 @@ async function slugAvailable(slug: string): Promise<boolean> {
     import("@/lib/firebase/db"),
   ]);
   try {
-    const snap = await getDoc(doc(getDb(), SHARED_RECIPE_CARDS_COLLECTION, slug));
-    return !snap.exists();
+    const db = getDb();
+    const [next, legacy] = await Promise.all([
+      getDoc(doc(db, ...RECIPE_PRINTER_SHARED_CARDS_PATH, slug)).catch(() => null),
+      getDoc(doc(db, SHARED_RECIPE_CARDS_COLLECTION, slug)),
+    ]);
+    return !next?.exists() && !legacy.exists();
   } catch (error) {
     // A denied read here means the doc exists but isn't publicly readable
     // right now (e.g. deactivated) — either way, the slug is taken.
@@ -66,7 +71,7 @@ export async function createSharedRecipeCard(
     published: true,
     viewCount: 0,
   });
-  await setDoc(doc(getDb(), SHARED_RECIPE_CARDS_COLLECTION, card.slug), data);
+  await setDoc(doc(getDb(), ...RECIPE_PRINTER_SHARED_CARDS_PATH, card.slug), data);
 }
 
 export async function setSharedRecipeCardPublished(slug: string, published: boolean): Promise<void> {
@@ -74,7 +79,7 @@ export async function setSharedRecipeCardPublished(slug: string, published: bool
     import("firebase/firestore"),
     import("@/lib/firebase/db"),
   ]);
-  await updateDoc(doc(getDb(), SHARED_RECIPE_CARDS_COLLECTION, slug), {
+  await updateDoc(doc(getDb(), ...RECIPE_PRINTER_SHARED_CARDS_PATH, slug), {
     published,
     updatedAt: Date.now(),
   });
@@ -92,7 +97,7 @@ export async function incrementSharedRecipeCardViewCount(slug: string): Promise<
     import("firebase/firestore"),
     import("@/lib/firebase/db"),
   ]);
-  await updateDoc(doc(getDb(), SHARED_RECIPE_CARDS_COLLECTION, slug), {
+  await updateDoc(doc(getDb(), ...RECIPE_PRINTER_SHARED_CARDS_PATH, slug), {
     viewCount: increment(1),
   });
 }
