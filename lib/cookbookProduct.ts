@@ -15,7 +15,7 @@
  * says why, and makes relaunching a one-line change — same approach as the
  * Fruit Stand template's gate in components/RecipeCardPrint.tsx.
  */
-export const COOKBOOK_ENABLED = false;
+export const COOKBOOK_ENABLED = true;
 
 // One purchase unlocks one stable cookbook project. The RevenueCat web product
 // behind this identifier must be configured as a repeat-purchasable consumable;
