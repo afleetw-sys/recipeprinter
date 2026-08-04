@@ -3127,7 +3127,7 @@ export default function PrintPage() {
           <div className="recipe-page-rail__add-row">
             <button
               type="button"
-              className={`recipe-page-rail__add recipe-page-rail__add-main ${
+              className={`btn btn-secondary recipe-page-rail__add-main ${
                 projectMeta.meta.cookbookMode ? "recipe-page-rail__add-main--paired" : ""
               }`}
               onClick={() => {
@@ -3691,6 +3691,7 @@ export default function PrintPage() {
 
           {!cookbookMode && (anyRecipeHasImage || anyRecipeHasSourceUrl) && (
             <div className="recipe-config-section recipe-config-section--settings">
+              <span className="recipe-config-label">Include</span>
               {anyRecipeHasImage && (
                 <label className="recipe-toggle">
                   <input
@@ -3699,7 +3700,7 @@ export default function PrintPage() {
                     onChange={(event) => setShowPhoto(event.target.checked)}
                   />
                   <span>
-                    <strong>Include recipe photo</strong>
+                    <strong>Recipe photo</strong>
                   </span>
                 </label>
               )}
@@ -3711,7 +3712,7 @@ export default function PrintPage() {
                     onChange={(event) => setShowSourceUrl(event.target.checked)}
                   />
                   <span>
-                    <strong>Include link</strong>
+                    <strong>Recipe link</strong>
                   </span>
                 </label>
               )}

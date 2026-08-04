@@ -237,35 +237,10 @@
    `.recipe-page-rail` (see its own `overflow-y: auto` above). `flex-shrink: 0`
    plus `position: sticky; bottom: 0` means it just sits below the last
    thumbnail when everything fits, but pins to the bottom of the visible rail
-   once the list overflows — no scroll-tracking JS needed. Needs its own
-   opaque background since thumbnails scroll underneath it once pinned. */
-.recipe-page-rail__add {
-  position: sticky;
-  bottom: 0;
-  z-index: 2;
-  flex-shrink: 0;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-  padding: 14px;
-  border: 1.5px solid var(--cp-line-strong);
-  border-radius: 12px;
-  background: var(--cp-card);
-  color: var(--cp-ink);
-  font-size: var(--cp-fs-caption);
-  font-weight: 700;
-  transition:
-    border-color 150ms ease,
-    background 150ms ease,
-    color 150ms ease;
-}
-
-.recipe-page-rail__add:hover {
-  border-color: var(--cp-accent);
-  background: rgba(127, 127, 127, 0.08);
-  color: var(--cp-accent-ink);
-}
+   once the list overflows — no scroll-tracking JS needed. The sticky wrapper
+   (.recipe-page-rail__add-row) carries the opaque background so thumbnails
+   scrolling underneath stay covered; the button itself is the shared
+   `.btn.btn-secondary` outline component for cross-app consistency. */
 
 /* Organizational section header shown above a named section's first recipe —
    independent of whether that section also prints its own divider page. */
@@ -341,20 +316,20 @@
   border-left-color: color-mix(in srgb, var(--cp-accent) 34%, var(--cp-line));
 }
 
+/* Pinned footer band: bleeds out to the rail's padding edges (rail padding is
+   16px 16px 16px 4px) so the whole strip behind the add button is a solid
+   white footer flush to the bottom, not just a top divider line. The matching
+   padding keeps the button aligned with the thumbnails above it. */
 .recipe-page-rail__add-row {
   position: sticky;
-  bottom: 0;
+  bottom: -16px;
   z-index: 2;
   display: flex;
   gap: 0;
-  margin-top: 4px;
-  padding-top: 12px;
+  margin: 4px -16px -16px -4px;
+  padding: 12px 16px 16px 4px;
   border-top: 1px solid var(--cp-line);
   background: var(--cp-card);
-}
-
-.recipe-page-rail__add-row .recipe-page-rail__add {
-  position: static;
 }
 
 /* Fills the row on its own (no cookbook mode → no chevron trigger next to
@@ -369,20 +344,22 @@
   border-bottom-right-radius: 0;
 }
 
+/* Paired siblings of the .btn.btn-secondary main button — matched to its 1px
+   outline so the merged seam reads as one control, with the same neutral
+   hover. */
 .recipe-page-rail__add-menu-trigger {
   flex: 0 0 42px;
   display: grid;
   place-items: center;
-  border: 1.5px solid var(--cp-line-strong);
+  border: 1px solid var(--cp-line-strong);
   border-left: 0;
   border-radius: 0 12px 12px 0;
-  background: var(--cp-card);
+  background: transparent;
   color: var(--cp-ink);
 }
 
 .recipe-page-rail__add-menu-trigger:hover {
-  border-color: var(--cp-accent);
-  color: var(--cp-accent-ink);
+  background: rgba(127, 127, 127, 0.08);
 }
 
 .recipe-page-rail__add-section {
@@ -390,20 +367,19 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 5px;
-  padding: 0 12px;
-  border: 1.5px solid var(--cp-line-strong);
+  gap: 6px;
+  padding: 0 14px;
+  border: 1px solid var(--cp-line-strong);
   border-left: 0;
   border-radius: 0 12px 12px 0;
-  background: var(--cp-card);
+  background: transparent;
   color: var(--cp-ink);
-  font-size: var(--cp-fs-caption);
-  font-weight: 750;
+  font-size: var(--cp-fs-body);
+  font-weight: 600;
 }
 
 .recipe-page-rail__add-section:hover {
-  border-color: var(--cp-accent);
-  color: var(--cp-accent-ink);
+  background: rgba(127, 127, 127, 0.08);
 }
 
 .recipe-page-rail__add-menu {
