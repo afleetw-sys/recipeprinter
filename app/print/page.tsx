@@ -3823,7 +3823,9 @@ export default function PrintPage() {
           </div>
 
           <div className="recipe-config-panel__footer">
-            {!cookbookMode && (
+            {/* Hidden for this release alongside the rest of the account/cookbook
+                surface — gated by COOKBOOK_ENABLED so it returns at launch. */}
+            {COOKBOOK_ENABLED && !cookbookMode && (
               <button
                 type="button"
                 className="btn btn-secondary recipe-print-button"
