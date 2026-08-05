@@ -1931,15 +1931,11 @@ export default function PrintPage() {
   const {
     revenueCatUserId,
     customerInfo,
-    showUnlockDialog,
-    setShowUnlockDialog,
     purchaseBusy,
     claimBusy,
-    templatePrices,
     freeTemplateBannerDismissed,
     setFreeTemplateBannerDismissed,
     selectedPremiumTemplate,
-    selectedTemplateLabel,
     selectedTemplateLocked,
     hasUnclaimedFreeTemplate,
     canClaimSelectedTemplateFree,
@@ -2006,7 +2002,6 @@ export default function PrintPage() {
         showAddRecipeDialog ||
         pendingDelete ||
         showDonateDialog ||
-        showUnlockDialog ||
         showFeedbackDialog ||
         showCookPilotLogin
       ) {
@@ -2022,7 +2017,6 @@ export default function PrintPage() {
     showAddRecipeDialog,
     pendingDelete,
     showDonateDialog,
-    showUnlockDialog,
     showFeedbackDialog,
     showCookPilotLogin,
     requestDeleteNavItem,
@@ -2049,7 +2043,7 @@ export default function PrintPage() {
   }, [pendingFocusNavId, pendingFocusRecipeId, navItems, cookbookView, spreads]);
 
   async function handlePrint() {
-    if (purchaseBusy || cookbookPurchaseBusy) return;
+    if (purchaseBusy || claimBusy || cookbookPurchaseBusy) return;
     if (!printLayoutReady) {
       // Remember it and let the effect below fire once the layout settles,
       // instead of turning them away — the button shows a spinner meanwhile.
@@ -2067,11 +2061,15 @@ export default function PrintPage() {
       return;
     }
     if (gate === "unlock-template" && selectedPremiumTemplate) {
-      track("paywall_shown", {
-        product: "premium_template",
-        template: selectedPremiumTemplate,
-      });
-      setShowUnlockDialog(true);
+      // No interstitial paywall dialog anymore — the price is stated inline under
+      // Themes, and the button already reads "Unlock & Print", so a click goes
+      // straight to the purchase (or a silent free claim for eligible CookPilot
+      // members, so they're never charged). Both paths print on success.
+      if (canClaimSelectedTemplateFree) {
+        void claimTemplateAndPrint(selectedPremiumTemplate);
+      } else {
+        void unlockTemplateAndPrint(selectedPremiumTemplate);
+      }
       return;
     }
     // An unlocked cookbook export lands on the "Print your cookbook" screen,
@@ -2109,7 +2107,7 @@ export default function PrintPage() {
   // there's a real async operation the click can't preempt. It is NOT disabled
   // for a measuring layout: a click then is queued (see `printPending`), so the
   // button stays live and just shows a spinner until the layout is ready.
-  const printBlocked = purchaseBusy || cookbookPurchaseBusy;
+  const printBlocked = purchaseBusy || claimBusy || cookbookPurchaseBusy;
   const printSpinner = printBlocked || printPending;
 
   // Always the current `handlePrint`, for the auto-print effect below.
@@ -3739,6 +3737,11 @@ export default function PrintPage() {
               </div>
             )}
             <h3 className="recipe-config-label">Themes</h3>
+            {!projectMeta.meta.cookbookMode && (
+              <p className="recipe-template-caption">
+                Premium themes are $1.99 — yours for life.
+              </p>
+            )}
             <div className="recipe-template-list">
               {RECIPE_PRINT_TEMPLATE_OPTIONS.map((option) => {
                 const premiumTemplate = isPremiumTemplate(option.id) ? option.id : null;
@@ -4029,16 +4032,6 @@ export default function PrintPage() {
         showDonateDialog={showDonateDialog}
         onCloseDonateDialog={() => setShowDonateDialog(false)}
         onOpenFeedbackDialog={() => setShowFeedbackDialog(true)}
-        showUnlockDialog={showUnlockDialog}
-        onCloseUnlockDialog={() => setShowUnlockDialog(false)}
-        selectedPremiumTemplate={selectedPremiumTemplate}
-        selectedTemplateLabel={selectedTemplateLabel}
-        selectedTemplatePrice={selectedPremiumTemplate ? templatePrices[selectedPremiumTemplate] : undefined}
-        purchaseBusy={purchaseBusy}
-        onUnlockTemplate={(premiumTemplate) => void unlockTemplateAndPrint(premiumTemplate)}
-        canClaimFree={canClaimSelectedTemplateFree}
-        claimBusy={claimBusy}
-        onClaimTemplate={(premiumTemplate) => void claimTemplateAndPrint(premiumTemplate)}
         showCookbookUnlockDialog={showCookbookUnlockDialog}
         onCloseCookbookUnlockDialog={() => setShowCookbookUnlockDialog(false)}
         cookbookPrice={cookbookPrice}
