@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { useEffect, useLayoutEffect, useRef } from "react";
 import type { ReadonlyURLSearchParams } from "next/navigation";
 import {
   PRINT_CARD_SIZE_OPTIONS,
@@ -9,6 +9,14 @@ import {
   type RecipePrintTemplate,
 } from "@/components/RecipeCardPrint";
 import { localStore } from "@/lib/storage";
+
+// SSR renders with the default (no localStorage), so the first client render
+// must match it — but we still want the stored size applied BEFORE paint, not a
+// frame later, so the preview never commits a default-size layout that the size
+// selector then disagrees with. A layout effect flips it before the browser
+// paints (after the SSR-matching first render), falling back to a passive effect
+// on the server where layout effects don't run.
+const useIsomorphicLayoutEffect = typeof window !== "undefined" ? useLayoutEffect : useEffect;
 
 // Layout preferences carry over across visits (device-local, no account/sync)
 // so going back to add another recipe doesn't reset the print setup. Shared
@@ -85,8 +93,10 @@ export function usePrintSettingsPersistence(
   } = state;
 
   // Hydrate stored layout preferences on mount (client only). Explicit URL
-  // params (for deep links) still win over whatever was last saved.
-  useEffect(() => {
+  // params (for deep links) still win over whatever was last saved. Runs as a
+  // layout effect so the stored size lands before the first painted frame — see
+  // useIsomorphicLayoutEffect above.
+  useIsomorphicLayoutEffect(() => {
     const stored = readPrintSettings();
     if (!stored) return;
     if (!params.get("size") && stored.cardSize && isPrintCardSize(stored.cardSize)) {

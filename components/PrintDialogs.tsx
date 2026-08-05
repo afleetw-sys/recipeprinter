@@ -1,13 +1,12 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { BookIcon, CheckIcon, CrownIcon, ICON_SIZE, SpinnerIcon, TrashIcon, XIcon } from "@/components/icons";
+import { BookIcon, CheckIcon, ICON_SIZE, SpinnerIcon, TrashIcon, XIcon } from "@/components/icons";
 import { Dialog } from "@/components/Dialog";
 import { COOKBOOK_BENEFITS } from "@/lib/cookbookProduct";
 import { COOKBOOK_PRESETS, PRINTERS } from "@/lib/cookbookPresets";
 import { track } from "@/lib/analytics";
 import type { CookbookPresetId } from "@/types/recipe";
-import type { PremiumRecipePrintTemplate } from "@/lib/premiumTemplates";
 
 const COFFEE_URL = "https://buymeacoffee.com/recipeprinter";
 const COFFEE_LOGO_SRC = "/images/buy-me-a-coffee-logo.png";
@@ -29,16 +28,6 @@ export function PrintDialogs({
   showDonateDialog,
   onCloseDonateDialog,
   onOpenFeedbackDialog,
-  showUnlockDialog,
-  onCloseUnlockDialog,
-  selectedPremiumTemplate,
-  selectedTemplateLabel,
-  selectedTemplatePrice,
-  purchaseBusy,
-  onUnlockTemplate,
-  canClaimFree,
-  claimBusy,
-  onClaimTemplate,
   showCookbookUnlockDialog,
   onCloseCookbookUnlockDialog,
   cookbookPrice,
@@ -63,16 +52,6 @@ export function PrintDialogs({
   showDonateDialog: boolean;
   onCloseDonateDialog: () => void;
   onOpenFeedbackDialog: () => void;
-  showUnlockDialog: boolean;
-  onCloseUnlockDialog: () => void;
-  selectedPremiumTemplate: PremiumRecipePrintTemplate | null;
-  selectedTemplateLabel: string;
-  selectedTemplatePrice?: string;
-  purchaseBusy: boolean;
-  onUnlockTemplate: (template: PremiumRecipePrintTemplate) => void;
-  canClaimFree: boolean;
-  claimBusy: boolean;
-  onClaimTemplate: (template: PremiumRecipePrintTemplate) => void;
   showCookbookUnlockDialog: boolean;
   onCloseCookbookUnlockDialog: () => void;
   cookbookPrice: string;
@@ -180,68 +159,6 @@ export function PrintDialogs({
               </button>
             </div>
       </Dialog>
-      {/* Guarded outside the Dialog rather than by `open`: the body below
-          reads `selectedPremiumTemplate` as non-null, and children are still
-          constructed even when a Dialog renders nothing. */}
-      {selectedPremiumTemplate && (
-        <Dialog
-          open={showUnlockDialog}
-          onClose={onCloseUnlockDialog}
-          closeDisabled={purchaseBusy || claimBusy}
-          labelledBy="recipeprinter-unlock-title"
-          className="print-success-dialog no-print"
-          backdropClassName="print-success-dialog__backdrop"
-          panelClassName="print-success-dialog__panel"
-        >
-            <button
-              type="button"
-              className="print-success-dialog__close icon-close-btn"
-              aria-label="Close"
-              onClick={onCloseUnlockDialog}
-              disabled={purchaseBusy}
-            >
-              <XIcon size={ICON_SIZE.md} />
-            </button>
-            <h2 id="recipeprinter-unlock-title">
-              Unlock {selectedTemplateLabel} theme{selectedTemplatePrice ? ` — ${selectedTemplatePrice}` : ""}?
-            </h2>
-            <p>
-              A one-time purchase — {selectedTemplateLabel} is yours to print with on every future
-              recipe, no separate charge later. Checkout will ask for your email, and afterward you
-              can protect access on other devices with a free account.
-            </p>
-            <div className="print-success-dialog__actions">
-              {canClaimFree && (
-                <button
-                  type="button"
-                  className="btn btn-primary"
-                  disabled={purchaseBusy || claimBusy}
-                  onClick={() => onClaimTemplate(selectedPremiumTemplate)}
-                >
-                  {claimBusy ? <SpinnerIcon size={ICON_SIZE.md} /> : <CrownIcon size={ICON_SIZE.md} />}
-                  Claim it — included with your CookPilot subscription
-                </button>
-              )}
-              <button
-                type="button"
-                className="btn btn-primary"
-                disabled={purchaseBusy || claimBusy}
-                onClick={() => onUnlockTemplate(selectedPremiumTemplate)}
-              >
-                {purchaseBusy ? <SpinnerIcon size={ICON_SIZE.md} /> : <CrownIcon size={ICON_SIZE.md} />}
-                Unlock & Print
-              </button>
-              <button
-                type="button"
-                className="btn btn-ghost"
-                onClick={onCloseUnlockDialog}
-                disabled={purchaseBusy || claimBusy}
-              >
-                Not now
-              </button>
-            </div>
-        </Dialog>
-      )}
       <Dialog
         open={showCookbookUnlockDialog}
         onClose={onCloseCookbookUnlockDialog}
