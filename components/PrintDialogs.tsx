@@ -260,9 +260,9 @@ export function PrintDialogs({
             >
               <XIcon size={ICON_SIZE.md} />
             </button>
-            <h2 id="cookbook-unlock-title">Purchase your cookbook — {cookbookPrice}</h2>
+            <h2 id="cookbook-unlock-title">Purchase your cookbook for {cookbookPrice}</h2>
             <p>
-              A one-time purchase — your recipes become a professionally designed cookbook, yours
+              A one-time purchase. Your recipes become a professionally designed cookbook, yours
               to re-export forever. Checkout will ask for your email, and afterward you can protect
               access on other devices with a free account.
             </p>
@@ -420,10 +420,10 @@ export function PrintDialogs({
               </button>
             </div>
       </Dialog>
-      {/* Leaving cookbook mode discards the whole book (cover, chapters, page
-          layouts) — a confirm guards it the way recipe deletion does. The
-          destructive button is intentionally NOT auto-focused, so Enter can't
-          wipe the book. */}
+      {/* Switching back to recipe cards is non-destructive now: the book is
+          tucked away (see `exitCookbook`/`restoreCookbook` in lib/project.ts)
+          and comes back intact on the next switch. So this is a light "sure you
+          don't want a cookbook?" nudge, not a data-loss warning. */}
       <Dialog
         open={showExitCookbookDialog}
         onClose={onCancelExitCookbook}
@@ -442,14 +442,14 @@ export function PrintDialogs({
             </button>
             <h2 id="exit-cookbook-title">Switch back to recipe cards?</h2>
             <p>
-              This clears your cookbook&apos;s cover, chapters, and page layouts. Your recipes stay
-              in the queue, but you&apos;ll have to set the book up again to come back.
+              Your cookbook is saved either way, so you can switch back anytime and pick up right
+              where you left off.
             </p>
             <div className="print-success-dialog__actions">
               <button type="button" className="btn btn-ghost" onClick={onCancelExitCookbook}>
-                Keep my cookbook
+                Never mind
               </button>
-              <button type="button" className="btn btn-danger" onClick={onConfirmExitCookbook}>
+              <button type="button" className="btn btn-secondary" onClick={onConfirmExitCookbook}>
                 Switch to recipe cards
               </button>
             </div>

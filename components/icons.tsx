@@ -217,6 +217,15 @@ export const SizeIcon = (p: IconProps) => (
   </Base>
 );
 
+export const ReorderIcon = (p: IconProps) => (
+  <Base {...p}>
+    <path d="M7 4v16" />
+    <path d="m3.5 7.5 3.5-3.5 3.5 3.5" />
+    <path d="M17 20V4" />
+    <path d="m13.5 16.5 3.5 3.5 3.5-3.5" />
+  </Base>
+);
+
 export const TemplateIcon = (p: IconProps) => (
   <Base {...p}>
     <rect x="3.5" y="3.5" width="17" height="17" rx="2.5" />

@@ -425,6 +425,7 @@ export const RecipeCardFace = memo(function RecipeCardFace({
   previewHidden = false,
   blank = false,
   showImage = false,
+  photoOnFacingPage = false,
   showSourceUrl = false,
   continued = false,
   contentScale,
@@ -443,6 +444,10 @@ export const RecipeCardFace = memo(function RecipeCardFace({
   previewHidden?: boolean;
   blank?: boolean;
   showImage?: boolean;
+  /** This recipe's photo fills its own facing page (cookbook image-spread), so
+      the card must NOT offer an in-card "Add photo" — the photo (and its
+      "Change photo" control) live on the image page. */
+  photoOnFacingPage?: boolean;
   showSourceUrl?: boolean;
   continued?: boolean;
   /** Shrink-to-fit factor for this face's content — see `RecipeFace.contentScale`. */
@@ -993,7 +998,7 @@ export const RecipeCardFace = memo(function RecipeCardFace({
               )}
             </span>
           )}
-          {!showPhoto && canEdit && inlineEdit && (
+          {!showPhoto && !photoOnFacingPage && canEdit && inlineEdit && (
             <ImagePicker
               images={inlineEdit.recipeImages ?? []}
               onSelect={(url) => inlineEdit.onImageChange(url ?? "")}
@@ -1294,12 +1299,14 @@ export const DividerFace = memo(function DividerFace({
             className="recipe-card__inline-textarea recipe-card__divider-title"
             value={inlineEdit.value}
             aria-label="Chapter title"
+            // No commit-on-blur: the title saves live via onChange, so blurring
+            // to click the photo picker or the subtitle/intro fields must NOT end
+            // the edit. Enter finishes it; Escape closes it.
             onChange={(event) => inlineEdit.onChange(event.target.value)}
-            onBlur={inlineEdit.onCommit}
             onKeyDown={(event) => {
               if (event.key === "Enter") {
                 event.preventDefault();
-                event.currentTarget.blur();
+                inlineEdit.onCommit();
               }
               if (event.key === "Escape") inlineEdit.onCancel();
             }}

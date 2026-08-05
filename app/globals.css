@@ -106,82 +106,99 @@
   display: grid;
   place-items: center;
   overflow: hidden;
-  background:
-    radial-gradient(circle at 50% 42%, color-mix(in srgb, var(--cp-accent) 18%, transparent), transparent 38%),
-    color-mix(in srgb, var(--cp-page) 94%, transparent);
-  backdrop-filter: blur(12px);
-  animation: cookbook-reveal-in 220ms ease both;
+  background: color-mix(in srgb, var(--cp-page) 95%, var(--cp-card));
+  backdrop-filter: blur(16px);
+  animation: cookbook-reveal-in 260ms ease both;
 }
+/* Soft accent "aurora" — two blurred blobs drifting behind the book. */
 .cookbook-build-reveal__glow {
   position: absolute;
-  width: min(70vw, 760px);
+  width: min(64vw, 640px);
   aspect-ratio: 1;
   border-radius: 50%;
-  background: color-mix(in srgb, var(--cp-accent) 12%, transparent);
-  filter: blur(70px);
-  animation: cookbook-reveal-breathe 1.35s ease-in-out both;
+  background: radial-gradient(circle, color-mix(in srgb, var(--cp-accent) 26%, transparent), transparent 66%);
+  filter: blur(32px);
+  animation: cookbook-reveal-drift 6.5s ease-in-out infinite alternate;
+}
+.cookbook-build-reveal__glow::after {
+  content: "";
+  position: absolute;
+  inset: -24% -30% auto auto;
+  width: 68%;
+  aspect-ratio: 1;
+  border-radius: 50%;
+  background: radial-gradient(circle, color-mix(in srgb, var(--cp-accent-ink) 20%, transparent), transparent 64%);
+  filter: blur(30px);
+  animation: cookbook-reveal-drift 8s ease-in-out infinite alternate-reverse;
 }
 .cookbook-build-reveal__content {
   position: relative;
   display: grid;
   place-items: center;
-  gap: .35rem;
+  gap: 1.15rem;
   text-align: center;
+  animation: cookbook-reveal-book 640ms cubic-bezier(.2, .8, .2, 1) both;
 }
 .cookbook-build-reveal .cookbook-mockup {
-  min-height: 270px;
-  animation: cookbook-reveal-book 1.35s cubic-bezier(.2,.8,.2,1) both;
+  min-height: 250px;
+}
+/* Gentle continuous bob so the book feels alive while it builds. */
+.cookbook-build-reveal .cookbook-mockup__book {
+  animation: cookbook-reveal-float 3.4s ease-in-out infinite alternate;
 }
 .cookbook-build-reveal__copy {
   display: grid;
   justify-items: center;
-  gap: .35rem;
+  gap: .5rem;
   color: var(--cp-ink);
 }
 .cookbook-build-reveal__copy span {
-  color: var(--cp-ink-soft);
-  font-size: .76rem;
+  color: var(--cp-accent-ink);
+  font-size: .72rem;
   font-weight: 800;
-  letter-spacing: .13em;
+  letter-spacing: .16em;
   text-transform: uppercase;
 }
 .cookbook-build-reveal__copy strong {
-  font-size: clamp(1.35rem, 3vw, 1.9rem);
+  font-size: clamp(1.4rem, 3vw, 1.95rem);
+  font-weight: 850;
   letter-spacing: -.02em;
 }
 .cookbook-build-reveal__progress {
-  width: min(270px, 60vw);
-  height: 4px;
-  margin-top: .7rem;
+  position: relative;
+  width: min(220px, 56vw);
+  height: 5px;
+  margin-top: .3rem;
   overflow: hidden;
   border-radius: 99px;
-  background: color-mix(in srgb, var(--cp-line-strong) 70%, transparent);
+  background: color-mix(in srgb, var(--cp-accent) 15%, transparent);
 }
 .cookbook-build-reveal__progress i {
-  display: block;
-  width: 100%;
-  height: 100%;
+  position: absolute;
+  inset: 0;
+  width: 42%;
   border-radius: inherit;
-  background: var(--cp-accent);
-  transform-origin: left;
-  animation: cookbook-reveal-progress 1.25s cubic-bezier(.2,.8,.2,1) both;
+  background: linear-gradient(90deg, transparent, var(--cp-accent), transparent);
+  animation: cookbook-reveal-sweep 1.15s ease-in-out infinite;
 }
 @keyframes cookbook-reveal-in {
   from { opacity: 0; }
 }
 @keyframes cookbook-reveal-book {
-  0% { opacity: 0; transform: translateY(28px) scale(.86) rotate(-2deg); }
-  55% { opacity: 1; transform: translateY(0) scale(1.04) rotate(0); }
-  100% { opacity: 1; transform: scale(1); }
+  from { opacity: 0; transform: translateY(22px); }
+  to { opacity: 1; transform: translateY(0); }
 }
-@keyframes cookbook-reveal-progress {
-  from { transform: scaleX(.04); }
-  to { transform: scaleX(1); }
+@keyframes cookbook-reveal-float {
+  from { transform: rotateY(-11deg) rotateX(2deg) rotateZ(-2deg) translateY(3px); }
+  to { transform: rotateY(-11deg) rotateX(2deg) rotateZ(-2deg) translateY(-9px); }
 }
-@keyframes cookbook-reveal-breathe {
-  0% { opacity: 0; transform: scale(.7); }
-  60% { opacity: 1; }
-  100% { opacity: .55; transform: scale(1.1); }
+@keyframes cookbook-reveal-sweep {
+  from { transform: translateX(-120%); }
+  to { transform: translateX(320%); }
+}
+@keyframes cookbook-reveal-drift {
+  from { transform: translate3d(-4%, -2%, 0) scale(1); opacity: .85; }
+  to { transform: translate3d(5%, 3%, 0) scale(1.12); opacity: 1; }
 }
 
 .cookbook-welcome,
@@ -427,12 +444,13 @@
   animation: print-success-pop 260ms cubic-bezier(0.2, 0.8, 0.2, 1) both;
 }
 .cookbook-welcome__panel {
-  width: min(1040px, calc(100vw - 48px));
+  width: min(920px, calc(100vw - 48px));
   display: grid;
-  grid-template-columns: minmax(440px, 1.08fr) minmax(420px, .92fr);
+  grid-template-columns: minmax(360px, 1fr) minmax(380px, 1.02fr);
   align-items: stretch;
   gap: 0;
   padding: 0;
+  border: none;
   overflow: hidden;
 }
 .cookbook-welcome__close,
@@ -453,7 +471,7 @@
   gap: .55rem;
 }
 .cookbook-welcome__visual {
-  min-height: 570px;
+  min-height: 440px;
   overflow: hidden;
   background: #ddd3c4;
 }
@@ -471,6 +489,9 @@
   font-weight: 850;
   line-height: 1.08;
   letter-spacing: -.03em;
+}
+.cookbook-welcome__copy h2 {
+  font-size: clamp(1.5rem, 2.6vw, 2rem);
 }
 .cookbook-welcome__copy > p,
 .cookbook-ready__hero p {
@@ -540,8 +561,8 @@
   gap: .5rem;
   margin-top: .1rem;
 }
-.cookbook-welcome__actions .btn-primary {
-  flex: 1;
+.cookbook-welcome__actions .btn {
+  flex: 0 0 auto;
 }
 
 .cookbook-mockup {
@@ -556,7 +577,7 @@
   aspect-ratio: 4 / 5;
   transform: rotateY(-12deg) rotateX(3deg) rotateZ(-2deg);
   transform-style: preserve-3d;
-  filter: drop-shadow(24px 28px 24px rgba(42,28,17,.25));
+  filter: drop-shadow(0 26px 42px rgba(42, 28, 17, 0.22));
 }
 .cookbook-mockup__cover {
   position: absolute;
@@ -636,7 +657,7 @@
   z-index: 1;
   inset: 5px -10px -8px 8px;
   border-radius: 4px 15px 15px 4px;
-  background: repeating-linear-gradient(0deg, #fffdf6 0 3px, #e8dece 3px 4px);
+  background: repeating-linear-gradient(0deg, #fffdf6 0 2px, #ece3d3 2px 3px);
 }
 .cookbook-mockup--compact {
   min-height: 300px;
@@ -824,7 +845,6 @@
   .cookbook-mockup__book {
     width: 180px;
   }
-  .cookbook-welcome__copy h2,
   .cookbook-ready__hero h2 {
     font-size: 2rem;
   }
@@ -847,7 +867,9 @@
   }
   .cookbook-build-reveal,
   .cookbook-build-reveal__glow,
-  .cookbook-build-reveal .cookbook-mockup,
+  .cookbook-build-reveal__glow::after,
+  .cookbook-build-reveal__content,
+  .cookbook-build-reveal .cookbook-mockup__book,
   .cookbook-build-reveal__progress i {
     animation: none;
   }
@@ -1516,6 +1538,34 @@
 @keyframes rp-spin {
   to {
     transform: rotate(360deg);
+  }
+}
+
+/* "Already added" cue. Re-importing a recipe that's already queued focuses the
+   existing card instead of adding a duplicate; it scrolls into view and shakes
+   so it's obvious why nothing new appeared. Shared by the home queue
+   (`.rp-queue-item--shake`) and the print rail (`.recipe-page-rail__row--shake`,
+   styled in print.css). */
+@keyframes rp-shake {
+  10%, 90% { transform: translateX(-1px); }
+  20%, 80% { transform: translateX(2px); }
+  30%, 50%, 70% { transform: translateX(-5px); }
+  40%, 60% { transform: translateX(5px); }
+}
+@keyframes rp-attention-ring {
+  0%, 100% { box-shadow: 0 0 0 0 transparent; }
+  30%, 60% { box-shadow: 0 0 0 3px color-mix(in srgb, var(--cp-accent) 60%, transparent); }
+}
+.rp-queue-item--shake {
+  animation: rp-shake 0.5s cubic-bezier(0.36, 0.07, 0.19, 0.97) both;
+}
+/* Motion-sensitive cooks get a brief accent ring instead of the shake. */
+@media (prefers-reduced-motion: reduce) {
+  .rp-queue-item--shake {
+    animation: none;
+  }
+  .rp-queue-item--shake > div {
+    animation: rp-attention-ring 0.6s ease both;
   }
 }
 

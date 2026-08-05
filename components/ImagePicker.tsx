@@ -39,6 +39,10 @@ export function ImagePicker({
       <button
         type="button"
         className={`image-picker__trigger no-print ${className}`}
+        // Don't let mousedown pull focus off a currently-edited field (e.g. the
+        // section/chapter title textarea): that blur would commit-and-close the
+        // edit before this picker ever opens. The click still fires.
+        onMouseDown={(event) => event.preventDefault()}
         onClick={(event) => {
           event.stopPropagation();
           setOpen(true);

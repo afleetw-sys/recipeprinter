@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { formatRecipeTime } from "@/lib/time";
 import { type QueueItem, type Recipe } from "@/types/recipe";
 import {
@@ -26,6 +26,7 @@ function RecipeCardItem({
   onRemove,
   animate,
   focused,
+  focusNonce,
 }: {
   item: QueueItem;
   canRetry: boolean;
@@ -33,24 +34,34 @@ function RecipeCardItem({
   onRemove: () => void;
   animate: boolean;
   focused: boolean;
+  focusNonce: number;
 }) {
   const itemRef = useRef<HTMLLIElement | null>(null);
+  const [shaking, setShaking] = useState(false);
   const ready = item.status === "ready";
   const recipe = item.recipe;
   const time = totalTime(recipe);
   const servings = recipe?.servings ?? recipe?.yield;
 
+  // Re-importing an already-queued recipe focuses this card instead of adding a
+  // duplicate. Make that obvious: scroll it into view and shake it. Keyed on
+  // `focusNonce` (not just `focused`) so re-importing the SAME recipe again
+  // re-fires — a boolean that's already true wouldn't. The class is removed
+  // after the animation so it can be re-added on the next hit.
   useEffect(() => {
-    if (!focused) return;
+    if (!focused || focusNonce === 0) return;
     itemRef.current?.scrollIntoView({ behavior: "smooth", block: "center" });
-  }, [focused]);
+    setShaking(true);
+    const timer = window.setTimeout(() => setShaking(false), 600);
+    return () => window.clearTimeout(timer);
+  }, [focused, focusNonce]);
 
   return (
     <li
       ref={itemRef}
       className={`relative ${animate ? "animate-fade-up" : ""} ${
         focused ? "rp-queue-item--focused" : ""
-      }`}
+      } ${shaking ? "rp-queue-item--shake" : ""}`}
     >
       <div className="block w-full text-left rounded-xl overflow-hidden bg-card border border-line">
         {/* Cover */}
@@ -156,6 +167,7 @@ export function PrintQueue({
   onRemove,
   animateItems = true,
   focusedItemId,
+  focusNonce = 0,
 }: {
   items: QueueItem[];
   canRetry: (item: QueueItem) => boolean;
@@ -163,6 +175,7 @@ export function PrintQueue({
   onRemove: (id: string) => void;
   animateItems?: boolean;
   focusedItemId?: string | null;
+  focusNonce?: number;
 }) {
   if (items.length === 0) {
     return (
@@ -187,6 +200,7 @@ export function PrintQueue({
             onRemove={() => onRemove(item.id)}
             animate={animateItems}
             focused={focusedItemId === item.id}
+            focusNonce={focusNonce}
           />
         ))}
       </ul>

@@ -1,6 +1,6 @@
 "use client";
 
-import { memo, useCallback, useEffect, useMemo, useRef, useState, type CSSProperties } from "react";
+import { memo, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type CSSProperties } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import dynamic from "next/dynamic";
@@ -13,6 +13,7 @@ import { CookbookBuildReveal, CookbookWelcomeDialog } from "@/components/Cookboo
 import { CookbookReadyDialog } from "@/components/CookbookReadyDialog";
 import { OrganizeCookbookDialog } from "@/components/OrganizeCookbookDialog";
 import { Select } from "@/components/Select";
+import { ImagePicker } from "@/components/ImagePicker";
 import { Dialog } from "@/components/Dialog";
 import { useModalFocus } from "@/components/useModalFocus";
 import {
@@ -83,6 +84,7 @@ import {
   LinkIcon,
   PlusIcon,
   PrintIcon,
+  ReorderIcon,
   SettingsIcon,
   SizeIcon,
   SpinnerIcon,
@@ -287,6 +289,74 @@ function TemplateThumbnail({ template }: { template: RecipePrintTemplate }) {
   );
 }
 
+/** Recipe cards / Cookbook segmented switch. Each option hugs its own content;
+ *  a single ink "thumb" measures the active option and slides+resizes to it, so
+ *  the transition reads as one control moving between the two. */
+function ModeSwitch({
+  inCookbook,
+  onSwitchToCards,
+  onSwitchToCookbook,
+}: {
+  inCookbook: boolean;
+  onSwitchToCards: () => void;
+  onSwitchToCookbook: () => void;
+}) {
+  const rootRef = useRef<HTMLDivElement>(null);
+  const [thumb, setThumb] = useState<{ left: number; width: number } | null>(null);
+
+  useLayoutEffect(() => {
+    const root = rootRef.current;
+    if (!root) return;
+    function measure() {
+      const active = root!.querySelector<HTMLElement>(".recipe-mode-switch__option.is-active");
+      // Ignore 0-width reads (pre-layout / fonts still loading / hidden on
+      // mobile) — the ResizeObserver re-fires once the real size lands.
+      if (active && active.offsetWidth > 0) {
+        setThumb({ left: active.offsetLeft, width: active.offsetWidth });
+      }
+    }
+    measure();
+    const observer = new ResizeObserver(measure);
+    observer.observe(root);
+    if (document.fonts?.ready) document.fonts.ready.then(measure).catch(() => undefined);
+    return () => observer.disconnect();
+  }, [inCookbook]);
+
+  return (
+    <div
+      className={`recipe-mode-switch ${thumb ? "recipe-mode-switch--ready" : ""}`}
+      role="group"
+      aria-label="Layout"
+      ref={rootRef}
+    >
+      {thumb && (
+        <span
+          className="recipe-mode-switch__thumb"
+          aria-hidden
+          style={{ transform: `translateX(${thumb.left}px)`, width: `${thumb.width}px` }}
+        />
+      )}
+      <button
+        type="button"
+        className={`recipe-mode-switch__option ${inCookbook ? "" : "is-active"}`}
+        aria-pressed={!inCookbook}
+        onClick={inCookbook ? onSwitchToCards : undefined}
+      >
+        Recipe cards
+      </button>
+      <button
+        type="button"
+        className={`recipe-mode-switch__option ${inCookbook ? "is-active" : ""}`}
+        aria-pressed={inCookbook}
+        onClick={inCookbook ? undefined : onSwitchToCookbook}
+      >
+        Cookbook
+        <span className="recipe-mode-switch__badge">New</span>
+      </button>
+    </div>
+  );
+}
+
 /**
  * A physical sheet rendered at true page size, scaled down by `scale` on
  * screen. Every face for every slot is always in the DOM — for print (via
@@ -364,6 +434,11 @@ const ScaledPage = memo(function ScaledPage({
     focusX: number;
     focusY: number;
     onChange: (focusX: number, focusY: number) => void;
+    /** Current full-page photo + candidates, so the image page can host its own
+        "Change photo" control instead of the recipe card doing it off-page. */
+    current?: string;
+    images?: string[];
+    onImageChange?: (url: string | undefined) => void;
   };
   tocKicker?: string;
   tocTitle?: string;
@@ -472,6 +547,15 @@ const ScaledPage = memo(function ScaledPage({
                 />
                 {repositionable && (
                   <span className="recipe-image-spread__hint no-print">Drag to reposition</span>
+                )}
+                {imageEdit?.onImageChange && (
+                  <ImagePicker
+                    current={imageEdit.current}
+                    images={imageEdit.images ?? []}
+                    onSelect={imageEdit.onImageChange}
+                    label="Change photo"
+                    className="recipe-image-spread__edit"
+                  />
                 )}
               </div>
             </div>
@@ -607,6 +691,7 @@ const ScaledPage = memo(function ScaledPage({
                     contentScale={slot.front.contentScale}
                     hasBackFace={slot.hasBack}
                     showImage={slot.showPhoto}
+                    photoOnFacingPage={slot.hidePhoto}
                     showSourceUrl={showSourceUrl}
                     continued={slot.isContinuation}
                     template={template}
@@ -733,6 +818,9 @@ export default function PrintPage() {
   const [showDonateDialog, setShowDonateDialog] = useState(false);
   const [showCookbookOfferDialog, setShowCookbookOfferDialog] = useState(false);
   const [cookbookBuilding, setCookbookBuilding] = useState(false);
+  // Re-entering an already-built book: a plain loading spinner (not the first-run
+  // build animation) while the stashed layout swaps back in.
+  const [cookbookRestoring, setCookbookRestoring] = useState(false);
   const [showCookbookPrintDialog, setShowCookbookPrintDialog] = useState(false);
   // True only when the cookbook print dialog was reached via a fresh purchase
   // (not a re-export), so it can lead with a one-time "your cookbook is ready"
@@ -752,6 +840,10 @@ export default function PrintPage() {
   >(null);
   const [pendingFocusRecipeId, setPendingFocusRecipeId] = useState<string | null>(null);
   const [pendingFocusNavId, setPendingFocusNavId] = useState<string | null>(null);
+  // The recipe whose rail row is currently shaking, set when a re-imported
+  // duplicate points back at a recipe already in this deck. `nonce` lets the
+  // same recipe re-shake on a repeat import (a bare id wouldn't change).
+  const [railShake, setRailShake] = useState<{ recipeId: string; nonce: number } | null>(null);
   const queue = useQueue();
   const projectMeta = useProjectMeta();
   // The section/cover/title organizational layer, joined against the working
@@ -771,6 +863,14 @@ export default function PrintPage() {
   >(null);
   const [editingToc, setEditingToc] = useState(false);
   const [addMenuOpen, setAddMenuOpen] = useState(false);
+  const addMenuRef = useRef<HTMLDivElement | null>(null);
+  // Cmd/Ctrl-click multi-select in the rail (cookbook mode): the set of selected
+  // recipe ids and whether the bulk-action menu is open.
+  const [selectedRailIds, setSelectedRailIds] = useState<Set<string>>(() => new Set());
+  // The last recipe clicked, used as the anchor for Shift-click range selection.
+  const [railAnchorId, setRailAnchorId] = useState<string | null>(null);
+  const [railBulkMenu, setRailBulkMenu] = useState<null | "root" | "move">(null);
+  const railBulkRef = useRef<HTMLDivElement | null>(null);
   const [pendingAddSectionId, setPendingAddSectionId] = useState<string | null>(null);
   const [projectSaveBusy, setProjectSaveBusy] = useState(false);
   const [savedProjectId, setSavedProjectId] = useState<string | null>(null);
@@ -1340,6 +1440,71 @@ export default function PrintPage() {
     track("cookbook_section_opener_toggled", { enabled });
   }
 
+  // ── Rail multi-select (cookbook) ─────────────────────────────────────────
+  // Cmd/Ctrl-click recipes in the rail to build a selection; two or more brings
+  // up a bulk bar to group them into a new section or move them into an existing
+  // one. Regular clicks navigate as before and clear any selection.
+  function toggleRailSelection(recipeId: string) {
+    setRailBulkMenu(null);
+    setRailAnchorId(recipeId);
+    setSelectedRailIds((current) => {
+      const next = new Set(current);
+      if (next.has(recipeId)) next.delete(recipeId);
+      else next.add(recipeId);
+      return next;
+    });
+  }
+  // Shift-click: select every recipe between the anchor (last clicked, else the
+  // page you're on) and this one, in book order — the customary range select.
+  function selectRailRange(recipeId: string) {
+    const ordered = sections.flatMap((section) => section.items).map((item) => item.id);
+    const anchor = railAnchorId ?? activeSelectableRecipeId ?? recipeId;
+    const from = ordered.indexOf(anchor);
+    const to = ordered.indexOf(recipeId);
+    if (from === -1 || to === -1) {
+      toggleRailSelection(recipeId);
+      return;
+    }
+    const [lo, hi] = from <= to ? [from, to] : [to, from];
+    setRailBulkMenu(null);
+    setSelectedRailIds((current) => {
+      const next = new Set(current);
+      for (let i = lo; i <= hi; i += 1) next.add(ordered[i]);
+      return next;
+    });
+  }
+  function clearRailSelection() {
+    setSelectedRailIds((current) => (current.size ? new Set() : current));
+    setRailBulkMenu(null);
+  }
+  // Selected recipe ids in book order, so a new/receiving section keeps sequence.
+  function orderedRailSelection(): string[] {
+    return sections
+      .flatMap((section) => section.items)
+      .map((item) => item.id)
+      .filter((id) => effectiveRailSelection.has(id));
+  }
+  function makeSectionFromSelection() {
+    const ids = orderedRailSelection();
+    if (ids.length === 0) return;
+    const sectionId = projectMeta.addSection("New section");
+    ids.forEach((id, index) => moveProjectItem(id, sectionId, index));
+    clearRailSelection();
+    projectMeta.updateSection(sectionId, { showOpener: true });
+    setEditingSectionId(sectionId);
+    setEditingSectionTitle("New section");
+    setPendingFocusNavId(sectionId);
+    track("cookbook_section_created_from_selection", { count: ids.length });
+  }
+  function moveSelectionToSection(sectionId: string) {
+    const ids = orderedRailSelection();
+    if (ids.length === 0) return;
+    const base = itemIdsForSection(sectionId).length;
+    ids.forEach((id, index) => moveProjectItem(id, sectionId, base + index));
+    clearRailSelection();
+    track("cookbook_section_selection_moved", { count: ids.length });
+  }
+
   function coverSideFromNavItem(navItem: NavItem): "front" | "back" | "dedication" {
     if (navItem.recipeId === "cover-back") return "back";
     if (navItem.recipeId === "cover-dedication") return "dedication";
@@ -1371,17 +1536,23 @@ export default function PrintPage() {
   // contents, and recipes grouped into chapters with dividers on. Anything they
   // already set up (a cover, named sections) is respected, not overwritten.
   function scaffoldCookbook() {
-    projectMeta.setCookbookMode(true);
-    // A cookbook is a bound book, never a 4×6 card — and it wants its photos.
-    // Force a book page size and turn recipe photos on so the scaffolded book
-    // looks finished rather than bare. The source link stays OFF by default —
-    // a bound cookbook rarely wants a URL under every recipe; the cook can turn
-    // it on if they do.
+    // A cookbook is a bound book, never a 4×6 card, and it wants its photos.
+    // These are component-level (not meta), so they apply whether we restore a
+    // stashed book or scaffold a fresh one.
     if (cardSize === "card-6x4") setCardSize("letter");
+    setShowPhoto(true);
+    // Coming back from a switch-to-recipe-cards? Restore the exact book the cook
+    // left — cover, chapters, layouts, and settings — in one commit, and skip
+    // the fresh-scaffold defaults below (which would clobber it, since they read
+    // the pre-restore meta snapshot).
+    if (projectMeta.restoreCookbook()) return;
+    projectMeta.setCookbookMode(true);
+    // Turn recipe photos on so the scaffolded book looks finished rather than
+    // bare. The source link stays OFF by default — a bound cookbook rarely wants
+    // a URL under every recipe; the cook can turn it on if they do.
     // Give the book a default print format (US Letter) so export geometry is
     // set from the start; a returning book keeps whatever it chose.
     if (!projectMeta.meta.cookbookPreset) projectMeta.setCookbookPreset(DEFAULT_COOKBOOK_PRESET_ID);
-    setShowPhoto(true);
     // The premium default is an editorial spread: the recipe's full-bleed
     // photograph on the left, with its recipe page facing it on the right.
     if (!projectMeta.meta.photoStyle) projectMeta.setPhotoStyle("full");
@@ -1430,6 +1601,19 @@ export default function PrintPage() {
   // can scaffold the cookbook immediately.
   function startCookbook() {
     if (projectMeta.meta.cookbookWelcomeCompleted) {
+      // A returning book restores a stash; a brief loading spinner covers the
+      // layout recompute so the pages swap in cleanly instead of morphing. The
+      // full build animation is reserved for the first-ever build.
+      if (projectMeta.meta.stashedCookbook) {
+        setCookbookRestoring(true);
+        window.setTimeout(() => {
+          scaffoldCookbook();
+          setActiveNavIndex(0);
+          setPendingFocusNavId("cover-front");
+        }, 140);
+        window.setTimeout(() => setCookbookRestoring(false), 650);
+        return;
+      }
       scaffoldCookbook();
       return;
     }
@@ -1437,9 +1621,10 @@ export default function PrintPage() {
     setShowCookbookOfferDialog(true);
   }
 
-  // Leaving cookbook mode wipes the cover, chapters, and page layouts (see
-  // `exitCookbook`), so it goes through a confirm rather than firing on the
-  // first stray click of the Recipe cards ↔ Cookbook switch.
+  // Switching back to recipe cards is non-destructive — the book is tucked into
+  // a stash (see `exitCookbook`/`restoreCookbook`) — but still goes through a
+  // confirm so a stray click of the Recipe cards ↔ Cookbook switch doesn't
+  // yank the cook out of their book.
   function confirmExitCookbook() {
     projectMeta.exitCookbook();
     setShowExitCookbookConfirm(false);
@@ -1731,6 +1916,21 @@ export default function PrintPage() {
     activeRecipeId && items
       ? items.find((item) => item.id === activeRecipeId && item.recipe)
       : null;
+
+  // The page you're on counts as part of a multi-select: once at least one other
+  // recipe is Cmd-clicked, the recipe currently open joins the group too — so a
+  // selection of two others while viewing a third reads (and acts on) all three.
+  const activeSelectableRecipeId =
+    activeNavItem?.kind === "recipe" ? activeNavItem.recipeId : null;
+  const effectiveRailSelection = useMemo(() => {
+    if (selectedRailIds.size === 0) return selectedRailIds;
+    if (!activeSelectableRecipeId || selectedRailIds.has(activeSelectableRecipeId)) {
+      return selectedRailIds;
+    }
+    const next = new Set(selectedRailIds);
+    next.add(activeSelectableRecipeId);
+    return next;
+  }, [selectedRailIds, activeSelectableRecipeId]);
 
   const { pageEditMode, togglePageEditMode, activeInlineEdit } = useRecipeInlineEditor({
     items,
@@ -2258,7 +2458,14 @@ export default function PrintPage() {
   );
 
   useEffect(() => {
-    if (projectLoading || !items?.length || (!cookbookMode && !savedProjectId)) return;
+    if (projectLoading || !items?.length) return;
+    // Plain recipe cards with no saved project: nothing to save or adopt, so
+    // clear any leftover status (e.g. an "adoption" prompt carried over from a
+    // cookbook the cook just switched away from).
+    if (!cookbookMode && !savedProjectId) {
+      if (saveStatus) setSaveStatus(null);
+      return;
+    }
     if (lastSavedFingerprintRef.current === "__loaded__") {
       lastSavedFingerprintRef.current = saveFingerprint;
       return;
@@ -2350,6 +2557,57 @@ export default function PrintPage() {
     );
   }, [queue.items]);
 
+  // Re-importing a recipe that's already in this print job doesn't add a
+  // duplicate — the queue focuses the existing item (bumping `focusNonce`).
+  // Mirror the home queue's cue here: scroll the deck to that recipe and shake
+  // its rail row so it's obvious why nothing new appeared. Keyed on
+  // `focusNonce` so a repeat import of the same recipe re-fires.
+  useEffect(() => {
+    if (queue.focusNonce === 0) return;
+    const id = queue.focusedItemId;
+    if (!id || !(items ?? []).some((it) => it.id === id)) return;
+    setPendingFocusRecipeId(id);
+    setRailShake({ recipeId: id, nonce: queue.focusNonce });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [queue.focusNonce]);
+
+  // Drop the shake class once the animation has run so a later duplicate can
+  // re-add it.
+  useEffect(() => {
+    if (!railShake) return;
+    const timer = window.setTimeout(() => setRailShake(null), 600);
+    return () => window.clearTimeout(timer);
+  }, [railShake]);
+
+  // Close the rail's "Add" overflow menu and the multi-select bulk menu on an
+  // outside click or Escape (same pattern as the import/list menus).
+  useEffect(() => {
+    if (!addMenuOpen && !railBulkMenu) return;
+    function onPointerDown(event: PointerEvent) {
+      const target = event.target as Node;
+      if (addMenuOpen && !addMenuRef.current?.contains(target)) setAddMenuOpen(false);
+      if (railBulkMenu && !railBulkRef.current?.contains(target)) setRailBulkMenu(null);
+    }
+    function onKeyDown(event: KeyboardEvent) {
+      if (event.key !== "Escape") return;
+      setAddMenuOpen(false);
+      setRailBulkMenu(null);
+    }
+    document.addEventListener("pointerdown", onPointerDown);
+    document.addEventListener("keydown", onKeyDown);
+    return () => {
+      document.removeEventListener("pointerdown", onPointerDown);
+      document.removeEventListener("keydown", onKeyDown);
+    };
+  }, [addMenuOpen, railBulkMenu]);
+
+  // Selection is a cookbook-only, page-scoped concern: drop it whenever we leave
+  // cookbook mode or the recipe set changes, so stale ids can't linger.
+  useEffect(() => {
+    setSelectedRailIds((current) => (current.size ? new Set() : current));
+    setRailBulkMenu(null);
+  }, [cookbookMode, items]);
+
   // Whether the "Print settings" trigger is reachable — purely card-format
   // concerns now (a back side to toggle, or 6x4's cut lines). Cookbook book
   // settings live inline in the Print setup panel (see `renderBookSettings`), so
@@ -2359,26 +2617,12 @@ export default function PrintPage() {
 
   function renderModeSwitch() {
     if (!COOKBOOK_ENABLED) return null;
-    const inCookbook = Boolean(projectMeta.meta.cookbookMode);
     return (
-      <div className="recipe-mode-switch" role="group" aria-label="Layout">
-        <button
-          type="button"
-          className={`recipe-mode-switch__option ${inCookbook ? "" : "is-active"}`}
-          aria-pressed={!inCookbook}
-          onClick={inCookbook ? () => setShowExitCookbookConfirm(true) : undefined}
-        >
-          Recipe cards
-        </button>
-        <button
-          type="button"
-          className={`recipe-mode-switch__option ${inCookbook ? "is-active" : ""}`}
-          aria-pressed={inCookbook}
-          onClick={inCookbook ? undefined : startCookbook}
-        >
-          Cookbook
-        </button>
-      </div>
+      <ModeSwitch
+        inCookbook={Boolean(projectMeta.meta.cookbookMode)}
+        onSwitchToCards={() => setShowExitCookbookConfirm(true)}
+        onSwitchToCookbook={startCookbook}
+      />
     );
   }
 
@@ -2755,7 +2999,11 @@ export default function PrintPage() {
       showCutLines={showCutLines && cardSize === "card-6x4"}
       inlineEdit={
         pageEditMode && focused && activeRecipeItem?.id === navItem.recipeId && activeInlineEdit
-          ? { ...activeInlineEdit, recipeImages: coverPhotoCandidates }
+          ? {
+              ...activeInlineEdit,
+              // The recipe's own photo only (plus upload), not other recipes'.
+              recipeImages: activeRecipeItem?.recipe?.image ? [activeRecipeItem.recipe.image] : [],
+            }
           : undefined
       }
       dividerEdit={
@@ -2763,7 +3011,13 @@ export default function PrintPage() {
           ? {
               sectionId: navItem.recipeId,
               value: editingSectionTitle,
-              onChange: setEditingSectionTitle,
+              // Save the title live (like the subtitle/intro), so blurring the
+              // field — to click the photo picker or another field — never loses
+              // or dismisses the edit.
+              onChange: (value) => {
+                setEditingSectionTitle(value);
+                projectMeta.renameSection(navItem.recipeId, value.trim() || undefined);
+              },
               onCommit: commitSectionEdit,
               onCancel: () => {
                 setEditingSectionId(null);
@@ -2792,13 +3046,28 @@ export default function PrintPage() {
       }
       imageEdit={
         // The photo is the whole page, so it's repositionable as soon as it's
-        // focused — no separate edit toggle (image pages have no other controls).
+        // focused (drag), and its "Change photo" control lives right here on the
+        // image — not orphaned inside the facing recipe card.
         focused && navItem.kind === "image"
           ? {
               focusX: projectMeta.meta.itemPlacements?.[navItem.recipeId]?.heroFocusX ?? 50,
               focusY: projectMeta.meta.itemPlacements?.[navItem.recipeId]?.heroFocusY ?? 50,
               onChange: (focusX, focusY) =>
                 projectMeta.setItemPlacement(navItem.recipeId, { heroFocusX: focusX, heroFocusY: focusY }),
+              current:
+                projectMeta.meta.itemPlacements?.[navItem.recipeId]?.heroImageUrl ??
+                items?.find((item) => item.id === navItem.recipeId)?.recipe?.image,
+              // Only this recipe's own photo (plus upload) — never a grid of
+              // OTHER recipes' images, which isn't what "change this photo" means.
+              images: (() => {
+                const own = items?.find((item) => item.id === navItem.recipeId)?.recipe?.image;
+                return own ? [own] : [];
+              })(),
+              // Pick a new full-page photo, or clear it to drop back to no photo.
+              onImageChange: (url) =>
+                url
+                  ? projectMeta.setItemPhotoMode(navItem.recipeId, "full", url)
+                  : setRecipePhotoMode(navItem.recipeId, "none"),
             }
           : undefined
       }
@@ -2855,15 +3124,6 @@ export default function PrintPage() {
           className={`recipe-page-rail recipe-page-rail--${previewCardSize} no-print`}
           aria-label="Pages"
         >
-          {projectMeta.meta.cookbookMode && (
-            <button
-              type="button"
-              className="recipe-page-rail__organize"
-              onClick={openOrganizeCookbook}
-            >
-              Reorder recipes
-            </button>
-          )}
           {projectMeta.meta.cookbookMode && !projectMeta.meta.cover && (
             <button
               type="button"
@@ -2879,28 +3139,89 @@ export default function PrintPage() {
           )}
           {cookbookView
             ? (() => {
-                const groups: Array<{
-                  key: string;
+                const navFor = (sheetIndex: number | null) =>
+                  sheetIndex != null && navIndexForSheet.has(sheetIndex)
+                    ? navItems[navIndexForSheet.get(sheetIndex)!]
+                    : null;
+                const namedSectionIdFor = (nav: NavItem | null) => {
+                  const found = nav?.kind === "recipe" ? sectionForNavItem(nav) : null;
+                  return found && sections[found.index]?.title?.trim() ? found.id : null;
+                };
+                // One rail entry per LOGICAL unit: an image-spread (a recipe's
+                // full-page photo + the recipe) is ONE unit shown as a mini
+                // two-page thumbnail; a spread of two independent pages
+                // (dedication + contents, or two different recipes) splits into
+                // one single-page thumbnail each.
+                type RailUnit = {
+                  num: number;
+                  index: number;
+                  focusSheet: number | null;
+                  nav: NavItem | null;
+                  thumbSheets: number[];
+                  label: string;
+                  soleUnit: boolean;
                   sectionId: string | null;
-                  entries: Array<{ spread: (typeof spreads)[number]; index: number }>;
-                }> = [];
+                };
+                const units: RailUnit[] = [];
+                const addUnit = (unit: Omit<RailUnit, "num">) =>
+                  units.push({ ...unit, num: units.length + 1 });
                 spreads.forEach((spread, index) => {
-                  const sheetIndex = spread.right ?? spread.left;
-                  const nav =
-                    sheetIndex != null && navIndexForSheet.has(sheetIndex)
-                      ? navItems[navIndexForSheet.get(sheetIndex)!]
-                      : null;
-                  const section = sectionForNavItem(nav);
-                  const sectionId =
-                    section && sections[section.index]?.title?.trim() ? section.id : null;
+                  const leftNav = navFor(spread.left);
+                  const rightNav = navFor(spread.right);
+                  const leftIsImage = spread.left != null && sheets[spread.left]?.layoutKind === "image";
+                  const rightIsImage = spread.right != null && sheets[spread.right]?.layoutKind === "image";
+                  if (leftIsImage || rightIsImage) {
+                    const recipeSheet = leftIsImage ? spread.right : spread.left;
+                    const recipeNav = [rightNav, leftNav].find((item) => item?.kind === "recipe") ?? null;
+                    addUnit({
+                      index,
+                      focusSheet: recipeSheet,
+                      nav: recipeNav,
+                      thumbSheets: [spread.left, spread.right].filter((s): s is number => s != null),
+                      label: recipeNav?.label ?? "Recipe",
+                      soleUnit: true,
+                      sectionId: namedSectionIdFor(recipeNav),
+                    });
+                  } else if (spread.single) {
+                    const nav = rightNav ?? leftNav;
+                    const sheet = spread.right ?? spread.left;
+                    addUnit({
+                      index,
+                      focusSheet: sheet,
+                      nav,
+                      thumbSheets: sheet != null ? [sheet] : [],
+                      label: nav?.label ?? "Page",
+                      soleUnit: true,
+                      sectionId: namedSectionIdFor(nav),
+                    });
+                  } else {
+                    const sides = [
+                      { sheet: spread.left, nav: leftNav },
+                      { sheet: spread.right, nav: rightNav },
+                    ].filter((side) => side.sheet != null && side.nav);
+                    sides.forEach(({ sheet, nav }) =>
+                      addUnit({
+                        index,
+                        focusSheet: sheet,
+                        nav,
+                        thumbSheets: [sheet as number],
+                        label: nav!.label ?? "Page",
+                        soleUnit: sides.length === 1,
+                        sectionId: namedSectionIdFor(nav),
+                      }),
+                    );
+                  }
+                });
+                const groups: Array<{ key: string; sectionId: string | null; units: RailUnit[] }> = [];
+                units.forEach((unit) => {
                   const previous = groups[groups.length - 1];
-                  if (previous && sectionId && previous.sectionId === sectionId) {
-                    previous.entries.push({ spread, index });
+                  if (previous && unit.sectionId && previous.sectionId === unit.sectionId) {
+                    previous.units.push(unit);
                   } else {
                     groups.push({
-                      key: sectionId ? `${sectionId}-${index}` : `page-${index}`,
-                      sectionId,
-                      entries: [{ spread, index }],
+                      key: unit.sectionId ? `${unit.sectionId}-${unit.num}` : `unit-${unit.num}`,
+                      sectionId: unit.sectionId,
+                      units: [unit],
                     });
                   }
                 });
@@ -2911,47 +3232,31 @@ export default function PrintPage() {
                       group.sectionId ? "recipe-page-rail__section-group--nested" : ""
                     }`}
                   >
-                  {group.entries.map(({ spread, index }) => {
-                const primarySheet = spread.right ?? spread.left;
-                const navFor = (sheetIndex: number | null) =>
-                  sheetIndex != null && navIndexForSheet.has(sheetIndex)
-                    ? navItems[navIndexForSheet.get(sheetIndex)!]
-                    : null;
-                const leftNav = navFor(spread.left);
-                const rightNav = navFor(spread.right);
-                const recipeNav = [rightNav, leftNav].find((item) => item?.kind === "recipe") ?? null;
-                const recipeSection = recipeNav ? sectionForNavItem(recipeNav) : null;
-                const dividerNav = [rightNav, leftNav].find((item) => item?.kind === "divider") ?? null;
+                  {group.units.map((unit, unitIdx) => {
+                const recipeNav = unit.nav?.kind === "recipe" ? unit.nav : null;
+                const dividerNav = unit.nav?.kind === "divider" ? unit.nav : null;
                 const dividerSection = dividerNav ? sectionForNavItem(dividerNav) : null;
-                const recipeSectionTitle =
-                  recipeSection ? sections[recipeSection.index]?.title?.trim() : "";
-                let previousRecipeSectionId: string | null = null;
-                for (let previousIndex = index - 1; previousIndex >= 0; previousIndex -= 1) {
-                  const previousSpread = spreads[previousIndex];
-                  const previousNav = [
-                    navFor(previousSpread.right),
-                    navFor(previousSpread.left),
-                  ].find((item) => item?.kind === "recipe");
-                  if (previousNav) {
-                    previousRecipeSectionId = sectionForNavItem(previousNav)?.id ?? null;
-                    break;
-                  }
-                }
+                const section = unit.sectionId
+                  ? sections.find((entry) => entry.id === unit.sectionId)
+                  : undefined;
+                const isFirstInSection =
+                  Boolean(unit.sectionId) &&
+                  (unitIdx === 0 || group.units[unitIdx - 1]?.sectionId !== unit.sectionId);
+                // Header (with "Add opener") only for a named section that has no
+                // opener page — the opener page is itself the section's title.
                 const showSectionHeader =
-                  Boolean(recipeSectionTitle) &&
-                  recipeSection?.id !== previousRecipeSectionId;
-                const labelParts = Array.from(
-                  new Set([leftNav?.label, rightNav?.label].filter(Boolean) as string[]),
-                );
-                const primarySheetObj = primarySheet != null ? sheets[primarySheet] : null;
+                  Boolean(section?.title?.trim()) && isFirstInSection && !section?.showOpener;
+                const isActive =
+                  unit.index === activeNavIndex && (unit.soleUnit || focusedSheet === unit.focusSheet);
+                const isSpreadThumb = unit.thumbSheets.length === 2;
                 return (
                   <div
-                    key={`rail-spread-${index}`}
+                    key={`rail-unit-${unit.num}`}
                     className={`recipe-page-rail__row ${
-                      recipeSection ? "recipe-page-rail__row--section-child" : ""
-                    }`}
+                      unit.sectionId ? "recipe-page-rail__row--section-child" : ""
+                    } ${isFirstInSection ? "recipe-page-rail__row--section-first" : ""}`}
                   >
-                    {showSectionHeader && recipeSection && (
+                    {showSectionHeader && section && (
                       <div
                         className="recipe-page-rail__section-header"
                         onDragOver={(event) => {
@@ -2959,30 +3264,29 @@ export default function PrintPage() {
                         }}
                         onDrop={(event) => {
                           event.preventDefault();
-                          handleDropIntoSection(recipeSection.id, 0);
+                          handleDropIntoSection(section.id, 0);
                         }}
                       >
-                        <span>{recipeSectionTitle}</span>
+                        <span>{section.title}</span>
                         <button
                           type="button"
                           className="recipe-page-rail__section-opener"
-                          aria-pressed={Boolean(sections[recipeSection.index]?.showOpener)}
+                          aria-pressed={Boolean(section.showOpener)}
                           onClick={(event) => {
                             event.stopPropagation();
-                            setSectionOpener(
-                              recipeSection.id,
-                              !sections[recipeSection.index]?.showOpener,
-                            );
+                            setSectionOpener(section.id, !section.showOpener);
                           }}
                         >
-                          {sections[recipeSection.index]?.showOpener ? "Opener on" : "Add opener"}
+                          {section.showOpener ? "Opener on" : "Add opener"}
                         </button>
                       </div>
                     )}
                     <div
-                      className={`recipe-page-rail__item ${
-                        index === activeNavIndex ? "is-active" : ""
-                      } ${draggingItemId === recipeNav?.recipeId ? "is-dragging" : ""}`}
+                      className={`recipe-page-rail__item ${isActive ? "is-active" : ""} ${
+                        draggingItemId === recipeNav?.recipeId ? "is-dragging" : ""
+                      } ${recipeNav && railShake?.recipeId === recipeNav.recipeId ? "is-shaking" : ""} ${
+                        recipeNav && effectiveRailSelection.has(recipeNav.recipeId) ? "is-selected" : ""
+                      }`}
                     >
                       <button
                         type="button"
@@ -2998,32 +3302,59 @@ export default function PrintPage() {
                         }}
                         onDragEnd={() => setDraggingItemId(null)}
                         className="recipe-page-rail__item-main"
-                        aria-current={index === activeNavIndex}
-                        onClick={() => goToSlide(index)}
+                        aria-current={isActive}
+                        aria-pressed={recipeNav ? effectiveRailSelection.has(recipeNav.recipeId) : undefined}
+                        onClick={(event) => {
+                          // Shift-click range-selects; Cmd/Ctrl-click toggles one;
+                          // a plain click clears any selection and navigates.
+                          if (recipeNav && event.shiftKey) {
+                            event.preventDefault();
+                            event.stopPropagation();
+                            selectRailRange(recipeNav.recipeId);
+                            return;
+                          }
+                          if (recipeNav && (event.metaKey || event.ctrlKey)) {
+                            event.preventDefault();
+                            event.stopPropagation();
+                            toggleRailSelection(recipeNav.recipeId);
+                            return;
+                          }
+                          if (selectedRailIds.size) clearRailSelection();
+                          setRailAnchorId(recipeNav?.recipeId ?? null);
+                          goToSlide(unit.index);
+                          if (unit.focusSheet != null) setFocusedSheetIndex(unit.focusSheet);
+                        }}
                       >
-                        <span className="recipe-page-rail__num">{index + 1}</span>
-                        <span className="recipe-page-rail__thumb">
-                          {primarySheetObj && (
-                            <ScaledPage
-                              sheet={primarySheetObj}
-                              isLastSheet={primarySheet === sheets.length - 1}
-                              activeSlotIndex={0}
-                              activeSide="front"
-                              scale={RAIL_SCALE[cardSize]}
-                              size={previewCardSize}
-                              template={previewTemplate}
-                              doubleSided={continueOnBack}
-                              showSourceUrl={previewSourceUrlOn}
-                              showCutLines={false}
-                              cookbookMode
-                            />
+                        <span className="recipe-page-rail__num">{unit.num}</span>
+                        <span
+                          className={`recipe-page-rail__thumb ${
+                            isSpreadThumb ? "recipe-page-rail__thumb--spread" : ""
+                          }`}
+                        >
+                          {unit.thumbSheets.map((sheetIndex, thumbIdx) =>
+                            sheets[sheetIndex] ? (
+                              <ScaledPage
+                                key={thumbIdx}
+                                sheet={sheets[sheetIndex]}
+                                isLastSheet={sheetIndex === sheets.length - 1}
+                                activeSlotIndex={0}
+                                activeSide="front"
+                                // Same zoom as a single thumb — a mini-spread just
+                                // crops each page into a half-width window (see the
+                                // --spread scaler rule) so both fit side by side.
+                                scale={RAIL_SCALE[cardSize]}
+                                size={previewCardSize}
+                                template={previewTemplate}
+                                doubleSided={continueOnBack}
+                                showSourceUrl={previewSourceUrlOn}
+                                showCutLines={false}
+                                cookbookMode
+                              />
+                            ) : null,
                           )}
                         </span>
                         <span className="recipe-page-rail__label">
-                          <span className="recipe-page-rail__title">{labelParts.join(" · ") || "Spread"}</span>
-                          <span className="recipe-page-rail__meta">
-                            {spread.single ? (rightNav ?? leftNav)?.pageLabel ?? "" : "Spread"}
-                          </span>
+                          <span className="recipe-page-rail__title">{unit.label}</span>
                         </span>
                       </button>
                     </div>
@@ -3066,7 +3397,11 @@ export default function PrintPage() {
                 <div
                   className={`recipe-page-rail__item ${
                     index === activeNavIndex ? "is-active" : ""
-                  } ${draggingItemId === navItem.recipeId ? "is-dragging" : ""}`}
+                  } ${draggingItemId === navItem.recipeId ? "is-dragging" : ""} ${
+                    navItem.kind === "recipe" && railShake?.recipeId === navItem.recipeId
+                      ? "is-shaking"
+                      : ""
+                  }`}
                 >
                   <button
                     type="button"
@@ -3124,32 +3459,110 @@ export default function PrintPage() {
             );
           })}
 
-          <div className="recipe-page-rail__add-row">
-            <button
-              type="button"
-              className={`btn btn-secondary recipe-page-rail__add-main ${
-                projectMeta.meta.cookbookMode ? "recipe-page-rail__add-main--paired" : ""
-              }`}
-              onClick={() => {
-                setAddMenuOpen(false);
-                setPendingAddSectionId(sectionForNavItem(activeNavItem)?.id ?? sections[0]?.id ?? null);
-                setShowAddRecipeDialog(true);
-              }}
-            >
-              <PlusIcon size={ICON_SIZE.md} />
-              Recipe
-            </button>
+          <div className="recipe-page-rail__footer">
+            {/* Floating selection pill — sits above the Add recipe row instead of
+                pushing the list down; one "Group (N)" control + a clear. */}
+            {projectMeta.meta.cookbookMode && effectiveRailSelection.size >= 2 && (
+              <div className="recipe-page-rail__bulk" ref={railBulkRef}>
+                <button
+                  type="button"
+                  className="recipe-page-rail__bulk-group"
+                  aria-haspopup="menu"
+                  aria-expanded={railBulkMenu !== null}
+                  onClick={() => setRailBulkMenu((menu) => (menu ? null : "root"))}
+                >
+                  Group ({effectiveRailSelection.size})
+                </button>
+                <button
+                  type="button"
+                  className="recipe-page-rail__bulk-clear"
+                  aria-label="Clear selection"
+                  onClick={clearRailSelection}
+                >
+                  <XIcon size={ICON_SIZE.sm} />
+                </button>
+                {railBulkMenu && (
+                  <div className="recipe-page-rail__bulk-menu" role="menu">
+                    <button type="button" role="menuitem" onClick={makeSectionFromSelection}>
+                      <PlusIcon size={ICON_SIZE.sm} />
+                      Make new section
+                    </button>
+                    {sections.some((section) => section.title?.trim()) && (
+                      <>
+                        <div className="recipe-page-rail__bulk-menu-label">Move to section</div>
+                        {sections
+                          .filter((section) => section.title?.trim())
+                          .map((section) => (
+                            <button
+                              key={section.id}
+                              type="button"
+                              role="menuitem"
+                              onClick={() => moveSelectionToSection(section.id)}
+                            >
+                              {section.title}
+                            </button>
+                          ))}
+                      </>
+                    )}
+                  </div>
+                )}
+              </div>
+            )}
+            <div className="recipe-page-rail__add-row" ref={addMenuRef}>
+              <button
+                type="button"
+                className={`btn btn-secondary recipe-page-rail__add-main ${
+                  projectMeta.meta.cookbookMode ? "recipe-page-rail__add-main--paired" : ""
+                }`}
+                onClick={() => {
+                  setAddMenuOpen(false);
+                  setPendingAddSectionId(sectionForNavItem(activeNavItem)?.id ?? sections[0]?.id ?? null);
+                  setShowAddRecipeDialog(true);
+                }}
+              >
+                <PlusIcon size={ICON_SIZE.md} />
+                {projectMeta.meta.cookbookMode ? "Add recipe" : "Recipe"}
+              </button>
+              {/* In a cookbook the section action folds into a split-button
+                  overflow, so the primary control reads plainly as "Add recipe". */}
+              {projectMeta.meta.cookbookMode && (
+                <>
+                  <button
+                    type="button"
+                    className="recipe-page-rail__add-menu-trigger"
+                    aria-haspopup="menu"
+                    aria-expanded={addMenuOpen}
+                    aria-label="More add options"
+                    onClick={() => setAddMenuOpen((open) => !open)}
+                  >
+                    <ChevronDownIcon size={ICON_SIZE.sm} />
+                  </button>
+                  {addMenuOpen && (
+                    <div className="recipe-page-rail__add-menu" role="menu">
+                      <button
+                        type="button"
+                        role="menuitem"
+                        onClick={() => {
+                          setAddMenuOpen(false);
+                          addSectionDivider();
+                        }}
+                      >
+                        <PlusIcon size={ICON_SIZE.sm} />
+                        Add section
+                      </button>
+                    </div>
+                  )}
+                </>
+              )}
+            </div>
             {projectMeta.meta.cookbookMode && (
               <button
                 type="button"
-                className="recipe-page-rail__add-section"
-                onClick={() => {
-                  setAddMenuOpen(false);
-                  addSectionDivider();
-                }}
+                className="recipe-page-rail__organize"
+                onClick={openOrganizeCookbook}
               >
-                <PlusIcon size={ICON_SIZE.sm} />
-                Section
+                <ReorderIcon size={ICON_SIZE.sm} />
+                Reorder recipes
               </button>
             )}
           </div>
@@ -3264,13 +3677,28 @@ export default function PrintPage() {
                       : [];
                   const designedBlank =
                     sectionGridImages.length > 0 || leftSlot?.kind === "toc";
+                  // A chapter opener whose facing page is a photo grid built from
+                  // this section's recipes is one logical unit — focus/outline
+                  // them together (like an image spread), since those photos come
+                  // straight from the section the opener titles.
+                  const isSectionSpread =
+                    leftSlot?.kind === "divider" && sectionGridImages.length > 0;
                   const renderBlank = (trailing = false) => (
                     <div
                       className={`recipe-spread__blank recipe-template--${previewTemplate} ${
                         designedBlank ? "recipe-spread__blank--designed" : ""
                       } ${sectionGridImages.length ? "recipe-spread__blank--photo-grid" : ""} ${
                         trailing ? "recipe-spread__blank--trailing" : ""
-                      }`}
+                      } ${isSectionSpread && !trailing ? "recipe-spread__blank--linked" : ""}`}
+                      onClick={
+                        isSectionSpread && !trailing
+                          ? (event) => {
+                              event.stopPropagation();
+                              if (!isActive) goToSlide(index);
+                              if (spread.left != null) setFocusedSheetIndex(spread.left);
+                            }
+                          : undefined
+                      }
                       aria-label={
                         sectionGridImages.length
                           ? `Photo page for ${leftSlot?.kind === "divider" ? leftSlot.title : "section"}`
@@ -3351,8 +3779,10 @@ export default function PrintPage() {
                         activeNavItem &&
                         renderActiveControls(
                           activeNavItem,
-                          isImageSpread ? spreadWidth * deckScale : previewDims.w * deckScale,
-                          isImageSpread || spread.single
+                          isImageSpread || isSectionSpread
+                            ? spreadWidth * deckScale
+                            : previewDims.w * deckScale,
+                          isImageSpread || isSectionSpread || spread.single
                             ? 0
                             : focusedSheet === spread.left
                               ? -((previewDims.w * deckScale + 12) / 2)
@@ -3360,9 +3790,10 @@ export default function PrintPage() {
                         )}
                       <div
                         className={`recipe-spread ${spread.single ? "recipe-spread--single" : ""} ${
-                          isImageSpread &&
                           isActive &&
-                          (focusedSheet === spread.left || focusedSheet === spread.right)
+                          ((isImageSpread &&
+                            (focusedSheet === spread.left || focusedSheet === spread.right)) ||
+                            (isSectionSpread && focusedSheet === spread.left))
                             ? "recipe-spread--image-focused"
                             : ""
                         }`}
@@ -3536,7 +3967,11 @@ export default function PrintPage() {
                     showCutLines={showCutLines && cardSize === "card-6x4"}
                     inlineEdit={
                       pageEditMode && isActive && activeRecipeItem?.id === navItem.recipeId && activeInlineEdit
-                        ? { ...activeInlineEdit, recipeImages: coverPhotoCandidates }
+                        ? {
+              ...activeInlineEdit,
+              // The recipe's own photo only (plus upload), not other recipes'.
+              recipeImages: activeRecipeItem?.recipe?.image ? [activeRecipeItem.recipe.image] : [],
+            }
                         : undefined
                     }
                     dividerEdit={
@@ -3544,7 +3979,10 @@ export default function PrintPage() {
                         ? {
                             sectionId: navItem.recipeId,
                             value: editingSectionTitle,
-                            onChange: setEditingSectionTitle,
+                            onChange: (value) => {
+                              setEditingSectionTitle(value);
+                              projectMeta.renameSection(navItem.recipeId, value.trim() || undefined);
+                            },
                             onCommit: commitSectionEdit,
                             onCancel: () => {
                               setEditingSectionId(null);
@@ -3803,40 +4241,12 @@ export default function PrintPage() {
                 );
               })}
             </div>
-            {!cookPilotUser && (
-              <div className="recipe-cookpilot-account">
-                <div className="recipe-cookpilot-account__prompt">
-                  <span className="recipe-cookpilot-account__hint">Already purchased?</span>
-                  <button
-                    type="button"
-                    className="recipe-cookpilot-account__link"
-                    onClick={() => {
-                      setCookPilotLoginReason("default");
-                      setShowCookPilotLogin(true);
-                    }}
-                  >
-                    Log in
-                  </button>
-                </div>
-              </div>
-            )}
           </div>
           </div>
 
           <div className="recipe-config-panel__footer">
-            {/* Hidden for this release alongside the rest of the account/cookbook
-                surface — gated by COOKBOOK_ENABLED so it returns at launch. */}
-            {COOKBOOK_ENABLED && !cookbookMode && (
-              <button
-                type="button"
-                className="btn btn-secondary recipe-print-button"
-                disabled={projectSaveBusy}
-                onClick={() => void handleSaveProject()}
-              >
-                {projectSaveBusy ? <SpinnerIcon size={ICON_SIZE.md} /> : <BookIcon size={ICON_SIZE.md} />}
-                {savedProjectId ? "Saved to account" : "Save project"}
-              </button>
-            )}
+            {/* Print (or Unlock/Purchase & Print) is the primary action, so it
+                always sits above the secondary "Save project". */}
             <button
               onClick={() => void handlePrint()}
               className="btn btn-primary recipe-print-button"
@@ -3853,6 +4263,19 @@ export default function PrintPage() {
                   ? "Unlock & Print"
                   : "Print"}
             </button>
+            {/* Hidden for this release alongside the rest of the account/cookbook
+                surface — gated by COOKBOOK_ENABLED so it returns at launch. */}
+            {COOKBOOK_ENABLED && !cookbookMode && (
+              <button
+                type="button"
+                className="btn btn-secondary recipe-print-button"
+                disabled={projectSaveBusy}
+                onClick={() => void handleSaveProject()}
+              >
+                {projectSaveBusy ? <SpinnerIcon size={ICON_SIZE.md} /> : <BookIcon size={ICON_SIZE.md} />}
+                {savedProjectId ? "Saved to account" : "Save project"}
+              </button>
+            )}
             {isRecipePrinterAdmin && activeRecipeItem?.recipe && (
               <button
                 type="button"
@@ -4097,6 +4520,12 @@ export default function PrintPage() {
         open={cookbookBuilding}
         cover={projectMeta.meta.cover ?? defaultCover()}
       />
+      {cookbookRestoring && (
+        <div className="cookbook-restore-overlay no-print" role="status" aria-live="polite">
+          <SpinnerIcon size={30} />
+          <span>Loading your cookbook…</span>
+        </div>
+      )}
       <CookbookReadyDialog
         open={showCookbookPrintDialog}
         justPurchased={cookbookJustPurchased}

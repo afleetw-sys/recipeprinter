@@ -29,6 +29,7 @@ export function PrinterWorkspace({
   const {
     items,
     focusedItemId,
+    focusNonce,
     hydrated,
     hydratedWithItems,
     addUrl,
@@ -189,6 +190,7 @@ export function PrinterWorkspace({
             onRemove={remove}
             animateItems={!skipProjectIntro}
             focusedItemId={focusedItemId}
+            focusNonce={focusNonce}
           />
         ) : (
           <div className="h-24 rounded-2xl border border-dashed border-line-strong" />
@@ -255,6 +257,7 @@ export function PrinterWorkspace({
                 onRemove={remove}
                 animateItems={!skipProjectIntro}
                 focusedItemId={focusedItemId}
+                focusNonce={focusNonce}
               />
             ) : (
               <div className="h-24 rounded-2xl border border-dashed border-line-strong" />

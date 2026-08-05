@@ -90,7 +90,31 @@ export interface ProjectMeta {
       lifecycle stays untouched by a book-only concern (see the type's comment).
       Absent/`full` = one card per sheet, i.e. today's behavior. */
   itemPlacements?: Record<string, RecipePagePlacement>;
+  /** Set by `exitCookbook` when the cook switches back to plain recipe cards:
+      the whole book (cover, chapters, layouts, settings) tucked away so a later
+      `restoreCookbook` brings it back exactly. Absent = no book to restore.
+      Never read by the renderer — recipe-cards mode sees a meta with no
+      cookbook fields, identical to a project that never had a book. */
+  stashedCookbook?: StashedCookbook;
 }
+
+/** Everything cookbook-specific that `exitCookbook` sets aside so switching back
+    to the book restores it intact, rather than making the cook rebuild it. */
+type StashedCookbook = Pick<
+  ProjectMeta,
+  | "cover"
+  | "backCover"
+  | "dedication"
+  | "frontMatter"
+  | "photoStyle"
+  | "tableOfContents"
+  | "tocKicker"
+  | "tocTitle"
+  | "sectionDividers"
+  | "cookbookPreset"
+  | "sections"
+  | "itemPlacements"
+>;
 
 const EMPTY_META: ProjectMeta = { sections: [] };
 
@@ -524,17 +548,49 @@ export function useProjectMeta() {
     [update],
   );
 
-  /** Leaving cookbook mode strips every cookbook-only artifact — cover, back
-      cover, chapters/dividers, table of contents, and per-recipe page layouts —
-      back to a plain print job. The recipes themselves live in the queue and
-      are untouched; clearing `sections` collapses them into one implicit
-      untitled section (see `buildSections`). */
+  /** Leaving cookbook mode returns to a plain print job WITHOUT discarding the
+      book: every cookbook-only artifact — cover, back cover, chapters/dividers,
+      table of contents, per-recipe page layouts, and book settings — is tucked
+      into `stashedCookbook` so `restoreCookbook` can bring it back untouched.
+      The recipes themselves live in the queue; clearing `sections` collapses
+      them into one implicit untitled section for card printing (see
+      `buildSections`). */
   const exitCookbook = useCallback(() => {
-    update((current) => ({
-      projectId: current.projectId,
-      cookbookWelcomeCompleted: current.cookbookWelcomeCompleted,
-      sections: [],
-    }));
+    update((current) => {
+      const stashedCookbook: StashedCookbook = {
+        cover: current.cover,
+        backCover: current.backCover,
+        dedication: current.dedication,
+        frontMatter: current.frontMatter,
+        photoStyle: current.photoStyle,
+        tableOfContents: current.tableOfContents,
+        tocKicker: current.tocKicker,
+        tocTitle: current.tocTitle,
+        sectionDividers: current.sectionDividers,
+        cookbookPreset: current.cookbookPreset,
+        sections: current.sections,
+        itemPlacements: current.itemPlacements,
+      };
+      return {
+        projectId: current.projectId,
+        cookbookWelcomeCompleted: current.cookbookWelcomeCompleted,
+        sections: [],
+        stashedCookbook,
+      };
+    });
+  }, [update]);
+
+  /** Re-enters cookbook mode from the stash left by `exitCookbook`, restoring
+      the cover, chapters, layouts, and every book setting in a single commit.
+      Returns false (a no-op) when nothing is stashed, so the caller can fall
+      back to scaffolding a fresh book. */
+  const restoreCookbook = useCallback(() => {
+    if (!metaRef.current.stashedCookbook) return false;
+    update((current) => {
+      const { stashedCookbook, ...rest } = current;
+      return { ...rest, ...stashedCookbook, cookbookMode: true };
+    });
+    return true;
   }, [update]);
 
   /** Sets (or, with `undefined`, clears back to the default `full`) a single
@@ -618,6 +674,7 @@ export function useProjectMeta() {
     setCookbookMode,
     setCookbookPreset,
     exitCookbook,
+    restoreCookbook,
     setItemPlacement,
     setItemPhotoMode,
     setPhotoStyle,

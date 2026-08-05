@@ -158,6 +158,12 @@ function canonicalUrl(rawUrl: string): string | null {
 export function useQueue() {
   const [items, setItems] = useState<QueueItem[]>([]);
   const [focusedItemId, setFocusedItemId] = useState<string | null>(null);
+  // Bumped on every `focusItem` call — even when the same id is focused twice in
+  // a row (re-importing the same URL). Consumers key their "already added"
+  // scroll-and-shake cue off this so a repeat duplicate re-triggers the motion,
+  // which a plain `focusedItemId` (unchanged value) could not.
+  const [focusNonce, setFocusNonce] = useState(0);
+  const focusNonceRef = useRef(0);
   const [hydrated, setHydrated] = useState(false);
   const [hydratedWithItems, setHydratedWithItems] = useState(false);
   const itemsRef = useRef<QueueItem[]>([]);
@@ -191,6 +197,8 @@ export function useQueue() {
       const existing = itemsRef.current.find((it) => it.id === id);
       if (!existing) return;
       setFocusedItemId(id);
+      focusNonceRef.current += 1;
+      setFocusNonce(focusNonceRef.current);
     },
     [],
   );
@@ -411,6 +419,7 @@ export function useQueue() {
   return {
     items,
     focusedItemId,
+    focusNonce,
     hydrated,
     hydratedWithItems,
     addUrl,

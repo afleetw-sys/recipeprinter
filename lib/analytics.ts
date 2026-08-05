@@ -140,6 +140,8 @@ type EventProps = {
   cookbook_cover_layout_selected: { layout: "photo" | "collage" | "typographic" };
   cookbook_front_matter_enabled: { kind: "dedication" | "introduction" };
   cookbook_section_opener_toggled: { enabled: boolean };
+  cookbook_section_created_from_selection: { count: number };
+  cookbook_section_selection_moved: { count: number };
   cookbook_ready_shown: { freshPurchase: boolean };
   relayout_started: {};
   relayout_method_selected: { method: "suggested" };
