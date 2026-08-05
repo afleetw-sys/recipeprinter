@@ -463,8 +463,22 @@
   scrollbar-width: none;
 }
 
-.recipe-page-canvas[data-single-recipe="true"] .recipe-page-deck {
-  padding: 16px 0;
+/* A lone card doesn't need the ~44vh centring pad, but the floating controls
+   (front/back arrows + Edit) sit ABOVE the card, so the deck still needs enough
+   top room for them to clear the sticky header — otherwise they hide behind it.
+   Desktop-scoped on purpose: the mobile deck keeps its own `54px 40px 18px`
+   (control clearance + side peek); an unscoped override here outranks that rule
+   and would collapse the mobile padding too, hiding the controls there as well. */
+/* A lone card doesn't need the ~44vh centring pad, but the floating controls
+   (front/back arrows + Edit) sit ABOVE the card, so the deck still needs enough
+   top room for them to clear the sticky header — otherwise they hide behind it.
+   Desktop-scoped on purpose: the mobile deck keeps its own `54px 40px 18px`
+   (control clearance + side peek); an unscoped override here outranks that rule
+   and would collapse the mobile padding too, hiding the controls there as well. */
+@media screen and (min-width: 821px) {
+  .recipe-page-canvas[data-single-recipe="true"] .recipe-page-deck {
+    padding: 72px 0 24px;
+  }
 }
 
 .recipe-page-deck::-webkit-scrollbar {
@@ -965,6 +979,18 @@
   font-weight: 800;
   letter-spacing: 0.08em;
   text-transform: uppercase;
+}
+
+/* Inline pricing note under the Themes heading — states the one-time premium
+   cost up front so the paywall no longer needs its own explanatory dialog. */
+.recipe-template-caption {
+  /* Negative top margin cancels most of the section's 9px flex gap so the note
+     tucks directly under the "Themes" label rather than floating midway to the
+     thumbnails; the small bottom margin keeps a little air before the grid. */
+  margin: -6px 0 2px;
+  color: var(--cp-ink-soft);
+  font-size: 0.75rem;
+  line-height: 1.4;
 }
 
 .recipe-free-template-banner {
@@ -5429,6 +5455,11 @@ textarea.recipe-card__toc-title {
 
 .print-success-dialog h2 {
   margin: 0;
+  /* Reserve space on both sides so a long, centred title can never slide
+     under the absolutely-positioned close button (top/right: 12px, 34px wide,
+     so it reaches ~46px in from the panel edge). Symmetric padding keeps the
+     text visually centred; it just wraps a line earlier instead of clipping. */
+  padding: 0 28px;
   /* Fixed, not the vw-based --cp-fs-h2-lg: this heading lives in a
      fixed-width modal (390px max), not full page width, so it shouldn't
      track viewport size. */
