@@ -259,6 +259,21 @@ describe("assembleSpreads (book imposition)", () => {
     const spreads = assembleSpreads(K("cover", "content"));
     expect(spreads[1]).toEqual({ left: 1, right: null, single: false });
   });
+
+  it("pairs a chapter opener with its facing section photo", () => {
+    const spreads = assembleSpreads(K("cover", "chapter", "section-photo", "content"));
+    // opener on the verso, its full-page/grid photo on the recto, as one spread
+    expect(spreads[1]).toEqual({ left: 1, right: 2, single: false });
+    expect(spreads[2]).toEqual({ left: 3, right: null, single: false });
+  });
+
+  it("realigns a stray page so a chapter opener isn't split from its photo", () => {
+    const spreads = assembleSpreads(K("content", "chapter", "section-photo", "content"));
+    // the lone content stands by itself so the opener keeps its photo on the recto
+    expect(spreads[0]).toEqual({ left: 0, right: null, single: false });
+    expect(spreads[1]).toEqual({ left: 1, right: 2, single: false });
+    expect(spreads[2]).toEqual({ left: 3, right: null, single: false });
+  });
 });
 
 describe("splitIntoColumns", () => {

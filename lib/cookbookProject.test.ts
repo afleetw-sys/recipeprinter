@@ -11,6 +11,13 @@ describe("cookbook project normalization", () => {
     expect(normalized.sections[0].showOpener).toBe(false);
   });
 
+  it("restores opener pages for named sections even if an older project disabled them", () => {
+    const normalized = normalizeProjectMeta({
+      sections: [{ id: "one", title: "Dinner", showOpener: false, itemIds: ["r1"] }],
+    });
+    expect(normalized.sections[0].showOpener).toBe(true);
+  });
+
   it("migrates legacy chapter pages, cover styles, and dedication content", () => {
     const normalized = normalizeProjectMeta({
       sectionDividers: true,

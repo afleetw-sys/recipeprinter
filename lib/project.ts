@@ -8,6 +8,7 @@ import type {
   QueueItem,
   RecipePagePlacement,
   Section,
+  SectionPhotoMode,
 } from "@/types/recipe";
 import { uid } from "@/lib/ids";
 import { sessionStore } from "@/lib/storage";
@@ -33,6 +34,20 @@ export const PROJECT_META_STORAGE_KEY = "recipeprinter:project-meta:v1";
     - `full` — a full-page photo facing each recipe (image spread).
     The per-page layout picker overrides individual recipes on top of this. */
 export type PhotoStyle = "none" | "card" | "full";
+
+const SECTION_PHOTO_MODES: readonly SectionPhotoMode[] = ["none", "band", "full", "grid"];
+
+/** The effective opener photo placement for a section. Explicit `photoMode` wins;
+    otherwise a stored `photoUrl` means the legacy top-band photo (`band`), and a
+    bare section is typographic (`none`). Shared by the sheet builder and the
+    picker so the printed page and the dialog can never disagree. */
+export function resolveSectionPhotoMode(section: {
+  photoMode?: SectionPhotoMode;
+  photoUrl?: string;
+}): SectionPhotoMode {
+  if (section.photoMode) return section.photoMode;
+  return section.photoUrl ? "band" : "none";
+}
 
 export function recipePagePlacementHasValues(placement: RecipePagePlacement): boolean {
   return (
@@ -80,6 +95,8 @@ export interface ProjectMeta {
     title?: string;
     subtitle?: string;
     photoUrl?: string;
+    photoMode?: SectionPhotoMode;
+    gridImages?: string[];
     intro?: string;
     showOpener?: boolean;
     numberAsChapter?: boolean;
@@ -135,11 +152,18 @@ export function normalizeProjectMeta(value: unknown): ProjectMeta {
           title: cleanText(section.title),
           subtitle: cleanText(section.subtitle),
           photoUrl: cleanText(section.photoUrl),
+          photoMode:
+            SECTION_PHOTO_MODES.includes(section.photoMode as SectionPhotoMode)
+              ? (section.photoMode as SectionPhotoMode)
+              : undefined,
+          gridImages: Array.isArray(section.gridImages)
+            ? section.gridImages.filter((url): url is string => typeof url === "string" && Boolean(url))
+            : undefined,
           intro: cleanText(section.intro),
-          showOpener:
-            typeof section.showOpener === "boolean"
-              ? section.showOpener
-              : legacyOpeners && Boolean(cleanText(section.title)),
+          // Named cookbook sections always receive an opener. Keep the field
+          // in persisted data for backward compatibility, but never preserve
+          // an old user-disabled value.
+          showOpener: Boolean(cleanText(section.title)),
           numberAsChapter:
             typeof section.numberAsChapter === "boolean"
               ? section.numberAsChapter
@@ -206,6 +230,8 @@ export function buildSections(items: QueueItem[], meta: ProjectMeta): Section[] 
         title: section.title,
         subtitle: section.subtitle,
         photoUrl: section.photoUrl,
+        photoMode: section.photoMode,
+        gridImages: section.gridImages,
         intro: section.intro,
         showOpener: section.showOpener,
         numberAsChapter: section.numberAsChapter,
@@ -252,6 +278,8 @@ function metaSectionsFromFull(sections: Section[]): ProjectMeta["sections"] {
     title: section.title,
     subtitle: section.subtitle,
     photoUrl: section.photoUrl,
+    photoMode: section.photoMode,
+    gridImages: section.gridImages,
     intro: section.intro,
     showOpener: section.showOpener,
     numberAsChapter: section.numberAsChapter,
@@ -301,6 +329,9 @@ export function useProjectMeta() {
             section.title !== next.title ||
             section.subtitle !== next.subtitle ||
             section.photoUrl !== next.photoUrl ||
+            section.photoMode !== next.photoMode ||
+            (section.gridImages?.length ?? 0) !== (next.gridImages?.length ?? 0) ||
+            (section.gridImages ?? []).some((url, i) => url !== next.gridImages?.[i]) ||
             section.intro !== next.intro ||
             section.showOpener !== next.showOpener ||
             section.numberAsChapter !== next.numberAsChapter ||
@@ -318,7 +349,7 @@ export function useProjectMeta() {
       const id = uid();
       update((current) => ({
         ...current,
-        sections: [...current.sections, { id, title, showOpener: false, itemIds: [] }],
+        sections: [...current.sections, { id, title, showOpener: Boolean(title?.trim()), itemIds: [] }],
       }));
       return id;
     },
@@ -337,17 +368,54 @@ export function useProjectMeta() {
     [update],
   );
 
-  /** Chapter-opener photo for a section (cookbook mode). Empty/undefined clears it. */
-  const setSectionPhoto = useCallback(
-    (sectionId: string, photoUrl: string | undefined) => {
+  /** Sets a section opener's photo PLACEMENT, mirroring `setItemPhotoMode` for
+      recipes. `none` clears everything; `band`/`full` set the single `photoUrl`
+      (kept if `opts.photoUrl` is omitted) and drop any grid; `grid` sets the
+      curated `gridImages`. Keeping mode + payload in one setter means the
+      persisted `photoMode` can never drift out of sync with the photo it names. */
+  const setSectionPhotoMode = useCallback(
+    (
+      sectionId: string,
+      mode: SectionPhotoMode,
+      opts?: { photoUrl?: string; gridImages?: string[] },
+    ) => {
       update((current) => ({
         ...current,
-        sections: current.sections.map((section) =>
-          section.id === sectionId ? { ...section, photoUrl: photoUrl || undefined } : section,
-        ),
+        sections: current.sections.map((section) => {
+          if (section.id !== sectionId) return section;
+          if (mode === "none") {
+            return { ...section, photoMode: "none", photoUrl: undefined, gridImages: undefined };
+          }
+          if (mode === "grid") {
+            return {
+              ...section,
+              photoMode: "grid",
+              gridImages: (opts?.gridImages ?? section.gridImages ?? []).filter(Boolean),
+            };
+          }
+          // band | full — a single facing/band photo, no grid.
+          return {
+            ...section,
+            photoMode: mode,
+            photoUrl:
+              opts?.photoUrl !== undefined ? opts.photoUrl || undefined : section.photoUrl,
+            gridImages: undefined,
+          };
+        }),
       }));
     },
     [update],
+  );
+
+  /** Chapter-opener photo for a section (cookbook mode). Empty/undefined clears
+      it. Thin wrapper over `setSectionPhotoMode` so the legacy single-photo path
+      keeps `photoMode` consistent: a url means the in-card `band`, clearing means
+      `none`. */
+  const setSectionPhoto = useCallback(
+    (sectionId: string, photoUrl: string | undefined) => {
+      setSectionPhotoMode(sectionId, photoUrl ? "band" : "none", { photoUrl });
+    },
+    [setSectionPhotoMode],
   );
 
   /** Chapter-opener intro line for a section (cookbook mode). */
@@ -367,7 +435,10 @@ export function useProjectMeta() {
     (
       sectionId: string,
       patch: Partial<
-        Pick<ProjectMeta["sections"][number], "title" | "subtitle" | "photoUrl" | "intro" | "showOpener">
+        Pick<
+          ProjectMeta["sections"][number],
+          "title" | "subtitle" | "photoUrl" | "photoMode" | "gridImages" | "intro" | "showOpener"
+        >
       >,
     ) => {
       update((current) => ({
@@ -620,6 +691,27 @@ export function useProjectMeta() {
     [update],
   );
 
+  /** Drops every per-recipe photo PLACEMENT override (pageLayout + showPhoto) so
+      all recipes fall back to the book-wide `photoStyle` — used when the cook
+      picks a book-wide Photos option, which should override individual choices.
+      A recipe's custom facing photo + focal point (heroImageUrl/heroFocus*) are
+      kept, so a hand-picked full-page image survives the reset. */
+  const clearItemPhotoOverrides = useCallback(() => {
+    update((current) => {
+      const placements = current.itemPlacements;
+      if (!placements || Object.keys(placements).length === 0) return current;
+      const next: Record<string, RecipePagePlacement> = {};
+      for (const [id, placement] of Object.entries(placements)) {
+        const kept: RecipePagePlacement = {};
+        if (placement.heroImageUrl !== undefined) kept.heroImageUrl = placement.heroImageUrl;
+        if (placement.heroFocusX !== undefined) kept.heroFocusX = placement.heroFocusX;
+        if (placement.heroFocusY !== undefined) kept.heroFocusY = placement.heroFocusY;
+        if (recipePagePlacementHasValues(kept)) next[id] = kept;
+      }
+      return { ...current, itemPlacements: next };
+    });
+  }, [update]);
+
   /** Replaces session metadata after a saved account project is verified. */
   const replaceMeta = useCallback(
     (next: ProjectMeta) => {
@@ -655,6 +747,7 @@ export function useProjectMeta() {
     addSection,
     renameSection,
     setSectionPhoto,
+    setSectionPhotoMode,
     setSectionIntro,
     updateSection,
     deleteSection,
@@ -677,6 +770,7 @@ export function useProjectMeta() {
     restoreCookbook,
     setItemPlacement,
     setItemPhotoMode,
+    clearItemPhotoOverrides,
     setPhotoStyle,
     replaceMeta,
   };

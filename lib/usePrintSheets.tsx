@@ -11,6 +11,7 @@ import {
   type RecipeFace,
 } from "@/lib/recipeCardLayout";
 import type { PrintCardSize, RecipePrintTemplate } from "@/components/RecipeCardPrint";
+import { resolveSectionPhotoMode } from "@/lib/project";
 import { RecipeFaceMeasurer } from "@/components/RecipeFaceMeasurer";
 import type {
   CoverConfig,
@@ -71,6 +72,23 @@ export interface DividerSheetSlot {
   intro?: string;
 }
 
+// The full-page photo (or curated grid) that FACES a section opener — the
+// section-level counterpart to an image-spread recipe's `ImageSheetSlot`.
+// Emitted right after its divider sheet; single-sided, carries a folio but shows
+// none, and pairs with the opener into one spread (see `assembleSpreads`).
+export interface SectionPhotoSheetSlot {
+  kind: "section-photo";
+  /** The section this photo page belongs to — shared with the divider slot's id
+      so the two group adjacently in the navigator. */
+  sectionId: string;
+  title: string;
+  mode: "full" | "grid";
+  /** `full` mode: the single full-bleed photo. */
+  photoUrl?: string;
+  /** `grid` mode: the curated collage photos (already resolved / auto-filled). */
+  gridImages?: string[];
+}
+
 export interface CoverSheetSlot {
   kind: "cover";
   id: string;
@@ -114,6 +132,7 @@ export interface ImageSheetSlot {
 export type SheetSlot =
   | RecipeSheetSlot
   | DividerSheetSlot
+  | SectionPhotoSheetSlot
   | CoverSheetSlot
   | TocSheetSlot
   | ImageSheetSlot;
@@ -145,8 +164,9 @@ export interface PageSheet {
   runningHeader?: string;
   /** Per-recipe page layout (cookbook mode). `undefined`/`full` renders one
       card per sheet; `image` is a full-bleed facing photo page (image-spread),
-      which is single-sided (never gets a duplex back). */
-  layoutKind?: "image";
+      and `section-photo` is a section opener's facing full-page/grid photo —
+      both single-sided (never get a duplex back) and folio-consuming. */
+  layoutKind?: "image" | "section-photo";
 }
 
 // The unit the on-screen navigator (rail + deck) browses by: one face at a
@@ -154,7 +174,7 @@ export interface PageSheet {
 // recipe's continuation pages — that's what lets a recipe's later faces still
 // browse and flip independently on screen.
 export interface NavItem {
-  kind: "recipe" | "divider" | "cover" | "toc" | "image";
+  kind: "recipe" | "divider" | "cover" | "toc" | "image" | "section-photo";
   /** The underlying recipe/divider/cover id — named `recipeId` for recipes so
       existing lookups by id keep working unchanged. */
   recipeId: string;
@@ -221,7 +241,6 @@ export function usePrintSheets({
   cover,
   backCover,
   dedication,
-  sectionDividers,
   tableOfContents,
   bookTitle,
   cookbookMode,
@@ -590,8 +609,7 @@ export function usePrintSheets({
     let queueIndexCursor = 0;
     let chapterNumber = 0;
     sections.forEach((section) => {
-      const showOpener = section.showOpener ?? Boolean(sectionDividers);
-      if (showOpener && section.title?.trim()) {
+      if (section.title?.trim()) {
         chapterNumber += 1;
         out.push({
           id: `sheet-divider-${section.id}`,
@@ -610,6 +628,42 @@ export function usePrintSheets({
           }],
           backGroupNeeded: false,
         });
+
+        // A `full`/`grid` opener gets a real facing photo page right after it —
+        // the section-level version of an image-spread recipe's photo page.
+        // `band`/`none` stay a single opener sheet. Skip the facing page when
+        // there's nothing to show yet (mode set but no photo picked) so we never
+        // print a blank.
+        if (cookbookLayouts) {
+          const photoMode = resolveSectionPhotoMode(section);
+          const gridImages =
+            photoMode === "grid"
+              ? (section.gridImages?.length
+                  ? section.gridImages
+                  : section.items
+                      .map((item) => item.recipe?.image)
+                      .filter((url): url is string => Boolean(url))
+                      .slice(0, 9))
+              : [];
+          const hasFacing =
+            (photoMode === "full" && Boolean(section.photoUrl)) ||
+            (photoMode === "grid" && gridImages.length > 0);
+          if (hasFacing) {
+            out.push({
+              id: `sheet-section-photo-${section.id}`,
+              slots: [{
+                kind: "section-photo",
+                sectionId: section.id,
+                title: section.title,
+                mode: photoMode === "grid" ? "grid" : "full",
+                photoUrl: section.photoUrl,
+                gridImages: photoMode === "grid" ? gridImages : undefined,
+              }],
+              backGroupNeeded: false,
+              layoutKind: "section-photo",
+            });
+          }
+        }
       }
       out.push(
         ...(cookbookLayouts
@@ -638,6 +692,14 @@ export function usePrintSheets({
       let pageNo = 0;
       let currentChapter = "";
       for (const sheet of out) {
+        // A full-page (image-spread) photo, or a section opener's facing
+        // full-page/grid photo, is a real printed page, so it must consume a page
+        // number even though it shows no folio itself — otherwise every recipe
+        // after it, and its TOC entry, drifts below the true page.
+        if (sheet.layoutKind === "image" || sheet.layoutKind === "section-photo") {
+          pageNo += 1;
+          continue;
+        }
         const dividerSlot = sheet.slots.find((slot) => slot?.kind === "divider") as
           | DividerSheetSlot
           | undefined;
@@ -700,7 +762,7 @@ export function usePrintSheets({
     }
 
     return out;
-  }, [sections, allItems, cover, backCover, dedication, sectionDividers, tableOfContents, bookTitle, cardSize, continueOnBack, photoOnFor, sourceUrlOn, template, measuredFacesFor, cookbookLayouts, cookbookResolution, itemPlacements]);
+  }, [sections, allItems, cover, backCover, dedication, tableOfContents, bookTitle, cardSize, continueOnBack, photoOnFor, sourceUrlOn, template, measuredFacesFor, cookbookLayouts, cookbookResolution, itemPlacements]);
 
   // What the rail and deck actually browse: one face per item, in physical
   // sheet order, except that a recipe's own faces (front + any continuations)
@@ -778,6 +840,23 @@ export function usePrintSheets({
           const group = groups.get(key);
           if (group) group.push(navItem);
           else groups.set(key, [navItem]);
+        } else if (slot.kind === "section-photo") {
+          // A section opener's facing photo/grid page shares the opener's nav
+          // group so the two sit adjacent; the divider sheet is emitted first,
+          // so this lands just after it.
+          const navItem: NavItem = {
+            kind: "section-photo",
+            recipeId: slot.sectionId,
+            sheetIndex,
+            slotIndex,
+            label: slot.title,
+            pageLabel: "Photo",
+            flip: false,
+          };
+          const key = `divider:${slot.sectionId}`;
+          const group = groups.get(key);
+          if (group) group.push(navItem);
+          else groups.set(key, [navItem]);
         } else {
           const coverLabel =
             slot.side === "front" ? "Cover" : slot.side === "dedication" ? "Dedication" : "Back cover";
@@ -805,6 +884,7 @@ export function usePrintSheets({
   const spreads = useMemo<DeckSpread[]>(() => {
     if (!cookbookLayouts) return [];
     const kinds: BookPageKind[] = sheets.map((sheet) => {
+      if (sheet.layoutKind === "section-photo") return "section-photo";
       if (sheet.layoutKind === "image") return "image-photo";
       const slot = sheet.slots.find((s): s is SheetSlot => s !== null);
       if (slot?.kind === "cover") {

@@ -12,6 +12,7 @@ import {
   TrashIcon,
 } from "@/components/icons";
 import { createCurrentPrintJob, useQueue } from "@/lib/queue";
+import { takePendingImport } from "@/lib/pendingImport";
 import type { ImportMethod } from "@/types/recipe";
 
 // The interactive heart of RecipePrinter: importing recipes and managing the
@@ -21,9 +22,16 @@ import type { ImportMethod } from "@/types/recipe";
 export function PrinterWorkspace({
   initialImportMode = "url",
   importSubmitLabel,
+  consumePendingImport = false,
 }: {
   initialImportMode?: ImportMethod;
   importSubmitLabel?: string;
+  /**
+   * When true, on mount (after the queue hydrates) pick up any recipe a visitor
+   * started importing on an SEO landing page and finish it here — the capture →
+   * app handoff. Enabled on the home page, which is the handoff target.
+   */
+  consumePendingImport?: boolean;
 }) {
   const router = useRouter();
   const {
@@ -54,10 +62,31 @@ export function PrinterWorkspace({
   const skipProjectIntro = hydratedWithItems && hasProject && !hasShownEmptyState;
   const hasAutoOpenedTrayRef = useRef(false);
   const prevItemsLengthRef = useRef<number | null>(null);
+  const consumedPendingRef = useRef(false);
 
   useEffect(() => {
     if (hydrated && items.length === 0) setHasShownEmptyState(true);
   }, [hydrated, items.length]);
+
+  // Capture → app handoff: a visitor who pasted a link, dropped a photo, or
+  // pasted text on an SEO landing page arrives here mid-import. Wait for the
+  // queue to hydrate first so seeding the pending item can't race the
+  // sessionStorage rehydrate, then consume it exactly once.
+  useEffect(() => {
+    if (!consumePendingImport || !hydrated || consumedPendingRef.current) return;
+    consumedPendingRef.current = true;
+    let cancelled = false;
+    void takePendingImport().then((pending) => {
+      if (cancelled || !pending) return;
+      if (pending.kind === "url") addUrl(pending.url);
+      else if (pending.kind === "text") addText(pending.text);
+      else if (pending.kind === "cookpilot") addCookPilotRecipes(pending.recipes);
+      else if (pending.kind === "images") addImages(pending.images, pending.label);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [consumePendingImport, hydrated, addUrl, addText, addImages, addCookPilotRecipes]);
 
   useEffect(() => {
     if (!hasProject) setMobileQueueOpen(false);

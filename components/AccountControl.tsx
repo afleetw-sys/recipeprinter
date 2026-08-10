@@ -10,6 +10,7 @@ import { loadPrintProjects } from "@/lib/printProjects";
 import { COOKBOOK_ENABLED } from "@/lib/cookbookProduct";
 import type { PrintProject } from "@/types/recipe";
 import type { User } from "firebase/auth";
+import { IconButton } from "@/components/Controls";
 
 // Two initials from the signed-in identity — first+last of a display name, else
 // the first letter of the email — so a logged-in avatar shows who's signed in.
@@ -107,11 +108,10 @@ export function AccountControl({
           {STATUS_LABEL[saveStatus]}
         </button>
       )}
-      <button
-        type="button"
-        className={`h-9 w-9 rounded-full inline-flex items-center justify-center transition-colors ${
+      <IconButton
+        className={`${
           user
-            ? "border border-transparent bg-[var(--cp-accent)] text-[var(--cp-ink)] text-[0.82rem] font-bold tracking-tight"
+            ? "border border-transparent bg-[var(--cp-accent)] text-[var(--cp-ink)] text-cp-caption font-bold tracking-tight"
             : "border border-line bg-card text-ink-soft hover:text-ink hover:border-ink-soft"
         }`}
         aria-label={user ? "Recipe Printer account" : "Sign in to Recipe Printer"}
@@ -127,10 +127,10 @@ export function AccountControl({
         ) : (
           <AccountIcon size={ICON_SIZE.lg} />
         )}
-      </button>
+      </IconButton>
 
       {open && user && (
-        <div className="absolute right-0 top-11 z-50 w-[min(340px,calc(100vw-2rem))] rounded-2xl border border-line bg-card p-cp-4 shadow-xl">
+        <div className="absolute right-0 top-11 z-50 w-[min(340px,calc(100vw-2rem))] rounded-2xl border border-line bg-card p-cp-4 shadow-cp-lg">
           <div className="flex items-start justify-between gap-cp-3">
             <div className="min-w-0">
               <strong className="block truncate">
@@ -140,9 +140,9 @@ export function AccountControl({
                 {user.email || "Signed in"}
               </span>
             </div>
-            <button className="icon-close-btn" onClick={() => setOpen(false)} aria-label="Close account menu">
+            <IconButton onClick={() => setOpen(false)} aria-label="Close account menu">
               <XIcon size={ICON_SIZE.sm} />
-            </button>
+            </IconButton>
           </div>
           {/* Hidden until the cookbook feature launches — gated by the same
               COOKBOOK_ENABLED flag as the print-page toggle so relaunch is a

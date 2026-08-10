@@ -119,8 +119,14 @@ type EventProps = {
   template_selected: { template: RecipePrintTemplate; premium: boolean };
 
   // ---- Money -----------------------------------------------------------
-  /** The unlock dialog was shown — the paywall impression the funnel needs. */
-  paywall_shown: { product: PurchasedProduct; template?: RecipePrintTemplate };
+  /** The unlock dialog was shown — the paywall impression the funnel needs.
+      `price` is the exact displayed price (e.g. "$19.99") so the funnel can be
+      segmented by what people actually saw. */
+  paywall_shown: { product: PurchasedProduct; template?: RecipePrintTemplate; price?: string };
+  /** The unlock dialog was closed WITHOUT starting checkout — i.e. the cook saw
+      the price and backed out. `paywall_shown` minus this is the answer to "how
+      many bail when they see it's $19.99". */
+  paywall_dismissed: { product: PurchasedProduct; template?: RecipePrintTemplate; price?: string };
   purchase_started: { product: PurchasedProduct; template?: RecipePrintTemplate };
   purchase_completed: { product: PurchasedProduct; template?: RecipePrintTemplate };
   purchase_cancelled: { product: PurchasedProduct; template?: RecipePrintTemplate };
@@ -134,9 +140,27 @@ type EventProps = {
   cookbook_print_options_shown: { preset: CookbookPresetId };
   /** A recommended print-shop link was opened from the export screen. */
   cookbook_printer_clicked: { printer: string; preset?: CookbookPresetId };
-  cookbook_welcome_shown: {};
-  cookbook_workspace_entered: {};
-  cookbook_onboarding_dismissed: {};
+  /** A signed-out cookbook owner clicked a "back up your purchase with a free
+      account" nudge. `source` distinguishes where the nudge lived (persistent
+      editor banner today) so we can see which surface converts guests. */
+  protect_prompt_clicked: { source: string };
+  /** The "make it a cookbook" offer (first place the price is shown). `price`
+      is the displayed per-cookbook price so the offer→dismiss funnel is
+      segmentable by price; `recipeCount` = how many recipes they had at the
+      time (does library size predict cookbook interest?). */
+  cookbook_welcome_shown: { price?: string; recipeCount: number };
+  /** Entered the cookbook workspace (built the book). `recipeCount` = library
+      size at build time, for segmenting who actually builds cookbooks;
+      `template` = the theme the book opened on (rotated premium default or a
+      theme the cook had already chosen), so we can see which cookbook themes
+      get used. */
+  cookbook_workspace_entered: { recipeCount: number; template: RecipePrintTemplate };
+  /** The offer dialog was dismissed without building — the price-reveal back-out
+      at the offer stage (the export paywall has its own `paywall_dismissed`). */
+  cookbook_onboarding_dismissed: { price?: string };
+  /** Switched back from a cookbook to plain recipe cards — how sticky the mode
+      is (build one, then bail?). `recipeCount` for consistent segmentation. */
+  cookbook_exited: { recipeCount: number };
   cookbook_cover_layout_selected: { layout: "photo" | "collage" | "typographic" };
   cookbook_front_matter_enabled: { kind: "dedication" | "introduction" };
   cookbook_section_opener_toggled: { enabled: boolean };

@@ -133,7 +133,7 @@ export function FeedbackDialog({ open, onClose, initialType = "idea" }: Feedback
         </button>
 
         <div className="pr-cp-7">
-          <h3 className="font-extrabold text-cp-h2">Give feedback</h3>
+          <h3 className="font-extrabold text-cp-dialog-title">Give feedback</h3>
         </div>
 
         {sent ? (

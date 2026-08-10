@@ -93,6 +93,13 @@ export const ChevronRightIcon = (p: IconProps) => (
   </Base>
 );
 
+export const ArrowRightIcon = (p: IconProps) => (
+  <Base {...p}>
+    <path d="M5 12h14" />
+    <path d="M13 6l6 6-6 6" />
+  </Base>
+);
+
 export const ChevronDownIcon = (p: IconProps) => (
   <Base {...p}>
     <path d="M6 9l6 6 6-6" />
@@ -223,6 +230,17 @@ export const ReorderIcon = (p: IconProps) => (
     <path d="m3.5 7.5 3.5-3.5 3.5 3.5" />
     <path d="M17 20V4" />
     <path d="m13.5 16.5 3.5 3.5 3.5-3.5" />
+  </Base>
+);
+
+export const GripIcon = (p: IconProps) => (
+  <Base {...p} fill="currentColor" stroke="none">
+    <circle cx="9" cy="6" r="1.4" />
+    <circle cx="15" cy="6" r="1.4" />
+    <circle cx="9" cy="12" r="1.4" />
+    <circle cx="15" cy="12" r="1.4" />
+    <circle cx="9" cy="18" r="1.4" />
+    <circle cx="15" cy="18" r="1.4" />
   </Base>
 );
 

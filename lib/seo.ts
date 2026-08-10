@@ -89,8 +89,8 @@ export const SOCIAL_PROFILES = [
   "https://www.pinterest.com/getcookpilot/",
   "https://www.crunchbase.com/organization/cookpilot",
   // Add the YouTube channel here once it has real content (at least a video or
-  // two). An empty channel adds no trust signal — a crawler that follows it
-  // finds nothing to corroborate — and a dead profile can read as a less-active
+  // two). An empty channel adds no trust signal, a crawler that follows it
+  // finds nothing to corroborate, and a dead profile can read as a less-active
   // brand, so leave it out until there's something to link to.
 ];
 
@@ -354,6 +354,44 @@ export function faqJsonLd(items: FaqItem[] = FAQ) {
       acceptedAnswer: {
         "@type": "Answer",
         text: item.answer,
+      },
+    })),
+  };
+}
+
+/**
+ * BreadcrumbList node for a page's trail. Pass absolute URLs (via `absoluteUrl`).
+ * Returned as a bare node so it can be dropped into a page's @graph next to the
+ * WebPage/FAQ/HowTo nodes rather than emitted as its own script.
+ */
+export function breadcrumbNode(trail: { name: string; url: string }[]) {
+  return {
+    "@type": "BreadcrumbList",
+    itemListElement: trail.map((crumb, index) => ({
+      "@type": "ListItem",
+      position: index + 1,
+      name: crumb.name,
+      item: crumb.url,
+    })),
+  };
+}
+
+/**
+ * HowTo node from a page's step list. Google has largely retired HowTo rich
+ * results, but the markup still helps AI answer engines and entity understanding
+ * and costs nothing, the same call Canva still ships on its create pages.
+ */
+export function howToNode(name: string, steps: { name: string; text: string }[]) {
+  return {
+    "@type": "HowTo",
+    name,
+    step: steps.map((step, index) => ({
+      "@type": "HowToStep",
+      position: index + 1,
+      name: step.name,
+      itemListElement: {
+        "@type": "HowToDirection",
+        text: step.text,
       },
     })),
   };

@@ -27,19 +27,7 @@ export const RECIPEPRINTER_COOKBOOK_PACKAGE_ID = "cookbook";
 export const RECIPEPRINTER_COOKBOOK_PRODUCT_ID = "cookbook";
 export const RECIPEPRINTER_COOKBOOK_ENTITLEMENT_ID = "cookbook";
 
-// Shown until the real RevenueCat price loads (or if it fails to load) so the
-// offer dialog never has to hide its price entirely.
+// The cookbook's price, shown wherever we name it ourselves (e.g. the welcome
+// dialog). Checkout states the authoritative price; keep this in sync with the
+// RevenueCat product if it ever changes.
 export const COOKBOOK_PRICE_FALLBACK = "$19.99";
-
-// What the offer dialog promises. Every line here must name something the
-// product actually does — this is the copy on a paid upgrade, and it sells the
-// COOKBOOK, not the PDF (the PDF is only the delivery format). "Table of
-// contents" was listed until it turned out nothing renders one; it's back now
-// that a real TOC page does. Print-ready format presets (Print your cookbook →
-// Save as PDF) are why the last two lines can promise print-ready layouts.
-export const COOKBOOK_BENEFITS = [
-  "A designed cover, chapters & back cover",
-  "Automatic table of contents & page numbers",
-  "Print-ready formats: US Letter spiral or 8×10 hardcover",
-  "Print at home, or order from Lulu, Blurb & Staples",
-] as const;

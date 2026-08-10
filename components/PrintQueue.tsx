@@ -7,12 +7,13 @@ import {
   ClockIcon,
   ICON_SIZE,
   RefreshIcon,
-  SpinnerIcon,
   TrashIcon,
   UsersIcon,
 } from "@/components/icons";
 import { LogoImage } from "@/components/Logo";
 import { EmptyState } from "@/components/EmptyState";
+import { IconButton } from "@/components/Controls";
+import { RecipeLoadingState } from "@/components/RecipeLoadingState";
 
 function totalTime(recipe?: Recipe): string | null {
   if (!recipe) return null;
@@ -84,10 +85,7 @@ function RecipeCardItem({
           {/* Parsing overlay */}
           {item.status === "parsing" && (
             <div className="absolute inset-0 grid place-items-center bg-card/90">
-              <div className="flex flex-col items-center gap-2 text-ink-soft">
-                <SpinnerIcon size={22} />
-                <span className="text-cp-caption font-semibold">Getting recipe…</span>
-              </div>
+              <RecipeLoadingState />
             </div>
           )}
 
@@ -130,15 +128,15 @@ function RecipeCardItem({
       </div>
 
       {/* Remove (overlay, above the toggle button) */}
-      <button
-        type="button"
+      <IconButton
         onClick={onRemove}
         aria-label="Remove recipe"
         title="Remove"
-        className="absolute top-2 right-2 grid place-items-center w-8 h-8 rounded-full bg-card/90 border border-line text-ink-soft hover:text-error transition-colors"
+        tone="danger"
+        className="absolute top-1 right-1 bg-card/90"
       >
         <TrashIcon size={ICON_SIZE.md} />
-      </button>
+      </IconButton>
 
       {/* Error detail + retry */}
       {item.status === "error" && (

@@ -28,7 +28,7 @@ export function suggestCookbookOrganization(items: QueueItem[]): CookbookOrganiz
       .map((title) => ({
         id: `suggested-${title.toLocaleLowerCase().replace(/[^a-z0-9]+/g, "-")}`,
         title,
-        showOpener: title !== "Uncategorized",
+        showOpener: true,
         itemIds: groups.get(title) ?? [],
       })),
   };
@@ -45,7 +45,7 @@ export function organizationSectionsForApply(
   const sections = draft.sections.map((section) => ({
     id: section.id,
     title: section.title.trim() || "Untitled section",
-    showOpener: Boolean(section.showOpener),
+    showOpener: true,
     itemIds: section.itemIds.filter((id) => {
       if (!valid.has(id) || used.has(id)) return false;
       used.add(id);
@@ -60,7 +60,7 @@ export function organizationSectionsForApply(
       sections.push({
         id: "suggested-uncategorized",
         title: "Uncategorized",
-        showOpener: false,
+        showOpener: true,
         itemIds: missing,
       });
     }

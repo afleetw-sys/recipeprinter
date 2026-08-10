@@ -704,6 +704,12 @@ export type RecipeCardEditTarget =
 export interface RecipeCardInlineEdit {
   /** Other photos already in this project, offered by the shared image picker. */
   recipeImages?: string[];
+  /** Cookbook only: the recipe's photo placement + a setter, so the in-card
+      "Photo" dialog can change None/In-card/Full-page in the same place it
+      changes the photo's source. */
+  photoPlacement?: string;
+  photoPlacementOptions?: Array<{ id: string; label: string; hint?: string }>;
+  onPhotoPlacementChange?: (id: string) => void;
   editingTarget: RecipeCardEditTarget | null;
   value: string;
   onFocusTarget: (target: RecipeCardEditTarget, value: string) => void;
@@ -884,7 +890,14 @@ export function planCookbookSection(
    - No blank sheets are inserted to force chapter, TOC, image, or recipe parity.
    - A trailing null is preview-only presentation for an incomplete spread; it
      never becomes a physical `PageSheet` or printed page. */
-export type BookPageKind = "cover" | "dedication" | "back" | "chapter" | "image-photo" | "content";
+export type BookPageKind =
+  | "cover"
+  | "dedication"
+  | "back"
+  | "chapter"
+  | "section-photo"
+  | "image-photo"
+  | "content";
 
 export interface BookSpread {
   /** Index (into the input array) of the left/verso page, or null for a blank. */
@@ -922,6 +935,20 @@ export function assembleSpreads(pages: BookPageKind[]): BookSpread[] {
       continue;
     }
     if (pages[cursor + 1] === "image-photo" && pages[cursor + 2] === "content") {
+      spreads.push({ left: cursor, right: null, single: false });
+      cursor += 1;
+      continue;
+    }
+    // Keep a chapter opener and its facing full-page/grid photo as one atomic
+    // spread — opener on the left/verso, photo on the right/recto. Same shape as
+    // the image-spread pair above, with the realign lookahead so a stray page
+    // can't split the opener from its photo.
+    if (pages[cursor] === "chapter" && pages[cursor + 1] === "section-photo") {
+      spreads.push({ left: cursor, right: cursor + 1, single: false });
+      cursor += 2;
+      continue;
+    }
+    if (pages[cursor + 1] === "chapter" && pages[cursor + 2] === "section-photo") {
       spreads.push({ left: cursor, right: null, single: false });
       cursor += 1;
       continue;

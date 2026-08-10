@@ -92,14 +92,31 @@ export interface QueueItem {
    See the "Document model: sections, not divider objects" section of the
    implementation plan for the reasoning. */
 
+/** How a section opener shows its photo(s), mirroring the recipe photo model
+    (`PhotoStyle`) plus a chapter-only grid:
+    - `none` — a typographic opener, no photo, no facing page;
+    - `band` — a photo in the opener's own top band (the legacy `photoUrl`);
+    - `full` — a full-bleed photo on the page FACING the opener (like a recipe
+      image-spread);
+    - `grid` — a curated photo collage on the facing page (`gridImages`).
+    Absent resolves via `resolveSectionPhotoMode`: a `photoUrl` present → `band`,
+    else `none`. Only meaningful in cookbook mode. */
+export type SectionPhotoMode = "none" | "band" | "full" | "grid";
+
 export interface Section {
   id: string;
   /** Untitled = no visible grouping in the UI, no divider page when printed. */
   title?: string;
   /** Optional secondary line on a cookbook section opener. */
   subtitle?: string;
-  /** Chapter-opener photo (cookbook mode only). */
+  /** Chapter-opener photo (cookbook mode only). Carries both the `band` (in-card)
+      photo and the `full` facing photo — the single source, like a recipe's
+      `heroImageUrl`. */
   photoUrl?: string;
+  /** Explicit opener photo placement. Absent = derived (see `SectionPhotoMode`). */
+  photoMode?: SectionPhotoMode;
+  /** Curated photos for the `grid` facing page (a chapter collage). */
+  gridImages?: string[];
   /** Short chapter intro line shown on the opener (cookbook mode only). */
   intro?: string;
   /** Whether this named section receives a printed opener page. */
@@ -167,6 +184,8 @@ export interface CookbookFrontMatter {
   kind: "dedication" | "introduction";
   heading?: string;
   body?: string;
+  /** Optional closing line, e.g. "— The Smith Family". */
+  signature?: string;
 }
 
 export interface PrintProjectSettings {

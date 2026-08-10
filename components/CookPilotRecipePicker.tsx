@@ -146,7 +146,7 @@ function RecipeRow({
       }
       className={`group flex w-full items-center gap-cp-3 rounded-xl border p-cp-2 text-left transition-colors ${
         added
-          ? "border-brand bg-brand-50/60 shadow-[var(--cp-selected-ring)]"
+          ? "border-brand bg-brand-50/60 shadow-cp-selected"
           : "border-line bg-card hover:border-line-strong"
       }`}
     >
@@ -191,7 +191,7 @@ function RecipeRow({
           Added
         </span>
       ) : (
-        <span className="btn btn-secondary btn-compact flex-shrink-0 pointer-events-none transition-colors group-hover:border-line-strong group-hover:bg-[rgba(127,127,127,0.08)]">
+        <span className="btn btn-secondary btn-compact flex-shrink-0 pointer-events-none transition-colors group-hover:border-line-strong group-hover:bg-page">
           {adding ? <SpinnerIcon size={ICON_SIZE.md} /> : <PlusIcon size={ICON_SIZE.md} />}
           Add
         </span>

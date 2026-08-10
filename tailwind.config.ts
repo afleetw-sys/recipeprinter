@@ -53,6 +53,7 @@ const config: Config = {
         "cp-body": "var(--cp-fs-body)",
         "cp-body-lg": "var(--cp-fs-body-lg)",
         "cp-h2": "var(--cp-fs-h2)",
+        "cp-dialog-title": "var(--cp-fs-dialog-title)",
         "cp-h2-lg": "var(--cp-fs-h2-lg)",
         "cp-hero-sm": "var(--cp-fs-hero-sm)",
         "cp-hero": "var(--cp-fs-hero)",
@@ -95,6 +96,8 @@ const config: Config = {
         "cp-md": "var(--cp-shadow-md)",
         "cp-lg": "var(--cp-shadow-lg)",
         "cp-xl": "var(--cp-shadow-xl)",
+        "cp-sheet": "var(--cp-shadow-sheet)",
+        "cp-selected": "var(--cp-selected-ring)",
       },
       keyframes: {
         "fade-up": {

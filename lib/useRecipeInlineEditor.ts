@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState, type Dispatch, type SetStateAction } from "react";
+import { useCallback, useEffect, useMemo, useState, type Dispatch, type MutableRefObject, type SetStateAction } from "react";
 import { printableRecipe, updateQueuedRecipe } from "@/lib/queue";
 import type { RecipeCardEditTarget, RecipeCardInlineEdit } from "@/lib/recipeCardLayout";
 import type { QueueItem, Recipe } from "@/types/recipe";
@@ -140,6 +140,11 @@ interface UseRecipeInlineEditorOptions {
       switch between the two cards without leaving the page, so the page passes a
       per-SHEET key here — switching cards then keeps edit mode on. */
   resetKey?: string | null;
+  /** When a recipe is intentionally moved (e.g. its photo placement changed, so
+      it lands on a different page), the page stashes that recipe id here so the
+      leave-edit-mode reset skips ONCE as focus follows it to the new page —
+      keeping the recipe both selected and still in edit mode. Consumed on use. */
+  keepEditingRef?: MutableRefObject<string | null>;
 }
 
 /**
@@ -158,6 +163,7 @@ export function useRecipeInlineEditor({
   activeRecipeId,
   activeRecipeItem,
   resetKey,
+  keepEditingRef,
 }: UseRecipeInlineEditorOptions) {
   const [pageEditMode, setPageEditMode] = useState(false);
   const [editingEdit, setEditingEdit] = useState<RecipeEditSelection | null>(null);
@@ -354,9 +360,16 @@ export function useRecipeInlineEditor({
   // keeps edit mode on. Falls back to `activeRecipeId` when unset.
   const resetOn = resetKey ?? activeRecipeId;
   useEffect(() => {
+    // A recipe we deliberately moved (placement change) is following focus to
+    // its new page — skip the reset once so it stays selected AND in edit mode.
+    if (keepEditingRef?.current && keepEditingRef.current === activeRecipeId) {
+      keepEditingRef.current = null;
+      return;
+    }
     setPageEditMode(false);
     setEditingEdit(null);
     setEditValue("");
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [resetOn]);
 
   function togglePageEditMode() {

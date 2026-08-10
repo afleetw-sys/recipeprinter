@@ -8,7 +8,6 @@ import { friendlyPurchaseSetupError } from "@/lib/friendlyErrors";
 import { track } from "@/lib/analytics";
 import {
   hasCookbookEntitlement,
-  loadRecipePrinterCookbookPrice,
   purchaseRecipePrinterCookbook,
 } from "@/lib/recipePrinterPurchases";
 import {
@@ -55,8 +54,6 @@ export function useCookbookPurchase({
   clearToast,
   onFreshPurchase,
 }: UseCookbookPurchaseOptions) {
-  const [cookbookPrice, setCookbookPrice] = useState<string | undefined>(undefined);
-  const [showCookbookUnlockDialog, setShowCookbookUnlockDialog] = useState(false);
   const [cookbookPurchaseBusy, setCookbookPurchaseBusy] = useState(false);
   const [projectUnlocked, setProjectUnlocked] = useState(() =>
     isCookbookProjectUnlocked(projectId),
@@ -100,16 +97,6 @@ export function useCookbookPurchase({
 
   const cookbookLocked = cookbookMode && !projectUnlocked;
 
-  useEffect(() => {
-    // Same rule as the template prices: reading offerings configures the SDK,
-    // which mints the customer record. Wait for the unlock dialog — the price
-    // is only rendered there, and opening it is real purchase intent.
-    if (!revenueCatUserId || !showCookbookUnlockDialog) return;
-    loadRecipePrinterCookbookPrice(revenueCatUserId)
-      .then(setCookbookPrice)
-      .catch(() => setCookbookPrice(undefined));
-  }, [revenueCatUserId, showCookbookUnlockDialog]);
-
   /** Buys the cookbook entitlement, then hands control back to `onUnlocked`
       (typically re-running the export/print gate) rather than printing
       directly — the caller may still have a locked premium template to
@@ -124,7 +111,6 @@ export function useCookbookPurchase({
     clearToast();
     try {
       if (isCookbookProjectUnlocked(projectId)) {
-        setShowCookbookUnlockDialog(false);
         setProjectUnlocked(true);
         onUnlocked(false);
         return;
@@ -158,7 +144,6 @@ export function useCookbookPurchase({
         }
       }
 
-      setShowCookbookUnlockDialog(false);
       onFreshPurchase();
       onUnlocked(true);
     } catch (error) {
@@ -169,10 +154,12 @@ export function useCookbookPurchase({
   }
 
   return {
-    cookbookPrice: cookbookPrice ?? COOKBOOK_PRICE_FALLBACK,
+    // Static fallback rather than the live RevenueCat price: with the paywall
+    // dialog gone there's no pre-purchase surface to load it into, and loading
+    // it eagerly would configure the SDK (minting a customer record) for anyone
+    // who merely opens a cookbook. Checkout states the authoritative price.
+    cookbookPrice: COOKBOOK_PRICE_FALLBACK,
     cookbookLocked,
-    showCookbookUnlockDialog,
-    setShowCookbookUnlockDialog,
     cookbookPurchaseBusy,
     purchaseCookbookAndContinue,
   };

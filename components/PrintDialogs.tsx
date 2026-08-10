@@ -1,9 +1,8 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { BookIcon, CheckIcon, ICON_SIZE, SpinnerIcon, TrashIcon, XIcon } from "@/components/icons";
+import { BookIcon, ICON_SIZE, TrashIcon, XIcon } from "@/components/icons";
 import { Dialog } from "@/components/Dialog";
-import { COOKBOOK_BENEFITS } from "@/lib/cookbookProduct";
 import { COOKBOOK_PRESETS, PRINTERS } from "@/lib/cookbookPresets";
 import { track } from "@/lib/analytics";
 import type { CookbookPresetId } from "@/types/recipe";
@@ -11,28 +10,10 @@ import type { CookbookPresetId } from "@/types/recipe";
 const COFFEE_URL = "https://buymeacoffee.com/recipeprinter";
 const COFFEE_LOGO_SRC = "/images/buy-me-a-coffee-logo.png";
 
-function CookbookBenefitsList() {
-  return (
-    <ul className="cookbook-benefits">
-      {COOKBOOK_BENEFITS.map((benefit) => (
-        <li key={benefit}>
-          <CheckIcon size={ICON_SIZE.sm} />
-          {benefit}
-        </li>
-      ))}
-    </ul>
-  );
-}
-
 export function PrintDialogs({
   showDonateDialog,
   onCloseDonateDialog,
   onOpenFeedbackDialog,
-  showCookbookUnlockDialog,
-  onCloseCookbookUnlockDialog,
-  cookbookPrice,
-  cookbookPurchaseBusy,
-  onUnlockCookbook,
   showCookbookPrintDialog,
   cookbookJustPurchased,
   onCloseCookbookPrintDialog,
@@ -52,11 +33,6 @@ export function PrintDialogs({
   showDonateDialog: boolean;
   onCloseDonateDialog: () => void;
   onOpenFeedbackDialog: () => void;
-  showCookbookUnlockDialog: boolean;
-  onCloseCookbookUnlockDialog: () => void;
-  cookbookPrice: string;
-  cookbookPurchaseBusy: boolean;
-  onUnlockCookbook: () => void;
   showCookbookPrintDialog: boolean;
   /** True the first time this screen opens right after purchase, so it leads
       with a one-time celebration instead of the plain re-export framing. */
@@ -156,51 +132,6 @@ export function PrintDialogs({
                 }}
               >
                 Leave feedback
-              </button>
-            </div>
-      </Dialog>
-      <Dialog
-        open={showCookbookUnlockDialog}
-        onClose={onCloseCookbookUnlockDialog}
-        closeDisabled={cookbookPurchaseBusy}
-        labelledBy="cookbook-unlock-title"
-        className="print-success-dialog no-print"
-        backdropClassName="print-success-dialog__backdrop"
-        panelClassName="print-success-dialog__panel"
-      >
-            <button
-              type="button"
-              className="print-success-dialog__close icon-close-btn"
-              aria-label="Close"
-              onClick={onCloseCookbookUnlockDialog}
-              disabled={cookbookPurchaseBusy}
-            >
-              <XIcon size={ICON_SIZE.md} />
-            </button>
-            <h2 id="cookbook-unlock-title">Purchase your cookbook for {cookbookPrice}</h2>
-            <p>
-              A one-time purchase. Your recipes become a professionally designed cookbook, yours
-              to re-export forever. Checkout will ask for your email, and afterward you can protect
-              access on other devices with a free account.
-            </p>
-            <CookbookBenefitsList />
-            <div className="print-success-dialog__actions">
-              <button
-                type="button"
-                className="btn btn-primary"
-                disabled={cookbookPurchaseBusy}
-                onClick={onUnlockCookbook}
-              >
-                {cookbookPurchaseBusy ? <SpinnerIcon size={ICON_SIZE.md} /> : <BookIcon size={ICON_SIZE.md} />}
-                Purchase & Export
-              </button>
-              <button
-                type="button"
-                className="btn btn-ghost"
-                onClick={onCloseCookbookUnlockDialog}
-                disabled={cookbookPurchaseBusy}
-              >
-                Not now
               </button>
             </div>
       </Dialog>

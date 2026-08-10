@@ -31,7 +31,7 @@ export function SiteFooter({ isHome = false }: { isHome?: boolean }) {
             href={COFFEE_URL}
             target="_blank"
             rel="noopener noreferrer"
-            className="ml-auto inline-flex min-h-[34px] items-center gap-2 rounded-full border border-[#ffdd00]/70 bg-white px-cp-3 text-cp-caption font-bold text-ink shadow-cp-xs transition-colors hover:border-[#ffdd00] hover:bg-[#fff9d8]"
+            className="ml-auto inline-flex min-h-10 items-center gap-2 rounded-full border border-[#ffdd00]/70 bg-white px-cp-3 text-cp-caption font-bold text-ink shadow-cp-xs transition-colors hover:border-[#ffdd00] hover:bg-[#fff9d8]"
           >
             <Image
               src={COFFEE_LOGO_SRC}

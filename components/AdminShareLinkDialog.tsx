@@ -103,7 +103,7 @@ export function AdminShareLinkDialog({
         </button>
 
         <div className="pr-cp-7">
-          <h3 className="font-extrabold tracking-[-0.02em] text-cp-h2">Save as share link</h3>
+          <h3 className="font-extrabold tracking-[-0.02em] text-cp-dialog-title">Save as share link</h3>
           <p className="text-cp-small text-ink-soft mt-1">
             Creates a public URL that opens this recipe preloaded with the current design and print settings.
           </p>

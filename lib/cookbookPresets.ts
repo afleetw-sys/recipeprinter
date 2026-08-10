@@ -52,6 +52,11 @@ export interface CookbookPreset {
   marginIn: number;
   /** EXTRA inset on the binding (inner) edge, on top of the margin, inches. */
   gutterIn: number;
+  /** Coil/spiral binding punches the bound edge, so at EXPORT the binding-edge
+      template decoration thickens to cover the punch (see `.rp-coil` in
+      print.css). A spined hardcover has no punch → false, and gets no such
+      treatment. Only affects export; the on-screen deck always previews plain. */
+  coilBound: boolean;
   /** Named `@page` rule that sets this preset's physical sheet size. */
   pageName: string;
   /** Class placed on `.recipe-print-preview` so the `page:` binding + geometry
@@ -77,12 +82,16 @@ export const COOKBOOK_PRESETS: CookbookPreset[] = [
     id: "us-letter",
     productName: "Spiral Cookbook",
     trimLabel: "US Letter (8.5 × 11 in)",
-    bestFor: "Best for home kitchens",
+    bestFor: "Print at home — no bleed, spiral or 3-ring",
     trimWidthIn: 8.5,
     trimHeightIn: 11,
     bleedIn: 0,
     marginIn: 0.5,
-    gutterIn: 0.375,
+    // Spiral/coil lies FLAT — no spine swallows the inner margin, so there is no
+    // binding gutter at all. Text sits in a uniform, symmetric margin; art bleeds
+    // to every edge and the coil punches through it (as real spiral books do).
+    gutterIn: 0,
+    coilBound: true,
     pageName: "rp-preset-us-letter",
     pageClass: "rp-page-us-letter",
     printerIds: ["staples", "lulu", "blurb"],
@@ -91,12 +100,15 @@ export const COOKBOOK_PRESETS: CookbookPreset[] = [
     id: "hardcover-8x10",
     productName: "Hardcover Book",
     trimLabel: "8 × 10 in",
-    bestFor: "Best for gifts",
+    bestFor: "Pro print-on-demand — full-bleed, trimmed",
     trimWidthIn: 8,
     trimHeightIn: 10,
     bleedIn: 0.125,
     marginIn: 0.5,
+    // Case binding has a real spine that swallows the inner margin, so text keeps
+    // a gutter there; art still bleeds all four edges.
     gutterIn: 0.5,
+    coilBound: false,
     pageName: "rp-preset-hardcover-8x10",
     pageClass: "rp-page-hardcover-8x10",
     printerIds: ["lulu", "blurb", "staples"],
@@ -127,18 +139,44 @@ export function presetSheetDims(preset: CookbookPreset): { w: number; h: number 
   return { w, h };
 }
 
+/** The physical sheet (trim + 2·bleed) as CSS `in` length strings. At EXPORT the
+    print page box (`.recipe-card-page`) is given this exact height so it matches
+    the `@page size` in every engine. It must NOT rely on `100vh`: WebKit/Safari
+    resolves viewport units in print against the on-screen viewport, not the page
+    box, so a `100vh` card-page collapsed to ~7.5in and clipped everything below a
+    top sliver on the custom (non-Letter) hardcover sheet. An absolute inch height
+    removes that guesswork. */
+export function presetSheetInches(preset: CookbookPreset): { w: string; h: string } {
+  return {
+    w: `${preset.trimWidthIn + preset.bleedIn * 2}in`,
+    h: `${preset.trimHeightIn + preset.bleedIn * 2}in`,
+  };
+}
+
+/** The printable SAFE box for TEXT content, inches — trim minus the margins on
+    every edge, minus the binding gutter (0 for a lie-flat spiral, non-zero for a
+    hardcover whose spine swallows the inner margin). Art does NOT use this box —
+    it bleeds the whole sheet (see `presetArtScale`). */
+function presetSafeBox(preset: CookbookPreset): { w: number; h: number } {
+  return {
+    w: preset.trimWidthIn - preset.marginIn * 2 - preset.gutterIn,
+    h: preset.trimHeightIn - preset.marginIn * 2,
+  };
+}
+
 /** Scale that fits the Letter card into this preset's SAFE box (used for
     text-dominant pages — recipes, TOC, dividers). `min` so it fits on both
     axes; the shorter axis letterboxes rather than clipping. */
 export function presetCardScale(preset: CookbookPreset): number {
-  const safeWidth = preset.trimWidthIn - preset.marginIn * 2 - preset.gutterIn;
-  const safeHeight = preset.trimHeightIn - preset.marginIn * 2;
-  return Math.min(safeWidth / LETTER_CARD_WIDTH_IN, safeHeight / LETTER_CARD_HEIGHT_IN);
+  const safe = presetSafeBox(preset);
+  return Math.min(safe.w / LETTER_CARD_WIDTH_IN, safe.h / LETTER_CARD_HEIGHT_IN);
 }
 
-/** Scale that fills this preset's SHEET box (used for art-dominant pages —
-    covers and full-page photos) so artwork bleeds to the physical edge. `max`
-    so it covers both axes; overflow is cropped by `overflow: hidden`. */
+/** Scale for art-dominant pages (covers, full-page photos): `max` so the card
+    COVERS the whole SHEET on both axes and bleeds to every edge, overflow cropped.
+    Art bleeds all four edges on both formats — a spiral coil simply punches
+    through the artwork (exactly like a real spiral cookbook), and a hardcover is
+    trimmed at the bleed. There is no per-edge special-casing. */
 export function presetArtScale(preset: CookbookPreset): number {
   const sheetWidth = preset.trimWidthIn + preset.bleedIn * 2;
   const sheetHeight = preset.trimHeightIn + preset.bleedIn * 2;

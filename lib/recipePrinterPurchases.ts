@@ -382,15 +382,6 @@ export function hasCookbookEntitlement(customerInfo: CustomerInfo | null): boole
   return Boolean(customerInfo?.entitlements.active[RECIPEPRINTER_COOKBOOK_ENTITLEMENT_ID]);
 }
 
-export async function loadRecipePrinterCookbookPrice(userId: string): Promise<string | undefined> {
-  const purchases = await getPurchases(userId);
-  const rcPackage = findPackage(
-    await offeringFor(purchases, RECIPEPRINTER_COOKBOOK_OFFERING_ID),
-    RECIPEPRINTER_COOKBOOK_PACKAGE_ID,
-    RECIPEPRINTER_COOKBOOK_PRODUCT_ID,
-  );
-  return rcPackage?.webBillingProduct.price.formattedPrice;
-}
 
 export async function purchaseRecipePrinterCookbook({
   userId,

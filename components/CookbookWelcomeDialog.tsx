@@ -1,34 +1,9 @@
 "use client";
 
+import type { CSSProperties } from "react";
 import { Dialog } from "@/components/Dialog";
 import { CheckIcon, ICON_SIZE, XIcon } from "@/components/icons";
 import type { CoverConfig } from "@/types/recipe";
-
-export function CookbookMockup({ cover, compact = false }: { cover: CoverConfig; compact?: boolean }) {
-  const images = cover.gridImages?.length ? cover.gridImages : cover.imageUrl ? [cover.imageUrl] : [];
-  return (
-    <div className={`cookbook-mockup ${compact ? "cookbook-mockup--compact" : ""}`} aria-hidden>
-      <div className="cookbook-mockup__book">
-        <div className="cookbook-mockup__spine" />
-        <div className={`cookbook-mockup__cover cookbook-mockup__cover--${cover.layout ?? "typographic"}`}>
-          <div className="cookbook-mockup__images">
-            {images.slice(0, 4).map((src, index) => (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img src={src} alt="" key={`${src}-${index}`} />
-            ))}
-          </div>
-          <div className="cookbook-mockup__shade" />
-          <div className="cookbook-mockup__type">
-            {cover.subtitle && <span>{cover.subtitle}</span>}
-            <strong>{cover.title || "My Cookbook"}</strong>
-            {cover.author && <small>{cover.creditLabel === "compiled-by" ? "Compiled by " : ""}{cover.author}</small>}
-          </div>
-        </div>
-        <div className="cookbook-mockup__pages" />
-      </div>
-    </div>
-  );
-}
 
 export function CookbookWelcomeDialog({
   open,
@@ -85,11 +60,20 @@ export function CookbookWelcomeDialog({
 
 export function CookbookBuildReveal({
   open,
-  cover,
+  images,
 }: {
   open: boolean;
-  cover: CoverConfig;
+  /** The cook's own recipe photos — gathered into a stack while the book
+      assembles. Repeated to fill the pile when there are only a few. */
+  images: string[];
 }) {
+  const pics = Array.from(new Set(images.filter(Boolean)));
+  // A tidy pile of ~7 cards; cycle through the recipe photos (repeating when
+  // there are fewer) so it always reads as a full gather, never a lone card.
+  const CARD_COUNT = 7;
+  const cards = Array.from({ length: CARD_COUNT }, (_, index) =>
+    pics.length ? pics[index % pics.length] : null,
+  );
   return (
     <Dialog
       open={open}
@@ -101,11 +85,28 @@ export function CookbookBuildReveal({
     >
       <div className="cookbook-build-reveal__glow" aria-hidden />
       <div className="cookbook-build-reveal__content">
-        <CookbookMockup cover={cover} compact />
+        <div className="cookbook-gather" aria-hidden>
+          <div className="cookbook-gather__base" />
+          <div className="cookbook-gather__stack">
+            {cards.map((src, index) => (
+              <div
+                className="cookbook-gather__card"
+                key={index}
+                style={{ "--i": index } as CSSProperties}
+              >
+                <div className="cookbook-gather__card-inner">
+                  {src ? (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img src={src} alt="" />
+                  ) : null}
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
         <div className="cookbook-build-reveal__copy">
-          <span>Bringing your recipes together</span>
+          <span>Gathering your recipes</span>
           <strong>Creating your cookbook…</strong>
-          <div className="cookbook-build-reveal__progress" aria-hidden><i /></div>
         </div>
       </div>
     </Dialog>

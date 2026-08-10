@@ -1,26 +1,24 @@
 "use client";
 
 import { Dialog } from "@/components/Dialog";
-import { CookbookMockup } from "@/components/CookbookWelcomeDialog";
-import { CheckIcon, ICON_SIZE, PrintIcon, XIcon } from "@/components/icons";
+import { ICON_SIZE, PrintIcon, XIcon } from "@/components/icons";
 import { COOKBOOK_PRESETS, PRINTERS } from "@/lib/cookbookPresets";
-import type { CookbookPresetId, CoverConfig } from "@/types/recipe";
+import type { CookbookPresetId } from "@/types/recipe";
 
 export function CookbookReadyDialog({
   open,
   justPurchased,
-  cover,
   onClose,
   onExport,
   onPrinterClick,
 }: {
   open: boolean;
   justPurchased: boolean;
-  cover: CoverConfig;
   onClose: () => void;
   onExport: (presetId: CookbookPresetId) => void;
   onPrinterClick: (printer: string, url: string) => void;
 }) {
+  const printers = Object.values(PRINTERS);
   return (
     <Dialog
       open={open}
@@ -34,55 +32,49 @@ export function CookbookReadyDialog({
       <button type="button" className="cookbook-ready__close icon-close-btn" aria-label="Close" onClick={onClose}>
         <XIcon size={ICON_SIZE.md} />
       </button>
-      <div className="cookbook-ready__hero">
-        <div className="cookbook-ready__mockups">
-          <CookbookMockup cover={cover} compact />
-          <div className="cookbook-ready__spread" aria-hidden>
-            <div><span>Contents</span><i /></div>
-            <div><strong>{cover.title || "My Cookbook"}</strong><i /><i /><i /></div>
-          </div>
-        </div>
-        <div>
-          <span className="cookbook-ready__eyebrow">{justPurchased ? "Beautifully done" : "Ready to print again"}</span>
-          <h2 id="cookbook-ready-title">Your cookbook is ready.</h2>
-          <p>It&apos;s permanently unlocked, every format is included, and you can export again after future edits.</p>
-          <div className="cookbook-ready__assurances">
-            {["This cookbook is yours", "All print formats included", "Re-export anytime"].map((item) => (
-              <span key={item}><CheckIcon size={ICON_SIZE.xs} />{item}</span>
-            ))}
-          </div>
-        </div>
+
+      <div className="cookbook-ready__head">
+        <h2 id="cookbook-ready-title">{justPurchased ? "Your cookbook is ready 🎉" : "Print your cookbook"}</h2>
+        <p>Choose a format to save as a PDF. Every format is included, and you can export again anytime.</p>
       </div>
 
-      <section className="cookbook-ready__section">
-        <h3>Choose your finished format</h3>
-        <div className="cookbook-ready__formats">
-          {COOKBOOK_PRESETS.map((preset) => (
-            <button key={preset.id} type="button" className="cookbook-format-card" onClick={() => onExport(preset.id)}>
-              <span className="cookbook-format-card__paper" aria-hidden />
-              <span>
-                <strong>{preset.productName}</strong>
-                <small>{preset.trimLabel} · {preset.bestFor}</small>
-              </span>
-              <PrintIcon size={ICON_SIZE.md} />
-            </button>
-          ))}
-        </div>
-      </section>
+      <div className="cookbook-ready__formats">
+        {COOKBOOK_PRESETS.map((preset) => (
+          <button
+            key={preset.id}
+            type="button"
+            className="cookbook-format-card"
+            onClick={() => onExport(preset.id)}
+          >
+            <span className="cookbook-format-card__text">
+              <strong>{preset.productName}</strong>
+              <small>{preset.trimLabel}</small>
+            </span>
+            <span className="cookbook-format-card__cta">
+              <PrintIcon size={ICON_SIZE.sm} />
+              Save PDF
+            </span>
+          </button>
+        ))}
+      </div>
 
-      <section className="cookbook-ready__section">
-        <h3>Bring it to life</h3>
-        <div className="cookbook-ready__recommendations">
-          <div><strong>Print at home</strong><span>Best for spiral binding and everyday kitchen copies.</span></div>
-          <div><strong>Local print shop</strong><span>Ask for double-sided color printing with sturdy covers.</span></div>
-          {Object.values(PRINTERS).map((printer) => (
-            <button type="button" key={printer.id} onClick={() => onPrinterClick(printer.id, printer.url)}>
-              <strong>{printer.name}</strong>
-              <span>{printer.note}</span>
+      {/* No integration with the print shops — the export is just a PDF. So the
+          honest instruction is: save it first, then upload that file yourself. */}
+      <p className="cookbook-ready__note">
+        To make a physical copy, save the PDF first — then print it at home, or upload it to a service like{" "}
+        {printers.map((printer, index) => (
+          <span key={printer.id}>
+            <button
+              type="button"
+              className="cookbook-ready__printer-link"
+              onClick={() => onPrinterClick(printer.id, printer.url)}
+            >
+              {printer.name}
             </button>
-          ))}
-        </div>
-      </section>
+            {index < printers.length - 1 ? (index === printers.length - 2 ? ", or " : ", ") : "."}
+          </span>
+        ))}
+      </p>
     </Dialog>
   );
 }

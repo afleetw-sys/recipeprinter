@@ -328,7 +328,7 @@ export function CookPilotLoginDialog({
         </button>
 
         <div className="pr-cp-7">
-          <h3 className="font-extrabold tracking-[-0.02em] text-cp-h2">
+          <h3 className="font-extrabold tracking-[-0.02em] text-cp-dialog-title">
             {reason === "purchase" ? "Don’t lose your purchase" : "Sign in to Recipe Printer"}
           </h3>
           <p className="text-cp-small text-ink-soft mt-1">
@@ -354,7 +354,7 @@ export function CookPilotLoginDialog({
                 value={email}
                 onChange={(event) => setEmail(event.target.value)}
               />
-              <p className="mt-1 text-[11px] leading-4 text-ink-soft">
+              <p className="mt-1 text-cp-caption leading-4 text-ink-soft">
                 Already use CookPilot? Sign in with the same account.
               </p>
             </div>
