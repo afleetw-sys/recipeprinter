@@ -11,6 +11,7 @@ import { uid } from "@/lib/ids";
 import {
   recipePrinterProjectPath,
   recipePrinterProjectsPath,
+  recipePrinterUserPhotoRoot,
 } from "@/lib/firebase/recipePrinterPaths";
 
 const PRINT_PROJECTS_COLLECTION = "printProjects";
@@ -147,9 +148,32 @@ export async function loadPrintProject(ownerUid: string, projectId: string): Pro
 }
 
 export async function deletePrintProject(ownerUid: string, projectId: string): Promise<void> {
-  const [{ doc, deleteDoc }, { getDb }] = await Promise.all([
+  const [{ doc, deleteDoc }, { getDb }, { deleteObject, listAll, ref }, { getFirebaseStorage }] = await Promise.all([
     import("firebase/firestore"),
     import("@/lib/firebase/db"),
+    import("firebase/storage"),
+    import("@/lib/firebase/storage"),
   ]);
-  await deleteDoc(doc(getDb(), ...recipePrinterProjectPath(ownerUid, projectId)));
+  const db = getDb();
+  const adoptedRoot = ref(
+    getFirebaseStorage(),
+    `${recipePrinterUserPhotoRoot(ownerUid)}/adopted/${projectId}`,
+  );
+  // Adopted anonymous images are copied under a project-owned prefix, so this
+  // folder is safe to remove. User-wide uploads are intentionally retained:
+  // another project or the recipe queue may still reference them.
+  const removeFolder = async (folder: ReturnType<typeof ref>): Promise<void> => {
+    const listed = await listAll(folder);
+    await Promise.all([
+      ...listed.items.map((item) => deleteObject(item)),
+      ...listed.prefixes.map((prefix) => removeFolder(prefix)),
+    ]);
+  };
+  await removeFolder(adoptedRoot);
+  // Compatibility reads merge the namespaced and legacy collections. Remove
+  // both copies so an older project cannot reappear after deletion.
+  await Promise.all([
+    deleteDoc(doc(db, ...recipePrinterProjectPath(ownerUid, projectId))),
+    deleteDoc(doc(db, "users", ownerUid, PRINT_PROJECTS_COLLECTION, projectId)),
+  ]);
 }

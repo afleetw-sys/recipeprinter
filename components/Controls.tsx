@@ -39,6 +39,18 @@ export const IconButton = forwardRef<
   );
 });
 
+export function Badge({
+  tone = "neutral",
+  className,
+  children,
+}: {
+  tone?: "neutral" | "success";
+  className?: string;
+  children: ReactNode;
+}) {
+  return <span className={classes("status-badge", `status-badge--${tone}`, className)}>{children}</span>;
+}
+
 export function Checkbox({
   label,
   hint,

@@ -16,7 +16,7 @@ import { CookbookReadyDialog } from "@/components/CookbookReadyDialog";
 import { Select } from "@/components/Select";
 import { ImagePicker } from "@/components/ImagePicker";
 import { Dialog } from "@/components/Dialog";
-import { Checkbox, CheckboxGroup, SegmentedControl, SelectTile } from "@/components/Controls";
+import { Checkbox, CheckboxGroup, IconButton, SegmentedControl, SelectTile } from "@/components/Controls";
 import { RecipeLoadingState } from "@/components/RecipeLoadingState";
 import { useModalFocus } from "@/components/useModalFocus";
 import {
@@ -981,6 +981,9 @@ export default function PrintPage() {
   const [pendingAddAfterRecipeId, setPendingAddAfterRecipeId] = useState<string | null>(null);
   const [projectSaveBusy, setProjectSaveBusy] = useState(false);
   const [savedProjectId, setSavedProjectId] = useState<string | null>(null);
+  // State drives the UI; the ref is the authoritative identity inside queued
+  // async saves, which can run before React commits the state update.
+  const savedProjectIdRef = useRef<string | null>(null);
   const [saveStatus, setSaveStatus] = useState<AccountSaveStatus | null>(null);
   const [projectLoading, setProjectLoading] = useState(Boolean(accountProjectId));
   const projectRevisionRef = useRef(0);
@@ -988,6 +991,7 @@ export default function PrintPage() {
   const lastAttemptedFingerprintRef = useRef<string | null>(null);
   const saveInFlightRef = useRef(false);
   const saveQueuedRef = useRef(false);
+  const latestSaveRef = useRef<() => void>(() => undefined);
   const saveAfterLoginRef = useRef(false);
   const projectIdRef = useRef<string>(createPrintProjectId());
   const [toastMessage, setToastMessage] = useState<string | null>(null);
@@ -1689,6 +1693,7 @@ export default function PrintPage() {
                           type="button"
                           className="recipe-structure-sheet__delete"
                           aria-label={`Delete ${section.title || "section"}`}
+                          title="Delete section"
                           onClick={() => requestDeleteSection(section.id)}
                         >
                           <TrashIcon size={ICON_SIZE.sm} />
@@ -2615,7 +2620,7 @@ export default function PrintPage() {
       items.find((item) => item.recipe)?.recipe?.title ||
       `Recipe cards — ${new Date().toLocaleDateString()}`;
     return assemblePrintProject({
-      id: cookbookProjectId,
+      id: savedProjectIdRef.current ?? accountProjectId ?? cookbookProjectId,
       ownerUid: cookPilotUser.uid,
       title: defaultTitle,
       sections,
@@ -2675,13 +2680,14 @@ export default function PrintPage() {
         backCover: materialized.backCover,
         itemPlacements: materialized.itemPlacements,
       };
-      const saved = savedProjectId
+      const saved = savedProjectIdRef.current
         ? await savePrintProject(project)
         : await adoptAnonymousProject(cookPilotUser.uid, project);
       projectRevisionRef.current = Number(saved.revision ?? 0);
+      savedProjectIdRef.current = saved.id;
       setSavedProjectId(saved.id);
       if (saved.id !== projectMeta.meta.projectId) {
-        projectMeta.replaceMeta({ ...projectMeta.meta, projectId: saved.id });
+        projectMeta.setProjectId(saved.id);
       }
       lastSavedFingerprintRef.current = JSON.stringify({
         items,
@@ -2706,10 +2712,14 @@ export default function PrintPage() {
       setProjectSaveBusy(false);
       if (saveQueuedRef.current) {
         saveQueuedRef.current = false;
-        window.setTimeout(() => void handleSaveProject(), 0);
+        window.setTimeout(() => latestSaveRef.current(), 0);
       }
     }
   }
+
+  // A save queued during an in-flight request must serialize the newest render,
+  // not the render whose request just completed.
+  latestSaveRef.current = () => void handleSaveProject();
 
   function handleRetrySave() {
     if (saveStatus !== "conflict") {
@@ -2725,8 +2735,9 @@ export default function PrintPage() {
     }
     const copyId = createPrintProjectId();
     projectRevisionRef.current = 0;
+    savedProjectIdRef.current = null;
     setSavedProjectId(null);
-    projectMeta.replaceMeta({ ...projectMeta.meta, projectId: copyId });
+    projectMeta.setProjectId(copyId);
     setSaveStatus(null);
   }
 
@@ -3024,6 +3035,7 @@ export default function PrintPage() {
         setShowSourceUrl(project.settings.showSourceUrl);
         setShowCutLines(project.settings.showCutLines);
         projectRevisionRef.current = Number(project.revision ?? 0);
+        savedProjectIdRef.current = project.id;
         setSavedProjectId(project.id);
         lastSavedFingerprintRef.current = "__loaded__";
         setSaveStatus("saved");
@@ -3808,10 +3820,10 @@ export default function PrintPage() {
                   // drags as one unit and carries a single `data-rail-section`.
                   if (nav?.kind === "divider") {
                     const section = sections.find((entry) => entry.id === nav.recipeId);
-                    return section?.title?.trim() ? section.id : null;
+                    return section && (organizeMode || section.title?.trim()) ? section.id : null;
                   }
                   const found = nav?.kind === "recipe" ? sectionForNavItem(nav) : null;
-                  return found && sections[found.index]?.title?.trim() ? found.id : null;
+                  return found && (organizeMode || sections[found.index]?.title?.trim()) ? found.id : null;
                 };
                 // One rail entry per LOGICAL unit: an image-spread (a recipe's
                 // full-page photo + the recipe) is ONE unit shown as a mini
@@ -3914,7 +3926,9 @@ export default function PrintPage() {
                     data-rail-section={group.sectionId ?? undefined}
                     className={`recipe-page-rail__section-group ${
                       group.sectionId ? "recipe-page-rail__section-group--nested" : ""
-                    } ${railDrag.draggingKind === "section" && railDrag.draggingId === group.sectionId ? "is-dragging" : ""}`}
+                    } ${organizeMode && group.sectionId && !sections.find((entry) => entry.id === group.sectionId)?.title?.trim()
+                      ? "recipe-page-rail__section-group--ungrouped"
+                      : ""} ${railDrag.draggingKind === "section" && railDrag.draggingId === group.sectionId ? "is-dragging" : ""}`}
                   >
                   {group.units.map((unit, unitIdx) => {
                 const recipeNav = unit.nav?.kind === "recipe" ? unit.nav : null;
@@ -3965,6 +3979,7 @@ export default function PrintPage() {
                           <input
                             className="recipe-page-rail__section-title-input"
                             value={section.title ?? ""}
+                            placeholder="Section name"
                             aria-label="Section name"
                             onChange={(event) => renameSectionEverywhere(section.id, event.target.value)}
                             onPointerDown={(event) => event.stopPropagation()}
@@ -3972,10 +3987,11 @@ export default function PrintPage() {
                         ) : (
                           <span>{section.title}</span>
                         )}
-                        <button
-                          type="button"
-                          className="icon-close-btn recipe-page-rail__section-delete"
+                        <IconButton
+                          tone="danger"
+                          className="recipe-page-rail__section-delete"
                           aria-label={`Delete ${section.title || "section"}`}
+                          title="Delete section"
                           onClick={(event) => {
                             event.stopPropagation();
                             requestDeleteSection(section.id);
@@ -3983,7 +3999,7 @@ export default function PrintPage() {
                           onPointerDown={(event) => event.stopPropagation()}
                         >
                           <TrashIcon size={ICON_SIZE.sm} />
-                        </button>
+                        </IconButton>
                       </div>
                     )}
                     <div

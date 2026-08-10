@@ -451,17 +451,19 @@ export function useProjectMeta() {
     [update],
   );
 
-  /** Removes a section, merging its items into the neighboring section (the
-      one before it, or the one after if it was first) so recipes are never
-      lost — collapsing structure is exactly as safe as creating it. */
+  /** Removes a section, merging its items into a neighbor. Deleting the final
+      named section dissolves it back to the implicit ungrouped recipe pool. */
   const deleteSection = useCallback(
     (sectionId: string) => {
       update((current) => {
         const index = current.sections.findIndex((section) => section.id === sectionId);
         if (index === -1) return current;
         const target = current.sections[index];
+        if (current.sections.length === 1) {
+          return { ...current, sections: [{ id: target.id, itemIds: [...target.itemIds] }] };
+        }
         const neighborIndex = index > 0 ? index - 1 : index + 1;
-        const sections = current.sections.slice();
+        const sections = current.sections.map((section) => ({ ...section, itemIds: [...section.itemIds] }));
         sections.splice(index, 1);
         const neighbor = sections[index > 0 ? neighborIndex - 1 : neighborIndex];
         if (neighbor) {
@@ -720,6 +722,15 @@ export function useProjectMeta() {
     [commit],
   );
 
+  /** Updates save identity without replacing newer edits made while an async
+      save was in flight. */
+  const setProjectId = useCallback(
+    (projectId: string) => {
+      update((current) => (current.projectId === projectId ? current : { ...current, projectId }));
+    },
+    [update],
+  );
+
   /** Per-recipe override of how ONE recipe shows its photo, using the same three
       options as the book-wide `photoStyle`: `none` (no photo), `card` (a header
       photo), `full` (a full-page facing photo / image-spread). Stored explicitly
@@ -773,5 +784,6 @@ export function useProjectMeta() {
     clearItemPhotoOverrides,
     setPhotoStyle,
     replaceMeta,
+    setProjectId,
   };
 }

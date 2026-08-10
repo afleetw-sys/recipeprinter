@@ -53,15 +53,31 @@ for (const directory of ["app", "components"]) {
 // workspace chrome before the themes and modal chrome after them.
 const cssTargets = [
   { file: "app/globals.css", ranges: [[1, Infinity]] },
-  { file: "app/print/print.css", ranges: [[1, 2750], [6200, 6550]] },
+  {
+    file: "app/print/print.css",
+    ranges: [[1, 2750]],
+    // Use the selector rather than a line number: printable artwork above it
+    // legitimately uses physical-unit typography and grows as themes evolve.
+    trailingUiMarker: ".print-success-dialog {",
+    trailingUiEndMarker: "@page rp-card-6x4 {",
+  },
 ];
 
 for (const target of cssTargets) {
   const file = path.join(root, target.file);
   const lines = fs.readFileSync(file, "utf8").split("\n");
+  const trailingUiStart = target.trailingUiMarker
+    ? lines.findIndex((line) => line.trim() === target.trailingUiMarker) + 1
+    : Infinity;
+  const trailingUiEnd = target.trailingUiEndMarker
+    ? lines.findIndex((line) => line.trim() === target.trailingUiEndMarker) + 1
+    : Infinity;
   lines.forEach((line, index) => {
     const lineNumber = index + 1;
-    if (!target.ranges.some(([start, end]) => lineNumber >= start && lineNumber <= end)) return;
+    if (
+      !target.ranges.some(([start, end]) => lineNumber >= start && lineNumber <= end) &&
+      (lineNumber < trailingUiStart || lineNumber >= trailingUiEnd)
+    ) return;
     const font = line.match(/font-size\s*:\s*([^;]+)/)?.[1].trim();
     if (font && !font.startsWith("var(--cp-fs") && font !== "0" && !font.startsWith("clamp(") && !font.endsWith("em")) {
       report(file, lineNumber, "use a --cp-fs-* typography token");

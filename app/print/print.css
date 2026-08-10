@@ -396,6 +396,12 @@
     display: contents;
   }
 
+  .recipe-print-shell--organizing .recipe-page-rail__section-group--ungrouped {
+    padding: 0;
+    border-color: transparent;
+    background: transparent;
+  }
+
   /* Organization is about recipe order and section membership. Keep covers,
      contents, dedication, and other front matter in the normal page rail. A
      divider contributes its editable section heading here, but not its opener

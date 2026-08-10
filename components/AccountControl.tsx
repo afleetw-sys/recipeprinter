@@ -176,6 +176,13 @@ export function AccountControl({
               ) : (
                 <p className="mt-2 text-cp-small text-ink-soft">Your saved cookbooks will appear here.</p>
               )}
+              <Link
+                href="/projects"
+                className="btn btn-secondary btn-compact mt-cp-3 w-full"
+                onClick={() => setOpen(false)}
+              >
+                View all projects
+              </Link>
             </div>
           )}
           <button
