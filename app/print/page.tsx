@@ -55,6 +55,7 @@ import {
 import { adoptAnonymousProject, readAdoptionManifest } from "@/lib/anonymousProjectAdoption";
 import { useRecipeInlineEditor } from "@/lib/useRecipeInlineEditor";
 import { useRailDrag, type RailDragKind, type RailDropResolved } from "@/lib/useRailDrag";
+import { useRailSelection } from "@/lib/useRailSelection";
 import { PAGE_DIMS } from "@/lib/printGeometry";
 import { useDeckScroller } from "@/lib/useDeckScroller";
 import { usePremiumTemplatePurchase } from "@/lib/usePremiumTemplatePurchase";
@@ -529,11 +530,6 @@ function PrintWorkspace(props: PrintWorkspaceProps) {
     templateLocked,
     toggleDedication,
   } = props;
-  // Cmd/Ctrl-click multi-select in the rail (cookbook mode): the set of selected
-  // recipe ids and whether the bulk-action menu is open.
-  const [selectedRailIds, setSelectedRailIds] = useState<Set<string>>(() => new Set());
-  // The last recipe clicked, used as the anchor for Shift-click range selection.
-  const [railAnchorId, setRailAnchorId] = useState<string | null>(null);
   // The photo-placement fields of a section opener's `dividerEdit`, shared by
   // both deck call sites (spread deck + single-page deck) so the two can never
   // drift. Drives the unified ImagePicker: the same None/In-card/Full-page row as
@@ -654,48 +650,6 @@ function PrintWorkspace(props: PrintWorkspaceProps) {
     setStructureSheetOpen(false);
   }
   // ── Rail multi-select (cookbook) ─────────────────────────────────────────
-  // Cmd/Ctrl-click recipes in the rail to build a selection; two or more brings
-  // up a bulk bar to group them into a new section or move them into an existing
-  // one. Regular clicks navigate as before and clear any selection.
-  function toggleRailSelection(recipeId: string) {
-    if (!organizeMode) enterOrganizeMode();
-    setRailAnchorId(recipeId);
-    setSelectedRailIds((current) => {
-      const next = new Set(current);
-      if (next.has(recipeId)) next.delete(recipeId);
-      else next.add(recipeId);
-      return next;
-    });
-  }
-  // Shift-click: select every recipe between the anchor (last clicked, else the
-  // page you're on) and this one, in book order — the customary range select.
-  function selectRailRange(recipeId: string) {
-    const ordered = sections.flatMap((section) => section.items).map((item) => item.id);
-    const anchor = railAnchorId ?? activeSelectableRecipeId ?? recipeId;
-    const from = ordered.indexOf(anchor);
-    const to = ordered.indexOf(recipeId);
-    if (from === -1 || to === -1) {
-      toggleRailSelection(recipeId);
-      return;
-    }
-    const [lo, hi] = from <= to ? [from, to] : [to, from];
-    if (!organizeMode) enterOrganizeMode();
-    setSelectedRailIds((current) => {
-      const next = new Set(current);
-      for (let i = lo; i <= hi; i += 1) next.add(ordered[i]);
-      return next;
-    });
-  }
-  function clearRailSelection() {
-    setSelectedRailIds((current) => (current.size ? new Set() : current));
-  }
-  // Selected recipe ids in book order, so a new/receiving section keeps sequence.
-  function orderedRailSelection(selection: ReadonlySet<string> = effectiveRailSelection): string[] {
-    return sections
-      .flatMap((section) => section.items)
-      .map((item) => item.id)
-      .filter((id) => selection.has(id));
-  }
   function makeSectionFromSelection(selection: ReadonlySet<string> = effectiveRailSelection) {
     const ids = orderedRailSelection(selection);
     if (ids.length === 0) return;
@@ -901,15 +855,20 @@ function PrintWorkspace(props: PrintWorkspaceProps) {
   // selection of two others while viewing a third reads (and acts on) all three.
   const activeSelectableRecipeId =
     activeNavItem?.kind === "recipe" ? activeNavItem.recipeId : null;
-  const effectiveRailSelection = useMemo(() => {
-    if (selectedRailIds.size === 0) return selectedRailIds;
-    if (!activeSelectableRecipeId || selectedRailIds.has(activeSelectableRecipeId)) {
-      return selectedRailIds;
-    }
-    const next = new Set(selectedRailIds);
-    next.add(activeSelectableRecipeId);
-    return next;
-  }, [selectedRailIds, activeSelectableRecipeId]);
+  const {
+    selectedRailIds,
+    effectiveRailSelection,
+    setRailAnchorId,
+    toggleRailSelection,
+    selectRailRange,
+    clearRailSelection,
+    orderedRailSelection,
+  } = useRailSelection({
+    sections,
+    organizeMode,
+    enterOrganizeMode,
+    activeSelectableRecipeId,
+  });
 
   // Set when a recipe is moved by a placement change while being edited, so the
   // inline editor keeps it in edit mode as focus follows it to its new page.
@@ -993,7 +952,7 @@ function PrintWorkspace(props: PrintWorkspaceProps) {
     function onKeyDown(event: KeyboardEvent) {
       if (event.key !== "Escape") return;
       setAddMenuOpen(false);
-      setSelectedRailIds((current) => (current.size ? new Set() : current));
+      clearRailSelection();
     }
     document.addEventListener("pointerdown", onPointerDown);
     document.addEventListener("keydown", onKeyDown);
@@ -1005,7 +964,7 @@ function PrintWorkspace(props: PrintWorkspaceProps) {
   // Selection is a cookbook-only, page-scoped concern: drop it whenever we leave
   // cookbook mode or the recipe set changes, so stale ids can't linger.
   useEffect(() => {
-    setSelectedRailIds((current) => (current.size ? new Set() : current));
+    clearRailSelection();
   }, [cookbookMode, items]);
   // ── Shared deck pieces (single-page deck + cookbook two-page-spread deck) ──
   // The floating controls for the active/focused page: side flip, per-recipe
