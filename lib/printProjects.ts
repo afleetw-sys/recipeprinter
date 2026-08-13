@@ -126,10 +126,14 @@ export async function loadPrintProjects(ownerUid: string): Promise<PrintProject[
   const [namespaced, legacy] = await Promise.all([
     getDocs(query(collection(db, ...recipePrinterProjectsPath(ownerUid)), orderBy("updatedAt", "desc")))
       .catch(() => null),
-    getDocs(query(collection(db, "users", ownerUid, PRINT_PROJECTS_COLLECTION), orderBy("updatedAt", "desc"))),
+    // Fault-isolated like the namespaced read: a transient error / rules change
+    // on the legacy collection must not reject the whole load and make every
+    // saved project appear to vanish — merge whichever half succeeded.
+    getDocs(query(collection(db, "users", ownerUid, PRINT_PROJECTS_COLLECTION), orderBy("updatedAt", "desc")))
+      .catch(() => null),
   ]);
   const byId = new Map<string, PrintProject>();
-  legacy.docs.forEach((snap) => byId.set(snap.id, snap.data() as PrintProject));
+  legacy?.docs.forEach((snap) => byId.set(snap.id, snap.data() as PrintProject));
   namespaced?.docs.forEach((snap) => byId.set(snap.id, snap.data() as PrintProject));
   return Array.from(byId.values()).sort((a, b) => Number(b.updatedAt) - Number(a.updatedAt));
 }

@@ -14,6 +14,17 @@
  * unnoticed and reads like a mistake to anyone who finds it. This is greppable,
  * says why, and makes relaunching a one-line change — same approach as the
  * Fruit Stand template's gate in components/RecipeCardPrint.tsx.
+ *
+ * ⚠️ BEFORE THIS IS `true` IN PRODUCTION — cookbook unlocks must be made
+ * server-authoritative first, or a signed-in user can grant themselves the paid
+ * unlock for free. Do the ordered sequence in docs/cookbook-unlock-webhook.md:
+ *   1. ship the `cookbook_project_id` attribute (lib/recipePrinterPurchases.ts)
+ *   2. deploy the extended RevenueCat webhook (CookPilot functions)
+ *   3. verify a real/sandbox purchase writes the unlock doc server-side
+ *   4. lock down firestore.rules (cookbookUnlocks → server-write only)
+ *   5. remove the now-dead client unlock writes
+ * Until all five are done, the unlock is client-writable and refunds never
+ * revoke. (Inert while this flag is `false`, since no one can purchase.)
  */
 export const COOKBOOK_ENABLED = true;
 

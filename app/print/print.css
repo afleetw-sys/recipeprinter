@@ -203,150 +203,6 @@
   outline-offset: var(--cp-focus-ring-offset);
 }
 
-/* Compact organizer layout. It is mounted inside the existing navigation rail;
-   recipe tiles share view-transition names with their full page thumbnails. */
-.cb-board {
-  display: grid;
-  grid-template-columns: 1fr;
-  gap: 16px;
-  min-width: 0;
-  animation: cb-board-enter 300ms 80ms cubic-bezier(0.22, 1, 0.36, 1) both;
-}
-
-@keyframes cb-board-enter {
-  from { opacity: 0; transform: translateX(-8px); }
-  to { opacity: 1; transform: translateX(0); }
-}
-
-.cb-board__col {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-  min-width: 0;
-  padding: 12px;
-  border: 1px solid var(--cp-line);
-  border-radius: 14px;
-  background: var(--cp-card);
-  transition: border-color 150ms ease, box-shadow 150ms ease, opacity 150ms ease;
-}
-
-.cb-board__col.is-over {
-  border-color: var(--cp-accent);
-  box-shadow: var(--cp-selected-ring);
-}
-.cb-board__col.is-dragging,
-.cb-board__card.is-dragging { opacity: 0.4; }
-
-.cb-board__col-head {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-.cb-board__section-image {
-  width: 38px;
-  height: 38px;
-  flex: none;
-  border-radius: 9px;
-  object-fit: cover;
-}
-.cb-board__grip {
-  display: inline-flex;
-  color: var(--cp-ink-soft);
-  cursor: grab;
-}
-.cb-board__title {
-  min-width: 0;
-  flex: 1;
-  padding: 5px 6px;
-  border: 1px solid transparent;
-  border-radius: 7px;
-  background: transparent;
-  color: var(--cp-ink);
-  font-size: var(--cp-fs-small);
-  font-weight: 800;
-}
-.cb-board__title:hover,
-.cb-board__title:focus { border-color: var(--cp-line-strong); }
-.cb-board__title:focus-visible {
-  outline: var(--cp-focus-ring);
-  outline-offset: var(--cp-focus-ring-offset);
-}
-.cb-board__count { color: var(--cp-ink-soft); font-size: var(--cp-fs-caption); }
-.cb-board__delete {
-  display: inline-flex;
-  padding: 4px;
-  border: 0;
-  border-radius: 6px;
-  background: transparent;
-  color: var(--cp-ink-soft);
-}
-.cb-board__delete:hover { color: var(--cp-error); background: var(--cp-error-soft); }
-.cb-board__cards {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
-  gap: 8px;
-  min-height: 44px;
-}
-.cb-board__card {
-  display: grid;
-  grid-template-columns: 46px minmax(0, 1fr);
-  align-items: center;
-  gap: 8px;
-  min-width: 0;
-  padding: 6px;
-  border: 1px solid var(--cp-line);
-  border-radius: 10px;
-  background: var(--cp-page);
-  cursor: grab;
-}
-.cb-board__card:hover { border-color: var(--cp-line-strong); }
-.cb-board__card.is-selected {
-  border-color: var(--cp-selected-border);
-  background: var(--cp-selected-fill);
-  box-shadow: var(--cp-selected-ring);
-}
-.cb-board__card img,
-.cb-board__card-placeholder {
-  width: 46px;
-  height: 46px;
-  border-radius: 8px;
-  object-fit: cover;
-  background: var(--cp-line);
-}
-.cb-board__card-title {
-  overflow: hidden;
-  display: -webkit-box;
-  color: var(--cp-ink);
-  font-size: var(--cp-fs-caption);
-  font-weight: 700;
-  line-height: 1.25;
-  -webkit-box-orient: vertical;
-  -webkit-line-clamp: 2;
-}
-.cb-board__empty {
-  grid-column: 1 / -1;
-  margin: 0;
-  padding: 12px;
-  border: 1px dashed var(--cp-line-strong);
-  border-radius: 9px;
-  color: var(--cp-ink-soft);
-  text-align: center;
-  font-size: var(--cp-fs-caption);
-}
-.cb-board__add {
-  min-height: 58px;
-  border: 1px dashed var(--cp-line-strong);
-  border-radius: 14px;
-  background: transparent;
-  color: var(--cp-ink-soft);
-  font-weight: 800;
-}
-.cb-board__add-count {
-  color: var(--cp-ink-soft);
-  font-size: var(--cp-fs-caption);
-  font-weight: 700;
-}
-
 @media screen and (min-width: 821px) {
   .recipe-print-page .recipe-print-shell {
     width: 100%;
@@ -508,7 +364,6 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .cb-board { animation: none; }
   .recipe-print-page .recipe-print-shell { transition: none; }
   .recipe-print-shell > .recipe-page-canvas,
   .recipe-print-shell > .recipe-config-panel {
@@ -2817,6 +2672,22 @@
   object-fit: cover;
   display: block;
 }
+.photo-unavailable-message {
+  display: none;
+}
+.has-unavailable-photo > .photo-unavailable-message {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  padding: 0.25in;
+  background: color-mix(in srgb, var(--recipe-bg, #fff) 92%, var(--recipe-muted, #667085));
+  color: var(--recipe-muted, #667085);
+  font-size: 10pt;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  text-align: center;
+}
 
 /* ── Image-spread facing photo (Phase 2b) ──────────────────────────────────
    A full-bleed photo filling a letter page, facing the recipe's card page. */
@@ -3851,11 +3722,13 @@
    which meant selecting "In card" for a chapter photo showed NOTHING on the
    opener — the photo only appeared as a Full-page facing sheet. When an in-card
    photo IS set, show it as a centered framed image above the title instead of
-   hiding it. Scoped with :has() so text-only framed openers are untouched.
+   hiding it. React adds `recipe-card--chapter-with-photo` from the same
+   `photoUrl` that renders the image, so text-only framed openers are untouched
+   without asking CSS to infer application state from the DOM.
    (Print-only geometry — verify on a re-export.) */
-.recipe-template--heirloom .recipe-card--chapter:has(.recipe-card__chapter-image),
-.recipe-template--keepsake .recipe-card--chapter:has(.recipe-card__chapter-image),
-.recipe-template--cookout .recipe-card--chapter:has(.recipe-card__chapter-image) {
+.recipe-template--heirloom .recipe-card--chapter-with-photo,
+.recipe-template--keepsake .recipe-card--chapter-with-photo,
+.recipe-template--cookout .recipe-card--chapter-with-photo {
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -3863,18 +3736,18 @@
   gap: 0.3in;
   padding: 0.9in;
 }
-.recipe-template--heirloom .recipe-card--chapter:has(.recipe-card__chapter-image) .recipe-card__chapter-body,
-.recipe-template--keepsake .recipe-card--chapter:has(.recipe-card__chapter-image) .recipe-card__chapter-body,
-.recipe-template--cookout .recipe-card--chapter:has(.recipe-card__chapter-image) .recipe-card__chapter-body {
+.recipe-template--heirloom .recipe-card--chapter-with-photo .recipe-card__chapter-body,
+.recipe-template--keepsake .recipe-card--chapter-with-photo .recipe-card__chapter-body,
+.recipe-template--cookout .recipe-card--chapter-with-photo .recipe-card__chapter-body {
   position: static;
   inset: auto;
   padding: 0;
   align-items: center;
   text-align: center;
 }
-.recipe-template--heirloom .recipe-card__chapter-photo:has(.recipe-card__chapter-image),
-.recipe-template--keepsake .recipe-card__chapter-photo:has(.recipe-card__chapter-image),
-.recipe-template--cookout .recipe-card__chapter-photo:has(.recipe-card__chapter-image) {
+.recipe-template--heirloom .recipe-card--chapter-with-photo .recipe-card__chapter-photo,
+.recipe-template--keepsake .recipe-card--chapter-with-photo .recipe-card__chapter-photo,
+.recipe-template--cookout .recipe-card--chapter-with-photo .recipe-card__chapter-photo {
   display: block;
   position: relative;
   flex: none;
@@ -4297,6 +4170,26 @@
   object-fit: cover;
   display: block;
 }
+.image-picker__photo--unavailable {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  border: 1px solid var(--cp-line);
+  background: var(--cp-page);
+  color: var(--cp-ink-soft);
+  cursor: pointer;
+}
+.image-picker__photo--unavailable:hover {
+  border-color: var(--cp-line-strong);
+  color: var(--cp-ink);
+}
+.image-picker__remove-label {
+  color: var(--cp-error);
+  font-size: var(--cp-fs-label);
+  font-weight: 750;
+}
 .image-picker__check {
   position: absolute;
   right: 5px;
@@ -4386,10 +4279,22 @@
   -webkit-print-color-adjust: exact;
   print-color-adjust: exact;
 }
+.recipe-card__cover-grid-cell {
+  position: relative;
+  display: block;
+  min-width: 0;
+  min-height: 0;
+  overflow: hidden;
+}
 /* Banner photo for odd collages (3, 5) — spans both columns so no cell is
    left empty. */
 .recipe-card__cover-grid-img--wide {
   grid-column: 1 / -1;
+}
+@media print {
+  .has-unavailable-photo > .photo-unavailable-message {
+    font-size: 0;
+  }
 }
 
 /* Photo-free cover — a proper typographic cover on the template's paper in its
@@ -5165,6 +5070,14 @@ textarea.recipe-card__toc-title {
 .recipe-card > .recipe-card__cook-photo-edit {
   position: absolute;
   z-index: 8;
+}
+
+/* Theme decoration layers set every direct card child to `position: relative`.
+   A chapter photo is one of those children, but its image must still fill the
+   framed photo region instead of participating in normal flow. */
+.recipe-card--chapter-with-photo .recipe-card__chapter-image {
+  position: absolute;
+  inset: 0;
 }
 
 /* A hand-drawn-BBQ-icon border running along all four edges. The icons are

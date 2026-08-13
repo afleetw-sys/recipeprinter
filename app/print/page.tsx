@@ -1,6 +1,6 @@
 "use client";
 
-import { memo, useCallback, useEffect, useMemo, useRef, useState, type CSSProperties, type Dispatch, type MutableRefObject, type ReactNode, type RefObject, type SetStateAction } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties, type Dispatch, type MutableRefObject, type ReactNode, type RefObject, type SetStateAction } from "react";
 import { flushSync } from "react-dom";
 import { useSearchParams } from "next/navigation";
 import Link from "next/link";
@@ -22,15 +22,13 @@ import { useModalFocus } from "@/components/useModalFocus";
 import {
   PRINT_CARD_SIZE_OPTIONS,
   RECIPE_PRINT_TEMPLATE_OPTIONS,
-  RecipeCardFace,
-  BistroCheckerSpine,
-  DividerFace,
-  CoverFace,
-  TableOfContentsFace,
-  type RecipeCardInlineEdit,
   type PrintCardSize,
   type RecipePrintTemplate,
 } from "@/components/RecipeCardPrint";
+import { TemplateThumbnail } from "@/components/print/TemplateThumbnail";
+import { ScaledPage } from "@/components/print/ScaledPage";
+import { PHOTO_STYLE_OPTIONS, PhotoStylePreview } from "@/components/print/photoStyle";
+import { MobileStructureSheet } from "@/components/print/MobileStructureSheet";
 import {
   usePrintSheets,
   type NavItem,
@@ -57,8 +55,7 @@ import {
 import { adoptAnonymousProject, readAdoptionManifest } from "@/lib/anonymousProjectAdoption";
 import { useRecipeInlineEditor } from "@/lib/useRecipeInlineEditor";
 import { useRailDrag, type RailDragKind, type RailDropResolved } from "@/lib/useRailDrag";
-import { photoGridLayout } from "@/lib/photoGrid";
-import { startFocalDrag } from "@/lib/focalDrag";
+import { PAGE_DIMS } from "@/lib/printGeometry";
 import { useDeckScroller } from "@/lib/useDeckScroller";
 import { usePremiumTemplatePurchase } from "@/lib/usePremiumTemplatePurchase";
 import { useCookbookPurchase } from "@/lib/useCookbookPurchase";
@@ -140,16 +137,6 @@ const AdminShareLinkDialog = dynamic(
 const POST_PRINT_DIALOG_STORAGE_KEY = "recipeprinter:post-print-dialog:last-shown:v1";
 
 
-// Real card dimensions in CSS px (96px per inch), used only to size the
-// on-screen scaler/thumbnails so a card looks true-to-size, just smaller.
-// Matches --recipe-card-width/-min-height in globals.css: 0.125in per side
-// smaller than the nominal "6x4"/"Letter" label, a safety margin for real
-// printers' hardware non-printable edge (see that variable's comment).
-const PAGE_DIMS: Record<PrintCardSize, { w: number; h: number }> = {
-  letter: { w: 8.25 * 96, h: 10.75 * 96 },
-  "card-6x4": { w: 5.75 * 96, h: 3.75 * 96 },
-};
-
 // Rail thumbnails target a fixed width so they always fit the rail column,
 // regardless of page aspect ratio (letter portrait vs. 6x4 landscape).
 const RAIL_THUMB_WIDTH = 112;
@@ -166,15 +153,6 @@ const RAIL_SCALE: Record<PrintCardSize, number> = {
 // Per-recipe cookbook page-layout choices. `full` = a plain full-page card;
 // `image-spread` = the card facing a full-bleed photo page. A cookbook always
 // gives each recipe its own full page.
-// The single "how does this recipe show its photo" axis — the book-wide default
-// (Print setup) and the per-recipe override both use these exact three options,
-// so there's one vocabulary rather than a layout picker + a separate on/off
-// toggle. `short` is the compact label for the per-page control.
-const PHOTO_STYLE_OPTIONS: Array<{ id: PhotoStyle; label: string; short: string; hint: string }> = [
-  { id: "none", label: "None", short: "None", hint: "No recipe photos" },
-  { id: "card", label: "In the recipe card", short: "In card", hint: "A photo in each card’s header" },
-  { id: "full", label: "Full page", short: "Full page", hint: "A full-page photo facing each recipe" },
-];
 
 // The section opener's photo placement — the SAME None/In-card/Full-page row as
 // a recipe, so the two pickers read identically. A collage isn't a fourth
@@ -195,33 +173,6 @@ function sectionRecipeImages(section: Section): string[] {
     .slice(0, 9);
 }
 
-// Tiny page illustration for each photo style — a blank card, a card with a
-// header photo, and a full-page facing photo — so the choice reads at a glance.
-function PhotoStylePreview({ id }: { id: PhotoStyle }) {
-  const lines = (
-    <>
-      <span className="recipe-photo-preview__line" />
-      <span className="recipe-photo-preview__line" />
-      <span className="recipe-photo-preview__line recipe-photo-preview__line--short" />
-    </>
-  );
-  if (id === "full") {
-    return (
-      <span className="recipe-photo-preview recipe-photo-preview--spread" aria-hidden>
-        <span className="recipe-photo-preview__page recipe-photo-preview__page--photo" />
-        <span className="recipe-photo-preview__page">{lines}</span>
-      </span>
-    );
-  }
-  return (
-    <span className="recipe-photo-preview" aria-hidden>
-      <span className="recipe-photo-preview__page">
-        {id === "card" && <span className="recipe-photo-preview__photo" />}
-        {lines}
-      </span>
-    </span>
-  );
-}
 
 // Fresh cookbooks open on a premium theme (unlocked inside the $19.99 book, so
 // no paywall — see `templateLocked`), rotating through them so the first view
@@ -253,104 +204,6 @@ function nextCookbookTemplate(): RecipePrintTemplate {
 
 // A short, generic recipe used only to fill each theme's picker preview. Kept
 // intentionally small so it lays out as a clean single front face at 6x4.
-const THUMB_RECIPE: Recipe = {
-  title: "Lemon Pasta",
-  servings: 4,
-  totalTime: "25 min",
-  ingredients: [
-    { name: "12 oz spaghetti" },
-    { name: "2 lemons, zested and juiced" },
-    { name: "1 cup grated parmesan" },
-    { name: "3 tbsp olive oil" },
-    { name: "2 cloves garlic, minced" },
-    { name: "Fresh basil and black pepper" },
-  ],
-  instructions: [
-    { step: 1, text: "Boil the spaghetti until al dente, then drain." },
-    { step: 2, text: "Toss with olive oil, garlic, and lemon." },
-    { step: 3, text: "Finish with parmesan, basil, and pepper." },
-  ],
-};
-
-// The theme picker thumbnails render the *real* card (the same RecipeCardFace
-// the print output uses) shrunk to fit, rather than a hand-built HTML mockup
-// styled to approximate it. The mockups drifted from the real templates —
-// different spacing, stray image placeholders, a BBQ preview that didn't look
-// like the BBQ card — because nothing kept them in sync. A scaled real card
-// can't drift: it *is* the template.
-const TEMPLATE_THUMB_SIZE: PrintCardSize = "card-6x4";
-// A whole 6x4 card shrunk to a ~110px picker cell renders its type too small to
-// read. Instead the thumbnail zooms *past* fit-to-width (`ZOOM`) and crops to a
-// fixed height (`HEIGHT`, px) anchored at the card's top-left — so the preview
-// shows the header and first rows at a legible size, with the right/bottom
-// edges running off under a soft mask fade. Bumping ZOOM trades how much of the
-// card is visible for how large the type reads.
-const TEMPLATE_THUMB_ZOOM = 1.95;
-const TEMPLATE_THUMB_HEIGHT = 86;
-
-function TemplateThumbnail({ template }: { template: RecipePrintTemplate }) {
-  const dims = PAGE_DIMS[TEMPLATE_THUMB_SIZE];
-  const ref = useRef<HTMLDivElement | null>(null);
-  // Fit the fixed-size real card to whatever width the picker cell happens to
-  // be (it varies with panel/drawer width), the same transform-scale trick
-  // ScaledPage uses, then zoom in past that fit. Starts at a sensible guess so
-  // first paint is close; the observer sets the exact scale from the measured
-  // cell width.
-  const [scale, setScale] = useState(0.22 * TEMPLATE_THUMB_ZOOM);
-
-  useEffect(() => {
-    const el = ref.current;
-    if (!el) return;
-    const measure = () => {
-      const w = el.clientWidth;
-      if (w > 0) setScale((w / dims.w) * TEMPLATE_THUMB_ZOOM);
-    };
-    measure();
-    if (typeof ResizeObserver === "undefined") return;
-    const observer = new ResizeObserver(measure);
-    observer.observe(el);
-    return () => observer.disconnect();
-  }, [dims.w]);
-
-  return (
-    <div ref={ref} className="recipe-template-option__thumb" aria-hidden>
-      <div
-        className="recipe-page-scaler recipe-template-option__scaler"
-        style={
-          {
-            "--page-scale": scale,
-            "--page-w": `${dims.w}px`,
-            "--page-h": `${dims.h}px`,
-            height: `${TEMPLATE_THUMB_HEIGHT}px`,
-          } as CSSProperties
-        }
-      >
-        <div className="recipe-page-scaler__inner">
-          <div className={`recipe-print-preview recipe-print-preview--${TEMPLATE_THUMB_SIZE}`}>
-            <div
-              className={`recipe-card-set recipe-card-set--${TEMPLATE_THUMB_SIZE} recipe-template--${template}`}
-            >
-              <div className="recipe-card-page recipe-card-page--front">
-                <RecipeCardFace
-                  recipe={THUMB_RECIPE}
-                  ingredients={THUMB_RECIPE.ingredients}
-                  instructions={THUMB_RECIPE.instructions}
-                  side="front"
-                  showHeader
-                  layout="standard"
-                  hasBackFace={false}
-                  showImage={false}
-                  template={template}
-                />
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-}
-
 /** Recipe cards / Cookbook segmented switch. Each option hugs its own content;
  *  a single ink "thumb" measures the active option and slides+resizes to it, so
  *  the transition reads as one control moving between the two. */
@@ -376,513 +229,6 @@ function ModeSwitch({
     />
   );
 }
-
-/**
- * A physical sheet rendered at true page size, scaled down by `scale` on
- * screen. Every face for every slot is always in the DOM — for print (via
- * `@media print` un-scaling it) that's the whole point. On screen, though,
- * browsing still happens one recipe at a time like it always has:
- * `data-preview-hidden` (a screen-only rule) hides the whole front/back group
- * that isn't `activeSide` — otherwise its declared page-sized height still
- * pushes the flex column taller even with its cards individually hidden,
- * shoving the side you want to see out of the scaler's clipped viewport —
- * and, within whichever group is showing, hides every card except the one
- * matching `activeSlotIndex`. One tree, so preview and print can't drift
- * apart even though they show different amounts of it at once.
- */
-const ScaledPage = memo(function ScaledPage({
-  sheet,
-  isLastSheet,
-  activeSlotIndex,
-  activeSide,
-  scale,
-  size,
-  template,
-  doubleSided,
-  showSourceUrl,
-  showCutLines,
-  showDecoration = true,
-  cookbookMode = false,
-  inlineEdit,
-  dividerEdit,
-  coverEdit,
-  imageEdit,
-  tocKicker,
-  tocTitle,
-  tocEdit,
-  gutterSide = "none",
-}: {
-  sheet: PageSheet;
-  isLastSheet: boolean;
-  activeSlotIndex: number;
-  activeSide: "front" | "back";
-  scale: number;
-  size: PrintCardSize;
-  template: RecipePrintTemplate;
-  doubleSided: boolean;
-  showSourceUrl: boolean;
-  cookbookMode?: boolean;
-  showCutLines: boolean;
-  /** False for the rail thumbnails, whose ~1/11 scale renders the templates'
-      decorative motifs sub-pixel — print.css paints a flat stand-in instead.
-      See `TemplateDecoration` in components/RecipeCardPrint.tsx. */
-  showDecoration?: boolean;
-  inlineEdit?: RecipeCardInlineEdit;
-  dividerEdit?: {
-    sectionId: string;
-    value: string;
-    onChange: (value: string) => void;
-    onCommit: () => void;
-    onCancel: () => void;
-    subtitle?: string;
-    onSubtitleChange?: (value: string) => void;
-    intro?: string;
-    onIntroChange?: (value: string) => void;
-    photoUrl?: string;
-    recipeImages?: string[];
-    onPhotoChange?: (url: string | undefined) => void;
-    /** Unified placement (None/In-card/Full-page/Photo grid) + grid curation, so
-        the opener picker is the same dialog as the recipe one, plus the cover's
-        multi-select grid. */
-    placement?: string;
-    placementOptions?: Array<{ id: string; label: string; hint?: string }>;
-    onPlacementChange?: (id: string) => void;
-    gridActive?: boolean;
-    gridImages?: string[];
-    onGridChange?: (urls: string[]) => void;
-    onSelectGrid?: () => void;
-    onExitGrid?: () => void;
-    gridMax?: number;
-  };
-  coverEdit?: {
-    side: "front" | "back" | "dedication";
-    cover: CoverConfig;
-    onChange: (cover: CoverConfig) => void;
-    recipeImages?: string[];
-  };
-  /** Present when the focused full-page image-spread photo is being edited —
-      enables drag-to-reposition, persisting the object-position focal point. */
-  imageEdit?: {
-    focusX: number;
-    focusY: number;
-    onChange: (focusX: number, focusY: number) => void;
-    /** Current full-page photo + candidates, so the image page can host its own
-        "Photo" control instead of the recipe card doing it off-page. */
-    current?: string;
-    images?: string[];
-    onImageChange?: (url: string | undefined) => void;
-    /** Recipe-photo placement (None/In-card/Full-page), shown inside the same
-        dialog so the photo's placement and source live in one place. */
-    placement?: string;
-    placementOptions?: Array<{ id: string; label: string; hint?: string }>;
-    onPlacementChange?: (id: string) => void;
-  };
-  tocKicker?: string;
-  tocTitle?: string;
-  tocEdit?: {
-    kicker: string;
-    title: string;
-    onKickerChange: (value: string) => void;
-    onTitleChange: (value: string) => void;
-  };
-  /** Which edge carries the binding gutter, used only when an export applies a
-      format (verso→right, recto→left, single/cover→none). */
-  gutterSide?: "left" | "right" | "none";
-}) {
-  const dims = PAGE_DIMS[size];
-  const imageSource =
-    sheet.layoutKind === "image"
-      ? sheet.slots.find((slot): slot is ImageSheetSlot => slot?.kind === "image")?.imageUrl
-      : undefined;
-  const [imageCanReposition, setImageCanReposition] = useState(false);
-  useEffect(() => {
-    setImageCanReposition(false);
-  }, [imageSource]);
-
-  const anySlot = sheet.slots.find((slot): slot is SheetSlot => slot !== null) ?? null;
-  if (!anySlot) return null;
-
-  // Cookbook print-format geometry is applied only at EXPORT time, never on
-  // screen: the book always PREVIEWS at plain Letter, and the chosen format is a
-  // pure export concern (see the `.rp-exporting` print-only rules + the deck's
-  // export vars in app/print/page.tsx / print.css). Each page still carries the
-  // static `--book-*` / `rp-bind-*` hooks so an export has something to act on;
-  // they're inert until a format is being exported. `--page-w/-h` stay Letter.
-  const gutterClass = !cookbookMode
-    ? ""
-    : gutterSide === "left"
-      ? "rp-bind-left"
-      : gutterSide === "right"
-        ? "rp-bind-right"
-        : "";
-  // Base class (paper bleed + binding side) plus the per-page bucket: `safe`
-  // scales text into the margins; `art` fills the sheet so covers/photos bleed.
-  const presetBaseClass = cookbookMode ? `recipe-print-preview--book-preset ${gutterClass}` : "";
-  const presetSafeClass = cookbookMode ? "recipe-print-preview--book-safe" : "";
-  const presetArtClass = cookbookMode ? "recipe-print-preview--book-art" : "";
-
-  // ── Image-spread facing photo ────────────────────────────────────────────
-  // A full-bleed photo alone on a letter page, facing the recipe's card page.
-  if (sheet.layoutKind === "image") {
-    const imageSlot = sheet.slots.find(
-      (slot): slot is ImageSheetSlot => slot?.kind === "image",
-    );
-    if (!imageSlot) return null;
-    const repositionable = Boolean(imageEdit && imageCanReposition);
-    return (
-      <div
-        className="recipe-page-scaler"
-        style={{ "--page-scale": scale, "--page-w": `${dims.w}px`, "--page-h": `${dims.h}px` } as CSSProperties}
-      >
-        <div className="recipe-page-scaler__inner">
-          <div
-            className={`recipe-print-preview recipe-print-preview--letter ${presetBaseClass} ${presetArtClass}`}
-            data-double-sided="false"
-          >
-            <div className={`recipe-card-set recipe-card-set--letter recipe-template--${template}`}>
-              <div
-                className={`recipe-card-page recipe-card-page--front recipe-card-page--image ${
-                  isLastSheet ? "recipe-card-page--no-break" : ""
-                }`}
-              >
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img
-                  className={`recipe-image-spread__photo ${
-                    repositionable ? "recipe-image-spread__photo--draggable" : ""
-                  }`}
-                  src={imageSlot.imageUrl}
-                  alt=""
-                  draggable={false}
-                  style={{
-                    objectPosition: `${imageEdit?.focusX ?? imageSlot.focusX ?? 50}% ${
-                      imageEdit?.focusY ?? imageSlot.focusY ?? 50
-                    }%`,
-                  }}
-                  onLoad={(event) => {
-                    const image = event.currentTarget;
-                    if (!image.naturalWidth || !image.naturalHeight) {
-                      setImageCanReposition(false);
-                      return;
-                    }
-                    const imageAspect = image.naturalWidth / image.naturalHeight;
-                    const frameAspect = dims.w / dims.h;
-                    const cropRatio = Math.max(imageAspect / frameAspect, frameAspect / imageAspect);
-                    // Ignore tiny rounding/aspect differences that technically
-                    // crop a sliver but don't create useful drag travel.
-                    setImageCanReposition(cropRatio > 1.015);
-                  }}
-                  onPointerDown={
-                    repositionable && imageEdit
-                      ? (event) =>
-                          startFocalDrag(
-                            event,
-                            { x: imageEdit.focusX, y: imageEdit.focusY },
-                            (point) => imageEdit.onChange(Math.round(point.x), Math.round(point.y)),
-                          )
-                      : undefined
-                  }
-                />
-                {repositionable && (
-                  <span className="recipe-image-spread__hint no-print">Drag to reposition</span>
-                )}
-              </div>
-            </div>
-          </div>
-        </div>
-        {/* Rendered OUTSIDE the scaled page — a sibling of the transformed
-            __inner, not a descendant — so it keeps its true screen size and a
-            clean hit region. Counter-scaling this control back up from inside the
-            page transform left its clickable area out of sync with its painted
-            box (and behaved differently across browsers). `.recipe-page-scaler`
-            is sized to the on-screen page, so a plain top-right offset hugs the
-            photo's corner. */}
-        {imageEdit?.onImageChange && (
-          <ImagePicker
-            current={imageEdit.current}
-            images={imageEdit.images ?? []}
-            onSelect={imageEdit.onImageChange}
-            placement={imageEdit.placement}
-            placementOptions={imageEdit.placementOptions}
-            onPlacementChange={imageEdit.onPlacementChange}
-            label="Photo"
-            className="recipe-image-spread__edit"
-          />
-        )}
-      </div>
-    );
-  }
-
-  // ── Section opener facing photo / grid ───────────────────────────────────
-  // A full-page photo (or curated collage) alone on a letter page, facing its
-  // chapter opener — the section-level counterpart to an image-spread. Reuses
-  // the image-spread photo frame and the cover collage grid so section art and
-  // cover art share one styling system. No focal-drag here (the opener owns the
-  // section's edit controls on the facing divider page).
-  if (anySlot.kind === "section-photo") {
-    const gridLayout =
-      anySlot.mode === "grid" ? photoGridLayout(anySlot.gridImages?.length ?? 0) : null;
-    return (
-      <div
-        className="recipe-page-scaler"
-        style={{ "--page-scale": scale, "--page-w": `${dims.w}px`, "--page-h": `${dims.h}px` } as CSSProperties}
-      >
-        <div className="recipe-page-scaler__inner">
-          <div
-            className={`recipe-print-preview recipe-print-preview--letter ${presetBaseClass} ${presetArtClass}`}
-            data-double-sided="false"
-          >
-            <div className={`recipe-card-set recipe-card-set--letter recipe-template--${template}`}>
-              <div
-                className={`recipe-card-page recipe-card-page--front recipe-card-page--image ${
-                  isLastSheet ? "recipe-card-page--no-break" : ""
-                }`}
-              >
-                {anySlot.mode === "full" && anySlot.photoUrl ? (
-                  // eslint-disable-next-line @next/next/no-img-element
-                  <img
-                    className="recipe-image-spread__photo"
-                    src={anySlot.photoUrl}
-                    alt=""
-                    draggable={false}
-                  />
-                ) : anySlot.mode === "grid" && gridLayout ? (
-                  <div
-                    className="recipe-card__cover-photo recipe-card__cover-photo--grid"
-                    style={{ "--cover-grid-cols": gridLayout.columns } as CSSProperties}
-                    aria-hidden
-                  >
-                    {(anySlot.gridImages ?? []).map((url, index) => (
-                      // eslint-disable-next-line @next/next/no-img-element
-                      <img
-                        key={`${url}-${index}`}
-                        src={url}
-                        alt=""
-                        draggable={false}
-                        className={`recipe-card__cover-grid-img ${
-                          gridLayout.firstSpans && index === 0 ? "recipe-card__cover-grid-img--wide" : ""
-                        }`}
-                      />
-                    ))}
-                  </div>
-                ) : null}
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
-  // Divider and cover sheets are always a single slot, single-sided, on their
-  // own dedicated page — render the whole sheet as one face rather than the
-  // front/back card-page structure below, which only recipes need.
-  if (anySlot.kind === "divider" || anySlot.kind === "cover" || anySlot.kind === "toc") {
-    // A cover/back is art-dominant (fill the sheet, bleed the artwork); a TOC or
-    // text divider is text-dominant (scale into the safe area over bleeding
-    // paper).
-    const bucketClass = anySlot.kind === "cover" ? presetArtClass : presetSafeClass;
-    return (
-      <div
-        className="recipe-page-scaler"
-        style={{ "--page-scale": scale, "--page-w": `${dims.w}px`, "--page-h": `${dims.h}px` } as CSSProperties}
-      >
-        <div className="recipe-page-scaler__inner">
-          <div
-            className={`recipe-print-preview recipe-print-preview--${size} ${presetBaseClass} ${bucketClass}`}
-            data-double-sided="false"
-          >
-            <div className={`recipe-card-set recipe-card-set--${size} recipe-template--${template}`}>
-              <div className={`recipe-card-page recipe-card-page--front ${isLastSheet ? "recipe-card-page--no-break" : ""}`}>
-                {anySlot.kind === "divider" && template === "bistro" && cookbookMode && (
-                  <BistroCheckerSpine className="recipe-card-page__spine" />
-                )}
-                {anySlot.kind === "divider" ? (
-                  <DividerFace
-                    title={anySlot.title}
-                    recipeTitles={anySlot.recipeTitles}
-                    chapterNumber={anySlot.chapterNumber}
-                    showChapterNumber={anySlot.showChapterNumber}
-                    subtitle={anySlot.subtitle}
-                    photoUrl={anySlot.photoUrl}
-                    intro={anySlot.intro}
-                    template={template}
-                    showDecoration={showDecoration}
-                    inlineEdit={dividerEdit?.sectionId === anySlot.id ? dividerEdit : undefined}
-                  />
-                ) : anySlot.kind === "toc" ? (
-                  <TableOfContentsFace
-                    entries={anySlot.entries}
-                    kicker={tocKicker}
-                    title={tocTitle}
-                    template={template}
-                    showDecoration={showDecoration}
-                    inlineEdit={tocEdit}
-                  />
-                ) : (
-                  <CoverFace
-                    cover={anySlot.cover}
-                    side={anySlot.side}
-                    template={template}
-                    showDecoration={showDecoration}
-                    inlineEdit={coverEdit?.side === anySlot.side ? coverEdit : undefined}
-                  />
-                )}
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
-  // The very last physical page of the whole print job shouldn't request a
-  // page break after itself — otherwise the print pipeline can add a
-  // trailing blank page. Rather than lean on a CSS `:last-child` selector to
-  // work out which page that is (which depends on the print engine
-  // correctly matching a structural pseudo-selector — not something we've
-  // been able to rely on), the page that's actually last is passed down and
-  // marked directly: the back group if this sheet prints one, else the front.
-  const lastGroupIsBack = isLastSheet && sheet.backGroupNeeded;
-  const lastGroupIsFront = isLastSheet && !sheet.backGroupNeeded;
-
-  return (
-    <div
-      className="recipe-page-scaler"
-      style={
-        {
-          "--page-scale": scale,
-          "--page-w": `${dims.w}px`,
-          "--page-h": `${dims.h}px`,
-        } as CSSProperties
-      }
-    >
-      <div className="recipe-page-scaler__inner">
-        <div
-          className={`recipe-print-preview recipe-print-preview--${size} ${presetBaseClass} ${presetSafeClass} ${
-            showCutLines ? "recipe-print-preview--cut-lines" : ""
-          }`}
-          data-double-sided={doubleSided ? "true" : "false"}
-        >
-          <div
-            className={`recipe-card-set recipe-card-set--${size} recipe-template--${template}`}
-          >
-            <div
-              className={`recipe-card-page recipe-card-page--front ${
-                lastGroupIsFront ? "recipe-card-page--no-break" : ""
-              }`}
-              data-preview-hidden={activeSide !== "front" ? "true" : undefined}
-            >
-              {sheet.pageNumber !== undefined && (
-                <>
-                  {sheet.runningHeader && (
-                    <div className="recipe-book-runhead" aria-hidden>
-                      {sheet.runningHeader}
-                    </div>
-                  )}
-                  <div className="recipe-book-folio" aria-hidden>
-                    {sheet.pageNumber}
-                  </div>
-                </>
-              )}
-              {/* Page-level copy of bistro's checker spine, drawn OUTSIDE the
-                  transform-scaled card so a spiral export doesn't rasterize the
-                  vector (see print.css `.rp-coil …__spine`). Shown only at spiral
-                  export; the in-card spine covers screen + hardcover. */}
-              {template === "bistro" && cookbookMode && (
-                <BistroCheckerSpine className="recipe-card-page__spine" />
-              )}
-              {sheet.slots.map((slot, slotIndex) =>
-                // `slot` is only ever null here in principle (this branch's
-                // one recipe slot is always filled by the time a sheet
-                // exists) — kept as a guard rather than assumed. Blank cards
-                // are only for the back side, to keep a duplex job's
-                // physical page count in sync (see `backGroupNeeded`), not
-                // for the front.
-                slot && slot.kind === "recipe" ? (
-                  <RecipeCardFace
-                    key={`front-${slotIndex}`}
-                    recipe={slot.recipe}
-                    ingredients={slot.front.ingredients}
-                    instructions={slot.front.instructions}
-                    side="front"
-                    showHeader={!slot.isContinuation}
-                    layout={slot.front.layout}
-                    contentScale={slot.front.contentScale}
-                    hasBackFace={slot.hasBack}
-                    showImage={slot.showPhoto}
-                    photoOnFacingPage={slot.hidePhoto}
-                    showSourceUrl={showSourceUrl}
-                    continued={slot.isContinuation}
-                    template={template}
-                    showDecoration={showDecoration}
-                    cookbookMode={cookbookMode}
-                    previewHidden={slotIndex !== activeSlotIndex || activeSide !== "front"}
-                    inlineEdit={
-                      activeSide === "front" &&
-                      slotIndex === activeSlotIndex
-                        ? inlineEdit
-                        : undefined
-                    }
-                  />
-                ) : null,
-              )}
-            </div>
-            {sheet.backGroupNeeded && (
-              <div
-                className={`recipe-card-page recipe-card-page--back ${
-                  lastGroupIsBack ? "recipe-card-page--no-break" : ""
-                }`}
-                data-preview-hidden={activeSide !== "back" ? "true" : undefined}
-              >
-                {sheet.slots.map((slot, slotIndex) => {
-                  if (!slot || slot.kind !== "recipe") return null;
-
-                  return slot.back ? (
-                    <RecipeCardFace
-                      key={`back-${slotIndex}`}
-                      recipe={slot.recipe}
-                      ingredients={slot.back.ingredients}
-                      instructions={slot.back.instructions}
-                      side="back"
-                      showHeader={false}
-                      layout={slot.back.layout}
-                      contentScale={slot.back.contentScale}
-                      hasBackFace={slot.hasBack}
-                      template={template}
-                      showDecoration={showDecoration}
-                      cookbookMode={cookbookMode}
-                      continued
-                      previewHidden={slotIndex !== activeSlotIndex || activeSide !== "back"}
-                      inlineEdit={
-                        activeSide === "back" &&
-                        slotIndex === activeSlotIndex
-                          ? inlineEdit
-                          : undefined
-                      }
-                    />
-                  ) : (
-                    <RecipeCardFace
-                      key={`back-blank-${slotIndex}`}
-                      recipe={slot.recipe}
-                      ingredients={[]}
-                      instructions={[]}
-                      side="back"
-                      showHeader={false}
-                      layout="standard"
-                      hasBackFace={false}
-                      template={template}
-                      blank
-                    />
-                  );
-                })}
-              </div>
-            )}
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-});
 
 function shouldShowPostPrintDialog() {
   return localStore.get(POST_PRINT_DIALOG_STORAGE_KEY) === null;
@@ -1306,219 +652,6 @@ function PrintWorkspace(props: PrintWorkspaceProps) {
     );
     if (index !== -1) goToSlide(index);
     setStructureSheetOpen(false);
-  }
-  function renderMobileStructureSheet() {
-    if (!projectMeta.meta.cookbookMode) return null;
-    const orderedIds = sections.flatMap((section) => section.items.map((item) => item.id));
-    const recipeCount = orderedIds.length;
-    const metaSections = projectMeta.meta.sections;
-    return (
-      <>
-        {structureSheetOpen && (
-          <button
-            type="button"
-            className="recipe-structure-sheet__backdrop no-print"
-            aria-label="Close pages"
-            onClick={() => setStructureSheetOpen(false)}
-          />
-        )}
-        <aside
-          className={`recipe-structure-sheet no-print ${structureSheetOpen ? "is-open" : ""}`}
-          role="dialog"
-          aria-modal={structureSheetOpen ? "true" : undefined}
-          aria-label="Pages and structure"
-          aria-hidden={structureSheetOpen ? undefined : "true"}
-        >
-          <div className="recipe-structure-sheet__grabber" aria-hidden />
-          <header className="recipe-structure-sheet__header">
-            <div>
-              <h2>Book</h2>
-              <span>
-                {recipeCount} recipes · {namedSectionCount(sections)} sections
-              </span>
-            </div>
-            <button
-              type="button"
-              className="icon-close-btn"
-              aria-label="Close"
-              onClick={() => setStructureSheetOpen(false)}
-            >
-              <XIcon size={ICON_SIZE.md} />
-            </button>
-          </header>
-
-          <div className="recipe-structure-sheet__scroll">
-            {/* Book-wide settings — the same controls as the desktop "Book
-                Settings" panel, which the mobile config drawer never exposes
-                (it only ever opens the Themes section). */}
-            <div className="recipe-structure-sheet__settings">
-              <Checkbox
-                  label="Table of contents"
-                  checked={Boolean(projectMeta.meta.tableOfContents)}
-                  onChange={(event) => projectMeta.setTableOfContents(event.target.checked)}
-              />
-              <Checkbox
-                  label="Opening page"
-                  checked={Boolean(projectMeta.meta.frontMatter || projectMeta.meta.dedication)}
-                  onChange={toggleDedication}
-              />
-              {anyRecipeHasImage && (
-                <div className="recipe-structure-sheet__photos">
-                  <span className="recipe-structure-sheet__group-label" id="sheet-photos-label">
-                    Photos
-                  </span>
-                  <div
-                    className="recipe-photo-style"
-                    role="radiogroup"
-                    aria-labelledby="sheet-photos-label"
-                  >
-                    {PHOTO_STYLE_OPTIONS.map((option) => (
-                      <SelectTile
-                        key={option.id}
-                        selected={bookPhotoStyle === option.id}
-                        className="recipe-photo-style__tile"
-                        title={option.hint}
-                      >
-                        <input
-                          type="radio"
-                          name="recipe-sheet-photo-style"
-                          className="sr-only"
-                          checked={bookPhotoStyle === option.id}
-                          onChange={() => applyBookPhotoStyle(option.id)}
-                        />
-                        <PhotoStylePreview id={option.id} />
-                        <span className="recipe-photo-style__tile-label">{option.short}</span>
-                      </SelectTile>
-                    ))}
-                  </div>
-                </div>
-              )}
-            </div>
-
-            <span className="recipe-structure-sheet__group-label recipe-structure-sheet__group-label--structure">
-              Structure
-            </span>
-
-            {sections.map((section) => {
-              const metaIndex = metaSections.findIndex((candidate) => candidate.id === section.id);
-              const canSectionUp = metaIndex > 0;
-              const canSectionDown = metaIndex !== -1 && metaIndex < metaSections.length - 1;
-              const showSectionChrome = sections.length > 1 || Boolean(section.title);
-              return (
-                <section className="recipe-structure-sheet__section" key={section.id}>
-                  {showSectionChrome && (
-                    <div className="recipe-structure-sheet__section-head">
-                      <input
-                        className="recipe-structure-sheet__section-title"
-                        value={section.title ?? ""}
-                        placeholder="Section name"
-                        aria-label="Section name"
-                        onChange={(event) =>
-                          renameSectionEverywhere(section.id, event.target.value)
-                        }
-                      />
-                      <div className="recipe-structure-sheet__move">
-                        <button
-                          type="button"
-                          className="recipe-structure-sheet__move-up"
-                          aria-label="Move section up"
-                          disabled={!canSectionUp}
-                          onClick={() => moveSectionInBook(section.id, -1)}
-                        >
-                          <ChevronDownIcon size={ICON_SIZE.sm} />
-                        </button>
-                        <button
-                          type="button"
-                          className="recipe-structure-sheet__move-down"
-                          aria-label="Move section down"
-                          disabled={!canSectionDown}
-                          onClick={() => moveSectionInBook(section.id, 1)}
-                        >
-                          <ChevronDownIcon size={ICON_SIZE.sm} />
-                        </button>
-                        <button
-                          type="button"
-                          className="recipe-structure-sheet__delete"
-                          aria-label={`Delete ${section.title || "section"}`}
-                          title="Delete section"
-                          onClick={() => requestDeleteSection(section.id)}
-                        >
-                          <TrashIcon size={ICON_SIZE.sm} />
-                        </button>
-                      </div>
-                    </div>
-                  )}
-                  <ul className="recipe-structure-sheet__recipes">
-                    {section.items.map((item) => {
-                      const globalIndex = orderedIds.indexOf(item.id);
-                      const title = item.recipe?.title || item.title;
-                      return (
-                        <li className="recipe-structure-sheet__recipe" key={item.id}>
-                          <button
-                            type="button"
-                            className="recipe-structure-sheet__recipe-open"
-                            onClick={() => navigateToRecipe(item.id)}
-                          >
-                            <span className="recipe-structure-sheet__recipe-num">
-                              {globalIndex + 1}
-                            </span>
-                            <span className="recipe-structure-sheet__recipe-title">{title}</span>
-                          </button>
-                          <div className="recipe-structure-sheet__move">
-                            <button
-                              type="button"
-                              className="recipe-structure-sheet__move-up"
-                              aria-label={`Move ${title} up`}
-                              disabled={globalIndex <= 0}
-                              onClick={() => moveRecipeInBook(item.id, -1)}
-                            >
-                              <ChevronDownIcon size={ICON_SIZE.sm} />
-                            </button>
-                            <button
-                              type="button"
-                              className="recipe-structure-sheet__move-down"
-                              aria-label={`Move ${title} down`}
-                              disabled={globalIndex >= recipeCount - 1}
-                              onClick={() => moveRecipeInBook(item.id, 1)}
-                            >
-                              <ChevronDownIcon size={ICON_SIZE.sm} />
-                            </button>
-                          </div>
-                        </li>
-                      );
-                    })}
-                    {section.items.length === 0 && (
-                      <li className="recipe-structure-sheet__empty">
-                        Empty — step a recipe here with the arrows above.
-                      </li>
-                    )}
-                  </ul>
-                </section>
-              );
-            })}
-          </div>
-
-          <footer className="recipe-structure-sheet__footer">
-            <button
-              type="button"
-              className="btn btn-secondary btn-compact"
-              onClick={addStructureSection}
-            >
-              <PlusIcon size={ICON_SIZE.sm} />
-              Add section
-            </button>
-            <button
-              type="button"
-              className="btn btn-ghost btn-compact"
-              onClick={suggestCookbookLayout}
-            >
-              <RefreshIcon size={ICON_SIZE.sm} />
-              Suggest a layout
-            </button>
-          </footer>
-        </aside>
-      </>
-    );
   }
   // ── Rail multi-select (cookbook) ─────────────────────────────────────────
   // Cmd/Ctrl-click recipes in the rail to build a selection; two or more brings
@@ -2421,6 +1554,8 @@ function PrintWorkspace(props: PrintWorkspaceProps) {
                                 doubleSided={continueOnBack}
                                 showSourceUrl={previewSourceUrlOn}
                                 showCutLines={false}
+                                // See the single-thumb note: flat stand-in only.
+                                showDecoration={false}
                                 cookbookMode
                               />
                             ) : null,
@@ -2524,6 +1659,10 @@ function PrintWorkspace(props: PrintWorkspaceProps) {
                         doubleSided={continueOnBack}
                         showSourceUrl={previewSourceUrlOn}
                         showCutLines={false}
+                        // Rail thumbnails paint a flat CSS stand-in for the
+                        // decorative layer (print.css); rendering the real one
+                        // at ~1/11 scale is thousands of masked-out DOM nodes.
+                        showDecoration={false}
                         cookbookMode={Boolean(projectMeta.meta.cookbookMode)}
                       />
                     </span>
@@ -3496,7 +2635,23 @@ function PrintWorkspace(props: PrintWorkspaceProps) {
           </div>
         </div>
 
-        {renderMobileStructureSheet()}
+        <MobileStructureSheet
+          projectMeta={projectMeta}
+          sections={sections}
+          toggleDedication={toggleDedication}
+          anyRecipeHasImage={anyRecipeHasImage}
+          bookPhotoStyle={bookPhotoStyle}
+          applyBookPhotoStyle={applyBookPhotoStyle}
+          renameSectionEverywhere={renameSectionEverywhere}
+          moveSectionInBook={moveSectionInBook}
+          requestDeleteSection={requestDeleteSection}
+          navigateToRecipe={navigateToRecipe}
+          moveRecipeInBook={moveRecipeInBook}
+          addStructureSection={addStructureSection}
+          suggestCookbookLayout={suggestCookbookLayout}
+          structureSheetOpen={structureSheetOpen}
+          setStructureSheetOpen={setStructureSheetOpen}
+        />
       </main>
       {showShareDialog && activeRecipeItem?.recipe && cookPilotUser && (
         <AdminShareLinkDialog
@@ -3607,6 +2762,7 @@ export default function PrintPage() {
   const saveInFlightRef = useRef(false);
   const saveQueuedRef = useRef(false);
   const latestSaveRef = useRef<() => void>(() => undefined);
+  const flushOnHideRef = useRef<() => void>(() => undefined);
   const saveAfterLoginRef = useRef(false);
   const projectIdRef = useRef<string>(createPrintProjectId());
   const [toastMessage, setToastMessage] = useState<string | null>(null);
@@ -4804,6 +3960,35 @@ export default function PrintPage() {
   // not the render whose request just completed.
   latestSaveRef.current = () => void handleSaveProject();
 
+  // Best-effort push to Firestore when the tab is being hidden/closed, so a
+  // signed-in edit still inside the 1.5s autosave debounce isn't left only in
+  // the local recovery mirror until the next visit. The durable localStorage
+  // mirror (lib/queue, lib/project) is the real safety net; this just narrows
+  // the window where the *cloud* copy is a beat behind. Reassigned each render
+  // (mirroring latestSaveRef) so it closes over the current book. It must never
+  // trigger the sign-in modal on the way out, and must not save when nothing
+  // changed — otherwise every tab close would write and could bump the revision
+  // other tabs are editing against.
+  flushOnHideRef.current = () => {
+    if (!cookPilotUser) return;
+    if (!(cookbookMode || savedProjectIdRef.current)) return;
+    if (!items || items.length === 0) return;
+    if (saveInFlightRef.current || saveQueuedRef.current) return;
+    if (lastSavedFingerprintRef.current === "__loaded__") return;
+    const fp = printProjectFingerprint(
+      items,
+      projectMeta.meta,
+      cardSize,
+      template,
+      doubleSided,
+      showPhoto,
+      showSourceUrl,
+      showCutLines,
+    );
+    if (fp === lastSavedFingerprintRef.current) return;
+    void handleSaveProject();
+  };
+
   function handleRetrySave() {
     if (saveStatus !== "conflict") {
       void handleSaveProject();
@@ -5050,6 +4235,8 @@ export default function PrintPage() {
             title: section.title,
             subtitle: section.subtitle,
             photoUrl: section.photoUrl,
+            photoMode: section.photoMode,
+            gridImages: section.gridImages,
             intro: section.intro,
             showOpener: section.showOpener,
             numberAsChapter: section.numberAsChapter,
@@ -5181,6 +4368,25 @@ export default function PrintPage() {
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [saveStatus, cookbookMode, savedProjectId]);
+
+  // Flush a pending save when the tab goes away. `pagehide` is the reliable
+  // teardown signal (fires on close/navigation, and on mobile bfcache freeze);
+  // `visibilitychange` → hidden covers backgrounding the tab/app, which on
+  // mobile is often the last callback before the page is discarded. Registered
+  // once — the work is delegated to flushOnHideRef, which always holds the
+  // current book.
+  useEffect(() => {
+    const flush = () => flushOnHideRef.current();
+    const onVisibility = () => {
+      if (document.visibilityState === "hidden") flush();
+    };
+    window.addEventListener("pagehide", flush);
+    document.addEventListener("visibilitychange", onVisibility);
+    return () => {
+      window.removeEventListener("pagehide", flush);
+      document.removeEventListener("visibilitychange", onVisibility);
+    };
+  }, []);
 
   // Pulls recipes added via the Add recipe dialog into this print job once
   // they finish parsing — keeps running even after the dialog closes, so a
@@ -5665,13 +4871,6 @@ export default function PrintPage() {
         showDonateDialog={showDonateDialog}
         onCloseDonateDialog={() => setShowDonateDialog(false)}
         onOpenFeedbackDialog={() => setShowFeedbackDialog(true)}
-        showCookbookPrintDialog={false}
-        cookbookJustPurchased={cookbookJustPurchased}
-        onCloseCookbookPrintDialog={() => {
-          setShowCookbookPrintDialog(false);
-          setCookbookJustPurchased(false);
-        }}
-        onExportFormat={exportCookbookAs}
         showDeleteRecipeDialog={pendingDelete !== null}
         deleteItemTitle={pendingDelete?.title ?? "this item"}
         deleteItemDescription={

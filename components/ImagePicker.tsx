@@ -52,6 +52,7 @@ export function ImagePicker({
   const [open, setOpen] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [failedImages, setFailedImages] = useState<Set<string>>(() => new Set());
   // Recipe-photo mode: placement (None/In-card/Full-page) on top, then the
   // source (this recipe's photo vs a custom one). `none` = no photo, so the
   // source section collapses.
@@ -90,6 +91,24 @@ export function ImagePicker({
       onGridChange([...selectedGrid, image]);
     }
     setError(null);
+  }
+
+  function markImageFailed(image: string) {
+    setFailedImages((current) => {
+      if (current.has(image)) return current;
+      const next = new Set(current);
+      next.add(image);
+      return next;
+    });
+  }
+
+  function removeFailedImage(image: string) {
+    if (gridMode && onGridChange) {
+      onGridChange(selectedGrid.filter((url) => url !== image));
+      return;
+    }
+    if (current === image || recipeMode) onSelect(undefined);
+    setOpen(false);
   }
 
   return (
@@ -208,6 +227,27 @@ export function ImagePicker({
             )}
 
             {uniqueImages.map((image, index) => {
+              const failed = failedImages.has(image);
+              if (failed) {
+                const isSelectedFailedImage = current === image || selectedGrid.includes(image) || recipeMode;
+                // A stale unselected candidate has no useful recovery action;
+                // simply stop offering it. Selected stale URLs remain visible
+                // as an explicit removable state so the saved config can heal.
+                if (!isSelectedFailedImage) return null;
+                return (
+                  <button
+                    key={image}
+                    type="button"
+                    className="image-picker__photo image-picker__photo--unavailable"
+                    onClick={() => removeFailedImage(image)}
+                    aria-label="Remove unavailable photo"
+                  >
+                    <ImageIcon size={ICON_SIZE.md} />
+                    <span className="image-picker__tile-label">Unavailable</span>
+                    <span className="image-picker__remove-label">Remove</span>
+                  </button>
+                );
+              }
               if (gridMode) {
                 const order = selectedGrid.indexOf(image);
                 const inGrid = order !== -1;
@@ -225,7 +265,7 @@ export function ImagePicker({
                     aria-pressed={inGrid}
                   >
                     {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img src={image} alt="" />
+                    <img src={image} alt="" onError={() => markImageFailed(image)} />
                     {inGrid && <span className="image-picker__order">{order + 1}</span>}
                   </button>
                 );
@@ -240,7 +280,7 @@ export function ImagePicker({
                   aria-pressed={current === image && !gridActive}
                 >
                   {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img src={image} alt="" />
+                  <img src={image} alt="" onError={() => markImageFailed(image)} />
                   {current === image && !gridActive && (
                     <span className="image-picker__check"><CheckIcon size={ICON_SIZE.sm} /></span>
                   )}

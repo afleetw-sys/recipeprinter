@@ -8,12 +8,18 @@ import { captureFailedImportImages, captureFailedImportText } from "@/lib/failed
 import { normalizeImportURL } from "@/lib/cookpilot";
 import { hostnameOf as rawHostnameOf } from "@/lib/url";
 import { uid } from "@/lib/ids";
-import { sessionStore } from "@/lib/storage";
+import { localStore, sessionStore } from "@/lib/storage";
 
 // The print queue is session-based for the MVP, no accounts, no saved library.
 // It survives navigation to /print (same tab) via sessionStorage.
 export const QUEUE_STORAGE_KEY = "recipeprinter:queue:v1";
 const CURRENT_PRINT_JOB_STORAGE_KEY = "recipeprinter:print-job:current:v1";
+// Durable backup of the session queue. sessionStorage is wiped when the tab
+// closes; this localStorage mirror lets a reopened tab restore the in-progress
+// working set so a cook never loses an unsaved book/cards by closing the tab.
+// The session copy stays authoritative per-tab (two open tabs keep independent
+// live queues) — this mirror is only read to reseed a fresh tab that has none.
+const QUEUE_RECOVERY_STORAGE_KEY = "recipeprinter:queue:recovery:v1";
 
 interface PrintJob {
   ids: string[];
@@ -51,7 +57,15 @@ function printableQueue(items: QueueItem[]): QueueItem[] {
 }
 
 export function readQueue(): QueueItem[] {
-  const raw = sessionStore.get(QUEUE_STORAGE_KEY);
+  // The per-tab session copy is authoritative. Only when it's absent (a fresh
+  // tab, e.g. reopened after close) do we fall back to the durable localStorage
+  // mirror and reseed this tab's session from it.
+  let raw = sessionStore.get(QUEUE_STORAGE_KEY);
+  let recovered = false;
+  if (raw === null) {
+    raw = localStore.get(QUEUE_RECOVERY_STORAGE_KEY);
+    recovered = raw !== null;
+  }
   if (raw === null) return [];
   let parsed: unknown;
   try {
@@ -60,12 +74,11 @@ export function readQueue(): QueueItem[] {
     return [];
   }
   if (!Array.isArray(parsed)) return [];
-  // Re-persist only when sanitizing actually changed something, so a normal
-  // read isn't a write. Compared against the raw string rather than the parsed
-  // value because that's what's already in storage.
+  // Re-persist when sanitizing changed something (so a normal read isn't a
+  // write), or when we recovered from the mirror (to seed this tab's session).
   const sanitized = printableQueue(parsed as QueueItem[]);
   const sanitizedRaw = JSON.stringify(sanitized);
-  if (sanitizedRaw !== raw) writeSerializedQueue(sanitizedRaw);
+  if (sanitizedRaw !== raw || recovered) writeSerializedQueue(sanitizedRaw);
   return sanitized;
 }
 
@@ -92,6 +105,10 @@ function writeSerializedQueue(serialized: string) {
   // A failed write is survivable: the queue stays correct in memory for this
   // page, it just won't survive a navigation.
   sessionStore.set(QUEUE_STORAGE_KEY, serialized);
+  // Mirror to the durable backup so the working set survives a tab close.
+  // Best-effort like the session write — if localStorage is unavailable
+  // (private mode/quota) there's simply no cross-close recovery.
+  localStore.set(QUEUE_RECOVERY_STORAGE_KEY, serialized);
 }
 
 /**

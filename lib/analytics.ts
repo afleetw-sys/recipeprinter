@@ -115,29 +115,16 @@ type EventProps = {
     cardSize: PrintCardSize;
     cookbookPreset?: CookbookPresetId;
   };
-  /**
-   * Card content overflowed its printable box — the recurring clip/reflow
-   * bug, instrumented so it's a rate rather than a hunch.
-   */
-  card_layout_overflow: {
-    template: RecipePrintTemplate;
-    cardSize: PrintCardSize;
-    showPhoto: boolean;
-    overflowPx: number;
-  };
-
   /** Which card designs people actually reach for. */
   template_selected: { template: RecipePrintTemplate; premium: boolean };
 
   // ---- Money -----------------------------------------------------------
-  /** The unlock dialog was shown — the paywall impression the funnel needs.
-      `price` is the exact displayed price (e.g. "$19.99") so the funnel can be
-      segmented by what people actually saw. */
-  paywall_shown: { product: PurchasedProduct; template?: RecipePrintTemplate; price?: string };
-  /** The unlock dialog was closed WITHOUT starting checkout — i.e. the cook saw
-      the price and backed out. `paywall_shown` minus this is the answer to "how
-      many bail when they see it's $19.99". */
-  paywall_dismissed: { product: PurchasedProduct; template?: RecipePrintTemplate; price?: string };
+  // No paywall-impression event on purpose: there's no interstitial paywall
+  // dialog anymore — a click on Unlock/Export goes straight to RevenueCat
+  // checkout. So the price impression IS `purchase_started` and the "saw the
+  // price and backed out" signal is `purchase_cancelled`. (The old
+  // `paywall_shown`/`paywall_dismissed` declarations were unfireable dead type
+  // surface once the dialog was removed — see lib/usePremiumTemplatePurchase.ts.)
   purchase_started: { product: PurchasedProduct; template?: RecipePrintTemplate };
   purchase_completed: { product: PurchasedProduct; template?: RecipePrintTemplate };
   purchase_cancelled: { product: PurchasedProduct; template?: RecipePrintTemplate };
@@ -167,24 +154,17 @@ type EventProps = {
       get used. */
   cookbook_workspace_entered: { recipeCount: number; template: RecipePrintTemplate };
   /** The offer dialog was dismissed without building — the price-reveal back-out
-      at the offer stage (the export paywall has its own `paywall_dismissed`). */
+      at the offer stage, before any cookbook is built. */
   cookbook_onboarding_dismissed: { price?: string };
   /** Switched back from a cookbook to plain recipe cards — how sticky the mode
       is (build one, then bail?). `recipeCount` for consistent segmentation. */
   cookbook_exited: { recipeCount: number };
   cookbook_cover_layout_selected: { layout: "photo" | "collage" | "typographic" };
   cookbook_front_matter_enabled: { kind: "dedication" | "introduction" };
-  cookbook_section_opener_toggled: { enabled: boolean };
   cookbook_section_created_from_selection: { count: number };
-  cookbook_section_selection_moved: { count: number };
   cookbook_ready_shown: { freshPurchase: boolean };
   relayout_started: {};
-  relayout_method_selected: { method: "suggested" };
-  relayout_previewed: { sectionCount: number; uncategorizedCount: number };
   relayout_applied: { sectionCount: number };
-  relayout_cancelled: {};
-  section_created: { source: "organize" };
-  section_opener_toggled: { enabled: boolean; source: "organize" };
 
   feedback_submitted: { type: FeedbackType };
 };
@@ -226,6 +206,24 @@ function enqueue(capture: (client: PostHog) => void): void {
   if (!loadStarted) return; // analytics disabled this session (see initAnalytics)
   if (pending.length >= MAX_PENDING_EVENTS) pending.shift();
   pending.push(capture);
+}
+
+/**
+ * Reports a crash to PostHog error tracking (`$exception`) — deliberately
+ * OUTSIDE the typed product-event map above. This is a reliability signal, not
+ * a product event, so it doesn't belong in `EventProps`; keeping it separate is
+ * the distinction the print error boundary's comment draws. Best-effort and
+ * queued like everything else, a no-op when analytics never loaded (non-prod /
+ * opted out).
+ */
+export function captureException(
+  error: unknown,
+  context?: Record<string, string | number | boolean>,
+): void {
+  enqueue((client) => {
+    const err = error instanceof Error ? error : new Error(String(error));
+    client.captureException(err, context);
+  });
 }
 
 // Defer the import to browser idle time so 220KB of analytics never sits in

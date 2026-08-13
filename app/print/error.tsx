@@ -8,6 +8,7 @@ import {
   isChunkLoadError,
   recordPrintError,
 } from "@/lib/printErrorRecovery";
+import { captureException } from "@/lib/analytics";
 
 /**
  * Error boundary for the print preview.
@@ -41,10 +42,13 @@ export default function PrintError({
 
   useEffect(() => {
     // Same channel the rest of the app uses for non-fatal failures (see the
-    // save/profile handlers in the print page). Not wired to analytics: the
-    // event map in lib/analytics.ts is a closed, typed set of *product*
-    // events, and adding a crash reporter is a separate decision from this.
+    // save/profile handlers in the print page).
     console.warn("RecipePrinter: print preview crashed", error);
+    // Report to PostHog error tracking — kept OUT of the typed product-event
+    // map (it's a reliability signal, not a product event). This is the most
+    // fragile, highest-value screen in the app; without this, render crashes
+    // here are invisible in production.
+    captureException(error, { surface: "print", digest: error.digest ?? "" });
   }, [error]);
 
   useEffect(() => {

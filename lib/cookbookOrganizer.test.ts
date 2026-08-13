@@ -24,7 +24,7 @@ describe("cookbook organization draft", () => {
     expect(first.sections.map((section) => section.title)).toEqual([
       "Main Dishes",
       "Desserts",
-      "Uncategorized",
+      "More Recipes",
     ]);
   });
 
@@ -32,7 +32,7 @@ describe("cookbook organization draft", () => {
     const original = suggestCookbookOrganization(items);
     const desserts = original.sections.find((section) => section.title === "Desserts")!;
     const moved = moveOrganizationItem(original, "mystery", desserts.id);
-    expect(original.sections.find((section) => section.title === "Uncategorized")?.itemIds).toEqual(["mystery"]);
+    expect(original.sections.find((section) => section.title === "More Recipes")?.itemIds).toEqual(["mystery"]);
     expect(moved.sections.find((section) => section.title === "Desserts")?.itemIds).toContain("mystery");
   });
 

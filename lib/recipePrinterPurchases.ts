@@ -394,6 +394,11 @@ export async function purchaseRecipePrinterCookbook({
 }): Promise<{ customerInfo: CustomerInfo; cancelled: boolean }> {
   const purchases = await getPurchases(userId);
   const rcPackage = await packageForCookbook(purchases);
+  // Give the cookbook-unlock webhook a reliable purchase→project map. Webhook
+  // payloads carry subscriber attributes, but not the purchase-time `metadata`
+  // below — so set both (attribute for the server, metadata kept for parity).
+  // See docs/cookbook-unlock-webhook.md. Harmless until the webhook exists.
+  await purchases.setAttributes({ cookbook_project_id: projectId }).catch(() => undefined);
 
   try {
     const result = await purchases.purchase({

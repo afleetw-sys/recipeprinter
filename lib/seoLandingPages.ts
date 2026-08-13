@@ -26,9 +26,6 @@ export type SeoProofKind =
   | "book"
   | "steps";
 
-/** Hub a page sits under (present → 3-level breadcrumb). Kept in `SEO_HUBS`. */
-export type SeoHubKey = "social-recipes" | "family-cookbooks";
-
 export type SeoLandingPage = {
   slug: string;
   primaryKeyword: string;
@@ -41,10 +38,6 @@ export type SeoLandingPage = {
    * not the site's visual language.
    */
   layout?: "capture-first" | "guide-first";
-  /** Optional hub this page belongs to; drives the 3-level breadcrumb. */
-  hub?: SeoHubKey;
-  /** Loose grouping for the related cluster even when there's no hub page. */
-  group?: string;
   eyebrow: string;
   statusNote?: string;
   initialImportMode?: ImportMethod;
@@ -59,16 +52,12 @@ export type SeoLandingPage = {
   lede: string;
   /** One-sentence emotional hook opening the content scaffold. */
   intro?: string;
-  /** 3–4 icon + label reassurances shown under the hero. */
-  valueProps?: { icon: SeoIconKey; label: string }[];
   /** "How to …" steps, renders the section and the HowTo JSON-LD. */
   howTo?: { name: string; text: string }[];
   /** 2–3 deep-dive sections, each targeting a secondary keyword, with a proof visual. */
   featureSections?: { heading: string; body: string; proof?: SeoProofKind }[];
   /** Real printed-card photo keys (PRINTED_CARDS) for the examples gallery. */
   examples?: string[];
-  /** A single real testimonial; only rendered when present. */
-  testimonial?: { quote: string; attribution: string };
   faqs: { question: string; answer: string }[];
   links: { href: string; label: string }[];
 };
@@ -749,30 +738,6 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
 export const SEO_LANDING_PAGE_MAP = new Map(
   SEO_LANDING_PAGES.map((page) => [page.slug, page]),
 );
-
-export type SeoHub = {
-  /** Hub page path segment, e.g. "social-recipes" → /social-recipes. */
-  slug: string;
-  /** Breadcrumb + hub-page heading label. */
-  label: string;
-  blurb: string;
-  /** Member leaf slugs, in display order. */
-  members: string[];
-};
-
-/**
- * Only the groups that earn a real hub page live here (see the plan's
- * "hubs only where they earn it"). A leaf page opts in via `hub`; pages without
- * one get a 2-level breadcrumb. Empty until the hub pages are built in Phase 1,
- * the breadcrumb and related cluster read this and fall back to a 2-level trail
- * while a hub is absent.
- */
-export const SEO_HUBS: Partial<Record<SeoHubKey, SeoHub>> = {};
-
-/** The resolved hub for a page, or null when it has none (or its hub isn't built yet). */
-export function hubForPage(page: SeoLandingPage): SeoHub | null {
-  return (page.hub && SEO_HUBS[page.hub]) || null;
-}
 
 /** The layout template a page renders with (explicit override, else by intent). */
 export function layoutForPage(page: SeoLandingPage): "capture-first" | "guide-first" {

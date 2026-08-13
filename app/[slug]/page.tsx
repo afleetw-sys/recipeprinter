@@ -15,7 +15,6 @@ import { ICON_SIZE, PrintIcon } from "@/components/icons";
 import {
   SEO_LANDING_PAGE_MAP,
   SEO_LANDING_PAGES,
-  hubForPage,
   layoutForPage,
   seoLandingPageMetadata,
   type SeoLandingPage,
@@ -38,13 +37,10 @@ export function generateMetadata({ params }: PageProps): Metadata {
   return seoLandingPageMetadata(page);
 }
 
-// Home › [Hub] › [Page]. The hub crumb only appears when the page belongs to a
-// built hub (SEO_HUBS); otherwise it's a 2-level trail, like Canva's create pages.
+// Home › [Page] — a 2-level trail, like Canva's create pages.
 function breadcrumbTrail(page: SeoLandingPage): Crumb[] {
-  const hub = hubForPage(page);
   return [
     { name: "Home", href: "/" },
-    ...(hub ? [{ name: hub.label, href: `/${hub.slug}` }] : []),
     { name: page.h1, href: `/${page.slug}` },
   ];
 }

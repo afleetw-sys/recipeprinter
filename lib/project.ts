@@ -11,7 +11,7 @@ import type {
   SectionPhotoMode,
 } from "@/types/recipe";
 import { uid } from "@/lib/ids";
-import { sessionStore } from "@/lib/storage";
+import { localStore, sessionStore } from "@/lib/storage";
 
 // The section/cover layer is purely organizational — which section each
 // queued recipe belongs to, plus section/cover metadata — kept separate from
@@ -27,6 +27,10 @@ import { sessionStore } from "@/lib/storage";
 // could ever change.
 
 export const PROJECT_META_STORAGE_KEY = "recipeprinter:project-meta:v1";
+// Durable backup of the section/cover metadata, mirroring lib/queue.ts: the
+// session copy is wiped on tab close, so this localStorage copy lets a reopened
+// tab restore the in-progress book structure alongside its recipes.
+const PROJECT_META_RECOVERY_STORAGE_KEY = "recipeprinter:project-meta:recovery:v1";
 
 /** Book-wide default treatment for recipe photos (cookbook mode):
     - `none` — no recipe photos anywhere;
@@ -199,13 +203,24 @@ export function normalizeProjectMeta(value: unknown): ProjectMeta {
 }
 
 function readMeta(): ProjectMeta {
-  const parsed = sessionStore.getJson<ProjectMeta>(PROJECT_META_STORAGE_KEY);
+  // Per-tab session copy wins; fall back to the durable mirror to restore a
+  // reopened tab, reseeding this tab's session from it (see lib/queue.ts).
+  let parsed = sessionStore.getJson<ProjectMeta>(PROJECT_META_STORAGE_KEY);
+  if (parsed === null) {
+    const recovered = localStore.getJson<ProjectMeta>(PROJECT_META_RECOVERY_STORAGE_KEY);
+    if (recovered !== null) {
+      parsed = recovered;
+      sessionStore.setJson(PROJECT_META_STORAGE_KEY, recovered);
+    }
+  }
   return normalizeProjectMeta(parsed);
 }
 
 function writeMeta(meta: ProjectMeta) {
   // Survivable if it fails: meta stays correct in memory for this page.
   sessionStore.setJson(PROJECT_META_STORAGE_KEY, meta);
+  // Mirror to the durable backup so book structure survives a tab close.
+  localStore.setJson(PROJECT_META_RECOVERY_STORAGE_KEY, meta);
 }
 
 /**
@@ -285,6 +300,33 @@ function metaSectionsFromFull(sections: Section[]): ProjectMeta["sections"] {
     numberAsChapter: section.numberAsChapter,
     itemIds: section.items.map((item) => item.id),
   }));
+}
+
+/**
+ * Removes a section, merging its recipes into a neighbor — the section just
+ * before it, or the one just after when deleting the first. Deleting the only
+ * section dissolves it back to an implicit ungrouped pool. Pure; the hook's
+ * `deleteSection` wraps this. Exported for testing.
+ */
+export function deleteSectionFromMeta(meta: ProjectMeta, sectionId: string): ProjectMeta {
+  const index = meta.sections.findIndex((section) => section.id === sectionId);
+  if (index === -1) return meta;
+  const target = meta.sections[index];
+  if (meta.sections.length === 1) {
+    return { ...meta, sections: [{ id: target.id, itemIds: [...target.itemIds] }] };
+  }
+  // Capture the inheriting neighbor by identity BEFORE removing the target.
+  // Computing an index into the post-removal array is off-by-one-prone (the
+  // previous version merged into the wrong section, or nowhere at all).
+  const neighborId = meta.sections[index > 0 ? index - 1 : index + 1].id;
+  const sections = meta.sections
+    .filter((section) => section.id !== sectionId)
+    .map((section) => ({ ...section, itemIds: [...section.itemIds] }));
+  const neighbor = sections.find((section) => section.id === neighborId);
+  if (neighbor) {
+    neighbor.itemIds = [...neighbor.itemIds, ...target.itemIds];
+  }
+  return { ...meta, sections };
 }
 
 export function useProjectMeta() {
@@ -455,22 +497,7 @@ export function useProjectMeta() {
       named section dissolves it back to the implicit ungrouped recipe pool. */
   const deleteSection = useCallback(
     (sectionId: string) => {
-      update((current) => {
-        const index = current.sections.findIndex((section) => section.id === sectionId);
-        if (index === -1) return current;
-        const target = current.sections[index];
-        if (current.sections.length === 1) {
-          return { ...current, sections: [{ id: target.id, itemIds: [...target.itemIds] }] };
-        }
-        const neighborIndex = index > 0 ? index - 1 : index + 1;
-        const sections = current.sections.map((section) => ({ ...section, itemIds: [...section.itemIds] }));
-        sections.splice(index, 1);
-        const neighbor = sections[index > 0 ? neighborIndex - 1 : neighborIndex];
-        if (neighbor) {
-          neighbor.itemIds = [...neighbor.itemIds, ...target.itemIds];
-        }
-        return { ...current, sections };
-      });
+      update((current) => deleteSectionFromMeta(current, sectionId));
     },
     [update],
   );

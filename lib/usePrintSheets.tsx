@@ -611,6 +611,7 @@ export function usePrintSheets({
     sections.forEach((section) => {
       if (section.title?.trim()) {
         chapterNumber += 1;
+        const sectionPhotoMode = resolveSectionPhotoMode(section);
         out.push({
           id: `sheet-divider-${section.id}`,
           slots: [{
@@ -620,7 +621,9 @@ export function usePrintSheets({
             chapterNumber,
             showChapterNumber: Boolean(section.numberAsChapter),
             subtitle: section.subtitle,
-            photoUrl: section.photoUrl,
+            // Only In-card (`band`) belongs inside the opener. Full/grid art is
+            // rendered on its own facing sheet below, never duplicated here.
+            photoUrl: sectionPhotoMode === "band" ? section.photoUrl : undefined,
             intro: section.intro,
             recipeTitles: section.items
               .map((item) => item.recipe?.title?.trim() || item.title?.trim())
@@ -635,7 +638,7 @@ export function usePrintSheets({
         // there's nothing to show yet (mode set but no photo picked) so we never
         // print a blank.
         if (cookbookLayouts) {
-          const photoMode = resolveSectionPhotoMode(section);
+          const photoMode = sectionPhotoMode;
           const gridImages =
             photoMode === "grid"
               ? (section.gridImages?.length

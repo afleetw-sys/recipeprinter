@@ -31,6 +31,7 @@ import {
   type RecipeFaces,
 } from "@/lib/recipeCardLayout";
 import type { CoverConfig, Recipe } from "@/types/recipe";
+import { markImageAvailable, markImageUnavailable } from "@/lib/imageFailure";
 
 // Layout-budget engine (the character-cost heuristics that decide what fits on
 // a front/back face) lives in lib/recipeCardLayout.ts — this file re-exports
@@ -492,11 +493,7 @@ export const RecipeCardFace = memo(function RecipeCardFace({
   // The photo only rides along on the front face (where the header lives). If
   // the source image 404s or is hotlink-blocked we drop it rather than print a
   // broken-image box.
-  const [imageFailed, setImageFailed] = useState(false);
-  useEffect(() => {
-    setImageFailed(false);
-  }, [recipe.image]);
-  const showPhoto = showHeader && !imageFailed && (showImage && Boolean(recipe.image));
+  const showPhoto = showHeader && (showImage && Boolean(recipe.image));
 
   // Shrink-to-fit for content pagination can't rescue (see
   // `RecipeFace.contentScale`). Laid out at `1 / scale` of the normal width and
@@ -995,9 +992,12 @@ export const RecipeCardFace = memo(function RecipeCardFace({
                 className="recipe-card__photo-img"
                 src={recipe.image}
                 alt={recipe.title ? `Photo of ${recipe.title}` : "Recipe photo"}
+                loading="lazy"
                 decoding="async"
-                onError={() => setImageFailed(true)}
+                onLoad={(event) => markImageAvailable(event.currentTarget)}
+                onError={(event) => markImageUnavailable(event.currentTarget)}
               />
+              <span className="photo-unavailable-message">Photo unavailable</span>
               {/* Recipe-cards mode keeps its small in-frame "Change" control.
                   Cookbook mode uses the larger, unclipped "Photo" button at the
                   card corner below (this header photo is tiny + clipped). */}
@@ -1304,14 +1304,15 @@ export const DividerFace = memo(function DividerFace({
 }) {
   return (
     <article
-      className="recipe-card recipe-card--divider recipe-card--chapter"
+      className={`recipe-card recipe-card--divider recipe-card--chapter${photoUrl ? " recipe-card--chapter-with-photo" : ""}`}
       data-preview-hidden={previewHidden ? "true" : undefined}
     >
       <div className="recipe-card__chapter-photo" aria-hidden>
         {photoUrl && (
           // eslint-disable-next-line @next/next/no-img-element
-          <img src={photoUrl} alt="" className="recipe-card__chapter-image" />
+          <img src={photoUrl} alt="" className="recipe-card__chapter-image" onLoad={(event) => markImageAvailable(event.currentTarget)} onError={(event) => markImageUnavailable(event.currentTarget)} />
         )}
+        <span className="photo-unavailable-message">Photo unavailable</span>
       </div>
       {inlineEdit?.onPhotoChange && (
         <ImagePicker
@@ -1555,20 +1556,22 @@ export const CoverFace = memo(function CoverFace({
       >
         {coverMode === "grid" &&
           gridImages.slice(0, 6).map((image, index) => (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img
+            <span
               key={`${image}-${index}`}
-              src={image}
-              alt=""
-              className={`recipe-card__cover-grid-img ${
+              className={`recipe-card__cover-grid-cell ${
                 gridFirstSpans && index === 0 ? "recipe-card__cover-grid-img--wide" : ""
               }`}
-            />
+            >
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src={image} alt="" className="recipe-card__cover-grid-img" onLoad={(event) => markImageAvailable(event.currentTarget)} onError={(event) => markImageUnavailable(event.currentTarget)} />
+              <span className="photo-unavailable-message">Photo unavailable</span>
+            </span>
           ))}
         {coverMode === "photo" && (
           // eslint-disable-next-line @next/next/no-img-element
-          <img src={draft.imageUrl} alt="" className="recipe-card__cover-image" />
+          <img src={draft.imageUrl} alt="" className="recipe-card__cover-image" onLoad={(event) => markImageAvailable(event.currentTarget)} onError={(event) => markImageUnavailable(event.currentTarget)} />
         )}
+        {coverMode === "photo" && <span className="photo-unavailable-message">Photo unavailable</span>}
       </div>
       <div className="recipe-card__cover-scrim" aria-hidden />
       <div className="recipe-card__cover-band" aria-hidden />

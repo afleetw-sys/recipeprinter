@@ -398,7 +398,7 @@
   color: var(--cp-ink-soft);
 }
 .cookbook-organize__order button:disabled {
-  opacity: .25;
+  opacity: .5;
 }
 .cookbook-organize__opener {
   display: inline-flex;
@@ -1170,8 +1170,8 @@
     padding: 0;
   }
   .mode-toggle__item:disabled {
-    @apply opacity-60;
-    cursor: not-allowed;
+    @apply opacity-50;
+    cursor: default;
   }
   .mode-toggle-overflow {
     position: relative;
@@ -1201,7 +1201,12 @@
     width: 18px;
     height: 18px;
   }
-  .mode-toggle-menu__item:hover,
+  /* Hover is a neutral tint; the accent selected-fill is reserved for the
+     actually-active row, so in a menu where one item is already selected the
+     hovered row and the selected row read as different states. */
+  .mode-toggle-menu__item:hover {
+    background: color-mix(in srgb, var(--cp-ink) 8%, transparent);
+  }
   .mode-toggle-menu__item.is-active {
     background: var(--cp-selected-fill);
     color: var(--cp-selected-text);
