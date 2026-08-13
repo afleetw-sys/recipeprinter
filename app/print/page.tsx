@@ -29,6 +29,7 @@ import { ScaledPage } from "@/components/print/ScaledPage";
 import { PHOTO_STYLE_OPTIONS } from "@/components/print/photoStyle";
 import { MobileStructureSheet } from "@/components/print/MobileStructureSheet";
 import { PrintConfigPanel } from "@/components/print/PrintConfigPanel";
+import { PendingImportRows } from "@/components/print/PendingImportRows";
 import {
   usePrintSheets,
   type NavItem,
@@ -86,7 +87,6 @@ import {
   LinkIcon,
   PlusIcon,
   PrintIcon,
-  RefreshIcon,
   GripIcon,
   SettingsIcon,
   SizeIcon,
@@ -606,39 +606,6 @@ function PrintWorkspace(props: PrintWorkspaceProps) {
     setPendingAddIndex(Math.max(0, insertionIndex));
     setPendingAddAfterRecipeId(anchorId);
     setShowAddRecipeDialog(true);
-  }
-  function renderPendingImportRows() {
-    return pendingImportItems.map((item) => (
-      <div className="recipe-page-rail__row" data-pending-import key={`parsing-${item.id}`}>
-        <div
-          className={`recipe-page-rail__item ${
-            item.status === "error" ? "recipe-page-rail__item--error" : "recipe-page-rail__item--loading"
-          }`}
-          aria-busy={item.status === "parsing"}
-        >
-          <div className="recipe-page-rail__item-main">
-            {item.status === "parsing" ? (
-              <RecipeLoadingState className="recipe-page-rail__loading-status" />
-            ) : (
-              <div className="recipe-page-rail__import-error" role="alert">
-                <strong>Couldn&apos;t import recipe</strong>
-                <span>{item.error || "Check the source and try again."}</span>
-                <div className="recipe-page-rail__import-error-actions">
-                  {queue.canRetry(item) && (
-                    <button type="button" className="btn btn-secondary btn-compact" onClick={() => queue.retry(item.id)}>
-                      <RefreshIcon size={ICON_SIZE.sm} /> Retry
-                    </button>
-                  )}
-                  <button type="button" className="btn btn-ghost btn-compact" onClick={() => queue.remove(item.id)}>
-                    <TrashIcon size={ICON_SIZE.sm} /> Remove
-                  </button>
-                </div>
-              </div>
-            )}
-          </div>
-        </div>
-      </div>
-    ));
   }
   function navigateToRecipe(itemId: string) {
     const index = navItems.findIndex(
@@ -1523,7 +1490,7 @@ function PrintWorkspace(props: PrintWorkspaceProps) {
                         </span>
                       </button>
                     </div>
-                    {(recipeNav?.recipeId ?? dividerNav?.recipeId) === pendingAddAfterRecipeId && renderPendingImportRows()}
+                    {(recipeNav?.recipeId ?? dividerNav?.recipeId) === pendingAddAfterRecipeId && <PendingImportRows items={pendingImportItems} canRetry={queue.canRetry} onRetry={queue.retry} onRemove={queue.remove} />}
                   </div>
                 );
                   })}
@@ -1642,14 +1609,14 @@ function PrintWorkspace(props: PrintWorkspaceProps) {
                     }}
                   />
                 )}
-                {navItem.recipeId === pendingAddAfterRecipeId && renderPendingImportRows()}
+                {navItem.recipeId === pendingAddAfterRecipeId && <PendingImportRows items={pendingImportItems} canRetry={queue.canRetry} onRetry={queue.retry} onRemove={queue.remove} />}
               </div>
             );
           })}
 
           {/* Keep pending imports visible without pretending a page or image
               exists yet. The real page appears only once parsing completes. */}
-          {!pendingAddAfterRecipeId && renderPendingImportRows()}
+          {!pendingAddAfterRecipeId && <PendingImportRows items={pendingImportItems} canRetry={queue.canRetry} onRetry={queue.retry} onRemove={queue.remove} />}
 
           <div className="recipe-page-rail__footer">
             <div className="recipe-page-rail__add-row" ref={addMenuRef}>
