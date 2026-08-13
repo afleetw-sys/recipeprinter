@@ -30,6 +30,22 @@ export function markCookbookProjectUnlockedLocal(projectId: string): void {
   if (localStore.get(PENDING_KEY) === projectId) localStore.remove(PENDING_KEY);
 }
 
+/**
+ * Re-keys a local unlock when a project's id changes — chiefly anonymous →
+ * adopted, where `adoptAnonymousProject` mints a fresh id on collision. Without
+ * this the unlock, bought against the anonymous id, is stranded and the adopted
+ * project reads as "not purchased".
+ */
+export function transferCookbookProjectUnlockLocal(fromProjectId: string, toProjectId: string): void {
+  if (fromProjectId === toProjectId) return;
+  const map = unlocks();
+  const existing = map[fromProjectId];
+  if (!existing) return;
+  const { [fromProjectId]: _moved, ...rest } = map;
+  localStore.setJson(UNLOCKS_KEY, { ...rest, [toProjectId]: existing });
+  if (localStore.get(PENDING_KEY) === fromProjectId) localStore.set(PENDING_KEY, toProjectId);
+}
+
 export function markCookbookUnlockPending(projectId: string): void {
   localStore.set(PENDING_KEY, projectId);
 }
@@ -77,6 +93,39 @@ export async function loadCookbookProjectUnlock(ownerUid: string, projectId: str
   if (!snap?.exists()) return false;
   markCookbookProjectUnlockedLocal(projectId);
   return true;
+}
+
+/**
+ * Best-effort heal: pushes every locally-known unlock into Firestore for this
+ * owner. Covers the two client-only loss paths — a purchase whose Firestore
+ * write was swallowed (`useCookbookPurchase` catches and moves on), and a
+ * signed-out purchase that only ever wrote localStorage. Idempotent: it skips
+ * docs that already exist (a create-only rule forbids re-writing them) and
+ * swallows per-doc failures so one bad write can't abort the rest. Runs on any
+ * authenticated visit — including `/projects`, which otherwise never retries.
+ */
+export async function reconcileCookbookProjectUnlocks(ownerUid: string): Promise<void> {
+  const local = unlocks();
+  const projectIds = Object.keys(local);
+  if (projectIds.length === 0) return;
+  const [{ doc, getDoc, setDoc }, { getDb }] = await Promise.all([
+    import("firebase/firestore"),
+    import("@/lib/firebase/db"),
+  ]);
+  const db = getDb();
+  await Promise.all(
+    projectIds.map(async (projectId) => {
+      try {
+        const ref = doc(db, ...recipePrinterUnlockPath(ownerUid, projectId));
+        if ((await getDoc(ref)).exists()) return;
+        await setDoc(ref, { projectId, unlockedAt: local[projectId]?.unlockedAt ?? Date.now() });
+      } catch {
+        // Leave it for the next authenticated visit.
+      }
+    }),
+  );
+  const pending = localStore.get(PENDING_KEY);
+  if (pending && local[pending]) localStore.remove(PENDING_KEY);
 }
 
 export async function hasAnyCookbookProjectUnlock(ownerUid: string): Promise<boolean> {

@@ -2,7 +2,7 @@ import { lookup } from "node:dns/promises";
 import { isIP } from "node:net";
 import { NextResponse } from "next/server";
 import { jsonDataBlocksFromHtml, jsonLdBlocksFromHtml, recipeFromJsonLd } from "@/lib/schemaRecipe";
-import { adaptCookPilotRecipe, normalizeImportURL } from "@/lib/cookpilot";
+import { adaptCookPilotRecipes, normalizeImportURL } from "@/lib/cookpilot";
 import type { ParseResponse, Recipe } from "@/types/recipe";
 
 export const runtime = "nodejs";
@@ -156,7 +156,7 @@ async function readHtmlWithLimit(response: Response): Promise<string> {
   return html + decoder.decode();
 }
 
-async function parseWithCookPilotServer(url: string): Promise<Recipe | null> {
+async function parseWithCookPilotServer(url: string): Promise<Recipe[] | null> {
   const endpoint = process.env.COOKPILOT_RECIPE_PARSER_URL?.trim();
   const secret = process.env.RECIPEPRINTER_PARSER_SECRET?.trim();
   if (!endpoint || !secret) return null;
@@ -167,14 +167,16 @@ async function parseWithCookPilotServer(url: string): Promise<Recipe | null> {
       "Content-Type": "application/json",
       "X-RecipePrinter-Parser-Secret": secret,
     },
-    body: JSON.stringify({ url }),
+    // `multiRecipe` is RecipePrinter's opt-in for roundup pages: CookPilot returns
+    // every recipe it finds ({ recipes: [...] }) instead of just the main one.
+    body: JSON.stringify({ url, multiRecipe: true }),
     signal: AbortSignal.timeout(55000),
   });
 
   const data = (await response.json().catch(() => null)) as unknown;
   if (response.ok) {
-    const recipe = adaptCookPilotRecipe(data, url);
-    if (recipe) return recipe;
+    const recipes = adaptCookPilotRecipes(data, url);
+    if (recipes.length > 0) return recipes;
     throw new ParseHttpError(
       "We couldn't find a complete recipe on that page. Try another link or paste the recipe text instead.",
       422,
@@ -216,9 +218,9 @@ export async function POST(request: Request) {
   }
 
   try {
-    const cookPilotRecipe = await parseWithCookPilotServer(url.toString());
-    if (cookPilotRecipe) {
-      return NextResponse.json({ success: true, recipe: cookPilotRecipe } satisfies ParseResponse);
+    const cookPilotRecipes = await parseWithCookPilotServer(url.toString());
+    if (cookPilotRecipes) {
+      return NextResponse.json({ success: true, recipes: cookPilotRecipes } satisfies ParseResponse);
     }
 
     const response = await fetchPublicHtml(url);
@@ -256,7 +258,9 @@ export async function POST(request: Request) {
       );
     }
 
-    return NextResponse.json({ success: true, recipe } satisfies ParseResponse);
+    // The JSON-LD-only fallback picks a single recipe; wrap it as a one-element
+    // array so the client sees the same `recipes` shape as the CookPilot path.
+    return NextResponse.json({ success: true, recipes: [recipe] } satisfies ParseResponse);
   } catch (err) {
     if (err instanceof ParseHttpError) {
       return errorResponse(err.message, err.status);

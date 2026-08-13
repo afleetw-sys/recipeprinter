@@ -22,6 +22,29 @@ import {
   persistCookbookProjectUnlock,
 } from "@/lib/cookbookUnlocks";
 
+/**
+ * Writes the unlock to Firestore, retrying a transient failure a few times
+ * before giving up. On the final failure it stays quiet: the local unlock
+ * marker is already set (inside `persistCookbookProjectUnlock`) and the
+ * projects-page reconciler re-attempts the write on the next authenticated
+ * visit, so the buyer is never shown a "not purchased" state.
+ */
+async function persistCookbookUnlockWithRetry(
+  uid: string,
+  projectId: string,
+  attempts = 3,
+): Promise<void> {
+  for (let attempt = 0; attempt < attempts; attempt += 1) {
+    try {
+      await persistCookbookProjectUnlock(uid, projectId);
+      return;
+    } catch {
+      if (attempt === attempts - 1) return;
+      await new Promise((resolve) => setTimeout(resolve, 400 * (attempt + 1)));
+    }
+  }
+}
+
 interface UseCookbookPurchaseOptions {
   /** Shared with usePremiumTemplatePurchase so this doesn't re-run RevenueCat
       identify/link/configure a second time for the same browser session. */
@@ -58,13 +81,35 @@ export function useCookbookPurchase({
   const [projectUnlocked, setProjectUnlocked] = useState(() =>
     isCookbookProjectUnlocked(projectId),
   );
+  const unlockKey = cookPilotUser ? `${cookPilotUser.uid}:${projectId}` : null;
+  const [resolvedUnlockKey, setResolvedUnlockKey] = useState<string | null>(() =>
+    isCookbookProjectUnlocked(projectId) ? unlockKey : null,
+  );
 
   useEffect(() => {
-    setProjectUnlocked(isCookbookProjectUnlocked(projectId));
-    if (!cookPilotUser) return;
+    const locallyUnlocked = isCookbookProjectUnlocked(projectId);
+    setProjectUnlocked(locallyUnlocked);
+    if (!cookPilotUser) {
+      setResolvedUnlockKey(null);
+      return;
+    }
+    const key = `${cookPilotUser.uid}:${projectId}`;
+    if (locallyUnlocked) {
+      setResolvedUnlockKey(key);
+      return;
+    }
+    let cancelled = false;
     loadCookbookProjectUnlock(cookPilotUser.uid, projectId)
-      .then((unlocked) => setProjectUnlocked(unlocked))
-      .catch(() => undefined);
+      .then((unlocked) => {
+        if (!cancelled) setProjectUnlocked(unlocked);
+      })
+      .catch(() => undefined)
+      .finally(() => {
+        if (!cancelled) setResolvedUnlockKey(key);
+      });
+    return () => {
+      cancelled = true;
+    };
   }, [cookPilotUser, projectId]);
 
   // One-time compatibility bridge for customers who bought the legacy
@@ -95,7 +140,20 @@ export function useCookbookPurchase({
     };
   }, [cookPilotUser, customerInfo, projectId, projectUnlocked]);
 
-  const cookbookLocked = cookbookMode && !projectUnlocked;
+  // A missing local marker is not evidence that an account-owned cookbook is
+  // either locked OR unlocked. Keep access tri-state until the project-scoped
+  // Firestore check answers, so neither the paid workspace nor its paywall can
+  // render based on a guess.
+  const cookbookUnlockLoading = Boolean(
+    cookbookMode && cookPilotUser && !projectUnlocked && resolvedUnlockKey !== unlockKey,
+  );
+  const cookbookAccessStatus: "loading" | "unlocked" | "locked" =
+    !cookbookMode || projectUnlocked
+      ? "unlocked"
+      : cookbookUnlockLoading
+        ? "loading"
+        : "locked";
+  const cookbookLocked = cookbookAccessStatus === "locked";
 
   /** Buys the cookbook entitlement, then hands control back to `onUnlocked`
       (typically re-running the export/print gate) rather than printing
@@ -135,13 +193,13 @@ export function useCookbookPurchase({
       markProjectScopedCookbookPurchase(projectId);
       markCookbookProjectUnlockedLocal(projectId);
       setProjectUnlocked(true);
+      // Signed-out buying is allowed, so an owner isn't guaranteed here. When we
+      // do have one, land the unlock in Firestore — with retries — before
+      // calling the purchase done, rather than the old fire-once-and-swallow.
+      // Signed-out, the local marker holds it until the adopt-on-sign-in path
+      // (adoptAnonymousProject) backs it up under the new account.
       if (cookPilotUser) {
-        try {
-          await persistCookbookProjectUnlock(cookPilotUser.uid, projectId);
-        } catch {
-          // The local pending marker prevents another charge and the
-          // reconciliation effect retries on the next authenticated visit.
-        }
+        await persistCookbookUnlockWithRetry(cookPilotUser.uid, projectId);
       }
 
       onFreshPurchase();
@@ -160,6 +218,7 @@ export function useCookbookPurchase({
     // who merely opens a cookbook. Checkout states the authoritative price.
     cookbookPrice: COOKBOOK_PRICE_FALLBACK,
     cookbookLocked,
+    cookbookAccessStatus,
     cookbookPurchaseBusy,
     purchaseCookbookAndContinue,
   };

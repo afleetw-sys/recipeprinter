@@ -120,18 +120,21 @@ export function SeoCapture({
           <label htmlFor="seo-url" className="field-label">
             Recipe URL
           </label>
-          <div className="flex flex-col gap-cp-4 lg:flex-row lg:items-center lg:gap-cp-2">
-            <input
-              id="seo-url"
-              type="url"
-              className="field flex-1"
-              placeholder={placeholder ?? "Paste recipe URL here"}
-              value={url}
-              onChange={(e) => {
-                setUrl(e.target.value);
-                if (error) setError(null);
-              }}
-            />
+          <div className="flex flex-col gap-cp-4 lg:flex-row lg:items-start lg:gap-cp-2">
+            <div className="flex-1">
+              <input
+                id="seo-url"
+                type="url"
+                className="field w-full"
+                placeholder={placeholder ?? "Paste recipe URL here"}
+                value={url}
+                onChange={(e) => {
+                  setUrl(e.target.value);
+                  if (error) setError(null);
+                }}
+              />
+              {error && <p className="field-error" role="alert">{error}</p>}
+            </div>
             {submitButton}
           </div>
         </div>
@@ -152,6 +155,7 @@ export function SeoCapture({
               if (error) setError(null);
             }}
           />
+          {error && <p className="field-error" role="alert">{error}</p>}
           {submitButton}
         </>
       )}
@@ -192,16 +196,11 @@ export function SeoCapture({
               {placeholder ?? "Snap a cookbook page or screenshot, or drop a photo"}
             </span>
           </label>
+          {error && <p className="field-error" role="alert">{error}</p>}
           {submitButton}
         </>
       )}
 
-      {error && (
-        <div className="state state--error mt-cp-4" role="alert">
-          <h4>Couldn&apos;t add that</h4>
-          <p>{error}</p>
-        </div>
-      )}
     </form>
   );
 }

@@ -106,6 +106,7 @@ export function ImagePicker({
           setOpen(true);
         }}
         aria-haspopup="dialog"
+        title={label}
       >
         <ImageIcon size={ICON_SIZE.md} />
         <span>{label}</span>
@@ -131,7 +132,7 @@ export function ImagePicker({
               {gridMode
                 ? `Pick up to ${gridMax} photos for the collage — tap to add or remove.`
                 : recipeMode
-                  ? "Choose where the photo goes, then pick a photo or a custom one."
+                  ? "Set the placement, then pick a photo."
                   : "Use a photo already in this cookbook or add a new one."}
             </p>
           </div>
@@ -142,7 +143,6 @@ export function ImagePicker({
 
         {recipeMode && placementOptions && (
           <section className="image-picker__placement" aria-label="Where the photo goes">
-            <h3>Placement</h3>
             <div className="image-picker__placement-row" role="group">
               {placementOptions.map((option) => (
                 <button
@@ -153,7 +153,6 @@ export function ImagePicker({
                   onClick={() => onPlacementChange?.(option.id)}
                 >
                   <span className="image-picker__placement-label">{option.label}</span>
-                  {option.hint && <span className="image-picker__placement-hint">{option.hint}</span>}
                 </button>
               ))}
             </div>
@@ -166,130 +165,139 @@ export function ImagePicker({
           </p>
         ) : (
         <>
-        <div className={`image-picker__choices ${recipeMode ? "image-picker__choices--recipe" : ""}`}>
-          {/* "Photo grid": on the cover it swaps the single cover photo for a
-              collage; under a Full-page placement (section openers) it toggles the
-              facing photo into a chapter collage, and `onExitGrid` collapses it
-              back to one photo. */}
-          {showGridChoice && (
-            <button
-              type="button"
-              className={`image-picker__choice ${gridActive ? "is-active" : ""}`}
-              onClick={() => {
-                setError(null);
-                if (gridActive) onExitGrid?.();
-                else if (onExitGrid) onSelectGrid?.();
-                else if (onSelectGrid) choose(onSelectGrid);
-              }}
-              aria-pressed={gridActive}
-            >
-              <span className="image-picker__grid-icon" aria-hidden><i /><i /><i /><i /></span>
-              <span>Photo grid</span>
-              {gridActive && <CheckIcon size={ICON_SIZE.sm} />}
-            </button>
-          )}
-          {!recipeMode && (
-            <button
-              type="button"
-              className={`image-picker__choice ${!current && !gridActive ? "is-active" : ""}`}
-              onClick={() => choose(() => onSelect(undefined))}
-              aria-pressed={!current && !gridActive}
-            >
-              <span className="image-picker__none-icon" aria-hidden />
-              <span>No image</span>
-              {!current && !gridActive && <CheckIcon size={ICON_SIZE.sm} />}
-            </button>
-          )}
-          <label className={`image-picker__choice ${uploading ? "is-busy" : ""}`}>
-            <UploadIcon size={22} />
-            <span>{uploading ? "Adding…" : recipeMode ? "Custom photo" : "Add new"}</span>
-            <input
-              type="file"
-              accept="image/*"
-              hidden
-              disabled={uploading}
-              onChange={async (event) => {
-                const file = event.target.files?.[0];
-                event.target.value = "";
-                if (!file) return;
-                setError(null);
-                setUploading(true);
-                try {
-                  const url = await uploadPhotoFile(file);
-                  // In grid mode a fresh upload joins the collage and the dialog
-                  // stays open so the user can keep curating; otherwise it's the
-                  // single chosen photo and we close.
-                  if (gridMode && onGridChange) {
-                    if (selectedGrid.length < gridMax) onGridChange([...selectedGrid, url]);
-                  } else {
-                    onSelect(url);
-                    setOpen(false);
-                  }
-                } catch (uploadError) {
-                  console.warn("RecipePrinter: image upload failed", uploadError);
-                  setError(friendlyPhotoUploadError(uploadError));
-                } finally {
-                  setUploading(false);
-                }
-              }}
-            />
-          </label>
-        </div>
+        <section className="image-picker__existing" aria-label="Photos">
+          <div className="image-picker__existing-head">
+            <h3>{gridMode ? "Tap to add or remove" : recipeMode ? "This recipe's photo" : "Your photos"}</h3>
+            {/* "Select multiple" turns the grid into a multi-pick collage. Section
+                openers can toggle back (onExitGrid); the cover enters and closes,
+                matching its one-way collage flow — so it's hidden once the cover is
+                already multi-selecting, having no single-photo state to return to. */}
+            {showGridChoice && (!gridActive || onExitGrid) && (
+              <button
+                type="button"
+                className={`image-picker__multiselect ${gridActive ? "is-active" : ""}`}
+                aria-pressed={gridActive}
+                onClick={() => {
+                  setError(null);
+                  if (gridActive) onExitGrid?.();
+                  else if (onExitGrid) onSelectGrid?.();
+                  else if (onSelectGrid) choose(onSelectGrid);
+                }}
+              >
+                <span className="image-picker__grid-icon" aria-hidden><i /><i /><i /><i /></span>
+                <span>{gridActive ? "Use one photo" : "Select multiple"}</span>
+              </button>
+            )}
+          </div>
 
-        {uniqueImages.length > 0 && (
-          <section className="image-picker__existing" aria-label="Existing photos">
-            <h3>{gridMode ? "Tap to add or remove" : recipeMode ? "This recipe's photo" : "Existing photos"}</h3>
-            <div className="image-picker__grid">
-              {uniqueImages.map((image, index) => {
-                if (gridMode) {
-                  const order = selectedGrid.indexOf(image);
-                  const inGrid = order !== -1;
-                  const atMax = !inGrid && selectedGrid.length >= gridMax;
-                  return (
-                    <button
-                      key={image}
-                      type="button"
-                      className={`image-picker__photo ${inGrid ? "is-active" : ""} ${
-                        atMax ? "is-disabled" : ""
-                      }`}
-                      onClick={() => toggleInGrid(image)}
-                      disabled={atMax}
-                      aria-label={inGrid ? `Remove photo ${index + 1} from cover` : `Add photo ${index + 1} to cover`}
-                      aria-pressed={inGrid}
-                    >
-                      {/* eslint-disable-next-line @next/next/no-img-element */}
-                      <img src={image} alt="" />
-                      {inGrid && <span className="image-picker__order">{order + 1}</span>}
-                    </button>
-                  );
-                }
+          <div className="image-picker__grid">
+            {/* Cover/plain pickers keep a "None" tile to clear the photo. */}
+            {!recipeMode && (
+              <button
+                type="button"
+                className={`image-picker__photo image-picker__photo--action ${
+                  !current && !gridActive ? "is-active" : ""
+                }`}
+                onClick={() => choose(() => onSelect(undefined))}
+                aria-label="No photo"
+                aria-pressed={!current && !gridActive}
+              >
+                <span className="image-picker__none-icon" aria-hidden />
+                <span className="image-picker__tile-label">None</span>
+              </button>
+            )}
+
+            {uniqueImages.map((image, index) => {
+              if (gridMode) {
+                const order = selectedGrid.indexOf(image);
+                const inGrid = order !== -1;
+                const atMax = !inGrid && selectedGrid.length >= gridMax;
                 return (
                   <button
                     key={image}
                     type="button"
-                    className={`image-picker__photo ${current === image && !gridActive ? "is-active" : ""}`}
-                    onClick={() => choose(() => onSelect(image))}
-                    aria-label={`Use existing photo ${index + 1}`}
-                    aria-pressed={current === image && !gridActive}
+                    className={`image-picker__photo ${inGrid ? "is-active" : ""} ${
+                      atMax ? "is-disabled" : ""
+                    }`}
+                    onClick={() => toggleInGrid(image)}
+                    disabled={atMax}
+                    aria-label={inGrid ? `Remove photo ${index + 1} from collage` : `Add photo ${index + 1} to collage`}
+                    aria-pressed={inGrid}
                   >
                     {/* eslint-disable-next-line @next/next/no-img-element */}
                     <img src={image} alt="" />
-                    {current === image && !gridActive && (
-                      <span className="image-picker__check"><CheckIcon size={ICON_SIZE.sm} /></span>
-                    )}
+                    {inGrid && <span className="image-picker__order">{order + 1}</span>}
                   </button>
                 );
-              })}
-            </div>
-          </section>
-        )}
+              }
+              return (
+                <button
+                  key={image}
+                  type="button"
+                  className={`image-picker__photo ${current === image && !gridActive ? "is-active" : ""}`}
+                  onClick={() => choose(() => onSelect(image))}
+                  aria-label={`Use existing photo ${index + 1}`}
+                  aria-pressed={current === image && !gridActive}
+                >
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img src={image} alt="" />
+                  {current === image && !gridActive && (
+                    <span className="image-picker__check"><CheckIcon size={ICON_SIZE.sm} /></span>
+                  )}
+                </button>
+              );
+            })}
+
+            {/* Upload sits at the end of the grid as an "add" tile: in grid mode a
+                fresh upload joins the collage (dialog stays open to keep curating);
+                otherwise it becomes the chosen photo and we close. */}
+            <label
+              className={`image-picker__photo image-picker__photo--action image-picker__photo--upload ${
+                uploading ? "is-busy" : ""
+              }`}
+            >
+              <UploadIcon size={20} />
+              <span className="image-picker__tile-label">{uploading ? "Adding…" : "Upload"}</span>
+              <input
+                type="file"
+                accept="image/*"
+                hidden
+                disabled={uploading}
+                onChange={async (event) => {
+                  const file = event.target.files?.[0];
+                  event.target.value = "";
+                  if (!file) return;
+                  setError(null);
+                  setUploading(true);
+                  try {
+                    const url = await uploadPhotoFile(file);
+                    if (gridMode && onGridChange) {
+                      if (selectedGrid.length < gridMax) onGridChange([...selectedGrid, url]);
+                    } else {
+                      onSelect(url);
+                      setOpen(false);
+                    }
+                  } catch (uploadError) {
+                    console.warn("RecipePrinter: image upload failed", uploadError);
+                    setError(friendlyPhotoUploadError(uploadError));
+                  } finally {
+                    setUploading(false);
+                  }
+                }}
+              />
+            </label>
+          </div>
+        </section>
         </>
         )}
-        {error && <p className="image-picker__error" role="alert">{error}</p>}
+        {error && <p className="field-error" role="alert">{error}</p>}
         {gridMode && (
           <div className="image-picker__footer">
             <span className="image-picker__count">
-              {selectedGrid.length} of {gridMax} selected
+              {selectedGrid.length === 0
+                ? "No photos yet"
+                : `${selectedGrid.length} photo${selectedGrid.length === 1 ? "" : "s"} selected`}
+              {selectedGrid.length >= gridMax && " · grid full"}
             </span>
             <button
               type="button"

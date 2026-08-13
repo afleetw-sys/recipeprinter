@@ -149,6 +149,25 @@ export function adaptCookPilotRecipe(body: unknown, sourceUrl?: string): Recipe 
   };
 }
 
+/**
+ * Array-aware sibling of `adaptCookPilotRecipe` for the RecipePrinter-only
+ * multi-recipe URL path. When CookPilot returns `{ recipes: RecipeData[] }` (a
+ * roundup page), each element is flattened through the single-recipe adapter and
+ * invalid entries are dropped. Any other shape (`{ recipe }`, raw `RecipeData`,
+ * the image parser's envelope) falls back to the single adapter and is wrapped
+ * as a one-element array — so a normal single-recipe response still yields one.
+ */
+export function adaptCookPilotRecipes(body: unknown, sourceUrl?: string): Recipe[] {
+  if (body && typeof body === "object" && Array.isArray((body as AnyRecord).recipes)) {
+    const recipes = (body as AnyRecord).recipes as unknown[];
+    return recipes
+      .map((entry) => adaptCookPilotRecipe(entry, sourceUrl))
+      .filter((recipe): recipe is Recipe => recipe !== null);
+  }
+  const one = adaptCookPilotRecipe(body, sourceUrl);
+  return one ? [one] : [];
+}
+
 function parseRecipeJSON(recipeJSON: string | undefined): AnyRecord | null {
   if (!recipeJSON) return null;
   try {

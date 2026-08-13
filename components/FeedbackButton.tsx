@@ -171,10 +171,14 @@ export function FeedbackDialog({ open, onClose, initialType = "idea" }: Feedback
                 ref={messageRef}
                 className="field"
                 value={message}
-                onChange={(event) => setMessage(event.target.value)}
+                onChange={(event) => {
+                  setMessage(event.target.value);
+                  if (error) setError(null);
+                }}
                 placeholder={MESSAGE_PROMPTS[type]}
                 disabled={busy}
               />
+              {error && <p className="field-error" role="alert">{error}</p>}
             </div>
 
             <div>
@@ -202,12 +206,6 @@ export function FeedbackDialog({ open, onClose, initialType = "idea" }: Feedback
           </form>
         )}
 
-      {error && (
-        <div className="state state--error" role="alert">
-          <h4>Feedback wasn&apos;t sent</h4>
-          <p>{error}</p>
-        </div>
-      )}
     </Dialog>
   );
 }

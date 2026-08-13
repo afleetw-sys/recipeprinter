@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import { signOut } from "firebase/auth";
-import { AccountIcon, BookIcon, CheckIcon, ICON_SIZE, SpinnerIcon, XIcon } from "@/components/icons";
+import { AccountIcon, BookIcon, CheckIcon, ICON_SIZE, PrintIcon, SpinnerIcon, XIcon } from "@/components/icons";
 import { CookPilotLoginDialog, useCookPilotAuth } from "@/components/CookPilotAuth";
 import { getFirebaseAuth } from "@/lib/firebase/client";
 import { loadPrintProjects } from "@/lib/printProjects";
@@ -11,6 +11,7 @@ import { COOKBOOK_ENABLED } from "@/lib/cookbookProduct";
 import type { PrintProject } from "@/types/recipe";
 import type { User } from "firebase/auth";
 import { IconButton } from "@/components/Controls";
+import { RecipeLoadingState } from "@/components/RecipeLoadingState";
 
 // Two initials from the signed-in identity — first+last of a display name, else
 // the first letter of the email — so a logged-in avatar shows who's signed in.
@@ -57,7 +58,10 @@ export function AccountControl({
   const [showLogin, setShowLogin] = useState(false);
   const [projects, setProjects] = useState<PrintProject[]>([]);
   const [loadingProjects, setLoadingProjects] = useState(false);
+  const [openingProjectId, setOpeningProjectId] = useState<string | null>(null);
   const rootRef = useRef<HTMLDivElement>(null);
+  const cookbooks = projects.filter((project) => project.kind !== "printProject");
+  const printProjects = projects.filter((project) => project.kind === "printProject");
 
   useEffect(() => {
     if (!open) return;
@@ -155,26 +159,60 @@ export function AccountControl({
               </strong>
               {loadingProjects ? (
                 <p className="mt-2 text-cp-small text-ink-soft">Loading…</p>
-              ) : projects.length ? (
+              ) : cookbooks.length ? (
                 <div className="mt-2 flex max-h-56 flex-col overflow-y-auto">
-                  {projects.map((project) => (
+                  {cookbooks.map((project) => (
                     <Link
                       key={project.id}
                       href={`/print?project=${encodeURIComponent(project.id)}`}
                       className="rounded-lg px-2 py-2 hover:bg-page"
-                      onClick={() => setOpen(false)}
+                      aria-busy={openingProjectId === project.id}
+                      onClick={() => {
+                        setOpeningProjectId(project.id);
+                        setOpen(false);
+                      }}
                     >
                       <span className="block truncate text-cp-small font-semibold">
-                        {project.title || "Untitled cookbook"}
+                        {openingProjectId === project.id ? (
+                          <span className="inline-flex items-center gap-2"><SpinnerIcon size={ICON_SIZE.sm} /> Opening cookbook…</span>
+                        ) : project.title || "Untitled cookbook"}
                       </span>
-                      <span className="text-cp-caption text-ink-soft">
-                        {project.kind === "printProject" ? "Print project" : "Cookbook"}
-                      </span>
+                      <span className="text-cp-caption text-ink-soft">Cookbook</span>
                     </Link>
                   ))}
                 </div>
               ) : (
                 <p className="mt-2 text-cp-small text-ink-soft">Your saved cookbooks will appear here.</p>
+              )}
+              <strong className="mt-cp-4 flex items-center gap-2 border-t border-line pt-cp-3 text-cp-small">
+                <PrintIcon size={ICON_SIZE.md} /> My print projects
+              </strong>
+              {loadingProjects ? (
+                <p className="mt-2 text-cp-small text-ink-soft">Loading…</p>
+              ) : printProjects.length ? (
+                <div className="mt-2 flex max-h-56 flex-col overflow-y-auto">
+                  {printProjects.map((project) => (
+                    <Link
+                      key={project.id}
+                      href={`/print?project=${encodeURIComponent(project.id)}`}
+                      className="rounded-lg px-2 py-2 hover:bg-page"
+                      aria-busy={openingProjectId === project.id}
+                      onClick={() => {
+                        setOpeningProjectId(project.id);
+                        setOpen(false);
+                      }}
+                    >
+                      <span className="block truncate text-cp-small font-semibold">
+                        {openingProjectId === project.id ? (
+                          <span className="inline-flex items-center gap-2"><SpinnerIcon size={ICON_SIZE.sm} /> Opening project…</span>
+                        ) : project.title || "Untitled print project"}
+                      </span>
+                      <span className="text-cp-caption text-ink-soft">Print project</span>
+                    </Link>
+                  ))}
+                </div>
+              ) : (
+                <p className="mt-2 text-cp-small text-ink-soft">Your saved print projects will appear here.</p>
               )}
               <Link
                 href="/projects"
@@ -197,6 +235,16 @@ export function AccountControl({
 
       {showLogin && !user && (
         <CookPilotLoginDialog onClose={() => setShowLogin(false)} onAuthenticated={() => setShowLogin(false)} />
+      )}
+      {openingProjectId && (
+        <div className="fixed inset-0 z-[100] flex min-h-dvh flex-col bg-page">
+          <RecipeLoadingState
+            className="flex-1"
+            label={projects.find((project) => project.id === openingProjectId)?.kind === "printProject"
+              ? "Loading your project…"
+              : "Loading your cookbook…"}
+          />
+        </div>
       )}
     </div>
   );

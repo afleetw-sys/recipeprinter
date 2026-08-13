@@ -18,7 +18,7 @@ export default function Home() {
 
       <a
         href="#rp-main"
-        className="sr-only focus:not-sr-only focus:absolute focus:z-50 focus:top-3 focus:left-3 focus:rounded-lg focus:bg-card focus:px-cp-4 focus:py-cp-2 focus:shadow-cp-lg"
+        className="sr-only focus:not-sr-only focus:absolute focus:z-50 focus:top-3 focus:left-3 focus:rounded-lg focus:border focus:border-line-strong focus:bg-card focus:px-cp-4 focus:py-cp-2"
       >
         Skip to the recipe printer
       </a>

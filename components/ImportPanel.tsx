@@ -343,19 +343,22 @@ export function ImportPanel({
             <label className="field-label" htmlFor="rp-url">
               Recipe URL
             </label>
-            <div className="flex flex-col gap-cp-4 lg:flex-row lg:items-center lg:gap-cp-2">
-              <input
-                id="rp-url"
-                type="url"
-                className="field flex-1"
-                placeholder="Paste recipe URL here"
-                value={url}
-                autoFocus={autoFocusUrl}
-                onChange={(e) => {
-                  setUrl(e.target.value);
-                  resetError();
-                }}
-              />
+            <div className="flex flex-col gap-cp-4 lg:flex-row lg:items-start lg:gap-cp-2">
+              <div className="flex-1">
+                <input
+                  id="rp-url"
+                  type="url"
+                  className="field w-full"
+                  placeholder="Paste recipe URL here"
+                  value={url}
+                  autoFocus={autoFocusUrl}
+                  onChange={(e) => {
+                    setUrl(e.target.value);
+                    resetError();
+                  }}
+                />
+                {error && <p className="field-error" role="alert">{error}</p>}
+              </div>
               <button
                 type="submit"
                 className="btn btn-primary rp-import-submit w-full lg:w-auto"
@@ -403,6 +406,7 @@ export function ImportPanel({
                 Snap a cookbook page or screenshot, or drop multiple for one recipe
               </span>
             </label>
+            {error && <p className="field-error" role="alert">{error}</p>}
           </div>
         )}
 
@@ -421,6 +425,7 @@ export function ImportPanel({
                 resetError();
               }}
             />
+            {error && <p className="field-error" role="alert">{error}</p>}
           </div>
         )}
 
@@ -433,12 +438,6 @@ export function ImportPanel({
       </form>
       )}
 
-      {error && (
-        <div className="state state--error mt-cp-4" role="alert">
-          <h4>Couldn&apos;t add that</h4>
-          <p>{error}</p>
-        </div>
-      )}
     </section>
   );
 }

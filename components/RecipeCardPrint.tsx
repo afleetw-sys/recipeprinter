@@ -159,33 +159,37 @@ const BBQ_EDGE_RIGHT: BbqIcon[] = [
   { src: "/images/bbq-sauce.svg", rotate: -8, flip: true, scale: 0.78, jitter: 0.02, gap: 1.4 },
 ];
 
-// Individually-drawn rects, not an SVG <pattern> tile (and before that, a
-// tiled CSS gradient) — both of those get pre-rasterized to a fixed-DPI
-// bitmap by Chrome's print/PDF pipeline even though they render crisply
-// on screen, which is what actually turned this checkerboard blocky in
-// exported PDFs. Plain vector geometry has no tile to rasterize, so it
-// stays crisp at any print DPI. 48 bands (0.24in each) comfortably covers
-// the tallest card (11in letter); any extra past the real card height is
-// clipped by the SVG's own viewport, which is sized to the card by CSS.
-function BistroCheckerSpine() {
-  // A tiled SVG `<pattern>` instead of a fixed grid of rects: the spine's WIDTH
-  // is now driven by CSS (thin on a single card, ~0.5in on a cookbook's binding
-  // edge so the coil punches the decoration, not the content — see the
-  // `.rp-bind-*` rules in print.css), and a pattern fills whatever box CSS gives
-  // it with the same 0.24in check. Still pure vector, so it stays crisp at any
-  // print DPI (the reason this was moved off a CSS `background-image` tile). The
-  // pattern id is per-instance so the many spines in the deck don't collide.
+// A tiled SVG `<pattern>` (not a background-image tile, which Chrome's print
+// pipeline pre-rasterizes to a low-DPI bitmap). Pure vector, so it stays crisp
+// at any print DPI — EXCEPT when an ancestor `transform: scale()` flattens it to
+// a bitmap first. The cookbook export scales the card to fill the sheet, so for
+// a SPIRAL book (a real ~1.03 scale) the in-card spine is rendered a second time
+// at the page level, OUTSIDE that transform, via `className="recipe-card-page__
+// spine"` (see the `.rp-coil` rules in print.css); hardcover's scale is exactly
+// 1.0 and its transform is dropped, so its in-card spine stays crisp as-is.
+//
+// The tile size is passed via the `check` prop and emitted as SVG attributes
+// (NOT CSS — browsers ignore width/height set via CSS on a `<pattern>`). The
+// pattern id is per-instance so the many spines in the deck don't collide.
+export function BistroCheckerSpine({
+  className = "recipe-card__checker",
+  check = "0.24in",
+}: { className?: string; check?: string } = {}) {
   const patternId = useId();
+  // The tile size MUST live on SVG attributes, not CSS: browsers ignore
+  // `width`/`height` set via CSS on an SVG `<pattern>` element (they only work
+  // as presentation attributes), which silently collapses the pattern and
+  // paints nothing. Drive the geometry off the `check` prop so the tile can be
+  // sized per-instance (e.g. a wider tile on a spiral binding spine).
+  const half = `calc(${check} / 2)`;
   return (
-    <div className="recipe-card__checker" aria-hidden>
+    <div className={className} aria-hidden>
       <svg width="100%" height="100%" focusable="false">
         <defs>
-          <pattern id={patternId} width="0.24in" height="0.24in" patternUnits="userSpaceOnUse">
-            <rect width="0.24in" height="0.24in" fill="#f8fffe" />
-            <rect x="0.12in" width="0.12in" height="0.12in" fill="#1479c9" />
-            <rect y="0.12in" width="0.12in" height="0.12in" fill="#1479c9" />
-            <line x1="0.12in" y1="0" x2="0.24in" y2="0.12in" stroke="#5fb0e6" strokeWidth="0.003in" />
-            <line x1="0" y1="0.12in" x2="0.12in" y2="0.24in" stroke="#5fb0e6" strokeWidth="0.003in" />
+          <pattern id={patternId} width={check} height={check} patternUnits="userSpaceOnUse">
+            <rect width={check} height={check} fill="#f8fffe" />
+            <rect x={half} width={half} height={half} fill="#1479c9" />
+            <rect y={half} width={half} height={half} fill="#1479c9" />
           </pattern>
         </defs>
         <rect width="100%" height="100%" fill={`url(#${patternId})`} />
@@ -674,11 +678,9 @@ export const RecipeCardFace = memo(function RecipeCardFace({
     inlineEdit?.onInsertStep(index);
   }
 
-  // Renders the click target that inserts a new blank ingredient/step.
-  // `variant: "hover"` sits absolutely inside the preceding line and only
-  // shows on hover (so it never affects layout when idle); `"empty"` is the
-  // permanent one shown in place of a section that has nothing in it yet.
-  function addLine(kind: "ingredient" | "step", index: number, variant: "hover" | "empty" = "hover") {
+  // The between-row action appears only after its row has hover/focus. This
+  // preserves exact insertion without making the whole gap a click target.
+  function addLine(kind: "ingredient" | "step", index: number, variant: "between" | "empty" = "between") {
     if (!canEdit || !inlineEdit) return null;
     const label = kind === "ingredient" ? "Add ingredient" : "Add step";
     return (
@@ -694,7 +696,7 @@ export const RecipeCardFace = memo(function RecipeCardFace({
           else insertStepAt(index);
         }}
       >
-        <span className="recipe-card__add-line-text">+ {label}</span>
+        <span className="recipe-card__add-line-text">{variant === "empty" ? `+ ${label}` : "+ Add below"}</span>
       </button>
     );
   }
@@ -709,9 +711,9 @@ export const RecipeCardFace = memo(function RecipeCardFace({
     }
     const target: RecipeCardEditTarget = { kind, index };
     const isEditingThis = sameTarget(inlineEdit.editingTarget, target);
-    // Unlike ingredient/step lines (real inputs the whole time edit mode is
+    // Unlike ingredient/step lines (real fields the whole time edit mode is
     // on), this one only becomes a real <input> while it's the active field.
-    // Mounting a permanent <input> here — even one whose box is pixel-
+    // Mounting a permanent field here — even one whose box is pixel-
     // identical to the <h3> it replaces — is exactly the kind of structural
     // change `useWideColumns`' measurement re-runs on, so it's avoidable
     // churn to mount one for every idle title. Kept on-demand for that
@@ -727,9 +729,10 @@ export const RecipeCardFace = memo(function RecipeCardFace({
       );
     }
     return (
-      <input
+      <textarea
         ref={focusIfEditing(target)}
-        className="recipe-card__inline-input recipe-card__section-title"
+        className="recipe-card__inline-textarea recipe-card__section-title"
+        rows={1}
         value={inlineEdit.value}
         aria-label="Section title"
         onChange={(event) => inlineEdit.onValueChange(event.target.value)}
@@ -902,9 +905,10 @@ export const RecipeCardFace = memo(function RecipeCardFace({
         >
           <div className="recipe-card__headline">
             {canEdit && inlineEdit ? (
-              <input
+              <textarea
                 autoFocus
-                className="recipe-card__inline-input recipe-card__title"
+                className="recipe-card__inline-textarea recipe-card__title"
+                rows={1}
                 value={sameTarget(inlineEdit.editingTarget, { kind: "title" }) ? inlineEdit.value : recipe.title}
                 aria-label="Recipe title"
                 onFocus={() => startEdit({ kind: "title" }, recipe.title)}
@@ -1250,7 +1254,7 @@ export interface DividerCardInlineEdit {
 // A section divider is always exactly one physical page — no ingredients/
 // instructions budget to split — so unlike RecipeCardFace's title/ingredient/
 // step fields there's just the one editable field. Same technique as the
-// recipe title, though: the `<input>` shares its typography class with the
+// recipe title, though: the wrapping field shares its typography class with the
 // `<h1>` it replaces (plus the shared `.recipe-card__inline-input` reset, see
 // its comment in globals.css) so the box is pixel-identical — editing swaps
 // the element, not the layout.
@@ -1263,6 +1267,14 @@ const CHAPTER_WORDS = [
 function chapterWord(n: number): string {
   return CHAPTER_WORDS[n - 1] ?? String(n);
 }
+
+// Default chapter-opener copy so a section page reads as designed rather than a
+// lone title. Shown only in read-only/print; the editor still binds to the
+// section's own (empty) intro with its placeholder, so a cook can personalize
+// each opener or leave the default to print. Kept generic on purpose — it's
+// filler the cook is expected to make their own.
+export const DEFAULT_CHAPTER_INTRO =
+  "A handful of recipes worth making again and again.";
 
 export const DividerFace = memo(function DividerFace({
   title,
@@ -1315,7 +1327,8 @@ export const DividerFace = memo(function DividerFace({
           onSelectGrid={inlineEdit.onSelectGrid}
           onExitGrid={inlineEdit.onExitGrid}
           gridMax={inlineEdit.gridMax}
-          className="recipe-card__cover-photopicker"
+          label="Photo"
+          className="recipe-card__cook-photo-edit"
         />
       )}
       <div className="recipe-card__chapter-frame" aria-hidden />
@@ -1369,7 +1382,7 @@ export const DividerFace = memo(function DividerFace({
             onChange={(event) => inlineEdit.onIntroChange?.(event.target.value)}
           />
         ) : (
-          intro && <p className="recipe-card__chapter-intro">{intro}</p>
+          <p className="recipe-card__chapter-intro">{intro || DEFAULT_CHAPTER_INTRO}</p>
         )}
       </div>
     </article>

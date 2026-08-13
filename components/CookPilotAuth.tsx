@@ -352,8 +352,12 @@ export function CookPilotLoginDialog({
                 autoComplete="username"
                 autoFocus
                 value={email}
-                onChange={(event) => setEmail(event.target.value)}
+                onChange={(event) => {
+                  setEmail(event.target.value);
+                  if (error) setError(null);
+                }}
               />
+              {error && <p className="field-error" role="alert">{error}</p>}
               <p className="mt-1 text-cp-caption leading-4 text-ink-soft">
                 Already use CookPilot? Sign in with the same account.
               </p>
@@ -398,8 +402,12 @@ export function CookPilotLoginDialog({
                 autoComplete={step === "create" ? "new-password" : "current-password"}
                 autoFocus
                 value={password}
-                onChange={(event) => setPassword(event.target.value)}
+                onChange={(event) => {
+                  setPassword(event.target.value);
+                  if (error) setError(null);
+                }}
               />
+              {error && <p className="field-error" role="alert">{error}</p>}
             </div>
             <button type="submit" className="btn btn-primary w-full" disabled={busy}>
               {busy ? <SpinnerIcon size={ICON_SIZE.md} /> : null}
@@ -426,12 +434,6 @@ export function CookPilotLoginDialog({
           </div>
         )}
 
-      {error && (
-        <div className="state state--error" role="alert">
-          <h4>{step === "create" ? "Couldn’t create account" : "Couldn’t sign in"}</h4>
-          <p>{error}</p>
-        </div>
-      )}
     </Dialog>
   );
 }

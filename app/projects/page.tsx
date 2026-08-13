@@ -8,7 +8,8 @@ import { Badge, IconButton } from "@/components/Controls";
 import { CookPilotLoginDialog, useCookPilotAuth } from "@/components/CookPilotAuth";
 import { BookIcon, CheckIcon, ICON_SIZE, SpinnerIcon, TrashIcon } from "@/components/icons";
 import { deletePrintProject, loadPrintProjects } from "@/lib/printProjects";
-import { loadCookbookProjectUnlock } from "@/lib/cookbookUnlocks";
+import { loadCookbookProjectUnlock, reconcileCookbookProjectUnlocks } from "@/lib/cookbookUnlocks";
+import { photoGridLayout } from "@/lib/photoGrid";
 import type { PrintProject } from "@/types/recipe";
 
 function projectDate(project: PrintProject): string {
@@ -22,25 +23,39 @@ function recipeCount(project: PrintProject): number {
   return project.sections.reduce((count, section) => count + section.items.length, 0);
 }
 
+/** The recipe photos in a project, deduped and in book order. */
+function projectImages(project: PrintProject): string[] {
+  const urls = project.sections.flatMap((section) =>
+    section.items.map((item) => item.recipe?.image),
+  );
+  return Array.from(new Set(urls.filter((url): url is string => Boolean(url))));
+}
+
 function ProjectCover({ project }: { project: PrintProject }) {
-  const cover = project.cover;
-  const images = cover?.layout === "collage"
-    ? cover.gridImages ?? []
-    : cover?.imageUrl
-      ? [cover.imageUrl]
-      : cover?.gridImages ?? [];
-  return (
-    <div className={`project-cover project-cover--${images.length > 1 ? "collage" : images.length ? "photo" : "type"}`}>
-      {images.slice(0, 6).map((url, index) => (
-        // eslint-disable-next-line @next/next/no-img-element
-        <img key={`${url}-${index}`} src={url} alt="" />
-      ))}
-      <div className="project-cover__scrim" aria-hidden />
-      <div className="project-cover__label">
-        {cover?.subtitle && <span>{cover.subtitle}</span>}
-        <strong>{cover?.title || project.title || "Untitled cookbook"}</strong>
-        {cover?.author && <small>{cover.author}</small>}
+  const images = projectImages(project).slice(0, 4);
+  if (images.length === 0) {
+    return (
+      <div className="project-cover project-cover--empty" aria-hidden>
+        <BookIcon size={28} />
       </div>
+    );
+  }
+  const { columns, firstSpans } = photoGridLayout(images.length);
+  return (
+    <div
+      className="project-cover"
+      style={{ gridTemplateColumns: `repeat(${columns}, 1fr)` }}
+      aria-hidden
+    >
+      {images.map((url, index) => (
+        // eslint-disable-next-line @next/next/no-img-element
+        <img
+          key={`${url}-${index}`}
+          src={url}
+          alt=""
+          className={firstSpans && index === 0 ? "project-cover__img--wide" : undefined}
+        />
+      ))}
     </div>
   );
 }
@@ -54,6 +69,8 @@ export default function ProjectsPage() {
   const [deleting, setDeleting] = useState(false);
   const [showLogin, setShowLogin] = useState(false);
   const [purchasedIds, setPurchasedIds] = useState<Set<string>>(() => new Set());
+  const cookbooks = projects.filter((project) => project.kind !== "printProject");
+  const printProjects = projects.filter((project) => project.kind === "printProject");
 
   const refresh = useCallback(async () => {
     if (!user) return;
@@ -62,6 +79,10 @@ export default function ProjectsPage() {
     try {
       const next = await loadPrintProjects(user.uid);
       setProjects(next);
+      // Back up any locally-known unlock that never reached Firestore (a
+      // swallowed write, or a signed-out purchase). Best-effort — never blocks
+      // the list from rendering.
+      void reconcileCookbookProjectUnlocks(user.uid);
       const purchased = await Promise.all(
         next.map(async (project) => [
           project.id,
@@ -117,22 +138,30 @@ export default function ProjectsPage() {
             <button type="button" className="btn btn-secondary mt-cp-4" onClick={() => void refresh()}>Try again</button>
           </div>
         ) : projects.length === 0 ? (
-          <div className="rounded-xl border border-line bg-card p-cp-8 text-center shadow-cp-sm">
-            <BookIcon size={32} className="mx-auto text-ink-soft" />
-            <h2 className="mt-cp-3 text-cp-section-title font-bold">No saved projects yet</h2>
-            <p className="mt-2 text-cp-body text-ink-soft">Your saved cookbooks will appear here.</p>
+          <div className="flex flex-col items-center rounded-xl border border-line bg-card px-cp-6 py-cp-8 text-center">
+            <div className="flex h-16 w-16 items-center justify-center rounded-full bg-[var(--cp-accent-soft)]">
+              <BookIcon size={28} className="text-[var(--cp-accent-ink)]" />
+            </div>
+            <h2 className="mt-cp-4 text-cp-section-title font-bold">No saved projects yet</h2>
+            <p className="mt-2 max-w-sm text-cp-body text-ink-soft">Build a cookbook or print project and it’ll show up here, ready to reopen anytime.</p>
             <Link href="/" className="btn btn-primary mt-cp-5">Add a recipe</Link>
           </div>
         ) : (
           <>
             {error && <p className="mb-cp-4 rounded-lg border border-[var(--cp-error-border)] bg-[var(--cp-error-soft)] p-cp-3 text-cp-small text-error">{error}</p>}
-            <ul className="grid gap-cp-4 sm:grid-cols-2 lg:grid-cols-3">
-              {projects.map((project) => (
-                <li key={project.id} className="group relative flex min-h-44 flex-col overflow-hidden rounded-xl border border-line bg-card shadow-cp-sm transition-[border-color,transform,box-shadow] hover:-translate-y-0.5 hover:border-line-strong hover:shadow-cp-md">
+            {([
+              ["Cookbooks", cookbooks],
+              ["Print projects", printProjects],
+            ] as const).map(([heading, groupedProjects]) => groupedProjects.length > 0 && (
+              <section key={heading} className="mb-cp-8">
+                <h2 className="mb-cp-4 text-cp-section-title font-bold">{heading}</h2>
+                <ul className="grid gap-cp-4 sm:grid-cols-2 lg:grid-cols-3">
+              {groupedProjects.map((project) => (
+                <li key={project.id} className="group relative flex min-h-44 flex-col overflow-hidden rounded-xl border border-line bg-card transition-colors hover:border-line-strong">
                   <Link
                     href={`/print?project=${encodeURIComponent(project.id)}`}
                     className="absolute inset-0 z-10 rounded-xl focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--cp-accent-ink)]"
-                    aria-label={`Open ${project.title || "Untitled cookbook"}`}
+                    aria-label={`Open ${project.title || (project.kind === "printProject" ? "Untitled print project" : "Untitled cookbook")}`}
                   />
                   <ProjectCover project={project} />
                   <div className="flex flex-1 flex-col p-cp-4">
@@ -141,7 +170,7 @@ export default function ProjectsPage() {
                       <span className="text-cp-label font-bold uppercase tracking-wide text-ink-soft">
                         {project.kind === "printProject" ? "Print project" : "Cookbook"}
                       </span>
-                      <h2 className="mt-1 line-clamp-2 text-cp-section-title font-bold">{project.title || "Untitled cookbook"}</h2>
+                      <h3 className="mt-1 line-clamp-2 text-cp-section-title font-bold">{project.title || (project.kind === "printProject" ? "Untitled print project" : "Untitled cookbook")}</h3>
                       </div>
                     <IconButton className="relative z-20" tone="danger" aria-label={`Delete ${project.title || "project"}`} onClick={() => setPendingDelete(project)}>
                       <TrashIcon size={ICON_SIZE.md} />
@@ -164,7 +193,9 @@ export default function ProjectsPage() {
                   </div>
                 </li>
               ))}
-            </ul>
+                </ul>
+              </section>
+            ))}
           </>
         )}
       </main>
@@ -172,7 +203,7 @@ export default function ProjectsPage() {
       <ConfirmDialog
         open={pendingDelete !== null}
         title="Delete project?"
-        description={<>“{pendingDelete?.title || "Untitled cookbook"}” will be permanently removed from your account.</>}
+        description={<>“{pendingDelete?.title || (pendingDelete?.kind === "printProject" ? "Untitled print project" : "Untitled cookbook")}” will be permanently removed from your account.</>}
         confirmLabel="Delete project"
         confirmIcon={<TrashIcon size={ICON_SIZE.md} />}
         busy={deleting}

@@ -22,6 +22,9 @@ type PurchasedProduct = "premium_template" | "cookbook";
  * photo parser find nothing" is a chart instead of a session-replay hunt.
  *   - blocked / not_found: the source site refused us or 404'd (URL only).
  *   - no_recipe: we reached the parser and it found no recipe in the input.
+ *   - rate_limited: the caller's hourly parse quota was reached (waiting fixes
+ *     it) — kept distinct from no_recipe so a quota wall isn't miscounted as
+ *     "the parser found nothing".
  *   - no_files: the import was submitted with nothing usable selected — the
  *     "Choose at least one photo" dead-end, tracked so that class of bug is a
  *     number instead of a session replay.
@@ -35,6 +38,7 @@ export type ImportFailureCode =
   | "blocked"
   | "not_found"
   | "no_recipe"
+  | "rate_limited"
   | "no_files"
   | "decode_failed"
   | "too_large"
@@ -79,6 +83,13 @@ type EventProps = {
      */
     debugPath?: string;
   };
+  /**
+   * A single URL turned out to be a "roundup" and yielded more than one recipe
+   * (RecipePrinter multi-recipe import) — all of which were added. `count` is how
+   * many recipes the page produced. Fires once per such URL, alongside the
+   * per-recipe `recipe_imported` events.
+   */
+  multi_recipe_found: { source: ImportMethod; hostname?: string; count: number };
 
   // ---- Printing --------------------------------------------------------
   // Card size, photo and duplex are the axes the clipping bug lives on, so

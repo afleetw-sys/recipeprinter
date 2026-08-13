@@ -223,7 +223,7 @@ export function PhotoGallery({ cardKeys }: { cardKeys: string[] }) {
                 height={card.height}
                 alt={card.alt}
                 sizes="(max-width: 640px) 90vw, 380px"
-                className="aspect-[4/3] w-full rounded-lg object-cover [object-position:50%_86%]"
+                className="aspect-square w-full rounded-lg object-cover [object-position:50%_88%]"
               />
             </div>
             <figcaption className="text-cp-caption font-semibold text-ink-soft">

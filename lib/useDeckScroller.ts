@@ -4,6 +4,11 @@ import { useCallback, useEffect, useRef, useState, type Dispatch, type SetStateA
 import type { PrintCardSize } from "@/components/RecipeCardPrint";
 
 const SINGLE_RECIPE_DECK_TOP_PADDING = 16;
+// The active slide's controls (front/back flip + Edit/Done) float ABOVE the
+// card, so a purely-centred card in a short deck viewport can tuck them up
+// behind the sticky top bar. Reserve at least this much room above every card
+// (matches the single-recipe CSS clearance) so the controls always clear it.
+const DECK_CONTROLS_CLEARANCE = 72;
 const PREVIEW_SELECTOR = ".recipe-page-scaler";
 
 interface UseDeckScrollerOptions {
@@ -167,7 +172,10 @@ export function useDeckScroller({
         // never a frame behind. That makes scrollTop:0 the first slide's own
         // resting position, with no gap above it left to overscroll into.
         if (!mobile) {
-          const topPad = Math.max(0, (availH - pageHeight * scale) / 2);
+          // Floor the centring pad at the control clearance so the first
+          // slide's floating controls never rest behind the sticky top bar
+          // (only bites when the card is nearly as tall as the viewport).
+          const topPad = Math.max(DECK_CONTROLS_CLEARANCE, (availH - pageHeight * scale) / 2);
           el.style.setProperty("--deck-top-pad", `${topPad}px`);
         }
       }
@@ -199,7 +207,10 @@ export function useDeckScroller({
       const preview = getPreviewMetrics(deck, slide);
       const targetTop = singleRecipePrintView
         ? preview.top - SINGLE_RECIPE_DECK_TOP_PADDING
-        : preview.top - (deck.clientHeight - preview.height) / 2;
+        : // Centre the card, but keep at least the control clearance above it so
+          // the floating controls stay clear of the sticky top bar. A larger gap
+          // means a smaller scrollTop (card sits lower), so take the max gap.
+          preview.top - Math.max(DECK_CONTROLS_CLEARANCE, (deck.clientHeight - preview.height) / 2);
       const maxTop = deck.scrollHeight - deck.clientHeight;
       scrollDeckTo(deck, {
         top: Math.round(Math.max(0, Math.min(targetTop, maxTop))),
@@ -277,7 +288,30 @@ export function useDeckScroller({
   }, [navItemsLength, deckScale, cardSize, singleRecipePrintView]);
 
   // Centre the active page when the deck is first laid out or rescaled.
+  const didInitDeckPositionRef = useRef(false);
   useEffect(() => {
+    // On the FIRST real layout, land on the cover (index 0). The deck is a
+    // native scroll container, so on a reload the browser restores its previous
+    // `scrollTop`, and the scroll listener above then rewrites `activeNavIndex`
+    // to whatever mid-book slide that lands on — the "refresh jumps to a random
+    // page" bug. Force the top and suppress the sync briefly so the restore
+    // scroll that fires as we reset can't corrupt the selection.
+    if (!didInitDeckPositionRef.current && navItemsLength > 0) {
+      didInitDeckPositionRef.current = true;
+      const el = deckRef.current;
+      suppressScrollSyncRef.current = true;
+      if (el) {
+        el.scrollTop = 0;
+        el.scrollLeft = 0;
+      }
+      setActiveNavIndex(0);
+      centerSlide(0);
+      window.clearTimeout(scrollSyncTimerRef.current);
+      scrollSyncTimerRef.current = window.setTimeout(() => {
+        suppressScrollSyncRef.current = false;
+      }, 250);
+      return;
+    }
     centerSlide(activeNavIndex);
     // Only re-centre on structural / size changes, not on every selection.
     // eslint-disable-next-line react-hooks/exhaustive-deps

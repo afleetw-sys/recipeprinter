@@ -58,10 +58,13 @@ interface Gesture {
 export function useRailDrag(
   scrollRef: RefObject<HTMLElement | null>,
   resolve: (kind: RailDragKind, id: string, clientX: number, clientY: number) => RailDropResolved | null,
+  onBegin?: (kind: RailDragKind, id: string) => void,
 ): RailDragController {
   const [dragging, setDragging] = useState<{ id: string; kind: RailDragKind } | null>(null);
   const resolveRef = useRef(resolve);
   resolveRef.current = resolve;
+  const onBeginRef = useRef(onBegin);
+  onBeginRef.current = onBegin;
 
   const gesture = useRef<Gesture | null>(null);
   const preview = useRef<HTMLElement | null>(null);
@@ -116,6 +119,7 @@ export function useRailDrag(
     const begin = (g: Gesture) => {
       g.active = true;
       didDragRef.current = true;
+      onBeginRef.current?.(g.kind, g.id);
       const rect = g.node.getBoundingClientRect();
       const clone = g.node.cloneNode(true) as HTMLElement;
       clone.classList.add("rail-drag-preview");

@@ -27,9 +27,7 @@
   --cp-page: #f5f7fb;
   --cp-card: #ffffff;
   --cp-error: #c53f3f;
-  /* Error surface tints, derived from --cp-error so the destructive red stays
-     one source of truth instead of the same rgba(197,63,63,…) being hand-typed
-     into every error block (.state--error, the queue-card parse error, etc.). */
+  /* Reserved for non-field error surfaces such as failed import queue cards. */
   --cp-error-soft: color-mix(in srgb, var(--cp-error) 6%, transparent);
   --cp-error-border: color-mix(in srgb, var(--cp-error) 16%, transparent);
   --cp-body-background: #f5f7fb;
@@ -87,13 +85,21 @@
      accent outline shown only on keyboard nav (:focus-visible). */
   --cp-selected-border: var(--cp-accent);
   --cp-selected-fill: color-mix(in srgb, var(--cp-accent) 8%, var(--cp-card));
-  --cp-selected-ring: 0 0 0 1px var(--cp-accent);
+  /* Flat by design: selection reads from the accent border + fill + ink text,
+     not a shadow. Kept as a no-op token so the many `box-shadow:
+     var(--cp-selected-ring)` call sites stay valid; set it to a real ring only
+     if a control ever needs one without an accompanying border. */
+  --cp-selected-ring: none;
   --cp-selected-text: var(--cp-accent-ink);
-  /* Focus needs to clear 3:1 against a white control surface. The vivid accent
-     is intentionally decorative and only reaches 1.95:1, so keyboard focus
-     uses its AA-safe ink sibling instead. */
-  --cp-focus-ring: 2px solid var(--cp-accent-ink);
-  --cp-focus-ring-offset: 2px;
+  /* Focus uses the vivid brand accent so it matches the selected-state border
+     (e.g. the mode-toggle tabs), which also uses --cp-accent — a focus ring in
+     the darker ink sibling read as a different, "wrong" colour next to it.
+     Trade-off: the vivid accent is ~1.95:1 on white, below the 3:1 focus ideal,
+     accepted here for visual consistency (chosen over the AA-safe ink). */
+  --cp-focus-ring: 2px solid var(--cp-accent);
+  /* Hug the control edge — an offset ring reads as a detached double-line next
+     to the field's own border. Zero keeps focus a single clean ring. */
+  --cp-focus-ring-offset: 0;
 
   /* How much the on-screen keyboard currently covers, kept in sync by
      KeyboardInsetWatcher. Fixed-position bottom bars sit above this instead
@@ -104,14 +110,14 @@
 /* Saved-project cover thumbnails use persisted cover data without importing
    the physical print-page layout into the projects dashboard. */
 .project-cover {
-  position: relative;
   display: grid;
   grid-template-columns: repeat(2, 1fr);
   grid-auto-rows: 1fr;
+  gap: 2px;
   width: 100%;
   aspect-ratio: 8.5 / 5.5;
   overflow: hidden;
-  background: var(--cp-accent-soft);
+  background: var(--cp-line);
 }
 .project-cover img {
   width: 100%;
@@ -119,43 +125,14 @@
   min-height: 0;
   object-fit: cover;
 }
-.project-cover--photo img {
+.project-cover__img--wide {
   grid-column: 1 / -1;
-  grid-row: 1 / -1;
 }
-.project-cover__scrim {
-  position: absolute;
-  inset: 0;
-  background: linear-gradient(to top, rgb(20 24 28 / 62%), rgb(20 24 28 / 4%) 70%);
-}
-.project-cover--type .project-cover__scrim {
-  background: linear-gradient(135deg, var(--cp-accent-soft), var(--cp-card));
-}
-.project-cover__label {
-  position: absolute;
-  inset: auto 10% 12%;
-  display: flex;
-  flex-direction: column;
-  gap: 3px;
-  color: white;
-  text-align: center;
-  text-shadow: 0 1px 8px rgb(0 0 0 / 28%);
-}
-.project-cover--type .project-cover__label {
-  top: 50%;
-  bottom: auto;
-  color: var(--cp-ink);
-  text-shadow: none;
-  transform: translateY(-50%);
-}
-.project-cover__label span,
-.project-cover__label small {
-  font-size: var(--cp-fs-label);
-  font-weight: 650;
-}
-.project-cover__label strong {
-  font-size: var(--cp-fs-h2);
-  line-height: 1.05;
+.project-cover--empty {
+  gap: 0;
+  place-items: center;
+  background: var(--cp-accent-soft);
+  color: var(--cp-accent-ink);
 }
 
 /* ── Cookbook premium workspace ───────────────────────────────────────── */
@@ -1295,6 +1272,10 @@
   .state--error {
     border-color: var(--cp-error-border);
     background: var(--cp-error-soft);
+  }
+  .field-error {
+    @apply mt-1 text-cp-small leading-relaxed;
+    color: var(--cp-error);
   }
   .state h4 {
     @apply text-cp-body font-bold;

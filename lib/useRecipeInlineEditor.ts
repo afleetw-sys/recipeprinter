@@ -224,7 +224,13 @@ export function useRecipeInlineEditor({
   const insertIngredientAt = useCallback(
     (index: number) => {
       if (!activeRecipeItem?.recipe) return;
-      const recipe = activeRecipeItem.recipe;
+      // Clicking Add blurs the current field just before the click fires. Build
+      // from that in-progress edit directly so the blur/save and insertion can
+      // never race and recreate the preceding row.
+      const recipe =
+        editingEdit?.recipeId === activeRecipeItem.id
+          ? applyRecipeTargetEdit(activeRecipeItem.recipe, editingEdit.target, editValue)
+          : activeRecipeItem.recipe;
       const section = sectionForInsertion(recipe.ingredients, index);
       const ingredients = recipe.ingredients.slice();
       ingredients.splice(index, 0, { raw: "", name: "", section });
@@ -237,13 +243,16 @@ export function useRecipeInlineEditor({
       setEditingEdit({ recipeId: activeRecipeItem.id, target: { kind: "ingredient", index } });
       setEditValue("");
     },
-    [activeRecipeItem, setItems],
+    [activeRecipeItem, editValue, editingEdit, setItems],
   );
 
   const insertStepAt = useCallback(
     (index: number) => {
       if (!activeRecipeItem?.recipe) return;
-      const recipe = activeRecipeItem.recipe;
+      const recipe =
+        editingEdit?.recipeId === activeRecipeItem.id
+          ? applyRecipeTargetEdit(activeRecipeItem.recipe, editingEdit.target, editValue)
+          : activeRecipeItem.recipe;
       const section = sectionForInsertion(recipe.instructions, index);
       const instructions = recipe.instructions.slice();
       instructions.splice(index, 0, { step: 0, text: "", section });
@@ -257,7 +266,7 @@ export function useRecipeInlineEditor({
       setEditingEdit({ recipeId: activeRecipeItem.id, target: { kind: "step", index } });
       setEditValue("");
     },
-    [activeRecipeItem, setItems],
+    [activeRecipeItem, editValue, editingEdit, setItems],
   );
 
   // Enter mid-ingredient/mid-step splits the line at the cursor: the text

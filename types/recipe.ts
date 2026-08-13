@@ -51,7 +51,9 @@ export interface Recipe {
 
 export interface ParseResult {
   success: true;
-  recipe: Recipe;
+  /** One or more recipes. A normal page yields exactly one; a "roundup" URL
+      (RecipePrinter multi-recipe import) yields several. */
+  recipes: Recipe[];
 }
 
 export interface ParseError {

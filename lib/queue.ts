@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import type { ImportMethod, QueueItem, Recipe } from "@/types/recipe";
 import { track, truncateReason } from "@/lib/analytics";
-import { ImportError, parseImages, parseText, parseUrl } from "@/lib/parser";
+import { ImportError, parseImages, parseText, parseUrlAll } from "@/lib/parser";
 import { captureFailedImportImages, captureFailedImportText } from "@/lib/failedImportCapture";
 import { normalizeImportURL } from "@/lib/cookpilot";
 import { hostnameOf as rawHostnameOf } from "@/lib/url";
@@ -232,7 +232,10 @@ export function useQueue() {
     async (
       id: string,
       origin: { source: ImportMethod; hostname?: string },
-      work: () => Promise<Recipe>,
+      // A URL parse can yield several recipes (a "roundup" page); image/text parses
+      // yield one. A multi result lands the first recipe on this item and blooms the
+      // rest into their own ready items — see below.
+      work: () => Promise<Recipe | Recipe[]>,
       // The exact input handed to the parser, stashed for debugging if the parse
       // fails (see lib/failedImportCapture.ts): the compressed data-URLs for an
       // image import, or the pasted text / URL for the others.
@@ -241,9 +244,42 @@ export function useQueue() {
       patch(id, { status: "parsing", error: undefined });
       track("recipe_import_started", origin);
       try {
-        const recipe = await work();
-        patch(id, { status: "ready", recipe, title: recipe.title || "Untitled recipe" });
+        const result = await work();
+        const recipes = Array.isArray(result) ? result : [result];
+        // parseUrlAll/parseImages/parseText throw rather than resolve empty, so this
+        // is a defensive guard, not an expected branch.
+        if (recipes.length === 0) {
+          throw new ImportError(
+            "We couldn't find a complete recipe on that page. Try another link or paste the recipe text instead.",
+            "no_recipe",
+          );
+        }
+        const [first, ...rest] = recipes;
+        patch(id, { status: "ready", recipe: first, title: first.title || "Untitled recipe" });
         track("recipe_imported", origin);
+        if (rest.length > 0) {
+          // A roundup URL: keep the first recipe on this item and add the rest as
+          // their own ready items, mirroring this item's URL context so retry/dedupe
+          // still key off the same source. Count each as its own import.
+          const base = itemsRef.current.find((it) => it.id === id);
+          const extras: QueueItem[] = rest.map((recipe) => ({
+            id: uid(),
+            method: base?.method ?? "url",
+            source: base?.source ?? origin.hostname ?? "",
+            originalUrl: base?.originalUrl,
+            status: "ready",
+            title: recipe.title || "Untitled recipe",
+            recipe,
+            addedAt: Date.now(),
+          }));
+          commit([...itemsRef.current, ...extras]);
+          rest.forEach(() => track("recipe_imported", origin));
+          track("multi_recipe_found", {
+            source: origin.source,
+            hostname: origin.hostname,
+            count: recipes.length,
+          });
+        }
       } catch (err) {
         patch(id, {
           status: "error",
@@ -270,7 +306,7 @@ export function useQueue() {
         });
       }
     },
-    [patch],
+    [patch, commit],
   );
 
   const addUrl = useCallback(
@@ -303,7 +339,7 @@ export function useQueue() {
       void runParse(
         id,
         { source: "url", hostname: hostnameOf(normalizedUrl) },
-        () => parseUrl(normalizedUrl),
+        () => parseUrlAll(normalizedUrl),
         { failedText: normalizedUrl },
       );
     },
@@ -381,7 +417,7 @@ export function useQueue() {
       if (!item) return;
       if (item.method === "url" && item.originalUrl) {
         const url = item.originalUrl;
-        void runParse(id, { source: "url", hostname: hostnameOf(url) }, () => parseUrl(url), {
+        void runParse(id, { source: "url", hostname: hostnameOf(url) }, () => parseUrlAll(url), {
           failedText: url,
         });
       } else if (item.method === "text") {

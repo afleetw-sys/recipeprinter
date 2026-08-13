@@ -6,6 +6,11 @@ import { getFirebaseStorage } from "@/lib/firebase/storage";
 import { recipePrinterUserPhotoRoot } from "@/lib/firebase/recipePrinterPaths";
 import { localStore } from "@/lib/storage";
 import { createPrintProjectId, loadPrintProject, savePrintProject } from "@/lib/printProjects";
+import {
+  isCookbookProjectUnlocked,
+  persistCookbookProjectUnlock,
+  transferCookbookProjectUnlockLocal,
+} from "@/lib/cookbookUnlocks";
 
 const MANIFEST_KEY = "recipeprinter:anonymous-adoption:v1";
 
@@ -181,6 +186,14 @@ export async function adoptAnonymousProject(
       Object.values(manifest.assets).some((url) => !verifiedJson.includes(url))
     ) {
       throw new Error("The saved project could not be verified.");
+    }
+    // Carry any cookbook unlock across the id change and back it up under the
+    // new owner. A signed-out purchase only ever wrote localStorage (no uid);
+    // adoption is the first moment we can durably persist it to Firestore, so a
+    // "buy first, make an account later" cookbook survives a device switch.
+    transferCookbookProjectUnlockLocal(project.id, destinationProjectId);
+    if (isCookbookProjectUnlocked(destinationProjectId)) {
+      await persistCookbookProjectUnlock(uid, destinationProjectId).catch(() => undefined);
     }
     writeManifest({ ...manifest, status: "complete", error: undefined });
     return saved;

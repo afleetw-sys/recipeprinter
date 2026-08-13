@@ -131,6 +131,7 @@ export function AdminShareLinkDialog({
               {deactivateBusy ? <SpinnerIcon size={ICON_SIZE.md} /> : null}
               Deactivate this link
             </button>
+            {error && <p className="field-error" role="alert">{error}</p>}
           </div>
         ) : (
           <form className="flex flex-col gap-cp-3" onSubmit={handleSave}>
@@ -145,10 +146,14 @@ export function AdminShareLinkDialog({
                   className="field"
                   value={slug}
                   autoFocus
-                  onChange={(event) => setSlug(event.target.value)}
+                  onChange={(event) => {
+                    setSlug(event.target.value);
+                    if (error) setError(null);
+                  }}
                   placeholder="lemon-pasta"
                 />
               </div>
+              {error && <p className="field-error" role="alert">{error}</p>}
             </div>
             <button type="submit" className="btn btn-primary w-full" disabled={busy}>
               {busy ? <SpinnerIcon size={ICON_SIZE.md} /> : null}
@@ -157,12 +162,6 @@ export function AdminShareLinkDialog({
           </form>
         )}
 
-      {error && (
-        <div className="state state--error" role="alert">
-          <h4>Couldn&apos;t save link</h4>
-          <p>{error}</p>
-        </div>
-      )}
     </Dialog>
   );
 }

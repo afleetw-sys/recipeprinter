@@ -55,7 +55,7 @@
 
 .recipe-print-shell {
   display: grid;
-  grid-template-columns: 190px minmax(0, 1fr) minmax(230px, 290px);
+  grid-template-columns: 190px minmax(0, 1fr) minmax(250px, 330px);
   align-items: start;
   gap: clamp(16px, 2.4vw, 30px);
 }
@@ -76,7 +76,7 @@
   }
 
   .recipe-print-page .recipe-print-shell {
-    grid-template-columns: 220px calc(100% - 510px) 290px;
+    grid-template-columns: 220px calc(100% - 550px) 330px;
     gap: 0;
     height: 100%;
     min-height: 0;
@@ -299,7 +299,7 @@
   background: var(--cp-page);
   cursor: grab;
 }
-.cb-board__card:hover { border-color: var(--cp-line-strong); box-shadow: var(--cp-shadow-sm); }
+.cb-board__card:hover { border-color: var(--cp-line-strong); }
 .cb-board__card.is-selected {
   border-color: var(--cp-selected-border);
   background: var(--cp-selected-fill);
@@ -633,7 +633,6 @@
   gap: 1px;
   border-radius: 5px;
   overflow: hidden;
-  box-shadow: var(--cp-shadow-sm);
   -webkit-mask-image: linear-gradient(to bottom, #000 74%, transparent);
   mask-image: linear-gradient(to bottom, #000 74%, transparent);
 }
@@ -926,93 +925,6 @@
   background: var(--cp-line);
 }
 
-/* ── Rail multi-select pill (cookbook) — floats above the Add recipe row ── */
-/* A selection action bar that appears when 2+ recipes are multi-selected. One
-   neutral "Move (N) ▾" dropdown, spanning nearly the rail's width just above the
-   Add-recipe row (floats over the list rather than pushing it down). No clear
-   button — clicking a recipe or empty space drops the selection. */
-.recipe-page-rail__bulk {
-  position: absolute;
-  /* Match the footer's own asymmetric padding (4px left, 16px right) so the bar
-     lines up flush with the Add-recipe row below it, not past its right edge. */
-  left: 4px;
-  right: 16px;
-  bottom: calc(100% + 8px);
-  z-index: 4;
-}
-
-.recipe-page-rail__bulk-move {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 5px;
-  width: 100%;
-  padding: 9px 14px;
-  border-radius: 10px;
-  background: var(--cp-ink);
-  color: var(--cp-card);
-  font-size: var(--cp-fs-caption);
-  font-weight: 800;
-  white-space: nowrap;
-  box-shadow: var(--cp-shadow-md);
-}
-
-.recipe-page-rail__bulk-move:hover {
-  background: color-mix(in srgb, var(--cp-ink) 88%, var(--cp-card));
-}
-
-.recipe-page-rail__bulk-move svg {
-  opacity: 0.8;
-}
-
-.recipe-page-rail__bulk-menu {
-  position: absolute;
-  bottom: calc(100% + 6px);
-  left: 0;
-  z-index: 6;
-  min-width: 184px;
-  max-height: 260px;
-  overflow-y: auto;
-  padding: 6px;
-  border: 1px solid var(--cp-line);
-  border-radius: 10px;
-  background: var(--cp-card);
-  box-shadow: var(--cp-shadow-md);
-}
-
-.recipe-page-rail__bulk-menu button {
-  display: flex;
-  align-items: center;
-  gap: 7px;
-  width: 100%;
-  padding: 8px 9px;
-  border-radius: 7px;
-  color: var(--cp-ink);
-  font-size: var(--cp-fs-caption);
-  font-weight: 700;
-  text-align: left;
-  white-space: nowrap;
-}
-
-/* The create-new action leads the menu; a hairline separates it from the list
-   of existing sections below. Kept neutral (no accent colour). */
-.recipe-page-rail__bulk-menu-new {
-  font-weight: 800;
-}
-
-.recipe-page-rail__bulk-menu button:hover {
-  background: var(--cp-line);
-}
-
-.recipe-page-rail__bulk-menu-label {
-  padding: 8px 9px 4px;
-  color: var(--cp-ink-soft);
-  font-size: var(--cp-fs-label);
-  font-weight: 800;
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
-}
-
 .recipe-page-canvas {
   position: sticky;
   top: 86px;
@@ -1048,15 +960,17 @@
    Desktop-scoped on purpose: the mobile deck keeps its own `54px 40px 18px`
    (control clearance + side peek); an unscoped override here outranks that rule
    and would collapse the mobile padding too, hiding the controls there as well. */
-/* A lone card doesn't need the ~44vh centring pad, but the floating controls
-   (front/back arrows + Edit) sit ABOVE the card, so the deck still needs enough
-   top room for them to clear the sticky header — otherwise they hide behind it.
-   Desktop-scoped on purpose: the mobile deck keeps its own `54px 40px 18px`
-   (control clearance + side peek); an unscoped override here outranks that rule
-   and would collapse the mobile padding too, hiding the controls there as well. */
 @media screen and (min-width: 821px) {
   .recipe-page-canvas[data-single-recipe="true"] .recipe-page-deck {
     padding: 72px 0 24px;
+  }
+  /* With multiple cards, `scroll-snap: y mandatory` re-centres the active card
+     and can pull its floating controls up behind the sticky header. Inset the
+     snapport top by the same control clearance the JS reserves
+     (`DECK_CONTROLS_CLEARANCE` in useDeckScroller) so the snapped card always
+     leaves room for them. Paired with the floored `--deck-top-pad`. */
+  .recipe-page-deck {
+    scroll-padding-top: 72px;
   }
 }
 
@@ -1197,7 +1111,6 @@
   border: 1px solid var(--cp-line);
   border-radius: 999px;
   background: var(--cp-card);
-  box-shadow: var(--cp-shadow-sm);
 }
 
 .recipe-spread__blank--designed {
@@ -1277,7 +1190,6 @@
   color: var(--cp-ink-soft);
   font-size: var(--cp-fs-caption);
   font-weight: 800;
-  box-shadow: var(--cp-shadow-sm);
 }
 
 .recipe-page-edit-toggle.is-active {
@@ -1433,9 +1345,7 @@
 
 .rp-queue-item--focused > button:first-of-type {
   border-color: var(--cp-accent);
-  box-shadow:
-    0 0 0 3px color-mix(in srgb, var(--cp-accent) 18%, transparent),
-    var(--cp-shadow-md);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--cp-accent) 18%, transparent);
 }
 
 /* Duplicate-import cue on the print rail: the already-present recipe's row
@@ -2074,7 +1984,6 @@
   font-size: var(--cp-fs-label);
   font-weight: 900;
   line-height: 1;
-  box-shadow: var(--cp-shadow-xs);
 }
 
 .recipe-template-option__owned {
@@ -2090,7 +1999,6 @@
   border-radius: 999px;
   background: #eefaf9;
   color: #267c77;
-  box-shadow: var(--cp-shadow-xs);
 }
 
 .recipe-template-note {
@@ -2755,7 +2663,11 @@
   .recipe-config-panel.is-mobile-open {
     visibility: visible;
     pointer-events: auto;
-    transform: translateY(0);
+    /* End at a genuinely untransformed box. A zero-valued transform still
+       creates a transformed coordinate system, which makes native select
+       popovers anchor above/aside the visible field on Safari/WebKit. `none`
+       remains transitionable from the closed translateY(100%) position. */
+    transform: none;
     transition:
       transform 220ms cubic-bezier(0.4, 0, 0.2, 1),
       visibility 0s;
@@ -2998,14 +2910,33 @@
   z-index: 4;
   zoom: calc(1 / var(--page-scale, 1));
   min-height: 0;
-  gap: 5px;
-  padding: 4px 9px;
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  justify-content: center;
   font-size: var(--cp-fs-label);
   border-radius: 999px;
+}
+.recipe-card__cook-photo-edit span {
+  display: none;
 }
 .recipe-card__cook-photo-edit svg {
   width: 13px;
   height: 13px;
+}
+
+/* Plain recipe-card photo action. The shared picker supplies app-sized defaults
+   that are appropriate outside the artwork but oversized inside this shallow
+   photo frame, so explicitly collapse its inherited minimum height and icon. */
+.image-picker__trigger.recipe-card__photo-edit {
+  min-height: 0;
+  gap: 0.035in;
+  padding: 0.035in 0.06in;
+  font-size: calc(var(--recipe-card-label-size) * 0.72);
+}
+.recipe-card__photo-edit svg {
+  width: 0.105in;
+  height: 0.105in;
 }
 
 .recipe-card-side-nav {
@@ -3020,7 +2951,6 @@
   color: var(--cp-ink-soft);
   font-size: var(--cp-fs-caption);
   font-weight: 800;
-  box-shadow: var(--cp-shadow-sm);
 }
 
 .recipe-card-side-nav__button {
@@ -3366,10 +3296,9 @@
 .recipe-card__chapter-photo {
   position: relative;
   overflow: hidden;
-  background:
-    radial-gradient(80% 74% at 72% 24%, color-mix(in srgb, var(--recipe-accent-2) 58%, transparent), transparent 62%),
-    radial-gradient(70% 68% at 20% 82%, color-mix(in srgb, var(--recipe-accent) 40%, transparent), transparent 60%),
-    linear-gradient(150deg, color-mix(in srgb, var(--recipe-accent) 40%, var(--recipe-bg)), color-mix(in srgb, var(--recipe-accent-2) 26%, var(--recipe-bg)));
+  /* A quiet loading/missing-photo surface. The old template-colored radial
+     gradient flashed as decorative artwork while remote images decoded. */
+  background: color-mix(in srgb, var(--recipe-bg) 88%, var(--recipe-muted));
   -webkit-print-color-adjust: exact;
   print-color-adjust: exact;
 }
@@ -3427,16 +3356,13 @@
   gap: 0.07in;
 }
 
-/* Full-bleed photo field. When no cover image is set, a template-tinted
-   gradient stands in so the cover still reads as designed rather than blank. */
+/* Full-bleed photo field. Keep its pre-image surface flat so loading a remote
+   cover doesn't briefly show unrelated generated artwork. */
 .recipe-card__cover-photo {
   position: absolute;
   inset: 0;
   z-index: 0;
-  background:
-    radial-gradient(78% 62% at 62% 26%, color-mix(in srgb, var(--recipe-accent) 32%, transparent), transparent 68%),
-    radial-gradient(72% 66% at 22% 84%, color-mix(in srgb, var(--recipe-accent-2) 30%, transparent), transparent 64%),
-    linear-gradient(158deg, color-mix(in srgb, var(--recipe-accent) 15%, var(--recipe-bg)), color-mix(in srgb, var(--recipe-accent-2) 14%, var(--recipe-bg)));
+  background: color-mix(in srgb, var(--recipe-bg) 88%, var(--recipe-muted));
   -webkit-print-color-adjust: exact;
   print-color-adjust: exact;
 }
@@ -3921,6 +3847,44 @@
   background: var(--recipe-accent);
 }
 
+/* Framed openers (heirloom/keepsake/cookout) drop the full-width band by design,
+   which meant selecting "In card" for a chapter photo showed NOTHING on the
+   opener — the photo only appeared as a Full-page facing sheet. When an in-card
+   photo IS set, show it as a centered framed image above the title instead of
+   hiding it. Scoped with :has() so text-only framed openers are untouched.
+   (Print-only geometry — verify on a re-export.) */
+.recipe-template--heirloom .recipe-card--chapter:has(.recipe-card__chapter-image),
+.recipe-template--keepsake .recipe-card--chapter:has(.recipe-card__chapter-image),
+.recipe-template--cookout .recipe-card--chapter:has(.recipe-card__chapter-image) {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.3in;
+  padding: 0.9in;
+}
+.recipe-template--heirloom .recipe-card--chapter:has(.recipe-card__chapter-image) .recipe-card__chapter-body,
+.recipe-template--keepsake .recipe-card--chapter:has(.recipe-card__chapter-image) .recipe-card__chapter-body,
+.recipe-template--cookout .recipe-card--chapter:has(.recipe-card__chapter-image) .recipe-card__chapter-body {
+  position: static;
+  inset: auto;
+  padding: 0;
+  align-items: center;
+  text-align: center;
+}
+.recipe-template--heirloom .recipe-card__chapter-photo:has(.recipe-card__chapter-image),
+.recipe-template--keepsake .recipe-card__chapter-photo:has(.recipe-card__chapter-image),
+.recipe-template--cookout .recipe-card__chapter-photo:has(.recipe-card__chapter-image) {
+  display: block;
+  position: relative;
+  flex: none;
+  width: 3.6in;
+  height: 2.4in;
+  border-radius: 0.06in;
+  overflow: hidden;
+  background: none;
+}
+
 /* ── Table of contents ────────────────────────────────────────────────────
    Skinned by the same --recipe-* vars as every other page, so it matches the
    chosen template. Chapters as headings, recipes indented with dot leaders. */
@@ -4012,6 +3976,25 @@
    is untouched. */
 .recipe-card-page {
   position: relative;
+  /* Where the footer furniture's outer edges sit, so the section name and folio
+     line up with the recipe content column instead of a hardcoded guess. These
+     mirror the card's own content padding: `--recipe-card-padding-x` (0.58in on
+     letter) plus whatever a template's spine decoration adds on top (see the
+     bistro/pantry/keepsake overrides below). The coil export push then adds
+     `--rp-bind-deco` to whichever edge is bound. */
+  --rp-foot-inset-l: var(--recipe-card-padding-x);
+  --rp-foot-inset-r: var(--recipe-card-padding-x);
+}
+/* Bistro & pantry push their content in from the left by their spine decoration
+   (+0.18in, matching .recipe-template--bistro/--pantry .recipe-card padding). */
+.recipe-card-page:has(.recipe-template--bistro),
+.recipe-card-page:has(.recipe-template--pantry) {
+  --rp-foot-inset-l: calc(var(--recipe-card-padding-x) + 0.18in);
+}
+/* Keepsake insets both edges by 0.06in (matches its symmetric card padding). */
+.recipe-card-page:has(.recipe-template--keepsake) {
+  --rp-foot-inset-l: calc(var(--recipe-card-padding-x) + 0.06in);
+  --rp-foot-inset-r: calc(var(--recipe-card-padding-x) + 0.06in);
 }
 /* Footer furniture: chapter/section name bottom-left, page number bottom-right,
    sharing a baseline in the page's bottom margin so they never collide with the
@@ -4019,7 +4002,7 @@
 .recipe-book-runhead {
   position: absolute;
   bottom: 0.24in;
-  left: 0.55in;
+  left: var(--rp-foot-inset-l);
   max-width: 4.5in;
   z-index: 6;
   text-align: left;
@@ -4036,7 +4019,7 @@
 .recipe-book-folio {
   position: absolute;
   bottom: 0.24in;
-  right: 0.55in;
+  right: var(--rp-foot-inset-r);
   z-index: 6;
   text-align: right;
   font-size: 0.115in;
@@ -4091,7 +4074,6 @@
   border: 1px solid var(--cp-line-strong);
   border-radius: 999px;
   background: var(--cp-card);
-  box-shadow: var(--cp-shadow-sm);
   color: var(--cp-accent-ink);
   font-size: var(--cp-fs-small);
   font-weight: 800;
@@ -4158,11 +4140,6 @@
 .image-picker__placement {
   margin-top: 20px;
 }
-.image-picker__placement h3 {
-  margin-bottom: 10px;
-  font-size: var(--cp-fs-caption);
-  font-weight: 800;
-}
 .image-picker__placement-row {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -4170,12 +4147,10 @@
 }
 .image-picker__placement-btn {
   display: flex;
-  flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 3px;
-  min-height: 64px;
-  padding: 10px 8px;
+  min-height: 44px;
+  padding: 8px 10px;
   border: 1px solid var(--cp-line);
   border-radius: 12px;
   background: var(--cp-card);
@@ -4197,54 +4172,10 @@
   font-size: var(--cp-fs-body);
   font-weight: 750;
 }
-.image-picker__placement-hint {
-  font-size: var(--cp-fs-caption);
-  font-weight: 600;
-  color: var(--cp-ink-soft);
-  line-height: 1.25;
-}
 .image-picker__placement-note {
   margin: 18px 0 0;
   color: var(--cp-ink-soft);
   font-size: var(--cp-fs-body);
-}
-.image-picker__choices {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 10px;
-  margin-top: 22px;
-}
-.image-picker__choices--recipe {
-  grid-template-columns: 1fr;
-}
-.image-picker__choice {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-  min-height: 72px;
-  padding: 12px;
-  border: 1px solid var(--cp-line);
-  border-radius: 12px;
-  background: var(--cp-card);
-  color: var(--cp-ink);
-  font-size: var(--cp-fs-body);
-  font-weight: 750;
-  cursor: pointer;
-}
-.image-picker__choice:hover:not(.is-active) {
-  border-color: var(--cp-line-strong);
-  background: var(--cp-page);
-}
-.image-picker__choice.is-active {
-  border-color: var(--cp-selected-border);
-  background: var(--cp-selected-fill);
-  box-shadow: var(--cp-selected-ring);
-  color: var(--cp-selected-text);
-}
-.image-picker__choice.is-busy {
-  opacity: 0.65;
-  cursor: wait;
 }
 .image-picker__grid-icon {
   display: grid;
@@ -4272,10 +4203,76 @@
   font-size: var(--cp-fs-caption);
   font-weight: 800;
 }
+/* Photos header: title left, a "Select multiple" toggle right — the collage lives
+   in the same library as the single photos, no separate mode boxes. */
+.image-picker__existing-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+.image-picker__existing-head h3 {
+  margin: 0;
+}
+.image-picker__multiselect {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  flex: 0 0 auto;
+  padding: 7px 13px;
+  border: 1px solid var(--cp-line);
+  border-radius: 999px;
+  background: var(--cp-card);
+  color: var(--cp-ink);
+  font-size: var(--cp-fs-caption);
+  font-weight: 750;
+  cursor: pointer;
+}
+.image-picker__multiselect:hover:not(.is-active) {
+  border-color: var(--cp-line-strong);
+  background: var(--cp-page);
+}
+.image-picker__multiselect.is-active {
+  border-color: var(--cp-selected-border);
+  background: var(--cp-selected-fill);
+  box-shadow: var(--cp-selected-ring);
+  color: var(--cp-selected-text);
+}
 .image-picker__grid {
   display: grid;
   grid-template-columns: repeat(5, minmax(0, 1fr));
   gap: 9px;
+}
+/* "None" and "Upload" ride in the grid as square action tiles — upload trailing,
+   none leading — instead of separate full-width buttons above it. */
+.image-picker__photo.image-picker__photo--action {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  border: 1px solid var(--cp-line);
+  background: var(--cp-card);
+  color: var(--cp-ink-soft);
+}
+.image-picker__photo.image-picker__photo--action:hover {
+  border-color: var(--cp-line-strong);
+  color: var(--cp-ink);
+}
+.image-picker__photo--action.is-active {
+  border-color: var(--cp-selected-border);
+  box-shadow: var(--cp-selected-ring);
+  color: var(--cp-selected-text);
+}
+.image-picker__photo--action.is-busy {
+  opacity: 0.65;
+  cursor: wait;
+}
+.image-picker__tile-label {
+  font-size: var(--cp-fs-caption);
+  font-weight: 700;
+  line-height: 1;
 }
 .image-picker__photo {
   position: relative;
@@ -4364,12 +4361,6 @@
     padding: 20px;
     border-radius: 24px 24px 14px 14px;
   }
-  .image-picker__choices {
-    grid-template-columns: 1fr;
-  }
-  .image-picker__choice {
-    min-height: 52px;
-  }
   .image-picker__grid {
     grid-template-columns: repeat(4, minmax(0, 1fr));
   }
@@ -4385,6 +4376,12 @@
 .recipe-card__cover-grid-img {
   width: 100%;
   height: 100%;
+  /* Grid cells default to min-height:auto (= the image's intrinsic height), which
+     lets a banner spanning two columns inflate its `1fr` row and swallow the frame
+     — a 3- or 5-photo collage then reads as one giant photo over a crushed sliver.
+     Pinning the min sizes to 0 keeps every row an honest equal share. */
+  min-width: 0;
+  min-height: 0;
   object-fit: cover;
   -webkit-print-color-adjust: exact;
   print-color-adjust: exact;
@@ -4502,6 +4499,8 @@ textarea.recipe-card__cover-subtitle,
 textarea.recipe-card__cover-author,
 textarea.recipe-card__cover-from,
 textarea.recipe-card__cover-blurb,
+textarea.recipe-card__title,
+textarea.recipe-card__section-title,
 textarea.recipe-card__divider-title,
 textarea.recipe-card__chapter-intro,
 textarea.recipe-card__toc-kicker,
@@ -4678,9 +4677,23 @@ textarea.recipe-card__toc-title {
   top: 0;
   bottom: 0;
   left: 0;
-  width: 0.24in;
+  /* One knob for both the strip width and the check TILE, so widening the spine
+     on a spiral binding edge (see the `.rp-coil` rule) makes the squares thicker
+     rather than adding more of them. Each square is half a tile. */
+  --bistro-check: 0.24in;
+  width: var(--bistro-check);
   -webkit-print-color-adjust: exact;
   print-color-adjust: exact;
+}
+/* The checker TILE geometry lives on SVG attributes in `BistroCheckerSpine`,
+   not here: browsers ignore CSS `width`/`height` on an SVG `<pattern>`, which
+   silently blanks the checkerboard. `--bistro-check` above only sizes the strip
+   width (widened on a coil binding edge); the squares stay a fixed tile. */
+/* A page-level copy of the spine, drawn as a sibling of the card so it escapes
+   the export transform. Used ONLY for spiral export (see the `.rp-coil` rule in
+   the print block); hidden everywhere else, where the in-card spine renders. */
+.recipe-card-page__spine {
+  display: none;
 }
 
 .recipe-template--classic .recipe-card__accent {
@@ -5139,6 +5152,19 @@ textarea.recipe-card__toc-title {
 .recipe-card--cover > .recipe-card__cover-frame,
 .recipe-card--cover > .recipe-card__cover-content {
   position: absolute;
+}
+
+/* The same `.recipe-card > *` theme rules also catch the overlay photo-picker
+   button (the cover's "Choose photo", the chapter opener's, and the in-card
+   "Photo"), dropping it into flow at z-index 1 — where the card's own
+   absolutely-positioned lockup (`.recipe-card__cover-content` / `__chapter-body`,
+   also z-index 1 but later in the DOM) paints over it and swallows the click.
+   Re-assert the picker as an absolute overlay above that content. Same 0,2,0
+   specificity as the theme rule, placed after all four so source order wins. */
+.recipe-card > .recipe-card__cover-photopicker,
+.recipe-card > .recipe-card__cook-photo-edit {
+  position: absolute;
+  z-index: 8;
 }
 
 /* A hand-drawn-BBQ-icon border running along all four edges. The icons are
@@ -6084,46 +6110,42 @@ textarea.recipe-card__toc-title {
   text-shadow: none;
 }
 
-/* Sits absolutely inside the line above it and reaches down into the gap
-   below — never a real flex/list child, so it can't add to the `gap`
-   between real items and never shifts anything while idle. Only shown on
-   hover (or keyboard focus), and only in edit mode: `addLine()` in
-   RecipeCardPrint.tsx returns null unless `canEdit`, so this never mounts
-   for the plain print/view render. */
+/* Exact between-row insertion without turning the whole gap into a click
+   target. A compact button appears at the trailing edge only after the row is
+   hovered or focused, making touch insertion a deliberate two-step action. */
 .recipe-card__add-line {
   position: absolute;
-  left: 0;
   right: 0;
-  bottom: -9px;
-  height: 15px;
+  bottom: -10px;
   z-index: 5;
-  display: none;
+  display: inline-flex;
   align-items: center;
-  border: none;
-  background: none;
+  width: fit-content;
+  min-height: 16px;
   margin: 0;
-  padding: 0;
+  padding: 1px 5px;
+  border: 1px solid color-mix(in srgb, var(--recipe-accent) 28%, transparent);
+  border-radius: 999px;
+  background: var(--recipe-bg);
+  opacity: 0;
+  pointer-events: none;
   cursor: pointer;
 }
 
 .recipe-card__editable-line:hover > .recipe-card__add-line,
+.recipe-card__editable-line:focus-within > .recipe-card__add-line,
 .recipe-card__add-line:focus-visible {
-  display: flex;
+  opacity: 1;
+  pointer-events: auto;
 }
 
-.recipe-card__add-line::before {
-  content: "";
-  position: absolute;
-  left: 0;
-  right: 0;
-  top: 50%;
-  border-top: 1px dashed color-mix(in srgb, var(--recipe-accent) 55%, transparent);
+.recipe-card__add-line:hover,
+.recipe-card__add-line:focus-visible {
+  border-color: color-mix(in srgb, var(--recipe-accent) 55%, transparent);
+  background: color-mix(in srgb, var(--recipe-accent) 10%, transparent);
 }
 
 .recipe-card__add-line-text {
-  position: relative;
-  padding-right: 5px;
-  background: var(--recipe-bg);
   font-size: 6.5pt;
   font-weight: 800;
   color: var(--recipe-accent);
@@ -6135,12 +6157,9 @@ textarea.recipe-card__toc-title {
    since there's no existing line for it to hide inside of. */
 .recipe-card__add-line--empty {
   position: static;
-  display: flex;
-  height: auto;
-}
-
-.recipe-card__add-line--empty::before {
-  content: none;
+  opacity: 1;
+  pointer-events: auto;
+  margin-top: 0;
 }
 
 .recipe-card__add-line--empty .recipe-card__add-line-text {
@@ -6658,6 +6677,18 @@ textarea.recipe-card__toc-title {
 
 @media print {
 
+  /* Hide the whole on-screen toolbar wrapper, not just its (already `no-print`)
+     children. Even collapsed to 0 height, this wrapper is real in-flow content
+     on the DEFAULT page, and it sits BEFORE the first `.recipe-card-page` — which
+     switches to a named `@page` (rp-card-6x4 / rp-letter / a cookbook preset).
+     Chrome treats that as default-page content followed by a named-page box and
+     forces a break between them, emitting a blank leading page that shifts every
+     sheet after it. It's pure screen chrome with nothing to print, so removing it
+     from the flow entirely kills the stray page across every size and export. */
+  .recipe-print-topbar {
+    display: none !important;
+  }
+
   /* The on-screen deck is the print source: every sheet already renders here
      (just scaled down and, for the inactive side of a flip, hidden), so
      printing just has to un-scale it and let it flow instead of scroll. */
@@ -6699,11 +6730,15 @@ textarea.recipe-card__toc-title {
     display: block !important;
   }
 
-  /* A parity blank is a real, intentionally-empty book page. */
+  /* A parity blank is a real, intentionally-empty book page. Pin it to the
+     exact preset sheet height like `.recipe-card-page` does — `100vh` in print
+     resolves against the DEFAULT (Letter) page box, not the preset sheet, which
+     made parity blanks export at 8.5×11 while content pages were the preset
+     size (the "different-size blank page" bug). */
   .recipe-spread__blank {
     display: block !important;
     width: auto !important;
-    height: 100vh !important;
+    height: var(--rp-sheet-h, 100vh) !important;
     margin: 0 !important;
     border: 0 !important;
     border-radius: 0 !important;
@@ -6807,6 +6842,18 @@ textarea.recipe-card__toc-title {
     transform-origin: center center;
   }
 
+  /* Hardcover's `--rp-art-scale` is exactly 1.0 — the 8.25in card already fills
+     the 8.25in (trim+bleed) sheet width — so `scale(1)` is a no-op that still
+     forces Chrome to flatten the card into a rasterized bitmap for print, which
+     is what pixelates bistro's vector checker spine (and any other SVG
+     decoration). Drop the transform for hardcover: byte-identical layout, crisp
+     vector output. Spiral keeps its ~1.03 fill scale (its slight blur is
+     mitigated by the thicker checker squares). */
+  .rp-exporting.rp-page-hardcover-8x10 .recipe-print-preview--book-safe .recipe-card,
+  .rp-exporting.rp-page-hardcover-8x10 .recipe-print-preview--book-art .recipe-card {
+    transform: none;
+  }
+
   /* Coil/spiral EXPORT only (`.rp-coil` is set on the deck for coil formats, and
      everything here is under `.rp-exporting`, so the on-screen deck and hardcover
      exports are untouched — the template previews and hardcover-prints plain).
@@ -6837,15 +6884,41 @@ textarea.recipe-card__toc-title {
     left: var(--recipe-card-padding-x);
     right: calc(var(--recipe-card-padding-x) + var(--rp-bind-deco));
   }
+  /* The cookbook page furniture (running section name + page folio) is anchored
+     to the sheet edge, outside `.recipe-card`, so it doesn't inherit the coil
+     push above. Move whichever sits on the BINDING edge inboard by the same
+     `--rp-bind-deco` so the bottom bar stays flush with the shifted content
+     column; the non-binding-edge item keeps its plain inset. */
+  .rp-exporting.rp-coil .rp-bind-left .recipe-book-runhead {
+    left: calc(var(--rp-foot-inset-l) + var(--rp-bind-deco));
+  }
+  .rp-exporting.rp-coil .rp-bind-right .recipe-book-folio {
+    right: calc(var(--rp-foot-inset-r) + var(--rp-bind-deco));
+  }
   /* Templates with a vertical edge decoration fill that pushed zone so the coil
      bites the DECORATION, not blank paper. Bistro's checker spine: */
-  .rp-exporting.rp-coil .rp-bind-left .recipe-template--bistro .recipe-card__checker {
+  /* Spiral scales the card ~1.03 to bleed, which flattens the in-card vector
+     spine to a bitmap. Hide it and render the crisp page-level `__spine` (a card
+     SIBLING, outside the transform) instead — widened to the coil zone on the
+     binding edge, with a thicker tile (two 0.25in squares, not a second grid of
+     thin ones). Hardcover keeps its in-card spine (its transform is dropped). */
+  .rp-exporting.rp-coil .recipe-template--bistro .recipe-card__checker {
+    display: none;
+  }
+  .rp-exporting.rp-coil .recipe-template--bistro .recipe-card-page__spine {
+    display: block;
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    z-index: 3;
     width: var(--rp-bind-deco);
+    --bistro-check: var(--rp-bind-deco);
+  }
+  .rp-exporting.rp-coil .rp-bind-left .recipe-card-page__spine {
     left: 0;
     right: auto;
   }
-  .rp-exporting.rp-coil .rp-bind-right .recipe-template--bistro .recipe-card__checker {
-    width: var(--rp-bind-deco);
+  .rp-exporting.rp-coil .rp-bind-right .recipe-card-page__spine {
     left: auto;
     right: 0;
   }
