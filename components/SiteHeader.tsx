@@ -39,13 +39,13 @@ export function SiteHeader({
 
   return (
     <header
-      className={`no-print relative flex items-center justify-between gap-cp-4 px-cp-6 min-h-[62px] flex-wrap ${
+      className={`no-print relative flex items-center justify-between gap-cp-3 sm:gap-cp-4 px-cp-4 sm:px-cp-6 min-h-[62px] flex-nowrap ${
         sticky ? "sticky top-0 z-10 bg-card border-b border-line py-cp-3" : ""
       }`}
     >
       <Link
         href={backHref ?? "/"}
-        className="flex items-center gap-cp-3 group"
+        className="flex items-center gap-cp-3 group shrink-0"
         aria-label="RecipePrinter home"
       >
         {logo}
@@ -55,7 +55,7 @@ export function SiteHeader({
             {actions}
           </div>
       )}
-      <div className="flex items-center gap-cp-3 flex-wrap justify-end">
+      <div className="flex items-center gap-cp-2 sm:gap-cp-3 flex-nowrap justify-end shrink-0">
         {actions && !centerActions ? actions : null}
         <AccountControl saveStatus={saveStatus} onRetry={onRetrySave} />
       </div>

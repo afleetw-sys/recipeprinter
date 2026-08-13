@@ -79,12 +79,21 @@ function pageJsonLd(page: SeoLandingPage) {
 function LandingCta({
   label = "Start printing recipes",
   variant = "primary",
+  compact = false,
 }: {
   label?: string;
   variant?: "primary" | "secondary";
+  /** Tighten padding/text on mobile so the header CTA fits inline with the
+      wordmark and account button; full size returns at the `sm` breakpoint. */
+  compact?: boolean;
 }) {
   return (
-    <Link href={CAPTURE_HREF} className={`btn ${variant === "primary" ? "btn-primary" : "btn-secondary"}`}>
+    <Link
+      href={CAPTURE_HREF}
+      className={`btn ${variant === "primary" ? "btn-primary" : "btn-secondary"}${
+        compact ? " px-cp-3 text-cp-small sm:px-[18px] sm:text-cp-body" : ""
+      }`}
+    >
       <PrintIcon size={ICON_SIZE.md} />
       {label}
     </Link>
@@ -131,7 +140,7 @@ export default function SeoLandingPage({ params }: PageProps) {
         dangerouslySetInnerHTML={{ __html: JSON.stringify(pageJsonLd(page)) }}
       />
 
-      <SiteHeader actions={<LandingCta label="Go to printer" />} />
+      <SiteHeader actions={<LandingCta label="Go to printer" compact />} />
 
       <main className="flex-1 px-cp-6 sm:px-cp-7 lg:px-[40px]">
         <div className="max-w-content mx-auto flex flex-col gap-[72px] pt-cp-5 pb-[80px]">
