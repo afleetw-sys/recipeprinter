@@ -247,6 +247,7 @@ function printProjectFingerprint(
   });
 }
 
+
 export default function PrintPage() {
   useEffect(() => {
     const stableTimer = window.setTimeout(markPrintPreviewStable, PRINT_PREVIEW_STABILITY_MS);
@@ -472,7 +473,6 @@ export default function PrintPage() {
     cookbookMode: projectMeta.meta.cookbookMode,
     itemPlacements: projectMeta.meta.itemPlacements,
     defaultFullPage,
-    sectionPhotoMode: photoStyle === "card" ? "band" : photoStyle,
     cardSize,
     doubleSided,
     photosOn,
@@ -744,6 +744,7 @@ export default function PrintPage() {
   );
 
 
+
   const sectionTitleForId = useCallback((sectionId: string): string => {
     return sections.find((section) => section.id === sectionId)?.title?.trim() || "section";
   }, [sections]);
@@ -1009,19 +1010,6 @@ export default function PrintPage() {
   function applyBookPhotoStyle(mode: PhotoStyle) {
     projectMeta.setPhotoStyle(mode);
     projectMeta.clearItemPhotoOverrides();
-    // The book-wide choice applies to chapter openers too. Store the chosen
-    // placement explicitly so it also replaces any older per-opener override;
-    // keep the selected source around when photos are hidden, just as recipe
-    // images remain available after choosing None.
-    const openerMode: SectionPhotoMode = mode === "card" ? "band" : mode;
-    sections.forEach((section) => {
-      const seedPhoto = section.photoUrl ?? sectionRecipeImages(section)[0];
-      projectMeta.updateSection(section.id, {
-        photoMode: openerMode,
-        photoUrl: seedPhoto,
-        gridImages: openerMode === "full" || openerMode === "band" ? undefined : section.gridImages,
-      });
-    });
   }
 
 
@@ -2257,6 +2245,7 @@ export default function PrintPage() {
     // listener has to be re-registered when they change or it would report a
     // stale configuration.
   }, [template, cardSize, cookbookMode, activePreset.id]);
+
   // The photo-placement fields of a section opener's `dividerEdit`, shared by
   // both deck call sites (spread deck + single-page deck) so the two can never
   // drift. Drives the unified ImagePicker: the same None/In-card/Full-page row as
@@ -2269,11 +2258,7 @@ export default function PrintPage() {
     const seedGridCount = ownImages.length >= 6 ? 6 : ownImages.length >= 4 ? 4 : 2;
     const isGrid = mode === "grid";
     return {
-      // Materialize the inherited image for the live editor too. The visible
-      // deck is double-buffered, so relying only on the next generated sheet
-      // lets the placement control say "In card" while the current opener is
-      // still handed no image at all.
-      photoUrl: section?.photoUrl ?? ownImages[0],
+      photoUrl: section?.photoUrl,
       recipeImages: ownImages,
       // A single photo tile is only pickable in band / single Full-page mode
       // (grid has its own multi-select, none has no tiles) — keep the current
