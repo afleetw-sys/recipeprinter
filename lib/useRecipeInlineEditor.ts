@@ -188,37 +188,46 @@ export function useRecipeInlineEditor({
     setEditValue("");
   }, []);
 
+  // Recipe content lives in two places — the durable queue (sessionStorage +
+  // recovery mirror) and the page's in-memory `items` — because
+  // `updateQueuedRecipe` persists storage but does NOT feed the live React copy
+  // the deck renders. Every edit must write both or the printed card and the
+  // saved/recovered copy silently disagree. This is the single place that does
+  // it, so no edit path can update one and forget the other. Title is carried
+  // alongside the recipe to match `updateQueuedRecipe`, keeping the two in step.
+  const applyRecipeUpdate = useCallback(
+    (id: string, nextRecipe: Recipe) => {
+      updateQueuedRecipe(id, nextRecipe);
+      setItems((current) =>
+        current?.map((item) =>
+          item.id === id
+            ? { ...item, recipe: nextRecipe, title: nextRecipe.title || "Untitled recipe" }
+            : item,
+        ) ?? current,
+      );
+    },
+    [setItems],
+  );
+
   const commitEditTarget = useCallback(
     (value = editValue) => {
       if (!editingEdit || !editingRecipeItem?.recipe) return;
       const target = editingEdit.target;
       const nextRecipe = applyRecipeTargetEdit(editingRecipeItem.recipe, target, value);
-      updateQueuedRecipe(editingRecipeItem.id, nextRecipe);
-      setItems((current) =>
-        current?.map((item) =>
-          item.id === editingRecipeItem.id
-            ? { ...item, recipe: nextRecipe, title: nextRecipe.title || "Untitled recipe" }
-          : item,
-        ) ?? current,
-      );
+      applyRecipeUpdate(editingRecipeItem.id, nextRecipe);
       setEditingEdit(null);
       setEditValue("");
     },
-    [editValue, editingEdit, editingRecipeItem, setItems],
+    [editValue, editingEdit, editingRecipeItem, applyRecipeUpdate],
   );
 
   const changeRecipeImage = useCallback(
     (url: string) => {
       if (!activeRecipeItem?.recipe) return;
       const nextRecipe = applyRecipeTargetEdit(activeRecipeItem.recipe, { kind: "image" }, url);
-      updateQueuedRecipe(activeRecipeItem.id, nextRecipe);
-      setItems((current) =>
-        current?.map((item) =>
-          item.id === activeRecipeItem.id ? { ...item, recipe: nextRecipe } : item,
-        ) ?? current,
-      );
+      applyRecipeUpdate(activeRecipeItem.id, nextRecipe);
     },
-    [activeRecipeItem, setItems],
+    [activeRecipeItem, applyRecipeUpdate],
   );
 
   const insertIngredientAt = useCallback(
@@ -235,15 +244,11 @@ export function useRecipeInlineEditor({
       const ingredients = recipe.ingredients.slice();
       ingredients.splice(index, 0, { raw: "", name: "", section });
       const nextRecipe = printableRecipe({ ...recipe, ingredients });
-      updateQueuedRecipe(activeRecipeItem.id, nextRecipe);
-      setItems((current) =>
-        current?.map((item) => (item.id === activeRecipeItem.id ? { ...item, recipe: nextRecipe } : item)) ??
-          current,
-      );
+      applyRecipeUpdate(activeRecipeItem.id, nextRecipe);
       setEditingEdit({ recipeId: activeRecipeItem.id, target: { kind: "ingredient", index } });
       setEditValue("");
     },
-    [activeRecipeItem, editValue, editingEdit, setItems],
+    [activeRecipeItem, editValue, editingEdit, applyRecipeUpdate],
   );
 
   const insertStepAt = useCallback(
@@ -258,15 +263,11 @@ export function useRecipeInlineEditor({
       instructions.splice(index, 0, { step: 0, text: "", section });
       const renumbered = instructions.map((step, i) => ({ ...step, step: i + 1 }));
       const nextRecipe = printableRecipe({ ...recipe, instructions: renumbered });
-      updateQueuedRecipe(activeRecipeItem.id, nextRecipe);
-      setItems((current) =>
-        current?.map((item) => (item.id === activeRecipeItem.id ? { ...item, recipe: nextRecipe } : item)) ??
-          current,
-      );
+      applyRecipeUpdate(activeRecipeItem.id, nextRecipe);
       setEditingEdit({ recipeId: activeRecipeItem.id, target: { kind: "step", index } });
       setEditValue("");
     },
-    [activeRecipeItem, editValue, editingEdit, setItems],
+    [activeRecipeItem, editValue, editingEdit, applyRecipeUpdate],
   );
 
   // Enter mid-ingredient/mid-step splits the line at the cursor: the text
@@ -290,11 +291,7 @@ export function useRecipeInlineEditor({
         const section = sectionForInsertion(ingredients, target.index + 1);
         ingredients.splice(target.index + 1, 0, { raw: after, name: after, section });
         const nextRecipe = printableRecipe({ ...recipe, ingredients });
-        updateQueuedRecipe(activeRecipeItem.id, nextRecipe);
-        setItems((current) =>
-          current?.map((item) => (item.id === activeRecipeItem.id ? { ...item, recipe: nextRecipe } : item)) ??
-            current,
-        );
+        applyRecipeUpdate(activeRecipeItem.id, nextRecipe);
         setEditingEdit({ recipeId: activeRecipeItem.id, target: { kind: "ingredient", index: target.index + 1 } });
         setEditValue(after);
         return;
@@ -306,16 +303,12 @@ export function useRecipeInlineEditor({
         instructions.splice(target.index + 1, 0, { step: 0, text: after, section });
         const renumbered = instructions.map((step, i) => ({ ...step, step: i + 1 }));
         const nextRecipe = printableRecipe({ ...recipe, instructions: renumbered });
-        updateQueuedRecipe(activeRecipeItem.id, nextRecipe);
-        setItems((current) =>
-          current?.map((item) => (item.id === activeRecipeItem.id ? { ...item, recipe: nextRecipe } : item)) ??
-            current,
-        );
+        applyRecipeUpdate(activeRecipeItem.id, nextRecipe);
         setEditingEdit({ recipeId: activeRecipeItem.id, target: { kind: "step", index: target.index + 1 } });
         setEditValue(after);
       }
     },
-    [activeRecipeItem, setItems],
+    [activeRecipeItem, applyRecipeUpdate],
   );
 
   // Only the currently-active recipe's card ever receives a real inlineEdit
