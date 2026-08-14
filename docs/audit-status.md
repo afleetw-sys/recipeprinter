@@ -36,17 +36,17 @@ print-page decomposition — see docs/audit-status.md"* (or *"work the audit"*).
 
 ## 🏗️ God-file decomposition (audit A1) — IN PROGRESS
 
-`app/print/page.tsx`: **~5,768 → 4,665 lines (~19% out)**, into 10 new modules:
+`app/print/page.tsx`: **~5,768 → 4,186 lines (~27% out)**, into 11 new modules:
 `lib/printGeometry`, `lib/useRailSelection`, and `components/print/{ScaledPage,
 TemplateThumbnail, MobileStructureSheet, photoStyle, ThemePicker,
-PrintSetupControls, PrintConfigPanel, PendingImportRows}`. Config sidebar fully
-extracted; rail started (pending-import rows out).
+PrintSetupControls, PrintConfigPanel, PendingImportRows, PageRail}`. Config
+sidebar fully extracted; rail fully extracted.
 
 **Remaining, in order (hardest last):**
-1. **`<PageRail>`** — the left rail `<nav>` (~480 lines left, ~40 deps: `railDrag`,
-   `useRailSelection`, section-title editing, nav/`goToSlide`, `ScaledPage`
-   thumbnails, drop handlers). One ~40-prop component; **verify drag-reorder,
-   multi-select, and inline section rename**. No clean small slices left inside it.
+1. ✅ **`<PageRail>`** — the left rail `<nav>` (~480 lines, 48 props, `railSelection`
+   passed whole). Verbatim body move; `RAIL_SCALE`/thumb constants moved in too.
+   Browser-verified: flat-view rail, cookbook view, **drag-reorder, multi-select,
+   inline section rename** all work; no console errors.
 2. **`<PrintDeck>`** — the center deck; split `renderActiveControls` then the deck
    shell. Hardest; coupled to inline editing, the deck scroller, focus, per-page
    photo controls. ~60% of remaining risk.
