@@ -36,11 +36,12 @@ print-page decomposition — see docs/audit-status.md"* (or *"work the audit"*).
 
 ## 🏗️ God-file decomposition (audit A1) — IN PROGRESS
 
-`app/print/page.tsx`: **~5,768 → 3,595 lines (~38% out)**, into 12 new modules:
+`app/print/page.tsx`: **~5,768 → 3,197 lines (~45% out)**, into 12 new modules:
 `lib/printGeometry`, `lib/useRailSelection`, and `components/print/{ScaledPage,
 TemplateThumbnail, MobileStructureSheet, photoStyle, ThemePicker,
 PrintSetupControls, PrintConfigPanel, PendingImportRows, PageRail, PrintDeck}`.
-Config sidebar, rail, and center deck all fully extracted.
+Config sidebar, rail, and center deck all fully extracted; the `PrintWorkspace`
+orchestrator has been collapsed into `PrintPage`.
 
 **Remaining, in order (hardest last):**
 1. ✅ **`<PageRail>`** — the left rail `<nav>` (~480 lines, 48 props, `railSelection`
@@ -52,8 +53,12 @@ Config sidebar, rail, and center deck all fully extracted.
    passed as props (`buildSectionPhotoEdit` typed via `ComponentProps<typeof
    ScaledPage>["dividerEdit"]`). Browser-verified: flat deck Edit toggle + inline
    edit persist; cookbook spreads, page focus, Edit toggle; no console errors.
-3. **Collapse the orchestrator** — `PrintWorkspace` goes thin (fold into
-   `PrintPage` or a slim layout); the ~125-prop `PrintWorkspaceProps` deletes itself.
+3. ✅ **Collapse the orchestrator** — `PrintWorkspace` merged into `PrintPage`; the
+   130-line `PrintWorkspaceProps` interface (all identity-passed props) deleted, its
+   body's hooks moved in ahead of the loading/empty guards, its JSX inlined at the
+   call site. Browser-verified: empty state, loading→loaded, flat deck + Edit,
+   cookbook mode; no console errors. (The former-child hooks now run during loading
+   too — all are dependency-guarded, so that is a no-op.)
 4. **A2** — queue vs `items` dual source of truth becomes tractable.
 
 **Approach that's working:** verbatim body moves (byte-exact shell extraction for
