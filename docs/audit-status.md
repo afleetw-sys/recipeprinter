@@ -109,11 +109,19 @@ S7 no security headers (P3).
 - ✅ **A11** readQueue writes on read (P3) — reads no longer rewrite storage; only the
   recovery reseed persists.
 
-**⚡ Performance** — PF1 measurement O(n²) + all measurers at once (P2, a naive fix
-was reverted — redo carefully) · PF2 virtualize the rail (P2) · PF4 whole-book
-fingerprint (P2) · PF5 HEIC on main thread (P2) · PF6/7/8 AccountControl refetch /
-per-load account write / failedImportCapture refetch (P3) · PF9 print.css
-tokenize (P3).
+**⚡ Performance** — 🟡 **PF1** (P2, PARTIAL) — the "all measurers at once" livelock
+is fixed: the print page now mounts at most `MEASURE_WINDOW_SIZE` (8)
+`RecipeFaceMeasurer`s, a self-advancing window (each leaves the pool as it settles).
+Engine untouched, so pagination invariants hold by construction; verified on 25-
+and 60-recipe books (no livelock/stall). The residual O(n²) is the per-settle
+whole-book `sheets` repack (each `setMeasuredFaces` gives `measuredFacesFor` a new
+identity). Left as-is deliberately: those intermediate layouts aren't displayed
+(double-buffer holds until `printLayoutReady`), measurement latency dominates cold
+load after windowing, and the obvious coalescing fix (timer/rAF-batched flush) hits
+the documented background-tab timer-freeze trap. · PF2 virtualize the rail (P2) ·
+PF4 whole-book fingerprint (P2) · PF5 HEIC on main thread (P2) · PF6/7/8
+AccountControl refetch / per-load account write / failedImportCapture refetch (P3) ·
+PF9 print.css tokenize (P3).
 
 **🐞 Bugs** — B1 private-browsing re-checkout loop (P2) · B2 reconcile not awaited
 (P2) · B3 parsed recipe no min-content check (P2) · B5 `/print?ids=` not
