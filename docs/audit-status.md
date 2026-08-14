@@ -80,21 +80,30 @@ time. (Skipped `useCookbookEditing` — low value; editing state already lives i
 unauth-writable (P3) · S6 two firestore.rules for one backend (P2, documented) ·
 S7 no security headers (P3).
 
-**🏗️ Architecture** — ✅ **A1** god-file (P1, DONE — page.tsx ~5,768→3,197, 12
-modules, orchestrator collapsed) · **A2** dual source of truth (P1, next up;
-medium-large, high blast-radius — `items` state vs the `queue`, kept in step by
-dual-writes at 5 sites; fix = make the queue the sole content owner and derive
-`items` as an ordered id-list projection) · **A3** three drag impls (P2 — really
-two overlapping: `useRailDrag` pointer-drag vs the flat rail's HTML5 DnD; unify
-by pointing the flat rail at `useRailDrag`. `MobileStructureSheet`'s arrow-button
-reorder is a justified touch affordance, leave it) · **A4** sections→syncSections
-cascade (P2 — three hand-maintained section-field lists that must stay in
-lockstep; dedup behind one helper. Coupled to the in-flight section-photo work,
-so best after that lands) · ✅ **A5** dual-read 2× reads (P2, DONE — print job now
-seeds from the hydrated queue, not a 2nd `readQueue()`) · A7 CSS-color audit gap
-(P2) · A8 double URL parse (P2) · A9 render-time ref assigns (P3) · A10 adoption
-substring match (P3) · ✅ **A11** readQueue writes on read (P3, DONE — reads no
-longer rewrite storage; only the recovery reseed persists).
+**🏗️ Architecture** — all worked this pass; only A2 left partial.
+- ✅ **A1** god-file (P1 — page.tsx ~5,768→3,197, 12 modules, orchestrator collapsed).
+- 🟡 **A2** dual source of truth (P1, PARTIAL) — the six inline-editor content
+  dual-writes collapsed behind one `applyRecipeUpdate` helper, so the hottest
+  mutation can't desync `items` from the queue. The **full** single-source rewrite
+  (queue as sole content owner, `items` a derived id-list projection) is left as a
+  focused follow-up: it must rework the queue hook so edits update its React state,
+  plus every job-membership site and the load-bearing null/empty/hydration contract.
+- ✅ **A3** three drag impls (P2) — flat rail rewired onto `useRailDrag` (organize-
+  mode side effect gated on cookbook mode); `MobileStructureSheet` arrow buttons left.
+- ✅ **A4** sections→syncSections cascade (P2) — the third hand-maintained section-field
+  list replaced by one `sectionsMetaEqual` helper (order-insensitive, no loop risk).
+- ✅ **A5** dual-read 2× reads (P2) — print job seeds from the hydrated queue.
+- ✅ **A7** CSS-color audit gap (P2) — the ~4 UI-chrome offenders tokenized
+  (`--cp-overlay-hover`/`-strong`, `--cp-surface-muted`, `--cp-card`); print.css
+  template art and the off-palette checkmark left (the latter is a color change).
+- ✅ **A8** double URL parse (P2) — ImportPanel validates via the shared
+  `normalizeImportURL` (was stricter than the pipeline); hostname parsed once in addUrl.
+- ✅ **A9** render-time ref assigns (P3) — latestSave/flushOnHide/activeNavIndexReset
+  refs published in effects, not during render.
+- ✅ **A10** adoption substring match (P3) — verify by exact asset-field Set membership,
+  not a JSON substring scan.
+- ✅ **A11** readQueue writes on read (P3) — reads no longer rewrite storage; only the
+  recovery reseed persists.
 
 **⚡ Performance** — PF1 measurement O(n²) + all measurers at once (P2, a naive fix
 was reverted — redo carefully) · PF2 virtualize the rail (P2) · PF4 whole-book
@@ -129,9 +138,10 @@ still written-but-unread, left as passive pageview analytics (P3).
 
 ## Suggested order
 1. ✅ Finish the god-file — `<PageRail>` → `<PrintDeck>` → collapse the orchestrator. **Done.**
-2. Architecture cleanups — ✅ A11, ✅ A5 done. Next: A3 (unify drag) is low-risk
-   and mostly in `PageRail`; A2 (dual source of truth) is the big one; A4 waits on
-   the in-flight section-photo work to land first (shared `project.ts` region).
+2. ✅ Architecture cleanups — A1, A3, A4, A5, A7, A8, A9, A10, A11 all done; **A2 partial**.
+   Remaining architecture work: the full A2 single-source rewrite (its own focused pass),
+   and the P3 tails deliberately scoped out above (A7 checkmark color, A8 SeoCapture
+   validation mirror, A10 anon-prefix hardening).
 3. Deploy S1 (its own sequence, before cookbook launch).
 4. Quick P1/P2 wins independent of the refactor: AC1, B1, U1, S2, B7/B8 guards.
 5. Perf pass on the decomposed code: PF1 (carefully) + PF2 + B6/PL1.
