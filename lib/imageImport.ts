@@ -1,8 +1,10 @@
 // ─────────────────────────────────────────────────────────────────────────────
-// Client-side image import helpers: HEIC transcode, canvas downscale/compress to
-// a JPEG data-URL, and the file validation/partition rules. Extracted from
-// ImportPanel so both the full workspace importer and the minimal SEO capture
-// block share one implementation (and one HEIC/compression code path).
+// Client-side image import helpers: HEIC transcode, downscale/compress to a JPEG
+// data-URL (off the main thread via createImageBitmap + OffscreenCanvas where
+// supported, main-thread <canvas> otherwise), and the file validation/partition
+// rules. Extracted from ImportPanel so both the full workspace importer and the
+// minimal SEO capture block share one implementation (and one HEIC/compression
+// code path).
 //
 // Browser-only (uses Image/canvas/FileReader) — call from client components.
 // ─────────────────────────────────────────────────────────────────────────────
@@ -64,7 +66,9 @@ async function heicToJpegBlob(file: File): Promise<Blob> {
 // the native decode first (free, works for every normal JPG/PNG and for HEIC on
 // Apple devices) and only fall back to the wasm transcode when a HEIC file fails
 // that path. Non-HEIC decode failures propagate untouched so the batch's
-// allSettled can skip just that file.
+// allSettled can skip just that file. (heic2any runs libheif in its own internal
+// worker, so that transcode is already off the main thread — see the OffscreenCanvas
+// note below for what this pipeline moves off-thread on top of that.)
 async function loadDecodableImage(file: File): Promise<{ image: HTMLImageElement; source: Blob }> {
   try {
     return { image: await loadImageFromBlob(file), source: file };
@@ -75,7 +79,47 @@ async function loadDecodableImage(file: File): Promise<{ image: HTMLImageElement
   }
 }
 
-export async function imageAsCompressedDataURL(file: File): Promise<string> {
+// The createImageBitmap analogue of loadDecodableImage: decode off the main
+// thread. Same HEIC fallback — native decode first, wasm transcode only when a
+// HEIC file the browser can't decode fails.
+async function decodeToBitmap(file: File): Promise<ImageBitmap> {
+  try {
+    return await createImageBitmap(file);
+  } catch (err) {
+    if (!isHeic(file)) throw err;
+    const jpeg = await heicToJpegBlob(file);
+    return await createImageBitmap(jpeg);
+  }
+}
+
+// Whether we can keep the decode/resize/encode off the main thread. `toDataURL`
+// on a regular <canvas> both encodes JPEG and drops it on the main thread; the
+// createImageBitmap (off-thread decode) + OffscreenCanvas.convertToBlob
+// (off-thread encode) path avoids that jank. Safari gained convertToBlob in 17,
+// so older browsers fall through to the main-thread canvas path below.
+const canOffscreenCompress =
+  typeof createImageBitmap === "function" &&
+  typeof OffscreenCanvas === "function" &&
+  typeof OffscreenCanvas.prototype.convertToBlob === "function";
+
+async function compressViaOffscreen(file: File): Promise<string> {
+  const bitmap = await decodeToBitmap(file);
+  try {
+    const scale = Math.min(1, MAX_IMAGE_DIMENSION / Math.max(bitmap.width, bitmap.height));
+    const width = Math.max(1, Math.round(bitmap.width * scale));
+    const height = Math.max(1, Math.round(bitmap.height * scale));
+    const canvas = new OffscreenCanvas(width, height);
+    const context = canvas.getContext("2d");
+    if (!context) throw new Error("no-2d-context");
+    context.drawImage(bitmap, 0, 0, width, height);
+    const blob = await canvas.convertToBlob({ type: "image/jpeg", quality: IMAGE_JPEG_QUALITY });
+    return await readImageAsDataURL(blob);
+  } finally {
+    bitmap.close();
+  }
+}
+
+async function compressViaCanvas(file: File): Promise<string> {
   const { image, source } = await loadDecodableImage(file);
   const scale = Math.min(1, MAX_IMAGE_DIMENSION / Math.max(image.naturalWidth, image.naturalHeight));
   const width = Math.max(1, Math.round(image.naturalWidth * scale));
@@ -87,6 +131,20 @@ export async function imageAsCompressedDataURL(file: File): Promise<string> {
   if (!context) return readImageAsDataURL(source);
   context.drawImage(image, 0, 0, width, height);
   return canvas.toDataURL("image/jpeg", IMAGE_JPEG_QUALITY);
+}
+
+export async function imageAsCompressedDataURL(file: File): Promise<string> {
+  if (canOffscreenCompress) {
+    try {
+      return await compressViaOffscreen(file);
+    } catch (err) {
+      // A HEIC file with no browser decoder AND no transcode still can't be
+      // read either way, so let that surface. Anything else (an OffscreenCanvas
+      // quirk on an otherwise-decodable file) retries on the main-thread path.
+      if (isHeic(file)) throw err;
+    }
+  }
+  return compressViaCanvas(file);
 }
 
 // HEIC/HEIF is the iPhone camera default. Only Safari can draw it to a <canvas>;
