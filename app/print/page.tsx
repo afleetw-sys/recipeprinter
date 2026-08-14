@@ -92,7 +92,6 @@ import {
 import {
   createCurrentPrintJob,
   readCurrentPrintJobIds,
-  readQueue,
   useQueue,
 } from "@/lib/queue";
 import {
@@ -1867,8 +1866,13 @@ export default function PrintPage() {
   }, [accountProjectId, cookPilotAuthReady, cookPilotUser?.uid, projectMeta.hydrated, queue.hydrated]);
 
   useEffect(() => {
-    if (accountProjectId) return;
-    const fullQueue = readQueue();
+    if (accountProjectId || !queue.hydrated) return;
+    // Read the already-hydrated in-memory queue rather than re-reading (and
+    // re-parsing) sessionStorage — the hook hydrated it from the same source on
+    // mount. `queue.items` is read as a one-shot snapshot at hydration (and on
+    // any ?ids= change), NOT a reactive dependency: re-running on every parse
+    // would reset `initialQueueIdsRef` and clobber the merged/edited selection.
+    const fullQueue = queue.items;
     initialQueueIdsRef.current = new Set(fullQueue.map((it) => it.id));
     const byId = new Map(fullQueue.map((it) => [it.id, it]));
     const idsFromUrl = idsParam.split(",").map((s) => s.trim()).filter(Boolean);
@@ -1880,7 +1884,9 @@ export default function PrintPage() {
       .map((id) => byId.get(id))
       .filter((it): it is QueueItem => Boolean(it && it.status === "ready" && it.recipe));
     setItems(printItems);
-  }, [accountProjectId, idsParam]);
+    // queue.items is read as an intentional snapshot (see above), not a trigger.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [accountProjectId, idsParam, queue.hydrated]);
 
   useEffect(() => {
     if (projectLoading || !items?.length) return;
