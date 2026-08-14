@@ -61,8 +61,9 @@ orchestrator has been collapsed into `PrintPage`.
    cookbook mode; no console errors. (The former-child hooks now run during loading
    too — all are dependency-guarded, so that is a no-op.)
 
-With the god-file split, **A2** (queue vs `items` dual source of truth) is now
-tractable but still open — see the Architecture findings below.
+With the god-file split, **A2** (queue vs `items` dual source of truth) became
+tractable and is now done — the queue is the sole content owner, `items` a
+derived id-list projection. See the Architecture findings below.
 
 **Approach that's working:** verbatim body moves (byte-exact shell extraction for
 big regions), pass hook-returns/objects whole to keep bodies unchanged, narrow a
@@ -80,14 +81,17 @@ time. (Skipped `useCookbookEditing` — low value; editing state already lives i
 unauth-writable (P3) · S6 two firestore.rules for one backend (P2, documented) ·
 S7 no security headers (P3).
 
-**🏗️ Architecture** — all worked this pass; only A2 left partial.
+**🏗️ Architecture** — all worked; A2 now fully done.
 - ✅ **A1** god-file (P1 — page.tsx ~5,768→3,197, 12 modules, orchestrator collapsed).
-- 🟡 **A2** dual source of truth (P1, PARTIAL) — the six inline-editor content
-  dual-writes collapsed behind one `applyRecipeUpdate` helper, so the hottest
-  mutation can't desync `items` from the queue. The **full** single-source rewrite
-  (queue as sole content owner, `items` a derived id-list projection) is left as a
-  focused follow-up: it must rework the queue hook so edits update its React state,
-  plus every job-membership site and the load-bearing null/empty/hydration contract.
+- ✅ **A2** dual source of truth (P1) — the full single-source rewrite is done.
+  `useQueue` gained `updateRecipe` (edits drive `commit`, so the hook's React
+  state and storage move together); the page's `items` is now a `useMemo`
+  projection of an ordered `jobIds: string[] | null` onto the queue's live
+  content, so the queue is the sole content owner. The five former `setItems`
+  writers edit `jobIds`; the four scattered `createCurrentPrintJob` calls
+  collapsed into one persist effect; the dead `updateQueuedRecipe` free function
+  was removed. The null/empty/hydration contract is preserved (`jobIds === null`
+  → loading). Browser-verified: load, edit, delete, reload hydration, empty state.
 - ✅ **A3** three drag impls (P2) — flat rail rewired onto `useRailDrag` (organize-
   mode side effect gated on cookbook mode); `MobileStructureSheet` arrow buttons left.
 - ✅ **A4** sections→syncSections cascade (P2) — the third hand-maintained section-field
@@ -138,10 +142,9 @@ still written-but-unread, left as passive pageview analytics (P3).
 
 ## Suggested order
 1. ✅ Finish the god-file — `<PageRail>` → `<PrintDeck>` → collapse the orchestrator. **Done.**
-2. ✅ Architecture cleanups — A1, A3, A4, A5, A7, A8, A9, A10, A11 all done; **A2 partial**.
-   Remaining architecture work: the full A2 single-source rewrite (its own focused pass),
-   and the P3 tails deliberately scoped out above (A7 checkmark color, A8 SeoCapture
-   validation mirror, A10 anon-prefix hardening).
+2. ✅ Architecture cleanups — A1, A2, A3, A4, A5, A7, A8, A9, A10, A11 all done.
+   Remaining architecture work: only the P3 tails deliberately scoped out above
+   (A7 checkmark color, A8 SeoCapture validation mirror, A10 anon-prefix hardening).
 3. Deploy S1 (its own sequence, before cookbook launch).
 4. Quick P1/P2 wins independent of the refactor: AC1, B1, U1, S2, B7/B8 guards.
 5. Perf pass on the decomposed code: PF1 (carefully) + PF2 + B6/PL1.
