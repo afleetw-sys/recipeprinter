@@ -118,10 +118,15 @@ whole-book `sheets` repack (each `setMeasuredFaces` gives `measuredFacesFor` a n
 identity). Left as-is deliberately: those intermediate layouts aren't displayed
 (double-buffer holds until `printLayoutReady`), measurement latency dominates cold
 load after windowing, and the obvious coalescing fix (timer/rAF-batched flush) hits
-the documented background-tab timer-freeze trap. · PF2 virtualize the rail (P2) ·
-PF4 whole-book fingerprint (P2) · PF5 HEIC on main thread (P2) · PF6/7/8
-AccountControl refetch / per-load account write / failedImportCapture refetch (P3) ·
-PF9 print.css tokenize (P3).
+the documented background-tab timer-freeze trap. · ✅ **PF2** rail virtualization —
+each thumbnail (~86% of the rail's DOM, plus its own column measurement) now
+lazy-mounts via `LazyRailThumb` (IntersectionObserver, 600px overscan) only as its
+row nears the viewport, holding a fixed-size empty `.recipe-page-scaler` box until
+then so row height + drag/hit geometry are unchanged. Reveal-and-keep, so scrolling
+never re-measures. Verified: 60-recipe book initial rail DOM −71%, scroll-reveal,
+drag-reorder + cookbook view intact. · PF4 whole-book fingerprint (P2) · PF5 HEIC on
+main thread (P2) · PF6/7/8 AccountControl refetch / per-load account write /
+failedImportCapture refetch (P3) · PF9 print.css tokenize (P3).
 
 **🐞 Bugs** — B1 private-browsing re-checkout loop (P2) · B2 reconcile not awaited
 (P2) · B3 parsed recipe no min-content check (P2) · B5 `/print?ids=` not
