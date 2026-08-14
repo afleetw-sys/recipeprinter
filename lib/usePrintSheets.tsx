@@ -27,6 +27,19 @@ import type {
 // precut sheet rather than sharing one with another card.
 const SLOTS_PER_SHEET = 1;
 
+// How many recipes may be measured concurrently. Each mounted `RecipeFaceMeasurer`
+// runs its own off-screen card tree and a settle loop that forces layout reads;
+// mounting all of a large cookbook's recipes at once floods the main thread with
+// hidden measurement DOM and (historically) starved React's passive-effect flush
+// so the probes never ran — the exact failure the harness documents and works
+// around with a sliding window. Only the first N unsettled recipes mount; each
+// drops out of the pool as it settles (its measured faces become non-null),
+// which pulls the next one in — the window advances itself with no cursor. Small
+// books (≤ N recipes) are unaffected. Mirrors the harness's `BATCH_SIZE`
+// rationale, sized down for a live page so the rest of the UI stays responsive
+// during a cold load rather than tuned purely for sweep throughput.
+const MEASURE_WINDOW_SIZE = 8;
+
 // Measured faces are cached per (recipe, size) pair, not per recipe: a recipe
 // can be measured at `letter` (cookbook) and `card-6x4` for different jobs, and
 // the two must not clobber each other — see the `measuredFaces` note.
@@ -927,6 +940,9 @@ export function usePrintSheets({
     <>
       {measuredRecipeItems
         .filter(({ id, recipe, hasPhoto, size }) => measuredFacesFor(id, recipe, hasPhoto, size) === null)
+        // Bound how many measure concurrently — the window advances itself as
+        // each settles out of the unsettled set above (see MEASURE_WINDOW_SIZE).
+        .slice(0, MEASURE_WINDOW_SIZE)
         .map(({ id, recipe, hasPhoto, size }) => (
           <RecipeFaceMeasurer
             key={`${id}-${size}-${template}-${hasPhoto}-${sourceUrlOn}-${cookbookLayouts ? "cb" : ""}`}
