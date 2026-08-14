@@ -74,11 +74,12 @@ export function readQueue(): QueueItem[] {
     return [];
   }
   if (!Array.isArray(parsed)) return [];
-  // Re-persist when sanitizing changed something (so a normal read isn't a
-  // write), or when we recovered from the mirror (to seed this tab's session).
   const sanitized = printableQueue(parsed as QueueItem[]);
-  const sanitizedRaw = JSON.stringify(sanitized);
-  if (sanitizedRaw !== raw || recovered) writeSerializedQueue(sanitizedRaw);
+  // A read stays pure: it never rewrites storage, even when sanitizing
+  // normalized a field — the next `commit` persists that. The one exception is
+  // recovery: a fresh tab reseeding from the durable mirror writes the set into
+  // this tab's own session (hydration itself doesn't persist).
+  if (recovered) writeSerializedQueue(JSON.stringify(sanitized));
   return sanitized;
 }
 
