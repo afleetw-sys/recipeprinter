@@ -1,6 +1,6 @@
 "use client";
 
-import type { Dispatch, MutableRefObject, SetStateAction } from "react";
+import { useEffect, useRef, useState, type Dispatch, type MutableRefObject, type ReactNode, type SetStateAction } from "react";
 import {
   ChevronDownIcon,
   ChevronLeftIcon,
@@ -34,6 +34,58 @@ const RAIL_SCALE: Record<PrintCardSize, number> = {
   letter: (RAIL_THUMB_WIDTH / PAGE_DIMS.letter.w) * RAIL_THUMB_ZOOM,
   "card-6x4": (RAIL_THUMB_WIDTH / PAGE_DIMS["card-6x4"].w) * RAIL_THUMB_ZOOM,
 };
+
+// How far outside the rail's scroll viewport a thumbnail starts rendering, so it
+// is ready before it scrolls into view (no visible pop-in).
+const RAIL_THUMB_OVERSCAN = "600px 0px";
+
+// A thumbnail is the bulk of a rail row's DOM (a full scaled card render, plus
+// its own column-split measurement) and there can be dozens in one book. This
+// mounts the real thumbnail only once its row nears the viewport, holding the
+// exact same footprint until then with an empty `.recipe-page-scaler` box (the
+// rail CSS pins that box to a fixed 112×74, independent of content — so row
+// height and drag/hit geometry are unchanged). Reveal-and-keep, NOT windowed:
+// once shown a thumbnail stays mounted, so scrolling never re-runs its
+// measurement. The row shells and every `data-rail-*` hook the drag/selection
+// code reads stay mounted throughout — only the heavy paint is deferred.
+function LazyRailThumb({
+  scrollRef,
+  className,
+  placeholder,
+  children,
+}: {
+  scrollRef: MutableRefObject<HTMLElement | null>;
+  className: string;
+  placeholder: ReactNode;
+  children: ReactNode;
+}) {
+  const ref = useRef<HTMLSpanElement | null>(null);
+  const [shown, setShown] = useState(false);
+  useEffect(() => {
+    if (shown) return;
+    const el = ref.current;
+    if (!el || typeof IntersectionObserver === "undefined") {
+      setShown(true);
+      return;
+    }
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries.some((entry) => entry.isIntersecting)) {
+          setShown(true);
+          observer.disconnect();
+        }
+      },
+      { root: scrollRef.current ?? null, rootMargin: RAIL_THUMB_OVERSCAN },
+    );
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, [scrollRef, shown]);
+  return (
+    <span ref={ref} className={className}>
+      {shown ? children : placeholder}
+    </span>
+  );
+}
 
 interface PageRailProps {
   railScrollRef: MutableRefObject<HTMLElement | null>;
@@ -424,10 +476,18 @@ export function PageRail(props: PageRailProps) {
                         }}
                       >
                         <span className="recipe-page-rail__num">{unit.num}</span>
-                        <span
+                        <LazyRailThumb
+                          scrollRef={railScrollRef}
                           className={`recipe-page-rail__thumb ${
                             isSpreadThumb ? "recipe-page-rail__thumb--spread" : ""
                           }`}
+                          // One empty scaler box per real page keeps the (single
+                          // or side-by-side spread) footprint until it scrolls in.
+                          placeholder={unit.thumbSheets.map((sheetIndex, thumbIdx) =>
+                            sheets[sheetIndex] ? (
+                              <div key={thumbIdx} className="recipe-page-scaler" aria-hidden />
+                            ) : null,
+                          )}
                         >
                           {unit.thumbSheets.map((sheetIndex, thumbIdx) =>
                             sheets[sheetIndex] ? (
@@ -452,7 +512,7 @@ export function PageRail(props: PageRailProps) {
                               />
                             ) : null,
                           )}
-                        </span>
+                        </LazyRailThumb>
                         <span className="recipe-page-rail__label">
                           <span className="recipe-page-rail__title">{unit.label}</span>
                         </span>
@@ -529,7 +589,11 @@ export function PageRail(props: PageRailProps) {
                     }}
                   >
                     <span className="recipe-page-rail__num">{index + 1}</span>
-                    <span className="recipe-page-rail__thumb">
+                    <LazyRailThumb
+                      scrollRef={railScrollRef}
+                      className="recipe-page-rail__thumb"
+                      placeholder={<div className="recipe-page-scaler" aria-hidden />}
+                    >
                       <ScaledPage
                         sheet={sheets[navItem.sheetIndex]}
                         isLastSheet={navItem.sheetIndex === sheets.length - 1}
@@ -547,7 +611,7 @@ export function PageRail(props: PageRailProps) {
                         showDecoration={false}
                         cookbookMode={Boolean(projectMeta.meta.cookbookMode)}
                       />
-                    </span>
+                    </LazyRailThumb>
                     <span className="recipe-page-rail__label">
                       <span className="recipe-page-rail__title">{navItem.label}</span>
                       <span className="recipe-page-rail__meta">{navItem.pageLabel}</span>
