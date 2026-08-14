@@ -1551,37 +1551,43 @@ export default function PrintPage() {
   }
 
   // A save queued during an in-flight request must serialize the newest render,
-  // not the render whose request just completed.
-  latestSaveRef.current = () => void handleSaveProject();
+  // not the render whose request just completed. Published in an effect (not
+  // during render) so a discarded or double-invoked render can't leave a stale
+  // closure behind — the same latest-ref pattern as handlePrintRef below.
+  useEffect(() => {
+    latestSaveRef.current = () => void handleSaveProject();
+  });
 
   // Best-effort push to Firestore when the tab is being hidden/closed, so a
   // signed-in edit still inside the 1.5s autosave debounce isn't left only in
   // the local recovery mirror until the next visit. The durable localStorage
   // mirror (lib/queue, lib/project) is the real safety net; this just narrows
-  // the window where the *cloud* copy is a beat behind. Reassigned each render
-  // (mirroring latestSaveRef) so it closes over the current book. It must never
-  // trigger the sign-in modal on the way out, and must not save when nothing
-  // changed — otherwise every tab close would write and could bump the revision
-  // other tabs are editing against.
-  flushOnHideRef.current = () => {
-    if (!cookPilotUser) return;
-    if (!(cookbookMode || savedProjectIdRef.current)) return;
-    if (!items || items.length === 0) return;
-    if (saveInFlightRef.current || saveQueuedRef.current) return;
-    if (lastSavedFingerprintRef.current === "__loaded__") return;
-    const fp = printProjectFingerprint(
-      items,
-      projectMeta.meta,
-      cardSize,
-      template,
-      doubleSided,
-      showPhoto,
-      showSourceUrl,
-      showCutLines,
-    );
-    if (fp === lastSavedFingerprintRef.current) return;
-    void handleSaveProject();
-  };
+  // the window where the *cloud* copy is a beat behind. Republished each commit
+  // via an effect (not during render, mirroring latestSaveRef) so it closes over
+  // the current book. It must never trigger the sign-in modal on the way out, and
+  // must not save when nothing changed — otherwise every tab close would write
+  // and could bump the revision other tabs are editing against.
+  useEffect(() => {
+    flushOnHideRef.current = () => {
+      if (!cookPilotUser) return;
+      if (!(cookbookMode || savedProjectIdRef.current)) return;
+      if (!items || items.length === 0) return;
+      if (saveInFlightRef.current || saveQueuedRef.current) return;
+      if (lastSavedFingerprintRef.current === "__loaded__") return;
+      const fp = printProjectFingerprint(
+        items,
+        projectMeta.meta,
+        cardSize,
+        template,
+        doubleSided,
+        showPhoto,
+        showSourceUrl,
+        showCutLines,
+      );
+      if (fp === lastSavedFingerprintRef.current) return;
+      void handleSaveProject();
+    };
+  });
 
   function handleRetrySave() {
     if (saveStatus !== "conflict") {
@@ -2414,7 +2420,13 @@ export default function PrintPage() {
     );
   };
   const [activeNavIndex, setActiveNavIndex] = useState(0);
-  activeNavIndexResetRef.current = setActiveNavIndex;
+  // Publish the setter through a ref in an effect rather than during render, so
+  // the ref callers (`activeNavIndexResetRef.current?.(0)`) always read a value
+  // from a committed render (setActiveNavIndex is stable, so this is a one-time
+  // settle in practice).
+  useEffect(() => {
+    activeNavIndexResetRef.current = setActiveNavIndex;
+  }, [setActiveNavIndex]);
   // The page rail (reorder/structure) is hidden on phones because the desktop
   // one relies on drag-and-drop, which doesn't exist on touch. This is the
   // mobile stand-in: a bottom sheet with the same structure controls driven by
