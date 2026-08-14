@@ -124,9 +124,14 @@ lazy-mounts via `LazyRailThumb` (IntersectionObserver, 600px overscan) only as i
 row nears the viewport, holding a fixed-size empty `.recipe-page-scaler` box until
 then so row height + drag/hit geometry are unchanged. Reveal-and-keep, so scrolling
 never re-measures. Verified: 60-recipe book initial rail DOM −71%, scroll-reveal,
-drag-reorder + cookbook view intact. · PF4 whole-book fingerprint (P2) · PF5 HEIC on
-main thread (P2) · PF6/7/8 AccountControl refetch / per-load account write /
-failedImportCapture refetch (P3) · PF9 print.css tokenize (P3).
+drag-reorder + cookbook view intact. · PF4 whole-book fingerprint (P2) · ✅ **PF5**
+image compression off-thread — the jank was the canvas resize + `toDataURL` encode,
+NOT the HEIC transcode (heic2any already runs libheif in its own worker). Import now
+decodes via `createImageBitmap` and encodes via `OffscreenCanvas.convertToBlob`
+(both off-thread), feature-gated with the old main-thread `<canvas>` path as the
+Safari-&lt;17 fallback; output is format-identical. Verified end-to-end (inject →
+compress → parse → recipe added). · PF6/7/8 AccountControl refetch / per-load account
+write / failedImportCapture refetch (P3) · PF9 print.css tokenize (P3).
 
 **🐞 Bugs** — B1 private-browsing re-checkout loop (P2) · B2 reconcile not awaited
 (P2) · B3 parsed recipe no min-content check (P2) · B5 `/print?ids=` not
