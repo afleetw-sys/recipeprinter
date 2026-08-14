@@ -67,10 +67,6 @@ interface PageRailProps {
   focusSheetInSpread: (spreadIndex: number, sheetIndex: number | null) => void;
   goToSlide: (index: number) => void;
   railShake: { recipeId: string; nonce: number } | null;
-  draggingItemId: string | null;
-  setDraggingItemId: Dispatch<SetStateAction<string | null>>;
-  handleDropOnItem: (targetItemId: string) => void;
-  handleDropIntoSection: (sectionId: string, toIndex: number) => void;
   pendingAddAfterRecipeId: string | null;
   pendingImportItems: QueueItem[];
   queue: ReturnType<typeof useQueue>;
@@ -124,10 +120,6 @@ export function PageRail(props: PageRailProps) {
     focusSheetInSpread,
     goToSlide,
     railShake,
-    draggingItemId,
-    setDraggingItemId,
-    handleDropOnItem,
-    handleDropIntoSection,
     pendingAddAfterRecipeId,
     pendingImportItems,
     queue,
@@ -494,9 +486,6 @@ export function PageRail(props: PageRailProps) {
             const headerSectionId =
               header && navItem.kind === "recipe" ? sectionAndIndexForItem(navItem.recipeId)?.sectionId : null;
             const currentSection = sectionForNavItem(navItem);
-            const nextSection = sectionForNavItem(railRows[index + 1]?.navItem ?? null);
-            const showSectionEndDrop =
-              Boolean(currentSection) && currentSection?.id !== nextSection?.id;
             const isSectionChild =
               Boolean(currentSection && sections[currentSection.index]?.title?.trim()) &&
               navItem.kind === "recipe" &&
@@ -507,23 +496,17 @@ export function PageRail(props: PageRailProps) {
                 className={isSectionChild ? "recipe-page-rail__row recipe-page-rail__row--section-child" : "recipe-page-rail__row"}
               >
                 {header && headerSectionId && (
-                  <div
-                    className="recipe-page-rail__section-header"
-                    onDragOver={(event) => {
-                      if (draggingItemId) event.preventDefault();
-                    }}
-                    onDrop={(event) => {
-                      event.preventDefault();
-                      handleDropIntoSection(headerSectionId, 0);
-                    }}
-                  >
+                  <div className="recipe-page-rail__section-header">
                     <span>{header}</span>
                   </div>
                 )}
                 <div
+                  data-rail-recipe={navItem.kind === "recipe" ? navItem.recipeId : undefined}
                   className={`recipe-page-rail__item ${
                     index === activeNavIndex ? "is-active" : ""
-                  } ${draggingItemId === navItem.recipeId ? "is-dragging" : ""} ${
+                  } ${railDrag.draggingId === navItem.recipeId ? "is-dragging" : ""} ${
+                    navItem.kind === "recipe" ? "recipe-page-rail__item--draggable" : ""
+                  } ${
                     navItem.kind === "recipe" && railShake?.recipeId === navItem.recipeId
                       ? "is-shaking"
                       : ""
@@ -531,20 +514,19 @@ export function PageRail(props: PageRailProps) {
                 >
                   <button
                     type="button"
-                    draggable={navItem.kind === "recipe"}
-                    onDragStart={() => navItem.kind === "recipe" && setDraggingItemId(navItem.recipeId)}
-                    onDragOver={(event) => {
-                      if (draggingItemId && navItem.kind !== "cover") event.preventDefault();
-                    }}
-                    onDrop={(event) => {
-                      event.preventDefault();
-                      if (navItem.kind === "recipe") handleDropOnItem(navItem.recipeId);
-                      if (navItem.kind === "divider") handleDropIntoSection(navItem.recipeId, 0);
-                    }}
-                    onDragEnd={() => setDraggingItemId(null)}
                     className="recipe-page-rail__item-main"
                     aria-current={index === activeNavIndex}
-                    onClick={() => goToSlide(index)}
+                    onPointerDown={(event) => {
+                      if (navItem.kind === "recipe") railDrag.start(event, "recipe", navItem.recipeId);
+                    }}
+                    onClick={(event) => {
+                      // A completed drag isn't a click — don't also navigate.
+                      if (railDrag.didDrag()) {
+                        event.preventDefault();
+                        return;
+                      }
+                      goToSlide(index);
+                    }}
                   >
                     <span className="recipe-page-rail__num">{index + 1}</span>
                     <span className="recipe-page-rail__thumb">
@@ -572,19 +554,6 @@ export function PageRail(props: PageRailProps) {
                     </span>
                   </button>
                 </div>
-                {showSectionEndDrop && currentSection && (
-                  <div
-                    className="recipe-page-rail__section-drop"
-                    aria-label={`Drop at end of ${sectionTitleForId(currentSection.id)}`}
-                    onDragOver={(event) => {
-                      if (draggingItemId) event.preventDefault();
-                    }}
-                    onDrop={(event) => {
-                      event.preventDefault();
-                      handleDropIntoSection(currentSection.id, itemIdsForSection(currentSection.id).length);
-                    }}
-                  />
-                )}
                 {navItem.recipeId === pendingAddAfterRecipeId && <PendingImportRows items={pendingImportItems} canRetry={queue.canRetry} onRetry={queue.retry} onRemove={queue.remove} />}
               </div>
             );

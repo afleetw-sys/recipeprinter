@@ -545,7 +545,6 @@ export default function PrintPage() {
     return map;
   }, [navItems]);
 
-  const [draggingItemId, setDraggingItemId] = useState<string | null>(null);
 
   // Precomputed once per `sections` change: recipe item id → its section id,
   // that section's index in `sections`, and the item's index within the
@@ -732,7 +731,9 @@ export default function PrintPage() {
     return { indicator, commit };
   };
   const railDrag = useRailDrag(railScrollRef, resolveRailDrop, (kind) => {
-    if (kind === "recipe" && !organizeMode) enterOrganizeMode();
+    // Only the cookbook rail opens the organizer on a recipe drag; the flat
+    // (non-cookbook) rail reorders the card list in place via the same drag.
+    if (kind === "recipe" && !organizeMode && cookbookMode) enterOrganizeMode();
   });
 
   // Imports started from this page stay in the rail until they either become a
@@ -742,22 +743,6 @@ export default function PrintPage() {
     (item) => item.status !== "ready" && !initialQueueIdsRef.current.has(item.id),
   );
 
-
-  function handleDropIntoSection(sectionId: string, toIndex: number) {
-    if (!draggingItemId) return;
-    projectMeta.moveItem(draggingItemId, sectionId, toIndex);
-    setDraggingItemId(null);
-  }
-
-  function handleDropOnItem(targetItemId: string) {
-    if (!draggingItemId || draggingItemId === targetItemId) {
-      setDraggingItemId(null);
-      return;
-    }
-    const target = sectionAndIndexForItem(targetItemId);
-    if (target) projectMeta.moveItem(draggingItemId, target.sectionId, target.index);
-    setDraggingItemId(null);
-  }
 
   const sectionTitleForId = useCallback((sectionId: string): string => {
     return sections.find((section) => section.id === sectionId)?.title?.trim() || "section";
@@ -2800,10 +2785,6 @@ export default function PrintPage() {
           focusSheetInSpread={focusSheetInSpread}
           goToSlide={goToSlide}
           railShake={railShake}
-          draggingItemId={draggingItemId}
-          setDraggingItemId={setDraggingItemId}
-          handleDropOnItem={handleDropOnItem}
-          handleDropIntoSection={handleDropIntoSection}
           pendingAddAfterRecipeId={pendingAddAfterRecipeId}
           pendingImportItems={pendingImportItems}
           queue={queue}
