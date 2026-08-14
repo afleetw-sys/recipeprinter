@@ -1,7 +1,8 @@
 # RecipePrinter — Audit & Decomposition Status
 
 Living status doc for the product-quality audit and the `app/print/page.tsx`
-god-file decomposition. Updated 2026-08-13 (branch `cookbook`).
+god-file decomposition. Updated 2026-08-13 (branch `cookbook`). Latest work:
+god-file decomposition finished (A1) and the first architecture cleanups (A5, A11).
 
 To resume: start a Claude Code session in this repo and say *"continue the
 print-page decomposition — see docs/audit-status.md"* (or *"work the audit"*).
@@ -34,7 +35,7 @@ print-page decomposition — see docs/audit-status.md"* (or *"work the audit"*).
 
 ---
 
-## 🏗️ God-file decomposition (audit A1) — IN PROGRESS
+## 🏗️ God-file decomposition (audit A1) — ✅ DONE
 
 `app/print/page.tsx`: **~5,768 → 3,197 lines (~45% out)**, into 12 new modules:
 `lib/printGeometry`, `lib/useRailSelection`, and `components/print/{ScaledPage,
@@ -59,7 +60,9 @@ orchestrator has been collapsed into `PrintPage`.
    call site. Browser-verified: empty state, loading→loaded, flat deck + Edit,
    cookbook mode; no console errors. (The former-child hooks now run during loading
    too — all are dependency-guarded, so that is a no-op.)
-4. **A2** — queue vs `items` dual source of truth becomes tractable.
+
+With the god-file split, **A2** (queue vs `items` dual source of truth) is now
+tractable but still open — see the Architecture findings below.
 
 **Approach that's working:** verbatim body moves (byte-exact shell extraction for
 big regions), pass hook-returns/objects whole to keep bodies unchanged, narrow a
@@ -77,11 +80,21 @@ time. (Skipped `useCookbookEditing` — low value; editing state already lives i
 unauth-writable (P3) · S6 two firestore.rules for one backend (P2, documented) ·
 S7 no security headers (P3).
 
-**🏗️ Architecture** — A1 god-file (P1, in progress) · A2 dual source of truth
-(P1) · A3 three drag impls (P2) · A4 sections→syncSections cascade (P2) · A5
-dual-read 2× reads (P2) · A7 CSS-color audit gap (P2) · A8 double URL parse (P2) ·
-A9 render-time ref assigns (P3) · A10 adoption substring match (P3) · A11
-readQueue writes on read (P3).
+**🏗️ Architecture** — ✅ **A1** god-file (P1, DONE — page.tsx ~5,768→3,197, 12
+modules, orchestrator collapsed) · **A2** dual source of truth (P1, next up;
+medium-large, high blast-radius — `items` state vs the `queue`, kept in step by
+dual-writes at 5 sites; fix = make the queue the sole content owner and derive
+`items` as an ordered id-list projection) · **A3** three drag impls (P2 — really
+two overlapping: `useRailDrag` pointer-drag vs the flat rail's HTML5 DnD; unify
+by pointing the flat rail at `useRailDrag`. `MobileStructureSheet`'s arrow-button
+reorder is a justified touch affordance, leave it) · **A4** sections→syncSections
+cascade (P2 — three hand-maintained section-field lists that must stay in
+lockstep; dedup behind one helper. Coupled to the in-flight section-photo work,
+so best after that lands) · ✅ **A5** dual-read 2× reads (P2, DONE — print job now
+seeds from the hydrated queue, not a 2nd `readQueue()`) · A7 CSS-color audit gap
+(P2) · A8 double URL parse (P2) · A9 render-time ref assigns (P3) · A10 adoption
+substring match (P3) · ✅ **A11** readQueue writes on read (P3, DONE — reads no
+longer rewrite storage; only the recovery reseed persists).
 
 **⚡ Performance** — PF1 measurement O(n²) + all measurers at once (P2, a naive fix
 was reverted — redo carefully) · PF2 virtualize the rail (P2) · PF4 whole-book
@@ -115,8 +128,10 @@ still written-but-unread, left as passive pageview analytics (P3).
 ---
 
 ## Suggested order
-1. Finish the god-file — `<PageRail>` → `<PrintDeck>` → collapse the orchestrator,
-   then A2.
-2. Deploy S1 (its own sequence, before cookbook launch).
-3. Quick P1/P2 wins independent of the refactor: AC1, B1, U1, S2, B7/B8 guards.
-4. Perf pass on the decomposed code: PF1 (carefully) + PF2 + B6/PL1.
+1. ✅ Finish the god-file — `<PageRail>` → `<PrintDeck>` → collapse the orchestrator. **Done.**
+2. Architecture cleanups — ✅ A11, ✅ A5 done. Next: A3 (unify drag) is low-risk
+   and mostly in `PageRail`; A2 (dual source of truth) is the big one; A4 waits on
+   the in-flight section-photo work to land first (shared `project.ts` region).
+3. Deploy S1 (its own sequence, before cookbook launch).
+4. Quick P1/P2 wins independent of the refactor: AC1, B1, U1, S2, B7/B8 guards.
+5. Perf pass on the decomposed code: PF1 (carefully) + PF2 + B6/PL1.
