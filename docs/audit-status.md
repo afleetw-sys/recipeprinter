@@ -36,20 +36,22 @@ print-page decomposition — see docs/audit-status.md"* (or *"work the audit"*).
 
 ## 🏗️ God-file decomposition (audit A1) — IN PROGRESS
 
-`app/print/page.tsx`: **~5,768 → 4,186 lines (~27% out)**, into 11 new modules:
+`app/print/page.tsx`: **~5,768 → 3,595 lines (~38% out)**, into 12 new modules:
 `lib/printGeometry`, `lib/useRailSelection`, and `components/print/{ScaledPage,
 TemplateThumbnail, MobileStructureSheet, photoStyle, ThemePicker,
-PrintSetupControls, PrintConfigPanel, PendingImportRows, PageRail}`. Config
-sidebar fully extracted; rail fully extracted.
+PrintSetupControls, PrintConfigPanel, PendingImportRows, PageRail, PrintDeck}`.
+Config sidebar, rail, and center deck all fully extracted.
 
 **Remaining, in order (hardest last):**
 1. ✅ **`<PageRail>`** — the left rail `<nav>` (~480 lines, 48 props, `railSelection`
    passed whole). Verbatim body move; `RAIL_SCALE`/thumb constants moved in too.
    Browser-verified: flat-view rail, cookbook view, **drag-reorder, multi-select,
    inline section rename** all work; no console errors.
-2. **`<PrintDeck>`** — the center deck; split `renderActiveControls` then the deck
-   shell. Hardest; coupled to inline editing, the deck scroller, focus, per-page
-   photo controls. ~60% of remaining risk.
+2. ✅ **`<PrintDeck>`** — the center deck (~870 lines, ~70 props). `renderActiveControls`
+   + `renderDeckPage` moved in as internals; `buildSectionPhotoEdit`/photo controls
+   passed as props (`buildSectionPhotoEdit` typed via `ComponentProps<typeof
+   ScaledPage>["dividerEdit"]`). Browser-verified: flat deck Edit toggle + inline
+   edit persist; cookbook spreads, page focus, Edit toggle; no console errors.
 3. **Collapse the orchestrator** — `PrintWorkspace` goes thin (fold into
    `PrintPage` or a slim layout); the ~125-prop `PrintWorkspaceProps` deletes itself.
 4. **A2** — queue vs `items` dual source of truth becomes tractable.
