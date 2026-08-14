@@ -31,6 +31,11 @@
   --cp-error-soft: color-mix(in srgb, var(--cp-error) 6%, transparent);
   --cp-error-border: color-mix(in srgb, var(--cp-error) 16%, transparent);
   --cp-body-background: #f5f7fb;
+  /* Neutral UI-chrome values (not palette colours): hover overlays and muted
+     surfaces, tokenized so chrome stops hardcoding them. Values unchanged. */
+  --cp-overlay-hover: rgba(127, 127, 127, 0.08);
+  --cp-overlay-hover-strong: rgba(127, 127, 127, 0.1);
+  --cp-surface-muted: #f6f8fa;
 
   /* ── Font-size scale ──────────────────────────────────────────────────────
      One shared type scale so titles, buttons, labels, and body copy read as
@@ -846,7 +851,7 @@
     border: 1px solid var(--cp-line-strong);
   }
   .btn-secondary:hover:not(:disabled) {
-    background: rgba(127, 127, 127, 0.08);
+    background: var(--cp-overlay-hover);
   }
 
   /* Ghost / icon */
@@ -858,7 +863,7 @@
     color: var(--cp-ink-soft);
   }
   .btn-ghost:hover:not(:disabled) {
-    background: rgba(127, 127, 127, 0.1);
+    background: var(--cp-overlay-hover-strong);
     color: var(--cp-ink);
   }
 
@@ -1149,13 +1154,13 @@
     padding: 0 14px;
     width: 100%;
     border: 1px solid var(--cp-line-strong);
-    background: #fff;
+    background: var(--cp-card);
     color: var(--cp-ink);
     font-size: var(--cp-fs-small);
     cursor: pointer;
   }
   .mode-toggle__item:hover:not(.is-active):not(:disabled) {
-    background: #f6f8fa;
+    background: var(--cp-surface-muted);
   }
   .mode-toggle__item.is-active {
     /* Shared selected recipe: accent border + soft fill + 1px ring, label in
