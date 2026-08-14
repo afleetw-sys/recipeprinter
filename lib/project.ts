@@ -302,6 +302,39 @@ function metaSectionsFromFull(sections: Section[]): ProjectMeta["sections"] {
   }));
 }
 
+function stringArraysEqual(a: string[] | undefined, b: string[] | undefined): boolean {
+  const x = a ?? [];
+  const y = b ?? [];
+  return x.length === y.length && x.every((value, i) => value === y[i]);
+}
+
+/** Structural equality for two persisted section lists. The single home for
+    "did the section metadata actually change?", so `syncSections`' write-back
+    round-trip has one field list to keep in step with `metaSectionsFromFull`
+    (right above) instead of a second, drift-prone inline diff. Order-insensitive
+    per field (never a `JSON.stringify` compare, whose key-order sensitivity could
+    reintroduce the `buildSections` implicit-section loop documented above). */
+function sectionsMetaEqual(a: ProjectMeta["sections"], b: ProjectMeta["sections"]): boolean {
+  return (
+    a.length === b.length &&
+    a.every((section, index) => {
+      const other = b[index];
+      return (
+        section.id === other.id &&
+        section.title === other.title &&
+        section.subtitle === other.subtitle &&
+        section.photoUrl === other.photoUrl &&
+        section.photoMode === other.photoMode &&
+        section.intro === other.intro &&
+        section.showOpener === other.showOpener &&
+        section.numberAsChapter === other.numberAsChapter &&
+        stringArraysEqual(section.gridImages, other.gridImages) &&
+        stringArraysEqual(section.itemIds, other.itemIds)
+      );
+    })
+  );
+}
+
 /**
  * Removes a section, merging its recipes into a neighbor — the section just
  * before it, or the one just after when deleting the first. Deleting the only
@@ -361,27 +394,9 @@ export function useProjectMeta() {
     (sections: Section[]) => {
       const nextSections = metaSectionsFromFull(sections);
       const current = metaRef.current;
-      const changed =
-        current.sections.length !== nextSections.length ||
-        current.sections.some((section, index) => {
-          const next = nextSections[index];
-          return (
-            !next ||
-            section.id !== next.id ||
-            section.title !== next.title ||
-            section.subtitle !== next.subtitle ||
-            section.photoUrl !== next.photoUrl ||
-            section.photoMode !== next.photoMode ||
-            (section.gridImages?.length ?? 0) !== (next.gridImages?.length ?? 0) ||
-            (section.gridImages ?? []).some((url, i) => url !== next.gridImages?.[i]) ||
-            section.intro !== next.intro ||
-            section.showOpener !== next.showOpener ||
-            section.numberAsChapter !== next.numberAsChapter ||
-            section.itemIds.length !== next.itemIds.length ||
-            section.itemIds.some((id, i) => id !== next.itemIds[i])
-          );
-        });
-      if (changed) commit({ ...current, sections: nextSections });
+      if (!sectionsMetaEqual(current.sections, nextSections)) {
+        commit({ ...current, sections: nextSections });
+      }
     },
     [commit],
   );
