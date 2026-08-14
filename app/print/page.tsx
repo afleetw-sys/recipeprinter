@@ -259,7 +259,11 @@ export default function PrintPage() {
   const accountProjectId = params.get("project");
   const shouldPrint = params.get("print") === "1";
   const activeNavIndexResetRef = useRef<((index: number) => void) | null>(null);
-  const [items, setItems] = useState<QueueItem[] | null>(null);
+  // The print job is an ordered list of member ids — NOT a second copy of the
+  // recipes. `items` (below) projects these ids onto the live queue content, so
+  // the queue is the sole content owner. `null` until the job hydrates, which
+  // keeps the loading (`null`) vs empty (`[]`) vs populated distinction.
+  const [jobIds, setJobIds] = useState<string[] | null>(null);
   const [cardSize, setCardSize] = useState<PrintCardSize>(() =>
     initialPrintCardSize(params.get("size")),
   );
@@ -311,9 +315,21 @@ export default function PrintPage() {
   const [railShake, setRailShake] = useState<{ recipeId: string; nonce: number } | null>(null);
   const queue = useQueue();
   const projectMeta = useProjectMeta();
+  // The print job as live recipes: project each member id onto the queue's
+  // content. An edit in the queue (the content owner) flows straight to the
+  // deck here — there is no second copy to keep in step. Non-ready/absent ids
+  // are dropped, matching what the job could ever render. `null` mirrors
+  // `jobIds === null` so the loading guard below still reads `items === null`.
+  const items = useMemo<QueueItem[] | null>(() => {
+    if (jobIds === null) return null;
+    const byId = new Map(queue.items.map((it) => [it.id, it] as const));
+    return jobIds
+      .map((id) => byId.get(id))
+      .filter((it): it is QueueItem => Boolean(it && it.status === "ready" && it.recipe));
+  }, [jobIds, queue.items]);
   // The section/cover/title organizational layer, joined against the working
-  // `items` snapshot below (see lib/project.ts) — recipe content itself stays
-  // owned by `items`/the queue, unchanged from today.
+  // `items` projection (see lib/project.ts) — recipe content itself stays owned
+  // by the queue.
   const sections = useMemo(() => buildSections(items ?? [], projectMeta.meta), [items, projectMeta.meta]);
   useEffect(() => {
     if (items) projectMeta.syncSections(sections);
@@ -321,6 +337,14 @@ export default function PrintPage() {
     // itself is a stable no-op once meta already reflects `sections`.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [sections]);
+  // Persist the job's id list whenever membership changes, so a reopened tab or
+  // a return to /print restores the same selection. `null` (not yet hydrated)
+  // is skipped so hydration reads the stored job before this can overwrite it;
+  // an emptied job intentionally leaves the last stored ids (parity with the
+  // prior `createCurrentPrintJob`, which no-ops on an empty list).
+  useEffect(() => {
+    if (jobIds) createCurrentPrintJob(jobIds);
+  }, [jobIds]);
   const [editingSectionId, setEditingSectionId] = useState<string | null>(null);
   const [editingSectionTitle, setEditingSectionTitle] = useState("");
   const [editingCoverSide, setEditingCoverSide] = useState<
@@ -1163,9 +1187,7 @@ export default function PrintPage() {
     if (!pendingDelete) return;
     if (pendingDelete.kind === "recipe") {
       const id = pendingDelete.id;
-      const nextItems = (items ?? []).filter((item) => item.id !== id);
-      setItems(nextItems);
-      createCurrentPrintJob(nextItems.map((item) => item.id));
+      setJobIds((current) => (current ?? []).filter((jid) => jid !== id));
       queue.remove(id);
     } else if (pendingDelete.kind === "section") {
       projectMeta.deleteSection(pendingDelete.id);
@@ -1186,9 +1208,7 @@ export default function PrintPage() {
   function confirmDeleteSectionRecipes() {
     if (!pendingDelete || pendingDelete.kind !== "section") return;
     const idsToRemove = new Set(pendingDelete.recipeIds);
-    const nextItems = (items ?? []).filter((item) => !idsToRemove.has(item.id));
-    setItems(nextItems);
-    createCurrentPrintJob(nextItems.map((item) => item.id));
+    setJobIds((current) => (current ?? []).filter((jid) => !idsToRemove.has(jid)));
     pendingDelete.recipeIds.forEach((id) => queue.remove(id));
     projectMeta.deleteSection(pendingDelete.id);
     setPendingDelete(null);
@@ -1786,8 +1806,7 @@ export default function PrintPage() {
         }
         const loadedItems = project.sections.flatMap((section) => section.items);
         queue.replaceAll(loadedItems);
-        setItems(loadedItems);
-        createCurrentPrintJob(loadedItems.map((item) => item.id));
+        setJobIds(loadedItems.map((item) => item.id));
         projectMeta.replaceMeta({
           projectId: project.id,
           cookbookMode: project.settings.cookbookMode ?? project.kind === "cookbook",
@@ -1858,11 +1877,13 @@ export default function PrintPage() {
     const ids =
       (idsFromUrl.length > 0 ? idsFromUrl : readCurrentPrintJobIds()) ??
       fullQueue.filter((it) => it.status === "ready").map((it) => it.id);
-    // Preserve the order from the current print job.
-    const printItems = ids
-      .map((id) => byId.get(id))
-      .filter((it): it is QueueItem => Boolean(it && it.status === "ready" && it.recipe));
-    setItems(printItems);
+    // Preserve the order from the current print job, keeping only ids that
+    // resolve to a ready recipe — the same set `items` would project.
+    const printIds = ids.filter((id) => {
+      const it = byId.get(id);
+      return Boolean(it && it.status === "ready" && it.recipe);
+    });
+    setJobIds(printIds);
     // queue.items is read as an intentional snapshot (see above), not a trigger.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [accountProjectId, idsParam, queue.hydrated]);
@@ -1982,9 +2003,7 @@ export default function PrintPage() {
         !(items ?? []).some((existing) => existing.id === item.id),
     );
     if (newlyReady.length === 0) return;
-    const nextItems = [...(items ?? []), ...newlyReady];
-    setItems(nextItems);
-    createCurrentPrintJob(nextItems.map((item) => item.id));
+    setJobIds((current) => [...(current ?? []), ...newlyReady.map((item) => item.id)]);
     if (pendingAddSectionId && sections.some((section) => section.id === pendingAddSectionId)) {
       const insertAt = pendingAddIndex ?? itemIdsForSection(pendingAddSectionId).length;
       newlyReady.forEach((item, offset) => {
@@ -2565,7 +2584,6 @@ export default function PrintPage() {
   const keepEditingRef = useRef<string | null>(null);
   const { pageEditMode, togglePageEditMode, activeInlineEdit } = useRecipeInlineEditor({
     items,
-    setItems,
     updateRecipe: queue.updateRecipe,
     activeRecipeId,
     activeRecipeItem,

@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState, type Dispatch, type MutableRefObject, type SetStateAction } from "react";
+import { useCallback, useEffect, useMemo, useState, type MutableRefObject } from "react";
 import { printableRecipe } from "@/lib/queue";
 import type { RecipeCardEditTarget, RecipeCardInlineEdit } from "@/lib/recipeCardLayout";
 import type { QueueItem, Recipe } from "@/types/recipe";
@@ -132,9 +132,9 @@ function sectionForInsertion<T extends { section?: string }>(items: T[], index: 
 
 interface UseRecipeInlineEditorOptions {
   items: QueueItem[] | null;
-  setItems: Dispatch<SetStateAction<QueueItem[] | null>>;
-  /** Writes the edit into the queue hook's React state + storage — the content
-      owner. Passed in so this hook never reaches into queue storage directly. */
+  /** Writes the edit into the queue hook's React state + storage — the single
+      content owner. The deck re-derives from the queue, so there is no separate
+      page copy to update here. */
   updateRecipe: (id: string, recipe: Recipe) => void;
   activeRecipeId: string | null;
   activeRecipeItem: QueueItem | null | undefined;
@@ -162,7 +162,6 @@ interface UseRecipeInlineEditorOptions {
  */
 export function useRecipeInlineEditor({
   items,
-  setItems,
   updateRecipe,
   activeRecipeId,
   activeRecipeItem,
@@ -192,23 +191,14 @@ export function useRecipeInlineEditor({
     setEditValue("");
   }, []);
 
-  // Route every edit through the queue hook, which updates its React `items`
-  // (the content owner the deck derives from) and storage together. The page's
-  // in-memory `items` is still patched here transitionally so both stay in
-  // step; once `items` is derived from the queue, this second write drops out.
-  // Title is carried alongside the recipe, matching the queue's own bookkeeping.
+  // Route every edit through the queue hook, the single content owner: it
+  // updates its React `items` (which the deck derives from) and storage
+  // together, so there is no separate page copy to keep in step here.
   const applyRecipeUpdate = useCallback(
     (id: string, nextRecipe: Recipe) => {
       updateRecipe(id, nextRecipe);
-      setItems((current) =>
-        current?.map((item) =>
-          item.id === id
-            ? { ...item, recipe: nextRecipe, title: nextRecipe.title || "Untitled recipe" }
-            : item,
-        ) ?? current,
-      );
     },
-    [setItems, updateRecipe],
+    [updateRecipe],
   );
 
   const commitEditTarget = useCallback(
