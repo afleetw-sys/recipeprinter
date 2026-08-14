@@ -343,20 +343,23 @@ export function useQueue() {
       }
 
       const normalizedUrl = normalizeImportURL(url);
+      // Compute the hostname once — hostnameOf re-normalizes and re-parses its
+      // input, so the source/title/analytics all reuse this instead of 3 calls.
+      const host = hostnameOf(normalizedUrl);
       const id = uid();
       const item: QueueItem = {
         id,
         method: "url",
-        source: hostnameOf(normalizedUrl),
+        source: host,
         originalUrl: normalizedUrl,
         status: "parsing",
-        title: hostnameOf(normalizedUrl),
+        title: host,
         addedAt: Date.now(),
       };
       commit([...itemsRef.current, item]);
       void runParse(
         id,
-        { source: "url", hostname: hostnameOf(normalizedUrl) },
+        { source: "url", hostname: host },
         () => parseUrlAll(normalizedUrl),
         { failedText: normalizedUrl },
       );

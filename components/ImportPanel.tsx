@@ -13,6 +13,7 @@ import type { ImportMethod } from "@/types/recipe";
 import type { QueueItem } from "@/types/recipe";
 import { track, truncateReason, type ImportFailureCode } from "@/lib/analytics";
 import { ImportError } from "@/lib/parser";
+import { normalizeImportURL } from "@/lib/cookpilot";
 import { captureFailedImportImages } from "@/lib/failedImportCapture";
 import {
   imageLabel,
@@ -159,7 +160,10 @@ export function ImportPanel({
       const trimmed = url.trim();
       if (!trimmed) return setError("Paste a recipe URL first.");
       try {
-        new URL(trimmed.startsWith("http") ? trimmed : `https://${trimmed}`);
+        // Validate through the same normalizer the queue and parser use, so the
+        // client gate can't reject a URL the pipeline would happily import (it
+        // was stricter here — case-sensitive scheme check, no whitespace strip).
+        new URL(normalizeImportURL(trimmed));
       } catch {
         return setError("That doesn't look like a valid URL.");
       }
