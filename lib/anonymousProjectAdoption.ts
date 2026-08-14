@@ -45,8 +45,12 @@ function anonymousRecipePrinterAsset(url: string | undefined): url is string {
   }
 }
 
-function assetUrls(project: PrintProject): string[] {
-  const values: Array<string | undefined> = [
+// Every field of a project that can hold a photo URL, flattened. The single
+// source of truth for "where do asset URLs live", so both the copy pass (which
+// filters to anonymous sources) and the post-save verification (which checks the
+// rewritten destinations landed) read the same field set.
+function projectAssetFields(project: PrintProject): Array<string | undefined> {
+  return [
     project.cover?.imageUrl,
     project.backCover?.imageUrl,
     ...(project.cover?.gridImages ?? []),
@@ -57,7 +61,10 @@ function assetUrls(project: PrintProject): string[] {
     ]),
     ...Object.values(project.itemPlacements ?? {}).map((placement) => placement.heroImageUrl),
   ];
-  return Array.from(new Set(values.filter(anonymousRecipePrinterAsset)));
+}
+
+function assetUrls(project: PrintProject): string[] {
+  return Array.from(new Set(projectAssetFields(project).filter(anonymousRecipePrinterAsset)));
 }
 
 function stableName(source: string): string {
@@ -178,12 +185,19 @@ export async function adoptAnonymousProject(
     );
     const saved = await savePrintProject(adopted);
     const verified = await loadPrintProject(uid, destinationProjectId);
-    const verifiedJson = JSON.stringify(verified);
+    // Check each rewritten URL sits in an actual asset field of the reloaded
+    // project — an exact Set membership, not a substring scan of the serialized
+    // blob (Firebase download URLs share a long common prefix, so one asset's
+    // URL being a substring of another's could pass a `.includes` check even
+    // when its own field was never rewritten).
+    const verifiedAssets = new Set(
+      verified ? projectAssetFields(verified).filter((url): url is string => Boolean(url)) : [],
+    );
     if (
       !verified ||
       verified.ownerUid !== uid ||
       verified.id !== destinationProjectId ||
-      Object.values(manifest.assets).some((url) => !verifiedJson.includes(url))
+      Object.values(manifest.assets).some((url) => !verifiedAssets.has(url))
     ) {
       throw new Error("The saved project could not be verified.");
     }
