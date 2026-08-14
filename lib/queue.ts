@@ -221,6 +221,23 @@ export function useQueue() {
     [],
   );
 
+  // Live-edit a queued recipe's content. Unlike the module-level
+  // `updateQueuedRecipe` (storage only), this drives `commit`, so the hook's
+  // React `items` — the single content owner the print deck derives from —
+  // updates in step with storage. No separate page copy to keep in sync.
+  const updateRecipe = useCallback(
+    (id: string, recipe: Recipe) => {
+      const nextRecipe = printableRecipe(recipe);
+      const next = itemsRef.current.map((it) =>
+        it.id === id
+          ? { ...it, recipe: nextRecipe, title: nextRecipe.title || "Untitled recipe" }
+          : it,
+      );
+      commit(next);
+    },
+    [commit],
+  );
+
   const patch = useCallback(
     (id: string, changes: Partial<QueueItem>) => {
       let changed = false;
@@ -489,5 +506,6 @@ export function useQueue() {
     clear,
     replaceAll,
     focusItem,
+    updateRecipe,
   };
 }

@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState, type Dispatch, type MutableRefObject, type SetStateAction } from "react";
-import { printableRecipe, updateQueuedRecipe } from "@/lib/queue";
+import { printableRecipe } from "@/lib/queue";
 import type { RecipeCardEditTarget, RecipeCardInlineEdit } from "@/lib/recipeCardLayout";
 import type { QueueItem, Recipe } from "@/types/recipe";
 
@@ -133,6 +133,9 @@ function sectionForInsertion<T extends { section?: string }>(items: T[], index: 
 interface UseRecipeInlineEditorOptions {
   items: QueueItem[] | null;
   setItems: Dispatch<SetStateAction<QueueItem[] | null>>;
+  /** Writes the edit into the queue hook's React state + storage — the content
+      owner. Passed in so this hook never reaches into queue storage directly. */
+  updateRecipe: (id: string, recipe: Recipe) => void;
   activeRecipeId: string | null;
   activeRecipeItem: QueueItem | null | undefined;
   /** What a change of "which page you're on" is keyed to for the leave-edit-mode
@@ -160,6 +163,7 @@ interface UseRecipeInlineEditorOptions {
 export function useRecipeInlineEditor({
   items,
   setItems,
+  updateRecipe,
   activeRecipeId,
   activeRecipeItem,
   resetKey,
@@ -188,16 +192,14 @@ export function useRecipeInlineEditor({
     setEditValue("");
   }, []);
 
-  // Recipe content lives in two places — the durable queue (sessionStorage +
-  // recovery mirror) and the page's in-memory `items` — because
-  // `updateQueuedRecipe` persists storage but does NOT feed the live React copy
-  // the deck renders. Every edit must write both or the printed card and the
-  // saved/recovered copy silently disagree. This is the single place that does
-  // it, so no edit path can update one and forget the other. Title is carried
-  // alongside the recipe to match `updateQueuedRecipe`, keeping the two in step.
+  // Route every edit through the queue hook, which updates its React `items`
+  // (the content owner the deck derives from) and storage together. The page's
+  // in-memory `items` is still patched here transitionally so both stay in
+  // step; once `items` is derived from the queue, this second write drops out.
+  // Title is carried alongside the recipe, matching the queue's own bookkeeping.
   const applyRecipeUpdate = useCallback(
     (id: string, nextRecipe: Recipe) => {
-      updateQueuedRecipe(id, nextRecipe);
+      updateRecipe(id, nextRecipe);
       setItems((current) =>
         current?.map((item) =>
           item.id === id
@@ -206,7 +208,7 @@ export function useRecipeInlineEditor({
         ) ?? current,
       );
     },
-    [setItems],
+    [setItems, updateRecipe],
   );
 
   const commitEditTarget = useCallback(

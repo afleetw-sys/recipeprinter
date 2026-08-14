@@ -2566,6 +2566,7 @@ export default function PrintPage() {
   const { pageEditMode, togglePageEditMode, activeInlineEdit } = useRecipeInlineEditor({
     items,
     setItems,
+    updateRecipe: queue.updateRecipe,
     activeRecipeId,
     activeRecipeItem,
     resetKey: String(activeNavIndex),
