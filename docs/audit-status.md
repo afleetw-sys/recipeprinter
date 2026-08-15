@@ -124,14 +124,26 @@ lazy-mounts via `LazyRailThumb` (IntersectionObserver, 600px overscan) only as i
 row nears the viewport, holding a fixed-size empty `.recipe-page-scaler` box until
 then so row height + drag/hit geometry are unchanged. Reveal-and-keep, so scrolling
 never re-measures. Verified: 60-recipe book initial rail DOM −71%, scroll-reveal,
-drag-reorder + cookbook view intact. · PF4 whole-book fingerprint (P2) · ✅ **PF5**
+drag-reorder + cookbook view intact. · ✅ **PF4** whole-book fingerprint — NO code
+change: measured it, the `JSON.stringify` change-signal is 0.05ms (10 recipes) /
+0.22ms (60) / 0.69ms (200) and already runs at most once per 1.5s debounce settle
+(the earlier lazy+debounce pass did the real mitigation). The only "optimization"
+left — hashing to shrink the compare — would add save-skipping collision risk to a
+data-loss-critical path for a sub-ms gain, a bad trade. Mitigated, closed. · ✅ **PF5**
 image compression off-thread — the jank was the canvas resize + `toDataURL` encode,
 NOT the HEIC transcode (heic2any already runs libheif in its own worker). Import now
 decodes via `createImageBitmap` and encodes via `OffscreenCanvas.convertToBlob`
 (both off-thread), feature-gated with the old main-thread `<canvas>` path as the
 Safari-&lt;17 fallback; output is format-identical. Verified end-to-end (inject →
-compress → parse → recipe added). · PF6/7/8 AccountControl refetch / per-load account
-write / failedImportCapture refetch (P3) · PF9 print.css tokenize (P3).
+compress → parse → recipe added). · ✅ **PF6** account-dropdown projects load cached
+per uid (10s fresh window skips the reopen read, shows cached instantly). · ✅ **PF7**
+per-load `lastSeenAt` write throttled by a 12h localStorage marker (skips the
+read+write transaction entirely when recent). · ✅ **PF8** failed-import data URLs
+decoded locally via `atob` instead of `fetch`-ing bytes already in memory. · 🟡 **PF9**
+print.css tokenize (PARTIAL) — the two exact-match rail hover backgrounds routed
+through `--cp-overlay-hover`; the rest is template/theme art (leave literal) or
+chrome with no existing token (modal backdrops, toast pill — would need new
+scrim/toast tokens + dark variants, out of scope for P3).
 
 **🐞 Bugs** — B1 private-browsing re-checkout loop (P2) · B2 reconcile not awaited
 (P2) · B3 parsed recipe no min-content check (P2) · B5 `/print?ids=` not
