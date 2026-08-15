@@ -395,7 +395,7 @@
 
 .recipe-page-rail__add-cover:hover {
   border-color: color-mix(in srgb, var(--cp-accent) 46%, var(--cp-line));
-  background: rgba(127, 127, 127, 0.08);
+  background: var(--cp-overlay-hover);
   color: var(--cp-accent-ink);
 }
 
@@ -740,7 +740,7 @@
 }
 
 .recipe-page-rail__add-menu-trigger:hover {
-  background: rgba(127, 127, 127, 0.08);
+  background: var(--cp-overlay-hover);
 }
 
 .recipe-page-rail__add-section {
