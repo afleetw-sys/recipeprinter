@@ -29,6 +29,15 @@ function accountInitials(user: User): string {
   return "";
 }
 
+// The saved-projects list was re-read from Firestore on every dropdown open —
+// open/close/open fired a fresh read each time. Cache the last successful load
+// per uid: reopening within the fresh window skips the read entirely, and a
+// stale reopen shows the cached list instantly (no spinner flash) while it
+// refetches in the background. A project just saved elsewhere can lag by at most
+// the fresh window before it shows on reopen — fine for a convenience list.
+const projectsCache = new Map<string, { projects: PrintProject[]; at: number }>();
+const PROJECTS_FRESH_MS = 10_000;
+
 export type AccountSaveStatus =
   | "saving"
   | "saved"
@@ -74,14 +83,24 @@ export function AccountControl({
 
   useEffect(() => {
     if (!open || !user || !COOKBOOK_ENABLED) return;
+    const uid = user.uid;
+    const cached = projectsCache.get(uid);
+    if (cached) {
+      // Show the last-known list immediately — no empty flash — and skip the
+      // read outright while it's still fresh.
+      setProjects(cached.projects);
+      if (Date.now() - cached.at < PROJECTS_FRESH_MS) return;
+    }
     let cancelled = false;
-    setLoadingProjects(true);
-    loadPrintProjects(user.uid)
+    setLoadingProjects(!cached);
+    loadPrintProjects(uid)
       .then((next) => {
+        projectsCache.set(uid, { projects: next, at: Date.now() });
         if (!cancelled) setProjects(next);
       })
       .catch(() => {
-        if (!cancelled) setProjects([]);
+        // Keep whatever was cached on a transient failure rather than blanking.
+        if (!cancelled && !cached) setProjects([]);
       })
       .finally(() => {
         if (!cancelled) setLoadingProjects(false);
