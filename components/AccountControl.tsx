@@ -1,12 +1,13 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { signOut } from "firebase/auth";
 import { AccountIcon, BookIcon, CheckIcon, ICON_SIZE, PrintIcon, SpinnerIcon, XIcon } from "@/components/icons";
 import { CookPilotLoginDialog, useCookPilotAuth } from "@/components/CookPilotAuth";
 import { getFirebaseAuth } from "@/lib/firebase/client";
 import { loadPrintProjects } from "@/lib/printProjects";
+import { planDuplicateCleanup } from "@/lib/duplicateProjects";
 import { COOKBOOK_ENABLED } from "@/lib/cookbookProduct";
 import type { PrintProject } from "@/types/recipe";
 import type { User } from "firebase/auth";
@@ -69,8 +70,13 @@ export function AccountControl({
   const [loadingProjects, setLoadingProjects] = useState(false);
   const [openingProjectId, setOpeningProjectId] = useState<string | null>(null);
   const rootRef = useRef<HTMLDivElement>(null);
-  const cookbooks = projects.filter((project) => project.kind !== "printProject");
-  const printProjects = projects.filter((project) => project.kind === "printProject");
+  // Stale forks left by an old autosave bug are hidden here as well as on
+  // /projects — a cook should never catch sight of the mess, whichever surface
+  // they open. The deletion itself belongs to the Projects page, which knows
+  // which copies are purchased; this menu only filters what it shows.
+  const visible = useMemo(() => planDuplicateCleanup(projects).keep, [projects]);
+  const cookbooks = visible.filter((project) => project.kind !== "printProject");
+  const printProjects = visible.filter((project) => project.kind === "printProject");
 
   useEffect(() => {
     if (!open) return;

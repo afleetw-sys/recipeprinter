@@ -166,6 +166,12 @@ type EventProps = {
   relayout_started: {};
   relayout_applied: { sectionCount: number };
 
+  /** Stale forks of a book that an old autosave bug saved into an account, then
+      silently deleted on the cook's next visit to Projects (lib/duplicateProjects).
+      Watched to know when the backlog is drained — a count that keeps arriving
+      from accounts already swept would mean something is still forking. */
+  duplicate_projects_cleaned: { count: number };
+
   feedback_submitted: { type: FeedbackType };
 };
 

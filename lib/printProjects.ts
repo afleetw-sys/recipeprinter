@@ -151,7 +151,16 @@ export async function loadPrintProject(ownerUid: string, projectId: string): Pro
   return legacy.exists() ? (legacy.data() as PrintProject) : null;
 }
 
-export async function deletePrintProject(ownerUid: string, projectId: string): Promise<void> {
+export async function deletePrintProject(
+  ownerUid: string,
+  projectId: string,
+  // Duplicate cleanup passes `keepAssets`. A forked copy only rewrites the
+  // *anonymous* photo URLs it adopts, so books that were forked from an earlier
+  // copy still point at that copy's `adopted/<id>/` folder — sweeping it while
+  // deleting the older document would blank out the book being kept. Orphaned
+  // photo objects are cheap; broken images in a kept cookbook are not.
+  options: { keepAssets?: boolean } = {},
+): Promise<void> {
   const [{ doc, deleteDoc }, { getDb }, { deleteObject, listAll, ref }, { getFirebaseStorage }] = await Promise.all([
     import("firebase/firestore"),
     import("@/lib/firebase/db"),
@@ -173,7 +182,7 @@ export async function deletePrintProject(ownerUid: string, projectId: string): P
       ...listed.prefixes.map((prefix) => removeFolder(prefix)),
     ]);
   };
-  await removeFolder(adoptedRoot);
+  if (!options.keepAssets) await removeFolder(adoptedRoot);
   // Compatibility reads merge the namespaced and legacy collections. Remove
   // both copies so an older project cannot reappear after deletion.
   await Promise.all([

@@ -363,6 +363,10 @@ export default function PrintPage() {
   const savedProjectIdRef = useRef<string | null>(null);
   const [saveStatus, setSaveStatus] = useState<AccountSaveStatus | null>(null);
   const [projectLoading, setProjectLoading] = useState(Boolean(accountProjectId));
+  // Whether the working copy has been matched against the account's saved
+  // documents yet (see the reattach effect below). Autosave waits for this so it
+  // can never mistake an already-saved book for a brand-new one.
+  const [projectAttachChecked, setProjectAttachChecked] = useState(false);
   const projectRevisionRef = useRef(0);
   const lastSavedFingerprintRef = useRef<string | null>(null);
   const lastAttemptedFingerprintRef = useRef<string | null>(null);
@@ -1563,6 +1567,7 @@ export default function PrintPage() {
   useEffect(() => {
     flushOnHideRef.current = () => {
       if (!cookPilotUser) return;
+      if (!projectAttachChecked) return;
       if (!(cookbookMode || savedProjectIdRef.current)) return;
       if (!items || items.length === 0) return;
       if (saveInFlightRef.current || saveQueuedRef.current) return;
@@ -1863,6 +1868,45 @@ export default function PrintPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [accountProjectId, cookPilotAuthReady, cookPilotUser?.uid, projectMeta.hydrated, queue.hydrated]);
 
+  // A working copy keeps its project id in session/local storage, but only the
+  // ?project= loader above knows that id already has a saved document behind it.
+  // Arriving on /print without the param — the workspace's Print button, a
+  // reload, a return visit — therefore left `savedProjectIdRef` null on a book
+  // that was already saved, and the next autosave took the adoption path. So
+  // reattach to the existing document before any save can run.
+  useEffect(() => {
+    if (accountProjectId) {
+      setProjectAttachChecked(true);
+      return;
+    }
+    if (!cookPilotAuthReady || !projectMeta.hydrated) return;
+    if (!cookPilotUser || savedProjectIdRef.current) {
+      setProjectAttachChecked(true);
+      return;
+    }
+    let cancelled = false;
+    loadPrintProject(cookPilotUser.uid, cookbookProjectId)
+      .then((project) => {
+        // Identity and revision only — the local copy is the newer draft here,
+        // so its content must still autosave up to the document it belongs to.
+        if (cancelled || !project) return;
+        projectRevisionRef.current = Number(project.revision ?? 0);
+        savedProjectIdRef.current = project.id;
+        setSavedProjectId(project.id);
+      })
+      .catch((error) => {
+        console.warn("RecipePrinter: could not match the working copy to a saved project", error);
+      })
+      .finally(() => {
+        if (!cancelled) setProjectAttachChecked(true);
+      });
+    return () => {
+      cancelled = true;
+    };
+    // projectMeta.hydrated gates the id; the hydration methods themselves are stable.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [accountProjectId, cookPilotAuthReady, cookPilotUser?.uid, projectMeta.hydrated, cookbookProjectId]);
+
   useEffect(() => {
     if (accountProjectId || !queue.hydrated) return;
     // Read the already-hydrated in-memory queue rather than re-reading (and
@@ -1889,7 +1933,7 @@ export default function PrintPage() {
   }, [accountProjectId, idsParam, queue.hydrated]);
 
   useEffect(() => {
-    if (projectLoading || !items?.length) return;
+    if (projectLoading || !projectAttachChecked || !items?.length) return;
     // Plain recipe cards with no saved project: nothing to save or adopt, so
     // clear any leftover status (e.g. an "adoption" prompt carried over from a
     // cookbook the cook just switched away from).
@@ -1948,6 +1992,7 @@ export default function PrintPage() {
     showSourceUrl,
     showCutLines,
     projectLoading,
+    projectAttachChecked,
     cookbookMode,
     savedProjectId,
     cookPilotUser,

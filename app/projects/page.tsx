@@ -8,6 +8,8 @@ import { Badge, IconButton } from "@/components/Controls";
 import { CookPilotLoginDialog, useCookPilotAuth } from "@/components/CookPilotAuth";
 import { BookIcon, CheckIcon, ICON_SIZE, SpinnerIcon, TrashIcon } from "@/components/icons";
 import { deletePrintProject, loadPrintProjects } from "@/lib/printProjects";
+import { deleteDuplicateProjects, planDuplicateCleanup } from "@/lib/duplicateProjects";
+import { track } from "@/lib/analytics";
 import { loadCookbookProjectUnlock, reconcileCookbookProjectUnlocks } from "@/lib/cookbookUnlocks";
 import { photoGridLayout } from "@/lib/photoGrid";
 import type { PrintProject } from "@/types/recipe";
@@ -78,7 +80,6 @@ export default function ProjectsPage() {
     setError(null);
     try {
       const next = await loadPrintProjects(user.uid);
-      setProjects(next);
       // Back up any locally-known unlock that never reached Firestore (a
       // swallowed write, or a signed-out purchase). Best-effort — never blocks
       // the list from rendering.
@@ -89,7 +90,24 @@ export default function ProjectsPage() {
           await loadCookbookProjectUnlock(user.uid, project.id).catch(() => false),
         ] as const),
       );
-      setPurchasedIds(new Set(purchased.filter(([, unlocked]) => unlocked).map(([id]) => id)));
+      const purchasedProjectIds = new Set(
+        purchased.filter(([, unlocked]) => unlocked).map(([id]) => id),
+      );
+      setPurchasedIds(purchasedProjectIds);
+      // Clear the copies an old autosave bug forked into this account before
+      // rendering, so they are never on screen. Silent and unprompted: nobody
+      // asked for thirty copies of their cookbook, so nobody is asked to tidy
+      // them up. Purchased copies are pinned — an unlock hangs off its own
+      // project id, and no cleanup is worth stranding a purchase.
+      const { keep, remove } = planDuplicateCleanup(next, {
+        pin: (project) => purchasedProjectIds.has(project.id),
+      });
+      setProjects(keep);
+      if (remove.length > 0) {
+        void deleteDuplicateProjects(user.uid, remove).then((cleaned) => {
+          if (cleaned > 0) track("duplicate_projects_cleaned", { count: cleaned });
+        });
+      }
     } catch {
       setError("We couldn’t load your projects. Try again.");
     } finally {

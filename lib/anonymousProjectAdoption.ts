@@ -5,7 +5,7 @@ import type { PrintProject } from "@/types/recipe";
 import { getFirebaseStorage } from "@/lib/firebase/storage";
 import { recipePrinterUserPhotoRoot } from "@/lib/firebase/recipePrinterPaths";
 import { localStore } from "@/lib/storage";
-import { createPrintProjectId, loadPrintProject, savePrintProject } from "@/lib/printProjects";
+import { loadPrintProject, savePrintProject } from "@/lib/printProjects";
 import {
   isCookbookProjectUnlocked,
   persistCookbookProjectUnlock,
@@ -142,14 +142,17 @@ export async function adoptAnonymousProject(
   project: PrintProject,
 ): Promise<PrintProject> {
   const previous = readAdoptionManifest();
-  let destinationProjectId =
-    previous?.uid === uid && previous.sourceProjectId === project.id
+  // Adoption is an UPSERT on the working copy's own id, never a fork. Project
+  // ids are random (lib/ids), so a document already sitting at this id is this
+  // same book being adopted again — a reload, a second visit, a retry after a
+  // failed save. Minting a new id there produced a duplicate cookbook in the
+  // account on every such pass. The only id that may differ from the working
+  // copy's is one a previous adoption already redirected to (kept below so an
+  // interrupted adoption resumes into the document it started writing).
+  const destinationProjectId =
+    (previous?.uid === uid && previous.sourceProjectId === project.id
       ? previous.destinationProjectId
-      : undefined;
-  if (!destinationProjectId) {
-    const collision = await loadPrintProject(uid, project.id);
-    destinationProjectId = collision ? createPrintProjectId() : project.id;
-  }
+      : undefined) ?? project.id;
   let manifest: AdoptionManifest = {
     sourceProjectId: project.id,
     destinationProjectId,
