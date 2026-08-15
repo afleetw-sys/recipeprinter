@@ -8,7 +8,11 @@ import { Badge, IconButton } from "@/components/Controls";
 import { CookPilotLoginDialog, useCookPilotAuth } from "@/components/CookPilotAuth";
 import { BookIcon, CheckIcon, ICON_SIZE, SpinnerIcon, TrashIcon } from "@/components/icons";
 import { deletePrintProject, loadPrintProjects } from "@/lib/printProjects";
-import { deleteDuplicateProjects, planDuplicateCleanup } from "@/lib/duplicateProjects";
+import {
+  deleteDuplicateProjects,
+  grantCookbookUnlock,
+  planDuplicateCleanup,
+} from "@/lib/duplicateProjects";
 import { track } from "@/lib/analytics";
 import { loadCookbookProjectUnlock, reconcileCookbookProjectUnlocks } from "@/lib/cookbookUnlocks";
 import { photoGridLayout } from "@/lib/photoGrid";
@@ -93,15 +97,18 @@ export default function ProjectsPage() {
       const purchasedProjectIds = new Set(
         purchased.filter(([, unlocked]) => unlocked).map(([id]) => id),
       );
-      setPurchasedIds(purchasedProjectIds);
       // Clear the copies an old autosave bug forked into this account before
       // rendering, so they are never on screen. Silent and unprompted: nobody
       // asked for thirty copies of their cookbook, so nobody is asked to tidy
       // them up. Purchased copies are pinned — an unlock hangs off its own
       // project id, and no cleanup is worth stranding a purchase.
-      const { keep, remove } = planDuplicateCleanup(next, {
-        pin: (project) => purchasedProjectIds.has(project.id),
+      const { keep, remove, granted } = await planDuplicateCleanup(user.uid, next, {
+        isPurchased: (project) => purchasedProjectIds.has(project.id),
+        grantUnlock: grantCookbookUnlock,
       });
+      // A keeper handed the unlock of a copy being deleted is purchased now.
+      granted.forEach((projectId) => purchasedProjectIds.add(projectId));
+      setPurchasedIds(purchasedProjectIds);
       setProjects(keep);
       if (remove.length > 0) {
         void deleteDuplicateProjects(user.uid, remove).then((cleaned) => {

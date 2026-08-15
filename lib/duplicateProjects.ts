@@ -1,5 +1,9 @@
 import type { PrintProject } from "@/types/recipe";
 import { deletePrintProject } from "@/lib/printProjects";
+import {
+  markCookbookProjectUnlockedLocal,
+  persistCookbookProjectUnlock,
+} from "@/lib/cookbookUnlocks";
 
 /**
  * Silent repair for duplicate saved projects — one book that ended up stored
@@ -57,43 +61,124 @@ export function projectContainment(older: PrintProject, keeper: PrintProject): n
   return shared / olderIds.size;
 }
 
+export interface DuplicateGroup {
+  /** The copy that survives — the most recently updated of the lineage. */
+  keeper: PrintProject;
+  /** Copies contained in the keeper, newest first. */
+  duplicates: PrintProject[];
+}
+
+/** Sorts an account's projects into one group per book. Pure — the purchase
+    question is handled by `reconcileDuplicateProjects`, which can act on it. */
+export function groupDuplicateProjects(projects: PrintProject[]): DuplicateGroup[] {
+  const byRecency = [...projects].sort(
+    (a, b) => Number(b.updatedAt || b.createdAt || 0) - Number(a.updatedAt || a.createdAt || 0),
+  );
+  const groups: DuplicateGroup[] = [];
+
+  for (const project of byRecency) {
+    // Checked against every copy already kept, newest first: a lineage that
+    // drifted across many forks is still contained in one of them.
+    const group = groups.find(
+      (candidate) => projectContainment(project, candidate.keeper) >= CONTAINMENT_THRESHOLD,
+    );
+    if (group) group.duplicates.push(project);
+    else groups.push({ keeper: project, duplicates: [] });
+  }
+
+  return groups;
+}
+
 export interface DuplicateCleanupPlan {
   /** The projects to keep, newest first. */
   keep: PrintProject[];
   /** Stale forks, safe to delete. */
   remove: PrintProject[];
+  /** Keepers that were handed the unlock of a copy being deleted, so a caller
+      can show them as purchased without re-reading Firestore. */
+  granted: string[];
 }
 
-export function planDuplicateCleanup(
+/**
+ * Works out what to delete, moving a purchase out of the way first.
+ *
+ * The tangle this has to handle: a cookbook's unlock hangs off its own project
+ * id, and `reconcileCookbookProjectUnlocks` re-persisted that unlock at each
+ * newly forked id without ever clearing the old one. So a book bought once can
+ * have almost every one of its forks reading as "purchased" — pinning them all
+ * would leave the whole pile on screen, which is how the first version of this
+ * managed to delete nothing at all.
+ *
+ * The rule that actually holds: each surviving book keeps an unlock if any of
+ * its copies had one. Where the keeper is already unlocked (usually — the
+ * unlock followed the forks forward) the duplicates just go. Where it isn't,
+ * the unlock is written onto the keeper first, and only a failure to write it
+ * leaves a second copy standing.
+ */
+export async function planDuplicateCleanup(
+  ownerUid: string,
   projects: PrintProject[],
   options: {
-    /** Copies that must survive whatever their content. The Projects page pins
-        purchased cookbooks (a cookbook's unlock hangs off its own project id)
-        and the project the cook is working in right now. */
-    pin?: (project: PrintProject) => boolean;
+    /** Whether this copy carries a cookbook unlock. */
+    isPurchased?: (project: PrintProject) => boolean;
+    /** Puts an unlock on the keeper. Injected so this stays testable and so the
+        unlock module isn't pulled into every caller. Returns false if the write
+        was refused — after the rules lockdown, that is the expected answer. */
+    grantUnlock?: (ownerUid: string, projectId: string) => Promise<boolean>;
   } = {},
-): DuplicateCleanupPlan {
-  const byRecency = [...projects].sort(
-    (a, b) => Number(b.updatedAt || b.createdAt || 0) - Number(a.updatedAt || a.createdAt || 0),
-  );
+): Promise<DuplicateCleanupPlan> {
+  const isPurchased = options.isPurchased ?? (() => false);
   const keep: PrintProject[] = [];
   const remove: PrintProject[] = [];
+  const granted: string[] = [];
 
-  for (const project of byRecency) {
-    if (options.pin?.(project)) {
-      keep.push(project);
+  for (const { keeper, duplicates } of groupDuplicateProjects(projects)) {
+    keep.push(keeper);
+    if (duplicates.length === 0) continue;
+    const purchasedCopies = duplicates.filter(isPurchased);
+    if (purchasedCopies.length === 0 || isPurchased(keeper)) {
+      remove.push(...duplicates);
       continue;
     }
-    // Checked against every copy already kept, newest first: a lineage that
-    // drifted across many forks is still contained in one of them.
-    const containedIn = keep.some(
-      (keeper) => projectContainment(project, keeper) >= CONTAINMENT_THRESHOLD,
-    );
-    if (containedIn) remove.push(project);
-    else keep.push(project);
+    const unlockMoved = options.grantUnlock
+      ? await options.grantUnlock(ownerUid, keeper.id).catch(() => false)
+      : false;
+    if (unlockMoved) {
+      granted.push(keeper.id);
+      remove.push(...duplicates);
+      continue;
+    }
+    // The purchase could not be moved, so the copy holding it stays. Its own
+    // duplicates still go: one unlocked copy is all the purchase needs.
+    const [survivor] = purchasedCopies;
+    keep.push(survivor);
+    remove.push(...duplicates.filter((copy) => copy.id !== survivor.id));
   }
 
-  return { keep, remove };
+  return {
+    keep: keep.sort(
+      (a, b) => Number(b.updatedAt || b.createdAt || 0) - Number(a.updatedAt || a.createdAt || 0),
+    ),
+    remove,
+    granted,
+  };
+}
+
+/**
+ * Moves a cookbook purchase onto the copy that is being kept. Server first —
+ * the local map is only marked once the durable write lands, so a refused write
+ * (the rules lockdown, or being offline) can't leave a device claiming an
+ * unlock the account doesn't have.
+ */
+export async function grantCookbookUnlock(ownerUid: string, projectId: string): Promise<boolean> {
+  try {
+    await persistCookbookProjectUnlock(ownerUid, projectId);
+    markCookbookProjectUnlockedLocal(projectId);
+    return true;
+  } catch (error) {
+    console.warn("RecipePrinter: could not move a cookbook unlock", projectId, error);
+    return false;
+  }
 }
 
 /**
@@ -114,7 +199,13 @@ export async function deleteDuplicateProjects(
       // out of that older copy's storage folder, so only the documents go.
       deletePrintProject(ownerUid, project.id, { keepAssets: true })
         .then(() => true)
-        .catch(() => false),
+        .catch((error) => {
+          // Quiet for the cook, but not invisible to us: a rules change or an
+          // offline tab would otherwise make the sweep look like it silently
+          // did nothing on every visit.
+          console.warn("RecipePrinter: could not remove a duplicate project", project.id, error);
+          return false;
+        }),
     ),
   );
   return results.filter(Boolean).length;

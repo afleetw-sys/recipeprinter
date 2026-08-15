@@ -28,8 +28,11 @@ class ParseHttpError extends Error {
   }
 }
 
-function errorResponse(error: string, status = 400) {
-  return NextResponse.json({ success: false, error } satisfies ParseResponse, { status });
+function errorResponse(error: string, status = 400, parserExhausted = false) {
+  return NextResponse.json(
+    { success: false, error, ...(parserExhausted ? { parserExhausted: true as const } : {}) } satisfies ParseResponse,
+    { status },
+  );
 }
 
 function isPrivateIPv4(address: string): boolean {
@@ -156,10 +159,26 @@ async function readHtmlWithLimit(response: Response): Promise<string> {
   return html + decoder.decode();
 }
 
-async function parseWithCookPilotServer(url: string): Promise<Recipe[] | null> {
+/**
+ * What the server-side CookPilot attempt concluded. The distinction that
+ * matters is `empty` vs `skipped`: only `empty` means the full parser actually
+ * ran and answered "there is no recipe here", which is what lets the client
+ * skip re-running it (see `ParseError.parserExhausted`). Anything we couldn't
+ * get a real answer out of — not configured for this deployment, an unreadable
+ * response body, a status this function doesn't translate — is `skipped`, and
+ * the client fallback stays worth trying.
+ */
+type CookPilotServerOutcome =
+  | { kind: "recipes"; recipes: Recipe[] }
+  | { kind: "empty" }
+  | { kind: "skipped" };
+
+const SKIPPED: CookPilotServerOutcome = { kind: "skipped" };
+
+async function parseWithCookPilotServer(url: string): Promise<CookPilotServerOutcome> {
   const endpoint = process.env.COOKPILOT_RECIPE_PARSER_URL?.trim();
   const secret = process.env.RECIPEPRINTER_PARSER_SECRET?.trim();
-  if (!endpoint || !secret) return null;
+  if (!endpoint || !secret) return SKIPPED;
 
   const response = await fetch(endpoint, {
     method: "POST",
@@ -176,11 +195,16 @@ async function parseWithCookPilotServer(url: string): Promise<Recipe[] | null> {
   const data = (await response.json().catch(() => null)) as unknown;
   if (response.ok) {
     const recipes = adaptCookPilotRecipes(data, url);
-    if (recipes.length > 0) return recipes;
-    throw new ParseHttpError(
-      "We couldn't find a complete recipe on that page. Try another link or paste the recipe text instead.",
-      422,
-    );
+    if (recipes.length > 0) return { kind: "recipes", recipes };
+    // An unreadable body isn't the parser answering "no recipe" — we simply
+    // never got its answer, so it doesn't count as exhausted.
+    if (data === null) return SKIPPED;
+    // The parser ran and found nothing. Deliberately NOT a throw: the JSON-LD
+    // pass below is a genuinely different reader, and a page whose structured
+    // data is fine but whose prose defeats the parser used to be rescued only
+    // by the client's duplicate call. Falling through gets that result here,
+    // in one round trip instead of two.
+    return { kind: "empty" };
   }
 
   if (response.status === 401 || response.status === 403) {
@@ -201,7 +225,7 @@ async function parseWithCookPilotServer(url: string): Promise<Recipe[] | null> {
       response.status,
     );
   }
-  return null;
+  return SKIPPED;
 }
 
 export async function POST(request: Request) {
@@ -217,33 +241,41 @@ export async function POST(request: Request) {
     return errorResponse("That doesn't look like a valid URL.");
   }
 
+  // Once the full parser has answered "no recipe", it stays answered for the
+  // rest of this request — whatever our own direct fetch goes on to hit, asking
+  // the client to run that same parser again can only reproduce it.
+  let parserExhausted = false;
+
   try {
-    const cookPilotRecipes = await parseWithCookPilotServer(url.toString());
-    if (cookPilotRecipes) {
-      return NextResponse.json({ success: true, recipes: cookPilotRecipes } satisfies ParseResponse);
+    const cookPilot = await parseWithCookPilotServer(url.toString());
+    if (cookPilot.kind === "recipes") {
+      return NextResponse.json({ success: true, recipes: cookPilot.recipes } satisfies ParseResponse);
     }
+    parserExhausted = cookPilot.kind === "empty";
 
     const response = await fetchPublicHtml(url);
 
     if (!response.ok) {
       if (response.status === 404) {
-        return errorResponse("We couldn't find that page. Check the link and try again.", 404);
+        return errorResponse("We couldn't find that page. Check the link and try again.", 404, parserExhausted);
       }
       if ([401, 402, 403, 429].includes(response.status)) {
         return errorResponse(
           "This website wouldn't let us read the recipe. Paste the recipe text or upload screenshots instead.",
           response.status,
+          parserExhausted,
         );
       }
       return errorResponse(
         "We couldn't open that recipe page. Try again, or paste the recipe text instead.",
         response.status,
+        parserExhausted,
       );
     }
 
     const contentType = response.headers.get("content-type") ?? "";
     if (!contentType.includes("text/html") && !contentType.includes("application/xhtml")) {
-      return errorResponse("That URL doesn't look like a recipe page.");
+      return errorResponse("That URL doesn't look like a recipe page.", 400, parserExhausted);
     }
 
     const html = await readHtmlWithLimit(response);
@@ -255,6 +287,7 @@ export async function POST(request: Request) {
       return errorResponse(
         "We couldn't find a complete recipe on that page. Try another link or paste the recipe text instead.",
         422,
+        parserExhausted,
       );
     }
 
@@ -263,17 +296,19 @@ export async function POST(request: Request) {
     return NextResponse.json({ success: true, recipes: [recipe] } satisfies ParseResponse);
   } catch (err) {
     if (err instanceof ParseHttpError) {
-      return errorResponse(err.message, err.status);
+      return errorResponse(err.message, err.status, parserExhausted);
     }
     if (err instanceof Error && err.name === "TimeoutError") {
       return errorResponse(
         "That website took too long to respond. Try again, or paste the recipe text instead.",
         504,
+        parserExhausted,
       );
     }
     return errorResponse(
       "We couldn't import that recipe. Try again, paste the recipe text, or upload screenshots.",
       500,
+      parserExhausted,
     );
   }
 }

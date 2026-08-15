@@ -59,6 +59,15 @@ export interface ParseResult {
 export interface ParseError {
   success: false;
   error: string;
+  /**
+   * Set when CookPilot's full parser already ran server-side and definitively
+   * found no recipe. The client's fallback calls that same parser through its
+   * own callable, so a retry would re-run identical work for an identical
+   * answer — twice the wait for the cook and twice the parse cost. Absent means
+   * the parser was never consulted (not configured for this deployment) or gave
+   * an inconclusive answer, and the fallback is still worth trying.
+   */
+  parserExhausted?: true;
 }
 
 export type ParseResponse = ParseResult | ParseError;

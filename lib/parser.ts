@@ -9,6 +9,9 @@ interface LocalParseOutcome {
   recipes: Recipe[] | null;
   error?: string;
   status?: number;
+  /** The route already ran CookPilot's full parser and it found nothing — see
+      `ParseError.parserExhausted`. */
+  parserExhausted?: boolean;
 }
 
 /**
@@ -158,7 +161,12 @@ async function parseUrlLocally(url: string): Promise<LocalParseOutcome> {
     });
     const data = (await response.json()) as ParseResponse;
     if (data.success) return { recipes: data.recipes };
-    return { recipes: null, error: data.error, status: response.status };
+    return {
+      recipes: null,
+      error: data.error,
+      status: response.status,
+      parserExhausted: data.parserExhausted,
+    };
   } catch {
     /* Fall back to CookPilot's callable parser below. */
   }
@@ -167,6 +175,13 @@ async function parseUrlLocally(url: string): Promise<LocalParseOutcome> {
 
 function shouldTryUrlFallback(outcome: LocalParseOutcome): boolean {
   if (outcome.recipes && outcome.recipes.length > 0) return false;
+  // The route already put this URL through CookPilot's full parser and it came
+  // back empty. The fallback below is that same parser reached through its own
+  // callable, so re-running it can only reproduce the same answer — at the cost
+  // of a second wait (the server attempt alone allows 55s) and a second parse.
+  // Only the *reasons the answer might differ* are worth a retry, which is what
+  // the two cases below are: never-consulted, or inconclusive.
+  if (outcome.parserExhausted) return false;
   if (outcome.status === undefined) return true;
   return ![400, 413].includes(outcome.status);
 }
@@ -196,6 +211,25 @@ async function parseUrlWithCookPilot(url: string, localError?: string): Promise<
 }
 
 /**
+ * The analytics bucket for a route failure we are NOT retrying through
+ * CookPilot. When every non-retried case was a 400/413 this could be a single
+ * inline ternary, but suppressing the duplicate parse (see
+ * `shouldTryUrlFallback`) means a blocked/404/timeout answer can now end here
+ * instead of being categorized by `friendlyError` on the way out of the
+ * fallback. Mirrors that function's status mapping deliberately, so which of
+ * the two paths a failure took never changes the bucket it lands in — the
+ * vocabulary is a closed map precisely so it stays comparable.
+ */
+function categoryForRouteStatus(status: number | undefined): ImportFailureCode {
+  if (status === 413) return "too_large";
+  if (status === 404) return "not_found";
+  if (status === 401 || status === 402 || status === 403 || status === 429) return "blocked";
+  if (status === 504) return "timeout";
+  if (status !== undefined && status >= 500) return "backend_unavailable";
+  return "no_recipe";
+}
+
+/**
  * URL import, CookPilot's `parseRecipeFromURL`. Returns one or more recipes: a
  * normal page yields exactly one, a "roundup" URL (e.g. "5 best borscht recipes")
  * yields several. Never resolves to an empty array — it throws `ImportError`
@@ -211,7 +245,7 @@ export async function parseUrlAll(rawUrl: string): Promise<Recipe[]> {
   throw new ImportError(
     local.error ??
       "We couldn't find a complete recipe on that page. Try another link or paste the recipe text instead.",
-    local.status === 413 ? "too_large" : "no_recipe",
+    categoryForRouteStatus(local.status),
   );
 }
 
