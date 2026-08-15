@@ -72,12 +72,28 @@ async function raceCapture(work: Promise<unknown>, folder: string): Promise<stri
   return Promise.race([work.then(() => folder).catch(() => null), timeout]);
 }
 
-async function toBlob(input: Blob | string): Promise<Blob | null> {
+// Decode a `data:` URL to a Blob locally, rather than `fetch`-ing it back —
+// the bytes are already in memory (this is the exact compressed payload the
+// parser was handed), so a fetch round-trip just re-parses base64 we hold.
+function dataUrlToBlob(dataUrl: string): Blob | null {
+  const comma = dataUrl.indexOf(",");
+  if (!dataUrl.startsWith("data:") || comma === -1) return null;
+  const header = dataUrl.slice(5, comma);
+  const mime = header.split(";")[0] || "application/octet-stream";
+  const body = dataUrl.slice(comma + 1);
+  if (!/;base64/i.test(header)) {
+    return new Blob([decodeURIComponent(body)], { type: mime });
+  }
+  const binary = atob(body);
+  const bytes = new Uint8Array(binary.length);
+  for (let i = 0; i < binary.length; i += 1) bytes[i] = binary.charCodeAt(i);
+  return new Blob([bytes], { type: mime });
+}
+
+function toBlob(input: Blob | string): Blob | null {
+  if (typeof input !== "string") return input;
   try {
-    if (typeof input !== "string") return input;
-    // A `data:` URL — fetch resolves it to a Blob in the browser.
-    const res = await fetch(input);
-    return await res.blob();
+    return dataUrlToBlob(input);
   } catch {
     return null;
   }
@@ -99,7 +115,7 @@ export async function captureFailedImportImages(
     const storage = getFirebaseStorage();
 
     const uploads = images.map(async (input, i) => {
-      const blob = await toBlob(input);
+      const blob = toBlob(input);
       if (!blob || blob.size === 0 || blob.size > MAX_CAPTURE_BYTES) return;
       await uploadBytes(ref(storage, `${folder}/${i}.jpg`), blob, {
         contentType: blob.type || "image/jpeg",
