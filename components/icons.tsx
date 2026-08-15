@@ -224,15 +224,6 @@ export const SizeIcon = (p: IconProps) => (
   </Base>
 );
 
-export const ReorderIcon = (p: IconProps) => (
-  <Base {...p}>
-    <path d="M7 4v16" />
-    <path d="m3.5 7.5 3.5-3.5 3.5 3.5" />
-    <path d="M17 20V4" />
-    <path d="m13.5 16.5 3.5 3.5 3.5-3.5" />
-  </Base>
-);
-
 export const GripIcon = (p: IconProps) => (
   <Base {...p} fill="currentColor" stroke="none">
     <circle cx="9" cy="6" r="1.4" />

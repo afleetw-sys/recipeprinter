@@ -615,9 +615,65 @@ export default function PrintPage() {
   }, [sections]);
 
   // Pointer drag-to-reorder for the cookbook rail: recipes (within/across
-  // sections) and whole sections (carrying their recipes). `resolve` measures
-  // the live rows and returns where the drop would land + how to commit it.
+  // sections) and whole sections (carrying their recipes). `resolve` reads the
+  // rows' geometry and returns where the drop would land + how to commit it.
   const railScrollRef = useRef<HTMLElement | null>(null);
+
+  // ── Rail geometry, measured once per drag rather than once per frame ──────
+  // `useRailDrag` re-resolves the drop target on EVERY animation frame, so this
+  // ran `querySelectorAll` + `getBoundingClientRect` over every rail row 60
+  // times a second — on a 60-recipe book, well over a hundred forced layout
+  // reads per frame, interleaved with the auto-scroll's writes to `scrollTop`
+  // in the same frame. That read-after-write is the textbook layout thrash.
+  //
+  // Rows only move when the rail scrolls or its layout changes, never merely
+  // because the pointer moved, so a snapshot is valid for the whole drag. The
+  // shape mirrors `useDeckScroller`'s `slideCentersRef`/`centersDirtyRef`.
+  interface RailGeometry {
+    scroller: HTMLElement;
+    scrollTop: number;
+    recipes: Array<{ id: string; rect: DOMRect }>;
+    sections: Array<{ id: string; rect: DOMRect }>;
+    newSection: DOMRect | null;
+    sectionAdds: Array<{ id: string; rect: DOMRect }>;
+  }
+  const railGeometryRef = useRef<RailGeometry | null>(null);
+  const railGeometryDirtyRef = useRef(true);
+  const readAll = (scroller: HTMLElement, selector: string, key: string) =>
+    Array.from(scroller.querySelectorAll<HTMLElement>(selector))
+      .map((el) => ({ id: el.dataset[key] as string, rect: el.getBoundingClientRect() }))
+      .filter((entry) => Boolean(entry.id));
+
+  const railGeometry = (scroller: HTMLElement): RailGeometry => {
+    const cached = railGeometryRef.current;
+    // `scrollTop` is one property read against a hundred-plus rect reads, so
+    // comparing it is far cheaper than re-measuring — and it catches both the
+    // drag's own auto-scroll and the user scrolling the rail underneath.
+    if (
+      cached &&
+      !railGeometryDirtyRef.current &&
+      cached.scroller === scroller &&
+      cached.scrollTop === scroller.scrollTop
+    ) {
+      return cached;
+    }
+    const newSection = scroller.querySelector<HTMLElement>("[data-rail-new-section]");
+    const measured: RailGeometry = {
+      scroller,
+      scrollTop: scroller.scrollTop,
+      recipes: readAll(scroller, "[data-rail-recipe]", "railRecipe"),
+      sections: readAll(scroller, "[data-rail-section]", "railSection"),
+      newSection: newSection?.getBoundingClientRect() ?? null,
+      sectionAdds: readAll(scroller, "[data-rail-section-add]", "railSectionAdd"),
+    };
+    railGeometryRef.current = measured;
+    // Entering the organizer runs a FLIP that re-projects every tile each frame
+    // (see `runOrganizeFlip`), so during that window there is no stable geometry
+    // to cache — stay dirty and keep measuring until it settles.
+    railGeometryDirtyRef.current = organizeAnimating;
+    return measured;
+  };
+
   const resolveRailDrop = (
     kind: RailDragKind,
     id: string,
@@ -626,14 +682,13 @@ export default function PrintPage() {
   ): RailDropResolved | null => {
     const scroller = railScrollRef.current;
     if (!scroller) return null;
+    const geometry = railGeometry(scroller);
     const midpointIndex = (rects: DOMRect[]) => {
       const i = rects.findIndex((rect) => clientY < rect.top + rect.height / 2);
       return i === -1 ? rects.length : i;
     };
     if (kind === "recipe") {
-      const rows = Array.from(scroller.querySelectorAll<HTMLElement>("[data-rail-recipe]")).map(
-        (el) => ({ id: el.dataset.railRecipe as string, rect: el.getBoundingClientRect() }),
-      );
+      const rows = geometry.recipes;
       if (rows.length === 0) return null;
 
       // The expanded organizer is a 2D card grid, so resolve against the card
@@ -642,9 +697,9 @@ export default function PrintPage() {
       if (organizeMode) {
         const contains = (rect: DOMRect) =>
           clientX >= rect.left && clientX <= rect.right && clientY >= rect.top && clientY <= rect.bottom;
-        const newSection = scroller.querySelector<HTMLElement>("[data-rail-new-section]");
-        if (newSection) {
-          const rect = newSection.getBoundingClientRect();
+        const newSectionRect = geometry.newSection;
+        if (newSectionRect) {
+          const rect = newSectionRect;
           if (contains(rect)) {
             return {
               indicator: { top: rect.top, left: rect.left, width: rect.width },
@@ -659,12 +714,10 @@ export default function PrintPage() {
           }
         }
 
-        const sectionAdd = Array.from(
-          scroller.querySelectorAll<HTMLElement>("[data-rail-section-add]"),
-        ).find((element) => contains(element.getBoundingClientRect()));
-        if (sectionAdd?.dataset.railSectionAdd) {
-          const sectionId = sectionAdd.dataset.railSectionAdd;
-          const rect = sectionAdd.getBoundingClientRect();
+        const sectionAdd = geometry.sectionAdds.find((entry) => contains(entry.rect));
+        if (sectionAdd) {
+          const sectionId = sectionAdd.id;
+          const rect = sectionAdd.rect;
           return {
             indicator: { top: rect.top, left: rect.left, width: rect.width },
             commit: () => projectMeta.moveItem(id, sectionId, itemIdsForSection(sectionId).filter((x) => x !== id).length),
@@ -736,9 +789,7 @@ export default function PrintPage() {
       };
       return { indicator, commit };
     }
-    const groups = Array.from(scroller.querySelectorAll<HTMLElement>("[data-rail-section]")).map(
-      (el) => ({ id: el.dataset.railSection as string, rect: el.getBoundingClientRect() }),
-    );
+    const groups = geometry.sections;
     if (groups.length === 0) return null;
     const k = midpointIndex(groups.map((g) => g.rect));
     const anchor = k < groups.length ? groups[k] : groups[groups.length - 1];
@@ -763,6 +814,14 @@ export default function PrintPage() {
     // (non-cookbook) rail reorders the card list in place via the same drag.
     if (kind === "recipe" && !organizeMode && cookbookMode) enterOrganizeMode();
   });
+
+  // Everything that can move rail rows WITHOUT scrolling the rail — the drag
+  // classes landing on the commit after `onBegin`, the organizer's grid/list
+  // switch, and any change to the page list itself. Scroll-driven movement is
+  // caught by the `scrollTop` comparison inside `railGeometry`.
+  useEffect(() => {
+    railGeometryDirtyRef.current = true;
+  }, [railDrag.draggingId, organizeMode, organizeAnimating, navItems]);
 
   // Imports started from this page stay in the rail until they either become a
   // real page or the cook removes them. In particular, an error must not vanish
@@ -829,8 +888,57 @@ export default function PrintPage() {
     setEditingSectionTitle(sectionTitleForId(sectionId));
   }
 
+  // Typing a chapter name used to write project meta on every character, and a
+  // meta change re-packs every sheet (section grouping, page numbering, the TOC)
+  // and re-renders every page in the deck. The textarea itself is driven by
+  // `editingSectionTitle` — local state — so only the meta write has to wait.
+  //
+  // A throttle, not a resetting debounce: the write always lands within the
+  // window, so the live-save guarantee the deck's `onChange` documents (blur to
+  // click the photo picker and the title is already saved) still holds. `commit`
+  // writes the final value itself, so a cancelled trailing write is never the
+  // only copy of anything.
+  const SECTION_RENAME_DEBOUNCE_MS = 200;
+  const pendingSectionRenameRef = useRef<{ sectionId: string; value: string } | null>(null);
+  const sectionRenameTimerRef = useRef<number | undefined>(undefined);
+  const renameSection = projectMeta.renameSection;
+
+  const cancelPendingSectionRename = useCallback(() => {
+    window.clearTimeout(sectionRenameTimerRef.current);
+    sectionRenameTimerRef.current = undefined;
+    pendingSectionRenameRef.current = null;
+  }, []);
+
+  const flushSectionRename = useCallback(() => {
+    const pending = pendingSectionRenameRef.current;
+    window.clearTimeout(sectionRenameTimerRef.current);
+    sectionRenameTimerRef.current = undefined;
+    pendingSectionRenameRef.current = null;
+    if (pending) renameSection(pending.sectionId, pending.value.trim() || undefined);
+  }, [renameSection]);
+
+  const editSectionTitle = useCallback(
+    (sectionId: string, value: string) => {
+      setEditingSectionTitle(value);
+      // Moving to a different section's title must not discard the one still
+      // pending — land it before this one takes over the slot.
+      const pending = pendingSectionRenameRef.current;
+      if (pending && pending.sectionId !== sectionId) flushSectionRename();
+      pendingSectionRenameRef.current = { sectionId, value };
+      if (sectionRenameTimerRef.current !== undefined) return;
+      sectionRenameTimerRef.current = window.setTimeout(flushSectionRename, SECTION_RENAME_DEBOUNCE_MS);
+    },
+    [flushSectionRename],
+  );
+
+  // Never strand a pending rename when the page goes away.
+  useEffect(() => flushSectionRename, [flushSectionRename]);
+
   function commitSectionEdit() {
     if (!editingSectionId) return;
+    // Commit writes the authoritative value right here, so a queued trailing
+    // write would only repeat it.
+    cancelPendingSectionRename();
     projectMeta.renameSection(editingSectionId, editingSectionTitle.trim() || undefined);
     setEditingSectionId(null);
     setEditingSectionTitle("");
@@ -2891,6 +2999,7 @@ export default function PrintPage() {
           setEditingSectionId={setEditingSectionId}
           editingSectionTitle={editingSectionTitle}
           setEditingSectionTitle={setEditingSectionTitle}
+          editSectionTitle={editSectionTitle}
           commitSectionEdit={commitSectionEdit}
           startSectionEdit={startSectionEdit}
           editingCoverSide={editingCoverSide}

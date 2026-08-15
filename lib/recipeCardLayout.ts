@@ -665,30 +665,6 @@ export interface RecipeFaces {
   hasBack: boolean;
 }
 
-// Section dividers and covers are always exactly one physical page — unlike a
-// recipe, there's no content-length budget to split across faces — so these
-// sibling resolvers exist purely for naming symmetry with `getRecipeFaces`
-// and to give the divider/cover a distinct, tagged shape `usePrintSheets` can
-// dispatch on, rather than forcing them into `RecipeFace`'s ingredients/
-// instructions shape.
-
-export interface SectionDividerContent {
-  title: string;
-}
-
-export function dividerToFaces(title: string): SectionDividerContent {
-  return { title };
-}
-
-export interface CoverContent {
-  cover: CoverConfig;
-  side: "front" | "back";
-}
-
-export function coverToFaces(cover: CoverConfig, side: "front" | "back" = "front"): CoverContent {
-  return { cover, side };
-}
-
 export type RecipeCardEditTarget =
   | { kind: "title" }
   | { kind: "description" }

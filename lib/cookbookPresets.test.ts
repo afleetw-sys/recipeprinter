@@ -7,7 +7,6 @@ import {
   PRINTERS,
   getCookbookPreset,
   gutterSideForRole,
-  isCookbookPresetId,
   presetArtScale,
   presetCardScale,
   presetInsets,
@@ -30,12 +29,10 @@ describe("cookbook presets", () => {
     expect(getCookbookPreset(undefined).id).toBe(DEFAULT_COOKBOOK_PRESET_ID);
   });
 
-  it("recognizes only known preset ids", () => {
-    expect(isCookbookPresetId("us-letter")).toBe(true);
-    expect(isCookbookPresetId("hardcover-8x10")).toBe(true);
-    expect(isCookbookPresetId("6x9")).toBe(false);
-    expect(isCookbookPresetId(null)).toBe(false);
-    expect(isCookbookPresetId(undefined)).toBe(false);
+  it("resolves an unknown id to the default rather than failing", () => {
+    // The one thing callers rely on: a stale/garbage stored id still yields a
+    // real preset, so a book saved against a retired format still exports.
+    expect(getCookbookPreset("6x9" as never).id).toBe(DEFAULT_COOKBOOK_PRESET_ID);
   });
 
   it("every preset points at printers that exist", () => {

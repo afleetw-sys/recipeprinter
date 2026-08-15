@@ -319,23 +319,6 @@ async function packageForTemplate(
   return rcPackage;
 }
 
-export async function loadRecipePrinterTemplatePrices(
-  userId: string,
-): Promise<Partial<Record<PremiumRecipePrintTemplate, string>>> {
-  const purchases = await getPurchases(userId);
-  const offering = await offeringFor(purchases, RECIPEPRINTER_OFFERING_ID);
-  if (!offering) return {};
-
-  return Object.fromEntries(
-    (Object.entries(PREMIUM_TEMPLATE_PACKAGE_IDS) as Array<[PremiumRecipePrintTemplate, string]>)
-      .map(([template, packageId]) => {
-        const rcPackage = findPackage(offering, packageId, productIdForTemplate(template));
-        return [template, rcPackage?.webBillingProduct.price.formattedPrice] as const;
-      })
-      .filter((entry): entry is [PremiumRecipePrintTemplate, string] => Boolean(entry[1])),
-  );
-}
-
 export async function purchaseRecipePrinterTemplate({
   userId,
   email,

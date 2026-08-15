@@ -121,18 +121,26 @@ export const DEFAULT_COOKBOOK_PRESET_ID: CookbookPresetId = "us-letter";
 
 const PRESETS_BY_ID = new Map(COOKBOOK_PRESETS.map((preset) => [preset.id, preset] as const));
 
-export function isCookbookPresetId(value: string | null | undefined): value is CookbookPresetId {
-  return value != null && PRESETS_BY_ID.has(value as CookbookPresetId);
-}
-
 /** Resolves an id (possibly undefined / stale) to a preset, falling back to the
     default so callers never have to null-check. */
 export function getCookbookPreset(id: CookbookPresetId | undefined): CookbookPreset {
   return (id && PRESETS_BY_ID.get(id)) || PRESETS_BY_ID.get(DEFAULT_COOKBOOK_PRESET_ID)!;
 }
 
-/** The physical sheet (trim + 2·bleed) in CSS px, used to size the on-screen
-    preview so it matches the printed page. */
+/* ── The geometry model, as executable spec ────────────────────────────────
+   `presetSheetDims`, `presetCardScale` and `presetInsets` below have no runtime
+   caller: print.css implements this geometry by hand in CSS, because the export
+   is browser print and the page box has to be described in `@page` rules rather
+   than computed in JS. They are kept, and unit-tested, because they are the only
+   machine-checkable statement of what those CSS rules are supposed to mean — that
+   a Letter card always fits inside each preset's safe box, that a spiral book
+   takes no gutter while a hardcover does, that bleed lands on every edge. Delete
+   them and the print model's invariants are asserted nowhere.
+
+   So: intentionally unreferenced. Not dead code — a specification. If the CSS
+   geometry changes, change these too and let the tests catch the disagreement. */
+
+/** The physical sheet (trim + 2·bleed) in CSS px. */
 export function presetSheetDims(preset: CookbookPreset): { w: number; h: number } {
   const w = (preset.trimWidthIn + preset.bleedIn * 2) * PX_PER_IN;
   const h = (preset.trimHeightIn + preset.bleedIn * 2) * PX_PER_IN;

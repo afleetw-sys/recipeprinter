@@ -46,28 +46,6 @@ const ICONS: Record<SeoIconKey, (p: { size?: number }) => JSX.Element> = {
   crown: CrownIcon,
 };
 
-/** Reassurances under the hero, as flat outline chips. */
-export function ValueRow({ items }: { items: { icon: SeoIconKey; label: string }[] }) {
-  return (
-    <ul className="flex flex-wrap gap-cp-2">
-      {items.map((item) => {
-        const Icon = ICONS[item.icon] ?? CheckIcon;
-        return (
-          <li
-            key={item.label}
-            className="inline-flex items-center gap-2 rounded-full border border-line bg-card px-cp-3 py-2 text-cp-small font-semibold text-ink"
-          >
-            <span style={accentInk} aria-hidden>
-              <Icon size={ICON_SIZE.md} />
-            </span>
-            {item.label}
-          </li>
-        );
-      })}
-    </ul>
-  );
-}
-
 /** A labelled placeholder for a real product screenshot to be dropped in later. */
 export function Placeholder({
   label = "Product screenshot",

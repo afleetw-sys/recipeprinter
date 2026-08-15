@@ -216,11 +216,53 @@ function readMeta(): ProjectMeta {
   return normalizeProjectMeta(parsed);
 }
 
-function writeMeta(meta: ProjectMeta) {
-  // Survivable if it fails: meta stays correct in memory for this page.
-  sessionStore.setJson(PROJECT_META_STORAGE_KEY, meta);
+// How long a meta change may sit in memory before it reaches storage.
+//
+// Every text field in the cookbook — a chapter title, the cover title, the
+// dedication, the TOC heading — writes through to this store on each keystroke,
+// and each write used to mean TWO `JSON.stringify` of the entire project meta
+// (once per storage area, via `setJson`) plus two SYNCHRONOUS storage writes, on
+// the main thread, between one typed character and the next. Serializing once
+// and coalescing the writes turns a per-character cost into a per-pause one.
+//
+// Deliberately a "schedule on first write, land on the timer" throttle rather
+// than a resetting debounce: continuous typing must not be able to starve the
+// write indefinitely, so nothing is ever more than this far from persisted. The
+// window is short on purpose — this mirror is what protects an unsaved book
+// from a tab close, and `flushMetaWrites` covers the orderly teardown paths
+// exactly (see the hook's pagehide/visibilitychange effect).
+const META_PERSIST_DEBOUNCE_MS = 250;
+
+let pendingMetaJson: string | null = null;
+let metaPersistTimer: ReturnType<typeof setTimeout> | null = null;
+
+/** Writes any coalesced meta straight through. Safe to call when nothing is pending. */
+function flushMetaWrites() {
+  if (metaPersistTimer !== null) {
+    clearTimeout(metaPersistTimer);
+    metaPersistTimer = null;
+  }
+  const serialized = pendingMetaJson;
+  pendingMetaJson = null;
+  if (serialized === null) return;
+  // Survivable if either fails: meta stays correct in memory for this page.
+  sessionStore.set(PROJECT_META_STORAGE_KEY, serialized);
   // Mirror to the durable backup so book structure survives a tab close.
-  localStore.setJson(PROJECT_META_RECOVERY_STORAGE_KEY, meta);
+  localStore.set(PROJECT_META_RECOVERY_STORAGE_KEY, serialized);
+}
+
+function writeMeta(meta: ProjectMeta) {
+  let serialized: string;
+  try {
+    serialized = JSON.stringify(meta);
+  } catch {
+    // Nothing persistable (circular structure / BigInt). In-memory meta is
+    // still correct, matching what `setJson` did on a serialization failure.
+    return;
+  }
+  pendingMetaJson = serialized;
+  if (metaPersistTimer !== null) return;
+  metaPersistTimer = setTimeout(flushMetaWrites, META_PERSIST_DEBOUNCE_MS);
 }
 
 /**
@@ -275,12 +317,6 @@ export function buildSections(items: QueueItem[], meta: ProjectMeta): Section[] 
   // after whatever's already there.
   const [first, ...rest] = sections;
   return [{ ...first, items: [...first.items, ...unassigned] }, ...rest];
-}
-
-/** Flattens sections back into a single ordered item list — the shape most
-    existing rendering/measurement code still expects. */
-export function flattenSections(sections: Section[]): QueueItem[] {
-  return sections.flatMap((section) => section.items);
 }
 
 export function namedSectionCount(sections: Section[]): number {
@@ -373,6 +409,27 @@ export function useProjectMeta() {
     setMeta(initial);
     writeMeta(initial);
     setHydrated(true);
+  }, []);
+
+  // Meta writes are coalesced (see `META_PERSIST_DEBOUNCE_MS`), so the last few
+  // hundred milliseconds of edits can still be in memory when the tab goes
+  // away. `pagehide` is the reliable teardown signal (close, navigation, and
+  // mobile bfcache freeze); `visibilitychange` → hidden covers backgrounding the
+  // app, which on mobile is often the last callback before the page is
+  // discarded. Same pair the print page uses to flush its Firestore save — this
+  // one protects the local recovery mirror, which is the safety net underneath it.
+  useEffect(() => {
+    const onVisibility = () => {
+      if (document.visibilityState === "hidden") flushMetaWrites();
+    };
+    window.addEventListener("pagehide", flushMetaWrites);
+    document.addEventListener("visibilitychange", onVisibility);
+    return () => {
+      window.removeEventListener("pagehide", flushMetaWrites);
+      document.removeEventListener("visibilitychange", onVisibility);
+      // Unmounting is itself a teardown — don't strand a pending write.
+      flushMetaWrites();
+    };
   }, []);
 
   const commit = useCallback((next: ProjectMeta) => {

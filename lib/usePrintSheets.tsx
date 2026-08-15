@@ -40,11 +40,53 @@ const SLOTS_PER_SHEET = 1;
 // during a cold load rather than tuned purely for sweep throughput.
 const MEASURE_WINDOW_SIZE = 8;
 
-// Measured faces are cached per (recipe, size) pair, not per recipe: a recipe
-// can be measured at `letter` (cookbook) and `card-6x4` for different jobs, and
-// the two must not clobber each other — see the `measuredFaces` note.
-function faceKey(id: string, size: PrintCardSize): string {
-  return `${id}::${size}`;
+// Measured faces are addressed by EVERY input that changes a card's rendered
+// height, not just the recipe and size. This used to be `id::size` alone, with
+// the other inputs stored alongside the entry and compared on read — so a
+// mismatch threw the result away and the next measurement overwrote the same
+// slot. That made the cache exactly one configuration deep: switching theme, or
+// the Photos control, or the recipe link, re-measured the entire book, and
+// switching back re-measured it again rather than reading the result computed
+// seconds earlier. Folding the discriminators into the key means each
+// configuration keeps its own entry and a return trip is free.
+//
+// `cookbookMode` belongs here for a second reason: it genuinely changes the
+// card (the source link moves into the header and the footer is dropped, see
+// RecipeCardFace), so faces measured in card mode do not describe the same card
+// in book mode. The old comparison never checked it at all, so entering a
+// cookbook could reuse card-mode faces — a stale height feeding the layout,
+// which is the clipping class this whole system exists to prevent.
+function faceKey(
+  id: string,
+  size: PrintCardSize,
+  template: RecipePrintTemplate,
+  hasPhoto: boolean,
+  sourceUrlOn: boolean,
+  cookbookMode: boolean,
+): string {
+  return `${id}::${size}::${template}::${hasPhoto ? 1 : 0}::${sourceUrlOn ? 1 : 0}::${cookbookMode ? 1 : 0}`;
+}
+
+// Ceiling on retained measurements, evicted oldest-first. Entries are cheap —
+// each holds a recipe reference and arrays of references into that recipe's own
+// ingredient/step objects, not copies — and a real session visits a handful of
+// configurations, so this never binds in practice. It exists so a cache whose
+// keys are driven by user actions can't grow without limit across a long
+// editing session. An evicted entry simply re-measures, which is what would
+// have happened on every switch before this cache existed.
+const MAX_MEASURED_FACE_ENTRIES = 2000;
+
+function withMeasuredFace<T>(current: Record<string, T>, key: string, entry: T): Record<string, T> {
+  const next = { ...current, [key]: entry };
+  const keys = Object.keys(next);
+  if (keys.length <= MAX_MEASURED_FACE_ENTRIES) return next;
+  // Object key order is insertion order for string keys, so the head is the
+  // oldest. Re-inserting an existing key keeps its original position, which is
+  // fine here: what matters is bounding the map, not perfect recency.
+  for (const stale of keys.slice(0, keys.length - MAX_MEASURED_FACE_ENTRIES)) {
+    delete next[stale];
+  }
+  return next;
 }
 
 // One card-sized slot on a physical sheet: a recipe's front (and, once it's
@@ -303,27 +345,22 @@ export function usePrintSheets({
   // measurement hasn't settled yet (e.g. the instant it's added), so nothing
   // ever waits on it to render.
   //
-  // Keyed by `id::size`, not `id` alone, so a recipe measured for a `letter`
-  // cookbook and a `card-6x4` job can hold both without clobbering each other.
+  // Addressed by the full configuration (see `faceKey`), so a recipe measured
+  // for a `letter` cookbook, a `card-6x4` job, and each theme all coexist
+  // instead of taking turns in one slot.
   const [measuredFaces, setMeasuredFaces] = useState<
-    Record<string, { recipe: Recipe; cardSize: PrintCardSize; template: RecipePrintTemplate; hasPhoto: boolean; sourceUrlOn: boolean; pages: RecipeFace[] }>
+    Record<string, { recipe: Recipe; pages: RecipeFace[] }>
   >({});
 
   const measuredFacesFor = useCallback(
     (id: string, recipe: Recipe, hasPhoto: boolean, size: PrintCardSize): RecipeFace[] | null => {
-      const entry = measuredFaces[faceKey(id, size)];
-      if (
-        !entry ||
-        entry.recipe !== recipe ||
-        entry.template !== template ||
-        entry.hasPhoto !== hasPhoto ||
-        entry.sourceUrlOn !== sourceUrlOn
-      ) {
-        return null;
-      }
-      return entry.pages;
+      const entry = measuredFaces[faceKey(id, size, template, hasPhoto, sourceUrlOn, cookbookLayouts)];
+      // Recipe CONTENT is the one discriminator a string key can't carry: an
+      // inline edit keeps the same id, so a measurement of the pre-edit recipe
+      // has to be rejected on identity. Everything else is in the key.
+      return entry && entry.recipe === recipe ? entry.pages : null;
     },
-    [measuredFaces, sourceUrlOn, template],
+    [measuredFaces, sourceUrlOn, template, cookbookLayouts],
   );
 
   // Resolves each recipe's per-page layout: an explicit placement, else the
@@ -953,10 +990,13 @@ export function usePrintSheets({
             showSourceUrl={sourceUrlOn}
             cookbookMode={cookbookLayouts}
             onSettled={(pages) =>
-              setMeasuredFaces((current) => ({
-                ...current,
-                [faceKey(id, size)]: { recipe, cardSize: size, template, hasPhoto, sourceUrlOn, pages },
-              }))
+              setMeasuredFaces((current) =>
+                withMeasuredFace(
+                  current,
+                  faceKey(id, size, template, hasPhoto, sourceUrlOn, cookbookLayouts),
+                  { recipe, pages },
+                ),
+              )
             }
           />
         ))}

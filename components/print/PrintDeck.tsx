@@ -82,6 +82,9 @@ interface PrintDeckProps {
   setEditingSectionId: Dispatch<SetStateAction<string | null>>;
   editingSectionTitle: string;
   setEditingSectionTitle: Dispatch<SetStateAction<string>>;
+  /** Updates the in-progress chapter title. Owns both halves: the local field
+      value (instant) and the throttled write into project meta. */
+  editSectionTitle: (sectionId: string, value: string) => void;
   commitSectionEdit: () => void;
   startSectionEdit: (sectionId: string) => void;
   editingCoverSide: CoverSide | null;
@@ -161,6 +164,7 @@ export function PrintDeck(props: PrintDeckProps) {
     setEditingSectionId,
     editingSectionTitle,
     setEditingSectionTitle,
+    editSectionTitle,
     commitSectionEdit,
     startSectionEdit,
     editingCoverSide,
@@ -338,13 +342,12 @@ export function PrintDeck(props: PrintDeckProps) {
           ? {
               sectionId: navItem.recipeId,
               value: editingSectionTitle,
-              // Save the title live (like the subtitle/intro), so blurring the
+              // Saves the title live (like the subtitle/intro), so blurring the
               // field — to click the photo picker or another field — never loses
-              // or dismisses the edit.
-              onChange: (value) => {
-                setEditingSectionTitle(value);
-                projectMeta.renameSection(navItem.recipeId, value.trim() || undefined);
-              },
+              // or dismisses the edit. The meta write behind it is throttled in
+              // the page (see `editSectionTitle`) because each one re-packs the
+              // whole book; the field stays instant either way.
+              onChange: (value) => editSectionTitle(navItem.recipeId, value),
               onCommit: commitSectionEdit,
               onCancel: () => {
                 setEditingSectionId(null);
@@ -817,10 +820,7 @@ export function PrintDeck(props: PrintDeckProps) {
                         ? {
                             sectionId: navItem.recipeId,
                             value: editingSectionTitle,
-                            onChange: (value) => {
-                              setEditingSectionTitle(value);
-                              projectMeta.renameSection(navItem.recipeId, value.trim() || undefined);
-                            },
+                            onChange: (value) => editSectionTitle(navItem.recipeId, value),
                             onCommit: commitSectionEdit,
                             onCancel: () => {
                               setEditingSectionId(null);

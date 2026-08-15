@@ -75,18 +75,3 @@ export function organizationSectionsForApply(
   return sections.filter((section) => section.itemIds.length > 0);
 }
 
-export function moveOrganizationItem(
-  draft: CookbookOrganizationDraft,
-  itemId: string,
-  targetSectionId: string,
-): CookbookOrganizationDraft {
-  return {
-    sections: draft.sections.map((section) => ({
-      ...section,
-      itemIds:
-        section.id === targetSectionId
-          ? [...section.itemIds.filter((id) => id !== itemId), itemId]
-          : section.itemIds.filter((id) => id !== itemId),
-    })),
-  };
-}
