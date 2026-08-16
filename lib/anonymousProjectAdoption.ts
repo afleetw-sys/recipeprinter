@@ -7,8 +7,6 @@ import { recipePrinterUserPhotoRoot } from "@/lib/firebase/recipePrinterPaths";
 import { localStore } from "@/lib/storage";
 import { loadPrintProject, savePrintProject } from "@/lib/printProjects";
 import {
-  isCookbookProjectUnlocked,
-  persistCookbookProjectUnlock,
   transferCookbookProjectUnlockLocal,
 } from "@/lib/cookbookUnlocks";
 
@@ -50,6 +48,7 @@ function anonymousRecipePrinterAsset(url: string | undefined): url is string {
 // filters to anonymous sources) and the post-save verification (which checks the
 // rewritten destinations landed) read the same field set.
 function projectAssetFields(project: PrintProject): Array<string | undefined> {
+  const stash = project.stashedCookbook;
   return [
     project.cover?.imageUrl,
     project.backCover?.imageUrl,
@@ -57,9 +56,26 @@ function projectAssetFields(project: PrintProject): Array<string | undefined> {
     ...(project.backCover?.gridImages ?? []),
     ...project.sections.flatMap((section) => [
       section.photoUrl,
+      // A chapter collage is usually curated from recipe photos (already
+      // covered below), but the picker also accepts an uploaded one.
+      ...(section.gridImages ?? []),
       ...section.items.map((item) => item.recipe?.image),
     ]),
     ...Object.values(project.itemPlacements ?? {}).map((placement) => placement.heroImageUrl),
+    // A book set aside by "switch to recipe cards" holds its own cover art,
+    // chapter photos and hero images. It's persisted with the project now, so
+    // adoption has to bring its assets across too — otherwise restoring the
+    // stash months later hands back a book still pointing at anonymous storage
+    // this account never owned.
+    stash?.cover?.imageUrl,
+    stash?.backCover?.imageUrl,
+    ...(stash?.cover?.gridImages ?? []),
+    ...(stash?.backCover?.gridImages ?? []),
+    ...(stash?.sections ?? []).flatMap((section) => [
+      section.photoUrl,
+      ...(section.gridImages ?? []),
+    ]),
+    ...Object.values(stash?.itemPlacements ?? {}).map((placement) => placement.heroImageUrl),
   ];
 }
 
@@ -113,6 +129,16 @@ function rewriteAssets(project: PrintProject, assets: Record<string, string>): P
           gridImages: cover.gridImages?.map((url) => replaceUrl(url, assets) ?? url),
         }
       : cover;
+  const rewritePlacements = (placements: PrintProject["itemPlacements"]) =>
+    placements
+      ? Object.fromEntries(
+          Object.entries(placements).map(([id, placement]) => [
+            id,
+            { ...placement, heroImageUrl: replaceUrl(placement.heroImageUrl, assets) },
+          ]),
+        )
+      : undefined;
+  const stash = project.stashedCookbook;
   return {
     ...project,
     cover: rewriteCover(project.cover),
@@ -120,19 +146,30 @@ function rewriteAssets(project: PrintProject, assets: Record<string, string>): P
     sections: project.sections.map((section) => ({
       ...section,
       photoUrl: replaceUrl(section.photoUrl, assets),
+      gridImages: section.gridImages?.map((url) => replaceUrl(url, assets) ?? url),
       items: section.items.map((item) =>
         item.recipe?.image
           ? { ...item, recipe: { ...item.recipe, image: replaceUrl(item.recipe.image, assets) } }
           : item,
       ),
     })),
-    itemPlacements: project.itemPlacements
-      ? Object.fromEntries(
-          Object.entries(project.itemPlacements).map(([id, placement]) => [
-            id,
-            { ...placement, heroImageUrl: replaceUrl(placement.heroImageUrl, assets) },
-          ]),
-        )
+    itemPlacements: rewritePlacements(project.itemPlacements),
+    // The set-aside book gets the same treatment — its section list holds ids
+    // rather than recipes, so only the art fields need rewriting. Must stay in
+    // step with `projectAssetFields`, which is what the post-save verification
+    // checks these against.
+    stashedCookbook: stash
+      ? {
+          ...stash,
+          cover: rewriteCover(stash.cover),
+          backCover: rewriteCover(stash.backCover),
+          sections: stash.sections.map((section) => ({
+            ...section,
+            photoUrl: replaceUrl(section.photoUrl, assets),
+            gridImages: section.gridImages?.map((url) => replaceUrl(url, assets) ?? url),
+          })),
+          itemPlacements: rewritePlacements(stash.itemPlacements),
+        }
       : undefined,
   };
 }
@@ -204,14 +241,15 @@ export async function adoptAnonymousProject(
     ) {
       throw new Error("The saved project could not be verified.");
     }
-    // Carry any cookbook unlock across the id change and back it up under the
-    // new owner. A signed-out purchase only ever wrote localStorage (no uid);
-    // adoption is the first moment we can durably persist it to Firestore, so a
-    // "buy first, make an account later" cookbook survives a device switch.
+    // Carry any cookbook unlock across the id change, locally. Adoption used to
+    // ALSO write the unlock to Firestore here, because a signed-out purchase had
+    // only ever reached localStorage and this was the first moment a uid existed
+    // to durably attach it to. The server owns that now: the purchase is
+    // recorded against the anonymous RevenueCat id at checkout and granted on
+    // the TRANSFER event RevenueCat fires when the buyer signs in — which is the
+    // same moment, from a better-informed side. The client write is denied by
+    // the rules regardless.
     transferCookbookProjectUnlockLocal(project.id, destinationProjectId);
-    if (isCookbookProjectUnlocked(destinationProjectId)) {
-      await persistCookbookProjectUnlock(uid, destinationProjectId).catch(() => undefined);
-    }
     writeManifest({ ...manifest, status: "complete", error: undefined });
     return saved;
   } catch (error) {

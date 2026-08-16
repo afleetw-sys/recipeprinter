@@ -6,7 +6,16 @@ import {
   initializeTestEnvironment,
   type RulesTestEnvironment,
 } from "@firebase/rules-unit-testing";
-import { doc, getDoc, serverTimestamp, setDoc, updateDoc } from "firebase/firestore";
+import {
+  collection,
+  deleteDoc,
+  doc,
+  getDoc,
+  getDocs,
+  serverTimestamp,
+  setDoc,
+  updateDoc,
+} from "firebase/firestore";
 import { afterAll, beforeAll, describe, test } from "vitest";
 
 let environment: RulesTestEnvironment;
@@ -129,6 +138,76 @@ describe("Recipe Printer Firestore namespace", () => {
       }),
     );
     await assertFails(getDoc(feedback));
+  });
+
+  // The cookbook unlock IS the $19.99 purchase record. Access is granted on the
+  // mere existence of this document, so "can a client write one?" is the whole
+  // paywall. It used to be yes. These lock that answer down, on both the
+  // namespaced path and the legacy one, while proving the reads the product
+  // actually depends on still work.
+  describe("cookbook unlocks are server-owned", () => {
+    const unlockPath = (uid: string, projectId: string) =>
+      `products/recipePrinter/users/${uid}/cookbookUnlocks/${projectId}`;
+
+    /** Writes an unlock the way the RevenueCat webhook does — admin SDK, rules
+        bypassed — so the read tests have something real to read. */
+    async function seedUnlock(path: string) {
+      await environment.withSecurityRulesDisabled(async (context) => {
+        await setDoc(doc(context.firestore(), path), {
+          projectId: "book-1",
+          unlockedAt: 1,
+          source: "revenuecat",
+        });
+      });
+    }
+
+    test("a signed-in user cannot grant themselves the paid unlock", async () => {
+      const owner = environment.authenticatedContext("buyer").firestore();
+      await assertFails(
+        setDoc(doc(owner, unlockPath("buyer", "book-1")), { projectId: "book-1", unlockedAt: 1 }),
+      );
+    });
+
+    test("an existing unlock cannot be altered or deleted by its owner", async () => {
+      await seedUnlock(unlockPath("buyer2", "book-1"));
+      const owner = environment.authenticatedContext("buyer2").firestore();
+      const ref = doc(owner, unlockPath("buyer2", "book-1"));
+      // A refund revokes by deleting this doc, so a client that could delete it
+      // could also un-revoke itself by re-creating one.
+      await assertFails(updateDoc(ref, { projectId: "book-2" }));
+      await assertFails(deleteDoc(ref));
+    });
+
+    test("the owner can still read one unlock and list them all", async () => {
+      await seedUnlock(unlockPath("buyer3", "book-1"));
+      const owner = environment.authenticatedContext("buyer3").firestore();
+      await assertSucceeds(getDoc(doc(owner, unlockPath("buyer3", "book-1"))));
+      // The projects list reads the whole collection in one query rather than a
+      // point lookup per project — `read` has to cover `list`, not just `get`.
+      await assertSucceeds(
+        getDocs(collection(owner, "products/recipePrinter/users/buyer3/cookbookUnlocks")),
+      );
+    });
+
+    test("nobody else can read someone's unlocks", async () => {
+      await seedUnlock(unlockPath("buyer4", "book-1"));
+      const stranger = environment.authenticatedContext("stranger").firestore();
+      await assertFails(getDoc(doc(stranger, unlockPath("buyer4", "book-1"))));
+    });
+
+    test("the legacy path is closed to writes but still readable", async () => {
+      const legacy = "users/buyer5/cookbookUnlocks/book-1";
+      await environment.withSecurityRulesDisabled(async (context) => {
+        await setDoc(doc(context.firestore(), legacy), { projectId: "book-1", unlockedAt: 1 });
+      });
+      const owner = environment.authenticatedContext("buyer5").firestore();
+      // Readable so long-standing owners keep their books with no backfill…
+      await assertSucceeds(getDoc(doc(owner, legacy)));
+      // …but this path was looser than the namespaced one, so it closes too.
+      await assertFails(setDoc(doc(owner, "users/buyer5/cookbookUnlocks/book-2"), {
+        projectId: "book-2",
+      }));
+    });
   });
 });
 

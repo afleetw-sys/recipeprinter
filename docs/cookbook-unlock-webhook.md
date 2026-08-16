@@ -57,8 +57,32 @@ attribute the client sets right before checkout (Step 0). So:
   handler (which no longer early-returns on an anonymous-only event, so
   signed-out purchases are recorded). Builds clean (`npm run build`).
 
-Still staged (apply during rollout, not yet done): the `firestore.rules`
-lockdown (Step 3 below) and the client write-removal (Step 4).
+**Status:** the `firestore.rules` lockdown (Step 4) and the client write-removal
+(Step 5) are now **written and in the repo, awaiting Steps 2–3**. They must not
+be *deployed* until the webhook is live and a sandbox purchase is verified — see
+the warning at the top. Note a git push ships Step 5 (client code, via Vercel)
+but NOT Step 4, which needs an explicit `firebase deploy --only firestore:rules`.
+
+Two things changed versus this document's original plan:
+
+- **`persistCookbookProjectUnlock` is kept, not gutted.** The plan said it should
+  stop writing. It can't: `grantCookbookUnlock` (lib/duplicateProjects.ts, added
+  after this doc) moves a purchase onto the copy that duplicate-cleanup keeps,
+  and is built around the write being *refused* — a rejection means "could not
+  move the purchase", so the copy holding it survives instead of being deleted.
+  Making the function a silent no-op would have made it report success and
+  **delete the copy that held the purchase**. It stays, and its refusal is now
+  load-bearing.
+- **A latent bug in that path is fixed here.** `persistCookbookProjectUnlock` set
+  the local unlock marker *before* the Firestore write, so a refused write still
+  left the device claiming an unlock the account doesn't have — harmless while
+  clients could write, guaranteed on every attempt once the rules lock down. The
+  marker now follows the write.
+
+Also added: rules tests for these paths in `rules-tests/` (there were none for
+the most security-critical rule in the file). They need Java for the Firestore
+emulator — `npm run test:rules` — and have **not been run yet on this machine**,
+which has no JDK.
 
 ---
 
@@ -80,9 +104,36 @@ cd ~/Desktop/CookPilot/functions && npm run build
 firebase deploy --only functions:recipePrinterRevenueCatWebhook -P recipeapp
 ```
 
-The webhook URL and `RECIPEPRINTER_REVENUECAT_WEBHOOK_AUTH` secret already exist,
-so no dashboard change is needed. Confirm `cookbook_project_id` is forwarded (it
-is, as a subscriber attribute, once Step 1 ships).
+> **Correction (2026-08-15).** This section used to say the webhook was already
+> dashboard-configured and that no RevenueCat change was needed. **That was
+> wrong.** RevenueCat's Integrations page lists no webhook at all, so the
+> function has never been called — no `source: "revenuecat"` unlock has ever been
+> written, `cookbookPurchases` was never created, and the function logs show no
+> invocations.
+>
+> It went unnoticed because the webhook's *other* job (mirroring template
+> entitlements into Firestore) is not on any critical path: template gating reads
+> `customerInfo` from the RevenueCat SDK in the browser. So the webhook could be
+> unwired forever with no visible symptom — until cookbook unlocks depended on it.
+
+### Step 2b — wire the webhook up in RevenueCat (REQUIRED)
+
+In the RevenueCat **project that issues `NEXT_PUBLIC_REVENUECAT_WEB_API_KEY`**
+(webhooks are per-project — check this first, it is the easiest thing to get
+wrong), add a webhook under Integrations:
+
+- **URL:** `https://recipeprinterrevenuecatwebhook-gxip6bzrkq-uc.a.run.app`
+- **Authorization header:** the exact value of the
+  `RECIPEPRINTER_REVENUECAT_WEBHOOK_AUTH` secret. Read it with
+  `npx firebase-tools functions:secrets:access RECIPEPRINTER_REVENUECAT_WEBHOOK_AUTH -P recipeapp`
+  — the function compares it verbatim and returns 401 on a mismatch.
+- **Events:** at minimum `INITIAL_PURCHASE`, `NON_RENEWING_PURCHASE`,
+  `CANCELLATION`, `REFUND`, `CHARGEBACK`, `EXPIRATION`, `TRANSFER` — the set
+  `processCookbookEvent` handles. Sending everything is fine; the rest is ignored.
+
+Use **Send test event** to confirm delivery and auth before spending anything.
+Sandbox events are processed (the handler records `environment` but does not
+filter on it).
 
 ### Step 3 — verify with a sandbox purchase (BEFORE locking rules)
 

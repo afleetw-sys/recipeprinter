@@ -7,43 +7,15 @@ import { COOKBOOK_PRICE_FALLBACK } from "@/lib/cookbookProduct";
 import { friendlyPurchaseSetupError } from "@/lib/friendlyErrors";
 import { track } from "@/lib/analytics";
 import {
-  hasCookbookEntitlement,
   purchaseRecipePrinterCookbook,
 } from "@/lib/recipePrinterPurchases";
 import {
-  claimLegacyCookbookUnlock,
-  hasAnyCookbookProjectUnlock,
   isCookbookProjectUnlocked,
   loadCookbookProjectUnlock,
   markCookbookProjectUnlockedLocal,
   markCookbookUnlockPending,
-  markProjectScopedCookbookPurchase,
   pendingCookbookUnlock,
-  persistCookbookProjectUnlock,
 } from "@/lib/cookbookUnlocks";
-
-/**
- * Writes the unlock to Firestore, retrying a transient failure a few times
- * before giving up. On the final failure it stays quiet: the local unlock
- * marker is already set (inside `persistCookbookProjectUnlock`) and the
- * projects-page reconciler re-attempts the write on the next authenticated
- * visit, so the buyer is never shown a "not purchased" state.
- */
-async function persistCookbookUnlockWithRetry(
-  uid: string,
-  projectId: string,
-  attempts = 3,
-): Promise<void> {
-  for (let attempt = 0; attempt < attempts; attempt += 1) {
-    try {
-      await persistCookbookProjectUnlock(uid, projectId);
-      return;
-    } catch {
-      if (attempt === attempts - 1) return;
-      await new Promise((resolve) => setTimeout(resolve, 400 * (attempt + 1)));
-    }
-  }
-}
 
 interface UseCookbookPurchaseOptions {
   /** Shared with usePremiumTemplatePurchase so this doesn't re-run RevenueCat
@@ -87,17 +59,19 @@ export function useCookbookPurchase({
   );
 
   useEffect(() => {
-    const locallyUnlocked = isCookbookProjectUnlocked(projectId);
-    setProjectUnlocked(locallyUnlocked);
+    setProjectUnlocked(isCookbookProjectUnlocked(projectId));
     if (!cookPilotUser) {
+      // Signed out there is no server to ask, so the local marker is the only
+      // answer available — see `loadCookbookProjectUnlock`.
       setResolvedUnlockKey(null);
       return;
     }
+    // Signed in, ALWAYS ask, even when the cache says unlocked. Skipping the
+    // read on a cached "yes" is what let a stale marker outrank the account:
+    // /projects (reading Firestore) showed "Not purchased" while this page
+    // showed an unlocked book, and no amount of deleting documents could
+    // change it. The answer below can now revoke as well as grant.
     const key = `${cookPilotUser.uid}:${projectId}`;
-    if (locallyUnlocked) {
-      setResolvedUnlockKey(key);
-      return;
-    }
     let cancelled = false;
     loadCookbookProjectUnlock(cookPilotUser.uid, projectId)
       .then((unlocked) => {
@@ -112,46 +86,47 @@ export function useCookbookPurchase({
     };
   }, [cookPilotUser, projectId]);
 
-  // One-time compatibility bridge for customers who bought the legacy
-  // account-wide cookbook unlock before projects became individually owned.
+  // A purchase that completed on THIS device but whose webhook write hasn't
+  // landed yet. `markCookbookUnlockPending` is set at checkout and cleared once
+  // the project is marked, so this only ever matches the project just bought —
+  // it cannot grant a different one.
   useEffect(() => {
-    if (projectUnlocked || !hasCookbookEntitlement(customerInfo)) return;
-    const pending = pendingCookbookUnlock();
-    if (pending === projectId) {
-      markCookbookProjectUnlockedLocal(projectId);
-      setProjectUnlocked(true);
-      if (cookPilotUser) void persistCookbookProjectUnlock(cookPilotUser.uid, projectId);
-      return;
-    }
-    if (!cookPilotUser) {
-      if (claimLegacyCookbookUnlock(projectId)) setProjectUnlocked(true);
-      return;
-    }
-    let cancelled = false;
-    hasAnyCookbookProjectUnlock(cookPilotUser.uid)
-      .then((hasProjectUnlock) => {
-        if (cancelled || hasProjectUnlock || !claimLegacyCookbookUnlock(projectId)) return;
-        setProjectUnlocked(true);
-        void persistCookbookProjectUnlock(cookPilotUser.uid, projectId);
-      })
-      .catch(() => undefined);
-    return () => {
-      cancelled = true;
-    };
-  }, [cookPilotUser, customerInfo, projectId, projectUnlocked]);
+    if (projectUnlocked || pendingCookbookUnlock() !== projectId) return;
+    markCookbookProjectUnlockedLocal(projectId);
+    setProjectUnlocked(true);
+  }, [projectId, projectUnlocked]);
 
-  // A missing local marker is not evidence that an account-owned cookbook is
-  // either locked OR unlocked. Keep access tri-state until the project-scoped
-  // Firestore check answers, so neither the paid workspace nor its paywall can
-  // render based on a guess.
+  /* The legacy account-wide bridge lived here, and it was a free-unlock hole.
+     It granted access to whatever project was open whenever the RevenueCat
+     `cookbook` entitlement was present and no unlock doc was found — guarded
+     only by a localStorage key, so a fresh browser profile re-armed it. Buy one
+     cookbook, open another in incognito, and it unlocked. The Firestore rules
+     lockdown could not touch it: it writes nothing, it just flips local state.
+
+     It is deleted rather than repaired because it protects nobody.
+     `COOKBOOK_ENABLED` has only ever been true on the `cookbook` branch, never
+     on the default branch, so the cookbook has never been publicly purchasable
+     and no customer can hold the former account-wide unlock. Entitlement is now
+     one thing only: a server-written unlock document. */
+
+  // The local marker is evidence of NEITHER answer for a signed-in account: a
+  // missing one may just be a new device, and a present one may be stale (a
+  // deleted or refunded unlock). So while signed in, access stays tri-state
+  // until the server answers — neither the paid workspace nor its paywall
+  // renders on a guess, in either direction.
+  //
+  // This deliberately no longer exits `loading` early when the cache says
+  // unlocked. Doing so is what produced a book that showed as owned on this
+  // page and "Not purchased" on /projects at the same time.
   const cookbookUnlockLoading = Boolean(
-    cookbookMode && cookPilotUser && !projectUnlocked && resolvedUnlockKey !== unlockKey,
+    cookbookMode && cookPilotUser && resolvedUnlockKey !== unlockKey,
   );
-  const cookbookAccessStatus: "loading" | "unlocked" | "locked" =
-    !cookbookMode || projectUnlocked
-      ? "unlocked"
-      : cookbookUnlockLoading
-        ? "loading"
+  const cookbookAccessStatus: "loading" | "unlocked" | "locked" = !cookbookMode
+    ? "unlocked"
+    : cookbookUnlockLoading
+      ? "loading"
+      : projectUnlocked
+        ? "unlocked"
         : "locked";
   const cookbookLocked = cookbookAccessStatus === "locked";
 
@@ -190,17 +165,19 @@ export function useCookbookPurchase({
       track("purchase_completed", { product: "cookbook" });
 
       markCookbookUnlockPending(projectId);
-      markProjectScopedCookbookPurchase(projectId);
       markCookbookProjectUnlockedLocal(projectId);
       setProjectUnlocked(true);
-      // Signed-out buying is allowed, so an owner isn't guaranteed here. When we
-      // do have one, land the unlock in Firestore — with retries — before
-      // calling the purchase done, rather than the old fire-once-and-swallow.
-      // Signed-out, the local marker holds it until the adopt-on-sign-in path
-      // (adoptAnonymousProject) backs it up under the new account.
-      if (cookPilotUser) {
-        await persistCookbookUnlockWithRetry(cookPilotUser.uid, projectId);
-      }
+      // The durable record is the server's: RevenueCat fires the purchase event
+      // at the webhook, which writes the unlock doc with the admin SDK. The
+      // client used to write it here (with retries) because nothing else did —
+      // that is exactly the hole this closed, since a write the client is
+      // allowed to make is a write any signed-in user can make for free.
+      //
+      // Signed-out buying is still allowed: the purchase is recorded against the
+      // anonymous RevenueCat id now and granted on the TRANSFER event when the
+      // buyer signs in. Either way the local marker set above carries access on
+      // this device in the meantime, so the buyer never sees "not purchased"
+      // while the webhook lands.
 
       onFreshPurchase();
       onUnlocked(true);
