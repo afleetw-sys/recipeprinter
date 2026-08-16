@@ -252,9 +252,6 @@ interface UsePrintSheetsOptions {
   /** Optional dedication / front-matter page, placed after the front cover and
       before the table of contents. A cover-like page whose `blurb` is the text. */
   dedication?: CoverConfig;
-  /** Whether a named section gets its own divider page. Off (or a project
-      with no named sections) reproduces today's flat behavior exactly. */
-  sectionDividers?: boolean;
   /** Cookbook mode: emit a table-of-contents page after the cover, and page
       numbers + running headers on the body pages. */
   tableOfContents?: boolean;

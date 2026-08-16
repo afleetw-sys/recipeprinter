@@ -34,9 +34,23 @@ export function CookbookReadyDialog({
       </button>
 
       <div className="cookbook-ready__head">
-        <h2 id="cookbook-ready-title">{justPurchased ? "Your cookbook is ready 🎉" : "Print your cookbook"}</h2>
-        <p>Choose a format to save as a PDF. Every format is included, and you can export again anytime.</p>
+        <h2 id="cookbook-ready-title">{justPurchased ? "Your cookbook is ready 🎉" : "Save your cookbook"}</h2>
+        <p>Choose a format. Every format is included, and you can export again anytime.</p>
       </div>
+
+      {/* The one instruction that decides whether the export works, stated
+          where the decision is made. A cookbook page is laid out to fill its
+          sheet edge to edge, which a PDF reproduces exactly and a printer
+          cannot — a printer reserves an unprintable margin and rescales the
+          whole page to fit inside it, which shifts every page of the book.
+          The browser gives no way to preselect the destination for the user
+          (`window.print()` opens on whatever they used last), so saying so
+          plainly, before the dialog opens, is the only lever there is. */}
+      <p className="cookbook-ready__destination" role="note">
+        Your browser’s print window opens next — choose <strong>Save as PDF</strong> as the
+        destination. Sending it straight to a printer rescales every page, so the layout
+        won’t come out right.
+      </p>
 
       <div className="cookbook-ready__formats">
         {COOKBOOK_PRESETS.map((preset) => (
@@ -59,9 +73,14 @@ export function CookbookReadyDialog({
       </div>
 
       {/* No integration with the print shops — the export is just a PDF. So the
-          honest instruction is: save it first, then upload that file yourself. */}
+          honest instruction is: save it first, then upload that file yourself.
+          Worth stating that home printing IS fine from the saved file: the PDF
+          has its geometry baked in, so a printer can only scale it uniformly —
+          a slightly inset page, never the broken one it produces from the web
+          page. That's the whole reason this flow is PDF-first. */}
       <p className="cookbook-ready__note">
-        To make a physical copy, save the PDF first — then print it at home, or upload it to a service like{" "}
+        Once it’s saved you can print it at home — the PDF keeps the layout — or upload it to a
+        service like{" "}
         {printers.map((printer, index) => (
           <span key={printer.id}>
             <button

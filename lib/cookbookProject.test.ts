@@ -4,6 +4,7 @@ import {
   normalizeProjectMeta,
   recipePagePlacementHasValues,
 } from "@/lib/project";
+import { assemblePrintProject } from "@/lib/printProjects";
 
 describe("cookbook project normalization", () => {
   it("adds a stable project shape without changing recipe ordering", () => {
@@ -99,5 +100,53 @@ describe("deleteSectionFromMeta", () => {
   it("is a no-op for an unknown section id", () => {
     const meta = base();
     expect(deleteSectionFromMeta(meta, "nope")).toBe(meta);
+  });
+});
+
+describe("stashed cookbook survives a save/reopen", () => {
+  // Switching a book to recipe cards tucks it into `stashedCookbook` and also
+  // detaches the working copy onto a fresh project id. The stash therefore has
+  // to reach the SAVED document — when it didn't, reopening that card project
+  // found no stash and quietly scaffolded a brand-new book over the one the
+  // confirm dialog promised was only set aside.
+  const stash = {
+    cover: { title: "Our Favorite Recipes", template: "heirloom" as const },
+    tableOfContents: true,
+    photoStyle: "full" as const,
+    cookbookPreset: "us-letter" as const,
+    sections: [{ id: "s1", title: "Dinner", itemIds: ["r1", "r2"] }],
+    itemPlacements: { r1: { pageLayout: "image-spread" as const } },
+  };
+
+  it("is carried into the assembled project document", () => {
+    const project = assemblePrintProject({
+      id: "p1",
+      ownerUid: "u1",
+      sections: [],
+      settings: {
+        cardSize: "letter",
+        template: "classic",
+        doubleSided: true,
+        showPhoto: false,
+        showSourceUrl: false,
+        showCutLines: false,
+      },
+      stashedCookbook: stash,
+    });
+    expect(project.kind).toBe("printProject");
+    expect(project.stashedCookbook?.cover?.title).toBe("Our Favorite Recipes");
+    expect(project.stashedCookbook?.sections[0].itemIds).toEqual(["r1", "r2"]);
+    expect(project.stashedCookbook?.itemPlacements?.r1.pageLayout).toBe("image-spread");
+  });
+
+  it("survives the normalization a reopened project passes through", () => {
+    const normalized = normalizeProjectMeta({ sections: [], stashedCookbook: stash });
+    expect(normalized.stashedCookbook?.cover?.title).toBe("Our Favorite Recipes");
+    expect(normalized.stashedCookbook?.tableOfContents).toBe(true);
+    expect(normalized.stashedCookbook?.cookbookPreset).toBe("us-letter");
+  });
+
+  it("leaves a project that was never a cookbook without one", () => {
+    expect(normalizeProjectMeta({ sections: [] }).stashedCookbook).toBeUndefined();
   });
 });

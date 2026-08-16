@@ -286,7 +286,6 @@ export default function PrintPage() {
   // (not a re-export), so it can lead with a one-time "your cookbook is ready"
   // celebration instead of the plain "print your cookbook" framing.
   const [cookbookJustPurchased, setCookbookJustPurchased] = useState(false);
-  const [showExitCookbookConfirm, setShowExitCookbookConfirm] = useState(false);
   const [showFeedbackDialog, setShowFeedbackDialog] = useState(false);
   const [showAddRecipeDialog, setShowAddRecipeDialog] = useState(false);
   const [organizeMode, setOrganizeMode] = useState(false);
@@ -482,7 +481,6 @@ export default function PrintPage() {
     hasRecipeBackSide,
     continueOnBack,
     printLayoutReady,
-    measuredRecipeItems,
     sheets,
     navItems,
     spreads,
@@ -495,7 +493,6 @@ export default function PrintPage() {
     cover: projectMeta.meta.cover,
     backCover: projectMeta.meta.backCover,
     dedication: dedicationPage,
-    sectionDividers: projectMeta.meta.sectionDividers,
     tableOfContents: projectMeta.meta.cookbookMode ? projectMeta.meta.tableOfContents : false,
     bookTitle: projectMeta.meta.cover?.title,
     cookbookMode: projectMeta.meta.cookbookMode,
@@ -1087,28 +1084,32 @@ export default function PrintPage() {
     setShowCookbookOfferDialog(true);
   }
 
-  // Switching back to recipe cards is non-destructive — the book is tucked into
-  // a stash (see `exitCookbook`/`restoreCookbook`) — but still goes through a
-  // confirm so a stray click of the Recipe cards ↔ Cookbook switch doesn't
-  // yank the cook out of their book.
-  function confirmExitCookbook() {
+  /**
+   * Recipe cards ↔ Cookbook. One document, one id, two modes.
+   *
+   * This used to do two extra things, and both were wrong.
+   *
+   * It showed a confirm dialog, for an action that loses nothing: the book is
+   * tucked into `stashedCookbook` and — since that stash is now persisted with
+   * the saved document — comes back intact on the way in.
+   *
+   * Worse, for any saved book it minted a fresh project id first, on the
+   * reasoning that a card job must never autosave over the cookbook. But the
+   * PURCHASE hangs off the project id, and `restoreCookbook` brings the book
+   * back under whatever id is current — so toggling out of a paid cookbook and
+   * back returned the book on a brand-new id with no unlock attached, and asked
+   * the cook to buy the book they had already bought. On unpaid books the same
+   * fork simply manufactured the duplicate projects `lib/duplicateProjects.ts`
+   * exists to sweep up, once per curious click.
+   *
+   * Keeping the id makes both problems go away: the document holds either an
+   * active book or a card job with the book stashed beside it, the unlock stays
+   * attached either way, and the switch is genuinely reversible — which is the
+   * only thing that justified it being a toggle in the first place.
+   */
+  function exitCookbookToCards() {
     track("cookbook_exited", { recipeCount: items?.length ?? 0 });
-    // A saved cookbook is a durable document, not merely the current editor
-    // mode. Recipe cards made from it are a new print project and must never
-    // autosave over the book the cook opened. Detach before changing the meta
-    // so the autosave effect treats the card version as an unsaved project.
-    if (savedProjectIdRef.current) {
-      const cardProjectId = createPrintProjectId();
-      projectRevisionRef.current = 0;
-      savedProjectIdRef.current = null;
-      setSavedProjectId(null);
-      projectMeta.setProjectId(cardProjectId);
-      lastSavedFingerprintRef.current = null;
-      lastAttemptedFingerprintRef.current = null;
-      setSaveStatus(null);
-    }
     projectMeta.exitCookbook();
-    setShowExitCookbookConfirm(false);
   }
 
   // The single per-recipe photo axis, matching the book-wide "Photos" control:
@@ -1585,6 +1586,11 @@ export default function PrintPage() {
         photoStyle: projectMeta.meta.photoStyle,
       },
       itemPlacements: projectMeta.meta.itemPlacements,
+      // Carries a book set aside by "switch to recipe cards". Without it the
+      // stash lived only in session metadata, so reopening the saved card
+      // project found none and `startCookbook` scaffolded a brand-new book over
+      // the one the cook was promised had merely been tucked away.
+      stashedCookbook: projectMeta.meta.stashedCookbook,
     });
   }
 
@@ -1935,6 +1941,9 @@ export default function PrintPage() {
           dedication: project.dedication,
           frontMatter: project.frontMatter,
           itemPlacements: project.itemPlacements,
+          // Restores a book this project set aside, so the Cookbook toggle
+          // brings it back instead of scaffolding a fresh one over it.
+          stashedCookbook: project.stashedCookbook,
           sections: project.sections.map((section) => ({
             id: section.id,
             title: section.title,
@@ -2227,12 +2236,16 @@ export default function PrintPage() {
   const hasPrintSettingsFields =
     !projectMeta.meta.cookbookMode && (hasRecipeBackSide || cardSize === "card-6x4");
 
+  // Stays a toggle in both directions, paid or not, because it is now genuinely
+  // reversible — see `exitCookbookToCards`. Starting a SEPARATE card job or a
+  // second cookbook is a different act, and belongs with the other create
+  // actions in the library rather than wedged into this header.
   function renderModeSwitch() {
     if (!COOKBOOK_ENABLED) return null;
     return (
       <ModeSwitch
         inCookbook={Boolean(projectMeta.meta.cookbookMode)}
-        onSwitchToCards={() => setShowExitCookbookConfirm(true)}
+        onSwitchToCards={exitCookbookToCards}
         onSwitchToCookbook={startCookbook}
       />
     );
@@ -3277,9 +3290,6 @@ export default function PrintPage() {
         onCancelDeleteRecipe={() => setPendingDelete(null)}
         onConfirmDeleteRecipe={confirmPendingDelete}
         onConfirmDeleteSectionRecipes={confirmDeleteSectionRecipes}
-        showExitCookbookDialog={showExitCookbookConfirm}
-        onCancelExitCookbook={() => setShowExitCookbookConfirm(false)}
-        onConfirmExitCookbook={confirmExitCookbook}
       />
       <CookbookWelcomeDialog
         open={showCookbookOfferDialog}

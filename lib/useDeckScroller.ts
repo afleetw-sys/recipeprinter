@@ -338,6 +338,5 @@ export function useDeckScroller({
     deckRef,
     slideRefs,
     goToSlide,
-    centerSlide,
   };
 }

@@ -137,6 +137,11 @@ export interface Section {
   items: QueueItem[];
 }
 
+/** A section stripped to what's persisted: the organizational fields plus the
+    member ids, never recipe content (which the queue owns). `Section` is this
+    joined against the live item list — see `buildSections` in lib/project.ts. */
+export type SectionMeta = Omit<Section, "items"> & { itemIds: string[] };
+
 /** Which print-format preset a cookbook exports at. Each id maps to a full
     page geometry (trim size, bleed, margin, binding gutter) in
     `lib/cookbookPresets.ts`. Only meaningful in cookbook mode. */
@@ -222,6 +227,32 @@ export interface PrintProjectSettings {
   photoStyle?: "none" | "card" | "full";
 }
 
+/**
+ * Everything cookbook-specific that switching back to recipe cards sets aside,
+ * so returning to the book restores it rather than making the cook rebuild it.
+ *
+ * This is persisted with the project on purpose. The stash lives in session
+ * metadata while you work, but "switch to cards" also detaches the working copy
+ * onto a fresh project id — so without carrying the stash into the saved
+ * document, reopening that card project later found no stash and silently
+ * scaffolded a brand-new book instead of restoring the one that was set aside.
+ * Only ids and organizational fields, so it stays small.
+ */
+export interface StashedCookbook {
+  cover?: CoverConfig;
+  backCover?: CoverConfig;
+  dedication?: CoverConfig;
+  frontMatter?: CookbookFrontMatter;
+  photoStyle?: "none" | "card" | "full";
+  tableOfContents?: boolean;
+  tocKicker?: string;
+  tocTitle?: string;
+  sectionDividers?: boolean;
+  cookbookPreset?: CookbookPresetId;
+  sections: SectionMeta[];
+  itemPlacements?: Record<string, RecipePagePlacement>;
+}
+
 export interface PrintProject {
   id: string;
   /** Distinguishes automatic cookbook persistence from opt-in card projects. */
@@ -245,6 +276,9 @@ export interface PrintProject {
       `RecipePagePlacement`). Absent for plain card projects. Kept alongside
       sections so a saved cookbook restores its per-recipe layout choices. */
   itemPlacements?: Record<string, RecipePagePlacement>;
+  /** A book set aside by switching this project to recipe cards. See
+      `StashedCookbook`. Absent for projects that were never a cookbook. */
+  stashedCookbook?: StashedCookbook;
   createdAt: number;
   updatedAt: number;
 }

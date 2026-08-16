@@ -14,7 +14,7 @@ import {
   planDuplicateCleanup,
 } from "@/lib/duplicateProjects";
 import { track } from "@/lib/analytics";
-import { loadCookbookProjectUnlock, reconcileCookbookProjectUnlocks } from "@/lib/cookbookUnlocks";
+import { loadCookbookProjectUnlockIds } from "@/lib/cookbookUnlocks";
 import { photoGridLayout } from "@/lib/photoGrid";
 import type { PrintProject } from "@/types/recipe";
 
@@ -84,18 +84,13 @@ export default function ProjectsPage() {
     setError(null);
     try {
       const next = await loadPrintProjects(user.uid);
-      // Back up any locally-known unlock that never reached Firestore (a
-      // swallowed write, or a signed-out purchase). Best-effort — never blocks
-      // the list from rendering.
-      void reconcileCookbookProjectUnlocks(user.uid);
-      const purchased = await Promise.all(
-        next.map(async (project) => [
-          project.id,
-          await loadCookbookProjectUnlock(user.uid, project.id).catch(() => false),
-        ] as const),
-      );
+      // No local→server unlock backfill here any more: unlocks are written by
+      // the RevenueCat webhook, and the client is denied write access to them.
+      // Two collection reads for the whole account, not two point lookups per
+      // project — see `loadCookbookProjectUnlockIds`.
+      const unlockedIds = await loadCookbookProjectUnlockIds(user.uid);
       const purchasedProjectIds = new Set(
-        purchased.filter(([, unlocked]) => unlocked).map(([id]) => id),
+        next.filter((project) => unlockedIds.has(project.id)).map((project) => project.id),
       );
       // Clear the copies an old autosave bug forked into this account before
       // rendering, so they are never on screen. Silent and unprompted: nobody
@@ -120,7 +115,13 @@ export default function ProjectsPage() {
     } finally {
       setLoading(false);
     }
-  }, [user]);
+    // Keyed on the uid, not the User object: Firebase hands `onAuthStateChanged`
+    // a fresh object on every token refresh (roughly hourly), and depending on
+    // the object identity re-ran this whole load — every project document and
+    // both unlock collections — for an account that hadn't changed. The print
+    // page already keys its own account effects this way.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user?.uid]);
 
   useEffect(() => {
     if (!ready) return;
@@ -130,7 +131,10 @@ export default function ProjectsPage() {
       return;
     }
     void refresh();
-  }, [ready, user, refresh]);
+    // Same reasoning as `refresh` above — a token refresh must not re-trigger
+    // the load. Signing in or out still changes the uid, so this still fires.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [ready, user?.uid, refresh]);
 
   async function confirmDelete() {
     if (!user || !pendingDelete) return;

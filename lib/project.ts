@@ -8,7 +8,9 @@ import type {
   QueueItem,
   RecipePagePlacement,
   Section,
+  SectionMeta,
   SectionPhotoMode,
+  StashedCookbook,
 } from "@/types/recipe";
 import { uid } from "@/lib/ids";
 import { localStore, sessionStore } from "@/lib/storage";
@@ -94,18 +96,7 @@ export interface ProjectMeta {
   cookbookPreset?: CookbookPresetId;
   /** Section metadata only (id/title/order/chapter-opener fields) — item ids,
       not recipe content. `photoUrl`/`intro` drive the cookbook chapter opener. */
-  sections: Array<{
-    id: string;
-    title?: string;
-    subtitle?: string;
-    photoUrl?: string;
-    photoMode?: SectionPhotoMode;
-    gridImages?: string[];
-    intro?: string;
-    showOpener?: boolean;
-    numberAsChapter?: boolean;
-    itemIds: string[];
-  }>;
+  sections: SectionMeta[];
   /** Per-recipe cookbook page layout (full/half/image-spread), keyed by
       `QueueItem.id`. Kept out of the section list so the import/parse/queue
       lifecycle stays untouched by a book-only concern (see the type's comment).
@@ -118,24 +109,6 @@ export interface ProjectMeta {
       cookbook fields, identical to a project that never had a book. */
   stashedCookbook?: StashedCookbook;
 }
-
-/** Everything cookbook-specific that `exitCookbook` sets aside so switching back
-    to the book restores it intact, rather than making the cook rebuild it. */
-type StashedCookbook = Pick<
-  ProjectMeta,
-  | "cover"
-  | "backCover"
-  | "dedication"
-  | "frontMatter"
-  | "photoStyle"
-  | "tableOfContents"
-  | "tocKicker"
-  | "tocTitle"
-  | "sectionDividers"
-  | "cookbookPreset"
-  | "sections"
-  | "itemPlacements"
->;
 
 const EMPTY_META: ProjectMeta = { sections: [] };
 
@@ -521,17 +494,6 @@ export function useProjectMeta() {
     [update],
   );
 
-  /** Chapter-opener photo for a section (cookbook mode). Empty/undefined clears
-      it. Thin wrapper over `setSectionPhotoMode` so the legacy single-photo path
-      keeps `photoMode` consistent: a url means the in-card `band`, clearing means
-      `none`. */
-  const setSectionPhoto = useCallback(
-    (sectionId: string, photoUrl: string | undefined) => {
-      setSectionPhotoMode(sectionId, photoUrl ? "band" : "none", { photoUrl });
-    },
-    [setSectionPhotoMode],
-  );
-
   /** Chapter-opener intro line for a section (cookbook mode). */
   const setSectionIntro = useCallback(
     (sectionId: string, intro: string | undefined) => {
@@ -600,23 +562,6 @@ export function useProjectMeta() {
         sections.splice(toIndex, 0, moved);
         return { ...current, sections };
       });
-    },
-    [update],
-  );
-
-  /** Replaces the whole section list at once — used by the "Make it a cookbook"
-      scaffold to auto-group loose recipes into chapters. Fresh ids are minted
-      here so callers pass only titles + item ids. */
-  const replaceSections = useCallback(
-    (groups: Array<{ title?: string; itemIds: string[] }>) => {
-      update((current) => ({
-        ...current,
-        sections: groups.map((group) => ({
-          id: uid(),
-          title: group.title,
-          itemIds: group.itemIds,
-        })),
-      }));
     },
     [update],
   );
@@ -856,14 +801,12 @@ export function useProjectMeta() {
     syncSections,
     addSection,
     renameSection,
-    setSectionPhoto,
     setSectionPhotoMode,
     setSectionIntro,
     updateSection,
     deleteSection,
     moveItem,
     reorderSections,
-    replaceSections,
     setSectionStructure,
     setCover,
     setBackCover,

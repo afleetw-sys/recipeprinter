@@ -6,6 +6,7 @@ import type {
   PrintProjectSettings,
   RecipePagePlacement,
   Section,
+  StashedCookbook,
 } from "@/types/recipe";
 import { uid } from "@/lib/ids";
 import {
@@ -54,6 +55,10 @@ export function assemblePrintProject(params: {
   frontMatter?: import("@/types/recipe").CookbookFrontMatter;
   settings: PrintProjectSettings;
   itemPlacements?: Record<string, RecipePagePlacement>;
+  /** A book set aside by switching to recipe cards — see `StashedCookbook`.
+      Persisted so "switch back to Cookbook" restores it after a reload, rather
+      than finding no stash and scaffolding a fresh book over it. */
+  stashedCookbook?: StashedCookbook;
   createdAt?: number;
   revision?: number;
   kind?: "cookbook" | "printProject";
@@ -72,6 +77,7 @@ export function assemblePrintProject(params: {
     frontMatter: params.frontMatter,
     settings: params.settings,
     itemPlacements: params.itemPlacements,
+    stashedCookbook: params.stashedCookbook,
     createdAt: params.createdAt ?? now,
     updatedAt: now,
   };

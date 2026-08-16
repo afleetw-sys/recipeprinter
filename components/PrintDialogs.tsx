@@ -19,9 +19,6 @@ export function PrintDialogs({
   onCancelDeleteRecipe,
   onConfirmDeleteRecipe,
   onConfirmDeleteSectionRecipes,
-  showExitCookbookDialog,
-  onCancelExitCookbook,
-  onConfirmExitCookbook,
 }: {
   showDonateDialog: boolean;
   onCloseDonateDialog: () => void;
@@ -34,9 +31,6 @@ export function PrintDialogs({
   onCancelDeleteRecipe: () => void;
   onConfirmDeleteRecipe: () => void;
   onConfirmDeleteSectionRecipes?: () => void;
-  showExitCookbookDialog: boolean;
-  onCancelExitCookbook: () => void;
-  onConfirmExitCookbook: () => void;
 }) {
   const deleteButtonRef = useRef<HTMLButtonElement | null>(null);
   const [alsoDeleteSectionRecipes, setAlsoDeleteSectionRecipes] = useState(false);
@@ -165,40 +159,11 @@ export function PrintDialogs({
               </button>
             </div>
       </Dialog>
-      {/* Switching back to recipe cards is non-destructive now: the book is
-          tucked away (see `exitCookbook`/`restoreCookbook` in lib/project.ts)
-          and comes back intact on the next switch. So this is a light "sure you
-          don't want a cookbook?" nudge, not a data-loss warning. */}
-      <Dialog
-        open={showExitCookbookDialog}
-        onClose={onCancelExitCookbook}
-        labelledBy="exit-cookbook-title"
-        className="print-success-dialog no-print"
-        backdropClassName="print-success-dialog__backdrop"
-        panelClassName="print-success-dialog__panel"
-      >
-            <button
-              type="button"
-              className="print-success-dialog__close icon-close-btn"
-              aria-label="Close"
-              onClick={onCancelExitCookbook}
-            >
-              <XIcon size={ICON_SIZE.md} />
-            </button>
-            <h2 id="exit-cookbook-title">Switch back to recipe cards?</h2>
-            <p>
-              Your cookbook is saved either way, so you can switch back anytime and pick up right
-              where you left off.
-            </p>
-            <div className="print-success-dialog__actions">
-              <button type="button" className="btn btn-ghost" onClick={onCancelExitCookbook}>
-                Never mind
-              </button>
-              <button type="button" className="btn btn-secondary" onClick={onConfirmExitCookbook}>
-                Switch to recipe cards
-              </button>
-            </div>
-      </Dialog>
+      {/* The "switch back to recipe cards?" confirm lived here. It is gone:
+          before a book is bought the switch is reversible exploration and has
+          nothing to warn about, and once bought there is no switch at all —
+          leaving is an explicit "New recipe cards" action that forks a
+          separate project. See `renderModeSwitch` in app/print/page.tsx. */}
     </>
   );
 }
