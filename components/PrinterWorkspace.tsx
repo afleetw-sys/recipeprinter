@@ -12,6 +12,7 @@ import {
   TrashIcon,
 } from "@/components/icons";
 import { createCurrentPrintJob, useQueue } from "@/lib/queue";
+import { useProjectMeta } from "@/lib/project";
 import { takePendingImport } from "@/lib/pendingImport";
 import type { ImportMethod } from "@/types/recipe";
 
@@ -49,6 +50,18 @@ export function PrinterWorkspace({
     remove,
     clear,
   } = useQueue();
+  const { startNewProject } = useProjectMeta();
+  /**
+   * "Clear all" means "I'm starting something else", so it releases the
+   * project identity as well as the recipes. Clearing only the list left the
+   * id pointing at whatever was last saved, and the next autosave wrote the
+   * new recipes over that cookbook. The saved book is untouched — it keeps
+   * its own id, document and purchase, and stays in the library.
+   */
+  function startOver() {
+    clear();
+    startNewProject();
+  }
   const readyItems = items.filter((it) => it.status === "ready");
   const readyRecipeIds = readyItems.map((it) => it.id);
   const hasProject = hydrated && items.length > 0;
@@ -187,7 +200,7 @@ export function PrinterWorkspace({
                       role="menuitem"
                       className="mode-toggle-menu__item mode-toggle-menu__item--danger"
                       onClick={() => {
-                        clear();
+                        startOver();
                         setMenuOpen(false);
                       }}
                     >
@@ -271,7 +284,7 @@ export function PrinterWorkspace({
                 <button
                   type="button"
                   className="btn-ghost btn-ghost--danger btn-compact"
-                  onClick={clear}
+                  onClick={startOver}
                 >
                   <TrashIcon size={ICON_SIZE.md} />
                   Clear all

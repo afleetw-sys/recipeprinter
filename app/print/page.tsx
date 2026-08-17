@@ -2236,6 +2236,32 @@ export default function PrintPage() {
   const hasPrintSettingsFields =
     !projectMeta.meta.cookbookMode && (hasRecipeBackSide || cardSize === "card-6x4");
 
+  /**
+   * Which book you are in, and the way back to the rest of them.
+   *
+   * Until now the workspace never said which document it was editing. That is
+   * how a cook could clear the recipe list, add five new ones, and silently
+   * overwrite a saved cookbook — there was nothing on screen claiming to BE
+   * anything. The cover title is already the book's name, so this needs no new
+   * concept, only somewhere to show it.
+   */
+  function renderDocumentName() {
+    if (!projectMeta.meta.cookbookMode) return null;
+    const title = projectMeta.meta.cover?.title?.trim();
+    return (
+      <Link
+        href="/projects"
+        className="hidden sm:flex items-center gap-cp-2 min-w-0 text-cp-small text-ink-soft hover:text-ink transition-colors"
+        title="Back to all projects"
+      >
+        <BookIcon size={ICON_SIZE.sm} />
+        <span className="truncate max-w-[16rem] font-semibold text-ink">
+          {title || "Untitled cookbook"}
+        </span>
+      </Link>
+    );
+  }
+
   // Stays a toggle in both directions, paid or not, because it is now genuinely
   // reversible — see `exitCookbookToCards`. Starting a SEPARATE card job or a
   // second cookbook is a different act, and belongs with the other create
@@ -2309,6 +2335,23 @@ export default function PrintPage() {
       </CheckboxGroup>
     );
   }
+
+  // "New cookbook" was chosen back in the library, before there were any
+  // recipes to make a book from. Now that there are, honour it — otherwise the
+  // cook lands in recipe cards after explicitly asking for a cookbook and has to
+  // go find the switch. Consumed first so a failed scaffold can't loop, and so
+  // returning to this project later doesn't re-scaffold over their work.
+  useEffect(() => {
+    if (!projectMeta.meta.cookbookIntent) return;
+    if (!items?.length || projectMeta.meta.cookbookMode) return;
+    projectMeta.clearCookbookIntent();
+    // `beginCookbookBuild`, not `startCookbook`: the latter opens the offer
+    // dialog for anyone who hasn't seen it, and pitching the cookbook to
+    // someone who just clicked "New cookbook" is asking a question they have
+    // already answered.
+    beginCookbookBuild();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [projectMeta.meta.cookbookIntent, projectMeta.meta.cookbookMode, items?.length]);
 
   usePrintSettingsPersistence(params, {
     cardSize,
@@ -2884,7 +2927,7 @@ export default function PrintPage() {
           compact
           sticky
           centerActions
-          actions={renderModeSwitch()}
+          actions={<>{renderDocumentName()}{renderModeSwitch()}</>}
           saveStatus={saveStatus}
           onRetrySave={handleRetrySave}
         />

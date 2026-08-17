@@ -6,6 +6,9 @@ import { SiteHeader } from "@/components/SiteHeader";
 import { ConfirmDialog } from "@/components/ConfirmDialog";
 import { Badge, IconButton } from "@/components/Controls";
 import { CookPilotLoginDialog, useCookPilotAuth } from "@/components/CookPilotAuth";
+import { useProjectMeta } from "@/lib/project";
+import { useQueue } from "@/lib/queue";
+import { useRouter } from "next/navigation";
 import { BookIcon, CheckIcon, ICON_SIZE, SpinnerIcon, TrashIcon } from "@/components/icons";
 import { deletePrintProject, loadPrintProjects } from "@/lib/printProjects";
 import {
@@ -68,6 +71,34 @@ function ProjectCover({ project }: { project: PrintProject }) {
 
 export default function ProjectsPage() {
   const { user, ready } = useCookPilotAuth();
+  const router = useRouter();
+  const { startNewProject } = useProjectMeta();
+  const { items: queueItems } = useQueue();
+
+  /**
+   * The missing entry point. Until now the only way into a cookbook was the
+   * mode switch on the print page, and once you had one it returned you to that
+   * same book — so a customer who wanted a SECOND cookbook had no way to make
+   * one, and no way to buy one. Every book is its own project and its own
+   * purchase, so "new" has to mean a new project id.
+   *
+   * Deliberately does NOT clear the recipe list. Emptying it to hand the cook a
+   * blank page throws away work to make room for work — the recipes they have
+   * are exactly what a new book gets made from, which is what "make it a
+   * cookbook" has always done. All that has to be new is the project IDENTITY,
+   * so the book being built is its own document and its own purchase rather
+   * than an edit of whichever one happened to be open.
+   *
+   * With recipes on hand there is nothing left to collect, so this goes straight
+   * to the workspace. With none, it routes to the importer instead and
+   * `cookbookIntent` carries the choice across that detour, so the cook still
+   * lands in a book rather than in recipe cards.
+   */
+  function startNewCookbook() {
+    const hasRecipes = queueItems.some((item) => item.status === "ready" && item.recipe);
+    startNewProject({ cookbook: true });
+    router.push(hasRecipes ? "/print" : "/");
+  }
   const [projects, setProjects] = useState<PrintProject[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -165,11 +196,17 @@ export default function ProjectsPage() {
             scale — so Tailwind emitted nothing, preflight's `font-size: inherit`
             took over, and the page title rendered at the same plain body size as
             the card titles below it. */}
-        <header className="mb-cp-7">
-          <h1 className="text-cp-hero-sm font-extrabold tracking-[-0.04em] leading-[1.08]">Projects</h1>
-          <p className="mt-cp-3 text-cp-body-lg text-ink-soft leading-relaxed">
-            Open or remove your saved cookbooks and print projects.
-          </p>
+        <header className="mb-cp-7 flex flex-wrap items-start justify-between gap-cp-4">
+          <div>
+            <h1 className="text-cp-hero-sm font-extrabold tracking-[-0.04em] leading-[1.08]">Projects</h1>
+            <p className="mt-cp-3 text-cp-body-lg text-ink-soft leading-relaxed">
+              Open or remove your saved cookbooks and print projects.
+            </p>
+          </div>
+          <button type="button" className="btn btn-primary flex-shrink-0" onClick={startNewCookbook}>
+            <BookIcon size={ICON_SIZE.md} />
+            New cookbook
+          </button>
         </header>
 
         {loading ? (

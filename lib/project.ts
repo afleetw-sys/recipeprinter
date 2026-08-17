@@ -90,6 +90,11 @@ export interface ProjectMeta {
       cookbook" — false/undefined means the plain print-cards UI. Gated off at
       the entry points for now; see COOKBOOK_ENABLED in lib/cookbookProduct.ts. */
   cookbookMode?: boolean;
+  /** "New cookbook" was chosen from the library, but there are no recipes yet
+      to make one from. Carries that choice through the add-recipes detour so
+      the workspace opens as a book instead of dropping the cook into recipe
+      cards and asking them to find the switch. Consumed on arrival. */
+  cookbookIntent?: boolean;
   /** The print-format preset this cookbook exports at (trim/bleed/margin/gutter
       — see lib/cookbookPresets.ts). Absent = the default preset. Cookbook-only;
       cleared by `exitCookbook`. */
@@ -758,6 +763,43 @@ export function useProjectMeta() {
     });
   }, [update]);
 
+  /**
+   * Starts a genuinely new project: fresh id, no cookbook, no sections, no stash.
+   *
+   * Clearing the recipe list used to leave the project IDENTITY in place, and
+   * the identity is what autosave writes to. So emptying the queue and adding
+   * different recipes did not start something new — it replaced the contents of
+   * the saved cookbook the id still pointed at, with no prompt and no undo. It
+   * is also why there was no way to make a SECOND cookbook: the only entry point
+   * returned you to the one that id already owned.
+   *
+   * Nothing saved is destroyed. The previous project keeps its own id, its own
+   * document, and its own purchase, and stays in the library — this just stops
+   * pointing at it.
+   */
+  const startNewProject = useCallback(
+    (options: { cookbook?: boolean } = {}) => {
+      commit({
+        ...EMPTY_META,
+        projectId: uid(),
+        cookbookIntent: options.cookbook || undefined,
+        // Whether the cookbook pitch has been seen is a fact about the PERSON,
+        // not the project. Resetting it per project would re-pitch the product
+        // to someone already on their second book.
+        cookbookWelcomeCompleted: metaRef.current.cookbookWelcomeCompleted,
+      });
+    },
+    [commit],
+  );
+
+  /** Consumes the "make this a cookbook" choice carried from the library, so it
+      fires exactly once and a later visit doesn't re-scaffold. */
+  const clearCookbookIntent = useCallback(() => {
+    update((current) =>
+      current.cookbookIntent ? { ...current, cookbookIntent: undefined } : current,
+    );
+  }, [update]);
+
   /** Replaces session metadata after a saved account project is verified. */
   const replaceMeta = useCallback(
     (next: ProjectMeta) => {
@@ -825,6 +867,8 @@ export function useProjectMeta() {
     setItemPhotoMode,
     clearItemPhotoOverrides,
     setPhotoStyle,
+    startNewProject,
+    clearCookbookIntent,
     replaceMeta,
     setProjectId,
   };
