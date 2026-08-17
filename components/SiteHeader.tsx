@@ -14,6 +14,7 @@ export function SiteHeader({
   sticky = false,
   saveStatus,
   onRetrySave,
+  onSave,
 }: {
   backHref?: string;
   actions?: ReactNode;
@@ -23,6 +24,7 @@ export function SiteHeader({
   sticky?: boolean;
   saveStatus?: AccountSaveStatus | null;
   onRetrySave?: () => void;
+  onSave?: () => void;
 }) {
   const logo = (
     <>
@@ -57,7 +59,7 @@ export function SiteHeader({
       )}
       <div className="flex items-center gap-cp-2 sm:gap-cp-3 flex-nowrap justify-end shrink-0">
         {actions && !centerActions ? actions : null}
-        <AccountControl saveStatus={saveStatus} onRetry={onRetrySave} />
+        <AccountControl saveStatus={saveStatus} onRetry={onRetrySave} onSave={onSave} />
       </div>
     </header>
   );

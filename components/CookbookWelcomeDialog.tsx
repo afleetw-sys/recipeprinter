@@ -10,12 +10,21 @@ export function CookbookWelcomeDialog({
   open,
   cover,
   price,
+  purchased = false,
   onStart,
   onClose,
 }: {
   open: boolean;
   cover: CoverConfig;
   price: string;
+  /**
+   * This project's cookbook is already paid for — the cook switched to recipe
+   * cards and is on their way back in. Every entry into a book goes through
+   * this screen (one path, always, with the build reveal after it), so without
+   * this it quoted $19.99 at someone who had already paid it, which is the
+   * single loudest way to suggest their purchase didn't survive.
+   */
+  purchased?: boolean;
   onStart: () => void;
   onClose: () => void;
 }) {
@@ -54,8 +63,16 @@ export function CookbookWelcomeDialog({
       </div>
       <div className="cookbook-welcome__copy">
         <div className="cookbook-welcome__lede">
-          <h2 id="cookbook-welcome-title">Turn your favorite recipes into a cookbook you&apos;ll keep forever.</h2>
-          <p>A beautifully designed cookbook you&apos;ll be proud to print, gift, and pass down.</p>
+          <h2 id="cookbook-welcome-title">
+            {purchased
+              ? "Your cookbook is right where you left it."
+              : "Turn your favorite recipes into a cookbook you'll keep forever."}
+          </h2>
+          <p>
+            {purchased
+              ? "Your cover, chapters and layout were kept. Open it back up and carry on."
+              : "A beautifully designed cookbook you'll be proud to print, gift, and pass down."}
+          </p>
         </div>
         <ul className="cookbook-feature-chips">
           {["Professionally designed", "Automatically organized", "Ready for hardcover or spiral printing"].map((item) => (
@@ -63,11 +80,22 @@ export function CookbookWelcomeDialog({
           ))}
         </ul>
         <div className="cookbook-welcome__price">
-          <b>{price}</b>
-          <span>One purchase per cookbook. Pay only when you first export.</span>
+          {purchased ? (
+            <span className="cookbook-welcome__owned">
+              <CheckIcon size={ICON_SIZE.sm} />
+              You own this cookbook — export it as often as you like.
+            </span>
+          ) : (
+            <>
+              <b>{price}</b>
+              <span>One purchase per cookbook. Pay only when you first export.</span>
+            </>
+          )}
         </div>
         <div className="cookbook-welcome__actions">
-          <button type="button" className="btn btn-primary" onClick={onStart}>Create my cookbook</button>
+          <button type="button" className="btn btn-primary" onClick={onStart}>
+            {purchased ? "Open my cookbook" : "Create my cookbook"}
+          </button>
           <button type="button" className="btn btn-ghost" onClick={onClose}>Not now</button>
         </div>
       </div>

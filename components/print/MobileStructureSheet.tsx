@@ -28,6 +28,8 @@ interface MobileStructureSheetProps {
   moveRecipeInBook: (itemId: string, direction: -1 | 1) => void;
   addStructureSection: () => void;
   suggestCookbookLayout: () => void;
+  undoCookbookOrganization: () => void;
+  canUndoOrganization: boolean;
   structureSheetOpen: boolean;
   setStructureSheetOpen: Dispatch<SetStateAction<boolean>>;
 }
@@ -53,6 +55,8 @@ export function MobileStructureSheet({
   moveRecipeInBook,
   addStructureSection,
   suggestCookbookLayout,
+  undoCookbookOrganization,
+  canUndoOrganization,
   structureSheetOpen,
   setStructureSheetOpen,
 }: MobileStructureSheetProps) {
@@ -258,10 +262,10 @@ export function MobileStructureSheet({
             <button
               type="button"
               className="btn btn-ghost btn-compact"
-              onClick={suggestCookbookLayout}
+              onClick={canUndoOrganization ? undoCookbookOrganization : suggestCookbookLayout}
             >
               <RefreshIcon size={ICON_SIZE.sm} />
-              Suggest a layout
+              {canUndoOrganization ? "Undo organizing" : "Organize it for me"}
             </button>
           </footer>
         </aside>

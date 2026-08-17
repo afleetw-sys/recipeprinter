@@ -145,6 +145,35 @@
   color: var(--cp-ink);
 }
 
+/* Auto-organize / Undo. Sits directly under "Organize recipes" (the manual
+   organizer) and reads as its quieter sibling — same size and weight, so
+   neither claims to be the primary way in. */
+.recipe-page-rail__auto-organize {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  width: 100%;
+  padding: 6px 8px;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--cp-ink-soft);
+  font-size: var(--cp-fs-caption);
+  font-weight: 700;
+}
+
+.recipe-page-rail__auto-organize:hover {
+  background: var(--cp-page);
+  color: var(--cp-ink);
+}
+
+.recipe-page-rail__auto-organize:focus-visible {
+  outline: var(--cp-focus-ring);
+  outline-offset: var(--cp-focus-ring-offset);
+}
+
 /* ── In-page Organize mode ──────────────────────────────────────────────────
    This is the same navigator and the same thumbnail DOM. The grid's first
    track widens while the other two contract, then the existing section groups
@@ -1997,12 +2026,21 @@
       min-width: 0;
       gap: 7px;
     }
+    /* Collapses to an icon-only circle. Flex, not grid: `font-size: 0` hides
+       the label but the label is still a bare text node, which grid promotes
+       to an anonymous ITEM on its own row — with `align-content: stretch` the
+       spare height split between the two rows (29px + 11px), so the icon
+       centred inside the first row rather than inside the circle and sat 7.5px
+       high. In a single-line flex row the collapsed label takes no width and
+       nothing to centre against changes. */
     .recipe-mobile-topbar__print {
-      display: grid;
-      place-items: center;
+      display: flex;
+      align-items: center;
+      justify-content: center;
       flex: 0 0 40px;
       width: 40px;
       height: 40px;
+      gap: 0;
       padding: 0;
       overflow: hidden;
       font-size: 0;
@@ -2442,13 +2480,20 @@
     flex: 1 1 auto;
     flex-direction: row;
     align-items: center;
-    /* `center`, not `flex-start`: when the deck's slides are narrower than
-       the viewport (one recipe, nothing to scroll to), flex-start left-aligns
-       them instead of centering, since all the leftover space collects on
-       one side. Overflowing (multi-page) decks are unaffected — center only
-       changes anything when there's slack to distribute, and `centerSlide()`
-       drives the actual scroll position for those regardless. */
+    /* Centres a deck that FITS (one recipe, nothing to scroll to), which
+       flex-start would left-align instead.
+    
+       `safe` is load-bearing, not a nicety. Plain `center` also distributes
+       NEGATIVE free space, so an overflowing deck gets half its overflow laid
+       out before the scroll origin — the first pages sat at `offsetLeft: -406`
+       with `scrollLeft` already at its minimum of 0, so no swipe, scroll or
+       click could ever reach them. `safe` falls back to `start` the moment
+       content overflows, which is the only case that scrolls at all.
+    
+       Plain `center` stays first: a browser without `safe` support drops the
+       second declaration entirely and keeps the old behaviour. */
     justify-content: center;
+    justify-content: safe center;
     gap: 16px;
     min-height: 0;
     /* Extra top room so the front/back flip control can sit above the card
@@ -2499,7 +2544,12 @@
     right: 0;
     bottom: var(--rp-keyboard-inset, 0px);
     left: 0;
-    z-index: 70;
+    /* Above `.recipe-mobile-actions` (75). At 70 the persistent Recipe/Book/
+       Themes bar drew ON TOP of this sheet, clipping its last row of controls
+       and leaving a live tab strip over a modal surface. Sheets and their
+       backdrops both belong above that bar; the structure sheet (80/81) sits
+       one layer higher still. */
+    z-index: 79;
     max-height: min(70vh, 560px);
     height: auto;
     margin: 0;
@@ -2577,7 +2627,10 @@
   .recipe-mobile-settings-backdrop {
     position: fixed;
     inset: 0;
-    z-index: 65;
+    /* Dismiss layer for the TOPBAR size/settings menus (z 77), so it must stay
+       under those — but above `.recipe-mobile-actions` (75), or a tap aimed at
+       dismissing lands on a toolbar button instead. */
+    z-index: 76;
     display: block;
     border: 0;
     background: rgba(15, 23, 42, 0.28);
@@ -4478,42 +4531,10 @@ textarea.recipe-card__toc-title {
   outline: var(--cp-focus-ring);
   outline-offset: var(--cp-focus-ring-offset);
 }
-.recipe-mode-switch__badge {
-  padding: 2px 6px;
-  border-radius: 999px;
-  background: var(--cp-accent);
-  color: var(--cp-ink);
-  font-size: 0.62rem;
-  font-weight: 800;
-  letter-spacing: 0.02em;
-  line-height: 1;
-  text-transform: uppercase;
-}
 @media (prefers-reduced-motion: reduce) {
   .segmented-control__thumb {
     transition: none;
   }
-}
-
-/* Plain loading overlay while a previously-built cookbook restores from its
-   stash (the first-ever build gets the richer reveal animation instead). */
-.cookbook-restore-overlay {
-  position: fixed;
-  inset: 0;
-  z-index: 60;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 14px;
-  background: color-mix(in srgb, var(--cp-page) 84%, transparent);
-  backdrop-filter: blur(2px);
-  color: var(--cp-ink);
-  font-weight: 750;
-  animation: print-success-fade 140ms ease both;
-}
-.cookbook-restore-overlay .spin {
-  color: var(--cp-accent);
 }
 
 /* Edit-mode hint on the contents page: the entries are generated, not typed. */
@@ -6515,6 +6536,8 @@ textarea.recipe-card__toc-title {
 }
 
 .recipe-add-dialog__body {
+  flex: 1 1 auto;
+  min-height: 0;
   padding: 20px;
   overflow-y: auto;
 }
@@ -6529,6 +6552,107 @@ textarea.recipe-card__toc-title {
   border: 0 !important;
   border-radius: 0 !important;
   background: transparent !important;
+}
+
+/* Running report of this sitting's imports. The dialog no longer closes on
+   submit, so it owes an answer for each recipe: parsing finishes long after
+   the button click, and the deck that would otherwise show it is behind the
+   backdrop. Flat, per the app's shadow policy — a hairline rule separates it
+   from the form rather than a raised card. */
+.recipe-add-dialog__duplicate {
+  margin-top: 14px;
+  color: var(--cp-ink-soft);
+  font-size: var(--cp-fs-small);
+}
+
+.recipe-add-dialog__added {
+  margin-top: 18px;
+  padding-top: 16px;
+  border-top: 1px solid var(--cp-line);
+}
+
+.recipe-add-dialog__added-title {
+  margin: 0 0 8px;
+  color: var(--cp-ink-soft);
+  font-size: var(--cp-fs-label);
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+}
+
+.recipe-add-dialog__added-list {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.recipe-add-dialog__added-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+  padding: 8px 4px;
+}
+
+.recipe-add-dialog__added-row + .recipe-add-dialog__added-row {
+  border-top: 1px solid color-mix(in srgb, var(--cp-line) 60%, transparent);
+}
+
+.recipe-add-dialog__added-icon {
+  display: grid;
+  flex: 0 0 auto;
+  place-items: center;
+  width: 22px;
+  height: 22px;
+  border-radius: 999px;
+  background: var(--cp-page);
+  color: var(--cp-ink-soft);
+}
+
+.recipe-add-dialog__added-row.is-ready .recipe-add-dialog__added-icon {
+  background: color-mix(in srgb, var(--cp-accent) 26%, transparent);
+  color: var(--cp-accent-ink);
+}
+
+.recipe-add-dialog__added-row.is-error .recipe-add-dialog__added-icon {
+  background: color-mix(in srgb, var(--cp-error) 14%, transparent);
+  color: var(--cp-error);
+}
+
+.recipe-add-dialog__added-text {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  min-width: 0;
+  margin-right: auto;
+}
+
+.recipe-add-dialog__added-name {
+  overflow: hidden;
+  font-size: var(--cp-fs-small);
+  font-weight: 650;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.recipe-add-dialog__added-status {
+  color: var(--cp-ink-soft);
+  font-size: var(--cp-fs-caption);
+}
+
+.recipe-add-dialog__added-row.is-error .recipe-add-dialog__added-status {
+  color: var(--cp-error);
+}
+
+/* Outside `__body` so it stays put while the added list scrolls. */
+.recipe-add-dialog__footer {
+  flex: 0 0 auto;
+  padding: 14px 20px calc(14px + env(safe-area-inset-bottom));
+  border-top: 1px solid var(--cp-line);
+  background: var(--cp-card);
 }
 
 @media (max-width: 639px) {

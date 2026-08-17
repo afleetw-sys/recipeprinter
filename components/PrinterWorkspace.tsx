@@ -50,7 +50,7 @@ export function PrinterWorkspace({
     remove,
     clear,
   } = useQueue();
-  const { startNewProject } = useProjectMeta();
+  const { meta, hydrated: metaHydrated, startNewProject } = useProjectMeta();
   /**
    * "Clear all" means "I'm starting something else", so it releases the
    * project identity as well as the recipes. Clearing only the list left the
@@ -76,10 +76,34 @@ export function PrinterWorkspace({
   const hasAutoOpenedTrayRef = useRef(false);
   const prevItemsLengthRef = useRef<number | null>(null);
   const consumedPendingRef = useRef(false);
+  const leftCookbookRef = useRef(false);
 
   useEffect(() => {
     if (hydrated && items.length === 0) setHasShownEmptyState(true);
   }, [hydrated, items.length]);
+
+  /**
+   * Arriving here from a cookbook means you left the book, so this page starts
+   * clean.
+   *
+   * A cookbook's recipes sit in the same queue a card job uses, so home used to
+   * show them under "Ready to print" with a Preview button that walked straight
+   * back into the book — a second door into one document, and a bound book
+   * dressed up as a stack of loose cards. Releasing the project id as well as
+   * the list is the point: whatever gets imported next is a NEW project, not
+   * another edit of the cookbook. The book keeps its own id and stays in the
+   * library.
+   *
+   * Waits on both hydrations so the reset can't race the rehydrate and land on
+   * a queue that is only momentarily empty.
+   */
+  useEffect(() => {
+    if (!hydrated || !metaHydrated || leftCookbookRef.current) return;
+    if (!meta.cookbookMode) return;
+    leftCookbookRef.current = true;
+    clear();
+    startNewProject();
+  }, [hydrated, metaHydrated, meta.cookbookMode, clear, startNewProject]);
 
   // Capture → app handoff: a visitor who pasted a link, dropped a photo, or
   // pasted text on an SEO landing page arrives here mid-import. Wait for the

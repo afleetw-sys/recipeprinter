@@ -6,6 +6,7 @@ import {
   ChevronLeftIcon,
   ChevronRightIcon,
   GripIcon,
+  RefreshIcon,
   ICON_SIZE,
   PlusIcon,
   TrashIcon,
@@ -130,6 +131,11 @@ interface PageRailProps {
   addSectionDivider: () => void;
   makeSectionFromSelection: (selection?: ReadonlySet<string>) => void;
   addMenuOpen: boolean;
+  /** Sorts the book into sections and orders it — see `suggestCookbookLayout`. */
+  suggestCookbookLayout: () => void;
+  undoCookbookOrganization: () => void;
+  /** True once an auto-organize has run and its "before" snapshot is still held. */
+  canUndoOrganization: boolean;
   setAddMenuOpen: Dispatch<SetStateAction<boolean>>;
   addMenuRef: MutableRefObject<HTMLDivElement | null>;
 }
@@ -183,6 +189,9 @@ export function PageRail(props: PageRailProps) {
     addSectionDivider,
     makeSectionFromSelection,
     addMenuOpen,
+    suggestCookbookLayout,
+    undoCookbookOrganization,
+    canUndoOrganization,
     setAddMenuOpen,
     addMenuRef,
   } = props;
@@ -533,10 +542,10 @@ export function PageRail(props: PageRailProps) {
                         setPendingAddAfterRecipeId(itemIdsForSection(group.sectionId!).at(-1) ?? null);
                         setShowAddRecipeDialog(true);
                       }}
-                      aria-label={`Add recipe to ${sectionTitleForId(group.sectionId)}`}
+                      aria-label={`Add recipes to ${sectionTitleForId(group.sectionId)}`}
                     >
                       <PlusIcon size={ICON_SIZE.md} />
-                      <span>Add recipe</span>
+                      <span>Add recipes</span>
                     </button>
                   )}
                   </div>
@@ -640,10 +649,10 @@ export function PageRail(props: PageRailProps) {
                 }}
               >
                 <PlusIcon size={ICON_SIZE.md} />
-                {projectMeta.meta.cookbookMode ? "Add recipe" : "Recipe"}
+                Add recipes
               </button>
               {/* In a cookbook the section action folds into a split-button
-                  overflow, so the primary control reads plainly as "Add recipe". */}
+                  overflow, so the primary control reads plainly as "Add recipes". */}
               {projectMeta.meta.cookbookMode && organizeMode && (
                 <button
                   type="button"
@@ -696,6 +705,24 @@ export function PageRail(props: PageRailProps) {
               >
                 <span>Organize recipes</span>
                 <ChevronRightIcon size={ICON_SIZE.sm} />
+              </button>
+            )}
+            {/* Auto-organize: sorts the book into sections and orders it. It
+                only ever existed on the mobile structure sheet, so on desktop
+                there was no way to reach it at all.
+
+                One button, two states. Undo used to live solely in the toast
+                that announced the change, so it was gone within seconds — for
+                an action that rewrites every section and the order of every
+                recipe, the way back has to outlive the notification. */}
+            {projectMeta.meta.cookbookMode && (
+              <button
+                type="button"
+                className="recipe-page-rail__auto-organize"
+                onClick={canUndoOrganization ? undoCookbookOrganization : suggestCookbookLayout}
+              >
+                <RefreshIcon size={ICON_SIZE.sm} />
+                <span>{canUndoOrganization ? "Undo organizing" : "Organize it for me"}</span>
               </button>
             )}
           </div>

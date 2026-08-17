@@ -617,6 +617,26 @@
   font-size: var(--cp-fs-h2);
   line-height: 1.15;
 }
+/* Same slot as the price, for a book that's already paid for. */
+/* Export failure — a server render can fail in ways a print dialog never
+   could (renderer down, timeout), so the dialog has somewhere to say it. */
+.cookbook-ready__error {
+  margin: 0 0 4px;
+  padding: 10px 12px;
+  border: 1px solid var(--cp-error-border);
+  border-radius: 12px;
+  background: var(--cp-error-soft);
+  color: var(--cp-error);
+  font-size: var(--cp-fs-small);
+}
+
+.cookbook-welcome__owned {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--cp-accent-ink);
+  font-weight: 650;
+}
 .cookbook-welcome__actions {
   display: flex;
   align-items: center;
@@ -692,18 +712,6 @@
    note, not a warning: nothing has gone wrong, the cook just needs to pick the
    right destination in the window that's about to open. Flat by policy: a
    border and a tinted ground, no shadow (it isn't a floating element). */
-.cookbook-ready__destination {
-  padding: 10px 12px;
-  border: 1px solid color-mix(in srgb, var(--cp-accent) 28%, transparent);
-  border-radius: var(--cp-radius-control);
-  background: var(--cp-accent-soft);
-  color: var(--cp-accent-ink);
-  font-size: var(--cp-fs-small);
-  line-height: 1.5;
-}
-.cookbook-ready__destination strong {
-  font-weight: 800;
-}
 .cookbook-ready__note {
   color: var(--cp-ink-soft);
   font-size: var(--cp-fs-small);

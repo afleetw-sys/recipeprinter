@@ -12,9 +12,14 @@ import { PrintDialogs } from "@/components/PrintDialogs";
 import { AddRecipeDialog } from "@/components/AddRecipeDialog";
 import { CookbookBuildReveal, CookbookWelcomeDialog } from "@/components/CookbookWelcomeDialog";
 import { CookbookReadyDialog } from "@/components/CookbookReadyDialog";
+import {
+  CookbookPdfError,
+  cookbookPdfFileName,
+  downloadCookbookPdf,
+} from "@/lib/cookbookPdfExport";
 import { ImagePicker } from "@/components/ImagePicker";
 import { Dialog } from "@/components/Dialog";
-import { Checkbox, CheckboxGroup, IconButton, SegmentedControl } from "@/components/Controls";
+import { Checkbox, CheckboxGroup, IconButton } from "@/components/Controls";
 import { RecipeLoadingState } from "@/components/RecipeLoadingState";
 import { useModalFocus } from "@/components/useModalFocus";
 import {
@@ -61,8 +66,6 @@ import { COOKBOOK_ENABLED } from "@/lib/cookbookProduct";
 import {
   DEFAULT_COOKBOOK_PRESET_ID,
   getCookbookPreset,
-  presetArtScale,
-  presetSheetInches,
 } from "@/lib/cookbookPresets";
 import { localStore } from "@/lib/storage";
 import { track } from "@/lib/analytics";
@@ -177,32 +180,6 @@ function nextCookbookTemplate(): RecipePrintTemplate {
 
 // A short, generic recipe used only to fill each theme's picker preview. Kept
 // intentionally small so it lays out as a clean single front face at 6x4.
-/** Recipe cards / Cookbook segmented switch. Each option hugs its own content;
- *  a single ink "thumb" measures the active option and slides+resizes to it, so
- *  the transition reads as one control moving between the two. */
-function ModeSwitch({
-  inCookbook,
-  onSwitchToCards,
-  onSwitchToCookbook,
-}: {
-  inCookbook: boolean;
-  onSwitchToCards: () => void;
-  onSwitchToCookbook: () => void;
-}) {
-  return (
-    <SegmentedControl
-      className="recipe-mode-switch"
-      label="Layout"
-      value={inCookbook ? "cookbook" : "cards"}
-      options={[
-        { id: "cards", label: "Recipe cards" },
-        { id: "cookbook", label: <>Cookbook <span className="recipe-mode-switch__badge">New</span></> },
-      ]}
-      onChange={(value) => value === "cookbook" ? onSwitchToCookbook() : onSwitchToCards()}
-    />
-  );
-}
-
 function shouldShowPostPrintDialog() {
   return localStore.get(POST_PRINT_DIALOG_STORAGE_KEY) === null;
 }
@@ -280,7 +257,6 @@ export default function PrintPage() {
   const [cookbookBuilding, setCookbookBuilding] = useState(false);
   // Re-entering an already-built book: a plain loading spinner (not the first-run
   // build animation) while the stashed layout swaps back in.
-  const [cookbookRestoring, setCookbookRestoring] = useState(false);
   const [showCookbookPrintDialog, setShowCookbookPrintDialog] = useState(false);
   // True only when the cookbook print dialog was reached via a fresh purchase
   // (not a re-export), so it can lead with a one-time "your cookbook is ready"
@@ -355,7 +331,6 @@ export default function PrintPage() {
   const [pendingAddSectionId, setPendingAddSectionId] = useState<string | null>(null);
   const [pendingAddIndex, setPendingAddIndex] = useState<number | null>(null);
   const [pendingAddAfterRecipeId, setPendingAddAfterRecipeId] = useState<string | null>(null);
-  const [projectSaveBusy, setProjectSaveBusy] = useState(false);
   const [savedProjectId, setSavedProjectId] = useState<string | null>(null);
   // State drives the UI; the ref is the authoritative identity inside queued
   // async saves, which can run before React commits the state update.
@@ -415,6 +390,18 @@ export default function PrintPage() {
   const anyRecipeHasSourceUrl =
     items?.some((item) => Boolean(item.recipe?.sourceUrl)) ?? false;
   const cookbookMode = Boolean(projectMeta.meta.cookbookMode);
+  /**
+   * Is this project a DOCUMENT, or is it a print run?
+   *
+   * A cookbook is a document: it was deliberately created, it has a name, a
+   * cover and chapters, and it can be paid for. Recipe cards are an act — you
+   * paste three links to print dinner tonight and you're done. Nobody declared
+   * a document, so nothing should file one on their behalf.
+   *
+   * `stashedCookbook` counts: a book being viewed as recipe cards is still a
+   * book (see `currentProject`), and must keep saving as one.
+   */
+  const isCookbookDocument = cookbookMode || Boolean(projectMeta.meta.stashedCookbook);
   // The cookbook's remembered export format (US Letter / 8×10 hardcover). This
   // is purely an EXPORT concern — it never changes how the book previews or how
   // recipes are measured; it just seeds the format the "Print your cookbook"
@@ -426,7 +413,9 @@ export default function PrintPage() {
   // between choosing a format and `window.print()` firing — that's when the
   // print-only geometry (see `.rp-exporting` in print.css) is switched on. Null
   // the rest of the time, so the on-screen book and a plain Ctrl+P stay Letter.
-  const [exportPreset, setExportPreset] = useState<CookbookPresetId | null>(null);
+  /** The format currently rendering server-side, if any. */
+  const [exportingPreset, setExportingPreset] = useState<CookbookPresetId | null>(null);
+  const [cookbookExportError, setCookbookExportError] = useState<string | null>(null);
   // Cookbook photos are set book-wide via the 3-way "Photos" control
   // (`photoStyle`); plain card mode keeps its own header-photo checkbox
   // (`showPhoto`). Default "card" = a header photo in each recipe card.
@@ -494,7 +483,6 @@ export default function PrintPage() {
     backCover: projectMeta.meta.backCover,
     dedication: dedicationPage,
     tableOfContents: projectMeta.meta.cookbookMode ? projectMeta.meta.tableOfContents : false,
-    bookTitle: projectMeta.meta.cover?.title,
     cookbookMode: projectMeta.meta.cookbookMode,
     itemPlacements: projectMeta.meta.itemPlacements,
     defaultFullPage,
@@ -1059,27 +1047,22 @@ export default function PrintPage() {
     window.setTimeout(() => setCookbookBuilding(false), 1650);
   }
 
-  // Entry point for the Recipe cards ↔ Cookbook toggle. The offer dialog is
-  // shown only until the cookbook welcome has been completed; later switches
-  // can scaffold the cookbook immediately.
+  /**
+   * "Make it a cookbook". One path, every time: the offer screen, then the
+   * build reveal.
+   *
+   * This used to fork three ways on whether the welcome had been seen and
+   * whether a stash existed, and two of those forks were worse. A returning
+   * book got a bare 650ms spinner instead of the reveal; a *second* book got
+   * no loading state at all — it snapped over mid-relayout — and never fired
+   * `cookbook_workspace_entered`, so every book after someone's first was
+   * invisible in analytics. That last branch went from rare to normal once
+   * `cookbookWelcomeCompleted` started surviving `startNewProject`.
+   *
+   * Nothing was gained for the branching: `scaffoldCookbook` already decides
+   * restore-vs-fresh on its own, from `stashedCookbook`.
+   */
   function startCookbook() {
-    if (projectMeta.meta.cookbookWelcomeCompleted) {
-      // A returning book restores a stash; a brief loading spinner covers the
-      // layout recompute so the pages swap in cleanly instead of morphing. The
-      // full build animation is reserved for the first-ever build.
-      if (projectMeta.meta.stashedCookbook) {
-        setCookbookRestoring(true);
-        window.setTimeout(() => {
-          scaffoldCookbook();
-          activeNavIndexResetRef.current?.(0);
-          setPendingFocusNavId("cover-front");
-        }, 140);
-        window.setTimeout(() => setCookbookRestoring(false), 650);
-        return;
-      }
-      scaffoldCookbook();
-      return;
-    }
     track("cookbook_welcome_shown", { price: cookbookPrice, recipeCount: items?.length ?? 0 });
     setShowCookbookOfferDialog(true);
   }
@@ -1337,7 +1320,7 @@ export default function PrintPage() {
       showPhoto,
       doubleSided,
       recipeCount: items?.filter((item) => item.recipe).length ?? 0,
-      cookbookPreset: exportPreset ?? undefined,
+      cookbookPreset: cookbookMode ? activePreset.id : undefined,
     });
     // Name the exported PDF after the cookbook. The browser seeds the Save-as-PDF
     // filename from document.title, so this is what turns the deliverable from
@@ -1552,8 +1535,27 @@ export default function PrintPage() {
 
   function currentProject(): PrintProject | null {
     if (!cookPilotUser || !items?.length) return null;
+    /**
+     * A book set aside is still a book.
+     *
+     * "Print as recipe cards instead" moves the cover, chapters and front
+     * matter into `stashedCookbook` and leaves `meta` almost empty — and the
+     * autosave that followed wrote that emptiness straight over the saved
+     * document. A purchased cookbook came back as `kind: "printProject"`,
+     * renamed after whichever recipe happened to be first, with its cover and
+     * dedication deleted from the record. It was recoverable (the stash is
+     * persisted and restores it) but until then the library showed no cookbook
+     * by that name at all, and the entry it did show looked unpaid.
+     *
+     * So the stash counts as proof of what this document IS, and supplies the
+     * fields the live meta no longer has. `settings.cookbookMode` still tracks
+     * the live view, so reopening lands the cook back in recipe cards where
+     * they left off — the DOCUMENT is a cookbook, the VIEW is cards.
+     */
+    const stash = projectMeta.meta.stashedCookbook;
+    const cover = projectMeta.meta.cover ?? stash?.cover;
     const defaultTitle =
-      projectMeta.meta.cover?.title ||
+      cover?.title ||
       items.find((item) => item.recipe)?.recipe?.title ||
       `Recipe cards — ${new Date().toLocaleDateString()}`;
     return assemblePrintProject({
@@ -1563,12 +1565,12 @@ export default function PrintPage() {
       ownerUid: cookPilotUser.uid,
       title: defaultTitle,
       sections,
-      cover: projectMeta.meta.cover,
-      backCover: projectMeta.meta.backCover,
-      dedication: projectMeta.meta.dedication,
-      frontMatter: projectMeta.meta.frontMatter,
+      cover,
+      backCover: projectMeta.meta.backCover ?? stash?.backCover,
+      dedication: projectMeta.meta.dedication ?? stash?.dedication,
+      frontMatter: projectMeta.meta.frontMatter ?? stash?.frontMatter,
       revision: projectRevisionRef.current,
-      kind: cookbookMode ? "cookbook" : "printProject",
+      kind: isCookbookDocument ? "cookbook" : "printProject",
       settings: {
         cardSize,
         template,
@@ -1608,7 +1610,6 @@ export default function PrintPage() {
     const baseProject = currentProject();
     if (!baseProject) return;
     saveInFlightRef.current = true;
-    setProjectSaveBusy(true);
     setSaveStatus("saving");
     try {
       const materialized = await materializeProjectPhotos({
@@ -1653,7 +1654,6 @@ export default function PrintPage() {
       }
     } finally {
       saveInFlightRef.current = false;
-      setProjectSaveBusy(false);
       if (saveQueuedRef.current) {
         saveQueuedRef.current = false;
         window.setTimeout(() => latestSaveRef.current(), 0);
@@ -1680,9 +1680,7 @@ export default function PrintPage() {
   // and could bump the revision other tabs are editing against.
   useEffect(() => {
     flushOnHideRef.current = () => {
-      if (!cookPilotUser) return;
-      if (!projectAttachChecked) return;
-      if (!(cookbookMode || savedProjectIdRef.current)) return;
+      if (!autosaveEnabled || !projectAttachChecked) return;
       if (!items || items.length === 0) return;
       if (saveInFlightRef.current || saveQueuedRef.current) return;
       if (lastSavedFingerprintRef.current === "__loaded__") return;
@@ -1701,13 +1699,61 @@ export default function PrintPage() {
     };
   });
 
+  /**
+   * Conflict recovery. Two tabs on one project, or a toggle in one while the
+   * other saves, and the second write finds a revision it didn't expect.
+   *
+   * "Save as a copy" used to be the fallback here, and on a PURCHASED cookbook
+   * that was a way to lose what you paid for: the entitlement hangs off the
+   * project id, so a copy under a fresh id is a locked book, and the paid one
+   * is left behind under a name the cook is no longer looking at. A purchase
+   * is never worth forking around, so a paid book overwrites instead —
+   * re-reading the remote revision first, since retrying with the stale one
+   * conflicts again forever.
+   */
+  async function resolveConflictByOverwriting() {
+    const projectId = savedProjectIdRef.current;
+    if (!projectId || !cookPilotUser) return;
+    setSaveStatus("saving");
+    try {
+      const remote = await loadPrintProject(cookPilotUser.uid, projectId);
+      projectRevisionRef.current = Number(remote?.revision ?? 0);
+      lastAttemptedFingerprintRef.current = null;
+      await handleSaveProject();
+    } catch (error) {
+      console.warn("RecipePrinter: could not resolve the save conflict", error);
+      setSaveStatus("error");
+    }
+  }
+
   function handleRetrySave() {
     if (saveStatus !== "conflict") {
       void handleSaveProject();
       return;
     }
+    // A cookbook is never forked, purchased or not.
+    //
+    // The fallback here used to be "save your current edits as a copy", which
+    // mints a fresh project id — a second cookbook in the library holding the
+    // same recipes, and, if the book was paid for, an unlocked original left
+    // behind under a name the cook is no longer looking at. Now that a cookbook
+    // autosaves from its first edit AND every mode toggle writes, conflicts are
+    // far easier to hit than they used to be, so this fork is the one path that
+    // can quietly multiply a book. Overwrite instead: re-read the remote
+    // revision, then write the edits in front of the cook on top of it.
+    if (isCookbookDocument) {
+      const loadNewer = window.confirm(
+        "This cookbook was updated in another tab. Choose OK to load that version, or Cancel to keep the edits in front of you and overwrite it.",
+      );
+      if (loadNewer && savedProjectId) {
+        window.location.assign(`/print?project=${encodeURIComponent(savedProjectId)}`);
+        return;
+      }
+      void resolveConflictByOverwriting();
+      return;
+    }
     const loadNewer = window.confirm(
-      "This cookbook was updated elsewhere. Choose OK to load that newer version, or Cancel to save your current edits as a copy.",
+      "This project was updated elsewhere. Choose OK to load that newer version, or Cancel to save your current edits as a copy.",
     );
     if (loadNewer && savedProjectId) {
       window.location.assign(`/print?project=${encodeURIComponent(savedProjectId)}`);
@@ -1844,14 +1890,79 @@ export default function PrintPage() {
     setShowCookbookPrintDialog(true);
   }
 
-  // Chosen a format on the "Print your cookbook" screen: remember it, flip on
-  // that format's print-only geometry, and let the effect below fire the OS
-  // print dialog once the deck has the geometry committed. The dialog stays open
-  // so they can immediately export another format if they want.
-  function exportCookbookAs(presetId: CookbookPresetId) {
+  /**
+   * Chosen a format on the "Save your cookbook" screen: render it server-side
+   * and hand back the finished file.
+   *
+   * This used to flip on the format's print geometry and fire `window.print()`,
+   * which meant the export's correctness depended on the cook picking "Save as
+   * PDF" in a dialog we cannot influence — send it to a printer instead and
+   * every page comes back rescaled, because the book bleeds to the sheet edge
+   * and printers reserve an unprintable margin. There is no dialog now and
+   * nothing to pick. The dialog stays open so another format is one click away.
+   */
+  async function exportCookbookAs(presetId: CookbookPresetId) {
     projectMeta.setCookbookPreset(presetId);
     track("cookbook_preset_selected", { preset: presetId });
-    setExportPreset(presetId);
+    const project = currentExportProject();
+    if (!project) return;
+    setCookbookExportError(null);
+    setExportingPreset(presetId);
+    try {
+      await downloadCookbookPdf(
+        project,
+        presetId,
+        cookbookPdfFileName(projectMeta.meta.cover?.title),
+      );
+    } catch (error) {
+      setCookbookExportError(
+        error instanceof CookbookPdfError
+          ? error.message
+          : "The cookbook couldn't be exported. Try again.",
+      );
+    } finally {
+      setExportingPreset(null);
+    }
+  }
+
+  /**
+   * The book, as the renderer needs it. Deliberately `assemblePrintProject` —
+   * the same builder the autosave uses — so the exported PDF is assembled from
+   * exactly the object that gets saved, and the two can't describe different
+   * books. Unlike `currentProject` it does not require being signed in: someone
+   * who paid for a cookbook should not meet a sign-in wall on the way to
+   * downloading it.
+   */
+  function currentExportProject(): PrintProject | null {
+    if (!items?.length) return null;
+    const stash = projectMeta.meta.stashedCookbook;
+    const cover = projectMeta.meta.cover ?? stash?.cover;
+    return assemblePrintProject({
+      id: cookbookProjectId,
+      ownerUid: cookPilotUser?.uid ?? "",
+      title: cover?.title,
+      sections,
+      cover,
+      backCover: projectMeta.meta.backCover ?? stash?.backCover,
+      dedication: projectMeta.meta.dedication ?? stash?.dedication,
+      frontMatter: projectMeta.meta.frontMatter ?? stash?.frontMatter,
+      kind: "cookbook",
+      settings: {
+        cardSize,
+        template,
+        doubleSided,
+        showPhoto,
+        showSourceUrl,
+        showCutLines,
+        cookbookMode: true,
+        tableOfContents: projectMeta.meta.tableOfContents,
+        sectionDividers: projectMeta.meta.sectionDividers,
+        tocKicker: projectMeta.meta.tocKicker,
+        tocTitle: projectMeta.meta.tocTitle,
+        photoStyle: projectMeta.meta.photoStyle,
+      },
+      itemPlacements: projectMeta.meta.itemPlacements,
+    });
   }
 
   function handleMobilePrint() {
@@ -1890,19 +2001,6 @@ export default function PrintPage() {
       void handlePrintRef.current();
     }
   }, [printPending, printLayoutReady, purchaseBusy, cookbookPurchaseBusy]);
-
-  // Export a chosen cookbook format: this runs AFTER React has committed the
-  // deck's `.rp-exporting` class + geometry vars, so `window.print()` captures
-  // the page at that format. Clearing `exportPreset` right after drops the deck
-  // back to the plain Letter preview (the print snapshot is already taken). Only
-  // depends on `exportPreset`; `printNow` is read as a fresh closure each render,
-  // and the null guard makes a re-run a no-op.
-  useEffect(() => {
-    if (!exportPreset) return;
-    printNow();
-    setExportPreset(null);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [exportPreset]);
 
   const moveProjectItem = projectMeta.moveItem;
 
@@ -2049,15 +2147,28 @@ export default function PrintPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [accountProjectId, idsParam, queue.hydrated]);
 
+  /**
+   * Which projects write themselves to the account, without being asked.
+   *
+   * Signed in, a cookbook always does — like Figma or Canva, where the
+   * deliberate act was creating the file and every edit after it is edits to a
+   * thing you already said you wanted. Clicking through the offer screen and
+   * watching the book build IS that act, so there is no Save button in a
+   * cookbook at all.
+   *
+   * Recipe cards never do. A print job is not a document: nobody named it,
+   * nobody asked to keep it, and filing every Tuesday's dinner prints would
+   * turn the library into a log. Reopening /print restores the working copy
+   * from local storage anyway, which is the part people actually rely on.
+   *
+   */
+  const autosaveEnabled = Boolean(cookPilotUser) && isCookbookDocument;
+
   useEffect(() => {
     if (projectLoading || !projectAttachChecked || !items?.length) return;
-    // Plain recipe cards with no saved project: nothing to save or adopt, so
-    // clear any leftover status (e.g. an "adoption" prompt carried over from a
-    // cookbook the cook just switched away from).
-    if (!cookbookMode && !savedProjectId) {
-      if (saveStatus) setSaveStatus(null);
-      return;
-    }
+    // A draft nobody asked to keep. The status this project does show is the
+    // draft effect's business, below.
+    if (!autosaveEnabled) return;
     // Lazily computed — the fingerprint is a JSON.stringify of the whole book, so
     // it's produced only where actually needed (the load baseline below, and once
     // per debounce settle inside the timer), never eagerly on every keystroke.
@@ -2074,10 +2185,6 @@ export default function PrintPage() {
       );
     if (lastSavedFingerprintRef.current === "__loaded__") {
       lastSavedFingerprintRef.current = fingerprint();
-      return;
-    }
-    if (!cookPilotUser) {
-      setSaveStatus("adoption");
       return;
     }
     if (saveStatus === "conflict") return;
@@ -2110,18 +2217,23 @@ export default function PrintPage() {
     showCutLines,
     projectLoading,
     projectAttachChecked,
-    cookbookMode,
-    savedProjectId,
-    cookPilotUser,
+    autosaveEnabled,
     saveStatus,
   ]);
+
+  // Nothing is writing this project, so the header has no business reporting on
+  // it — and a stale "Saved" after signing out would be a lie. Clearing is also
+  // what puts the Save button back.
+  useEffect(() => {
+    if (!autosaveEnabled && saveStatus) setSaveStatus(null);
+  }, [autosaveEnabled, saveStatus]);
 
   useEffect(() => {
     const online = () => {
       if (saveStatus === "offline") void handleSaveProject();
     };
     const offline = () => {
-      if (cookbookMode || savedProjectId) setSaveStatus("offline");
+      if (autosaveEnabled) setSaveStatus("offline");
     };
     window.addEventListener("online", online);
     window.addEventListener("offline", offline);
@@ -2130,7 +2242,7 @@ export default function PrintPage() {
       window.removeEventListener("offline", offline);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [saveStatus, cookbookMode, savedProjectId]);
+  }, [saveStatus, autosaveEnabled]);
 
   // Flush a pending save when the tab goes away. `pagehide` is the reliable
   // teardown signal (fires on close/navigation, and on mobile bfcache freeze);
@@ -2191,6 +2303,17 @@ export default function PrintPage() {
   // Surfaces a parse failure for a dialog-added recipe as a toast, since the
   // dialog that submitted it is already closed by the time parsing fails.
   useEffect(() => {
+    // With the Add recipe dialog open, a failed parse is already reported in
+    // its own list (with retry) — a toast on top of that is the same news
+    // twice. Mark them surfaced so closing the dialog doesn't then replay them.
+    if (showAddRecipeDialog) {
+      queue.items.forEach((item) => {
+        if (item.status === "error" && !initialQueueIdsRef.current.has(item.id)) {
+          toastedErrorIdsRef.current.add(item.id);
+        }
+      });
+      return;
+    }
     const newlyErrored = queue.items.find(
       (item) =>
         item.status === "error" &&
@@ -2203,7 +2326,7 @@ export default function PrintPage() {
       newlyErrored.error ||
         "That recipe looks incomplete. Add a title, ingredients, and directions, then try again.",
     );
-  }, [queue.items]);
+  }, [queue.items, showAddRecipeDialog]);
 
   // Re-importing a recipe that's already in this print job doesn't add a
   // duplicate — the queue focuses the existing item (bumping `focusNonce`).
@@ -2236,46 +2359,19 @@ export default function PrintPage() {
   const hasPrintSettingsFields =
     !projectMeta.meta.cookbookMode && (hasRecipeBackSide || cardSize === "card-6x4");
 
-  /**
-   * Which book you are in, and the way back to the rest of them.
-   *
-   * Until now the workspace never said which document it was editing. That is
-   * how a cook could clear the recipe list, add five new ones, and silently
-   * overwrite a saved cookbook — there was nothing on screen claiming to BE
-   * anything. The cover title is already the book's name, so this needs no new
-   * concept, only somewhere to show it.
-   */
-  function renderDocumentName() {
-    if (!projectMeta.meta.cookbookMode) return null;
-    const title = projectMeta.meta.cover?.title?.trim();
-    return (
-      <Link
-        href="/projects"
-        className="hidden sm:flex items-center gap-cp-2 min-w-0 text-cp-small text-ink-soft hover:text-ink transition-colors"
-        title="Back to all projects"
-      >
-        <BookIcon size={ICON_SIZE.sm} />
-        <span className="truncate max-w-[16rem] font-semibold text-ink">
-          {title || "Untitled cookbook"}
-        </span>
-      </Link>
-    );
-  }
+  /* The Recipe cards / Cookbook segmented control lived here and is gone.
+     It put a MODE control where navigation goes, and once the header started
+     naming the open document the two answered "where am I?" differently — a
+     book called "Grandma's Book" with a switch beside it insisting the answer
+     was "Cookbook". Worse, a segmented control implies two views of one thing,
+     and a free print job and a paid document with a cover, chapters and an
+     owner are not that.
 
-  // Stays a toggle in both directions, paid or not, because it is now genuinely
-  // reversible — see `exitCookbookToCards`. Starting a SEPARATE card job or a
-  // second cookbook is a different act, and belongs with the other create
-  // actions in the library rather than wedged into this header.
-  function renderModeSwitch() {
-    if (!COOKBOOK_ENABLED) return null;
-    return (
-      <ModeSwitch
-        inCookbook={Boolean(projectMeta.meta.cookbookMode)}
-        onSwitchToCards={exitCookbookToCards}
-        onSwitchToCookbook={startCookbook}
-      />
-    );
-  }
+     Both halves are now what they always were — actions — and live with the
+     other actions in the print panel: "Make it a cookbook" creates, "Print as
+     recipe cards instead" leaves. Creating a SEPARATE book is "New cookbook" in
+     the library. The header is left to say which document you're in and let you
+     get back to the rest of them. */
 
   // Card-format print settings (behind the "Print settings" trigger). Cookbook
   // book settings are NOT here — they're inline in the panel (see
@@ -2661,36 +2757,13 @@ export default function PrintPage() {
   // spread (not a single page). `activeNavIndex` then indexes `spreads`, and the
   // controls/editing target a FOCUSED page within the active spread.
   const cookbookView = spreads.length > 0;
-  // The book always previews at Letter — print format is applied only at export
-  // time, never in the deck (see `exportPreset`), so on-screen sizing is Letter.
+  // The deck previews at Letter, always. It used to briefly carry an export
+  // preset's `@page` class and geometry vars so `window.print()` could capture
+  // a cookbook at its real trim — that round trip is gone; `/export` renders the
+  // format server-side and owns that geometry itself (see app/export/page.tsx).
+  // The deck is left doing one job: previewing.
   const previewDims = PAGE_DIMS[previewCardSize];
   const spreadWidth = previewDims.w * 2;
-  // While a format is being exported, the deck carries that preset's @page class
-  // and geometry vars so the print-only `.rp-exporting` rules resize/inset/bleed
-  // the pages. Empty the rest of the time → a plain Letter deck and Letter print.
-  const exportPresetObj = exportPreset ? getCookbookPreset(exportPreset) : null;
-  // `.rp-coil` marks a spiral/coil export so the coil-only binding decoration
-  // fires (see print.css); it stays off for hardcover. Both are gated behind
-  // `.rp-exporting`, so NONE of this touches the on-screen deck — the preview
-  // always shows the plain Letter template.
-  const deckExportClass = exportPresetObj
-    ? `rp-exporting ${exportPresetObj.pageClass}${exportPresetObj.coilBound ? " rp-coil" : ""}`
-    : "";
-  const deckExportStyle = (exportPresetObj
-    ? {
-        // Every cookbook page — text and art alike — fills the sheet at this
-        // scale so paper/art bleeds to every edge; content is inset only by the
-        // card's own padding + the binding decoration (see print.css).
-        "--rp-art-scale": presetArtScale(exportPresetObj),
-        // The exact physical sheet size, so the print page box (`.recipe-card-page`)
-        // is a fixed `in` height that matches this preset's `@page size` in every
-        // engine — never `100vh`, which WebKit resolves against the on-screen
-        // viewport in print and collapsed the custom hardcover sheet to a top
-        // sliver (see `presetSheetInches` + print.css).
-        "--rp-sheet-w": presetSheetInches(exportPresetObj).w,
-        "--rp-sheet-h": presetSheetInches(exportPresetObj).h,
-      }
-    : undefined) as CSSProperties | undefined;
   // Sheet index → its representative nav item index (the first nav item on it).
   const navIndexForSheet = useMemo(() => {
     const map = new Map<number, number>();
@@ -2927,9 +3000,16 @@ export default function PrintPage() {
           compact
           sticky
           centerActions
-          actions={<>{renderDocumentName()}{renderModeSwitch()}</>}
           saveStatus={saveStatus}
           onRetrySave={handleRetrySave}
+          /* The only Save button left: a cookbook belonging to someone who
+             isn't signed in. Signed in it autosaves, so a button would be a
+             control for something already done. */
+          onSave={
+            COOKBOOK_ENABLED && isCookbookDocument && !cookPilotUser && items?.length
+              ? () => void handleSaveProject()
+              : undefined
+          }
         />
 
         {/* One-line "back up your cookbook" bar under the toolbar, shown to a
@@ -3011,6 +3091,9 @@ export default function PrintPage() {
           addMenuOpen={addMenuOpen}
           setAddMenuOpen={setAddMenuOpen}
           addMenuRef={addMenuRef}
+          suggestCookbookLayout={suggestCookbookLayout}
+          undoCookbookOrganization={undoCookbookOrganization}
+          canUndoOrganization={organizationUndo !== null}
         />
 
         {/* Center: large preview of the selected page */}
@@ -3020,8 +3103,6 @@ export default function PrintPage() {
           previewMeasuring={previewMeasuring}
           previewDims={previewDims}
           spreadWidth={spreadWidth}
-          deckExportClass={deckExportClass}
-          deckExportStyle={deckExportStyle}
           previewCardSize={previewCardSize}
           previewTemplate={previewTemplate}
           continueOnBack={continueOnBack}
@@ -3076,7 +3157,6 @@ export default function PrintPage() {
           setSizeMenuOpen={setSizeMenuOpen}
           settingsMenuOpen={settingsMenuOpen}
           setSettingsMenuOpen={setSettingsMenuOpen}
-          renderModeSwitch={renderModeSwitch}
           hasPrintSettingsFields={hasPrintSettingsFields}
           renderPrintSettingsFields={renderPrintSettingsFields}
           handleMobilePrint={handleMobilePrint}
@@ -3102,6 +3182,7 @@ export default function PrintPage() {
           setMobileDrawer={setMobileDrawer}
           cookbookMode={cookbookMode}
           cookbookLocked={cookbookLocked}
+          bookTitle={projectMeta.meta.cover?.title}
           cardSize={cardSize}
           setCardSize={setCardSize}
           anyRecipeHasImage={anyRecipeHasImage}
@@ -3124,14 +3205,13 @@ export default function PrintPage() {
           printBlocked={printBlocked}
           printSpinner={printSpinner}
           templateLocked={templateLocked}
-          projectSaveBusy={projectSaveBusy}
-          handleSaveProject={handleSaveProject}
-          savedProjectId={savedProjectId}
           isRecipePrinterAdmin={isRecipePrinterAdmin}
           canShareActiveRecipe={Boolean(activeRecipeItem?.recipe)}
           setShowShareDialog={setShowShareDialog}
           hasPrintSettingsFields={hasPrintSettingsFields}
           setPrintSettingsOpen={setPrintSettingsOpen}
+          onMakeCookbook={startCookbook}
+          onSwitchToCards={exitCookbookToCards}
         />
 
         <Dialog
@@ -3295,6 +3375,8 @@ export default function PrintPage() {
           moveRecipeInBook={moveRecipeInBook}
           addStructureSection={addStructureSection}
           suggestCookbookLayout={suggestCookbookLayout}
+          undoCookbookOrganization={undoCookbookOrganization}
+          canUndoOrganization={organizationUndo !== null}
           structureSheetOpen={structureSheetOpen}
           setStructureSheetOpen={setStructureSheetOpen}
         />
@@ -3338,6 +3420,10 @@ export default function PrintPage() {
         open={showCookbookOfferDialog}
         cover={projectMeta.meta.cover ?? defaultCover()}
         price={cookbookPrice}
+        /* `cookbookLocked` is false whenever the project isn't a cookbook at
+           all, so the unlock has to be read directly — this screen is shown
+           FROM recipe-cards mode, where `cookbookMode` is false. */
+        purchased={isCookbookProjectUnlocked(cookbookProjectId)}
         onClose={() => {
           track("cookbook_onboarding_dismissed", { price: cookbookPrice });
           setShowCookbookOfferDialog(false);
@@ -3347,12 +3433,6 @@ export default function PrintPage() {
         }}
       />
       <CookbookBuildReveal open={cookbookBuilding} images={coverPhotoCandidates} />
-      {cookbookRestoring && (
-        <div className="cookbook-restore-overlay no-print" role="status" aria-live="polite">
-          <SpinnerIcon size={30} />
-          <span>Loading your cookbook…</span>
-        </div>
-      )}
       <CookbookReadyDialog
         open={showCookbookPrintDialog}
         justPurchased={cookbookJustPurchased}
@@ -3360,7 +3440,9 @@ export default function PrintPage() {
           setShowCookbookPrintDialog(false);
           setCookbookJustPurchased(false);
         }}
-        onExport={exportCookbookAs}
+        onExport={(presetId) => void exportCookbookAs(presetId)}
+        exportingPreset={exportingPreset}
+        exportError={cookbookExportError}
         onPrinterClick={(printer, url) => {
           track("cookbook_printer_clicked", { printer, preset: activePreset.id });
           window.open(url, "_blank", "noopener,noreferrer");
@@ -3370,6 +3452,10 @@ export default function PrintPage() {
         open={showAddRecipeDialog}
         onClose={() => setShowAddRecipeDialog(false)}
         items={queue.items}
+        focusedItemId={queue.focusedItemId}
+        focusNonce={queue.focusNonce}
+        canRetry={queue.canRetry}
+        onRetry={queue.retry}
         onAddUrl={queue.addUrl}
         onAddImages={queue.addImages}
         onAddText={queue.addText}

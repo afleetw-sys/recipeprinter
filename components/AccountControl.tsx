@@ -59,9 +59,15 @@ const STATUS_LABEL: Record<AccountSaveStatus, string> = {
 export function AccountControl({
   saveStatus,
   onRetry,
+  onSave,
 }: {
   saveStatus?: AccountSaveStatus | null;
   onRetry?: () => void;
+  /** Save the current project. Given only by surfaces that have something
+      savable AND aren't autosaving it — this is the whole save control, sat
+      where the "Saved" word already appears rather than as a full-width button
+      in a settings panel two columns away. */
+  onSave?: () => void;
 }) {
   const { user, ready } = useCookPilotAuth();
   const [open, setOpen] = useState(false);
@@ -121,6 +127,19 @@ export function AccountControl({
 
   return (
     <div ref={rootRef} className="relative flex items-center gap-cp-2">
+      {/* The save control and the save STATE are the same thing in the same
+          place: "Save" until it's saved, then "Saved". Not hidden on small
+          screens the way the bare status text is — it's the only way to save
+          a project there. */}
+      {!saveStatus && onSave && (
+        <button
+          type="button"
+          className="btn btn-secondary btn-compact"
+          onClick={onSave}
+        >
+          Save
+        </button>
+      )}
       {saveStatus && (
         <button
           type="button"
@@ -178,7 +197,7 @@ export function AccountControl({
           </div>
           {/* Hidden until the cookbook feature launches — gated by the same
               COOKBOOK_ENABLED flag as the print-page toggle so relaunch is a
-              one-line flip. (Also lists saved print projects today, so restoring
+              one-line flip. (Also lists saved recipe cards, so restoring
               it brings back the saved-projects list too.) */}
           {COOKBOOK_ENABLED && (
             <div className="mt-cp-4 border-t border-line pt-cp-3">
@@ -213,7 +232,7 @@ export function AccountControl({
                 <p className="mt-2 text-cp-small text-ink-soft">Your saved cookbooks will appear here.</p>
               )}
               <strong className="mt-cp-4 flex items-center gap-2 border-t border-line pt-cp-3 text-cp-small">
-                <PrintIcon size={ICON_SIZE.md} /> My print projects
+                <PrintIcon size={ICON_SIZE.md} /> My recipe cards
               </strong>
               {loadingProjects ? (
                 <p className="mt-2 text-cp-small text-ink-soft">Loading…</p>
@@ -233,14 +252,14 @@ export function AccountControl({
                       <span className="block truncate text-cp-small font-semibold">
                         {openingProjectId === project.id ? (
                           <span className="inline-flex items-center gap-2"><SpinnerIcon size={ICON_SIZE.sm} /> Opening project…</span>
-                        ) : project.title || "Untitled print project"}
+                        ) : project.title || "Untitled recipe cards"}
                       </span>
-                      <span className="text-cp-caption text-ink-soft">Print project</span>
+                      <span className="text-cp-caption text-ink-soft">Recipe cards</span>
                     </Link>
                   ))}
                 </div>
               ) : (
-                <p className="mt-2 text-cp-small text-ink-soft">Your saved print projects will appear here.</p>
+                <p className="mt-2 text-cp-small text-ink-soft">Recipe cards you saved before will appear here.</p>
               )}
               <Link
                 href="/projects"
@@ -269,7 +288,7 @@ export function AccountControl({
           <RecipeLoadingState
             className="flex-1"
             label={projects.find((project) => project.id === openingProjectId)?.kind === "printProject"
-              ? "Loading your project…"
+              ? "Loading your recipe cards…"
               : "Loading your cookbook…"}
           />
         </div>

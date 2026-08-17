@@ -44,8 +44,6 @@ interface PrintDeckProps {
   previewMeasuring: boolean;
   previewDims: { w: number; h: number };
   spreadWidth: number;
-  deckExportClass: string;
-  deckExportStyle: CSSProperties | undefined;
   previewCardSize: PrintCardSize;
   previewTemplate: RecipePrintTemplate;
   continueOnBack: boolean;
@@ -107,7 +105,6 @@ interface PrintDeckProps {
   setSizeMenuOpen: Dispatch<SetStateAction<boolean>>;
   settingsMenuOpen: boolean;
   setSettingsMenuOpen: Dispatch<SetStateAction<boolean>>;
-  renderModeSwitch: () => ReactNode;
   hasPrintSettingsFields: boolean;
   renderPrintSettingsFields: () => ReactNode;
   handleMobilePrint: () => void;
@@ -129,8 +126,6 @@ export function PrintDeck(props: PrintDeckProps) {
     previewMeasuring,
     previewDims,
     spreadWidth,
-    deckExportClass,
-    deckExportStyle,
     previewCardSize,
     previewTemplate,
     continueOnBack,
@@ -185,7 +180,6 @@ export function PrintDeck(props: PrintDeckProps) {
     setSizeMenuOpen,
     settingsMenuOpen,
     setSettingsMenuOpen,
-    renderModeSwitch,
     hasPrintSettingsFields,
     renderPrintSettingsFields,
     handleMobilePrint,
@@ -447,7 +441,6 @@ export function PrintDeck(props: PrintDeckProps) {
               <Wordmark className="text-[length:var(--cp-fs-wordmark-compact)] text-ink" />
             </Link>
             <div className="recipe-mobile-topbar__actions">
-              {renderModeSwitch()}
               {hasPrintSettingsFields && (
                 <div className="recipe-mobile-toolbar__btn-wrap">
                   <button
@@ -490,8 +483,7 @@ export function PrintDeck(props: PrintDeckProps) {
             </div>
           </div>
           <div
-            className={`recipe-page-deck ${cookbookView ? "recipe-page-deck--book" : ""} ${deckExportClass}`}
-            style={deckExportStyle}
+            className={`recipe-page-deck ${cookbookView ? "recipe-page-deck--book" : ""}`}
             id="recipe-page-deck"
             ref={deckRef}
           >

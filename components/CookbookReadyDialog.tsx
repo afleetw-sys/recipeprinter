@@ -1,7 +1,7 @@
 "use client";
 
 import { Dialog } from "@/components/Dialog";
-import { ICON_SIZE, PrintIcon, XIcon } from "@/components/icons";
+import { ICON_SIZE, PrintIcon, SpinnerIcon, XIcon } from "@/components/icons";
 import { COOKBOOK_PRESETS, PRINTERS } from "@/lib/cookbookPresets";
 import type { CookbookPresetId } from "@/types/recipe";
 
@@ -11,12 +11,18 @@ export function CookbookReadyDialog({
   onClose,
   onExport,
   onPrinterClick,
+  exportingPreset,
+  exportError,
 }: {
   open: boolean;
   justPurchased: boolean;
   onClose: () => void;
   onExport: (presetId: CookbookPresetId) => void;
   onPrinterClick: (printer: string, url: string) => void;
+  /** The format currently rendering, if any — the export is a server round trip
+      that cold-starts a browser, so it is measured in seconds and has to say so. */
+  exportingPreset: CookbookPresetId | null;
+  exportError: string | null;
 }) {
   const printers = Object.values(PRINTERS);
   return (
@@ -38,19 +44,17 @@ export function CookbookReadyDialog({
         <p>Choose a format. Every format is included, and you can export again anytime.</p>
       </div>
 
-      {/* The one instruction that decides whether the export works, stated
-          where the decision is made. A cookbook page is laid out to fill its
-          sheet edge to edge, which a PDF reproduces exactly and a printer
-          cannot — a printer reserves an unprintable margin and rescales the
-          whole page to fit inside it, which shifts every page of the book.
-          The browser gives no way to preselect the destination for the user
-          (`window.print()` opens on whatever they used last), so saying so
-          plainly, before the dialog opens, is the only lever there is. */}
-      <p className="cookbook-ready__destination" role="note">
-        Your browser’s print window opens next — choose <strong>Save as PDF</strong> as the
-        destination. Sending it straight to a printer rescales every page, so the layout
-        won’t come out right.
-      </p>
+      {/* The "choose Save as PDF, and don't send it to a printer" note used to
+          live here. It existed only because `window.print()` handed the
+          destination to the browser and no page can preselect it — so the
+          correctness of a paid export rested on someone reading a paragraph.
+          The file is now rendered server-side and downloaded, so there is no
+          destination to choose and nothing to warn about. */}
+      {exportError && (
+        <p className="cookbook-ready__error" role="alert">
+          {exportError}
+        </p>
+      )}
 
       <div className="cookbook-ready__formats">
         {COOKBOOK_PRESETS.map((preset) => (
@@ -58,6 +62,7 @@ export function CookbookReadyDialog({
             key={preset.id}
             type="button"
             className="cookbook-format-card"
+            disabled={exportingPreset !== null}
             onClick={() => onExport(preset.id)}
           >
             <span className="cookbook-format-card__text">
@@ -65,8 +70,17 @@ export function CookbookReadyDialog({
               <small>{preset.trimLabel}</small>
             </span>
             <span className="cookbook-format-card__cta">
-              <PrintIcon size={ICON_SIZE.sm} />
-              Save PDF
+              {exportingPreset === preset.id ? (
+                <>
+                  <SpinnerIcon size={ICON_SIZE.sm} />
+                  Preparing…
+                </>
+              ) : (
+                <>
+                  <PrintIcon size={ICON_SIZE.sm} />
+                  Save PDF
+                </>
+              )}
             </span>
           </button>
         ))}

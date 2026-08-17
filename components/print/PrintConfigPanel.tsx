@@ -22,6 +22,14 @@ interface PrintConfigPanelProps {
   setMobileDrawer: Dispatch<SetStateAction<"template" | null>>;
   cookbookMode: boolean;
   cookbookLocked: boolean;
+  /** Turns this print job into a cookbook. A create action, not a view change —
+      see `renderModeSwitch`'s removal in app/print/page.tsx. */
+  /** The cover title — this panel's heading in cookbook mode. */
+  bookTitle: string | undefined;
+  onMakeCookbook: () => void;
+  /** Leaves the book and prints the same recipes as cards. The book is stashed
+      with the project, so this is reversible and loses nothing. */
+  onSwitchToCards: () => void;
   // Setup controls (Size / Photos / Include)
   cardSize: PrintCardSize;
   setCardSize: Dispatch<SetStateAction<PrintCardSize>>;
@@ -47,9 +55,6 @@ interface PrintConfigPanelProps {
   printBlocked: boolean;
   printSpinner: boolean;
   templateLocked: boolean;
-  projectSaveBusy: boolean;
-  handleSaveProject: () => Promise<void> | void;
-  savedProjectId: string | null;
   isRecipePrinterAdmin: boolean;
   canShareActiveRecipe: boolean;
   setShowShareDialog: Dispatch<SetStateAction<boolean>>;
@@ -70,6 +75,9 @@ export function PrintConfigPanel({
   setMobileDrawer,
   cookbookMode,
   cookbookLocked,
+  bookTitle,
+  onMakeCookbook,
+  onSwitchToCards,
   cardSize,
   setCardSize,
   anyRecipeHasImage,
@@ -92,9 +100,6 @@ export function PrintConfigPanel({
   printBlocked,
   printSpinner,
   templateLocked,
-  projectSaveBusy,
-  handleSaveProject,
-  savedProjectId,
   isRecipePrinterAdmin,
   canShareActiveRecipe,
   setShowShareDialog,
@@ -112,11 +117,17 @@ export function PrintConfigPanel({
       data-mobile-drawer={mobileDrawer ?? undefined}
     >
       <div className="recipe-config-panel__header">
-        <h2 className="text-cp-dialog-title font-extrabold tracking-[-0.02em]">
+        {/* In a book this heading is the book's NAME, not "Book Settings" —
+            the workspace has to say which document you're editing somewhere,
+            and a generic label was spending the most prominent line in the
+            panel to state something the surrounding UI already makes obvious.
+            One line, truncated: a long title should never push the Purchased
+            chip or the close button around. */}
+        <h2 className="text-cp-dialog-title font-extrabold tracking-[-0.02em] min-w-0 truncate">
           {mobileDrawer === "template"
             ? "Themes"
             : cookbookMode
-              ? "Book Settings"
+              ? bookTitle?.trim() || "Untitled cookbook"
               : "Print setup"}
         </h2>
         {cookbookMode && !cookbookLocked && mobileDrawer !== "template" && (
@@ -183,19 +194,30 @@ export function PrintConfigPanel({
               ? "Unlock & Print"
               : "Print"}
         </button>
-        {/* Hidden for this release alongside the rest of the account/cookbook
-            surface — gated by COOKBOOK_ENABLED so it returns at launch. */}
+        {/* Making a cookbook is a CREATE action, so it reads as one and sits with
+            the other actions. It used to be half of a segmented control in the
+            header, which implied two views of one thing — but a cookbook is a
+            paid document with a cover and chapters and a card job is a free
+            print, and the header now says which document you're in, so a toggle
+            there was answering the same question differently. */}
         {COOKBOOK_ENABLED && !cookbookMode && (
-          <button
-            type="button"
-            className="btn btn-secondary recipe-print-button"
-            disabled={projectSaveBusy}
-            onClick={() => void handleSaveProject()}
-          >
-            {projectSaveBusy ? <SpinnerIcon size={ICON_SIZE.md} /> : <BookIcon size={ICON_SIZE.md} />}
-            {savedProjectId ? "Saved to account" : "Save project"}
+          <button type="button" className="btn btn-secondary recipe-print-button" onClick={onMakeCookbook}>
+            <BookIcon size={ICON_SIZE.md} />
+            Make it a cookbook
           </button>
         )}
+        {COOKBOOK_ENABLED && cookbookMode && (
+          <button type="button" className="recipe-print-settings-link" onClick={onSwitchToCards}>
+            Print as recipe cards instead
+          </button>
+        )}
+        {/* "Save project" lived here as a third full-width button and is gone.
+            It was the largest control in the panel for an action taken once,
+            it sat among PRINT settings which is not what it did, and it
+            duplicated a "Saved" indicator already sitting beside the account
+            avatar — two places claiming to own the same fact. Saving now
+            happens where that word already is: see `onSave` on SiteHeader. */
+        }
         {/* Share links are a single-recipe-card feature; a cookbook is a
             whole bound book, so this is hidden in cookbook mode even for the
             admin user. */}

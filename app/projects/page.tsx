@@ -107,7 +107,7 @@ export default function ProjectsPage() {
   const [showLogin, setShowLogin] = useState(false);
   const [purchasedIds, setPurchasedIds] = useState<Set<string>>(() => new Set());
   const cookbooks = projects.filter((project) => project.kind !== "printProject");
-  const printProjects = projects.filter((project) => project.kind === "printProject");
+  const recipeCardProjects = projects.filter((project) => project.kind === "printProject");
 
   const refresh = useCallback(async () => {
     if (!user) return;
@@ -200,7 +200,7 @@ export default function ProjectsPage() {
           <div>
             <h1 className="text-cp-hero-sm font-extrabold tracking-[-0.04em] leading-[1.08]">Projects</h1>
             <p className="mt-cp-3 text-cp-body-lg text-ink-soft leading-relaxed">
-              Open or remove your saved cookbooks and print projects.
+              Open or remove your saved cookbooks and recipe cards.
             </p>
           </div>
           <button type="button" className="btn btn-primary flex-shrink-0" onClick={startNewCookbook}>
@@ -222,7 +222,7 @@ export default function ProjectsPage() {
               <BookIcon size={28} className="text-[var(--cp-accent-ink)]" />
             </div>
             <h2 className="mt-cp-4 text-cp-h2 font-extrabold tracking-[-0.02em]">No saved projects yet</h2>
-            <p className="mt-cp-2 max-w-sm text-cp-body text-ink-soft leading-relaxed">Build a cookbook or print project and it’ll show up here, ready to reopen anytime.</p>
+            <p className="mt-cp-2 max-w-sm text-cp-body text-ink-soft leading-relaxed">Build a cookbook or a set of recipe cards and it’ll show up here, ready to reopen anytime.</p>
             <Link href="/" className="btn btn-primary mt-cp-5">Add a recipe</Link>
           </div>
         ) : (
@@ -230,7 +230,7 @@ export default function ProjectsPage() {
             {error && <p className="mb-cp-4 rounded-lg border border-[var(--cp-error-border)] bg-[var(--cp-error-soft)] p-cp-3 text-cp-small text-error">{error}</p>}
             {([
               ["Cookbooks", cookbooks],
-              ["Print projects", printProjects],
+              ["Recipe cards", recipeCardProjects],
             ] as const).map(([heading, groupedProjects]) => groupedProjects.length > 0 && (
               <section key={heading} className="mb-cp-7">
                 <h2 className="mb-cp-4 text-cp-h2 font-extrabold tracking-[-0.02em]">{heading}</h2>
@@ -240,20 +240,20 @@ export default function ProjectsPage() {
                   <Link
                     href={`/print?project=${encodeURIComponent(project.id)}`}
                     className="absolute inset-0 z-10 rounded-xl focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--cp-accent-ink)]"
-                    aria-label={`Open ${project.title || (project.kind === "printProject" ? "Untitled print project" : "Untitled cookbook")}`}
+                    aria-label={`Open ${project.title || (project.kind === "printProject" ? "Untitled recipe cards" : "Untitled cookbook")}`}
                   />
                   <ProjectCover project={project} />
                   <div className="flex flex-1 flex-col p-cp-4">
                     <div className="flex items-start justify-between gap-cp-3">
                       <div className="min-w-0">
                         <span className="text-cp-label font-bold uppercase tracking-wide text-ink-soft">
-                          {project.kind === "printProject" ? "Print project" : "Cookbook"}
+                          {project.kind === "printProject" ? "Recipe cards" : "Cookbook"}
                         </span>
                         {/* A card title sits UNDER the section heading in the
                             hierarchy, so it takes --cp-fs-body, not the section
                             heading's size. */}
                         <h3 className="mt-cp-1 line-clamp-2 text-cp-body font-bold leading-snug">
-                          {project.title || (project.kind === "printProject" ? "Untitled print project" : "Untitled cookbook")}
+                          {project.title || (project.kind === "printProject" ? "Untitled recipe cards" : "Untitled cookbook")}
                         </h3>
                       </div>
                       <IconButton className="relative z-20" tone="danger" aria-label={`Delete ${project.title || "project"}`} onClick={() => setPendingDelete(project)}>
@@ -265,15 +265,19 @@ export default function ProjectsPage() {
                       <span aria-hidden>·</span>
                       <span>Updated {projectDate(project)}</span>
                     </div>
-                    <div className="mt-cp-3">
-                      {project.kind === "printProject" ? (
-                        <Badge>No purchase needed</Badge>
-                      ) : purchasedIds.has(project.id) ? (
-                        <Badge tone="success"><CheckIcon size={ICON_SIZE.sm} /> Purchased</Badge>
-                      ) : (
-                        <Badge>Not purchased</Badge>
-                      )}
-                    </div>
+                    {/* Purchase state is a cookbook-only concept — recipe cards
+                        are free and always were, so a "No purchase needed" badge
+                        on them answered a question nobody had asked, and raised
+                        the idea that they might cost something. */}
+                    {project.kind !== "printProject" && (
+                      <div className="mt-cp-3">
+                        {purchasedIds.has(project.id) ? (
+                          <Badge tone="success"><CheckIcon size={ICON_SIZE.sm} /> Purchased</Badge>
+                        ) : (
+                          <Badge>Not purchased</Badge>
+                        )}
+                      </div>
+                    )}
                   </div>
                 </li>
               ))}
@@ -287,7 +291,7 @@ export default function ProjectsPage() {
       <ConfirmDialog
         open={pendingDelete !== null}
         title="Delete project?"
-        description={<>“{pendingDelete?.title || (pendingDelete?.kind === "printProject" ? "Untitled print project" : "Untitled cookbook")}” will be permanently removed from your account.</>}
+        description={<>“{pendingDelete?.title || (pendingDelete?.kind === "printProject" ? "Untitled recipe cards" : "Untitled cookbook")}” will be permanently removed from your account.</>}
         confirmLabel="Delete project"
         confirmIcon={<TrashIcon size={ICON_SIZE.md} />}
         busy={deleting}

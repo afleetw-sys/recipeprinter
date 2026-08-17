@@ -1,0 +1,93 @@
+# Cookbook PDF export
+
+A cookbook downloads as a finished PDF. Nobody sees a print dialog.
+
+## Why it works this way
+
+`window.print()` always opens the browser's own dialog, and no browser lets a
+page preselect "Save as PDF" or skip it. The export therefore used to depend on
+the cook reading a paragraph and choosing the right destination — and a cookbook
+sent to a desktop printer comes back rescaled on **every** page, because the
+design bleeds to the sheet edge and printers reserve an unprintable margin.
+Rendering server-side removes the choice, and with it the failure mode.
+
+## The path
+
+```
+CookbookReadyDialog  →  lib/cookbookPdfExport.ts
+                     →  POST /api/cookbook-pdf          (app, holds the secret)
+                     →  recipePrinterCookbookPdf        (Cloud Run + Chromium)
+                     →  GET  /export                    (app, renders the book)
+                     →  page.pdf()  →  download
+```
+
+- **`/export`** (`app/export/page.tsx`) renders the book from a payload injected
+  into `window.__RP_EXPORT__`. It reuses `usePrintSheets` and `ScaledPage` — the
+  same layout engine and the same `print.css` as the preview — so the file people
+  pay for cannot drift from the book they approved. It sets
+  `<html data-export-ready="true">` once the layout has measured, fonts have
+  resolved, and it has painted.
+- **`/api/cookbook-pdf`** exists to keep `RECIPEPRINTER_PDF_AUTH` server-side.
+  Calling the renderer from the browser would ship a shared secret to every
+  visitor and let anyone burn 2GiB of Chromium on demand.
+- **The renderer** lives in the CookPilot repo at `functions-pdf/`, as its **own
+  Firebase codebase**. A codebase deploys as one bundle, so Chromium (~50MB)
+  sitting in `functions/` would have been added to the cold start of every
+  unrelated function — `extractRecipe`, `parseRecipeFromURL`, the RevenueCat
+  webhook. Isolated, nothing else pays for it.
+
+## Deploying it
+
+1. `cd ~/Desktop/CookPilot/functions-pdf && npm install`
+2. Set the shared secret (any long random string):
+   `npx firebase-tools functions:secrets:set RECIPEPRINTER_PDF_AUTH -P recipeapp`
+3. Export it: add `export {recipePrinterCookbookPdf} from "./index";` is not
+   needed — `functions-pdf/src/index.ts` *is* the entry point.
+4. Deploy **only** this codebase, so the main functions are untouched:
+   `npx firebase-tools deploy --only functions:pdf -P recipeapp`
+   (`-P recipeapp` = cookpilot-bbecb, NOT the `.firebaserc` default.)
+5. In Vercel, set on the **recipeprinter-1zf6** project:
+   - `RECIPEPRINTER_PDF_URL` — the deployed function's URL
+   - `RECIPEPRINTER_PDF_AUTH` — the same secret value
+
+Until both Vercel vars are set, `/api/cookbook-pdf` returns 503 and the dialog
+says export isn't configured — a deployment state, not a broken cookbook.
+
+## Keeping the trim sizes in sync
+
+`PRESET_SHEETS` in `functions-pdf/src/index.ts` must match `COOKBOOK_PRESETS` in
+`lib/cookbookPresets.ts`. Separate repos, no shared package — the same hand-sync
+arrangement as `RECIPEPRINTER_PREMIUM_TEMPLATES`.
+
+## Verified locally (2026-08-17)
+
+Driving the system Chrome through the identical steps, against the dev server:
+
+| Preset | Pages | MediaBox | Expected |
+|---|---|---|---|
+| `hardcover-8x10` | 8 | 594 × 738pt = 8.250 × 10.250in | 8×10 trim + 0.125in bleed ✓ |
+| `us-letter` | 8 | 612 × 792pt = 8.500 × 11.000in | Letter ✓ |
+
+Ready signal fired in ~2s; a rendered recipe page carried its running header,
+folio, full-bleed band, ingredients and steps. The whole path was also exercised
+through `/api/cookbook-pdf` itself (200, `application/pdf`, 223KB), and a
+malformed request returned 502 with a JSON error rather than a corrupt file.
+
+## Still on browser print
+
+Recipe **cards** still use `window.print()`. They're a free print job on plain
+paper with no bleed, so the print dialog is the right tool and there is nothing
+to warn about. Only cookbooks route through the renderer.
+
+## Note on the `@media print` cleanup
+
+`page.pdf()` renders in **print media**, and the export route deliberately
+depends on that: the existing `@media print` rules are what un-hide the
+non-active faces and reset `.recipe-page-slide` opacity. So those rules are
+**not** dead and must not be deleted while the renderer works this way.
+
+What the PDF work did retire is the browser-print *export round trip* — the
+`.rp-exporting` class and geometry vars the deck used to put on for the instant
+`window.print()` fired, and the state machine around it. Deleting the `@media
+print` block itself would require the export route to carry its own screen-media
+stylesheet first.
