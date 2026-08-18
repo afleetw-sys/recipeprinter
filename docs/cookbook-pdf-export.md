@@ -36,6 +36,34 @@ CookbookReadyDialog  →  lib/cookbookPdfExport.ts
   unrelated function — `extractRecipe`, `parseRecipeFromURL`, the RevenueCat
   webhook. Isolated, nothing else pays for it.
 
+## Running it locally
+
+```bash
+npm run pdf:dev      # renderer on :8899, in a second terminal
+npm run dev
+```
+
+and in `.env.local`:
+
+```
+RECIPEPRINTER_PDF_URL=http://localhost:8899
+RECIPEPRINTER_PDF_AUTH=local-dev-secret
+```
+
+`scripts/pdf-renderer-dev.mjs` runs the same steps as the deployed function —
+inject payload, open `/export`, wait for `data-export-ready`, `page.pdf()` — so
+local work exercises the real path rather than a mock. The only difference is
+the browser: the function uses `@sparticuz/chromium` (a Linux build for Cloud
+Run), the script uses whatever Chrome is already installed (`CHROME_PATH` to
+override). `puppeteer-core` is a devDependency; nothing here reaches the browser
+or production.
+
+If the dev server isn't on port 3000, point the renderer at it:
+`RECIPEPRINTER_ORIGIN=http://localhost:3001 npm run pdf:dev`.
+
+Without those two env vars the export button reports "PDF export isn't
+configured on this deployment" — that is this state, not a broken cookbook.
+
 ## Deploying it
 
 1. `cd ~/Desktop/CookPilot/functions-pdf && npm install`
