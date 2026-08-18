@@ -12,8 +12,8 @@ import { isPrintCardSize, isRecipePrintTemplate } from "@/lib/printSettings";
 import type { ExportPayload } from "@/types/export";
 import type { QueueItem } from "@/types/recipe";
 
-/** Backstop for the paint frame below; see the note there. */
-const EXPORT_READY_FALLBACK_MS = 1500;
+/** Backstop for the paint frame only — never for fonts or images. */
+const EXPORT_READY_FALLBACK_MS = 1000;
 
 /**
  * The page the PDF renderer photographs.
@@ -91,35 +91,54 @@ function ExportDocument({ payload }: { payload: ExportPayload }) {
   });
 
   /**
-   * The renderer's go signal.
+   * The renderer's go signal, and the ONLY thing it waits on.
    *
-   * `printLayoutReady` means the measurement pass has settled, but a settled
-   * layout is not yet a painted one, and a font swapping in after capture
-   * reflows text off its page. So: measured, then fonts resolved, then a frame.
+   * This has to be authoritative, because the renderer no longer waits for the
+   * network to fall quiet before capturing — that heuristic cost ~900ms per
+   * export and was standing in for three things this can state exactly:
+   * the measured layout has settled, the fonts have resolved, and every image
+   * has decoded. A book captured a beat early loses photos or reflows text off
+   * its page, and nothing downstream would notice.
    *
-   * The frame is raced against a timer on purpose. `requestAnimationFrame` does
-   * not fire in a page the browser isn't painting — I hit exactly that here,
-   * with a fully laid-out book and a signal that never came. A renderer waiting
-   * on this would hang rather than fail, which is the worse way to break, so
-   * the timer guarantees the signal even if no frame is ever served.
+   * Only the final paint frame is raced against a timer. `requestAnimationFrame`
+   * does not fire in a page the browser isn't painting — I hit exactly that,
+   * with a fully laid-out book and a signal that never came — and a renderer
+   * waiting on it would hang rather than fail. The content guarantees above are
+   * never skipped; only the paint is.
    */
   useEffect(() => {
     if (!printLayoutReady || sheets.length === 0) return;
+    let cancelled = false;
     let done = false;
+    let frame = 0;
+    let timer = 0;
     const signal = () => {
-      if (done) return;
+      if (done || cancelled) return;
       done = true;
       window.__RP_EXPORT_READY__ = true;
       document.documentElement.setAttribute("data-export-ready", "true");
     };
-    let frame = 0;
-    const timer = window.setTimeout(signal, EXPORT_READY_FALLBACK_MS);
-    void document.fonts.ready.then(() => {
+
+    const imagesDecoded = () =>
+      Promise.all(
+        Array.from(document.images).map((image) =>
+          // `decode()` resolves once the pixels are ready to paint, which
+          // `complete` alone does not promise. A failed image resolves too —
+          // one broken photo must not hold an entire book hostage.
+          image.decode().catch(() => undefined),
+        ),
+      );
+
+    void Promise.all([document.fonts.ready, imagesDecoded()]).then(() => {
+      if (cancelled) return;
+      timer = window.setTimeout(signal, EXPORT_READY_FALLBACK_MS);
       frame = requestAnimationFrame(() => {
         frame = requestAnimationFrame(signal);
       });
     });
+
     return () => {
+      cancelled = true;
       done = true;
       window.clearTimeout(timer);
       cancelAnimationFrame(frame);

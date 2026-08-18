@@ -101,6 +101,30 @@ folio, full-bleed band, ingredients and steps. The whole path was also exercised
 through `/api/cookbook-pdf` itself (200, `application/pdf`, 223KB), and a
 malformed request returned 502 with a JSON error rather than a corrupt file.
 
+## Speed
+
+Measured locally (3-recipe book, hardcover 8×10, byte-identical output each time):
+
+| | |
+|---|---|
+| First export on a cold container | ~1.5s |
+| Every export after | **~0.6s** |
+
+Two things get it there, both in the renderer:
+
+- **One Chromium per container, not per request.** Launching it was the single
+  most expensive step (~700ms warm, seconds cold) and was pure overhead — the
+  browser that just rendered a book renders the next one fine. The page closes
+  after each request; the browser stays.
+- **`domcontentloaded`, not `networkidle0`.** Idling the network cost ~900ms per
+  export while only *guessing* fonts and images had arrived. `/export` now
+  states it exactly: `data-export-ready` waits for the measured layout,
+  `document.fonts.ready`, **and** every image to `decode()`. Dropping the network
+  wait without that would have captured books before their photos appeared.
+
+If cold starts ever matter more than cost, `minInstances: 1` on the function
+keeps one container warm — that is a standing bill, so it is not on by default.
+
 ## Still on browser print
 
 Recipe **cards** still use `window.print()`. They're a free print job on plain

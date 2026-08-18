@@ -49,6 +49,18 @@ if (!executablePath) {
   process.exit(1);
 }
 
+// One browser for the life of this process, mirroring the deployed function's
+// one-per-container reuse — so local timings reflect production's warm path.
+let browserPromise = null;
+async function getBrowser() {
+  if (browserPromise) {
+    const existing = await browserPromise.catch(() => null);
+    if (existing?.connected) return existing;
+  }
+  browserPromise = puppeteer.launch({ executablePath, headless: true });
+  return browserPromise;
+}
+
 createServer(async (req, res) => {
   if (req.method !== "POST") {
     res.writeHead(405).end("Use POST.");
@@ -76,14 +88,17 @@ createServer(async (req, res) => {
   }
 
   const started = Date.now();
-  const browser = await puppeteer.launch({ executablePath, headless: true });
+  const browser = await getBrowser();
+  const page = await browser.newPage();
   try {
-    const page = await browser.newPage();
     await page.evaluateOnNewDocument((injected) => {
       window.__RP_EXPORT__ = injected;
     }, payload);
+    // Matches the function: `data-export-ready` is the real guarantee (layout
+    // measured, fonts resolved, images decoded), so idling the network too was
+    // ~900ms spent on a weaker version of the same thing.
     await page.goto(`${APP_ORIGIN}/export`, {
-      waitUntil: "networkidle0",
+      waitUntil: "domcontentloaded",
       timeout: 45000,
     });
     await page.waitForSelector('html[data-export-ready="true"]', {
@@ -107,7 +122,7 @@ createServer(async (req, res) => {
     console.error("render failed:", error.message);
     res.writeHead(500).end("Could not render the cookbook.");
   } finally {
-    await browser.close();
+    await page.close().catch(() => undefined);
   }
 }).listen(PORT, () => {
   console.log(`Cookbook PDF renderer (dev) on http://localhost:${PORT}`);
