@@ -2981,18 +2981,18 @@ export default function PrintPage() {
   if (projectAccess) {
     const copy = {
       "needs-auth": {
-        title: "Sign in to open this project",
-        body: "Saved projects live in your account, so we need to know whose this is.",
+        title: "Sign in to see your project",
+        body: "Your projects are saved to your account. Sign in and this one will be right here.",
         action: "Sign in",
       },
       missing: {
         title: "We couldn't find that project",
-        body: "It may have been deleted, or it belongs to a different account. Signing in as that account will bring it back.",
-        action: "Sign in as someone else",
+        body: "It might be saved to a different account — signing in with that one will bring it back.",
+        action: "Try another account",
       },
       failed: {
-        title: "That project wouldn't open",
-        body: "Something went wrong reaching your account. It's still there — this is worth another try.",
+        title: "That project didn't load",
+        body: "Something went wrong on the way to your account. Your project is safe, so it's worth another try.",
         action: "Try again",
       },
     }[projectAccess];
