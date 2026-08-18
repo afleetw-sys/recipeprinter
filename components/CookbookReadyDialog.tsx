@@ -93,7 +93,7 @@ export function CookbookReadyDialog({
           a slightly inset page, never the broken one it produces from the web
           page. That's the whole reason this flow is PDF-first. */}
       <p className="cookbook-ready__note">
-        Once it’s saved you can print it at home — the PDF keeps the layout — or upload it to a
+        Once it’s saved you can print it at home, or upload it to a
         service like{" "}
         {printers.map((printer, index) => (
           <span key={printer.id}>

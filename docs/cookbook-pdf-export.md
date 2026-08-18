@@ -67,6 +67,11 @@ configured on this deployment" — that is this state, not a broken cookbook.
 ## Deploying it
 
 1. `cd ~/Desktop/CookPilot/functions-pdf && npm install`
+
+   The codebase has a `predeploy` hook that runs `npm run build`, so the
+   TypeScript is compiled for you. Without it the deploy fails on
+   `functions-pdf/lib/index.js does not exist` — `main` points at the compiled
+   output, and nothing else would ever emit it.
 2. Set the shared secret (any long random string):
    `npx firebase-tools functions:secrets:set RECIPEPRINTER_PDF_AUTH -P recipeapp`
 3. Export it: add `export {recipePrinterCookbookPdf} from "./index";` is not
