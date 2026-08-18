@@ -61,6 +61,17 @@ async function getBrowser() {
   return browserPromise;
 }
 
+// Reuse means the browser outlives each request, so it needs an owner for the
+// end of the process too — otherwise stopping the renderer with Ctrl+C leaves a
+// headless Chrome running with nothing to serve.
+async function shutdown() {
+  const browser = await (browserPromise ?? Promise.resolve(null)).catch(() => null);
+  await browser?.close().catch(() => undefined);
+  process.exit(0);
+}
+process.on("SIGINT", shutdown);
+process.on("SIGTERM", shutdown);
+
 createServer(async (req, res) => {
   if (req.method !== "POST") {
     res.writeHead(405).end("Use POST.");
