@@ -337,6 +337,19 @@ export default function PrintPage() {
   const savedProjectIdRef = useRef<string | null>(null);
   const [saveStatus, setSaveStatus] = useState<AccountSaveStatus | null>(null);
   const [projectLoading, setProjectLoading] = useState(Boolean(accountProjectId));
+  /**
+   * How opening a bookmarked `?project=` link turned out.
+   *
+   * Needed because "still loading" and "will never load" looked identical.
+   * `items` stays null until a job's ids land, and the three ways a bookmarked
+   * project fails — signed out, not yours / deleted, request failed — all
+   * returned without ever setting them. The page then sat on "Loading your
+   * project…" forever. A toast fired in two of those cases, which is not a
+   * thing to say to someone staring at a spinner that will never stop.
+   */
+  const [projectAccess, setProjectAccess] = useState<
+    "needs-auth" | "missing" | "failed" | null
+  >(null);
   // Whether the working copy has been matched against the account's saved
   // documents yet (see the reattach effect below). Autosave waits for this so it
   // can never mistake an already-saved book for a brand-new one.
@@ -2007,18 +2020,20 @@ export default function PrintPage() {
   useEffect(() => {
     if (!accountProjectId || !cookPilotAuthReady || !projectMeta.hydrated || !queue.hydrated) return;
     if (!cookPilotUser) {
+      // A saved project lives in an account, so there is nothing to show until
+      // we know whose it is. Say that, instead of spinning.
       setProjectLoading(false);
-      setCookPilotLoginReason("default");
-      setShowCookPilotLogin(true);
+      setProjectAccess("needs-auth");
       return;
     }
     let cancelled = false;
     setProjectLoading(true);
+    setProjectAccess(null);
     loadPrintProject(cookPilotUser.uid, accountProjectId)
       .then((project) => {
         if (cancelled) return;
         if (!project) {
-          showToast("That saved project could not be found.");
+          setProjectAccess("missing");
           return;
         }
         const loadedItems = project.sections.flatMap((section) => section.items);
@@ -2070,7 +2085,7 @@ export default function PrintPage() {
       .catch((error) => {
         if (!cancelled) {
           console.warn("RecipePrinter: could not open project", error);
-          showToast("That saved project couldn't be opened.");
+          setProjectAccess("failed");
         }
       })
       .finally(() => {
@@ -2957,6 +2972,69 @@ export default function PrintPage() {
   useEffect(() => {
     clearRailSelection();
   }, [cookbookMode, items]);
+
+  /**
+   * A bookmarked project link that cannot be opened. Must come BEFORE the
+   * loading gate below: `items` is still null in every one of these cases, so
+   * that gate would otherwise render a spinner that never resolves.
+   */
+  if (projectAccess) {
+    const copy = {
+      "needs-auth": {
+        title: "Sign in to open this project",
+        body: "Saved projects live in your account, so we need to know whose this is.",
+        action: "Sign in",
+      },
+      missing: {
+        title: "We couldn't find that project",
+        body: "It may have been deleted, or it belongs to a different account. Signing in as that account will bring it back.",
+        action: "Sign in as someone else",
+      },
+      failed: {
+        title: "That project wouldn't open",
+        body: "Something went wrong reaching your account. It's still there — this is worth another try.",
+        action: "Try again",
+      },
+    }[projectAccess];
+    return (
+      <div className="h-full flex flex-col">
+        <SiteHeader compact sticky />
+        <div className="flex-1 flex flex-col items-center justify-center gap-cp-4 text-center px-cp-6">
+          <div className="flex h-16 w-16 items-center justify-center rounded-full bg-[var(--cp-accent-soft)]">
+            <BookIcon size={28} className="text-[var(--cp-accent-ink)]" />
+          </div>
+          <p className="font-bold text-cp-h2">{copy.title}</p>
+          <p className="text-ink-soft max-w-sm leading-relaxed">{copy.body}</p>
+          <div className="flex flex-wrap items-center justify-center gap-cp-3">
+            <button
+              type="button"
+              className="btn btn-primary"
+              onClick={() => {
+                if (projectAccess === "failed") {
+                  window.location.reload();
+                  return;
+                }
+                setCookPilotLoginReason("default");
+                setShowCookPilotLogin(true);
+              }}
+            >
+              {copy.action}
+            </button>
+            <Link href="/" className="btn btn-secondary">
+              Back to your recipes
+            </Link>
+          </div>
+        </div>
+        {showCookPilotLogin && !cookPilotUser && (
+          <CookPilotLoginDialog
+            onClose={() => setShowCookPilotLogin(false)}
+            onAuthenticated={() => setShowCookPilotLogin(false)}
+            reason={cookPilotLoginReason}
+          />
+        )}
+      </div>
+    );
+  }
 
   if (items === null || projectLoading || cookbookAccessStatus === "loading") {
     return (
