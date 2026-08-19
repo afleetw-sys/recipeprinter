@@ -1491,6 +1491,22 @@
 /* Quiet "you own this" acknowledgement in the Book Settings header, so a
    purchased cookbook reads as paid-for even for a signed-in owner (who never
    sees the back-up bar). */
+/* "New" flag on the cookbook CTA — the same treatment the retired Recipe
+   cards / Cookbook toggle carried, now on the button that replaced it. Accent
+   on the dark primary button, so it reads as a flag rather than a second
+   label competing with the action. */
+.recipe-cookbook-cta__badge {
+  padding: 2px 6px;
+  border-radius: 999px;
+  background: var(--cp-accent);
+  color: var(--cp-ink);
+  font-size: 0.62rem;
+  font-weight: 800;
+  letter-spacing: 0.02em;
+  line-height: 1;
+  text-transform: uppercase;
+}
+
 .recipe-purchased-chip {
   display: inline-flex;
   align-items: center;
@@ -2647,11 +2663,6 @@
     padding: 10px 16px max(10px, env(safe-area-inset-bottom));
     border-top: 1px solid var(--cp-line);
     background: var(--cp-page);
-  }
-
-  /* Sits above the Recipe/Size/Themes toolbar in the same fixed bar. */
-  .recipe-mobile-actions__cookbook {
-    width: 100%;
   }
 }
 

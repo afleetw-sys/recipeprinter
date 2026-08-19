@@ -3088,6 +3088,7 @@ export default function PrintPage() {
               >
                 <BookIcon size={ICON_SIZE.sm} />
                 Make it a cookbook
+                <span className="recipe-cookbook-cta__badge">New</span>
               </button>
             ) : undefined
           }
@@ -3326,20 +3327,12 @@ export default function PrintPage() {
         </Dialog>
 
         <div className="recipe-mobile-actions no-print">
-          {/* Mobile had NO way to make a cookbook at all. The desktop header is
-              hidden below 821px and `.recipe-config-panel__footer` — which holds
-              this CTA on desktop — is `display: none` here, so the single most
-              important action in the product was unreachable on a phone. */}
-          {COOKBOOK_ENABLED && !cookbookMode && Boolean(items?.length) && (
-            <button
-              type="button"
-              className="btn btn-primary recipe-mobile-actions__cookbook"
-              onClick={startCookbook}
-            >
-              <BookIcon size={ICON_SIZE.md} />
-              Make it a cookbook
-            </button>
-          )}
+          {/* No "Make it a cookbook" here on purpose. Building a book — covers,
+              chapters, page layouts, the organizer — is not something the phone
+              layout does well yet, and selling someone a $19.99 document they
+              then can't comfortably edit is worse than not offering it. The
+              desktop header carries the CTA; an existing book still OPENS and
+              edits here, it just isn't created here. */}
           <div className="recipe-mobile-toolbar">
             <button
               type="button"
