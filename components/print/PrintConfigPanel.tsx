@@ -3,7 +3,6 @@
 import type { Dispatch, ReactNode, RefObject, SetStateAction } from "react";
 import type { CustomerInfo } from "@revenuecat/purchases-js";
 import {
-  BookIcon,
   CheckIcon,
   ICON_SIZE,
   PrintIcon,
@@ -26,7 +25,6 @@ interface PrintConfigPanelProps {
       see `renderModeSwitch`'s removal in app/print/page.tsx. */
   /** The cover title — this panel's heading in cookbook mode. */
   bookTitle: string | undefined;
-  onMakeCookbook: () => void;
   /** Leaves the book and prints the same recipes as cards. The book is stashed
       with the project, so this is reversible and loses nothing. */
   onSwitchToCards: () => void;
@@ -76,7 +74,6 @@ export function PrintConfigPanel({
   cookbookMode,
   cookbookLocked,
   bookTitle,
-  onMakeCookbook,
   onSwitchToCards,
   cardSize,
   setCardSize,
@@ -200,12 +197,6 @@ export function PrintConfigPanel({
             paid document with a cover and chapters and a card job is a free
             print, and the header now says which document you're in, so a toggle
             there was answering the same question differently. */}
-        {COOKBOOK_ENABLED && !cookbookMode && (
-          <button type="button" className="btn btn-secondary recipe-print-button" onClick={onMakeCookbook}>
-            <BookIcon size={ICON_SIZE.md} />
-            Make it a cookbook
-          </button>
-        )}
         {COOKBOOK_ENABLED && cookbookMode && (
           <button type="button" className="recipe-print-settings-link" onClick={onSwitchToCards}>
             Print as recipe cards instead

@@ -1925,7 +1925,7 @@ export default function PrintPage() {
       await downloadCookbookPdf(
         project,
         presetId,
-        cookbookPdfFileName(projectMeta.meta.cover?.title),
+        cookbookPdfFileName(projectMeta.meta.cover?.title, presetId),
       );
     } catch (error) {
       setCookbookExportError(
@@ -3083,10 +3083,14 @@ export default function PrintPage() {
             COOKBOOK_ENABLED && !cookbookMode && items?.length ? (
               <button
                 type="button"
-                className="btn btn-primary btn-compact"
+                /* Outlined, not primary: Print is the primary action on this
+                   page, and two solid buttons competing at the top would argue
+                   about which one the page is for. `mr-cp-2` keeps it off the
+                   avatar — the header's own gap reads as too tight for a button
+                   sitting next to a circular control. */
+                className="btn btn-secondary btn-compact mr-cp-2"
                 onClick={startCookbook}
               >
-                <BookIcon size={ICON_SIZE.sm} />
                 Make it a cookbook
                 <span className="recipe-cookbook-cta__badge">New</span>
               </button>
@@ -3302,7 +3306,6 @@ export default function PrintPage() {
           setShowShareDialog={setShowShareDialog}
           hasPrintSettingsFields={hasPrintSettingsFields}
           setPrintSettingsOpen={setPrintSettingsOpen}
-          onMakeCookbook={startCookbook}
           onSwitchToCards={exitCookbookToCards}
         />
 

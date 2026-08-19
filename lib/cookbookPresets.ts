@@ -57,6 +57,10 @@ export interface CookbookPreset {
       print.css). A spined hardcover has no punch → false, and gets no such
       treatment. Only affects export; the on-screen deck always previews plain. */
   coilBound: boolean;
+  /** One word for the download's filename. Deliberately not `productName`:
+      "Our-Favorite-Recipes-Spiral-Cookbook.pdf" says cookbook twice and an
+      untitled book came out as "Cookbook-Spiral-Cookbook.pdf". */
+  fileLabel: string;
   /** Named `@page` rule that sets this preset's physical sheet size. */
   pageName: string;
   /** Class placed on `.recipe-print-preview` so the `page:` binding + geometry
@@ -81,6 +85,7 @@ export const COOKBOOK_PRESETS: CookbookPreset[] = [
   {
     id: "us-letter",
     productName: "Spiral Cookbook",
+    fileLabel: "Spiral",
     trimLabel: "US Letter (8.5 × 11 in)",
     bestFor: "Print at home — no bleed, spiral or 3-ring",
     trimWidthIn: 8.5,
@@ -99,6 +104,7 @@ export const COOKBOOK_PRESETS: CookbookPreset[] = [
   {
     id: "hardcover-8x10",
     productName: "Hardcover Book",
+    fileLabel: "Hardcover",
     trimLabel: "8 × 10 in",
     bestFor: "Pro print-on-demand — full-bleed, trimmed",
     trimWidthIn: 8,

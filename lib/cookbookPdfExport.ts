@@ -1,5 +1,6 @@
 "use client";
 
+import { getCookbookPreset } from "@/lib/cookbookPresets";
 import type { CookbookPresetId, PrintProject } from "@/types/recipe";
 
 /**
@@ -56,9 +57,30 @@ export async function downloadCookbookPdf(
   }
 }
 
-/** A filename someone can find later, from the book's own name. */
-export function cookbookPdfFileName(title: string | undefined): string {
+/**
+ * A filename someone can find later — the book's own name, plus which format
+ * it is.
+ *
+ * Every format is included with the purchase, so a cook can reasonably export
+ * the same book as both. Without the format in the name the second download
+ * lands as "Our-Favorite-Recipes (1).pdf", and the one thing that actually
+ * distinguishes the two files — the physical book they produce — is the one
+ * thing you can't tell without opening them.
+ */
+export function cookbookPdfFileName(
+  title: string | undefined,
+  preset: CookbookPresetId,
+): string {
   const base = (title ?? "").trim() || "Cookbook";
-  const safe = base.replace(/[^\w\s-]/g, "").replace(/\s+/g, "-").slice(0, 60);
-  return `${safe || "Cookbook"}.pdf`;
+  const safe = slugPart(base) || "Cookbook";
+  const format = slugPart(getCookbookPreset(preset).fileLabel);
+  return `${safe}-${format}.pdf`;
+}
+
+function slugPart(value: string): string {
+  return value
+    .replace(/[^\w\s-]/g, "")
+    .replace(/\s+/g, "-")
+    .slice(0, 60)
+    .replace(/^-+|-+$/g, "");
 }
