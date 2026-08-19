@@ -145,31 +145,30 @@
   color: var(--cp-ink);
 }
 
-/* Auto-organize / Undo. Sits directly under "Organize recipes" (the manual
-   organizer) and reads as its quieter sibling — same size and weight, so
-   neither claims to be the primary way in. */
-.recipe-page-rail__auto-organize {
-  flex-shrink: 0;
-  display: flex;
+/* Auto-organize / Undo, in the organizer's own toolbar beside the collapse
+   control. Quiet by default — the cook is already arranging things by hand in
+   here, so this offers to help rather than announcing itself. */
+.recipe-organize-bar__auto {
+  display: inline-flex;
   align-items: center;
-  justify-content: center;
   gap: 5px;
-  width: 100%;
-  padding: 6px 8px;
-  border: 0;
-  border-radius: 8px;
+  padding: 6px 10px;
+  border: 1px solid var(--cp-line);
+  border-radius: 999px;
   background: transparent;
   color: var(--cp-ink-soft);
   font-size: var(--cp-fs-caption);
   font-weight: 700;
+  white-space: nowrap;
 }
 
-.recipe-page-rail__auto-organize:hover {
-  background: var(--cp-page);
+.recipe-organize-bar__auto:hover {
+  border-color: var(--cp-line-strong);
+  background: var(--cp-card);
   color: var(--cp-ink);
 }
 
-.recipe-page-rail__auto-organize:focus-visible {
+.recipe-organize-bar__auto:focus-visible {
   outline: var(--cp-focus-ring);
   outline-offset: var(--cp-focus-ring-offset);
 }

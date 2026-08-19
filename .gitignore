@@ -27,3 +27,5 @@ tsconfig.tsbuildinfo
 export-check.pdf
 scratch-export.pdf
 *-export.pdf
+.vercel
+.env*

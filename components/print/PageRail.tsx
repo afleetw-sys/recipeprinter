@@ -218,6 +218,20 @@ export function PageRail(props: PageRailProps) {
                 <span className="recipe-organize-bar__title">Organize recipes</span>
               </div>
               <div className="recipe-organize-bar__actions">
+                {/* Auto-organize belongs to the organizer, not the rail. Out
+                    there it sat next to "Organize recipes" — a second, similar
+                    label competing with the thing that opens this — and offered
+                    to rearrange a book the cook could not see being rearranged.
+                    In here the result is right in front of them, and so is the
+                    Undo. */}
+                <button
+                  type="button"
+                  className="recipe-organize-bar__auto"
+                  onClick={canUndoOrganization ? undoCookbookOrganization : suggestCookbookLayout}
+                >
+                  <RefreshIcon size={ICON_SIZE.sm} />
+                  <span>{canUndoOrganization ? "Undo organizing" : "Organize it for me"}</span>
+                </button>
                 <button
                   type="button"
                   className="btn btn-secondary btn-compact recipe-organize-bar__collapse"
@@ -707,24 +721,7 @@ export function PageRail(props: PageRailProps) {
                 <ChevronRightIcon size={ICON_SIZE.sm} />
               </button>
             )}
-            {/* Auto-organize: sorts the book into sections and orders it. It
-                only ever existed on the mobile structure sheet, so on desktop
-                there was no way to reach it at all.
 
-                One button, two states. Undo used to live solely in the toast
-                that announced the change, so it was gone within seconds — for
-                an action that rewrites every section and the order of every
-                recipe, the way back has to outlive the notification. */}
-            {projectMeta.meta.cookbookMode && (
-              <button
-                type="button"
-                className="recipe-page-rail__auto-organize"
-                onClick={canUndoOrganization ? undoCookbookOrganization : suggestCookbookLayout}
-              >
-                <RefreshIcon size={ICON_SIZE.sm} />
-                <span>{canUndoOrganization ? "Undo organizing" : "Organize it for me"}</span>
-              </button>
-            )}
           </div>
         </nav>
   );
