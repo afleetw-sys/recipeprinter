@@ -13,6 +13,13 @@ export interface CookbookOrganizationDraft {
   sections: CookbookOrganizationSection[];
 }
 
+// The classifier's catch-all CATEGORY key stays "Uncategorized" (internal), but
+// its printed CHAPTER title should read like something a cook wants in a
+// keepsake book — not a dev label — since the conservative classifier sends a
+// lot of recipes here.
+const CATCH_ALL_CATEGORY = "Uncategorized";
+const CATCH_ALL_TITLE = "More Recipes";
+
 export function suggestCookbookOrganization(items: QueueItem[]): CookbookOrganizationDraft {
   const groups = new Map<string, string[]>();
   for (const item of items) {
@@ -21,15 +28,15 @@ export function suggestCookbookOrganization(items: QueueItem[]): CookbookOrganiz
     groups.set(category, [...(groups.get(category) ?? []), item.id]);
   }
 
-  const ordered = [...COOKBOOK_CATEGORIES, "Uncategorized"] as const;
+  const ordered = [...COOKBOOK_CATEGORIES, CATCH_ALL_CATEGORY] as const;
   return {
     sections: ordered
-      .filter((title) => (groups.get(title)?.length ?? 0) > 0)
-      .map((title) => ({
-        id: `suggested-${title.toLocaleLowerCase().replace(/[^a-z0-9]+/g, "-")}`,
-        title,
-        showOpener: title !== "Uncategorized",
-        itemIds: groups.get(title) ?? [],
+      .filter((category) => (groups.get(category)?.length ?? 0) > 0)
+      .map((category) => ({
+        id: `suggested-${category.toLocaleLowerCase().replace(/[^a-z0-9]+/g, "-")}`,
+        title: category === CATCH_ALL_CATEGORY ? CATCH_ALL_TITLE : category,
+        showOpener: true,
+        itemIds: groups.get(category) ?? [],
       })),
   };
 }
@@ -45,7 +52,7 @@ export function organizationSectionsForApply(
   const sections = draft.sections.map((section) => ({
     id: section.id,
     title: section.title.trim() || "Untitled section",
-    showOpener: Boolean(section.showOpener),
+    showOpener: true,
     itemIds: section.itemIds.filter((id) => {
       if (!valid.has(id) || used.has(id)) return false;
       used.add(id);
@@ -54,13 +61,13 @@ export function organizationSectionsForApply(
   }));
   const missing = currentItemIds.filter((id) => !used.has(id));
   if (missing.length > 0) {
-    const uncategorized = sections.find((section) => section.title === "Uncategorized");
-    if (uncategorized) uncategorized.itemIds.push(...missing);
+    const catchAll = sections.find((section) => section.title === CATCH_ALL_TITLE);
+    if (catchAll) catchAll.itemIds.push(...missing);
     else {
       sections.push({
         id: "suggested-uncategorized",
-        title: "Uncategorized",
-        showOpener: false,
+        title: CATCH_ALL_TITLE,
+        showOpener: true,
         itemIds: missing,
       });
     }
@@ -68,18 +75,3 @@ export function organizationSectionsForApply(
   return sections.filter((section) => section.itemIds.length > 0);
 }
 
-export function moveOrganizationItem(
-  draft: CookbookOrganizationDraft,
-  itemId: string,
-  targetSectionId: string,
-): CookbookOrganizationDraft {
-  return {
-    sections: draft.sections.map((section) => ({
-      ...section,
-      itemIds:
-        section.id === targetSectionId
-          ? [...section.itemIds.filter((id) => id !== itemId), itemId]
-          : section.itemIds.filter((id) => id !== itemId),
-    })),
-  };
-}

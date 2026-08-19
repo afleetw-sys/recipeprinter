@@ -1,26 +1,30 @@
 "use client";
 
 import { Dialog } from "@/components/Dialog";
-import { CookbookMockup } from "@/components/CookbookWelcomeDialog";
-import { CheckIcon, ICON_SIZE, PrintIcon, XIcon } from "@/components/icons";
+import { ICON_SIZE, PrintIcon, SpinnerIcon, XIcon } from "@/components/icons";
 import { COOKBOOK_PRESETS, PRINTERS } from "@/lib/cookbookPresets";
-import type { CookbookPresetId, CoverConfig } from "@/types/recipe";
+import type { CookbookPresetId } from "@/types/recipe";
 
 export function CookbookReadyDialog({
   open,
   justPurchased,
-  cover,
   onClose,
   onExport,
   onPrinterClick,
+  exportingPreset,
+  exportError,
 }: {
   open: boolean;
   justPurchased: boolean;
-  cover: CoverConfig;
   onClose: () => void;
   onExport: (presetId: CookbookPresetId) => void;
   onPrinterClick: (printer: string, url: string) => void;
+  /** The format currently rendering, if any — the export is a server round trip
+      that cold-starts a browser, so it is measured in seconds and has to say so. */
+  exportingPreset: CookbookPresetId | null;
+  exportError: string | null;
 }) {
+  const printers = Object.values(PRINTERS);
   return (
     <Dialog
       open={open}
@@ -34,55 +38,76 @@ export function CookbookReadyDialog({
       <button type="button" className="cookbook-ready__close icon-close-btn" aria-label="Close" onClick={onClose}>
         <XIcon size={ICON_SIZE.md} />
       </button>
-      <div className="cookbook-ready__hero">
-        <div className="cookbook-ready__mockups">
-          <CookbookMockup cover={cover} compact />
-          <div className="cookbook-ready__spread" aria-hidden>
-            <div><span>Contents</span><i /></div>
-            <div><strong>{cover.title || "My Cookbook"}</strong><i /><i /><i /></div>
-          </div>
-        </div>
-        <div>
-          <span className="cookbook-ready__eyebrow">{justPurchased ? "Beautifully done" : "Ready to print again"}</span>
-          <h2 id="cookbook-ready-title">Your cookbook is ready.</h2>
-          <p>It&apos;s permanently unlocked, every format is included, and you can export again after future edits.</p>
-          <div className="cookbook-ready__assurances">
-            {["This cookbook is yours", "All print formats included", "Re-export anytime"].map((item) => (
-              <span key={item}><CheckIcon size={ICON_SIZE.xs} />{item}</span>
-            ))}
-          </div>
-        </div>
+
+      <div className="cookbook-ready__head">
+        <h2 id="cookbook-ready-title">{justPurchased ? "Your cookbook is ready 🎉" : "Save your cookbook"}</h2>
+        <p>Choose a format. Every format is included, and you can export again anytime.</p>
       </div>
 
-      <section className="cookbook-ready__section">
-        <h3>Choose your finished format</h3>
-        <div className="cookbook-ready__formats">
-          {COOKBOOK_PRESETS.map((preset) => (
-            <button key={preset.id} type="button" className="cookbook-format-card" onClick={() => onExport(preset.id)}>
-              <span className="cookbook-format-card__paper" aria-hidden />
-              <span>
-                <strong>{preset.productName}</strong>
-                <small>{preset.trimLabel} · {preset.bestFor}</small>
-              </span>
-              <PrintIcon size={ICON_SIZE.md} />
-            </button>
-          ))}
-        </div>
-      </section>
+      {/* The "choose Save as PDF, and don't send it to a printer" note used to
+          live here. It existed only because `window.print()` handed the
+          destination to the browser and no page can preselect it — so the
+          correctness of a paid export rested on someone reading a paragraph.
+          The file is now rendered server-side and downloaded, so there is no
+          destination to choose and nothing to warn about. */}
+      {exportError && (
+        <p className="cookbook-ready__error" role="alert">
+          {exportError}
+        </p>
+      )}
 
-      <section className="cookbook-ready__section">
-        <h3>Bring it to life</h3>
-        <div className="cookbook-ready__recommendations">
-          <div><strong>Print at home</strong><span>Best for spiral binding and everyday kitchen copies.</span></div>
-          <div><strong>Local print shop</strong><span>Ask for double-sided color printing with sturdy covers.</span></div>
-          {Object.values(PRINTERS).map((printer) => (
-            <button type="button" key={printer.id} onClick={() => onPrinterClick(printer.id, printer.url)}>
-              <strong>{printer.name}</strong>
-              <span>{printer.note}</span>
+      <div className="cookbook-ready__formats">
+        {COOKBOOK_PRESETS.map((preset) => (
+          <button
+            key={preset.id}
+            type="button"
+            className="cookbook-format-card"
+            disabled={exportingPreset !== null}
+            onClick={() => onExport(preset.id)}
+          >
+            <span className="cookbook-format-card__text">
+              <strong>{preset.productName}</strong>
+              <small>{preset.trimLabel}</small>
+            </span>
+            <span className="cookbook-format-card__cta">
+              {exportingPreset === preset.id ? (
+                <>
+                  <SpinnerIcon size={ICON_SIZE.sm} />
+                  Preparing…
+                </>
+              ) : (
+                <>
+                  <PrintIcon size={ICON_SIZE.sm} />
+                  Save PDF
+                </>
+              )}
+            </span>
+          </button>
+        ))}
+      </div>
+
+      {/* No integration with the print shops — the export is just a PDF. So the
+          honest instruction is: save it first, then upload that file yourself.
+          Worth stating that home printing IS fine from the saved file: the PDF
+          has its geometry baked in, so a printer can only scale it uniformly —
+          a slightly inset page, never the broken one it produces from the web
+          page. That's the whole reason this flow is PDF-first. */}
+      <p className="cookbook-ready__note">
+        Once it’s saved you can print it at home, or upload it to a
+        service like{" "}
+        {printers.map((printer, index) => (
+          <span key={printer.id}>
+            <button
+              type="button"
+              className="cookbook-ready__printer-link"
+              onClick={() => onPrinterClick(printer.id, printer.url)}
+            >
+              {printer.name}
             </button>
-          ))}
-        </div>
-      </section>
+            {index < printers.length - 1 ? (index === printers.length - 2 ? ", or " : ", ") : "."}
+          </span>
+        ))}
+      </p>
     </Dialog>
   );
 }

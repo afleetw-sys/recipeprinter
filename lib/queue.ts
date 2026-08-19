@@ -3,17 +3,23 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import type { ImportMethod, QueueItem, Recipe } from "@/types/recipe";
 import { track, truncateReason } from "@/lib/analytics";
-import { ImportError, parseImages, parseText, parseUrl } from "@/lib/parser";
+import { ImportError, parseImages, parseText, parseUrlAll } from "@/lib/parser";
 import { captureFailedImportImages, captureFailedImportText } from "@/lib/failedImportCapture";
 import { normalizeImportURL } from "@/lib/cookpilot";
 import { hostnameOf as rawHostnameOf } from "@/lib/url";
 import { uid } from "@/lib/ids";
-import { sessionStore } from "@/lib/storage";
+import { localStore, sessionStore } from "@/lib/storage";
 
 // The print queue is session-based for the MVP, no accounts, no saved library.
 // It survives navigation to /print (same tab) via sessionStorage.
 export const QUEUE_STORAGE_KEY = "recipeprinter:queue:v1";
 const CURRENT_PRINT_JOB_STORAGE_KEY = "recipeprinter:print-job:current:v1";
+// Durable backup of the session queue. sessionStorage is wiped when the tab
+// closes; this localStorage mirror lets a reopened tab restore the in-progress
+// working set so a cook never loses an unsaved book/cards by closing the tab.
+// The session copy stays authoritative per-tab (two open tabs keep independent
+// live queues) — this mirror is only read to reseed a fresh tab that has none.
+const QUEUE_RECOVERY_STORAGE_KEY = "recipeprinter:queue:recovery:v1";
 
 interface PrintJob {
   ids: string[];
@@ -51,7 +57,15 @@ function printableQueue(items: QueueItem[]): QueueItem[] {
 }
 
 export function readQueue(): QueueItem[] {
-  const raw = sessionStore.get(QUEUE_STORAGE_KEY);
+  // The per-tab session copy is authoritative. Only when it's absent (a fresh
+  // tab, e.g. reopened after close) do we fall back to the durable localStorage
+  // mirror and reseed this tab's session from it.
+  let raw = sessionStore.get(QUEUE_STORAGE_KEY);
+  let recovered = false;
+  if (raw === null) {
+    raw = localStore.get(QUEUE_RECOVERY_STORAGE_KEY);
+    recovered = raw !== null;
+  }
   if (raw === null) return [];
   let parsed: unknown;
   try {
@@ -60,12 +74,12 @@ export function readQueue(): QueueItem[] {
     return [];
   }
   if (!Array.isArray(parsed)) return [];
-  // Re-persist only when sanitizing actually changed something, so a normal
-  // read isn't a write. Compared against the raw string rather than the parsed
-  // value because that's what's already in storage.
   const sanitized = printableQueue(parsed as QueueItem[]);
-  const sanitizedRaw = JSON.stringify(sanitized);
-  if (sanitizedRaw !== raw) writeSerializedQueue(sanitizedRaw);
+  // A read stays pure: it never rewrites storage, even when sanitizing
+  // normalized a field — the next `commit` persists that. The one exception is
+  // recovery: a fresh tab reseeding from the durable mirror writes the set into
+  // this tab's own session (hydration itself doesn't persist).
+  if (recovered) writeSerializedQueue(JSON.stringify(sanitized));
   return sanitized;
 }
 
@@ -92,6 +106,10 @@ function writeSerializedQueue(serialized: string) {
   // A failed write is survivable: the queue stays correct in memory for this
   // page, it just won't survive a navigation.
   sessionStore.set(QUEUE_STORAGE_KEY, serialized);
+  // Mirror to the durable backup so the working set survives a tab close.
+  // Best-effort like the session write — if localStorage is unavailable
+  // (private mode/quota) there's simply no cross-close recovery.
+  localStore.set(QUEUE_RECOVERY_STORAGE_KEY, serialized);
 }
 
 /**
@@ -118,22 +136,6 @@ export function seedSharedQueueItem(recipe: Recipe, source: string): string {
   return id;
 }
 
-export function updateQueuedRecipe(id: string, recipe: Recipe): QueueItem[] {
-  const nextRecipe = printableRecipe(recipe);
-  const next = readQueue().map((item) =>
-    item.id === id
-      ? {
-          ...item,
-          recipe: nextRecipe,
-          title: nextRecipe.title || "Untitled recipe",
-        }
-      : item,
-  );
-  const serialized = serializeQueue(next);
-  if (serialized) writeSerializedQueue(serialized);
-  return next;
-}
-
 function hostnameOf(url: string): string {
   return rawHostnameOf(normalizeImportURL(url)) ?? url;
 }
@@ -158,6 +160,12 @@ function canonicalUrl(rawUrl: string): string | null {
 export function useQueue() {
   const [items, setItems] = useState<QueueItem[]>([]);
   const [focusedItemId, setFocusedItemId] = useState<string | null>(null);
+  // Bumped on every `focusItem` call — even when the same id is focused twice in
+  // a row (re-importing the same URL). Consumers key their "already added"
+  // scroll-and-shake cue off this so a repeat duplicate re-triggers the motion,
+  // which a plain `focusedItemId` (unchanged value) could not.
+  const [focusNonce, setFocusNonce] = useState(0);
+  const focusNonceRef = useRef(0);
   const [hydrated, setHydrated] = useState(false);
   const [hydratedWithItems, setHydratedWithItems] = useState(false);
   const itemsRef = useRef<QueueItem[]>([]);
@@ -191,8 +199,26 @@ export function useQueue() {
       const existing = itemsRef.current.find((it) => it.id === id);
       if (!existing) return;
       setFocusedItemId(id);
+      focusNonceRef.current += 1;
+      setFocusNonce(focusNonceRef.current);
     },
     [],
+  );
+
+  // Live-edit a queued recipe's content. Drives `commit`, so the hook's React
+  // `items` — the single content owner the print deck derives from — updates in
+  // step with storage. No separate page copy to keep in sync.
+  const updateRecipe = useCallback(
+    (id: string, recipe: Recipe) => {
+      const nextRecipe = printableRecipe(recipe);
+      const next = itemsRef.current.map((it) =>
+        it.id === id
+          ? { ...it, recipe: nextRecipe, title: nextRecipe.title || "Untitled recipe" }
+          : it,
+      );
+      commit(next);
+    },
+    [commit],
   );
 
   const patch = useCallback(
@@ -224,7 +250,10 @@ export function useQueue() {
     async (
       id: string,
       origin: { source: ImportMethod; hostname?: string },
-      work: () => Promise<Recipe>,
+      // A URL parse can yield several recipes (a "roundup" page); image/text parses
+      // yield one. A multi result lands the first recipe on this item and blooms the
+      // rest into their own ready items — see below.
+      work: () => Promise<Recipe | Recipe[]>,
       // The exact input handed to the parser, stashed for debugging if the parse
       // fails (see lib/failedImportCapture.ts): the compressed data-URLs for an
       // image import, or the pasted text / URL for the others.
@@ -233,9 +262,42 @@ export function useQueue() {
       patch(id, { status: "parsing", error: undefined });
       track("recipe_import_started", origin);
       try {
-        const recipe = await work();
-        patch(id, { status: "ready", recipe, title: recipe.title || "Untitled recipe" });
+        const result = await work();
+        const recipes = Array.isArray(result) ? result : [result];
+        // parseUrlAll/parseImages/parseText throw rather than resolve empty, so this
+        // is a defensive guard, not an expected branch.
+        if (recipes.length === 0) {
+          throw new ImportError(
+            "We couldn't find a complete recipe on that page. Try another link or paste the recipe text instead.",
+            "no_recipe",
+          );
+        }
+        const [first, ...rest] = recipes;
+        patch(id, { status: "ready", recipe: first, title: first.title || "Untitled recipe" });
         track("recipe_imported", origin);
+        if (rest.length > 0) {
+          // A roundup URL: keep the first recipe on this item and add the rest as
+          // their own ready items, mirroring this item's URL context so retry/dedupe
+          // still key off the same source. Count each as its own import.
+          const base = itemsRef.current.find((it) => it.id === id);
+          const extras: QueueItem[] = rest.map((recipe) => ({
+            id: uid(),
+            method: base?.method ?? "url",
+            source: base?.source ?? origin.hostname ?? "",
+            originalUrl: base?.originalUrl,
+            status: "ready",
+            title: recipe.title || "Untitled recipe",
+            recipe,
+            addedAt: Date.now(),
+          }));
+          commit([...itemsRef.current, ...extras]);
+          rest.forEach(() => track("recipe_imported", origin));
+          track("multi_recipe_found", {
+            source: origin.source,
+            hostname: origin.hostname,
+            count: recipes.length,
+          });
+        }
       } catch (err) {
         patch(id, {
           status: "error",
@@ -262,7 +324,7 @@ export function useQueue() {
         });
       }
     },
-    [patch],
+    [patch, commit],
   );
 
   const addUrl = useCallback(
@@ -281,21 +343,24 @@ export function useQueue() {
       }
 
       const normalizedUrl = normalizeImportURL(url);
+      // Compute the hostname once — hostnameOf re-normalizes and re-parses its
+      // input, so the source/title/analytics all reuse this instead of 3 calls.
+      const host = hostnameOf(normalizedUrl);
       const id = uid();
       const item: QueueItem = {
         id,
         method: "url",
-        source: hostnameOf(normalizedUrl),
+        source: host,
         originalUrl: normalizedUrl,
         status: "parsing",
-        title: hostnameOf(normalizedUrl),
+        title: host,
         addedAt: Date.now(),
       };
       commit([...itemsRef.current, item]);
       void runParse(
         id,
-        { source: "url", hostname: hostnameOf(normalizedUrl) },
-        () => parseUrl(normalizedUrl),
+        { source: "url", hostname: host },
+        () => parseUrlAll(normalizedUrl),
         { failedText: normalizedUrl },
       );
     },
@@ -373,7 +438,7 @@ export function useQueue() {
       if (!item) return;
       if (item.method === "url" && item.originalUrl) {
         const url = item.originalUrl;
-        void runParse(id, { source: "url", hostname: hostnameOf(url) }, () => parseUrl(url), {
+        void runParse(id, { source: "url", hostname: hostnameOf(url) }, () => parseUrlAll(url), {
           failedText: url,
         });
       } else if (item.method === "text") {
@@ -411,6 +476,7 @@ export function useQueue() {
   return {
     items,
     focusedItemId,
+    focusNonce,
     hydrated,
     hydratedWithItems,
     addUrl,
@@ -423,5 +489,6 @@ export function useQueue() {
     clear,
     replaceAll,
     focusItem,
+    updateRecipe,
   };
 }

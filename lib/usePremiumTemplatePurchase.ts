@@ -11,7 +11,6 @@ import {
   hasTemplateEntitlement,
   identifyRecipePrinterCustomer,
   loadRecipePrinterCustomerInfo,
-  loadRecipePrinterTemplatePrices,
   purchaseRecipePrinterTemplate,
   recipePrinterCustomerId,
   syncRecipePrinterCustomerAttributes,
@@ -61,9 +60,7 @@ export function usePremiumTemplatePurchase({
 }: UsePremiumTemplatePurchaseOptions) {
   const [revenueCatUserId, setRevenueCatUserId] = useState<string | null>(null);
   const [customerInfo, setCustomerInfo] = useState<CustomerInfo | null>(null);
-  const [showUnlockDialog, setShowUnlockDialog] = useState(false);
   const [purchaseBusy, setPurchaseBusy] = useState(false);
-  const [templatePrices, setTemplatePrices] = useState<Partial<Record<PremiumRecipePrintTemplate, string>>>({});
   const [claimBusy, setClaimBusy] = useState(false);
   const [freeTemplateBannerDismissed, setFreeTemplateBannerDismissed] = useState(false);
   const linkedCookPilotUidRef = useRef<string | null>(null);
@@ -119,7 +116,6 @@ export function usePremiumTemplatePurchase({
     try {
       const latestInfo = customerInfo ?? (await refreshCustomerInfo(revenueCatUserId));
       if (hasTemplateEntitlement(latestInfo, premiumTemplate)) {
-        setShowUnlockDialog(false);
         printNow();
         return;
       }
@@ -145,7 +141,6 @@ export function usePremiumTemplatePurchase({
         return;
       }
 
-      setShowUnlockDialog(false);
       onFreshPurchase();
       printNow();
     } catch (error) {
@@ -177,7 +172,6 @@ export function usePremiumTemplatePurchase({
 
       track("free_template_claimed", { template: premiumTemplate });
 
-      setShowUnlockDialog(false);
       printNow();
     } catch (error) {
       showToast(friendlyClaimError(error));
@@ -255,25 +249,11 @@ export function usePremiumTemplatePurchase({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [revenueCatUserId]);
 
-  useEffect(() => {
-    // Prices come from RevenueCat offerings, and reading offerings means
-    // configuring the SDK — which mints the customer record. So this waits
-    // for the unlock dialog to actually open: the first unambiguous signal of
-    // purchase intent, and the only place a price is ever rendered.
-    if (!revenueCatUserId || !showUnlockDialog) return;
-    loadRecipePrinterTemplatePrices(revenueCatUserId)
-      .then(setTemplatePrices)
-      .catch(() => setTemplatePrices({}));
-  }, [revenueCatUserId, showUnlockDialog]);
-
   return {
     revenueCatUserId,
     customerInfo,
-    showUnlockDialog,
-    setShowUnlockDialog,
     purchaseBusy,
     claimBusy,
-    templatePrices,
     freeTemplateBannerDismissed,
     setFreeTemplateBannerDismissed,
     selectedPremiumTemplate,

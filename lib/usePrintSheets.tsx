@@ -11,6 +11,7 @@ import {
   type RecipeFace,
 } from "@/lib/recipeCardLayout";
 import type { PrintCardSize, RecipePrintTemplate } from "@/components/RecipeCardPrint";
+import { resolveSectionPhotoMode } from "@/lib/project";
 import { RecipeFaceMeasurer } from "@/components/RecipeFaceMeasurer";
 import type {
   CoverConfig,
@@ -26,11 +27,66 @@ import type {
 // precut sheet rather than sharing one with another card.
 const SLOTS_PER_SHEET = 1;
 
-// Measured faces are cached per (recipe, size) pair, not per recipe: a recipe
-// can be measured at `letter` (cookbook) and `card-6x4` for different jobs, and
-// the two must not clobber each other — see the `measuredFaces` note.
-function faceKey(id: string, size: PrintCardSize): string {
-  return `${id}::${size}`;
+// How many recipes may be measured concurrently. Each mounted `RecipeFaceMeasurer`
+// runs its own off-screen card tree and a settle loop that forces layout reads;
+// mounting all of a large cookbook's recipes at once floods the main thread with
+// hidden measurement DOM and (historically) starved React's passive-effect flush
+// so the probes never ran — the exact failure the harness documents and works
+// around with a sliding window. Only the first N unsettled recipes mount; each
+// drops out of the pool as it settles (its measured faces become non-null),
+// which pulls the next one in — the window advances itself with no cursor. Small
+// books (≤ N recipes) are unaffected. Mirrors the harness's `BATCH_SIZE`
+// rationale, sized down for a live page so the rest of the UI stays responsive
+// during a cold load rather than tuned purely for sweep throughput.
+const MEASURE_WINDOW_SIZE = 8;
+
+// Measured faces are addressed by EVERY input that changes a card's rendered
+// height, not just the recipe and size. This used to be `id::size` alone, with
+// the other inputs stored alongside the entry and compared on read — so a
+// mismatch threw the result away and the next measurement overwrote the same
+// slot. That made the cache exactly one configuration deep: switching theme, or
+// the Photos control, or the recipe link, re-measured the entire book, and
+// switching back re-measured it again rather than reading the result computed
+// seconds earlier. Folding the discriminators into the key means each
+// configuration keeps its own entry and a return trip is free.
+//
+// `cookbookMode` belongs here for a second reason: it genuinely changes the
+// card (the source link moves into the header and the footer is dropped, see
+// RecipeCardFace), so faces measured in card mode do not describe the same card
+// in book mode. The old comparison never checked it at all, so entering a
+// cookbook could reuse card-mode faces — a stale height feeding the layout,
+// which is the clipping class this whole system exists to prevent.
+function faceKey(
+  id: string,
+  size: PrintCardSize,
+  template: RecipePrintTemplate,
+  hasPhoto: boolean,
+  sourceUrlOn: boolean,
+  cookbookMode: boolean,
+): string {
+  return `${id}::${size}::${template}::${hasPhoto ? 1 : 0}::${sourceUrlOn ? 1 : 0}::${cookbookMode ? 1 : 0}`;
+}
+
+// Ceiling on retained measurements, evicted oldest-first. Entries are cheap —
+// each holds a recipe reference and arrays of references into that recipe's own
+// ingredient/step objects, not copies — and a real session visits a handful of
+// configurations, so this never binds in practice. It exists so a cache whose
+// keys are driven by user actions can't grow without limit across a long
+// editing session. An evicted entry simply re-measures, which is what would
+// have happened on every switch before this cache existed.
+const MAX_MEASURED_FACE_ENTRIES = 2000;
+
+function withMeasuredFace<T>(current: Record<string, T>, key: string, entry: T): Record<string, T> {
+  const next = { ...current, [key]: entry };
+  const keys = Object.keys(next);
+  if (keys.length <= MAX_MEASURED_FACE_ENTRIES) return next;
+  // Object key order is insertion order for string keys, so the head is the
+  // oldest. Re-inserting an existing key keeps its original position, which is
+  // fine here: what matters is bounding the map, not perfect recency.
+  for (const stale of keys.slice(0, keys.length - MAX_MEASURED_FACE_ENTRIES)) {
+    delete next[stale];
+  }
+  return next;
 }
 
 // One card-sized slot on a physical sheet: a recipe's front (and, once it's
@@ -69,6 +125,23 @@ export interface DividerSheetSlot {
   subtitle?: string;
   photoUrl?: string;
   intro?: string;
+}
+
+// The full-page photo (or curated grid) that FACES a section opener — the
+// section-level counterpart to an image-spread recipe's `ImageSheetSlot`.
+// Emitted right after its divider sheet; single-sided, carries a folio but shows
+// none, and pairs with the opener into one spread (see `assembleSpreads`).
+export interface SectionPhotoSheetSlot {
+  kind: "section-photo";
+  /** The section this photo page belongs to — shared with the divider slot's id
+      so the two group adjacently in the navigator. */
+  sectionId: string;
+  title: string;
+  mode: "full" | "grid";
+  /** `full` mode: the single full-bleed photo. */
+  photoUrl?: string;
+  /** `grid` mode: the curated collage photos (already resolved / auto-filled). */
+  gridImages?: string[];
 }
 
 export interface CoverSheetSlot {
@@ -114,6 +187,7 @@ export interface ImageSheetSlot {
 export type SheetSlot =
   | RecipeSheetSlot
   | DividerSheetSlot
+  | SectionPhotoSheetSlot
   | CoverSheetSlot
   | TocSheetSlot
   | ImageSheetSlot;
@@ -145,8 +219,9 @@ export interface PageSheet {
   runningHeader?: string;
   /** Per-recipe page layout (cookbook mode). `undefined`/`full` renders one
       card per sheet; `image` is a full-bleed facing photo page (image-spread),
-      which is single-sided (never gets a duplex back). */
-  layoutKind?: "image";
+      and `section-photo` is a section opener's facing full-page/grid photo —
+      both single-sided (never get a duplex back) and folio-consuming. */
+  layoutKind?: "image" | "section-photo";
 }
 
 // The unit the on-screen navigator (rail + deck) browses by: one face at a
@@ -154,7 +229,7 @@ export interface PageSheet {
 // recipe's continuation pages — that's what lets a recipe's later faces still
 // browse and flip independently on screen.
 export interface NavItem {
-  kind: "recipe" | "divider" | "cover" | "toc" | "image";
+  kind: "recipe" | "divider" | "cover" | "toc" | "image" | "section-photo";
   /** The underlying recipe/divider/cover id — named `recipeId` for recipes so
       existing lookups by id keep working unchanged. */
   recipeId: string;
@@ -177,9 +252,6 @@ interface UsePrintSheetsOptions {
   /** Optional dedication / front-matter page, placed after the front cover and
       before the table of contents. A cover-like page whose `blurb` is the text. */
   dedication?: CoverConfig;
-  /** Whether a named section gets its own divider page. Off (or a project
-      with no named sections) reproduces today's flat behavior exactly. */
-  sectionDividers?: boolean;
   /** Cookbook mode: emit a table-of-contents page after the cover, and page
       numbers + running headers on the body pages. */
   tableOfContents?: boolean;
@@ -221,7 +293,6 @@ export function usePrintSheets({
   cover,
   backCover,
   dedication,
-  sectionDividers,
   tableOfContents,
   bookTitle,
   cookbookMode,
@@ -271,27 +342,22 @@ export function usePrintSheets({
   // measurement hasn't settled yet (e.g. the instant it's added), so nothing
   // ever waits on it to render.
   //
-  // Keyed by `id::size`, not `id` alone, so a recipe measured for a `letter`
-  // cookbook and a `card-6x4` job can hold both without clobbering each other.
+  // Addressed by the full configuration (see `faceKey`), so a recipe measured
+  // for a `letter` cookbook, a `card-6x4` job, and each theme all coexist
+  // instead of taking turns in one slot.
   const [measuredFaces, setMeasuredFaces] = useState<
-    Record<string, { recipe: Recipe; cardSize: PrintCardSize; template: RecipePrintTemplate; hasPhoto: boolean; sourceUrlOn: boolean; pages: RecipeFace[] }>
+    Record<string, { recipe: Recipe; pages: RecipeFace[] }>
   >({});
 
   const measuredFacesFor = useCallback(
     (id: string, recipe: Recipe, hasPhoto: boolean, size: PrintCardSize): RecipeFace[] | null => {
-      const entry = measuredFaces[faceKey(id, size)];
-      if (
-        !entry ||
-        entry.recipe !== recipe ||
-        entry.template !== template ||
-        entry.hasPhoto !== hasPhoto ||
-        entry.sourceUrlOn !== sourceUrlOn
-      ) {
-        return null;
-      }
-      return entry.pages;
+      const entry = measuredFaces[faceKey(id, size, template, hasPhoto, sourceUrlOn, cookbookLayouts)];
+      // Recipe CONTENT is the one discriminator a string key can't carry: an
+      // inline edit keeps the same id, so a measurement of the pre-edit recipe
+      // has to be rejected on identity. Everything else is in the key.
+      return entry && entry.recipe === recipe ? entry.pages : null;
     },
-    [measuredFaces, sourceUrlOn, template],
+    [measuredFaces, sourceUrlOn, template, cookbookLayouts],
   );
 
   // Resolves each recipe's per-page layout: an explicit placement, else the
@@ -590,9 +656,9 @@ export function usePrintSheets({
     let queueIndexCursor = 0;
     let chapterNumber = 0;
     sections.forEach((section) => {
-      const showOpener = section.showOpener ?? Boolean(sectionDividers);
-      if (showOpener && section.title?.trim()) {
+      if (section.title?.trim()) {
         chapterNumber += 1;
+        const sectionPhotoMode = resolveSectionPhotoMode(section);
         out.push({
           id: `sheet-divider-${section.id}`,
           slots: [{
@@ -602,7 +668,9 @@ export function usePrintSheets({
             chapterNumber,
             showChapterNumber: Boolean(section.numberAsChapter),
             subtitle: section.subtitle,
-            photoUrl: section.photoUrl,
+            // Only In-card (`band`) belongs inside the opener. Full/grid art is
+            // rendered on its own facing sheet below, never duplicated here.
+            photoUrl: sectionPhotoMode === "band" ? section.photoUrl : undefined,
             intro: section.intro,
             recipeTitles: section.items
               .map((item) => item.recipe?.title?.trim() || item.title?.trim())
@@ -610,6 +678,42 @@ export function usePrintSheets({
           }],
           backGroupNeeded: false,
         });
+
+        // A `full`/`grid` opener gets a real facing photo page right after it —
+        // the section-level version of an image-spread recipe's photo page.
+        // `band`/`none` stay a single opener sheet. Skip the facing page when
+        // there's nothing to show yet (mode set but no photo picked) so we never
+        // print a blank.
+        if (cookbookLayouts) {
+          const photoMode = sectionPhotoMode;
+          const gridImages =
+            photoMode === "grid"
+              ? (section.gridImages?.length
+                  ? section.gridImages
+                  : section.items
+                      .map((item) => item.recipe?.image)
+                      .filter((url): url is string => Boolean(url))
+                      .slice(0, 9))
+              : [];
+          const hasFacing =
+            (photoMode === "full" && Boolean(section.photoUrl)) ||
+            (photoMode === "grid" && gridImages.length > 0);
+          if (hasFacing) {
+            out.push({
+              id: `sheet-section-photo-${section.id}`,
+              slots: [{
+                kind: "section-photo",
+                sectionId: section.id,
+                title: section.title,
+                mode: photoMode === "grid" ? "grid" : "full",
+                photoUrl: section.photoUrl,
+                gridImages: photoMode === "grid" ? gridImages : undefined,
+              }],
+              backGroupNeeded: false,
+              layoutKind: "section-photo",
+            });
+          }
+        }
       }
       out.push(
         ...(cookbookLayouts
@@ -638,6 +742,14 @@ export function usePrintSheets({
       let pageNo = 0;
       let currentChapter = "";
       for (const sheet of out) {
+        // A full-page (image-spread) photo, or a section opener's facing
+        // full-page/grid photo, is a real printed page, so it must consume a page
+        // number even though it shows no folio itself — otherwise every recipe
+        // after it, and its TOC entry, drifts below the true page.
+        if (sheet.layoutKind === "image" || sheet.layoutKind === "section-photo") {
+          pageNo += 1;
+          continue;
+        }
         const dividerSlot = sheet.slots.find((slot) => slot?.kind === "divider") as
           | DividerSheetSlot
           | undefined;
@@ -700,7 +812,7 @@ export function usePrintSheets({
     }
 
     return out;
-  }, [sections, allItems, cover, backCover, dedication, sectionDividers, tableOfContents, bookTitle, cardSize, continueOnBack, photoOnFor, sourceUrlOn, template, measuredFacesFor, cookbookLayouts, cookbookResolution, itemPlacements]);
+  }, [sections, allItems, cover, backCover, dedication, tableOfContents, bookTitle, cardSize, continueOnBack, photoOnFor, sourceUrlOn, template, measuredFacesFor, cookbookLayouts, cookbookResolution, itemPlacements]);
 
   // What the rail and deck actually browse: one face per item, in physical
   // sheet order, except that a recipe's own faces (front + any continuations)
@@ -778,6 +890,23 @@ export function usePrintSheets({
           const group = groups.get(key);
           if (group) group.push(navItem);
           else groups.set(key, [navItem]);
+        } else if (slot.kind === "section-photo") {
+          // A section opener's facing photo/grid page shares the opener's nav
+          // group so the two sit adjacent; the divider sheet is emitted first,
+          // so this lands just after it.
+          const navItem: NavItem = {
+            kind: "section-photo",
+            recipeId: slot.sectionId,
+            sheetIndex,
+            slotIndex,
+            label: slot.title,
+            pageLabel: "Photo",
+            flip: false,
+          };
+          const key = `divider:${slot.sectionId}`;
+          const group = groups.get(key);
+          if (group) group.push(navItem);
+          else groups.set(key, [navItem]);
         } else {
           const coverLabel =
             slot.side === "front" ? "Cover" : slot.side === "dedication" ? "Dedication" : "Back cover";
@@ -805,6 +934,7 @@ export function usePrintSheets({
   const spreads = useMemo<DeckSpread[]>(() => {
     if (!cookbookLayouts) return [];
     const kinds: BookPageKind[] = sheets.map((sheet) => {
+      if (sheet.layoutKind === "section-photo") return "section-photo";
       if (sheet.layoutKind === "image") return "image-photo";
       const slot = sheet.slots.find((s): s is SheetSlot => s !== null);
       if (slot?.kind === "cover") {
@@ -844,6 +974,9 @@ export function usePrintSheets({
     <>
       {measuredRecipeItems
         .filter(({ id, recipe, hasPhoto, size }) => measuredFacesFor(id, recipe, hasPhoto, size) === null)
+        // Bound how many measure concurrently — the window advances itself as
+        // each settles out of the unsettled set above (see MEASURE_WINDOW_SIZE).
+        .slice(0, MEASURE_WINDOW_SIZE)
         .map(({ id, recipe, hasPhoto, size }) => (
           <RecipeFaceMeasurer
             key={`${id}-${size}-${template}-${hasPhoto}-${sourceUrlOn}-${cookbookLayouts ? "cb" : ""}`}
@@ -854,10 +987,13 @@ export function usePrintSheets({
             showSourceUrl={sourceUrlOn}
             cookbookMode={cookbookLayouts}
             onSettled={(pages) =>
-              setMeasuredFaces((current) => ({
-                ...current,
-                [faceKey(id, size)]: { recipe, cardSize: size, template, hasPhoto, sourceUrlOn, pages },
-              }))
+              setMeasuredFaces((current) =>
+                withMeasuredFace(
+                  current,
+                  faceKey(id, size, template, hasPhoto, sourceUrlOn, cookbookLayouts),
+                  { recipe, pages },
+                ),
+              )
             }
           />
         ))}

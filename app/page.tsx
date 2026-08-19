@@ -18,7 +18,7 @@ export default function Home() {
 
       <a
         href="#rp-main"
-        className="sr-only focus:not-sr-only focus:absolute focus:z-50 focus:top-3 focus:left-3 focus:rounded-lg focus:bg-card focus:px-cp-4 focus:py-cp-2 focus:shadow"
+        className="sr-only focus:not-sr-only focus:absolute focus:z-50 focus:top-3 focus:left-3 focus:rounded-lg focus:border focus:border-line-strong focus:bg-card focus:px-cp-4 focus:py-cp-2"
       >
         Skip to the recipe printer
       </a>
@@ -39,8 +39,10 @@ export default function Home() {
             </div>
           </div>
 
-          {/* The tool itself (interactive, client). */}
-          <PrinterWorkspace />
+          {/* The tool itself (interactive, client). As the capture → app
+              handoff target, it also finishes any import a visitor started on
+              an SEO landing page. */}
+          <PrinterWorkspace consumePendingImport />
         </div>
       </main>
 

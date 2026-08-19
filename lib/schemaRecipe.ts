@@ -44,12 +44,31 @@ function typeMatches(node: AnyRecord, expected: string): boolean {
   return false;
 }
 
-function findRecipeNode(value: unknown, seen = new WeakSet<object>()): AnyRecord | null {
+// How deep to look for a Recipe node before giving up.
+//
+// The walk below descends into every object value, and it is handed more than
+// tidy JSON-LD: `jsonDataBlocksFromHtml` also feeds it every
+// `<script type="application/json">` on the page, which on a modern recipe site
+// means the whole serialized app state (`__NEXT_DATA__` and friends, frequently
+// hundreds of KB). Without a bound, a page with no recipe in its structured data
+// costs a full traversal of all of it, per import, on the server.
+//
+// Schema.org nests a recipe a handful of levels at most, and the three paths
+// that legitimately go deeper (`@graph`, `mainEntity`, `mainEntityOfPage`,
+// `about`) are followed explicitly below rather than stumbled into. 8 is well
+// clear of any real markup while cutting off the runaway case. Mirrors the same
+// guard `collectImageCandidates` already applies in lib/recipeImages.ts.
+const MAX_RECIPE_NODE_DEPTH = 8;
+
+function findRecipeNode(value: unknown, seen = new WeakSet<object>(), depth = 0): AnyRecord | null {
+  if (depth > MAX_RECIPE_NODE_DEPTH) return null;
   const node = asRecord(value);
   if (!node) {
     if (Array.isArray(value)) {
       for (const item of value) {
-        const found = findRecipeNode(item, seen);
+        // An array is a container, not a nesting level — descending into a
+        // 200-element list must not burn 200 levels of the budget.
+        const found = findRecipeNode(item, seen, depth);
         if (found) return found;
       }
     }
@@ -64,19 +83,20 @@ function findRecipeNode(value: unknown, seen = new WeakSet<object>()): AnyRecord
   const graph = node["@graph"];
   if (Array.isArray(graph)) {
     for (const item of graph) {
-      const found = findRecipeNode(item, seen);
+      const found = findRecipeNode(item, seen, depth);
       if (found) return found;
     }
   }
 
   for (const key of ["mainEntity", "mainEntityOfPage", "about"]) {
-    const found = findRecipeNode(node[key], seen);
+    // The documented wrappers around a recipe, so they don't spend budget.
+    const found = findRecipeNode(node[key], seen, depth);
     if (found) return found;
   }
 
   for (const child of Object.values(node)) {
     if (!child || typeof child !== "object") continue;
-    const found = findRecipeNode(child, seen);
+    const found = findRecipeNode(child, seen, depth + 1);
     if (found) return found;
   }
 
@@ -224,6 +244,26 @@ export function jsonLdBlocksFromHtml(html: string): unknown[] {
   return blocks;
 }
 
+/**
+ * Whether a raw `application/json` block could possibly hold a recipe.
+ *
+ * Unlike a JSON-LD block, which exists to describe the page, these are whatever
+ * the site's framework serialized — `__NEXT_DATA__`, Nuxt payloads, Shopify
+ * state — routinely hundreds of KB of application state with nothing to do with
+ * food. Parsing and walking all of it to conclude "no recipe" is the common
+ * case, and it is paid per import on the server.
+ *
+ * `findRecipeNode` only ever matches a node whose `@type` lowercases to exactly
+ * "recipe", so those seven characters must appear literally in the source text
+ * of any block that could match. A case-insensitive substring test over a string
+ * already in memory costs a fraction of parsing it. Deliberately lenient — it
+ * looks for the bare word, not `"@type":"Recipe"`, so HTML-entity-encoded or
+ * oddly-whitespaced markup still passes through to the real parser.
+ */
+function mightContainRecipe(raw: string): boolean {
+  return /recipe/i.test(raw);
+}
+
 export function jsonDataBlocksFromHtml(html: string): unknown[] {
   const blocks: unknown[] = [];
   const scriptPattern =
@@ -232,7 +272,7 @@ export function jsonDataBlocksFromHtml(html: string): unknown[] {
   let match = scriptPattern.exec(html);
   while (match) {
     const raw = match[1]?.trim();
-    if (raw) {
+    if (raw && mightContainRecipe(raw)) {
       try {
         blocks.push(JSON.parse(raw));
       } catch {

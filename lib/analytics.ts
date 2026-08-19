@@ -22,6 +22,9 @@ type PurchasedProduct = "premium_template" | "cookbook";
  * photo parser find nothing" is a chart instead of a session-replay hunt.
  *   - blocked / not_found: the source site refused us or 404'd (URL only).
  *   - no_recipe: we reached the parser and it found no recipe in the input.
+ *   - rate_limited: the caller's hourly parse quota was reached (waiting fixes
+ *     it) — kept distinct from no_recipe so a quota wall isn't miscounted as
+ *     "the parser found nothing".
  *   - no_files: the import was submitted with nothing usable selected — the
  *     "Choose at least one photo" dead-end, tracked so that class of bug is a
  *     number instead of a session replay.
@@ -35,6 +38,7 @@ export type ImportFailureCode =
   | "blocked"
   | "not_found"
   | "no_recipe"
+  | "rate_limited"
   | "no_files"
   | "decode_failed"
   | "too_large"
@@ -79,6 +83,13 @@ type EventProps = {
      */
     debugPath?: string;
   };
+  /**
+   * A single URL turned out to be a "roundup" and yielded more than one recipe
+   * (RecipePrinter multi-recipe import) — all of which were added. `count` is how
+   * many recipes the page produced. Fires once per such URL, alongside the
+   * per-recipe `recipe_imported` events.
+   */
+  multi_recipe_found: { source: ImportMethod; hostname?: string; count: number };
 
   // ---- Printing --------------------------------------------------------
   // Card size, photo and duplex are the axes the clipping bug lives on, so
@@ -104,23 +115,16 @@ type EventProps = {
     cardSize: PrintCardSize;
     cookbookPreset?: CookbookPresetId;
   };
-  /**
-   * Card content overflowed its printable box — the recurring clip/reflow
-   * bug, instrumented so it's a rate rather than a hunch.
-   */
-  card_layout_overflow: {
-    template: RecipePrintTemplate;
-    cardSize: PrintCardSize;
-    showPhoto: boolean;
-    overflowPx: number;
-  };
-
   /** Which card designs people actually reach for. */
   template_selected: { template: RecipePrintTemplate; premium: boolean };
 
   // ---- Money -----------------------------------------------------------
-  /** The unlock dialog was shown — the paywall impression the funnel needs. */
-  paywall_shown: { product: PurchasedProduct; template?: RecipePrintTemplate };
+  // No paywall-impression event on purpose: there's no interstitial paywall
+  // dialog anymore — a click on Unlock/Export goes straight to RevenueCat
+  // checkout. So the price impression IS `purchase_started` and the "saw the
+  // price and backed out" signal is `purchase_cancelled`. (The old
+  // `paywall_shown`/`paywall_dismissed` declarations were unfireable dead type
+  // surface once the dialog was removed — see lib/usePremiumTemplatePurchase.ts.)
   purchase_started: { product: PurchasedProduct; template?: RecipePrintTemplate };
   purchase_completed: { product: PurchasedProduct; template?: RecipePrintTemplate };
   purchase_cancelled: { product: PurchasedProduct; template?: RecipePrintTemplate };
@@ -134,20 +138,39 @@ type EventProps = {
   cookbook_print_options_shown: { preset: CookbookPresetId };
   /** A recommended print-shop link was opened from the export screen. */
   cookbook_printer_clicked: { printer: string; preset?: CookbookPresetId };
-  cookbook_welcome_shown: {};
-  cookbook_workspace_entered: {};
-  cookbook_onboarding_dismissed: {};
+  /** A signed-out cookbook owner clicked a "back up your purchase with a free
+      account" nudge. `source` distinguishes where the nudge lived (persistent
+      editor banner today) so we can see which surface converts guests. */
+  protect_prompt_clicked: { source: string };
+  /** The "make it a cookbook" offer (first place the price is shown). `price`
+      is the displayed per-cookbook price so the offer→dismiss funnel is
+      segmentable by price; `recipeCount` = how many recipes they had at the
+      time (does library size predict cookbook interest?). */
+  cookbook_welcome_shown: { price?: string; recipeCount: number };
+  /** Entered the cookbook workspace (built the book). `recipeCount` = library
+      size at build time, for segmenting who actually builds cookbooks;
+      `template` = the theme the book opened on (rotated premium default or a
+      theme the cook had already chosen), so we can see which cookbook themes
+      get used. */
+  cookbook_workspace_entered: { recipeCount: number; template: RecipePrintTemplate };
+  /** The offer dialog was dismissed without building — the price-reveal back-out
+      at the offer stage, before any cookbook is built. */
+  cookbook_onboarding_dismissed: { price?: string };
+  /** Switched back from a cookbook to plain recipe cards — how sticky the mode
+      is (build one, then bail?). `recipeCount` for consistent segmentation. */
+  cookbook_exited: { recipeCount: number };
   cookbook_cover_layout_selected: { layout: "photo" | "collage" | "typographic" };
   cookbook_front_matter_enabled: { kind: "dedication" | "introduction" };
-  cookbook_section_opener_toggled: { enabled: boolean };
+  cookbook_section_created_from_selection: { count: number };
   cookbook_ready_shown: { freshPurchase: boolean };
   relayout_started: {};
-  relayout_method_selected: { method: "suggested" };
-  relayout_previewed: { sectionCount: number; uncategorizedCount: number };
   relayout_applied: { sectionCount: number };
-  relayout_cancelled: {};
-  section_created: { source: "organize" };
-  section_opener_toggled: { enabled: boolean; source: "organize" };
+
+  /** Stale forks of a book that an old autosave bug saved into an account, then
+      silently deleted on the cook's next visit to Projects (lib/duplicateProjects).
+      Watched to know when the backlog is drained — a count that keeps arriving
+      from accounts already swept would mean something is still forking. */
+  duplicate_projects_cleaned: { count: number };
 
   feedback_submitted: { type: FeedbackType };
 };
@@ -189,6 +212,24 @@ function enqueue(capture: (client: PostHog) => void): void {
   if (!loadStarted) return; // analytics disabled this session (see initAnalytics)
   if (pending.length >= MAX_PENDING_EVENTS) pending.shift();
   pending.push(capture);
+}
+
+/**
+ * Reports a crash to PostHog error tracking (`$exception`) — deliberately
+ * OUTSIDE the typed product-event map above. This is a reliability signal, not
+ * a product event, so it doesn't belong in `EventProps`; keeping it separate is
+ * the distinction the print error boundary's comment draws. Best-effort and
+ * queued like everything else, a no-op when analytics never loaded (non-prod /
+ * opted out).
+ */
+export function captureException(
+  error: unknown,
+  context?: Record<string, string | number | boolean>,
+): void {
+  enqueue((client) => {
+    const err = error instanceof Error ? error : new Error(String(error));
+    client.captureException(err, context);
+  });
 }
 
 // Defer the import to browser idle time so 220KB of analytics never sits in

@@ -4,6 +4,7 @@ import {
   Fragment,
   memo,
   useEffect,
+  useId,
   useLayoutEffect,
   useMemo,
   useRef,
@@ -12,6 +13,7 @@ import {
   type ReactNode,
 } from "react";
 import { formatRecipeTime } from "@/lib/time";
+import { photoGridLayout } from "@/lib/photoGrid";
 import { ImagePicker } from "@/components/ImagePicker";
 import { useWideColumns } from "@/lib/measureHeights";
 import {
@@ -29,6 +31,7 @@ import {
   type RecipeFaces,
 } from "@/lib/recipeCardLayout";
 import type { CoverConfig, Recipe } from "@/types/recipe";
+import { markImageAvailable, markImageUnavailable } from "@/lib/imageFailure";
 
 // Layout-budget engine (the character-cost heuristics that decide what fits on
 // a front/back face) lives in lib/recipeCardLayout.ts — this file re-exports
@@ -157,46 +160,40 @@ const BBQ_EDGE_RIGHT: BbqIcon[] = [
   { src: "/images/bbq-sauce.svg", rotate: -8, flip: true, scale: 0.78, jitter: 0.02, gap: 1.4 },
 ];
 
-// Individually-drawn rects, not an SVG <pattern> tile (and before that, a
-// tiled CSS gradient) — both of those get pre-rasterized to a fixed-DPI
-// bitmap by Chrome's print/PDF pipeline even though they render crisply
-// on screen, which is what actually turned this checkerboard blocky in
-// exported PDFs. Plain vector geometry has no tile to rasterize, so it
-// stays crisp at any print DPI. 48 bands (0.24in each) comfortably covers
-// the tallest card (11in letter); any extra past the real card height is
-// clipped by the SVG's own viewport, which is sized to the card by CSS.
-const BISTRO_CHECKER_BANDS = 48;
-
-function BistroCheckerSpine() {
+// A tiled SVG `<pattern>` (not a background-image tile, which Chrome's print
+// pipeline pre-rasterizes to a low-DPI bitmap). Pure vector, so it stays crisp
+// at any print DPI — EXCEPT when an ancestor `transform: scale()` flattens it to
+// a bitmap first. The cookbook export scales the card to fill the sheet, so for
+// a SPIRAL book (a real ~1.03 scale) the in-card spine is rendered a second time
+// at the page level, OUTSIDE that transform, via `className="recipe-card-page__
+// spine"` (see the `.rp-coil` rules in print.css); hardcover's scale is exactly
+// 1.0 and its transform is dropped, so its in-card spine stays crisp as-is.
+//
+// The tile size is passed via the `check` prop and emitted as SVG attributes
+// (NOT CSS — browsers ignore width/height set via CSS on a `<pattern>`). The
+// pattern id is per-instance so the many spines in the deck don't collide.
+export function BistroCheckerSpine({
+  className = "recipe-card__checker",
+  check = "0.24in",
+}: { className?: string; check?: string } = {}) {
+  const patternId = useId();
+  // The tile size MUST live on SVG attributes, not CSS: browsers ignore
+  // `width`/`height` set via CSS on an SVG `<pattern>` element (they only work
+  // as presentation attributes), which silently collapses the pattern and
+  // paints nothing. Drive the geometry off the `check` prop so the tile can be
+  // sized per-instance (e.g. a wider tile on a spiral binding spine).
+  const half = `calc(${check} / 2)`;
   return (
-    <div className="recipe-card__checker" aria-hidden>
+    <div className={className} aria-hidden>
       <svg width="100%" height="100%" focusable="false">
-        {Array.from({ length: BISTRO_CHECKER_BANDS }, (_, band) => {
-          const y = band * 0.24;
-          return (
-            <Fragment key={band}>
-              <rect x="0" y={`${y}in`} width="0.24in" height="0.24in" fill="#f8fffe" />
-              <rect x="0.12in" y={`${y}in`} width="0.12in" height="0.12in" fill="#1479c9" />
-              <rect x="0" y={`${y + 0.12}in`} width="0.12in" height="0.12in" fill="#1479c9" />
-              <line
-                x1="0.12in"
-                y1={`${y}in`}
-                x2="0.24in"
-                y2={`${y + 0.12}in`}
-                stroke="#5fb0e6"
-                strokeWidth="0.003in"
-              />
-              <line
-                x1="0"
-                y1={`${y + 0.12}in`}
-                x2="0.12in"
-                y2={`${y + 0.24}in`}
-                stroke="#5fb0e6"
-                strokeWidth="0.003in"
-              />
-            </Fragment>
-          );
-        })}
+        <defs>
+          <pattern id={patternId} width={check} height={check} patternUnits="userSpaceOnUse">
+            <rect width={check} height={check} fill="#f8fffe" />
+            <rect x={half} width={half} height={half} fill="#1479c9" />
+            <rect y={half} width={half} height={half} fill="#1479c9" />
+          </pattern>
+        </defs>
+        <rect width="100%" height="100%" fill={`url(#${patternId})`} />
       </svg>
     </div>
   );
@@ -425,6 +422,7 @@ export const RecipeCardFace = memo(function RecipeCardFace({
   previewHidden = false,
   blank = false,
   showImage = false,
+  photoOnFacingPage = false,
   showSourceUrl = false,
   continued = false,
   contentScale,
@@ -443,6 +441,10 @@ export const RecipeCardFace = memo(function RecipeCardFace({
   previewHidden?: boolean;
   blank?: boolean;
   showImage?: boolean;
+  /** This recipe's photo fills its own facing page (cookbook image-spread), so
+      the card must NOT offer an in-card "Add photo" — the photo (and its
+      "Change photo" control) live on the image page. */
+  photoOnFacingPage?: boolean;
   showSourceUrl?: boolean;
   continued?: boolean;
   /** Shrink-to-fit factor for this face's content — see `RecipeFace.contentScale`. */
@@ -491,11 +493,7 @@ export const RecipeCardFace = memo(function RecipeCardFace({
   // The photo only rides along on the front face (where the header lives). If
   // the source image 404s or is hotlink-blocked we drop it rather than print a
   // broken-image box.
-  const [imageFailed, setImageFailed] = useState(false);
-  useEffect(() => {
-    setImageFailed(false);
-  }, [recipe.image]);
-  const showPhoto = showHeader && !imageFailed && (showImage && Boolean(recipe.image));
+  const showPhoto = showHeader && (showImage && Boolean(recipe.image));
 
   // Shrink-to-fit for content pagination can't rescue (see
   // `RecipeFace.contentScale`). Laid out at `1 / scale` of the normal width and
@@ -677,11 +675,9 @@ export const RecipeCardFace = memo(function RecipeCardFace({
     inlineEdit?.onInsertStep(index);
   }
 
-  // Renders the click target that inserts a new blank ingredient/step.
-  // `variant: "hover"` sits absolutely inside the preceding line and only
-  // shows on hover (so it never affects layout when idle); `"empty"` is the
-  // permanent one shown in place of a section that has nothing in it yet.
-  function addLine(kind: "ingredient" | "step", index: number, variant: "hover" | "empty" = "hover") {
+  // The between-row action appears only after its row has hover/focus. This
+  // preserves exact insertion without making the whole gap a click target.
+  function addLine(kind: "ingredient" | "step", index: number, variant: "between" | "empty" = "between") {
     if (!canEdit || !inlineEdit) return null;
     const label = kind === "ingredient" ? "Add ingredient" : "Add step";
     return (
@@ -697,7 +693,7 @@ export const RecipeCardFace = memo(function RecipeCardFace({
           else insertStepAt(index);
         }}
       >
-        <span className="recipe-card__add-line-text">+ {label}</span>
+        <span className="recipe-card__add-line-text">{variant === "empty" ? `+ ${label}` : "+ Add below"}</span>
       </button>
     );
   }
@@ -712,9 +708,9 @@ export const RecipeCardFace = memo(function RecipeCardFace({
     }
     const target: RecipeCardEditTarget = { kind, index };
     const isEditingThis = sameTarget(inlineEdit.editingTarget, target);
-    // Unlike ingredient/step lines (real inputs the whole time edit mode is
+    // Unlike ingredient/step lines (real fields the whole time edit mode is
     // on), this one only becomes a real <input> while it's the active field.
-    // Mounting a permanent <input> here — even one whose box is pixel-
+    // Mounting a permanent field here — even one whose box is pixel-
     // identical to the <h3> it replaces — is exactly the kind of structural
     // change `useWideColumns`' measurement re-runs on, so it's avoidable
     // churn to mount one for every idle title. Kept on-demand for that
@@ -730,9 +726,10 @@ export const RecipeCardFace = memo(function RecipeCardFace({
       );
     }
     return (
-      <input
+      <textarea
         ref={focusIfEditing(target)}
-        className="recipe-card__inline-input recipe-card__section-title"
+        className="recipe-card__inline-textarea recipe-card__section-title"
+        rows={1}
         value={inlineEdit.value}
         aria-label="Section title"
         onChange={(event) => inlineEdit.onValueChange(event.target.value)}
@@ -881,6 +878,21 @@ export const RecipeCardFace = memo(function RecipeCardFace({
         continued={continued}
         withPhotoGap={showPhoto}
       />
+      {/* Cookbook in-card "Photo" button: at the card corner (not inside the
+          small, clipped header photo), sized for the screen — opens the same
+          placement + source dialog as the full-page image control. */}
+      {cookbookMode && showPhoto && canEdit && inlineEdit && (
+        <ImagePicker
+          current={recipe.image}
+          images={inlineEdit.recipeImages ?? []}
+          onSelect={(url) => inlineEdit.onImageChange(url ?? "")}
+          placement={inlineEdit.photoPlacement}
+          placementOptions={inlineEdit.photoPlacementOptions}
+          onPlacementChange={inlineEdit.onPhotoPlacementChange}
+          label="Photo"
+          className="recipe-card__cook-photo-edit"
+        />
+      )}
 
       {showHeader ? (
         <header
@@ -890,9 +902,10 @@ export const RecipeCardFace = memo(function RecipeCardFace({
         >
           <div className="recipe-card__headline">
             {canEdit && inlineEdit ? (
-              <input
+              <textarea
                 autoFocus
-                className="recipe-card__inline-input recipe-card__title"
+                className="recipe-card__inline-textarea recipe-card__title"
+                rows={1}
                 value={sameTarget(inlineEdit.editingTarget, { kind: "title" }) ? inlineEdit.value : recipe.title}
                 aria-label="Recipe title"
                 onFocus={() => startEdit({ kind: "title" }, recipe.title)}
@@ -979,10 +992,16 @@ export const RecipeCardFace = memo(function RecipeCardFace({
                 className="recipe-card__photo-img"
                 src={recipe.image}
                 alt={recipe.title ? `Photo of ${recipe.title}` : "Recipe photo"}
+                loading="lazy"
                 decoding="async"
-                onError={() => setImageFailed(true)}
+                onLoad={(event) => markImageAvailable(event.currentTarget)}
+                onError={(event) => markImageUnavailable(event.currentTarget)}
               />
-              {canEdit && inlineEdit && (
+              <span className="photo-unavailable-message">Photo unavailable</span>
+              {/* Recipe-cards mode keeps its small in-frame "Change" control.
+                  Cookbook mode uses the larger, unclipped "Photo" button at the
+                  card corner below (this header photo is tiny + clipped). */}
+              {!cookbookMode && canEdit && inlineEdit && (
                 <ImagePicker
                   current={recipe.image}
                   images={inlineEdit.recipeImages ?? []}
@@ -993,7 +1012,10 @@ export const RecipeCardFace = memo(function RecipeCardFace({
               )}
             </span>
           )}
-          {!showPhoto && canEdit && inlineEdit && (
+          {/* The stray "Add photo" overlay only belongs in plain recipe-cards
+              mode; in a cookbook, adding/placing a photo is the job of the
+              page's "Photo" dialog, so there's no orphaned floating button. */}
+          {!cookbookMode && !showPhoto && !photoOnFacingPage && canEdit && inlineEdit && (
             <ImagePicker
               images={inlineEdit.recipeImages ?? []}
               onSelect={(url) => inlineEdit.onImageChange(url ?? "")}
@@ -1216,12 +1238,23 @@ export interface DividerCardInlineEdit {
   photoUrl?: string;
   recipeImages?: string[];
   onPhotoChange?: (url: string | undefined) => void;
+  /** Unified placement (None/In-card/Full-page/Photo grid) + grid curation, so
+      the opener picker is the same dialog as a recipe's, plus the cover's grid. */
+  placement?: string;
+  placementOptions?: Array<{ id: string; label: string; hint?: string }>;
+  onPlacementChange?: (id: string) => void;
+  gridActive?: boolean;
+  gridImages?: string[];
+  onGridChange?: (urls: string[]) => void;
+  onSelectGrid?: () => void;
+  onExitGrid?: () => void;
+  gridMax?: number;
 }
 
 // A section divider is always exactly one physical page — no ingredients/
 // instructions budget to split — so unlike RecipeCardFace's title/ingredient/
 // step fields there's just the one editable field. Same technique as the
-// recipe title, though: the `<input>` shares its typography class with the
+// recipe title, though: the wrapping field shares its typography class with the
 // `<h1>` it replaces (plus the shared `.recipe-card__inline-input` reset, see
 // its comment in globals.css) so the box is pixel-identical — editing swaps
 // the element, not the layout.
@@ -1234,6 +1267,14 @@ const CHAPTER_WORDS = [
 function chapterWord(n: number): string {
   return CHAPTER_WORDS[n - 1] ?? String(n);
 }
+
+// Default chapter-opener copy so a section page reads as designed rather than a
+// lone title. Shown only in read-only/print; the editor still binds to the
+// section's own (empty) intro with its placeholder, so a cook can personalize
+// each opener or leave the default to print. Kept generic on purpose — it's
+// filler the cook is expected to make their own.
+export const DEFAULT_CHAPTER_INTRO =
+  "A handful of recipes worth making again and again.";
 
 export const DividerFace = memo(function DividerFace({
   title,
@@ -1263,21 +1304,32 @@ export const DividerFace = memo(function DividerFace({
 }) {
   return (
     <article
-      className="recipe-card recipe-card--divider recipe-card--chapter"
+      className={`recipe-card recipe-card--divider recipe-card--chapter${photoUrl ? " recipe-card--chapter-with-photo" : ""}`}
       data-preview-hidden={previewHidden ? "true" : undefined}
     >
       <div className="recipe-card__chapter-photo" aria-hidden>
         {photoUrl && (
           // eslint-disable-next-line @next/next/no-img-element
-          <img src={photoUrl} alt="" className="recipe-card__chapter-image" />
+          <img src={photoUrl} alt="" className="recipe-card__chapter-image" onLoad={(event) => markImageAvailable(event.currentTarget)} onError={(event) => markImageUnavailable(event.currentTarget)} />
         )}
+        <span className="photo-unavailable-message">Photo unavailable</span>
       </div>
       {inlineEdit?.onPhotoChange && (
         <ImagePicker
           current={photoUrl}
           images={inlineEdit.recipeImages ?? []}
           onSelect={inlineEdit.onPhotoChange}
-          className="recipe-card__cover-photopicker"
+          placement={inlineEdit.placement}
+          placementOptions={inlineEdit.placementOptions}
+          onPlacementChange={inlineEdit.onPlacementChange}
+          gridActive={inlineEdit.gridActive}
+          gridImages={inlineEdit.gridImages}
+          onGridChange={inlineEdit.onGridChange}
+          onSelectGrid={inlineEdit.onSelectGrid}
+          onExitGrid={inlineEdit.onExitGrid}
+          gridMax={inlineEdit.gridMax}
+          label="Photo"
+          className="recipe-card__cook-photo-edit"
         />
       )}
       <div className="recipe-card__chapter-frame" aria-hidden />
@@ -1294,12 +1346,14 @@ export const DividerFace = memo(function DividerFace({
             className="recipe-card__inline-textarea recipe-card__divider-title"
             value={inlineEdit.value}
             aria-label="Chapter title"
+            // No commit-on-blur: the title saves live via onChange, so blurring
+            // to click the photo picker or the subtitle/intro fields must NOT end
+            // the edit. Enter finishes it; Escape closes it.
             onChange={(event) => inlineEdit.onChange(event.target.value)}
-            onBlur={inlineEdit.onCommit}
             onKeyDown={(event) => {
               if (event.key === "Enter") {
                 event.preventDefault();
-                event.currentTarget.blur();
+                inlineEdit.onCommit();
               }
               if (event.key === "Escape") inlineEdit.onCancel();
             }}
@@ -1329,7 +1383,7 @@ export const DividerFace = memo(function DividerFace({
             onChange={(event) => inlineEdit.onIntroChange?.(event.target.value)}
           />
         ) : (
-          intro && <p className="recipe-card__chapter-intro">{intro}</p>
+          <p className="recipe-card__chapter-intro">{intro || DEFAULT_CHAPTER_INTRO}</p>
         )}
       </div>
     </article>
@@ -1346,12 +1400,17 @@ export interface CoverCardInlineEdit {
 export const CoverFace = memo(function CoverFace({
   cover,
   side,
+  template,
   previewHidden = false,
   inlineEdit,
   showDecoration = true,
 }: {
   cover: CoverConfig;
   side: "front" | "back" | "dedication";
+  /** The active preview template. This is authoritative over the template
+      captured in an older cover draft so decoration cannot persist across a
+      theme change. */
+  template?: RecipePrintTemplate;
   previewHidden?: boolean;
   /** See `TemplateDecoration` — false on surfaces that never show it. */
   showDecoration?: boolean;
@@ -1374,8 +1433,8 @@ export const CoverFace = memo(function CoverFace({
       >
         <div className="recipe-card__cover-photo recipe-card__cover-photo--paper" aria-hidden />
         <TemplateDecoration
-          template={draft.template}
-          show={showDecoration && draft.template !== "bistro"}
+          template={template ?? draft.template}
+          show={showDecoration && (template ?? draft.template) !== "bistro"}
         />
         <div className="recipe-card__cover-band" aria-hidden />
         <div className="recipe-card__cover-back-content">
@@ -1395,13 +1454,27 @@ export const CoverFace = memo(function CoverFace({
             <textarea
               className="recipe-card__inline-textarea recipe-card__cover-blurb recipe-card__cover-dedication-text"
               value={draft.blurb ?? ""}
-              placeholder="For the ones who taught us to cook…"
+              placeholder="For the ones who taught us to cook — and who made every table feel like home."
               aria-label="Dedication"
               onChange={(event) => set({ blurb: event.target.value || undefined })}
             />
           ) : (
             draft.blurb && (
               <p className="recipe-card__cover-blurb recipe-card__cover-dedication-text">{draft.blurb}</p>
+            )
+          )}
+          {canEdit ? (
+            <textarea
+              rows={1}
+              className="recipe-card__inline-textarea recipe-card__cover-from recipe-card__cover-dedication-sign"
+              value={draft.author ?? ""}
+              placeholder="— The Smith Family (optional)"
+              aria-label="Dedication signature"
+              onChange={(event) => set({ author: event.target.value || undefined })}
+            />
+          ) : (
+            draft.author && (
+              <p className="recipe-card__cover-from recipe-card__cover-dedication-sign">{draft.author}</p>
             )
           )}
         </div>
@@ -1419,8 +1492,8 @@ export const CoverFace = memo(function CoverFace({
       >
         <div className="recipe-card__cover-photo recipe-card__cover-photo--paper" aria-hidden />
         <TemplateDecoration
-          template={draft.template}
-          show={showDecoration && draft.template !== "bistro"}
+          template={template ?? draft.template}
+          show={showDecoration && (template ?? draft.template) !== "bistro"}
         />
         <div className="recipe-card__cover-band" aria-hidden />
         <div className="recipe-card__cover-back-content">
@@ -1465,7 +1538,9 @@ export const CoverFace = memo(function CoverFace({
       : requestedLayout === "photo" && draft.imageUrl
         ? "photo"
         : "none";
-  const gridColumns = gridImages.length <= 2 ? Math.max(1, gridImages.length) : 2;
+  // Responsive collage: columns + banner adapt to the photo count so any number
+  // (2, 3, 5, …) fills the frame with no empty cells. Shared with section grids.
+  const { columns: gridColumns, firstSpans: gridFirstSpans } = photoGridLayout(gridImages.length);
   const candidateImages = inlineEdit?.recipeImages ?? [];
 
   return (
@@ -1481,13 +1556,22 @@ export const CoverFace = memo(function CoverFace({
       >
         {coverMode === "grid" &&
           gridImages.slice(0, 6).map((image, index) => (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img key={`${image}-${index}`} src={image} alt="" className="recipe-card__cover-grid-img" />
+            <span
+              key={`${image}-${index}`}
+              className={`recipe-card__cover-grid-cell ${
+                gridFirstSpans && index === 0 ? "recipe-card__cover-grid-img--wide" : ""
+              }`}
+            >
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src={image} alt="" className="recipe-card__cover-grid-img" onLoad={(event) => markImageAvailable(event.currentTarget)} onError={(event) => markImageUnavailable(event.currentTarget)} />
+              <span className="photo-unavailable-message">Photo unavailable</span>
+            </span>
           ))}
         {coverMode === "photo" && (
           // eslint-disable-next-line @next/next/no-img-element
-          <img src={draft.imageUrl} alt="" className="recipe-card__cover-image" />
+          <img src={draft.imageUrl} alt="" className="recipe-card__cover-image" onLoad={(event) => markImageAvailable(event.currentTarget)} onError={(event) => markImageUnavailable(event.currentTarget)} />
         )}
+        {coverMode === "photo" && <span className="photo-unavailable-message">Photo unavailable</span>}
       </div>
       <div className="recipe-card__cover-scrim" aria-hidden />
       <div className="recipe-card__cover-band" aria-hidden />
@@ -1504,9 +1588,19 @@ export const CoverFace = memo(function CoverFace({
               layout: imageUrl ? "photo" : "typographic",
             })
           }
+          gridImages={gridImages}
+          onGridChange={(urls) =>
+            set({
+              gridImages: urls.length ? urls : undefined,
+              imageUrl: undefined,
+              layout: urls.length ? "collage" : "typographic",
+            })
+          }
           onSelectGrid={
             candidateImages.length >= 2
               ? () => {
+                  // Seed the collage with a sensible starting set; the user then
+                  // curates exactly how many and which ones in the picker.
                   const count =
                     candidateImages.length >= 6 ? 6 : candidateImages.length >= 4 ? 4 : 2;
                   set({
@@ -1523,8 +1617,8 @@ export const CoverFace = memo(function CoverFace({
           Heirloom, Keepsake, etc.); hidden by default on photo-forward themes. */}
       <div className="recipe-card__cover-frame" aria-hidden />
       <TemplateDecoration
-        template={draft.template}
-        show={showDecoration && draft.template !== "bistro"}
+        template={template ?? draft.template}
+        show={showDecoration && (template ?? draft.template) !== "bistro"}
       />
       <div className="recipe-card__cover-content">
         <span className="recipe-card__cover-ornament" aria-hidden />
@@ -1559,17 +1653,13 @@ export const CoverFace = memo(function CoverFace({
             rows={1}
             className="recipe-card__inline-textarea recipe-card__cover-author"
             value={draft.author ?? ""}
-            placeholder={draft.creditLabel === "by" ? "Author" : "Compiled by"}
-            aria-label="Cover author"
+            placeholder="Compiled by the Smith family"
+            aria-label="Cover byline"
             onChange={(event) => set({ author: event.target.value || undefined })}
           />
         ) : (
-          draft.author && (
-            <p className="recipe-card__cover-author">
-              {draft.creditLabel === "compiled-by" ? "Compiled by " : ""}
-              {draft.author}
-            </p>
-          )
+          // Whatever they typed, verbatim — no forced "Compiled by" prefix.
+          draft.author && <p className="recipe-card__cover-author">{draft.author}</p>
         )}
         {canEdit ? (
           <textarea

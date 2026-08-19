@@ -113,12 +113,19 @@ service cloud.firestore {
         allow delete: if owns(uid);
       }
 
+      // A cookbook unlock is the $19.99 purchase record, so it is written by the
+      // server or not at all: the RevenueCat webhook grants it with the admin
+      // SDK (which bypasses rules) on the purchase event, and revokes it on
+      // refund/chargeback. Until this rule, the client wrote it and the rules
+      // only checked ownership and key shape — no proof of purchase — so any
+      // signed-in user could `setDoc` themselves the paid unlock for free.
+      //
+      // `read` stays open to the owner: the print page and the projects list
+      // both check entitlement here, including a `list` over this collection
+      // (`loadCookbookProjectUnlockIds`), which `read` covers.
       match /cookbookUnlocks/{unlockId} {
         allow read: if owns(uid);
-        allow create: if owns(uid)
-          && request.resource.data.projectId == unlockId
-          && request.resource.data.keys().hasOnly(["projectId", "unlockedAt"]);
-        allow update, delete: if false;
+        allow write: if false;
       }
     }
 
@@ -162,10 +169,12 @@ service cloud.firestore {
       allow read, write: if owns(uid);
     }
 
+    // The pre-namespace location. Existing docs stay readable so current owners
+    // keep their books with no backfill; writes are closed here too, since this
+    // path was even looser than the namespaced one it replaced.
     match /users/{uid}/cookbookUnlocks/{projectId} {
       allow read: if owns(uid);
-      allow write: if owns(uid)
-        && request.resource.data.projectId == projectId;
+      allow write: if false;
     }
   }
 }

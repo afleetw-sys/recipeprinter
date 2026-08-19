@@ -1,6 +1,5 @@
 import { describe, expect, it } from "vitest";
 import {
-  moveOrganizationItem,
   organizationSectionsForApply,
   suggestCookbookOrganization,
 } from "@/lib/cookbookOrganizer";
@@ -24,16 +23,8 @@ describe("cookbook organization draft", () => {
     expect(first.sections.map((section) => section.title)).toEqual([
       "Main Dishes",
       "Desserts",
-      "Uncategorized",
+      "More Recipes",
     ]);
-  });
-
-  it("moves within the draft without mutating the original", () => {
-    const original = suggestCookbookOrganization(items);
-    const desserts = original.sections.find((section) => section.title === "Desserts")!;
-    const moved = moveOrganizationItem(original, "mystery", desserts.id);
-    expect(original.sections.find((section) => section.title === "Uncategorized")?.itemIds).toEqual(["mystery"]);
-    expect(moved.sections.find((section) => section.title === "Desserts")?.itemIds).toContain("mystery");
   });
 
   it("applies without duplicate or lost recipes", () => {
@@ -43,10 +34,10 @@ describe("cookbook organization draft", () => {
     expect(applied.flatMap((section) => section.itemIds).sort()).toEqual(["chicken", "cookie", "mystery"]);
   });
 
-  it("cancel is mutation-free because the proposal is detached", () => {
+  it("building a proposal never touches the persisted sections", () => {
     const persisted = [{ id: "current", title: "Current", itemIds: ["cookie", "chicken", "mystery"] }];
     const snapshot = structuredClone(persisted);
-    moveOrganizationItem(suggestCookbookOrganization(items), "mystery", "suggested-desserts");
+    suggestCookbookOrganization(items);
     expect(persisted).toEqual(snapshot);
   });
 

@@ -7,11 +7,11 @@ import {
   PRINTERS,
   getCookbookPreset,
   gutterSideForRole,
-  isCookbookPresetId,
   presetArtScale,
   presetCardScale,
   presetInsets,
   presetSheetDims,
+  presetSheetInches,
 } from "@/lib/cookbookPresets";
 
 /**
@@ -29,12 +29,10 @@ describe("cookbook presets", () => {
     expect(getCookbookPreset(undefined).id).toBe(DEFAULT_COOKBOOK_PRESET_ID);
   });
 
-  it("recognizes only known preset ids", () => {
-    expect(isCookbookPresetId("us-letter")).toBe(true);
-    expect(isCookbookPresetId("hardcover-8x10")).toBe(true);
-    expect(isCookbookPresetId("6x9")).toBe(false);
-    expect(isCookbookPresetId(null)).toBe(false);
-    expect(isCookbookPresetId(undefined)).toBe(false);
+  it("resolves an unknown id to the default rather than failing", () => {
+    // The one thing callers rely on: a stale/garbage stored id still yields a
+    // real preset, so a book saved against a retired format still exports.
+    expect(getCookbookPreset("6x9" as never).id).toBe(DEFAULT_COOKBOOK_PRESET_ID);
   });
 
   it("every preset points at printers that exist", () => {
@@ -59,6 +57,19 @@ describe("cookbook presets", () => {
     });
   });
 
+  it("sheet inches are `in` length strings matching the @page size the export pins", () => {
+    // These feed `--rp-sheet-w/-h`, which pin the print page box in inches so it
+    // matches `@page size` in every engine (never `100vh` — see presetSheetInches).
+    expect(presetSheetInches(getCookbookPreset("us-letter"))).toEqual({
+      w: "8.5in",
+      h: "11in",
+    });
+    expect(presetSheetInches(getCookbookPreset("hardcover-8x10"))).toEqual({
+      w: "8.25in",
+      h: "10.25in",
+    });
+  });
+
   it("card scale fits inside the safe box and never inverts", () => {
     for (const preset of COOKBOOK_PRESETS) {
       const scale = presetCardScale(preset);
@@ -76,18 +87,41 @@ describe("cookbook presets", () => {
     }
   });
 
-  it("art scale fills (covers) the whole sheet so artwork bleeds", () => {
+  it("spiral has no binding gutter (lies flat); hardcover keeps one (spine)", () => {
+    // A coil book lies flat — no spine swallows the inner margin — so its text
+    // sits in a uniform, symmetric margin with NO extra gutter.
+    expect(getCookbookPreset("us-letter").gutterIn).toBe(0);
+    // Case binding does swallow the inner margin, so hardcover keeps a gutter.
+    expect(getCookbookPreset("hardcover-8x10").gutterIn).toBeGreaterThan(0);
+  });
+
+  it("only the coil format is flagged coilBound (drives the export-only `.rp-coil`)", () => {
+    // Spiral is coil-punched → binding decoration thickens at export; hardcover
+    // has a spine, no punch → must NOT get the thick inner edge.
+    expect(getCookbookPreset("us-letter").coilBound).toBe(true);
+    expect(getCookbookPreset("hardcover-8x10").coilBound).toBe(false);
+  });
+
+  it("art scale fills the whole sheet so artwork bleeds every edge, both formats", () => {
     for (const preset of COOKBOOK_PRESETS) {
       const scale = presetArtScale(preset);
       const sheetWidth = preset.trimWidthIn + preset.bleedIn * 2;
       const sheetHeight = preset.trimHeightIn + preset.bleedIn * 2;
-      // Covers both axes: scaled card is at least as large as the sheet.
+      // Covers both axes → art reaches (and overflows) every sheet edge.
       expect(scale * LETTER_CARD_WIDTH_IN).toBeGreaterThanOrEqual(sheetWidth - 1e-9);
       expect(scale * LETTER_CARD_HEIGHT_IN).toBeGreaterThanOrEqual(sheetHeight - 1e-9);
     }
   });
 
-  it("insets equal margin off the outer/block edges and margin+gutter on the bind edge", () => {
+  it("spiral text margin is symmetric — same inset on the bind edge as the outer edge", () => {
+    // With no gutter, the bind inset collapses to the plain margin, so a recipe
+    // is centered with equal margins instead of shoved off one side.
+    const insets = presetInsets(getCookbookPreset("us-letter"));
+    expect(insets.bind).toBe(insets.outer);
+    expect(insets.outer).toBe("0.5in");
+  });
+
+  it("hardcover insets: margin off outer/block, margin+gutter on the bind edge", () => {
     const hardcover = getCookbookPreset("hardcover-8x10");
     const insets = presetInsets(hardcover);
     // bleed 0.125 + margin 0.5 = 0.625 on outer/block; + gutter 0.5 = 1.125 bind.

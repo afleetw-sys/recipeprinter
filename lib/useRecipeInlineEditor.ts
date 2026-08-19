@@ -1,7 +1,7 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState, type Dispatch, type SetStateAction } from "react";
-import { printableRecipe, updateQueuedRecipe } from "@/lib/queue";
+import { useCallback, useEffect, useMemo, useState, type MutableRefObject } from "react";
+import { printableRecipe } from "@/lib/queue";
 import type { RecipeCardEditTarget, RecipeCardInlineEdit } from "@/lib/recipeCardLayout";
 import type { QueueItem, Recipe } from "@/types/recipe";
 
@@ -132,7 +132,10 @@ function sectionForInsertion<T extends { section?: string }>(items: T[], index: 
 
 interface UseRecipeInlineEditorOptions {
   items: QueueItem[] | null;
-  setItems: Dispatch<SetStateAction<QueueItem[] | null>>;
+  /** Writes the edit into the queue hook's React state + storage — the single
+      content owner. The deck re-derives from the queue, so there is no separate
+      page copy to update here. */
+  updateRecipe: (id: string, recipe: Recipe) => void;
   activeRecipeId: string | null;
   activeRecipeItem: QueueItem | null | undefined;
   /** What a change of "which page you're on" is keyed to for the leave-edit-mode
@@ -140,6 +143,11 @@ interface UseRecipeInlineEditorOptions {
       switch between the two cards without leaving the page, so the page passes a
       per-SHEET key here — switching cards then keeps edit mode on. */
   resetKey?: string | null;
+  /** When a recipe is intentionally moved (e.g. its photo placement changed, so
+      it lands on a different page), the page stashes that recipe id here so the
+      leave-edit-mode reset skips ONCE as focus follows it to the new page —
+      keeping the recipe both selected and still in edit mode. Consumed on use. */
+  keepEditingRef?: MutableRefObject<string | null>;
 }
 
 /**
@@ -154,10 +162,11 @@ interface UseRecipeInlineEditorOptions {
  */
 export function useRecipeInlineEditor({
   items,
-  setItems,
+  updateRecipe,
   activeRecipeId,
   activeRecipeItem,
   resetKey,
+  keepEditingRef,
 }: UseRecipeInlineEditorOptions) {
   const [pageEditMode, setPageEditMode] = useState(false);
   const [editingEdit, setEditingEdit] = useState<RecipeEditSelection | null>(null);
@@ -182,76 +191,75 @@ export function useRecipeInlineEditor({
     setEditValue("");
   }, []);
 
+  // Route every edit through the queue hook, the single content owner: it
+  // updates its React `items` (which the deck derives from) and storage
+  // together, so there is no separate page copy to keep in step here.
+  const applyRecipeUpdate = useCallback(
+    (id: string, nextRecipe: Recipe) => {
+      updateRecipe(id, nextRecipe);
+    },
+    [updateRecipe],
+  );
+
   const commitEditTarget = useCallback(
     (value = editValue) => {
       if (!editingEdit || !editingRecipeItem?.recipe) return;
       const target = editingEdit.target;
       const nextRecipe = applyRecipeTargetEdit(editingRecipeItem.recipe, target, value);
-      updateQueuedRecipe(editingRecipeItem.id, nextRecipe);
-      setItems((current) =>
-        current?.map((item) =>
-          item.id === editingRecipeItem.id
-            ? { ...item, recipe: nextRecipe, title: nextRecipe.title || "Untitled recipe" }
-          : item,
-        ) ?? current,
-      );
+      applyRecipeUpdate(editingRecipeItem.id, nextRecipe);
       setEditingEdit(null);
       setEditValue("");
     },
-    [editValue, editingEdit, editingRecipeItem, setItems],
+    [editValue, editingEdit, editingRecipeItem, applyRecipeUpdate],
   );
 
   const changeRecipeImage = useCallback(
     (url: string) => {
       if (!activeRecipeItem?.recipe) return;
       const nextRecipe = applyRecipeTargetEdit(activeRecipeItem.recipe, { kind: "image" }, url);
-      updateQueuedRecipe(activeRecipeItem.id, nextRecipe);
-      setItems((current) =>
-        current?.map((item) =>
-          item.id === activeRecipeItem.id ? { ...item, recipe: nextRecipe } : item,
-        ) ?? current,
-      );
+      applyRecipeUpdate(activeRecipeItem.id, nextRecipe);
     },
-    [activeRecipeItem, setItems],
+    [activeRecipeItem, applyRecipeUpdate],
   );
 
   const insertIngredientAt = useCallback(
     (index: number) => {
       if (!activeRecipeItem?.recipe) return;
-      const recipe = activeRecipeItem.recipe;
+      // Clicking Add blurs the current field just before the click fires. Build
+      // from that in-progress edit directly so the blur/save and insertion can
+      // never race and recreate the preceding row.
+      const recipe =
+        editingEdit?.recipeId === activeRecipeItem.id
+          ? applyRecipeTargetEdit(activeRecipeItem.recipe, editingEdit.target, editValue)
+          : activeRecipeItem.recipe;
       const section = sectionForInsertion(recipe.ingredients, index);
       const ingredients = recipe.ingredients.slice();
       ingredients.splice(index, 0, { raw: "", name: "", section });
       const nextRecipe = printableRecipe({ ...recipe, ingredients });
-      updateQueuedRecipe(activeRecipeItem.id, nextRecipe);
-      setItems((current) =>
-        current?.map((item) => (item.id === activeRecipeItem.id ? { ...item, recipe: nextRecipe } : item)) ??
-          current,
-      );
+      applyRecipeUpdate(activeRecipeItem.id, nextRecipe);
       setEditingEdit({ recipeId: activeRecipeItem.id, target: { kind: "ingredient", index } });
       setEditValue("");
     },
-    [activeRecipeItem, setItems],
+    [activeRecipeItem, editValue, editingEdit, applyRecipeUpdate],
   );
 
   const insertStepAt = useCallback(
     (index: number) => {
       if (!activeRecipeItem?.recipe) return;
-      const recipe = activeRecipeItem.recipe;
+      const recipe =
+        editingEdit?.recipeId === activeRecipeItem.id
+          ? applyRecipeTargetEdit(activeRecipeItem.recipe, editingEdit.target, editValue)
+          : activeRecipeItem.recipe;
       const section = sectionForInsertion(recipe.instructions, index);
       const instructions = recipe.instructions.slice();
       instructions.splice(index, 0, { step: 0, text: "", section });
       const renumbered = instructions.map((step, i) => ({ ...step, step: i + 1 }));
       const nextRecipe = printableRecipe({ ...recipe, instructions: renumbered });
-      updateQueuedRecipe(activeRecipeItem.id, nextRecipe);
-      setItems((current) =>
-        current?.map((item) => (item.id === activeRecipeItem.id ? { ...item, recipe: nextRecipe } : item)) ??
-          current,
-      );
+      applyRecipeUpdate(activeRecipeItem.id, nextRecipe);
       setEditingEdit({ recipeId: activeRecipeItem.id, target: { kind: "step", index } });
       setEditValue("");
     },
-    [activeRecipeItem, setItems],
+    [activeRecipeItem, editValue, editingEdit, applyRecipeUpdate],
   );
 
   // Enter mid-ingredient/mid-step splits the line at the cursor: the text
@@ -275,11 +283,7 @@ export function useRecipeInlineEditor({
         const section = sectionForInsertion(ingredients, target.index + 1);
         ingredients.splice(target.index + 1, 0, { raw: after, name: after, section });
         const nextRecipe = printableRecipe({ ...recipe, ingredients });
-        updateQueuedRecipe(activeRecipeItem.id, nextRecipe);
-        setItems((current) =>
-          current?.map((item) => (item.id === activeRecipeItem.id ? { ...item, recipe: nextRecipe } : item)) ??
-            current,
-        );
+        applyRecipeUpdate(activeRecipeItem.id, nextRecipe);
         setEditingEdit({ recipeId: activeRecipeItem.id, target: { kind: "ingredient", index: target.index + 1 } });
         setEditValue(after);
         return;
@@ -291,16 +295,12 @@ export function useRecipeInlineEditor({
         instructions.splice(target.index + 1, 0, { step: 0, text: after, section });
         const renumbered = instructions.map((step, i) => ({ ...step, step: i + 1 }));
         const nextRecipe = printableRecipe({ ...recipe, instructions: renumbered });
-        updateQueuedRecipe(activeRecipeItem.id, nextRecipe);
-        setItems((current) =>
-          current?.map((item) => (item.id === activeRecipeItem.id ? { ...item, recipe: nextRecipe } : item)) ??
-            current,
-        );
+        applyRecipeUpdate(activeRecipeItem.id, nextRecipe);
         setEditingEdit({ recipeId: activeRecipeItem.id, target: { kind: "step", index: target.index + 1 } });
         setEditValue(after);
       }
     },
-    [activeRecipeItem, setItems],
+    [activeRecipeItem, applyRecipeUpdate],
   );
 
   // Only the currently-active recipe's card ever receives a real inlineEdit
@@ -354,9 +354,16 @@ export function useRecipeInlineEditor({
   // keeps edit mode on. Falls back to `activeRecipeId` when unset.
   const resetOn = resetKey ?? activeRecipeId;
   useEffect(() => {
+    // A recipe we deliberately moved (placement change) is following focus to
+    // its new page — skip the reset once so it stays selected AND in edit mode.
+    if (keepEditingRef?.current && keepEditingRef.current === activeRecipeId) {
+      keepEditingRef.current = null;
+      return;
+    }
     setPageEditMode(false);
     setEditingEdit(null);
     setEditValue("");
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [resetOn]);
 
   function togglePageEditMode() {

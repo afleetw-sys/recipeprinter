@@ -14,8 +14,19 @@
  * unnoticed and reads like a mistake to anyone who finds it. This is greppable,
  * says why, and makes relaunching a one-line change — same approach as the
  * Fruit Stand template's gate in components/RecipeCardPrint.tsx.
+ *
+ * ⚠️ BEFORE THIS IS `true` IN PRODUCTION — cookbook unlocks must be made
+ * server-authoritative first, or a signed-in user can grant themselves the paid
+ * unlock for free. Do the ordered sequence in docs/cookbook-unlock-webhook.md:
+ *   1. ship the `cookbook_project_id` attribute (lib/recipePrinterPurchases.ts)
+ *   2. deploy the extended RevenueCat webhook (CookPilot functions)
+ *   3. verify a real/sandbox purchase writes the unlock doc server-side
+ *   4. lock down firestore.rules (cookbookUnlocks → server-write only)
+ *   5. remove the now-dead client unlock writes
+ * Until all five are done, the unlock is client-writable and refunds never
+ * revoke. (Inert while this flag is `false`, since no one can purchase.)
  */
-export const COOKBOOK_ENABLED = false;
+export const COOKBOOK_ENABLED = true;
 
 // One purchase unlocks one stable cookbook project. The RevenueCat web product
 // behind this identifier must be configured as a repeat-purchasable consumable;
@@ -27,19 +38,7 @@ export const RECIPEPRINTER_COOKBOOK_PACKAGE_ID = "cookbook";
 export const RECIPEPRINTER_COOKBOOK_PRODUCT_ID = "cookbook";
 export const RECIPEPRINTER_COOKBOOK_ENTITLEMENT_ID = "cookbook";
 
-// Shown until the real RevenueCat price loads (or if it fails to load) so the
-// offer dialog never has to hide its price entirely.
+// The cookbook's price, shown wherever we name it ourselves (e.g. the welcome
+// dialog). Checkout states the authoritative price; keep this in sync with the
+// RevenueCat product if it ever changes.
 export const COOKBOOK_PRICE_FALLBACK = "$19.99";
-
-// What the offer dialog promises. Every line here must name something the
-// product actually does — this is the copy on a paid upgrade, and it sells the
-// COOKBOOK, not the PDF (the PDF is only the delivery format). "Table of
-// contents" was listed until it turned out nothing renders one; it's back now
-// that a real TOC page does. Print-ready format presets (Print your cookbook →
-// Save as PDF) are why the last two lines can promise print-ready layouts.
-export const COOKBOOK_BENEFITS = [
-  "A designed cover, chapters & back cover",
-  "Automatic table of contents & page numbers",
-  "Print-ready formats: US Letter spiral or 8×10 hardcover",
-  "Print at home, or order from Lulu, Blurb & Staples",
-] as const;

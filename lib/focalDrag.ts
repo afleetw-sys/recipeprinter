@@ -6,8 +6,6 @@ export interface FocalPoint {
   y: number;
 }
 
-export const DEFAULT_FOCAL_POINT: FocalPoint = { x: 50, y: 50 };
-
 /**
  * Drag-to-reposition for a full-bleed `object-fit: cover` photo. Grab the photo
  * and drag: the crop follows the pointer (dragging right reveals more of the

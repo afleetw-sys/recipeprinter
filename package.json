@@ -8,8 +8,11 @@
     "start": "next start",
     "lint": "next lint",
     "test": "vitest run",
+    "audit:design-system": "node scripts/design-system-audit.mjs",
+    "audit:unlocks": "npx --yes --package firebase-admin -c \"node scripts/cookbook-unlock-audit.mjs\"",
     "test:rules": "npx firebase-tools@14.27.0 --config firebase.rules-test.json emulators:exec --only firestore,storage \"vitest run --config vitest.rules.config.ts\"",
-    "test:watch": "vitest"
+    "test:watch": "vitest",
+    "pdf:dev": "node scripts/pdf-renderer-dev.mjs"
   },
   "dependencies": {
     "@revenuecat/purchases-js": "^1.46.0",
@@ -29,6 +32,7 @@
     "eslint": "^8.57.1",
     "eslint-config-next": "^14.2.29",
     "postcss": "^8",
+    "puppeteer-core": "^25.8.0",
     "tailwindcss": "^3.4.1",
     "typescript": "^5",
     "vitest": "^2.1.9"

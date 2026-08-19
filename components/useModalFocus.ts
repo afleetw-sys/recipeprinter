@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, type RefObject } from "react";
+import { useEffect, useRef, type RefObject } from "react";
 
 const FOCUSABLE_SELECTOR = [
   "a[href]",
@@ -27,6 +27,17 @@ export function useModalFocus(
 ) {
   const { disabled = false, closeDisabled = false } = options;
 
+  // Hold the callback + flag in refs so the focus-trap effect below depends only
+  // on open/disabled — NOT on `onClose`'s identity. Callers routinely pass a
+  // fresh `onClose` arrow every render; if that were a dep, the effect would
+  // re-run every render, re-running its focus() call. Inside an editable surface
+  // (a recipe card's inputs fire onFocus/onBlur → setState) that re-focus churn
+  // ping-pongs into an infinite render loop and freezes the page.
+  const onCloseRef = useRef(onClose);
+  onCloseRef.current = onClose;
+  const closeDisabledRef = useRef(closeDisabled);
+  closeDisabledRef.current = closeDisabled;
+
   useEffect(() => {
     if (disabled) return;
     const root = ref.current;
@@ -40,7 +51,7 @@ export function useModalFocus(
     function onKeyDown(event: KeyboardEvent) {
       if (event.key === "Escape") {
         event.preventDefault();
-        if (!closeDisabled) onClose();
+        if (!closeDisabledRef.current) onCloseRef.current();
         return;
       }
 
@@ -68,5 +79,5 @@ export function useModalFocus(
       document.removeEventListener("keydown", onKeyDown);
       previousActive?.focus();
     };
-  }, [ref, onClose, disabled, closeDisabled]);
+  }, [ref, disabled]);
 }

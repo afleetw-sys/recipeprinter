@@ -12,6 +12,8 @@ import {
   TrashIcon,
 } from "@/components/icons";
 import { createCurrentPrintJob, useQueue } from "@/lib/queue";
+import { useProjectMeta } from "@/lib/project";
+import { takePendingImport } from "@/lib/pendingImport";
 import type { ImportMethod } from "@/types/recipe";
 
 // The interactive heart of RecipePrinter: importing recipes and managing the
@@ -21,14 +23,22 @@ import type { ImportMethod } from "@/types/recipe";
 export function PrinterWorkspace({
   initialImportMode = "url",
   importSubmitLabel,
+  consumePendingImport = false,
 }: {
   initialImportMode?: ImportMethod;
   importSubmitLabel?: string;
+  /**
+   * When true, on mount (after the queue hydrates) pick up any recipe a visitor
+   * started importing on an SEO landing page and finish it here — the capture →
+   * app handoff. Enabled on the home page, which is the handoff target.
+   */
+  consumePendingImport?: boolean;
 }) {
   const router = useRouter();
   const {
     items,
     focusedItemId,
+    focusNonce,
     hydrated,
     hydratedWithItems,
     addUrl,
@@ -40,6 +50,18 @@ export function PrinterWorkspace({
     remove,
     clear,
   } = useQueue();
+  const { meta, hydrated: metaHydrated, startNewProject } = useProjectMeta();
+  /**
+   * "Clear all" means "I'm starting something else", so it releases the
+   * project identity as well as the recipes. Clearing only the list left the
+   * id pointing at whatever was last saved, and the next autosave wrote the
+   * new recipes over that cookbook. The saved book is untouched — it keeps
+   * its own id, document and purchase, and stays in the library.
+   */
+  function startOver() {
+    clear();
+    startNewProject();
+  }
   const readyItems = items.filter((it) => it.status === "ready");
   const readyRecipeIds = readyItems.map((it) => it.id);
   const hasProject = hydrated && items.length > 0;
@@ -53,10 +75,55 @@ export function PrinterWorkspace({
   const skipProjectIntro = hydratedWithItems && hasProject && !hasShownEmptyState;
   const hasAutoOpenedTrayRef = useRef(false);
   const prevItemsLengthRef = useRef<number | null>(null);
+  const consumedPendingRef = useRef(false);
+  const leftCookbookRef = useRef(false);
 
   useEffect(() => {
     if (hydrated && items.length === 0) setHasShownEmptyState(true);
   }, [hydrated, items.length]);
+
+  /**
+   * Arriving here from a cookbook means you left the book, so this page starts
+   * clean.
+   *
+   * A cookbook's recipes sit in the same queue a card job uses, so home used to
+   * show them under "Ready to print" with a Preview button that walked straight
+   * back into the book — a second door into one document, and a bound book
+   * dressed up as a stack of loose cards. Releasing the project id as well as
+   * the list is the point: whatever gets imported next is a NEW project, not
+   * another edit of the cookbook. The book keeps its own id and stays in the
+   * library.
+   *
+   * Waits on both hydrations so the reset can't race the rehydrate and land on
+   * a queue that is only momentarily empty.
+   */
+  useEffect(() => {
+    if (!hydrated || !metaHydrated || leftCookbookRef.current) return;
+    if (!meta.cookbookMode) return;
+    leftCookbookRef.current = true;
+    clear();
+    startNewProject();
+  }, [hydrated, metaHydrated, meta.cookbookMode, clear, startNewProject]);
+
+  // Capture → app handoff: a visitor who pasted a link, dropped a photo, or
+  // pasted text on an SEO landing page arrives here mid-import. Wait for the
+  // queue to hydrate first so seeding the pending item can't race the
+  // sessionStorage rehydrate, then consume it exactly once.
+  useEffect(() => {
+    if (!consumePendingImport || !hydrated || consumedPendingRef.current) return;
+    consumedPendingRef.current = true;
+    let cancelled = false;
+    void takePendingImport().then((pending) => {
+      if (cancelled || !pending) return;
+      if (pending.kind === "url") addUrl(pending.url);
+      else if (pending.kind === "text") addText(pending.text);
+      else if (pending.kind === "cookpilot") addCookPilotRecipes(pending.recipes);
+      else if (pending.kind === "images") addImages(pending.images, pending.label);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [consumePendingImport, hydrated, addUrl, addText, addImages, addCookPilotRecipes]);
 
   useEffect(() => {
     if (!hasProject) setMobileQueueOpen(false);
@@ -157,7 +224,7 @@ export function PrinterWorkspace({
                       role="menuitem"
                       className="mode-toggle-menu__item mode-toggle-menu__item--danger"
                       onClick={() => {
-                        clear();
+                        startOver();
                         setMenuOpen(false);
                       }}
                     >
@@ -189,6 +256,7 @@ export function PrinterWorkspace({
             onRemove={remove}
             animateItems={!skipProjectIntro}
             focusedItemId={focusedItemId}
+            focusNonce={focusNonce}
           />
         ) : (
           <div className="h-24 rounded-2xl border border-dashed border-line-strong" />
@@ -240,7 +308,7 @@ export function PrinterWorkspace({
                 <button
                   type="button"
                   className="btn-ghost btn-ghost--danger btn-compact"
-                  onClick={clear}
+                  onClick={startOver}
                 >
                   <TrashIcon size={ICON_SIZE.md} />
                   Clear all
@@ -255,6 +323,7 @@ export function PrinterWorkspace({
                 onRemove={remove}
                 animateItems={!skipProjectIntro}
                 focusedItemId={focusedItemId}
+                focusNonce={focusNonce}
               />
             ) : (
               <div className="h-24 rounded-2xl border border-dashed border-line-strong" />

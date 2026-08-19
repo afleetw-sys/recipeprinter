@@ -5,7 +5,10 @@ import type { PrintProject } from "@/types/recipe";
 import { getFirebaseStorage } from "@/lib/firebase/storage";
 import { recipePrinterUserPhotoRoot } from "@/lib/firebase/recipePrinterPaths";
 import { localStore } from "@/lib/storage";
-import { createPrintProjectId, loadPrintProject, savePrintProject } from "@/lib/printProjects";
+import { loadPrintProject, savePrintProject } from "@/lib/printProjects";
+import {
+  transferCookbookProjectUnlockLocal,
+} from "@/lib/cookbookUnlocks";
 
 const MANIFEST_KEY = "recipeprinter:anonymous-adoption:v1";
 
@@ -40,19 +43,44 @@ function anonymousRecipePrinterAsset(url: string | undefined): url is string {
   }
 }
 
-function assetUrls(project: PrintProject): string[] {
-  const values: Array<string | undefined> = [
+// Every field of a project that can hold a photo URL, flattened. The single
+// source of truth for "where do asset URLs live", so both the copy pass (which
+// filters to anonymous sources) and the post-save verification (which checks the
+// rewritten destinations landed) read the same field set.
+function projectAssetFields(project: PrintProject): Array<string | undefined> {
+  const stash = project.stashedCookbook;
+  return [
     project.cover?.imageUrl,
     project.backCover?.imageUrl,
     ...(project.cover?.gridImages ?? []),
     ...(project.backCover?.gridImages ?? []),
     ...project.sections.flatMap((section) => [
       section.photoUrl,
+      // A chapter collage is usually curated from recipe photos (already
+      // covered below), but the picker also accepts an uploaded one.
+      ...(section.gridImages ?? []),
       ...section.items.map((item) => item.recipe?.image),
     ]),
     ...Object.values(project.itemPlacements ?? {}).map((placement) => placement.heroImageUrl),
+    // A book set aside by "switch to recipe cards" holds its own cover art,
+    // chapter photos and hero images. It's persisted with the project now, so
+    // adoption has to bring its assets across too — otherwise restoring the
+    // stash months later hands back a book still pointing at anonymous storage
+    // this account never owned.
+    stash?.cover?.imageUrl,
+    stash?.backCover?.imageUrl,
+    ...(stash?.cover?.gridImages ?? []),
+    ...(stash?.backCover?.gridImages ?? []),
+    ...(stash?.sections ?? []).flatMap((section) => [
+      section.photoUrl,
+      ...(section.gridImages ?? []),
+    ]),
+    ...Object.values(stash?.itemPlacements ?? {}).map((placement) => placement.heroImageUrl),
   ];
-  return Array.from(new Set(values.filter(anonymousRecipePrinterAsset)));
+}
+
+function assetUrls(project: PrintProject): string[] {
+  return Array.from(new Set(projectAssetFields(project).filter(anonymousRecipePrinterAsset)));
 }
 
 function stableName(source: string): string {
@@ -101,6 +129,16 @@ function rewriteAssets(project: PrintProject, assets: Record<string, string>): P
           gridImages: cover.gridImages?.map((url) => replaceUrl(url, assets) ?? url),
         }
       : cover;
+  const rewritePlacements = (placements: PrintProject["itemPlacements"]) =>
+    placements
+      ? Object.fromEntries(
+          Object.entries(placements).map(([id, placement]) => [
+            id,
+            { ...placement, heroImageUrl: replaceUrl(placement.heroImageUrl, assets) },
+          ]),
+        )
+      : undefined;
+  const stash = project.stashedCookbook;
   return {
     ...project,
     cover: rewriteCover(project.cover),
@@ -108,19 +146,30 @@ function rewriteAssets(project: PrintProject, assets: Record<string, string>): P
     sections: project.sections.map((section) => ({
       ...section,
       photoUrl: replaceUrl(section.photoUrl, assets),
+      gridImages: section.gridImages?.map((url) => replaceUrl(url, assets) ?? url),
       items: section.items.map((item) =>
         item.recipe?.image
           ? { ...item, recipe: { ...item.recipe, image: replaceUrl(item.recipe.image, assets) } }
           : item,
       ),
     })),
-    itemPlacements: project.itemPlacements
-      ? Object.fromEntries(
-          Object.entries(project.itemPlacements).map(([id, placement]) => [
-            id,
-            { ...placement, heroImageUrl: replaceUrl(placement.heroImageUrl, assets) },
-          ]),
-        )
+    itemPlacements: rewritePlacements(project.itemPlacements),
+    // The set-aside book gets the same treatment — its section list holds ids
+    // rather than recipes, so only the art fields need rewriting. Must stay in
+    // step with `projectAssetFields`, which is what the post-save verification
+    // checks these against.
+    stashedCookbook: stash
+      ? {
+          ...stash,
+          cover: rewriteCover(stash.cover),
+          backCover: rewriteCover(stash.backCover),
+          sections: stash.sections.map((section) => ({
+            ...section,
+            photoUrl: replaceUrl(section.photoUrl, assets),
+            gridImages: section.gridImages?.map((url) => replaceUrl(url, assets) ?? url),
+          })),
+          itemPlacements: rewritePlacements(stash.itemPlacements),
+        }
       : undefined,
   };
 }
@@ -130,14 +179,17 @@ export async function adoptAnonymousProject(
   project: PrintProject,
 ): Promise<PrintProject> {
   const previous = readAdoptionManifest();
-  let destinationProjectId =
-    previous?.uid === uid && previous.sourceProjectId === project.id
+  // Adoption is an UPSERT on the working copy's own id, never a fork. Project
+  // ids are random (lib/ids), so a document already sitting at this id is this
+  // same book being adopted again — a reload, a second visit, a retry after a
+  // failed save. Minting a new id there produced a duplicate cookbook in the
+  // account on every such pass. The only id that may differ from the working
+  // copy's is one a previous adoption already redirected to (kept below so an
+  // interrupted adoption resumes into the document it started writing).
+  const destinationProjectId =
+    (previous?.uid === uid && previous.sourceProjectId === project.id
       ? previous.destinationProjectId
-      : undefined;
-  if (!destinationProjectId) {
-    const collision = await loadPrintProject(uid, project.id);
-    destinationProjectId = collision ? createPrintProjectId() : project.id;
-  }
+      : undefined) ?? project.id;
   let manifest: AdoptionManifest = {
     sourceProjectId: project.id,
     destinationProjectId,
@@ -173,15 +225,31 @@ export async function adoptAnonymousProject(
     );
     const saved = await savePrintProject(adopted);
     const verified = await loadPrintProject(uid, destinationProjectId);
-    const verifiedJson = JSON.stringify(verified);
+    // Check each rewritten URL sits in an actual asset field of the reloaded
+    // project — an exact Set membership, not a substring scan of the serialized
+    // blob (Firebase download URLs share a long common prefix, so one asset's
+    // URL being a substring of another's could pass a `.includes` check even
+    // when its own field was never rewritten).
+    const verifiedAssets = new Set(
+      verified ? projectAssetFields(verified).filter((url): url is string => Boolean(url)) : [],
+    );
     if (
       !verified ||
       verified.ownerUid !== uid ||
       verified.id !== destinationProjectId ||
-      Object.values(manifest.assets).some((url) => !verifiedJson.includes(url))
+      Object.values(manifest.assets).some((url) => !verifiedAssets.has(url))
     ) {
       throw new Error("The saved project could not be verified.");
     }
+    // Carry any cookbook unlock across the id change, locally. Adoption used to
+    // ALSO write the unlock to Firestore here, because a signed-out purchase had
+    // only ever reached localStorage and this was the first moment a uid existed
+    // to durably attach it to. The server owns that now: the purchase is
+    // recorded against the anonymous RevenueCat id at checkout and granted on
+    // the TRANSFER event RevenueCat fires when the buyer signs in — which is the
+    // same moment, from a better-informed side. The client write is denied by
+    // the rules regardless.
+    transferCookbookProjectUnlockLocal(project.id, destinationProjectId);
     writeManifest({ ...manifest, status: "complete", error: undefined });
     return saved;
   } catch (error) {

@@ -111,10 +111,7 @@ function SignedOutCookPilotImport({
         </button>
       </div>
       {(error ?? redirectError) && (
-        <div className="state state--error mt-cp-4 text-left" role="alert">
-          <h4>Couldn&apos;t sign in</h4>
-          <p>{error ?? redirectError}</p>
-        </div>
+        <p className="field-error mt-cp-4 text-left" role="alert">{error ?? redirectError}</p>
       )}
     </div>
   );
@@ -146,7 +143,7 @@ function RecipeRow({
       }
       className={`group flex w-full items-center gap-cp-3 rounded-xl border p-cp-2 text-left transition-colors ${
         added
-          ? "border-brand bg-brand-50/60 shadow-[var(--cp-selected-ring)]"
+          ? "border-brand bg-brand-50/60"
           : "border-line bg-card hover:border-line-strong"
       }`}
     >
@@ -191,7 +188,7 @@ function RecipeRow({
           Added
         </span>
       ) : (
-        <span className="btn btn-secondary btn-compact flex-shrink-0 pointer-events-none transition-colors group-hover:border-line-strong group-hover:bg-[rgba(127,127,127,0.08)]">
+        <span className="btn btn-secondary btn-compact flex-shrink-0 pointer-events-none transition-colors group-hover:border-line-strong group-hover:bg-page">
           {adding ? <SpinnerIcon size={ICON_SIZE.md} /> : <PlusIcon size={ICON_SIZE.md} />}
           Add
         </span>
@@ -461,10 +458,7 @@ function SignedInCookPilotImport({
       )}
 
       {!loading && error && (
-        <div className="state state--error" role="alert">
-          <h4>Couldn&apos;t load recipes</h4>
-          <p>{error}</p>
-        </div>
+        <p className="field-error" role="alert">{error}</p>
       )}
 
       {!loading && !error && summaries.length === 0 && (
@@ -518,9 +512,8 @@ function SignedInCookPilotImport({
       )}
 
       {!loading && !loadingMore && loadMoreError && (
-        <div className="state state--error" role="alert">
-          <h4>Couldn&apos;t load more recipes</h4>
-          <p>{loadMoreError}</p>
+        <div>
+          <p className="field-error" role="alert">{loadMoreError}</p>
           <button type="button" className="btn btn-secondary btn-compact mt-cp-3" onClick={retryLoadMore}>
             Try again
           </button>

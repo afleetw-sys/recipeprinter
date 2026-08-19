@@ -1,14 +1,12 @@
-import Image from "next/image";
-
 // ─────────────────────────────────────────────────────────────────────────────
-// SEO landing-page visuals — real printed recipe cards.
+// The catalogue of SEO landing-page photography: real printed recipe cards.
 //
 // These are photographs of actual cards printed from RecipePrinter, sitting on a
 // real table in real light. Nothing here is fabricated or greeked: the whole
 // point is that a real printed card is the thing that sells the product, and no
-// mockup can fake it. Presentation stays deliberately restrained — good sizing,
-// a soft shadow, real breathing room — and lets the photos carry it.
+// mockup can fake it.
 //
+// Data only — the components that FRAME these photos live in LandingVisuals.
 // Files live in /public/images. Swap or add photos by editing PRINTED_CARDS.
 // ─────────────────────────────────────────────────────────────────────────────
 
@@ -51,62 +49,4 @@ export const PRINTED_CARDS: Record<string, PrintedCard> = {
   },
 };
 
-/**
- * One real printed-card photo, framed cleanly. The source shots are tall
- * portraits with the card sitting in the lower third under a houseplant; we
- * crop to a landscape window low in the frame so the card itself — which is a
- * 6x4 landscape card anyway — is the subject, with just a hint of the sunny
- * table setting behind it for warmth.
- */
-function CardPhoto({
-  card,
-  className = "",
-  sizes = "(max-width: 640px) 88vw, 440px",
-  priority = false,
-}: {
-  card: PrintedCard;
-  className?: string;
-  sizes?: string;
-  priority?: boolean;
-}) {
-  return (
-    <div
-      className={`aspect-[4/3] overflow-hidden rounded-2xl shadow-[0_24px_60px_rgba(15,23,42,0.22)] ${className}`}
-    >
-      <Image
-        src={card.src}
-        width={card.width}
-        height={card.height}
-        alt={card.alt}
-        sizes={sizes}
-        priority={priority}
-        className="h-full w-full object-cover [object-position:50%_86%]"
-      />
-    </div>
-  );
-}
 
-export type HeroVariant =
-  | "transform"
-  | "pdf"
-  | "social"
-  | "binder"
-  | "keepsake"
-  | "templates";
-
-// Which real card photo a landing page leads with, by intent, so no two open
-// the same way.
-const VARIANT_CARD: Record<HeroVariant, string> = {
-  templates: "caprese",
-  binder: "korean",
-  transform: "korean",
-  pdf: "caprese",
-  social: "caprese",
-  keepsake: "pesto",
-};
-
-/** The hero photo for a landing page — one real printed card, by intent. */
-export function LandingHeroVisual({ variant }: { variant: HeroVariant }) {
-  const card = PRINTED_CARDS[VARIANT_CARD[variant]] ?? PRINTED_CARDS.korean;
-  return <CardPhoto card={card} priority sizes="(max-width: 1023px) 90vw, 440px" />;
-}

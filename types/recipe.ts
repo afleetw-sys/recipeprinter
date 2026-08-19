@@ -51,12 +51,23 @@ export interface Recipe {
 
 export interface ParseResult {
   success: true;
-  recipe: Recipe;
+  /** One or more recipes. A normal page yields exactly one; a "roundup" URL
+      (RecipePrinter multi-recipe import) yields several. */
+  recipes: Recipe[];
 }
 
 export interface ParseError {
   success: false;
   error: string;
+  /**
+   * Set when CookPilot's full parser already ran server-side and definitively
+   * found no recipe. The client's fallback calls that same parser through its
+   * own callable, so a retry would re-run identical work for an identical
+   * answer — twice the wait for the cook and twice the parse cost. Absent means
+   * the parser was never consulted (not configured for this deployment) or gave
+   * an inconclusive answer, and the fallback is still worth trying.
+   */
+  parserExhausted?: true;
 }
 
 export type ParseResponse = ParseResult | ParseError;
@@ -92,14 +103,31 @@ export interface QueueItem {
    See the "Document model: sections, not divider objects" section of the
    implementation plan for the reasoning. */
 
+/** How a section opener shows its photo(s), mirroring the recipe photo model
+    (`PhotoStyle`) plus a chapter-only grid:
+    - `none` — a typographic opener, no photo, no facing page;
+    - `band` — a photo in the opener's own top band (the legacy `photoUrl`);
+    - `full` — a full-bleed photo on the page FACING the opener (like a recipe
+      image-spread);
+    - `grid` — a curated photo collage on the facing page (`gridImages`).
+    Absent resolves via `resolveSectionPhotoMode`: a `photoUrl` present → `band`,
+    else `none`. Only meaningful in cookbook mode. */
+export type SectionPhotoMode = "none" | "band" | "full" | "grid";
+
 export interface Section {
   id: string;
   /** Untitled = no visible grouping in the UI, no divider page when printed. */
   title?: string;
   /** Optional secondary line on a cookbook section opener. */
   subtitle?: string;
-  /** Chapter-opener photo (cookbook mode only). */
+  /** Chapter-opener photo (cookbook mode only). Carries both the `band` (in-card)
+      photo and the `full` facing photo — the single source, like a recipe's
+      `heroImageUrl`. */
   photoUrl?: string;
+  /** Explicit opener photo placement. Absent = derived (see `SectionPhotoMode`). */
+  photoMode?: SectionPhotoMode;
+  /** Curated photos for the `grid` facing page (a chapter collage). */
+  gridImages?: string[];
   /** Short chapter intro line shown on the opener (cookbook mode only). */
   intro?: string;
   /** Whether this named section receives a printed opener page. */
@@ -108,6 +136,11 @@ export interface Section {
   numberAsChapter?: boolean;
   items: QueueItem[];
 }
+
+/** A section stripped to what's persisted: the organizational fields plus the
+    member ids, never recipe content (which the queue owns). `Section` is this
+    joined against the live item list — see `buildSections` in lib/project.ts. */
+export type SectionMeta = Omit<Section, "items"> & { itemIds: string[] };
 
 /** Which print-format preset a cookbook exports at. Each id maps to a full
     page geometry (trim size, bleed, margin, binding gutter) in
@@ -167,6 +200,8 @@ export interface CookbookFrontMatter {
   kind: "dedication" | "introduction";
   heading?: string;
   body?: string;
+  /** Optional closing line, e.g. "— The Smith Family". */
+  signature?: string;
 }
 
 export interface PrintProjectSettings {
@@ -192,6 +227,32 @@ export interface PrintProjectSettings {
   photoStyle?: "none" | "card" | "full";
 }
 
+/**
+ * Everything cookbook-specific that switching back to recipe cards sets aside,
+ * so returning to the book restores it rather than making the cook rebuild it.
+ *
+ * This is persisted with the project on purpose. The stash lives in session
+ * metadata while you work, but "switch to cards" also detaches the working copy
+ * onto a fresh project id — so without carrying the stash into the saved
+ * document, reopening that card project later found no stash and silently
+ * scaffolded a brand-new book instead of restoring the one that was set aside.
+ * Only ids and organizational fields, so it stays small.
+ */
+export interface StashedCookbook {
+  cover?: CoverConfig;
+  backCover?: CoverConfig;
+  dedication?: CoverConfig;
+  frontMatter?: CookbookFrontMatter;
+  photoStyle?: "none" | "card" | "full";
+  tableOfContents?: boolean;
+  tocKicker?: string;
+  tocTitle?: string;
+  sectionDividers?: boolean;
+  cookbookPreset?: CookbookPresetId;
+  sections: SectionMeta[];
+  itemPlacements?: Record<string, RecipePagePlacement>;
+}
+
 export interface PrintProject {
   id: string;
   /** Distinguishes automatic cookbook persistence from opt-in card projects. */
@@ -215,6 +276,9 @@ export interface PrintProject {
       `RecipePagePlacement`). Absent for plain card projects. Kept alongside
       sections so a saved cookbook restores its per-recipe layout choices. */
   itemPlacements?: Record<string, RecipePagePlacement>;
+  /** A book set aside by switching this project to recipe cards. See
+      `StashedCookbook`. Absent for projects that were never a cookbook. */
+  stashedCookbook?: StashedCookbook;
   createdAt: number;
   updatedAt: number;
 }

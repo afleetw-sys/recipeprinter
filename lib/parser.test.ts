@@ -1,0 +1,139 @@
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { ImportError } from "@/lib/parser";
+import { parseUrlAll } from "@/lib/parser";
+
+// What these tests are about is one decision: after `/api/parse` fails, do we
+// go on to run CookPilot's parser AGAIN through its client callable? The route
+// already calls that same parser server-side, so an unconditional retry means
+// the cook waits through two full parses to reach one answer. `parserExhausted`
+// is the route telling us the parser already answered.
+//
+// So the callable is a spy and the assertion is usually its call count. The
+// modules underneath (Firebase Functions, Storage) are irrelevant here and are
+// mocked to nothing.
+
+const callable = vi.hoisted(() => vi.fn());
+
+vi.mock("firebase/functions", () => ({
+  httpsCallable: () => callable,
+}));
+vi.mock("@/lib/firebase/functions", () => ({ getFns: () => ({}) }));
+vi.mock("@/lib/photoStorage", () => ({ anonymousOwnerId: () => "anon-test" }));
+
+const COOKPILOT_RESULT = {
+  data: {
+    recipe: {
+      title: "Fallback Borscht",
+      ingredientSections: [{ title: undefined, ingredients: [{ name: "beets", amount: "2" }] }],
+      instructionSections: [{ title: undefined, instructions: [{ text: "Simmer." }] }],
+    },
+  },
+};
+
+/** Stubs `/api/parse` with one response. */
+function routeReplies(status: number, body: Record<string, unknown>) {
+  vi.stubGlobal(
+    "fetch",
+    vi.fn(async () => ({
+      status,
+      json: async () => body,
+    })),
+  );
+}
+
+beforeEach(() => {
+  callable.mockReset();
+  callable.mockResolvedValue(COOKPILOT_RESULT);
+});
+
+afterEach(() => {
+  vi.unstubAllGlobals();
+});
+
+describe("parseUrlAll — CookPilot fallback suppression", () => {
+  it("returns the route's recipes without touching the callable", async () => {
+    routeReplies(200, {
+      success: true,
+      recipes: [{ title: "Route Borscht", ingredients: [], instructions: [] }],
+    });
+
+    const recipes = await parseUrlAll("example.com/borscht");
+
+    expect(recipes).toHaveLength(1);
+    expect(recipes[0].title).toBe("Route Borscht");
+    expect(callable).not.toHaveBeenCalled();
+  });
+
+  it("does not re-run the parser when the route says it already found nothing", async () => {
+    routeReplies(422, {
+      success: false,
+      error: "We couldn't find a complete recipe on that page.",
+      parserExhausted: true,
+    });
+
+    await expect(parseUrlAll("example.com/not-a-recipe")).rejects.toThrow(ImportError);
+    expect(callable).not.toHaveBeenCalled();
+  });
+
+  it("still falls back when the route never consulted the parser", async () => {
+    // No `parserExhausted`: the deployment has no server-side parser configured,
+    // so the route only managed a JSON-LD read. The callable is the first time
+    // the real parser sees this URL, and it's the whole reason the fallback
+    // exists — suppressing it here would break import on those deployments.
+    routeReplies(422, {
+      success: false,
+      error: "We couldn't find a complete recipe on that page.",
+    });
+
+    const recipes = await parseUrlAll("example.com/borscht");
+
+    expect(callable).toHaveBeenCalledTimes(1);
+    expect(recipes[0].title).toBe("Fallback Borscht");
+  });
+
+  it("falls back when the route itself is unreachable", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async () => {
+        throw new Error("offline");
+      }),
+    );
+
+    const recipes = await parseUrlAll("example.com/borscht");
+
+    expect(callable).toHaveBeenCalledTimes(1);
+    expect(recipes[0].title).toBe("Fallback Borscht");
+  });
+
+  it("keeps not retrying a rejected input (400)", async () => {
+    routeReplies(400, { success: false, error: "That doesn't look like a valid URL." });
+
+    await expect(parseUrlAll("example.com/nope")).rejects.toThrow(ImportError);
+    expect(callable).not.toHaveBeenCalled();
+  });
+});
+
+describe("parseUrlAll — analytics buckets for suppressed retries", () => {
+  // Suppressing the retry means these statuses now end at parseUrlAll's own
+  // throw instead of being categorized by `friendlyError` on the way out of the
+  // fallback. The bucket has to come out the same either way, or the closed
+  // vocabulary stops being comparable across the two paths.
+  const cases: Array<[number, string]> = [
+    [422, "no_recipe"],
+    [404, "not_found"],
+    [403, "blocked"],
+    [429, "blocked"],
+    [413, "too_large"],
+    [504, "timeout"],
+    [502, "backend_unavailable"],
+  ];
+
+  for (const [status, category] of cases) {
+    it(`reports ${status} as ${category}`, async () => {
+      routeReplies(status, { success: false, error: "nope", parserExhausted: true });
+
+      await expect(parseUrlAll("example.com/x")).rejects.toMatchObject({ code: category });
+      expect(callable).not.toHaveBeenCalled();
+    });
+  }
+});

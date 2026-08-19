@@ -2,21 +2,62 @@ import type { Metadata } from "next";
 import { pageMetadata } from "@/lib/seo";
 import type { ImportMethod } from "@/types/recipe";
 
+/** Icon slugs a value-prop chip can use, resolved to real icons in the template. */
+export type SeoIconKey =
+  | "link"
+  | "image"
+  | "text"
+  | "print"
+  | "pdf"
+  | "book"
+  | "clock"
+  | "check"
+  | "users"
+  | "crown";
+
+/** Which claim-specific proof visual a feature row draws (placeholder for now). */
+export type SeoProofKind =
+  | "before-after"
+  | "pdf"
+  | "card"
+  | "social"
+  | "photo"
+  | "binder"
+  | "book"
+  | "steps";
+
 export type SeoLandingPage = {
   slug: string;
   primaryKeyword: string;
   secondaryKeywords: string[];
   intent: "Utility SEO" | "Organization SEO" | "Preservation and Gift SEO";
+  /**
+   * Where the shared SEO page asks the visitor to begin. Utility intent puts
+   * capture in the hero; guide intent introduces the broader workflow first
+   * and moves capture below the explanatory sections. This changes sequence,
+   * not the site's visual language.
+   */
+  layout?: "capture-first" | "guide-first";
   eyebrow: string;
   statusNote?: string;
   initialImportMode?: ImportMethod;
   importSubmitLabel?: string;
-  /** Short hint shown under the embedded importer when the preselected mode needs a caveat. */
+  /** Reassurance below capture; false hides the default utility-page message. */
+  captureReassurance?: string | false;
+  /** Short hint shown under the capture block when the preselected mode needs a caveat. */
   importHint?: string;
   title: string;
   description: string;
   h1: string;
   lede: string;
+  /** One-sentence emotional hook opening the content scaffold. */
+  intro?: string;
+  /** "How to …" steps, renders the section and the HowTo JSON-LD. */
+  howTo?: { name: string; text: string }[];
+  /** 2–3 deep-dive sections, each targeting a secondary keyword, with a proof visual. */
+  featureSections?: { heading: string; body: string; proof?: SeoProofKind }[];
+  /** Real printed-card photo keys (PRINTED_CARDS) for the examples gallery. */
+  examples?: string[];
   faqs: { question: string; answer: string }[];
   links: { href: string; label: string }[];
 };
@@ -40,16 +81,55 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
     h1: "Print a recipe from a website",
     lede:
       "Found a recipe on a food blog or recipe website that you want to cook from paper? Paste the page link into Recipe Printer and turn the recipe itself into a clean printable card, full page, or PDF.",
-    faqs: [
+    howTo: [
       {
-        question: "Can I print a recipe from any website?",
-        answer:
-          "Usually, yes. Paste the recipe URL into Recipe Printer. If a website does not import cleanly, you can paste the recipe text or upload a screenshot instead.",
+        name: "Copy the recipe link",
+        text: "On the food blog or recipe site, copy the page link from your browser's address bar or the app's share button.",
       },
       {
-        question: "Can I save the printed recipe as a PDF?",
+        name: "Paste it in and start",
+        text: "Paste the link into the box above and start it. Recipe Printer reads the page and rebuilds the recipe as a clean, printable layout.",
+      },
+      {
+        name: "Set the format",
+        text: "Choose a recipe card or a full page, keep or drop the photo, and fix anything the site formatted oddly before you print.",
+      },
+      {
+        name: "Print or save as PDF",
+        text: "Send it to your printer, or choose Save as PDF in the print dialog to keep a copy on your phone or computer.",
+      },
+    ],
+    featureSections: [
+      {
+        heading: "It keeps the recipe and drops everything else",
+        proof: "before-after",
+        body:
+          "Recipe Printer reads the page and keeps only what you cook from: the ingredient list with amounts, the numbered steps, the prep and cook times, and the servings. The blogger's backstory, the autoplay video, the comments, and the ads stay behind. When the site names a source or author, that can print alongside the recipe so you know where it came from and can find it again.",
+      },
+      {
+        heading: "Print it the way your kitchen actually works",
+        proof: "card",
+        body:
+          "Pick the format that fits how you cook. A 4 by 6 card drops straight into a recipe box or an index-card binder. A full letter page suits long bakes and doubled batches, with room in the margin for your own notes. Keep the finished-dish photo or leave it off to save ink, and the type stays large enough to read from across the counter.",
+      },
+      {
+        heading: "For the pages that fight back",
+        proof: "steps",
+        body:
+          "Some recipes hide behind a login, sit on a site that blocks importers, or live only in a video's description. When a link won't import cleanly, paste the recipe text straight in or upload a screenshot, and Recipe Printer structures it into the same clean printout. It works from a phone too, so you can grab a recipe on the couch and print it from the kitchen later.",
+      },
+    ],
+    examples: ["caprese", "korean", "pesto"],
+    faqs: [
+      {
+        question: "Can I print more than one recipe at once?",
         answer:
-          "Yes. Recipe Printer formats the recipe for printing, and you can choose Save as PDF in your browser print dialog.",
+          "Yes. Add several recipes and print them together, which helps when you're prepping a week of dinners or building a section for a binder.",
+      },
+      {
+        question: "Can I save the recipe as a PDF instead of printing?",
+        answer:
+          "Yes. Recipe Printer builds a print-ready page, so in the print dialog you can choose Save as PDF and keep a clean copy on your phone or computer to print whenever you want.",
       },
     ],
     links: [
@@ -480,13 +560,13 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
     intent: "Preservation and Gift SEO",
     eyebrow: "Family recipe guide",
     statusNote:
-      "Turn old cards, photos, screenshots, and pasted text into clean recipe pages — then gather them into a keepsake cookbook with a cover, automatic table of contents, and chapters.",
+      "Turn old cards, photos, screenshots, and pasted text into clean recipe pages, then gather them into a keepsake cookbook with a cover, an automatic table of contents, and chapters.",
     title: "Preserve Family Recipes",
     description:
       "Preserve family recipes by turning old cards, photos, screenshots, and text into printable keepsakes and a bound family cookbook.",
     h1: "Preserve family recipes",
     lede:
-      "Family recipes deserve more than a fading card in a drawer. Recipe Printer turns old recipe cards, photos, and text into printable pages worth keeping — and gathers them into a keepsake family cookbook.",
+      "Family recipes deserve more than a fading card in a drawer. Recipe Printer turns old recipe cards, photos, and text into printable pages worth keeping, then gathers them into a keepsake family cookbook.",
     faqs: [
       {
         question: "Can I print recipes from old handwritten cards?",
@@ -516,24 +596,63 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
     ],
     intent: "Preservation and Gift SEO",
     eyebrow: "Family recipe guide",
-    statusNote:
-      "Recipe Printer turns your recipes into a designed family cookbook — a cover, an automatic table of contents, and chapters — ready to print at home or send to a professional printer.",
     title: "Family Recipe Book Ideas",
     description:
       "Create a family recipe book from printed recipes, old cards, online favorites, photos, and kitchen notes.",
     h1: "Family recipe book ideas",
     lede:
-      "A family recipe book can start one recipe at a time. Recipe Printer turns online recipes, old cards, photos, and text into clean pages — then binds them into a family cookbook with a cover, table of contents, and chapters.",
+      "A family recipe book can start with one recipe. Recipe Printer turns online recipes, old cards, photos, and typed-in notes into clean, matching pages, then binds them into a cookbook with a cover, chapters, and a table of contents.",
+    captureReassurance: false,
+    importHint: "Start here, then add as many recipes as you like.",
+    howTo: [
+      {
+        name: "Gather the recipes",
+        text: "Bring together the recipes you want to keep: paste links, photograph old handwritten cards, upload screenshots, or type in the ones that only live in someone's head.",
+      },
+      {
+        name: "Clean up each page",
+        text: "Recipe Printer sets every recipe on a clear, consistent page, so a faded card and a copied text end up looking like they belong in the same book.",
+      },
+      {
+        name: "Organize into chapters",
+        text: "Group them into chapters like breakfasts, mains, and holiday baking, and add a cover and a dedication.",
+      },
+      {
+        name: "Print at home or send to a printer",
+        text: "Print the finished cookbook on your home printer, or export it and order a bound copy from a professional printer to give as a gift.",
+      },
+    ],
+    featureSections: [
+      {
+        heading: "Different sources, one consistent book",
+        proof: "photo",
+        body:
+          "Family recipes arrive in every format: a stained index card, a screenshot from a group chat, a link a cousin sent, a method that only lives in someone's head. Recipe Printer reads each one and sets it on a clean, consistent page, so a card from 1975 and a text from last week look like they belong in the same book instead of a pile of mismatched scraps.",
+      },
+      {
+        heading: "Keep the details that make it yours",
+        proof: "book",
+        body:
+          "A good family cookbook is as much about the people as the food. Keep a note about who a recipe came from, the substitution that makes it work, and the holiday it belongs to. Place a photo of the dish, the cook, or the original handwritten card next to the clean typed version, so the story and the exact wording survive alongside the measurements.",
+      },
+      {
+        heading: "Print one at home, or a bound copy for everyone",
+        proof: "book",
+        body:
+          "Print a copy on your home printer to flip through and check, then export a print-ready file to order bound books from a professional printer. A finished cookbook makes a keepsake gift for a wedding, a milestone birthday, or the holidays, and everyone who cooks from it gets their own copy in the kitchen.",
+      },
+    ],
+    examples: ["pesto", "caprese", "korean"],
     faqs: [
       {
         question: "What should go in a family recipe book?",
         answer:
-          "Include favorite recipes, notes about who made them, substitutions, holiday traditions, photos, and the stories that make the food meaningful.",
+          "Include the recipes people actually ask for, notes on who made them and when, substitutions and tips, holiday traditions, and photos. The small stories are what turn a stack of recipes into a book worth keeping.",
       },
       {
-        question: "Can Recipe Printer help before professional printing?",
+        question: "Can I add recipes to the book over time?",
         answer:
-          "Yes. It creates clean, readable recipe pages and compiles them into a cookbook with a cover, an automatic table of contents, and chapters — ready to print at home or send to a professional printer.",
+          "Yes. You don't have to finish it in one sitting. Add recipes as you collect them, and the table of contents renumbers itself so the book stays in order as it grows.",
       },
     ],
     links: [
@@ -619,6 +738,11 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
 export const SEO_LANDING_PAGE_MAP = new Map(
   SEO_LANDING_PAGES.map((page) => [page.slug, page]),
 );
+
+/** The layout template a page renders with (explicit override, else by intent). */
+export function layoutForPage(page: SeoLandingPage): "capture-first" | "guide-first" {
+  return page.layout ?? (page.intent === "Utility SEO" ? "capture-first" : "guide-first");
+}
 
 export function seoLandingPageMetadata(page: SeoLandingPage): Metadata {
   return pageMetadata({

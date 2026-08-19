@@ -319,23 +319,6 @@ async function packageForTemplate(
   return rcPackage;
 }
 
-export async function loadRecipePrinterTemplatePrices(
-  userId: string,
-): Promise<Partial<Record<PremiumRecipePrintTemplate, string>>> {
-  const purchases = await getPurchases(userId);
-  const offering = await offeringFor(purchases, RECIPEPRINTER_OFFERING_ID);
-  if (!offering) return {};
-
-  return Object.fromEntries(
-    (Object.entries(PREMIUM_TEMPLATE_PACKAGE_IDS) as Array<[PremiumRecipePrintTemplate, string]>)
-      .map(([template, packageId]) => {
-        const rcPackage = findPackage(offering, packageId, productIdForTemplate(template));
-        return [template, rcPackage?.webBillingProduct.price.formattedPrice] as const;
-      })
-      .filter((entry): entry is [PremiumRecipePrintTemplate, string] => Boolean(entry[1])),
-  );
-}
-
 export async function purchaseRecipePrinterTemplate({
   userId,
   email,
@@ -382,15 +365,6 @@ export function hasCookbookEntitlement(customerInfo: CustomerInfo | null): boole
   return Boolean(customerInfo?.entitlements.active[RECIPEPRINTER_COOKBOOK_ENTITLEMENT_ID]);
 }
 
-export async function loadRecipePrinterCookbookPrice(userId: string): Promise<string | undefined> {
-  const purchases = await getPurchases(userId);
-  const rcPackage = findPackage(
-    await offeringFor(purchases, RECIPEPRINTER_COOKBOOK_OFFERING_ID),
-    RECIPEPRINTER_COOKBOOK_PACKAGE_ID,
-    RECIPEPRINTER_COOKBOOK_PRODUCT_ID,
-  );
-  return rcPackage?.webBillingProduct.price.formattedPrice;
-}
 
 export async function purchaseRecipePrinterCookbook({
   userId,
@@ -403,6 +377,11 @@ export async function purchaseRecipePrinterCookbook({
 }): Promise<{ customerInfo: CustomerInfo; cancelled: boolean }> {
   const purchases = await getPurchases(userId);
   const rcPackage = await packageForCookbook(purchases);
+  // Give the cookbook-unlock webhook a reliable purchase→project map. Webhook
+  // payloads carry subscriber attributes, but not the purchase-time `metadata`
+  // below — so set both (attribute for the server, metadata kept for parity).
+  // See docs/cookbook-unlock-webhook.md. Harmless until the webhook exists.
+  await purchases.setAttributes({ cookbook_project_id: projectId }).catch(() => undefined);
 
   try {
     const result = await purchases.purchase({

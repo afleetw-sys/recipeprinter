@@ -3,8 +3,56 @@
 import { useCallback, useEffect, useRef, useState, type Dispatch, type SetStateAction } from "react";
 import type { PrintCardSize } from "@/components/RecipeCardPrint";
 
-const SINGLE_RECIPE_DECK_TOP_PADDING = 16;
 const PREVIEW_SELECTOR = ".recipe-page-scaler";
+/** Mirrors `scroll-padding-top` on `.recipe-page-deck` in app/print/print.css.
+    Reserves room above every card for its floating controls (front/back flip +
+    Edit), which would otherwise tuck behind the sticky top bar. */
+const DECK_SCROLL_PADDING_TOP = 72;
+
+/**
+ * The element CSS actually snaps for this slide — which differs by mode.
+ *
+ * A cookbook spread snaps the SLIDE; a recipe card snaps its `.recipe-page-
+ * scaler` (see the two `scroll-snap-align: center` rules in print.css). Aiming
+ * a programmatic scroll at the wrong one is aiming at a position the browser
+ * does not consider a snap point, which it then corrects with a visible jump.
+ */
+function snapTargetIn(slide: HTMLElement): HTMLElement {
+  if (getComputedStyle(slide).scrollSnapAlign !== "none") return slide;
+  return slide.querySelector<HTMLElement>(PREVIEW_SELECTOR) ?? slide;
+}
+
+/**
+ * Where the browser would rest this slide, computed the way CSS scroll-snap
+ * computes it: against the SNAPPORT (the scrollport inset by `scroll-padding`),
+ * honouring the target's own `scroll-snap-align`.
+ *
+ * This used to be hand-rolled as `top - max(72, (clientHeight - height) / 2)`,
+ * which ignored `scroll-padding-top: 72px` entirely and so landed every card
+ * 36px — half the padding — off the real snap point. `scrollDeckTo` suspends
+ * snapping for the animation and restores it on `scrollend` on the premise
+ * that "we always scroll to a snap point, so restoring moves nothing"; the
+ * premise was false, so restoring moved everything by 36px. That correction,
+ * arriving just after the scroll appeared to finish, is the overshoot-then-
+ * catch glitch. Deriving the target from the same inputs CSS uses makes the
+ * premise true instead of approximately true.
+ */
+function snapScrollTopFor(deck: HTMLElement, slide: HTMLElement): number {
+  const target = snapTargetIn(slide);
+  const deckStyle = getComputedStyle(deck);
+  const padTop = parseFloat(deckStyle.scrollPaddingTop) || 0;
+  const padBottom = parseFloat(deckStyle.scrollPaddingBottom) || 0;
+  const deckRect = deck.getBoundingClientRect();
+  const rect = target.getBoundingClientRect();
+  const top = rect.top - deckRect.top + deck.scrollTop;
+  // One value applies to both axes; two are block-then-inline. This deck
+  // scrolls in the block axis, so the first value is the one that governs.
+  const align = getComputedStyle(target).scrollSnapAlign.split(" ")[0];
+  if (align === "start") return top - padTop;
+  if (align === "end") return top + rect.height - (deck.clientHeight - padBottom);
+  const snapportHeight = deck.clientHeight - padTop - padBottom;
+  return top - padTop - (snapportHeight - rect.height) / 2;
+}
 
 interface UseDeckScrollerOptions {
   activeNavIndex: number;
@@ -50,26 +98,6 @@ function scrollDeckTo(deck: HTMLDivElement, options: ScrollToOptions) {
   deck.scrollTo(options);
 }
 
-function getPreviewMetrics(deck: HTMLDivElement, slide: HTMLDivElement) {
-  const preview = slide.querySelector<HTMLElement>(PREVIEW_SELECTOR);
-  if (!preview) {
-    return {
-      top: slide.offsetTop,
-      left: slide.offsetLeft,
-      width: slide.offsetWidth,
-      height: slide.offsetHeight,
-    };
-  }
-
-  const deckRect = deck.getBoundingClientRect();
-  const previewRect = preview.getBoundingClientRect();
-  return {
-    top: previewRect.top - deckRect.top + deck.scrollTop,
-    left: previewRect.left - deckRect.left + deck.scrollLeft,
-    width: previewRect.width,
-    height: previewRect.height,
-  };
-}
 
 /**
  * Owns the print page's scrollable deck: which face (front/back) is showing,
@@ -167,7 +195,16 @@ export function useDeckScroller({
         // never a frame behind. That makes scrollTop:0 the first slide's own
         // resting position, with no gap above it left to overscroll into.
         if (!mobile) {
-          const topPad = Math.max(0, (availH - pageHeight * scale) / 2);
+          // Centre the first card inside the SNAPPORT (the viewport inset by
+          // `scroll-padding-top`), not the raw viewport — the same geometry
+          // `snapScrollTopFor` uses. Centring against the raw viewport put the
+          // first slide's resting place half the padding away from its own snap
+          // point, so it drifted the moment snapping re-engaged. The padding
+          // itself is the control clearance, so this can never fall below it.
+          const snapportHeight = availH - DECK_SCROLL_PADDING_TOP;
+          const topPad =
+            DECK_SCROLL_PADDING_TOP +
+            Math.max(0, (snapportHeight - pageHeight * scale) / 2);
           el.style.setProperty("--deck-top-pad", `${topPad}px`);
         }
       }
@@ -196,17 +233,17 @@ export function useDeckScroller({
         return;
       }
 
-      const preview = getPreviewMetrics(deck, slide);
-      const targetTop = singleRecipePrintView
-        ? preview.top - SINGLE_RECIPE_DECK_TOP_PADDING
-        : preview.top - (deck.clientHeight - preview.height) / 2;
+      // Control clearance is no longer applied here: `scroll-padding-top` owns
+      // it, and honouring that is exactly what keeps this in agreement with the
+      // browser. Two implementations of one intent is what drifted.
+      const targetTop = snapScrollTopFor(deck, slide);
       const maxTop = deck.scrollHeight - deck.clientHeight;
       scrollDeckTo(deck, {
         top: Math.round(Math.max(0, Math.min(targetTop, maxTop))),
         behavior,
       });
     },
-    [singleRecipePrintView],
+    [],
   );
 
   // Holds off the scroll listener until a programmatic scroll settles,
@@ -277,7 +314,30 @@ export function useDeckScroller({
   }, [navItemsLength, deckScale, cardSize, singleRecipePrintView]);
 
   // Centre the active page when the deck is first laid out or rescaled.
+  const didInitDeckPositionRef = useRef(false);
   useEffect(() => {
+    // On the FIRST real layout, land on the cover (index 0). The deck is a
+    // native scroll container, so on a reload the browser restores its previous
+    // `scrollTop`, and the scroll listener above then rewrites `activeNavIndex`
+    // to whatever mid-book slide that lands on — the "refresh jumps to a random
+    // page" bug. Force the top and suppress the sync briefly so the restore
+    // scroll that fires as we reset can't corrupt the selection.
+    if (!didInitDeckPositionRef.current && navItemsLength > 0) {
+      didInitDeckPositionRef.current = true;
+      const el = deckRef.current;
+      suppressScrollSyncRef.current = true;
+      if (el) {
+        el.scrollTop = 0;
+        el.scrollLeft = 0;
+      }
+      setActiveNavIndex(0);
+      centerSlide(0);
+      window.clearTimeout(scrollSyncTimerRef.current);
+      scrollSyncTimerRef.current = window.setTimeout(() => {
+        suppressScrollSyncRef.current = false;
+      }, 250);
+      return;
+    }
     centerSlide(activeNavIndex);
     // Only re-centre on structural / size changes, not on every selection.
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -304,6 +364,5 @@ export function useDeckScroller({
     deckRef,
     slideRefs,
     goToSlide,
-    centerSlide,
   };
 }

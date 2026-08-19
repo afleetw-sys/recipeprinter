@@ -27,12 +27,15 @@
   --cp-page: #f5f7fb;
   --cp-card: #ffffff;
   --cp-error: #c53f3f;
-  /* Error surface tints, derived from --cp-error so the destructive red stays
-     one source of truth instead of the same rgba(197,63,63,…) being hand-typed
-     into every error block (.state--error, the queue-card parse error, etc.). */
+  /* Reserved for non-field error surfaces such as failed import queue cards. */
   --cp-error-soft: color-mix(in srgb, var(--cp-error) 6%, transparent);
   --cp-error-border: color-mix(in srgb, var(--cp-error) 16%, transparent);
   --cp-body-background: #f5f7fb;
+  /* Neutral UI-chrome values (not palette colours): hover overlays and muted
+     surfaces, tokenized so chrome stops hardcoding them. Values unchanged. */
+  --cp-overlay-hover: rgba(127, 127, 127, 0.08);
+  --cp-overlay-hover-strong: rgba(127, 127, 127, 0.1);
+  --cp-surface-muted: #f6f8fa;
 
   /* ── Font-size scale ──────────────────────────────────────────────────────
      One shared type scale so titles, buttons, labels, and body copy read as
@@ -48,6 +51,8 @@
   --cp-fs-body: 0.92rem; /* standard paragraph copy, primary buttons */
   --cp-fs-body-lg: 1.02rem; /* lede/intro paragraphs under a heading */
   --cp-fs-h2: 1.1rem; /* section headings, dialog/card titles */
+  --cp-fs-dialog-title: 1.24rem; /* functional modal and drawer titles */
+  --cp-fs-price: 1.6rem; /* standalone purchase price */
   --cp-fs-h2-lg: clamp(1.2rem, 1rem + 1vw, 1.4rem); /* step numbers, emphasis headings */
   --cp-fs-hero-sm: clamp(1.9rem, 1.5rem + 2vw, 2.5rem); /* article page H1 (features/about/faq/how-it-works) */
   --cp-fs-hero: clamp(2rem, 1.1rem + 4vw, 2.75rem); /* app/home page H1 */
@@ -66,6 +71,15 @@
   --cp-shadow-md: 0 10px 30px rgba(15, 23, 42, 0.1); /* cards, page previews, focus lift */
   --cp-shadow-lg: 0 18px 48px rgba(15, 23, 42, 0.18); /* toasts, dropdown menus */
   --cp-shadow-xl: 0 24px 80px rgba(15, 23, 42, 0.22); /* modal dialogs */
+  --cp-shadow-sheet: 0 -18px 48px rgba(15, 23, 42, 0.18); /* bottom sheets/drawers */
+
+  /* Semantic radii for authored CSS. Tailwind utilities expose the same
+     numeric scale, while these names keep component intent visible. */
+  --cp-radius-control: 12px;
+  --cp-radius-thumbnail: 10px;
+  --cp-radius-card: 24px;
+  --cp-radius-dialog: 28px;
+  --cp-radius-sheet: 20px;
 
   /* ── Interaction states ──────────────────────────────────────────────────
      One recipe for "this option is selected" and one for keyboard focus, so
@@ -76,15 +90,54 @@
      accent outline shown only on keyboard nav (:focus-visible). */
   --cp-selected-border: var(--cp-accent);
   --cp-selected-fill: color-mix(in srgb, var(--cp-accent) 8%, var(--cp-card));
-  --cp-selected-ring: 0 0 0 1px var(--cp-accent);
+  /* Flat by design: selection reads from the accent border + fill + ink text,
+     not a shadow. Kept as a no-op token so the many `box-shadow:
+     var(--cp-selected-ring)` call sites stay valid; set it to a real ring only
+     if a control ever needs one without an accompanying border. */
+  --cp-selected-ring: none;
   --cp-selected-text: var(--cp-accent-ink);
+  /* Focus uses the vivid brand accent so it matches the selected-state border
+     (e.g. the mode-toggle tabs), which also uses --cp-accent — a focus ring in
+     the darker ink sibling read as a different, "wrong" colour next to it.
+     Trade-off: the vivid accent is ~1.95:1 on white, below the 3:1 focus ideal,
+     accepted here for visual consistency (chosen over the AA-safe ink). */
   --cp-focus-ring: 2px solid var(--cp-accent);
+  /* Hug the control edge — an offset ring reads as a detached double-line next
+     to the field's own border. Zero keeps focus a single clean ring. */
   --cp-focus-ring-offset: 0;
 
   /* How much the on-screen keyboard currently covers, kept in sync by
      KeyboardInsetWatcher. Fixed-position bottom bars sit above this instead
      of `bottom: 0`, so the keyboard doesn't cover or scroll them away. */
   --rp-keyboard-inset: 0px;
+}
+
+/* Saved-project cover thumbnails use persisted cover data without importing
+   the physical print-page layout into the projects dashboard. */
+.project-cover {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  grid-auto-rows: 1fr;
+  gap: 2px;
+  width: 100%;
+  aspect-ratio: 8.5 / 5.5;
+  overflow: hidden;
+  background: var(--cp-line);
+}
+.project-cover img {
+  width: 100%;
+  height: 100%;
+  min-height: 0;
+  object-fit: cover;
+}
+.project-cover__img--wide {
+  grid-column: 1 / -1;
+}
+.project-cover--empty {
+  gap: 0;
+  place-items: center;
+  background: var(--cp-accent-soft);
+  color: var(--cp-accent-ink);
 }
 
 /* ── Cookbook premium workspace ───────────────────────────────────────── */
@@ -106,82 +159,128 @@
   display: grid;
   place-items: center;
   overflow: hidden;
-  background:
-    radial-gradient(circle at 50% 42%, color-mix(in srgb, var(--cp-accent) 18%, transparent), transparent 38%),
-    color-mix(in srgb, var(--cp-page) 94%, transparent);
-  backdrop-filter: blur(12px);
-  animation: cookbook-reveal-in 220ms ease both;
+  background: color-mix(in srgb, var(--cp-page) 95%, var(--cp-card));
+  backdrop-filter: blur(16px);
+  animation: cookbook-reveal-in 260ms ease both;
 }
+/* Soft accent "aurora" — two blurred blobs drifting behind the book. */
 .cookbook-build-reveal__glow {
   position: absolute;
-  width: min(70vw, 760px);
+  width: min(64vw, 640px);
   aspect-ratio: 1;
   border-radius: 50%;
-  background: color-mix(in srgb, var(--cp-accent) 12%, transparent);
-  filter: blur(70px);
-  animation: cookbook-reveal-breathe 1.35s ease-in-out both;
+  background: radial-gradient(circle, color-mix(in srgb, var(--cp-accent) 26%, transparent), transparent 66%);
+  filter: blur(32px);
+  animation: cookbook-reveal-drift 6.5s ease-in-out infinite alternate;
+}
+.cookbook-build-reveal__glow::after {
+  content: "";
+  position: absolute;
+  inset: -24% -30% auto auto;
+  width: 68%;
+  aspect-ratio: 1;
+  border-radius: 50%;
+  background: radial-gradient(circle, color-mix(in srgb, var(--cp-accent-ink) 20%, transparent), transparent 64%);
+  filter: blur(30px);
+  animation: cookbook-reveal-drift 8s ease-in-out infinite alternate-reverse;
 }
 .cookbook-build-reveal__content {
   position: relative;
   display: grid;
   place-items: center;
-  gap: .35rem;
+  gap: 1.15rem;
   text-align: center;
+  animation: cookbook-reveal-book 640ms cubic-bezier(.2, .8, .2, 1) both;
 }
-.cookbook-build-reveal .cookbook-mockup {
-  min-height: 270px;
-  animation: cookbook-reveal-book 1.35s cubic-bezier(.2,.8,.2,1) both;
+/* The build overlay gathers the cook's own recipe photos into a neat pile, as
+   if collecting them into the book. No progress bar — the pile keeps filling
+   (cycling the photos, repeating when there are only a few) until it's ready. */
+.cookbook-gather {
+  position: relative;
+  width: min(70vw, 320px);
+  height: 210px;
+  display: grid;
+  place-items: center;
+}
+.cookbook-gather__base {
+  position: absolute;
+  bottom: 26px;
+  width: 60%;
+  height: 24px;
+  border-radius: 50%;
+  background: radial-gradient(ellipse, rgba(17, 24, 39, 0.2), transparent 70%);
+  filter: blur(2px);
+}
+.cookbook-gather__stack {
+  position: relative;
+  width: 150px;
+  height: 114px;
+}
+.cookbook-gather__card {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 150px;
+  height: 114px;
+  /* Resting pile: each card fanned a touch off-center by its index. */
+  transform: translate(-50%, -50%) rotate(calc((var(--i) - 3) * 4deg))
+    translateX(calc((var(--i) - 3) * 3px));
+}
+.cookbook-gather__card-inner {
+  width: 100%;
+  height: 100%;
+  border-radius: 12px;
+  overflow: hidden;
+  background: color-mix(in srgb, var(--cp-accent) 16%, var(--cp-card));
+  box-shadow: var(--cp-shadow-md), 0 0 0 4px var(--cp-card);
+  animation: cookbook-gather-drop 1.9s cubic-bezier(.2, .8, .2, 1) infinite;
+  animation-delay: calc(var(--i) * 0.16s);
+}
+.cookbook-gather__card-inner img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+@keyframes cookbook-gather-drop {
+  0% { opacity: 0; transform: translateY(-190%) rotate(-6deg) scale(1.05); }
+  12% { opacity: 1; }
+  32% { opacity: 1; transform: translateY(0) rotate(0deg) scale(1); }
+  82% { opacity: 1; transform: translateY(0) rotate(0deg) scale(1); }
+  94% { opacity: 0; }
+  100% { opacity: 0; transform: translateY(-190%) rotate(-6deg) scale(1.05); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .cookbook-gather__card-inner { animation: none; opacity: 1; }
 }
 .cookbook-build-reveal__copy {
   display: grid;
   justify-items: center;
-  gap: .35rem;
+  gap: .5rem;
   color: var(--cp-ink);
 }
 .cookbook-build-reveal__copy span {
-  color: var(--cp-ink-soft);
-  font-size: .76rem;
+  color: var(--cp-accent-ink);
+  font-size: var(--cp-fs-label);
   font-weight: 800;
-  letter-spacing: .13em;
+  letter-spacing: .16em;
   text-transform: uppercase;
 }
 .cookbook-build-reveal__copy strong {
-  font-size: clamp(1.35rem, 3vw, 1.9rem);
+  font-size: clamp(1.4rem, 3vw, 1.95rem);
+  font-weight: 850;
   letter-spacing: -.02em;
-}
-.cookbook-build-reveal__progress {
-  width: min(270px, 60vw);
-  height: 4px;
-  margin-top: .7rem;
-  overflow: hidden;
-  border-radius: 99px;
-  background: color-mix(in srgb, var(--cp-line-strong) 70%, transparent);
-}
-.cookbook-build-reveal__progress i {
-  display: block;
-  width: 100%;
-  height: 100%;
-  border-radius: inherit;
-  background: var(--cp-accent);
-  transform-origin: left;
-  animation: cookbook-reveal-progress 1.25s cubic-bezier(.2,.8,.2,1) both;
 }
 @keyframes cookbook-reveal-in {
   from { opacity: 0; }
 }
 @keyframes cookbook-reveal-book {
-  0% { opacity: 0; transform: translateY(28px) scale(.86) rotate(-2deg); }
-  55% { opacity: 1; transform: translateY(0) scale(1.04) rotate(0); }
-  100% { opacity: 1; transform: scale(1); }
+  from { opacity: 0; transform: translateY(22px); }
+  to { opacity: 1; transform: translateY(0); }
 }
-@keyframes cookbook-reveal-progress {
-  from { transform: scaleX(.04); }
-  to { transform: scaleX(1); }
-}
-@keyframes cookbook-reveal-breathe {
-  0% { opacity: 0; transform: scale(.7); }
-  60% { opacity: 1; }
-  100% { opacity: .55; transform: scale(1.1); }
+@keyframes cookbook-reveal-drift {
+  from { transform: translate3d(-4%, -2%, 0) scale(1); opacity: .85; }
+  to { transform: translate3d(5%, 3%, 0) scale(1.12); opacity: 1; }
 }
 
 .cookbook-welcome,
@@ -203,51 +302,59 @@
   backdrop-filter: blur(5px);
 }
 
+/* Organize is a REAL full-screen dialog (portaled over everything, no app nav):
+   X + title on top, a scrolling section grid in the middle, Save/Cancel on the
+   bottom. Welcome/Ready keep the centred-card treatment from the shared group. */
+.cookbook-organize {
+  padding: 0;
+  place-items: stretch;
+}
 .cookbook-organize__panel {
   position: relative;
   z-index: 1;
   display: grid;
   grid-template-rows: auto minmax(0, 1fr) auto;
-  width: min(920px, calc(100vw - 48px));
-  max-height: min(86vh, 780px);
+  width: 100vw;
+  height: 100dvh;
   overflow: hidden;
-  border: 1px solid var(--cp-line);
-  border-radius: 18px;
   background: var(--cp-card);
   color: var(--cp-ink);
-  box-shadow: var(--cp-shadow-lg);
 }
 .cookbook-organize__header {
   display: flex;
   align-items: flex-start;
   justify-content: space-between;
   gap: 1rem;
-  padding: 20px 22px 16px;
+  padding: 18px 24px;
   border-bottom: 1px solid var(--cp-line);
 }
 .cookbook-organize__header h2 {
-  font-size: 1.35rem;
+  margin: 0;
+  font-size: var(--cp-fs-dialog-title);
+  font-weight: 800;
   letter-spacing: -.02em;
 }
 .cookbook-organize__header p {
   margin-top: .25rem;
   color: var(--cp-ink-soft);
-  font-size: var(--cp-fs-caption);
+  font-size: var(--cp-fs-small);
 }
 .cookbook-organize__sections {
   display: grid;
-  grid-template-columns: repeat(2, minmax(260px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(248px, 1fr));
+  align-content: start;
   align-items: start;
-  gap: 10px;
+  gap: 12px;
+  width: min(1180px, 100%);
+  margin: 0 auto;
   overflow: auto;
-  padding: 14px 16px 18px;
-  background: var(--cp-card);
+  padding: 22px 24px 28px;
 }
 .cookbook-organize__section {
   min-width: 0;
   padding: 10px;
   border: 1px solid var(--cp-line);
-  border-radius: 12px;
+  border-radius: var(--cp-radius-control);
   background: color-mix(in srgb, var(--cp-page) 48%, var(--cp-card));
 }
 .cookbook-organize__section.is-uncategorized {
@@ -271,7 +378,10 @@
 }
 .cookbook-organize__section-heading input:focus {
   border-bottom-color: var(--cp-accent);
-  outline: 0;
+}
+.cookbook-organize__section-heading input:focus-visible {
+  outline: var(--cp-focus-ring);
+  outline-offset: var(--cp-focus-ring-offset);
 }
 .cookbook-organize__section-heading > span {
   display: grid;
@@ -281,7 +391,7 @@
   border-radius: 999px;
   background: var(--cp-page);
   color: var(--cp-ink-soft);
-  font-size: .72rem;
+  font-size: var(--cp-fs-label);
   font-weight: 800;
 }
 .cookbook-organize__order {
@@ -293,7 +403,7 @@
   color: var(--cp-ink-soft);
 }
 .cookbook-organize__order button:disabled {
-  opacity: .25;
+  opacity: .5;
 }
 .cookbook-organize__opener {
   display: inline-flex;
@@ -301,7 +411,7 @@
   gap: 6px;
   margin: 9px 0;
   color: var(--cp-ink-soft);
-  font-size: .75rem;
+  font-size: var(--cp-fs-label);
   font-weight: 700;
 }
 .cookbook-organize__recipes {
@@ -312,31 +422,45 @@
 .cookbook-organize__recipes > p {
   padding: 12px;
   border: 1px dashed var(--cp-line-strong);
-  border-radius: 9px;
+  border-radius: var(--cp-radius-thumbnail);
   color: var(--cp-ink-soft);
-  font-size: .75rem;
+  font-size: var(--cp-fs-label);
   text-align: center;
 }
 .cookbook-organize__recipe {
   display: grid;
-  gap: 5px;
-  padding: 7px 8px;
-  border: 0;
-  border-radius: 8px;
+  grid-template-columns: auto 40px minmax(0, 1fr);
+  align-items: center;
+  gap: 9px;
+  padding: 6px 9px 6px 6px;
+  border: 1px solid var(--cp-line);
+  border-radius: var(--cp-radius-thumbnail);
   background: var(--cp-card);
   cursor: grab;
 }
-.cookbook-organize__recipe span {
+.cookbook-organize__recipe:active {
+  cursor: grabbing;
+}
+.cookbook-organize__recipe.is-dragging {
+  opacity: 0.45;
+}
+.cookbook-organize__recipe > svg {
+  color: var(--cp-ink-soft);
+}
+.cookbook-organize__recipe img,
+.cookbook-organize__recipe-placeholder {
+  width: 40px;
+  height: 40px;
+  border-radius: var(--cp-radius-thumbnail);
+  background: var(--cp-page);
+  object-fit: cover;
+}
+.cookbook-organize__recipe-title {
   overflow: hidden;
-  font-size: .78rem;
-  font-weight: 750;
+  font-size: var(--cp-fs-caption);
+  font-weight: 700;
   text-overflow: ellipsis;
   white-space: nowrap;
-}
-.cookbook-organize__recipe select {
-  width: 100%;
-  color: var(--cp-ink-soft);
-  font-size: .7rem;
 }
 .cookbook-organize__add {
   display: inline-flex;
@@ -345,9 +469,9 @@
   gap: 6px;
   min-height: 42px;
   border: 1px dashed var(--cp-line-strong);
-  border-radius: 12px;
+  border-radius: var(--cp-radius-control);
   color: var(--cp-ink-soft);
-  font-size: .8rem;
+  font-size: var(--cp-fs-caption);
   font-weight: 750;
 }
 .cookbook-organize__actions {
@@ -358,58 +482,19 @@
   border-top: 1px solid var(--cp-line);
 }
 
-/* In-page organization mode: it replaces the three-column print workspace
-   beneath the shared header instead of opening a modal over it. */
-.recipe-print-shell > .cookbook-organize {
-  position: relative;
-  inset: auto;
-  z-index: auto;
-  grid-column: 1 / -1;
-  display: block;
-  min-width: 0;
-  height: 100%;
-  padding: 16px;
-  overflow: hidden;
-  background: var(--cp-page);
-}
-.recipe-print-shell > .cookbook-organize .cookbook-organize__panel {
-  width: min(1100px, 100%);
-  height: 100%;
-  max-height: none;
-  margin: 0 auto;
-  box-shadow: none;
-}
-.cookbook-organize__recipe-summary {
-  display: grid;
-  grid-template-columns: 42px minmax(0, 1fr);
-  align-items: center;
-  gap: 9px;
-}
-.cookbook-organize__recipe-summary img,
-.cookbook-organize__recipe-placeholder {
-  width: 42px;
-  height: 42px;
-  border-radius: 7px;
-  background: var(--cp-page);
-  object-fit: cover;
-}
-.cookbook-organize__recipe-summary > span:last-child {
-  overflow: hidden;
-  font-size: .78rem;
-  font-weight: 750;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+/* A section highlights while a recipe is being dragged, so the drop target
+   reads clearly. */
+.cookbook-organize__section.is-drop-target {
+  border-color: color-mix(in srgb, var(--cp-accent) 55%, var(--cp-line));
+  background: color-mix(in srgb, var(--cp-accent) 6%, var(--cp-card));
 }
 @media (max-width: 760px) {
-  .cookbook-organize {
-    padding: 12px;
-  }
-  .cookbook-organize__panel {
-    width: calc(100vw - 24px);
-    max-height: 94vh;
+  .cookbook-organize__header {
+    padding: 16px 18px;
   }
   .cookbook-organize__sections {
     grid-template-columns: 1fr;
+    padding: 16px 18px 24px;
   }
 }
 .cookbook-welcome__panel,
@@ -420,19 +505,20 @@
   max-height: min(88vh, 760px);
   overflow: auto;
   border: 1px solid color-mix(in srgb, var(--cp-line) 72%, transparent);
-  border-radius: 28px;
+  border-radius: var(--cp-radius-dialog);
   background: var(--cp-card);
   color: var(--cp-ink);
   box-shadow: var(--cp-shadow-xl);
   animation: print-success-pop 260ms cubic-bezier(0.2, 0.8, 0.2, 1) both;
 }
 .cookbook-welcome__panel {
-  width: min(1040px, calc(100vw - 48px));
+  width: min(920px, calc(100vw - 48px));
   display: grid;
-  grid-template-columns: minmax(440px, 1.08fr) minmax(420px, .92fr);
+  grid-template-columns: minmax(360px, 1fr) minmax(380px, 1.02fr);
   align-items: stretch;
   gap: 0;
   padding: 0;
+  border: none;
   overflow: hidden;
 }
 .cookbook-welcome__close,
@@ -453,7 +539,7 @@
   gap: .55rem;
 }
 .cookbook-welcome__visual {
-  min-height: 570px;
+  min-height: 440px;
   overflow: hidden;
   background: #ddd3c4;
 }
@@ -463,37 +549,34 @@
   object-fit: cover;
   object-position: 52% center;
 }
-.cookbook-welcome__copy h2,
-.cookbook-ready__hero h2 {
+.cookbook-welcome__copy h2 {
   color: var(--cp-ink);
   font-family: inherit;
-  font-size: clamp(1.85rem, 3.2vw, 2.6rem);
   font-weight: 850;
   line-height: 1.08;
   letter-spacing: -.03em;
+  font-size: clamp(1.5rem, 2.6vw, 2rem);
 }
-.cookbook-welcome__copy > p,
-.cookbook-ready__hero p {
+.cookbook-welcome__copy > p {
   color: var(--cp-ink-soft);
-  font-size: 1rem;
+  font-size: var(--cp-fs-body-lg);
   line-height: 1.55;
 }
-.cookbook-ready__assurances {
-  display: flex;
-  flex-wrap: wrap;
-  gap: .5rem;
-}
-.cookbook-ready__assurances span {
-  display: inline-flex;
-  align-items: center;
-  gap: .3rem;
-  padding: .5rem .7rem;
-  border: 1px solid var(--cp-line-strong);
-  border-radius: 999px;
+/* Match the standard centered dialog (.print-success-dialog): a fixed 1.24rem
+   heading and a --cp-fs-body paragraph, not the welcome dialog's viewport-
+   tracking marketing hero, so this reads as one of our normal dialogs. */
+.cookbook-ready__head h2 {
+  margin: 0;
   color: var(--cp-ink);
-  background: var(--cp-page);
-  font-size: .78rem;
-  font-weight: 750;
+  font-size: var(--cp-fs-dialog-title);
+  line-height: 1.18;
+  font-weight: 850;
+}
+.cookbook-ready__head p {
+  margin: 0;
+  color: var(--cp-ink-soft);
+  font-size: var(--cp-fs-body);
+  line-height: 1.5;
 }
 .cookbook-feature-chips {
   display: grid;
@@ -507,7 +590,7 @@
   align-items: center;
   gap: .55rem;
   color: var(--cp-ink);
-  font-size: .95rem;
+  font-size: var(--cp-fs-body);
   font-weight: 600;
   line-height: 1.25;
 }
@@ -521,18 +604,38 @@
   padding-left: 1rem;
   border-left: 3px solid var(--cp-accent);
   color: var(--cp-ink-soft);
-  font-size: .92rem;
+  font-size: var(--cp-fs-body);
   line-height: 1.4;
 }
 .cookbook-welcome__price strong {
   color: var(--cp-ink);
-  font-size: 1.02rem;
+  font-size: var(--cp-fs-body-lg);
 }
 .cookbook-welcome__price b {
   margin-top: .25rem;
   color: var(--cp-ink);
-  font-size: 1.15rem;
+  font-size: var(--cp-fs-h2);
   line-height: 1.15;
+}
+/* Same slot as the price, for a book that's already paid for. */
+/* Export failure — a server render can fail in ways a print dialog never
+   could (renderer down, timeout), so the dialog has somewhere to say it. */
+.cookbook-ready__error {
+  margin: 0 0 4px;
+  padding: 10px 12px;
+  border: 1px solid var(--cp-error-border);
+  border-radius: 12px;
+  background: var(--cp-error-soft);
+  color: var(--cp-error);
+  font-size: var(--cp-fs-small);
+}
+
+.cookbook-welcome__owned {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--cp-accent-ink);
+  font-weight: 650;
 }
 .cookbook-welcome__actions {
   display: flex;
@@ -540,231 +643,89 @@
   gap: .5rem;
   margin-top: .1rem;
 }
-.cookbook-welcome__actions .btn-primary {
-  flex: 1;
+.cookbook-welcome__actions .btn {
+  flex: 0 0 auto;
 }
 
-.cookbook-mockup {
+/* Compact, single-column layout: a short header, the two format choices, then
+   one line on how to actually print. No decorative book mockups. Padding (28px)
+   and section rhythm mirror .print-success-dialog so it reads as one of our
+   standard dialogs, just a touch wider to hold the format rows. */
+.cookbook-ready__panel {
   display: grid;
-  place-items: center;
-  min-height: 350px;
-  perspective: 1200px;
+  gap: 1.25rem;
+  width: min(440px, calc(100vw - 48px));
+  padding: 28px;
 }
-.cookbook-mockup__book {
-  position: relative;
-  width: min(250px, 70vw);
-  aspect-ratio: 4 / 5;
-  transform: rotateY(-12deg) rotateX(3deg) rotateZ(-2deg);
-  transform-style: preserve-3d;
-  filter: drop-shadow(24px 28px 24px rgba(42,28,17,.25));
-}
-.cookbook-mockup__cover {
-  position: absolute;
-  z-index: 2;
-  inset: 0;
-  overflow: hidden;
-  border-radius: 5px 12px 12px 5px;
-  background: #eaddc7;
-  transform: translateZ(15px);
-}
-.cookbook-mockup__images {
-  position: absolute;
-  inset: 0;
-  display: grid;
-  grid-template-columns: repeat(2, 1fr);
-}
-.cookbook-mockup__images img {
-  width: 100%;
-  height: 100%;
-  min-height: 0;
-  object-fit: cover;
-}
-.cookbook-mockup__cover--photo .cookbook-mockup__images {
-  display: block;
-}
-.cookbook-mockup__cover--photo .cookbook-mockup__images img {
-  width: 100%;
-  height: 100%;
-}
-.cookbook-mockup__shade {
-  position: absolute;
-  inset: 0;
-  background: linear-gradient(180deg, rgba(24,16,12,.05), rgba(24,16,12,.58));
-}
-.cookbook-mockup__cover--typographic .cookbook-mockup__shade {
-  background: linear-gradient(145deg, #f5ead8, #d8bea0);
-}
-.cookbook-mockup__type {
-  position: absolute;
-  z-index: 2;
-  inset: auto 10% 11%;
+.cookbook-ready__head {
   display: grid;
   gap: .5rem;
-  color: white;
-  text-shadow: 0 2px 12px rgba(0,0,0,.35);
-}
-.cookbook-mockup__cover--typographic .cookbook-mockup__type {
-  inset: 20% 12%;
-  align-content: center;
-  color: #4d392c;
-  text-align: center;
-  text-shadow: none;
-}
-.cookbook-mockup__type strong {
-  font-family: Georgia, serif;
-  font-size: clamp(1.8rem, 4vw, 2.75rem);
-  line-height: 1;
-}
-.cookbook-mockup__type span,
-.cookbook-mockup__type small {
-  font-size: .75rem;
-  font-weight: 800;
-  letter-spacing: .12em;
-  text-transform: uppercase;
-}
-.cookbook-mockup__spine {
-  position: absolute;
-  z-index: 4;
-  inset: 0 auto 0 0;
-  width: 10px;
-  border-radius: 4px 0 0 4px;
-  background: rgba(58,38,26,.38);
-  transform: translateZ(18px);
-}
-.cookbook-mockup__pages {
-  position: absolute;
-  z-index: 1;
-  inset: 5px -10px -8px 8px;
-  border-radius: 4px 15px 15px 4px;
-  background: repeating-linear-gradient(0deg, #fffdf6 0 3px, #e8dece 3px 4px);
-}
-.cookbook-mockup--compact {
-  min-height: 300px;
-}
-.cookbook-mockup--compact .cookbook-mockup__book {
-  width: min(210px, 55vw);
-}
-
-.cookbook-ready__panel {
-  padding: clamp(1.4rem, 4vw, 3rem);
-}
-.cookbook-ready__hero {
-  display: grid;
-  grid-template-columns: minmax(210px,.7fr) minmax(320px,1.3fr);
-  align-items: center;
-  gap: clamp(1.5rem,4vw,3rem);
-}
-.cookbook-ready__mockups {
-  position: relative;
-}
-.cookbook-ready__spread {
-  position: absolute;
-  right: -18px;
-  bottom: 10px;
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  width: 178px;
-  height: 92px;
-  transform: rotate(3deg);
-  filter: drop-shadow(8px 9px 9px rgba(42,28,17,.22));
-}
-.cookbook-ready__spread > div {
-  display: grid;
-  align-content: center;
-  gap: 5px;
-  padding: 12px;
-  color: #6a5140;
-  background: #fffaf0;
-  font-family: Georgia, serif;
-  font-size: 7px;
-}
-.cookbook-ready__spread > div:first-child {
-  border-radius: 8px 1px 1px 8px;
-  box-shadow: inset -4px 0 8px rgba(69,44,27,.1);
-}
-.cookbook-ready__spread > div:last-child {
-  border-radius: 1px 8px 8px 1px;
-  box-shadow: inset 4px 0 8px rgba(69,44,27,.1);
-}
-.cookbook-ready__spread i {
-  display: block;
-  height: 2px;
-  background: #d8c7b1;
-}
-.cookbook-ready__eyebrow {
-  display: block;
-  margin-bottom: .6rem;
-  color: #a24e34;
-  font-size: .78rem;
-  font-weight: 850;
-  letter-spacing: .13em;
-  text-transform: uppercase;
-}
-.cookbook-ready__section {
-  display: grid;
-  gap: .8rem;
-  margin-top: 1.5rem;
-}
-.cookbook-ready__section h3 {
-  color: #30231a;
-  font-size: 1.05rem;
-  font-weight: 850;
+  padding-right: 2.25rem;
 }
 .cookbook-ready__formats {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0,1fr));
-  gap: .75rem;
+  gap: .7rem;
 }
 .cookbook-format-card {
-  display: grid;
-  grid-template-columns: 52px minmax(0,1fr) auto;
+  display: flex;
   align-items: center;
-  gap: .8rem;
-  padding: .9rem;
-  border: 1px solid #ddcbb6;
-  border-radius: 15px;
-  background: rgba(255,255,255,.72);
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 1rem 1.15rem;
+  border: 1px solid var(--cp-line-strong);
+  border-radius: var(--cp-radius-control);
+  background: var(--cp-page);
   text-align: left;
+  cursor: pointer;
+  transition: border-color 120ms ease, background 120ms ease;
 }
 .cookbook-format-card:hover {
-  border-color: #a96043;
-  transform: translateY(-1px);
+  border-color: var(--cp-accent);
+  background: var(--cp-accent-soft);
 }
-.cookbook-format-card span:not(.cookbook-format-card__paper) {
+.cookbook-format-card__text {
   display: grid;
-  gap: .2rem;
+  gap: .15rem;
 }
-.cookbook-format-card small {
-  color: #776355;
+.cookbook-format-card__text strong {
+  color: var(--cp-ink);
+  font-size: var(--cp-fs-body-lg);
+  font-weight: 800;
 }
-.cookbook-format-card__paper {
-  display: block;
-  width: 40px;
-  height: 50px;
-  border-radius: 2px 5px 5px 2px;
-  background: linear-gradient(145deg,#b56f4c,#6a4637);
-  box-shadow: 4px 5px 8px rgba(49,31,20,.2);
+.cookbook-format-card__text small {
+  color: var(--cp-ink-soft);
+  font-size: var(--cp-fs-caption);
 }
-.cookbook-ready__recommendations {
-  display: grid;
-  grid-template-columns: repeat(3,minmax(0,1fr));
-  gap: .65rem;
+.cookbook-format-card__cta {
+  display: inline-flex;
+  align-items: center;
+  gap: .4rem;
+  flex: 0 0 auto;
+  padding: .5rem .9rem;
+  border-radius: 999px;
+  background: var(--cp-accent);
+  color: var(--cp-on-accent, #fff);
+  font-size: var(--cp-fs-caption);
+  font-weight: 750;
 }
-.cookbook-ready__recommendations > * {
-  display: grid;
-  align-content: start;
-  gap: .25rem;
-  padding: .85rem;
-  border: 1px solid #e2d2c0;
-  border-radius: 13px;
-  color: #30231a;
-  background: rgba(255,255,255,.5);
-  text-align: left;
+/* Same hairline-bordered accent callout as the print-settings banner — a quiet
+   note, not a warning: nothing has gone wrong, the cook just needs to pick the
+   right destination in the window that's about to open. Flat by policy: a
+   border and a tinted ground, no shadow (it isn't a floating element). */
+.cookbook-ready__note {
+  color: var(--cp-ink-soft);
+  font-size: var(--cp-fs-small);
+  line-height: 1.55;
 }
-.cookbook-ready__recommendations span {
-  color: #776355;
-  font-size: .76rem;
-  line-height: 1.4;
+.cookbook-ready__printer-link {
+  color: var(--cp-accent-ink);
+  font-weight: 700;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  cursor: pointer;
+}
+.cookbook-ready__printer-link:hover {
+  text-decoration: none;
 }
 
 .recipe-card__cover-edition,
@@ -791,15 +752,12 @@
 }
 
 @media (max-width: 720px) {
-  .cookbook-welcome__panel,
-  .cookbook-ready__hero {
-    grid-template-columns: 1fr;
-  }
   .cookbook-welcome__panel {
+    grid-template-columns: 1fr;
     width: calc(100vw - 24px);
     max-height: calc(100vh - 24px);
     gap: 0;
-    border-radius: 22px;
+    border-radius: var(--cp-radius-card);
   }
   .cookbook-welcome__visual {
     min-height: 190px;
@@ -816,21 +774,7 @@
     gap: .45rem;
   }
   .cookbook-feature-chips li {
-    font-size: .88rem;
-  }
-  .cookbook-mockup {
-    min-height: 280px;
-  }
-  .cookbook-mockup__book {
-    width: 180px;
-  }
-  .cookbook-welcome__copy h2,
-  .cookbook-ready__hero h2 {
-    font-size: 2rem;
-  }
-  .cookbook-ready__formats,
-  .cookbook-ready__recommendations {
-    grid-template-columns: 1fr;
+    font-size: var(--cp-fs-small);
   }
 }
 
@@ -842,13 +786,11 @@
   .recipe-print-shell--entering-cookbook {
     transform: none;
   }
-  .cookbook-mockup__book {
-    transform: none;
-  }
   .cookbook-build-reveal,
   .cookbook-build-reveal__glow,
-  .cookbook-build-reveal .cookbook-mockup,
-  .cookbook-build-reveal__progress i {
+  .cookbook-build-reveal__glow::after,
+  .cookbook-build-reveal__content,
+  .cookbook-gather__card-inner {
     animation: none;
   }
 }
@@ -933,7 +875,7 @@
     border: 1px solid var(--cp-line-strong);
   }
   .btn-secondary:hover:not(:disabled) {
-    background: rgba(127, 127, 127, 0.08);
+    background: var(--cp-overlay-hover);
   }
 
   /* Ghost / icon */
@@ -945,12 +887,12 @@
     color: var(--cp-ink-soft);
   }
   .btn-ghost:hover:not(:disabled) {
-    background: rgba(127, 127, 127, 0.1);
+    background: var(--cp-overlay-hover-strong);
     color: var(--cp-ink);
   }
 
   .btn-compact {
-    min-height: 34px;
+    min-height: 40px;
     padding: 0 14px;
     @apply text-cp-small;
   }
@@ -979,11 +921,12 @@
      drawer and the print-success dialogs) — one shared style instead of
      mixing a bordered circle in some modals with a plain ghost button in
      others. */
+  .icon-button,
   .icon-close-btn {
     display: grid;
     place-items: center;
-    width: 34px;
-    height: 34px;
+    width: 40px;
+    height: 40px;
     border: 1px solid var(--cp-line);
     border-radius: 999px;
     background: var(--cp-card);
@@ -992,9 +935,143 @@
       color 150ms ease,
       border-color 150ms ease;
   }
-  .icon-close-btn:hover {
+  .icon-button:hover:not(:disabled),
+  .icon-close-btn:hover:not(:disabled) {
     color: var(--cp-ink);
     border-color: var(--cp-line-strong);
+  }
+  .icon-button.is-active {
+    border-color: var(--cp-selected-border);
+    background: var(--cp-selected-fill);
+    box-shadow: var(--cp-selected-ring);
+    color: var(--cp-selected-text);
+  }
+  .icon-button--danger:hover:not(:disabled) {
+    border-color: var(--cp-error-border);
+    background: var(--cp-error-soft);
+    color: var(--cp-error);
+  }
+  .icon-button:disabled {
+    cursor: default;
+    opacity: .5;
+  }
+
+  .status-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    min-height: 26px;
+    padding: 4px 9px;
+    border: 1px solid var(--cp-line);
+    border-radius: 999px;
+    background: var(--cp-page);
+    color: var(--cp-ink-soft);
+    font-size: var(--cp-fs-caption);
+    font-weight: 700;
+    line-height: 1;
+  }
+
+  .status-badge--success {
+    border-color: color-mix(in srgb, var(--cp-accent) 38%, var(--cp-line));
+    background: var(--cp-accent-soft);
+    color: var(--cp-accent-ink);
+  }
+
+  /* Shared checkbox: one semantic component and one visual recipe for every
+     binary setting in the print workspace. */
+  .control-checkbox {
+    display: grid;
+    grid-template-columns: 20px 1fr;
+    align-items: center;
+    gap: 10px;
+    min-height: 40px;
+    color: var(--cp-ink);
+    cursor: pointer;
+  }
+  .control-checkbox--with-hint { align-items: start; }
+  .control-checkbox input {
+    position: relative;
+    width: 20px;
+    height: 20px;
+    margin: 0;
+    appearance: none;
+    border: 1px solid var(--cp-line-strong);
+    border-radius: 5px;
+    background: var(--cp-card);
+  }
+  .control-checkbox--with-hint input { margin-top: 2px; }
+  .control-checkbox input:checked {
+    border-color: var(--cp-accent);
+    background: var(--cp-accent);
+  }
+  .control-checkbox input:checked::after {
+    content: "";
+    position: absolute;
+    left: 6px;
+    top: 2px;
+    width: 6px;
+    height: 11px;
+    border: solid #0c3a37;
+    border-width: 0 3px 3px 0;
+    transform: rotate(45deg);
+  }
+  .control-checkbox span { display: flex; flex-direction: column; gap: 2px; }
+  .control-checkbox strong { font-size: var(--cp-fs-small); line-height: 1.25; }
+  .control-checkbox small {
+    color: var(--cp-ink-soft);
+    font-size: var(--cp-fs-label);
+    line-height: 1.3;
+  }
+  .control-checkbox-group {
+    min-width: 0;
+    margin: 0;
+    padding: 0;
+    border: 0;
+  }
+  .control-checkbox-group__label {
+    float: none;
+    width: 100%;
+    margin: 0 0 6px;
+    padding: 0;
+    color: var(--cp-ink-soft);
+    font-size: var(--cp-fs-label);
+    font-weight: 800;
+    letter-spacing: .08em;
+    text-transform: uppercase;
+  }
+  .control-checkbox-group__items {
+    display: grid;
+    gap: 0;
+  }
+  .control-checkbox-group .control-checkbox {
+    min-height: 32px;
+  }
+
+  .select-tile {
+    cursor: pointer;
+    transition: border-color 150ms ease, background-color 150ms ease, box-shadow 150ms ease;
+  }
+  .select-tile.is-active {
+    border-color: var(--cp-selected-border);
+    background: var(--cp-selected-fill);
+    box-shadow: var(--cp-selected-ring);
+    color: var(--cp-selected-text);
+  }
+  .select-tile:has(input:focus-visible) {
+    outline: var(--cp-focus-ring);
+    outline-offset: var(--cp-focus-ring-offset);
+  }
+
+  .recipe-loading-state {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    color: var(--cp-ink-soft);
+    font-size: var(--cp-fs-caption);
+    font-weight: 600;
+    text-align: center;
   }
 
   /* ── Fields (mirrors .cp-field__control) ──────────────────────────────── */
@@ -1028,7 +1105,7 @@
   /* Compact field/select variant (e.g. the print-size dropdown) — one named
      modifier instead of per-call !important overrides on .field. */
   .field--compact {
-    min-height: 38px;
+    min-height: 40px;
     padding-top: 0;
     padding-bottom: 0;
     padding-left: 12px;
@@ -1101,13 +1178,13 @@
     padding: 0 14px;
     width: 100%;
     border: 1px solid var(--cp-line-strong);
-    background: #fff;
+    background: var(--cp-card);
     color: var(--cp-ink);
     font-size: var(--cp-fs-small);
     cursor: pointer;
   }
   .mode-toggle__item:hover:not(.is-active):not(:disabled) {
-    background: #f6f8fa;
+    background: var(--cp-surface-muted);
   }
   .mode-toggle__item.is-active {
     /* Shared selected recipe: accent border + soft fill + 1px ring, label in
@@ -1122,8 +1199,8 @@
     padding: 0;
   }
   .mode-toggle__item:disabled {
-    @apply opacity-60;
-    cursor: not-allowed;
+    @apply opacity-50;
+    cursor: default;
   }
   .mode-toggle-overflow {
     position: relative;
@@ -1153,7 +1230,12 @@
     width: 18px;
     height: 18px;
   }
-  .mode-toggle-menu__item:hover,
+  /* Hover is a neutral tint; the accent selected-fill is reserved for the
+     actually-active row, so in a menu where one item is already selected the
+     hovered row and the selected row read as different states. */
+  .mode-toggle-menu__item:hover {
+    background: color-mix(in srgb, var(--cp-ink) 8%, transparent);
+  }
   .mode-toggle-menu__item.is-active {
     background: var(--cp-selected-fill);
     color: var(--cp-selected-text);
@@ -1224,6 +1306,10 @@
   .state--error {
     border-color: var(--cp-error-border);
     background: var(--cp-error-soft);
+  }
+  .field-error {
+    @apply mt-1 text-cp-small leading-relaxed;
+    color: var(--cp-error);
   }
   .state h4 {
     @apply text-cp-body font-bold;
@@ -1516,6 +1602,34 @@
 @keyframes rp-spin {
   to {
     transform: rotate(360deg);
+  }
+}
+
+/* "Already added" cue. Re-importing a recipe that's already queued focuses the
+   existing card instead of adding a duplicate; it scrolls into view and shakes
+   so it's obvious why nothing new appeared. Shared by the home queue
+   (`.rp-queue-item--shake`) and the print rail (`.recipe-page-rail__row--shake`,
+   styled in print.css). */
+@keyframes rp-shake {
+  10%, 90% { transform: translateX(-1px); }
+  20%, 80% { transform: translateX(2px); }
+  30%, 50%, 70% { transform: translateX(-5px); }
+  40%, 60% { transform: translateX(5px); }
+}
+@keyframes rp-attention-ring {
+  0%, 100% { box-shadow: 0 0 0 0 transparent; }
+  30%, 60% { box-shadow: 0 0 0 3px color-mix(in srgb, var(--cp-accent) 60%, transparent); }
+}
+.rp-queue-item--shake {
+  animation: rp-shake 0.5s cubic-bezier(0.36, 0.07, 0.19, 0.97) both;
+}
+/* Motion-sensitive cooks get a brief accent ring instead of the shake. */
+@media (prefers-reduced-motion: reduce) {
+  .rp-queue-item--shake {
+    animation: none;
+  }
+  .rp-queue-item--shake > div {
+    animation: rp-attention-ring 0.6s ease both;
   }
 }
 

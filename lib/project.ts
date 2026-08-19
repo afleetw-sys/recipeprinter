@@ -8,9 +8,12 @@ import type {
   QueueItem,
   RecipePagePlacement,
   Section,
+  SectionMeta,
+  SectionPhotoMode,
+  StashedCookbook,
 } from "@/types/recipe";
 import { uid } from "@/lib/ids";
-import { sessionStore } from "@/lib/storage";
+import { localStore, sessionStore } from "@/lib/storage";
 
 // The section/cover layer is purely organizational — which section each
 // queued recipe belongs to, plus section/cover metadata — kept separate from
@@ -26,6 +29,10 @@ import { sessionStore } from "@/lib/storage";
 // could ever change.
 
 export const PROJECT_META_STORAGE_KEY = "recipeprinter:project-meta:v1";
+// Durable backup of the section/cover metadata, mirroring lib/queue.ts: the
+// session copy is wiped on tab close, so this localStorage copy lets a reopened
+// tab restore the in-progress book structure alongside its recipes.
+const PROJECT_META_RECOVERY_STORAGE_KEY = "recipeprinter:project-meta:recovery:v1";
 
 /** Book-wide default treatment for recipe photos (cookbook mode):
     - `none` — no recipe photos anywhere;
@@ -33,6 +40,20 @@ export const PROJECT_META_STORAGE_KEY = "recipeprinter:project-meta:v1";
     - `full` — a full-page photo facing each recipe (image spread).
     The per-page layout picker overrides individual recipes on top of this. */
 export type PhotoStyle = "none" | "card" | "full";
+
+const SECTION_PHOTO_MODES: readonly SectionPhotoMode[] = ["none", "band", "full", "grid"];
+
+/** The effective opener photo placement for a section. Explicit `photoMode` wins;
+    otherwise a stored `photoUrl` means the legacy top-band photo (`band`), and a
+    bare section is typographic (`none`). Shared by the sheet builder and the
+    picker so the printed page and the dialog can never disagree. */
+export function resolveSectionPhotoMode(section: {
+  photoMode?: SectionPhotoMode;
+  photoUrl?: string;
+}): SectionPhotoMode {
+  if (section.photoMode) return section.photoMode;
+  return section.photoUrl ? "band" : "none";
+}
 
 export function recipePagePlacementHasValues(placement: RecipePagePlacement): boolean {
   return (
@@ -69,27 +90,29 @@ export interface ProjectMeta {
       cookbook" — false/undefined means the plain print-cards UI. Gated off at
       the entry points for now; see COOKBOOK_ENABLED in lib/cookbookProduct.ts. */
   cookbookMode?: boolean;
+  /** "New cookbook" was chosen from the library, but there are no recipes yet
+      to make one from. Carries that choice through the add-recipes detour so
+      the workspace opens as a book instead of dropping the cook into recipe
+      cards and asking them to find the switch. Consumed on arrival. */
+  cookbookIntent?: boolean;
   /** The print-format preset this cookbook exports at (trim/bleed/margin/gutter
       — see lib/cookbookPresets.ts). Absent = the default preset. Cookbook-only;
       cleared by `exitCookbook`. */
   cookbookPreset?: CookbookPresetId;
   /** Section metadata only (id/title/order/chapter-opener fields) — item ids,
       not recipe content. `photoUrl`/`intro` drive the cookbook chapter opener. */
-  sections: Array<{
-    id: string;
-    title?: string;
-    subtitle?: string;
-    photoUrl?: string;
-    intro?: string;
-    showOpener?: boolean;
-    numberAsChapter?: boolean;
-    itemIds: string[];
-  }>;
+  sections: SectionMeta[];
   /** Per-recipe cookbook page layout (full/half/image-spread), keyed by
       `QueueItem.id`. Kept out of the section list so the import/parse/queue
       lifecycle stays untouched by a book-only concern (see the type's comment).
       Absent/`full` = one card per sheet, i.e. today's behavior. */
   itemPlacements?: Record<string, RecipePagePlacement>;
+  /** Set by `exitCookbook` when the cook switches back to plain recipe cards:
+      the whole book (cover, chapters, layouts, settings) tucked away so a later
+      `restoreCookbook` brings it back exactly. Absent = no book to restore.
+      Never read by the renderer — recipe-cards mode sees a meta with no
+      cookbook fields, identical to a project that never had a book. */
+  stashedCookbook?: StashedCookbook;
 }
 
 const EMPTY_META: ProjectMeta = { sections: [] };
@@ -111,11 +134,18 @@ export function normalizeProjectMeta(value: unknown): ProjectMeta {
           title: cleanText(section.title),
           subtitle: cleanText(section.subtitle),
           photoUrl: cleanText(section.photoUrl),
+          photoMode:
+            SECTION_PHOTO_MODES.includes(section.photoMode as SectionPhotoMode)
+              ? (section.photoMode as SectionPhotoMode)
+              : undefined,
+          gridImages: Array.isArray(section.gridImages)
+            ? section.gridImages.filter((url): url is string => typeof url === "string" && Boolean(url))
+            : undefined,
           intro: cleanText(section.intro),
-          showOpener:
-            typeof section.showOpener === "boolean"
-              ? section.showOpener
-              : legacyOpeners && Boolean(cleanText(section.title)),
+          // Named cookbook sections always receive an opener. Keep the field
+          // in persisted data for backward compatibility, but never preserve
+          // an old user-disabled value.
+          showOpener: Boolean(cleanText(section.title)),
           numberAsChapter:
             typeof section.numberAsChapter === "boolean"
               ? section.numberAsChapter
@@ -151,13 +181,66 @@ export function normalizeProjectMeta(value: unknown): ProjectMeta {
 }
 
 function readMeta(): ProjectMeta {
-  const parsed = sessionStore.getJson<ProjectMeta>(PROJECT_META_STORAGE_KEY);
+  // Per-tab session copy wins; fall back to the durable mirror to restore a
+  // reopened tab, reseeding this tab's session from it (see lib/queue.ts).
+  let parsed = sessionStore.getJson<ProjectMeta>(PROJECT_META_STORAGE_KEY);
+  if (parsed === null) {
+    const recovered = localStore.getJson<ProjectMeta>(PROJECT_META_RECOVERY_STORAGE_KEY);
+    if (recovered !== null) {
+      parsed = recovered;
+      sessionStore.setJson(PROJECT_META_STORAGE_KEY, recovered);
+    }
+  }
   return normalizeProjectMeta(parsed);
 }
 
+// How long a meta change may sit in memory before it reaches storage.
+//
+// Every text field in the cookbook — a chapter title, the cover title, the
+// dedication, the TOC heading — writes through to this store on each keystroke,
+// and each write used to mean TWO `JSON.stringify` of the entire project meta
+// (once per storage area, via `setJson`) plus two SYNCHRONOUS storage writes, on
+// the main thread, between one typed character and the next. Serializing once
+// and coalescing the writes turns a per-character cost into a per-pause one.
+//
+// Deliberately a "schedule on first write, land on the timer" throttle rather
+// than a resetting debounce: continuous typing must not be able to starve the
+// write indefinitely, so nothing is ever more than this far from persisted. The
+// window is short on purpose — this mirror is what protects an unsaved book
+// from a tab close, and `flushMetaWrites` covers the orderly teardown paths
+// exactly (see the hook's pagehide/visibilitychange effect).
+const META_PERSIST_DEBOUNCE_MS = 250;
+
+let pendingMetaJson: string | null = null;
+let metaPersistTimer: ReturnType<typeof setTimeout> | null = null;
+
+/** Writes any coalesced meta straight through. Safe to call when nothing is pending. */
+function flushMetaWrites() {
+  if (metaPersistTimer !== null) {
+    clearTimeout(metaPersistTimer);
+    metaPersistTimer = null;
+  }
+  const serialized = pendingMetaJson;
+  pendingMetaJson = null;
+  if (serialized === null) return;
+  // Survivable if either fails: meta stays correct in memory for this page.
+  sessionStore.set(PROJECT_META_STORAGE_KEY, serialized);
+  // Mirror to the durable backup so book structure survives a tab close.
+  localStore.set(PROJECT_META_RECOVERY_STORAGE_KEY, serialized);
+}
+
 function writeMeta(meta: ProjectMeta) {
-  // Survivable if it fails: meta stays correct in memory for this page.
-  sessionStore.setJson(PROJECT_META_STORAGE_KEY, meta);
+  let serialized: string;
+  try {
+    serialized = JSON.stringify(meta);
+  } catch {
+    // Nothing persistable (circular structure / BigInt). In-memory meta is
+    // still correct, matching what `setJson` did on a serialization failure.
+    return;
+  }
+  pendingMetaJson = serialized;
+  if (metaPersistTimer !== null) return;
+  metaPersistTimer = setTimeout(flushMetaWrites, META_PERSIST_DEBOUNCE_MS);
 }
 
 /**
@@ -182,6 +265,8 @@ export function buildSections(items: QueueItem[], meta: ProjectMeta): Section[] 
         title: section.title,
         subtitle: section.subtitle,
         photoUrl: section.photoUrl,
+        photoMode: section.photoMode,
+        gridImages: section.gridImages,
         intro: section.intro,
         showOpener: section.showOpener,
         numberAsChapter: section.numberAsChapter,
@@ -212,12 +297,6 @@ export function buildSections(items: QueueItem[], meta: ProjectMeta): Section[] 
   return [{ ...first, items: [...first.items, ...unassigned] }, ...rest];
 }
 
-/** Flattens sections back into a single ordered item list — the shape most
-    existing rendering/measurement code still expects. */
-export function flattenSections(sections: Section[]): QueueItem[] {
-  return sections.flatMap((section) => section.items);
-}
-
 export function namedSectionCount(sections: Section[]): number {
   return sections.filter((section) => section.title?.trim()).length;
 }
@@ -228,11 +307,73 @@ function metaSectionsFromFull(sections: Section[]): ProjectMeta["sections"] {
     title: section.title,
     subtitle: section.subtitle,
     photoUrl: section.photoUrl,
+    photoMode: section.photoMode,
+    gridImages: section.gridImages,
     intro: section.intro,
     showOpener: section.showOpener,
     numberAsChapter: section.numberAsChapter,
     itemIds: section.items.map((item) => item.id),
   }));
+}
+
+function stringArraysEqual(a: string[] | undefined, b: string[] | undefined): boolean {
+  const x = a ?? [];
+  const y = b ?? [];
+  return x.length === y.length && x.every((value, i) => value === y[i]);
+}
+
+/** Structural equality for two persisted section lists. The single home for
+    "did the section metadata actually change?", so `syncSections`' write-back
+    round-trip has one field list to keep in step with `metaSectionsFromFull`
+    (right above) instead of a second, drift-prone inline diff. Order-insensitive
+    per field (never a `JSON.stringify` compare, whose key-order sensitivity could
+    reintroduce the `buildSections` implicit-section loop documented above). */
+function sectionsMetaEqual(a: ProjectMeta["sections"], b: ProjectMeta["sections"]): boolean {
+  return (
+    a.length === b.length &&
+    a.every((section, index) => {
+      const other = b[index];
+      return (
+        section.id === other.id &&
+        section.title === other.title &&
+        section.subtitle === other.subtitle &&
+        section.photoUrl === other.photoUrl &&
+        section.photoMode === other.photoMode &&
+        section.intro === other.intro &&
+        section.showOpener === other.showOpener &&
+        section.numberAsChapter === other.numberAsChapter &&
+        stringArraysEqual(section.gridImages, other.gridImages) &&
+        stringArraysEqual(section.itemIds, other.itemIds)
+      );
+    })
+  );
+}
+
+/**
+ * Removes a section, merging its recipes into a neighbor — the section just
+ * before it, or the one just after when deleting the first. Deleting the only
+ * section dissolves it back to an implicit ungrouped pool. Pure; the hook's
+ * `deleteSection` wraps this. Exported for testing.
+ */
+export function deleteSectionFromMeta(meta: ProjectMeta, sectionId: string): ProjectMeta {
+  const index = meta.sections.findIndex((section) => section.id === sectionId);
+  if (index === -1) return meta;
+  const target = meta.sections[index];
+  if (meta.sections.length === 1) {
+    return { ...meta, sections: [{ id: target.id, itemIds: [...target.itemIds] }] };
+  }
+  // Capture the inheriting neighbor by identity BEFORE removing the target.
+  // Computing an index into the post-removal array is off-by-one-prone (the
+  // previous version merged into the wrong section, or nowhere at all).
+  const neighborId = meta.sections[index > 0 ? index - 1 : index + 1].id;
+  const sections = meta.sections
+    .filter((section) => section.id !== sectionId)
+    .map((section) => ({ ...section, itemIds: [...section.itemIds] }));
+  const neighbor = sections.find((section) => section.id === neighborId);
+  if (neighbor) {
+    neighbor.itemIds = [...neighbor.itemIds, ...target.itemIds];
+  }
+  return { ...meta, sections };
 }
 
 export function useProjectMeta() {
@@ -246,6 +387,27 @@ export function useProjectMeta() {
     setMeta(initial);
     writeMeta(initial);
     setHydrated(true);
+  }, []);
+
+  // Meta writes are coalesced (see `META_PERSIST_DEBOUNCE_MS`), so the last few
+  // hundred milliseconds of edits can still be in memory when the tab goes
+  // away. `pagehide` is the reliable teardown signal (close, navigation, and
+  // mobile bfcache freeze); `visibilitychange` → hidden covers backgrounding the
+  // app, which on mobile is often the last callback before the page is
+  // discarded. Same pair the print page uses to flush its Firestore save — this
+  // one protects the local recovery mirror, which is the safety net underneath it.
+  useEffect(() => {
+    const onVisibility = () => {
+      if (document.visibilityState === "hidden") flushMetaWrites();
+    };
+    window.addEventListener("pagehide", flushMetaWrites);
+    document.addEventListener("visibilitychange", onVisibility);
+    return () => {
+      window.removeEventListener("pagehide", flushMetaWrites);
+      document.removeEventListener("visibilitychange", onVisibility);
+      // Unmounting is itself a teardown — don't strand a pending write.
+      flushMetaWrites();
+    };
   }, []);
 
   const commit = useCallback((next: ProjectMeta) => {
@@ -267,24 +429,9 @@ export function useProjectMeta() {
     (sections: Section[]) => {
       const nextSections = metaSectionsFromFull(sections);
       const current = metaRef.current;
-      const changed =
-        current.sections.length !== nextSections.length ||
-        current.sections.some((section, index) => {
-          const next = nextSections[index];
-          return (
-            !next ||
-            section.id !== next.id ||
-            section.title !== next.title ||
-            section.subtitle !== next.subtitle ||
-            section.photoUrl !== next.photoUrl ||
-            section.intro !== next.intro ||
-            section.showOpener !== next.showOpener ||
-            section.numberAsChapter !== next.numberAsChapter ||
-            section.itemIds.length !== next.itemIds.length ||
-            section.itemIds.some((id, i) => id !== next.itemIds[i])
-          );
-        });
-      if (changed) commit({ ...current, sections: nextSections });
+      if (!sectionsMetaEqual(current.sections, nextSections)) {
+        commit({ ...current, sections: nextSections });
+      }
     },
     [commit],
   );
@@ -294,7 +441,7 @@ export function useProjectMeta() {
       const id = uid();
       update((current) => ({
         ...current,
-        sections: [...current.sections, { id, title, showOpener: false, itemIds: [] }],
+        sections: [...current.sections, { id, title, showOpener: Boolean(title?.trim()), itemIds: [] }],
       }));
       return id;
     },
@@ -313,14 +460,40 @@ export function useProjectMeta() {
     [update],
   );
 
-  /** Chapter-opener photo for a section (cookbook mode). Empty/undefined clears it. */
-  const setSectionPhoto = useCallback(
-    (sectionId: string, photoUrl: string | undefined) => {
+  /** Sets a section opener's photo PLACEMENT, mirroring `setItemPhotoMode` for
+      recipes. `none` clears everything; `band`/`full` set the single `photoUrl`
+      (kept if `opts.photoUrl` is omitted) and drop any grid; `grid` sets the
+      curated `gridImages`. Keeping mode + payload in one setter means the
+      persisted `photoMode` can never drift out of sync with the photo it names. */
+  const setSectionPhotoMode = useCallback(
+    (
+      sectionId: string,
+      mode: SectionPhotoMode,
+      opts?: { photoUrl?: string; gridImages?: string[] },
+    ) => {
       update((current) => ({
         ...current,
-        sections: current.sections.map((section) =>
-          section.id === sectionId ? { ...section, photoUrl: photoUrl || undefined } : section,
-        ),
+        sections: current.sections.map((section) => {
+          if (section.id !== sectionId) return section;
+          if (mode === "none") {
+            return { ...section, photoMode: "none", photoUrl: undefined, gridImages: undefined };
+          }
+          if (mode === "grid") {
+            return {
+              ...section,
+              photoMode: "grid",
+              gridImages: (opts?.gridImages ?? section.gridImages ?? []).filter(Boolean),
+            };
+          }
+          // band | full — a single facing/band photo, no grid.
+          return {
+            ...section,
+            photoMode: mode,
+            photoUrl:
+              opts?.photoUrl !== undefined ? opts.photoUrl || undefined : section.photoUrl,
+            gridImages: undefined,
+          };
+        }),
       }));
     },
     [update],
@@ -343,7 +516,10 @@ export function useProjectMeta() {
     (
       sectionId: string,
       patch: Partial<
-        Pick<ProjectMeta["sections"][number], "title" | "subtitle" | "photoUrl" | "intro" | "showOpener">
+        Pick<
+          ProjectMeta["sections"][number],
+          "title" | "subtitle" | "photoUrl" | "photoMode" | "gridImages" | "intro" | "showOpener"
+        >
       >,
     ) => {
       update((current) => ({
@@ -356,24 +532,11 @@ export function useProjectMeta() {
     [update],
   );
 
-  /** Removes a section, merging its items into the neighboring section (the
-      one before it, or the one after if it was first) so recipes are never
-      lost — collapsing structure is exactly as safe as creating it. */
+  /** Removes a section, merging its items into a neighbor. Deleting the final
+      named section dissolves it back to the implicit ungrouped recipe pool. */
   const deleteSection = useCallback(
     (sectionId: string) => {
-      update((current) => {
-        const index = current.sections.findIndex((section) => section.id === sectionId);
-        if (index === -1) return current;
-        const target = current.sections[index];
-        const neighborIndex = index > 0 ? index - 1 : index + 1;
-        const sections = current.sections.slice();
-        sections.splice(index, 1);
-        const neighbor = sections[index > 0 ? neighborIndex - 1 : neighborIndex];
-        if (neighbor) {
-          neighbor.itemIds = [...neighbor.itemIds, ...target.itemIds];
-        }
-        return { ...current, sections };
-      });
+      update((current) => deleteSectionFromMeta(current, sectionId));
     },
     [update],
   );
@@ -404,23 +567,6 @@ export function useProjectMeta() {
         sections.splice(toIndex, 0, moved);
         return { ...current, sections };
       });
-    },
-    [update],
-  );
-
-  /** Replaces the whole section list at once — used by the "Make it a cookbook"
-      scaffold to auto-group loose recipes into chapters. Fresh ids are minted
-      here so callers pass only titles + item ids. */
-  const replaceSections = useCallback(
-    (groups: Array<{ title?: string; itemIds: string[] }>) => {
-      update((current) => ({
-        ...current,
-        sections: groups.map((group) => ({
-          id: uid(),
-          title: group.title,
-          itemIds: group.itemIds,
-        })),
-      }));
     },
     [update],
   );
@@ -524,17 +670,49 @@ export function useProjectMeta() {
     [update],
   );
 
-  /** Leaving cookbook mode strips every cookbook-only artifact — cover, back
-      cover, chapters/dividers, table of contents, and per-recipe page layouts —
-      back to a plain print job. The recipes themselves live in the queue and
-      are untouched; clearing `sections` collapses them into one implicit
-      untitled section (see `buildSections`). */
+  /** Leaving cookbook mode returns to a plain print job WITHOUT discarding the
+      book: every cookbook-only artifact — cover, back cover, chapters/dividers,
+      table of contents, per-recipe page layouts, and book settings — is tucked
+      into `stashedCookbook` so `restoreCookbook` can bring it back untouched.
+      The recipes themselves live in the queue; clearing `sections` collapses
+      them into one implicit untitled section for card printing (see
+      `buildSections`). */
   const exitCookbook = useCallback(() => {
-    update((current) => ({
-      projectId: current.projectId,
-      cookbookWelcomeCompleted: current.cookbookWelcomeCompleted,
-      sections: [],
-    }));
+    update((current) => {
+      const stashedCookbook: StashedCookbook = {
+        cover: current.cover,
+        backCover: current.backCover,
+        dedication: current.dedication,
+        frontMatter: current.frontMatter,
+        photoStyle: current.photoStyle,
+        tableOfContents: current.tableOfContents,
+        tocKicker: current.tocKicker,
+        tocTitle: current.tocTitle,
+        sectionDividers: current.sectionDividers,
+        cookbookPreset: current.cookbookPreset,
+        sections: current.sections,
+        itemPlacements: current.itemPlacements,
+      };
+      return {
+        projectId: current.projectId,
+        cookbookWelcomeCompleted: current.cookbookWelcomeCompleted,
+        sections: [],
+        stashedCookbook,
+      };
+    });
+  }, [update]);
+
+  /** Re-enters cookbook mode from the stash left by `exitCookbook`, restoring
+      the cover, chapters, layouts, and every book setting in a single commit.
+      Returns false (a no-op) when nothing is stashed, so the caller can fall
+      back to scaffolding a fresh book. */
+  const restoreCookbook = useCallback(() => {
+    if (!metaRef.current.stashedCookbook) return false;
+    update((current) => {
+      const { stashedCookbook, ...rest } = current;
+      return { ...rest, ...stashedCookbook, cookbookMode: true };
+    });
+    return true;
   }, [update]);
 
   /** Sets (or, with `undefined`, clears back to the default `full`) a single
@@ -564,12 +742,79 @@ export function useProjectMeta() {
     [update],
   );
 
+  /** Drops every per-recipe photo PLACEMENT override (pageLayout + showPhoto) so
+      all recipes fall back to the book-wide `photoStyle` — used when the cook
+      picks a book-wide Photos option, which should override individual choices.
+      A recipe's custom facing photo + focal point (heroImageUrl/heroFocus*) are
+      kept, so a hand-picked full-page image survives the reset. */
+  const clearItemPhotoOverrides = useCallback(() => {
+    update((current) => {
+      const placements = current.itemPlacements;
+      if (!placements || Object.keys(placements).length === 0) return current;
+      const next: Record<string, RecipePagePlacement> = {};
+      for (const [id, placement] of Object.entries(placements)) {
+        const kept: RecipePagePlacement = {};
+        if (placement.heroImageUrl !== undefined) kept.heroImageUrl = placement.heroImageUrl;
+        if (placement.heroFocusX !== undefined) kept.heroFocusX = placement.heroFocusX;
+        if (placement.heroFocusY !== undefined) kept.heroFocusY = placement.heroFocusY;
+        if (recipePagePlacementHasValues(kept)) next[id] = kept;
+      }
+      return { ...current, itemPlacements: next };
+    });
+  }, [update]);
+
+  /**
+   * Starts a genuinely new project: fresh id, no cookbook, no sections, no stash.
+   *
+   * Clearing the recipe list used to leave the project IDENTITY in place, and
+   * the identity is what autosave writes to. So emptying the queue and adding
+   * different recipes did not start something new — it replaced the contents of
+   * the saved cookbook the id still pointed at, with no prompt and no undo. It
+   * is also why there was no way to make a SECOND cookbook: the only entry point
+   * returned you to the one that id already owned.
+   *
+   * Nothing saved is destroyed. The previous project keeps its own id, its own
+   * document, and its own purchase, and stays in the library — this just stops
+   * pointing at it.
+   */
+  const startNewProject = useCallback(
+    (options: { cookbook?: boolean } = {}) => {
+      commit({
+        ...EMPTY_META,
+        projectId: uid(),
+        cookbookIntent: options.cookbook || undefined,
+        // Whether the cookbook pitch has been seen is a fact about the PERSON,
+        // not the project. Resetting it per project would re-pitch the product
+        // to someone already on their second book.
+        cookbookWelcomeCompleted: metaRef.current.cookbookWelcomeCompleted,
+      });
+    },
+    [commit],
+  );
+
+  /** Consumes the "make this a cookbook" choice carried from the library, so it
+      fires exactly once and a later visit doesn't re-scaffold. */
+  const clearCookbookIntent = useCallback(() => {
+    update((current) =>
+      current.cookbookIntent ? { ...current, cookbookIntent: undefined } : current,
+    );
+  }, [update]);
+
   /** Replaces session metadata after a saved account project is verified. */
   const replaceMeta = useCallback(
     (next: ProjectMeta) => {
       commit(normalizeProjectMeta(next));
     },
     [commit],
+  );
+
+  /** Updates save identity without replacing newer edits made while an async
+      save was in flight. */
+  const setProjectId = useCallback(
+    (projectId: string) => {
+      update((current) => (current.projectId === projectId ? current : { ...current, projectId }));
+    },
+    [update],
   );
 
   /** Per-recipe override of how ONE recipe shows its photo, using the same three
@@ -598,13 +843,12 @@ export function useProjectMeta() {
     syncSections,
     addSection,
     renameSection,
-    setSectionPhoto,
+    setSectionPhotoMode,
     setSectionIntro,
     updateSection,
     deleteSection,
     moveItem,
     reorderSections,
-    replaceSections,
     setSectionStructure,
     setCover,
     setBackCover,
@@ -618,9 +862,14 @@ export function useProjectMeta() {
     setCookbookMode,
     setCookbookPreset,
     exitCookbook,
+    restoreCookbook,
     setItemPlacement,
     setItemPhotoMode,
+    clearItemPhotoOverrides,
     setPhotoStyle,
+    startNewProject,
+    clearCookbookIntent,
     replaceMeta,
+    setProjectId,
   };
 }

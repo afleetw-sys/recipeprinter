@@ -98,58 +98,106 @@ function rememberCookPilotSignedIn(signedIn: boolean) {
   else localStore.remove(COOKPILOT_SIGNED_IN_STORAGE_KEY);
 }
 
+/* ── One auth state for the whole page ──────────────────────────────────────
+   `useCookPilotAuth` mounts in several places at once (the print page, the
+   account control in the header, the CookPilot picker), and each instance used
+   to run its own `getRedirectResult` and its own `onAuthStateChanged`.
+
+   The subscriptions were merely wasteful. `getRedirectResult` was not: it
+   CONSUMES the pending redirect, so with two or three racing it, exactly one
+   learns the outcome and the rest resolve empty. A Google/Apple sign-in that
+   failed would report its error into whichever instance happened to win — and
+   only the print page renders `redirectError`, so if the header's copy won, the
+   user was returned from the provider and shown nothing at all.
+
+   So the redirect is resolved once, into a shared promise, and every consumer
+   reads the same answer. Same shape as `authReadyPromise` above. */
+
+interface AuthState {
+  user: User | null;
+  ready: boolean;
+  redirectError: string | null;
+}
+
+let authState: AuthState = { user: null, ready: !readCookPilotWasSignedIn(), redirectError: null };
+const authSubscribers = new Set<(state: AuthState) => void>();
+let unsubscribeAuth: (() => void) | null = null;
+let redirectPromise: Promise<void> | null = null;
+
+function publishAuthState(patch: Partial<AuthState>) {
+  authState = { ...authState, ...patch };
+  authSubscribers.forEach((notify) => notify(authState));
+}
+
+/** Resolves the pending Google/Apple redirect exactly once per page load. */
+function resolveRedirectOnce(): void {
+  if (redirectPromise) return;
+  redirectPromise = getRedirectResult(getFirebaseAuth())
+    .then(() => undefined)
+    .catch((err) => {
+      publishAuthState({
+        redirectError: friendlyAuthError(err, "We couldn't finish signing you in. Please try again."),
+      });
+    });
+}
+
+/** Starts the single `onAuthStateChanged` subscription on first use. */
+function startAuthSubscription(): void {
+  if (unsubscribeAuth) return;
+  unsubscribeAuth = onAuthStateChanged(getFirebaseAuth(), (nextUser) => {
+    // RecipePrinter has no use for anonymous accounts, and they don't count
+    // as being logged in to a CookPilot recipe library. `checkEmailProviders`
+    // creates one briefly to authorize a callable and cleans it up itself;
+    // skip purging here while that's in flight so we don't race it. Anything
+    // else anonymous restored from a stale session gets purged on sight
+    // instead of just hidden, so it doesn't linger as an orphaned user.
+    if (nextUser?.isAnonymous) {
+      if (!checkingEmailProviders) {
+        purgeAnonymousUser(nextUser);
+      }
+      rememberCookPilotSignedIn(false);
+      publishAuthState({ user: null, ready: true });
+      return;
+    }
+    rememberCookPilotSignedIn(Boolean(nextUser));
+    if (nextUser) {
+      // The one place a real CookPilot account becomes known — identify the
+      // PostHog person here so first-/latest-touch attribution lands on the
+      // person. Uses the opaque Firebase uid, no PII.
+      identifyUser(nextUser.uid);
+      // Account metadata is best-effort and must never hold the sign-in UI
+      // hostage. Rules allow only these harmless timestamps; server-owned
+      // purchases, entitlements, grants, and roles cannot be changed here.
+      void ensureRecipePrinterAccount(nextUser).catch((error) => {
+        console.warn("Could not initialize Recipe Printer account metadata.", error);
+      });
+    }
+    publishAuthState({ user: nextUser ?? null, ready: true });
+  });
+}
+
 export function useCookPilotAuth() {
-  const [user, setUser] = useState<User | null>(null);
-  const [ready, setReady] = useState(() => !readCookPilotWasSignedIn());
-  const [redirectError, setRedirectError] = useState<string | null>(null);
+  const [state, setState] = useState<AuthState>(authState);
 
   useEffect(() => {
-    // Google/Apple sign-in uses a full-page redirect (see handleGoogle/handleApple
-    // below) rather than a popup, since popups are unreliable on mobile browsers
-    // and in-app browsers — they silently open a new tab that never hands control
-    // back to the opener. This resolves that redirect once the user lands back here.
-    getRedirectResult(getFirebaseAuth()).catch((err) => {
-      setRedirectError(friendlyAuthError(err, "We couldn't finish signing you in. Please try again."));
-    });
+    resolveRedirectOnce();
+    startAuthSubscription();
+    authSubscribers.add(setState);
+    // A state change between this component's render and this effect (another
+    // instance mounted first and the listener already fired) would otherwise be
+    // missed, since only future notifications reach a late subscriber.
+    setState(authState);
+    return () => {
+      authSubscribers.delete(setState);
+      // Deliberately NOT unsubscribing from Firebase when the last consumer
+      // unmounts: these hooks mount and unmount as dialogs and panels come and
+      // go, and tearing the listener down would drop `authState` back to its
+      // pre-hydration default and re-run the redirect resolution on the next
+      // mount. One listener per page load is the intent.
+    };
   }, []);
 
-  useEffect(() => {
-    return onAuthStateChanged(getFirebaseAuth(), (nextUser) => {
-      // RecipePrinter has no use for anonymous accounts, and they don't count
-      // as being logged in to a CookPilot recipe library. `checkEmailProviders`
-      // creates one briefly to authorize a callable and cleans it up itself;
-      // skip purging here while that's in flight so we don't race it. Anything
-      // else anonymous restored from a stale session gets purged on sight
-      // instead of just hidden, so it doesn't linger as an orphaned user.
-      if (nextUser?.isAnonymous) {
-        if (!checkingEmailProviders) {
-          purgeAnonymousUser(nextUser);
-        }
-        rememberCookPilotSignedIn(false);
-        setUser(null);
-        setReady(true);
-        return;
-      }
-      rememberCookPilotSignedIn(Boolean(nextUser));
-      if (nextUser) {
-        // The one place a real CookPilot account becomes known — identify the
-        // PostHog person here so first-/latest-touch attribution lands on the
-        // person. Idempotent per uid, so the several components that mount this
-        // hook don't re-identify. Uses the opaque Firebase uid, no PII.
-        identifyUser(nextUser.uid);
-        // Account metadata is best-effort and must never hold the sign-in UI
-        // hostage. Rules allow only these harmless timestamps; server-owned
-        // purchases, entitlements, grants, and roles cannot be changed here.
-        void ensureRecipePrinterAccount(nextUser).catch((error) => {
-          console.warn("Could not initialize Recipe Printer account metadata.", error);
-        });
-      }
-      setUser(nextUser ?? null);
-      setReady(true);
-    });
-  }, []);
-
-  return { user, ready, redirectError };
+  return state;
 }
 
 /** Which sign-in providers an email is already registered with, from CookPilot's own
@@ -328,7 +376,7 @@ export function CookPilotLoginDialog({
         </button>
 
         <div className="pr-cp-7">
-          <h3 className="font-extrabold tracking-[-0.02em] text-cp-h2">
+          <h3 className="font-extrabold tracking-[-0.02em] text-cp-dialog-title">
             {reason === "purchase" ? "Don’t lose your purchase" : "Sign in to Recipe Printer"}
           </h3>
           <p className="text-cp-small text-ink-soft mt-1">
@@ -352,9 +400,13 @@ export function CookPilotLoginDialog({
                 autoComplete="username"
                 autoFocus
                 value={email}
-                onChange={(event) => setEmail(event.target.value)}
+                onChange={(event) => {
+                  setEmail(event.target.value);
+                  if (error) setError(null);
+                }}
               />
-              <p className="mt-1 text-[11px] leading-4 text-ink-soft">
+              {error && <p className="field-error" role="alert">{error}</p>}
+              <p className="mt-1 text-cp-caption leading-4 text-ink-soft">
                 Already use CookPilot? Sign in with the same account.
               </p>
             </div>
@@ -398,8 +450,12 @@ export function CookPilotLoginDialog({
                 autoComplete={step === "create" ? "new-password" : "current-password"}
                 autoFocus
                 value={password}
-                onChange={(event) => setPassword(event.target.value)}
+                onChange={(event) => {
+                  setPassword(event.target.value);
+                  if (error) setError(null);
+                }}
               />
+              {error && <p className="field-error" role="alert">{error}</p>}
             </div>
             <button type="submit" className="btn btn-primary w-full" disabled={busy}>
               {busy ? <SpinnerIcon size={ICON_SIZE.md} /> : null}
@@ -426,12 +482,6 @@ export function CookPilotLoginDialog({
           </div>
         )}
 
-      {error && (
-        <div className="state state--error" role="alert">
-          <h4>{step === "create" ? "Couldn’t create account" : "Couldn’t sign in"}</h4>
-          <p>{error}</p>
-        </div>
-      )}
     </Dialog>
   );
 }
