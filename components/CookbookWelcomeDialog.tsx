@@ -88,7 +88,7 @@ export function CookbookWelcomeDialog({
           ) : (
             <>
               <b>{price}</b>
-              <span>One purchase per cookbook. Pay only when you first export.</span>
+              <span>Pay only when you first export. One purchase per cookbook.</span>
             </>
           )}
         </div>
