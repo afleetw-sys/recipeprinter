@@ -2648,6 +2648,11 @@
     border-top: 1px solid var(--cp-line);
     background: var(--cp-page);
   }
+
+  /* Sits above the Recipe/Size/Themes toolbar in the same fixed bar. */
+  .recipe-mobile-actions__cookbook {
+    width: 100%;
+  }
 }
 
 /* Same 0.125in-per-side safety shrink as the base `.recipe-print-preview`

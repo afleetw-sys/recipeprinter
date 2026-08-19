@@ -3077,7 +3077,20 @@ export default function PrintPage() {
         <SiteHeader
           compact
           sticky
-          centerActions
+          /* Right-aligned, so the cookbook CTA lands beside the save state and
+             the avatar rather than floating in the middle of the bar. */
+          actions={
+            COOKBOOK_ENABLED && !cookbookMode && items?.length ? (
+              <button
+                type="button"
+                className="btn btn-primary btn-compact"
+                onClick={startCookbook}
+              >
+                <BookIcon size={ICON_SIZE.sm} />
+                Make it a cookbook
+              </button>
+            ) : undefined
+          }
           saveStatus={saveStatus}
           onRetrySave={handleRetrySave}
           /* The only Save button left: a cookbook belonging to someone who
@@ -3313,6 +3326,20 @@ export default function PrintPage() {
         </Dialog>
 
         <div className="recipe-mobile-actions no-print">
+          {/* Mobile had NO way to make a cookbook at all. The desktop header is
+              hidden below 821px and `.recipe-config-panel__footer` — which holds
+              this CTA on desktop — is `display: none` here, so the single most
+              important action in the product was unreachable on a phone. */}
+          {COOKBOOK_ENABLED && !cookbookMode && Boolean(items?.length) && (
+            <button
+              type="button"
+              className="btn btn-primary recipe-mobile-actions__cookbook"
+              onClick={startCookbook}
+            >
+              <BookIcon size={ICON_SIZE.md} />
+              Make it a cookbook
+            </button>
+          )}
           <div className="recipe-mobile-toolbar">
             <button
               type="button"
