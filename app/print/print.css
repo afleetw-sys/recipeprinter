@@ -5466,10 +5466,33 @@ textarea.recipe-card__toc-title {
   transform: translateX(-50%);
 }
 
+/* Same header row as a real photo, so the control occupies the corner the
+   thumbnail will fill once one is chosen. Without this the header stayed a
+   plain block and the button dropped below the meta line, floating in the
+   card's empty middle with nothing to belong to. */
+.recipe-card__header--with-photo-add {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--recipe-card-gap);
+}
+
 .recipe-card__photo-add {
-  align-self: flex-start;
   flex: 0 0 auto;
-  margin-left: 0.12in;
+  margin-top: 1px;
+}
+
+/* The shared picker's app-sized default is oversized against card type — match
+   the in-frame "Change" control's scale so it reads as part of the card. */
+.image-picker__trigger.recipe-card__photo-add {
+  min-height: 0;
+  gap: 0.05in;
+  padding: 0.05in 0.085in;
+  font-size: calc(var(--recipe-card-label-size) * 0.86);
+}
+.recipe-card__photo-add svg {
+  width: 0.13in;
+  height: 0.13in;
 }
 
 .recipe-card__photo-remove {
