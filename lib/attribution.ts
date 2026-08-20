@@ -40,6 +40,8 @@ export type KnownTrafficSource =
   | "Reddit"
   | "Facebook"
   | "Instagram"
+  | "Peerlist"
+  | "Uneed"
   | "Email"
   | "CookPilot"
   | "Referral"
@@ -76,6 +78,13 @@ export const REFERRER_RULES: ReadonlyArray<{
   { source: "Reddit", pattern: /(^|\.)reddit\.com$/ },
   { source: "Facebook", pattern: /(^|\.)(facebook\.com|fb\.com|fb\.me)$/ },
   { source: "Instagram", pattern: /(^|\.)instagram\.com$/ },
+  // --- Launch / discovery platforms. Both send a burst of traffic on launch
+  // day and then a long tail from the permanent listing, which is exactly the
+  // shape that gets lost inside a generic "Referral".
+  // Peerlist launches send traffic from the post and the profile alike, and
+  // its share links keep the referrer on peerlist.io.
+  { source: "Peerlist", pattern: /(^|\.)peerlist\.io$/ },
+  { source: "Uneed", pattern: /(^|\.)uneed\.best$/ },
   // --- Our sister product; a link from CookPilot is a known, valuable path.
   { source: "CookPilot", pattern: /(^|\.)cookpilotapp\.com$/ },
 ];
@@ -102,6 +111,8 @@ export const UTM_SOURCE_ALIASES: ReadonlyArray<{
   { source: "Reddit", keywords: ["reddit"] },
   { source: "Facebook", keywords: ["facebook", "fb", "meta"] },
   { source: "Instagram", keywords: ["instagram", "ig"] },
+  { source: "Peerlist", keywords: ["peerlist"] },
+  { source: "Uneed", keywords: ["uneed"] },
   { source: "Email", keywords: ["email", "e-mail", "newsletter", "klaviyo", "mailchimp", "substack"] },
   { source: "CookPilot", keywords: ["cookpilot"] },
 ];
@@ -137,8 +148,21 @@ export function isExternalSource(source: TrafficSource): boolean {
  * traffic is AI vs Search vs Social" reporting alongside the specific source.
  * An unrecognized (custom `utm_source`) value is a tagged campaign we don't
  * have a bucket for → Referral.
+ *
+ * `Launch` is its own bucket rather than a flavour of Social/Referral: a launch
+ * platform's traffic is one dated spike plus a listing tail, so mixing it into
+ * Social would distort the organic-social trend line on exactly the days we
+ * most want to read it, and burying it in Referral would make "how did the
+ * launches do" an ever-growing OR across site names.
  */
-export type TrafficCategory = "AI" | "Search" | "Social" | "Email" | "Referral" | "Direct";
+export type TrafficCategory =
+  | "AI"
+  | "Search"
+  | "Social"
+  | "Launch"
+  | "Email"
+  | "Referral"
+  | "Direct";
 
 const CATEGORY_BY_SOURCE: Readonly<Record<KnownTrafficSource, TrafficCategory>> = {
   "Google Search": "Search",
@@ -153,6 +177,8 @@ const CATEGORY_BY_SOURCE: Readonly<Record<KnownTrafficSource, TrafficCategory>> 
   Reddit: "Social",
   Facebook: "Social",
   Instagram: "Social",
+  Peerlist: "Launch",
+  Uneed: "Launch",
   Email: "Email",
   CookPilot: "Referral",
   Referral: "Referral",

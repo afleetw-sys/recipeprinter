@@ -494,6 +494,12 @@ export const RecipeCardFace = memo(function RecipeCardFace({
   // the source image 404s or is hotlink-blocked we drop it rather than print a
   // broken-image box.
   const showPhoto = showHeader && (showImage && Boolean(recipe.image));
+  // No photo yet, but this card could take one: the "Add photo" control stands
+  // in for the missing thumbnail. It sits in the photo's own corner of the
+  // header (see `--with-photo-add`) rather than loose under the meta line,
+  // where it read as a stray button with no relationship to anything.
+  const showPhotoAdd =
+    showHeader && !cookbookMode && !showPhoto && !photoOnFacingPage && canEdit && Boolean(inlineEdit);
 
   // Shrink-to-fit for content pagination can't rescue (see
   // `RecipeFace.contentScale`). Laid out at `1 / scale` of the normal width and
@@ -898,7 +904,7 @@ export const RecipeCardFace = memo(function RecipeCardFace({
         <header
           className={`recipe-card__header ${
             showPhoto ? "recipe-card__header--with-photo" : ""
-          }`}
+          } ${showPhotoAdd ? "recipe-card__header--with-photo-add" : ""}`}
         >
           <div className="recipe-card__headline">
             {canEdit && inlineEdit ? (
@@ -1012,10 +1018,9 @@ export const RecipeCardFace = memo(function RecipeCardFace({
               )}
             </span>
           )}
-          {/* The stray "Add photo" overlay only belongs in plain recipe-cards
-              mode; in a cookbook, adding/placing a photo is the job of the
-              page's "Photo" dialog, so there's no orphaned floating button. */}
-          {!cookbookMode && !showPhoto && !photoOnFacingPage && canEdit && inlineEdit && (
+          {/* "Add photo" only belongs in plain recipe-cards mode; in a cookbook,
+              adding/placing a photo is the job of the page's "Photo" dialog. */}
+          {showPhotoAdd && inlineEdit && (
             <ImagePicker
               images={inlineEdit.recipeImages ?? []}
               onSelect={(url) => inlineEdit.onImageChange(url ?? "")}
