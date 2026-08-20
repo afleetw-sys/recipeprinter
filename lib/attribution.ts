@@ -41,6 +41,7 @@ export type KnownTrafficSource =
   | "Facebook"
   | "Instagram"
   | "Peerlist"
+  | "PeerPush"
   | "Uneed"
   | "Email"
   | "CookPilot"
@@ -84,6 +85,7 @@ export const REFERRER_RULES: ReadonlyArray<{
   // Peerlist launches send traffic from the post and the profile alike, and
   // its share links keep the referrer on peerlist.io.
   { source: "Peerlist", pattern: /(^|\.)peerlist\.io$/ },
+  { source: "PeerPush", pattern: /(^|\.)peerpush\.net$/ },
   { source: "Uneed", pattern: /(^|\.)uneed\.best$/ },
   // --- Our sister product; a link from CookPilot is a known, valuable path.
   { source: "CookPilot", pattern: /(^|\.)cookpilotapp\.com$/ },
@@ -112,6 +114,7 @@ export const UTM_SOURCE_ALIASES: ReadonlyArray<{
   { source: "Facebook", keywords: ["facebook", "fb", "meta"] },
   { source: "Instagram", keywords: ["instagram", "ig"] },
   { source: "Peerlist", keywords: ["peerlist"] },
+  { source: "PeerPush", keywords: ["peerpush"] },
   { source: "Uneed", keywords: ["uneed"] },
   { source: "Email", keywords: ["email", "e-mail", "newsletter", "klaviyo", "mailchimp", "substack"] },
   { source: "CookPilot", keywords: ["cookpilot"] },
@@ -178,6 +181,7 @@ const CATEGORY_BY_SOURCE: Readonly<Record<KnownTrafficSource, TrafficCategory>> 
   Facebook: "Social",
   Instagram: "Social",
   Peerlist: "Launch",
+  PeerPush: "Launch",
   Uneed: "Launch",
   Email: "Email",
   CookPilot: "Referral",
