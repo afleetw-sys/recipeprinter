@@ -32,6 +32,29 @@ const PRESET_SHEETS = {
   "hardcover-8x10": { width: "8.25in", height: "10.25in" },
 };
 
+// Ceiling on a caller-supplied sheet, so a bad request can't ask Chromium for a
+// 400-inch page. Mirrors MAX_SHEET_IN in the deployed function.
+const MAX_SHEET_IN = 40;
+
+/**
+ * The sheet to render at — mirrors `resolveSheet` in the deployed function.
+ *
+ * A hardcover COVER WRAP has no fixed size (its spine width depends on the
+ * book's page count), so an explicit `sheet` from the caller wins over the
+ * preset table.
+ */
+function resolveSheet(payload) {
+  const explicit = payload?.sheet;
+  if (explicit) {
+    const w = Number(explicit.widthIn);
+    const h = Number(explicit.heightIn);
+    const sane = (n) => Number.isFinite(n) && n > 0 && n <= MAX_SHEET_IN;
+    if (!sane(w) || !sane(h)) return null;
+    return { width: `${w}in`, height: `${h}in` };
+  }
+  return PRESET_SHEETS[payload?.preset ?? "us-letter"] ?? null;
+}
+
 const CHROME_CANDIDATES = [
   "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome",
   "/Applications/Chromium.app/Contents/MacOS/Chromium",
@@ -92,9 +115,9 @@ createServer(async (req, res) => {
     res.writeHead(400).end("Malformed request.");
     return;
   }
-  const sheet = PRESET_SHEETS[payload?.preset ?? "us-letter"];
+  const sheet = resolveSheet(payload);
   if (!payload?.project || !sheet) {
-    res.writeHead(400).end("Missing project or unknown preset.");
+    res.writeHead(400).end("Missing project, unknown preset, or bad sheet.");
     return;
   }
 

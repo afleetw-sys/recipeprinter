@@ -1402,6 +1402,66 @@ export interface CoverCardInlineEdit {
   recipeImages?: string[];
 }
 
+/**
+ * The spine panel of a hardcover case wrap.
+ *
+ * A hardcover's cover is one flat sheet — back | spine | front — so the spine
+ * is a real printed surface, not decoration. It was missing entirely: the
+ * export emitted the front cover as a lone trim-size page, which is not a file
+ * any case binder can use.
+ *
+ * It matches the theme by construction rather than by a parallel set of rules:
+ * the paper element and `TemplateDecoration` are the SAME ones the front and
+ * back covers use, so a spine can never drift from the covers it sits between
+ * when a template changes. Only the geometry is spine-specific, and that comes
+ * from `lib/coverWrap.ts`.
+ *
+ * Type runs bottom-to-top, the convention for English-language hardcovers, so
+ * the title reads correctly when the book lies face-up on a table.
+ *
+ * A thin book gets a blank spine: below `MIN_TITLED_SPINE_IN` there is no room
+ * for legible type between the hinges, and printers reject or silently mangle
+ * type that crowds them. Blank is the correct output there, not smaller text.
+ */
+export const SpineFace = memo(function SpineFace({
+  cover,
+  template,
+  spineWidthIn,
+  showTitle,
+  showDecoration = true,
+}: {
+  cover: CoverConfig;
+  /** Authoritative over the template captured in an older cover draft, exactly
+      as `CoverFace` treats it. */
+  template?: RecipePrintTemplate;
+  /** Physical spine width in inches, from `coverWrapGeometry`. */
+  spineWidthIn: number;
+  /** False when the spine is too thin to carry type — see `spineFitsTitle`. */
+  showTitle: boolean;
+  showDecoration?: boolean;
+}) {
+  const resolved = template ?? cover.template;
+  return (
+    <div
+      className="recipe-card recipe-card--cover recipe-card--spine"
+      style={{ ["--rp-spine-w" as string]: `${spineWidthIn}in` }}
+      aria-hidden
+    >
+      <div className="recipe-card__cover-photo recipe-card__cover-photo--paper" aria-hidden />
+      {/* Bistro's decoration is itself a spine-like strip down the page edge —
+          on a panel this narrow it would read as a stripe of noise rather than
+          a motif, so it sits out here exactly as it does on the back cover. */}
+      <TemplateDecoration template={resolved} show={showDecoration && resolved !== "bistro"} />
+      {showTitle && (
+        <div className="recipe-card__spine-text">
+          <span className="recipe-card__spine-title">{cover.title}</span>
+          {cover.author && <span className="recipe-card__spine-author">{cover.author}</span>}
+        </div>
+      )}
+    </div>
+  );
+});
+
 export const CoverFace = memo(function CoverFace({
   cover,
   side,

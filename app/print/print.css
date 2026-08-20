@@ -3310,13 +3310,223 @@
   background: var(--recipe-bg);
 }
 
+/* ── Hardcover case wrap: back | spine | front on one flat sheet ───────────
+   A case-bound cover is a single landscape sheet glued around the boards, not
+   three separate pages. Geometry (sheet size, spine width, panel offsets) is
+   computed in lib/coverWrap.ts and handed down as inline custom properties —
+   the spine's width depends on the book's page count, so it cannot be a fixed
+   value in a stylesheet. */
+.cookbook-wrap {
+  position: relative;
+  display: flex;
+  align-items: stretch;
+  box-sizing: border-box;
+  width: var(--rp-wrap-w);
+  height: var(--rp-wrap-h);
+  /* The fold-over allowance. Its background is the theme's own paper so the
+     material that disappears around the board edge still matches the cover —
+     a white gap here shows as a pale seam on the finished hinge. */
+  padding: var(--rp-wrap-allowance);
+  background: var(--recipe-bg);
+  -webkit-print-color-adjust: exact;
+  print-color-adjust: exact;
+}
+
+/* Each panel is exactly trim size; the spine takes whatever the page count
+   makes it. `flex: 0 0 auto` throughout — a wrap that flexed would put the
+   spine art off-centre on the finished book, which is the exact failure this
+   whole path exists to avoid. */
+.cookbook-wrap > .recipe-card {
+  flex: 0 0 auto;
+  width: var(--rp-wrap-panel-w);
+  height: var(--rp-wrap-panel-h);
+  min-height: 0;
+}
+
+.cookbook-wrap > .recipe-card--spine {
+  width: var(--rp-spine-w);
+}
+
+/* Trim/fold guides. Screen-only: they mark where the board edge falls so the
+   composition can be checked, and must never reach the printed file. */
+.cookbook-wrap__guide {
+  position: absolute;
+  z-index: 5;
+  top: 0;
+  bottom: 0;
+  width: 0;
+  border-left: 1px dashed rgba(120, 120, 120, 0.55);
+  pointer-events: none;
+}
+@media print {
+  .cookbook-wrap__guide {
+    display: none;
+  }
+}
+
+.recipe-card--spine {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+}
+
+/* The wrap is ONE physical sheet, and print media has to be told so.
+   
+   Without this it exported as three pages: the shared print rules size book
+   pages against `100vh` and set `break-after: page` on them, and a print
+   `100vh` resolves against the DEFAULT page box rather than our (much wider)
+   wrap sheet. The panels were each being pushed onto their own page.
+   
+   Everything here is a pin, not a tweak: exact inches for the box, breaks
+   forced off, and the panels held to the trim size the geometry computed.
+   A wrap that paginates is not a usable file, so none of it can be left to
+   inference. */
+@media print {
+  .rp-page-cover-wrap,
+  .rp-page-cover-wrap .cookbook-wrap {
+    break-before: avoid !important;
+    break-after: avoid !important;
+    break-inside: avoid !important;
+    page-break-before: avoid !important;
+    page-break-after: avoid !important;
+    page-break-inside: avoid !important;
+  }
+
+  .rp-page-cover-wrap .cookbook-wrap {
+    display: flex !important;
+    width: var(--rp-wrap-w) !important;
+    height: var(--rp-wrap-h) !important;
+    margin: 0 !important;
+    overflow: hidden !important;
+  }
+
+  .rp-page-cover-wrap .cookbook-wrap > .recipe-card {
+    width: var(--rp-wrap-panel-w) !important;
+    height: var(--rp-wrap-panel-h) !important;
+    min-height: 0 !important;
+    margin: 0 !important;
+    border-radius: 0 !important;
+    break-inside: avoid !important;
+    page-break-inside: avoid !important;
+  }
+
+  .rp-page-cover-wrap .cookbook-wrap > .recipe-card--spine {
+    width: var(--rp-spine-w) !important;
+  }
+}
+
+/* Bottom-to-top, the English-language hardcover convention: the title reads
+   correctly with the book lying face-up. `writing-mode` rather than a rotate
+   transform so the text still wraps and centres within the panel's real box. */
+.recipe-card__spine-text {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  align-items: baseline;
+  justify-content: center;
+  gap: 0.3in;
+  max-height: calc(100% - 0.9in);
+  writing-mode: vertical-rl;
+  transform: rotate(180deg);
+  color: var(--recipe-ink);
+}
+
+.recipe-card__spine-title {
+  font-family: var(--recipe-title-font, inherit);
+  font-size: calc(var(--rp-spine-w) * 0.42);
+  font-weight: 700;
+  letter-spacing: 0.01em;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.recipe-card__spine-author {
+  font-size: calc(var(--rp-spine-w) * 0.26);
+  font-weight: 500;
+  color: var(--recipe-muted);
+  white-space: nowrap;
+}
+
+/* Per-theme spine treatments. The paper, ink and decoration already come from
+   the shared cover rules, so these only add what a spine specifically needs —
+   the accent edge each template uses to separate cover from spine. */
+.recipe-template--classic .recipe-card--spine,
+.recipe-template--keepsake .recipe-card--spine {
+  border-left: 1px solid var(--recipe-line);
+  border-right: 1px solid var(--recipe-line);
+}
+
+/* Bistro's identity is the checkerboard, and its spine is the one place the
+   motif can run full height without competing with content. */
+.recipe-template--bistro .recipe-card--spine {
+  background:
+    repeating-conic-gradient(
+      var(--recipe-accent) 0% 25%,
+      transparent 0% 50%
+    )
+    0 0 / calc(var(--rp-spine-w) / 2) calc(var(--rp-spine-w) / 2);
+}
+.recipe-template--bistro .recipe-card__spine-text {
+  padding: 0.12in 0;
+  background: var(--recipe-bg);
+}
+
+/* Heirloom and Cookout carry a solid accent spine — the cloth-and-foil look of
+   an older cookbook — so their type flips to the paper colour. */
+.recipe-template--heirloom .recipe-card--spine,
+.recipe-template--cookout .recipe-card--spine {
+  background: var(--recipe-accent);
+}
+.recipe-template--heirloom .recipe-card__spine-title,
+.recipe-template--cookout .recipe-card__spine-title,
+.recipe-template--heirloom .recipe-card__spine-author,
+.recipe-template--cookout .recipe-card__spine-author {
+  color: var(--recipe-bg);
+}
+
+/* Counter is black-and-white by design; Pantry is a ruled notebook. Both read
+   best with a hairline rule rather than a filled spine. */
+.recipe-template--counter .recipe-card--spine,
+.recipe-template--pantry .recipe-card--spine {
+  border-left: 1px solid var(--recipe-ink);
+  border-right: 1px solid var(--recipe-ink);
+}
+
 .recipe-card__cover-image {
   position: absolute;
   inset: 0;
   width: 100%;
   height: 100%;
   object-fit: cover;
-  filter: brightness(0.84) saturate(0.98);
+  -webkit-print-color-adjust: exact;
+  print-color-adjust: exact;
+}
+
+/* The cover photo's darkening, as a flat overlay rather than a CSS `filter`.
+   
+   This used to be `filter: brightness(0.84) saturate(0.98)` on the image, and
+   that one declaration was quietly rasterizing the ENTIRE cover page in the
+   exported PDF: Chrome cannot express a CSS filter in vector PDF output, so it
+   flattens the whole stacking context that contains it. The measured result on
+   a 4-page book was a single 2552x3302 bitmap for page 1 — the cover's title
+   and author set as pixels instead of text — and a 10.2MB file. Replacing the
+   filter with this overlay drops the same book to 4.4MB, leaves the photo
+   embedded at its own resolution, and keeps the type vector (and therefore
+   sharp at any size, and selectable/searchable in the PDF).
+
+   A 16% black wash is the same result `brightness(0.84)` produced. The 2%
+   desaturation is not reproduced: it was imperceptible, and nothing that costs
+   a vector page is worth it.
+
+   `:has()` scopes this to photo covers — the `--paper` variant has no image to
+   darken, and tinting it would dirty the template's paper colour. */
+.recipe-card__cover-photo:has(> .recipe-card__cover-image)::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.16);
   -webkit-print-color-adjust: exact;
   print-color-adjust: exact;
 }
