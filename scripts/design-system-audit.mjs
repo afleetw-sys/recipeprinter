@@ -1,8 +1,26 @@
 import fs from "node:fs";
 import path from "node:path";
+import { stripCssComments, stripJsComments } from "./stripComments.mjs";
 
 const root = process.cwd();
 const failures = [];
+
+/**
+ * Source with its comments blanked out, split into lines.
+ *
+ * Every rule below is a pattern that only means anything in real code, so a
+ * comment that merely NAMES one is not a violation — it is usually the note
+ * explaining why the real code nearby is the way it is. Scanning raw text made
+ * this audit fail on print.css:2177, a comment describing what `font-size: 0`
+ * does to a collapsed label, which it read as a `font-size` declaration.
+ *
+ * `stripComments` preserves length and line breaks, so `index + 1` is still the
+ * line number in the file the developer will open.
+ */
+function scannableLines(file, source) {
+  const stripped = file.endsWith(".css") ? stripCssComments(source) : stripJsComments(source);
+  return stripped.split("\n");
+}
 
 function walk(directory) {
   return fs.readdirSync(directory, { withFileTypes: true }).flatMap((entry) => {
@@ -26,9 +44,8 @@ for (const directory of ["app", "components"]) {
   for (const file of walk(path.join(root, directory)).filter((name) => name.endsWith(".tsx"))) {
     const relative = path.relative(root, file);
     if (exemptTsx.has(relative)) continue;
-    const lines = fs.readFileSync(file, "utf8").split("\n");
+    const lines = scannableLines(file, fs.readFileSync(file, "utf8"));
     lines.forEach((line, index) => {
-      if (line.trimStart().startsWith("//")) return;
       if (/text-\[(?:\d|\.\d)/.test(line)) {
         report(file, index + 1, "use a text-cp-* typography token");
       }
@@ -65,7 +82,9 @@ const cssTargets = [
 
 for (const target of cssTargets) {
   const file = path.join(root, target.file);
-  const lines = fs.readFileSync(file, "utf8").split("\n");
+  // Stripped before the marker search too, so a selector quoted in a comment
+  // can't be mistaken for the section boundary it names.
+  const lines = scannableLines(file, fs.readFileSync(file, "utf8"));
   const trailingUiStart = target.trailingUiMarker
     ? lines.findIndex((line) => line.trim() === target.trailingUiMarker) + 1
     : Infinity;

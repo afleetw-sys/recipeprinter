@@ -5,8 +5,12 @@ node_modules/
 
 # next.js
 .next/
-# alternate dist dir used by the preview dev server (.claude/launch.json)
-.next-preview/
+# Alternate dist dirs via NEXT_DIST_DIR — the preview dev server
+# (.claude/launch.json) uses .next-preview, and one-off builds pick their own.
+# Globbed rather than listed: a build into an unlisted dir also gets Next to add
+# `<dir>/types/**/*.ts` to tsconfig.json, so an untracked one is easy to commit
+# by accident along with that edit.
+.next-*/
 out/
 
 # env — keep .env.local.example, never commit .env.local

@@ -9,7 +9,12 @@ import { defineConfig } from "vitest/config";
 export default defineConfig({
   test: {
     environment: "node",
-    include: ["lib/**/*.test.ts"],
+    // `scripts/` covers the build-time guards (the design-system audit's
+    // comment stripper). They live outside lib/ on purpose — they are tooling,
+    // not app code, and nothing shippable should be able to import them — but
+    // they are pure functions whose failure mode is a guard that silently stops
+    // guarding, so they get the same treatment as the pagination engine.
+    include: ["lib/**/*.test.ts", "scripts/**/*.test.mjs"],
   },
   resolve: {
     // Mirrors the `@/*` path alias in tsconfig.json.

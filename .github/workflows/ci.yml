@@ -1,0 +1,50 @@
+name: CI
+
+# Nothing ran on a push before this existed. The design-system audit had been
+# failing on `main` for long enough that the failure itself went unnoticed,
+# which is roughly the whole argument for having this file.
+on:
+  push:
+    branches: ["**"]
+  pull_request:
+
+# A new push supersedes the run in flight for the same ref.
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - run: npm ci
+
+      # Each check is its own step so a red run says which one failed on the
+      # summary page, without opening the log.
+      - name: Types
+        run: npx tsc --noEmit
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Tests
+        run: npm test
+
+      - name: Design system
+        run: npm run audit:design-system
+
+      # Last because it is the slowest, and because everything above tends to
+      # explain a build failure faster than the build does. Deliberately still
+      # here: Vercel only builds the branch it watches, so a PR onto anything
+      # else would otherwise never be compiled at all.
+      - name: Build
+        run: npx next build
