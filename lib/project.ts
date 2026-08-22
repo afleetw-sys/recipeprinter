@@ -441,6 +441,31 @@ export function deleteSectionFromMeta(meta: ProjectMeta, sectionId: string): Pro
   return { ...meta, sections };
 }
 
+/**
+ * The id of the project this browser is working on, minting one if there
+ * isn't one yet.
+ *
+ * `normalizeProjectMeta` already defaults a missing `projectId` to a fresh
+ * `uid()`, but it does so on every read — so two reads of an empty store return
+ * two different ids. That was harmless while the id lived only inside the
+ * workspace, which read it once on mount and immediately wrote it back. It is
+ * not harmless now that the id is in the URL: the homepage has to know where it
+ * is sending someone BEFORE the workspace mounts, and a throwaway id would send
+ * them to an address the studio then disagrees with.
+ *
+ * So this reads and writes back, exactly as the hook's hydration effect does,
+ * which is what makes the id stable from the first caller onwards.
+ *
+ * Creating an id is not creating a saved project. Nothing here reaches an
+ * account or the on-device library — see `autosaveEnabled` in the studio and
+ * `saveLocalProject`, both of which have their own, stricter, conditions.
+ */
+export function ensureWorkingProjectId(): string {
+  const meta = readMeta();
+  writeMeta(meta);
+  return meta.projectId ?? uid();
+}
+
 export function useProjectMeta() {
   const [meta, setMeta] = useState<ProjectMeta>(EMPTY_META);
   const [hydrated, setHydrated] = useState(false);
@@ -861,17 +886,21 @@ export function useProjectMeta() {
    * document, and its own purchase, and stays in the library — this just stops
    * pointing at it.
    */
+  /** Returns the new project's id — callers navigate to `/projects/<id>`, so
+      the identity has to come back out rather than only being committed. */
   const startNewProject = useCallback(
     (options: { cookbook?: boolean } = {}) => {
+      const projectId = uid();
       commit({
         ...EMPTY_META,
-        projectId: uid(),
+        projectId,
         cookbookIntent: options.cookbook || undefined,
         // Whether the cookbook pitch has been seen is a fact about the PERSON,
         // not the project. Resetting it per project would re-pitch the product
         // to someone already on their second book.
         cookbookWelcomeCompleted: metaRef.current.cookbookWelcomeCompleted,
       });
+      return projectId;
     },
     [commit],
   );

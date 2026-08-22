@@ -519,7 +519,7 @@ export const RecipeCardFace = memo(function RecipeCardFace({
       : undefined;
 
   // Whole-page edit mode means every field is a live input at once (see
-  // togglePageEditMode in app/print/page.tsx) — there's no separate
+  // togglePageEditMode in components/print/Studio.tsx) — there's no separate
   // select-then-edit step, so this only needs to tell the currently-focused
   // field apart from the rest (to know whether to show the shared draft
   // value or the field's live committed value).

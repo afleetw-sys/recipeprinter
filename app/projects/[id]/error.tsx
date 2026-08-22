@@ -27,7 +27,7 @@ import { captureException } from "@/lib/analytics";
  * was never in React to begin with. Transient crashes are retried
  * automatically; the manual recovery UI only appears after repeated failures.
  *
- * Deliberately scoped to the /print segment rather than the app root: this is
+ * Deliberately scoped to `/projects/<id>` rather than the app root: this is
  * the only route with anything to lose, and a root boundary would swallow
  * marketing-page errors into a message about recipes.
  */

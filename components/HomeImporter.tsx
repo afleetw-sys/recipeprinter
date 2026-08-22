@@ -4,6 +4,7 @@ import { useRef } from "react";
 import { useRouter } from "next/navigation";
 import { ImportPanel } from "@/components/ImportPanel";
 import { stashPendingImport } from "@/lib/pendingImport";
+import { ensureWorkingProjectId } from "@/lib/project";
 import { stashArrivingImporter } from "@/lib/studioHandoff";
 import type { QueueItem } from "@/types/recipe";
 
@@ -51,7 +52,14 @@ export function HomeImporter() {
     // travel from here rather than simply appearing somewhere else. Measured
     // before the navigation, because after it this page is gone.
     stashArrivingImporter(panelRef.current?.getBoundingClientRect() ?? null);
-    void stashPendingImport(payload).finally(() => router.push("/print"));
+    // The id is read (and, first time, minted) here rather than in the studio,
+    // because the destination has to exist before the navigation does. It is
+    // the working copy's own id, so arriving there opens what is already in
+    // this browser rather than fetching anything.
+    const projectId = ensureWorkingProjectId();
+    void stashPendingImport(payload).finally(() =>
+      router.push(`/projects/${encodeURIComponent(projectId)}`),
+    );
   };
 
   return (

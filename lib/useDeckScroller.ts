@@ -127,7 +127,7 @@ export function useDeckScroller({
   //
   // That distinction is load-bearing. The print page unmounts its whole editor
   // behind a loading gate (`items === null || projectLoading || cookbookAccess
-  // === "loading"` in app/print/page.tsx) — which a signed-in cook passes
+  // === "loading"` in components/print/Studio.tsx) — which a signed-in cook passes
   // through more than once on a refresh, as auth resolves and the saved project
   // and its unlock are fetched. Each pass mounts a NEW deck element, while the
   // things these effects watched (page count, card size) stayed put — so the

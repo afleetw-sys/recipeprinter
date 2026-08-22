@@ -64,8 +64,11 @@ export default function ProjectsPage() {
    */
   function startNewCookbook() {
     const hasRecipes = queueItems.some((item) => item.status === "ready" && item.recipe);
-    startNewProject({ cookbook: true });
-    router.push(hasRecipes ? "/print" : "/");
+    const projectId = startNewProject({ cookbook: true });
+    // With recipes to bind, straight into the new book. With none, home — the
+    // empty studio is the importer, and `cookbookIntent` (committed above)
+    // carries the choice across so the first import still lands in a book.
+    router.push(hasRecipes ? `/projects/${encodeURIComponent(projectId)}` : "/");
   }
   const [accountProjects, setAccountProjects] = useState<PrintProject[]>([]);
   /**
@@ -261,7 +264,7 @@ export default function ProjectsPage() {
             </div>
             <h2 className="mt-cp-4 text-cp-h2 font-extrabold tracking-[-0.02em]">No saved projects yet</h2>
             <p className="mt-cp-2 max-w-sm text-cp-body text-ink-soft leading-relaxed">Build a cookbook or a set of recipe cards and it’ll show up here, ready to reopen anytime.</p>
-            <Link href="/print" className="btn btn-primary mt-cp-5">Add a recipe</Link>
+            <Link href="/" className="btn btn-primary mt-cp-5">Add a recipe</Link>
           </div>
         ) : (
           <>
@@ -276,7 +279,7 @@ export default function ProjectsPage() {
               {groupedProjects.map((project) => (
                 <li key={project.id} className="group relative flex min-h-44 flex-col overflow-hidden rounded-xl border border-line bg-card transition-colors hover:border-line-strong">
                   <Link
-                    href={`/print?project=${encodeURIComponent(project.id)}`}
+                    href={`/projects/${encodeURIComponent(project.id)}`}
                     className="absolute inset-0 z-10 rounded-xl focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--cp-accent-ink)]"
                     aria-label={`Open ${project.title || (project.kind === "printProject" ? "Untitled recipe cards" : "Untitled cookbook")}`}
                   />

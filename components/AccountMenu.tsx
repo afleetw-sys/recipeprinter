@@ -179,7 +179,7 @@ export default function AccountMenu({
                   {cookbooks.map((project) => (
                     <Link
                       key={project.id}
-                      href={`/print?project=${encodeURIComponent(project.id)}`}
+                      href={`/projects/${encodeURIComponent(project.id)}`}
                       className="rounded-lg px-2 py-2 hover:bg-page"
                       aria-busy={openingProjectId === project.id}
                       onClick={() => {
@@ -209,7 +209,7 @@ export default function AccountMenu({
                   {printProjects.map((project) => (
                     <Link
                       key={project.id}
-                      href={`/print?project=${encodeURIComponent(project.id)}`}
+                      href={`/projects/${encodeURIComponent(project.id)}`}
                       className="rounded-lg px-2 py-2 hover:bg-page"
                       aria-busy={openingProjectId === project.id}
                       onClick={() => {

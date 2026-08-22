@@ -24,7 +24,7 @@ interface PrintConfigPanelProps {
   cookbookMode: boolean;
   cookbookLocked: boolean;
   /** Turns this print job into a cookbook. A create action, not a view change —
-      see `renderModeSwitch`'s removal in app/print/page.tsx. */
+      see `renderModeSwitch`'s removal in components/print/Studio.tsx. */
   /** The cover title — this panel's heading in cookbook mode. */
   bookTitle: string | undefined;
   /** Leaves the book and prints the same recipes as cards. The book is stashed

@@ -4,6 +4,7 @@ import { useState, type DragEvent, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
 import { ArrowRightIcon, ICON_SIZE, SpinnerIcon, UploadIcon } from "@/components/icons";
 import { stashPendingImport } from "@/lib/pendingImport";
+import { ensureWorkingProjectId } from "@/lib/project";
 import { imageLabel, partitionImageFiles, prepareImageDataUrls, validateImageFiles } from "@/lib/imageImport";
 import type { ImportMethod } from "@/types/recipe";
 
@@ -46,7 +47,7 @@ export function SeoCapture({
     // already told us what they wanted; the studio just shows them the page.
     // Even if persistence failed (private mode, quota), send them to the
     // working tool rather than stranding them on the landing page.
-    router.push("/print");
+    router.push(`/projects/${encodeURIComponent(ensureWorkingProjectId())}`);
     if (!ok) setBusy(false);
   }
 

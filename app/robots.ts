@@ -9,7 +9,11 @@ export default function robots(): MetadataRoute.Robots {
     rules: {
       userAgent: "*",
       allow: "/",
-      disallow: ["/print$", "/print?", "/api/"],
+      // `/projects` and everything under it is one person's private work.
+      // `/print/<slug>` is deliberately NOT listed: it is the public share
+      // link, and untangling it from the private workspace is half the
+      // reason the workspace moved off that prefix.
+      disallow: ["/projects", "/api/"],
     },
     sitemap: absoluteUrl("/sitemap.xml"),
     host: absoluteUrl("/"),

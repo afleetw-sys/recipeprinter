@@ -163,7 +163,7 @@ export function PrintDialogs({
           before a book is bought the switch is reversible exploration and has
           nothing to warn about, and once bought there is no switch at all —
           leaving is an explicit "New recipe cards" action that forks a
-          separate project. See `renderModeSwitch` in app/print/page.tsx. */}
+          separate project. See `renderModeSwitch` in components/print/Studio.tsx. */}
     </>
   );
 }

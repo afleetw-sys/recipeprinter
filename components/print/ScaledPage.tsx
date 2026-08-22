@@ -213,7 +213,7 @@ export const ScaledPage = memo(function ScaledPage({
   // Cookbook print-format geometry is applied only at EXPORT time, never on
   // screen: the book always PREVIEWS at plain Letter, and the chosen format is a
   // pure export concern (see the `.rp-exporting` print-only rules + the deck's
-  // export vars in app/print/page.tsx / print.css). Each page still carries the
+  // export vars in components/print/Studio.tsx / print.css). Each page still carries the
   // static `--book-*` / `rp-bind-*` hooks so an export has something to act on;
   // they're inert until a format is being exported. `--page-w/-h` stay Letter.
   const gutterClass = !cookbookMode

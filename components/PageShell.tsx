@@ -36,10 +36,16 @@ export function PageHeader({
   );
 }
 
-/** Shared call-to-action that sends the reader back to the tool. */
+/**
+ * Shared call-to-action that sends the reader back to the tool.
+ *
+ * The tool is the front door. There is no separate "open the app" destination
+ * any more: `/` is the empty studio, and importing there is what makes a
+ * project — which then has an address of its own.
+ */
 export function StartPrintingCta({ label = "Start printing recipes" }: { label?: string }) {
   return (
-    <Link href="/print" className="btn btn-primary">
+    <Link href="/" className="btn btn-primary">
       <PrintIcon size={ICON_SIZE.md} />
       {label}
     </Link>

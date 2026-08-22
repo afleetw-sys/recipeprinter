@@ -212,7 +212,7 @@ export function StudioEmptyState({
             {shelf.map((project) => (
               <li key={project.id}>
                 <Link
-                  href={`/print?project=${encodeURIComponent(project.id)}`}
+                  href={`/projects/${encodeURIComponent(project.id)}`}
                   className="rp-studio-empty__card"
                 >
                   <ProjectCover project={project} />
