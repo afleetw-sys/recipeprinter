@@ -3294,13 +3294,26 @@ export default function PrintPage() {
           }
         />
 
-        {/* One-line "back up your cookbook" bar under the toolbar, shown to a
-            signed-out owner. Not dismissable on purpose: an un-backed-up purchase
-            lives only in this browser, so it stays until they make an account. */}
-        {projectMeta.meta.cookbookMode && !cookbookLocked && !cookPilotUser && (
+        {/* One-line "back up your cookbook" bar under the toolbar, shown to any
+            signed-out owner. Not dismissable on purpose: a book that lives only
+            in this browser stays worth saying so about until they make an
+            account.
+
+            This used to be gated on `!cookbookLocked`, so it only appeared once
+            a book had been PAID for — which is both the smallest audience and
+            the latest possible moment. Every unsaved book is worth keeping, and
+            asking here, while the cook is in the middle of building one, is a
+            far better moment than the one we were reaching for otherwise: a
+            modal at the door on the way out, making an account the price of
+            keeping their work. This says the same thing without holding
+            anything hostage — the book is on the device's shelf either way (see
+            lib/localProjects), and an account is how it stops being only there. */}
+        {projectMeta.meta.cookbookMode && !cookPilotUser && (
           <div className="recipe-protect-bar no-print" role="status">
             <span className="recipe-protect-bar__text">
-              Your cookbook is saved only on this device. Create a free account so you don&apos;t lose it.
+              {cookbookLocked
+                ? "Your cookbook is saved only on this device. Create a free account so you don’t lose it."
+                : "Your cookbook and your purchase are saved only on this device. Create a free account to keep them."}
             </span>
             <button
               type="button"

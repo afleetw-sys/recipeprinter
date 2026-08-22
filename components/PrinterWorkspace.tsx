@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { ImportPanel } from "@/components/ImportPanel";
 import { PrintQueue } from "@/components/PrintQueue";
@@ -10,6 +11,7 @@ import {
   MoreVerticalIcon,
   PrintIcon,
   TrashIcon,
+  XIcon,
 } from "@/components/icons";
 import { createCurrentPrintJob, useQueue } from "@/lib/queue";
 import { useProjectMeta } from "@/lib/project";
@@ -70,6 +72,8 @@ export function PrinterWorkspace({
     hydrated && readyItems.length > 0 ? `Ready to print (${readyItems.length})` : "Ready to print";
 
   const [menuOpen, setMenuOpen] = useState(false);
+  /** The cookbook just filed on the way in, so the page can say where it went. */
+  const [filedBookTitle, setFiledBookTitle] = useState<string | null>(null);
   const [mobileQueueOpen, setMobileQueueOpen] = useState(false);
   const [hasShownEmptyState, setHasShownEmptyState] = useState(false);
   const menuRef = useRef<HTMLDivElement | null>(null);
@@ -122,6 +126,7 @@ export function PrinterWorkspace({
   useEffect(() => {
     if (!hydrated || !metaHydrated || leftCookbookRef.current) return;
     if (!meta.cookbookMode) return;
+    const bookTitle = meta.cover?.title?.trim() || meta.stashedCookbook?.cover?.title?.trim();
     const hasPrintable = items.some((item) => item.status === "ready" && item.recipe);
     // A book with recipes is filed before it is released, and a shelf that
     // can't be written to (private mode, quota) means we keep the working copy
@@ -136,6 +141,10 @@ export function PrinterWorkspace({
     leftCookbookRef.current = true;
     clear();
     startNewProject();
+    // Say where the book went. Without this, the homepage simply no longer has
+    // the cookbook on it and nothing accounts for the difference — which is the
+    // confusion the old clear-on-arrival created and never answered.
+    if (hasPrintable) setFiledBookTitle(bookTitle || "Your cookbook");
   }, [hydrated, metaHydrated, meta, items, clear, startNewProject]);
 
   // Capture → app handoff: a visitor who pasted a link, dropped a photo, or
@@ -207,6 +216,31 @@ export function PrinterWorkspace({
         hasProject ? "rp-printer-workspace--active" : "rp-printer-workspace--landing"
       } ${skipProjectIntro ? "rp-printer-workspace--no-intro" : ""}`}
     >
+      {/* Where the cookbook went. A quiet, dismissable line rather than a
+          floating toast: it answers a question the cook is asking right now
+          ("wasn't I just editing a book?"), and it should still be there if
+          they look up ten seconds later. */}
+      {filedBookTitle && (
+        <div className="rp-workspace-filed" role="status">
+          <p className="rp-workspace-filed__text">
+            <strong>{filedBookTitle}</strong> is saved in your projects.
+          </p>
+          <div className="rp-workspace-filed__actions">
+            <Link href="/projects" className="btn btn-secondary btn-compact">
+              View projects
+            </Link>
+            <button
+              type="button"
+              className="icon-close-btn"
+              aria-label="Dismiss"
+              onClick={() => setFiledBookTitle(null)}
+            >
+              <XIcon size={ICON_SIZE.sm} />
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* Import panel */}
       <div className="rp-workspace-import">
         <ImportPanel

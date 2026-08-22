@@ -1335,6 +1335,29 @@
     min-width: 0;
   }
 
+  /* "Your cookbook is saved in your projects" — shown once, on arriving here
+     from a book that was just filed to this device's shelf. A hairline panel
+     rather than a floating toast: it answers a question ("wasn't I editing a
+     book?") that stays worth answering after a toast would have timed out. */
+  .rp-workspace-filed {
+    @apply flex flex-wrap items-center justify-between gap-cp-3 rounded-xl border border-line px-cp-4 py-cp-3;
+    background: var(--cp-accent-soft);
+    /* The workspace becomes a two-column grid at ≥1024px (see below). This is a
+       banner over both of them, not a third panel competing for a cell —
+       without this it took the import column's slot and pushed the whole
+       layout across by one. Harmless in the flex column below that breakpoint. */
+    grid-column: 1 / -1;
+  }
+
+  .rp-workspace-filed__text {
+    @apply text-cp-small;
+    min-width: 0;
+  }
+
+  .rp-workspace-filed__actions {
+    @apply flex items-center gap-cp-2 flex-shrink-0;
+  }
+
   .rp-mobile-print-tray {
     display: none;
   }
