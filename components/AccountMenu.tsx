@@ -13,6 +13,8 @@ import type { PrintProject } from "@/types/recipe";
 import type { User } from "firebase/auth";
 import { IconButton } from "@/components/Controls";
 import { RecipeLoadingState } from "@/components/RecipeLoadingState";
+import { SignInButton } from "@/components/SignInButton";
+import { readCookPilotWasSignedIn } from "@/lib/cookPilotSession";
 
 // Two initials from the signed-in identity — first+last of a display name, else
 // the first letter of the email — so a logged-in avatar shows who's signed in.
@@ -60,6 +62,13 @@ export default function AccountMenu({
   onActivated?: () => void;
 }) {
   const { user, ready } = useCookPilotAuth();
+  /** Whether this browser has an account behind it, for the brief window
+      before auth resolves. Read after mount so the server and the first client
+      render agree — see the same read in components/AccountControl. */
+  const [wasSignedIn, setWasSignedIn] = useState(false);
+  useEffect(() => {
+    setWasSignedIn(readCookPilotWasSignedIn());
+  }, []);
   const [open, setOpen] = useState(false);
   const [showLogin, setShowLogin] = useState(false);
   const [projects, setProjects] = useState<PrintProject[]>([]);
@@ -127,26 +136,47 @@ export default function AccountMenu({
 
   return (
     <div ref={rootRef} className="relative flex items-center">
-      <IconButton
-        className={`${
-          user
-            ? "border border-transparent bg-[var(--cp-accent)] text-[var(--cp-ink)] text-cp-caption font-bold tracking-tight"
-            : "border border-line bg-card text-ink-soft hover:text-ink hover:border-ink-soft"
-        }`}
-        aria-label={user ? "Recipe Printer account" : "Sign in to Recipe Printer"}
-        title={user ? "Recipe Printer account" : "Sign in to Recipe Printer"}
-        onClick={() => {
-          if (!ready) return;
-          if (user) setOpen((value) => !value);
-          else setShowLogin(true);
-        }}
-      >
-        {user && accountInitials(user) ? (
-          <span aria-hidden>{accountInitials(user)}</span>
-        ) : (
-          <AccountIcon size={ICON_SIZE.lg} />
-        )}
-      </IconButton>
+      {/*
+        Signed out — including the moment before auth resolves on a browser
+        with no record of an account — this is a button that says "Sign in",
+        not a person-shaped glyph the visitor has to interpret. It is the same
+        component `AccountControl` renders while this chunk is loading, so the
+        handover is invisible.
+
+        While auth is still resolving on a browser that HAS an account, the
+        avatar shape holds instead: rendering "Sign in" and then replacing it
+        with initials a moment later would tell a signed-in cook they were
+        signed out, which is exactly the sort of flicker that makes people
+        click the wrong thing.
+      */}
+      {user || (!ready && wasSignedIn) ? (
+        <IconButton
+          className={`${
+            user
+              ? "border border-transparent bg-[var(--cp-accent)] text-[var(--cp-ink)] text-cp-caption font-bold tracking-tight"
+              : "border border-line bg-card text-ink-soft"
+          }`}
+          aria-label="Recipe Printer account"
+          title="Recipe Printer account"
+          onClick={() => {
+            if (!ready || !user) return;
+            setOpen((value) => !value);
+          }}
+        >
+          {user && accountInitials(user) ? (
+            <span aria-hidden>{accountInitials(user)}</span>
+          ) : (
+            <AccountIcon size={ICON_SIZE.lg} />
+          )}
+        </IconButton>
+      ) : (
+        <SignInButton
+          onClick={() => {
+            if (!ready) return;
+            setShowLogin(true);
+          }}
+        />
+      )}
 
       {open && user && (
         <div className="absolute right-0 top-11 z-50 w-[min(340px,calc(100vw-2rem))] rounded-2xl border border-line bg-card p-cp-4 shadow-cp-lg">
