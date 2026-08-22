@@ -1,4 +1,12 @@
 import { NextResponse } from "next/server";
+import {
+  bearerToken,
+  cookbookAccessConfigured,
+  hasCookbookUnlock,
+  projectIdFromPayload,
+  verifyIdToken,
+} from "@/lib/server/cookbookAccess";
+import { callerKey, rateLimit } from "@/lib/server/rateLimit";
 
 export const runtime = "nodejs";
 // A cookbook is dozens of pages and the renderer cold-starts Chromium, so the
@@ -8,31 +16,102 @@ export const runtime = "nodejs";
 export const maxDuration = 300;
 
 /**
- * Proxies a cookbook to the PDF renderer.
+ * Renders a cookbook to PDF, for the person who bought it.
  *
- * It exists to keep `RECIPEPRINTER_PDF_AUTH` on the server. Calling the render
- * function straight from the browser would mean shipping that shared secret to
- * every visitor, which turns a private endpoint into a public one — anyone
- * could burn 2GiB of Chromium on demand. The browser talks to this route; only
- * this route knows the secret.
+ * This route used to check nothing at all. It kept `RECIPEPRINTER_PDF_AUTH` off
+ * the client, which is necessary but was mistaken for sufficient: keeping the
+ * secret private is not the same as keeping the endpoint private. Anyone able
+ * to form a POST got the paid renderer, which made it simultaneously the
+ * cheapest way around the $19.99 paywall and an uncapped way to spend 300
+ * seconds of Chromium per request on someone else's bill.
+ *
+ * Three gates now, cheapest first:
+ *
+ *   1. rate limit — before any work, and before any network call
+ *   2. identity — a real Firebase ID token, verified against Google
+ *   3. entitlement — an unlock document for THIS book, owned by THAT account
+ *
+ * Step 3 is trustworthy because of work already done: `firestore.rules` denies
+ * every client write to `cookbookUnlocks`, so the document can only have come
+ * from the RevenueCat webhook. Nobody can mint themselves one.
  */
+
+// Generous enough that nobody legitimate meets it: a hardcover export is two
+// renders (interior + cover wrap), and trying both formats is four. Ten leaves
+// room to retry a failure and still not be the reason a book didn't arrive.
+const EXPORT_LIMIT = 10;
+const EXPORT_WINDOW_MS = 10 * 60 * 1000;
+
+function jsonError(error: string, status: number, extra?: Record<string, unknown>) {
+  return NextResponse.json({ error, ...extra }, { status });
+}
+
 export async function POST(request: Request) {
+  const limit = rateLimit(`cookbook-pdf:${callerKey(request)}`, EXPORT_LIMIT, EXPORT_WINDOW_MS);
+  if (!limit.ok) {
+    return NextResponse.json(
+      { error: "That's a lot of exports at once. Wait a moment and try again." },
+      { status: 429, headers: { "retry-after": String(limit.retryAfterSeconds) } },
+    );
+  }
+
   const endpoint = process.env.RECIPEPRINTER_PDF_URL?.trim();
   const secret = process.env.RECIPEPRINTER_PDF_AUTH?.trim();
   if (!endpoint || !secret) {
     // Not configured is a deployment state, not a user mistake — say so plainly
     // so it can't be mistaken for a broken cookbook.
-    return NextResponse.json(
-      { error: "PDF export isn't configured on this deployment." },
-      { status: 503 },
-    );
+    return jsonError("PDF export isn't configured on this deployment.", 503);
+  }
+
+  // Refusing to render is the only safe answer when entitlement can't be
+  // checked. Rendering anyway would restore exactly the hole this closes.
+  if (!cookbookAccessConfigured()) {
+    return jsonError("PDF export isn't configured on this deployment.", 503);
   }
 
   let payload: unknown;
   try {
     payload = await request.json();
   } catch {
-    return NextResponse.json({ error: "Malformed request." }, { status: 400 });
+    return jsonError("Malformed request.", 400);
+  }
+
+  const bookProjectId = projectIdFromPayload(payload);
+  if (!bookProjectId) {
+    return jsonError("That request didn't name a cookbook.", 400);
+  }
+
+  const idToken = bearerToken(request);
+  if (!idToken) {
+    // `needsAuth` lets the client offer a sign-in button instead of an error.
+    // Reachable for a real customer: buying while signed out is supported, and
+    // that purchase lives only in the browser until they make an account.
+    return jsonError(
+      "Sign in to download your cookbook. Your purchase is on this device, and an account is what lets us confirm it.",
+      401,
+      { needsAuth: true },
+    );
+  }
+
+  const uid = await verifyIdToken(idToken);
+  if (!uid) {
+    return jsonError("Your session has expired. Sign in again to download your cookbook.", 401, {
+      needsAuth: true,
+    });
+  }
+
+  let unlocked: boolean;
+  try {
+    unlocked = await hasCookbookUnlock(uid, bookProjectId, idToken);
+  } catch (error) {
+    // Couldn't ask. That is not the same as "no", and a paying customer must
+    // never be told their purchase doesn't exist because a lookup failed.
+    console.warn("cookbook-pdf: could not check entitlement", error);
+    return jsonError("We couldn't confirm your purchase just now. Try again in a moment.", 503);
+  }
+
+  if (!unlocked) {
+    return jsonError("This cookbook hasn't been purchased on this account.", 403);
   }
 
   let response: Response;
@@ -44,18 +123,12 @@ export async function POST(request: Request) {
     });
   } catch (error) {
     console.warn("cookbook-pdf: renderer unreachable", error);
-    return NextResponse.json(
-      { error: "The cookbook renderer didn't respond." },
-      { status: 502 },
-    );
+    return jsonError("The cookbook renderer didn't respond.", 502);
   }
 
   if (!response.ok) {
     console.warn("cookbook-pdf: renderer failed", response.status);
-    return NextResponse.json(
-      { error: "The cookbook couldn't be rendered." },
-      { status: 502 },
-    );
+    return jsonError("The cookbook couldn't be rendered.", 502);
   }
 
   // Streamed, not buffered: a book runs to several MB and there is no reason to

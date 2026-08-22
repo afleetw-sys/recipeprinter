@@ -628,6 +628,18 @@
   background: var(--cp-error-soft);
   color: var(--cp-error);
   font-size: var(--cp-fs-small);
+  /* Holds a message and, when the export was refused for want of an account, a
+     Sign in button beside it — so this is a row, not a bare paragraph. */
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.cookbook-ready__error p {
+  margin: 0;
+  min-width: 0;
 }
 
 .cookbook-welcome__owned {

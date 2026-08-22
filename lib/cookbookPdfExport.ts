@@ -18,9 +18,37 @@ import type { CookbookPresetId, PrintProject } from "@/types/recipe";
  * failure.
  */
 export class CookbookPdfError extends Error {
-  constructor(message: string) {
+  /** The export was refused because we can't confirm who's asking. The caller
+      offers a sign-in button rather than showing this as a plain failure —
+      buying while signed out is supported, so this is a real customer with a
+      real purchase that currently exists only in their browser. */
+  readonly needsAuth: boolean;
+
+  constructor(message: string, options: { needsAuth?: boolean } = {}) {
     super(message);
     this.name = "CookbookPdfError";
+    this.needsAuth = options.needsAuth ?? false;
+  }
+}
+
+/**
+ * The signed-in caller's Firebase ID token, if there is one.
+ *
+ * The export route verifies this against Google and then reads the unlock
+ * document as that user, so a browser that merely claims to have paid gets
+ * nothing. Loaded lazily: `lib/cookbookPdfExport` is reachable from the print
+ * page, and pulling `firebase/auth` eagerly is what put the auth SDK on pages
+ * that had no account on them.
+ */
+async function currentIdToken(): Promise<string | null> {
+  try {
+    const { getFirebaseAuth } = await import("@/lib/firebase/client");
+    const user = getFirebaseAuth().currentUser;
+    return user ? await user.getIdToken() : null;
+  } catch {
+    // No Firebase configured, or no session to read. The route answers with the
+    // sign-in prompt, which is the right thing to show either way.
+    return null;
   }
 }
 
@@ -35,18 +63,24 @@ interface RenderRequest {
 }
 
 async function renderPdf(request: RenderRequest): Promise<Blob> {
+  const idToken = await currentIdToken();
   const response = await fetch("/api/cookbook-pdf", {
     method: "POST",
-    headers: { "content-type": "application/json" },
+    headers: {
+      "content-type": "application/json",
+      ...(idToken ? { authorization: `Bearer ${idToken}` } : {}),
+    },
     body: JSON.stringify(request),
   });
 
   if (!response.ok) {
-    const detail = await response
+    const body = await response
       .json()
-      .then((body: { error?: string }) => body.error)
-      .catch(() => undefined);
-    throw new CookbookPdfError(detail ?? "The cookbook couldn't be exported.");
+      .then((parsed: { error?: string; needsAuth?: boolean }) => parsed)
+      .catch(() => ({}) as { error?: string; needsAuth?: boolean });
+    throw new CookbookPdfError(body.error ?? "The cookbook couldn't be exported.", {
+      needsAuth: Boolean(body.needsAuth),
+    });
   }
   return response.blob();
 }

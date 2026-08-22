@@ -448,6 +448,9 @@ export default function PrintPage() {
   /** The format currently rendering server-side, if any. */
   const [exportingPreset, setExportingPreset] = useState<CookbookPresetId | null>(null);
   const [cookbookExportError, setCookbookExportError] = useState<string | null>(null);
+  /** The export was refused for want of an account, not because it broke — so
+      the ready dialog offers a sign-in button beside the message. */
+  const [cookbookExportNeedsAuth, setCookbookExportNeedsAuth] = useState(false);
   // Cookbook photos are set book-wide via the 3-way "Photos" control
   // (`photoStyle`); plain card mode keeps its own header-photo checkbox
   // (`showPhoto`). Default "card" = a header photo in each recipe card.
@@ -2036,6 +2039,7 @@ export default function PrintPage() {
     const project = currentExportProject();
     if (!project) return;
     setCookbookExportError(null);
+    setCookbookExportNeedsAuth(false);
     setExportingPreset(presetId);
     try {
       await downloadCookbookPdf(
@@ -2049,6 +2053,7 @@ export default function PrintPage() {
           ? error.message
           : "The cookbook couldn't be exported. Try again.",
       );
+      setCookbookExportNeedsAuth(error instanceof CookbookPdfError && error.needsAuth);
     } finally {
       setExportingPreset(null);
     }
@@ -3769,6 +3774,12 @@ export default function PrintPage() {
         onExport={(presetId) => void exportCookbookAs(presetId)}
         exportingPreset={exportingPreset}
         exportError={cookbookExportError}
+        exportNeedsAuth={cookbookExportNeedsAuth}
+        onSignIn={() => {
+          track("protect_prompt_clicked", { source: "cookbook_export" });
+          setCookPilotLoginReason("purchase");
+          setShowCookPilotLogin(true);
+        }}
         onPrinterClick={(printer, url) => {
           track("cookbook_printer_clicked", { printer, preset: activePreset.id });
           window.open(url, "_blank", "noopener,noreferrer");
