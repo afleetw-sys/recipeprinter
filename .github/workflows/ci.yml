@@ -48,3 +48,34 @@ jobs:
       # else would otherwise never be compiled at all.
       - name: Build
         run: npx next build
+
+  # Its own job: it needs a JVM and downloads the emulator suite, so it would
+  # slow the fast checks down for no reason. Runs in parallel with them.
+  #
+  # Worth having at all because firestore.rules and storage.rules are the only
+  # thing standing between a paid cookbook and anyone who asks for it, and they
+  # are not exercised by anything else — `npm test` can't reach them, and the
+  # emulator needs Java that a laptop may not have.
+  rules:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      # The emulator suite is a JVM program; ubuntu-latest ships a JDK but pin
+      # it rather than depending on whatever the image happens to carry.
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+
+      - run: npm ci
+
+      - name: Security rules
+        run: npm run test:rules

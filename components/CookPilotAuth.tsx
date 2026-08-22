@@ -9,6 +9,7 @@ import {
   OAuthProvider,
   createUserWithEmailAndPassword,
   deleteUser,
+  sendPasswordResetEmail,
   getRedirectResult,
   onAuthStateChanged,
   signInAnonymously,
@@ -191,6 +192,48 @@ export function useCookPilotAuth() {
  * `checkUserProviders` callable (Firebase Auth's provider list isn't usable here since
  * the project has email-enumeration protection on). Mirrors the iOS app's
  * `AuthFlowLogic.stepAfterEmailSubmit`. */
+/**
+ * Sends a password-reset email.
+ *
+ * There was no way to recover a password anywhere in either product — not here
+ * and not in the CookPilot iOS app, whose `AuthClient` has no reset operation at
+ * all. The two share one Firebase Auth project, so between them a forgotten
+ * password locked you out permanently. For RecipePrinter that also means a lost
+ * $19.99 cookbook, since entitlement hangs off the account.
+ *
+ * Two things worth knowing about the behaviour:
+ *
+ * The project has email-enumeration protection on (it is why
+ * `checkEmailProviders` exists as a callable instead of reading Firebase's own
+ * provider list). With it on, this resolves the same way whether or not an
+ * account exists — so the UI must never say "we sent you a link", only that one
+ * is on the way IF there is an account. Anything more specific would hand back
+ * the enumeration oracle the protection removes.
+ *
+ * The `url` is where the reset lands afterwards, and it has to be an authorized
+ * domain in the Firebase console. If it isn't, Firebase rejects the whole call
+ * with `auth/unauthorized-continue-uri` — so a missing bit of console config
+ * would take password recovery down entirely. Not worth that: on exactly that
+ * error we retry with no continue URL, which falls back to Firebase's own
+ * "password changed" page. Slightly less polished, still recovers the account.
+ */
+export async function sendCookPilotPasswordReset(email: string): Promise<void> {
+  const auth = getFirebaseAuth();
+  const normalized = email.trim().toLowerCase();
+  try {
+    await sendPasswordResetEmail(auth, normalized, {
+      url: `${window.location.origin}/`,
+      handleCodeInApp: false,
+    });
+  } catch (error) {
+    if ((error as { code?: string })?.code === "auth/unauthorized-continue-uri") {
+      await sendPasswordResetEmail(auth, normalized);
+      return;
+    }
+    throw error;
+  }
+}
+
 export async function checkEmailProviders(email: string): Promise<string[]> {
   const auth = getFirebaseAuth();
   await prewarmCookPilotAuth();
@@ -236,6 +279,7 @@ export function CookPilotLoginDialog({
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
+  const [resetSent, setResetSent] = useState(false);
 
   useEffect(() => {
     // Overlap the Functions chunk download with the time spent entering an
@@ -317,6 +361,26 @@ export function CookPilotLoginDialog({
             : "We couldn't sign in. Please try again.",
         ),
       );
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  /**
+   * Offered only on the `password` step, which is reached only when
+   * `checkEmailProviders` has already said this email HAS a password account —
+   * so it never has to guess, and never asks someone with a Google-only account
+   * to reset a password they don't have.
+   */
+  async function handleForgotPassword() {
+    if (busy) return;
+    setBusy(true);
+    setError(null);
+    try {
+      await sendCookPilotPasswordReset(email);
+      setResetSent(true);
+    } catch (err) {
+      setError(friendlyAuthError(err, "We couldn't send the reset email. Please try again."));
     } finally {
       setBusy(false);
     }
@@ -443,6 +507,29 @@ export function CookPilotLoginDialog({
                 }}
               />
               {error && <p className="field-error" role="alert">{error}</p>}
+              {step === "password" && (
+                <div className="mt-2">
+                  {resetSent ? (
+                    /* Deliberately conditional — "if there's an account". The
+                       project has email-enumeration protection on, and a flat
+                       "we sent it" would confirm the address exists, which is
+                       the exact thing that protection removes. */
+                    <p className="text-cp-caption text-ink-soft" role="status">
+                      If there’s an account for {email.trim()}, a reset link is on its way. It can
+                      take a minute, and it might land in spam.
+                    </p>
+                  ) : (
+                    <button
+                      type="button"
+                      className="text-cp-caption text-ink-soft underline underline-offset-2 bg-transparent border-0 p-0"
+                      onClick={handleForgotPassword}
+                      disabled={busy}
+                    >
+                      Forgot your password?
+                    </button>
+                  )}
+                </div>
+              )}
             </div>
             <button type="submit" className="btn btn-primary w-full" disabled={busy}>
               {busy ? <SpinnerIcon size={ICON_SIZE.md} /> : null}
@@ -455,6 +542,7 @@ export function CookPilotLoginDialog({
                 setStep("email");
                 setPassword("");
                 setError(null);
+                setResetSent(false);
               }}
               disabled={busy}
             >
