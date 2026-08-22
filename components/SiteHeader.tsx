@@ -15,6 +15,7 @@ export function SiteHeader({
   saveStatus,
   onRetrySave,
   onSave,
+  onNew,
 }: {
   backHref?: string;
   actions?: ReactNode;
@@ -25,6 +26,11 @@ export function SiteHeader({
   saveStatus?: AccountSaveStatus | null;
   onRetrySave?: () => void;
   onSave?: () => void;
+  /** Start a fresh project. Sits beside the avatar because it is global and
+      always available, next to the other always-available thing — who you are.
+      Given only by surfaces that have a document to leave, so it is absent
+      when the studio is already empty and there is nothing to start from. */
+  onNew?: () => void;
 }) {
   const logo = (
     <>
@@ -59,6 +65,11 @@ export function SiteHeader({
       )}
       <div className="flex items-center gap-cp-2 sm:gap-cp-3 flex-nowrap justify-end shrink-0">
         {actions && !centerActions ? actions : null}
+        {onNew && (
+          <button type="button" className="btn btn-secondary btn-compact" onClick={onNew}>
+            New
+          </button>
+        )}
         <AccountControl saveStatus={saveStatus} onRetry={onRetrySave} onSave={onSave} />
       </div>
     </header>

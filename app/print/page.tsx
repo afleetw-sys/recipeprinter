@@ -19,6 +19,7 @@ import {
 } from "@/lib/cookbookPdfExport";
 import { ImagePicker } from "@/components/ImagePicker";
 import { Dialog } from "@/components/Dialog";
+import { ConfirmDialog } from "@/components/ConfirmDialog";
 import { Checkbox, CheckboxGroup, IconButton } from "@/components/Controls";
 import { RecipeLoadingState } from "@/components/RecipeLoadingState";
 import { useModalFocus } from "@/components/useModalFocus";
@@ -57,7 +58,7 @@ import {
   PrintProjectConflictError,
 } from "@/lib/printProjects";
 import { adoptAnonymousProject, readAdoptionManifest } from "@/lib/anonymousProjectAdoption";
-import { loadLocalProject } from "@/lib/localProjects";
+import { fileCookbookLocally, loadLocalProject } from "@/lib/localProjects";
 import { useRecipeInlineEditor } from "@/lib/useRecipeInlineEditor";
 import { useRailDrag, type RailDragKind, type RailDropResolved } from "@/lib/useRailDrag";
 import { useRailSelection } from "@/lib/useRailSelection";
@@ -407,6 +408,8 @@ export default function PrintPage() {
    * every page committed in time.
    */
   const [renderAllPages, setRenderAllPages] = useState(false);
+  /** Asked before "New" throws away a card job, which has nowhere to be filed. */
+  const [confirmNewProject, setConfirmNewProject] = useState(false);
   // Snapshot of every queue id that already existed when this print job was
   // loaded, so the merge effect below can tell "pre-existing queue item the
   // user didn't select for this job" apart from "just added via the Add
@@ -1408,6 +1411,52 @@ export default function PrintPage() {
 
   function showToast(message: string) {
     setToastMessage(message);
+  }
+
+  /**
+   * Start something else.
+   *
+   * Until now this was only possible from the homepage ("Clear all") and the
+   * Projects page ("New cookbook") — so the surface people actually work on had
+   * no way to begin a second book at all.
+   *
+   * Deliberately not a menu offering "new cookbook" or "new recipe cards". That
+   * asks someone to choose the shape of the thing before they have a single
+   * recipe to judge it by. "New" starts a project; "Make it a cookbook" arrives
+   * later, once there is something on screen to make one out of. One question,
+   * asked once, at the moment it can be answered.
+   */
+  function startNewProjectNow() {
+    // A book is filed to the device shelf on the way out, so this is
+    // recoverable from Projects rather than gone (see lib/localProjects).
+    // A card job is not a document and has nowhere to be filed — which is why
+    // the confirm below exists for exactly that case.
+    if (isCookbookDocument && items) fileCookbookLocally(items, projectMeta.meta);
+    queue.clear();
+    projectMeta.startNewProject();
+    setConfirmNewProject(false);
+    // No toast confirming the filing. Clearing the queue drops straight into
+    // the empty studio, which renders the shelf — so the book that was just set
+    // aside is the first thing on it, under its own name. A transient message
+    // saying the same thing would be weaker feedback than seeing it there, and
+    // the toast lives past the early return anyway, so it never showed.
+  }
+
+  function requestNewProject() {
+    const hasWork = (items?.length ?? 0) > 0;
+    // Nothing to lose, and nothing to file: just reset.
+    if (!hasWork) {
+      startNewProjectNow();
+      return;
+    }
+    // A cookbook is filed on the way out, so leaving it costs nothing and does
+    // not need permission. Recipe cards are not filed anywhere, so clearing
+    // them really does discard them — ask first.
+    if (isCookbookDocument) {
+      startNewProjectNow();
+      return;
+    }
+    setConfirmNewProject(true);
   }
 
   // Organize is now an in-page MODE (the rail expands to a full drag-drop
@@ -3351,6 +3400,7 @@ export default function PrintPage() {
               </button>
             ) : undefined
           }
+          onNew={requestNewProject}
           saveStatus={saveStatus}
           onRetrySave={handleRetrySave}
           /* The only Save button left: a cookbook belonging to someone who
@@ -3788,6 +3838,15 @@ export default function PrintPage() {
         onCancelDeleteRecipe={() => setPendingDelete(null)}
         onConfirmDeleteRecipe={confirmPendingDelete}
         onConfirmDeleteSectionRecipes={confirmDeleteSectionRecipes}
+      />
+      <ConfirmDialog
+        open={confirmNewProject}
+        title="Start something new?"
+        description="These recipe cards will be cleared. Recipe cards aren't saved to your projects the way a cookbook is."
+        confirmLabel="Start new"
+        busy={false}
+        onCancel={() => setConfirmNewProject(false)}
+        onConfirm={startNewProjectNow}
       />
       <CookbookWelcomeDialog
         open={showCookbookOfferDialog}

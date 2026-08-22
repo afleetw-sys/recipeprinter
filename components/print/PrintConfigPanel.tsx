@@ -1,5 +1,7 @@
 "use client";
 
+import Link from "next/link";
+
 import type { Dispatch, ReactNode, RefObject, SetStateAction } from "react";
 import type { CustomerInfo } from "@revenuecat/purchases-js";
 import {
@@ -232,6 +234,13 @@ export function PrintConfigPanel({
             Print settings
           </button>
         )}
+        {/* Reopening something is a thing you do AROUND the document you have
+            open, which is what this row already collects. It also gets the
+            library out from behind the account avatar, where it had been
+            filed under identity. */}
+        <Link href="/projects" className="recipe-print-settings-link">
+          Saved projects
+        </Link>
       </div>
     </aside>
   );
