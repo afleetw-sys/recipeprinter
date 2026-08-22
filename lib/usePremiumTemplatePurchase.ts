@@ -180,13 +180,15 @@ export function usePremiumTemplatePurchase({
     }
   }
 
+  const hasItems = (items?.length ?? 0) > 0;
+
   useEffect(() => {
     // Gated on having something to print. This only reads (or mints locally)
     // the anonymous id — it does not configure the SDK, so no RevenueCat
     // customer exists until there's a purchase, a claim, or a login. Wait for
     // Firebase's initial auth restore first so a signed-in browser does not
     // briefly load anonymous entitlements and mark owned templates as locked.
-    if (!items || items.length === 0 || !cookPilotAuthReady) return;
+    if (!hasItems || !cookPilotAuthReady) return;
 
     const requestId = identityRequestRef.current + 1;
     identityRequestRef.current = requestId;
@@ -234,8 +236,18 @@ export function usePremiumTemplatePurchase({
     return () => {
       cancelled = true;
     };
+    // Keyed on WHETHER there is anything to print, not on the item list, and on
+    // the uid rather than the User object.
+    //
+    // `items` is a useMemo that produces a new array on every queue change, and
+    // the effect only ever asked it one question: is it empty? So every
+    // blur-commit of an ingredient re-ran this — and for a signed-in cook that
+    // means `identifyRecipePrinterCustomer` and a `getCustomerInfo()` round trip
+    // to RevenueCat, per edit. The User object has the same problem more slowly:
+    // Firebase hands `onAuthStateChanged` a fresh one on every token refresh
+    // (roughly hourly), so an account that hadn't changed re-ran this too.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [cookPilotAuthReady, cookPilotUser, items]);
+  }, [cookPilotAuthReady, cookPilotUser?.uid, hasItems]);
 
   useEffect(() => {
     if (!revenueCatUserId) return;

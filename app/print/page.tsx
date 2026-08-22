@@ -1905,8 +1905,10 @@ export default function PrintPage() {
     if (!cookPilotUser || !saveAfterLoginRef.current) return;
     saveAfterLoginRef.current = false;
     void handleSaveProject();
+    // The uid, not the User object — Firebase replaces that object on every
+    // token refresh, and this should fire on signing in, not hourly.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [cookPilotUser]);
+  }, [cookPilotUser?.uid]);
 
   const {
     revenueCatUserId,
@@ -2740,7 +2742,11 @@ export default function PrintPage() {
     return () => {
       cancelled = true;
     };
-  }, [cookPilotUser]);
+    // Same again: keyed on the uid, so a token refresh does not re-read the
+    // profile document for an account that has not changed. /projects already
+    // keys its account effects this way and documents why.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [cookPilotUser?.uid]);
 
   useEffect(() => {
     if (!toastMessage) return;

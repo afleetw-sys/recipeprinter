@@ -55,6 +55,64 @@ const STATUS_LABEL: Record<AccountSaveStatus, string> = {
   adoption: "Finish saving to your account",
 };
 
+/** Statuses that mean something went wrong and can be tried again. */
+const RETRYABLE = new Set<AccountSaveStatus>(["error", "conflict", "adoption", "offline"]);
+
+/**
+ * What is happening to this document, said where the account is.
+ *
+ * Two things were wrong with it.
+ *
+ * It carried `hidden sm:inline-flex`, so below the small breakpoint it did not
+ * render at all — a cookbook autosaving on a phone that failed to save said
+ * nothing and offered no way to retry. The owner found out when the book was
+ * not in their library.
+ *
+ * And every state looked identical: "Couldn't save" was the same grey caption
+ * as "Saved", with no error colour and nothing to suggest an action. A failure
+ * on a paid document read exactly like success.
+ *
+ * It was also always a `<button>`, including for "Saving…" and "Saved", which
+ * put a focusable control in the tab order that does nothing when activated.
+ * Now it is a button only when there is something to retry.
+ */
+function SaveStatus({
+  status,
+  onRetry,
+}: {
+  status: AccountSaveStatus;
+  onRetry?: () => void;
+}) {
+  const failed = RETRYABLE.has(status);
+  const icon =
+    status === "saving" ? (
+      <SpinnerIcon size={ICON_SIZE.sm} />
+    ) : status === "saved" ? (
+      <CheckIcon size={ICON_SIZE.sm} />
+    ) : null;
+
+  if (!failed || !onRetry) {
+    return (
+      <span className="rp-save-status" role="status" aria-live="polite">
+        {icon}
+        {STATUS_LABEL[status]}
+      </span>
+    );
+  }
+
+  return (
+    <button
+      type="button"
+      className="rp-save-status rp-save-status--failed"
+      onClick={onRetry}
+      aria-live="polite"
+    >
+      {STATUS_LABEL[status]}
+      <span className="rp-save-status__retry">Retry</span>
+    </button>
+  );
+}
+
 export function AccountControl({
   saveStatus,
   onRetry,
@@ -99,25 +157,7 @@ export function AccountControl({
           Save
         </button>
       )}
-      {saveStatus && (
-        <button
-          type="button"
-          className="hidden sm:inline-flex items-center gap-1 text-cp-caption text-ink-soft bg-transparent border-0"
-          onClick={
-            saveStatus === "error" || saveStatus === "adoption" || saveStatus === "conflict"
-              ? onRetry
-              : undefined
-          }
-          aria-live="polite"
-        >
-          {saveStatus === "saving" ? (
-            <SpinnerIcon size={ICON_SIZE.sm} />
-          ) : saveStatus === "saved" ? (
-            <CheckIcon size={ICON_SIZE.sm} />
-          ) : null}
-          {STATUS_LABEL[saveStatus]}
-        </button>
-      )}
+      {saveStatus && <SaveStatus status={saveStatus} onRetry={onRetry} />}
 
       {showMenu ? (
         <AccountMenu

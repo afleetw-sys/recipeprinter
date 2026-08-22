@@ -1285,6 +1285,38 @@
     transform: translateY(-1px);
   }
 
+  /* ── Save state ───────────────────────────────────────────────────────────
+     Shown at every width. It used to be `hidden sm:inline-flex`, so a cookbook
+     autosaving on a phone that failed to save said nothing at all — the owner
+     found out when the book wasn't in their library. */
+  .rp-save-status {
+    @apply inline-flex items-center gap-1 text-cp-caption;
+    color: var(--cp-ink-soft);
+    background: transparent;
+    border: 0;
+  }
+
+  /* A failure has to look like one. Every state used to render in the same grey
+     caption, so "Couldn't save" on a paid document read exactly like "Saved". */
+  .rp-save-status--failed {
+    @apply gap-cp-2 rounded-lg px-cp-2 py-1 font-semibold;
+    color: var(--cp-error);
+    background: var(--cp-error-soft);
+    border: 1px solid var(--cp-error-border);
+  }
+
+  .rp-save-status__retry {
+    @apply underline underline-offset-2;
+  }
+
+  /* On a narrow screen the label alone is enough — "Retry" is what the whole
+     control does, and the header has no room for both. */
+  @media (max-width: 480px) {
+    .rp-save-status__retry {
+      display: none;
+    }
+  }
+
   /* ── Empty state (shared <EmptyState>) ────────────────────────────────── */
   .rp-empty-state {
     @apply flex flex-col items-center text-center rounded-2xl;
