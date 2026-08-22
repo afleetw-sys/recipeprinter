@@ -395,6 +395,17 @@ export default function PrintPage() {
   // click, correct result, no "try again". Cleared if the request resolves or
   // the user navigates away from the intent.
   const [printPending, setPrintPending] = useState(false);
+  /**
+   * Draw the whole book, not just the window around the reader.
+   *
+   * The deck renders only the pages near the active slide (see `DECK_WINDOW` in
+   * components/print/PrintDeck) — but the deck IS what a browser print
+   * captures, so a windowed deck would print placeholders. `beforeprint` is the
+   * one hook that fires for BOTH `window.print()` and the user's own ⌘P, and it
+   * runs synchronously before the print snapshot, so a `flushSync` there gets
+   * every page committed in time.
+   */
+  const [renderAllPages, setRenderAllPages] = useState(false);
   // Snapshot of every queue id that already existed when this print job was
   // loaded, so the merge effect below can tell "pre-existing queue item the
   // user didn't select for this job" apart from "just added via the Add
@@ -2718,7 +2729,18 @@ export default function PrintPage() {
   }, [toastMessage]);
 
   useEffect(() => {
+    function handleBeforePrint() {
+      // Synchronous on purpose: window.print() does not yield, so a normal
+      // state update would not have committed before the snapshot is taken.
+      flushSync(() => setRenderAllPages(true));
+    }
+    window.addEventListener("beforeprint", handleBeforePrint);
+    return () => window.removeEventListener("beforeprint", handleBeforePrint);
+  }, []);
+
+  useEffect(() => {
     function handleAfterPrint() {
+      setRenderAllPages(false);
       if (!printRequestedRef.current) return;
       printRequestedRef.current = false;
       // Undo the cookbook filename override once the print dialog closes.
@@ -3462,6 +3484,7 @@ export default function PrintPage() {
           printSpinner={printSpinner}
           cookbookLocked={cookbookLocked}
           templateLocked={templateLocked}
+          renderAllPages={renderAllPages}
         />
 
         {/* Right: print setup */}

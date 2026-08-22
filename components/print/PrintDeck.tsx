@@ -37,6 +37,44 @@ import type { CoverConfig, QueueItem, Section } from "@/types/recipe";
 type DividerEdit = NonNullable<ComponentProps<typeof ScaledPage>["dividerEdit"]>;
 type CoverSide = "front" | "back" | "dedication";
 
+/**
+ * How many slides either side of the active one draw their real pages.
+ *
+ * The deck used to render every page of the book at full fidelity, always: a
+ * 60-recipe cookbook mounted 65 `ScaledPage`s and 5,214 DOM nodes on load, and
+ * every one of them was reconciled again on each page crossing. That cost is
+ * O(book) in the one place a large book actually gets edited.
+ *
+ * Two is enough to cover the neighbours a scroll or an arrow key can reach
+ * before the next render lands, so nothing is ever seen filling in.
+ */
+const DECK_WINDOW = 2;
+
+/**
+ * The exact box a real page occupies, with nothing in it.
+ *
+ * `.recipe-page-scaler` takes its size purely from these three custom
+ * properties (see print.css), so this holds the identical footprint — which is
+ * what keeps scroll height, scroll-snap points, and the deck scroller's cached
+ * slide centres unchanged whether a slide is drawn or not. Same trick the rail
+ * already uses for its thumbnails.
+ */
+function PagePlaceholder({ width, height, scale }: { width: number; height: number; scale: number }) {
+  return (
+    <div
+      className="recipe-page-scaler"
+      aria-hidden
+      style={
+        {
+          "--page-scale": scale,
+          "--page-w": `${width}px`,
+          "--page-h": `${height}px`,
+        } as CSSProperties
+      }
+    />
+  );
+}
+
 interface PrintDeckProps {
   // Layout / preview geometry
   singleRecipePrintView: boolean;
@@ -117,6 +155,9 @@ interface PrintDeckProps {
   printSpinner: boolean;
   cookbookLocked: boolean;
   templateLocked: boolean;
+  /** Draw every page regardless of the window — set while printing, when the
+      deck IS the output and a placeholder would print blank. */
+  renderAllPages: boolean;
 }
 
 // The center deck: the mobile topbar plus the scrolling page preview. Two render
@@ -192,6 +233,7 @@ export function PrintDeck(props: PrintDeckProps) {
     printSpinner,
     cookbookLocked,
     templateLocked,
+    renderAllPages,
   } = props;
 
   const renderActiveControls = (
@@ -576,6 +618,9 @@ export function PrintDeck(props: PrintDeckProps) {
                       ) : null}
                     </div>
                   );
+                  // Far from the reader, and not printing: hold the page's box
+                  // and draw nothing in it. See DECK_WINDOW.
+                  const drawn = renderAllPages || Math.abs(index - activeNavIndex) <= DECK_WINDOW;
                   const renderSide = (
                     sheetIndex: number | null,
                     role: "left" | "right" | "single",
@@ -583,6 +628,15 @@ export function PrintDeck(props: PrintDeckProps) {
                     if (sheetIndex === null) return renderBlank();
                     const pageSheet = sheets[sheetIndex];
                     if (!pageSheet) return renderBlank();
+                    if (!drawn) {
+                      return (
+                        <PagePlaceholder
+                          width={previewDims.w}
+                          height={previewDims.h}
+                          scale={deckScale}
+                        />
+                      );
+                    }
                     const ni = navIndexForSheet.get(sheetIndex);
                     const pageNav = ni != null ? navItems[ni] : null;
                     if (!pageNav) return renderBlank();
@@ -799,6 +853,13 @@ export function PrintDeck(props: PrintDeckProps) {
                       )}
                     </div>
                   )}
+                  {!(renderAllPages || Math.abs(index - activeNavIndex) <= DECK_WINDOW) ? (
+                    <PagePlaceholder
+                      width={PAGE_DIMS[previewCardSize].w}
+                      height={PAGE_DIMS[previewCardSize].h}
+                      scale={deckScale}
+                    />
+                  ) : (
                   <ScaledPage
                     sheet={sheet}
                     isLastSheet={navItem.sheetIndex === sheets.length - 1}
@@ -887,6 +948,7 @@ export function PrintDeck(props: PrintDeckProps) {
                         : undefined
                     }
                   />
+                  )}
                 </div>
               );
             })}
