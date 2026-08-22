@@ -33,6 +33,7 @@ import { MobileStructureSheet } from "@/components/print/MobileStructureSheet";
 import { PrintConfigPanel } from "@/components/print/PrintConfigPanel";
 import { PageRail, type RailSortMode } from "@/components/print/PageRail";
 import { PrintDeck } from "@/components/print/PrintDeck";
+import { StudioEmptyState } from "@/components/print/StudioEmptyState";
 import {
   usePrintSheets,
   type NavItem,
@@ -3277,19 +3278,45 @@ export default function PrintPage() {
   }
 
   if (items.length === 0) {
+    /**
+     * Two situations reach here, and only one of them is an error.
+     *
+     * A `?ids=` link names specific recipes. If none of them resolve, something
+     * really is wrong — they were removed, or the link came from another
+     * browser's session — and saying so is the honest answer.
+     *
+     * Everything else is just an empty studio: a first visit, a cleared list, a
+     * new project. That is not a mistake to apologise for, it is the front door,
+     * and it used to be shown the error copy anyway. See `StudioEmptyState`.
+     */
+    const askedForSpecificRecipes = idsParam.split(",").some((id) => id.trim());
+    if (askedForSpecificRecipes) {
+      return (
+        <div className="h-full flex flex-col">
+          <SiteHeader compact sticky />
+          <div className="flex-1 flex flex-col items-center justify-center gap-cp-4 text-center px-cp-6">
+            <p className="font-bold text-cp-h2">We couldn&apos;t find those recipes</p>
+            <p className="text-ink-soft max-w-sm">
+              They may have been removed, or this link may have come from a different browser.
+            </p>
+            <Link href="/print" className="btn btn-primary">
+              Start a new one
+            </Link>
+          </div>
+        </div>
+      );
+    }
     return (
       <div className="h-full flex flex-col">
         <SiteHeader compact sticky />
-        <div className="flex-1 flex flex-col items-center justify-center gap-cp-4 text-center px-cp-6">
-          <p className="font-bold text-cp-h2">Nothing to print</p>
-          <p className="text-ink-soft max-w-sm">
-            We couldn&apos;t find those recipes. They may have been removed, or this page was
-            opened directly.
-          </p>
-          <Link href="/" className="btn btn-primary">
-            Back to your recipes
-          </Link>
-        </div>
+        <StudioEmptyState
+          items={queue.items}
+          onAddUrl={queue.addUrl}
+          onAddImages={queue.addImages}
+          onAddText={queue.addText}
+          onAddCookPilotRecipes={queue.addCookPilotRecipes}
+          onRemoveRecipe={queue.remove}
+        />
       </div>
     );
   }

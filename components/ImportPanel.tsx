@@ -14,6 +14,7 @@ import type { QueueItem } from "@/types/recipe";
 import { track, truncateReason, type ImportFailureCode } from "@/lib/analytics";
 import { ImportError } from "@/lib/parser";
 import { normalizeImportURL } from "@/lib/cookpilot";
+import { readCookPilotWasSignedIn } from "@/lib/cookPilotSession";
 import { captureFailedImportImages } from "@/lib/failedImportCapture";
 import {
   imageLabel,
@@ -97,6 +98,18 @@ export function ImportPanel({
     // enough to keep out of the initial page bundle. Fetch and initialize it
     // once the browser is idle so choosing CookPilot feels immediate without
     // delaying first paint.
+    //
+    // Only for a browser that has been signed in before. Importing from a
+    // CookPilot recipe library requires a CookPilot account, so prewarming for
+    // someone who has never had one buys nothing and costs the whole Firebase
+    // SDK — this chunk reaches Firestore (lib/cookpilotRecipes imports it
+    // statically) as well as Auth. That was tolerable while this panel only
+    // rendered on a page that already loaded Firebase; it stops being tolerable
+    // the moment the panel is what the marketing homepage shows.
+    //
+    // Same Firebase-free hint the header's account control uses to decide
+    // whether to fetch its own menu (see lib/cookPilotSession).
+    if (!readCookPilotWasSignedIn()) return;
     const prewarm = () => {
       void loadCookPilotImport().then((mod) => mod.prewarmCookPilotImport());
     };
@@ -116,6 +129,24 @@ export function ImportPanel({
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [overflowOpen, setOverflowOpen] = useState(false);
+  const urlInputRef = useRef<HTMLInputElement | null>(null);
+
+  /**
+   * Focus the URL field without scrolling to it.
+   *
+   * This was the `autoFocus` attribute, which React honours by calling
+   * `.focus()` with no options — and focusing an element the browser considers
+   * off-screen scrolls it into view. On a short window that yanked whatever sat
+   * above the panel out of the viewport: on the studio's empty state, the one
+   * line of orientation a first-time visitor needs. `preventScroll` keeps the
+   * convenience and drops the jump.
+   */
+  useEffect(() => {
+    if (!autoFocusUrl) return;
+    urlInputRef.current?.focus({ preventScroll: true });
+    // Once, on mount, matching what the attribute did.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
   const overflowRef = useRef<HTMLDivElement | null>(null);
   const overflowActive = OVERFLOW_MODES.some((option) => option.id === mode);
   // While the print list is empty, surface every import option so people learn
@@ -359,7 +390,7 @@ export function ImportPanel({
                 className="field w-full lg:flex-1 lg:min-w-0"
                 placeholder="Paste recipe URL here"
                 value={url}
-                autoFocus={autoFocusUrl}
+                ref={urlInputRef}
                 onChange={(e) => {
                   setUrl(e.target.value);
                   resetError();

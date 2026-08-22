@@ -18,12 +18,12 @@ import {
 } from "@/lib/duplicateProjects";
 import { track } from "@/lib/analytics";
 import { isCookbookProjectUnlocked, loadCookbookProjectUnlockIds } from "@/lib/cookbookUnlocks";
+import { ProjectCover } from "@/components/ProjectCover";
 import {
   deleteLocalProject,
   loadLocalProjects,
   pruneLocalProjects,
 } from "@/lib/localProjects";
-import { photoGridLayout } from "@/lib/photoGrid";
 import type { PrintProject } from "@/types/recipe";
 
 function projectDate(project: PrintProject): string {
@@ -35,43 +35,6 @@ function projectDate(project: PrintProject): string {
 
 function recipeCount(project: PrintProject): number {
   return project.sections.reduce((count, section) => count + section.items.length, 0);
-}
-
-/** The recipe photos in a project, deduped and in book order. */
-function projectImages(project: PrintProject): string[] {
-  const urls = project.sections.flatMap((section) =>
-    section.items.map((item) => item.recipe?.image),
-  );
-  return Array.from(new Set(urls.filter((url): url is string => Boolean(url))));
-}
-
-function ProjectCover({ project }: { project: PrintProject }) {
-  const images = projectImages(project).slice(0, 4);
-  if (images.length === 0) {
-    return (
-      <div className="project-cover project-cover--empty" aria-hidden>
-        <BookIcon size={28} />
-      </div>
-    );
-  }
-  const { columns, firstSpans } = photoGridLayout(images.length);
-  return (
-    <div
-      className="project-cover"
-      style={{ gridTemplateColumns: `repeat(${columns}, 1fr)` }}
-      aria-hidden
-    >
-      {images.map((url, index) => (
-        // eslint-disable-next-line @next/next/no-img-element
-        <img
-          key={`${url}-${index}`}
-          src={url}
-          alt=""
-          className={firstSpans && index === 0 ? "project-cover__img--wide" : undefined}
-        />
-      ))}
-    </div>
-  );
 }
 
 export default function ProjectsPage() {

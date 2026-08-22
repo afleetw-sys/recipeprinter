@@ -1347,6 +1347,76 @@
     min-width: 0;
   }
 
+  /* ── The studio with nothing open ─────────────────────────────────────────
+     A single centred column, because there is exactly one thing to do here and
+     no document to arrange around. Scrolls on its own — the studio shell is a
+     fixed-height grid on desktop, so this pane has to own its overflow rather
+     than pushing the page taller. */
+  .rp-studio-empty {
+    @apply flex-1 overflow-y-auto w-full;
+    display: flex;
+    flex-direction: column;
+    gap: 28px;
+    padding: clamp(24px, 6vh, 64px) 24px 64px;
+    max-width: 680px;
+    margin: 0 auto;
+  }
+
+  .rp-studio-empty__intro {
+    max-width: 34rem;
+  }
+
+  .rp-studio-empty__shelf {
+    @apply flex flex-col gap-cp-3;
+    border-top: 1px solid var(--cp-line);
+    padding-top: 24px;
+  }
+
+  .rp-studio-empty__shelf-head {
+    @apply flex items-center justify-between gap-cp-3;
+  }
+
+  .rp-studio-empty__shelf-grid {
+    @apply grid gap-cp-3;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    list-style: none;
+    margin: 0;
+    padding: 0;
+  }
+
+  @media (min-width: 640px) {
+    .rp-studio-empty__shelf-grid {
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+    }
+  }
+
+  /* h-full so the cards in a row end level with each other — a two-line title
+     next to a one-line title otherwise leaves the shelf visibly ragged. */
+  .rp-studio-empty__card {
+    @apply flex h-full flex-col gap-cp-2 rounded-xl border border-line bg-card overflow-hidden transition-colors;
+  }
+
+  .rp-studio-empty__card:hover {
+    border-color: var(--cp-line-strong);
+  }
+
+  .rp-studio-empty__card-text {
+    @apply flex flex-col gap-1 px-cp-3 pb-cp-3;
+    min-width: 0;
+  }
+
+  .rp-studio-empty__card-title {
+    @apply text-cp-small font-bold leading-snug;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+
+  .rp-studio-empty__card-meta {
+    @apply text-cp-caption text-ink-soft;
+  }
+
   /* "Your cookbook is saved in your projects" — shown once, on arriving here
      from a book that was just filed to this device's shelf. A hairline panel
      rather than a floating toast: it answers a question ("wasn't I editing a
