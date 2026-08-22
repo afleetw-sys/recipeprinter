@@ -23,7 +23,10 @@ import { getFirebaseAuth } from "@/lib/firebase/client";
 import { ensureRecipePrinterAccount } from "@/lib/firebase/recipePrinterAccount";
 import { friendlyAuthError } from "@/lib/friendlyErrors";
 import { identifyUser } from "@/lib/analytics";
-import { localStore } from "@/lib/storage";
+import {
+  readCookPilotWasSignedIn,
+  rememberCookPilotSignedIn,
+} from "@/lib/cookPilotSession";
 import { Dialog } from "@/components/Dialog";
 import { ICON_SIZE, SpinnerIcon, XIcon } from "@/components/icons";
 
@@ -40,7 +43,6 @@ export const appleProvider = new OAuthProvider("apple.com");
 appleProvider.addScope("email");
 appleProvider.addScope("name");
 
-const COOKPILOT_SIGNED_IN_STORAGE_KEY = "recipeprinter:cookpilot-was-signed-in:v1";
 
 // `checkEmailProviders` briefly signs in anonymously just to authorize its
 // `checkUserProviders` call, then deletes that session itself once done (see
@@ -81,21 +83,6 @@ export function prewarmCookPilotAuth(): Promise<void> {
     authReadyPromise = getFirebaseAuth().authStateReady();
   }
   return authReadyPromise;
-}
-
-function readCookPilotWasSignedIn(): boolean {
-  // Can't tell — assume they were. An absent key means "not signed in", but
-  // an *unreadable* one must not: guessing "signed out" here would flash a
-  // logged-out UI at someone whose Firebase session is about to rehydrate.
-  if (!localStore.available()) return true;
-  return localStore.get(COOKPILOT_SIGNED_IN_STORAGE_KEY) === "true";
-}
-
-function rememberCookPilotSignedIn(signedIn: boolean) {
-  // Firebase auth remains the source of truth either way; this only decides
-  // whether the first paint waits for it.
-  if (signedIn) localStore.set(COOKPILOT_SIGNED_IN_STORAGE_KEY, "true");
-  else localStore.remove(COOKPILOT_SIGNED_IN_STORAGE_KEY);
 }
 
 /* ── One auth state for the whole page ──────────────────────────────────────

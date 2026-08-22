@@ -1,8 +1,33 @@
-import { doc, runTransaction, serverTimestamp } from "firebase/firestore";
 import type { User } from "firebase/auth";
-import { getDb } from "./db";
 import { recipePrinterUserPath } from "./recipePrinterPaths";
 import { localStore } from "@/lib/storage";
+
+/**
+ * Firestore is loaded on demand, like everywhere else in this codebase — and
+ * here it matters more than anywhere else.
+ *
+ * This module used to `import { doc, runTransaction, serverTimestamp } from
+ * "firebase/firestore"` at the top. It is reached from `CookPilotAuth` →
+ * `AccountControl` → `SiteHeader`, and `SiteHeader` renders on EVERY route. So
+ * that one static import pulled `@firebase/firestore` (328 KB) plus its `re2js`
+ * regex-engine dependency (157 KB) into the eagerly-loaded chunk set of the
+ * homepage, all sixteen SEO landing pages, and the FAQ/Features/About/How-it-
+ * works pages — none of which touch Firestore, and all of which are statically
+ * prerendered content pages carrying the organic search traffic.
+ *
+ * The measurement that found it: /export (same app, same styles, no SiteHeader)
+ * was 172 KB First Load JS while /faq was 333 KB.
+ *
+ * Called once per sign-in at most (see the guards below), so paying a dynamic
+ * import here costs nothing anyone can perceive.
+ */
+async function firestore() {
+  const [{ doc, runTransaction, serverTimestamp }, { getDb }] = await Promise.all([
+    import("firebase/firestore"),
+    import("./db"),
+  ]);
+  return { doc, runTransaction, serverTimestamp, db: getDb() };
+}
 
 const completedBootstraps = new Set<string>();
 const pendingBootstraps = new Map<string, Promise<void>>();
@@ -38,29 +63,32 @@ export function ensureRecipePrinterAccount(user: User): Promise<void> {
   const pending = pendingBootstraps.get(uid);
   if (pending) return pending;
 
-  const bootstrap = runTransaction(getDb(), async (transaction) => {
-    const accountRef = doc(getDb(), ...recipePrinterUserPath(uid));
-    const account = await transaction.get(accountRef);
-    const profile = {
-      email: user.email,
-      displayName: user.displayName,
-      photoURL: user.photoURL,
-      providerIds: Array.from(new Set(user.providerData.map((provider) => provider.providerId))),
-    };
+  const bootstrap = (async () => {
+    const { doc, runTransaction, serverTimestamp, db } = await firestore();
+    await runTransaction(db, async (transaction) => {
+      const accountRef = doc(db, ...recipePrinterUserPath(uid));
+      const account = await transaction.get(accountRef);
+      const profile = {
+        email: user.email,
+        displayName: user.displayName,
+        photoURL: user.photoURL,
+        providerIds: Array.from(new Set(user.providerData.map((provider) => provider.providerId))),
+      };
 
-    if (account.exists()) {
-      transaction.update(accountRef, {
-        ...profile,
-        lastSeenAt: serverTimestamp(),
-      });
-    } else {
-      transaction.set(accountRef, {
-        ...profile,
-        createdAt: serverTimestamp(),
-        lastSeenAt: serverTimestamp(),
-      });
-    }
-  })
+      if (account.exists()) {
+        transaction.update(accountRef, {
+          ...profile,
+          lastSeenAt: serverTimestamp(),
+        });
+      } else {
+        transaction.set(accountRef, {
+          ...profile,
+          createdAt: serverTimestamp(),
+          lastSeenAt: serverTimestamp(),
+        });
+      }
+    });
+  })()
     .then(() => {
       completedBootstraps.add(uid);
       localStore.set(`${SEEN_MARKER_PREFIX}${uid}`, String(Date.now()));
