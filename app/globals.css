@@ -1347,6 +1347,42 @@
      grew as you added, plus a duplicate of that list in a mobile tray — went
      with PrinterWorkspace. The homepage keeps the importer and hands the
      rest to the studio (see components/HomeImporter). */
+  /* ── The front door ───────────────────────────────────────────────────────
+     The same column the studio's empty state uses, and deliberately so: this
+     page and that one are the same act, and importing here simply carries you
+     into a project. It used to run to the full 1240px content width, which
+     stretched a four-way mode switch across the screen with a word floating in
+     the middle of each option, and gave a recipe URL a field five times longer
+     than any URL. A form is not a layout; it wants a measure. */
+  /* Optically centred while the page is short — which is most first visits,
+     where the shelf is absent and the importer is the only thing here. `grid`
+     rather than flex centring so the column simply grows past the viewport and
+     scrolls once someone has projects, instead of being clipped. */
+  .rp-home-main {
+    @apply flex-1 grid;
+    align-content: center;
+  }
+
+  .rp-home {
+    @apply w-full flex flex-col;
+    gap: 28px;
+    max-width: 680px;
+    margin: 0 auto;
+    padding: clamp(24px, 5vh, 56px) 0 clamp(32px, 6vh, 72px);
+  }
+
+  /* The headline and lede run the full column width. Capping them narrower
+     than the panel below left the copy visibly out of register with the thing
+     it introduces — two different left-aligned measures stacked on each other. */
+  .rp-home__title {
+    text-wrap: balance;
+  }
+
+  .rp-home__lede {
+    text-wrap: pretty;
+    max-width: 42rem;
+  }
+
   .rp-home-import {
     @apply w-full animate-fade-up;
   }
@@ -1366,8 +1402,16 @@
     margin: 0 auto;
   }
 
-  .rp-studio-empty__intro {
-    max-width: 34rem;
+  /* Full column width, matching the front door: capping the copy narrower
+     than the panel it introduces leaves two different left-aligned measures
+     stacked on each other. */
+  .rp-studio-empty__intro h1 {
+    text-wrap: balance;
+  }
+
+  .rp-studio-empty__intro p {
+    text-wrap: pretty;
+    max-width: 42rem;
   }
 
   /* The import in flight. Borrows the rail's own pending row, so what shows
@@ -1378,17 +1422,19 @@
     @apply flex flex-col gap-cp-2;
   }
 
-  .rp-studio-empty__shelf {
+  /* Used by the front door (components/ProjectShelf). The hairline is the
+     separation — see the flat-design policy; nothing here floats. */
+  .rp-shelf {
     @apply flex flex-col gap-cp-3;
     border-top: 1px solid var(--cp-line);
     padding-top: 24px;
   }
 
-  .rp-studio-empty__shelf-head {
+  .rp-shelf__head {
     @apply flex items-center justify-between gap-cp-3;
   }
 
-  .rp-studio-empty__shelf-grid {
+  .rp-shelf__grid {
     @apply grid gap-cp-3;
     grid-template-columns: repeat(2, minmax(0, 1fr));
     list-style: none;
@@ -1397,27 +1443,27 @@
   }
 
   @media (min-width: 640px) {
-    .rp-studio-empty__shelf-grid {
+    .rp-shelf__grid {
       grid-template-columns: repeat(4, minmax(0, 1fr));
     }
   }
 
   /* h-full so the cards in a row end level with each other — a two-line title
      next to a one-line title otherwise leaves the shelf visibly ragged. */
-  .rp-studio-empty__card {
+  .rp-shelf__card {
     @apply flex h-full flex-col gap-cp-2 rounded-xl border border-line bg-card overflow-hidden transition-colors;
   }
 
-  .rp-studio-empty__card:hover {
+  .rp-shelf__card:hover {
     border-color: var(--cp-line-strong);
   }
 
-  .rp-studio-empty__card-text {
+  .rp-shelf__card-text {
     @apply flex flex-col gap-1 px-cp-3 pb-cp-3;
     min-width: 0;
   }
 
-  .rp-studio-empty__card-title {
+  .rp-shelf__card-title {
     @apply text-cp-small font-bold leading-snug;
     display: -webkit-box;
     -webkit-line-clamp: 2;
@@ -1425,7 +1471,7 @@
     overflow: hidden;
   }
 
-  .rp-studio-empty__card-meta {
+  .rp-shelf__card-meta {
     @apply text-cp-caption text-ink-soft;
   }
 

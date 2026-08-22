@@ -1,12 +1,18 @@
 import { SiteHeader } from "@/components/SiteHeader";
 import { SiteFooter } from "@/components/SiteFooter";
 import { HomeImporter } from "@/components/HomeImporter";
+import { ProjectShelf } from "@/components/ProjectShelf";
 import { homeJsonLd } from "@/lib/seo";
 
-// The homepage is a focused utility: understand what RecipePrinter does and
-// start printing without scrolling past marketing. Deeper explanations and the
-// FAQ live on their own pages (How it works, Features, FAQ, About), linked from
-// the footer. Server-rendered, so the hero and copy ship as crawlable HTML.
+// The front door, and the only one. Understand what RecipePrinter does, start,
+// or pick up something you already have — importing makes a project and carries
+// you into it at its own address. Deeper explanations and the FAQ live on their
+// own pages (How it works, Features, FAQ, About), linked from the footer.
+//
+// Server-rendered and statically prerendered: the hero and copy ship as
+// crawlable HTML and this page carries the organic search traffic, which is why
+// the two things that need the browser — the importer and the shelf — are
+// client islands rather than the page itself being a client component.
 export default function Home() {
   return (
     <div className="min-h-screen flex flex-col">
@@ -25,27 +31,28 @@ export default function Home() {
 
       <SiteHeader />
 
-      <main id="rp-main" className="flex-1 px-cp-6">
-        <div className="max-w-content mx-auto flex flex-col gap-cp-7 pt-cp-6 sm:pt-cp-7 pb-cp-7">
-          {/* Hero: what it does and why it's useful, in two sentences. */}
-          <div className="rp-landing-hero w-full">
-            <div className="max-w-[48rem]">
-              <h1 className="text-cp-hero font-extrabold tracking-[-0.04em] leading-[1.05]">
-                Print the recipes worth making again.
-              </h1>
-              <p className="mt-cp-3 text-ink-soft text-cp-body-lg leading-relaxed">
-                Turn web and social recipe links into printable recipe cards for your kitchen.
-              </p>
-            </div>
+      <main id="rp-main" className="rp-home-main px-cp-6">
+        <div className="rp-home">
+          {/* What this is, in two sentences. Server-rendered, so it ships as
+              crawlable HTML — this page carries the organic search traffic. */}
+          <div className="rp-home__intro">
+            <h1 className="rp-home__title text-cp-hero font-extrabold tracking-[-0.04em] leading-[1.05]">
+              Print the recipes worth making again.
+            </h1>
+            <p className="rp-home__lede mt-cp-3 text-ink-soft text-cp-body-lg leading-relaxed">
+              Turn web and social recipe links into printable recipe cards for your kitchen.
+            </p>
           </div>
 
-          {/* Every import method, full width — and nothing after it. Submitting
-              hands off to the studio, which is where a recipe becomes a page.
-              This page no longer keeps a queue, a list, or a Preview button;
-              see components/HomeImporter for why. */}
+          {/* Every import method, and nothing after it. Submitting makes a
+              project and carries you into it; see components/HomeImporter. */}
           <div className="rp-home-import">
             <HomeImporter />
           </div>
+
+          {/* What you already have. Absent entirely when there is nothing, so
+              this never becomes an empty list under an empty form. */}
+          <ProjectShelf />
         </div>
       </main>
 

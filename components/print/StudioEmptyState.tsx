@@ -1,17 +1,11 @@
 "use client";
 
-import Link from "next/link";
-import { useCallback, useEffect, useLayoutEffect, useRef, useState, type MutableRefObject } from "react";
+import { useCallback, useLayoutEffect, useRef, type MutableRefObject } from "react";
 import { ImportPanel } from "@/components/ImportPanel";
 import { PendingImportRows } from "@/components/print/PendingImportRows";
-import { ProjectCover } from "@/components/ProjectCover";
-import { useCookPilotAuth } from "@/components/CookPilotAuth";
 import { flipTransform } from "@/lib/flipTransform";
-import { loadLocalProjects } from "@/lib/localProjects";
 import { takeArrivingImporter } from "@/lib/studioHandoff";
-import { loadPrintProjects } from "@/lib/printProjects";
 import type { QueueItem } from "@/types/recipe";
-import type { PrintProject } from "@/types/recipe";
 
 /** The geometry the hand-off animation flies out of (see the print page). */
 export interface StudioHandoffRects {
@@ -28,18 +22,12 @@ export interface StudioHandoffRects {
  * mistake, because at the time you probably had: importing happened somewhere
  * else and you were only ever sent here with recipes in hand.
  *
- * Three zones, in order of what someone needs:
- *
- *  1. A line saying what this is. Not a marketing hero — the homepage keeps
- *     that job — just enough for someone who clicked the logo and has never
- *     seen the product.
- *  2. The importer, full width, every method. The largest thing on screen,
- *     because it is the only thing to do here.
- *  3. What you already have, if you have anything. Someone with five saved
- *     cookbooks landing on an empty studio must not be shown a page implying
- *     they have none — the same lie the Projects page used to tell a signed-out
- *     visitor. Absent entirely when there is genuinely nothing, so it never
- *     becomes an empty list inside an empty state.
+ * A project with nothing in it yet: a line saying what to do, the importer at
+ * full width, and whatever import is in flight. Nothing else — this is the
+ * inside of a document, not a place to browse from. The shelf of everything
+ * you have moved to the front door (components/ProjectShelf), which is where
+ * choosing between documents belongs; keeping a copy here is what made an
+ * empty project and the homepage read as the same screen twice.
  */
 export function StudioEmptyState({
   items,
@@ -64,8 +52,6 @@ export function StudioEmptyState({
       once the first recipe lands. See `runStudioHandoff` on the print page. */
   captureRef: MutableRefObject<StudioHandoffRects>;
 }) {
-  const { user, ready } = useCookPilotAuth();
-  const [recent, setRecent] = useState<PrintProject[]>([]);
   const pendingRef = useRef<HTMLDivElement | null>(null);
   const panelRef = useRef<HTMLDivElement | null>(null);
 
@@ -106,7 +92,7 @@ export function StudioEmptyState({
   useLayoutEffect(() => {
     const el = panelRef.current;
     if (!el || typeof window === "undefined") return;
-    const from = takeArrivingImporter();
+    const from = takeArrivingImporter()?.importPanel ?? null;
     if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
     const transform = flipTransform(from, el.getBoundingClientRect());
     if (!transform) return;
@@ -124,36 +110,6 @@ export function StudioEmptyState({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  /**
-   * Both shelves, merged the way the Projects page merges them: the account's
-   * own documents plus anything filed on this device, with the account copy
-   * winning on a shared id. Read on the device first so a signed-out cook sees
-   * their books immediately, then topped up once the account answers.
-   */
-  useEffect(() => {
-    let cancelled = false;
-    const local = loadLocalProjects();
-    if (!cancelled) setRecent(local);
-    if (!ready || !user) return;
-    loadPrintProjects(user.uid)
-      .then((account) => {
-        if (cancelled) return;
-        const inAccount = new Set(account.map((project) => project.id));
-        const merged = [...account, ...local.filter((project) => !inAccount.has(project.id))];
-        merged.sort(
-          (a, b) => Number(b.updatedAt ?? b.createdAt ?? 0) - Number(a.updatedAt ?? a.createdAt ?? 0),
-        );
-        setRecent(merged);
-      })
-      // A failed read just means no shelf on this screen. The importer below is
-      // the point of the page and does not depend on it.
-      .catch(() => undefined);
-    return () => {
-      cancelled = true;
-    };
-  }, [ready, user]);
-
-  const shelf = recent.slice(0, 4);
 
   return (
     <div className="rp-studio-empty">
@@ -198,39 +154,6 @@ export function StudioEmptyState({
         </div>
       )}
 
-      {shelf.length > 0 && (
-        <section className="rp-studio-empty__shelf" aria-labelledby="rp-studio-shelf-heading">
-          <div className="rp-studio-empty__shelf-head">
-            <h2 id="rp-studio-shelf-heading" className="text-cp-small font-bold uppercase tracking-wide text-ink-soft">
-              Pick up where you left off
-            </h2>
-            <Link href="/projects" className="text-cp-small text-ink-soft underline underline-offset-2">
-              All projects
-            </Link>
-          </div>
-          <ul className="rp-studio-empty__shelf-grid">
-            {shelf.map((project) => (
-              <li key={project.id}>
-                <Link
-                  href={`/projects/${encodeURIComponent(project.id)}`}
-                  className="rp-studio-empty__card"
-                >
-                  <ProjectCover project={project} />
-                  <span className="rp-studio-empty__card-text">
-                    <span className="rp-studio-empty__card-title">
-                      {project.title ||
-                        (project.kind === "printProject" ? "Untitled recipe cards" : "Untitled cookbook")}
-                    </span>
-                    <span className="rp-studio-empty__card-meta">
-                      {project.kind === "printProject" ? "Recipe cards" : "Cookbook"}
-                    </span>
-                  </span>
-                </Link>
-              </li>
-            ))}
-          </ul>
-        </section>
-      )}
     </div>
   );
 }

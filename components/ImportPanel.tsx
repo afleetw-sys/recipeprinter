@@ -75,6 +75,7 @@ export function ImportPanel({
   submitLabel = "Add",
   autoFocusUrl = true,
   expanded: expandedOverride,
+  busy: busyOverride,
   onAddUrl,
   onAddImages,
   onAddText,
@@ -93,6 +94,13 @@ export function ImportPanel({
       looking at, because a parse happens to be in flight, hides the control
       they just used at the moment they are most likely to reach for it again. */
   expanded?: boolean;
+  /** Forces the busy state on from outside, for a caller whose work continues
+      after the handler returns. The URL and text paths are synchronous from
+      this panel's point of view, so it has nothing of its own to show — but on
+      the homepage `onAddUrl` starts a navigation into the studio, and until
+      that lands the only feedback was the field going blank. Can force busy on,
+      never off: the panel's own async work still owns its own state. */
+  busy?: boolean;
   onAddUrl: (url: string) => void;
   onAddImages: (images: string[], label: string) => void;
   onAddText: (text: string) => void;
@@ -132,7 +140,8 @@ export function ImportPanel({
   const [text, setText] = useState("");
   const [imageFiles, setImageFiles] = useState<File[]>([]);
   const [dragging, setDragging] = useState(false);
-  const [busy, setBusy] = useState(false);
+  const [selfBusy, setBusy] = useState(false);
+  const busy = busyOverride || selfBusy;
   const [error, setError] = useState<string | null>(null);
   const [overflowOpen, setOverflowOpen] = useState(false);
   const urlInputRef = useRef<HTMLInputElement | null>(null);

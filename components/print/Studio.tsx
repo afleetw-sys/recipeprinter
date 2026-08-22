@@ -35,6 +35,7 @@ import { PrintConfigPanel } from "@/components/print/PrintConfigPanel";
 import { PageRail, type RailSortMode } from "@/components/print/PageRail";
 import { PrintDeck } from "@/components/print/PrintDeck";
 import { StudioEmptyState, type StudioHandoffRects } from "@/components/print/StudioEmptyState";
+import { peekArrivingImporter } from "@/lib/studioHandoff";
 import { flipTransform } from "@/lib/flipTransform";
 import { usePendingImport } from "@/lib/usePendingImport";
 import {
@@ -315,6 +316,20 @@ export function Studio({ projectId: routeProjectId }: { projectId: string }) {
   // same recipe re-shake on a repeat import (a bare id wouldn't change).
   const [railShake, setRailShake] = useState<{ recipeId: string; nonce: number } | null>(null);
   const queue = useQueue();
+  /**
+   * Whether the front door already established there is nothing to lay out.
+   *
+   * Read once, on mount and without consuming: these facts are only true for
+   * the paint that follows the navigation that set them (see lib/studioHandoff).
+   * `false` on a reload, a bookmark or a hard load — including on the server,
+   * where nothing has ever stashed anything — so there is no hydration
+   * mismatch and no chance of flashing an empty studio at someone whose
+   * recipes are simply still loading.
+   */
+  const [arrivedIntoEmptyStudio] = useState(
+    () => peekArrivingImporter()?.studioIsEmpty ?? false,
+  );
+
   const projectMeta = useProjectMeta();
   // The print job as live recipes: project each member id onto the queue's
   // content. An edit in the queue (the content owner) flows straight to the
@@ -3457,7 +3472,37 @@ export function Studio({ projectId: routeProjectId }: { projectId: string }) {
     );
   }
 
-  if (items === null || projectLoading || cookbookAccessStatus === "loading") {
+  /**
+   * A `?ids=` link names specific recipes. If none of them resolve, something
+   * really is wrong — they were removed, or the link came from another
+   * browser's session — and saying so is the honest answer. Everything else
+   * reaching an empty studio is not a mistake to apologise for.
+   */
+  const askedForSpecificRecipes = idsParam.split(",").some((id) => id.trim());
+
+  /**
+   * The empty studio is decided BEFORE "we don't know yet", because there are
+   * two ways to know it and only one of them requires waiting.
+   *
+   * The print job having resolved to nothing is the settled answer. The
+   * hand-off is the early one: the front door read the queue synchronously on
+   * its way out and found nothing ready, so the destination was known before
+   * this component existed. Without that, arriving from the front door meant
+   * roughly a second of centred spinner — measured at 933ms on a production
+   * build — sitting between the importer someone had just typed into and the
+   * importer it was supposed to have become. A whole unrelated screen in the
+   * middle of a movement is a cut, not a slow transition, which is exactly why
+   * the hand-off read as not animating at all.
+   *
+   * Note this deliberately does not wait on `cookbookAccessStatus` either.
+   * That gate exists so a paid book never renders on a guess about whether it
+   * was purchased; an empty studio has no book on it and nothing to gate.
+   */
+  const showEmptyStudio =
+    !askedForSpecificRecipes &&
+    (items?.length === 0 || (items === null && arrivedIntoEmptyStudio && !projectLoadId));
+
+  if (!showEmptyStudio && (items === null || projectLoading || cookbookAccessStatus === "loading")) {
     return (
       <div className="h-full flex flex-col">
         <SiteHeader compact sticky />
@@ -3469,35 +3514,24 @@ export function Studio({ projectId: routeProjectId }: { projectId: string }) {
     );
   }
 
-  if (items.length === 0) {
-    /**
-     * Two situations reach here, and only one of them is an error.
-     *
-     * A `?ids=` link names specific recipes. If none of them resolve, something
-     * really is wrong — they were removed, or the link came from another
-     * browser's session — and saying so is the honest answer.
-     *
-     * Everything else is just an empty studio: a first visit, a cleared list, a
-     * new project. That is not a mistake to apologise for, it is the front door,
-     * and it used to be shown the error copy anyway. See `StudioEmptyState`.
-     */
-    const askedForSpecificRecipes = idsParam.split(",").some((id) => id.trim());
-    if (askedForSpecificRecipes) {
-      return (
-        <div className="h-full flex flex-col">
-          <SiteHeader compact sticky />
-          <div className="flex-1 flex flex-col items-center justify-center gap-cp-4 text-center px-cp-6">
-            <p className="font-bold text-cp-h2">We couldn&apos;t find those recipes</p>
-            <p className="text-ink-soft max-w-sm">
-              They may have been removed, or this link may have come from a different browser.
-            </p>
-            <Link href="/print" className="btn btn-primary">
-              Start a new one
-            </Link>
-          </div>
+  if (items !== null && items.length === 0 && askedForSpecificRecipes) {
+    return (
+      <div className="h-full flex flex-col">
+        <SiteHeader compact sticky />
+        <div className="flex-1 flex flex-col items-center justify-center gap-cp-4 text-center px-cp-6">
+          <p className="font-bold text-cp-h2">We couldn&apos;t find those recipes</p>
+          <p className="text-ink-soft max-w-sm">
+            They may have been removed, or this link may have come from a different browser.
+          </p>
+          <Link href="/" className="btn btn-primary">
+            Start a new one
+          </Link>
         </div>
-      );
-    }
+      </div>
+    );
+  }
+
+  if (showEmptyStudio) {
     return (
       <div className="h-full flex flex-col">
         <SiteHeader compact sticky />
