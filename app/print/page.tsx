@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties, type Dispatch, type MutableRefObject, type ReactNode, type RefObject, type SetStateAction } from "react";
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type CSSProperties, type Dispatch, type MutableRefObject, type ReactNode, type RefObject, type SetStateAction } from "react";
 import { flushSync } from "react-dom";
 import { useSearchParams } from "next/navigation";
 import Link from "next/link";
@@ -34,7 +34,8 @@ import { MobileStructureSheet } from "@/components/print/MobileStructureSheet";
 import { PrintConfigPanel } from "@/components/print/PrintConfigPanel";
 import { PageRail, type RailSortMode } from "@/components/print/PageRail";
 import { PrintDeck } from "@/components/print/PrintDeck";
-import { StudioEmptyState } from "@/components/print/StudioEmptyState";
+import { StudioEmptyState, type StudioHandoffRects } from "@/components/print/StudioEmptyState";
+import { flipTransform } from "@/lib/flipTransform";
 import {
   usePrintSheets,
   type NavItem,
@@ -410,6 +411,26 @@ export default function PrintPage() {
   const [renderAllPages, setRenderAllPages] = useState(false);
   /** Asked before "New" throws away a card job, which has nowhere to be filed. */
   const [confirmNewProject, setConfirmNewProject] = useState(false);
+
+  /**
+   * The hand-off from the empty studio to the workspace.
+   *
+   * The first import replaces the whole screen: the importer someone was just
+   * using disappears, and a rail, a deck and a setup panel arrive in its place.
+   * Nothing connects the two, so the natural question is "where did that go?"
+   *
+   * So the two things that MOVED are shown moving. The recipe travels from the
+   * card it was importing in, up and left, into its row in the rail; the
+   * importer travels down into the "Add recipes" button it becomes. Both are
+   * animated from their old position to their new one, which is the only way to
+   * say "this is the same thing, it lives here now" without a word of copy.
+   *
+   * `StudioEmptyState` measures the two source rects into this ref while it is
+   * still on screen — by the time the workspace exists it has been unmounted,
+   * so nothing else could.
+   */
+  const studioHandoffRef = useRef<StudioHandoffRects>({ pendingCard: null, importPanel: null });
+  const studioWasEmptyRef = useRef(false);
   // Snapshot of every queue id that already existed when this print job was
   // loaded, so the merge effect below can tell "pre-existing queue item the
   // user didn't select for this job" apart from "just added via the Add
@@ -2201,6 +2222,57 @@ export default function PrintPage() {
     }
   }, [printPending, printLayoutReady, purchaseBusy, cookbookPurchaseBusy]);
 
+  /**
+   * Plays that hand-off, once, on the render where the workspace first appears.
+   *
+   * A layout effect so the transforms are set before the browser paints the new
+   * layout — otherwise the rail and the button flash in at their final position
+   * and then jump back to start the animation.
+   *
+   * Every reason to skip is a silent one. This is decoration on a transition
+   * that already works; if anything about it doesn't line up, the right outcome
+   * is the plain switch, not a broken one.
+   */
+  useLayoutEffect(() => {
+    const isEmpty = items !== null && items.length === 0;
+    const wasEmpty = studioWasEmptyRef.current;
+    studioWasEmptyRef.current = isEmpty;
+    if (!wasEmpty || isEmpty || !items?.length) return;
+
+    const { pendingCard, importPanel } = studioHandoffRef.current;
+    studioHandoffRef.current = { pendingCard: null, importPanel: null };
+    if (typeof window === "undefined") return;
+    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+
+    // The rail is `display: none` below 820px, so on a phone there is no "up
+    // and to the left" to travel to — the deck simply appears. Its targets
+    // measure 0x0, which the guard below catches.
+    const row = document.querySelector<HTMLElement>(".recipe-page-rail__item");
+    const addButton = document.querySelector<HTMLElement>(".recipe-page-rail__add-main");
+
+    const fly = (el: HTMLElement | null, from: DOMRect | null, delayMs: number) => {
+      if (!el) return;
+      // `flipTransform` owns the arithmetic and the refusals — a zero-area
+      // rect (the rail is display:none below 820px, so on a phone the target
+      // measures 0x0), a missing measurement, or a move that isn't one.
+      const transform = flipTransform(from, el.getBoundingClientRect());
+      if (!transform) return;
+      el.style.transformOrigin = "top left";
+      el.animate(
+        [
+          { transform, opacity: 0.35 },
+          { transform: "none", opacity: 1 },
+        ],
+        { duration: 460, delay: delayMs, easing: "cubic-bezier(0.2, 0, 0, 1)", fill: "backwards" },
+      );
+    };
+
+    // The recipe leads; the importer follows a beat later, so the eye is not
+    // asked to track two things at once.
+    fly(row, pendingCard, 0);
+    fly(addButton, importPanel, 90);
+  }, [items]);
+
   const moveProjectItem = projectMeta.moveItem;
 
   useEffect(() => {
@@ -3359,6 +3431,9 @@ export default function PrintPage() {
       <div className="h-full flex flex-col">
         <SiteHeader compact sticky />
         <StudioEmptyState
+          captureRef={studioHandoffRef}
+          canRetry={queue.canRetry}
+          onRetry={queue.retry}
           items={queue.items}
           onAddUrl={queue.addUrl}
           onAddImages={queue.addImages}

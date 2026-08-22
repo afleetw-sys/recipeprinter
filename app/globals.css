@@ -1366,6 +1366,14 @@
     max-width: 34rem;
   }
 
+  /* The import in flight. Borrows the rail's own pending row, so what shows
+     here is what the rail shows — which is what makes the hand-off animation
+     read as one object moving rather than one thing vanishing and another
+     appearing. Scoped width only; the row brings its own look. */
+  .rp-studio-empty__pending {
+    @apply flex flex-col gap-cp-2;
+  }
+
   .rp-studio-empty__shelf {
     @apply flex flex-col gap-cp-3;
     border-top: 1px solid var(--cp-line);

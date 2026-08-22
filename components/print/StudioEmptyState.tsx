@@ -1,14 +1,21 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useLayoutEffect, useRef, useState, type MutableRefObject } from "react";
 import { ImportPanel } from "@/components/ImportPanel";
+import { PendingImportRows } from "@/components/print/PendingImportRows";
 import { ProjectCover } from "@/components/ProjectCover";
 import { useCookPilotAuth } from "@/components/CookPilotAuth";
 import { loadLocalProjects } from "@/lib/localProjects";
 import { loadPrintProjects } from "@/lib/printProjects";
 import type { QueueItem } from "@/types/recipe";
 import type { PrintProject } from "@/types/recipe";
+
+/** The geometry the hand-off animation flies out of (see the print page). */
+export interface StudioHandoffRects {
+  pendingCard: DOMRect | null;
+  importPanel: DOMRect | null;
+}
 
 /**
  * The studio with nothing open — which is to say, the front door.
@@ -39,6 +46,9 @@ export function StudioEmptyState({
   onAddText,
   onAddCookPilotRecipes,
   onRemoveRecipe,
+  canRetry,
+  onRetry,
+  captureRef,
 }: {
   items: QueueItem[];
   onAddUrl: (url: string) => void;
@@ -46,9 +56,38 @@ export function StudioEmptyState({
   onAddText: (text: string) => void;
   onAddCookPilotRecipes: (recipes: QueueItem[]) => number;
   onRemoveRecipe: (id: string) => void;
+  canRetry: (item: QueueItem) => boolean;
+  onRetry: (id: string) => void;
+  /** Where this layout sits, handed up so the workspace can animate out of it
+      once the first recipe lands. See `runStudioHandoff` on the print page. */
+  captureRef: MutableRefObject<StudioHandoffRects>;
 }) {
   const { user, ready } = useCookPilotAuth();
   const [recent, setRecent] = useState<PrintProject[]>([]);
+  const pendingRef = useRef<HTMLDivElement | null>(null);
+  const panelRef = useRef<HTMLDivElement | null>(null);
+
+  const pending = items.filter((item) => item.status !== "ready");
+
+  /**
+   * Keep the two rects that the hand-off animation flies out of.
+   *
+   * Measured here rather than read later because by the time the workspace
+   * exists this component is gone — the switch is an early return in the print
+   * page, not a sibling swap. A ref is the only thing that survives it.
+   */
+  const capture = useCallback(() => {
+    captureRef.current = {
+      pendingCard: pendingRef.current?.getBoundingClientRect() ?? null,
+      importPanel: panelRef.current?.getBoundingClientRect() ?? null,
+    };
+  }, [captureRef]);
+
+  useLayoutEffect(() => {
+    capture();
+    window.addEventListener("resize", capture);
+    return () => window.removeEventListener("resize", capture);
+  });
 
   /**
    * Both shelves, merged the way the Projects page merges them: the account's
@@ -93,7 +132,7 @@ export function StudioEmptyState({
         </p>
       </div>
 
-      <div className="rp-studio-empty__import">
+      <div className="rp-studio-empty__import" ref={panelRef}>
         <ImportPanel
           items={items}
           onAddUrl={onAddUrl}
@@ -103,6 +142,22 @@ export function StudioEmptyState({
           onRemoveRecipe={onRemoveRecipe}
         />
       </div>
+
+      {/* The import in flight. Without this, submitting cleared the field and
+          then nothing happened at all for the second or four that parsing takes
+          — the one moment someone most needs to be told something is
+          happening. The rail's own pending row, so the thing that appears here
+          is the thing that ends up over there. */}
+      {pending.length > 0 && (
+        <div className="rp-studio-empty__pending" ref={pendingRef}>
+          <PendingImportRows
+            items={pending}
+            canRetry={canRetry}
+            onRetry={onRetry}
+            onRemove={onRemoveRecipe}
+          />
+        </div>
+      )}
 
       {shelf.length > 0 && (
         <section className="rp-studio-empty__shelf" aria-labelledby="rp-studio-shelf-heading">
