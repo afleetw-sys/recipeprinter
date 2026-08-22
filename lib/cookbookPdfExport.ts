@@ -23,11 +23,15 @@ export class CookbookPdfError extends Error {
       buying while signed out is supported, so this is a real customer with a
       real purchase that currently exists only in their browser. */
   readonly needsAuth: boolean;
+  /** True when there was no session at all (offer "Create free account"), false
+      when there was one and it didn't hold up (offer "Sign in"). */
+  readonly needsAccount: boolean;
 
-  constructor(message: string, options: { needsAuth?: boolean } = {}) {
+  constructor(message: string, options: { needsAuth?: boolean; needsAccount?: boolean } = {}) {
     super(message);
     this.name = "CookbookPdfError";
     this.needsAuth = options.needsAuth ?? false;
+    this.needsAccount = options.needsAccount ?? false;
   }
 }
 
@@ -76,10 +80,11 @@ async function renderPdf(request: RenderRequest): Promise<Blob> {
   if (!response.ok) {
     const body = await response
       .json()
-      .then((parsed: { error?: string; needsAuth?: boolean }) => parsed)
-      .catch(() => ({}) as { error?: string; needsAuth?: boolean });
+      .then((parsed: { error?: string; needsAuth?: boolean; needsAccount?: boolean }) => parsed)
+      .catch(() => ({}) as { error?: string; needsAuth?: boolean; needsAccount?: boolean });
     throw new CookbookPdfError(body.error ?? "The cookbook couldn't be exported.", {
       needsAuth: Boolean(body.needsAuth),
+      needsAccount: Boolean(body.needsAccount),
     });
   }
   return response.blob();

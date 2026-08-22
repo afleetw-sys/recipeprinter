@@ -451,6 +451,8 @@ export default function PrintPage() {
   /** The export was refused for want of an account, not because it broke — so
       the ready dialog offers a sign-in button beside the message. */
   const [cookbookExportNeedsAuth, setCookbookExportNeedsAuth] = useState(false);
+  /** No session at all (offer to create one) vs a session that didn't hold up. */
+  const [cookbookExportNeedsAccount, setCookbookExportNeedsAccount] = useState(false);
   // Cookbook photos are set book-wide via the 3-way "Photos" control
   // (`photoStyle`); plain card mode keeps its own header-photo checkbox
   // (`showPhoto`). Default "card" = a header photo in each recipe card.
@@ -2040,6 +2042,7 @@ export default function PrintPage() {
     if (!project) return;
     setCookbookExportError(null);
     setCookbookExportNeedsAuth(false);
+    setCookbookExportNeedsAccount(false);
     setExportingPreset(presetId);
     try {
       await downloadCookbookPdf(
@@ -2054,6 +2057,7 @@ export default function PrintPage() {
           : "The cookbook couldn't be exported. Try again.",
       );
       setCookbookExportNeedsAuth(error instanceof CookbookPdfError && error.needsAuth);
+      setCookbookExportNeedsAccount(error instanceof CookbookPdfError && error.needsAccount);
     } finally {
       setExportingPreset(null);
     }
@@ -2108,6 +2112,17 @@ export default function PrintPage() {
   // there's a real async operation the click can't preempt. It is NOT disabled
   // for a measuring layout: a click then is queued (see `printPending`), so the
   // button stays live and just shows a spinner until the layout is ready.
+  /**
+   * Would a print right now produce something that hasn't been paid for?
+   *
+   * Drives the print-time watermark (see `.rp-print-locked` in print.css). Both
+   * paywalls used to stop at a button label, and the deck on screen is what a
+   * browser print captures — so Cmd-P produced the finished article from either
+   * a locked premium theme or an unpurchased cookbook. Nothing about the
+   * on-screen preview changes; this only marks the paper.
+   */
+  const printWatermarked = templateLocked || cookbookLocked;
+
   const printBlocked = purchaseBusy || claimBusy || cookbookPurchaseBusy;
   const printSpinner = printBlocked || printPending;
 
@@ -3280,7 +3295,7 @@ export default function PrintPage() {
   }
 
   return (
-    <div className="h-dvh recipe-print-page">
+    <div className={`h-dvh recipe-print-page ${printWatermarked ? "rp-print-locked" : ""}`}>
       {measurers}
       {/* Header + the back-up bar share one grid row so the bar pushes the
           editor down instead of stealing the deck's `1fr` row (which left it
@@ -3775,6 +3790,7 @@ export default function PrintPage() {
         exportingPreset={exportingPreset}
         exportError={cookbookExportError}
         exportNeedsAuth={cookbookExportNeedsAuth}
+        exportNeedsAccount={cookbookExportNeedsAccount}
         onSignIn={() => {
           track("protect_prompt_clicked", { source: "cookbook_export" });
           setCookPilotLoginReason("purchase");

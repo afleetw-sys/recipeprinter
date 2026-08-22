@@ -83,20 +83,24 @@ export async function POST(request: Request) {
 
   const idToken = bearerToken(request);
   if (!idToken) {
-    // `needsAuth` lets the client offer a sign-in button instead of an error.
-    // Reachable for a real customer: buying while signed out is supported, and
-    // that purchase lives only in the browser until they make an account.
-    return jsonError(
-      "Sign in to download your cookbook. Your purchase is on this device, and an account is what lets us confirm it.",
-      401,
-      { needsAuth: true },
-    );
+    // `needsAuth` lets the client offer an account button instead of an error;
+    // `needsAccount` picks between "create one" and "sign back in".
+    //
+    // Copy note: this deliberately does not explain where the purchase is kept
+    // or why an account is what proves it. That is our storage model, not
+    // something a customer should have to understand to download the book they
+    // paid for. The sign-in dialog itself says why ("Don't lose your purchase").
+    return jsonError("Create a free account to download your cookbook.", 401, {
+      needsAuth: true,
+      needsAccount: true,
+    });
   }
 
   const uid = await verifyIdToken(idToken);
   if (!uid) {
-    return jsonError("Your session has expired. Sign in again to download your cookbook.", 401, {
+    return jsonError("You've been signed out. Sign in again to download your cookbook.", 401, {
       needsAuth: true,
+      needsAccount: false,
     });
   }
 
@@ -111,7 +115,13 @@ export async function POST(request: Request) {
   }
 
   if (!unlocked) {
-    return jsonError("This cookbook hasn't been purchased on this account.", 403);
+    // Names the likeliest cause and what to do about it. The common way to see
+    // this is buying with one email and signing in with another.
+    return jsonError(
+      "We couldn't find this cookbook on your account. If you bought it with a different email, sign in with that one.",
+      403,
+      { needsAuth: true, needsAccount: false },
+    );
   }
 
   let response: Response;

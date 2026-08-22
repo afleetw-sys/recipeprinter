@@ -14,6 +14,7 @@ export function CookbookReadyDialog({
   exportingPreset,
   exportError,
   exportNeedsAuth = false,
+  exportNeedsAccount = false,
   onSignIn,
 }: {
   open: boolean;
@@ -28,6 +29,8 @@ export function CookbookReadyDialog({
   /** The export was refused because there's no account to confirm the purchase
       against — offer the way out rather than just the bad news. */
   exportNeedsAuth?: boolean;
+  /** No session at all, so the way forward is making one rather than signing in. */
+  exportNeedsAccount?: boolean;
   onSignIn?: () => void;
 }) {
   const printers = Object.values(PRINTERS);
@@ -61,7 +64,7 @@ export function CookbookReadyDialog({
           <p>{exportError}</p>
           {exportNeedsAuth && onSignIn && (
             <button type="button" className="btn btn-primary btn-compact" onClick={onSignIn}>
-              Sign in
+              {exportNeedsAccount ? "Create free account" : "Sign in"}
             </button>
           )}
         </div>

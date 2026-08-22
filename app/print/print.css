@@ -7550,3 +7550,75 @@ textarea.recipe-card__toc-title {
   }
 
 }
+
+/* ── Unpaid print: mark it ─────────────────────────────────────────────────
+   The paywall on a premium theme, and on the cookbook, only ever changed a
+   button's label. But the deck on screen IS what a browser print captures, so
+   Cmd-P walked straight past both of them and produced the finished article —
+   no watermark, nothing to distinguish it from a paid one. The gate was
+   advisory, and the only thing enforcing it was that people hadn't thought to
+   try.
+
+   A print-time mark is the honest fix for a preview you can see but haven't
+   bought: nothing about browsing changes, the preview stays clean and complete,
+   and the moment the purchase lands the mark is gone. It costs a paying
+   customer nothing.
+
+   Deliberately scoped to `.rp-print-locked`, which only the /print page's own
+   root ever carries. The server-side renderer at /export builds a different
+   tree with no such ancestor, so a paid PDF can never pick this up by accident
+   — and that route now checks entitlement itself before rendering at all.
+
+   `.recipe-card-page` is the printed page for every kind — recipe faces, image
+   spreads, covers, chapter openers, contents — so one selector covers the book.
+   Both marks are absolutely positioned on purpose: `.recipe-card-page` is a
+   flex column, and an in-flow pseudo-element would become a flex ITEM and shove
+   the card's real content around. */
+@media print {
+  .rp-print-locked .recipe-card-page {
+    position: relative;
+  }
+
+  /* The diagonal. Short word on purpose — a long string would overrun the
+     diagonal of a 6x4 card and spill onto the sheet. */
+  .rp-print-locked .recipe-card-page::after {
+    content: "PREVIEW";
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transform: rotate(-32deg);
+    font-family: var(--font-manrope), system-ui, sans-serif;
+    font-size: 0.7in;
+    font-weight: 800;
+    letter-spacing: 0.12em;
+    color: rgba(17, 17, 17, 0.17);
+    white-space: nowrap;
+    pointer-events: none;
+    z-index: 90;
+    /* Browsers drop non-essential ink by default; a watermark nobody prints is
+       not a watermark. */
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+
+  /* Says what to do about it, rather than only that something is wrong. */
+  .rp-print-locked .recipe-card-page::before {
+    content: "Unlock at recipeprinter.com";
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: 0.18in;
+    text-align: center;
+    font-family: var(--font-manrope), system-ui, sans-serif;
+    font-size: 8pt;
+    font-weight: 600;
+    letter-spacing: 0.06em;
+    color: rgba(17, 17, 17, 0.42);
+    pointer-events: none;
+    z-index: 90;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+}
