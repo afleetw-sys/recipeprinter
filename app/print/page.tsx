@@ -31,7 +31,7 @@ import { TemplateThumbnail } from "@/components/print/TemplateThumbnail";
 import { PHOTO_STYLE_OPTIONS } from "@/components/print/photoStyle";
 import { MobileStructureSheet } from "@/components/print/MobileStructureSheet";
 import { PrintConfigPanel } from "@/components/print/PrintConfigPanel";
-import { PageRail } from "@/components/print/PageRail";
+import { PageRail, type RailSortMode } from "@/components/print/PageRail";
 import { PrintDeck } from "@/components/print/PrintDeck";
 import {
   usePrintSheets,
@@ -41,6 +41,7 @@ import {
 import {
   buildSections,
   namedSectionCount,
+  defaultSectionGridImages,
   resolveSectionPhotoMode,
   useProjectMeta,
   type ProjectMeta,
@@ -275,6 +276,12 @@ export default function PrintPage() {
   const [organizeAnimating, setOrganizeAnimating] = useState(false);
   const organizeTimers = useRef<number[]>([]);
   const [organizationUndo, setOrganizationUndo] = useState<ProjectMeta["sections"] | null>(null);
+  // The organizer's "Sort by". `custom` is whatever order the cook has built by
+  // hand; `title` is A–Z within every section. `customOrderUndo` holds the
+  // arrangement A–Z replaced, so switching back restores it rather than leaving
+  // the book alphabetized forever.
+  const [railSortMode, setRailSortMode] = useState<RailSortMode>("custom");
+  const [customOrderUndo, setCustomOrderUndo] = useState<ProjectMeta["sections"] | null>(null);
   const [showShareDialog, setShowShareDialog] = useState(false);
   const [pendingDelete, setPendingDelete] = useState<
     | { kind: "recipe"; id: string; title: string }
@@ -499,6 +506,9 @@ export default function PrintPage() {
     cookbookMode: projectMeta.meta.cookbookMode,
     itemPlacements: projectMeta.meta.itemPlacements,
     defaultFullPage,
+    // Chapter openers with no placement of their own follow the book's Photos
+    // choice (see `resolveSectionPhotoMode`).
+    photoStyle: cookbookMode ? photoStyle : undefined,
     cardSize,
     doubleSided,
     photosOn,
@@ -686,7 +696,15 @@ export default function PrintPage() {
       return i === -1 ? rects.length : i;
     };
     if (kind === "recipe") {
-      const rows = geometry.recipes;
+      // Dragging a recipe that's part of the current selection carries the
+      // whole selection, in book order — every tile the cook picked travels
+      // with the one under the pointer. Dragging an unselected one moves it
+      // alone, and leaves the selection where it is.
+      const movingIds = effectiveRailSelection.has(id) ? orderedRailSelection() : [id];
+      const moving = new Set(movingIds);
+      // Nothing being carried can also be a drop target — a selection can't
+      // land on itself, and neither can a single card.
+      const rows = geometry.recipes.filter((row) => !moving.has(row.id));
       if (rows.length === 0) return null;
 
       // The expanded organizer is a 2D card grid, so resolve against the card
@@ -703,7 +721,8 @@ export default function PrintPage() {
               indicator: { top: rect.top, left: rect.left, width: rect.width },
               commit: () => {
                 const sectionId = projectMeta.addSection("New section");
-                projectMeta.moveItem(id, sectionId, 0);
+                projectMeta.moveItems(movingIds, sectionId, 0);
+                clearRailSelection();
                 setEditingSectionId(sectionId);
                 setEditingSectionTitle("New section");
                 setPendingFocusNavId(sectionId);
@@ -718,11 +737,16 @@ export default function PrintPage() {
           const rect = sectionAdd.rect;
           return {
             indicator: { top: rect.top, left: rect.left, width: rect.width },
-            commit: () => projectMeta.moveItem(id, sectionId, itemIdsForSection(sectionId).filter((x) => x !== id).length),
+            commit: () =>
+              projectMeta.moveItems(
+                movingIds,
+                sectionId,
+                itemIdsForSection(sectionId).filter((x) => !moving.has(x)).length,
+              ),
           };
         }
 
-        const candidates = rows.filter((row) => row.id !== id && row.rect.width > 0 && row.rect.height > 0);
+        const candidates = rows.filter((row) => row.rect.width > 0 && row.rect.height > 0);
         if (candidates.length === 0) return null;
         const distanceTo = (rect: DOMRect) => {
           const dx = Math.max(rect.left - clientX, 0, clientX - rect.right);
@@ -754,10 +778,10 @@ export default function PrintPage() {
           commit: () => {
             const location = sectionAndIndexForItem(target.id);
             if (!location) return;
-            const ids = itemIdsForSection(location.sectionId).filter((x) => x !== id);
+            const ids = itemIdsForSection(location.sectionId).filter((x) => !moving.has(x));
             const targetIndex = ids.indexOf(target.id);
-            projectMeta.moveItem(
-              id,
+            projectMeta.moveItems(
+              movingIds,
               location.sectionId,
               Math.max(0, targetIndex + (after ? 1 : 0)),
             );
@@ -776,13 +800,17 @@ export default function PrintPage() {
         if (k < rows.length) {
           const target = sectionAndIndexForItem(rows[k].id);
           if (!target) return;
-          const ids = itemIdsForSection(target.sectionId).filter((x) => x !== id);
+          const ids = itemIdsForSection(target.sectionId).filter((x) => !moving.has(x));
           const idx = ids.indexOf(rows[k].id);
-          projectMeta.moveItem(id, target.sectionId, idx < 0 ? ids.length : idx);
+          projectMeta.moveItems(movingIds, target.sectionId, idx < 0 ? ids.length : idx);
         } else {
           const last = sectionAndIndexForItem(rows[rows.length - 1].id);
           if (!last) return;
-          projectMeta.moveItem(id, last.sectionId, itemIdsForSection(last.sectionId).filter((x) => x !== id).length);
+          projectMeta.moveItems(
+            movingIds,
+            last.sectionId,
+            itemIdsForSection(last.sectionId).filter((x) => !moving.has(x)).length,
+          );
         }
       };
       return { indicator, commit };
@@ -807,11 +835,18 @@ export default function PrintPage() {
     };
     return { indicator, commit };
   };
-  const railDrag = useRailDrag(railScrollRef, resolveRailDrop, (kind) => {
-    // Only the cookbook rail opens the organizer on a recipe drag; the flat
-    // (non-cookbook) rail reorders the card list in place via the same drag.
-    if (kind === "recipe" && !organizeMode && cookbookMode) enterOrganizeMode();
-  });
+  const railDrag = useRailDrag(
+    railScrollRef,
+    resolveRailDrop,
+    (kind) => {
+      // Only the cookbook rail opens the organizer on a recipe drag; the flat
+      // (non-cookbook) rail reorders the card list in place via the same drag.
+      if (kind === "recipe" && !organizeMode && cookbookMode) enterOrganizeMode();
+      if (kind === "recipe") markCustomOrder();
+    },
+    (kind, id) =>
+      kind === "recipe" && effectiveRailSelection.has(id) ? effectiveRailSelection.size : 1,
+  );
 
   // Everything that can move rail rows WITHOUT scrolling the rail — the drag
   // classes landing on the commit after `onBegin`, the organizer's grid/list
@@ -1143,6 +1178,11 @@ export default function PrintPage() {
   function applyBookPhotoStyle(mode: PhotoStyle) {
     projectMeta.setPhotoStyle(mode);
     projectMeta.clearItemPhotoOverrides();
+    // Chapter openers are part of the book, not an exception to it: a placement
+    // made for one opener under the old choice would otherwise pin that chapter
+    // to art the book no longer uses. Their photos and collages are kept, so the
+    // new placement uses them immediately.
+    projectMeta.clearSectionPhotoModes();
   }
 
 
@@ -1158,7 +1198,7 @@ export default function PrintPage() {
     // Nothing to place if the section has neither a chosen photo nor any recipe
     // image to seed one from — hide the toggle rather than offer a blank page.
     if (!section.photoUrl && ownImages.length === 0) return null;
-    const resolved = resolveSectionPhotoMode(section);
+    const resolved = resolveSectionPhotoMode(section, photoStyle);
     const active: SectionPhotoMode = resolved === "grid" ? "full" : resolved;
     return (
       <div className="recipe-page-layout-control">
@@ -1544,6 +1584,70 @@ export default function PrintPage() {
     projectMeta.setSectionStructure(organizationUndo);
     setOrganizationUndo(null);
     showToast("Organization undone");
+  }
+
+  function recipeTitleForId(itemId: string) {
+    const item = items?.find((entry) => entry.id === itemId);
+    return (item?.recipe?.title || item?.title || "").trim();
+  }
+
+  // Sorting is a real reorder, not a view: the organizer shows the book, so A–Z
+  // has to move the pages themselves — otherwise the tiles and the printed
+  // order would disagree. Each section sorts within itself; section order is
+  // the cook's own (and "Organize it for me" above owns that question).
+  function applyRailSort(mode: RailSortMode) {
+    if (mode === railSortMode) return;
+    if (mode === "title") {
+      setCustomOrderUndo(structuredClone(projectMeta.meta.sections));
+      projectMeta.setSectionStructure(
+        projectMeta.meta.sections.map((section) => ({
+          ...section,
+          itemIds: [...section.itemIds].sort((a, b) =>
+            recipeTitleForId(a).localeCompare(recipeTitleForId(b), undefined, {
+              sensitivity: "base",
+              numeric: true,
+            }),
+          ),
+        })),
+      );
+      setRailSortMode("title");
+      track("cookbook_sorted", { mode: "title" });
+      showToast("Sorted A–Z");
+      return;
+    }
+    if (customOrderUndo) projectMeta.setSectionStructure(customOrderUndo);
+    setCustomOrderUndo(null);
+    setRailSortMode("custom");
+    track("cookbook_sorted", { mode: "custom" });
+  }
+
+  // A recipe placed by hand IS the custom order — so the moment the cook drags
+  // one (or moves one from the tile menu), the sort goes back to reading
+  // "Custom order" and the pre-sort snapshot is spent. Leaving it on "A–Z"
+  // would promise an order the book no longer has.
+  function markCustomOrder() {
+    if (railSortMode === "custom" && !customOrderUndo) return;
+    setRailSortMode("custom");
+    setCustomOrderUndo(null);
+  }
+
+  // The tile menu's "Move to" — the same commit a drag makes, for cooks who
+  // would rather pick a section than drag across a long book. Moved recipes
+  // land at the end of the receiving section, in book order.
+  function moveRecipesToSection(ids: string[], sectionId: string) {
+    if (ids.length === 0) return;
+    markCustomOrder();
+    const moving = new Set(ids);
+    projectMeta.moveItems(
+      ids,
+      sectionId,
+      itemIdsForSection(sectionId).filter((itemId) => !moving.has(itemId)).length,
+    );
+    track("cookbook_recipes_moved_to_section", { count: ids.length, via: "tile_menu" });
+    // An untitled section has no name to say, so the toast just confirms the move.
+    const title = projectMeta.meta.sections.find((section) => section.id === sectionId)?.title?.trim();
+    const where = title ? ` to ${title}` : "";
+    showToast(ids.length > 1 ? `Moved ${ids.length} recipes${where}` : `Moved${where}`);
   }
 
   function currentProject(): PrintProject | null {
@@ -2591,23 +2695,39 @@ export default function PrintPage() {
   // a recipe. A collage is NOT a top-level choice — under Full page the cook can
   // toggle the single facing photo into a grid of this chapter's own photos
   // (scoped to the section, not the whole-book candidates).
-  const buildSectionPhotoEdit = (section: Section | undefined) => {
-    const mode = resolveSectionPhotoMode(section ?? {});
+  const buildSectionPhotoEdit = (
+    section: Section | undefined,
+    // Where this picker is being rendered. The "Photo" button belongs ON the art
+    // it changes: in the opener card when the opener shows the photo, and on the
+    // facing page when the art lives there (`art`) — so a full-page or collage
+    // chapter is edited by clicking the picture, not a button on the page next
+    // to it. Everything else about the dialog is identical either way.
+    surface: "opener" | "art" = "opener",
+  ) => {
+    const mode = resolveSectionPhotoMode(section ?? {}, photoStyle);
     const ownImages = section ? sectionRecipeImages(section) : [];
-    const seedGridCount = ownImages.length >= 6 ? 6 : ownImages.length >= 4 ? 4 : 2;
     const isGrid = mode === "grid";
+    // A grid the BOOK chose behaves exactly like one the cook picked: the same
+    // photos, already ticked, with "Select multiple" on — so the dialog opens on
+    // a real selection they can add to or pare back.
+    const gridImages = section?.gridImages?.length
+      ? section.gridImages
+      : defaultSectionGridImages(ownImages);
     return {
       photoUrl: section?.photoUrl,
       recipeImages: ownImages,
       // A single photo tile is only pickable in band / single Full-page mode
       // (grid has its own multi-select, none has no tiles) — keep the current
       // placement and set the one photo it names.
-      onPhotoChange: (url: string | undefined) => {
-        if (!section) return;
-        projectMeta.setSectionPhotoMode(section.id, mode === "band" ? "band" : "full", {
-          photoUrl: url,
-        });
-      },
+      onPhotoChange:
+        surface === "art" || mode === "band"
+          ? (url: string | undefined) => {
+              if (!section) return;
+              projectMeta.setSectionPhotoMode(section.id, mode === "band" ? "band" : "full", {
+                photoUrl: url,
+              });
+            }
+          : undefined,
       // Grid is a Full-page sub-mode, so it reports "Full page" as the active
       // placement and exposes the collage separately via `gridActive`.
       placement: isGrid ? "full" : mode,
@@ -2631,13 +2751,7 @@ export default function PrintPage() {
       gridActive: isGrid,
       onSelectGrid:
         section && ownImages.length >= 2
-          ? () => {
-              projectMeta.setSectionPhotoMode(section.id, "grid", {
-                gridImages: section.gridImages?.length
-                  ? section.gridImages
-                  : ownImages.slice(0, seedGridCount),
-              });
-            }
+          ? () => projectMeta.setSectionPhotoMode(section.id, "grid", { gridImages })
           : undefined,
       onExitGrid: section
         ? () =>
@@ -2645,7 +2759,9 @@ export default function PrintPage() {
               photoUrl: section.photoUrl ?? section.gridImages?.[0] ?? ownImages[0],
             })
         : undefined,
-      gridImages: section?.gridImages,
+      // Pinning the tiles the moment one is toggled turns a defaulted collage
+      // into the cook's own, which is what un-ticking a photo means.
+      gridImages,
       onGridChange: (urls: string[]) => {
         if (!section) return;
         projectMeta.setSectionPhotoMode(section.id, "grid", { gridImages: urls });
@@ -3184,6 +3300,9 @@ export default function PrintPage() {
           openAddRecipeBelow={openAddRecipeBelow}
           addSectionDivider={addSectionDivider}
           makeSectionFromSelection={makeSectionFromSelection}
+          moveRecipesToSection={moveRecipesToSection}
+          railSortMode={railSortMode}
+          applyRailSort={applyRailSort}
           addMenuOpen={addMenuOpen}
           setAddMenuOpen={setAddMenuOpen}
           addMenuRef={addMenuRef}

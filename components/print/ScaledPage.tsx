@@ -47,6 +47,7 @@ export const ScaledPage = memo(function ScaledPage({
   cookbookMode = false,
   inlineEdit,
   dividerEdit,
+  sectionArtEdit,
   coverEdit,
   imageEdit,
   tocKicker,
@@ -86,6 +87,24 @@ export const ScaledPage = memo(function ScaledPage({
     /** Unified placement (None/In-card/Full-page/Photo grid) + grid curation, so
         the opener picker is the same dialog as the recipe one, plus the cover's
         multi-select grid. */
+    placement?: string;
+    placementOptions?: Array<{ id: string; label: string; hint?: string }>;
+    onPlacementChange?: (id: string) => void;
+    gridActive?: boolean;
+    gridImages?: string[];
+    onGridChange?: (urls: string[]) => void;
+    onSelectGrid?: () => void;
+    onExitGrid?: () => void;
+    gridMax?: number;
+  };
+  /** The photo picker for a chapter's FACING art page (its full-page photo or
+      collage) — the same dialog the opener's picker opens, rendered over the
+      art itself so the button is always on the picture it changes. */
+  sectionArtEdit?: {
+    sectionId: string;
+    photoUrl?: string;
+    recipeImages?: string[];
+    onPhotoChange?: (url: string | undefined) => void;
     placement?: string;
     placementOptions?: Array<{ id: string; label: string; hint?: string }>;
     onPlacementChange?: (id: string) => void;
@@ -326,6 +345,27 @@ export const ScaledPage = memo(function ScaledPage({
             </div>
           </div>
         </div>
+        {/* Outside the scaled page, hugging the art's corner — see the
+            image-spread note above for why it can't live inside the transform.
+            The chapter's art is edited by clicking the art. */}
+        {sectionArtEdit?.sectionId === anySlot.sectionId && sectionArtEdit.onPhotoChange && (
+          <ImagePicker
+            current={sectionArtEdit.photoUrl}
+            images={sectionArtEdit.recipeImages ?? []}
+            onSelect={sectionArtEdit.onPhotoChange}
+            placement={sectionArtEdit.placement}
+            placementOptions={sectionArtEdit.placementOptions}
+            onPlacementChange={sectionArtEdit.onPlacementChange}
+            gridActive={sectionArtEdit.gridActive}
+            gridImages={sectionArtEdit.gridImages}
+            onGridChange={sectionArtEdit.onGridChange}
+            onSelectGrid={sectionArtEdit.onSelectGrid}
+            onExitGrid={sectionArtEdit.onExitGrid}
+            gridMax={sectionArtEdit.gridMax}
+            label="Photo"
+            className="recipe-image-spread__edit"
+          />
+        )}
       </div>
     );
   }
@@ -371,6 +411,7 @@ export const ScaledPage = memo(function ScaledPage({
                     entries={anySlot.entries}
                     kicker={tocKicker}
                     title={tocTitle}
+                    continued={anySlot.continued}
                     template={template}
                     showDecoration={showDecoration}
                     inlineEdit={tocEdit}

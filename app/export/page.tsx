@@ -236,6 +236,10 @@ function InteriorDocument({ payload }: { payload: ExportPayload }) {
     cookbookMode,
     itemPlacements: project.itemPlacements,
     defaultFullPage: cookbookMode && photoStyle === "full",
+    // Chapter openers follow the book's Photos choice — the export has to be
+    // handed the same one the editor previewed, or a derived opener (a facing
+    // collage, an in-card band) would exist on screen and not on paper.
+    photoStyle: cookbookMode ? photoStyle : undefined,
     cardSize,
     doubleSided: settings.doubleSided,
     photosOn: headerPhotosOn && anyRecipeHasImage,

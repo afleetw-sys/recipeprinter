@@ -1748,6 +1748,9 @@ export interface TableOfContentsEntry {
   title: string;
   pageNumber?: number;
   chapterNumber?: number;
+  /** This chapter heading is a repeat at the top of a contents page whose
+      recipes carried over from the page before. */
+  continued?: boolean;
 }
 
 export interface TableOfContentsInlineEdit {
@@ -1765,6 +1768,7 @@ export const TableOfContentsFace = memo(function TableOfContentsFace({
   entries,
   kicker,
   title,
+  continued = false,
   template,
   previewHidden = false,
   showDecoration = true,
@@ -1773,6 +1777,9 @@ export const TableOfContentsFace = memo(function TableOfContentsFace({
   entries: TableOfContentsEntry[];
   kicker?: string;
   title?: string;
+  /** A contents page after the first. It repeats neither the heading nor the
+      editing affordances — it is the same list, still running. */
+  continued?: boolean;
   template?: RecipePrintTemplate;
   previewHidden?: boolean;
   showDecoration?: boolean;
@@ -1780,6 +1787,13 @@ export const TableOfContentsFace = memo(function TableOfContentsFace({
 }) {
   const kickerText = (inlineEdit ? inlineEdit.kicker : kicker) || "Contents";
   const titleText = (inlineEdit ? inlineEdit.title : title) || "What's inside";
+  // The heading is set once, on the first page; a continuation just says so
+  // quietly and gives the rest of the page to the list.
+  const heading = continued ? (
+    <p className="recipe-card__toc-kicker recipe-card__toc-kicker--continued">
+      {kickerText} continued
+    </p>
+  ) : null;
   return (
     <article
       className="recipe-card recipe-card--toc"
@@ -1787,7 +1801,8 @@ export const TableOfContentsFace = memo(function TableOfContentsFace({
     >
       <TemplateDecoration template={template} show={showDecoration} />
       <div className="recipe-card__toc-content">
-        {inlineEdit ? (
+        {heading}
+        {continued ? null : inlineEdit ? (
           <textarea
             rows={1}
             className="recipe-card__inline-textarea recipe-card__toc-kicker"
@@ -1799,7 +1814,7 @@ export const TableOfContentsFace = memo(function TableOfContentsFace({
         ) : (
           <p className="recipe-card__toc-kicker">{kickerText}</p>
         )}
-        {inlineEdit ? (
+        {continued ? null : inlineEdit ? (
           <textarea
             rows={1}
             className="recipe-card__inline-textarea recipe-card__toc-title"
@@ -1814,8 +1829,18 @@ export const TableOfContentsFace = memo(function TableOfContentsFace({
         <ol className="recipe-card__toc-list">
           {entries.map((entry, index) =>
             entry.kind === "chapter" ? (
-              <li key={`c-${index}`} className="recipe-card__toc-chapter">
-                <span className="recipe-card__toc-chapter-name">{entry.title}</span>
+              <li
+                key={`c-${index}`}
+                className={`recipe-card__toc-chapter${
+                  entry.continued ? " recipe-card__toc-chapter--continued" : ""
+                }`}
+              >
+                <span className="recipe-card__toc-chapter-name">
+                  {entry.title}
+                  {entry.continued && (
+                    <span className="recipe-card__toc-chapter-continued"> (continued)</span>
+                  )}
+                </span>
                 {entry.pageNumber !== undefined && (
                   <span className="recipe-card__toc-pg">{entry.pageNumber}</span>
                 )}
@@ -1831,7 +1856,7 @@ export const TableOfContentsFace = memo(function TableOfContentsFace({
             ),
           )}
         </ol>
-        {inlineEdit && (
+        {inlineEdit && !continued && (
           <p className="recipe-card__toc-note no-print">
             Chapters, recipes and page numbers are pulled from your pages — to change them,
             edit a section or recipe.

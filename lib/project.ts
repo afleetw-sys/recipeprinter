@@ -43,16 +43,55 @@ export type PhotoStyle = "none" | "card" | "full";
 
 const SECTION_PHOTO_MODES: readonly SectionPhotoMode[] = ["none", "band", "full", "grid"];
 
-/** The effective opener photo placement for a section. Explicit `photoMode` wins;
-    otherwise a stored `photoUrl` means the legacy top-band photo (`band`), and a
-    bare section is typographic (`none`). Shared by the sheet builder and the
-    picker so the printed page and the dialog can never disagree. */
-export function resolveSectionPhotoMode(section: {
-  photoMode?: SectionPhotoMode;
-  photoUrl?: string;
-}): SectionPhotoMode {
+/** The effective opener photo placement for a section. Explicit `photoMode`
+    wins; otherwise a stored `photoUrl` means the legacy top-band photo
+    (`band`), and failing both the opener FOLLOWS THE BOOK.
+ *
+ *  Chapter openers used to sit outside the book-wide Photos choice entirely: a
+ *  book where every recipe faced a full-page photo still opened each chapter on
+ *  a bare typographic page, and nothing in the UI explained why. So an opener
+ *  with no choice of its own takes the book's:
+ *    - `full` → `grid`, a collage of that chapter's own photos facing the
+ *      opener. A single hero would just re-run the recipe pages' one-big-photo
+ *      idea; a chapter is a group, and a group reads as a collage.
+ *    - `card` → `band`, the photo inside the opener, matching the header photo
+ *      each recipe card carries.
+ *    - `none` → `none`.
+ *  The book OUTRANKS a stored `photoUrl` (which only ever implied `band` for
+ *  books saved before openers had a mode of their own) — otherwise a chapter
+ *  with a photo could never follow a book that moved to full-page art. It does
+ *  not outrank an explicit `photoMode`; changing the book-wide control clears
+ *  those first (see `clearSectionPhotoModes`), so "follow the book" stays true
+ *  without a placement the cook made becoming impossible to keep.
+ *  Pass `bookPhotoStyle` wherever the book is known; omit it and the old
+ *  photo-less default stands. Shared by the sheet builder and the pickers so
+ *  the printed page and the dialog can never disagree. */
+export function resolveSectionPhotoMode(
+  section: {
+    photoMode?: SectionPhotoMode;
+    photoUrl?: string;
+  },
+  bookPhotoStyle?: PhotoStyle,
+): SectionPhotoMode {
   if (section.photoMode) return section.photoMode;
+  if (bookPhotoStyle === "full") return "grid";
+  if (bookPhotoStyle === "card") return "band";
+  if (bookPhotoStyle === "none") return "none";
+  // No book to follow: a stored photo means the legacy top-band opener.
   return section.photoUrl ? "band" : "none";
+}
+
+/** How many of a chapter's own photos a collage starts with. A defaulted grid
+    is a real selection, not a placeholder: the picker opens with exactly these
+    tiles ticked, so "Select multiple" reads as something the cook could have
+    done by hand — and could now undo one tile at a time. */
+export const SECTION_GRID_DEFAULT_COUNT = 6;
+
+/** The collage a chapter shows when nobody has curated one: its own recipes'
+    photos, in book order, capped. The single source both the printed page and
+    the picker read, so the page can never show a collage the dialog doesn't. */
+export function defaultSectionGridImages(ownImages: readonly string[]): string[] {
+  return ownImages.slice(0, SECTION_GRID_DEFAULT_COUNT);
 }
 
 export function recipePagePlacementHasValues(placement: RecipePagePlacement): boolean {
@@ -350,6 +389,31 @@ function sectionsMetaEqual(a: ProjectMeta["sections"], b: ProjectMeta["sections"
 }
 
 /**
+ * Moves one or more items into `toSectionId` as a single block, in the order
+ * given. `toIndex` counts within the destination AFTER every moved id has been
+ * pulled out of it — the list the rail measures its drop against. Pure; the
+ * hook's `moveItems` wraps this. Exported for testing.
+ */
+export function moveItemsInMeta(
+  meta: ProjectMeta,
+  itemIds: string[],
+  toSectionId: string,
+  toIndex: number,
+): ProjectMeta {
+  const moving = new Set(itemIds);
+  const ordered = itemIds.filter((id, index) => itemIds.indexOf(id) === index);
+  const sections = meta.sections.map((section) => ({
+    ...section,
+    itemIds: section.itemIds.filter((id) => !moving.has(id)),
+  }));
+  const target = sections.find((section) => section.id === toSectionId);
+  if (!target) return meta;
+  const clampedIndex = Math.max(0, Math.min(toIndex, target.itemIds.length));
+  target.itemIds.splice(clampedIndex, 0, ...ordered);
+  return { ...meta, sections };
+}
+
+/**
  * Removes a section, merging its recipes into a neighbor — the section just
  * before it, or the one just after when deleting the first. Deleting the only
  * section dissolves it back to an implicit ungrouped pool. Pure; the hook's
@@ -541,21 +605,20 @@ export function useProjectMeta() {
     [update],
   );
 
-  const moveItem = useCallback(
-    (itemId: string, toSectionId: string, toIndex: number) => {
-      update((current) => {
-        const sections = current.sections.map((section) => ({
-          ...section,
-          itemIds: section.itemIds.filter((id) => id !== itemId),
-        }));
-        const target = sections.find((section) => section.id === toSectionId);
-        if (!target) return current;
-        const clampedIndex = Math.max(0, Math.min(toIndex, target.itemIds.length));
-        target.itemIds.splice(clampedIndex, 0, itemId);
-        return { ...current, sections };
-      });
+  /** Moves one or more items as a single block — what a drag of a rail
+      multi-select commits. Moving the ids one at a time instead would insert
+      each against a list still holding its siblings, so a selection dragged
+      past its own members would land scattered (see `moveItemsInMeta`). */
+  const moveItems = useCallback(
+    (itemIds: string[], toSectionId: string, toIndex: number) => {
+      update((current) => moveItemsInMeta(current, itemIds, toSectionId, toIndex));
     },
     [update],
+  );
+
+  const moveItem = useCallback(
+    (itemId: string, toSectionId: string, toIndex: number) => moveItems([itemId], toSectionId, toIndex),
+    [moveItems],
   );
 
   const reorderSections = useCallback(
@@ -747,6 +810,25 @@ export function useProjectMeta() {
       picks a book-wide Photos option, which should override individual choices.
       A recipe's custom facing photo + focal point (heroImageUrl/heroFocus*) are
       kept, so a hand-picked full-page image survives the reset. */
+  /** Drops every opener's explicit photo placement so chapter openers fall back
+      to following the book (see `resolveSectionPhotoMode`). The art itself —
+      a chosen photo, a curated collage — is KEPT, so the new placement uses it
+      straight away and switching back restores exactly what was there. */
+  const clearSectionPhotoModes = useCallback(() => {
+    update((current) => {
+      if (!current.sections.some((section) => section.photoMode)) return current;
+      return {
+        ...current,
+        sections: current.sections.map((section) => {
+          if (!section.photoMode) return section;
+          const next = { ...section };
+          delete next.photoMode;
+          return next;
+        }),
+      };
+    });
+  }, [update]);
+
   const clearItemPhotoOverrides = useCallback(() => {
     update((current) => {
       const placements = current.itemPlacements;
@@ -848,6 +930,7 @@ export function useProjectMeta() {
     updateSection,
     deleteSection,
     moveItem,
+    moveItems,
     reorderSections,
     setSectionStructure,
     setCover,
@@ -866,6 +949,7 @@ export function useProjectMeta() {
     setItemPlacement,
     setItemPhotoMode,
     clearItemPhotoOverrides,
+    clearSectionPhotoModes,
     setPhotoStyle,
     startNewProject,
     clearCookbookIntent,

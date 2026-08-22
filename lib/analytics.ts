@@ -162,6 +162,12 @@ type EventProps = {
   cookbook_cover_layout_selected: { layout: "photo" | "collage" | "typographic" };
   cookbook_front_matter_enabled: { kind: "dedication" | "introduction" };
   cookbook_section_created_from_selection: { count: number };
+  /** The organizer's "Sort by" — does anyone reach for A–Z, and do they keep it
+      or go back to their own order? */
+  cookbook_sorted: { mode: "custom" | "title" };
+  /** A recipe (or a whole selection) moved into another section from the tile's
+      right-click menu rather than by dragging. */
+  cookbook_recipes_moved_to_section: { count: number; via: "tile_menu" };
   cookbook_ready_shown: { freshPurchase: boolean };
   relayout_started: {};
   relayout_applied: { sectionCount: number };

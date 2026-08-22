@@ -97,7 +97,12 @@ interface PrintDeckProps {
   // Photo controls / helpers (defined in the page)
   renderPagePhotoControl: (recipeId: string) => ReactNode;
   renderSectionPhotoControl: (sectionId: string) => ReactNode;
-  buildSectionPhotoEdit: (section: Section | undefined) => Partial<DividerEdit>;
+  buildSectionPhotoEdit: (
+    section: Section | undefined,
+    /** Which surface the picker is rendered on — the opener card, or the
+        chapter's facing art page. See the builder in app/print/page.tsx. */
+    surface?: "opener" | "art",
+  ) => Partial<DividerEdit>;
   photoModeFor: (recipeId: string) => PhotoStyle;
   setRecipePhotoMode: (recipeId: string, mode: PhotoStyle) => void;
   // Mobile topbar
@@ -232,7 +237,7 @@ export function PrintDeck(props: PrintDeckProps) {
           </div>
         )}
       </div>
-      {navItem.kind !== "image" && navItem.kind !== "section-photo" && (
+      {navItem.kind !== "image" && navItem.kind !== "section-photo" && !navItem.continued && (
         <div className="recipe-page-canvas__controls-right">
           {/* The placement toggle appears next to Edit once you're editing the
               recipe — one click to move the photo between None, In card, and
@@ -353,6 +358,21 @@ export function PrintDeck(props: PrintDeckProps) {
               intro: sections.find((section) => section.id === navItem.recipeId)?.intro,
               onIntroChange: (value) => projectMeta.setSectionIntro(navItem.recipeId, value || undefined),
               ...buildSectionPhotoEdit(sections.find((section) => section.id === navItem.recipeId)),
+            }
+          : undefined
+      }
+      sectionArtEdit={
+        // The facing art page is not the focused page of a chapter spread (the
+        // opener is), so this hangs off the section being edited rather than
+        // focus — otherwise the button would only appear on the page nobody
+        // clicks.
+        navItem.kind === "section-photo" && editingSectionId === navItem.recipeId
+          ? {
+              sectionId: navItem.recipeId,
+              ...buildSectionPhotoEdit(
+                sections.find((section) => section.id === navItem.recipeId),
+                "art",
+              ),
             }
           : undefined
       }
@@ -723,7 +743,7 @@ export function PrintDeck(props: PrintDeckProps) {
                           </div>
                         )}
                       </div>
-                      {activeNavItem && activeNavItem.kind !== "image" && (
+                      {activeNavItem && activeNavItem.kind !== "image" && !activeNavItem.continued && (
                         <div className="recipe-page-canvas__controls-right">
                           {projectMeta.meta.cookbookMode &&
                             activeNavItem.kind === "recipe" &&
@@ -826,6 +846,17 @@ export function PrintDeck(props: PrintDeckProps) {
                               projectMeta.setSectionIntro(navItem.recipeId, value || undefined),
                             ...buildSectionPhotoEdit(
                               sections.find((section) => section.id === navItem.recipeId),
+                            ),
+                          }
+                        : undefined
+                    }
+                    sectionArtEdit={
+                      navItem.kind === "section-photo" && editingSectionId === navItem.recipeId
+                        ? {
+                            sectionId: navItem.recipeId,
+                            ...buildSectionPhotoEdit(
+                              sections.find((section) => section.id === navItem.recipeId),
+                              "art",
                             ),
                           }
                         : undefined

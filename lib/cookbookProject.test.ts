@@ -1,8 +1,10 @@
 import { describe, expect, it } from "vitest";
 import {
   deleteSectionFromMeta,
+  moveItemsInMeta,
   normalizeProjectMeta,
   recipePagePlacementHasValues,
+  resolveSectionPhotoMode,
 } from "@/lib/project";
 import { assemblePrintProject } from "@/lib/printProjects";
 
@@ -100,6 +102,74 @@ describe("deleteSectionFromMeta", () => {
   it("is a no-op for an unknown section id", () => {
     const meta = base();
     expect(deleteSectionFromMeta(meta, "nope")).toBe(meta);
+  });
+});
+
+describe("resolveSectionPhotoMode", () => {
+  it("follows the book when the opener has no placement of its own", () => {
+    expect(resolveSectionPhotoMode({}, "full")).toBe("grid");
+    expect(resolveSectionPhotoMode({}, "card")).toBe("band");
+    expect(resolveSectionPhotoMode({}, "none")).toBe("none");
+  });
+
+  it("keeps an opener the cook placed by hand, whatever the book does", () => {
+    expect(resolveSectionPhotoMode({ photoMode: "none" }, "full")).toBe("none");
+    expect(resolveSectionPhotoMode({ photoMode: "band" }, "full")).toBe("band");
+    expect(resolveSectionPhotoMode({ photoMode: "grid" }, "none")).toBe("grid");
+  });
+
+  it("reads a legacy stored photo as the in-card band when there is no book to follow", () => {
+    expect(resolveSectionPhotoMode({ photoUrl: "hero.jpg" })).toBe("band");
+  });
+
+  it("lets the book outrank a legacy stored photo, so an opener can follow it", () => {
+    expect(resolveSectionPhotoMode({ photoUrl: "hero.jpg" }, "full")).toBe("grid");
+    expect(resolveSectionPhotoMode({ photoUrl: "hero.jpg" }, "none")).toBe("none");
+  });
+
+  it("stays typographic when the book is unknown", () => {
+    expect(resolveSectionPhotoMode({})).toBe("none");
+  });
+});
+
+describe("moveItemsInMeta", () => {
+  const base = () =>
+    normalizeProjectMeta({
+      sections: [
+        { id: "s0", title: "Starters", itemIds: ["a", "m1", "b", "m2", "c"] },
+        { id: "s1", title: "Mains", itemIds: ["d"] },
+      ],
+    });
+  const idsIn = (meta: ReturnType<typeof base>, sectionId: string) =>
+    meta.sections.find((section) => section.id === sectionId)?.itemIds;
+
+  it("keeps a multi-select together when it moves down past its own members", () => {
+    // The drop lands after "c", measured on the list with m1/m2 pulled out
+    // (["a", "b", "c"]) — the same index the rail computes.
+    const next = moveItemsInMeta(base(), ["m1", "m2"], "s0", 3);
+    expect(idsIn(next, "s0")).toEqual(["a", "b", "c", "m1", "m2"]);
+  });
+
+  it("keeps a multi-select together when it moves up past its own members", () => {
+    const next = moveItemsInMeta(base(), ["m1", "m2"], "s0", 0);
+    expect(idsIn(next, "s0")).toEqual(["m1", "m2", "a", "b", "c"]);
+  });
+
+  it("moves a selection into another section in the order given", () => {
+    const next = moveItemsInMeta(base(), ["m1", "m2"], "s1", 0);
+    expect(idsIn(next, "s0")).toEqual(["a", "b", "c"]);
+    expect(idsIn(next, "s1")).toEqual(["m1", "m2", "d"]);
+  });
+
+  it("clamps past the end and ignores a repeated id", () => {
+    const next = moveItemsInMeta(base(), ["m1", "m1"], "s1", 99);
+    expect(idsIn(next, "s1")).toEqual(["d", "m1"]);
+    expect(idsIn(next, "s0")).toEqual(["a", "b", "m2", "c"]);
+  });
+
+  it("is a no-op for an unknown destination", () => {
+    const meta = base();
+    expect(moveItemsInMeta(meta, ["m1"], "nope", 0)).toBe(meta);
   });
 });
 

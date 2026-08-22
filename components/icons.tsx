@@ -224,6 +224,16 @@ export const SizeIcon = (p: IconProps) => (
   </Base>
 );
 
+// Sort: three rules of decreasing length. Reads as "put these in an order"
+// without committing to a direction the way an arrow glyph would.
+export const SortIcon = (p: IconProps) => (
+  <Base {...p}>
+    <path d="M5 7h14" />
+    <path d="M5 12h9" />
+    <path d="M5 17h5" />
+  </Base>
+);
+
 export const GripIcon = (p: IconProps) => (
   <Base {...p} fill="currentColor" stroke="none">
     <circle cx="9" cy="6" r="1.4" />

@@ -145,26 +145,32 @@
   color: var(--cp-ink);
 }
 
-/* Auto-organize / Undo, in the organizer's own toolbar beside the collapse
-   control. Quiet by default — the cook is already arranging things by hand in
-   here, so this offers to help rather than announcing itself. */
+/* Auto-organize / Undo, in the organizer's own toolbar beside Sort and the
+   collapse control. Quiet by default — the cook is already arranging things by
+   hand in here, so this offers to help rather than announcing itself. It wears
+   the icon button's own treatment (same height, card face, hairline, ink-soft
+   glyph) so the toolbar reads as one row of controls, just a wider one that
+   happens to carry a label. */
 .recipe-organize-bar__auto {
   display: inline-flex;
   align-items: center;
-  gap: 5px;
-  padding: 6px 10px;
+  gap: 6px;
+  height: 40px;
+  padding: 0 14px;
   border: 1px solid var(--cp-line);
   border-radius: 999px;
-  background: transparent;
+  background: var(--cp-card);
   color: var(--cp-ink-soft);
   font-size: var(--cp-fs-caption);
   font-weight: 700;
   white-space: nowrap;
+  transition:
+    color 150ms ease,
+    border-color 150ms ease;
 }
 
 .recipe-organize-bar__auto:hover {
   border-color: var(--cp-line-strong);
-  background: var(--cp-card);
   color: var(--cp-ink);
 }
 
@@ -206,6 +212,117 @@
   display: inline-flex;
   align-items: center;
   gap: 8px;
+}
+
+/* Sort: an icon button at the head of the organizer's actions that opens its
+   own menu, so the toolbar stays a row of glyphs rather than a form field. */
+.recipe-organize-bar__sort {
+  position: relative;
+  display: inline-flex;
+}
+.recipe-organize-bar__sort-menu {
+  position: absolute;
+  top: calc(100% + 6px);
+  left: 0;
+  z-index: 20;
+  width: 244px;
+  padding: 6px;
+  border: 1px solid var(--cp-line);
+  border-radius: 10px;
+  background: var(--cp-card);
+  box-shadow: var(--cp-shadow-md);
+  text-align: left;
+}
+.recipe-organize-bar__sort-heading {
+  padding: 6px 9px 4px;
+  color: var(--cp-ink-soft);
+  font-size: var(--cp-fs-label);
+  font-weight: 700;
+}
+.recipe-organize-bar__sort-menu button {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  width: 100%;
+  padding: 8px 9px;
+  border-radius: 7px;
+  color: var(--cp-ink);
+  font-size: var(--cp-fs-caption);
+  font-weight: 700;
+  text-align: left;
+}
+.recipe-organize-bar__sort-menu button:hover {
+  background: var(--cp-line);
+}
+.recipe-organize-bar__sort-menu button.is-active {
+  color: var(--cp-selected-text);
+}
+/* A fixed gutter for the tick, so the two labels line up whichever is chosen. */
+.recipe-organize-bar__sort-check {
+  display: inline-flex;
+  justify-content: center;
+  flex: 0 0 14px;
+}
+/* The question this control raises is "will this shuffle my chapters?" — so it
+   answers it in the menu, where the choice is made. */
+.recipe-organize-bar__sort-note {
+  padding: 6px 9px 4px;
+  margin-top: 4px;
+  border-top: 1px solid var(--cp-line);
+  color: var(--cp-ink-soft);
+  font-size: var(--cp-fs-label);
+  line-height: 1.45;
+}
+
+/* Right-click menu on an organizer tile: the same destinations a drag has, for
+   a book too long to drag across. Floating, so it keeps a shadow. */
+.rail-tile-menu {
+  position: fixed;
+  z-index: 1200;
+  min-width: 184px;
+  max-width: 260px;
+  /* A long book can have more sections than fit beside the pointer. */
+  max-height: min(60vh, 420px);
+  overflow-y: auto;
+  padding: 6px;
+  border: 1px solid var(--cp-line);
+  border-radius: 10px;
+  background: var(--cp-card);
+  box-shadow: var(--cp-shadow-md);
+}
+.rail-tile-menu__heading {
+  padding: 6px 9px 4px;
+  color: var(--cp-ink-soft);
+  font-size: var(--cp-fs-label);
+  font-weight: 700;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.rail-tile-menu button {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  width: 100%;
+  padding: 8px 9px;
+  border-radius: 7px;
+  color: var(--cp-ink);
+  font-size: var(--cp-fs-caption);
+  font-weight: 700;
+  text-align: left;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.rail-tile-menu button:hover {
+  background: var(--cp-line);
+}
+.rail-tile-menu__new {
+  margin-top: 4px;
+  border-top: 1px solid var(--cp-line);
+  border-radius: 0 0 7px 7px;
+  padding-top: 10px;
+  color: var(--cp-accent-ink);
 }
 
 .recipe-page-rail__section-title-input {
@@ -638,6 +755,22 @@
 .rail-drag-preview.recipe-page-rail__section-group {
   padding: 8px;
   background: var(--cp-card);
+}
+/* How many recipes the drag is actually carrying, when a multi-select is on the
+   move — the preview under the pointer is only the card that was grabbed. */
+.rail-drag-preview__count {
+  position: absolute;
+  top: -8px;
+  right: -8px;
+  min-width: 22px;
+  padding: 0 6px;
+  border-radius: 999px;
+  background: var(--cp-ink);
+  color: var(--cp-card);
+  font-size: var(--cp-fs-label);
+  font-weight: 800;
+  line-height: 22px;
+  text-align: center;
 }
 /* The drop indicator line. */
 .rail-drop-line {
@@ -3230,6 +3363,16 @@
   padding: 0;
   overflow: hidden;
   text-align: left;
+  /* MUST override `.recipe-card--divider`'s `align-items: center`, which this
+     opener inherits from the old centered divider card. In a grid that means
+     "size every row's item to its own content instead of stretching it" — and
+     the photo box's only in-flow content is the hidden `Photo unavailable`
+     span, so it collapsed to ZERO height with its `inset: 0` image inside it.
+     That is why picking In-card for a chapter appeared to do nothing at all:
+     the image was there, in a box with no height. Same for `justify-*`. */
+  align-items: stretch;
+  justify-items: stretch;
+  justify-content: stretch;
 }
 
 .recipe-card__chapter-photo {
@@ -3240,6 +3383,14 @@
   background: color-mix(in srgb, var(--recipe-bg) 88%, var(--recipe-muted));
   -webkit-print-color-adjust: exact;
   print-color-adjust: exact;
+}
+
+/* An opener with no in-card photo — typographic, or one whose art is on the
+   facing page — keeps the band's SPACE (so chapter titles sit at the same
+   height throughout the book) but paints nothing in it. The tint is a
+   placeholder for a photo that's coming, not a design element. */
+.recipe-card--chapter:not(.recipe-card--chapter-with-photo) .recipe-card__chapter-photo {
+  background: none;
 }
 
 .recipe-card__chapter-image {
@@ -4066,6 +4217,12 @@
   color: var(--recipe-ink);
   font-weight: 800;
 }
+/* A continuation contents page says "CONTENTS CONTINUED" where the first page
+   sets its heading, then gives the rest of the sheet to the list. The space
+   below it is what lib/tocPagination.ts budgets for — keep the two in step. */
+.recipe-card__toc-kicker--continued {
+  margin-bottom: 0.3in;
+}
 .recipe-card__toc-list {
   list-style: none;
   margin: 0;
@@ -4088,6 +4245,24 @@
   letter-spacing: 0.03em;
   text-transform: uppercase;
   color: var(--recipe-ink);
+}
+
+/* A chapter heading repeated at the top of the next contents page. It opens
+   the page, so it drops the 0.3in of air a mid-page chapter gets — the same
+   `:first-child` treatment, asserted here because it is first by construction
+   (see lib/tocPagination.ts, which budgets it that way). */
+.recipe-card__toc-chapter--continued {
+  margin-top: 0;
+}
+/* "(continued)" is an aside, not part of the chapter's name: lowercase and
+   lighter, so the eye still reads the name itself. */
+.recipe-card__toc-chapter-continued {
+  font-weight: 600;
+  font-size: 0.86em;
+  letter-spacing: 0.01em;
+  text-transform: lowercase;
+  font-style: italic;
+  color: var(--recipe-muted);
 }
 .recipe-card__toc-recipe {
   display: flex;
