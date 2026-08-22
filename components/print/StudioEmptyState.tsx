@@ -169,6 +169,10 @@ export function StudioEmptyState({
 
       <div className="rp-studio-empty__import" ref={panelRef}>
         <ImportPanel
+          // The empty studio is nothing but this panel — it must not fold its
+          // options away the moment a parse starts. `items` still goes through
+          // so the CookPilot picker can tell what's already been added.
+          expanded
           items={items}
           onAddUrl={onAddUrl}
           onAddImages={onAddImages}

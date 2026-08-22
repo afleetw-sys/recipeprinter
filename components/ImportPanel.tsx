@@ -74,6 +74,7 @@ export function ImportPanel({
   initialMode = "url",
   submitLabel = "Add",
   autoFocusUrl = true,
+  expanded: expandedOverride,
   onAddUrl,
   onAddImages,
   onAddText,
@@ -87,6 +88,11 @@ export function ImportPanel({
   /** Autofocus the URL input on mount. Off on SEO capture blocks, where the panel
       can sit below the fold and stealing focus would scroll the page on load. */
   autoFocusUrl?: boolean;
+  /** Show every import method, regardless of what's in the queue. Surfaces
+      where this panel IS the page pass true: collapsing the options someone is
+      looking at, because a parse happens to be in flight, hides the control
+      they just used at the moment they are most likely to reach for it again. */
+  expanded?: boolean;
   onAddUrl: (url: string) => void;
   onAddImages: (images: string[], label: string) => void;
   onAddText: (text: string) => void;
@@ -151,7 +157,9 @@ export function ImportPanel({
   const overflowActive = OVERFLOW_MODES.some((option) => option.id === mode);
   // While the print list is empty, surface every import option so people learn
   // what's available; once a recipe is added, tuck the extras into the overflow.
-  const expanded = items.length === 0;
+  // Defaults to "nothing added yet", which is right for the add-recipe dialog
+  // opened over a deck. Anywhere the panel is the main event, the caller says so.
+  const expanded = expandedOverride ?? items.length === 0;
 
   useEffect(() => {
     function onPointerDown(event: PointerEvent) {
