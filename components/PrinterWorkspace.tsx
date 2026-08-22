@@ -16,7 +16,7 @@ import {
 import { createCurrentPrintJob, useQueue } from "@/lib/queue";
 import { useProjectMeta } from "@/lib/project";
 import { fileCookbookLocally } from "@/lib/localProjects";
-import { takePendingImport } from "@/lib/pendingImport";
+import { usePendingImport } from "@/lib/usePendingImport";
 import type { ImportMethod } from "@/types/recipe";
 
 // The interactive heart of RecipePrinter: importing recipes and managing the
@@ -80,7 +80,6 @@ export function PrinterWorkspace({
   const skipProjectIntro = hydratedWithItems && hasProject && !hasShownEmptyState;
   const hasAutoOpenedTrayRef = useRef(false);
   const prevItemsLengthRef = useRef<number | null>(null);
-  const consumedPendingRef = useRef(false);
   const leftCookbookRef = useRef(false);
 
   useEffect(() => {
@@ -147,25 +146,18 @@ export function PrinterWorkspace({
     if (hasPrintable) setFiledBookTitle(bookTitle || "Your cookbook");
   }, [hydrated, metaHydrated, meta, items, clear, startNewProject]);
 
-  // Capture → app handoff: a visitor who pasted a link, dropped a photo, or
-  // pasted text on an SEO landing page arrives here mid-import. Wait for the
-  // queue to hydrate first so seeding the pending item can't race the
-  // sessionStorage rehydrate, then consume it exactly once.
-  useEffect(() => {
-    if (!consumePendingImport || !hydrated || consumedPendingRef.current) return;
-    consumedPendingRef.current = true;
-    let cancelled = false;
-    void takePendingImport().then((pending) => {
-      if (cancelled || !pending) return;
-      if (pending.kind === "url") addUrl(pending.url);
-      else if (pending.kind === "text") addText(pending.text);
-      else if (pending.kind === "cookpilot") addCookPilotRecipes(pending.recipes);
-      else if (pending.kind === "images") addImages(pending.images, pending.label);
-    });
-    return () => {
-      cancelled = true;
-    };
-  }, [consumePendingImport, hydrated, addUrl, addText, addImages, addCookPilotRecipes]);
+  // The other end of the landing-page handoff, shared with the studio (see
+  // lib/usePendingImport). The studio is the destination now; this stays until
+  // the homepage stops being an app surface, so an in-flight handoff from an
+  // older tab still lands somewhere.
+  usePendingImport({
+    enabled: consumePendingImport,
+    hydrated,
+    addUrl,
+    addText,
+    addImages,
+    addCookPilotRecipes,
+  });
 
   useEffect(() => {
     if (!hasProject) setMobileQueueOpen(false);

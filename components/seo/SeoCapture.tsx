@@ -10,7 +10,7 @@ import type { ImportMethod } from "@/types/recipe";
 // A deliberately minimal capture for the SEO landing pages: just the one input
 // that matches the page's intent (a URL field, a paste box, or a photo dropzone)
 // plus an import button, no mode toggles, no other options. On submit it stashes
-// the payload and hands off to the app at "/", which finishes the import. The full
+// the payload and hands off to the studio, which finishes the import. The full
 // multi-source importer lives on the app itself, not on the marketing pages.
 type CaptureMode = "url" | "text" | "image";
 
@@ -41,9 +41,12 @@ export function SeoCapture({
   async function handoff(payload: Parameters<typeof stashPendingImport>[0]) {
     setBusy(true);
     const ok = await stashPendingImport(payload);
-    // Even if persistence failed (private mode, quota), send them to the working
-    // tool rather than stranding them on the landing page.
-    router.push("/");
+    // Straight to the studio, not to the homepage. The homepage was a detour
+    // through a second importer and a Preview button for someone who had
+    // already told us what they wanted; the studio just shows them the page.
+    // Even if persistence failed (private mode, quota), send them to the
+    // working tool rather than stranding them on the landing page.
+    router.push("/print");
     if (!ok) setBusy(false);
   }
 

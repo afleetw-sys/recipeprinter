@@ -95,8 +95,12 @@ export default function PrintError({
           <button type="button" className="btn btn-primary" onClick={reset}>
             Try again
           </button>
-          <Link href="/" className="btn btn-secondary">
-            Back to your recipes
+          {/* Not back to the studio: `reset()` above is the retry, and the
+              session that crashed it is still the session. This wants a
+              genuinely different destination, and the library is the one that
+              shows what they still have. */}
+          <Link href="/projects" className="btn btn-secondary">
+            Your projects
           </Link>
         </div>
       </div>

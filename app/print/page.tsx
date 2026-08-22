@@ -36,6 +36,7 @@ import { PageRail, type RailSortMode } from "@/components/print/PageRail";
 import { PrintDeck } from "@/components/print/PrintDeck";
 import { StudioEmptyState, type StudioHandoffRects } from "@/components/print/StudioEmptyState";
 import { flipTransform } from "@/lib/flipTransform";
+import { usePendingImport } from "@/lib/usePendingImport";
 import {
   usePrintSheets,
   type NavItem,
@@ -2273,6 +2274,23 @@ export default function PrintPage() {
     fly(addButton, importPanel, 90);
   }, [items]);
 
+  /**
+   * The studio is where a landing-page import lands now.
+   *
+   * Someone who pasted a link on "print a recipe from a URL" used to be handed
+   * to the homepage, which showed them a second importer and a Preview button
+   * — a detour through the very surface they had already used. Now the recipe
+   * simply appears here, as a page, which is what they asked for.
+   */
+  usePendingImport({
+    enabled: !accountProjectId,
+    hydrated: queue.hydrated,
+    addUrl: queue.addUrl,
+    addText: queue.addText,
+    addImages: queue.addImages,
+    addCookPilotRecipes: queue.addCookPilotRecipes,
+  });
+
   const moveProjectItem = projectMeta.moveItem;
 
   useEffect(() => {
@@ -3370,8 +3388,8 @@ export default function PrintPage() {
             >
               {copy.action}
             </button>
-            <Link href="/" className="btn btn-secondary">
-              Back to your recipes
+            <Link href="/print" className="btn btn-secondary">
+              Start a new one
             </Link>
           </div>
         </div>

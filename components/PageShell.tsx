@@ -39,7 +39,7 @@ export function PageHeader({
 /** Shared call-to-action that sends the reader back to the tool. */
 export function StartPrintingCta({ label = "Start printing recipes" }: { label?: string }) {
   return (
-    <Link href="/" className="btn btn-primary">
+    <Link href="/print" className="btn btn-primary">
       <PrintIcon size={ICON_SIZE.md} />
       {label}
     </Link>

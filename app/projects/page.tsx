@@ -261,7 +261,7 @@ export default function ProjectsPage() {
             </div>
             <h2 className="mt-cp-4 text-cp-h2 font-extrabold tracking-[-0.02em]">No saved projects yet</h2>
             <p className="mt-cp-2 max-w-sm text-cp-body text-ink-soft leading-relaxed">Build a cookbook or a set of recipe cards and it’ll show up here, ready to reopen anytime.</p>
-            <Link href="/" className="btn btn-primary mt-cp-5">Add a recipe</Link>
+            <Link href="/print" className="btn btn-primary mt-cp-5">Add a recipe</Link>
           </div>
         ) : (
           <>
