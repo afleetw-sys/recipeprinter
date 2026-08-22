@@ -16,11 +16,13 @@ import type { PageSheet, SheetSlot, ImageSheetSlot } from "@/lib/usePrintSheets"
 import { photoGridLayout } from "@/lib/photoGrid";
 import { startFocalDrag } from "@/lib/focalDrag";
 import {
+  IMAGE_CROP_TOLERANCE,
+  IMAGE_ZOOM_FIT,
   IMAGE_ZOOM_MAX,
-  IMAGE_ZOOM_MIN,
   IMAGE_ZOOM_STEP,
   clampImageZoom,
   formatImageZoom,
+  minZoomFor,
   zoomByWheel,
 } from "@/lib/imageZoom";
 import { markImageAvailable, markImageUnavailable } from "@/lib/imageFailure";
@@ -167,10 +169,22 @@ export const ScaledPage = memo(function ScaledPage({
     sheet.layoutKind === "image"
       ? sheet.slots.find((slot): slot is ImageSheetSlot => slot?.kind === "image")?.imageUrl
       : undefined;
-  const [imageCanReposition, setImageCanReposition] = useState(false);
-  useEffect(() => {
-    setImageCanReposition(false);
-  }, [imageSource]);
+  // How far `cover` overshoots the page to fill it — 1 for a photo shaped like
+  // the page, more for one being cropped. It says both whether there is crop to
+  // drag through and how far this photo can zoom OUT, so it is read from the
+  // real image once it loads.
+  //
+  // Stamped WITH the source it was measured from rather than reset by an effect
+  // on `imageSource`: a cached photo (or a data URI) fires `load` before effects
+  // run after mount, so a reset effect would wipe the measurement the load had
+  // just taken and leave every such photo looking un-croppable — no drag, no
+  // zoom out. Keying it instead means a stale measurement simply doesn't match
+  // and reads as 1 until the new photo reports its own.
+  const [measuredImage, setMeasuredImage] = useState<{ src?: string; cropRatio: number }>({
+    cropRatio: 1,
+  });
+  const imageCropRatio = measuredImage.src === imageSource ? measuredImage.cropRatio : 1;
+  const imageCanReposition = imageCropRatio > IMAGE_CROP_TOLERANCE;
   // Pinch (and ctrl/⌘ + wheel, which is the same event) zooms the full-page
   // photo. Bound natively rather than through React's `onWheel`, because React
   // registers wheel PASSIVELY at the root — a passive listener cannot
@@ -178,7 +192,8 @@ export const ScaledPage = memo(function ScaledPage({
   // instead of the picture. A plain wheel is left alone so the deck still
   // scrolls with the photo under the pointer.
   const zoomTargetRef = useRef<HTMLImageElement | null>(null);
-  const imageZoom = clampImageZoom(imageEdit?.zoom ?? 1);
+  const minZoom = minZoomFor(imageCropRatio);
+  const imageZoom = clampImageZoom(imageEdit?.zoom ?? IMAGE_ZOOM_FIT, minZoom);
   const onZoomChange = imageEdit?.onZoomChange;
   useEffect(() => {
     const node = zoomTargetRef.current;
@@ -186,11 +201,11 @@ export const ScaledPage = memo(function ScaledPage({
     const onWheel = (event: WheelEvent) => {
       if (!event.ctrlKey && !event.metaKey) return;
       event.preventDefault();
-      onZoomChange(zoomByWheel(imageZoom, event.deltaY));
+      onZoomChange(zoomByWheel(imageZoom, event.deltaY, minZoom));
     };
     node.addEventListener("wheel", onWheel, { passive: false });
     return () => node.removeEventListener("wheel", onWheel);
-  }, [onZoomChange, imageZoom]);
+  }, [onZoomChange, imageZoom, minZoom]);
 
   const anySlot = sheet.slots.find((slot): slot is SheetSlot => slot !== null) ?? null;
   if (!anySlot) return null;
@@ -223,10 +238,13 @@ export const ScaledPage = memo(function ScaledPage({
     if (!imageSlot) return null;
     // The live zoom: the cook's while editing, otherwise whatever the slot
     // carries — so preview, print and export all crop identically.
-    const zoom = clampImageZoom(imageEdit?.zoom ?? imageSlot.zoom ?? 1);
+    const zoom = clampImageZoom(imageEdit?.zoom ?? imageSlot.zoom ?? IMAGE_ZOOM_FIT, minZoom);
+    const focusX = imageEdit?.focusX ?? imageSlot.focusX ?? 50;
+    const focusY = imageEdit?.focusY ?? imageSlot.focusY ?? 50;
     // A photo that exactly fits its page has no crop to drag around — until it
-    // is zoomed in, which creates that travel. So zoom decides this too.
-    const repositionable = Boolean(imageEdit && (imageCanReposition || zoom > IMAGE_ZOOM_MIN));
+    // is zoomed, which gives it either crop to explore (in) or room to move on
+    // the page (out). So any zoom off the fit makes it draggable.
+    const repositionable = Boolean(imageEdit && (imageCanReposition || zoom !== IMAGE_ZOOM_FIT));
     return (
       <div
         className="recipe-page-scaler"
@@ -255,37 +273,49 @@ export const ScaledPage = memo(function ScaledPage({
                   decoding="async"
                   ref={zoomTargetRef}
                   style={{
-                    objectPosition: `${imageEdit?.focusX ?? imageSlot.focusX ?? 50}% ${
-                      imageEdit?.focusY ?? imageSlot.focusY ?? 50
-                    }%`,
-                    // Zoom magnifies about the same point the cook dragged to,
-                    // so zooming in closes on what they framed rather than on
-                    // the middle of the page.
-                    ...(zoom > 1
+                    objectPosition: `${focusX}% ${focusY}%`,
+                    // Zoom scales about the same point the cook dragged to, so
+                    // it closes on (or backs away from) what they framed rather
+                    // than the middle of the page.
+                    //
+                    // Which way it scales depends on which side of the cover fit
+                    // it is, and the difference matters: scaling a COVER-fitted
+                    // photo below 1 would shrink the crop and its window
+                    // together — a smaller version of the same crop, never a
+                    // sight of what cover had cut off. So under the fit the
+                    // photo switches to `contain` (the whole picture, letter-
+                    // boxed) and is scaled back UP by exactly the amount cover
+                    // was overshooting. The two meet seamlessly: at zoom 1,
+                    // contain × cropRatio IS cover.
+                    ...(zoom < IMAGE_ZOOM_FIT
                       ? {
-                          transform: `scale(${zoom})`,
-                          transformOrigin: `${imageEdit?.focusX ?? imageSlot.focusX ?? 50}% ${
-                            imageEdit?.focusY ?? imageSlot.focusY ?? 50
-                          }%`,
+                          objectFit: "contain" as const,
+                          transform: `scale(${zoom * imageCropRatio})`,
+                          transformOrigin: `${focusX}% ${focusY}%`,
                         }
-                      : null),
+                      : zoom > IMAGE_ZOOM_FIT
+                        ? {
+                            transform: `scale(${zoom})`,
+                            transformOrigin: `${focusX}% ${focusY}%`,
+                          }
+                        : null),
                   }}
                   onLoad={(event) => {
                     const image = event.currentTarget;
                     markImageAvailable(image);
                     if (!image.naturalWidth || !image.naturalHeight) {
-                      setImageCanReposition(false);
+                      setMeasuredImage({ src: imageSlot.imageUrl, cropRatio: 1 });
                       return;
                     }
                     const imageAspect = image.naturalWidth / image.naturalHeight;
                     const frameAspect = dims.w / dims.h;
-                    const cropRatio = Math.max(imageAspect / frameAspect, frameAspect / imageAspect);
-                    // Ignore tiny rounding/aspect differences that technically
-                    // crop a sliver but don't create useful drag travel.
-                    setImageCanReposition(cropRatio > 1.015);
+                    setMeasuredImage({
+                      src: imageSlot.imageUrl,
+                      cropRatio: Math.max(imageAspect / frameAspect, frameAspect / imageAspect),
+                    });
                   }}
                   onError={(event) => {
-                    setImageCanReposition(false);
+                    setMeasuredImage({ src: imageSlot.imageUrl, cropRatio: 1 });
                     markImageUnavailable(event.currentTarget);
                   }}
                   onPointerDown={
@@ -326,8 +356,8 @@ export const ScaledPage = memo(function ScaledPage({
             <button
               type="button"
               aria-label="Zoom out"
-              disabled={zoom <= IMAGE_ZOOM_MIN}
-              onClick={() => onZoomChange(clampImageZoom(zoom - IMAGE_ZOOM_STEP))}
+              disabled={zoom <= minZoom}
+              onClick={() => onZoomChange(clampImageZoom(zoom - IMAGE_ZOOM_STEP, minZoom))}
             >
               −
             </button>
@@ -336,7 +366,7 @@ export const ScaledPage = memo(function ScaledPage({
               type="button"
               aria-label="Zoom in"
               disabled={zoom >= IMAGE_ZOOM_MAX}
-              onClick={() => onZoomChange(clampImageZoom(zoom + IMAGE_ZOOM_STEP))}
+              onClick={() => onZoomChange(clampImageZoom(zoom + IMAGE_ZOOM_STEP, minZoom))}
             >
               +
             </button>

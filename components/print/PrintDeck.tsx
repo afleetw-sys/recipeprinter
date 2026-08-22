@@ -440,8 +440,11 @@ export function PrintDeck(props: PrintDeckProps) {
               onChange: (focusX, focusY) =>
                 projectMeta.setItemPlacement(navItem.recipeId, { heroFocusX: focusX, heroFocusY: focusY }),
               zoom: projectMeta.meta.itemPlacements?.[navItem.recipeId]?.heroZoom ?? 1,
+              // Stored either side of the cover fit — zoomed out is as real a
+              // choice as zoomed in. Exactly 1 is "no choice made", so it
+              // clears rather than persisting a no-op.
               onZoomChange: (zoom) =>
-                projectMeta.setItemPlacement(navItem.recipeId, { heroZoom: zoom > 1 ? zoom : undefined }),
+                projectMeta.setItemPlacement(navItem.recipeId, { heroZoom: zoom === 1 ? undefined : zoom }),
               current:
                 projectMeta.meta.itemPlacements?.[navItem.recipeId]?.heroImageUrl ??
                 items?.find((item) => item.id === navItem.recipeId)?.recipe?.image,

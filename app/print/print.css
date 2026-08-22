@@ -2895,6 +2895,12 @@
 .recipe-card-page--image {
   padding: 0;
   position: relative;
+  /* A photo zoomed out past its cover fit no longer reaches every edge (see
+     lib/imageZoom.ts), so what it stops short of has to be the book's own
+     paper — not the deck's grey or a bare transparent hole. */
+  background: var(--recipe-bg);
+  -webkit-print-color-adjust: exact;
+  print-color-adjust: exact;
 }
 
 .recipe-image-spread__photo {
