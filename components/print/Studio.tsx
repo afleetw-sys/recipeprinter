@@ -32,6 +32,7 @@ import { TemplateThumbnail } from "@/components/print/TemplateThumbnail";
 import { PHOTO_STYLE_OPTIONS } from "@/components/print/photoStyle";
 import { MobileStructureSheet } from "@/components/print/MobileStructureSheet";
 import { PrintConfigPanel } from "@/components/print/PrintConfigPanel";
+import { ThemePicker } from "@/components/print/ThemePicker";
 import { PageRail, type RailSortMode } from "@/components/print/PageRail";
 import { PrintDeck } from "@/components/print/PrintDeck";
 import { StudioEmptyState, type StudioHandoffRects } from "@/components/print/StudioEmptyState";
@@ -3532,9 +3533,15 @@ export function Studio({ projectId: routeProjectId }: { projectId: string }) {
   }
 
   if (showEmptyStudio) {
+    // The same page wrapper the workspace itself uses, so this is the studio
+    // with nothing on it rather than a different screen that leads to it — the
+    // grid rows, the full-height behaviour and every responsive rule come from
+    // `.recipe-print-page` instead of being restated here.
     return (
-      <div className="h-full flex flex-col">
-        <SiteHeader compact sticky />
+      <div className="h-dvh recipe-print-page rp-empty-page">
+        <div className="recipe-print-topbar">
+          <SiteHeader compact sticky />
+        </div>
         <StudioEmptyState
           captureRef={studioHandoffRef}
           canRetry={queue.canRetry}
@@ -3545,6 +3552,22 @@ export function Studio({ projectId: routeProjectId }: { projectId: string }) {
           onAddText={queue.addText}
           onAddCookPilotRecipes={queue.addCookPilotRecipes}
           onRemoveRecipe={queue.remove}
+          // Honestly offerable with nothing laid out yet: the theme previews are
+          // generic samples regardless of your recipes, so picking a design
+          // while you add the first one works exactly as it will afterwards.
+          configSlot={
+            <ThemePicker
+              cookbookMode={cookbookMode}
+              template={template}
+              setTemplate={setTemplate}
+              customerInfo={customerInfo}
+              hasUnclaimedFreeTemplate={hasUnclaimedFreeTemplate}
+              freeTemplateBannerDismissed={freeTemplateBannerDismissed}
+              setFreeTemplateBannerDismissed={setFreeTemplateBannerDismissed}
+              setToastMessage={setToastMessage}
+              setMobileDrawer={setMobileDrawer}
+            />
+          }
         />
       </div>
     );
