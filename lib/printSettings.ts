@@ -8,7 +8,6 @@ import {
   type PrintCardSize,
   type RecipePrintTemplate,
 } from "@/components/RecipeCardPrint";
-import { localStore } from "@/lib/storage";
 
 // SSR renders with the default (no localStorage), so the first client render
 // must match it — but we still want the stored size applied BEFORE paint, not a
@@ -18,31 +17,18 @@ import { localStore } from "@/lib/storage";
 // on the server where layout effects don't run.
 const useIsomorphicLayoutEffect = typeof window !== "undefined" ? useLayoutEffect : useEffect;
 
-// Layout preferences carry over across visits (device-local, no account/sync)
-// so going back to add another recipe doesn't reset the print setup. Shared
-// with the /print/[slug] loader, which seeds these from a sharedRecipeCards
-// doc before handing off to the real /print page.
-export const PRINT_SETTINGS_STORAGE_KEY = "recipeprinter:print-settings:v1";
+// The storage half lives in lib/printSettingsStore, which has no dependency on
+// components/RecipeCardPrint — see that module for why. Imported for this
+// module's own use and re-exported, so this stays the single import site for
+// everything print-settings.
+import { readPrintSettings, writePrintSettings } from "@/lib/printSettingsStore";
 
-export interface StoredPrintSettings {
-  cardSize?: string;
-  template?: string;
-  doubleSided?: boolean;
-  showCutLines?: boolean;
-  showPhoto?: boolean;
-  showSourceUrl?: boolean;
-}
-
-export function readPrintSettings(): StoredPrintSettings | null {
-  const parsed = localStore.getJson<StoredPrintSettings>(PRINT_SETTINGS_STORAGE_KEY);
-  return parsed && typeof parsed === "object" ? parsed : null;
-}
-
-export function writePrintSettings(settings: Required<StoredPrintSettings>) {
-  // Survivable if it fails: settings stay correct for this session, they just
-  // won't carry over to the next visit.
-  localStore.setJson(PRINT_SETTINGS_STORAGE_KEY, settings);
-}
+export {
+  PRINT_SETTINGS_STORAGE_KEY,
+  readPrintSettings,
+  writePrintSettings,
+  type StoredPrintSettings,
+} from "@/lib/printSettingsStore";
 
 export function isPrintCardSize(value: string | null): value is PrintCardSize {
   return PRINT_CARD_SIZE_OPTIONS.some((option) => option.id === value);

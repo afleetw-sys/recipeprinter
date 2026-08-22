@@ -56,6 +56,7 @@ import {
   PrintProjectConflictError,
 } from "@/lib/printProjects";
 import { adoptAnonymousProject, readAdoptionManifest } from "@/lib/anonymousProjectAdoption";
+import { loadLocalProject } from "@/lib/localProjects";
 import { useRecipeInlineEditor } from "@/lib/useRecipeInlineEditor";
 import { useRailDrag, type RailDragKind, type RailDropResolved } from "@/lib/useRailDrag";
 import { useRailSelection } from "@/lib/useRailSelection";
@@ -2123,23 +2124,34 @@ export default function PrintPage() {
 
   useEffect(() => {
     if (!accountProjectId || !cookPilotAuthReady || !projectMeta.hydrated || !queue.hydrated) return;
-    if (!cookPilotUser) {
-      // A saved project lives in an account, so there is nothing to show until
-      // we know whose it is. Say that, instead of spinning.
-      setProjectLoading(false);
-      setProjectAccess("needs-auth");
-      return;
-    }
-    let cancelled = false;
-    setProjectLoading(true);
-    setProjectAccess(null);
-    loadPrintProject(cookPilotUser.uid, accountProjectId)
-      .then((project) => {
-        if (cancelled) return;
-        if (!project) {
-          setProjectAccess("missing");
-          return;
-        }
+
+    /**
+     * A book filed on this device by leaving the workspace (lib/localProjects).
+     * Consulted whether or not anyone is signed in, because a book on the shelf
+     * belongs to the browser, not to an account — which is the whole reason the
+     * shelf exists.
+     */
+    const shelved = loadLocalProject(accountProjectId);
+
+    /**
+     * Loads a project into the working copy.
+     *
+     * `source` decides what happens to the SAVE identity afterwards, which is
+     * the only way the two sources differ:
+     *
+     *  - `account` — this document already exists in Firestore under this id, so
+     *    adopt its revision and identity and start from a clean "Saved" state.
+     *  - `shelf` — it doesn't exist in any account yet, so leave the save
+     *    identity unset. For a signed-in cook that means the next autosave takes
+     *    the ADOPTION path (`adoptAnonymousProject`), which migrates the book's
+     *    anonymous photo assets and re-keys its cookbook unlock — exactly what
+     *    moving a device-local book into an account has to do. Deliberately no
+     *    `"__loaded__"` sentinel either: that sentinel exists to stop a freshly
+     *    loaded account document re-saving itself unchanged, and here the save
+     *    is the point. Opening a shelved book while signed in files it to the
+     *    account, which is the product's rule for cookbooks.
+     */
+    const applyProject = (project: PrintProject, source: "account" | "shelf") => {
         const loadedItems = project.sections.flatMap((section) => section.items);
         queue.replaceAll(loadedItems);
         setJobIds(loadedItems.map((item) => item.id));
@@ -2180,17 +2192,60 @@ export default function PrintPage() {
         setShowPhoto(project.settings.showPhoto);
         setShowSourceUrl(project.settings.showSourceUrl);
         setShowCutLines(project.settings.showCutLines);
-        projectRevisionRef.current = Number(project.revision ?? 0);
-        savedProjectIdRef.current = project.id;
-        setSavedProjectId(project.id);
-        lastSavedFingerprintRef.current = "__loaded__";
-        setSaveStatus("saved");
+        if (source === "account") {
+          projectRevisionRef.current = Number(project.revision ?? 0);
+          savedProjectIdRef.current = project.id;
+          setSavedProjectId(project.id);
+          lastSavedFingerprintRef.current = "__loaded__";
+          setSaveStatus("saved");
+        }
+    };
+
+    // Signed out there is no account to ask, so the shelf is the only answer
+    // available — and for a book built or bought while signed out, it is the
+    // right one. Only when the shelf has nothing either is "sign in" the honest
+    // thing to say.
+    if (!cookPilotUser) {
+      if (shelved) {
+        applyProject(shelved, "shelf");
+        setProjectLoading(false);
+        setProjectAccess(null);
+        return;
+      }
+      setProjectLoading(false);
+      setProjectAccess("needs-auth");
+      return;
+    }
+
+    let cancelled = false;
+    setProjectLoading(true);
+    setProjectAccess(null);
+    loadPrintProject(cookPilotUser.uid, accountProjectId)
+      .then((project) => {
+        if (cancelled) return;
+        // The account copy is authoritative when it exists; the shelf is the
+        // fallback for a book that hasn't been adopted into this account yet.
+        if (project) {
+          applyProject(project, "account");
+          return;
+        }
+        if (shelved) {
+          applyProject(shelved, "shelf");
+          return;
+        }
+        setProjectAccess("missing");
       })
       .catch((error) => {
-        if (!cancelled) {
-          console.warn("RecipePrinter: could not open project", error);
-          setProjectAccess("failed");
+        if (cancelled) return;
+        console.warn("RecipePrinter: could not open project", error);
+        // A failed read is the absence of an answer, not proof the account
+        // lacks the book — but if this device happens to hold a copy, showing
+        // it beats showing an error page about a book we are holding.
+        if (shelved) {
+          applyProject(shelved, "shelf");
+          return;
         }
+        setProjectAccess("failed");
       })
       .finally(() => {
         if (!cancelled) setProjectLoading(false);
