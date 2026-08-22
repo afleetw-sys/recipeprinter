@@ -1180,9 +1180,20 @@
     padding: 1px;
   }
   /* Empty state: every import option is shown so people see what's available.
-     2×2 on small screens, a single row once there's room. */
+     2×2 on small screens, a single row once there's room.
+     Keyed on WIDTH, not on which surface is rendering it. The single-row rule
+     used to hang off `.rp-import-panel--workspace`, a class only the homepage's
+     old two-column workspace applied — so when that went and the panel became
+     full width, the four options stayed stacked 2×2 and stretched across the
+     page. The panel is now the same component in the same shape on the homepage
+     and in the studio; what it should do depends on how much room it has. */
   .mode-toggle.mode-toggle--expanded {
     grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  @media (min-width: 640px) {
+    .mode-toggle.mode-toggle--expanded {
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+    }
   }
   .mode-toggle__item {
     @apply inline-flex items-center justify-center gap-2 rounded font-bold transition-colors;
@@ -1331,20 +1342,13 @@
     @apply text-cp-small leading-relaxed;
   }
 
-  /* The import panel always lives on the left. On desktop both columns always
-     fill the row; only the split changes. While empty, import takes the larger
-     share; once the first recipe is added, the recipes panel takes it. It never
-     collapses back to a vertical stack. */
-  .rp-printer-workspace {
+  /* The homepage importer: one column, full width. The two-column workspace
+     that lived here — import on the left, a recipe list on the right that
+     grew as you added, plus a duplicate of that list in a mobile tray — went
+     with PrinterWorkspace. The homepage keeps the importer and hands the
+     rest to the studio (see components/HomeImporter). */
+  .rp-home-import {
     @apply w-full animate-fade-up;
-  }
-  .rp-printer-workspace--landing,
-  .rp-printer-workspace--active {
-    @apply flex flex-col gap-cp-6;
-  }
-  .rp-workspace-import,
-  .rp-workspace-project {
-    min-width: 0;
   }
 
   /* ── The studio with nothing open ─────────────────────────────────────────
@@ -1423,33 +1427,6 @@
 
   .rp-studio-empty__card-meta {
     @apply text-cp-caption text-ink-soft;
-  }
-
-  /* "Your cookbook is saved in your projects" — shown once, on arriving here
-     from a book that was just filed to this device's shelf. A hairline panel
-     rather than a floating toast: it answers a question ("wasn't I editing a
-     book?") that stays worth answering after a toast would have timed out. */
-  .rp-workspace-filed {
-    @apply flex flex-wrap items-center justify-between gap-cp-3 rounded-xl border border-line px-cp-4 py-cp-3;
-    background: var(--cp-accent-soft);
-    /* The workspace becomes a two-column grid at ≥1024px (see below). This is a
-       banner over both of them, not a third panel competing for a cell —
-       without this it took the import column's slot and pushed the whole
-       layout across by one. Harmless in the flex column below that breakpoint. */
-    grid-column: 1 / -1;
-  }
-
-  .rp-workspace-filed__text {
-    @apply text-cp-small;
-    min-width: 0;
-  }
-
-  .rp-workspace-filed__actions {
-    @apply flex items-center gap-cp-2 flex-shrink-0;
-  }
-
-  .rp-mobile-print-tray {
-    display: none;
   }
 
   /* Below the two-column desktop layout, "Recipes to print" already sits

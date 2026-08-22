@@ -167,7 +167,6 @@ export function useQueue() {
   const [focusNonce, setFocusNonce] = useState(0);
   const focusNonceRef = useRef(0);
   const [hydrated, setHydrated] = useState(false);
-  const [hydratedWithItems, setHydratedWithItems] = useState(false);
   const itemsRef = useRef<QueueItem[]>([]);
   const serializedItemsRef = useRef<string | null>(null);
   // Pasted text payloads are kept in memory only (too large/private to persist)
@@ -180,7 +179,6 @@ export function useQueue() {
     itemsRef.current = initial;
     serializedItemsRef.current = serializeQueue(initial);
     setItems(initial);
-    setHydratedWithItems(initial.length > 0);
     setHydrated(true);
   }, []);
 
@@ -478,7 +476,6 @@ export function useQueue() {
     focusedItemId,
     focusNonce,
     hydrated,
-    hydratedWithItems,
     addUrl,
     addImages,
     addText,

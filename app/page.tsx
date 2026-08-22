@@ -1,6 +1,6 @@
 import { SiteHeader } from "@/components/SiteHeader";
 import { SiteFooter } from "@/components/SiteFooter";
-import { PrinterWorkspace } from "@/components/PrinterWorkspace";
+import { HomeImporter } from "@/components/HomeImporter";
 import { homeJsonLd } from "@/lib/seo";
 
 // The homepage is a focused utility: understand what RecipePrinter does and
@@ -39,10 +39,13 @@ export default function Home() {
             </div>
           </div>
 
-          {/* The tool itself (interactive, client). As the capture → app
-              handoff target, it also finishes any import a visitor started on
-              an SEO landing page. */}
-          <PrinterWorkspace consumePendingImport />
+          {/* Every import method, full width — and nothing after it. Submitting
+              hands off to the studio, which is where a recipe becomes a page.
+              This page no longer keeps a queue, a list, or a Preview button;
+              see components/HomeImporter for why. */}
+          <div className="rp-home-import">
+            <HomeImporter />
+          </div>
         </div>
       </main>
 

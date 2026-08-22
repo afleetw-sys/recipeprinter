@@ -6,7 +6,9 @@ import { ImportPanel } from "@/components/ImportPanel";
 import { PendingImportRows } from "@/components/print/PendingImportRows";
 import { ProjectCover } from "@/components/ProjectCover";
 import { useCookPilotAuth } from "@/components/CookPilotAuth";
+import { flipTransform } from "@/lib/flipTransform";
 import { loadLocalProjects } from "@/lib/localProjects";
+import { takeArrivingImporter } from "@/lib/studioHandoff";
 import { loadPrintProjects } from "@/lib/printProjects";
 import type { QueueItem } from "@/types/recipe";
 import type { PrintProject } from "@/types/recipe";
@@ -88,6 +90,39 @@ export function StudioEmptyState({
     window.addEventListener("resize", capture);
     return () => window.removeEventListener("resize", capture);
   });
+
+  /**
+   * Arrive by travelling, not by appearing.
+   *
+   * The homepage hands an import over by navigating here, so without this the
+   * importer someone was just typing into is replaced by a different-looking
+   * one somewhere else on screen, with nothing connecting them. It is the same
+   * object; showing it move is the only way to say so.
+   *
+   * Runs once, on mount, and only when the homepage actually left a rect behind
+   * (`takeArrivingImporter` clears as it reads) — so a bookmark, the logo or
+   * Back all just render, with nothing flying anywhere.
+   */
+  useLayoutEffect(() => {
+    const el = panelRef.current;
+    if (!el || typeof window === "undefined") return;
+    const from = takeArrivingImporter();
+    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+    const transform = flipTransform(from, el.getBoundingClientRect());
+    if (!transform) return;
+    el.style.transformOrigin = "top left";
+    // Shorter than the studio-to-workspace hand-off: this one is a settle
+    // between two nearby positions, not a journey across the screen.
+    el.animate(
+      [
+        { transform },
+        { transform: "none" },
+      ],
+      { duration: 320, easing: "cubic-bezier(0.2, 0, 0, 1)", fill: "backwards" },
+    );
+    // Mount only — a later re-render must not replay it.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   /**
    * Both shelves, merged the way the Projects page merges them: the account's
