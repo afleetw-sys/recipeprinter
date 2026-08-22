@@ -2369,6 +2369,20 @@ export default function PrintPage() {
   // mobile is often the last callback before the page is discarded. Registered
   // once — the work is delegated to flushOnHideRef, which always holds the
   // current book.
+  //
+  // The cleanup flushes too, and that case is not covered by either event.
+  // Every in-app exit from this page — the header logo, "Back to your recipes",
+  // a link to /projects — is a client-side `next/link` navigation, which fires
+  // NEITHER `pagehide` NOR `visibilitychange`: the document never goes away, only
+  // this component does. So the one exit route people actually take was the one
+  // route that never flushed, and an edit made inside the 1.5s autosave debounce
+  // was dropped on the way out. Unmounting is itself a teardown — the same
+  // reasoning (and the same fix) as the meta-write flush in lib/project.ts.
+  //
+  // Safe to fire on every unmount: `flushOnHideRef` no-ops unless autosave is on
+  // and the fingerprint actually differs from the last saved one, and the request
+  // it starts is not tied to this component's lifetime, so it completes after the
+  // page is gone.
   useEffect(() => {
     const flush = () => flushOnHideRef.current();
     const onVisibility = () => {
@@ -2379,6 +2393,7 @@ export default function PrintPage() {
     return () => {
       window.removeEventListener("pagehide", flush);
       document.removeEventListener("visibilitychange", onVisibility);
+      flush();
     };
   }, []);
 
