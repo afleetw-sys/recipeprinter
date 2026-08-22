@@ -1121,7 +1121,13 @@ export const RecipeCardFace = memo(function RecipeCardFace({
             <h2 className="recipe-card__label">
               Steps
               {side === "front" && hasBackFace && !continued ? (
-                <span className="recipe-card__continued-inline"> (continued on back)</span>
+                // A cookbook continues on the NEXT LEAF, never on the back of
+                // this one (see `continueOnBack` in lib/usePrintSheets.tsx —
+                // duplex is the recipe-card path only), so "on back" sent the
+                // cook looking at the wrong side of the page.
+                <span className="recipe-card__continued-inline">
+                  {cookbookMode ? " (continued on the next page)" : " (continued on back)"}
+                </span>
               ) : side === "back" || continued ? (
                 " continued"
               ) : (
