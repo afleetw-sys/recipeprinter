@@ -100,6 +100,7 @@ export function recipePagePlacementHasValues(placement: RecipePagePlacement): bo
     placement.heroImageUrl !== undefined ||
     placement.heroFocusX !== undefined ||
     placement.heroFocusY !== undefined ||
+    placement.heroZoom !== undefined ||
     placement.showPhoto !== undefined
   );
 }
@@ -839,6 +840,7 @@ export function useProjectMeta() {
         if (placement.heroImageUrl !== undefined) kept.heroImageUrl = placement.heroImageUrl;
         if (placement.heroFocusX !== undefined) kept.heroFocusX = placement.heroFocusX;
         if (placement.heroFocusY !== undefined) kept.heroFocusY = placement.heroFocusY;
+        if (placement.heroZoom !== undefined) kept.heroZoom = placement.heroZoom;
         if (recipePagePlacementHasValues(kept)) next[id] = kept;
       }
       return { ...current, itemPlacements: next };

@@ -2931,6 +2931,50 @@
   white-space: nowrap;
 }
 
+/* Zoom for a full-page photo, in the opposite corner from the Photo button so
+   the two never crowd each other. A sibling of the scaled page (not a child),
+   like that button — a transform-scaled control paints at one size and clicks
+   at another. */
+.recipe-image-spread__zoom {
+  position: absolute;
+  right: 9px;
+  bottom: 9px;
+  z-index: 3;
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  padding: 3px;
+  border-radius: 999px;
+  background: rgba(17, 24, 39, 0.72);
+  color: #fff;
+  font-size: var(--cp-fs-caption);
+  font-weight: 700;
+}
+.recipe-image-spread__zoom button {
+  display: grid;
+  place-items: center;
+  width: 26px;
+  height: 26px;
+  border-radius: 999px;
+  color: inherit;
+  font-size: 15px;
+  line-height: 1;
+}
+.recipe-image-spread__zoom button:hover:not(:disabled) {
+  background: rgba(255, 255, 255, 0.18);
+}
+.recipe-image-spread__zoom button:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+/* Tabular-ish fixed width so stepping through 100/125/150% doesn't shuffle the
+   buttons left and right under the cook's cursor. */
+.recipe-image-spread__zoom span {
+  min-width: 3.4em;
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+}
+
 /* ONE "choose photo" overlay button, reused on the cover, on full-page images,
    and over the in-card header photo so it reads as the same control everywhere,
    sized to match the sibling "Done"/"Edit" toggle. The px sizes here ARE the real

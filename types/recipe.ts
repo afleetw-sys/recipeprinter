@@ -166,6 +166,10 @@ export interface RecipePagePlacement {
       Absent = 50/50 (centered). */
   heroFocusX?: number;
   heroFocusY?: number;
+  /** How far the full-bleed photo is zoomed IN past its cover fit, as a scale
+      about the focal point above. 1 (or absent) = the plain cover crop; the
+      page always stays fully covered, so there is nothing below 1. */
+  heroZoom?: number;
   /** Per-page override of the book-wide "Include recipe photo" default
       (cookbook mode). `undefined` = follow the global toggle; `true`/`false` =
       force this recipe's header photo on/off regardless. Ignored for

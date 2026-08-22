@@ -1,6 +1,6 @@
 "use client";
 
-import { memo, useEffect, useState, type CSSProperties } from "react";
+import { memo, useEffect, useRef, useState, type CSSProperties } from "react";
 import {
   RecipeCardFace,
   BistroCheckerSpine,
@@ -15,6 +15,14 @@ import { ImagePicker } from "@/components/ImagePicker";
 import type { PageSheet, SheetSlot, ImageSheetSlot } from "@/lib/usePrintSheets";
 import { photoGridLayout } from "@/lib/photoGrid";
 import { startFocalDrag } from "@/lib/focalDrag";
+import {
+  IMAGE_ZOOM_MAX,
+  IMAGE_ZOOM_MIN,
+  IMAGE_ZOOM_STEP,
+  clampImageZoom,
+  formatImageZoom,
+  zoomByWheel,
+} from "@/lib/imageZoom";
 import { markImageAvailable, markImageUnavailable } from "@/lib/imageFailure";
 import { PAGE_DIMS } from "@/lib/printGeometry";
 import type { CoverConfig } from "@/types/recipe";
@@ -127,6 +135,10 @@ export const ScaledPage = memo(function ScaledPage({
     focusX: number;
     focusY: number;
     onChange: (focusX: number, focusY: number) => void;
+    /** Zoom past the cover fit (1 = none), and its setter. Present means the
+        photo can be zoomed as well as dragged. */
+    zoom?: number;
+    onZoomChange?: (zoom: number) => void;
     /** Current full-page photo + candidates, so the image page can host its own
         "Photo" control instead of the recipe card doing it off-page. */
     current?: string;
@@ -159,6 +171,26 @@ export const ScaledPage = memo(function ScaledPage({
   useEffect(() => {
     setImageCanReposition(false);
   }, [imageSource]);
+  // Pinch (and ctrl/⌘ + wheel, which is the same event) zooms the full-page
+  // photo. Bound natively rather than through React's `onWheel`, because React
+  // registers wheel PASSIVELY at the root — a passive listener cannot
+  // preventDefault, and without that a pinch zooms the whole browser page
+  // instead of the picture. A plain wheel is left alone so the deck still
+  // scrolls with the photo under the pointer.
+  const zoomTargetRef = useRef<HTMLImageElement | null>(null);
+  const imageZoom = clampImageZoom(imageEdit?.zoom ?? 1);
+  const onZoomChange = imageEdit?.onZoomChange;
+  useEffect(() => {
+    const node = zoomTargetRef.current;
+    if (!node || !onZoomChange) return;
+    const onWheel = (event: WheelEvent) => {
+      if (!event.ctrlKey && !event.metaKey) return;
+      event.preventDefault();
+      onZoomChange(zoomByWheel(imageZoom, event.deltaY));
+    };
+    node.addEventListener("wheel", onWheel, { passive: false });
+    return () => node.removeEventListener("wheel", onWheel);
+  }, [onZoomChange, imageZoom]);
 
   const anySlot = sheet.slots.find((slot): slot is SheetSlot => slot !== null) ?? null;
   if (!anySlot) return null;
@@ -189,7 +221,12 @@ export const ScaledPage = memo(function ScaledPage({
       (slot): slot is ImageSheetSlot => slot?.kind === "image",
     );
     if (!imageSlot) return null;
-    const repositionable = Boolean(imageEdit && imageCanReposition);
+    // The live zoom: the cook's while editing, otherwise whatever the slot
+    // carries — so preview, print and export all crop identically.
+    const zoom = clampImageZoom(imageEdit?.zoom ?? imageSlot.zoom ?? 1);
+    // A photo that exactly fits its page has no crop to drag around — until it
+    // is zoomed in, which creates that travel. So zoom decides this too.
+    const repositionable = Boolean(imageEdit && (imageCanReposition || zoom > IMAGE_ZOOM_MIN));
     return (
       <div
         className="recipe-page-scaler"
@@ -216,10 +253,22 @@ export const ScaledPage = memo(function ScaledPage({
                   draggable={false}
                   loading="lazy"
                   decoding="async"
+                  ref={zoomTargetRef}
                   style={{
                     objectPosition: `${imageEdit?.focusX ?? imageSlot.focusX ?? 50}% ${
                       imageEdit?.focusY ?? imageSlot.focusY ?? 50
                     }%`,
+                    // Zoom magnifies about the same point the cook dragged to,
+                    // so zooming in closes on what they framed rather than on
+                    // the middle of the page.
+                    ...(zoom > 1
+                      ? {
+                          transform: `scale(${zoom})`,
+                          transformOrigin: `${imageEdit?.focusX ?? imageSlot.focusX ?? 50}% ${
+                            imageEdit?.focusY ?? imageSlot.focusY ?? 50
+                          }%`,
+                        }
+                      : null),
                   }}
                   onLoad={(event) => {
                     const image = event.currentTarget;
@@ -252,7 +301,9 @@ export const ScaledPage = memo(function ScaledPage({
                 />
                 <span className="photo-unavailable-message">Photo unavailable</span>
                 {repositionable && (
-                  <span className="recipe-image-spread__hint no-print">Drag to reposition</span>
+                  <span className="recipe-image-spread__hint no-print">
+                    {onZoomChange ? "Drag to reposition · pinch to zoom" : "Drag to reposition"}
+                  </span>
                 )}
               </div>
             </div>
@@ -265,6 +316,32 @@ export const ScaledPage = memo(function ScaledPage({
             box (and behaved differently across browsers). `.recipe-page-scaler`
             is sized to the on-screen page, so a plain top-right offset hugs the
             photo's corner. */}
+        {/* Zoom, in the photo's own bottom corner and OUTSIDE the scaled page
+            (see the note above the Photo control): buttons that are transform-
+            scaled get hit regions that don't match what's painted. Pinch does
+            the same job on a trackpad; this is the part you can find without
+            knowing that. */}
+        {onZoomChange && (
+          <div className="recipe-image-spread__zoom no-print">
+            <button
+              type="button"
+              aria-label="Zoom out"
+              disabled={zoom <= IMAGE_ZOOM_MIN}
+              onClick={() => onZoomChange(clampImageZoom(zoom - IMAGE_ZOOM_STEP))}
+            >
+              −
+            </button>
+            <span aria-live="polite">{formatImageZoom(zoom)}</span>
+            <button
+              type="button"
+              aria-label="Zoom in"
+              disabled={zoom >= IMAGE_ZOOM_MAX}
+              onClick={() => onZoomChange(clampImageZoom(zoom + IMAGE_ZOOM_STEP))}
+            >
+              +
+            </button>
+          </div>
+        )}
         {imageEdit?.onImageChange && (
           <ImagePicker
             current={imageEdit.current}

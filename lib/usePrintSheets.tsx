@@ -194,6 +194,8 @@ export interface ImageSheetSlot {
       the same crop the cook set. */
   focusX?: number;
   focusY?: number;
+  /** Zoom past the cover fit, about that focal point. 1/undefined = no zoom. */
+  zoom?: number;
   queueIndex: number;
 }
 
@@ -623,6 +625,7 @@ export function usePrintSheets({
               imageUrl: planSlot.heroImageUrl,
               focusX: placement?.heroFocusX,
               focusY: placement?.heroFocusY,
+              zoom: placement?.heroZoom,
               queueIndex: entry.queueIndex,
             };
           }
