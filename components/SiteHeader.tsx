@@ -16,6 +16,7 @@ export function SiteHeader({
   onRetrySave,
   onSave,
   lead,
+  center,
   wordmark = true,
   onNavigateHome,
 }: {
@@ -30,6 +31,11 @@ export function SiteHeader({
       brand's place, because there the document IS what the page is about; the
       logo stays beside them as the way home. */
   lead?: ReactNode;
+  /** Centred on the page, independent of `actions`. The workspace puts the
+      document's name and kind here — the two facts that say WHICH thing you
+      are looking at, which belong in the middle rather than queued up with the
+      controls that act on it. */
+  center?: ReactNode;
   /** Drop the wordmark, keeping just the mark as the home link. For surfaces
       that put something more useful than the product's own name in that
       corner. */
@@ -75,9 +81,18 @@ export function SiteHeader({
         </HomeLink>
         {lead}
       </div>
-      {actions && centerActions && (
-        <div className="pointer-events-none absolute inset-x-0 top-1/2 -translate-y-1/2 flex justify-center">
-          <div className="pointer-events-auto flex items-center gap-cp-3">{actions}</div>
+      {/* Centred on the PAGE, not between its neighbours — absolutely
+          positioned so the title holds still as the buttons beside it change
+          width (Buy & Print appears and disappears with the paywall, the save
+          state comes and goes). A flex-centred middle column would slide the
+          title sideways every time one of those changed, which reads as the
+          page twitching. `pointer-events` is restored on the content so the
+          full-width box doesn't swallow clicks meant for the bar. */}
+      {(center || (actions && centerActions)) && (
+        <div className="pointer-events-none absolute inset-x-0 top-1/2 -translate-y-1/2 flex justify-center px-cp-6">
+          <div className="pointer-events-auto flex items-center min-w-0 max-w-[min(44%,26rem)]">
+            {center ?? actions}
+          </div>
         </div>
       )}
       <div className="relative z-[1] flex items-center gap-cp-2 sm:gap-cp-3 flex-nowrap justify-end shrink-0">

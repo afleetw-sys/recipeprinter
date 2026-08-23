@@ -963,6 +963,16 @@
       color 150ms ease,
       border-color 150ms ease;
   }
+  /* The account control sits in a row of compact buttons, so it matches them
+     rather than standing a third taller than everything beside it.
+     Deliberately scoped to the avatar and not to `.icon-button` at large:
+     the other icon buttons live in dialogs and the rail, where 40px is a
+     touch target rather than a size choice. */
+  [data-rp-avatar] {
+    width: 30px;
+    height: 30px;
+  }
+
   .icon-button:hover:not(:disabled),
   .icon-close-btn:hover:not(:disabled) {
     color: var(--cp-ink);
@@ -1259,18 +1269,19 @@
      0` computes to nothing, so every name truncated to a few characters
      regardless of the room available. A real limit on the container gives the
      percentage something to be a percentage of. */
+  /* One line, not two: the name and what kind of document it is, side by side
+     with a separator — the way a document header names a file and its branch.
+     Stacked, it was two lines deep in a bar that is only 62px tall, which is
+     what made the header feel like a page heading rather than a toolbar. */
   .rp-project-heading {
-    @apply flex flex-col items-start;
+    @apply flex flex-row items-center;
     /* Names run long — "Original NESTLÉ TOLL HOUSE Chocolate Chip Cookies" is
        a real one — and this corner has the room, since the only things
        competing for it are two buttons and an avatar. Still a cap rather than
        none, so a pathological title cannot push them off the bar. */
     max-width: min(52vw, 40rem);
-    /* Pulled left as a WHOLE, so the text lines up with the logo beside it
-       while both children keep their padding as hover targets. Doing this per
-       child instead shortens each one's contribution to this column's width,
-       which sized it a few pixels under the title and truncated every name. */
-    margin-left: -6px;
+    gap: 2px;
+    min-width: 0;
     /* Zero, not a gap: both children already carry padding for their own hover
        targets, so the visible space between them is that padding. The name and
        what kind of thing it is are one label on two lines, and they should sit
@@ -1321,8 +1332,16 @@
   /* `flex`, not a plain block: an inline-flex child inside a block sits on a
      text baseline and the line box adds descender space under it — about 6px
      of gap that belongs to nothing and cannot be tuned away with padding. */
+  /* The dot between the name and the kind, as in a breadcrumb. */
+  .rp-project-heading__kind::before {
+    content: "·";
+    margin-right: 2px;
+    color: var(--cp-ink-soft);
+  }
+
   .rp-project-heading__kind {
-    @apply relative flex;
+    @apply relative flex items-center;
+    flex: 0 0 auto;
   }
 
   .rp-project-heading__kind-trigger {
@@ -1348,7 +1367,8 @@
   .rp-project-heading__menu {
     position: absolute;
     top: calc(100% + 8px);
-    left: -6px;
+    left: 50%;
+    transform: translateX(-50%);
     z-index: 20;
     width: max-content;
     max-width: min(20rem, calc(100vw - 2rem));

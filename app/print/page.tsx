@@ -3435,8 +3435,7 @@ export default function PrintPage() {
             the order you'd reach for them: how it stands, then the action that
             finishes it.
           */
-          wordmark={false}
-          lead={
+          center={
             items?.length ? (
               <ProjectHeading
                 title={headingTitle}
