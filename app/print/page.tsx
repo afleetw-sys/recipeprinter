@@ -2,10 +2,12 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties, type Dispatch, type MutableRefObject, type ReactNode, type RefObject, type SetStateAction } from "react";
 import { flushSync } from "react-dom";
-import { useSearchParams } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import dynamic from "next/dynamic";
 import { SiteHeader } from "@/components/SiteHeader";
+import { flyIntoProfile, visibleDeckPage } from "@/lib/flyIntoProfile";
+import { fileProjectLocally } from "@/lib/localProjects";
 import type { AccountSaveStatus } from "@/components/AccountControl";
 import { FeedbackDialog } from "@/components/FeedbackButton";
 import { PrintDialogs } from "@/components/PrintDialogs";
@@ -233,6 +235,7 @@ export default function PrintPage() {
     return () => window.clearTimeout(stableTimer);
   }, []);
 
+  const router = useRouter();
   const params = useSearchParams();
   const idsParam = params.get("ids") ?? "";
   const accountProjectId = params.get("project");
@@ -1795,6 +1798,59 @@ export default function PrintPage() {
     }
   }
 
+  /**
+   * Going home: put this project away, show it going, and start a fresh one.
+   *
+   * Three things have to happen in the right order, and the order is chosen
+   * around what is safe to lose.
+   *
+   * The DEVICE copy is written first and synchronously, and clearing is gated
+   * on it. That is what makes this safe: the desk is only wiped once the
+   * project is definitely on the shelf, so a failed write (private mode, quota)
+   * leaves the working copy exactly where it was rather than destroying it. The
+   * homepage will try again on arrival and reach the same conclusion.
+   *
+   * The ACCOUNT copy is fired and deliberately not awaited. It is not
+   * load-bearing — the device copy already made this safe — and waiting on a
+   * network round trip before navigating would make going home feel broken on
+   * a bad connection. This is a client-side navigation, so the request survives
+   * it, and the existing `pagehide` flush covers a genuine tab close. A
+   * signed-in cook therefore ends up with both copies, and the local one is
+   * swept on the next library load.
+   *
+   * The FLIGHT overlaps both, so the animation costs no extra wait: by the time
+   * the project has finished travelling into the profile, the writes have
+   * usually already happened.
+   */
+  const [leavingHome, setLeavingHome] = useState(false);
+
+  async function handleNavigateHome() {
+    if (leavingHome) return;
+    setLeavingHome(true);
+
+    const printable = queue.items.some((item) => item.status === "ready" && item.recipe);
+    if (!printable) {
+      // Nothing made, nothing to file, nothing to show travelling.
+      router.push("/");
+      return;
+    }
+
+    const flight = flyIntoProfile(visibleDeckPage());
+    const filed = fileProjectLocally(queue.items, projectMeta.meta);
+    if (cookPilotUser) void handleSaveProject();
+
+    await flight;
+
+    // Only now is the desk safe to clear — and releasing the project id is the
+    // half that makes the next import a NEW project rather than another edit
+    // of this one.
+    if (filed) {
+      queue.clear();
+      projectMeta.startNewProject();
+    }
+    router.push("/");
+  }
+
   // A save queued during an in-flight request must serialize the newest render,
   // not the render whose request just completed. Published in an effect (not
   // during render) so a discarded or double-invoked render can't leave a stale
@@ -3324,6 +3380,7 @@ export default function PrintPage() {
               </button>
             ) : undefined
           }
+          onNavigateHome={() => void handleNavigateHome()}
           saveStatus={saveStatus}
           onRetrySave={handleRetrySave}
           /* The only Save button left: a cookbook belonging to someone who

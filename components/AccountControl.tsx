@@ -130,6 +130,7 @@ export function AccountControl({
            for a browser with no record of an account, or in the moment before
            the chunk lands for one that has. */
         <IconButton
+          data-rp-avatar
           className="border border-line bg-card text-ink-soft hover:text-ink hover:border-ink-soft"
           aria-label="Sign in to Recipe Printer"
           title="Sign in to Recipe Printer"

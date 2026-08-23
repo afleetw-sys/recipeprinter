@@ -1,7 +1,8 @@
 import { beforeEach, describe, expect, it } from "vitest";
 import {
+  MAX_LOCAL_PROJECTS,
   deleteLocalProject,
-  fileCookbookLocally,
+  fileProjectLocally,
   loadLocalProject,
   loadLocalProjects,
   pruneLocalProjects,
@@ -81,10 +82,10 @@ function project(overrides: Partial<PrintProject> = {}): PrintProject {
   };
 }
 
-describe("the on-device cookbook shelf", () => {
+describe("the on-device project shelf", () => {
   it("files a cookbook and reads it back whole", () => {
     const items = [recipeItem("r1", "Sourdough"), recipeItem("r2", "Focaccia")];
-    expect(fileCookbookLocally(items, cookbookMeta())).toBe(true);
+    expect(fileProjectLocally(items, cookbookMeta())).toBe(true);
 
     const shelved = loadLocalProject("book-a");
     expect(shelved?.title).toBe("Nana’s Kitchen");
@@ -96,7 +97,7 @@ describe("the on-device cookbook shelf", () => {
   // The whole reason the shelf exists: leaving the workspace must not be able
   // to destroy a book, so filing has to actually report whether it worked.
   it("reports failure rather than silently dropping a book it cannot file", () => {
-    expect(fileCookbookLocally([], cookbookMeta())).toBe(false);
+    expect(fileProjectLocally([], cookbookMeta())).toBe(false);
     expect(loadLocalProjects()).toHaveLength(0);
   });
 
@@ -105,7 +106,7 @@ describe("the on-device cookbook shelf", () => {
       recipeItem("r1", "Sourdough"),
       { id: "r2", method: "url", source: "example.com", status: "parsing", title: "example.com", addedAt: 2 },
     ];
-    fileCookbookLocally(items, cookbookMeta());
+    fileProjectLocally(items, cookbookMeta());
     expect(loadLocalProject("book-a")?.sections.flatMap((s) => s.items)).toHaveLength(1);
   });
 
@@ -120,13 +121,32 @@ describe("the on-device cookbook shelf", () => {
         cover: { title: "The Stashed Book", template: "keepsake" },
       },
     });
-    expect(fileCookbookLocally([recipeItem("r1", "Sourdough")], meta)).toBe(true);
+    expect(fileProjectLocally([recipeItem("r1", "Sourdough")], meta)).toBe(true);
     expect(loadLocalProject("book-a")?.cover?.title).toBe("The Stashed Book");
   });
 
-  it("refuses to shelve a plain print job — a card run is not a document", () => {
-    expect(saveLocalProject(project({ kind: "printProject", stashedCookbook: undefined }))).toBe(false);
-    expect(loadLocalProjects()).toHaveLength(0);
+  // The shelf used to take documents only, on the reasoning that nobody named
+  // a plain card run. That inverted once leaving the workspace started clearing
+  // the desk: an unfiled card job is now a DESTROYED card job.
+  it("shelves a plain card run, which leaving the workspace would otherwise destroy", () => {
+    expect(saveLocalProject(project({ kind: "printProject", stashedCookbook: undefined }))).toBe(true);
+    expect(loadLocalProjects()).toHaveLength(1);
+  });
+
+  it("names a card run after its recipes, so it can be found again", () => {
+    const items = [recipeItem("r1", "Sourdough"), recipeItem("r2", "Focaccia")];
+    const meta = { ...cookbookMeta(), cookbookMode: false, cover: undefined, stashedCookbook: undefined };
+    expect(fileProjectLocally(items, meta)).toBe(true);
+
+    const shelved = loadLocalProject("book-a");
+    expect(shelved?.kind).toBe("printProject");
+    expect(shelved?.title).toBe("Sourdough + 1 more");
+  });
+
+  it("names a single-recipe card run after that recipe alone", () => {
+    const meta = { ...cookbookMeta(), cookbookMode: false, cover: undefined, stashedCookbook: undefined };
+    fileProjectLocally([recipeItem("r1", "Sourdough")], meta);
+    expect(loadLocalProject("book-a")?.title).toBe("Sourdough");
   });
 
   it("returns books newest first", () => {
@@ -142,13 +162,15 @@ describe("the on-device cookbook shelf", () => {
     expect(loadLocalProject("book-a")?.title).toBe("Renamed");
   });
 
-  it("caps the shelf, dropping the oldest book", () => {
-    for (let i = 0; i < 15; i++) {
+  it("caps the shelf, dropping the oldest project", () => {
+    const overflow = 3;
+    for (let i = 0; i < MAX_LOCAL_PROJECTS + overflow; i++) {
       saveLocalProject(project({ id: `book-${i}`, updatedAt: i }));
     }
     const shelved = loadLocalProjects();
-    expect(shelved).toHaveLength(12);
-    expect(shelved.at(-1)?.id).toBe("book-3");
+    expect(shelved).toHaveLength(MAX_LOCAL_PROJECTS);
+    // Newest first, so the last survivor is the oldest one that fit.
+    expect(shelved.at(-1)?.id).toBe(`book-${overflow}`);
     expect(loadLocalProject("book-0")).toBeNull();
   });
 
@@ -156,7 +178,7 @@ describe("the on-device cookbook shelf", () => {
   // clears the working copy on a true, so that would be the deletion this
   // whole module exists to prevent.
   it("reports failure when the cap would evict the very book being filed", () => {
-    for (let i = 1; i <= 12; i++) {
+    for (let i = 1; i <= MAX_LOCAL_PROJECTS; i++) {
       saveLocalProject(project({ id: `book-${i}`, updatedAt: 1000 + i }));
     }
     expect(saveLocalProject(project({ id: "ancient", updatedAt: 1 }))).toBe(false);

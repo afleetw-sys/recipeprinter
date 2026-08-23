@@ -128,6 +128,7 @@ export default function AccountMenu({
   return (
     <div ref={rootRef} className="relative flex items-center">
       <IconButton
+        data-rp-avatar
         className={`${
           user
             ? "border border-transparent bg-[var(--cp-accent)] text-[var(--cp-ink)] text-cp-caption font-bold tracking-tight"

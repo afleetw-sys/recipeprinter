@@ -1,4 +1,4 @@
-import Link from "next/link";
+import { HomeLink } from "@/components/HomeLink";
 import type { ReactNode } from "react";
 import { LogoMark, Wordmark } from "@/components/Logo";
 import { AccountControl, type AccountSaveStatus } from "@/components/AccountControl";
@@ -15,6 +15,7 @@ export function SiteHeader({
   saveStatus,
   onRetrySave,
   onSave,
+  onNavigateHome,
 }: {
   backHref?: string;
   actions?: ReactNode;
@@ -25,6 +26,10 @@ export function SiteHeader({
   saveStatus?: AccountSaveStatus | null;
   onRetrySave?: () => void;
   onSave?: () => void;
+  /** Intercepts the logo's navigation home. Given by the workspace, which puts
+      the open project away (and animates it going) before it leaves, and owns
+      the push itself. */
+  onNavigateHome?: () => void;
 }) {
   const logo = (
     <>
@@ -45,13 +50,9 @@ export function SiteHeader({
         sticky ? "sticky top-0 z-10 bg-card border-b border-line py-cp-3" : ""
       }`}
     >
-      <Link
-        href={backHref ?? "/"}
-        className="flex items-center gap-cp-3 group shrink-0"
-        aria-label="RecipePrinter home"
-      >
+      <HomeLink href={backHref ?? "/"} onNavigateHome={onNavigateHome}>
         {logo}
-      </Link>
+      </HomeLink>
       {actions && centerActions && (
           <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 flex items-center gap-cp-3">
             {actions}
