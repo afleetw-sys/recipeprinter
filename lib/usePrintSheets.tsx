@@ -1005,6 +1005,7 @@ export function usePrintSheets({
         return "cover";
       }
       if (slot?.kind === "divider") return "chapter";
+      if (slot?.kind === "toc") return "toc";
       return "content";
     });
     return assembleSpreads(kinds);

@@ -609,10 +609,15 @@ export function PrintDeck(props: PrintDeckProps) {
                   // unit; `linkedFocusSheet` is the page whose controls the pair
                   // shares — the recipe for an image spread, the opener for a
                   // section spread.
-                  const linkedSpread = isImageSpread || isSectionSpread;
+                  // Two contents pages facing each other are one opening, so
+                  // they outline and select together and the first page owns
+                  // the editing — the heading you can change lives there.
+                  const isTocSpread =
+                    leftSlot?.kind === "toc" && rightSlot?.kind === "toc";
+                  const linkedSpread = isImageSpread || isSectionSpread || isTocSpread;
                   const linkedFocusSheet = isImageSpread
                     ? imageSpreadFocusSheet
-                    : isSectionSpread
+                    : isSectionSpread || isTocSpread
                       ? spread.left
                       : null;
                   const designedBlank = leftSlot?.kind === "toc";

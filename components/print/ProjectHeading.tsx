@@ -159,19 +159,6 @@ export function ProjectHeading({
               </button>
             )}
 
-            {/*
-              Said here rather than in a confirm dialog, because it is
-              reassurance and not a decision: switching to cards does not
-              discard the book. `exitCookbook` moves the cover, chapters,
-              layouts and settings into `stashedCookbook`, and switching back
-              restores them exactly — so there is nothing to warn about and
-              nothing to confirm.
-            */}
-            {cookbookMode && (
-              <p className="rp-project-heading__menu-note">
-                Your cookbook is kept — its cover and chapters come back if you switch again.
-              </p>
-            )}
           </div>
         )}
       </div>

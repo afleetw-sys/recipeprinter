@@ -1387,17 +1387,6 @@
     line-height: 1.4;
   }
 
-  /* Reassurance, not a warning — switching to cards stashes the book rather
-     than discarding it, so this sits quietly under the options instead of
-     interrupting as a confirm dialog. */
-  .rp-project-heading__menu-note {
-    padding: 6px 10px 2px;
-    border-top: 1px solid var(--cp-line);
-    margin-top: 4px;
-    font-size: var(--cp-fs-caption);
-    color: var(--cp-ink-soft);
-    line-height: 1.4;
-  }
 
   /* How the project stands, sitting to the left of Print. Quiet by default;
      the failure state is the only one that asks for anything. */
