@@ -768,16 +768,7 @@ export function usePrintSheets({
     // body pages (chapter openers + recipe pages) get a running page number and
     // a running header; covers and the TOC itself carry no folio. The TOC is
     // then built from that numbering and spliced in right after the front cover.
-    {
-      /**
-       * Numbering runs whether or not there is a table of contents.
-       *
-       * It used to be inside `if (tableOfContents)`, which made "what page is
-       * this?" a side effect of asking for a contents page — so with the TOC
-       * off, no sheet knew its own number and anything wanting to SAY a page
-       * number (the page strip below the deck) had nothing to say. The contents
-       * is built from the numbering, not the other way round.
-       */
+    if (tableOfContents) {
       const title = bookTitle?.trim() || cover?.title?.trim() || "";
       const tocEntries: TocEntry[] = [];
       let pageNo = 0;
@@ -789,12 +780,6 @@ export function usePrintSheets({
         // after it, and its TOC entry, drifts below the true page.
         if (sheet.layoutKind === "image" || sheet.layoutKind === "section-photo") {
           pageNo += 1;
-          // It KEEPS that number even though it prints no folio. Skipping the
-          // assignment is what left the page strip unable to tell you which
-          // page a facing photo is — the number existed, it just wasn't written
-          // down anywhere. `layoutKind` is what suppresses the printed folio
-          // (see ScaledPage), not the absence of a number.
-          sheet.pageNumber = pageNo;
           continue;
         }
         const dividerSlot = sheet.slots.find((slot) => slot?.kind === "divider") as
@@ -827,7 +812,7 @@ export function usePrintSheets({
         }
       }
 
-      if (tableOfContents && tocEntries.length > 0) {
+      if (tocEntries.length > 0) {
         // A long book's contents runs onto as many pages as it needs. The page
         // is `overflow: hidden`, so anything past the first page's bottom edge
         // used to be silently clipped — recipes with no listing at all.

@@ -547,13 +547,7 @@ export const ScaledPage = memo(function ScaledPage({
               }`}
               data-preview-hidden={activeSide !== "front" ? "true" : undefined}
             >
-              {/* A photo page carries a page NUMBER (so the strip below the deck
-                  can say which page it is) but prints no folio and no running
-                  head — a full-bleed picture with a numeral over it is not a
-                  book, it's a mistake. `layoutKind` is what makes it a photo
-                  page; before numbering was decoupled from the contents, the
-                  absence of a number did this job by accident. */}
-              {sheet.pageNumber !== undefined && !sheet.layoutKind && (
+              {sheet.pageNumber !== undefined && (
                 <>
                   {sheet.runningHeader && (
                     <div className="recipe-book-runhead" aria-hidden>
