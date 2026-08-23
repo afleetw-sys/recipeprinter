@@ -898,15 +898,18 @@
    button at the bottom of a long list. Filled, so it reads as the thing to do.
    It doesn't compete with Print, which now lives in the header — the two are
    never in the same block of the screen. */
+/* A quiet neutral fill, not full ink. Adding a recipe is the most common thing
+   you do here, but it is not the page's climax — Print is — and a black button
+   in the rail argued with the black button in the header for that role. */
 .recipe-page-rail__head .recipe-page-rail__add-main {
-  background: var(--cp-ink);
-  border-color: var(--cp-ink);
-  color: var(--cp-card);
+  background: var(--cp-surface-muted);
+  border-color: var(--cp-line);
+  color: var(--cp-ink);
 }
 
 .recipe-page-rail__head .recipe-page-rail__add-main:hover:not(:disabled) {
-  background: var(--cp-ink-soft);
-  border-color: var(--cp-ink-soft);
+  background: var(--cp-overlay-hover-strong);
+  border-color: var(--cp-line-strong);
 }
 
 /* The other half of the SAME button.
@@ -915,18 +918,18 @@
    solid button with an outlined button stuck to it. They are one thing: one
    fill, and a divider between them rather than a border around each. */
 .recipe-page-rail__head .recipe-page-rail__add-menu-trigger {
-  border: 1px solid var(--cp-ink);
-  border-left: 1px solid color-mix(in srgb, var(--cp-card) 30%, var(--cp-ink));
-  background: var(--cp-ink);
-  color: var(--cp-card);
+  border: 1px solid var(--cp-line);
+  border-left: 1px solid var(--cp-line-strong);
+  background: var(--cp-surface-muted);
+  color: var(--cp-ink);
 }
 
 .recipe-page-rail__head .recipe-page-rail__add-menu-trigger:hover:not(:disabled) {
-  border-color: var(--cp-ink-soft);
+  border-color: var(--cp-line-strong);
   /* Re-stated so the divider survives the hover, which would otherwise repaint
      every edge including the one holding the two halves apart. */
-  border-left-color: color-mix(in srgb, var(--cp-card) 30%, var(--cp-ink-soft));
-  background: var(--cp-ink-soft);
+  border-left-color: var(--cp-line-strong);
+  background: var(--cp-overlay-hover-strong);
 }
 
 /* Fills the row on its own (no cookbook mode → no chevron trigger next to
@@ -6174,31 +6177,21 @@ textarea.recipe-card__toc-title {
   border-radius: 0;
 }
 
-/* ── Letter banner photo ──────────────────────────────────────────────────
-   Letter pages have room to lead with the photo as a wide, short band above
-   the title. Only the templates with a plain rectangular frame read well this
-   way (classic, counter); the tilted/taped snapshot templates (heirloom,
-   bistro, pantry) keep their corner thumbnail, and 6x4 stays a thumbnail too. */
-.recipe-print-preview--letter .recipe-template--classic .recipe-card__header--with-photo,
-.recipe-print-preview--letter .recipe-template--counter .recipe-card__header--with-photo {
-  flex-direction: column-reverse;
-  align-items: stretch;
-  gap: 0.16in;
-}
+/* ── One photo treatment, every template ──────────────────────────────────
+   Letter pages used to lead with a wide, short banner photo above the title on
+   the two templates with a plain rectangular frame (classic and counter),
+   while the tilted/taped snapshot templates kept a corner thumbnail. So the
+   same recipe with the same photo was a different KIND of page depending on
+   which theme you picked, and switching themes moved the photo rather than
+   redressing it.
 
-.recipe-print-preview--letter .recipe-template--classic .recipe-card__header--with-photo .recipe-card__photo,
-.recipe-print-preview--letter .recipe-template--counter .recipe-card__header--with-photo .recipe-card__photo {
-  width: 100%;
-  height: 2.5in;
-  margin-top: 0;
-}
+   Every template now uses the in-card thumbnail — the treatment bistro and the
+   rest already had. Themes still differ in how the photo is framed (mats,
+   tape, tilt, tonal treatment, which is the point of a theme) and no longer in
+   where it goes.
 
-/* Trim the top padding on the banner templates so the taller photo has room
-   without pushing the recipe text down as much. */
-.recipe-print-preview--letter .recipe-template--classic .recipe-card,
-.recipe-print-preview--letter .recipe-template--counter .recipe-card {
-  --recipe-card-padding-top: 0.42in;
-}
+   The padding trim that went with the banner goes too: it existed to make room
+   for a 2.5in band, and left without one the title sat too high. */
 
 /* Without a photo, that trimmed padding leaves the title sitting right under
    the checkerboard band with barely any breathing room. Give the header

@@ -866,12 +866,16 @@
 
 @layer components {
   /* ── Buttons (mirrors .cp-button) ─────────────────────────────────────── */
+  /* Tighter than they were (40px/18px). Buttons sit in rows beside each other
+     all over this product — a header bar, a settings panel, a dialog footer —
+     and at the old size a row of three read as the loudest thing on screen
+     rather than as the controls for what is. */
   .btn {
     @apply inline-flex items-center justify-center gap-2 whitespace-nowrap
            rounded font-semibold text-cp-body
            transition-transform duration-150 select-none;
-    min-height: 40px;
-    padding: 0 18px;
+    min-height: 34px;
+    padding: 0 14px;
   }
   .btn:hover:not(:disabled) {
     transform: translateY(-1px);
@@ -911,8 +915,8 @@
   }
 
   .btn-compact {
-    min-height: 40px;
-    padding: 0 14px;
+    min-height: 30px;
+    padding: 0 11px;
     @apply text-cp-small;
   }
 
