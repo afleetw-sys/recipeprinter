@@ -350,6 +350,22 @@ export function PageRail(props: PageRailProps) {
     0,
   );
 
+  /**
+   * The page number a thumbnail stands for.
+   *
+   * Not its position in the rail. Those are different numbers and they drift
+   * apart in both directions: the rail counts the cover and the contents,
+   * which print no folio, so it runs ahead — and a facing full-page photo has
+   * no tile of its own, so it runs behind.
+   *
+   * Front matter says nothing rather than borrowing a position and calling it
+   * a page.
+   */
+  const railPageLabel = (navItem: NavItem): string => {
+    const page = sheets[navItem.sheetIndex]?.pageNumber;
+    return page === undefined ? "" : String(page);
+  };
+
   return (
         <nav
           ref={railScrollRef}
@@ -561,7 +577,13 @@ export function PageRail(props: PageRailProps) {
                 // (dedication + contents, or two different recipes) splits into
                 // one single-page thumbnail each.
                 type RailUnit = {
-                  num: number;
+                  /** The page this tile starts at. A tile can hold two pages —
+                      a photo and its recipe, an opener and its facing photo —
+                      and it is labelled with the first of them, so the numbers
+                      down the rail read 8, 10, 12 rather than 8–9, 10–11. The
+                      second page of a pair has no separate tile to sit on, so
+                      naming it would be labelling something you cannot go to. */
+                  num: string;
                   index: number;
                   focusSheet: number | null;
                   nav: NavItem | null;
@@ -570,9 +592,17 @@ export function PageRail(props: PageRailProps) {
                   soleUnit: boolean;
                   sectionId: string | null;
                 };
+                /** The first page a tile stands for, or nothing when it stands
+                    for front matter that carries no folio. */
+                const startPageLabel = (thumbSheets: number[]): string => {
+                  const pages = thumbSheets
+                    .map((sheetIndex) => sheets[sheetIndex]?.pageNumber)
+                    .filter((page): page is number => page !== undefined);
+                  return pages.length === 0 ? "" : String(Math.min(...pages));
+                };
                 const rawUnits: RailUnit[] = [];
                 const addUnit = (unit: Omit<RailUnit, "num">) =>
-                  rawUnits.push({ ...unit, num: rawUnits.length + 1 });
+                  rawUnits.push({ ...unit, num: startPageLabel(unit.thumbSheets) });
                 spreads.forEach((spread, index) => {
                   const leftNav = navFor(spread.left);
                   const rightNav = navFor(spread.right);
@@ -655,10 +685,12 @@ export function PageRail(props: PageRailProps) {
                     // would overflow it, and adds nothing to a stand-in.
                     previous.thumbSheets = [...previous.thumbSheets, ...unit.thumbSheets].slice(0, 2);
                     // The merged tile now owns its whole spread position.
+                    // The merged tile now starts where its first face does.
+                    previous.num = startPageLabel(previous.thumbSheets);
                     previous.soleUnit = true;
                     return;
                   }
-                  units.push({ ...unit, num: units.length + 1 });
+                  units.push({ ...unit });
                 });
                 const groups: Array<{ key: string; sectionId: string | null; units: RailUnit[] }> = [];
                 units.forEach((unit) => {
@@ -667,7 +699,7 @@ export function PageRail(props: PageRailProps) {
                     previous.units.push(unit);
                   } else {
                     groups.push({
-                      key: unit.sectionId ? `${unit.sectionId}-${unit.num}` : `unit-${unit.num}`,
+                      key: unit.sectionId ? `${unit.sectionId}-${unit.index}` : `unit-${unit.index}`,
                       sectionId: unit.sectionId,
                       units: [unit],
                     });
@@ -918,7 +950,7 @@ export function PageRail(props: PageRailProps) {
                       goToSlide(index);
                     }}
                   >
-                    <span className="recipe-page-rail__num">{index + 1}</span>
+                    <span className="recipe-page-rail__num">{railPageLabel(navItem)}</span>
                     <LazyRailThumb
                       scrollRef={railScrollRef}
                       className="recipe-page-rail__thumb"

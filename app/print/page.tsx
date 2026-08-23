@@ -169,6 +169,15 @@ const COOKBOOK_TEMPLATE_ROTATION: RecipePrintTemplate[] = [
   "counter",
   "keepsake",
 ];
+/**
+ * How many recipes before the workspace suggests binding them.
+ *
+ * Three, because that is the point where a stack of cards starts to look like
+ * a collection. Below it the suggestion is a pitch at someone who has printed
+ * one thing; at or above it, it names something they have already half done.
+ */
+const COOKBOOK_SUGGESTION_MIN = 3;
+
 const COOKBOOK_TEMPLATE_ROTATION_KEY = "recipeprinter:cookbook-template-rotation";
 
 // A ready-made dedication seeded when the page is turned on — real, editable
@@ -3442,6 +3451,30 @@ export default function PrintPage() {
           actions={
             items?.length ? (
               <>
+                {/*
+                  Becoming a cookbook needs somewhere to be NOTICED.
+                  Until now the only way across was the small kind-dropdown
+                  under the title, which someone has to already suspect exists
+                  before they will open it — so nobody discovered the paid half
+                  of the product by using the free half, which is the one route
+                  that should work.
+
+                  It appears only once there are enough recipes for a book to
+                  mean anything. Offering it over a single card is a pitch;
+                  offering it over a shelf of recipes is a suggestion, and the
+                  difference is whether the cook has already done the work that
+                  makes it obvious.
+                */}
+                {COOKBOOK_ENABLED && !cookbookMode && (items?.length ?? 0) >= COOKBOOK_SUGGESTION_MIN && (
+                  <button
+                    type="button"
+                    className="btn btn-secondary btn-compact rp-make-cookbook"
+                    onClick={startCookbook}
+                  >
+                    <BookIcon size={ICON_SIZE.md} />
+                    Make it a cookbook
+                  </button>
+                )}
                 {/*
                   How this project stands, to the LEFT of the action rather than
                   out by the avatar. It reads as part of the same sentence as
