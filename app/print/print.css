@@ -866,11 +866,32 @@
   z-index: 2;
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 6px;
   margin: -16px -16px 8px -4px;
   padding: 16px 16px 12px 4px;
   border-bottom: 1px solid var(--cp-line);
   background: var(--cp-card);
+}
+
+/* The count and the add control, side by side — one sentence about the list
+   below. `min-width: 0` on the count so IT is what gives way if the rail is
+   ever narrowed, rather than the button being squeezed out of usefulness. */
+.recipe-page-rail__head-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.recipe-page-rail__head-top .recipe-page-rail__count {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.recipe-page-rail__head-top .recipe-page-rail__head-actions {
+  flex: 0 0 auto;
 }
 
 /* How much is in the project, stated plainly. The rail is a list of PAGES, and
@@ -948,12 +969,17 @@
    outline so the merged seam reads as one control, with the same neutral
    hover. */
 .recipe-page-rail__add-menu-trigger {
-  flex: 0 0 42px;
+  /* Narrower to match the compact half beside it — the chevron's box was
+     sized against the taller button this used to be. */
+  /* Just wide enough for the chevron. It was sized for the taller, wider
+     button this used to be, so beside a short "Add" it read as half the
+     control rather than an attachment to it. */
+  flex: 0 0 24px;
   display: grid;
   place-items: center;
   border: 1px solid var(--cp-line-strong);
   border-left: 0;
-  border-radius: 0 12px 12px 0;
+  border-radius: 0 8px 8px 0;
   background: transparent;
   color: var(--cp-ink);
 }

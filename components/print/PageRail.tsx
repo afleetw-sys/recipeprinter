@@ -385,6 +385,11 @@ export function PageRail(props: PageRailProps) {
               gives. */}
           {!organizeMode && (
             <div className="recipe-page-rail__head">
+              {/* The count and Add share a line: they are one sentence — how
+                  much is here, and how to add to it — and a full-width button
+                  under a short label spent the rail's scarcest dimension, its
+                  width, on a single control. */}
+              <div className="recipe-page-rail__head-top">
               <span className="recipe-page-rail__count">
                 {recipeCount} {recipeCount === 1 ? "recipe" : "recipes"}
               </span>
@@ -392,7 +397,10 @@ export function PageRail(props: PageRailProps) {
             <div className="recipe-page-rail__add-row" ref={addMenuRef}>
               <button
                 type="button"
-                className={`btn btn-secondary recipe-page-rail__add-main ${
+                /* `btn-compact` like every other button in the chrome; it was
+                   the only one without it and sat a size larger than Save and
+                   Print for no visible reason. */
+                className={`btn btn-secondary btn-compact recipe-page-rail__add-main ${
                   projectMeta.meta.cookbookMode ? "recipe-page-rail__add-main--paired" : ""
                 }`}
                 onClick={() => {
@@ -400,8 +408,8 @@ export function PageRail(props: PageRailProps) {
                   openAddRecipeBelow();
                 }}
               >
-                <PlusIcon size={ICON_SIZE.md} />
-                Add recipes
+                <PlusIcon size={ICON_SIZE.sm} />
+                Add
               </button>
               {/* In a cookbook the section action folds into a split-button
                   overflow, so the primary control reads plainly as "Add recipes". */}
@@ -449,6 +457,8 @@ export function PageRail(props: PageRailProps) {
                 </>
               )}
             </div>
+            </div>
+            </div>
             {projectMeta.meta.cookbookMode && (
               <button
                 type="button"
@@ -459,8 +469,6 @@ export function PageRail(props: PageRailProps) {
                 <ChevronRightIcon size={ICON_SIZE.sm} />
               </button>
             )}
-
-          </div>
             </div>
           )}
 

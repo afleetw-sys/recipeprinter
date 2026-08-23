@@ -914,9 +914,14 @@
     color: var(--cp-ink);
   }
 
+  /* A tighter corner than the 12px control radius. At 30px tall a 12px radius
+     is nearly a pill, which reads as a soft standalone control — and these are
+     the workspace's chrome, sitting in rows beside each other. The curve should
+     scale with the box, not stay put while the box shrinks. */
   .btn-compact {
     min-height: 30px;
     padding: 0 11px;
+    border-radius: 8px;
     @apply text-cp-small;
   }
 
