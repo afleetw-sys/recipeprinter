@@ -972,6 +972,12 @@
     width: 30px;
     height: 30px;
   }
+  /* Initials belong to the circle, not to the type scale: they have to clear a
+     curve on both sides, so the size is a fraction of the diameter rather than
+     a step on the ramp. At 40px, "AW" ran 52% of the inner width; the same
+     0.8rem inside a 30px circle runs 71% and crowds the edge. This is the size
+     that keeps the old proportion. */
+  [data-rp-avatar] { font-size: 0.62rem; }
 
   .icon-button:hover:not(:disabled),
   .icon-close-btn:hover:not(:disabled) {

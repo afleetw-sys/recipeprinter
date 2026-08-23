@@ -342,14 +342,6 @@ export function PageRail(props: PageRailProps) {
       })
     : [];
 
-  /** Recipes in the project. Counts the ready ones only: a row still parsing
-      is not yet a recipe, and saying otherwise makes the number flicker down
-      when an import fails. */
-  const recipeCount = sections.reduce(
-    (total, section) => total + section.items.filter((item) => item.recipe).length,
-    0,
-  );
-
   /**
    * The page number a thumbnail stands for.
    *
@@ -385,15 +377,11 @@ export function PageRail(props: PageRailProps) {
               gives. */}
           {!organizeMode && (
             <div className="recipe-page-rail__head">
-              {/* The count and Add share a line: they are one sentence — how
-                  much is here, and how to add to it — and a full-width button
-                  under a short label spent the rail's scarcest dimension, its
-                  width, on a single control. */}
-              <div className="recipe-page-rail__head-top">
-              <span className="recipe-page-rail__count">
-                {recipeCount} {recipeCount === 1 ? "recipe" : "recipes"}
-              </span>
-          <div className="recipe-page-rail__head-actions">
+              {/* Adding a recipe gets the rail's full width. It had been
+                  squeezed onto one line beside a recipe count, which cost the
+                  primary action of this panel most of its size to state a
+                  number you can also just see in the list underneath. */}
+              <div className="recipe-page-rail__head-actions">
             <div className="recipe-page-rail__add-row" ref={addMenuRef}>
               <button
                 type="button"
@@ -409,7 +397,7 @@ export function PageRail(props: PageRailProps) {
                 }}
               >
                 <PlusIcon size={ICON_SIZE.sm} />
-                Add
+                Add recipes
               </button>
               {/* In a cookbook the section action folds into a split-button
                   overflow, so the primary control reads plainly as "Add recipes". */}
@@ -456,7 +444,6 @@ export function PageRail(props: PageRailProps) {
                   )}
                 </>
               )}
-            </div>
             </div>
             </div>
             {projectMeta.meta.cookbookMode && (

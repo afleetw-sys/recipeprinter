@@ -873,36 +873,6 @@
   background: var(--cp-card);
 }
 
-/* The count and the add control, side by side — one sentence about the list
-   below. `min-width: 0` on the count so IT is what gives way if the rail is
-   ever narrowed, rather than the button being squeezed out of usefulness. */
-.recipe-page-rail__head-top {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 8px;
-}
-
-.recipe-page-rail__head-top .recipe-page-rail__count {
-  min-width: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.recipe-page-rail__head-top .recipe-page-rail__head-actions {
-  flex: 0 0 auto;
-}
-
-/* How much is in the project, stated plainly. The rail is a list of PAGES, and
-   a book's pages outnumber its recipes once photos get their own — so the one
-   number a cook actually keeps track of is worth saying outright. */
-.recipe-page-rail__count {
-  font-size: var(--cp-fs-caption);
-  font-weight: 700;
-  color: var(--cp-ink-soft);
-}
-
 .recipe-page-rail__head-actions {
   display: flex;
   flex-direction: column;

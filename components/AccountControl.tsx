@@ -155,7 +155,7 @@ export function AccountControl({
             setShowMenu(true);
           }}
         >
-          <AccountIcon size={ICON_SIZE.lg} />
+          <AccountIcon size={ICON_SIZE.sm} />
         </IconButton>
       )}
     </div>
