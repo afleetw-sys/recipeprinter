@@ -1332,6 +1332,26 @@
   /* `flex`, not a plain block: an inline-flex child inside a block sits on a
      text baseline and the line box adds descender space under it — about 6px
      of gap that belongs to nothing and cannot be tuned away with padding. */
+  /* Header-sized: the shared segmented control is built for a settings panel,
+     where it is a primary choice with room around it. Here it sits in a 62px
+     bar beside the document's name, so it takes the chip's scale rather than
+     the panel's. */
+  .rp-project-heading__kinds {
+    flex: 0 0 auto;
+    margin-left: 6px;
+  }
+
+  .rp-project-heading__kinds .segmented-control__option {
+    padding: 3px 9px;
+    font-size: var(--cp-fs-caption);
+    font-weight: 700;
+    border-radius: 6px;
+  }
+
+  .rp-project-heading__kinds .segmented-control__thumb {
+    border-radius: 6px;
+  }
+
   .rp-project-heading__kind {
     @apply relative flex items-center;
     flex: 0 0 auto;

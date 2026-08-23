@@ -3450,30 +3450,12 @@ export default function PrintPage() {
           actions={
             items?.length ? (
               <>
-                {/*
-                  Becoming a cookbook needs somewhere to be NOTICED.
-                  Until now the only way across was the small kind-dropdown
-                  under the title, which someone has to already suspect exists
-                  before they will open it — so nobody discovered the paid half
-                  of the product by using the free half, which is the one route
-                  that should work.
-
-                  It appears only once there are enough recipes for a book to
-                  mean anything. Offering it over a single card is a pitch;
-                  offering it over a shelf of recipes is a suggestion, and the
-                  difference is whether the cook has already done the work that
-                  makes it obvious.
-                */}
-                {COOKBOOK_ENABLED && !cookbookMode && (items?.length ?? 0) >= COOKBOOK_SUGGESTION_MIN && (
-                  <button
-                    type="button"
-                    className="btn btn-secondary btn-compact rp-make-cookbook"
-                    onClick={startCookbook}
-                  >
-                    <BookIcon size={ICON_SIZE.md} />
-                    Make it a cookbook
-                  </button>
-                )}
+                {/* The "Make it a cookbook" button that sat here is gone: the
+                    kind control in the middle of the bar now shows both kinds
+                    side by side while you are in recipe cards, so the offer is
+                    already visible and two controls for it in one bar was one
+                    too many. See ProjectHeading. */
+                }
                 {/*
                   How this project stands, to the LEFT of the action rather than
                   out by the avatar. It reads as part of the same sentence as

@@ -2,6 +2,7 @@
 
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { ChevronDownIcon, ICON_SIZE } from "@/components/icons";
+import { SegmentedControl } from "@/components/Controls";
 
 /**
  * What you are looking at, in the middle of the bar: its name, and what kind of
@@ -111,6 +112,33 @@ export function ProjectHeading({
         {title}
       </button>
 
+      {/*
+        Two shapes, because the control has two jobs.
+
+        In recipe cards it is an OFFER: both kinds are shown side by side, so
+        the cookbook is something you can see rather than something you have to
+        suspect is behind a menu. Nobody discovered the paid half of the product
+        by using the free half, and a closed dropdown was most of the reason.
+
+        In a cookbook it is STATUS: you are already in the thing, so it shrinks
+        back to a chip that names what you are looking at and quietly offers the
+        way back. Showing "Recipe cards" as a permanent live tab beside your
+        bound book would be inviting you to undo it.
+      */}
+      {!cookbookMode && canBecomeCookbook ? (
+        <SegmentedControl
+          className="rp-project-heading__kinds"
+          label="Document kind"
+          value="cards"
+          options={[
+            { id: "cards", label: "Recipe cards" },
+            { id: "book", label: "Cookbook" },
+          ]}
+          onChange={(next) => {
+            if (next === "book") onSwitchToCookbook();
+          }}
+        />
+      ) : (
       <div className="rp-project-heading__kind" ref={menuRef}>
         <button
           type="button"
@@ -162,6 +190,7 @@ export function ProjectHeading({
           </div>
         )}
       </div>
+      )}
     </div>
   );
 }
