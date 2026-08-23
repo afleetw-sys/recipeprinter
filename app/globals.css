@@ -1355,8 +1355,13 @@
      nothing said the kind could be changed. */
   .rp-project-heading__kind-trigger {
     @apply inline-flex items-center gap-1 font-bold transition-colors;
-    padding: 2px 5px 2px 7px;
-    border: 1px solid var(--cp-line);
+    /* No border. The fill alone is enough to enclose it at this size, and a
+       hairline around a 22px pill reads as a tiny button competing with the
+       real ones — the chip is a label you can press, not a control in the
+       toolbar's sense. The padding absorbs the pixel the border was taking so
+       the chip stays the same size. */
+    padding: 3px 6px 3px 8px;
+    border: 0;
     border-radius: 6px;
     background: var(--cp-surface-muted);
     color: var(--cp-ink-soft);
@@ -1365,14 +1370,15 @@
   }
 
   .rp-project-heading__kind-trigger:hover {
-    border-color: var(--cp-line-strong);
     background: var(--cp-overlay-hover-strong);
     color: var(--cp-ink);
   }
 
+  /* A ring, not a border colour: there is no border left to recolour, and a
+     chip that grew one only when focused would jump by a pixel. */
   .rp-project-heading__kind-trigger:focus-visible {
-    border-color: var(--cp-accent);
-    outline: none;
+    outline: var(--cp-focus-ring);
+    outline-offset: 1px;
   }
 
   .rp-project-heading__menu {
