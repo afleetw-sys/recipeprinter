@@ -490,7 +490,13 @@ export function PageRail(props: PageRailProps) {
                 className="recipe-page-rail__organize"
                 onClick={enterOrganizeMode}
               >
-                <span>Organize recipes</span>
+                {/* Just "Organize". Stacked under "Add recipes" in a panel that
+                    holds nothing but recipes, the second "recipes" said nothing
+                    the first had not — and the view it opens announces itself as
+                    "Organize recipes" once you are there. Add keeps its noun,
+                    because there it separates the button from the "Add section"
+                    in its own overflow. */}
+                <span>Organize</span>
                 <ChevronRightIcon size={ICON_SIZE.sm} />
               </button>
             )}

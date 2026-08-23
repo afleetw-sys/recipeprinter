@@ -125,6 +125,10 @@
 
 /* Matches the "Print settings" link in recipe-cards mode: centered, muted,
    caption-sized. Centered under the Add recipe button. */
+/* Same treatment as Add above, and as the organizer's own toolbar — this is
+   the button that takes you in there, so arriving should not look like a
+   change of design. Softer ink than Add: one is the panel's main action, the
+   other a way through to another view. */
 .recipe-page-rail__organize {
   flex-shrink: 0;
   display: flex;
@@ -132,16 +136,23 @@
   justify-content: center;
   gap: 3px;
   width: 100%;
-  padding: 6px 8px;
-  border: 0;
-  border-radius: 8px;
-  background: transparent;
+  /* Height comes from min-height alone, so it lands on 30px exactly like Add
+     above it — vertical padding on top of that pushed it to 33. */
+  min-height: 30px;
+  padding: 0 8px;
+  border: 1px solid var(--cp-line);
+  border-radius: 999px;
+  background: var(--cp-card);
   color: var(--cp-ink-soft);
   font-size: var(--cp-fs-caption);
   font-weight: 700;
+  transition:
+    color 150ms ease,
+    border-color 150ms ease;
 }
 
 .recipe-page-rail__organize:hover {
+  border-color: var(--cp-line-strong);
   color: var(--cp-ink);
 }
 
@@ -885,20 +896,42 @@
   gap: 0;
 }
 
-/* Outlined, not filled. The rail is a column of thumbnails on a plain card,
-   and a filled block at the top of it was the heaviest thing on that side of
-   the screen — competing for the eye with the page you are actually working
-   on. Full width already says this is the panel's main action; it does not
-   also need a fill to say it. Both halves are the same transparent treatment,
-   parted by a single divider, so the control reads as one object. */
+/* The organizer's own toolbar — "Organize it for me", Sort, the collapse
+   control — settled on a shape that works: a pill, a hairline in `--cp-line`
+   rather than the heavier `--cp-line-strong`, a card fill, and caption-sized
+   text at 700. The rail's controls were the shared button component instead,
+   so opening the organizer meant walking from one button language into
+   another. These two now speak the organizer's.
+
+   Height stays 30px, not the organizer's 40px. In there the toolbar is the
+   only chrome on a wide sheet; out here these sit in a 220px rail beside a
+   row of 30px buttons in the header, and matching that row matters more than
+   matching the organizer's scale. */
+.recipe-page-rail__head .recipe-page-rail__add-main {
+  border-color: var(--cp-line);
+  border-radius: 999px 0 0 999px;
+  background: var(--cp-card);
+  font-size: var(--cp-fs-caption);
+  font-weight: 700;
+}
+
+.recipe-page-rail__head .recipe-page-rail__add-main:hover:not(:disabled) {
+  border-color: var(--cp-line-strong);
+  background: var(--cp-card);
+}
+
 .recipe-page-rail__head .recipe-page-rail__add-menu-trigger {
-  border: 1px solid var(--cp-line-strong);
+  border: 1px solid var(--cp-line);
+  /* The seam is the one edge that stays at full strength — it has to read as a
+     division inside a single control, not as another outer edge. */
   border-left: 1px solid var(--cp-line-strong);
-  background: transparent;
+  border-radius: 0 999px 999px 0;
+  background: var(--cp-card);
   color: var(--cp-ink);
 }
 
 .recipe-page-rail__head .recipe-page-rail__add-menu-trigger:hover:not(:disabled) {
+  border-color: var(--cp-line-strong);
   /* Re-stated so the divider survives the hover, which would otherwise repaint
      every edge including the one holding the two halves apart. */
   border-left-color: var(--cp-line-strong);

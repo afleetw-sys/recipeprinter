@@ -73,7 +73,7 @@ export function SiteHeader({
          "app chrome" (it picks the smaller wordmark), so the marketing pages
          keep the taller bar they want. */
       className={`no-print relative flex items-center justify-between gap-cp-3 sm:gap-cp-4 px-cp-4 sm:px-cp-6 flex-nowrap ${
-        compact ? "min-h-[50px]" : "min-h-[62px]"
+        compact ? "min-h-[56px]" : "min-h-[62px]"
       } ${sticky ? `sticky top-0 z-10 bg-card border-b border-line ${compact ? "py-cp-2" : "py-cp-3"}` : ""}`}
     >
       {/* The left group: the way home, and — where a page provides one — what
