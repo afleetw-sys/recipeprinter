@@ -1332,17 +1332,6 @@
   /* `flex`, not a plain block: an inline-flex child inside a block sits on a
      text baseline and the line box adds descender space under it — about 6px
      of gap that belongs to nothing and cannot be tuned away with padding. */
-  /* The dot between the name and the kind, as in a breadcrumb.
-     Hung off the TITLE rather than the chip's wrapper: the wrapper is what the
-     dropdown positions against, and a dot inside it moved the wrapper's centre
-     left of the chip's, so the menu opened off-centre from the control that
-     opened it. */
-  .rp-project-heading__title::after {
-    content: "·";
-    margin: 0 2px 0 8px;
-    color: var(--cp-line-strong);
-  }
-
   .rp-project-heading__kind {
     @apply relative flex items-center;
     flex: 0 0 auto;
