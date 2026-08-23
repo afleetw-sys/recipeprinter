@@ -85,7 +85,7 @@ function project(overrides: Partial<PrintProject> = {}): PrintProject {
 describe("the on-device project shelf", () => {
   it("files a cookbook and reads it back whole", () => {
     const items = [recipeItem("r1", "Sourdough"), recipeItem("r2", "Focaccia")];
-    expect(fileProjectLocally(items, cookbookMeta())).toBe(true);
+    expect(fileProjectLocally(items, cookbookMeta())).toBe("book-a");
 
     const shelved = loadLocalProject("book-a");
     expect(shelved?.title).toBe("Nana’s Kitchen");
@@ -97,7 +97,7 @@ describe("the on-device project shelf", () => {
   // The whole reason the shelf exists: leaving the workspace must not be able
   // to destroy a book, so filing has to actually report whether it worked.
   it("reports failure rather than silently dropping a book it cannot file", () => {
-    expect(fileProjectLocally([], cookbookMeta())).toBe(false);
+    expect(fileProjectLocally([], cookbookMeta())).toBeNull();
     expect(loadLocalProjects()).toHaveLength(0);
   });
 
@@ -121,7 +121,7 @@ describe("the on-device project shelf", () => {
         cover: { title: "The Stashed Book", template: "keepsake" },
       },
     });
-    expect(fileProjectLocally([recipeItem("r1", "Sourdough")], meta)).toBe(true);
+    expect(fileProjectLocally([recipeItem("r1", "Sourdough")], meta)).toBe("book-a");
     expect(loadLocalProject("book-a")?.cover?.title).toBe("The Stashed Book");
   });
 
@@ -136,7 +136,7 @@ describe("the on-device project shelf", () => {
   it("names a card run after its recipes, so it can be found again", () => {
     const items = [recipeItem("r1", "Sourdough"), recipeItem("r2", "Focaccia")];
     const meta = { ...cookbookMeta(), cookbookMode: false, cover: undefined, stashedCookbook: undefined };
-    expect(fileProjectLocally(items, meta)).toBe(true);
+    expect(fileProjectLocally(items, meta)).toBe("book-a");
 
     const shelved = loadLocalProject("book-a");
     expect(shelved?.kind).toBe("printProject");
@@ -204,5 +204,31 @@ describe("the on-device project shelf", () => {
     expect(() => loadLocalProjects()).not.toThrow();
     expect(loadLocalProjects()).toEqual([]);
     expect(saveLocalProject(project())).toBe(false);
+  });
+});
+
+describe("filing the same recipes twice", () => {
+  /**
+   * The behaviour this whole content key exists for. Printing the same dinner
+   * again produces a fresh working copy with a fresh id, and filing it blindly
+   * put a second identical project in the library every single time.
+   */
+  it("files back over the project those recipes already were", () => {
+    const items = [recipeItem("r1", "Sourdough")];
+    const cards = { ...cookbookMeta(), cookbookMode: false, cover: undefined, stashedCookbook: undefined };
+
+    const first = fileProjectLocally(items, cards);
+    // A second visit: same recipes, brand-new working copy id.
+    const second = fileProjectLocally(items, { ...cards, projectId: "a-different-id" });
+
+    expect(second).toBe(first);
+    expect(loadLocalProjects()).toHaveLength(1);
+  });
+
+  it("still files a genuinely different set as its own project", () => {
+    const cards = { ...cookbookMeta(), cookbookMode: false, cover: undefined, stashedCookbook: undefined };
+    fileProjectLocally([recipeItem("r1", "Sourdough")], cards);
+    fileProjectLocally([recipeItem("r2", "Focaccia")], { ...cards, projectId: "second-project" });
+    expect(loadLocalProjects()).toHaveLength(2);
   });
 });

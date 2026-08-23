@@ -1250,7 +1250,11 @@
      percentage something to be a percentage of. */
   .rp-project-heading {
     @apply flex flex-col items-start;
-    max-width: min(38vw, 22rem);
+    /* Names run long — "Original NESTLÉ TOLL HOUSE Chocolate Chip Cookies" is
+       a real one — and this corner has the room, since the only things
+       competing for it are two buttons and an avatar. Still a cap rather than
+       none, so a pathological title cannot push them off the bar. */
+    max-width: min(52vw, 40rem);
     /* Pulled left as a WHOLE, so the text lines up with the logo beside it
        while both children keep their padding as hover targets. Doing this per
        child instead shortens each one's contribution to this column's width,

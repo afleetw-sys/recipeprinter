@@ -10,6 +10,7 @@ import { assemblePrintProject } from "@/lib/printProjects";
 // and this one runs on the homepage. See lib/printSettingsStore.
 import { readPrintSettings } from "@/lib/printSettingsStore";
 import { uid } from "@/lib/ids";
+import { lookupProjectId, projectContentKey, rememberProjectId } from "@/lib/projectIdentity";
 
 /**
  * Cookbooks kept on this device.
@@ -155,8 +156,15 @@ export function pruneLocalProjects(accountProjectIds: readonly string[]): void {
  * uses, so a book filed here and the same book saved to Firestore are the same
  * object built the same way and cannot describe different books.
  *
- * Returns whether it was actually filed, so the caller can decide whether it is
- * safe to release the working copy.
+ * Returns the id it was filed under, or null if it could not be filed — so the
+ * caller can tell a filed project from one that could not be written, and can
+ * point the account save at the same document.
+ *
+ * That id is not necessarily the working copy's own. Printing the same recipes
+ * again produces a fresh working copy with a fresh id, and filing it blindly
+ * added a second identical project to the library every single time. So the
+ * CONTENT decides: the same set of recipes, as the same kind of document, files
+ * back over the project it was last time. See lib/projectIdentity.
  */
 /** A name someone can find this by later, from the recipes in it. */
 function describeProject(printable: QueueItem[], cookbook: boolean): string {
@@ -166,9 +174,9 @@ function describeProject(printable: QueueItem[], cookbook: boolean): string {
   return rest > 0 ? `${first} + ${rest} more` : first;
 }
 
-export function fileProjectLocally(items: QueueItem[], meta: ProjectMeta): boolean {
+export function fileProjectLocally(items: QueueItem[], meta: ProjectMeta): string | null {
   const printable = items.filter((item) => item.status === "ready" && item.recipe);
-  if (printable.length === 0) return false;
+  if (printable.length === 0) return null;
 
   /**
    * A book set aside is still a book — the same rule `currentProject` applies
@@ -186,8 +194,12 @@ export function fileProjectLocally(items: QueueItem[], meta: ProjectMeta): boole
   // `isRecipePrintTemplate`), which is the right boundary for that check.
   const stored = readPrintSettings() ?? {};
 
+  const isBook = Boolean(meta.cookbookMode || meta.stashedCookbook);
+  const contentKey = projectContentKey(printable, isBook);
   const project = assemblePrintProject({
-    id: meta.projectId ?? uid(),
+    // The content's existing project if it has one, otherwise this working
+    // copy's own id.
+    id: lookupProjectId(contentKey) ?? meta.projectId ?? uid(),
     // No account behind this copy — that is the entire point of the shelf.
     // Adopting it into an account later fills this in (see
     // lib/anonymousProjectAdoption).
@@ -222,5 +234,7 @@ export function fileProjectLocally(items: QueueItem[], meta: ProjectMeta): boole
     stashedCookbook: meta.stashedCookbook,
   });
 
-  return saveLocalProject(project);
+  if (!saveLocalProject(project)) return null;
+  rememberProjectId(contentKey, project.id);
+  return project.id;
 }

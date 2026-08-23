@@ -1601,7 +1601,7 @@ export default function PrintPage() {
     );
     projectMeta.setSectionStructure(next);
     track("relayout_applied", { sectionCount: next.length });
-    showToast("Cookbook organized");
+    showToast(cookbookMode ? "Cookbook organized" : "Recipes organized");
   }
 
   function undoCookbookOrganization() {
@@ -1675,7 +1675,7 @@ export default function PrintPage() {
     showToast(ids.length > 1 ? `Moved ${ids.length} recipes${where}` : `Moved${where}`);
   }
 
-  function currentProject(): PrintProject | null {
+  function currentProject(idOverride?: string): PrintProject | null {
     if (!cookPilotUser || !items?.length) return null;
     /**
      * A book set aside is still a book.
@@ -1703,7 +1703,10 @@ export default function PrintPage() {
     return assemblePrintProject({
       // projectMeta owns the working copy's identity. It can intentionally
       // differ from the URL after a saved cookbook is converted to cards.
-      id: savedProjectIdRef.current ?? cookbookProjectId ?? accountProjectId,
+      // The override wins: when leaving files this content back over an
+      // earlier project, the account copy has to go to that same document or
+      // the library gains the duplicate the shelf just avoided.
+      id: idOverride ?? savedProjectIdRef.current ?? cookbookProjectId ?? accountProjectId,
       ownerUid: cookPilotUser.uid,
       title: defaultTitle,
       sections,
@@ -1738,7 +1741,9 @@ export default function PrintPage() {
     });
   }
 
-  async function handleSaveProject() {
+  /** `projectIdOverride` points this save at a specific document — used when
+      leaving files the content back over the project it already was. */
+  async function handleSaveProject(projectIdOverride?: string) {
     if (!cookPilotUser) {
       saveAfterLoginRef.current = true;
       setCookPilotLoginReason("default");
@@ -1749,7 +1754,7 @@ export default function PrintPage() {
       saveQueuedRef.current = true;
       return;
     }
-    const baseProject = currentProject();
+    const baseProject = currentProject(projectIdOverride);
     if (!baseProject) return;
     saveInFlightRef.current = true;
     setSaveStatus("saving");
@@ -1841,8 +1846,12 @@ export default function PrintPage() {
     }
 
     const flight = flyIntoProfile(visibleDeckPage());
+    // Files under the project this content already is, if it has been printed
+    // before — so the account save below is pointed at the same document
+    // rather than creating its own copy of it.
     const filed = fileProjectLocally(queue.items, projectMeta.meta);
-    if (cookPilotUser) void handleSaveProject();
+    if (filed) projectMeta.setProjectId(filed);
+    if (cookPilotUser && filed) void handleSaveProject(filed);
 
     await flight;
 
@@ -1938,7 +1947,9 @@ export default function PrintPage() {
     // revision, then write the edits in front of the cook on top of it.
     if (isCookbookDocument) {
       const loadNewer = window.confirm(
-        "This cookbook was updated in another tab. Choose OK to load that version, or Cancel to keep the edits in front of you and overwrite it.",
+        `${
+          cookbookMode ? "This cookbook" : "This project"
+        } was updated in another tab. Choose OK to load that version, or Cancel to keep the edits in front of you and overwrite it.`,
       );
       if (loadNewer && savedProjectId) {
         window.location.assign(`/print?project=${encodeURIComponent(savedProjectId)}`);
@@ -3181,9 +3192,37 @@ export default function PrintPage() {
   // Set when a recipe is moved by a placement change while being edited, so the
   // inline editor keeps it in edit mode as focus follows it to its new page.
   const keepEditingRef = useRef<string | null>(null);
+  /**
+   * Choosing a photo for one recipe is choosing to SHOW it on that recipe.
+   *
+   * Photos have a book-wide default and a per-recipe override, and picking a
+   * custom photo only ever wrote the photo — never the override. So with the
+   * book default off, going to the trouble of uploading a picture for one
+   * recipe appeared to do nothing at all: it was stored, and then hidden by a
+   * setting the cook had made before they had a photo to show. The only way to
+   * see it was to turn photos on for the whole book, which is the opposite of
+   * what "just this one" means.
+   *
+   * Only when this recipe is currently showing NO photo. A recipe already set
+   * to a full-page spread has made a more specific choice than this one, and
+   * replacing its picture must not quietly demote it to an in-card thumbnail.
+   */
+  const updateRecipeAndRevealPhoto = useCallback(
+    (id: string, next: Recipe) => {
+      const previous = items?.find((item) => item.id === id)?.recipe;
+      queue.updateRecipe(id, next);
+      if (next.image && next.image !== previous?.image && photoModeFor(id) === "none") {
+        projectMeta.setItemPhotoMode(id, "card");
+      }
+    },
+    // `setItemPhotoMode` and `updateRecipe` are stable; the rest is read fresh.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [items, photoModeFor, queue.updateRecipe, projectMeta.setItemPhotoMode],
+  );
+
   const { pageEditMode, togglePageEditMode, activeInlineEdit } = useRecipeInlineEditor({
     items,
-    updateRecipe: queue.updateRecipe,
+    updateRecipe: updateRecipeAndRevealPhoto,
     activeRecipeId,
     activeRecipeItem,
     resetKey: String(activeNavIndex),
