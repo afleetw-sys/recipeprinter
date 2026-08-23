@@ -396,7 +396,10 @@ export function PageRail(props: PageRailProps) {
                   openAddRecipeBelow();
                 }}
               >
-                <PlusIcon size={ICON_SIZE.sm} />
+                {/* `md`, the size Save and Buy & Print use for theirs. The type
+                    already matched them; the icon was a step down, which made the
+                    whole button read as smaller than the ones in the header. */}
+                <PlusIcon size={ICON_SIZE.md} />
                 Add recipes
               </button>
               {/* In a cookbook the section action folds into a split-button
