@@ -1332,11 +1332,15 @@
   /* `flex`, not a plain block: an inline-flex child inside a block sits on a
      text baseline and the line box adds descender space under it — about 6px
      of gap that belongs to nothing and cannot be tuned away with padding. */
-  /* The dot between the name and the kind, as in a breadcrumb. */
-  .rp-project-heading__kind::before {
+  /* The dot between the name and the kind, as in a breadcrumb.
+     Hung off the TITLE rather than the chip's wrapper: the wrapper is what the
+     dropdown positions against, and a dot inside it moved the wrapper's centre
+     left of the chip's, so the menu opened off-centre from the control that
+     opened it. */
+  .rp-project-heading__title::after {
     content: "·";
-    margin-right: 2px;
-    color: var(--cp-ink-soft);
+    margin: 0 2px 0 8px;
+    color: var(--cp-line-strong);
   }
 
   .rp-project-heading__kind {
@@ -1344,18 +1348,25 @@
     flex: 0 0 auto;
   }
 
+  /* A chip, not a word with a chevron after it. Filled and enclosed, it reads
+     as a piece of METADATA about the document — the same way a branch name
+     does beside a file name — rather than as part of the title. That also
+     makes it obviously pressable, which bare text next to a name was not:
+     nothing said the kind could be changed. */
   .rp-project-heading__kind-trigger {
-    @apply inline-flex items-center gap-1 rounded font-bold transition-colors;
-    padding: 0 6px 1px;
-    line-height: 1.2;
-    border: 1px solid transparent;
-    background: transparent;
+    @apply inline-flex items-center gap-1 font-bold transition-colors;
+    padding: 2px 5px 2px 7px;
+    border: 1px solid var(--cp-line);
+    border-radius: 6px;
+    background: var(--cp-surface-muted);
     color: var(--cp-ink-soft);
     font-size: var(--cp-fs-caption);
+    line-height: 1.25;
   }
 
   .rp-project-heading__kind-trigger:hover {
-    background: var(--cp-overlay-hover);
+    border-color: var(--cp-line-strong);
+    background: var(--cp-overlay-hover-strong);
     color: var(--cp-ink);
   }
 
