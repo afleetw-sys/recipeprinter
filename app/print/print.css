@@ -600,6 +600,66 @@
   display: block;
 }
 
+/* ── The page IS the thumbnail ────────────────────────────────────────────
+   Every tile used to carry an outer card, the recipe's title underneath and a
+   "One page" caption — three pieces of furniture around a picture of the page,
+   which is the only part that says which page it is. In a list of pages you
+   pick one by looking at it, so the card and the title go and the picture
+   carries the selection itself.
+
+   Not applied while organizing: there the tiles are drag targets you read
+   titles off, and a board of untitled pictures would be worse to rearrange. */
+.recipe-print-shell:not(.recipe-print-shell--organizing) .recipe-page-rail__item {
+  position: relative;
+  gap: 0;
+  row-gap: 0;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+}
+
+.recipe-print-shell:not(.recipe-print-shell--organizing) .recipe-page-rail__item-main {
+  grid-template-columns: 1fr;
+  column-gap: 0;
+  row-gap: 0;
+}
+
+.recipe-print-shell:not(.recipe-print-shell--organizing) .recipe-page-rail__thumb {
+  grid-column: 1;
+  border: 1px solid var(--cp-line);
+  border-radius: 8px;
+  overflow: hidden;
+  background: #fff;
+}
+
+.recipe-print-shell:not(.recipe-print-shell--organizing) .recipe-page-rail__item.is-active .recipe-page-rail__thumb {
+  border-color: var(--cp-accent);
+  box-shadow: 0 0 0 1px var(--cp-accent);
+}
+
+.recipe-print-shell:not(.recipe-print-shell--organizing) .recipe-page-rail__label {
+  display: none;
+}
+
+/* Sat in its own column beside the page; sits ON it now, bottom-left, the way
+   a page number sits on a page. */
+.recipe-print-shell:not(.recipe-print-shell--organizing) .recipe-page-rail__num {
+  position: absolute;
+  left: 5px;
+  bottom: 5px;
+  z-index: 1;
+  min-width: 18px;
+  padding: 1px 5px;
+  border-radius: 4px;
+  background: color-mix(in srgb, var(--cp-ink) 74%, transparent);
+  color: var(--cp-card);
+  font-size: var(--cp-fs-caption);
+  font-weight: 700;
+  line-height: 1.3;
+  text-align: center;
+}
+
 /* A two-page (image-spread) unit shows both pages side by side as a mini-spread
    — the recipe's photo page next to its recipe page, reading as one recipe. */
 .recipe-page-rail__thumb--spread {
