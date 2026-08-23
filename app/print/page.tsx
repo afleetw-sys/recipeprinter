@@ -3412,18 +3412,29 @@ export default function PrintPage() {
                   (see `handleNavigateHome`); this is for saving without leaving.
                 */}
                 {autosaveEnabled
-                  ? saveStatus && (
-                      <span
-                        className={`rp-save-state ${
-                          SAVE_FAILURES.has(saveStatus) ? "rp-save-state--failed" : ""
-                        }`}
-                        role="status"
+                  ? saveStatus &&
+                    /* A button only when there is something to retry — a
+                       focusable control that does nothing when activated is
+                       worse than plain text. */
+                    (SAVE_FAILURES.has(saveStatus) ? (
+                      <button
+                        type="button"
+                        className="rp-save-state rp-save-state--failed"
+                        onClick={handleRetrySave}
                         aria-live="polite"
-                        onClick={SAVE_FAILURES.has(saveStatus) ? handleRetrySave : undefined}
                       >
                         {SAVE_STATUS_LABEL[saveStatus]}
+                      </button>
+                    ) : (
+                      <span className="rp-save-state" role="status" aria-live="polite">
+                        {saveStatus === "saving" ? (
+                          <SpinnerIcon size={ICON_SIZE.sm} />
+                        ) : saveStatus === "saved" ? (
+                          <CheckIcon size={ICON_SIZE.sm} />
+                        ) : null}
+                        {SAVE_STATUS_LABEL[saveStatus]}
                       </span>
-                    )
+                    ))
                   : (
                       <button
                         type="button"

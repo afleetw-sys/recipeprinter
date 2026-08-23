@@ -1245,7 +1245,12 @@
      — the border changing colour rather than a ring appearing outside it. */
   .rp-project-heading {
     @apply flex flex-col items-center;
-    gap: 1px;
+    /* Zero, not a gap: both children already carry padding for their own hover
+       targets, so the visible space between them is that padding. The name and
+       what kind of thing it is are one label on two lines, and they should sit
+       like one. (`gap` rejects negative values, so tightening further is the
+       children's line-height and padding, below — not a negative gap here.) */
+    gap: 0;
     min-width: 0;
   }
 
@@ -1254,12 +1259,12 @@
      the buttons either side of it for a job that is mostly just a label. */
   .rp-project-heading__title {
     @apply max-w-full truncate rounded font-bold transition-colors;
-    padding: 2px 8px;
+    padding: 1px 8px;
     border: 1px solid transparent;
     background: transparent;
     color: var(--cp-ink);
     font-size: var(--cp-fs-body);
-    line-height: 1.25;
+    line-height: 1.2;
     cursor: text;
   }
 
@@ -1285,13 +1290,17 @@
     outline: none;
   }
 
+  /* `flex`, not a plain block: an inline-flex child inside a block sits on a
+     text baseline and the line box adds descender space under it — about 6px
+     of gap that belongs to nothing and cannot be tuned away with padding. */
   .rp-project-heading__kind {
-    @apply relative;
+    @apply relative flex;
   }
 
   .rp-project-heading__kind-trigger {
     @apply inline-flex items-center gap-1 rounded font-bold transition-colors;
-    padding: 1px 6px;
+    padding: 0 6px 1px;
+    line-height: 1.2;
     border: 1px solid transparent;
     background: transparent;
     color: var(--cp-ink-soft);
@@ -1377,7 +1386,7 @@
   /* How the project stands, sitting to the left of Print. Quiet by default;
      the failure state is the only one that asks for anything. */
   .rp-save-state {
-    @apply inline-flex items-center whitespace-nowrap;
+    @apply inline-flex items-center gap-1 whitespace-nowrap border-0 bg-transparent;
     font-size: var(--cp-fs-caption);
     color: var(--cp-ink-soft);
   }
