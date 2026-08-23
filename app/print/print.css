@@ -90,8 +90,12 @@
     /* Deliberately short. The strip is a way to get to a page, not a second
        view of the book — at 194px it was a shelf competing with the page you
        were actually reading. */
-    --rp-strip-height: 132px;
-    --rp-thumb-width: 92px;
+    --rp-strip-height: 150px;
+    --rp-strip-inset: 16px;
+    /* Narrow enough that a strip of them reads as an index rather than as a
+       row of pages competing with the one you are reading. About eight fit,
+       which is as many as anyone tracks at a glance. */
+    --rp-thumb-width: 76px;
     /* The width a thumbnail's page renders at, which the spread halves crop
        against. Kept as a variable so the two cannot drift apart. */
     --rp-thumb-page-width: 141px;
@@ -120,14 +124,22 @@
 
   /* Header bar plus the scrolling row of pages. The bar is a sibling of the
      scroller, not a child, so it cannot scroll away sideways with the pages. */
+  /* Inset from both sides rather than run edge to edge: it is a panel of its
+     own, the same as the settings beside it, so it gets the same border and
+     the same air around it instead of reading as the floor of the window. The
+     gap to the settings panel and the gap to the right edge are one value, so
+     they cannot drift apart. */
   .recipe-print-page .recipe-page-strip {
     grid-column: 2;
     grid-row: 2;
     display: flex;
     flex-direction: column;
     min-height: 0;
-    border-top: 1px solid var(--cp-line);
+    margin: 0 var(--rp-strip-inset) var(--rp-strip-inset) var(--rp-strip-inset);
+    border: 1px solid var(--cp-line);
+    border-radius: 14px;
     background: var(--cp-card);
+    overflow: hidden;
   }
 
   /* ── The deck runs across ──────────────────────────────────────────────
@@ -176,6 +188,36 @@
     place-items: center;
     flex: 0 0 auto;
     scroll-snap-align: center;
+  }
+
+  /* ── Room around the page you are on ───────────────────────────────────
+     Everything before the active page shifts left and everything after it
+     shifts right, so the page being read sits in a clearing while its
+     neighbours still peek in.
+
+     Done with `transform`, not margins, and that is the whole design. The
+     active page changes WHILE YOU SCROLL, so any real-layout spacing would
+     move the pages under the scroll that is choosing them — shifting the
+     positions that decide which page is nearest the centre, which can chase
+     its own tail and fights scroll-snap for the same pixels. A transform
+     changes nothing the scroller measures: snap points, `scrollWidth` and the
+     cached slide centres are all exactly where they were.
+
+     `~` rather than `+` so the shift is shared by every page on that side.
+     Nudging only the immediate neighbour would close the gap between it and
+     the page beyond it by the same amount, and at a 16px gap that is an
+     overlap. Slides already transition `transform`, so this animates as the
+     selection moves without anything further. */
+  .recipe-print-page .recipe-page-deck {
+    --rp-active-clearance: 48px;
+  }
+
+  .recipe-print-page .recipe-page-slide.is-active ~ .recipe-page-slide {
+    transform: translateX(var(--rp-active-clearance));
+  }
+
+  .recipe-print-page .recipe-page-slide:has(~ .recipe-page-slide.is-active) {
+    transform: translateX(calc(var(--rp-active-clearance) * -1));
   }
 
   /* ── The page strip ────────────────────────────────────────────────────
@@ -263,7 +305,10 @@
   }
 
   .recipe-print-page .recipe-print-shell--organizing .recipe-page-strip {
-    border-top: 0;
+    margin: 0;
+    border: 0;
+    border-radius: 0;
+    overflow: visible;
   }
 
   .recipe-print-page .recipe-print-shell--organizing .recipe-page-canvas {
@@ -1804,14 +1849,17 @@
   scrollbar-gutter: stable;
 }
 
+/* No rule across the top any more. It used to separate the settings above from
+   Print below it; Print is in the header now, so the line was dividing the
+   settings from a couple of quiet text links — drawing a boundary where there
+   is no longer a change of kind. */
 .recipe-config-panel__footer {
   flex: 0 0 auto;
   display: flex;
   flex-direction: column;
   gap: 10px;
   margin-top: 12px;
-  padding-top: 14px;
-  border-top: 1px solid var(--cp-line);
+  padding-top: 4px;
 }
 
 .recipe-cookpilot-account {
