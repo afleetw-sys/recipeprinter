@@ -716,10 +716,37 @@ export default function PrintPage() {
     const scroller = railScrollRef.current;
     if (!scroller) return null;
     const geometry = railGeometry(scroller);
+    /**
+     * Which way the strip runs, read from the strip itself.
+     *
+     * It is a horizontal strip along the bottom on desktop and a vertical list
+     * elsewhere, and drop resolution has to follow — a horizontal list resolved
+     * by vertical midpoints puts every card in the same band, so every drop
+     * lands in the same place. Asking the DOM rather than re-deriving the
+     * breakpoint means the two cannot disagree when the CSS changes.
+     */
+    const horizontal = getComputedStyle(scroller).flexDirection === "row";
     const midpointIndex = (rects: DOMRect[]) => {
-      const i = rects.findIndex((rect) => clientY < rect.top + rect.height / 2);
+      const i = horizontal
+        ? rects.findIndex((rect) => clientX < rect.left + rect.width / 2)
+        : rects.findIndex((rect) => clientY < rect.top + rect.height / 2);
       return i === -1 ? rects.length : i;
     };
+    /** The insertion caret: a vertical bar between cards when the strip runs
+        across, a horizontal one between rows when it runs down. */
+    const caretAt = (rect: DOMRect, after: boolean) =>
+      horizontal
+        ? {
+            top: rect.top,
+            left: after ? rect.right + 5 : rect.left - 5,
+            width: 3,
+            height: rect.height,
+          }
+        : {
+            top: after ? rect.bottom + 5 : rect.top - 5,
+            left: rect.left,
+            width: rect.width,
+          };
     if (kind === "recipe") {
       // Dragging a recipe that's part of the current selection carries the
       // whole selection, in book order — every tile the cook picked travels
@@ -816,11 +843,7 @@ export default function PrintPage() {
 
       const k = midpointIndex(rows.map((r) => r.rect));
       const before = k < rows.length ? rows[k] : rows[rows.length - 1];
-      const indicator = {
-        top: (k < rows.length ? before.rect.top : before.rect.bottom) - (k < rows.length ? 5 : -5),
-        left: before.rect.left,
-        width: before.rect.width,
-      };
+      const indicator = caretAt(before.rect, k >= rows.length);
       const commit = () => {
         if (k < rows.length) {
           const target = sectionAndIndexForItem(rows[k].id);
@@ -844,11 +867,7 @@ export default function PrintPage() {
     if (groups.length === 0) return null;
     const k = midpointIndex(groups.map((g) => g.rect));
     const anchor = k < groups.length ? groups[k] : groups[groups.length - 1];
-    const indicator = {
-      top: (k < groups.length ? anchor.rect.top : anchor.rect.bottom) - (k < groups.length ? 6 : -6),
-      left: anchor.rect.left,
-      width: anchor.rect.width,
-    };
+    const indicator = caretAt(anchor.rect, k >= groups.length);
     const targetId = k < groups.length ? groups[k].id : null;
     const commit = () => {
       const metaIds = projectMeta.meta.sections.map((section) => section.id);

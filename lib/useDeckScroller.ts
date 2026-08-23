@@ -54,6 +54,20 @@ function snapScrollTopFor(deck: HTMLElement, slide: HTMLElement): number {
   return top - padTop - (snapportHeight - rect.height) / 2;
 }
 
+/**
+ * Which way the deck runs, asked of the deck itself.
+ *
+ * The deck was vertical on desktop and horizontal on small screens, and this
+ * used to be re-derived here as `matchMedia("(max-width: 820px)")` — a second
+ * copy of a decision the stylesheet had already made. Now that it runs
+ * horizontally at every width, reading `flex-direction` keeps the one copy in
+ * CSS: change the layout there and the scrolling follows, instead of the two
+ * drifting apart and the deck snapping along an axis it no longer scrolls on.
+ */
+function isHorizontal(deck: HTMLElement): boolean {
+  return getComputedStyle(deck).flexDirection === "row";
+}
+
 interface UseDeckScrollerOptions {
   activeNavIndex: number;
   setActiveNavIndex: Dispatch<SetStateAction<number>>;
@@ -213,15 +227,15 @@ export function useDeckScroller({
     const update = () => {
       // Any resize moves the slides, so the cached centers are stale.
       centersDirtyRef.current = true;
-      const mobile = window.matchMedia("(max-width: 820px)").matches;
-      // On mobile each slide is narrower than the deck itself (100vw - 96px)
-      // so neighbouring pages peek in on both sides; the scale must fit that
-      // slide width, not the full deck width, or the card overflows its slot.
-      const availW = el.clientWidth - (mobile ? 96 : 40);
+      const horizontal = isHorizontal(el);
+      // Each slide is narrower than the deck itself (`calc(100% - 96px)`) so
+      // neighbouring pages peek in on both sides; the scale must fit that slide
+      // width, not the full deck width, or the card overflows its slot.
+      const availW = el.clientWidth - (horizontal ? 96 : 40);
       const availH = el.clientHeight;
       if (availW > 0 && availH > 0) {
         const widthScale = availW / pageWidth;
-        const heightScale = (availH * (mobile ? 0.86 : 0.74)) / pageHeight;
+        const heightScale = (availH * (horizontal ? 0.86 : 0.74)) / pageHeight;
         const scale = Math.max(0.12, Math.min(1.05, widthScale, heightScale));
         setDeckScale(scale);
         // Give the CSS top padding (see `--deck-top-pad` in globals.css) the
@@ -229,7 +243,7 @@ export function useDeckScroller({
         // from the same scale rather than measured post-render, so it's
         // never a frame behind. That makes scrollTop:0 the first slide's own
         // resting position, with no gap above it left to overscroll into.
-        if (!mobile) {
+        if (!horizontal) {
           // Centre the first card inside the SNAPPORT (the viewport inset by
           // `scroll-padding-top`), not the raw viewport — the same geometry
           // `snapScrollTopFor` uses. Centring against the raw viewport put the
@@ -256,7 +270,7 @@ export function useDeckScroller({
       const slide = slideRefs.current[index];
       if (!deck || !slide) return;
 
-      if (window.matchMedia("(max-width: 820px)").matches) {
+      if (isHorizontal(deck)) {
         const targetLeft = slide.offsetLeft - (deck.clientWidth - slide.offsetWidth) / 2;
         const maxLeft = deck.scrollWidth - deck.clientWidth;
         // Round so the resting position is pixel-identical to the CSS snap
@@ -311,17 +325,19 @@ export function useDeckScroller({
     // nothing to compare against (the deck is mid-remeasure, so its slides are
     // unmounted). Null means "leave the selection alone" — the old code fell
     // through to index 0 and yanked the cook back to the cover.
-    const closestIndex = (mobile: boolean): number | null => {
+    const closestIndex = (horizontal: boolean): number | null => {
       // Re-measure once after a layout change, then reuse the cache for every
       // frame of the scroll that follows — no getBoundingClientRect per frame.
       if (centersDirtyRef.current) measureSlideCenters();
       const centers = slideCentersRef.current;
-      const mid = mobile ? el.scrollLeft + el.clientWidth / 2 : el.scrollTop + el.clientHeight / 2;
+      const mid = horizontal
+        ? el.scrollLeft + el.clientWidth / 2
+        : el.scrollTop + el.clientHeight / 2;
       let bestIndex: number | null = null;
       let bestDist = Number.POSITIVE_INFINITY;
       for (let index = 0; index < centers.length; index += 1) {
         if (!slideRefs.current[index]) continue;
-        const center = mobile ? centers[index].left : centers[index].top;
+        const center = horizontal ? centers[index].left : centers[index].top;
         const dist = Math.abs(center - mid);
         if (dist < bestDist) {
           bestDist = dist;
@@ -334,10 +350,10 @@ export function useDeckScroller({
     const onScroll = () => {
       if (suppressScrollSyncRef.current) return;
       if (el.scrollHeight !== measuredScrollHeightRef.current) centersDirtyRef.current = true;
-      const mobile = window.matchMedia("(max-width: 820px)").matches;
+      const horizontal = isHorizontal(el);
       cancelAnimationFrame(raf);
       raf = requestAnimationFrame(() => {
-        const next = closestIndex(mobile);
+        const next = closestIndex(horizontal);
         if (next !== null) setActiveNavIndex(next);
       });
     };

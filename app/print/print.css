@@ -75,18 +75,214 @@
     grid-template-rows: auto minmax(0, 1fr);
   }
 
+  /* Two columns, two rows: the page you are looking at above, the pages you
+     could look at below it, and the setup panel down the side spanning both.
+     The panel keeps its full height on purpose — it scrolls internally and
+     pins its own controls, and cutting it short to make room for the strip
+     would cost more than the strip gains. */
   .recipe-print-page .recipe-print-shell {
-    grid-template-columns: 220px calc(100% - 550px) 330px;
+    grid-template-columns: minmax(0, 1fr) 330px;
+    /* A fixed strip height, not `auto`. `auto` sizes to the thumbnails, which
+       are as tall as they like — so the bottom row ate the whole shell and the
+       deck above it computed to 0px. The strip is a fixed piece of furniture;
+       the deck takes whatever is left. */
+    grid-template-rows: minmax(0, 1fr) var(--rp-strip-height);
+    --rp-strip-height: 148px;
     gap: 0;
     height: 100%;
     min-height: 0;
     padding-inline: 0 !important;
-    /* Constrain the single grid row to the shell's height so the columns
-       stretch to the viewport (not to their taller content), letting the
-       config panel scroll internally and pin its print button. */
-    grid-template-rows: minmax(0, 1fr);
     align-items: stretch;
     overflow: hidden;
+  }
+
+  /* Explicit placement, because the DOM order is rail → canvas → panel and the
+     layout wants canvas → rail with the panel beside both. */
+  .recipe-print-page .recipe-page-canvas {
+    grid-column: 1;
+    grid-row: 1;
+  }
+
+  .recipe-print-page .recipe-page-rail {
+    grid-column: 1;
+    grid-row: 2;
+  }
+
+  .recipe-print-page .recipe-config-panel {
+    grid-column: 2;
+    grid-row: 1 / span 2;
+  }
+
+  /* ── The deck runs across ──────────────────────────────────────────────
+     Page to page sideways, the way you turn a book, instead of scrolling down
+     a column of them. This is the layout the small-screen deck has always
+     used — the same snapping, the same neighbour peek, and the same
+     `justify-content: safe center` (plain `center` distributes NEGATIVE free
+     space too, so an overflowing deck laid its first pages out before the
+     scroll origin, where nothing could reach them). Promoted rather than
+     rewritten.
+
+     `height: 100%` because the deck used to size itself with
+     `calc(100dvh - 132px)` — a guess at the chrome above it that is simply
+     wrong now there is a strip below it too. Its grid row already knows. */
+  .recipe-print-page .recipe-page-deck {
+    height: 100%;
+    min-height: 0;
+    flex-direction: row;
+    align-items: center;
+    justify-content: center;
+    justify-content: safe center;
+    gap: 16px;
+    padding: 54px 40px 18px;
+    overflow-x: auto;
+    overflow-y: hidden;
+    scroll-padding-top: 0;
+    scroll-padding-inline: 40px;
+    scroll-snap-type: x mandatory;
+  }
+
+  .recipe-print-page .recipe-page-canvas {
+    position: static;
+    min-height: 0;
+    height: 100%;
+    overflow: hidden;
+  }
+
+  /* Percentage of the DECK, not the viewport: this column is not the window,
+     and `100vw - 96px` would be wider than the space it has to sit in. */
+  .recipe-print-page .recipe-page-slide {
+    display: grid;
+    place-items: center;
+    flex: 0 0 calc(100% - 96px);
+    scroll-snap-align: center;
+  }
+
+  /* ── The page strip ────────────────────────────────────────────────────
+     The rail was a tall column down the left; it is now a strip across the
+     bottom. Same element, same scroll container (`railScrollRef`, which the
+     deck's scroll-sync and the drag geometry both read) — only the axis
+     changes, which is what keeps this a layout change rather than a rewrite. */
+  .recipe-print-page .recipe-page-rail {
+    position: static;
+    flex-direction: row;
+    align-items: stretch;
+    gap: 12px;
+    height: auto;
+    max-height: none;
+    padding: 12px 16px;
+    border-top: 1px solid var(--cp-line);
+    background: var(--cp-card);
+    overflow-x: auto;
+    overflow-y: hidden;
+    scrollbar-gutter: auto;
+    height: 100%;
+    min-height: 0;
+  }
+
+  /* ── Strip thumbnails ──────────────────────────────────────────────────
+     The page art IS the thumbnail. The tall rail gave every page an outer
+     card, a title underneath and a "One page" caption — three pieces of
+     furniture around a picture of the page, which is the only part that says
+     which page it is. In a strip there is no room for that and no need: you
+     are picking a page out of a row of pages, by looking at them. */
+  .recipe-print-page .recipe-page-rail__item {
+    flex-direction: column;
+    gap: 0;
+    height: 100%;
+    padding: 0;
+    border: 0;
+    border-radius: 0;
+    background: transparent;
+    box-shadow: none;
+  }
+
+  .recipe-print-page .recipe-page-rail__item-main {
+    display: flex;
+    align-items: stretch;
+    height: 100%;
+    padding: 0;
+    gap: 0;
+  }
+
+  /* The page itself carries the selection, so the outline lands on the art
+     rather than on a card around it. */
+  .recipe-print-page .recipe-page-rail__thumb {
+    height: 100%;
+    border: 1px solid var(--cp-line);
+    border-radius: 6px;
+    overflow: hidden;
+    background: #fff;
+  }
+
+  .recipe-print-page .recipe-page-rail__item.is-active .recipe-page-rail__thumb {
+    border-color: var(--cp-accent);
+    box-shadow: 0 0 0 1px var(--cp-accent);
+  }
+
+  /* The title and the "One page" caption go. The strip is a row of pictures of
+     pages, and the picture is what tells you which page it is — a name
+     underneath each one is furniture around the only informative part. */
+  .recipe-print-page .recipe-page-rail__label,
+  .recipe-print-page .recipe-page-rail__section-header {
+    display: none;
+  }
+
+  /* Sat outside the art in the tall rail; sits ON it here, bottom-left, the
+     way a page number sits on a page. */
+  .recipe-print-page .recipe-page-rail__num {
+    position: absolute;
+    left: 4px;
+    bottom: 4px;
+    z-index: 1;
+    min-width: 18px;
+    padding: 1px 4px;
+    border-radius: 4px;
+    background: color-mix(in srgb, var(--cp-ink) 76%, transparent);
+    color: var(--cp-card);
+    font-size: var(--cp-fs-caption);
+    font-weight: 700;
+    line-height: 1.3;
+    text-align: center;
+  }
+
+  .recipe-print-page .recipe-page-rail__item {
+    position: relative;
+  }
+
+  /* Pinned to the left edge so the count and the controls stay put while the
+     thumbnails scroll past them. Above the strip would cost vertical room,
+     which is the scarcest thing on this screen now. */
+  .recipe-print-page .recipe-page-rail__head {
+    position: sticky;
+    left: -16px;
+    top: auto;
+    z-index: 3;
+    flex-direction: column;
+    justify-content: center;
+    flex: 0 0 auto;
+    width: 168px;
+    margin: -12px 4px -12px -16px;
+    padding: 12px 12px 12px 16px;
+    border-bottom: 0;
+    border-right: 1px solid var(--cp-line);
+  }
+
+  /* Each thumbnail is its own strip item rather than a stacked row. */
+  .recipe-print-page .recipe-page-rail__row {
+    flex: 0 0 auto;
+    display: flex;
+  }
+
+  /* Sections group their pages in a wrapper, which stacks them in a column —
+     correct for a tall rail, and the reason the strip's fourth thumbnail
+     appeared underneath the third instead of after it. The grouping still
+     matters (it keeps a chapter's pages together and carries the section
+     header), so the wrapper runs across rather than being removed. */
+  .recipe-print-page .recipe-page-rail__section-group {
+    flex-direction: row;
+    align-items: stretch;
+    gap: 12px;
+    flex: 0 0 auto;
   }
 }
 
