@@ -277,6 +277,8 @@ export function PageRail(props: PageRailProps) {
     { x: number; y: number; ids: string[]; label: string } | null
   >(null);
   const tileMenuRef = useRef<HTMLDivElement | null>(null);
+  const addMenuTriggerRef = useRef<HTMLButtonElement | null>(null);
+  const addMenuPanelRef = useRef<HTMLDivElement | null>(null);
 
   function openTileMenu(event: ReactMouseEvent, recipeId: string, label: string) {
     event.preventDefault();
@@ -302,6 +304,36 @@ export function PageRail(props: PageRailProps) {
     node.style.left = `${Math.max(8, Math.min(tileMenu.x, window.innerWidth - rect.width - 8))}px`;
     node.style.top = `${Math.max(8, Math.min(tileMenu.y, window.innerHeight - rect.height - 8))}px`;
   }, [tileMenu]);
+
+  /* The Add overflow is portalled to the body and placed by hand.
+     It used to be an absolutely-positioned child of the add row, which put it
+     inside `.recipe-page-rail` — and that is the rail's scroll container
+     (`overflow-y: auto`, which forces overflow-x to compute to auto too), so
+     the menu was clipped at the rail's edge and never actually seen. It also
+     opened UPWARD, from when Add was pinned to the BOTTOM of the rail; with the
+     button at the top, that put the menu off the top of the panel.
+
+     Now: fixed, below the caret, right edge aligned to it, clamped to the
+     viewport. Reposition on scroll and resize so it tracks the trigger. */
+  useLayoutEffect(() => {
+    if (!addMenuOpen) return;
+    function place() {
+      const panel = addMenuPanelRef.current;
+      const trigger = addMenuTriggerRef.current;
+      if (!panel || !trigger) return;
+      const t = trigger.getBoundingClientRect();
+      const p = panel.getBoundingClientRect();
+      panel.style.left = `${Math.max(8, Math.min(t.right - p.width, window.innerWidth - p.width - 8))}px`;
+      panel.style.top = `${Math.max(8, Math.min(t.bottom + 6, window.innerHeight - p.height - 8))}px`;
+    }
+    place();
+    window.addEventListener("resize", place);
+    window.addEventListener("scroll", place, true);
+    return () => {
+      window.removeEventListener("resize", place);
+      window.removeEventListener("scroll", place, true);
+    };
+  }, [addMenuOpen]);
 
   useEffect(() => {
     if (!tileMenu) return;
@@ -421,6 +453,7 @@ export function PageRail(props: PageRailProps) {
               {projectMeta.meta.cookbookMode && !organizeMode && (
                 <>
                   <button
+                    ref={addMenuTriggerRef}
                     type="button"
                     className="recipe-page-rail__add-menu-trigger"
                     aria-haspopup="menu"
@@ -430,21 +463,23 @@ export function PageRail(props: PageRailProps) {
                   >
                     <ChevronDownIcon size={ICON_SIZE.sm} />
                   </button>
-                  {addMenuOpen && (
-                    <div className="recipe-page-rail__add-menu" role="menu">
-                      <button
-                        type="button"
-                        role="menuitem"
-                        onClick={() => {
-                          setAddMenuOpen(false);
-                          addSectionDivider();
-                        }}
-                      >
-                        <PlusIcon size={ICON_SIZE.sm} />
-                        Add section
-                      </button>
-                    </div>
-                  )}
+                  {addMenuOpen &&
+                    createPortal(
+                      <div ref={addMenuPanelRef} className="recipe-page-rail__add-menu" role="menu">
+                        <button
+                          type="button"
+                          role="menuitem"
+                          onClick={() => {
+                            setAddMenuOpen(false);
+                            addSectionDivider();
+                          }}
+                        >
+                          <PlusIcon size={ICON_SIZE.sm} />
+                          Add section
+                        </button>
+                      </div>,
+                      document.body,
+                    )}
                 </>
               )}
             </div>

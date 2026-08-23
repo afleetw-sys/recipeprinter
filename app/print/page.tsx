@@ -3303,7 +3303,12 @@ export default function PrintPage() {
     if (!addMenuOpen && !hasSelection) return;
     function onPointerDown(event: PointerEvent) {
       const target = event.target as Node;
-      if (addMenuOpen && !addMenuRef.current?.contains(target)) setAddMenuOpen(false);
+      // The menu itself is portalled to the body, so containment in the add row
+      // no longer covers it — a click on "Add section" would close the menu
+      // before its own handler ran.
+      const inMenu =
+        target instanceof Element && target.closest(".recipe-page-rail__add-menu") !== null;
+      if (addMenuOpen && !inMenu && !addMenuRef.current?.contains(target)) setAddMenuOpen(false);
     }
     function onKeyDown(event: KeyboardEvent) {
       if (event.key !== "Escape") return;
