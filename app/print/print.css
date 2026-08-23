@@ -907,35 +907,44 @@
    only chrome on a wide sheet; out here these sit in a 220px rail beside a
    row of 30px buttons in the header, and matching that row matters more than
    matching the organizer's scale. */
+/* The accent, because this one has to be FOUND. A white pill with a hairline
+   on a white rail is the correct weight for a secondary control and the wrong
+   weight for the only thing a cook with an empty book needs to press.
+
+   Accent rather than ink: the page already has one black button, Buy & Print,
+   and black here would put two climaxes on one screen. This is the same teal
+   that marks a checked box and a signed-in avatar, so it reads as "ours" and
+   not as an alert, and it is the one saturated thing in the rail. */
 .recipe-page-rail__head .recipe-page-rail__add-main {
-  border-color: var(--cp-line);
+  border-color: transparent;
   border-radius: 999px 0 0 999px;
-  background: var(--cp-card);
+  background: var(--cp-accent);
+  color: var(--cp-ink);
   font-size: var(--cp-fs-caption);
   font-weight: 700;
 }
 
 .recipe-page-rail__head .recipe-page-rail__add-main:hover:not(:disabled) {
-  border-color: var(--cp-line-strong);
-  background: var(--cp-card);
+  border-color: transparent;
+  background: color-mix(in srgb, var(--cp-accent) 88%, var(--cp-ink));
 }
 
 .recipe-page-rail__head .recipe-page-rail__add-menu-trigger {
-  border: 1px solid var(--cp-line);
-  /* The seam is the one edge that stays at full strength — it has to read as a
-     division inside a single control, not as another outer edge. */
-  border-left: 1px solid var(--cp-line-strong);
+  border: 1px solid transparent;
+  /* The seam divides one control; on a filled button it is a darker wash of
+     the fill rather than a line laid over it. */
+  border-left: 1px solid color-mix(in srgb, var(--cp-accent) 62%, var(--cp-ink));
   border-radius: 0 999px 999px 0;
-  background: var(--cp-card);
+  background: var(--cp-accent);
   color: var(--cp-ink);
 }
 
 .recipe-page-rail__head .recipe-page-rail__add-menu-trigger:hover:not(:disabled) {
-  border-color: var(--cp-line-strong);
+  border-color: transparent;
   /* Re-stated so the divider survives the hover, which would otherwise repaint
      every edge including the one holding the two halves apart. */
-  border-left-color: var(--cp-line-strong);
-  background: var(--cp-overlay-hover);
+  border-left-color: color-mix(in srgb, var(--cp-accent) 62%, var(--cp-ink));
+  background: color-mix(in srgb, var(--cp-accent) 88%, var(--cp-ink));
 }
 
 /* Fills the row on its own (no cookbook mode → no chevron trigger next to

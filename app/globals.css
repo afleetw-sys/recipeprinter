@@ -870,12 +870,18 @@
      all over this product — a header bar, a settings panel, a dialog footer —
      and at the old size a row of three read as the loudest thing on screen
      rather than as the controls for what is. */
+  /* One button shape for the whole app. Icon buttons, the organizer's toolbar,
+     the Edit toggle over the page and the chips in the header were already
+     pills; the .btn family was the only rounded rectangle left, so a screen
+     with both on it looked like two kits. Pills won because they are what the
+     majority already were, not the other way round. */
   .btn {
     @apply inline-flex items-center justify-center gap-2 whitespace-nowrap
-           rounded font-semibold text-cp-body
+           font-semibold text-cp-body
            transition-transform duration-150 select-none;
     min-height: 34px;
     padding: 0 14px;
+    border-radius: 999px;
   }
   .btn:hover:not(:disabled) {
     transform: translateY(-1px);
@@ -920,8 +926,9 @@
      scale with the box, not stay put while the box shrinks. */
   .btn-compact {
     min-height: 30px;
-    padding: 0 11px;
-    border-radius: 8px;
+    /* A pill needs more side padding than a rectangle to look evenly inset —
+       the curve eats into the first and last character's breathing room. */
+    padding: 0 13px;
     @apply text-cp-small;
   }
 
@@ -1184,9 +1191,8 @@
     padding-top: 0;
     padding-bottom: 0;
     padding-left: 12px;
-    /* Controls corner at 8px, cards at 12px. This was carrying the card radius
-       while sitting in a row of 8px buttons. */
-    border-radius: 8px;
+    /* Matches the buttons it shares a panel with — see the note on .btn. */
+    border-radius: 999px;
     @apply text-cp-small font-semibold;
   }
 

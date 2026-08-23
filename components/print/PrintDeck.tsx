@@ -491,15 +491,34 @@ export function PrintDeck(props: PrintDeckProps) {
    * looking at and want to change.
    *
    * Only ON, never off. Once editing, a double-click is how you select a word,
-   * and having that close the editor mid-sentence would be maddening. It is
-   * also recipes only: covers, dividers and the contents have their own
-   * editors with their own idea of what "editing" means.
+   * and having that close the editor mid-sentence would be maddening.
+   *
+   * Every kind that has an editor, not just recipes. Covers, chapter openers
+   * and the contents each have their own idea of what "editing" means, which
+   * is why this fans out by kind — but from the cook's side there is one rule
+   * ("double-click the words to change them") rather than a rule that happens
+   * to hold on recipe pages. Kinds with nothing to type into opt out below,
+   * and they are exactly the kinds that show no Edit button either.
    */
   const openEditOnDoubleClick = (navItem: NavItem) => (event: ReactMouseEvent) => {
-    if (navItem.kind !== "recipe" || pageEditMode) return;
+    // A full-page photo and a chapter's facing art have no text; a continued
+    // page is the runover of a recipe that is edited from its first page.
+    if (navItem.kind === "image" || navItem.kind === "section-photo" || navItem.continued) return;
     // Not on the floating controls that sit over the page.
     if ((event.target as HTMLElement).closest("button, a, input, textarea")) return;
-    togglePageEditMode();
+    if (navItem.kind === "recipe") {
+      if (!pageEditMode) togglePageEditMode();
+      return;
+    }
+    if (navItem.kind === "divider") {
+      if (editingSectionId !== navItem.recipeId) startSectionEdit(navItem.recipeId);
+      return;
+    }
+    if (navItem.kind === "toc") {
+      setEditingToc(true);
+      return;
+    }
+    setEditingCoverSide(coverSideFromNavItem(navItem));
   };
 
   return (
