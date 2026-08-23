@@ -342,6 +342,14 @@ export function PageRail(props: PageRailProps) {
       })
     : [];
 
+  /** Recipes in the project. Counts the ready ones only: a row still parsing
+      is not yet a recipe, and saying otherwise makes the number flicker down
+      when an import fails. */
+  const recipeCount = sections.reduce(
+    (total, section) => total + section.items.filter((item) => item.recipe).length,
+    0,
+  );
+
   return (
         <nav
           ref={railScrollRef}
@@ -350,6 +358,96 @@ export function PageRail(props: PageRailProps) {
           }`}
           aria-label="Pages"
         >
+          {/* What is in this project, and the two things you do to it as a
+              WHOLE — add to it, and rearrange it. They were at the very bottom
+              of the rail, below every thumbnail, which put "Add recipes" an
+              entire book's worth of scrolling away from the top of the list it
+              adds to. Sticky rather than moved outside the scroller: this
+              `<nav>` IS the scroll container (`railScrollRef`, which the deck's
+              scroll-sync reads), and lifting the header out of it would mean
+              restructuring that relationship for a visual result sticky already
+              gives. */}
+          {!organizeMode && (
+            <div className="recipe-page-rail__head">
+              <span className="recipe-page-rail__count">
+                {recipeCount} {recipeCount === 1 ? "recipe" : "recipes"}
+              </span>
+          <div className="recipe-page-rail__head-actions">
+            <div className="recipe-page-rail__add-row" ref={addMenuRef}>
+              <button
+                type="button"
+                className={`btn btn-secondary recipe-page-rail__add-main ${
+                  projectMeta.meta.cookbookMode ? "recipe-page-rail__add-main--paired" : ""
+                }`}
+                onClick={() => {
+                  setAddMenuOpen(false);
+                  openAddRecipeBelow();
+                }}
+              >
+                <PlusIcon size={ICON_SIZE.md} />
+                Add recipes
+              </button>
+              {/* In a cookbook the section action folds into a split-button
+                  overflow, so the primary control reads plainly as "Add recipes". */}
+              {projectMeta.meta.cookbookMode && organizeMode && (
+                <button
+                  type="button"
+                  className="btn btn-secondary recipe-page-rail__add-section"
+                  data-rail-new-section
+                  onClick={() => {
+                    if (effectiveRailSelection.size > 0) makeSectionFromSelection();
+                    else addSectionDivider();
+                  }}
+                >
+                  <PlusIcon size={ICON_SIZE.md} />
+                  Add section
+                </button>
+              )}
+              {projectMeta.meta.cookbookMode && !organizeMode && (
+                <>
+                  <button
+                    type="button"
+                    className="recipe-page-rail__add-menu-trigger"
+                    aria-haspopup="menu"
+                    aria-expanded={addMenuOpen}
+                    aria-label="More add options"
+                    onClick={() => setAddMenuOpen((open) => !open)}
+                  >
+                    <ChevronDownIcon size={ICON_SIZE.sm} />
+                  </button>
+                  {addMenuOpen && (
+                    <div className="recipe-page-rail__add-menu" role="menu">
+                      <button
+                        type="button"
+                        role="menuitem"
+                        onClick={() => {
+                          setAddMenuOpen(false);
+                          addSectionDivider();
+                        }}
+                      >
+                        <PlusIcon size={ICON_SIZE.sm} />
+                        Add section
+                      </button>
+                    </div>
+                  )}
+                </>
+              )}
+            </div>
+            {projectMeta.meta.cookbookMode && (
+              <button
+                type="button"
+                className="recipe-page-rail__organize"
+                onClick={enterOrganizeMode}
+              >
+                <span>Organize recipes</span>
+                <ChevronRightIcon size={ICON_SIZE.sm} />
+              </button>
+            )}
+
+          </div>
+            </div>
+          )}
+
           {organizeMode && (
             <div className="recipe-organize-bar">
               <div className="recipe-organize-bar__heading">
@@ -859,79 +957,6 @@ export function PageRail(props: PageRailProps) {
               exists yet. The real page appears only once parsing completes. */}
           {!pendingAddAfterRecipeId && <PendingImportRows items={pendingImportItems} canRetry={queue.canRetry} onRetry={queue.retry} onRemove={queue.remove} />}
 
-          <div className="recipe-page-rail__footer">
-            <div className="recipe-page-rail__add-row" ref={addMenuRef}>
-              <button
-                type="button"
-                className={`btn btn-secondary recipe-page-rail__add-main ${
-                  projectMeta.meta.cookbookMode ? "recipe-page-rail__add-main--paired" : ""
-                }`}
-                onClick={() => {
-                  setAddMenuOpen(false);
-                  openAddRecipeBelow();
-                }}
-              >
-                <PlusIcon size={ICON_SIZE.md} />
-                Add recipes
-              </button>
-              {/* In a cookbook the section action folds into a split-button
-                  overflow, so the primary control reads plainly as "Add recipes". */}
-              {projectMeta.meta.cookbookMode && organizeMode && (
-                <button
-                  type="button"
-                  className="btn btn-secondary recipe-page-rail__add-section"
-                  data-rail-new-section
-                  onClick={() => {
-                    if (effectiveRailSelection.size > 0) makeSectionFromSelection();
-                    else addSectionDivider();
-                  }}
-                >
-                  <PlusIcon size={ICON_SIZE.md} />
-                  Add section
-                </button>
-              )}
-              {projectMeta.meta.cookbookMode && !organizeMode && (
-                <>
-                  <button
-                    type="button"
-                    className="recipe-page-rail__add-menu-trigger"
-                    aria-haspopup="menu"
-                    aria-expanded={addMenuOpen}
-                    aria-label="More add options"
-                    onClick={() => setAddMenuOpen((open) => !open)}
-                  >
-                    <ChevronDownIcon size={ICON_SIZE.sm} />
-                  </button>
-                  {addMenuOpen && (
-                    <div className="recipe-page-rail__add-menu" role="menu">
-                      <button
-                        type="button"
-                        role="menuitem"
-                        onClick={() => {
-                          setAddMenuOpen(false);
-                          addSectionDivider();
-                        }}
-                      >
-                        <PlusIcon size={ICON_SIZE.sm} />
-                        Add section
-                      </button>
-                    </div>
-                  )}
-                </>
-              )}
-            </div>
-            {projectMeta.meta.cookbookMode && (
-              <button
-                type="button"
-                className="recipe-page-rail__organize"
-                onClick={enterOrganizeMode}
-              >
-                <span>Organize recipes</span>
-                <ChevronRightIcon size={ICON_SIZE.sm} />
-              </button>
-            )}
-
-          </div>
           {tileMenu &&
             createPortal(
               <div

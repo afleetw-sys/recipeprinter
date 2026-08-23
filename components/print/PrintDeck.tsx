@@ -4,6 +4,7 @@ import type {
   ComponentProps,
   CSSProperties,
   Dispatch,
+  MouseEvent as ReactMouseEvent,
   ReactNode,
   SetStateAction,
 } from "react";
@@ -483,6 +484,24 @@ export function PrintDeck(props: PrintDeckProps) {
     />
   );
 
+  /**
+   * Double-clicking a recipe's text opens edit mode, exactly as the Edit button
+   * does — because that is what people try first. The button is small, floats
+   * above the page, and is easy not to notice; the text is the thing they are
+   * looking at and want to change.
+   *
+   * Only ON, never off. Once editing, a double-click is how you select a word,
+   * and having that close the editor mid-sentence would be maddening. It is
+   * also recipes only: covers, dividers and the contents have their own
+   * editors with their own idea of what "editing" means.
+   */
+  const openEditOnDoubleClick = (navItem: NavItem) => (event: ReactMouseEvent) => {
+    if (navItem.kind !== "recipe" || pageEditMode) return;
+    // Not on the floating controls that sit over the page.
+    if ((event.target as HTMLElement).closest("button, a, input, textarea")) return;
+    togglePageEditMode();
+  };
+
   return (
         <section
           className="recipe-page-canvas"
@@ -660,6 +679,11 @@ export function PrintDeck(props: PrintDeckProps) {
                             linkedSpread ? linkedFocusSheet ?? sheetIndex : sheetIndex,
                           );
                         }}
+                        // Per HALF, not per spread: double-clicking the recipe
+                        // opens its editor, and double-clicking the facing photo
+                        // does nothing, which is right — there is no text there
+                        // to have been aiming at.
+                        onDoubleClick={openEditOnDoubleClick(pageNav)}
                       >
                         {renderDeckPage(pageNav, pageSheet, isFocused, role)}
                       </div>
@@ -742,6 +766,7 @@ export function PrintDeck(props: PrintDeckProps) {
                     if (isActive) return;
                     goToSlide(index);
                   }}
+                  onDoubleClick={openEditOnDoubleClick(navItem)}
                   role="button"
                   tabIndex={0}
                   aria-current={isActive}
