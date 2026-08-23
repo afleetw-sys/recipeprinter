@@ -100,8 +100,15 @@
      (e.g. the mode-toggle tabs), which also uses --cp-accent — a focus ring in
      the darker ink sibling read as a different, "wrong" colour next to it.
      Trade-off: the vivid accent is ~1.95:1 on white, below the 3:1 focus ideal,
-     accepted here for visual consistency (chosen over the AA-safe ink). */
-  --cp-focus-ring: 2px solid var(--cp-accent);
+     accepted here for visual consistency (chosen over the AA-safe ink).
+
+     One pixel, not two. Every control this lands on already draws its own 1px
+     border, and an outline at zero offset sits directly outside it — so a 2px
+     ring read as a 3px edge, which is why focusing a text field looked like the
+     field had suddenly grown a heavy rule around it. Matching the border's own
+     weight makes focus read as the edge CHANGING COLOUR rather than as the
+     control changing size. */
+  --cp-focus-ring: 1px solid var(--cp-accent);
   /* Hug the control edge — an offset ring reads as a detached double-line next
      to the field's own border. Zero keeps focus a single clean ring. */
   --cp-focus-ring-offset: 0;
@@ -1105,9 +1112,25 @@
   .field:focus {
     background: var(--cp-card);
   }
+  /**
+   * A text field shows focus in its OWN border, not in a ring outside it.
+   *
+   * The shared ring is drawn as an outline at zero offset, which sits directly
+   * outside the border the field already has — so focus added a second line
+   * rather than changing the existing one, and the edge visibly thickened. A
+   * field's border is its most prominent feature and it is nearly invisible at
+   * rest (8% ink); moving it to the accent is a large, unmistakable change that
+   * costs no width at all.
+   *
+   * This is the opt-out the global rule was written to allow: it is wrapped in
+   * `:where()` at zero specificity exactly so a control can bring its own focus
+   * treatment. Deliberately NOT extended to tiles and toggles — their selected
+   * state already owns the accent border, so recolouring it on focus would make
+   * "focused" and "selected" the same picture.
+   */
   .field:focus-visible {
-    outline: var(--cp-focus-ring);
-    outline-offset: var(--cp-focus-ring-offset);
+    border-color: var(--cp-accent);
+    outline: none;
   }
   textarea.field {
     min-height: 140px;
