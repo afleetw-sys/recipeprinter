@@ -342,6 +342,14 @@ export function PageRail(props: PageRailProps) {
       })
     : [];
 
+  /** Recipes in the project. Counts the ready ones only: a row still parsing
+      is not yet a recipe, and saying otherwise makes the number flicker down
+      when an import fails. */
+  const recipeCount = sections.reduce(
+    (total, section) => total + section.items.filter((item) => item.recipe).length,
+    0,
+  );
+
   /**
    * What to write on a thumbnail: the page's own number.
    *
@@ -349,8 +357,7 @@ export function PageRail(props: PageRailProps) {
    * different number from the page's. The rail counts the cover and the
    * contents, which carry no folio, so it ran ahead; and a facing full-page
    * photo has no tile of its own, so it ran behind. On a book with photos the
-   * two disagreed by a factor of two, which is exactly the report: thirty
-   * thumbnails against sixty pages.
+   * two disagreed by a factor of two: thirty thumbnails against sixty pages.
    *
    * Front matter has no number to show, and says nothing rather than borrowing
    * a position and calling it a page.
@@ -360,33 +367,90 @@ export function PageRail(props: PageRailProps) {
     return page === undefined ? "" : String(page);
   };
 
-  /** Recipes in the project. Counts the ready ones only: a row still parsing
-      is not yet a recipe, and saying otherwise makes the number flicker down
-      when an import fails. */
-  const recipeCount = sections.reduce(
-    (total, section) => total + section.items.filter((item) => item.recipe).length,
-    0,
-  );
-
   return (
-      <div className="recipe-page-strip">
-        {/* What is in this project, and the two things you do to it as a WHOLE
-            — add to it, and rearrange it. They used to sit at the very bottom
-            of the rail, below every thumbnail, which put "Add recipes" a whole
-            book's worth of scrolling from the list it adds to.
-
-            Above the strip rather than inside it, and OUTSIDE the <nav>: that
-            element is the scroll container (`railScrollRef`, which the deck's
-            scroll-sync, the drag geometry and the pending-import scroll all
-            read), so wrapping it keeps every one of those pointing at the same
-            node while the header sits clear of the horizontal scroll. */}
-        {!organizeMode && (
+        <nav
+          ref={railScrollRef}
+          className={`recipe-page-rail recipe-page-rail--${previewCardSize} no-print ${
+            railDrag.draggingId ? "recipe-page-rail--dragging" : ""
+          }`}
+          aria-label="Pages"
+        >
+          {/* What is in this project, and the two things you do to it as a
+              WHOLE — add to it, and rearrange it. They were at the very bottom
+              of the rail, below every thumbnail, which put "Add recipes" an
+              entire book's worth of scrolling away from the top of the list it
+              adds to. Sticky rather than moved outside the scroller: this
+              `<nav>` IS the scroll container (`railScrollRef`, which the deck's
+              scroll-sync reads), and lifting the header out of it would mean
+              restructuring that relationship for a visual result sticky already
+              gives. */}
+          {!organizeMode && (
             <div className="recipe-page-rail__head">
               <span className="recipe-page-rail__count">
-              {recipeCount} {recipeCount === 1 ? "recipe" : "recipes"}
+                {recipeCount} {recipeCount === 1 ? "recipe" : "recipes"}
               </span>
           <div className="recipe-page-rail__head-actions">
-          {projectMeta.meta.cookbookMode && (
+            <div className="recipe-page-rail__add-row" ref={addMenuRef}>
+              <button
+                type="button"
+                className={`btn btn-secondary recipe-page-rail__add-main ${
+                  projectMeta.meta.cookbookMode ? "recipe-page-rail__add-main--paired" : ""
+                }`}
+                onClick={() => {
+                  setAddMenuOpen(false);
+                  openAddRecipeBelow();
+                }}
+              >
+                <PlusIcon size={ICON_SIZE.md} />
+                Add recipes
+              </button>
+              {/* In a cookbook the section action folds into a split-button
+                  overflow, so the primary control reads plainly as "Add recipes". */}
+              {projectMeta.meta.cookbookMode && organizeMode && (
+                <button
+                  type="button"
+                  className="btn btn-secondary recipe-page-rail__add-section"
+                  data-rail-new-section
+                  onClick={() => {
+                    if (effectiveRailSelection.size > 0) makeSectionFromSelection();
+                    else addSectionDivider();
+                  }}
+                >
+                  <PlusIcon size={ICON_SIZE.md} />
+                  Add section
+                </button>
+              )}
+              {projectMeta.meta.cookbookMode && !organizeMode && (
+                <>
+                  <button
+                    type="button"
+                    className="recipe-page-rail__add-menu-trigger"
+                    aria-haspopup="menu"
+                    aria-expanded={addMenuOpen}
+                    aria-label="More add options"
+                    onClick={() => setAddMenuOpen((open) => !open)}
+                  >
+                    <ChevronDownIcon size={ICON_SIZE.sm} />
+                  </button>
+                  {addMenuOpen && (
+                    <div className="recipe-page-rail__add-menu" role="menu">
+                      <button
+                        type="button"
+                        role="menuitem"
+                        onClick={() => {
+                          setAddMenuOpen(false);
+                          addSectionDivider();
+                        }}
+                      >
+                        <PlusIcon size={ICON_SIZE.sm} />
+                        Add section
+                      </button>
+                    </div>
+                  )}
+                </>
+              )}
+            </div>
+            {projectMeta.meta.cookbookMode && (
               <button
                 type="button"
                 className="recipe-page-rail__organize"
@@ -400,13 +464,7 @@ export function PageRail(props: PageRailProps) {
           </div>
             </div>
           )}
-        <nav
-          ref={railScrollRef}
-          className={`recipe-page-rail recipe-page-rail--${previewCardSize} no-print ${
-            railDrag.draggingId ? "recipe-page-rail--dragging" : ""
-          }`}
-          aria-label="Pages"
-        >
+
           {organizeMode && (
             <div className="recipe-organize-bar">
               <div className="recipe-organize-bar__heading">
@@ -636,8 +694,9 @@ export function PageRail(props: PageRailProps) {
                     // Two faces already fill the thumb (see --spread); a third
                     // would overflow it, and adds nothing to a stand-in.
                     previous.thumbSheets = [...previous.thumbSheets, ...unit.thumbSheets].slice(0, 2);
-                    // The merged tile now owns its whole spread position — and
-                    // both pages, so its label has to be recomputed to say so.
+                    // The merged tile now owns its whole spread position.
+                    // The merged tile now owns both pages, so its label has to
+                    // be recomputed to say so.
                     previous.num = pageRangeLabel(previous.thumbSheets);
                     previous.soleUnit = true;
                     return;
@@ -979,6 +1038,5 @@ export function PageRail(props: PageRailProps) {
               document.body,
             )}
         </nav>
-      </div>
   );
 }

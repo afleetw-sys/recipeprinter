@@ -50,8 +50,6 @@ interface PrintConfigPanelProps {
   canShareActiveRecipe: boolean;
   setShowShareDialog: Dispatch<SetStateAction<boolean>>;
   hasPrintSettingsFields: boolean;
-  /** The Add-recipes control, built by the page (its menu state lives there). */
-  addControl?: ReactNode;
   setPrintSettingsOpen: Dispatch<SetStateAction<boolean>>;
 }
 
@@ -91,7 +89,6 @@ export function PrintConfigPanel({
   canShareActiveRecipe,
   setShowShareDialog,
   hasPrintSettingsFields,
-  addControl,
   setPrintSettingsOpen,
 }: PrintConfigPanelProps) {
   return (
@@ -112,14 +109,10 @@ export function PrintConfigPanel({
             One line, truncated: a long title should never push the Purchased
             chip or the close button around. */}
         <h2 className="text-cp-dialog-title font-extrabold tracking-[-0.02em] min-w-0 truncate">
-          {/* Says what the panel IS, not what the document is called. The
-              document's name is in the top-left corner of the bar now, so
-              repeating it here spent the panel's only heading on a fact
-              already on screen — and left the panel itself unlabelled. */}
           {mobileDrawer === "template"
             ? "Themes"
             : cookbookMode
-              ? "Cookbook settings"
+              ? bookTitle?.trim() || "Untitled cookbook"
               : "Print setup"}
         </h2>
         {cookbookMode && !cookbookLocked && mobileDrawer !== "template" && (
@@ -137,11 +130,6 @@ export function PrintConfigPanel({
           <XIcon size={ICON_SIZE.md} />
         </button>
       </div>
-
-      {/* First thing in the panel, because adding a recipe is the first thing
-          you do to a project — and everything below it is about how what you
-          added should look. */}
-      {addControl}
 
       <div className="recipe-config-panel__scroll">
         <PrintSetupControls

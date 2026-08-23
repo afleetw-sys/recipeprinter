@@ -83,7 +83,6 @@ import {
 import {
   CheckIcon,
   BookIcon,
-  ChevronDownIcon,
   ICON_SIZE,
   ImageIcon,
   LinkIcon,
@@ -717,37 +716,10 @@ export default function PrintPage() {
     const scroller = railScrollRef.current;
     if (!scroller) return null;
     const geometry = railGeometry(scroller);
-    /**
-     * Which way the strip runs, read from the strip itself.
-     *
-     * It is a horizontal strip along the bottom on desktop and a vertical list
-     * elsewhere, and drop resolution has to follow — a horizontal list resolved
-     * by vertical midpoints puts every card in the same band, so every drop
-     * lands in the same place. Asking the DOM rather than re-deriving the
-     * breakpoint means the two cannot disagree when the CSS changes.
-     */
-    const horizontal = getComputedStyle(scroller).flexDirection === "row";
     const midpointIndex = (rects: DOMRect[]) => {
-      const i = horizontal
-        ? rects.findIndex((rect) => clientX < rect.left + rect.width / 2)
-        : rects.findIndex((rect) => clientY < rect.top + rect.height / 2);
+      const i = rects.findIndex((rect) => clientY < rect.top + rect.height / 2);
       return i === -1 ? rects.length : i;
     };
-    /** The insertion caret: a vertical bar between cards when the strip runs
-        across, a horizontal one between rows when it runs down. */
-    const caretAt = (rect: DOMRect, after: boolean) =>
-      horizontal
-        ? {
-            top: rect.top,
-            left: after ? rect.right + 5 : rect.left - 5,
-            width: 3,
-            height: rect.height,
-          }
-        : {
-            top: after ? rect.bottom + 5 : rect.top - 5,
-            left: rect.left,
-            width: rect.width,
-          };
     if (kind === "recipe") {
       // Dragging a recipe that's part of the current selection carries the
       // whole selection, in book order — every tile the cook picked travels
@@ -844,7 +816,11 @@ export default function PrintPage() {
 
       const k = midpointIndex(rows.map((r) => r.rect));
       const before = k < rows.length ? rows[k] : rows[rows.length - 1];
-      const indicator = caretAt(before.rect, k >= rows.length);
+      const indicator = {
+        top: (k < rows.length ? before.rect.top : before.rect.bottom) - (k < rows.length ? 5 : -5),
+        left: before.rect.left,
+        width: before.rect.width,
+      };
       const commit = () => {
         if (k < rows.length) {
           const target = sectionAndIndexForItem(rows[k].id);
@@ -868,7 +844,11 @@ export default function PrintPage() {
     if (groups.length === 0) return null;
     const k = midpointIndex(groups.map((g) => g.rect));
     const anchor = k < groups.length ? groups[k] : groups[groups.length - 1];
-    const indicator = caretAt(anchor.rect, k >= groups.length);
+    const indicator = {
+      top: (k < groups.length ? anchor.rect.top : anchor.rect.bottom) - (k < groups.length ? 6 : -6),
+      left: anchor.rect.left,
+      width: anchor.rect.width,
+    };
     const targetId = k < groups.length ? groups[k].id : null;
     const commit = () => {
       const metaIds = projectMeta.meta.sections.map((section) => section.id);
@@ -1482,24 +1462,14 @@ export default function PrintPage() {
     // Cancel + clean up any FLIP still running before measuring the "before".
     organizeFlipRef.current?.finalize();
 
-    /**
-     * The organizer grows DOWNWARDS now, not sideways.
-     *
-     * It used to be a third column widening across a three-column shell. The
-     * shell is two columns and two rows since the page strip moved under the
-     * deck, so the same expansion is now the strip's ROW taking the deck's
-     * height — the board unfolds upward into the space the page was using. The
-     * per-frame drive is unchanged, which is the point: the tiles still travel
-     * from where they were to where they land, tracking the layout as it moves
-     * rather than being told a start and an end.
-     */
-    const parseRows = () =>
+    const parseCols = () =>
       window
         .getComputedStyle(shell)
-        .gridTemplateRows.split(" ")
+        .gridTemplateColumns.split(" ")
         .map((v) => parseFloat(v));
-    const fromRows = parseRows();
-    const canAnimateWidth = fromRows.length === 2 && fromRows.every((v) => !Number.isNaN(v));
+    // Whether we can drive the 3-column expansion (desktop grid layout only).
+    const fromCols = parseCols();
+    const canAnimateWidth = fromCols.length === 3 && fromCols.every((v) => !Number.isNaN(v));
 
     const selector = "[data-organize-flip]";
     const firstRects = new Map<string, DOMRect>();
@@ -1516,15 +1486,15 @@ export default function PrintPage() {
     // Read the target column widths, then pin the columns back to their start so
     // the panel can be widened frame by frame instead of snapping. Done with the
     // shell's own transition suppressed so neither read nor pin animates.
-    let toRows: number[] = [];
+    let toCols: number[] = [];
     const prevShellTransition = shell.style.transition;
     if (canAnimateWidth) {
       shell.style.transition = "none";
-      shell.style.gridTemplateRows = "";
-      toRows = parseRows();
-      shell.style.gridTemplateRows = fromRows.map((v) => `${v}px`).join(" ");
-      // Commit the pinned start height before the first frame paints.
-      void shell.offsetHeight;
+      shell.style.gridTemplateColumns = "";
+      toCols = parseCols();
+      shell.style.gridTemplateColumns = fromCols.map((v) => `${v}px`).join(" ");
+      // Commit the pinned start width before the first frame paints.
+      void shell.offsetWidth;
     }
 
     const nodes = Array.from(shell.querySelectorAll<HTMLElement>(selector))
@@ -1534,9 +1504,9 @@ export default function PrintPage() {
           Boolean(n.prev) && n.prev!.width > 0 && n.prev!.height > 0,
       );
 
-    const widthOk = canAnimateWidth && toRows.length === 2 && toRows.every((v) => !Number.isNaN(v));
+    const widthOk = canAnimateWidth && toCols.length === 3 && toCols.every((v) => !Number.isNaN(v));
     if (nodes.length === 0 && !widthOk) {
-      shell.style.gridTemplateRows = "";
+      shell.style.gridTemplateColumns = "";
       shell.style.transition = prevShellTransition;
       setOrganizeAnimating(false);
       return;
@@ -1550,8 +1520,8 @@ export default function PrintPage() {
 
     const finalize = () => {
       if (organizeFlipRef.current) window.cancelAnimationFrame(organizeFlipRef.current.raf);
-      // Hand the rows back to CSS (the --organizing / base class value).
-      shell.style.gridTemplateRows = "";
+      // Hand the columns back to CSS (the --organize-wide / base class value).
+      shell.style.gridTemplateColumns = "";
       shell.style.transition = prevShellTransition;
       nodes.forEach((n) => {
         n.el.style.transform = "";
@@ -1569,10 +1539,10 @@ export default function PrintPage() {
     const frame = (nowTs: number) => {
       const t = Math.min(1, (nowTs - start) / ORGANIZE_FLIP_MS);
       const e = ease(t);
-      // Grow (or shrink) the strip's row for this frame.
+      // Widen (or narrow) the panel columns for this frame.
       if (widthOk) {
-        shell.style.gridTemplateRows = fromRows
-          .map((from, i) => `${from + (toRows[i] - from) * e}px`)
+        shell.style.gridTemplateColumns = fromCols
+          .map((from, i) => `${from + (toCols[i] - from) * e}px`)
           .join(" ");
       }
       // Clear transforms first so getBoundingClientRect reads each tile's true
@@ -3733,75 +3703,6 @@ export default function PrintPage() {
         )}
 
         <PrintConfigPanel
-          /* Adding a recipe is the first thing you do to a project, so it sits
-             at the top of the panel rather than tucked under a strip of
-             thumbnails at the bottom of the screen. Built here because the
-             menu's state already lives here — it was only ever passed down to
-             the rail — so moving the control is moving JSX, not state. */
-          addControl={
-            <div className="recipe-config-add-slot">
-            <div className="recipe-config-add" ref={addMenuRef}>
-              <button
-                type="button"
-                className={`btn btn-secondary recipe-config-add__main ${
-                  cookbookMode ? "recipe-config-add__main--paired" : ""
-                }`}
-                onClick={() => {
-                  setAddMenuOpen(false);
-                  openAddRecipeBelow();
-                }}
-              >
-                <PlusIcon size={ICON_SIZE.md} />
-                Add recipes
-              </button>
-            {/* In a cookbook the section action folds into a split-button
-                  overflow, so the primary control reads plainly as "Add recipes". */}
-            {cookbookMode && organizeMode && (
-                <button
-                  type="button"
-                  className="btn btn-secondary recipe-config-add__section"
-                  data-rail-new-section
-                  onClick={() => {
-                    if (effectiveRailSelection.size > 0) makeSectionFromSelection();
-                    else addSectionDivider();
-                  }}
-                >
-                  <PlusIcon size={ICON_SIZE.md} />
-                  Add section
-                </button>
-              )}
-            {cookbookMode && !organizeMode && (
-                <>
-                  <button
-                    type="button"
-                    className="recipe-config-add__trigger"
-                    aria-haspopup="menu"
-                    aria-expanded={addMenuOpen}
-                    aria-label="More add options"
-                    onClick={() => setAddMenuOpen((open) => !open)}
-                  >
-                    <ChevronDownIcon size={ICON_SIZE.sm} />
-                  </button>
-                {addMenuOpen && (
-                    <div className="recipe-config-add__menu" role="menu">
-                      <button
-                        type="button"
-                        role="menuitem"
-                        onClick={() => {
-                          setAddMenuOpen(false);
-                          addSectionDivider();
-                        }}
-                      >
-                        <PlusIcon size={ICON_SIZE.sm} />
-                        Add section
-                      </button>
-                    </div>
-                  )}
-                </>
-              )}
-            </div>
-            </div>
-          }
           configPanelRef={configPanelRef}
           mobileDrawer={mobileDrawer}
           setMobileDrawer={setMobileDrawer}
