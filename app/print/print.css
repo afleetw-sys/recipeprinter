@@ -1603,11 +1603,14 @@
   gap: 6px;
 }
 
-/* The panel names itself quietly. A 20px bold heading is a DOCUMENT
-   convention — it announces the thing you are reading. This panel is not the
-   thing you are reading; the page is. */
+/* The panel names itself, but not louder than the product or the document.
+   The class on the element asks for the 19.84px dialog title, which is a
+   DOCUMENT convention — it announces the thing you are reading, and this panel
+   is not that; the page is. Body size was the other extreme: it left the panel
+   with no heading to speak of. This is the step directly below the wordmark
+   (16.8px), which is where a panel title belongs. */
 .recipe-config-panel h2 {
-  font-size: var(--cp-fs-body);
+  font-size: var(--cp-fs-body-lg);
 }
 .control-checkbox-group.recipe-config-section {
   gap: 0;
