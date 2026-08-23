@@ -147,6 +147,16 @@ export const PrintIcon = (p: IconProps) => (
   </Base>
 );
 
+/** Floppy disk — the conventional "save" glyph, and the only one people read
+    as save rather than as download or upload. */
+export const SaveIcon = (p: IconProps) => (
+  <Base {...p}>
+    <path d="M5 3h11l5 5v13a1 1 0 01-1 1H5a1 1 0 01-1-1V4a1 1 0 011-1z" />
+    <path d="M8 3v6h7V3" />
+    <path d="M8 21v-7h8v7" />
+  </Base>
+);
+
 export const TrashIcon = (p: IconProps) => (
   <Base {...p}>
     <path d="M4 7h16" />

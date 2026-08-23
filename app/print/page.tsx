@@ -88,6 +88,7 @@ import {
   LinkIcon,
   PlusIcon,
   PrintIcon,
+  SaveIcon,
   SizeIcon,
   SpinnerIcon,
   TemplateIcon,
@@ -3445,6 +3446,7 @@ export default function PrintPage() {
                         className="btn btn-secondary btn-compact"
                         onClick={() => void handleSaveProject()}
                       >
+                        <SaveIcon size={ICON_SIZE.md} />
                         Save
                       </button>
                     )}
@@ -3469,7 +3471,7 @@ export default function PrintPage() {
                     <PrintIcon size={ICON_SIZE.md} />
                   )}
                   {cookbookLocked
-                    ? `Purchase & Print · ${cookbookPrice}`
+                    ? "Purchase & Print"
                     : templateLocked
                       ? "Unlock & Print"
                       : "Print"}
