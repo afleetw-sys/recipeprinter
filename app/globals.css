@@ -976,12 +976,12 @@
        read as a different kind of thing than the buttons it sits with. */
     border-radius: 8px;
   }
-  /* Initials belong to the circle, not to the type scale: they have to clear a
-     curve on both sides, so the size is a fraction of the diameter rather than
-     a step on the ramp. At 40px, "AW" ran 52% of the inner width; the same
-     0.8rem inside a 30px circle runs 71% and crowds the edge. This is the size
-     that keeps the old proportion. */
-  [data-rp-avatar] { font-size: 0.62rem; }
+  /* Same size as the text in the buttons it sits beside. Sized off the type
+     ramp rather than off the avatar's width, which is what the round version
+     needed: a circle makes the corners unusable, so two letters had to stay
+     well inside the diameter. Squared to 8px, the full width is available and
+     the initials can simply match Save and Buy & Print. */
+  [data-rp-avatar] { font-size: var(--cp-fs-small); }
 
   .icon-button:hover:not(:disabled),
   .icon-close-btn:hover:not(:disabled) {
