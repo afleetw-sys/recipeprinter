@@ -642,6 +642,41 @@
   display: none;
 }
 
+/* ── One tile, one page size ──────────────────────────────────────────────
+   A facing pair reads as two pages with a gutter between them, the way the
+   deck shows it — not as two crops butted together. They were meeting at a
+   3px seam, which made a spread look like one wide page rather than two.
+
+   And every tile is now the same footprint. A page with nothing facing it —
+   the cover, the back, an odd last page — used to be drawn nearly twice as
+   wide as either half of a spread, so the column had two page sizes in it and
+   the singles read as more important. It gets the same page size and sits
+   centred in the same width, with the empty half standing for the absent one.
+
+   Two pages plus the gutter make the tile, so the three numbers are derived
+   from each other rather than typed out separately and left to drift. */
+.recipe-print-shell:not(.recipe-print-shell--organizing) .recipe-page-rail__thumb {
+  --rp-rail-page: 62px;
+  --rp-rail-gutter: 9px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--rp-rail-gutter);
+  width: calc((2 * var(--rp-rail-page)) + var(--rp-rail-gutter));
+  overflow: hidden;
+}
+
+.recipe-print-shell:not(.recipe-print-shell--organizing) .recipe-page-rail__thumb .recipe-page-scaler {
+  flex: 0 0 var(--rp-rail-page);
+  width: var(--rp-rail-page);
+}
+
+/* The gutter is real space, so each page keeps its own edge rather than the
+   pair sharing one. */
+.recipe-print-shell:not(.recipe-print-shell--organizing) .recipe-page-rail__thumb--spread .recipe-page-scaler {
+  border-radius: 3px;
+}
+
 /* Sat in its own column beside the page; sits ON it now, bottom-left, the way
    a page number sits on a page. */
 .recipe-print-shell:not(.recipe-print-shell--organizing) .recipe-page-rail__num {
