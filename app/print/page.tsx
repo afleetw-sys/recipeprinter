@@ -3572,7 +3572,7 @@ export default function PrintPage() {
             </span>
             <button
               type="button"
-              className="btn btn-primary btn-compact"
+              className="btn btn-secondary btn-compact recipe-protect-bar__action"
               onClick={() => {
                 track("protect_prompt_clicked", { source: "cookbook_banner" });
                 setCookPilotLoginReason("purchase");

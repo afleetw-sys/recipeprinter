@@ -1703,6 +1703,24 @@
   font-weight: 650;
 }
 
+/* Drawn in the banner's own hue rather than in page-primary black. This bar is
+   a standing note about where the book lives, not the page's climax — and the
+   climax, Buy & Print, is a black button sitting directly above it. Two of
+   those stacked made the quieter message look like the louder one. Accent
+   outline on the accent tint keeps the whole bar one calm object while leaving
+   the action plainly clickable. */
+.recipe-protect-bar__action {
+  border-color: color-mix(in srgb, var(--cp-accent) 55%, transparent);
+  background: var(--cp-card);
+  color: var(--cp-accent-ink);
+}
+
+.recipe-protect-bar__action:hover:not(:disabled) {
+  border-color: var(--cp-accent);
+  background: var(--cp-card);
+  color: var(--cp-accent-ink);
+}
+
 /* Quiet "you own this" acknowledgement in the Book Settings header, so a
    purchased cookbook reads as paid-for even for a signed-in owner (who never
    sees the back-up bar). */

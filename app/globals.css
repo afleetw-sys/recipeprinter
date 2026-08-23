@@ -971,6 +971,10 @@
   [data-rp-avatar] {
     width: 30px;
     height: 30px;
+    /* Squared to `.btn-compact`'s 8px rather than kept a circle: it stands in
+       a row with Save and Buy & Print, and a lone pill among rounded rectangles
+       read as a different kind of thing than the buttons it sits with. */
+    border-radius: 8px;
   }
   /* Initials belong to the circle, not to the type scale: they have to clear a
      curve on both sides, so the size is a fraction of the diameter rather than
