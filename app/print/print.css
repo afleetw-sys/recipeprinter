@@ -960,9 +960,14 @@
   flex: 1 1 auto;
 }
 
+/* Square where the two halves meet, and no border on that edge: the trigger
+   beside it draws the divider. With both drawing one, the seam was two 1px
+   lines against each other — a double rule down the middle of a single
+   control. */
 .recipe-page-rail__add-main--paired {
   border-top-right-radius: 0;
   border-bottom-right-radius: 0;
+  border-right: 0;
 }
 
 /* Paired siblings of the .btn.btn-secondary main button — matched to its 1px

@@ -803,8 +803,14 @@ export function PageRail(props: PageRailProps) {
                       } ${(recipeNav || dividerSection) ? "recipe-page-rail__item--draggable" : ""} ${
                         recipeNav && railShake?.recipeId === recipeNav.recipeId ? "is-shaking" : ""
                       } ${recipeNav && effectiveRailSelection.has(recipeNav.recipeId) ? "is-selected" : ""}`}
+                      /* Right-click moves a recipe to a section in the page
+                         rail as well as in the organizer. It was gated on
+                         organize mode, so the same gesture on the same tile
+                         did something in one view and nothing in the other —
+                         and the rail is where you spend your time, so it was
+                         missing from the place people would try it first. */
                       onContextMenu={
-                        organizeMode && recipeNav
+                        recipeNav
                           ? (event) => openTileMenu(event, recipeNav.recipeId, `“${unit.label}”`)
                           : undefined
                       }
