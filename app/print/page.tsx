@@ -6,6 +6,8 @@ import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import dynamic from "next/dynamic";
 import { SiteHeader } from "@/components/SiteHeader";
+import { SAVE_FAILURES, SAVE_STATUS_LABEL } from "@/components/AccountControl";
+import { ProjectHeading } from "@/components/print/ProjectHeading";
 import { flyIntoProfile, visibleDeckPage } from "@/lib/flyIntoProfile";
 import { fileProjectLocally } from "@/lib/localProjects";
 import type { AccountSaveStatus } from "@/components/AccountControl";
@@ -43,6 +45,7 @@ import {
 import {
   buildSections,
   namedSectionCount,
+  projectDisplayTitle,
   defaultSectionGridImages,
   resolveSectionPhotoMode,
   useProjectMeta,
@@ -84,6 +87,7 @@ import {
   ImageIcon,
   LinkIcon,
   PlusIcon,
+  PrintIcon,
   SizeIcon,
   SpinnerIcon,
   TemplateIcon,
@@ -2179,6 +2183,19 @@ export default function PrintPage() {
    */
   const printWatermarked = templateLocked || cookbookLocked;
 
+  /**
+   * What the header calls this project. Inherits the cookbook's cover title
+   * unless it has been renamed, and falls back to the recipes themselves —
+   * "Banana Bread + 2 more" tells you which project this is, and "Recipe cards"
+   * does not.
+   */
+  const firstRecipeTitle = items?.find((item) => item.recipe)?.recipe?.title;
+  const headingTitle = projectDisplayTitle(
+    projectMeta.meta,
+    firstRecipeTitle,
+    Math.max((items?.length ?? 0) - 1, 0),
+  );
+
   const printBlocked = purchaseBusy || claimBusy || cookbookPurchaseBusy;
   const printSpinner = printBlocked || printPending;
 
@@ -3361,36 +3378,91 @@ export default function PrintPage() {
         <SiteHeader
           compact
           sticky
-          /* Right-aligned, so the cookbook CTA lands beside the save state and
-             the avatar rather than floating in the middle of the bar. */
+          /*
+            The middle says WHICH document this is; the right says what you can
+            do to it, in the order you'd reach for them: how it stands, then the
+            action that finishes it.
+          */
+          center={
+            items?.length ? (
+              <ProjectHeading
+                title={headingTitle}
+                onRename={projectMeta.setProjectTitle}
+                cookbookMode={cookbookMode}
+                canBecomeCookbook={COOKBOOK_ENABLED}
+                onSwitchToCards={exitCookbookToCards}
+                onSwitchToCookbook={startCookbook}
+              />
+            ) : undefined
+          }
           actions={
-            COOKBOOK_ENABLED && !cookbookMode && items?.length ? (
-              <button
-                type="button"
-                /* Outlined, not primary: Print is the primary action on this
-                   page, and two solid buttons competing at the top would argue
-                   about which one the page is for. `mr-cp-2` keeps it off the
-                   avatar — the header's own gap reads as too tight for a button
-                   sitting next to a circular control. */
-                className="btn btn-secondary btn-compact mr-cp-2"
-                onClick={startCookbook}
-              >
-                Make it a cookbook
-                <span className="recipe-cookbook-cta__badge">New</span>
-              </button>
+            items?.length ? (
+              <>
+                {/*
+                  How this project stands, to the LEFT of the action rather than
+                  out by the avatar. It reads as part of the same sentence as
+                  Print, and the avatar goes back to being only the account.
+
+                  Two shapes, because there are two situations. A signed-in
+                  cookbook autosaves, so there is nothing to press and the word
+                  is the whole story. Anything that does NOT autosave — every
+                  card job, and a book belonging to someone signed out — gets a
+                  real button, because for those "saved" is something you have
+                  to ask for. Leaving the workspace files either of them anyway
+                  (see `handleNavigateHome`); this is for saving without leaving.
+                */}
+                {autosaveEnabled
+                  ? saveStatus && (
+                      <span
+                        className={`rp-save-state ${
+                          SAVE_FAILURES.has(saveStatus) ? "rp-save-state--failed" : ""
+                        }`}
+                        role="status"
+                        aria-live="polite"
+                        onClick={SAVE_FAILURES.has(saveStatus) ? handleRetrySave : undefined}
+                      >
+                        {SAVE_STATUS_LABEL[saveStatus]}
+                      </span>
+                    )
+                  : (
+                      <button
+                        type="button"
+                        className="btn btn-secondary btn-compact"
+                        onClick={() => void handleSaveProject()}
+                      >
+                        Save
+                      </button>
+                    )}
+
+                {/*
+                  One button, not two. Buying and printing are not separate
+                  actions here — if the book has not been paid for, printing IS
+                  the purchase, and the label has always said so. Splitting them
+                  would put a Purchase button beside a Print button that does the
+                  same thing when pressed, and leave someone unsure which one had
+                  just charged them.
+                */}
+                <button
+                  type="button"
+                  className="btn btn-primary btn-compact"
+                  disabled={printBlocked}
+                  onClick={() => void handlePrint()}
+                >
+                  {printSpinner ? (
+                    <SpinnerIcon size={ICON_SIZE.md} />
+                  ) : (
+                    <PrintIcon size={ICON_SIZE.md} />
+                  )}
+                  {cookbookLocked
+                    ? `Purchase & Print · ${cookbookPrice}`
+                    : templateLocked
+                      ? "Unlock & Print"
+                      : "Print"}
+                </button>
+              </>
             ) : undefined
           }
           onNavigateHome={() => void handleNavigateHome()}
-          saveStatus={saveStatus}
-          onRetrySave={handleRetrySave}
-          /* The only Save button left: a cookbook belonging to someone who
-             isn't signed in. Signed in it autosaves, so a button would be a
-             control for something already done. */
-          onSave={
-            COOKBOOK_ENABLED && isCookbookDocument && !cookPilotUser && items?.length
-              ? () => void handleSaveProject()
-              : undefined
-          }
         />
 
         {/* One-line "back up your cookbook" bar under the toolbar, shown to any
@@ -3495,6 +3567,9 @@ export default function PrintPage() {
 
         {/* Center: large preview of the selected page */}
         <PrintDeck
+          printBlocked={printBlocked}
+          printSpinner={printSpinner}
+          templateLocked={templateLocked}
           singleRecipePrintView={singleRecipePrintView}
           cookbookView={cookbookView}
           previewMeasuring={previewMeasuring}
@@ -3557,10 +3632,7 @@ export default function PrintPage() {
           hasPrintSettingsFields={hasPrintSettingsFields}
           renderPrintSettingsFields={renderPrintSettingsFields}
           handleMobilePrint={handleMobilePrint}
-          printBlocked={printBlocked}
-          printSpinner={printSpinner}
           cookbookLocked={cookbookLocked}
-          templateLocked={templateLocked}
           renderAllPages={renderAllPages}
         />
 
@@ -3599,16 +3671,11 @@ export default function PrintPage() {
           freeTemplateBannerDismissed={freeTemplateBannerDismissed}
           setFreeTemplateBannerDismissed={setFreeTemplateBannerDismissed}
           setToastMessage={setToastMessage}
-          handlePrint={handlePrint}
-          printBlocked={printBlocked}
-          printSpinner={printSpinner}
-          templateLocked={templateLocked}
           isRecipePrinterAdmin={isRecipePrinterAdmin}
           canShareActiveRecipe={Boolean(activeRecipeItem?.recipe)}
           setShowShareDialog={setShowShareDialog}
           hasPrintSettingsFields={hasPrintSettingsFields}
           setPrintSettingsOpen={setPrintSettingsOpen}
-          onSwitchToCards={exitCookbookToCards}
         />
 
         <Dialog

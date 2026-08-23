@@ -1237,6 +1237,158 @@
     @apply opacity-50;
     cursor: default;
   }
+  /* ── The document's name and kind, centred in the workspace bar ─────────
+     Built from the same parts as everything else in the bar: the menu is the
+     `.mode-toggle-menu` recipe (hairline, 12px radius, card ground, lg shadow
+     because it floats), the selected option uses the shared `--cp-selected-*`
+     tokens every single-select control uses, and focus is the field treatment
+     — the border changing colour rather than a ring appearing outside it. */
+  .rp-project-heading {
+    @apply flex flex-col items-center;
+    gap: 1px;
+    min-width: 0;
+  }
+
+  /* Reads as text until you go near it, then as something you can act on.
+     A control that announces itself with a border at rest would compete with
+     the buttons either side of it for a job that is mostly just a label. */
+  .rp-project-heading__title {
+    @apply max-w-full truncate rounded font-bold transition-colors;
+    padding: 2px 8px;
+    border: 1px solid transparent;
+    background: transparent;
+    color: var(--cp-ink);
+    font-size: var(--cp-fs-body);
+    line-height: 1.25;
+    cursor: text;
+  }
+
+  .rp-project-heading__title:hover {
+    background: var(--cp-overlay-hover);
+  }
+
+  .rp-project-heading__title:focus-visible {
+    border-color: var(--cp-accent);
+    outline: none;
+  }
+
+  /* Same box as the title it replaces, so renaming doesn't move the bar. */
+  .rp-project-heading__input {
+    @apply w-full rounded font-bold;
+    max-width: 22rem;
+    padding: 2px 8px;
+    border: 1px solid var(--cp-accent);
+    background: var(--cp-card);
+    color: var(--cp-ink);
+    font-size: var(--cp-fs-body);
+    line-height: 1.25;
+    outline: none;
+  }
+
+  .rp-project-heading__kind {
+    @apply relative;
+  }
+
+  .rp-project-heading__kind-trigger {
+    @apply inline-flex items-center gap-1 rounded font-bold transition-colors;
+    padding: 1px 6px;
+    border: 1px solid transparent;
+    background: transparent;
+    color: var(--cp-ink-soft);
+    font-size: var(--cp-fs-caption);
+  }
+
+  .rp-project-heading__kind-trigger:hover {
+    background: var(--cp-overlay-hover);
+    color: var(--cp-ink);
+  }
+
+  .rp-project-heading__kind-trigger:focus-visible {
+    border-color: var(--cp-accent);
+    outline: none;
+  }
+
+  .rp-project-heading__menu {
+    position: absolute;
+    top: calc(100% + 8px);
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 20;
+    width: max-content;
+    max-width: min(20rem, calc(100vw - 2rem));
+    padding: 6px;
+    border: 1px solid var(--cp-line);
+    border-radius: 12px;
+    background: var(--cp-card);
+    box-shadow: var(--cp-shadow-lg);
+  }
+
+  .rp-project-heading__option {
+    @apply flex w-full flex-col rounded text-left transition-colors;
+    gap: 1px;
+    padding: 8px 10px;
+    border: 1px solid transparent;
+    background: transparent;
+  }
+
+  .rp-project-heading__option:hover {
+    background: var(--cp-surface-muted);
+  }
+
+  .rp-project-heading__option.is-active {
+    border-color: var(--cp-selected-border);
+    background: var(--cp-selected-fill);
+    box-shadow: var(--cp-selected-ring);
+  }
+
+  .rp-project-heading__option.is-active .rp-project-heading__option-name {
+    color: var(--cp-selected-text);
+  }
+
+  .rp-project-heading__option:focus-visible {
+    border-color: var(--cp-accent);
+    outline: none;
+  }
+
+  .rp-project-heading__option-name {
+    @apply font-bold;
+    font-size: var(--cp-fs-small);
+    color: var(--cp-ink);
+  }
+
+  .rp-project-heading__option-note {
+    font-size: var(--cp-fs-caption);
+    color: var(--cp-ink-soft);
+    line-height: 1.4;
+  }
+
+  /* Reassurance, not a warning — switching to cards stashes the book rather
+     than discarding it, so this sits quietly under the options instead of
+     interrupting as a confirm dialog. */
+  .rp-project-heading__menu-note {
+    padding: 6px 10px 2px;
+    border-top: 1px solid var(--cp-line);
+    margin-top: 4px;
+    font-size: var(--cp-fs-caption);
+    color: var(--cp-ink-soft);
+    line-height: 1.4;
+  }
+
+  /* How the project stands, sitting to the left of Print. Quiet by default;
+     the failure state is the only one that asks for anything. */
+  .rp-save-state {
+    @apply inline-flex items-center whitespace-nowrap;
+    font-size: var(--cp-fs-caption);
+    color: var(--cp-ink-soft);
+  }
+
+  .rp-save-state--failed {
+    color: var(--cp-error);
+    cursor: pointer;
+    text-decoration: underline;
+    text-underline-offset: 2px;
+  }
+
   .mode-toggle-overflow {
     position: relative;
   }

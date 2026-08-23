@@ -5,8 +5,6 @@ import type { CustomerInfo } from "@revenuecat/purchases-js";
 import {
   CheckIcon,
   ICON_SIZE,
-  PrintIcon,
-  SpinnerIcon,
   XIcon,
 } from "@/components/icons";
 import { PrintSetupControls } from "@/components/print/PrintSetupControls";
@@ -27,7 +25,6 @@ interface PrintConfigPanelProps {
   bookTitle: string | undefined;
   /** Leaves the book and prints the same recipes as cards. The book is stashed
       with the project, so this is reversible and loses nothing. */
-  onSwitchToCards: () => void;
   // Setup controls (Size / Photos / Include)
   cardSize: PrintCardSize;
   setCardSize: Dispatch<SetStateAction<PrintCardSize>>;
@@ -49,10 +46,6 @@ interface PrintConfigPanelProps {
   setFreeTemplateBannerDismissed: Dispatch<SetStateAction<boolean>>;
   setToastMessage: Dispatch<SetStateAction<string | null>>;
   // Footer actions
-  handlePrint: () => Promise<void> | void;
-  printBlocked: boolean;
-  printSpinner: boolean;
-  templateLocked: boolean;
   isRecipePrinterAdmin: boolean;
   canShareActiveRecipe: boolean;
   setShowShareDialog: Dispatch<SetStateAction<boolean>>;
@@ -74,7 +67,6 @@ export function PrintConfigPanel({
   cookbookMode,
   cookbookLocked,
   bookTitle,
-  onSwitchToCards,
   cardSize,
   setCardSize,
   anyRecipeHasImage,
@@ -93,10 +85,6 @@ export function PrintConfigPanel({
   freeTemplateBannerDismissed,
   setFreeTemplateBannerDismissed,
   setToastMessage,
-  handlePrint,
-  printBlocked,
-  printSpinner,
-  templateLocked,
   isRecipePrinterAdmin,
   canShareActiveRecipe,
   setShowShareDialog,
@@ -173,42 +161,14 @@ export function PrintConfigPanel({
       </div>
 
       <div className="recipe-config-panel__footer">
-        {/* Print (or Unlock/Purchase & Print) is the primary action, so it
-            always sits above the secondary "Save project". */}
-        <button
-          onClick={() => void handlePrint()}
-          className="btn btn-primary recipe-print-button"
-          disabled={printBlocked}
-        >
-          {printSpinner ? (
-            <SpinnerIcon size={ICON_SIZE.md} />
-          ) : (
-            <PrintIcon size={ICON_SIZE.md} />
-          )}
-          {cookbookLocked
-            ? "Purchase & Print"
-            : templateLocked
-              ? "Unlock & Print"
-              : "Print"}
-        </button>
-        {/* Making a cookbook is a CREATE action, so it reads as one and sits with
-            the other actions. It used to be half of a segmented control in the
-            header, which implied two views of one thing — but a cookbook is a
-            paid document with a cover and chapters and a card job is a free
-            print, and the header now says which document you're in, so a toggle
-            there was answering the same question differently. */}
-        {COOKBOOK_ENABLED && cookbookMode && (
-          <button type="button" className="recipe-print-settings-link" onClick={onSwitchToCards}>
-            Print as recipe cards instead
-          </button>
-        )}
-        {/* "Save project" lived here as a third full-width button and is gone.
-            It was the largest control in the panel for an action taken once,
-            it sat among PRINT settings which is not what it did, and it
-            duplicated a "Saved" indicator already sitting beside the account
-            avatar — two places claiming to own the same fact. Saving now
-            happens where that word already is: see `onSave` on SiteHeader. */
-        }
+        {/* Print, Purchase and "switch to recipe cards" all left this panel.
+            This is where you set up a print; they are things you DO to the
+            document, and they now sit in the header with the document's own
+            name — Print and Purchase as buttons, the card/cookbook switch under
+            the title, which is the one place that already says which kind of
+            document this is. "Save project" went earlier, and saving itself has
+            since gone too: leaving the workspace files the project on the way
+            out. What is left here is genuinely settings. */}
         {/* Share links are a single-recipe-card feature; a cookbook is a
             whole bound book, so this is hidden in cookbook mode even for the
             admin user. */}

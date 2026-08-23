@@ -15,12 +15,19 @@ export function SiteHeader({
   saveStatus,
   onRetrySave,
   onSave,
+  center,
   onNavigateHome,
 }: {
   backHref?: string;
   actions?: ReactNode;
-  /** Center `actions` in the bar (absolute) rather than right-aligning them. */
+  /** Center `actions` in the bar (absolute) rather than right-aligning them.
+      Superseded by `center`, which lets a page have both. */
   centerActions?: boolean;
+  /** Centred on the page, independent of `actions`. The workspace puts the
+      project's title and what kind of document it is here — the two facts that
+      say WHICH thing you are looking at, which belong in the middle rather
+      than queued up with the controls that act on it. */
+  center?: ReactNode;
   compact?: boolean;
   sticky?: boolean;
   saveStatus?: AccountSaveStatus | null;
@@ -53,12 +60,21 @@ export function SiteHeader({
       <HomeLink href={backHref ?? "/"} onNavigateHome={onNavigateHome}>
         {logo}
       </HomeLink>
-      {actions && centerActions && (
-          <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 flex items-center gap-cp-3">
-            {actions}
+      {/* Centred on the PAGE, not between its neighbours — absolutely
+          positioned so the title stays put as the buttons beside it change
+          width (Purchase appears and disappears with the paywall, the save
+          warning comes and goes). A flex-centred middle column would slide the
+          title sideways every time one of those changed, which reads as the
+          page twitching. `pointer-events` is restored on the content so the
+          full-width box doesn't swallow clicks meant for the bar. */}
+      {(center || (actions && centerActions)) && (
+        <div className="pointer-events-none absolute inset-x-0 top-1/2 -translate-y-1/2 flex justify-center">
+          <div className="pointer-events-auto flex items-center gap-cp-3 max-w-[min(46%,26rem)]">
+            {center ?? actions}
           </div>
+        </div>
       )}
-      <div className="flex items-center gap-cp-2 sm:gap-cp-3 flex-nowrap justify-end shrink-0">
+      <div className="relative z-[1] flex items-center gap-cp-2 sm:gap-cp-3 flex-nowrap justify-end shrink-0">
         {actions && !centerActions ? actions : null}
         <AccountControl saveStatus={saveStatus} onRetry={onRetrySave} onSave={onSave} />
       </div>
