@@ -3741,7 +3741,6 @@ export default function PrintPage() {
           setMobileDrawer={setMobileDrawer}
           cookbookMode={cookbookMode}
           cookbookLocked={cookbookLocked}
-          bookTitle={projectMeta.meta.cover?.title}
           cardSize={cardSize}
           setCardSize={setCardSize}
           anyRecipeHasImage={anyRecipeHasImage}

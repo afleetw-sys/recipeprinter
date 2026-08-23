@@ -22,7 +22,6 @@ interface PrintConfigPanelProps {
   /** Turns this print job into a cookbook. A create action, not a view change —
       see `renderModeSwitch`'s removal in app/print/page.tsx. */
   /** The cover title — this panel's heading in cookbook mode. */
-  bookTitle: string | undefined;
   /** Leaves the book and prints the same recipes as cards. The book is stashed
       with the project, so this is reversible and loses nothing. */
   // Setup controls (Size / Photos / Include)
@@ -66,7 +65,6 @@ export function PrintConfigPanel({
   setMobileDrawer,
   cookbookMode,
   cookbookLocked,
-  bookTitle,
   cardSize,
   setCardSize,
   anyRecipeHasImage,
@@ -109,10 +107,14 @@ export function PrintConfigPanel({
             One line, truncated: a long title should never push the Purchased
             chip or the close button around. */}
         <h2 className="text-cp-dialog-title font-extrabold tracking-[-0.02em] min-w-0 truncate">
+          {/* Says what the panel IS, not what the document is called. The
+              document's name is already in the top-left corner of the bar, so
+              repeating it here spent the panel's only heading on a fact that
+              was on screen twice — and left the panel itself unlabelled. */}
           {mobileDrawer === "template"
             ? "Themes"
             : cookbookMode
-              ? bookTitle?.trim() || "Untitled cookbook"
+              ? "Cookbook settings"
               : "Print setup"}
         </h2>
         {cookbookMode && !cookbookLocked && mobileDrawer !== "template" && (
