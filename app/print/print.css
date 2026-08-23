@@ -1439,8 +1439,8 @@
   display: flex;
   flex-direction: column;
   max-height: calc(100dvh - 104px);
-  margin: 16px 0;
-  padding: 16px;
+  margin: 12px 0;
+  padding: 12px 14px 14px;
   border: 1px solid var(--cp-line);
   border-radius: 18px;
   background:
@@ -1491,7 +1491,7 @@
   align-items: center;
   justify-content: space-between;
   gap: 10px;
-  padding-bottom: 12px;
+  padding-bottom: 10px;
   border-bottom: 1px solid var(--cp-line);
 }
 
@@ -1598,10 +1598,30 @@
   line-height: 1.4;
 }
 
+/* ── Workspace density ────────────────────────────────────────────────────
+   A tool panel reads as a tool by its RHYTHM, not by being uniformly small:
+   quiet labels, rows close enough to scan as one group, and clear air between
+   groups. So the space WITHIN a setting tightens and the space BETWEEN
+   settings holds. Shrinking both equally just makes a smaller version of the
+   same page and loses the grouping that makes a dense panel readable.
+
+   Nothing here touches the deck. The page being printed is the work, not the
+   chrome around it, and it stays exactly the size it was. */
 .recipe-config-section {
   display: flex;
   flex-direction: column;
-  gap: 9px;
+  gap: 6px;
+}
+
+.recipe-config-section + .recipe-config-section {
+  margin-top: 14px;
+}
+
+/* The panel names itself quietly. A 20px bold heading is a DOCUMENT
+   convention — it announces the thing you are reading. This panel is not the
+   thing you are reading; the page is. */
+.recipe-config-panel h2 {
+  font-size: var(--cp-fs-body);
 }
 .control-checkbox-group.recipe-config-section {
   gap: 0;

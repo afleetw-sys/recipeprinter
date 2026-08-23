@@ -1002,12 +1002,14 @@
 
   /* Shared checkbox: one semantic component and one visual recipe for every
      binary setting in the print workspace. */
+  /* A settings row, not a primary action: 40px is a touch target for something
+     you press once, and these are things you scan a column of. */
   .control-checkbox {
     display: grid;
     grid-template-columns: 20px 1fr;
     align-items: center;
     gap: 10px;
-    min-height: 40px;
+    min-height: 30px;
     color: var(--cp-ink);
     cursor: pointer;
   }
