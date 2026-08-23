@@ -1243,8 +1243,19 @@
      because it floats), the selected option uses the shared `--cp-selected-*`
      tokens every single-select control uses, and focus is the field treatment
      — the border changing colour rather than a ring appearing outside it. */
+  /* Capped HERE rather than on the title. The title used `max-w-full`, which
+     resolves against this column — and a shrink-to-fit column with `min-width:
+     0` computes to nothing, so every name truncated to a few characters
+     regardless of the room available. A real limit on the container gives the
+     percentage something to be a percentage of. */
   .rp-project-heading {
-    @apply flex flex-col items-center;
+    @apply flex flex-col items-start;
+    max-width: min(38vw, 22rem);
+    /* Pulled left as a WHOLE, so the text lines up with the logo beside it
+       while both children keep their padding as hover targets. Doing this per
+       child instead shortens each one's contribution to this column's width,
+       which sized it a few pixels under the title and truncated every name. */
+    margin-left: -6px;
     /* Zero, not a gap: both children already carry padding for their own hover
        targets, so the visible space between them is that padding. The name and
        what kind of thing it is are one label on two lines, and they should sit
@@ -1259,7 +1270,9 @@
      the buttons either side of it for a job that is mostly just a label. */
   .rp-project-heading__title {
     @apply max-w-full truncate rounded font-bold transition-colors;
-    padding: 1px 8px;
+    /* Room for the ellipsis to be the exception rather than the rule. */
+    min-width: 0;
+    padding: 1px 6px;
     border: 1px solid transparent;
     background: transparent;
     color: var(--cp-ink);
@@ -1320,8 +1333,7 @@
   .rp-project-heading__menu {
     position: absolute;
     top: calc(100% + 8px);
-    left: 50%;
-    transform: translateX(-50%);
+    left: -6px;
     z-index: 20;
     width: max-content;
     max-width: min(20rem, calc(100vw - 2rem));

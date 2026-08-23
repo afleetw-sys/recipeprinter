@@ -3379,11 +3379,15 @@ export default function PrintPage() {
           compact
           sticky
           /*
-            The middle says WHICH document this is; the right says what you can
-            do to it, in the order you'd reach for them: how it stands, then the
-            action that finishes it.
+            The top left says WHICH document this is, in place of the product's
+            own name — on this page you already know what app you are in, and
+            the thing you don't know is which project is open. The mark stays
+            beside it as the way home. The right says what you can DO to it, in
+            the order you'd reach for them: how it stands, then the action that
+            finishes it.
           */
-          center={
+          wordmark={false}
+          lead={
             items?.length ? (
               <ProjectHeading
                 title={headingTitle}

@@ -15,7 +15,8 @@ export function SiteHeader({
   saveStatus,
   onRetrySave,
   onSave,
-  center,
+  lead,
+  wordmark = true,
   onNavigateHome,
 }: {
   backHref?: string;
@@ -25,9 +26,14 @@ export function SiteHeader({
   centerActions?: boolean;
   /** Centred on the page, independent of `actions`. The workspace puts the
       project's title and what kind of document it is here — the two facts that
-      say WHICH thing you are looking at, which belong in the middle rather
-      than queued up with the controls that act on it. */
-  center?: ReactNode;
+      say WHICH thing you are looking at. On the workspace they sit in the
+      brand's place, because there the document IS what the page is about; the
+      logo stays beside them as the way home. */
+  lead?: ReactNode;
+  /** Drop the wordmark, keeping just the mark as the home link. For surfaces
+      that put something more useful than the product's own name in that
+      corner. */
+  wordmark?: boolean;
   compact?: boolean;
   sticky?: boolean;
   saveStatus?: AccountSaveStatus | null;
@@ -41,13 +47,15 @@ export function SiteHeader({
   const logo = (
     <>
       <LogoMark size={compact ? 26 : 30} rounded={0} />
-      <Wordmark
-        className={`${
-          compact
-            ? "text-[length:var(--cp-fs-wordmark-compact)]"
-            : "text-[length:var(--cp-fs-wordmark)]"
-        } text-ink`}
-      />
+      {wordmark && (
+        <Wordmark
+          className={`${
+            compact
+              ? "text-[length:var(--cp-fs-wordmark-compact)]"
+              : "text-[length:var(--cp-fs-wordmark)]"
+          } text-ink`}
+        />
+      )}
     </>
   );
 
@@ -57,21 +65,19 @@ export function SiteHeader({
         sticky ? "sticky top-0 z-10 bg-card border-b border-line py-cp-3" : ""
       }`}
     >
-      <HomeLink href={backHref ?? "/"} onNavigateHome={onNavigateHome}>
-        {logo}
-      </HomeLink>
-      {/* Centred on the PAGE, not between its neighbours — absolutely
-          positioned so the title stays put as the buttons beside it change
-          width (Purchase appears and disappears with the paywall, the save
-          warning comes and goes). A flex-centred middle column would slide the
-          title sideways every time one of those changed, which reads as the
-          page twitching. `pointer-events` is restored on the content so the
-          full-width box doesn't swallow clicks meant for the bar. */}
-      {(center || (actions && centerActions)) && (
+      {/* The left group: the way home, and — where a page provides one — what
+          you are looking at, sitting where the product's name would otherwise
+          be. `min-w-0` so the name is what truncates when the bar gets tight,
+          rather than shoving the buttons off the end. */}
+      <div className="flex items-center gap-cp-3 min-w-0">
+        <HomeLink href={backHref ?? "/"} onNavigateHome={onNavigateHome}>
+          {logo}
+        </HomeLink>
+        {lead}
+      </div>
+      {actions && centerActions && (
         <div className="pointer-events-none absolute inset-x-0 top-1/2 -translate-y-1/2 flex justify-center">
-          <div className="pointer-events-auto flex items-center gap-cp-3 max-w-[min(46%,26rem)]">
-            {center ?? actions}
-          </div>
+          <div className="pointer-events-auto flex items-center gap-cp-3">{actions}</div>
         </div>
       )}
       <div className="relative z-[1] flex items-center gap-cp-2 sm:gap-cp-3 flex-nowrap justify-end shrink-0">
