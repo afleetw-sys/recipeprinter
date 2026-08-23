@@ -87,7 +87,14 @@
        deck above it computed to 0px. The strip is a fixed piece of furniture;
        the deck takes whatever is left. */
     grid-template-rows: minmax(0, 1fr) var(--rp-strip-height);
-    --rp-strip-height: 194px;
+    /* Deliberately short. The strip is a way to get to a page, not a second
+       view of the book — at 194px it was a shelf competing with the page you
+       were actually reading. */
+    --rp-strip-height: 132px;
+    --rp-thumb-width: 92px;
+    /* The width a thumbnail's page renders at, which the spread halves crop
+       against. Kept as a variable so the two cannot drift apart. */
+    --rp-thumb-page-width: 141px;
     gap: 0;
     height: 100%;
     min-height: 0;
@@ -180,10 +187,15 @@
     position: static;
     flex-direction: row;
     align-items: stretch;
-    gap: 12px;
+    gap: 10px;
     height: auto;
     max-height: none;
-    padding: 12px 16px;
+    /* Inset from both ends, so the first thumbnail is not welded to the
+       settings panel and the last is not sliced off by the window edge. The
+       inline padding is part of the scrollable box, so it holds at both ends of
+       the scroll rather than only at rest. */
+    padding: 6px 20px 10px;
+    scroll-padding-inline: 20px;
     border-top: 1px solid var(--cp-line);
     background: var(--cp-card);
     overflow-x: auto;
@@ -242,20 +254,16 @@
      left of the shell, full height, and lays its tiles out as a wrapping grid.
      The deck steps aside entirely — you are arranging the book, not reading a
      page of it. */
+  /* Same columns, different rows: the strip's row takes the deck's height so
+     the board unfolds upward. Keeping the column count identical is what lets
+     the expansion be animated frame by frame — a grid cannot interpolate
+     between different numbers of tracks. */
   .recipe-print-page .recipe-print-shell--organizing {
-    grid-template-columns: minmax(0, 1fr) 330px;
-    grid-template-rows: minmax(0, 1fr);
+    grid-template-rows: 0px minmax(0, 1fr);
   }
 
   .recipe-print-page .recipe-print-shell--organizing .recipe-page-strip {
-    grid-column: 1;
-    grid-row: 1;
     border-top: 0;
-  }
-
-  .recipe-print-page .recipe-print-shell--organizing .recipe-config-panel {
-    grid-column: 2;
-    grid-row: 1;
   }
 
   .recipe-print-page .recipe-print-shell--organizing .recipe-page-canvas {
@@ -270,8 +278,14 @@
     overflow-y: auto;
   }
 
+  /* The board is a grid of tiles, so a section's pages run across and wrap.
+     The base rule stacks them in a column, which is right for a tall rail and
+     put every tile on its own row here. */
   .recipe-print-page .recipe-print-shell--organizing .recipe-page-rail__section-group {
+    flex-direction: row;
     flex-wrap: wrap;
+    align-content: flex-start;
+    gap: 16px;
     width: 100%;
   }
 
@@ -286,7 +300,7 @@
      width and clipping the right one at the tile's edge costs nothing — the
      pages render at their usual scale and the window does the work. */
   .recipe-print-page .recipe-print-shell:not(.recipe-print-shell--organizing) .recipe-page-rail__thumb {
-    width: 143px;
+    width: var(--rp-thumb-width);
     overflow: hidden;
   }
 
@@ -297,16 +311,19 @@
   }
 
   .recipe-print-page .recipe-print-shell:not(.recipe-print-shell--organizing) .recipe-page-rail__thumb--spread .recipe-page-scaler {
-    flex: 0 0 141px;
-    width: 141px;
+    flex: 0 0 var(--rp-thumb-page-width);
+    width: var(--rp-thumb-page-width);
   }
 
+  /* Each half is (tile - gutter) / 2 wide, so the page is pulled over by
+     whatever of it does not fit. Derived rather than hardcoded: the two numbers
+     have to agree or the pages stop meeting in the middle. */
   .recipe-print-page .recipe-print-shell:not(.recipe-print-shell--organizing) .recipe-page-rail__thumb--spread .recipe-page-scaler:first-child {
-    margin-left: -70px;
+    margin-left: calc(((var(--rp-thumb-width) - 1px) / 2) - var(--rp-thumb-page-width));
   }
 
   .recipe-print-page .recipe-print-shell:not(.recipe-print-shell--organizing) .recipe-page-rail__thumb--spread .recipe-page-scaler:last-child {
-    margin-right: -70px;
+    margin-right: calc(((var(--rp-thumb-width) - 1px) / 2) - var(--rp-thumb-page-width));
   }
 
   /* The title and the "One page" caption go. The strip is a row of pictures of
@@ -349,7 +366,7 @@
     gap: 16px;
     width: auto;
     margin: 0;
-    padding: 10px 16px 6px;
+    padding: 8px 20px 4px;
     border: 0;
     background: transparent;
   }
@@ -654,8 +671,14 @@
      calc() tracks and these percentages. The per-frame FLIP measures the live
      layout each frame, so the recipe tiles slide into their cells in step with
      the expansion. This class is the end state the JS animates toward. */
+  /* The three-column expansion this class used to drive is gone: the shell has
+     two columns now and the organizer grows DOWNWARDS instead (see
+     `--organizing` above, and `runOrganizeFlip`). Left in place with no column
+     override because the class still marks the end state the JS animates
+     toward — and because a stale `50% 30% 20%` silently made a THIRD column on
+     a two-column grid, which is what squeezed the board into 384px. */
   .recipe-print-page .recipe-print-shell--organize-wide {
-    grid-template-columns: 50% 30% 20%;
+    grid-template-rows: 0px minmax(0, 1fr);
   }
 
   /* While the organizer is open the preview + settings recede to a quiet peek,
@@ -7950,4 +7973,86 @@ textarea.recipe-card__toc-title {
     -webkit-print-color-adjust: exact;
     print-color-adjust: exact;
   }
+}
+
+/* ── Add recipes, at the top of the settings panel ────────────────────────
+   Moved out of the page strip. In the strip it was a split button whose two
+   halves were styled by different rules — a filled primary beside an outlined
+   overflow trigger — which read as one button painted half black and half
+   white. Both halves are styled together here, so the pair reads as the single
+   control it is. */
+.recipe-config-add-slot {
+  padding: 0 16px 4px;
+}
+
+.recipe-config-add {
+  position: relative;
+  display: flex;
+  width: 100%;
+}
+
+.recipe-config-add__main {
+  flex: 1 1 auto;
+  justify-content: center;
+  background: var(--cp-ink);
+  border: 1px solid var(--cp-ink);
+  color: var(--cp-card);
+}
+
+.recipe-config-add__main--paired {
+  border-top-right-radius: 0;
+  border-bottom-right-radius: 0;
+}
+
+.recipe-config-add__main:hover:not(:disabled) {
+  background: var(--cp-ink-soft);
+  border-color: var(--cp-ink-soft);
+}
+
+/* The other half of the same button, not a separate outlined one. */
+.recipe-config-add__trigger {
+  flex: 0 0 42px;
+  display: grid;
+  place-items: center;
+  border: 1px solid var(--cp-ink);
+  border-left: 1px solid color-mix(in srgb, var(--cp-card) 35%, var(--cp-ink));
+  border-radius: 0 12px 12px 0;
+  background: var(--cp-ink);
+  color: var(--cp-card);
+}
+
+.recipe-config-add__trigger:hover:not(:disabled) {
+  background: var(--cp-ink-soft);
+  border-color: var(--cp-ink-soft);
+}
+
+.recipe-config-add__menu {
+  position: absolute;
+  top: calc(100% + 6px);
+  right: 0;
+  z-index: 20;
+  min-width: 180px;
+  padding: 6px;
+  border: 1px solid var(--cp-line);
+  border-radius: 12px;
+  background: var(--cp-card);
+  box-shadow: var(--cp-shadow-lg);
+}
+
+.recipe-config-add__menu button {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  min-height: 40px;
+  padding: 0 10px;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--cp-ink);
+  font-size: var(--cp-fs-small);
+  font-weight: 700;
+}
+
+.recipe-config-add__menu button:hover {
+  background: var(--cp-surface-muted);
 }

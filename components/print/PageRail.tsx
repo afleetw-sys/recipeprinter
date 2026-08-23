@@ -386,66 +386,6 @@ export function PageRail(props: PageRailProps) {
               {recipeCount} {recipeCount === 1 ? "recipe" : "recipes"}
               </span>
           <div className="recipe-page-rail__head-actions">
-            <div className="recipe-page-rail__add-row" ref={addMenuRef}>
-              <button
-                type="button"
-                className={`btn btn-secondary recipe-page-rail__add-main ${
-                  projectMeta.meta.cookbookMode ? "recipe-page-rail__add-main--paired" : ""
-                }`}
-                onClick={() => {
-                  setAddMenuOpen(false);
-                  openAddRecipeBelow();
-                }}
-              >
-                <PlusIcon size={ICON_SIZE.md} />
-                Add recipes
-              </button>
-            {/* In a cookbook the section action folds into a split-button
-                  overflow, so the primary control reads plainly as "Add recipes". */}
-            {projectMeta.meta.cookbookMode && organizeMode && (
-                <button
-                  type="button"
-                  className="btn btn-secondary recipe-page-rail__add-section"
-                  data-rail-new-section
-                  onClick={() => {
-                    if (effectiveRailSelection.size > 0) makeSectionFromSelection();
-                    else addSectionDivider();
-                  }}
-                >
-                  <PlusIcon size={ICON_SIZE.md} />
-                  Add section
-                </button>
-              )}
-            {projectMeta.meta.cookbookMode && !organizeMode && (
-                <>
-                  <button
-                    type="button"
-                    className="recipe-page-rail__add-menu-trigger"
-                    aria-haspopup="menu"
-                    aria-expanded={addMenuOpen}
-                    aria-label="More add options"
-                    onClick={() => setAddMenuOpen((open) => !open)}
-                  >
-                    <ChevronDownIcon size={ICON_SIZE.sm} />
-                  </button>
-                {addMenuOpen && (
-                    <div className="recipe-page-rail__add-menu" role="menu">
-                      <button
-                        type="button"
-                        role="menuitem"
-                        onClick={() => {
-                          setAddMenuOpen(false);
-                          addSectionDivider();
-                        }}
-                      >
-                        <PlusIcon size={ICON_SIZE.sm} />
-                        Add section
-                      </button>
-                    </div>
-                  )}
-                </>
-              )}
-            </div>
           {projectMeta.meta.cookbookMode && (
               <button
                 type="button"

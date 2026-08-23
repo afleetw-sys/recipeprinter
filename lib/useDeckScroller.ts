@@ -239,9 +239,10 @@ export function useDeckScroller({
       if (availW > 0 && availH > 0) {
         const widthScale = availW / pageWidth;
         // Height is what limits a portrait page on a short deck, so this factor
-        // is the real size control. Raised from 0.86: the strip below took the
-        // deck's spare height and the page shrank with it.
-        const heightScale = (availH * (horizontal ? 0.94 : 0.74)) / pageHeight;
+        // is the real size control. 0.94 filled the deck edge to edge and read
+        // as overwhelming rather than legible; this is a step up from the old
+        // vertical deck's 0.74 without the page becoming the whole screen.
+        const heightScale = (availH * (horizontal ? 0.84 : 0.74)) / pageHeight;
         const scale = Math.max(0.12, Math.min(1.05, widthScale, heightScale));
         setDeckScale(scale);
         // Give the CSS top padding (see `--deck-top-pad` in globals.css) the

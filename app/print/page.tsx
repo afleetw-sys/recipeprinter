@@ -83,6 +83,7 @@ import {
 import {
   CheckIcon,
   BookIcon,
+  ChevronDownIcon,
   ICON_SIZE,
   ImageIcon,
   LinkIcon,
@@ -1481,14 +1482,24 @@ export default function PrintPage() {
     // Cancel + clean up any FLIP still running before measuring the "before".
     organizeFlipRef.current?.finalize();
 
-    const parseCols = () =>
+    /**
+     * The organizer grows DOWNWARDS now, not sideways.
+     *
+     * It used to be a third column widening across a three-column shell. The
+     * shell is two columns and two rows since the page strip moved under the
+     * deck, so the same expansion is now the strip's ROW taking the deck's
+     * height — the board unfolds upward into the space the page was using. The
+     * per-frame drive is unchanged, which is the point: the tiles still travel
+     * from where they were to where they land, tracking the layout as it moves
+     * rather than being told a start and an end.
+     */
+    const parseRows = () =>
       window
         .getComputedStyle(shell)
-        .gridTemplateColumns.split(" ")
+        .gridTemplateRows.split(" ")
         .map((v) => parseFloat(v));
-    // Whether we can drive the 3-column expansion (desktop grid layout only).
-    const fromCols = parseCols();
-    const canAnimateWidth = fromCols.length === 3 && fromCols.every((v) => !Number.isNaN(v));
+    const fromRows = parseRows();
+    const canAnimateWidth = fromRows.length === 2 && fromRows.every((v) => !Number.isNaN(v));
 
     const selector = "[data-organize-flip]";
     const firstRects = new Map<string, DOMRect>();
@@ -1505,15 +1516,15 @@ export default function PrintPage() {
     // Read the target column widths, then pin the columns back to their start so
     // the panel can be widened frame by frame instead of snapping. Done with the
     // shell's own transition suppressed so neither read nor pin animates.
-    let toCols: number[] = [];
+    let toRows: number[] = [];
     const prevShellTransition = shell.style.transition;
     if (canAnimateWidth) {
       shell.style.transition = "none";
-      shell.style.gridTemplateColumns = "";
-      toCols = parseCols();
-      shell.style.gridTemplateColumns = fromCols.map((v) => `${v}px`).join(" ");
-      // Commit the pinned start width before the first frame paints.
-      void shell.offsetWidth;
+      shell.style.gridTemplateRows = "";
+      toRows = parseRows();
+      shell.style.gridTemplateRows = fromRows.map((v) => `${v}px`).join(" ");
+      // Commit the pinned start height before the first frame paints.
+      void shell.offsetHeight;
     }
 
     const nodes = Array.from(shell.querySelectorAll<HTMLElement>(selector))
@@ -1523,9 +1534,9 @@ export default function PrintPage() {
           Boolean(n.prev) && n.prev!.width > 0 && n.prev!.height > 0,
       );
 
-    const widthOk = canAnimateWidth && toCols.length === 3 && toCols.every((v) => !Number.isNaN(v));
+    const widthOk = canAnimateWidth && toRows.length === 2 && toRows.every((v) => !Number.isNaN(v));
     if (nodes.length === 0 && !widthOk) {
-      shell.style.gridTemplateColumns = "";
+      shell.style.gridTemplateRows = "";
       shell.style.transition = prevShellTransition;
       setOrganizeAnimating(false);
       return;
@@ -1539,8 +1550,8 @@ export default function PrintPage() {
 
     const finalize = () => {
       if (organizeFlipRef.current) window.cancelAnimationFrame(organizeFlipRef.current.raf);
-      // Hand the columns back to CSS (the --organize-wide / base class value).
-      shell.style.gridTemplateColumns = "";
+      // Hand the rows back to CSS (the --organizing / base class value).
+      shell.style.gridTemplateRows = "";
       shell.style.transition = prevShellTransition;
       nodes.forEach((n) => {
         n.el.style.transform = "";
@@ -1558,10 +1569,10 @@ export default function PrintPage() {
     const frame = (nowTs: number) => {
       const t = Math.min(1, (nowTs - start) / ORGANIZE_FLIP_MS);
       const e = ease(t);
-      // Widen (or narrow) the panel columns for this frame.
+      // Grow (or shrink) the strip's row for this frame.
       if (widthOk) {
-        shell.style.gridTemplateColumns = fromCols
-          .map((from, i) => `${from + (toCols[i] - from) * e}px`)
+        shell.style.gridTemplateRows = fromRows
+          .map((from, i) => `${from + (toRows[i] - from) * e}px`)
           .join(" ");
       }
       // Clear transforms first so getBoundingClientRect reads each tile's true
@@ -3722,6 +3733,75 @@ export default function PrintPage() {
         )}
 
         <PrintConfigPanel
+          /* Adding a recipe is the first thing you do to a project, so it sits
+             at the top of the panel rather than tucked under a strip of
+             thumbnails at the bottom of the screen. Built here because the
+             menu's state already lives here — it was only ever passed down to
+             the rail — so moving the control is moving JSX, not state. */
+          addControl={
+            <div className="recipe-config-add-slot">
+            <div className="recipe-config-add" ref={addMenuRef}>
+              <button
+                type="button"
+                className={`btn btn-secondary recipe-config-add__main ${
+                  cookbookMode ? "recipe-config-add__main--paired" : ""
+                }`}
+                onClick={() => {
+                  setAddMenuOpen(false);
+                  openAddRecipeBelow();
+                }}
+              >
+                <PlusIcon size={ICON_SIZE.md} />
+                Add recipes
+              </button>
+            {/* In a cookbook the section action folds into a split-button
+                  overflow, so the primary control reads plainly as "Add recipes". */}
+            {cookbookMode && organizeMode && (
+                <button
+                  type="button"
+                  className="btn btn-secondary recipe-config-add__section"
+                  data-rail-new-section
+                  onClick={() => {
+                    if (effectiveRailSelection.size > 0) makeSectionFromSelection();
+                    else addSectionDivider();
+                  }}
+                >
+                  <PlusIcon size={ICON_SIZE.md} />
+                  Add section
+                </button>
+              )}
+            {cookbookMode && !organizeMode && (
+                <>
+                  <button
+                    type="button"
+                    className="recipe-config-add__trigger"
+                    aria-haspopup="menu"
+                    aria-expanded={addMenuOpen}
+                    aria-label="More add options"
+                    onClick={() => setAddMenuOpen((open) => !open)}
+                  >
+                    <ChevronDownIcon size={ICON_SIZE.sm} />
+                  </button>
+                {addMenuOpen && (
+                    <div className="recipe-config-add__menu" role="menu">
+                      <button
+                        type="button"
+                        role="menuitem"
+                        onClick={() => {
+                          setAddMenuOpen(false);
+                          addSectionDivider();
+                        }}
+                      >
+                        <PlusIcon size={ICON_SIZE.sm} />
+                        Add section
+                      </button>
+                    </div>
+                  )}
+                </>
+              )}
+            </div>
+            </div>
+          }
           configPanelRef={configPanelRef}
           mobileDrawer={mobileDrawer}
           setMobileDrawer={setMobileDrawer}
