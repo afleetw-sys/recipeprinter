@@ -885,42 +885,24 @@
   gap: 0;
 }
 
-/* Adding a recipe is the whole job of this panel, and it was a quiet outlined
-   button at the bottom of a long list. Filled, so it reads as the thing to do.
-   It doesn't compete with Print, which now lives in the header — the two are
-   never in the same block of the screen. */
-/* A quiet neutral fill, not full ink. Adding a recipe is the most common thing
-   you do here, but it is not the page's climax — Print is — and a black button
-   in the rail argued with the black button in the header for that role. */
-.recipe-page-rail__head .recipe-page-rail__add-main {
-  background: var(--cp-surface-muted);
-  border-color: var(--cp-line);
-  color: var(--cp-ink);
-}
-
-.recipe-page-rail__head .recipe-page-rail__add-main:hover:not(:disabled) {
-  background: var(--cp-overlay-hover-strong);
-  border-color: var(--cp-line-strong);
-}
-
-/* The other half of the SAME button.
-   The main half is filled and the chevron half was left transparent with a
-   hairline border, so one control was painted in two colours — it read as a
-   solid button with an outlined button stuck to it. They are one thing: one
-   fill, and a divider between them rather than a border around each. */
+/* Outlined, not filled. The rail is a column of thumbnails on a plain card,
+   and a filled block at the top of it was the heaviest thing on that side of
+   the screen — competing for the eye with the page you are actually working
+   on. Full width already says this is the panel's main action; it does not
+   also need a fill to say it. Both halves are the same transparent treatment,
+   parted by a single divider, so the control reads as one object. */
 .recipe-page-rail__head .recipe-page-rail__add-menu-trigger {
-  border: 1px solid var(--cp-line);
+  border: 1px solid var(--cp-line-strong);
   border-left: 1px solid var(--cp-line-strong);
-  background: var(--cp-surface-muted);
+  background: transparent;
   color: var(--cp-ink);
 }
 
 .recipe-page-rail__head .recipe-page-rail__add-menu-trigger:hover:not(:disabled) {
-  border-color: var(--cp-line-strong);
   /* Re-stated so the divider survives the hover, which would otherwise repaint
      every edge including the one holding the two halves apart. */
   border-left-color: var(--cp-line-strong);
-  background: var(--cp-overlay-hover-strong);
+  background: var(--cp-overlay-hover);
 }
 
 /* Fills the row on its own (no cookbook mode → no chevron trigger next to

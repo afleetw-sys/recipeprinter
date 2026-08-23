@@ -145,7 +145,7 @@ export default function AccountMenu({
         {user && accountInitials(user) ? (
           <span aria-hidden>{accountInitials(user)}</span>
         ) : (
-          <AccountIcon size={ICON_SIZE.sm} />
+          <AccountIcon size={ICON_SIZE.md} />
         )}
       </IconButton>
 
