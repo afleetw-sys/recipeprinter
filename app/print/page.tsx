@@ -3542,8 +3542,22 @@ export default function PrintPage() {
                   ) : (
                     <PrintIcon size={ICON_SIZE.md} />
                   )}
+                  {/* Shorter than "Purchase & Print", and still says that money
+                      is involved — which it has to. A button that charges has
+                      to say so before it is pressed, however clearly the price
+                      was stated on the way in: someone reopening a book days
+                      later has not just read that dialog.
+
+                      The price is deliberately NOT in the label. `cookbookPrice`
+                      is a hardcoded fallback, not the customer's price — see
+                      `COOKBOOK_PRICE_FALLBACK`, which exists because loading the
+                      live one would configure the purchase SDK for anyone who
+                      merely opens a cookbook. Printing a number here would quote
+                      the wrong currency and the wrong amount to anyone outside
+                      the US, and would go stale the moment the product's price
+                      changes. Checkout states the authoritative price. */}
                   {cookbookLocked
-                    ? "Purchase & Print"
+                    ? "Buy & Print"
                     : templateLocked
                       ? "Unlock & Print"
                       : "Print"}

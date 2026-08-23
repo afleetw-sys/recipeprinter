@@ -1510,14 +1510,17 @@
   scrollbar-gutter: stable;
 }
 
+/* No rule across the top. It used to separate the settings above from Print
+   below it; Print is in the header now, so the line was dividing the settings
+   from a couple of quiet text links — a boundary where there is no longer a
+   change of kind. */
 .recipe-config-panel__footer {
   flex: 0 0 auto;
   display: flex;
   flex-direction: column;
   gap: 10px;
-  margin-top: 12px;
-  padding-top: 14px;
-  border-top: 1px solid var(--cp-line);
+  margin-top: 10px;
+  padding-top: 2px;
 }
 
 .recipe-cookpilot-account {
