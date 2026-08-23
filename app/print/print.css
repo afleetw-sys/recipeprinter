@@ -1004,6 +1004,26 @@
   border-color: var(--cp-ink-soft);
 }
 
+/* The other half of the SAME button.
+   The main half is filled and the chevron half was left transparent with a
+   hairline border, so one control was painted in two colours — it read as a
+   solid button with an outlined button stuck to it. They are one thing: one
+   fill, and a divider between them rather than a border around each. */
+.recipe-page-rail__head .recipe-page-rail__add-menu-trigger {
+  border: 1px solid var(--cp-ink);
+  border-left: 1px solid color-mix(in srgb, var(--cp-card) 30%, var(--cp-ink));
+  background: var(--cp-ink);
+  color: var(--cp-card);
+}
+
+.recipe-page-rail__head .recipe-page-rail__add-menu-trigger:hover:not(:disabled) {
+  border-color: var(--cp-ink-soft);
+  /* Re-stated so the divider survives the hover, which would otherwise repaint
+     every edge including the one holding the two halves apart. */
+  border-left-color: color-mix(in srgb, var(--cp-card) 30%, var(--cp-ink-soft));
+  background: var(--cp-ink-soft);
+}
+
 /* Fills the row on its own (no cookbook mode → no chevron trigger next to
    it); only squares off its right corners once the trigger is actually
    rendered alongside it, so it never looks clipped mid-button. */
