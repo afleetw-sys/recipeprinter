@@ -96,7 +96,7 @@
   top: 86px;
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 8px;
   max-height: calc(100dvh - 110px);
   padding: 16px 16px 16px 4px;
   overflow-y: auto;
@@ -547,9 +547,9 @@
 .recipe-page-rail__item {
   display: grid;
   grid-template-columns: 1fr;
-  gap: 8px;
-  row-gap: 8px;
-  padding: 10px;
+  gap: 6px;
+  row-gap: 6px;
+  padding: 8px;
   border: 1px solid var(--cp-line);
   border-radius: 12px;
   background: var(--cp-card);
@@ -1482,9 +1482,13 @@
   flex: 1 1 auto;
   display: flex;
   flex-direction: column;
-  gap: 20px;
+  /* One source of separation between sections. This gap and a 14px margin-top
+     on adjacent sections were both in force, so settings sat 34px apart in a
+     330px panel — the single biggest reason it still read loose after the
+     density pass. */
+  gap: 18px;
   min-height: 0;
-  padding-top: 16px;
+  padding-top: 10px;
   /* Horizontal breathing room so keyboard :focus-visible outlines on full-width
      children (theme cards, the size/paper dropdowns) aren't clipped at the
      edges — overflow-y:auto forces overflow-x to compute to auto, which clips. */
@@ -1599,10 +1603,6 @@
   gap: 6px;
 }
 
-.recipe-config-section + .recipe-config-section {
-  margin-top: 14px;
-}
-
 /* The panel names itself quietly. A 20px bold heading is a DOCUMENT
    convention — it announces the thing you are reading. This panel is not the
    thing you are reading; the page is. */
@@ -1616,7 +1616,9 @@
 .recipe-config-label {
   color: var(--cp-ink-soft);
   font-size: var(--cp-fs-label);
-  font-weight: 800;
+  /* Matches .control-checkbox-group__label — see the note there on why an
+     eyebrow does not carry the panel title's weight. */
+  font-weight: 700;
   letter-spacing: 0.08em;
   text-transform: uppercase;
 }
@@ -1794,9 +1796,12 @@
   gap: 2px;
 }
 
+/* Duplicates the rule in globals.css, and being unlayered it is the one that
+   actually governs here — changing only the layered copy does nothing. See the
+   note there: an option's name is an item label, not button text. */
 .recipe-toggle strong,
 .control-checkbox strong {
-  font-size: var(--cp-fs-small);
+  font-size: var(--cp-fs-caption);
   line-height: 1.25;
 }
 

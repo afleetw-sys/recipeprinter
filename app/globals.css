@@ -1066,7 +1066,10 @@
     transform: rotate(45deg);
   }
   .control-checkbox span { display: flex; flex-direction: column; gap: 2px; }
-  .control-checkbox strong { font-size: var(--cp-fs-small); line-height: 1.25; }
+  /* An option's name is an ITEM LABEL, the same rank as a thumbnail's title in
+     the rail — not button text. It was a step above both, which left the
+     settings panel's title barely larger than the options underneath it. */
+  .control-checkbox strong { font-size: var(--cp-fs-caption); line-height: 1.25; }
   .control-checkbox small {
     color: var(--cp-ink-soft);
     font-size: var(--cp-fs-label);
@@ -1085,7 +1088,9 @@
     padding: 0;
     color: var(--cp-ink-soft);
     font-size: var(--cp-fs-label);
-    font-weight: 800;
+    /* 700, not 800. An eyebrow is already set apart by caps, tracking and a
+       muted colour; at the panel title's own weight it competed with it. */
+    font-weight: 700;
     letter-spacing: .08em;
     text-transform: uppercase;
   }
@@ -1170,11 +1175,18 @@
   }
   /* Compact field/select variant (e.g. the print-size dropdown) — one named
      modifier instead of per-call !important overrides on .field. */
+  /* "Compact" means one height across the app's chrome. This was 40px while
+     `.btn-compact` is 30px, so the Size dropdown stood a third taller than
+     every button around it — the loudest remaining size mismatch on the print
+     page. Only the print-setup Size select uses this variant. */
   .field--compact {
-    min-height: 40px;
+    min-height: 30px;
     padding-top: 0;
     padding-bottom: 0;
     padding-left: 12px;
+    /* Controls corner at 8px, cards at 12px. This was carrying the card radius
+       while sitting in a row of 8px buttons. */
+    border-radius: 8px;
     @apply text-cp-small font-semibold;
   }
 
