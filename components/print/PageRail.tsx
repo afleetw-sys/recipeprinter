@@ -369,26 +369,21 @@ export function PageRail(props: PageRailProps) {
   );
 
   return (
-        <nav
-          ref={railScrollRef}
-          className={`recipe-page-rail recipe-page-rail--${previewCardSize} no-print ${
-            railDrag.draggingId ? "recipe-page-rail--dragging" : ""
-          }`}
-          aria-label="Pages"
-        >
-          {/* What is in this project, and the two things you do to it as a
-              WHOLE — add to it, and rearrange it. They were at the very bottom
-              of the rail, below every thumbnail, which put "Add recipes" an
-              entire book's worth of scrolling away from the top of the list it
-              adds to. Sticky rather than moved outside the scroller: this
-              `<nav>` IS the scroll container (`railScrollRef`, which the deck's
-              scroll-sync reads), and lifting the header out of it would mean
-              restructuring that relationship for a visual result sticky already
-              gives. */}
-          {!organizeMode && (
+      <div className="recipe-page-strip">
+        {/* What is in this project, and the two things you do to it as a WHOLE
+            — add to it, and rearrange it. They used to sit at the very bottom
+            of the rail, below every thumbnail, which put "Add recipes" a whole
+            book's worth of scrolling from the list it adds to.
+
+            Above the strip rather than inside it, and OUTSIDE the <nav>: that
+            element is the scroll container (`railScrollRef`, which the deck's
+            scroll-sync, the drag geometry and the pending-import scroll all
+            read), so wrapping it keeps every one of those pointing at the same
+            node while the header sits clear of the horizontal scroll. */}
+        {!organizeMode && (
             <div className="recipe-page-rail__head">
               <span className="recipe-page-rail__count">
-                {recipeCount} {recipeCount === 1 ? "recipe" : "recipes"}
+              {recipeCount} {recipeCount === 1 ? "recipe" : "recipes"}
               </span>
           <div className="recipe-page-rail__head-actions">
             <div className="recipe-page-rail__add-row" ref={addMenuRef}>
@@ -405,9 +400,9 @@ export function PageRail(props: PageRailProps) {
                 <PlusIcon size={ICON_SIZE.md} />
                 Add recipes
               </button>
-              {/* In a cookbook the section action folds into a split-button
+            {/* In a cookbook the section action folds into a split-button
                   overflow, so the primary control reads plainly as "Add recipes". */}
-              {projectMeta.meta.cookbookMode && organizeMode && (
+            {projectMeta.meta.cookbookMode && organizeMode && (
                 <button
                   type="button"
                   className="btn btn-secondary recipe-page-rail__add-section"
@@ -421,7 +416,7 @@ export function PageRail(props: PageRailProps) {
                   Add section
                 </button>
               )}
-              {projectMeta.meta.cookbookMode && !organizeMode && (
+            {projectMeta.meta.cookbookMode && !organizeMode && (
                 <>
                   <button
                     type="button"
@@ -433,7 +428,7 @@ export function PageRail(props: PageRailProps) {
                   >
                     <ChevronDownIcon size={ICON_SIZE.sm} />
                   </button>
-                  {addMenuOpen && (
+                {addMenuOpen && (
                     <div className="recipe-page-rail__add-menu" role="menu">
                       <button
                         type="button"
@@ -451,7 +446,7 @@ export function PageRail(props: PageRailProps) {
                 </>
               )}
             </div>
-            {projectMeta.meta.cookbookMode && (
+          {projectMeta.meta.cookbookMode && (
               <button
                 type="button"
                 className="recipe-page-rail__organize"
@@ -465,7 +460,13 @@ export function PageRail(props: PageRailProps) {
           </div>
             </div>
           )}
-
+        <nav
+          ref={railScrollRef}
+          className={`recipe-page-rail recipe-page-rail--${previewCardSize} no-print ${
+            railDrag.draggingId ? "recipe-page-rail--dragging" : ""
+          }`}
+          aria-label="Pages"
+        >
           {organizeMode && (
             <div className="recipe-organize-bar">
               <div className="recipe-organize-bar__heading">
@@ -1038,5 +1039,6 @@ export function PageRail(props: PageRailProps) {
               document.body,
             )}
         </nav>
+      </div>
   );
 }

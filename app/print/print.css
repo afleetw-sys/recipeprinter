@@ -81,13 +81,13 @@
      pins its own controls, and cutting it short to make room for the strip
      would cost more than the strip gains. */
   .recipe-print-page .recipe-print-shell {
-    grid-template-columns: minmax(0, 1fr) 330px;
+    grid-template-columns: 330px minmax(0, 1fr);
     /* A fixed strip height, not `auto`. `auto` sizes to the thumbnails, which
        are as tall as they like — so the bottom row ate the whole shell and the
        deck above it computed to 0px. The strip is a fixed piece of furniture;
        the deck takes whatever is left. */
     grid-template-rows: minmax(0, 1fr) var(--rp-strip-height);
-    --rp-strip-height: 148px;
+    --rp-strip-height: 194px;
     gap: 0;
     height: 100%;
     min-height: 0;
@@ -98,19 +98,29 @@
 
   /* Explicit placement, because the DOM order is rail → canvas → panel and the
      layout wants canvas → rail with the panel beside both. */
-  .recipe-print-page .recipe-page-canvas {
+  /* Setup on the left, the book on the right. Settings are what you set once
+     and then work against, so they read as the margin of the screen rather
+     than as something appended to the end of it. */
+  .recipe-print-page .recipe-config-panel {
     grid-column: 1;
+    grid-row: 1 / span 2;
+  }
+
+  .recipe-print-page .recipe-page-canvas {
+    grid-column: 2;
     grid-row: 1;
   }
 
-  .recipe-print-page .recipe-page-rail {
-    grid-column: 1;
-    grid-row: 2;
-  }
-
-  .recipe-print-page .recipe-config-panel {
+  /* Header bar plus the scrolling row of pages. The bar is a sibling of the
+     scroller, not a child, so it cannot scroll away sideways with the pages. */
+  .recipe-print-page .recipe-page-strip {
     grid-column: 2;
-    grid-row: 1 / span 2;
+    grid-row: 2;
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+    border-top: 1px solid var(--cp-line);
+    background: var(--cp-card);
   }
 
   /* ── The deck runs across ──────────────────────────────────────────────
@@ -148,12 +158,16 @@
     overflow: hidden;
   }
 
-  /* Percentage of the DECK, not the viewport: this column is not the window,
-     and `100vw - 96px` would be wider than the space it has to sit in. */
+  /* Sized to the PAGE, not to a share of the deck.
+     A fixed slide width only peeks if the page fills it. These pages are tall,
+     so height is what limits their scale — the page ends up much narrower than
+     a fixed slide, and what peeks past the edge is empty slide rather than the
+     next page. Letting the slide shrink-wrap its page means the gap either side
+     is real page, which is the thing that says "there is more this way". */
   .recipe-print-page .recipe-page-slide {
     display: grid;
     place-items: center;
-    flex: 0 0 calc(100% - 96px);
+    flex: 0 0 auto;
     scroll-snap-align: center;
   }
 
@@ -175,8 +189,10 @@
     overflow-x: auto;
     overflow-y: hidden;
     scrollbar-gutter: auto;
-    height: 100%;
+    flex: 1 1 auto;
     min-height: 0;
+    border-top: 0;
+    background: transparent;
   }
 
   /* ── Strip thumbnails ──────────────────────────────────────────────────
@@ -185,7 +201,7 @@
      furniture around a picture of the page, which is the only part that says
      which page it is. In a strip there is no room for that and no need: you
      are picking a page out of a row of pages, by looking at them. */
-  .recipe-print-page .recipe-page-rail__item {
+  .recipe-print-page .recipe-print-shell:not(.recipe-print-shell--organizing) .recipe-page-rail__item {
     flex-direction: column;
     gap: 0;
     height: 100%;
@@ -196,7 +212,7 @@
     box-shadow: none;
   }
 
-  .recipe-print-page .recipe-page-rail__item-main {
+  .recipe-print-page .recipe-print-shell:not(.recipe-print-shell--organizing) .recipe-page-rail__item-main {
     display: flex;
     align-items: stretch;
     height: 100%;
@@ -206,7 +222,7 @@
 
   /* The page itself carries the selection, so the outline lands on the art
      rather than on a card around it. */
-  .recipe-print-page .recipe-page-rail__thumb {
+  .recipe-print-page .recipe-print-shell:not(.recipe-print-shell--organizing) .recipe-page-rail__thumb {
     height: 100%;
     border: 1px solid var(--cp-line);
     border-radius: 6px;
@@ -214,22 +230,96 @@
     background: #fff;
   }
 
-  .recipe-print-page .recipe-page-rail__item.is-active .recipe-page-rail__thumb {
+  .recipe-print-page .recipe-print-shell:not(.recipe-print-shell--organizing) .recipe-page-rail__item.is-active .recipe-page-rail__thumb {
     border-color: var(--cp-accent);
     box-shadow: 0 0 0 1px var(--cp-accent);
+  }
+
+  /* ── Organizing takes the room back ───────────────────────────────────
+     The organizer is a 2D board of every page, and it was built when the rail
+     was a tall column that could simply widen. A 194px strip has nowhere to put
+     it, so while organizing the strip stops being a strip: it takes the whole
+     left of the shell, full height, and lays its tiles out as a wrapping grid.
+     The deck steps aside entirely — you are arranging the book, not reading a
+     page of it. */
+  .recipe-print-page .recipe-print-shell--organizing {
+    grid-template-columns: minmax(0, 1fr) 330px;
+    grid-template-rows: minmax(0, 1fr);
+  }
+
+  .recipe-print-page .recipe-print-shell--organizing .recipe-page-strip {
+    grid-column: 1;
+    grid-row: 1;
+    border-top: 0;
+  }
+
+  .recipe-print-page .recipe-print-shell--organizing .recipe-config-panel {
+    grid-column: 2;
+    grid-row: 1;
+  }
+
+  .recipe-print-page .recipe-print-shell--organizing .recipe-page-canvas {
+    display: none;
+  }
+
+  .recipe-print-page .recipe-print-shell--organizing .recipe-page-rail {
+    flex-wrap: wrap;
+    align-content: flex-start;
+    gap: 16px;
+    overflow-x: hidden;
+    overflow-y: auto;
+  }
+
+  .recipe-print-page .recipe-print-shell--organizing .recipe-page-rail__section-group {
+    flex-wrap: wrap;
+    width: 100%;
+  }
+
+  /* ── One tile, one size ────────────────────────────────────────────────
+     A tile holding a two-page spread was 229px against a single page's 143,
+     so the strip had two different rhythms in it and a spread looked like a
+     more important page rather than a wider one. Every tile is now the same
+     footprint, and a spread splits it down the middle.
+
+     Each half shows the page's INNER half, so the two meet at the gutter the
+     way they do when the book is open. Shifting the left page left by half its
+     width and clipping the right one at the tile's edge costs nothing — the
+     pages render at their usual scale and the window does the work. */
+  .recipe-print-page .recipe-print-shell:not(.recipe-print-shell--organizing) .recipe-page-rail__thumb {
+    width: 143px;
+    overflow: hidden;
+  }
+
+  .recipe-print-page .recipe-print-shell:not(.recipe-print-shell--organizing) .recipe-page-rail__thumb--spread {
+    display: flex;
+    gap: 1px;
+    justify-content: flex-start;
+  }
+
+  .recipe-print-page .recipe-print-shell:not(.recipe-print-shell--organizing) .recipe-page-rail__thumb--spread .recipe-page-scaler {
+    flex: 0 0 141px;
+    width: 141px;
+  }
+
+  .recipe-print-page .recipe-print-shell:not(.recipe-print-shell--organizing) .recipe-page-rail__thumb--spread .recipe-page-scaler:first-child {
+    margin-left: -70px;
+  }
+
+  .recipe-print-page .recipe-print-shell:not(.recipe-print-shell--organizing) .recipe-page-rail__thumb--spread .recipe-page-scaler:last-child {
+    margin-right: -70px;
   }
 
   /* The title and the "One page" caption go. The strip is a row of pictures of
      pages, and the picture is what tells you which page it is — a name
      underneath each one is furniture around the only informative part. */
-  .recipe-print-page .recipe-page-rail__label,
+  .recipe-print-page .recipe-print-shell:not(.recipe-print-shell--organizing) .recipe-page-rail__label,
   .recipe-print-page .recipe-page-rail__section-header {
     display: none;
   }
 
   /* Sat outside the art in the tall rail; sits ON it here, bottom-left, the
      way a page number sits on a page. */
-  .recipe-print-page .recipe-page-rail__num {
+  .recipe-print-page .recipe-print-shell:not(.recipe-print-shell--organizing) .recipe-page-rail__num {
     position: absolute;
     left: 4px;
     bottom: 4px;
@@ -245,30 +335,38 @@
     text-align: center;
   }
 
-  .recipe-print-page .recipe-page-rail__item {
+  .recipe-print-page .recipe-print-shell:not(.recipe-print-shell--organizing) .recipe-page-rail__item {
     position: relative;
   }
 
-  /* Pinned to the left edge so the count and the controls stay put while the
-     thumbnails scroll past them. Above the strip would cost vertical room,
-     which is the scarcest thing on this screen now. */
+  /* One row across the top of the strip: how much is here, then the two things
+     you do to the whole of it. */
   .recipe-print-page .recipe-page-rail__head {
-    position: sticky;
-    left: -16px;
-    top: auto;
-    z-index: 3;
-    flex-direction: column;
-    justify-content: center;
+    position: static;
     flex: 0 0 auto;
-    width: 168px;
-    margin: -12px 4px -12px -16px;
-    padding: 12px 12px 12px 16px;
-    border-bottom: 0;
-    border-right: 1px solid var(--cp-line);
+    flex-direction: row;
+    align-items: center;
+    gap: 16px;
+    width: auto;
+    margin: 0;
+    padding: 10px 16px 6px;
+    border: 0;
+    background: transparent;
+  }
+
+  .recipe-print-page .recipe-page-rail__head-actions {
+    flex-direction: row;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .recipe-print-page .recipe-page-rail__organize {
+    width: auto;
+    padding: 6px 10px;
   }
 
   /* Each thumbnail is its own strip item rather than a stacked row. */
-  .recipe-print-page .recipe-page-rail__row {
+  .recipe-print-page .recipe-print-shell:not(.recipe-print-shell--organizing) .recipe-page-rail__row {
     flex: 0 0 auto;
     display: flex;
   }
@@ -278,7 +376,7 @@
      appeared underneath the third instead of after it. The grouping still
      matters (it keeps a chapter's pages together and carries the section
      header), so the wrapper runs across rather than being removed. */
-  .recipe-print-page .recipe-page-rail__section-group {
+  .recipe-print-page .recipe-print-shell:not(.recipe-print-shell--organizing) .recipe-page-rail__section-group {
     flex-direction: row;
     align-items: stretch;
     gap: 12px;

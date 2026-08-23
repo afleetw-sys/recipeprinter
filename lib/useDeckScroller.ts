@@ -231,11 +231,17 @@ export function useDeckScroller({
       // Each slide is narrower than the deck itself (`calc(100% - 96px)`) so
       // neighbouring pages peek in on both sides; the scale must fit that slide
       // width, not the full deck width, or the card overflows its slot.
-      const availW = el.clientWidth - (horizontal ? 96 : 40);
+      // The reserve is what the neighbouring pages show through. Bigger than
+      // the old 96 because the slide now shrink-wraps its page, so this margin
+      // IS the peek rather than empty slide either side of it.
+      const availW = el.clientWidth - (horizontal ? 240 : 40);
       const availH = el.clientHeight;
       if (availW > 0 && availH > 0) {
         const widthScale = availW / pageWidth;
-        const heightScale = (availH * (horizontal ? 0.86 : 0.74)) / pageHeight;
+        // Height is what limits a portrait page on a short deck, so this factor
+        // is the real size control. Raised from 0.86: the strip below took the
+        // deck's spare height and the page shrank with it.
+        const heightScale = (availH * (horizontal ? 0.94 : 0.74)) / pageHeight;
         const scale = Math.max(0.12, Math.min(1.05, widthScale, heightScale));
         setDeckScale(scale);
         // Give the CSS top padding (see `--deck-top-pad` in globals.css) the
