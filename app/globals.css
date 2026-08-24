@@ -50,6 +50,7 @@
      text gets additional tablet/phone steps below so headings and ledes relax
      with the available width. Use via the matching Tailwind utilities
      (text-cp-label, text-cp-body, etc.), not the vars directly. */
+  --cp-fs-micro: 0.62rem; /* badges and flags riding alongside other text */
   --cp-fs-label: 0.74rem; /* uppercase eyebrows, section labels */
   --cp-fs-caption: 0.8rem; /* smallest meta/helper text, compact chips */
   --cp-fs-small: 0.86rem; /* secondary copy, footer links, small buttons */
@@ -1509,9 +1510,11 @@
     border-radius: 999px;
     background: var(--cp-accent);
     color: var(--cp-ink);
-    /* The smallest step on the ramp. A flag beside a 12.8px label has to sit
-       under it or it stops being a flag. */
-    font-size: var(--cp-fs-label);
+    /* A flag has to sit well under the label it rides on or it stops reading as
+       a flag. `--cp-fs-label` was only a step below the 12.8px tab, which is
+       close enough to look like a second word; this is the ramp's badge
+       step. */
+    font-size: var(--cp-fs-micro);
     font-weight: 800;
     letter-spacing: .02em;
     line-height: 1.1;
