@@ -2,7 +2,7 @@
 
 import type { Dispatch, ReactNode, SetStateAction } from "react";
 import { Checkbox, CheckboxGroup, SelectTile } from "@/components/Controls";
-import { Select } from "@/components/Select";
+import { SelectMenu } from "@/components/Select";
 import {
   PRINT_CARD_SIZE_OPTIONS,
   type PrintCardSize,
@@ -57,19 +57,16 @@ export function PrintSetupControls({
           <label className="recipe-config-label" htmlFor="recipe-print-size">
             Size
           </label>
-          <Select
+          {/* Our own menu, not the OS's — and the reason is in the data: each
+              size carries a `detail` ("Letter paper", "Landscape recipe card")
+              that a native <option> has nowhere to show. */}
+          <SelectMenu
             id="recipe-print-size"
-            className="field"
-            variant="compact"
+            label="Card size"
             value={cardSize}
-            onChange={(event) => setCardSize(event.target.value as PrintCardSize)}
-          >
-            {PRINT_CARD_SIZE_OPTIONS.map((option) => (
-              <option key={option.id} value={option.id}>
-                {option.label}
-              </option>
-            ))}
-          </Select>
+            options={PRINT_CARD_SIZE_OPTIONS}
+            onChange={(next) => setCardSize(next as PrintCardSize)}
+          />
         </div>
       )}
 

@@ -1241,6 +1241,86 @@
     @apply text-cp-small font-semibold;
   }
 
+  /* ── Our own dropdown (SelectMenu) ─────────────────────────────────────── */
+  /* The trigger IS a field — same box, same border, same height — so it reads
+     as the control it replaced rather than as a button that happens to sit
+     where one used to be. */
+  .select-menu__trigger {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    padding-right: 10px;
+    text-align: left;
+  }
+  .select-menu__trigger:hover:not(:disabled) {
+    border-color: var(--cp-line-strong);
+  }
+  .select-menu__caret {
+    flex: 0 0 auto;
+    color: var(--cp-ink-soft);
+  }
+  .select-menu__value {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  /* Portalled and placed from JS — fixed, so the settings panel's own scroll
+     container cannot clip it. */
+  .select-menu__panel {
+    position: fixed;
+    z-index: 1200;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    padding: 6px;
+    border: 1px solid var(--cp-line);
+    border-radius: 10px;
+    background: var(--cp-card);
+    box-shadow: var(--cp-shadow-md);
+  }
+
+  .select-menu__option {
+    position: relative;
+    display: grid;
+    gap: 1px;
+    padding: 7px 26px 7px 9px;
+    border-radius: 7px;
+    color: var(--cp-ink);
+    text-align: left;
+  }
+  .select-menu__option:hover,
+  .select-menu__option:focus-visible {
+    background: var(--cp-overlay-hover);
+    outline: none;
+  }
+  .select-menu__option.is-active {
+    background: var(--cp-selected-fill);
+    color: var(--cp-selected-text);
+  }
+  .select-menu__option-name {
+    font-size: var(--cp-fs-caption);
+    font-weight: 700;
+  }
+  /* The half of each option a native <select> had nowhere to put. */
+  .select-menu__option-note {
+    color: var(--cp-ink-soft);
+    font-size: var(--cp-fs-label);
+    line-height: 1.3;
+  }
+  .select-menu__option.is-active .select-menu__option-note {
+    color: inherit;
+    opacity: .75;
+  }
+  .select-menu__check {
+    position: absolute;
+    top: 50%;
+    right: 9px;
+    transform: translateY(-50%);
+  }
+
   /* ── Shared dropdown (Select component) ───────────────────────────────── */
   .select-shell {
     position: relative;
