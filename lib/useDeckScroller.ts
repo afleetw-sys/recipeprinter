@@ -236,7 +236,19 @@ export function useDeckScroller({
         // nothing implies the deck scrolls. 0.88 leaves ~35px of each.
         const heightBudget = mobile ? 0.86 : spread ? 0.82 : 0.88;
         const heightScale = (availH * heightBudget) / pageHeight;
-        const scale = Math.max(0.12, Math.min(1.05, widthScale, heightScale));
+        // A page can never be taller than the SNAPPORT. `scroll-snap-align:
+        // center` centres against the snapport, so a page taller than it
+        // cannot be centred without eating into the inset — and the top half
+        // of that inset is the room the floating Edit control sits in, which
+        // would then be clipped by the deck's own overflow. Capping here keeps
+        // the two rules consistent: the page centres, AND the clearance holds.
+        const snapportScale = mobile
+          ? Infinity
+          : (availH - DECK_SCROLL_PADDING_TOP * 2) / pageHeight;
+        const scale = Math.max(
+          0.12,
+          Math.min(1.05, widthScale, heightScale, snapportScale),
+        );
         setDeckScale(scale);
         // Give the CSS top padding (see `--deck-top-pad` in globals.css) the
         // exact offset that centres the first slide, computed analytically
@@ -245,12 +257,14 @@ export function useDeckScroller({
         // resting position, with no gap above it left to overscroll into.
         if (!mobile) {
           // Centre the first card inside the SNAPPORT (the viewport inset by
-          // `scroll-padding-top`), not the raw viewport — the same geometry
-          // `snapScrollTopFor` uses. Centring against the raw viewport put the
-          // first slide's resting place half the padding away from its own snap
-          // point, so it drifted the moment snapping re-engaged. The padding
-          // itself is the control clearance, so this can never fall below it.
-          const snapportHeight = availH - DECK_SCROLL_PADDING_TOP;
+          // `scroll-padding-top` AND `-bottom`), not the raw viewport — the
+          // same geometry `snapScrollTopFor` uses. Centring against the raw
+          // viewport put the first slide's resting place half the padding away
+          // from its own snap point, so it drifted the moment snapping
+          // re-engaged. The inset is equal at both ends, so the snapport's
+          // centre is the deck's centre and the top inset still guarantees the
+          // control clearance.
+          const snapportHeight = availH - DECK_SCROLL_PADDING_TOP * 2;
           const topPad =
             DECK_SCROLL_PADDING_TOP +
             Math.max(0, (snapportHeight - pageHeight * scale) / 2);

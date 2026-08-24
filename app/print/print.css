@@ -1024,6 +1024,14 @@
      leaves room for them. Paired with the floored `--deck-top-pad`. */
   .recipe-page-deck {
     scroll-padding-top: 72px;
+    /* The SAME inset at the bottom, and it is what keeps the snapped page
+       centred. `scroll-snap-align: center` centres against the SNAPPORT, so a
+       top-only inset moved the snapport's middle 36px down the deck: the page
+       rested low, with a wide band above it and the next page pushed out of
+       sight below. Insetting both ends puts the snapport's centre back on the
+       deck's centre while the top inset still holds the floating controls
+       clear of the header. */
+    scroll-padding-bottom: 72px;
     /* Fill the canvas instead of guessing at the chrome above it.
        The base rule is `height: calc(100dvh - 132px)`, and 132 is a hard-coded
        stand-in for the header plus the back-up banner — which is wrong in both
