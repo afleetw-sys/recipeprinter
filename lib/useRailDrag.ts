@@ -59,12 +59,18 @@ export function useRailDrag(
   scrollRef: RefObject<HTMLElement | null>,
   resolve: (kind: RailDragKind, id: string, clientX: number, clientY: number) => RailDropResolved | null,
   onBegin?: (kind: RailDragKind, id: string) => void,
+  /** How many rows this drag actually carries (a multi-select drags them all).
+      Anything above one gets a count badge on the preview, so the cook can see
+      the drag is bigger than the single card under the pointer. */
+  countFor?: (kind: RailDragKind, id: string) => number,
 ): RailDragController {
   const [dragging, setDragging] = useState<{ id: string; kind: RailDragKind } | null>(null);
   const resolveRef = useRef(resolve);
   resolveRef.current = resolve;
   const onBeginRef = useRef(onBegin);
   onBeginRef.current = onBegin;
+  const countForRef = useRef(countFor);
+  countForRef.current = countFor;
 
   const gesture = useRef<Gesture | null>(null);
   const preview = useRef<HTMLElement | null>(null);
@@ -133,6 +139,13 @@ export function useRailDrag(
         zIndex: "1000",
         transform: `translate3d(${g.x - g.grabDX}px, ${g.y - g.grabDY}px, 0) scale(1.03)`,
       });
+      const count = countForRef.current?.(g.kind, g.id) ?? 1;
+      if (count > 1) {
+        const badge = document.createElement("span");
+        badge.className = "rail-drag-preview__count";
+        badge.textContent = String(count);
+        clone.appendChild(badge);
+      }
       document.body.appendChild(clone);
       preview.current = clone;
 

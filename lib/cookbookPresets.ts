@@ -63,6 +63,13 @@ export interface CookbookPreset {
   fileLabel: string;
   /** Named `@page` rule that sets this preset's physical sheet size. */
   pageName: string;
+  /**
+   * Whether this format needs a separate COVER WRAP file (back | spine | front
+   * on one flat sheet). True for case binding, whose cover is glued around
+   * boards and whose spine width depends on the page count. A coil book has no
+   * spine to wrap: its cover is just the first page.
+   */
+  wrapRequired: boolean;
   /** Class placed on `.recipe-print-preview` so the `page:` binding + geometry
       rules for this preset apply (see app/print/print.css). */
   pageClass: string;
@@ -97,6 +104,7 @@ export const COOKBOOK_PRESETS: CookbookPreset[] = [
     // to every edge and the coil punches through it (as real spiral books do).
     gutterIn: 0,
     coilBound: true,
+    wrapRequired: false,
     pageName: "rp-preset-us-letter",
     pageClass: "rp-page-us-letter",
     printerIds: ["staples", "lulu", "blurb"],
@@ -115,6 +123,7 @@ export const COOKBOOK_PRESETS: CookbookPreset[] = [
     // a gutter there; art still bleeds all four edges.
     gutterIn: 0.5,
     coilBound: false,
+    wrapRequired: true,
     pageName: "rp-preset-hardcover-8x10",
     pageClass: "rp-page-hardcover-8x10",
     printerIds: ["lulu", "blurb", "staples"],

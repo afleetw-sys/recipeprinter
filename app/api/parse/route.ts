@@ -6,6 +6,23 @@ import { adaptCookPilotRecipes, normalizeImportURL } from "@/lib/cookpilot";
 import type { ParseResponse, Recipe } from "@/types/recipe";
 
 export const runtime = "nodejs";
+/**
+ * Long enough to outlast this route's own timeouts.
+ *
+ * Without it, Vercel terminates the function at the platform default — well
+ * before either `AbortSignal.timeout` below can fire. So every careful message
+ * under here was unreachable in production: a slow recipe site produced an
+ * opaque FUNCTION_INVOCATION_TIMEOUT instead of "That website took too long to
+ * respond. Try again, or paste the recipe text instead." Import failure is the
+ * most common failure this product has, and its best error text was dead code.
+ *
+ * The budget is the CookPilot parser (55s) and then, if it found nothing, our
+ * own fetch (20s) — so the worst case is a little over 75s and this sits above
+ * it. Note that 55s is a long time to ask someone to keep watching a spinner;
+ * lowering it is a behaviour change worth making separately, and this at least
+ * means the wait now ends in a sentence rather than a platform error.
+ */
+export const maxDuration = 90;
 
 const MAX_HTML_BYTES = 2_000_000;
 const MAX_REDIRECTS = 3;

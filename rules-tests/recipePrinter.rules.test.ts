@@ -242,15 +242,34 @@ describe("Recipe Printer Storage namespace", () => {
     );
   });
 
-  test("legacy photo writes remain available without bypassing reserved prefixes", async () => {
+  test("the legacy photo root is read-only, and still can't reach the reserved prefixes", async () => {
+    // This test used to assert the opposite — that an unauthenticated write to
+    // the legacy root SUCCEEDS — which is exactly the hole it was encoding as an
+    // expectation. `allow write` there meant create AND update AND delete, with
+    // no auth check, for any first segment that wasn't reserved. Anyone holding
+    // a photo URL could overwrite the picture behind it in someone else's
+    // cookbook, including one that had been paid for.
     const anonymousStorage = environment.unauthenticatedContext().storage();
-    await assertSucceeds(
+    const strangerStorage = environment.authenticatedContext("stranger").storage();
+
+    await assertFails(
       Promise.resolve(anonymousStorage.ref("recipeprinter/photos/anon/photo.jpg").putString(
         "image",
         "raw",
         { contentType: "image/jpeg" },
       )),
     );
+    // Being signed in as somebody is no help either — the root is closed to
+    // writes outright, not merely to strangers.
+    await assertFails(
+      Promise.resolve(strangerStorage.ref("recipeprinter/photos/anon/someone-elses.jpg").putString(
+        "image",
+        "raw",
+        { contentType: "image/jpeg" },
+      )),
+    );
+    // The reserved-prefix guard still holds: overlapping Storage matches are
+    // ORed, so the legacy rule must never become a way around the owner checks.
     await assertFails(
       Promise.resolve(anonymousStorage.ref("recipeprinter/photos/users/owner/bypass.jpg").putString(
         "image",
@@ -258,6 +277,18 @@ describe("Recipe Printer Storage namespace", () => {
         { contentType: "image/jpeg" },
       )),
     );
+  });
+
+  test("debug captures can be dropped but never overwritten or removed", async () => {
+    const anonymousStorage = environment.unauthenticatedContext().storage();
+    // The pre-namespace location allowed `write`, so a capture already
+    // collected could be replaced or deleted by anyone. Create only.
+    const legacyDebug = anonymousStorage.ref("debug/failed-imports/case/payload.txt");
+    await assertSucceeds(
+      Promise.resolve(legacyDebug.putString("failed input", "raw", { contentType: "text/plain" })),
+    );
+    await assertFails(legacyDebug.getDownloadURL());
+    await assertFails(Promise.resolve(legacyDebug.delete()));
   });
 
   test("anonymous uploads are write-only by capability prefix and debug captures are private", async () => {

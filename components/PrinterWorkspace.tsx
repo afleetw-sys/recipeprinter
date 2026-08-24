@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { ImportPanel } from "@/components/ImportPanel";
 import { PrintQueue } from "@/components/PrintQueue";
@@ -10,9 +11,11 @@ import {
   MoreVerticalIcon,
   PrintIcon,
   TrashIcon,
+  XIcon,
 } from "@/components/icons";
 import { createCurrentPrintJob, useQueue } from "@/lib/queue";
 import { useProjectMeta } from "@/lib/project";
+import { fileCookbookLocally } from "@/lib/localProjects";
 import { takePendingImport } from "@/lib/pendingImport";
 import type { ImportMethod } from "@/types/recipe";
 
@@ -69,6 +72,8 @@ export function PrinterWorkspace({
     hydrated && readyItems.length > 0 ? `Ready to print (${readyItems.length})` : "Ready to print";
 
   const [menuOpen, setMenuOpen] = useState(false);
+  /** The cookbook just filed on the way in, so the page can say where it went. */
+  const [filedBookTitle, setFiledBookTitle] = useState<string | null>(null);
   const [mobileQueueOpen, setMobileQueueOpen] = useState(false);
   const [hasShownEmptyState, setHasShownEmptyState] = useState(false);
   const menuRef = useRef<HTMLDivElement | null>(null);
@@ -84,15 +89,36 @@ export function PrinterWorkspace({
 
   /**
    * Arriving here from a cookbook means you left the book, so this page starts
-   * clean.
+   * clean — but the book gets FILED on the way out, not thrown away.
    *
    * A cookbook's recipes sit in the same queue a card job uses, so home used to
    * show them under "Ready to print" with a Preview button that walked straight
    * back into the book — a second door into one document, and a bound book
    * dressed up as a stack of loose cards. Releasing the project id as well as
    * the list is the point: whatever gets imported next is a NEW project, not
-   * another edit of the cookbook. The book keeps its own id and stays in the
-   * library.
+   * another edit of the cookbook.
+   *
+   * What that release used to skip is the filing. It cleared the queue and the
+   * meta — including the durable localStorage recovery mirror underneath both —
+   * so for anyone whose book was not already in an account, "go back to add
+   * another recipe" deleted the book. Signed out, autosave never runs (see
+   * `autosaveEnabled` on the print page) and signed-out purchase is explicitly
+   * supported, so that included books people had paid for. And because the
+   * trigger is this page MOUNTING with `cookbookMode` set, not any click, it
+   * also fired on a fresh tab: the recovery mirror would faithfully restore the
+   * book, and then this would delete it.
+   *
+   * So write the document to the on-device shelf first (lib/localProjects), and
+   * only release the working copy once it is filed. The homepage is just as
+   * clean, "one place to manage the book" still holds — that place is
+   * /projects, which now lists on-device books beside account ones — and
+   * nothing is destroyed. A book already saved to the account is filed too and
+   * swept on the next library load, which is cheaper than trying to work out
+   * here whether the account has it.
+   *
+   * If the shelf cannot be written to at all (private mode, quota), keep the
+   * working copy rather than release it: a slightly confusing homepage is a far
+   * better failure than a deleted cookbook.
    *
    * Waits on both hydrations so the reset can't race the rehydrate and land on
    * a queue that is only momentarily empty.
@@ -100,10 +126,26 @@ export function PrinterWorkspace({
   useEffect(() => {
     if (!hydrated || !metaHydrated || leftCookbookRef.current) return;
     if (!meta.cookbookMode) return;
+    const bookTitle = meta.cover?.title?.trim() || meta.stashedCookbook?.cover?.title?.trim();
+    const hasPrintable = items.some((item) => item.status === "ready" && item.recipe);
+    // A book with recipes is filed before it is released, and a shelf that
+    // can't be written to (private mode, quota) means we keep the working copy
+    // instead. `leftCookbookRef` is only raised once the release actually
+    // happens — raising it before the attempt would turn one failed write, or
+    // one render where the queue hadn't landed yet, into a book that is never
+    // filed AND never released.
+    //
+    // An empty book has nothing to file and nothing to lose, so it just
+    // releases.
+    if (hasPrintable && !fileCookbookLocally(items, meta)) return;
     leftCookbookRef.current = true;
     clear();
     startNewProject();
-  }, [hydrated, metaHydrated, meta.cookbookMode, clear, startNewProject]);
+    // Say where the book went. Without this, the homepage simply no longer has
+    // the cookbook on it and nothing accounts for the difference — which is the
+    // confusion the old clear-on-arrival created and never answered.
+    if (hasPrintable) setFiledBookTitle(bookTitle || "Your cookbook");
+  }, [hydrated, metaHydrated, meta, items, clear, startNewProject]);
 
   // Capture → app handoff: a visitor who pasted a link, dropped a photo, or
   // pasted text on an SEO landing page arrives here mid-import. Wait for the
@@ -174,6 +216,31 @@ export function PrinterWorkspace({
         hasProject ? "rp-printer-workspace--active" : "rp-printer-workspace--landing"
       } ${skipProjectIntro ? "rp-printer-workspace--no-intro" : ""}`}
     >
+      {/* Where the cookbook went. A quiet, dismissable line rather than a
+          floating toast: it answers a question the cook is asking right now
+          ("wasn't I just editing a book?"), and it should still be there if
+          they look up ten seconds later. */}
+      {filedBookTitle && (
+        <div className="rp-workspace-filed" role="status">
+          <p className="rp-workspace-filed__text">
+            <strong>{filedBookTitle}</strong> is saved in your projects.
+          </p>
+          <div className="rp-workspace-filed__actions">
+            <Link href="/projects" className="btn btn-secondary btn-compact">
+              View projects
+            </Link>
+            <button
+              type="button"
+              className="icon-close-btn"
+              aria-label="Dismiss"
+              onClick={() => setFiledBookTitle(null)}
+            >
+              <XIcon size={ICON_SIZE.sm} />
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* Import panel */}
       <div className="rp-workspace-import">
         <ImportPanel

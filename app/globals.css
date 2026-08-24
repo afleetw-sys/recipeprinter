@@ -628,6 +628,18 @@
   background: var(--cp-error-soft);
   color: var(--cp-error);
   font-size: var(--cp-fs-small);
+  /* Holds a message and, when the export was refused for want of an account, a
+     Sign in button beside it — so this is a row, not a bare paragraph. */
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.cookbook-ready__error p {
+  margin: 0;
+  min-width: 0;
 }
 
 .cookbook-welcome__owned {
@@ -1273,6 +1285,38 @@
     transform: translateY(-1px);
   }
 
+  /* ── Save state ───────────────────────────────────────────────────────────
+     Shown at every width. It used to be `hidden sm:inline-flex`, so a cookbook
+     autosaving on a phone that failed to save said nothing at all — the owner
+     found out when the book wasn't in their library. */
+  .rp-save-status {
+    @apply inline-flex items-center gap-1 text-cp-caption;
+    color: var(--cp-ink-soft);
+    background: transparent;
+    border: 0;
+  }
+
+  /* A failure has to look like one. Every state used to render in the same grey
+     caption, so "Couldn't save" on a paid document read exactly like "Saved". */
+  .rp-save-status--failed {
+    @apply gap-cp-2 rounded-lg px-cp-2 py-1 font-semibold;
+    color: var(--cp-error);
+    background: var(--cp-error-soft);
+    border: 1px solid var(--cp-error-border);
+  }
+
+  .rp-save-status__retry {
+    @apply underline underline-offset-2;
+  }
+
+  /* On a narrow screen the label alone is enough — "Retry" is what the whole
+     control does, and the header has no room for both. */
+  @media (max-width: 480px) {
+    .rp-save-status__retry {
+      display: none;
+    }
+  }
+
   /* ── Empty state (shared <EmptyState>) ────────────────────────────────── */
   .rp-empty-state {
     @apply flex flex-col items-center text-center rounded-2xl;
@@ -1333,6 +1377,29 @@
   .rp-workspace-import,
   .rp-workspace-project {
     min-width: 0;
+  }
+
+  /* "Your cookbook is saved in your projects" — shown once, on arriving here
+     from a book that was just filed to this device's shelf. A hairline panel
+     rather than a floating toast: it answers a question ("wasn't I editing a
+     book?") that stays worth answering after a toast would have timed out. */
+  .rp-workspace-filed {
+    @apply flex flex-wrap items-center justify-between gap-cp-3 rounded-xl border border-line px-cp-4 py-cp-3;
+    background: var(--cp-accent-soft);
+    /* The workspace becomes a two-column grid at ≥1024px (see below). This is a
+       banner over both of them, not a third panel competing for a cell —
+       without this it took the import column's slot and pushed the whole
+       layout across by one. Harmless in the flex column below that breakpoint. */
+    grid-column: 1 / -1;
+  }
+
+  .rp-workspace-filed__text {
+    @apply text-cp-small;
+    min-width: 0;
+  }
+
+  .rp-workspace-filed__actions {
+    @apply flex items-center gap-cp-2 flex-shrink-0;
   }
 
   .rp-mobile-print-tray {

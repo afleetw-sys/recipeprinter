@@ -17,7 +17,25 @@ export interface ExportPayload {
   project: PrintProject;
   /** Physical format to render at — trim size and bleed. */
   preset: CookbookPresetId;
+  /**
+   * Which half of the book to draw.
+   *
+   * A case-bound hardcover is TWO files: the interior block, and a cover wrap
+   * (back | spine | front on one flat sheet) whose width depends on the page
+   * count. Print-on-demand services reject a cover bound into the interior, so
+   * they cannot be one render. Absent = `interior`, keeping every existing
+   * caller and the spiral preset unchanged.
+   */
+  mode?: ExportMode;
+  /**
+   * Interior page count, needed only for `cover-wrap` — the spine's thickness
+   * is a function of it (see lib/coverWrap.ts). Passed in rather than derived
+   * here because the interior render is what actually knows the final count.
+   */
+  pageCount?: number;
 }
+
+export type ExportMode = "interior" | "cover-wrap";
 
 declare global {
   interface Window {

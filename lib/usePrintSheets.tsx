@@ -11,7 +11,12 @@ import {
   type RecipeFace,
 } from "@/lib/recipeCardLayout";
 import type { PrintCardSize, RecipePrintTemplate } from "@/components/RecipeCardPrint";
-import { resolveSectionPhotoMode } from "@/lib/project";
+import {
+  defaultSectionGridImages,
+  resolveSectionPhotoMode,
+  type PhotoStyle,
+} from "@/lib/project";
+import { paginateTocEntries } from "@/lib/tocPagination";
 import { RecipeFaceMeasurer } from "@/components/RecipeFaceMeasurer";
 import type {
   CoverConfig,
@@ -159,12 +164,20 @@ export interface TocEntry {
   title: string;
   pageNumber?: number;
   chapterNumber?: number;
+  /** A chapter heading repeated at the top of a contents page because its
+      recipes ran over from the page before — "Desserts (continued)". Carries
+      the chapter's own page number; see lib/tocPagination.ts. */
+  continued?: boolean;
 }
 
 export interface TocSheetSlot {
   kind: "toc";
   id: string;
   entries: TocEntry[];
+  /** A contents page after the first: it carries a small "continued" kicker
+      instead of repeating the heading, and its list picks up where the previous
+      page ran out of room (see lib/tocPagination.ts). */
+  continued?: boolean;
 }
 
 // The full-bleed facing photo of an `image-spread` recipe (cookbook mode).
@@ -181,6 +194,8 @@ export interface ImageSheetSlot {
       the same crop the cook set. */
   focusX?: number;
   focusY?: number;
+  /** Zoom past the cover fit, about that focal point. 1/undefined = no zoom. */
+  zoom?: number;
   queueIndex: number;
 }
 
@@ -238,6 +253,10 @@ export interface NavItem {
   label: string;
   pageLabel: string;
   flip: boolean;
+  /** This face continues the one before it rather than starting something new
+      (a contents page that ran long). Chrome that edits the page's own heading
+      belongs on the first face only. */
+  continued?: boolean;
 }
 
 interface UsePrintSheetsOptions {
@@ -266,6 +285,9 @@ interface UsePrintSheetsOptions {
   /** Book-wide "Full page" photo default (cookbook): every recipe with an image
       defaults to a full-page image spread unless its own placement overrides. */
   defaultFullPage?: boolean;
+  /** The book-wide Photos choice itself (cookbook). Chapter openers with no
+      placement of their own follow it — see `resolveSectionPhotoMode`. */
+  photoStyle?: PhotoStyle;
   cardSize: PrintCardSize;
   doubleSided: boolean;
   photosOn: boolean;
@@ -298,6 +320,7 @@ export function usePrintSheets({
   cookbookMode,
   itemPlacements,
   defaultFullPage,
+  photoStyle,
   cardSize,
   doubleSided,
   photosOn,
@@ -602,6 +625,7 @@ export function usePrintSheets({
               imageUrl: planSlot.heroImageUrl,
               focusX: placement?.heroFocusX,
               focusY: placement?.heroFocusY,
+              zoom: placement?.heroZoom,
               queueIndex: entry.queueIndex,
             };
           }
@@ -658,7 +682,18 @@ export function usePrintSheets({
     sections.forEach((section) => {
       if (section.title?.trim()) {
         chapterNumber += 1;
-        const sectionPhotoMode = resolveSectionPhotoMode(section);
+        // This chapter's own recipe photos — what a derived opener draws on, so
+        // following the book never means printing an empty band or a blank
+        // facing page. A section with no photos at all stays typographic.
+        const ownImages = section.items
+          .map((item) => item.recipe?.image)
+          .filter((url): url is string => Boolean(url))
+          .slice(0, 9);
+        const sectionPhotoMode = resolveSectionPhotoMode(
+          section,
+          cookbookLayouts ? photoStyle : undefined,
+        );
+        const sectionPhoto = section.photoUrl ?? ownImages[0];
         out.push({
           id: `sheet-divider-${section.id}`,
           slots: [{
@@ -670,7 +705,7 @@ export function usePrintSheets({
             subtitle: section.subtitle,
             // Only In-card (`band`) belongs inside the opener. Full/grid art is
             // rendered on its own facing sheet below, never duplicated here.
-            photoUrl: sectionPhotoMode === "band" ? section.photoUrl : undefined,
+            photoUrl: sectionPhotoMode === "band" ? sectionPhoto : undefined,
             intro: section.intro,
             recipeTitles: section.items
               .map((item) => item.recipe?.title?.trim() || item.title?.trim())
@@ -690,13 +725,10 @@ export function usePrintSheets({
             photoMode === "grid"
               ? (section.gridImages?.length
                   ? section.gridImages
-                  : section.items
-                      .map((item) => item.recipe?.image)
-                      .filter((url): url is string => Boolean(url))
-                      .slice(0, 9))
+                  : defaultSectionGridImages(ownImages))
               : [];
           const hasFacing =
-            (photoMode === "full" && Boolean(section.photoUrl)) ||
+            (photoMode === "full" && Boolean(sectionPhoto)) ||
             (photoMode === "grid" && gridImages.length > 0);
           if (hasFacing) {
             out.push({
@@ -706,7 +738,7 @@ export function usePrintSheets({
                 sectionId: section.id,
                 title: section.title,
                 mode: photoMode === "grid" ? "grid" : "full",
-                photoUrl: section.photoUrl,
+                photoUrl: sectionPhoto,
                 gridImages: photoMode === "grid" ? gridImages : undefined,
               }],
               backGroupNeeded: false,
@@ -781,14 +813,24 @@ export function usePrintSheets({
       }
 
       if (tocEntries.length > 0) {
-        const tocSheet: PageSheet = {
-          id: "sheet-toc",
-          slots: [{ kind: "toc", id: "toc", entries: tocEntries }],
+        // A long book's contents runs onto as many pages as it needs. The page
+        // is `overflow: hidden`, so anything past the first page's bottom edge
+        // used to be silently clipped — recipes with no listing at all.
+        const tocSheets: PageSheet[] = paginateTocEntries(tocEntries).map((pageEntries, index) => ({
+          id: index === 0 ? "sheet-toc" : `sheet-toc-${index + 1}`,
+          slots: [
+            {
+              kind: "toc",
+              id: index === 0 ? "toc" : `toc-${index + 1}`,
+              entries: pageEntries,
+              continued: index > 0,
+            },
+          ],
           backGroupNeeded: false,
-        };
+        }));
         // Insert after the front-matter pages already emitted (cover, then
         // dedication) so the order is cover → dedication → contents → chapters.
-        out.splice((cover ? 1 : 0) + (dedication ? 1 : 0), 0, tocSheet);
+        out.splice((cover ? 1 : 0) + (dedication ? 1 : 0), 0, ...tocSheets);
       }
     }
 
@@ -812,7 +854,7 @@ export function usePrintSheets({
     }
 
     return out;
-  }, [sections, allItems, cover, backCover, dedication, tableOfContents, bookTitle, cardSize, continueOnBack, photoOnFor, sourceUrlOn, template, measuredFacesFor, cookbookLayouts, cookbookResolution, itemPlacements]);
+  }, [sections, allItems, cover, backCover, dedication, tableOfContents, bookTitle, cardSize, continueOnBack, photoOnFor, photoStyle, sourceUrlOn, template, measuredFacesFor, cookbookLayouts, cookbookResolution, itemPlacements]);
 
   // What the rail and deck actually browse: one face per item, in physical
   // sheet order, except that a recipe's own faces (front + any continuations)
@@ -862,17 +904,22 @@ export function usePrintSheets({
             },
           ]);
         } else if (slot.kind === "toc") {
-          groups.set(`toc:${slot.id}`, [
-            {
-              kind: "toc",
-              recipeId: slot.id,
-              sheetIndex,
-              slotIndex,
-              label: "Contents",
-              pageLabel: "Contents",
-              flip: false,
-            },
-          ]);
+          // Every contents face shares one nav group (keyed on the first page's
+          // id, like a recipe's continuation faces) so the pages stay adjacent
+          // in the rail and the deck browses them in order.
+          const navItem: NavItem = {
+            kind: "toc",
+            recipeId: slot.id,
+            sheetIndex,
+            slotIndex,
+            label: "Contents",
+            pageLabel: slot.continued ? "Continued" : "Contents",
+            flip: false,
+            continued: slot.continued,
+          };
+          const group = groups.get("toc:toc");
+          if (group) group.push(navItem);
+          else groups.set("toc:toc", [navItem]);
         } else if (slot.kind === "image") {
           // An image-spread's facing photo shares its recipe's nav group (same
           // queueIndex) so the two sit adjacent; the image sheet is emitted

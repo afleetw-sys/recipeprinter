@@ -1,7 +1,19 @@
 "use client";
 
-import { useEffect, useRef, useState, type Dispatch, type MutableRefObject, type ReactNode, type SetStateAction } from "react";
 import {
+  useEffect,
+  useLayoutEffect,
+  useRef,
+  useState,
+  type Dispatch,
+  type MouseEvent as ReactMouseEvent,
+  type MutableRefObject,
+  type ReactNode,
+  type SetStateAction,
+} from "react";
+import { createPortal } from "react-dom";
+import {
+  CheckIcon,
   ChevronDownIcon,
   ChevronLeftIcon,
   ChevronRightIcon,
@@ -9,6 +21,7 @@ import {
   RefreshIcon,
   ICON_SIZE,
   PlusIcon,
+  SortIcon,
   TrashIcon,
 } from "@/components/icons";
 import { IconButton } from "@/components/Controls";
@@ -39,6 +52,15 @@ const RAIL_SCALE: Record<PrintCardSize, number> = {
 // How far outside the rail's scroll viewport a thumbnail starts rendering, so it
 // is ready before it scrolls into view (no visible pop-in).
 const RAIL_THUMB_OVERSCAN = "600px 0px";
+
+/** How the organizer orders the recipes inside each section: the cook's own
+    arrangement, or A–Z by recipe title. Section order is never touched. */
+export type RailSortMode = "custom" | "title";
+
+const RAIL_SORT_OPTIONS: Array<{ value: RailSortMode; label: string }> = [
+  { value: "custom", label: "Custom order" },
+  { value: "title", label: "A–Z by title" },
+];
 
 // A thumbnail is the bulk of a rail row's DOM (a full scaled card render, plus
 // its own column-split measurement) and there can be dozens in one book. This
@@ -130,6 +152,10 @@ interface PageRailProps {
   openAddRecipeBelow: (navItem?: NavItem | null) => void;
   addSectionDivider: () => void;
   makeSectionFromSelection: (selection?: ReadonlySet<string>) => void;
+  /** Tile-menu move: drops `ids` at the end of `sectionId`, in book order. */
+  moveRecipesToSection: (ids: string[], sectionId: string) => void;
+  railSortMode: RailSortMode;
+  applyRailSort: (mode: RailSortMode) => void;
   addMenuOpen: boolean;
   /** Sorts the book into sections and orders it — see `suggestCookbookLayout`. */
   suggestCookbookLayout: () => void;
@@ -188,6 +214,9 @@ export function PageRail(props: PageRailProps) {
     openAddRecipeBelow,
     addSectionDivider,
     makeSectionFromSelection,
+    moveRecipesToSection,
+    railSortMode,
+    applyRailSort,
     addMenuOpen,
     suggestCookbookLayout,
     undoCookbookOrganization,
@@ -202,7 +231,116 @@ export function PageRail(props: PageRailProps) {
     toggleRailSelection,
     selectRailRange,
     clearRailSelection,
+    orderedRailSelection,
   } = railSelection;
+
+  // A drag that started on a selected recipe carries every selected recipe, so
+  // every one of them is a source and dims — not just the card under the
+  // pointer (see `resolveRailDrop`).
+  const draggingSelection =
+    railDrag.draggingKind === "recipe" &&
+    railDrag.draggingId != null &&
+    effectiveRailSelection.has(railDrag.draggingId);
+  const isDragSource = (recipeId: string | null | undefined) =>
+    Boolean(recipeId) &&
+    railDrag.draggingKind === "recipe" &&
+    (railDrag.draggingId === recipeId || (draggingSelection && effectiveRailSelection.has(recipeId!)));
+
+  const [sortMenuOpen, setSortMenuOpen] = useState(false);
+  const sortMenuRef = useRef<HTMLDivElement | null>(null);
+  useEffect(() => {
+    if (!sortMenuOpen) return;
+    const close = () => setSortMenuOpen(false);
+    const onPointerDown = (event: PointerEvent) => {
+      if (!sortMenuRef.current?.contains(event.target as Node)) close();
+    };
+    // Capture Escape ahead of the page's handler, so closing this menu doesn't
+    // also clear a selection the cook is still working with.
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key !== "Escape") return;
+      event.stopPropagation();
+      close();
+    };
+    window.addEventListener("pointerdown", onPointerDown, true);
+    window.addEventListener("keydown", onKeyDown, true);
+    return () => {
+      window.removeEventListener("pointerdown", onPointerDown, true);
+      window.removeEventListener("keydown", onKeyDown, true);
+    };
+  }, [sortMenuOpen]);
+
+  // Right-clicking a tile in the organizer offers the drag's destinations as a
+  // list — the same moves, for a book too long to drag across. The ids are
+  // captured when the menu opens so it acts on what was right-clicked even if
+  // the selection changes underneath it.
+  const [tileMenu, setTileMenu] = useState<
+    { x: number; y: number; ids: string[]; label: string } | null
+  >(null);
+  const tileMenuRef = useRef<HTMLDivElement | null>(null);
+
+  function openTileMenu(event: ReactMouseEvent, recipeId: string, label: string) {
+    event.preventDefault();
+    // Right-clicking outside the selection acts on that one recipe (and drops
+    // the selection), the way file managers have always behaved.
+    const inSelection = effectiveRailSelection.has(recipeId);
+    if (!inSelection) clearRailSelection();
+    const ids = inSelection ? orderedRailSelection() : [recipeId];
+    setTileMenu({
+      x: event.clientX,
+      y: event.clientY,
+      ids,
+      label: ids.length > 1 ? `Move ${ids.length} recipes to` : `Move ${label} to`,
+    });
+  }
+
+  // Keep the menu on screen: it opens at the pointer, so near the right or
+  // bottom edge it has to come back inside once its real size is known.
+  useLayoutEffect(() => {
+    const node = tileMenuRef.current;
+    if (!node || !tileMenu) return;
+    const rect = node.getBoundingClientRect();
+    node.style.left = `${Math.max(8, Math.min(tileMenu.x, window.innerWidth - rect.width - 8))}px`;
+    node.style.top = `${Math.max(8, Math.min(tileMenu.y, window.innerHeight - rect.height - 8))}px`;
+  }, [tileMenu]);
+
+  useEffect(() => {
+    if (!tileMenu) return;
+    const close = () => setTileMenu(null);
+    const onPointerDown = (event: PointerEvent) => {
+      if (!tileMenuRef.current?.contains(event.target as Node)) close();
+    };
+    // Capture Escape before the page's own handler, so closing the menu doesn't
+    // also clear the selection the menu was about to act on.
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key !== "Escape") return;
+      event.stopPropagation();
+      close();
+    };
+    // Anything scrolling underneath moves the tile the menu points at — except
+    // the menu's own scroll when it holds more sections than fit.
+    const onScroll = (event: Event) => {
+      if (tileMenuRef.current?.contains(event.target as Node)) return;
+      close();
+    };
+    window.addEventListener("pointerdown", onPointerDown, true);
+    window.addEventListener("keydown", onKeyDown, true);
+    window.addEventListener("resize", close);
+    document.addEventListener("scroll", onScroll, true);
+    return () => {
+      window.removeEventListener("pointerdown", onPointerDown, true);
+      window.removeEventListener("keydown", onKeyDown, true);
+      window.removeEventListener("resize", close);
+      document.removeEventListener("scroll", onScroll, true);
+    };
+  }, [tileMenu]);
+
+  const tileMenuSections = tileMenu
+    ? sections.filter((section) => {
+        const ids = itemIdsForSection(section.id);
+        // A section every moved recipe is already in has nowhere to move them.
+        return !tileMenu.ids.every((id) => ids.includes(id));
+      })
+    : [];
 
   return (
         <nav
@@ -218,6 +356,50 @@ export function PageRail(props: PageRailProps) {
                 <span className="recipe-organize-bar__title">Organize recipes</span>
               </div>
               <div className="recipe-organize-bar__actions">
+                {/* Sort: the cook's own arrangement, or A–Z inside every
+                    section. It reorders the book itself, so switching back to
+                    "Custom order" restores the order A–Z replaced. The menu
+                    says out loud that this works within sections — the fear it
+                    answers is "will this shuffle my chapters?". */}
+                <div className="recipe-organize-bar__sort" ref={sortMenuRef}>
+                  <IconButton
+                    aria-label="Sort recipes"
+                    title="Sort recipes"
+                    aria-haspopup="menu"
+                    aria-expanded={sortMenuOpen}
+                    selected={sortMenuOpen || railSortMode !== "custom"}
+                    onClick={() => setSortMenuOpen((open) => !open)}
+                  >
+                    <SortIcon size={ICON_SIZE.md} />
+                  </IconButton>
+                  {sortMenuOpen && (
+                    <div className="recipe-organize-bar__sort-menu" role="menu">
+                      <p className="recipe-organize-bar__sort-heading">Sort recipes</p>
+                      {RAIL_SORT_OPTIONS.map((option) => (
+                        <button
+                          key={option.value}
+                          type="button"
+                          role="menuitemradio"
+                          aria-checked={railSortMode === option.value}
+                          className={railSortMode === option.value ? "is-active" : ""}
+                          onClick={() => {
+                            applyRailSort(option.value);
+                            setSortMenuOpen(false);
+                          }}
+                        >
+                          <span className="recipe-organize-bar__sort-check">
+                            {railSortMode === option.value && <CheckIcon size={ICON_SIZE.sm} />}
+                          </span>
+                          {option.label}
+                        </button>
+                      ))}
+                      <p className="recipe-organize-bar__sort-note">
+                        Sorts the recipes inside each section. Your sections stay in the order you
+                        put them.
+                      </p>
+                    </div>
+                  )}
+                </div>
                 {/* Auto-organize belongs to the organizer, not the rail. Out
                     there it sat next to "Organize recipes" — a second, similar
                     label competing with the thing that opens this — and offered
@@ -232,15 +414,16 @@ export function PageRail(props: PageRailProps) {
                   <RefreshIcon size={ICON_SIZE.sm} />
                   <span>{canUndoOrganization ? "Undo organizing" : "Organize it for me"}</span>
                 </button>
-                <button
-                  type="button"
-                  className="btn btn-secondary btn-compact recipe-organize-bar__collapse"
+                {/* Icon-only, so it wears the icon button rather than a
+                    button-shaped exception beside Sort and Organize. */}
+                <IconButton
+                  className="recipe-organize-bar__collapse"
                   onClick={exitOrganizeMode}
                   aria-label="Collapse organizer"
                   title="Collapse organizer"
                 >
                   <ChevronLeftIcon size={ICON_SIZE.md} />
-                </button>
+                </IconButton>
               </div>
             </div>
           )}
@@ -289,9 +472,9 @@ export function PageRail(props: PageRailProps) {
                   soleUnit: boolean;
                   sectionId: string | null;
                 };
-                const units: RailUnit[] = [];
+                const rawUnits: RailUnit[] = [];
                 const addUnit = (unit: Omit<RailUnit, "num">) =>
-                  units.push({ ...unit, num: units.length + 1 });
+                  rawUnits.push({ ...unit, num: rawUnits.length + 1 });
                 spreads.forEach((spread, index) => {
                   const leftNav = navFor(spread.left);
                   const rightNav = navFor(spread.right);
@@ -355,6 +538,29 @@ export function PageRail(props: PageRailProps) {
                       }),
                     );
                   }
+                });
+                // In the organizer a recipe is ONE draggable thing, so it gets
+                // one tile: a recipe that runs onto a second page shows as a
+                // mini-spread of its two faces rather than two tiles that can't
+                // be dragged apart (both carry the same recipe id, so dragging
+                // either always moved the whole recipe anyway). The page rail
+                // proper keeps a row per face — there each face is its own
+                // page to navigate to.
+                const units: RailUnit[] = [];
+                rawUnits.forEach((unit) => {
+                  const previous = units[units.length - 1];
+                  const recipeId = unit.nav?.kind === "recipe" ? unit.nav.recipeId : null;
+                  const previousRecipeId =
+                    previous?.nav?.kind === "recipe" ? previous.nav.recipeId : null;
+                  if (organizeMode && recipeId && recipeId === previousRecipeId) {
+                    // Two faces already fill the thumb (see --spread); a third
+                    // would overflow it, and adds nothing to a stand-in.
+                    previous.thumbSheets = [...previous.thumbSheets, ...unit.thumbSheets].slice(0, 2);
+                    // The merged tile now owns its whole spread position.
+                    previous.soleUnit = true;
+                    return;
+                  }
+                  units.push({ ...unit, num: units.length + 1 });
                 });
                 const groups: Array<{ key: string; sectionId: string | null; units: RailUnit[] }> = [];
                 units.forEach((unit) => {
@@ -455,12 +661,15 @@ export function PageRail(props: PageRailProps) {
                       data-rail-recipe={recipeNav?.recipeId ?? undefined}
                       data-organize-flip={recipeNav?.recipeId ?? undefined}
                     className={`recipe-page-rail__item ${isActive ? "is-active" : ""} ${
-                        (railDrag.draggingKind === "recipe" && railDrag.draggingId === recipeNav?.recipeId)
-                          ? "is-dragging"
-                          : ""
+                        isDragSource(recipeNav?.recipeId) ? "is-dragging" : ""
                       } ${(recipeNav || dividerSection) ? "recipe-page-rail__item--draggable" : ""} ${
                         recipeNav && railShake?.recipeId === recipeNav.recipeId ? "is-shaking" : ""
                       } ${recipeNav && effectiveRailSelection.has(recipeNav.recipeId) ? "is-selected" : ""}`}
+                      onContextMenu={
+                        organizeMode && recipeNav
+                          ? (event) => openTileMenu(event, recipeNav.recipeId, `“${unit.label}”`)
+                          : undefined
+                      }
                   >
                       <button
                         type="button"
@@ -723,6 +932,43 @@ export function PageRail(props: PageRailProps) {
             )}
 
           </div>
+          {tileMenu &&
+            createPortal(
+              <div
+                ref={tileMenuRef}
+                className="rail-tile-menu"
+                role="menu"
+                style={{ top: tileMenu.y, left: tileMenu.x }}
+              >
+                <p className="rail-tile-menu__heading">{tileMenu.label}</p>
+                {tileMenuSections.map((section) => (
+                  <button
+                    key={section.id}
+                    type="button"
+                    role="menuitem"
+                    onClick={() => {
+                      moveRecipesToSection(tileMenu.ids, section.id);
+                      setTileMenu(null);
+                    }}
+                  >
+                    {section.title?.trim() || "Untitled section"}
+                  </button>
+                ))}
+                <button
+                  type="button"
+                  role="menuitem"
+                  className="rail-tile-menu__new"
+                  onClick={() => {
+                    makeSectionFromSelection(new Set(tileMenu.ids));
+                    setTileMenu(null);
+                  }}
+                >
+                  <PlusIcon size={ICON_SIZE.sm} />
+                  New section
+                </button>
+              </div>,
+              document.body,
+            )}
         </nav>
   );
 }

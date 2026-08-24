@@ -1,5 +1,23 @@
 rules_version = "2";
 
+// ─────────────────────────────────────────────────────────────────────────────
+// THIS FILE IS THE COMPLETE RULESET FOR THE SHARED BUCKET. DEPLOY IT FROM HERE.
+//
+// RecipePrinter and CookPilot are two clients of one Firebase project, and both
+// repos declare the same two buckets in their firebase.json:
+//   cookpilot-bbecb.appspot.com  /  cookpilot-bbecb.firebasestorage.app
+//
+// The CookPilot repo's storage.rules is an eight-line file covering only
+// `recipe-images/`. It knows nothing about any recipeprinter/ path. So a
+// `firebase deploy --only storage` from THAT repo silently drops every rule
+// below, and every RecipePrinter photo path falls through to the catch-all deny
+// at the bottom — no cover photos, no uploads, no chapter art, for everyone.
+//
+// This file is a superset: it contains CookPilot's `recipe-images/` rule
+// verbatim, so deploying from here is safe for both products. The same is true
+// of firestore.rules, whose matches are a superset of CookPilot's nine.
+// ─────────────────────────────────────────────────────────────────────────────
+
 service firebase.storage {
   match /b/{bucket}/o {
     function signedIn() {
@@ -34,6 +52,11 @@ service firebase.storage {
       allow delete: if signedIn() && request.auth.uid == uid;
     }
 
+    // A cook who hasn't made an account yet. Create-only, never update or
+    // delete, so one visitor can't touch another's. The owner id is a 20+
+    // character random string, so paths aren't guessable — but as with the debug
+    // drop box, VOLUME is bounded by App Check enforcement, not by anything
+    // expressible here.
     match /recipeprinter/photos/anonymous/{anonymousOwnerId}/{path=**} {
       allow read: if true;
       allow create: if !signedIn()
@@ -42,28 +65,54 @@ service firebase.storage {
       allow update, delete: if false;
     }
 
+    // Write-only drop box for the exact input that failed to import.
+    //
+    // Deliberately unauthenticated: a signed-out visitor hitting a broken
+    // importer is the failure most worth capturing, and requiring an account
+    // would blind us to it.
+    //
+    // What bounds it is not this rule. `read` is denied, so nothing written here
+    // can be served back out — it cannot be used as free hosting, only as free
+    // storage. Quantity is not something Storage rules can limit at all: THE
+    // CONTROL FOR THAT IS APP CHECK ENFORCEMENT ON THE BUCKET, which is a
+    // console setting, not a line in this file. If it is off, this path and the
+    // anonymous photo path below are both open to volume abuse.
     match /recipeprinter/debug/failed-imports/{path=**} {
       allow read, update, delete: if false;
       allow create: if validDebugCapture();
     }
 
     // ── Recipe Printer migration compatibility ─────────────────────────────
-    // Old app versions write photos as recipeprinter/photos/{uid}/... or
-    // recipeprinter/photos/anon/.... Excluding the reserved new roots is
-    // essential: overlapping Storage matches are ORed, so a broad legacy
-    // allow must not bypass the owner checks above.
+    // Photos written by an older build, at recipeprinter/photos/{uid}/... or
+    // recipeprinter/photos/anon/.... READ-ONLY, and that is the fix.
+    //
+    // This used to `allow write` — which is create AND update AND delete — with
+    // NO auth check at all, to any first segment that wasn't one of the two
+    // reserved roots. Anyone who could see a photo URL could overwrite the photo
+    // behind it, in someone else's cookbook, or delete it. A stranger could
+    // replace the picture on a book a customer had paid for.
+    //
+    // Nothing needs the write. Every current write goes to
+    // `photos/users/{uid}` or `photos/anonymous/{id}` (see
+    // lib/firebase/recipePrinterPaths). The legacy root is only ever READ now —
+    // `lib/anonymousProjectAdoption` looks for these URLs to migrate them into
+    // an account. And unlike a mobile app, a web client has no old versions
+    // lingering in the wild: a reload is the upgrade.
+    //
+    // Excluding the reserved new roots still matters. Overlapping Storage
+    // matches are ORed, so a broad legacy allow must never bypass the owner
+    // checks above.
     match /recipeprinter/photos/{legacyOwner}/{allPaths=**} {
       allow read: if true;
-      allow write: if legacyOwner != "users"
-        && legacyOwner != "anonymous"
-        && validImage();
+      allow write: if false;
     }
 
-    // Historical failed-import captures stay private and old clients may keep
-    // writing here during the compatibility release.
+    // The pre-namespace debug location. Create-only like its replacement above
+    // — `write` here also meant update and delete, which let anyone overwrite or
+    // remove captures already collected.
     match /debug/failed-imports/{allPaths=**} {
-      allow read: if false;
-      allow write: if validDebugCapture();
+      allow read, update, delete: if false;
+      allow create: if validDebugCapture();
     }
 
     match /{path=**} {

@@ -120,7 +120,27 @@ export function useDeckScroller({
 }: UseDeckScrollerOptions) {
   const [canvasSide, setCanvasSide] = useState<"front" | "back">("front");
   const [deckScale, setDeckScale] = useState(0.5);
-  const deckRef = useRef<HTMLDivElement>(null);
+  // The deck element, held two ways on purpose. `deckRef` is what the scrolling
+  // helpers below read on demand; `deckNode` is the same element as STATE, so an
+  // effect that binds a listener to it re-runs when React hands us a different
+  // element.
+  //
+  // That distinction is load-bearing. The print page unmounts its whole editor
+  // behind a loading gate (`items === null || projectLoading || cookbookAccess
+  // === "loading"` in app/print/page.tsx) — which a signed-in cook passes
+  // through more than once on a refresh, as auth resolves and the saved project
+  // and its unlock are fetched. Each pass mounts a NEW deck element, while the
+  // things these effects watched (page count, card size) stayed put — so the
+  // scroll listener went on living on the discarded element. Scrolling then
+  // selected nothing at all, while clicking a page in the rail still worked,
+  // because that writes the selection directly. Depending on the node itself is
+  // what makes a remount re-bind.
+  const deckRef = useRef<HTMLDivElement | null>(null);
+  const [deckNode, setDeckNode] = useState<HTMLDivElement | null>(null);
+  const attachDeck = useCallback((node: HTMLDivElement | null) => {
+    deckRef.current = node;
+    setDeckNode(node);
+  }, []);
   const slideRefs = useRef<(HTMLDivElement | null)[]>([]);
   // While we scroll the deck programmatically (after a click), ignore the
   // scroll-driven selection so it doesn't yank the outline back to whichever
@@ -136,10 +156,25 @@ export function useDeckScroller({
   // every frame of a scroll on large decks.
   const slideCentersRef = useRef<{ top: number; left: number }[]>([]);
   const centersDirtyRef = useRef(true);
+  // The deck's total scrollable height when those centers were measured. Any
+  // change means the slides moved — pages added, a layout swapped in, art that
+  // resized a page — so the cache is stale even though nothing the effects below
+  // watch has changed. One property read per scroll event (not per slide) buys
+  // a cache that can't silently rot.
+  const measuredScrollHeightRef = useRef(0);
 
   const measureSlideCenters = useCallback(() => {
     const deck = deckRef.current;
     if (!deck) return;
+    // The deck swaps its slides for a loading state while a layout is being
+    // measured (see `previewMeasuring`). Measuring THEN would cache a center of
+    // zero for every slide and clear the dirty flag — and since nothing marks it
+    // dirty again when the slides come back, every later scroll would find all
+    // centers equidistant and settle on the first one. That is the "scrolling
+    // doesn't move the selection, it just sits on the cover" bug. Nothing
+    // mounted means nothing to measure: stay dirty and try again next scroll.
+    if (!slideRefs.current.some(Boolean)) return;
+    measuredScrollHeightRef.current = deck.scrollHeight;
     const deckRect = deck.getBoundingClientRect();
     const { scrollTop, scrollLeft } = deck;
     slideCentersRef.current = slideRefs.current.map((slide) => {
@@ -173,7 +208,7 @@ export function useDeckScroller({
   // Scale each deck page to fit the available width while leaving room above
   // and below so the previous / next pages peek in (implying you can scroll).
   useEffect(() => {
-    const el = deckRef.current;
+    const el = deckNode;
     if (!el) return;
     const update = () => {
       // Any resize moves the slides, so the cached centers are stale.
@@ -213,7 +248,7 @@ export function useDeckScroller({
     const observer = new ResizeObserver(update);
     observer.observe(el);
     return () => observer.disconnect();
-  }, [cardSize, sheetsLength, pageWidth, pageHeight]);
+  }, [deckNode, cardSize, sheetsLength, pageWidth, pageHeight]);
 
   const centerSlide = useCallback(
     (index: number, behavior: ScrollBehavior = "auto") => {
@@ -268,17 +303,21 @@ export function useDeckScroller({
   // Every nav item — including a second recipe sharing a sheet with the
   // first — has its own slide, so this is a direct index lookup.
   useEffect(() => {
-    const el = deckRef.current;
+    const el = deckNode;
     if (!el) return;
     let raf = 0;
 
-    const closestIndex = (mobile: boolean) => {
+    // The slide nearest the middle of the scrollport, or null when there is
+    // nothing to compare against (the deck is mid-remeasure, so its slides are
+    // unmounted). Null means "leave the selection alone" — the old code fell
+    // through to index 0 and yanked the cook back to the cover.
+    const closestIndex = (mobile: boolean): number | null => {
       // Re-measure once after a layout change, then reuse the cache for every
       // frame of the scroll that follows — no getBoundingClientRect per frame.
       if (centersDirtyRef.current) measureSlideCenters();
       const centers = slideCentersRef.current;
       const mid = mobile ? el.scrollLeft + el.clientWidth / 2 : el.scrollTop + el.clientHeight / 2;
-      let bestIndex = 0;
+      let bestIndex: number | null = null;
       let bestDist = Number.POSITIVE_INFINITY;
       for (let index = 0; index < centers.length; index += 1) {
         if (!slideRefs.current[index]) continue;
@@ -294,18 +333,40 @@ export function useDeckScroller({
 
     const onScroll = () => {
       if (suppressScrollSyncRef.current) return;
+      if (el.scrollHeight !== measuredScrollHeightRef.current) centersDirtyRef.current = true;
       const mobile = window.matchMedia("(max-width: 820px)").matches;
       cancelAnimationFrame(raf);
       raf = requestAnimationFrame(() => {
-        setActiveNavIndex(closestIndex(mobile));
+        const next = closestIndex(mobile);
+        if (next !== null) setActiveNavIndex(next);
       });
     };
+    // A programmatic scroll (clicking a page in the rail) briefly ignores the
+    // scroll-driven selection, so the animation doesn't drag the outline across
+    // every page it flies past. That guard is a 500ms timer, though — and if it
+    // is ever left standing (a timer dropped while the tab was backgrounded, a
+    // navigation that re-armed it, a re-render mid-animation), scroll-to-select
+    // is dead for the rest of the session: clicking a thumbnail still selects,
+    // because that sets the selection directly, while scrolling silently stops
+    // choosing anything. A real gesture settles it — the cook is driving now, so
+    // their input always outranks an in-flight programmatic scroll.
+    const onUserScrollIntent = () => {
+      if (!suppressScrollSyncRef.current) return;
+      window.clearTimeout(scrollSyncTimerRef.current);
+      suppressScrollSyncRef.current = false;
+    };
+    el.addEventListener("wheel", onUserScrollIntent, { passive: true });
+    el.addEventListener("touchmove", onUserScrollIntent, { passive: true });
+    el.addEventListener("keydown", onUserScrollIntent);
     el.addEventListener("scroll", onScroll, { passive: true });
     return () => {
+      el.removeEventListener("wheel", onUserScrollIntent);
+      el.removeEventListener("touchmove", onUserScrollIntent);
+      el.removeEventListener("keydown", onUserScrollIntent);
       el.removeEventListener("scroll", onScroll);
       cancelAnimationFrame(raf);
     };
-  }, [navItemsLength, setActiveNavIndex, measureSlideCenters]);
+  }, [deckNode, navItemsLength, setActiveNavIndex, measureSlideCenters]);
 
   // Adding/removing slides or switching the deck's axis moves every slide, so
   // the cached centers must be rebuilt on the next scroll.
@@ -361,7 +422,9 @@ export function useDeckScroller({
     canvasSide,
     setCanvasSide,
     deckScale,
-    deckRef,
+    /** Attach this to the deck element (a callback ref, not an object): the
+        listeners above follow the element it reports. */
+    deckRef: attachDeck,
     slideRefs,
     goToSlide,
   };

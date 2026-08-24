@@ -84,7 +84,11 @@ export function useCookbookPurchase({
     return () => {
       cancelled = true;
     };
-  }, [cookPilotUser, projectId]);
+    // The uid, not the User object: Firebase replaces that object on every
+    // token refresh, and depending on its identity re-issued both unlock reads
+    // for an account that had not changed.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [cookPilotUser?.uid, projectId]);
 
   // A purchase that completed on THIS device but whose webhook write hasn't
   // landed yet. `markCookbookUnlockPending` is set at checkout and cleared once

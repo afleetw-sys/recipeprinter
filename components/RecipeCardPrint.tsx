@@ -1121,7 +1121,13 @@ export const RecipeCardFace = memo(function RecipeCardFace({
             <h2 className="recipe-card__label">
               Steps
               {side === "front" && hasBackFace && !continued ? (
-                <span className="recipe-card__continued-inline"> (continued on back)</span>
+                // A cookbook continues on the NEXT LEAF, never on the back of
+                // this one (see `continueOnBack` in lib/usePrintSheets.tsx —
+                // duplex is the recipe-card path only), so "on back" sent the
+                // cook looking at the wrong side of the page.
+                <span className="recipe-card__continued-inline">
+                  {cookbookMode ? " (continued on the next page)" : " (continued on back)"}
+                </span>
               ) : side === "back" || continued ? (
                 " continued"
               ) : (
@@ -1401,6 +1407,66 @@ export interface CoverCardInlineEdit {
   /** Candidate cover photos (the book's recipe images) offered in edit mode. */
   recipeImages?: string[];
 }
+
+/**
+ * The spine panel of a hardcover case wrap.
+ *
+ * A hardcover's cover is one flat sheet — back | spine | front — so the spine
+ * is a real printed surface, not decoration. It was missing entirely: the
+ * export emitted the front cover as a lone trim-size page, which is not a file
+ * any case binder can use.
+ *
+ * It matches the theme by construction rather than by a parallel set of rules:
+ * the paper element and `TemplateDecoration` are the SAME ones the front and
+ * back covers use, so a spine can never drift from the covers it sits between
+ * when a template changes. Only the geometry is spine-specific, and that comes
+ * from `lib/coverWrap.ts`.
+ *
+ * Type runs bottom-to-top, the convention for English-language hardcovers, so
+ * the title reads correctly when the book lies face-up on a table.
+ *
+ * A thin book gets a blank spine: below `MIN_TITLED_SPINE_IN` there is no room
+ * for legible type between the hinges, and printers reject or silently mangle
+ * type that crowds them. Blank is the correct output there, not smaller text.
+ */
+export const SpineFace = memo(function SpineFace({
+  cover,
+  template,
+  spineWidthIn,
+  showTitle,
+  showDecoration = true,
+}: {
+  cover: CoverConfig;
+  /** Authoritative over the template captured in an older cover draft, exactly
+      as `CoverFace` treats it. */
+  template?: RecipePrintTemplate;
+  /** Physical spine width in inches, from `coverWrapGeometry`. */
+  spineWidthIn: number;
+  /** False when the spine is too thin to carry type — see `spineFitsTitle`. */
+  showTitle: boolean;
+  showDecoration?: boolean;
+}) {
+  const resolved = template ?? cover.template;
+  return (
+    <div
+      className="recipe-card recipe-card--cover recipe-card--spine"
+      style={{ ["--rp-spine-w" as string]: `${spineWidthIn}in` }}
+      aria-hidden
+    >
+      <div className="recipe-card__cover-photo recipe-card__cover-photo--paper" aria-hidden />
+      {/* Bistro's decoration is itself a spine-like strip down the page edge —
+          on a panel this narrow it would read as a stripe of noise rather than
+          a motif, so it sits out here exactly as it does on the back cover. */}
+      <TemplateDecoration template={resolved} show={showDecoration && resolved !== "bistro"} />
+      {showTitle && (
+        <div className="recipe-card__spine-text">
+          <span className="recipe-card__spine-title">{cover.title}</span>
+          {cover.author && <span className="recipe-card__spine-author">{cover.author}</span>}
+        </div>
+      )}
+    </div>
+  );
+});
 
 export const CoverFace = memo(function CoverFace({
   cover,
@@ -1688,6 +1754,9 @@ export interface TableOfContentsEntry {
   title: string;
   pageNumber?: number;
   chapterNumber?: number;
+  /** This chapter heading is a repeat at the top of a contents page whose
+      recipes carried over from the page before. */
+  continued?: boolean;
 }
 
 export interface TableOfContentsInlineEdit {
@@ -1705,6 +1774,7 @@ export const TableOfContentsFace = memo(function TableOfContentsFace({
   entries,
   kicker,
   title,
+  continued = false,
   template,
   previewHidden = false,
   showDecoration = true,
@@ -1713,6 +1783,9 @@ export const TableOfContentsFace = memo(function TableOfContentsFace({
   entries: TableOfContentsEntry[];
   kicker?: string;
   title?: string;
+  /** A contents page after the first. It repeats neither the heading nor the
+      editing affordances — it is the same list, still running. */
+  continued?: boolean;
   template?: RecipePrintTemplate;
   previewHidden?: boolean;
   showDecoration?: boolean;
@@ -1720,6 +1793,13 @@ export const TableOfContentsFace = memo(function TableOfContentsFace({
 }) {
   const kickerText = (inlineEdit ? inlineEdit.kicker : kicker) || "Contents";
   const titleText = (inlineEdit ? inlineEdit.title : title) || "What's inside";
+  // The heading is set once, on the first page; a continuation just says so
+  // quietly and gives the rest of the page to the list.
+  const heading = continued ? (
+    <p className="recipe-card__toc-kicker recipe-card__toc-kicker--continued">
+      {kickerText} continued
+    </p>
+  ) : null;
   return (
     <article
       className="recipe-card recipe-card--toc"
@@ -1727,7 +1807,8 @@ export const TableOfContentsFace = memo(function TableOfContentsFace({
     >
       <TemplateDecoration template={template} show={showDecoration} />
       <div className="recipe-card__toc-content">
-        {inlineEdit ? (
+        {heading}
+        {continued ? null : inlineEdit ? (
           <textarea
             rows={1}
             className="recipe-card__inline-textarea recipe-card__toc-kicker"
@@ -1739,7 +1820,7 @@ export const TableOfContentsFace = memo(function TableOfContentsFace({
         ) : (
           <p className="recipe-card__toc-kicker">{kickerText}</p>
         )}
-        {inlineEdit ? (
+        {continued ? null : inlineEdit ? (
           <textarea
             rows={1}
             className="recipe-card__inline-textarea recipe-card__toc-title"
@@ -1754,8 +1835,18 @@ export const TableOfContentsFace = memo(function TableOfContentsFace({
         <ol className="recipe-card__toc-list">
           {entries.map((entry, index) =>
             entry.kind === "chapter" ? (
-              <li key={`c-${index}`} className="recipe-card__toc-chapter">
-                <span className="recipe-card__toc-chapter-name">{entry.title}</span>
+              <li
+                key={`c-${index}`}
+                className={`recipe-card__toc-chapter${
+                  entry.continued ? " recipe-card__toc-chapter--continued" : ""
+                }`}
+              >
+                <span className="recipe-card__toc-chapter-name">
+                  {entry.title}
+                  {entry.continued && (
+                    <span className="recipe-card__toc-chapter-continued"> (continued)</span>
+                  )}
+                </span>
                 {entry.pageNumber !== undefined && (
                   <span className="recipe-card__toc-pg">{entry.pageNumber}</span>
                 )}
@@ -1771,7 +1862,7 @@ export const TableOfContentsFace = memo(function TableOfContentsFace({
             ),
           )}
         </ol>
-        {inlineEdit && (
+        {inlineEdit && !continued && (
           <p className="recipe-card__toc-note no-print">
             Chapters, recipes and page numbers are pulled from your pages — to change them,
             edit a section or recipe.

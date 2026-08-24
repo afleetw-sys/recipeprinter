@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { SiteHeader } from "@/components/SiteHeader";
 import { ConfirmDialog } from "@/components/ConfirmDialog";
 import { Badge, IconButton } from "@/components/Controls";
@@ -17,7 +17,12 @@ import {
   planDuplicateCleanup,
 } from "@/lib/duplicateProjects";
 import { track } from "@/lib/analytics";
-import { loadCookbookProjectUnlockIds } from "@/lib/cookbookUnlocks";
+import { isCookbookProjectUnlocked, loadCookbookProjectUnlockIds } from "@/lib/cookbookUnlocks";
+import {
+  deleteLocalProject,
+  loadLocalProjects,
+  pruneLocalProjects,
+} from "@/lib/localProjects";
 import { photoGridLayout } from "@/lib/photoGrid";
 import type { PrintProject } from "@/types/recipe";
 
@@ -99,13 +104,47 @@ export default function ProjectsPage() {
     startNewProject({ cookbook: true });
     router.push(hasRecipes ? "/print" : "/");
   }
-  const [projects, setProjects] = useState<PrintProject[]>([]);
+  const [accountProjects, setAccountProjects] = useState<PrintProject[]>([]);
+  /**
+   * Books filed on this device (lib/localProjects) — everything the workspace
+   * released without an account behind it. Read synchronously and shown to
+   * everyone, signed in or not, because these belong to the browser rather than
+   * to an account.
+   */
+  const [localProjects, setLocalProjects] = useState<PrintProject[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [pendingDelete, setPendingDelete] = useState<PrintProject | null>(null);
   const [deleting, setDeleting] = useState(false);
   const [showLogin, setShowLogin] = useState(false);
   const [purchasedIds, setPurchasedIds] = useState<Set<string>>(() => new Set());
+
+  useEffect(() => {
+    setLocalProjects(loadLocalProjects());
+  }, []);
+
+  const localOnlyIds = useMemo(() => {
+    const inAccount = new Set(accountProjects.map((project) => project.id));
+    return new Set(
+      localProjects.filter((project) => !inAccount.has(project.id)).map((project) => project.id),
+    );
+  }, [accountProjects, localProjects]);
+
+  /**
+   * One list, newest first. A book the account already holds wins over this
+   * device's copy of it — same id, same document, and the account copy is the
+   * one that stays current across devices.
+   */
+  const projects = useMemo(() => {
+    const merged = [
+      ...accountProjects,
+      ...localProjects.filter((project) => localOnlyIds.has(project.id)),
+    ];
+    return merged.sort(
+      (a, b) => Number(b.updatedAt ?? b.createdAt ?? 0) - Number(a.updatedAt ?? a.createdAt ?? 0),
+    );
+  }, [accountProjects, localProjects, localOnlyIds]);
+
   const cookbooks = projects.filter((project) => project.kind !== "printProject");
   const recipeCardProjects = projects.filter((project) => project.kind === "printProject");
 
@@ -135,7 +174,13 @@ export default function ProjectsPage() {
       // A keeper handed the unlock of a copy being deleted is purchased now.
       granted.forEach((projectId) => purchasedProjectIds.add(projectId));
       setPurchasedIds(purchasedProjectIds);
-      setProjects(keep);
+      setAccountProjects(keep);
+      // This account now holds these books, so this device's copies of them are
+      // redundant. Only ever after a SUCCESSFUL read — a failed one is the
+      // absence of an answer, not proof the account has anything, and the whole
+      // point of the shelf is that it doesn't lose books to a bad connection.
+      pruneLocalProjects(keep.map((project) => project.id));
+      setLocalProjects(loadLocalProjects());
       if (remove.length > 0) {
         void deleteDuplicateProjects(user.uid, remove).then((cleaned) => {
           if (cleaned > 0) track("duplicate_projects_cleaned", { count: cleaned });
@@ -157,8 +202,11 @@ export default function ProjectsPage() {
   useEffect(() => {
     if (!ready) return;
     if (!user) {
+      // No auto-opened sign-in modal. This page has something to show a signed
+      // out visitor now — the books on this device's shelf — and throwing a
+      // dialog over them buries the thing they came for. Signing in is one
+      // click away from the empty state and from each on-device book.
       setLoading(false);
-      setShowLogin(true);
       return;
     }
     void refresh();
@@ -168,11 +216,21 @@ export default function ProjectsPage() {
   }, [ready, user?.uid, refresh]);
 
   async function confirmDelete() {
-    if (!user || !pendingDelete) return;
+    if (!pendingDelete) return;
+    // A book that only exists on this device has no account document to delete
+    // — drop it from the shelf and we're done. No sign-in required to remove
+    // something that was never in an account.
+    if (localOnlyIds.has(pendingDelete.id)) {
+      deleteLocalProject(pendingDelete.id);
+      setLocalProjects(loadLocalProjects());
+      setPendingDelete(null);
+      return;
+    }
+    if (!user) return;
     setDeleting(true);
     try {
       await deletePrintProject(user.uid, pendingDelete.id);
-      setProjects((current) => current.filter((project) => project.id !== pendingDelete.id));
+      setAccountProjects((current) => current.filter((project) => project.id !== pendingDelete.id));
       setPendingDelete(null);
     } catch {
       setError("That project couldn’t be deleted. Try again.");
@@ -215,6 +273,23 @@ export default function ProjectsPage() {
           <div className="rounded-xl border border-line bg-card p-cp-6 text-center">
             <p className="text-error">{error}</p>
             <button type="button" className="btn btn-secondary mt-cp-4" onClick={() => void refresh()}>Try again</button>
+          </div>
+        ) : projects.length === 0 && !user ? (
+          /* Signed out with nothing on this device's shelf either. Telling
+             someone who may have a shelf full of books that they have none
+             would be a lie — the honest answer is that their library lives in
+             an account we can't see yet. */
+          <div className="flex flex-col items-center rounded-xl border border-line bg-card px-cp-6 py-cp-7 text-center">
+            <div className="flex h-16 w-16 items-center justify-center rounded-full bg-[var(--cp-accent-soft)]">
+              <BookIcon size={28} className="text-[var(--cp-accent-ink)]" />
+            </div>
+            <h2 className="mt-cp-4 text-cp-h2 font-extrabold tracking-[-0.02em]">Sign in to see your projects</h2>
+            <p className="mt-cp-2 max-w-sm text-cp-body text-ink-soft leading-relaxed">
+              Your cookbooks and recipe cards are saved to your account. Sign in and they’ll be right here.
+            </p>
+            <button type="button" className="btn btn-primary mt-cp-5" onClick={() => setShowLogin(true)}>
+              Sign in
+            </button>
           </div>
         ) : projects.length === 0 ? (
           <div className="flex flex-col items-center rounded-xl border border-line bg-card px-cp-6 py-cp-7 text-center">
@@ -270,13 +345,41 @@ export default function ProjectsPage() {
                         on them answered a question nobody had asked, and raised
                         the idea that they might cost something. */}
                     {project.kind !== "printProject" && (
-                      <div className="mt-cp-3">
-                        {purchasedIds.has(project.id) ? (
+                      <div className="mt-cp-3 flex flex-wrap items-center gap-cp-2">
+                        {/* A book on this device's shelf has no account
+                            document behind it, so `purchasedIds` (built from
+                            the account's unlock collections) can't speak for
+                            it. Its unlock lives in the local map — which is
+                            exactly where a signed-out purchase is recorded
+                            until the webhook's TRANSFER event lands. */}
+                        {(localOnlyIds.has(project.id)
+                          ? isCookbookProjectUnlocked(project.id)
+                          : purchasedIds.has(project.id)) ? (
                           <Badge tone="success"><CheckIcon size={ICON_SIZE.sm} /> Purchased</Badge>
                         ) : (
                           <Badge>Not purchased</Badge>
                         )}
+                        {localOnlyIds.has(project.id) && <Badge>On this device</Badge>}
                       </div>
+                    )}
+                    {/* Says where the book is and what to do about it, on the
+                        book itself — rather than making "sign in" the price of
+                        keeping it at the moment they were leaving. */}
+                    {localOnlyIds.has(project.id) && (
+                      <p className="mt-cp-2 text-cp-caption text-ink-soft leading-snug">
+                        Saved on this device only.{" "}
+                        {user ? (
+                          <>Open it and it’ll save to your account.</>
+                        ) : (
+                          <button
+                            type="button"
+                            className="relative z-20 underline underline-offset-2"
+                            onClick={() => setShowLogin(true)}
+                          >
+                            Sign in to keep it safe.
+                          </button>
+                        )}
+                      </p>
                     )}
                   </div>
                 </li>

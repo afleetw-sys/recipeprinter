@@ -31,7 +31,7 @@ import { TemplateThumbnail } from "@/components/print/TemplateThumbnail";
 import { PHOTO_STYLE_OPTIONS } from "@/components/print/photoStyle";
 import { MobileStructureSheet } from "@/components/print/MobileStructureSheet";
 import { PrintConfigPanel } from "@/components/print/PrintConfigPanel";
-import { PageRail } from "@/components/print/PageRail";
+import { PageRail, type RailSortMode } from "@/components/print/PageRail";
 import { PrintDeck } from "@/components/print/PrintDeck";
 import {
   usePrintSheets,
@@ -41,6 +41,7 @@ import {
 import {
   buildSections,
   namedSectionCount,
+  defaultSectionGridImages,
   resolveSectionPhotoMode,
   useProjectMeta,
   type ProjectMeta,
@@ -55,6 +56,7 @@ import {
   PrintProjectConflictError,
 } from "@/lib/printProjects";
 import { adoptAnonymousProject, readAdoptionManifest } from "@/lib/anonymousProjectAdoption";
+import { loadLocalProject } from "@/lib/localProjects";
 import { useRecipeInlineEditor } from "@/lib/useRecipeInlineEditor";
 import { useRailDrag, type RailDragKind, type RailDropResolved } from "@/lib/useRailDrag";
 import { useRailSelection } from "@/lib/useRailSelection";
@@ -275,6 +277,12 @@ export default function PrintPage() {
   const [organizeAnimating, setOrganizeAnimating] = useState(false);
   const organizeTimers = useRef<number[]>([]);
   const [organizationUndo, setOrganizationUndo] = useState<ProjectMeta["sections"] | null>(null);
+  // The organizer's "Sort by". `custom` is whatever order the cook has built by
+  // hand; `title` is A–Z within every section. `customOrderUndo` holds the
+  // arrangement A–Z replaced, so switching back restores it rather than leaving
+  // the book alphabetized forever.
+  const [railSortMode, setRailSortMode] = useState<RailSortMode>("custom");
+  const [customOrderUndo, setCustomOrderUndo] = useState<ProjectMeta["sections"] | null>(null);
   const [showShareDialog, setShowShareDialog] = useState(false);
   const [pendingDelete, setPendingDelete] = useState<
     | { kind: "recipe"; id: string; title: string }
@@ -387,6 +395,17 @@ export default function PrintPage() {
   // click, correct result, no "try again". Cleared if the request resolves or
   // the user navigates away from the intent.
   const [printPending, setPrintPending] = useState(false);
+  /**
+   * Draw the whole book, not just the window around the reader.
+   *
+   * The deck renders only the pages near the active slide (see `DECK_WINDOW` in
+   * components/print/PrintDeck) — but the deck IS what a browser print
+   * captures, so a windowed deck would print placeholders. `beforeprint` is the
+   * one hook that fires for BOTH `window.print()` and the user's own ⌘P, and it
+   * runs synchronously before the print snapshot, so a `flushSync` there gets
+   * every page committed in time.
+   */
+  const [renderAllPages, setRenderAllPages] = useState(false);
   // Snapshot of every queue id that already existed when this print job was
   // loaded, so the merge effect below can tell "pre-existing queue item the
   // user didn't select for this job" apart from "just added via the Add
@@ -429,6 +448,11 @@ export default function PrintPage() {
   /** The format currently rendering server-side, if any. */
   const [exportingPreset, setExportingPreset] = useState<CookbookPresetId | null>(null);
   const [cookbookExportError, setCookbookExportError] = useState<string | null>(null);
+  /** The export was refused for want of an account, not because it broke — so
+      the ready dialog offers a sign-in button beside the message. */
+  const [cookbookExportNeedsAuth, setCookbookExportNeedsAuth] = useState(false);
+  /** No session at all (offer to create one) vs a session that didn't hold up. */
+  const [cookbookExportNeedsAccount, setCookbookExportNeedsAccount] = useState(false);
   // Cookbook photos are set book-wide via the 3-way "Photos" control
   // (`photoStyle`); plain card mode keeps its own header-photo checkbox
   // (`showPhoto`). Default "card" = a header photo in each recipe card.
@@ -499,6 +523,9 @@ export default function PrintPage() {
     cookbookMode: projectMeta.meta.cookbookMode,
     itemPlacements: projectMeta.meta.itemPlacements,
     defaultFullPage,
+    // Chapter openers with no placement of their own follow the book's Photos
+    // choice (see `resolveSectionPhotoMode`).
+    photoStyle: cookbookMode ? photoStyle : undefined,
     cardSize,
     doubleSided,
     photosOn,
@@ -686,7 +713,15 @@ export default function PrintPage() {
       return i === -1 ? rects.length : i;
     };
     if (kind === "recipe") {
-      const rows = geometry.recipes;
+      // Dragging a recipe that's part of the current selection carries the
+      // whole selection, in book order — every tile the cook picked travels
+      // with the one under the pointer. Dragging an unselected one moves it
+      // alone, and leaves the selection where it is.
+      const movingIds = effectiveRailSelection.has(id) ? orderedRailSelection() : [id];
+      const moving = new Set(movingIds);
+      // Nothing being carried can also be a drop target — a selection can't
+      // land on itself, and neither can a single card.
+      const rows = geometry.recipes.filter((row) => !moving.has(row.id));
       if (rows.length === 0) return null;
 
       // The expanded organizer is a 2D card grid, so resolve against the card
@@ -703,7 +738,8 @@ export default function PrintPage() {
               indicator: { top: rect.top, left: rect.left, width: rect.width },
               commit: () => {
                 const sectionId = projectMeta.addSection("New section");
-                projectMeta.moveItem(id, sectionId, 0);
+                projectMeta.moveItems(movingIds, sectionId, 0);
+                clearRailSelection();
                 setEditingSectionId(sectionId);
                 setEditingSectionTitle("New section");
                 setPendingFocusNavId(sectionId);
@@ -718,11 +754,16 @@ export default function PrintPage() {
           const rect = sectionAdd.rect;
           return {
             indicator: { top: rect.top, left: rect.left, width: rect.width },
-            commit: () => projectMeta.moveItem(id, sectionId, itemIdsForSection(sectionId).filter((x) => x !== id).length),
+            commit: () =>
+              projectMeta.moveItems(
+                movingIds,
+                sectionId,
+                itemIdsForSection(sectionId).filter((x) => !moving.has(x)).length,
+              ),
           };
         }
 
-        const candidates = rows.filter((row) => row.id !== id && row.rect.width > 0 && row.rect.height > 0);
+        const candidates = rows.filter((row) => row.rect.width > 0 && row.rect.height > 0);
         if (candidates.length === 0) return null;
         const distanceTo = (rect: DOMRect) => {
           const dx = Math.max(rect.left - clientX, 0, clientX - rect.right);
@@ -754,10 +795,10 @@ export default function PrintPage() {
           commit: () => {
             const location = sectionAndIndexForItem(target.id);
             if (!location) return;
-            const ids = itemIdsForSection(location.sectionId).filter((x) => x !== id);
+            const ids = itemIdsForSection(location.sectionId).filter((x) => !moving.has(x));
             const targetIndex = ids.indexOf(target.id);
-            projectMeta.moveItem(
-              id,
+            projectMeta.moveItems(
+              movingIds,
               location.sectionId,
               Math.max(0, targetIndex + (after ? 1 : 0)),
             );
@@ -776,13 +817,17 @@ export default function PrintPage() {
         if (k < rows.length) {
           const target = sectionAndIndexForItem(rows[k].id);
           if (!target) return;
-          const ids = itemIdsForSection(target.sectionId).filter((x) => x !== id);
+          const ids = itemIdsForSection(target.sectionId).filter((x) => !moving.has(x));
           const idx = ids.indexOf(rows[k].id);
-          projectMeta.moveItem(id, target.sectionId, idx < 0 ? ids.length : idx);
+          projectMeta.moveItems(movingIds, target.sectionId, idx < 0 ? ids.length : idx);
         } else {
           const last = sectionAndIndexForItem(rows[rows.length - 1].id);
           if (!last) return;
-          projectMeta.moveItem(id, last.sectionId, itemIdsForSection(last.sectionId).filter((x) => x !== id).length);
+          projectMeta.moveItems(
+            movingIds,
+            last.sectionId,
+            itemIdsForSection(last.sectionId).filter((x) => !moving.has(x)).length,
+          );
         }
       };
       return { indicator, commit };
@@ -807,11 +852,18 @@ export default function PrintPage() {
     };
     return { indicator, commit };
   };
-  const railDrag = useRailDrag(railScrollRef, resolveRailDrop, (kind) => {
-    // Only the cookbook rail opens the organizer on a recipe drag; the flat
-    // (non-cookbook) rail reorders the card list in place via the same drag.
-    if (kind === "recipe" && !organizeMode && cookbookMode) enterOrganizeMode();
-  });
+  const railDrag = useRailDrag(
+    railScrollRef,
+    resolveRailDrop,
+    (kind) => {
+      // Only the cookbook rail opens the organizer on a recipe drag; the flat
+      // (non-cookbook) rail reorders the card list in place via the same drag.
+      if (kind === "recipe" && !organizeMode && cookbookMode) enterOrganizeMode();
+      if (kind === "recipe") markCustomOrder();
+    },
+    (kind, id) =>
+      kind === "recipe" && effectiveRailSelection.has(id) ? effectiveRailSelection.size : 1,
+  );
 
   // Everything that can move rail rows WITHOUT scrolling the rail — the drag
   // classes landing on the commit after `onBegin`, the organizer's grid/list
@@ -1143,6 +1195,11 @@ export default function PrintPage() {
   function applyBookPhotoStyle(mode: PhotoStyle) {
     projectMeta.setPhotoStyle(mode);
     projectMeta.clearItemPhotoOverrides();
+    // Chapter openers are part of the book, not an exception to it: a placement
+    // made for one opener under the old choice would otherwise pin that chapter
+    // to art the book no longer uses. Their photos and collages are kept, so the
+    // new placement uses them immediately.
+    projectMeta.clearSectionPhotoModes();
   }
 
 
@@ -1158,7 +1215,7 @@ export default function PrintPage() {
     // Nothing to place if the section has neither a chosen photo nor any recipe
     // image to seed one from — hide the toggle rather than offer a blank page.
     if (!section.photoUrl && ownImages.length === 0) return null;
-    const resolved = resolveSectionPhotoMode(section);
+    const resolved = resolveSectionPhotoMode(section, photoStyle);
     const active: SectionPhotoMode = resolved === "grid" ? "full" : resolved;
     return (
       <div className="recipe-page-layout-control">
@@ -1546,6 +1603,70 @@ export default function PrintPage() {
     showToast("Organization undone");
   }
 
+  function recipeTitleForId(itemId: string) {
+    const item = items?.find((entry) => entry.id === itemId);
+    return (item?.recipe?.title || item?.title || "").trim();
+  }
+
+  // Sorting is a real reorder, not a view: the organizer shows the book, so A–Z
+  // has to move the pages themselves — otherwise the tiles and the printed
+  // order would disagree. Each section sorts within itself; section order is
+  // the cook's own (and "Organize it for me" above owns that question).
+  function applyRailSort(mode: RailSortMode) {
+    if (mode === railSortMode) return;
+    if (mode === "title") {
+      setCustomOrderUndo(structuredClone(projectMeta.meta.sections));
+      projectMeta.setSectionStructure(
+        projectMeta.meta.sections.map((section) => ({
+          ...section,
+          itemIds: [...section.itemIds].sort((a, b) =>
+            recipeTitleForId(a).localeCompare(recipeTitleForId(b), undefined, {
+              sensitivity: "base",
+              numeric: true,
+            }),
+          ),
+        })),
+      );
+      setRailSortMode("title");
+      track("cookbook_sorted", { mode: "title" });
+      showToast("Sorted A–Z");
+      return;
+    }
+    if (customOrderUndo) projectMeta.setSectionStructure(customOrderUndo);
+    setCustomOrderUndo(null);
+    setRailSortMode("custom");
+    track("cookbook_sorted", { mode: "custom" });
+  }
+
+  // A recipe placed by hand IS the custom order — so the moment the cook drags
+  // one (or moves one from the tile menu), the sort goes back to reading
+  // "Custom order" and the pre-sort snapshot is spent. Leaving it on "A–Z"
+  // would promise an order the book no longer has.
+  function markCustomOrder() {
+    if (railSortMode === "custom" && !customOrderUndo) return;
+    setRailSortMode("custom");
+    setCustomOrderUndo(null);
+  }
+
+  // The tile menu's "Move to" — the same commit a drag makes, for cooks who
+  // would rather pick a section than drag across a long book. Moved recipes
+  // land at the end of the receiving section, in book order.
+  function moveRecipesToSection(ids: string[], sectionId: string) {
+    if (ids.length === 0) return;
+    markCustomOrder();
+    const moving = new Set(ids);
+    projectMeta.moveItems(
+      ids,
+      sectionId,
+      itemIdsForSection(sectionId).filter((itemId) => !moving.has(itemId)).length,
+    );
+    track("cookbook_recipes_moved_to_section", { count: ids.length, via: "tile_menu" });
+    // An untitled section has no name to say, so the toast just confirms the move.
+    const title = projectMeta.meta.sections.find((section) => section.id === sectionId)?.title?.trim();
+    const where = title ? ` to ${title}` : "";
+    showToast(ids.length > 1 ? `Moved ${ids.length} recipes${where}` : `Moved${where}`);
+  }
+
   function currentProject(): PrintProject | null {
     if (!cookPilotUser || !items?.length) return null;
     /**
@@ -1784,8 +1905,10 @@ export default function PrintPage() {
     if (!cookPilotUser || !saveAfterLoginRef.current) return;
     saveAfterLoginRef.current = false;
     void handleSaveProject();
+    // The uid, not the User object — Firebase replaces that object on every
+    // token refresh, and this should fire on signing in, not hourly.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [cookPilotUser]);
+  }, [cookPilotUser?.uid]);
 
   const {
     revenueCatUserId,
@@ -1920,6 +2043,8 @@ export default function PrintPage() {
     const project = currentExportProject();
     if (!project) return;
     setCookbookExportError(null);
+    setCookbookExportNeedsAuth(false);
+    setCookbookExportNeedsAccount(false);
     setExportingPreset(presetId);
     try {
       await downloadCookbookPdf(
@@ -1933,6 +2058,8 @@ export default function PrintPage() {
           ? error.message
           : "The cookbook couldn't be exported. Try again.",
       );
+      setCookbookExportNeedsAuth(error instanceof CookbookPdfError && error.needsAuth);
+      setCookbookExportNeedsAccount(error instanceof CookbookPdfError && error.needsAccount);
     } finally {
       setExportingPreset(null);
     }
@@ -1987,6 +2114,17 @@ export default function PrintPage() {
   // there's a real async operation the click can't preempt. It is NOT disabled
   // for a measuring layout: a click then is queued (see `printPending`), so the
   // button stays live and just shows a spinner until the layout is ready.
+  /**
+   * Would a print right now produce something that hasn't been paid for?
+   *
+   * Drives the print-time watermark (see `.rp-print-locked` in print.css). Both
+   * paywalls used to stop at a button label, and the deck on screen is what a
+   * browser print captures — so Cmd-P produced the finished article from either
+   * a locked premium theme or an unpurchased cookbook. Nothing about the
+   * on-screen preview changes; this only marks the paper.
+   */
+  const printWatermarked = templateLocked || cookbookLocked;
+
   const printBlocked = purchaseBusy || claimBusy || cookbookPurchaseBusy;
   const printSpinner = printBlocked || printPending;
 
@@ -2019,23 +2157,34 @@ export default function PrintPage() {
 
   useEffect(() => {
     if (!accountProjectId || !cookPilotAuthReady || !projectMeta.hydrated || !queue.hydrated) return;
-    if (!cookPilotUser) {
-      // A saved project lives in an account, so there is nothing to show until
-      // we know whose it is. Say that, instead of spinning.
-      setProjectLoading(false);
-      setProjectAccess("needs-auth");
-      return;
-    }
-    let cancelled = false;
-    setProjectLoading(true);
-    setProjectAccess(null);
-    loadPrintProject(cookPilotUser.uid, accountProjectId)
-      .then((project) => {
-        if (cancelled) return;
-        if (!project) {
-          setProjectAccess("missing");
-          return;
-        }
+
+    /**
+     * A book filed on this device by leaving the workspace (lib/localProjects).
+     * Consulted whether or not anyone is signed in, because a book on the shelf
+     * belongs to the browser, not to an account — which is the whole reason the
+     * shelf exists.
+     */
+    const shelved = loadLocalProject(accountProjectId);
+
+    /**
+     * Loads a project into the working copy.
+     *
+     * `source` decides what happens to the SAVE identity afterwards, which is
+     * the only way the two sources differ:
+     *
+     *  - `account` — this document already exists in Firestore under this id, so
+     *    adopt its revision and identity and start from a clean "Saved" state.
+     *  - `shelf` — it doesn't exist in any account yet, so leave the save
+     *    identity unset. For a signed-in cook that means the next autosave takes
+     *    the ADOPTION path (`adoptAnonymousProject`), which migrates the book's
+     *    anonymous photo assets and re-keys its cookbook unlock — exactly what
+     *    moving a device-local book into an account has to do. Deliberately no
+     *    `"__loaded__"` sentinel either: that sentinel exists to stop a freshly
+     *    loaded account document re-saving itself unchanged, and here the save
+     *    is the point. Opening a shelved book while signed in files it to the
+     *    account, which is the product's rule for cookbooks.
+     */
+    const applyProject = (project: PrintProject, source: "account" | "shelf") => {
         const loadedItems = project.sections.flatMap((section) => section.items);
         queue.replaceAll(loadedItems);
         setJobIds(loadedItems.map((item) => item.id));
@@ -2076,17 +2225,60 @@ export default function PrintPage() {
         setShowPhoto(project.settings.showPhoto);
         setShowSourceUrl(project.settings.showSourceUrl);
         setShowCutLines(project.settings.showCutLines);
-        projectRevisionRef.current = Number(project.revision ?? 0);
-        savedProjectIdRef.current = project.id;
-        setSavedProjectId(project.id);
-        lastSavedFingerprintRef.current = "__loaded__";
-        setSaveStatus("saved");
+        if (source === "account") {
+          projectRevisionRef.current = Number(project.revision ?? 0);
+          savedProjectIdRef.current = project.id;
+          setSavedProjectId(project.id);
+          lastSavedFingerprintRef.current = "__loaded__";
+          setSaveStatus("saved");
+        }
+    };
+
+    // Signed out there is no account to ask, so the shelf is the only answer
+    // available — and for a book built or bought while signed out, it is the
+    // right one. Only when the shelf has nothing either is "sign in" the honest
+    // thing to say.
+    if (!cookPilotUser) {
+      if (shelved) {
+        applyProject(shelved, "shelf");
+        setProjectLoading(false);
+        setProjectAccess(null);
+        return;
+      }
+      setProjectLoading(false);
+      setProjectAccess("needs-auth");
+      return;
+    }
+
+    let cancelled = false;
+    setProjectLoading(true);
+    setProjectAccess(null);
+    loadPrintProject(cookPilotUser.uid, accountProjectId)
+      .then((project) => {
+        if (cancelled) return;
+        // The account copy is authoritative when it exists; the shelf is the
+        // fallback for a book that hasn't been adopted into this account yet.
+        if (project) {
+          applyProject(project, "account");
+          return;
+        }
+        if (shelved) {
+          applyProject(shelved, "shelf");
+          return;
+        }
+        setProjectAccess("missing");
       })
       .catch((error) => {
-        if (!cancelled) {
-          console.warn("RecipePrinter: could not open project", error);
-          setProjectAccess("failed");
+        if (cancelled) return;
+        console.warn("RecipePrinter: could not open project", error);
+        // A failed read is the absence of an answer, not proof the account
+        // lacks the book — but if this device happens to hold a copy, showing
+        // it beats showing an error page about a book we are holding.
+        if (shelved) {
+          applyProject(shelved, "shelf");
+          return;
         }
+        setProjectAccess("failed");
       })
       .finally(() => {
         if (!cancelled) setProjectLoading(false);
@@ -2265,6 +2457,20 @@ export default function PrintPage() {
   // mobile is often the last callback before the page is discarded. Registered
   // once — the work is delegated to flushOnHideRef, which always holds the
   // current book.
+  //
+  // The cleanup flushes too, and that case is not covered by either event.
+  // Every in-app exit from this page — the header logo, "Back to your recipes",
+  // a link to /projects — is a client-side `next/link` navigation, which fires
+  // NEITHER `pagehide` NOR `visibilitychange`: the document never goes away, only
+  // this component does. So the one exit route people actually take was the one
+  // route that never flushed, and an edit made inside the 1.5s autosave debounce
+  // was dropped on the way out. Unmounting is itself a teardown — the same
+  // reasoning (and the same fix) as the meta-write flush in lib/project.ts.
+  //
+  // Safe to fire on every unmount: `flushOnHideRef` no-ops unless autosave is on
+  // and the fingerprint actually differs from the last saved one, and the request
+  // it starts is not tied to this component's lifetime, so it completes after the
+  // page is gone.
   useEffect(() => {
     const flush = () => flushOnHideRef.current();
     const onVisibility = () => {
@@ -2275,6 +2481,7 @@ export default function PrintPage() {
     return () => {
       window.removeEventListener("pagehide", flush);
       document.removeEventListener("visibilitychange", onVisibility);
+      flush();
     };
   }, []);
 
@@ -2535,7 +2742,11 @@ export default function PrintPage() {
     return () => {
       cancelled = true;
     };
-  }, [cookPilotUser]);
+    // Same again: keyed on the uid, so a token refresh does not re-read the
+    // profile document for an account that has not changed. /projects already
+    // keys its account effects this way and documents why.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [cookPilotUser?.uid]);
 
   useEffect(() => {
     if (!toastMessage) return;
@@ -2544,7 +2755,18 @@ export default function PrintPage() {
   }, [toastMessage]);
 
   useEffect(() => {
+    function handleBeforePrint() {
+      // Synchronous on purpose: window.print() does not yield, so a normal
+      // state update would not have committed before the snapshot is taken.
+      flushSync(() => setRenderAllPages(true));
+    }
+    window.addEventListener("beforeprint", handleBeforePrint);
+    return () => window.removeEventListener("beforeprint", handleBeforePrint);
+  }, []);
+
+  useEffect(() => {
     function handleAfterPrint() {
+      setRenderAllPages(false);
       if (!printRequestedRef.current) return;
       printRequestedRef.current = false;
       // Undo the cookbook filename override once the print dialog closes.
@@ -2591,23 +2813,39 @@ export default function PrintPage() {
   // a recipe. A collage is NOT a top-level choice — under Full page the cook can
   // toggle the single facing photo into a grid of this chapter's own photos
   // (scoped to the section, not the whole-book candidates).
-  const buildSectionPhotoEdit = (section: Section | undefined) => {
-    const mode = resolveSectionPhotoMode(section ?? {});
+  const buildSectionPhotoEdit = (
+    section: Section | undefined,
+    // Where this picker is being rendered. The "Photo" button belongs ON the art
+    // it changes: in the opener card when the opener shows the photo, and on the
+    // facing page when the art lives there (`art`) — so a full-page or collage
+    // chapter is edited by clicking the picture, not a button on the page next
+    // to it. Everything else about the dialog is identical either way.
+    surface: "opener" | "art" = "opener",
+  ) => {
+    const mode = resolveSectionPhotoMode(section ?? {}, photoStyle);
     const ownImages = section ? sectionRecipeImages(section) : [];
-    const seedGridCount = ownImages.length >= 6 ? 6 : ownImages.length >= 4 ? 4 : 2;
     const isGrid = mode === "grid";
+    // A grid the BOOK chose behaves exactly like one the cook picked: the same
+    // photos, already ticked, with "Select multiple" on — so the dialog opens on
+    // a real selection they can add to or pare back.
+    const gridImages = section?.gridImages?.length
+      ? section.gridImages
+      : defaultSectionGridImages(ownImages);
     return {
       photoUrl: section?.photoUrl,
       recipeImages: ownImages,
       // A single photo tile is only pickable in band / single Full-page mode
       // (grid has its own multi-select, none has no tiles) — keep the current
       // placement and set the one photo it names.
-      onPhotoChange: (url: string | undefined) => {
-        if (!section) return;
-        projectMeta.setSectionPhotoMode(section.id, mode === "band" ? "band" : "full", {
-          photoUrl: url,
-        });
-      },
+      onPhotoChange:
+        surface === "art" || mode === "band"
+          ? (url: string | undefined) => {
+              if (!section) return;
+              projectMeta.setSectionPhotoMode(section.id, mode === "band" ? "band" : "full", {
+                photoUrl: url,
+              });
+            }
+          : undefined,
       // Grid is a Full-page sub-mode, so it reports "Full page" as the active
       // placement and exposes the collage separately via `gridActive`.
       placement: isGrid ? "full" : mode,
@@ -2631,13 +2869,7 @@ export default function PrintPage() {
       gridActive: isGrid,
       onSelectGrid:
         section && ownImages.length >= 2
-          ? () => {
-              projectMeta.setSectionPhotoMode(section.id, "grid", {
-                gridImages: section.gridImages?.length
-                  ? section.gridImages
-                  : ownImages.slice(0, seedGridCount),
-              });
-            }
+          ? () => projectMeta.setSectionPhotoMode(section.id, "grid", { gridImages })
           : undefined,
       onExitGrid: section
         ? () =>
@@ -2645,7 +2877,9 @@ export default function PrintPage() {
               photoUrl: section.photoUrl ?? section.gridImages?.[0] ?? ownImages[0],
             })
         : undefined,
-      gridImages: section?.gridImages,
+      // Pinning the tiles the moment one is toggled turns a defaulted collage
+      // into the cook's own, which is what un-ticking a photo means.
+      gridImages,
       onGridChange: (urls: string[]) => {
         if (!section) return;
         projectMeta.setSectionPhotoMode(section.id, "grid", { gridImages: urls });
@@ -3067,7 +3301,7 @@ export default function PrintPage() {
   }
 
   return (
-    <div className="h-dvh recipe-print-page">
+    <div className={`h-dvh recipe-print-page ${printWatermarked ? "rp-print-locked" : ""}`}>
       {measurers}
       {/* Header + the back-up bar share one grid row so the bar pushes the
           editor down instead of stealing the deck's `1fr` row (which left it
@@ -3108,13 +3342,26 @@ export default function PrintPage() {
           }
         />
 
-        {/* One-line "back up your cookbook" bar under the toolbar, shown to a
-            signed-out owner. Not dismissable on purpose: an un-backed-up purchase
-            lives only in this browser, so it stays until they make an account. */}
-        {projectMeta.meta.cookbookMode && !cookbookLocked && !cookPilotUser && (
+        {/* One-line "back up your cookbook" bar under the toolbar, shown to any
+            signed-out owner. Not dismissable on purpose: a book that lives only
+            in this browser stays worth saying so about until they make an
+            account.
+
+            This used to be gated on `!cookbookLocked`, so it only appeared once
+            a book had been PAID for — which is both the smallest audience and
+            the latest possible moment. Every unsaved book is worth keeping, and
+            asking here, while the cook is in the middle of building one, is a
+            far better moment than the one we were reaching for otherwise: a
+            modal at the door on the way out, making an account the price of
+            keeping their work. This says the same thing without holding
+            anything hostage — the book is on the device's shelf either way (see
+            lib/localProjects), and an account is how it stops being only there. */}
+        {projectMeta.meta.cookbookMode && !cookPilotUser && (
           <div className="recipe-protect-bar no-print" role="status">
             <span className="recipe-protect-bar__text">
-              Your cookbook is saved only on this device. Create a free account so you don&apos;t lose it.
+              {cookbookLocked
+                ? "Your cookbook is saved only on this device. Create a free account so you don’t lose it."
+                : "Your cookbook and your purchase are saved only on this device. Create a free account to keep them."}
             </span>
             <button
               type="button"
@@ -3184,6 +3431,9 @@ export default function PrintPage() {
           openAddRecipeBelow={openAddRecipeBelow}
           addSectionDivider={addSectionDivider}
           makeSectionFromSelection={makeSectionFromSelection}
+          moveRecipesToSection={moveRecipesToSection}
+          railSortMode={railSortMode}
+          applyRailSort={applyRailSort}
           addMenuOpen={addMenuOpen}
           setAddMenuOpen={setAddMenuOpen}
           addMenuRef={addMenuRef}
@@ -3260,6 +3510,7 @@ export default function PrintPage() {
           printSpinner={printSpinner}
           cookbookLocked={cookbookLocked}
           templateLocked={templateLocked}
+          renderAllPages={renderAllPages}
         />
 
         {/* Right: print setup */}
@@ -3544,6 +3795,13 @@ export default function PrintPage() {
         onExport={(presetId) => void exportCookbookAs(presetId)}
         exportingPreset={exportingPreset}
         exportError={cookbookExportError}
+        exportNeedsAuth={cookbookExportNeedsAuth}
+        exportNeedsAccount={cookbookExportNeedsAccount}
+        onSignIn={() => {
+          track("protect_prompt_clicked", { source: "cookbook_export" });
+          setCookPilotLoginReason("purchase");
+          setShowCookPilotLogin(true);
+        }}
         onPrinterClick={(printer, url) => {
           track("cookbook_printer_clicked", { printer, preset: activePreset.id });
           window.open(url, "_blank", "noopener,noreferrer");

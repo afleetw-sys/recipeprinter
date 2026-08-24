@@ -8,6 +8,7 @@
     "start": "next start",
     "lint": "next lint",
     "test": "vitest run",
+    "verify": "tsc --noEmit && next lint && vitest run && node scripts/design-system-audit.mjs",
     "audit:design-system": "node scripts/design-system-audit.mjs",
     "audit:unlocks": "npx --yes --package firebase-admin -c \"node scripts/cookbook-unlock-audit.mjs\"",
     "test:rules": "npx firebase-tools@14.27.0 --config firebase.rules-test.json emulators:exec --only firestore,storage \"vitest run --config vitest.rules.config.ts\"",
