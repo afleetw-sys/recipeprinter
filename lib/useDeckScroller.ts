@@ -217,11 +217,19 @@ export function useDeckScroller({
       // On mobile each slide is narrower than the deck itself (100vw - 96px)
       // so neighbouring pages peek in on both sides; the scale must fit that
       // slide width, not the full deck width, or the card overflows its slot.
-      const availW = el.clientWidth - (mobile ? 96 : 40);
+      const availW = el.clientWidth - (mobile ? 96 : 20);
       const availH = el.clientHeight;
       if (availW > 0 && availH > 0) {
         const widthScale = availW / pageWidth;
-        const heightScale = (availH * (mobile ? 0.86 : 0.74)) / pageHeight;
+        // 0.82, not 0.74. A cookbook spread is width-bound — two pages side by
+        // side — so the old budget left ~180px of vertical slack nothing could
+        // use, and it still capped the scale below what the width allowed once
+        // the canvas padding came down. Deliberately not pushed further: this
+        // number is what sizes a SINGLE recipe card, where height is the
+        // binding constraint, and the neighbours above and below have to keep
+        // peeking in or nothing implies the deck scrolls. At 0.82 they show
+        // about 53px each.
+        const heightScale = (availH * (mobile ? 0.86 : 0.82)) / pageHeight;
         const scale = Math.max(0.12, Math.min(1.05, widthScale, heightScale));
         setDeckScale(scale);
         // Give the CSS top padding (see `--deck-top-pad` in globals.css) the

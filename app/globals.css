@@ -567,7 +567,7 @@
   font-weight: 850;
   line-height: 1.08;
   letter-spacing: -.03em;
-  font-size: clamp(1.5rem, 2.6vw, 2rem);
+  font-size: clamp(1.8rem, 2.6vw, 2rem);
 }
 .cookbook-welcome__copy > p {
   color: var(--cp-ink-soft);
@@ -760,21 +760,6 @@
   text-transform: uppercase;
 }
 
-.recipe-config-inline-select {
-  display: grid;
-  gap: .35rem;
-  padding-left: 2rem;
-  color: var(--cp-ink-soft);
-  font-size: .78rem;
-  font-weight: 700;
-}
-.recipe-config-section__hint {
-  margin: .25rem 0 0;
-  color: var(--cp-ink-soft);
-  font-size: .78rem;
-  line-height: 1.45;
-}
-
 @media (max-width: 720px) {
   .cookbook-welcome__panel {
     grid-template-columns: 1fr;
@@ -790,9 +775,6 @@
   .cookbook-welcome__copy {
     gap: 1rem;
     padding: 1.25rem;
-  }
-  .cookbook-welcome__copy h2 {
-    font-size: 1.8rem;
   }
   .cookbook-feature-chips {
     gap: .45rem;
