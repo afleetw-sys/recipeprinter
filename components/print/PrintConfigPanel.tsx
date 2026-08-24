@@ -4,6 +4,7 @@ import type { Dispatch, ReactNode, RefObject, SetStateAction } from "react";
 import type { CustomerInfo } from "@revenuecat/purchases-js";
 import {
   CheckIcon,
+  ChevronRightIcon,
   ICON_SIZE,
   XIcon,
 } from "@/components/icons";
@@ -15,6 +16,8 @@ import type { PrintCardSize, RecipePrintTemplate } from "@/components/RecipeCard
 
 interface PrintConfigPanelProps {
   configPanelRef: RefObject<HTMLElement>;
+  /** Fold the panel away, giving its width back to the page. */
+  onCollapse: () => void;
   mobileDrawer: "template" | null;
   setMobileDrawer: Dispatch<SetStateAction<"template" | null>>;
   cookbookMode: boolean;
@@ -61,6 +64,7 @@ interface PrintConfigPanelProps {
  */
 export function PrintConfigPanel({
   configPanelRef,
+  onCollapse,
   mobileDrawer,
   setMobileDrawer,
   cookbookMode,
@@ -123,6 +127,18 @@ export function PrintConfigPanel({
             Purchased
           </span>
         )}
+        {/* Desktop only. On a phone this panel is a drawer over the page, and
+            the X beside this closes it; there is no second column to give the
+            width back to. */}
+        <button
+          type="button"
+          className="recipe-config-panel__collapse icon-button no-print"
+          aria-label="Hide settings"
+          title="Hide settings"
+          onClick={onCollapse}
+        >
+          <ChevronRightIcon size={ICON_SIZE.md} />
+        </button>
         <button
           type="button"
           className="recipe-config-panel__close icon-close-btn"

@@ -83,6 +83,8 @@ import {
 import {
   CheckIcon,
   BookIcon,
+  ChevronLeftIcon,
+  ChevronRightIcon,
   ICON_SIZE,
   ImageIcon,
   LinkIcon,
@@ -351,6 +353,11 @@ export default function PrintPage() {
     "front" | "back" | "dedication" | null
   >(null);
   const [editingToc, setEditingToc] = useState(false);
+  // Either side panel can be folded away to give the page more room. Session
+  // state on purpose, not a stored preference: collapsing is something you do
+  // to look at a page, not how you want the workspace set up from now on.
+  const [railCollapsed, setRailCollapsed] = useState(false);
+  const [panelCollapsed, setPanelCollapsed] = useState(false);
   const [addMenuOpen, setAddMenuOpen] = useState(false);
   const addMenuRef = useRef<HTMLDivElement | null>(null);
   const [pendingAddSectionId, setPendingAddSectionId] = useState<string | null>(null);
@@ -3013,11 +3020,18 @@ export default function PrintPage() {
   function setRecipePhotoMode(recipeId: string, mode: PhotoStyle) {
     if (pageEditMode && activeRecipeId === recipeId) keepEditingRef.current = recipeId;
     setPendingFocusRecipeId(recipeId);
-    if (mode === photoStyle) {
+    const image = items?.find((item) => item.id === recipeId)?.recipe?.image;
+    // Clearing the override lets the page follow the book — but only when the
+    // book default would actually RESOLVE to the mode just chosen. "Full page"
+    // falls back to a plain card for a recipe with no photo yet (see
+    // `cookbookResolution`), so clearing here snapped the choice straight back
+    // to None: the one placement you might pick in order to add a photo was
+    // the one placement you could not pick until you had one.
+    if (mode === photoStyle && (mode !== "full" || image)) {
       projectMeta.setItemPlacement(recipeId, undefined);
       return;
     }
-    const hero = mode === "full" ? items?.find((item) => item.id === recipeId)?.recipe?.image : undefined;
+    const hero = mode === "full" ? image : undefined;
     projectMeta.setItemPhotoMode(recipeId, mode, hero);
   }
   // The per-recipe photo placement toggle (cookbook): an always-present
@@ -3120,7 +3134,7 @@ export default function PrintPage() {
     singleRecipePrintView,
     pageWidth: cookbookView ? spreadWidth : PAGE_DIMS[previewCardSize].w,
     pageHeight: cookbookView ? previewDims.h : PAGE_DIMS[previewCardSize].h,
-    spread: cookbookView,
+    layoutKey: `${railCollapsed ? "r" : ""}${panelCollapsed ? "p" : ""}`,
   });
 
   // The page (sheet) inside the active spread the controls act on. Clicking a
@@ -3600,9 +3614,38 @@ export default function PrintPage() {
           organizeMode ? "recipe-print-shell--organizing" : ""
         } ${organizeWide ? "recipe-print-shell--organize-wide" : ""} ${
           organizeAnimating ? "recipe-print-shell--organize-animating" : ""
+        } ${railCollapsed ? "recipe-print-shell--rail-collapsed" : ""} ${
+          panelCollapsed ? "recipe-print-shell--panel-collapsed" : ""
         }`}
       >
+        {/* The way back to a panel you folded away. Pinned to the edge the
+            panel left behind, and rendered only while it is gone — a permanent
+            handle beside an open panel is a control that does nothing most of
+            the time. */}
+        {railCollapsed && (
+          <button
+            type="button"
+            className="recipe-panel-restore recipe-panel-restore--left no-print"
+            onClick={() => setRailCollapsed(false)}
+            aria-label="Show pages"
+            title="Show pages"
+          >
+            <ChevronRightIcon size={ICON_SIZE.md} />
+          </button>
+        )}
+        {panelCollapsed && (
+          <button
+            type="button"
+            className="recipe-panel-restore recipe-panel-restore--right no-print"
+            onClick={() => setPanelCollapsed(false)}
+            aria-label={cookbookMode ? "Show cookbook settings" : "Show print setup"}
+            title={cookbookMode ? "Show cookbook settings" : "Show print setup"}
+          >
+            <ChevronLeftIcon size={ICON_SIZE.md} />
+          </button>
+        )}
         <PageRail
+          onCollapse={() => setRailCollapsed(true)}
           railScrollRef={railScrollRef}
           railDrag={railDrag}
           railSelection={railSelection}
@@ -3737,6 +3780,7 @@ export default function PrintPage() {
         )}
 
         <PrintConfigPanel
+          onCollapse={() => setPanelCollapsed(true)}
           configPanelRef={configPanelRef}
           mobileDrawer={mobileDrawer}
           setMobileDrawer={setMobileDrawer}

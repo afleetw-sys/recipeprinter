@@ -54,6 +54,8 @@
 }
 
 .recipe-print-shell {
+  /* Positioning context for the collapsed-panel restore tabs. */
+  position: relative;
   display: grid;
   grid-template-columns: 190px minmax(0, 1fr) minmax(250px, 330px);
   align-items: start;
@@ -75,8 +77,23 @@
     grid-template-rows: auto minmax(0, 1fr);
   }
 
+  /* The two side columns are variables so either can fold to nothing and the
+     middle takes back exactly what it gave up — no second `grid-template-
+     columns` to keep in step with this one. The deck's own ResizeObserver
+     re-scales the page as the column settles. */
   .recipe-print-page .recipe-print-shell {
-    grid-template-columns: 220px calc(100% - 550px) 330px;
+    --rail-w: 220px;
+    --panel-w: 330px;
+    grid-template-columns:
+      var(--rail-w)
+      calc(100% - var(--rail-w) - var(--panel-w))
+      var(--panel-w);
+    /* No transition on the tracks. `grid-template-columns` does not interpolate
+       reliably between calc() tracks — the same reason the organizer's
+       expansion is animated per-frame in JS (see `--organize-wide` below) — and
+       here it left the computed value stuck at the pre-collapse widths, so the
+       panel faded out and its column stayed. The panel's own fade carries the
+       change; the tracks snap under it. */
     gap: 0;
     height: 100%;
     min-height: 0;
@@ -114,12 +131,22 @@
   margin: 0 0 2px;
 }
 
+/* Organize and the collapse arrow share a line. In recipe cards, where there
+   is nothing to organize, the arrow has the line to itself at the rail's
+   edge. */
+.recipe-page-rail__head-row {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
 /* Layout only — see the note on `__add-cover`. The trailing chevron hugs the
    label rather than taking the button's own 8px gap: it is an affordance on
    the label, not a second item beside it. */
 .recipe-page-rail__organize {
-  flex-shrink: 0;
-  width: 100%;
+  flex: 1 1 auto;
+  min-width: 0;
   gap: 4px;
 }
 
@@ -1483,10 +1510,7 @@
 
   .recipe-page-canvas {
     position: relative;
-    /* A cookbook spread is two pages wide, so WIDTH is what caps how big the
-       deck can draw — 30px a side here was 60px taken straight off the page
-       while 178px of vertical slack went unused. */
-    padding-inline: clamp(10px, 1vw, 14px);
+    padding-inline: clamp(16px, 2.4vw, 30px);
   }
 
   .recipe-page-rail {
@@ -1500,6 +1524,73 @@
     margin: 0;
     border-width: 0 0 0 1px;
     border-radius: 0;
+  }
+
+  /* Folded away. `overflow: hidden` is what lets the width reach zero without
+     the panel's content spilling across the page on the way down, and the
+     border goes with it — otherwise a 1px line is left standing where a panel
+     used to be. */
+  /* `.recipe-print-page` prefix on purpose: the variables are declared on
+     `.recipe-print-page .recipe-print-shell`, so a bare class here loses the
+     specificity tie and the column never actually shrinks — the panel would
+     fade out and leave its width behind as empty space. */
+  .recipe-print-page .recipe-print-shell--rail-collapsed { --rail-w: 0px; }
+  .recipe-print-page .recipe-print-shell--panel-collapsed { --panel-w: 0px; }
+
+  .recipe-print-shell--rail-collapsed > .recipe-page-rail,
+  .recipe-print-shell--panel-collapsed > .recipe-config-panel {
+    overflow: hidden;
+    padding-inline: 0;
+    border-width: 0;
+    opacity: 0;
+    pointer-events: none;
+  }
+
+  /* The way back: half a pill against the page edge, so it reads as the folded
+     panel's own tab rather than a button floating over the deck. */
+  .recipe-panel-restore {
+    position: absolute;
+    top: 50%;
+    z-index: 3;
+    display: grid;
+    place-items: center;
+    width: 22px;
+    height: 46px;
+    border: 1px solid var(--cp-line);
+    background: var(--cp-card);
+    color: var(--cp-ink-soft);
+    transform: translateY(-50%);
+    transition:
+      color 150ms ease,
+      border-color 150ms ease;
+  }
+  .recipe-panel-restore:hover {
+    border-color: var(--cp-line-strong);
+    color: var(--cp-ink);
+  }
+  .recipe-panel-restore--left {
+    left: 0;
+    border-left: 0;
+    border-radius: 0 8px 8px 0;
+  }
+  .recipe-panel-restore--right {
+    right: 0;
+    border-right: 0;
+    border-radius: 8px 0 0 8px;
+  }
+
+  .recipe-config-panel__collapse {
+    flex: 0 0 auto;
+    width: 26px;
+    height: 26px;
+    border-radius: 8px;
+  }
+
+  .recipe-page-rail__collapse {
+    flex: 0 0 auto;
+    width: 30px;
+    height: 30px;
+    border-radius: 8px;
   }
 }
 

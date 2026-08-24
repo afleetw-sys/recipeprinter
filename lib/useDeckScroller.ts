@@ -64,9 +64,12 @@ interface UseDeckScrollerOptions {
   singleRecipePrintView: boolean;
   pageWidth: number;
   pageHeight: number;
-  /** Two pages drawn side by side (a cookbook), rather than one. Changes which
-      dimension limits the deck's scale — see the height budget below. */
-  spread?: boolean;
+  /** Anything outside this hook that changes how much room the deck has —
+      folding a side panel away, for instance. The ResizeObserver alone is not
+      enough: collapsing a grid column settles over more than one frame, and the
+      observation that lands can be the one taken before the track resolved,
+      leaving the scale sized for the old width. Changing this re-measures. */
+  layoutKey?: string;
 }
 
 // One pending "restore snapping" cleanup per deck, so back-to-back programmatic
@@ -120,7 +123,7 @@ export function useDeckScroller({
   singleRecipePrintView,
   pageWidth,
   pageHeight,
-  spread = false,
+  layoutKey,
 }: UseDeckScrollerOptions) {
   const [canvasSide, setCanvasSide] = useState<"front" | "back">("front");
   const [deckScale, setDeckScale] = useState(0.5);
@@ -221,27 +224,18 @@ export function useDeckScroller({
       // On mobile each slide is narrower than the deck itself (100vw - 96px)
       // so neighbouring pages peek in on both sides; the scale must fit that
       // slide width, not the full deck width, or the card overflows its slot.
-      const availW = el.clientWidth - (mobile ? 96 : 20);
+      const availW = el.clientWidth - (mobile ? 96 : 40);
       const availH = el.clientHeight;
       if (availW > 0 && availH > 0) {
         const widthScale = availW / pageWidth;
-        // Two budgets, because the two views are limited by different things.
-        //
-        // A cookbook spread is WIDTH-bound — two pages side by side — so its
-        // height budget never binds; 0.82 only has to stay out of the width's
-        // way. A single recipe card is the opposite: it uses barely half the
-        // deck's width, so every pixel it gains has to come out of the height,
-        // and it gets the larger share. What stops that going to 1 is the
-        // peek — the neighbours above and below have to stay visible or
-        // nothing implies the deck scrolls. 0.88 leaves ~35px of each.
-        const heightBudget = mobile ? 0.86 : spread ? 0.82 : 0.88;
-        const heightScale = (availH * heightBudget) / pageHeight;
+        const heightScale = (availH * (mobile ? 0.86 : 0.74)) / pageHeight;
         // A page can never be taller than the SNAPPORT. `scroll-snap-align:
         // center` centres against the snapport, so a page taller than it
         // cannot be centred without eating into the inset — and the top half
         // of that inset is the room the floating Edit control sits in, which
-        // would then be clipped by the deck's own overflow. Capping here keeps
-        // the two rules consistent: the page centres, AND the clearance holds.
+        // would then be clipped by the deck's own overflow. This does not bind
+        // at the budget above; it is the guard that keeps the two rules
+        // consistent if the deck is ever short enough that it would.
         const snapportScale = mobile
           ? Infinity
           : (availH - DECK_SCROLL_PADDING_TOP * 2) / pageHeight;
@@ -276,7 +270,7 @@ export function useDeckScroller({
     const observer = new ResizeObserver(update);
     observer.observe(el);
     return () => observer.disconnect();
-  }, [deckNode, cardSize, sheetsLength, pageWidth, pageHeight, spread]);
+  }, [deckNode, cardSize, sheetsLength, pageWidth, pageHeight, layoutKey]);
 
   const centerSlide = useCallback(
     (index: number, behavior: ScrollBehavior = "auto") => {

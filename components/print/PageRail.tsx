@@ -120,6 +120,8 @@ interface PageRailProps {
   continueOnBack: boolean;
   previewSourceUrlOn: boolean;
   organizeMode: boolean;
+  /** Fold the rail away, giving its width back to the page. */
+  onCollapse: () => void;
   enterOrganizeMode: () => void;
   exitOrganizeMode: () => void;
   projectMeta: ReturnType<typeof useProjectMeta>;
@@ -182,6 +184,7 @@ export function PageRail(props: PageRailProps) {
     continueOnBack,
     previewSourceUrlOn,
     organizeMode,
+    onCollapse,
     enterOrganizeMode,
     exitOrganizeMode,
     projectMeta,
@@ -474,22 +477,35 @@ export function PageRail(props: PageRailProps) {
               )}
             </div>
             </div>
-            {projectMeta.meta.cookbookMode && (
-              <button
-                type="button"
-                className="btn btn-secondary btn-compact recipe-page-rail__organize"
-                onClick={enterOrganizeMode}
+            {/* Organize shares its line with the collapse arrow — and in recipe
+                cards, where there is nothing to organize, the arrow has the
+                line to itself and sits at the rail's edge. */}
+            <div className="recipe-page-rail__head-row">
+              {projectMeta.meta.cookbookMode && (
+                <button
+                  type="button"
+                  className="btn btn-secondary btn-compact recipe-page-rail__organize"
+                  onClick={enterOrganizeMode}
+                >
+                  {/* Just "Organize". Stacked under "Add recipes" in a panel that
+                      holds nothing but recipes, the second "recipes" said nothing
+                      the first had not — and the view it opens announces itself as
+                      "Organize recipes" once you are there. Add keeps its noun,
+                      because there it separates the button from the "Add section"
+                      in its own overflow. */}
+                  <span>Organize</span>
+                  <ChevronRightIcon size={ICON_SIZE.sm} />
+                </button>
+              )}
+              <IconButton
+                className="recipe-page-rail__collapse"
+                onClick={onCollapse}
+                aria-label="Hide pages"
+                title="Hide pages"
               >
-                {/* Just "Organize". Stacked under "Add recipes" in a panel that
-                    holds nothing but recipes, the second "recipes" said nothing
-                    the first had not — and the view it opens announces itself as
-                    "Organize recipes" once you are there. Add keeps its noun,
-                    because there it separates the button from the "Add section"
-                    in its own overflow. */}
-                <span>Organize</span>
-                <ChevronRightIcon size={ICON_SIZE.sm} />
-              </button>
-            )}
+                <ChevronLeftIcon size={ICON_SIZE.md} />
+              </IconButton>
+            </div>
             </div>
           )}
 
