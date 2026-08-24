@@ -1501,6 +1501,23 @@
     border-radius: 6px;
   }
 
+  /* Accent fill on a tab that is otherwise plain text, so it reads as a flag
+     rather than a second word in the label. */
+  .rp-project-heading__new {
+    margin-left: 5px;
+    padding: 1px 5px;
+    border-radius: 999px;
+    background: var(--cp-accent);
+    color: var(--cp-ink);
+    /* The smallest step on the ramp. A flag beside a 12.8px label has to sit
+       under it or it stops being a flag. */
+    font-size: var(--cp-fs-label);
+    font-weight: 800;
+    letter-spacing: .02em;
+    line-height: 1.1;
+    text-transform: uppercase;
+  }
+
   .rp-project-heading__kinds .segmented-control__thumb {
     border-radius: 6px;
   }

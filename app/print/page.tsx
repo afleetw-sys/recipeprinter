@@ -358,10 +358,6 @@ export default function PrintPage() {
   // to look at a page, not how you want the workspace set up from now on.
   const [railCollapsed, setRailCollapsed] = useState(false);
   const [panelCollapsed, setPanelCollapsed] = useState(false);
-  // Where each collapse arrow was, so its restore tab appears in the same
-  // place rather than at some unrelated height. See lib/collapseAnchor.
-  const [railTabTop, setRailTabTop] = useState<number | null>(null);
-  const [panelTabTop, setPanelTabTop] = useState<number | null>(null);
   const [addMenuOpen, setAddMenuOpen] = useState(false);
   const addMenuRef = useRef<HTMLDivElement | null>(null);
   const [pendingAddSectionId, setPendingAddSectionId] = useState<string | null>(null);
@@ -3622,39 +3618,42 @@ export default function PrintPage() {
           panelCollapsed ? "recipe-print-shell--panel-collapsed" : ""
         }`}
       >
-        {/* The way back to a panel you folded away. Pinned to the edge the
-            panel left behind, and rendered only while it is gone — a permanent
-            handle beside an open panel is a control that does nothing most of
-            the time. */}
-        {railCollapsed && (
-          <button
-            type="button"
-            className="recipe-panel-restore recipe-panel-restore--left no-print"
-            style={railTabTop == null ? undefined : { top: railTabTop }}
-            onClick={() => setRailCollapsed(false)}
-            aria-label="Show pages"
-            title="Show pages"
-          >
+        {/* One control per side, and it does not move when the panel does.
+            It rides the panel's own edge — `left: var(--rail-w)` — so folding
+            the column to zero carries it to the page edge without anything
+            having to remember where it was. An arrow INSIDE a panel can only
+            ever be the one that closes it, and then has to be replaced by a
+            different control somewhere else the moment it works; this is the
+            same button throughout, and only the chevron turns round. */}
+        <button
+          type="button"
+          className="recipe-panel-toggle recipe-panel-toggle--left no-print"
+          onClick={() => setRailCollapsed((collapsed) => !collapsed)}
+          aria-expanded={!railCollapsed}
+          aria-label={railCollapsed ? "Show pages" : "Hide pages"}
+          title={railCollapsed ? "Show pages" : "Hide pages"}
+        >
+          {railCollapsed ? (
             <ChevronRightIcon size={ICON_SIZE.md} />
-          </button>
-        )}
-        {panelCollapsed && (
-          <button
-            type="button"
-            className="recipe-panel-restore recipe-panel-restore--right no-print"
-            style={panelTabTop == null ? undefined : { top: panelTabTop }}
-            onClick={() => setPanelCollapsed(false)}
-            aria-label={cookbookMode ? "Show cookbook settings" : "Show print setup"}
-            title={cookbookMode ? "Show cookbook settings" : "Show print setup"}
-          >
+          ) : (
             <ChevronLeftIcon size={ICON_SIZE.md} />
-          </button>
-        )}
+          )}
+        </button>
+        <button
+          type="button"
+          className="recipe-panel-toggle recipe-panel-toggle--right no-print"
+          onClick={() => setPanelCollapsed((collapsed) => !collapsed)}
+          aria-expanded={!panelCollapsed}
+          aria-label={`${panelCollapsed ? "Show" : "Hide"} ${cookbookMode ? "cookbook settings" : "print setup"}`}
+          title={`${panelCollapsed ? "Show" : "Hide"} ${cookbookMode ? "cookbook settings" : "print setup"}`}
+        >
+          {panelCollapsed ? (
+            <ChevronLeftIcon size={ICON_SIZE.md} />
+          ) : (
+            <ChevronRightIcon size={ICON_SIZE.md} />
+          )}
+        </button>
         <PageRail
-          onCollapse={(top) => {
-            setRailTabTop(top);
-            setRailCollapsed(true);
-          }}
           railScrollRef={railScrollRef}
           railDrag={railDrag}
           railSelection={railSelection}
@@ -3789,10 +3788,6 @@ export default function PrintPage() {
         )}
 
         <PrintConfigPanel
-          onCollapse={(top) => {
-            setPanelTabTop(top);
-            setPanelCollapsed(true);
-          }}
           configPanelRef={configPanelRef}
           mobileDrawer={mobileDrawer}
           setMobileDrawer={setMobileDrawer}

@@ -25,7 +25,6 @@ import {
   TrashIcon,
 } from "@/components/icons";
 import { IconButton } from "@/components/Controls";
-import { collapseAnchor } from "@/lib/collapseAnchor";
 import { ScaledPage } from "@/components/print/ScaledPage";
 import { PendingImportRows } from "@/components/print/PendingImportRows";
 import { PAGE_DIMS } from "@/lib/printGeometry";
@@ -121,10 +120,6 @@ interface PageRailProps {
   continueOnBack: boolean;
   previewSourceUrlOn: boolean;
   organizeMode: boolean;
-  /** Fold the rail away, giving its width back to the page. `top` is this
-      control's own centre, measured from the shell — the restore tab uses it
-      so it appears exactly where the arrow you pressed was. */
-  onCollapse: (top: number) => void;
   enterOrganizeMode: () => void;
   exitOrganizeMode: () => void;
   projectMeta: ReturnType<typeof useProjectMeta>;
@@ -187,7 +182,6 @@ export function PageRail(props: PageRailProps) {
     continueOnBack,
     previewSourceUrlOn,
     organizeMode,
-    onCollapse,
     enterOrganizeMode,
     exitOrganizeMode,
     projectMeta,
@@ -480,11 +474,12 @@ export function PageRail(props: PageRailProps) {
               )}
             </div>
             </div>
-            {/* Organize shares its line with the collapse arrow — and in recipe
-                cards, where there is nothing to organize, the arrow has the
-                line to itself and sits at the rail's edge. */}
-            <div className="recipe-page-rail__head-row">
-              {projectMeta.meta.cookbookMode && (
+            {/* The collapse arrow is NOT here. It lives on the rail's own edge
+                (see `.recipe-panel-toggle`), where it stays put whether the
+                rail is open or folded — an arrow inside the panel can only be
+                the one that closes it, so it has to be replaced by a different
+                control somewhere else the moment it works. */}
+            {projectMeta.meta.cookbookMode && (
                 <button
                   type="button"
                   className="btn btn-secondary btn-compact recipe-page-rail__organize"
@@ -500,15 +495,6 @@ export function PageRail(props: PageRailProps) {
                   <ChevronRightIcon size={ICON_SIZE.sm} />
                 </button>
               )}
-              <IconButton
-                className="recipe-page-rail__collapse"
-                onClick={(event) => onCollapse(collapseAnchor(event.currentTarget))}
-                aria-label="Hide pages"
-                title="Hide pages"
-              >
-                <ChevronLeftIcon size={ICON_SIZE.md} />
-              </IconButton>
-            </div>
             </div>
           )}
 

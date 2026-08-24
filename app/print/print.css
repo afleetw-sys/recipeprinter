@@ -131,16 +131,6 @@
   margin: 0 0 2px;
 }
 
-/* Organize and the collapse arrow share a line. In recipe cards, where there
-   is nothing to organize, the arrow has the line to itself at the rail's
-   edge. */
-.recipe-page-rail__head-row {
-  display: flex;
-  align-items: center;
-  justify-content: flex-end;
-  gap: 8px;
-}
-
 /* Layout only — see the note on `__add-cover`. The trailing chevron hugs the
    label rather than taking the button's own 8px gap: it is an affordance on
    the label, not a second item beside it. */
@@ -1546,55 +1536,41 @@
     pointer-events: none;
   }
 
-  /* The way back: half a pill against the page edge, so it reads as the folded
-     panel's own tab rather than a button floating over the deck. */
-  .recipe-panel-restore {
+  /* Rides the boundary between the panel and the page, near the top of both —
+     `left`/`right` are the same column variables the grid uses, so folding the
+     column to zero walks the button out to the page edge with it. Floating
+     over the line rather than inside the panel is what lets one control both
+     close and reopen: it is still there when the panel is not. */
+  .recipe-panel-toggle {
     position: absolute;
-    /* Overridden inline with the arrow's own centre the moment it is pressed
-       (see lib/collapseAnchor). 50% is the fallback for a panel collapsed
-       before any arrow has reported a position. */
-    top: 50%;
+    top: 18px;
     z-index: 3;
     display: grid;
     place-items: center;
-    width: 22px;
-    height: 46px;
+    width: 20px;
+    height: 40px;
     border: 1px solid var(--cp-line);
     background: var(--cp-card);
     color: var(--cp-ink-soft);
-    transform: translateY(-50%);
     transition:
       color 150ms ease,
       border-color 150ms ease;
   }
-  .recipe-panel-restore:hover {
+  .recipe-panel-toggle:hover {
     border-color: var(--cp-line-strong);
     color: var(--cp-ink);
   }
-  .recipe-panel-restore--left {
-    left: 0;
+  .recipe-panel-toggle--left {
+    left: var(--rail-w);
     border-left: 0;
     border-radius: 0 8px 8px 0;
   }
-  .recipe-panel-restore--right {
-    right: 0;
+  .recipe-panel-toggle--right {
+    right: var(--panel-w);
     border-right: 0;
     border-radius: 8px 0 0 8px;
   }
 
-  .recipe-config-panel__collapse {
-    flex: 0 0 auto;
-    width: 26px;
-    height: 26px;
-    border-radius: 8px;
-  }
-
-  .recipe-page-rail__collapse {
-    flex: 0 0 auto;
-    width: 30px;
-    height: 30px;
-    border-radius: 8px;
-  }
 }
 
 .recipe-config-panel__header {

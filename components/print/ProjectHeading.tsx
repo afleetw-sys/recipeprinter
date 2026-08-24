@@ -132,7 +132,19 @@ export function ProjectHeading({
           value="cards"
           options={[
             { id: "cards", label: "Recipe cards" },
-            { id: "book", label: "Cookbook" },
+            {
+              id: "book",
+              /* The tab makes the cookbook visible; the flag says it is worth
+                 looking at. Only in cards mode, which is the only mode where
+                 this is news — inside a cookbook it would be labelling the
+                 thing you are already using. */
+              label: (
+                <>
+                  Cookbook
+                  <span className="rp-project-heading__new">New</span>
+                </>
+              ),
+            },
           ]}
           onChange={(next) => {
             if (next === "book") onSwitchToCookbook();
