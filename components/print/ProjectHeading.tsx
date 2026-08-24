@@ -14,6 +14,7 @@ import { SegmentedControl } from "@/components/Controls";
  */
 export function ProjectHeading({
   title,
+  showTitle,
   onRename,
   cookbookMode,
   canBecomeCookbook,
@@ -21,6 +22,12 @@ export function ProjectHeading({
   onSwitchToCookbook,
 }: {
   title: string;
+  /** Whether this project is in the account yet. A name is a thing you can come
+      back to; until it is saved there is nothing to come back to, and the
+      "name" is a stand-in generated from the first recipe. Showing that made
+      the bar claim a project existed when only a draft did — and made the
+      rename it offers a change to something nothing would remember. */
+  showTitle: boolean;
   onRename: (next: string | undefined) => void;
   cookbookMode: boolean;
   /** Whether becoming a cookbook is offered at all (the feature flag). */
@@ -65,7 +72,7 @@ export function ProjectHeading({
     onRename(draft.trim() || undefined);
   }
 
-  if (editing) {
+  if (editing && showTitle) {
     return (
       <input
         ref={inputRef}
@@ -86,7 +93,9 @@ export function ProjectHeading({
   }
 
   return (
-    <div className="rp-project-heading">
+    <div className={`rp-project-heading ${showTitle ? "" : "rp-project-heading--kind-only"}`}>
+      {showTitle && (
+      <>
       {/*
         Double-click to rename, as asked. It is also a real button that opens on
         Enter — double-click alone is invisible to anyone navigating by keyboard,
@@ -111,6 +120,8 @@ export function ProjectHeading({
       >
         {title}
       </button>
+      </>
+      )}
 
       {/*
         Two shapes, because the control has two jobs.

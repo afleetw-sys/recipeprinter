@@ -2468,7 +2468,24 @@ export default function PrintPage() {
    * from local storage anyway, which is the part people actually rely on.
    *
    */
-  const autosaveEnabled = Boolean(cookPilotUser) && isCookbookDocument;
+  /**
+   * Whether this project exists in the account — not merely whether someone is
+   * signed in. `savedProjectId` is set by a save, by adopting an anonymous
+   * draft, and by opening a project from the profile; it is null for a draft
+   * nobody has kept yet.
+   *
+   * Two things hang off it. The bar shows the project's NAME only once there is
+   * a project to name (until then the name is a stand-in derived from the first
+   * recipe, and renaming it would change something nothing remembers). And
+   * saving becomes automatic: once a copy exists, every later edit belongs to
+   * it, and asking someone to press Save again to keep a book they already told
+   * us to keep is asking them to do our bookkeeping.
+   */
+  const savedToProfile = Boolean(cookPilotUser) && savedProjectId !== null;
+
+  // Cookbooks autosave from the first edit — a book is by nature a thing you
+  // come back to — and everything else joins them the moment it is saved once.
+  const autosaveEnabled = Boolean(cookPilotUser) && (isCookbookDocument || savedToProfile);
 
   useEffect(() => {
     if (projectLoading || !projectAttachChecked || !items?.length) return;
@@ -3459,6 +3476,7 @@ export default function PrintPage() {
             items?.length ? (
               <ProjectHeading
                 title={headingTitle}
+                showTitle={savedToProfile}
                 onRename={projectMeta.setProjectTitle}
                 cookbookMode={cookbookMode}
                 canBecomeCookbook={COOKBOOK_ENABLED}

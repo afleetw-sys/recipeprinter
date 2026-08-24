@@ -1486,6 +1486,16 @@
   /* `flex`, not a plain block: an inline-flex child inside a block sits on a
      text baseline and the line box adds descender space under it — about 6px
      of gap that belongs to nothing and cannot be tuned away with padding. */
+  /* Only the kind control — a draft has no name to show. Nothing to cap or
+     truncate, and no left-hand sibling for the tabs to sit beside, so the
+     margin that parts them goes too. */
+  .rp-project-heading--kind-only {
+    max-width: none;
+  }
+  .rp-project-heading--kind-only .rp-project-heading__kinds {
+    margin-left: 0;
+  }
+
   /* Header-sized: the shared segmented control is built for a settings panel,
      where it is a primary choice with room around it. Here it sits in a 62px
      bar beside the document's name, so it takes the chip's scale rather than
