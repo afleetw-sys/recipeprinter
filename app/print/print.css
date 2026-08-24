@@ -103,66 +103,31 @@
   scrollbar-gutter: stable;
 }
 
+/* Layout only. The box, corner, type and hover all come from
+   `.btn.btn-secondary.btn-compact` on the element itself — this used to
+   restate every one of them at values that had drifted from the shared
+   button, which is the whole reason the rail and the header stopped
+   matching. */
 .recipe-page-rail__add-cover {
   flex-shrink: 0;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 7px;
+  width: 100%;
   margin: 0 0 2px;
-  /* Height from min-height, so it lands on the shared 30px rather than on
-     whatever its own padding happened to add up to (39px). */
-  min-height: 30px;
-  padding: 0 11px;
-  border: 1px solid var(--cp-line-strong);
-  border-radius: 8px;
-  background: transparent;
-  color: var(--cp-ink);
-  font-size: var(--cp-fs-small);
-  font-weight: 600;
-  transition:
-    border-color 150ms ease,
-    background 150ms ease,
-    color 150ms ease;
 }
 
-/* Matches the "Print settings" link in recipe-cards mode: centered, muted,
-   caption-sized. Centered under the Add recipe button. */
-/* Same treatment as Add above, and as the organizer's own toolbar — this is
-   the button that takes you in there, so arriving should not look like a
-   change of design. Softer ink than Add: one is the panel's main action, the
-   other a way through to another view. */
+/* Layout only — see the note on `__add-cover`. The trailing chevron hugs the
+   label rather than taking the button's own 8px gap: it is an affordance on
+   the label, not a second item beside it. */
 .recipe-page-rail__organize {
   flex-shrink: 0;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 3px;
   width: 100%;
-  /* Height comes from min-height alone, so it lands on 30px exactly like Add
-     above it — vertical padding on top of that pushed it to 33. */
-  min-height: 30px;
-  padding: 0 8px;
-  border: 1px solid var(--cp-line);
-  border-radius: 8px;
-  background: var(--cp-card);
-  color: var(--cp-ink-soft);
-  font-size: var(--cp-fs-caption);
-  font-weight: 700;
-  transition:
-    color 150ms ease,
-    border-color 150ms ease;
+  gap: 4px;
 }
 
-.recipe-page-rail__organize:hover {
-  border-color: var(--cp-line-strong);
-  color: var(--cp-ink);
-}
-
-/* Sort, Collapse and each section's Delete sit in rows with the buttons
-   above, so in here they take the button box too — 30px, 8px corner. Scoped
-   to the organizer on purpose: elsewhere .icon-button is a 40px circle in a
-   dialog, where it is a touch target rather than a member of a button row. */
+/* Sort, Collapse and each section's Delete sit in rows with 30px buttons, so
+   in here the icon button takes that box — and with it the 8px corner the
+   radius scale gives a 30px control, rather than the 12px a 40px one gets.
+   Scoped to the organizer on purpose: elsewhere .icon-button is a 40px touch
+   target rather than a member of a button row. */
 .recipe-print-shell--organizing .icon-button {
   width: 30px;
   height: 30px;
@@ -175,43 +140,16 @@
   background: var(--cp-overlay-hover);
 }
 
-/* Auto-organize / Undo, in the organizer's own toolbar beside Sort and the
+/* Auto-organize / Undo, in the organizer's toolbar beside Sort and the
    collapse control. Quiet by default — the cook is already arranging things by
-   hand in here, so this offers to help rather than announcing itself. It wears
-   the icon button's own treatment (same height, card face, hairline, ink-soft
-   glyph) so the toolbar reads as one row of controls, just a wider one that
-   happens to carry a label. */
-/* Same box as every other button in the app: 30px tall, an 8px corner, and
-   the secondary outline in --cp-line-strong. The organizer had grown its own
-   dialect — 40px pills on a softer hairline — and opening it meant walking
-   from one button language into another. */
+   hand in here, so this offers to help rather than announcing itself.
+
+   Layout only: it is a `.btn.btn-secondary.btn-compact`, so the box, corner,
+   hover and focus ring all arrive with the shared button. The organizer had
+   grown its own dialect — 40px pills on a softer hairline — and opening it
+   meant walking from one button language into another. */
 .recipe-organize-bar__auto {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  height: 30px;
-  padding: 0 11px;
-  border: 1px solid var(--cp-line-strong);
-  border-radius: 8px;
-  background: transparent;
-  color: var(--cp-ink);
-  font-size: var(--cp-fs-small);
-  font-weight: 600;
   white-space: nowrap;
-  transition:
-    color 150ms ease,
-    border-color 150ms ease;
-}
-
-.recipe-organize-bar__auto:hover {
-  border-color: var(--cp-line-strong);
-  background: var(--cp-overlay-hover);
-  color: var(--cp-ink);
-}
-
-.recipe-organize-bar__auto:focus-visible {
-  outline: var(--cp-focus-ring);
-  outline-offset: var(--cp-focus-ring-offset);
 }
 
 /* ── In-page Organize mode ──────────────────────────────────────────────────
@@ -747,13 +685,17 @@
   color: var(--cp-danger, #b42318);
 }
 
+/* A real aria-pressed toggle, so it takes a corner. A pill is reserved for
+   the status chips (Purchased, Premium, the drag count), which are labels
+   rather than controls — keeping that line is what lets the chips stay round
+   without reading as leftovers. */
 .recipe-page-rail__section-opener {
   margin-left: auto;
   padding: 3px 6px;
-  border-radius: 999px;
+  border-radius: 6px;
   color: var(--cp-ink-soft);
   font-size: var(--cp-fs-label);
-  font-weight: 750;
+  font-weight: 700;
   white-space: nowrap;
 }
 
@@ -943,8 +885,6 @@
    between them is a deeper wash of the fill rather than a line laid over it. */
 .recipe-page-rail__head .recipe-page-rail__add-main {
   border-radius: 8px 0 0 8px;
-  font-size: var(--cp-fs-caption);
-  font-weight: 700;
 }
 
 .recipe-page-rail__head .recipe-page-rail__add-menu-trigger {
@@ -1218,12 +1158,15 @@
   gap: 4px;
 }
 
+/* A track holding ~25px segments with 3px of padding, so the outer corner is
+   the inner one plus that padding — 6 + 3 — rather than a pill wrapped around
+   rectangles. */
 .recipe-page-layout-picker {
   display: inline-flex;
   align-items: center;
   padding: 3px;
   border: 1px solid var(--cp-line);
-  border-radius: 999px;
+  border-radius: 9px;
   background: var(--cp-card);
 }
 
@@ -1265,11 +1208,12 @@
   flex: none;
   padding: 3px 10px;
   border: 0;
-  border-radius: 999px;
+  border-radius: 6px;
   background: transparent;
   color: var(--cp-ink-soft);
   font-size: var(--cp-fs-caption);
-  font-weight: 800;
+  /* 700, matching the segmented control — this is the same kind of control. */
+  font-weight: 700;
   /* Never let the labels wrap: when a recipe switches from a full-page spread
      (double-wide controls) back to a single card page, the controls row halves
      in width and the picker would otherwise smoosh the labels onto two lines. */
@@ -1283,8 +1227,8 @@
 }
 
 .recipe-page-layout-picker__btn:disabled {
-  opacity: 0.4;
-  cursor: not-allowed;
+  opacity: .5;
+  cursor: default;
 }
 
 .recipe-page-canvas__controls .recipe-card-side-nav,
@@ -1293,17 +1237,21 @@
   pointer-events: auto;
 }
 
+/* The same box as every other 30px control — it floats over the page, but it
+   is still a button and it is read alongside the header's. It was a pill at
+   weight 800, which made the chrome over the card heavier than Print. */
 .recipe-page-edit-toggle {
   display: inline-flex;
   align-items: center;
-  gap: 5px;
-  padding: 5px 12px;
+  gap: 6px;
+  min-height: 30px;
+  padding: 0 11px;
   border: 1px solid var(--cp-line);
-  border-radius: 999px;
+  border-radius: 8px;
   background: var(--cp-card);
   color: var(--cp-ink-soft);
-  font-size: var(--cp-fs-caption);
-  font-weight: 800;
+  font-size: var(--cp-fs-small);
+  font-weight: 600;
 }
 
 .recipe-page-edit-toggle.is-active {
@@ -2218,8 +2166,8 @@
   width: 26px;
   height: 26px;
   border: 1px solid var(--cp-line);
-  border-radius: 999px;
-  background: #fff;
+  border-radius: 6px;
+  background: var(--cp-card);
   color: var(--cp-ink-soft);
 }
 
@@ -2296,7 +2244,7 @@
     width: 40px;
     height: 40px;
     border: 1px solid var(--cp-line);
-    border-radius: 999px;
+    border-radius: var(--cp-radius-control);
     background: var(--cp-card);
     color: var(--cp-ink);
     transition:
@@ -2393,7 +2341,7 @@
     place-items: center;
     width: 46px;
     height: 46px;
-    border-radius: 14px;
+    border-radius: var(--cp-radius-control);
     color: var(--cp-ink);
     transition:
       background 150ms ease,
@@ -2735,13 +2683,14 @@
     width: 38px;
     height: 38px;
     border: 1px solid var(--cp-line);
-    border-radius: 10px;
+    border-radius: var(--cp-radius-control);
     background: var(--cp-card);
     color: var(--cp-ink);
   }
 
   .recipe-structure-sheet__move button:disabled {
-    opacity: 0.35;
+    opacity: .5;
+    cursor: default;
   }
 
   .recipe-structure-sheet__move-up svg {
@@ -3230,7 +3179,7 @@
 }
 
 .recipe-card-side-nav__button:disabled {
-  opacity: 0.38;
+  opacity: .5;
   cursor: default;
 }
 

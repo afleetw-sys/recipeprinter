@@ -324,7 +324,7 @@ export function PrintDeck(props: PrintDeckProps) {
               }
             }}
           >
-            <EditIcon size={ICON_SIZE.xs} />
+            <EditIcon size={ICON_SIZE.md} />
             {(navItem.kind === "recipe" && pageEditMode) ||
             (navItem.kind === "divider" && editingSectionId === navItem.recipeId) ||
             (navItem.kind === "cover" && editingCoverSide === coverSideFromNavItem(navItem)) ||
@@ -890,7 +890,7 @@ export function PrintDeck(props: PrintDeckProps) {
                               }
                             }}
                           >
-                            <EditIcon size={ICON_SIZE.xs} />
+                            <EditIcon size={ICON_SIZE.md} />
                             {(activeNavItem.kind === "recipe" && pageEditMode) ||
                             (activeNavItem.kind === "divider" && editingSectionId === activeNavItem.recipeId) ||
                             (activeNavItem.kind === "cover" && editingCoverSide === coverSideFromNavItem(activeNavItem)) ||

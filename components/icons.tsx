@@ -7,10 +7,18 @@ import type { SVGProps } from "react";
 // close buttons at both 16 and 17, and meta icons split between 13 and 14).
 // Icons that intentionally stand out on their own — empty-state graphics,
 // the upload dropzone glyph — size themselves directly instead of using this.
+// Which step a given icon takes is decided by WHAT IT SITS IN, not by the call
+// site, or the same button ends up with a 16px glyph on one side and a 14px one
+// on the other (the rail's Add carried exactly that pair):
+//   - a LEADING icon takes its control's size — `md` inside any .btn, so Save,
+//     Print, Add recipes, Add cover and Organize it for me all match;
+//   - a TRAILING disclosure chevron takes the TEXT's size (`sm`), because it
+//     belongs to the label rather than to the button;
+//   - meta icons beside small text are `sm`; glyphs inside a status chip `xs`.
 export const ICON_SIZE = {
   xs: 12, // micro badges, inline chip checkmarks
-  sm: 14, // meta icons (clock/servings/external-link) next to small text
-  md: 16, // buttons, close icons, standard controls
+  sm: 14, // meta icons (clock/servings/external-link), trailing chevrons
+  md: 16, // leading icons in buttons, close icons, standard controls
   lg: 18, // default size — nav/toolbar icons, matches Base's own default
 } as const;
 

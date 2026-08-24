@@ -487,7 +487,7 @@ export function PageRail(props: PageRailProps) {
             {projectMeta.meta.cookbookMode && (
               <button
                 type="button"
-                className="recipe-page-rail__organize"
+                className="btn btn-secondary btn-compact recipe-page-rail__organize"
                 onClick={enterOrganizeMode}
               >
                 {/* Just "Organize". Stacked under "Add recipes" in a panel that
@@ -561,10 +561,10 @@ export function PageRail(props: PageRailProps) {
                     Undo. */}
                 <button
                   type="button"
-                  className="recipe-organize-bar__auto"
+                  className="btn btn-secondary btn-compact recipe-organize-bar__auto"
                   onClick={canUndoOrganization ? undoCookbookOrganization : suggestCookbookLayout}
                 >
-                  <RefreshIcon size={ICON_SIZE.sm} />
+                  <RefreshIcon size={ICON_SIZE.md} />
                   <span>{canUndoOrganization ? "Undo organizing" : "Organize it for me"}</span>
                 </button>
                 {/* Icon-only, so it wears the icon button rather than a
@@ -583,13 +583,13 @@ export function PageRail(props: PageRailProps) {
           {projectMeta.meta.cookbookMode && !projectMeta.meta.cover && (
             <button
               type="button"
-              className="recipe-page-rail__add-cover"
+              className="btn btn-secondary btn-compact recipe-page-rail__add-cover"
               onClick={() => {
                 setAddMenuOpen(false);
                 addCover();
               }}
             >
-              <PlusIcon size={ICON_SIZE.sm} />
+              <PlusIcon size={ICON_SIZE.md} />
               Add cover
             </button>
           )}

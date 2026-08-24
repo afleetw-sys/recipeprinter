@@ -921,11 +921,21 @@
 
   /* Ghost / icon */
   .btn-ghost {
-    @apply inline-flex items-center justify-center rounded transition-colors;
-    min-height: 40px;
+    @apply inline-flex items-center justify-center rounded;
+    /* 34px, the family's own height — not 40. A ghost Cancel sits directly
+       beside a filled confirm in every dialog footer, and standing 6px taller
+       made the pair read as two different kinds of control. */
+    min-height: 34px;
     padding: 0 12px;
     background: transparent;
     color: var(--cp-ink-soft);
+    /* Transform as well as colour. `.btn:hover` lifts every button 1px; a
+       colours-only transition let this one SNAP into the lifted position while
+       everything beside it eased. */
+    transition:
+      color 150ms ease,
+      background-color 150ms ease,
+      transform 150ms ease;
   }
   .btn-ghost:hover:not(:disabled) {
     background: var(--cp-overlay-hover-strong);
@@ -963,10 +973,16 @@
     background: color-mix(in srgb, var(--cp-error) 10%, transparent);
   }
 
-  /* Round icon-only close button (mirrors the shape used by the mobile print
-     drawer and the print-success dialogs) — one shared style instead of
-     mixing a bordered circle in some modals with a plain ghost button in
-     others. */
+  /* The icon-only button — dialog closes, rail and toolbar glyphs — in one
+     shared style instead of a bordered circle in some modals and a plain ghost
+     button in others.
+
+     Squared, for the same reason the avatar below is: these sit in rows with
+     labelled buttons, and a lone circle among rounded rectangles reads as a
+     different kind of thing than the controls beside it. The corner follows
+     the same rule as the rest of the family — it scales with the box, so a
+     40px button takes the 12px control radius and `.btn-compact`'s 30px box
+     takes 8px. */
   .icon-button,
   .icon-close-btn {
     display: grid;
@@ -974,7 +990,7 @@
     width: 40px;
     height: 40px;
     border: 1px solid var(--cp-line);
-    border-radius: 999px;
+    border-radius: var(--cp-radius-control);
     background: var(--cp-card);
     color: var(--cp-ink-soft);
     transition:
