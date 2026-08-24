@@ -109,6 +109,17 @@ export interface ProjectMeta {
   /** Stable identity for purchase scoping and saved-project hydration. */
   projectId?: string;
   cover?: CoverConfig;
+  /**
+   * What this project is called in the app, as distinct from what is printed
+   * on the cookbook's cover.
+   *
+   * Absent means "inherit" — see `projectDisplayTitle`. Most books want one
+   * name in both places and get it for free; the two come apart when the cover
+   * says "Recipes" in a decorative face and the shelf needs to say which of the
+   * four books called Recipes this one is. Setting it here never touches the
+   * cover, and a card job can have one even though it has no cover at all.
+   */
+  projectTitle?: string;
   backCover?: CoverConfig;
   /** Optional dedication / front-matter page shown after the cover, before the
       table of contents. A CoverConfig (like the back cover) whose `blurb` is the
@@ -199,6 +210,7 @@ export function normalizeProjectMeta(value: unknown): ProjectMeta {
   return {
     ...raw,
     projectId: cleanText(raw.projectId) ?? uid(),
+    projectTitle: cleanText(raw.projectTitle),
     sections,
     cover: raw.cover
       ? {
@@ -439,6 +451,30 @@ export function deleteSectionFromMeta(meta: ProjectMeta, sectionId: string): Pro
     neighbor.itemIds = [...neighbor.itemIds, ...target.itemIds];
   }
   return { ...meta, sections };
+}
+
+/**
+ * What to call this project on screen.
+ *
+ * One name, resolved in order of how deliberate it was: an explicit rename
+ * first, then the cookbook's cover, then the book set aside behind a card job,
+ * then the first recipe in it, and only then a generic label. The recipe
+ * fallback matters more than it looks — "Banana Bread + 2 more" is findable in
+ * a shelf of forty; "Recipe cards" is not, and four projects called that are
+ * indistinguishable.
+ */
+export function projectDisplayTitle(
+  meta: Pick<ProjectMeta, "projectTitle" | "cover" | "stashedCookbook" | "cookbookMode">,
+  firstRecipeTitle?: string,
+  extraCount = 0,
+): string {
+  const explicit = meta.projectTitle?.trim();
+  if (explicit) return explicit;
+  const cover = meta.cover?.title?.trim() || meta.stashedCookbook?.cover?.title?.trim();
+  if (cover) return cover;
+  const recipe = firstRecipeTitle?.trim();
+  if (recipe) return extraCount > 0 ? `${recipe} + ${extraCount} more` : recipe;
+  return meta.cookbookMode ? "Untitled cookbook" : "Recipe cards";
 }
 
 export function useProjectMeta() {
@@ -718,6 +754,15 @@ export function useProjectMeta() {
     [update],
   );
 
+  /** Renames the project without touching the cookbook's printed cover.
+      Clearing it (empty string) puts the name back to inheriting. */
+  const setProjectTitle = useCallback(
+    (value: string | undefined) => {
+      update((current) => ({ ...current, projectTitle: value?.trim() || undefined }));
+    },
+    [update],
+  );
+
   const setCookbookMode = useCallback(
     (value: boolean) => {
       update((current) => ({ ...current, cookbookMode: value }));
@@ -943,6 +988,7 @@ export function useProjectMeta() {
     setTableOfContents,
     setTocKicker,
     setTocTitle,
+    setProjectTitle,
     setSectionDividers,
     setCookbookMode,
     setCookbookPreset,

@@ -4,6 +4,7 @@ import type {
   ComponentProps,
   CSSProperties,
   Dispatch,
+  MouseEvent as ReactMouseEvent,
   ReactNode,
   SetStateAction,
 } from "react";
@@ -323,7 +324,7 @@ export function PrintDeck(props: PrintDeckProps) {
               }
             }}
           >
-            <EditIcon size={ICON_SIZE.xs} />
+            <EditIcon size={ICON_SIZE.md} />
             {(navItem.kind === "recipe" && pageEditMode) ||
             (navItem.kind === "divider" && editingSectionId === navItem.recipeId) ||
             (navItem.kind === "cover" && editingCoverSide === coverSideFromNavItem(navItem)) ||
@@ -483,6 +484,43 @@ export function PrintDeck(props: PrintDeckProps) {
     />
   );
 
+  /**
+   * Double-clicking a recipe's text opens edit mode, exactly as the Edit button
+   * does — because that is what people try first. The button is small, floats
+   * above the page, and is easy not to notice; the text is the thing they are
+   * looking at and want to change.
+   *
+   * Only ON, never off. Once editing, a double-click is how you select a word,
+   * and having that close the editor mid-sentence would be maddening.
+   *
+   * Every kind that has an editor, not just recipes. Covers, chapter openers
+   * and the contents each have their own idea of what "editing" means, which
+   * is why this fans out by kind — but from the cook's side there is one rule
+   * ("double-click the words to change them") rather than a rule that happens
+   * to hold on recipe pages. Kinds with nothing to type into opt out below,
+   * and they are exactly the kinds that show no Edit button either.
+   */
+  const openEditOnDoubleClick = (navItem: NavItem) => (event: ReactMouseEvent) => {
+    // A full-page photo and a chapter's facing art have no text; a continued
+    // page is the runover of a recipe that is edited from its first page.
+    if (navItem.kind === "image" || navItem.kind === "section-photo" || navItem.continued) return;
+    // Not on the floating controls that sit over the page.
+    if ((event.target as HTMLElement).closest("button, a, input, textarea")) return;
+    if (navItem.kind === "recipe") {
+      if (!pageEditMode) togglePageEditMode();
+      return;
+    }
+    if (navItem.kind === "divider") {
+      if (editingSectionId !== navItem.recipeId) startSectionEdit(navItem.recipeId);
+      return;
+    }
+    if (navItem.kind === "toc") {
+      setEditingToc(true);
+      return;
+    }
+    setEditingCoverSide(coverSideFromNavItem(navItem));
+  };
+
   return (
         <section
           className="recipe-page-canvas"
@@ -590,10 +628,15 @@ export function PrintDeck(props: PrintDeckProps) {
                   // unit; `linkedFocusSheet` is the page whose controls the pair
                   // shares — the recipe for an image spread, the opener for a
                   // section spread.
-                  const linkedSpread = isImageSpread || isSectionSpread;
+                  // Two contents pages facing each other are one opening, so
+                  // they outline and select together and the first page owns
+                  // the editing — the heading you can change lives there.
+                  const isTocSpread =
+                    leftSlot?.kind === "toc" && rightSlot?.kind === "toc";
+                  const linkedSpread = isImageSpread || isSectionSpread || isTocSpread;
                   const linkedFocusSheet = isImageSpread
                     ? imageSpreadFocusSheet
-                    : isSectionSpread
+                    : isSectionSpread || isTocSpread
                       ? spread.left
                       : null;
                   const designedBlank = leftSlot?.kind === "toc";
@@ -660,6 +703,11 @@ export function PrintDeck(props: PrintDeckProps) {
                             linkedSpread ? linkedFocusSheet ?? sheetIndex : sheetIndex,
                           );
                         }}
+                        // Per HALF, not per spread: double-clicking the recipe
+                        // opens its editor, and double-clicking the facing photo
+                        // does nothing, which is right — there is no text there
+                        // to have been aiming at.
+                        onDoubleClick={openEditOnDoubleClick(pageNav)}
                       >
                         {renderDeckPage(pageNav, pageSheet, isFocused, role)}
                       </div>
@@ -742,6 +790,7 @@ export function PrintDeck(props: PrintDeckProps) {
                     if (isActive) return;
                     goToSlide(index);
                   }}
+                  onDoubleClick={openEditOnDoubleClick(navItem)}
                   role="button"
                   tabIndex={0}
                   aria-current={isActive}
@@ -841,7 +890,7 @@ export function PrintDeck(props: PrintDeckProps) {
                               }
                             }}
                           >
-                            <EditIcon size={ICON_SIZE.xs} />
+                            <EditIcon size={ICON_SIZE.md} />
                             {(activeNavItem.kind === "recipe" && pageEditMode) ||
                             (activeNavItem.kind === "divider" && editingSectionId === activeNavItem.recipeId) ||
                             (activeNavItem.kind === "cover" && editingCoverSide === coverSideFromNavItem(activeNavItem)) ||

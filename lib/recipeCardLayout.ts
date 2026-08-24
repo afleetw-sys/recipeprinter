@@ -873,6 +873,7 @@ export type BookPageKind =
   | "chapter"
   | "section-photo"
   | "image-photo"
+  | "toc"
   | "content";
 
 export interface BookSpread {
@@ -925,6 +926,30 @@ export function assembleSpreads(pages: BookPageKind[]): BookSpread[] {
       continue;
     }
     if (pages[cursor + 1] === "chapter" && pages[cursor + 2] === "section-photo") {
+      spreads.push({ left: cursor, right: null, single: false });
+      cursor += 1;
+      continue;
+    }
+    /**
+     * A contents that runs long is still ONE thing, so its pages pair only with
+     * each other — two to a spread, and an odd last page by itself.
+     *
+     * Typed as `content` before this, the contents flowed like any other page:
+     * page two of a three-page contents would pair with the first chapter
+     * opener, so a spread was half table-of-contents and half book. Two pages
+     * that are read as one opening should be selected as one.
+     *
+     * The lookahead below keeps a preceding page (a dedication, say) from being
+     * dragged into the contents' first spread, exactly as the image-spread and
+     * chapter-opener rules above protect their own pairs.
+     */
+    if (pages[cursor] === "toc") {
+      const pairs = pages[cursor + 1] === "toc" && cursor + 1 < end;
+      spreads.push({ left: cursor, right: pairs ? cursor + 1 : null, single: false });
+      cursor += pairs ? 2 : 1;
+      continue;
+    }
+    if (pages[cursor + 1] === "toc") {
       spreads.push({ left: cursor, right: null, single: false });
       cursor += 1;
       continue;

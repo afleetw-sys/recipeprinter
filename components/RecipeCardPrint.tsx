@@ -500,6 +500,16 @@ export const RecipeCardFace = memo(function RecipeCardFace({
   // where it read as a stray button with no relationship to anything.
   const showPhotoAdd =
     showHeader && !cookbookMode && !showPhoto && !photoOnFacingPage && canEdit && Boolean(inlineEdit);
+  /* A cookbook's photo control, which is NOT conditional on there already
+     being a photo — that was the bug. It hung off `showPhoto`, which requires
+     `recipe.image`, so a recipe that arrived without one showed no photo
+     affordance at all while editing: nothing to press, and therefore no way to
+     add the photo that would have made the control appear. Recipe-cards mode
+     never had this hole; it has `showPhotoAdd` for exactly this case.
+     Suppressed only when the photo has a page of its own, where the control
+     belongs on that page instead (see `imageEdit`). */
+  const showCookbookPhotoEdit =
+    showHeader && cookbookMode && !photoOnFacingPage && canEdit && Boolean(inlineEdit);
 
   // Shrink-to-fit for content pagination can't rescue (see
   // `RecipeFace.contentScale`). Laid out at `1 / scale` of the normal width and
@@ -887,7 +897,7 @@ export const RecipeCardFace = memo(function RecipeCardFace({
       {/* Cookbook in-card "Photo" button: at the card corner (not inside the
           small, clipped header photo), sized for the screen — opens the same
           placement + source dialog as the full-page image control. */}
-      {cookbookMode && showPhoto && canEdit && inlineEdit && (
+      {showCookbookPhotoEdit && inlineEdit && (
         <ImagePicker
           current={recipe.image}
           images={inlineEdit.recipeImages ?? []}
@@ -895,7 +905,9 @@ export const RecipeCardFace = memo(function RecipeCardFace({
           placement={inlineEdit.photoPlacement}
           placementOptions={inlineEdit.photoPlacementOptions}
           onPlacementChange={inlineEdit.onPhotoPlacementChange}
-          label="Photo"
+          /* Says which job it is doing: there is nothing to change yet when the
+             recipe came in without a photo. */
+          label={recipe.image ? "Photo" : "Add photo"}
           className="recipe-card__cook-photo-edit"
         />
       )}

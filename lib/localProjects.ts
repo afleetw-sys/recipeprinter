@@ -10,6 +10,7 @@ import { assemblePrintProject } from "@/lib/printProjects";
 // and this one runs on the homepage. See lib/printSettingsStore.
 import { readPrintSettings } from "@/lib/printSettingsStore";
 import { uid } from "@/lib/ids";
+import { lookupProjectId, projectContentKey, rememberProjectId } from "@/lib/projectIdentity";
 
 /**
  * Cookbooks kept on this device.
@@ -41,15 +42,19 @@ import { uid } from "@/lib/ids";
 const LOCAL_PROJECTS_KEY = "recipeprinter:local-projects:v1";
 
 /**
- * How many books this shelf holds before the oldest falls off.
+ * How many projects this shelf holds before the oldest falls off.
  *
  * Photos are Storage URLs rather than base64 (see lib/photoStorage.ts), so a
- * book is essentially its text — tens of KB, not MB — and a dozen sits well
- * inside any browser's ~5 MB origin budget. The cap exists so a store written
- * on every exit from the workspace cannot grow without limit across a long
- * life on one device, not because a realistic number of books would strain it.
+ * project is essentially its text — a recipe measures about 4.6 KB — and this
+ * many sits well inside any browser's ~5 MB origin budget.
+ *
+ * Raised from twelve when the shelf stopped being books-only. Twelve was
+ * generous for cookbooks, which people make deliberately and rarely; it is a
+ * fortnight for card printing, which happens whenever someone cooks. The cap
+ * exists so a store written on every exit cannot grow without limit across a
+ * long life on one device, not because a realistic number would strain it.
  */
-const MAX_LOCAL_PROJECTS = 12;
+export const MAX_LOCAL_PROJECTS = 40;
 
 type LocalProjectMap = Record<string, PrintProject>;
 
@@ -71,22 +76,27 @@ function byNewest(projects: PrintProject[]): PrintProject[] {
 }
 
 /**
- * Files a book on this device.
+ * Files a project on this device.
  *
- * Deliberately only accepts documents — a cookbook, or a card job with a book
- * stashed beside it. A plain print job is not a document: nobody named it,
- * nobody asked to keep it, and shelving every Tuesday's dinner prints would
- * turn the library into a log. That is the same rule `autosaveEnabled` applies
- * on the print page, kept identical here so the two shelves agree about what
- * counts as a book.
+ * This used to accept documents only — a cookbook, or a card job with a book
+ * stashed beside it — on the reasoning that nobody named a plain print job,
+ * nobody asked to keep it, and shelving every Tuesday's dinner would turn the
+ * library into a log.
+ *
+ * That reasoning has been overtaken. Leaving the workspace now clears the desk
+ * for a genuinely new project, so a card job that isn't filed is a card job
+ * that is destroyed — and the recipes someone just imported, corrected and
+ * arranged are worth more than a tidy library. The log objection is answered
+ * where it actually lands: the shelf is capped, and the recipe content behind
+ * these projects is deduplicated rather than copied per session.
  *
  * Returns whether anything was stored, so callers that clear the working copy
- * afterwards can tell a filed book from one that could not be written (private
- * mode, quota) — the difference between releasing a copy and losing one.
+ * afterwards can tell a filed project from one that could not be written
+ * (private mode, quota) — the difference between releasing a copy and losing
+ * one.
  */
 export function saveLocalProject(project: PrintProject): boolean {
-  const isDocument = project.kind === "cookbook" || Boolean(project.stashedCookbook);
-  if (!isDocument || !project.id) return false;
+  if (!project.id) return false;
 
   const map = readAll();
   map[project.id] = project;
@@ -139,19 +149,34 @@ export function pruneLocalProjects(accountProjectIds: readonly string[]): void {
 }
 
 /**
- * Files the live working copy — the queue plus its project metadata — as a
- * document on this device's shelf.
+ * Files the live working copy — the queue plus its project metadata — onto
+ * this device's shelf.
  *
  * Assembled with `assemblePrintProject`, the same builder the account autosave
  * uses, so a book filed here and the same book saved to Firestore are the same
  * object built the same way and cannot describe different books.
  *
- * Returns whether it was actually filed, so the caller can decide whether it is
- * safe to release the working copy.
+ * Returns the id it was filed under, or null if it could not be filed — so the
+ * caller can tell a filed project from one that could not be written, and can
+ * point the account save at the same document.
+ *
+ * That id is not necessarily the working copy's own. Printing the same recipes
+ * again produces a fresh working copy with a fresh id, and filing it blindly
+ * added a second identical project to the library every single time. So the
+ * CONTENT decides: the same set of recipes, as the same kind of document, files
+ * back over the project it was last time. See lib/projectIdentity.
  */
-export function fileCookbookLocally(items: QueueItem[], meta: ProjectMeta): boolean {
+/** A name someone can find this by later, from the recipes in it. */
+function describeProject(printable: QueueItem[], cookbook: boolean): string {
+  const first = printable.find((item) => item.recipe)?.recipe?.title?.trim();
+  if (!first) return cookbook ? "Untitled cookbook" : "Recipe cards";
+  const rest = printable.length - 1;
+  return rest > 0 ? `${first} + ${rest} more` : first;
+}
+
+export function fileProjectLocally(items: QueueItem[], meta: ProjectMeta): string | null {
   const printable = items.filter((item) => item.status === "ready" && item.recipe);
-  if (printable.length === 0) return false;
+  if (printable.length === 0) return null;
 
   /**
    * A book set aside is still a book — the same rule `currentProject` applies
@@ -169,22 +194,26 @@ export function fileCookbookLocally(items: QueueItem[], meta: ProjectMeta): bool
   // `isRecipePrintTemplate`), which is the right boundary for that check.
   const stored = readPrintSettings() ?? {};
 
+  const isBook = Boolean(meta.cookbookMode || meta.stashedCookbook);
+  const contentKey = projectContentKey(printable, isBook);
   const project = assemblePrintProject({
-    id: meta.projectId ?? uid(),
+    // The content's existing project if it has one, otherwise this working
+    // copy's own id.
+    id: lookupProjectId(contentKey) ?? meta.projectId ?? uid(),
     // No account behind this copy — that is the entire point of the shelf.
     // Adopting it into an account later fills this in (see
     // lib/anonymousProjectAdoption).
     ownerUid: "",
-    title:
-      cover?.title ||
-      printable.find((item) => item.recipe)?.recipe?.title ||
-      `Cookbook — ${new Date().toLocaleDateString()}`,
+    // A card job has no cover to take a name from, so it borrows the first
+    // recipe's — "Banana Bread + 2 more" is findable later in a way that
+    // "Recipe cards — 22/08/2026" never is.
+    title: cover?.title || describeProject(printable, Boolean(meta.cookbookMode)),
     sections: buildSections(printable, meta),
     cover,
     backCover: meta.backCover ?? stash?.backCover,
     dedication: meta.dedication ?? stash?.dedication,
     frontMatter: meta.frontMatter ?? stash?.frontMatter,
-    kind: "cookbook",
+    kind: meta.cookbookMode || meta.stashedCookbook ? "cookbook" : "printProject",
     settings: {
       cardSize: (stored.cardSize as PrintCardSize) ?? "letter",
       template: (stored.template as RecipePrintTemplate) ?? "classic",
@@ -205,5 +234,7 @@ export function fileCookbookLocally(items: QueueItem[], meta: ProjectMeta): bool
     stashedCookbook: meta.stashedCookbook,
   });
 
-  return saveLocalProject(project);
+  if (!saveLocalProject(project)) return null;
+  rememberProjectId(contentKey, project.id);
+  return project.id;
 }

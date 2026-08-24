@@ -46,7 +46,23 @@ export type AccountSaveStatus =
   | "conflict"
   | "adoption";
 
-const STATUS_LABEL: Record<AccountSaveStatus, string> = {
+/**
+ * Statuses that mean something actually went wrong.
+ *
+ * The workspace surfaces the save state only for these. Leaving now files the
+ * project on the way out, so "Saving…" and "Saved" narrate work nobody asked
+ * about — but a failure is the one case where silence costs someone their book,
+ * so it still has to be said. Kept beside the labels so the two lists cannot
+ * drift into disagreeing about what counts as failure.
+ */
+export const SAVE_FAILURES = new Set<AccountSaveStatus>([
+  "offline",
+  "error",
+  "conflict",
+  "adoption",
+]);
+
+export const SAVE_STATUS_LABEL: Record<AccountSaveStatus, string> = {
   saving: "Saving…",
   saved: "Saved",
   offline: "Offline — changes pending",
@@ -115,7 +131,7 @@ export function AccountControl({
           ) : saveStatus === "saved" ? (
             <CheckIcon size={ICON_SIZE.sm} />
           ) : null}
-          {STATUS_LABEL[saveStatus]}
+          {SAVE_STATUS_LABEL[saveStatus]}
         </button>
       )}
 
@@ -130,6 +146,7 @@ export function AccountControl({
            for a browser with no record of an account, or in the moment before
            the chunk lands for one that has. */
         <IconButton
+          data-rp-avatar
           className="border border-line bg-card text-ink-soft hover:text-ink hover:border-ink-soft"
           aria-label="Sign in to Recipe Printer"
           title="Sign in to Recipe Printer"
@@ -138,7 +155,7 @@ export function AccountControl({
             setShowMenu(true);
           }}
         >
-          <AccountIcon size={ICON_SIZE.lg} />
+          <AccountIcon size={ICON_SIZE.md} />
         </IconButton>
       )}
     </div>

@@ -299,3 +299,36 @@ describe("splitIntoColumns", () => {
     }
   });
 });
+
+describe("a contents page that runs long", () => {
+  const spread = (left: number | null, right: number | null, single = false) => ({ left, right, single });
+
+  /**
+   * Typed as `content`, page two of a three-page contents paired with the first
+   * chapter opener — half table-of-contents, half book, selected as one thing.
+   */
+  it("pairs contents pages only with each other", () => {
+    const spreads = assembleSpreads(["cover", "toc", "toc", "chapter", "content"]);
+    expect(spreads).toContainEqual(spread(1, 2));
+    expect(spreads.some((s) => s.left === 2 && s.right === 3)).toBe(false);
+  });
+
+  it("leaves an odd third contents page on its own", () => {
+    const spreads = assembleSpreads(["cover", "toc", "toc", "toc", "chapter"]);
+    expect(spreads).toContainEqual(spread(1, 2));
+    expect(spreads).toContainEqual(spread(3, null));
+  });
+
+  // A dedication sitting before the contents must not be dragged into its
+  // first opening, the same way a page before an image spread isn't.
+  it("does not pull the page before it into the first contents spread", () => {
+    const spreads = assembleSpreads(["cover", "dedication", "toc", "toc"]);
+    expect(spreads).toContainEqual(spread(1, null));
+    expect(spreads).toContainEqual(spread(2, 3));
+  });
+
+  it("still pairs a single contents page with nothing after it", () => {
+    const spreads = assembleSpreads(["cover", "toc", "chapter", "content"]);
+    expect(spreads).toContainEqual(spread(1, null));
+  });
+});
