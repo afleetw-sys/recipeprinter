@@ -845,8 +845,10 @@
   flex-direction: column;
   gap: 6px;
   margin: -16px -16px 8px -4px;
+  /* No rule under it. The header is still sticky and still carries the card
+     background, so thumbnails scrolling beneath it stay covered — the line was
+     only ever drawing a boundary the gap already makes. */
   padding: 16px 16px 12px 4px;
-  border-bottom: 1px solid var(--cp-line);
   background: var(--cp-card);
 }
 
