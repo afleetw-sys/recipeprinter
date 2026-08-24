@@ -601,7 +601,7 @@
   min-width: 0;
   height: 74px;
   display: grid;
-  grid-template-columns: repeat(var(--section-grid-cols, 2), 1fr);
+  grid-template-columns: repeat(2, 1fr);
   grid-auto-rows: 1fr;
   gap: 1px;
   border-radius: 5px;
@@ -682,7 +682,7 @@
 }
 
 .recipe-page-rail__section-delete:hover {
-  color: var(--cp-danger, #b42318);
+  color: var(--cp-error);
 }
 
 /* A real aria-pressed toggle, so it takes a corner. A pill is reserved for
@@ -873,17 +873,16 @@
    only chrome on a wide sheet; out here these sit in a 220px rail beside a
    row of 30px buttons in the header, and matching that row matters more than
    matching the organizer's scale. */
-/* A grey fill. It has to be findable — a white button with a hairline on a
-   white rail is the correct weight for a secondary control and the wrong
-   weight for the only thing a cook with an empty book needs to press — but
-   the page's black is spoken for by Buy & Print, and colour read as status
-   rather than as the thing to press. A filled neutral is what is left, and it
-   is enough: nothing else in this column is filled at all. */
 /* Colour comes from .btn-neutral (see globals.css) — this is the shared
    filled-neutral button, not a one-off. What stays here is the geometry of
    the split: the two halves round only their outer corners, and the seam
-   between them is a deeper wash of the fill rather than a line laid over it. */
-.recipe-page-rail__head .recipe-page-rail__add-main {
+   between them is a deeper wash of the fill rather than a line laid over it.
+
+   Only in the paired state, which is the only state that HAS a second half.
+   Outside a cookbook there is no "Add section", so no caret is rendered, and
+   this used to leave a button squared off down its right edge against
+   nothing — a split button with the split hidden. */
+.recipe-page-rail__head .recipe-page-rail__add-main--paired {
   border-radius: 8px 0 0 8px;
 }
 
@@ -1179,7 +1178,7 @@
 
 .recipe-spread__blank-grid {
   display: grid;
-  grid-template-columns: repeat(var(--section-grid-cols, 3), 1fr);
+  grid-template-columns: repeat(3, 1fr);
   grid-auto-rows: 1fr;
   gap: 2px;
   width: 100%;

@@ -133,7 +133,9 @@ for (const target of cssTargets) {
   for (const directory of ["app", "components", "lib"]) {
     for (const file of walk(path.join(root, directory)).filter((n) => /\.tsx?$/.test(n))) {
       const text = fs.readFileSync(file, "utf8");
-      for (const match of text.matchAll(/["'`](--[\w-]+)["'`]?\s*[:,]/g)) defined.add(match[1]);
+      // Also `["--rp-spine-w" as string]: ...` — the cast sits between the
+      // closing quote and the colon, so skip anything up to that colon.
+      for (const match of text.matchAll(/["'`](--[\w-]+)["'`][^:,\n]*[:,]/g)) defined.add(match[1]);
       for (const match of text.matchAll(/variable:\s*["'`](--[\w-]+)/g)) defined.add(match[1]);
     }
   }

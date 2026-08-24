@@ -65,6 +65,38 @@
   --cp-fs-wordmark: 1.2rem;
   --cp-fs-wordmark-compact: 1.05rem;
 
+  /* ── Font-weight scale ───────────────────────────────────────────────────
+     The size ramp above had names and a rule; weight had neither, so it was
+     the one type axis nobody could check — and it drifted to NINE values
+     (500/600/650/700/750/760/800/850/900). Weight is what makes chrome shout:
+     the Edit toggle floating over the page sat at 800 while Print, the page's
+     actual primary action, sat at 600.
+
+     Four steps, because four is what UI chrome needs. Printed template
+     artwork legitimately reaches past this — a card's title is not a button —
+     and sizes itself directly, the same exemption the size ramp gives it. */
+  --cp-fw-regular: 400; /* body copy */
+  --cp-fw-medium: 600; /* button labels, field values, secondary emphasis */
+  --cp-fw-bold: 700; /* item titles, eyebrows, chips, selected menu rows */
+  --cp-fw-display: 800; /* panel and dialog titles, page headings */
+
+  /* ── Stacking order ──────────────────────────────────────────────────────
+     Thirteen ad-hoc values (20 … 1200) had grown up here, and two of them
+     were ordered wrong rather than merely arbitrary: portalled rail menus sat
+     at 1200, ABOVE dialogs at 50, and the organizer's sort menu at 20 sat
+     BELOW the toast at 60. Six steps, far enough apart to slot between. */
+  --z-base: 0;
+  --z-sticky: 100; /* the workspace header, the rail, the mobile bars */
+  --z-overlay: 200; /* full-surface takeovers: organizer, cookbook reveal */
+  --z-menu: 300; /* menus and popovers — above chrome, BELOW dialogs */
+  --z-dialog: 400; /* modals and their scrims, and bottom sheets */
+  --z-toast: 500; /* always the last word */
+
+  /* One scrim for everything that dims the page behind it. Four recipes were
+     in use — two tints, two blur radii, and one that was pure black. */
+  --cp-scrim: rgba(15, 23, 42, 0.34);
+  --cp-scrim-blur: blur(5px);
+
   /* ── Elevation (box-shadow) scale ────────────────────────────────────────
      Same idea as the font-size scale: this replaced a dozen near-duplicate
      one-off shadows (some tinted rgba(15,23,42,*), some rgba(17,17,17,*),
@@ -728,7 +760,10 @@
   padding: .5rem .9rem;
   border-radius: 999px;
   background: var(--cp-accent);
-  color: var(--cp-on-accent, #fff);
+  /* Ink, not white. --cp-on-accent was never defined anywhere, so this fell
+     through to its #fff fallback — and white on the vivid accent is 1.95:1,
+     the contrast failure --cp-accent-ink exists to avoid. */
+  color: var(--cp-ink);
   font-size: var(--cp-fs-caption);
   font-weight: 750;
 }
