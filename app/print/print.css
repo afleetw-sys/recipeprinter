@@ -110,13 +110,16 @@
   justify-content: center;
   gap: 7px;
   margin: 0 0 2px;
-  padding: 9px 10px;
+  /* Height from min-height, so it lands on the shared 30px rather than on
+     whatever its own padding happened to add up to (39px). */
+  min-height: 30px;
+  padding: 0 11px;
   border: 1px solid var(--cp-line-strong);
-  border-radius: 10px;
-  background: var(--cp-card);
+  border-radius: 8px;
+  background: transparent;
   color: var(--cp-ink);
-  font-size: var(--cp-fs-caption);
-  font-weight: 700;
+  font-size: var(--cp-fs-small);
+  font-weight: 600;
   transition:
     border-color 150ms ease,
     background 150ms ease,
@@ -156,24 +159,44 @@
   color: var(--cp-ink);
 }
 
+/* Sort, Collapse and each section's Delete sit in rows with the buttons
+   above, so in here they take the button box too — 30px, 8px corner. Scoped
+   to the organizer on purpose: elsewhere .icon-button is a 40px circle in a
+   dialog, where it is a touch target rather than a member of a button row. */
+.recipe-print-shell--organizing .icon-button {
+  width: 30px;
+  height: 30px;
+  border-color: var(--cp-line-strong);
+  border-radius: 8px;
+  background: transparent;
+}
+
+.recipe-print-shell--organizing .icon-button:hover:not(:disabled) {
+  background: var(--cp-overlay-hover);
+}
+
 /* Auto-organize / Undo, in the organizer's own toolbar beside Sort and the
    collapse control. Quiet by default — the cook is already arranging things by
    hand in here, so this offers to help rather than announcing itself. It wears
    the icon button's own treatment (same height, card face, hairline, ink-soft
    glyph) so the toolbar reads as one row of controls, just a wider one that
    happens to carry a label. */
+/* Same box as every other button in the app: 30px tall, an 8px corner, and
+   the secondary outline in --cp-line-strong. The organizer had grown its own
+   dialect — 40px pills on a softer hairline — and opening it meant walking
+   from one button language into another. */
 .recipe-organize-bar__auto {
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  height: 40px;
-  padding: 0 14px;
-  border: 1px solid var(--cp-line);
-  border-radius: 999px;
-  background: var(--cp-card);
-  color: var(--cp-ink-soft);
-  font-size: var(--cp-fs-caption);
-  font-weight: 700;
+  height: 30px;
+  padding: 0 11px;
+  border: 1px solid var(--cp-line-strong);
+  border-radius: 8px;
+  background: transparent;
+  color: var(--cp-ink);
+  font-size: var(--cp-fs-small);
+  font-weight: 600;
   white-space: nowrap;
   transition:
     color 150ms ease,
@@ -182,6 +205,7 @@
 
 .recipe-organize-bar__auto:hover {
   border-color: var(--cp-line-strong);
+  background: var(--cp-overlay-hover);
   color: var(--cp-ink);
 }
 
@@ -917,13 +941,14 @@
    same faint blue cast as --cp-page and the segmented control's thumb instead
    of reading as a different family of neutral. --cp-surface-muted (#f6f8fa)
    was the obvious token and it is 3% off white — invisible as a fill on a
-   white rail. This is roughly #dadde3: unmistakably a filled button, still
-   nowhere near the weight of Buy & Print. No border, because a fill this
-   visible does not need an outline to find its own edges. */
+   white rail; 26% went past what this control needs to carry. 16% is the step
+   between them, roughly #e6e8ec: unmistakably a filled button, still nowhere
+   near the weight of Buy & Print. No border, because a fill this visible does
+   not need an outline to find its own edges. */
 .recipe-page-rail__head .recipe-page-rail__add-main {
   border-color: transparent;
   border-radius: 8px 0 0 8px;
-  background: color-mix(in srgb, var(--cp-ink-soft) 26%, var(--cp-card));
+  background: color-mix(in srgb, var(--cp-ink-soft) 16%, var(--cp-card));
   color: var(--cp-ink);
   font-size: var(--cp-fs-caption);
   font-weight: 700;
@@ -931,16 +956,16 @@
 
 .recipe-page-rail__head .recipe-page-rail__add-main:hover:not(:disabled) {
   border-color: transparent;
-  background: color-mix(in srgb, var(--cp-ink-soft) 36%, var(--cp-card));
+  background: color-mix(in srgb, var(--cp-ink-soft) 26%, var(--cp-card));
 }
 
 .recipe-page-rail__head .recipe-page-rail__add-menu-trigger {
   border: 1px solid transparent;
   /* The seam divides one control, so it is a deeper wash of the fill rather
      than a line laid over it. */
-  border-left: 1px solid color-mix(in srgb, var(--cp-ink-soft) 52%, var(--cp-card));
+  border-left: 1px solid color-mix(in srgb, var(--cp-ink-soft) 40%, var(--cp-card));
   border-radius: 0 8px 8px 0;
-  background: color-mix(in srgb, var(--cp-ink-soft) 26%, var(--cp-card));
+  background: color-mix(in srgb, var(--cp-ink-soft) 16%, var(--cp-card));
   color: var(--cp-ink);
 }
 
@@ -948,8 +973,8 @@
   border-color: transparent;
   /* Re-stated so the divider survives the hover, which would otherwise repaint
      every edge including the one holding the two halves apart. */
-  border-left-color: color-mix(in srgb, var(--cp-ink-soft) 52%, var(--cp-card));
-  background: color-mix(in srgb, var(--cp-ink-soft) 36%, var(--cp-card));
+  border-left-color: color-mix(in srgb, var(--cp-ink-soft) 40%, var(--cp-card));
+  background: color-mix(in srgb, var(--cp-ink-soft) 26%, var(--cp-card));
 }
 
 /* Fills the row on its own (no cookbook mode → no chevron trigger next to
