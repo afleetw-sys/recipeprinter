@@ -907,44 +907,45 @@
    only chrome on a wide sheet; out here these sit in a 220px rail beside a
    row of 30px buttons in the header, and matching that row matters more than
    matching the organizer's scale. */
-/* The accent, because this one has to be FOUND. A white pill with a hairline
-   on a white rail is the correct weight for a secondary control and the wrong
+/* Primary ink, the same as Buy & Print. A white pill with a hairline on a
+   white rail is the correct weight for a secondary control and the wrong
    weight for the only thing a cook with an empty book needs to press.
 
-   Accent rather than ink: the page already has one black button, Buy & Print,
-   and black here would put two climaxes on one screen. This is the same teal
-   that marks a checked box and a signed-in avatar, so it reads as "ours" and
-   not as an alert, and it is the one saturated thing in the rail. */
+   Two black buttons on one screen is the obvious objection, and it holds when
+   they compete for the same decision. These do not: Buy & Print is the end of
+   the job and lives in the header; this is the start of it and lives in the
+   rail, which is otherwise entirely white cards and hairlines. Nothing else
+   in that column is filled, so it is unmistakable there. */
 .recipe-page-rail__head .recipe-page-rail__add-main {
   border-color: transparent;
   border-radius: 999px 0 0 999px;
-  background: var(--cp-accent);
-  color: var(--cp-ink);
+  background: var(--cp-ink);
+  color: var(--cp-card);
   font-size: var(--cp-fs-caption);
   font-weight: 700;
 }
 
 .recipe-page-rail__head .recipe-page-rail__add-main:hover:not(:disabled) {
   border-color: transparent;
-  background: color-mix(in srgb, var(--cp-accent) 88%, var(--cp-ink));
+  background: var(--cp-ink-soft);
 }
 
 .recipe-page-rail__head .recipe-page-rail__add-menu-trigger {
   border: 1px solid transparent;
-  /* The seam divides one control; on a filled button it is a darker wash of
+  /* The seam divides one control; on a filled button it is a lighter wash of
      the fill rather than a line laid over it. */
-  border-left: 1px solid color-mix(in srgb, var(--cp-accent) 62%, var(--cp-ink));
+  border-left: 1px solid color-mix(in srgb, var(--cp-ink) 62%, var(--cp-card));
   border-radius: 0 999px 999px 0;
-  background: var(--cp-accent);
-  color: var(--cp-ink);
+  background: var(--cp-ink);
+  color: var(--cp-card);
 }
 
 .recipe-page-rail__head .recipe-page-rail__add-menu-trigger:hover:not(:disabled) {
   border-color: transparent;
   /* Re-stated so the divider survives the hover, which would otherwise repaint
      every edge including the one holding the two halves apart. */
-  border-left-color: color-mix(in srgb, var(--cp-accent) 62%, var(--cp-ink));
-  background: color-mix(in srgb, var(--cp-accent) 88%, var(--cp-ink));
+  border-left-color: color-mix(in srgb, var(--cp-ink) 62%, var(--cp-card));
+  background: var(--cp-ink-soft);
 }
 
 /* Fills the row on its own (no cookbook mode → no chevron trigger next to
