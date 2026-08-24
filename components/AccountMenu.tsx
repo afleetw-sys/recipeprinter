@@ -128,9 +128,10 @@ export default function AccountMenu({
   return (
     <div ref={rootRef} className="relative flex items-center">
       <IconButton
+        data-rp-avatar
         className={`${
           user
-            ? "border border-transparent bg-[var(--cp-accent)] text-[var(--cp-ink)] text-cp-caption font-bold tracking-tight"
+            ? "border border-transparent bg-[var(--cp-accent)] text-[var(--cp-ink)] font-bold tracking-tight"
             : "border border-line bg-card text-ink-soft hover:text-ink hover:border-ink-soft"
         }`}
         aria-label={user ? "Recipe Printer account" : "Sign in to Recipe Printer"}
@@ -144,7 +145,7 @@ export default function AccountMenu({
         {user && accountInitials(user) ? (
           <span aria-hidden>{accountInitials(user)}</span>
         ) : (
-          <AccountIcon size={ICON_SIZE.lg} />
+          <AccountIcon size={ICON_SIZE.md} />
         )}
       </IconButton>
 

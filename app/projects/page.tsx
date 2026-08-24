@@ -9,8 +9,9 @@ import { CookPilotLoginDialog, useCookPilotAuth } from "@/components/CookPilotAu
 import { useProjectMeta } from "@/lib/project";
 import { useQueue } from "@/lib/queue";
 import { useRouter } from "next/navigation";
-import { BookIcon, CheckIcon, ICON_SIZE, SpinnerIcon, TrashIcon } from "@/components/icons";
+import { BookIcon, CheckIcon, ICON_SIZE, PlusIcon, SpinnerIcon, TrashIcon } from "@/components/icons";
 import { deletePrintProject, loadPrintProjects } from "@/lib/printProjects";
+import { forgetProjectId } from "@/lib/projectIdentity";
 import {
   deleteDuplicateProjects,
   grantCookbookUnlock,
@@ -99,9 +100,9 @@ export default function ProjectsPage() {
    * `cookbookIntent` carries the choice across that detour, so the cook still
    * lands in a book rather than in recipe cards.
    */
-  function startNewCookbook() {
+  function startNew(cookbook: boolean) {
     const hasRecipes = queueItems.some((item) => item.status === "ready" && item.recipe);
-    startNewProject({ cookbook: true });
+    startNewProject({ cookbook });
     router.push(hasRecipes ? "/print" : "/");
   }
   const [accountProjects, setAccountProjects] = useState<PrintProject[]>([]);
@@ -217,6 +218,10 @@ export default function ProjectsPage() {
 
   async function confirmDelete() {
     if (!pendingDelete) return;
+    // Forget that these recipes ever became this project. Without it, printing
+    // them again would file straight back into a document that has just been
+    // deleted, and the deletion would look like it had not worked.
+    forgetProjectId(pendingDelete.id);
     // A book that only exists on this device has no account document to delete
     // — drop it from the shelf and we're done. No sign-in required to remove
     // something that was never in an account.
@@ -261,10 +266,6 @@ export default function ProjectsPage() {
               Open or remove your saved cookbooks and recipe cards.
             </p>
           </div>
-          <button type="button" className="btn btn-primary flex-shrink-0" onClick={startNewCookbook}>
-            <BookIcon size={ICON_SIZE.md} />
-            New cookbook
-          </button>
         </header>
 
         {loading ? (
@@ -303,12 +304,37 @@ export default function ProjectsPage() {
         ) : (
           <>
             {error && <p className="mb-cp-4 rounded-lg border border-[var(--cp-error-border)] bg-[var(--cp-error-soft)] p-cp-3 text-cp-small text-error">{error}</p>}
+            {/* Both sections always render, even when empty — the "New …"
+                button is the point of the empty one, and a section that
+                disappears when you have none of that kind hides the only way to
+                start one. */}
             {([
-              ["Cookbooks", cookbooks],
-              ["Recipe cards", recipeCardProjects],
-            ] as const).map(([heading, groupedProjects]) => groupedProjects.length > 0 && (
+              ["Cookbooks", cookbooks, true],
+              ["Recipe cards", recipeCardProjects, false],
+            ] as const).map(([heading, groupedProjects, isCookbook]) => (
               <section key={heading} className="mb-cp-7">
-                <h2 className="mb-cp-4 text-cp-h2 font-extrabold tracking-[-0.02em]">{heading}</h2>
+                <div className="mb-cp-4 flex flex-wrap items-center justify-between gap-cp-3">
+                  <h2 className="text-cp-h2 font-extrabold tracking-[-0.02em]">{heading}</h2>
+                  {/* Beside the things it makes, so it says which KIND it
+                      starts. A single "New cookbook" over both groups was the
+                      only way to start anything, and there was no way at all to
+                      deliberately start recipe cards. */}
+                  <button
+                    type="button"
+                    className="btn btn-secondary btn-compact"
+                    onClick={() => startNew(isCookbook)}
+                  >
+                    <PlusIcon size={ICON_SIZE.md} />
+                    {isCookbook ? "New cookbook" : "New recipe cards"}
+                  </button>
+                </div>
+                {groupedProjects.length === 0 ? (
+                  <p className="rounded-xl border border-dashed border-line-strong px-cp-5 py-cp-5 text-cp-small text-ink-soft">
+                    {isCookbook
+                      ? "No cookbooks yet. A set of recipes can become one at any time."
+                      : "No recipe cards yet."}
+                  </p>
+                ) : (
                 <ul className="grid gap-cp-4 sm:grid-cols-2 lg:grid-cols-3">
               {groupedProjects.map((project) => (
                 <li key={project.id} className="group relative flex min-h-44 flex-col overflow-hidden rounded-xl border border-line bg-card transition-colors hover:border-line-strong">
@@ -385,6 +411,7 @@ export default function ProjectsPage() {
                 </li>
               ))}
                 </ul>
+                )}
               </section>
             ))}
           </>

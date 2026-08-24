@@ -98,7 +98,11 @@ for (const target of cssTargets) {
       (lineNumber < trailingUiStart || lineNumber >= trailingUiEnd)
     ) return;
     const font = line.match(/font-size\s*:\s*([^;]+)/)?.[1].trim();
-    if (font && !font.startsWith("var(--cp-fs") && font !== "0" && !font.startsWith("clamp(") && !font.endsWith("em")) {
+    // `em` (relative sizing inside printed artwork) is exempt; `rem` is NOT.
+    // A bare `endsWith("em")` also matched every `rem` literal in the codebase,
+    // which quietly exempted the whole file from the one check this rule
+    // exists to make — `font-size: 0.62rem` passed for as long as it stood.
+    if (font && !font.startsWith("var(--cp-fs") && font !== "0" && !font.startsWith("clamp(") && !/(^|[\d.])em$/.test(font)) {
       report(file, lineNumber, "use a --cp-fs-* typography token");
     }
     const shadow = line.match(/box-shadow\s*:\s*([^;]+)/)?.[1].trim();
@@ -106,6 +110,82 @@ for (const target of cssTargets) {
       report(file, lineNumber, "use a --cp-shadow-* elevation token");
     }
   });
+}
+
+// ── Every --cp-* / --rp-* / --z-* a stylesheet READS must be one it DEFINES ──
+// `var()` fails silently: a name with a typo, or one that was never added,
+// falls through to its fallback (or to nothing) and ships looking almost
+// right. `var(--cp-danger, #b42318)` sat in print.css doing exactly that —
+// painting the section-delete hover in a red that matched nothing else in the
+// product, because the token is called --cp-error.
+{
+  const sources = ["app/globals.css", "app/print/print.css"].map((name) => ({
+    name,
+    text: stripCssComments(fs.readFileSync(path.join(root, name), "utf8")),
+  }));
+  // A custom property counts as defined wherever it is SET — :root, a component
+  // selector, a JSX `style` object, or a next/font `variable`. The bug this
+  // catches is a name that is set nowhere at all.
+  const defined = new Set();
+  for (const { text } of sources) {
+    for (const match of text.matchAll(/(--[\w-]+)\s*:/g)) defined.add(match[1]);
+  }
+  for (const directory of ["app", "components", "lib"]) {
+    for (const file of walk(path.join(root, directory)).filter((n) => /\.tsx?$/.test(n))) {
+      const text = fs.readFileSync(file, "utf8");
+      // Also `["--rp-spine-w" as string]: ...` — the cast sits between the
+      // closing quote and the colon, so skip anything up to that colon.
+      for (const match of text.matchAll(/["'`](--[\w-]+)["'`][^:,\n]*[:,]/g)) defined.add(match[1]);
+      for (const match of text.matchAll(/variable:\s*["'`](--[\w-]+)/g)) defined.add(match[1]);
+    }
+  }
+  for (const { name, text } of sources) {
+    text.split("\n").forEach((line, index) => {
+      for (const match of line.matchAll(/var\(\s*(--[\w-]+)/g)) {
+        if (!defined.has(match[1])) {
+          report(path.join(root, name), index + 1, `${match[1]} is not defined in :root`);
+        }
+      }
+    });
+  }
+}
+
+// ── A shared component is defined once, in globals.css ──
+// print.css loads AFTER globals.css on /print, so any selector it restates
+// wins ties on source order alone — silently, and only on this one route. That
+// is how the workspace ended up with a second copy of .control-checkbox whose
+// own comment noted the layered original had stopped having any effect.
+// Page CSS may position and compose; restating a shared component is the bug.
+{
+  const selectorsOf = (name) => {
+    const text = stripCssComments(fs.readFileSync(path.join(root, name), "utf8"));
+    const found = new Map();
+    // Keyframe steps (`from`, `to`, `50%`) are per-animation, never shared
+    // components — two animations legitimately both have a `from`.
+    const keyframeStep = /^(from|to|[\d.]+%)$/;
+    for (const match of text.matchAll(/([^{}@;][^{}]*?)\{/g)) {
+      const selector = match[1].trim();
+      if (!selector || selector.includes("@")) continue;
+      const line = text.slice(0, match.index).split("\n").length;
+      for (const part of selector.split(",")) {
+        const one = part.trim();
+        if (!one || keyframeStep.test(one)) continue;
+        if (!found.has(one)) found.set(one, line);
+      }
+    }
+    return found;
+  };
+  const shared = selectorsOf("app/globals.css");
+  // Layout that the page legitimately owns on top of a shared shell.
+  const allowed = new Set([".recipe-print-shell"]);
+  for (const [selector, line] of selectorsOf("app/print/print.css")) {
+    if (!shared.has(selector) || allowed.has(selector)) continue;
+    report(
+      path.join(root, "app/print/print.css"),
+      line,
+      `${selector} is already defined in app/globals.css:${shared.get(selector)} — page CSS must not restate a shared component`,
+    );
+  }
 }
 
 if (failures.length) {

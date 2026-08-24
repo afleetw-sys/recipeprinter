@@ -46,7 +46,25 @@ export type AccountSaveStatus =
   | "conflict"
   | "adoption";
 
-const STATUS_LABEL: Record<AccountSaveStatus, string> = {
+/**
+ * Statuses that mean something actually went wrong.
+ *
+ * The workspace surfaces the save state only for these. Leaving now files the
+ * project on the way out, so "Saving…" and "Saved" narrate work nobody asked
+ * about — but a failure is the one case where silence costs someone their book,
+ * so it still has to be said. Kept beside the labels so the two lists cannot
+ * drift into disagreeing about what counts as failure — and it is the same
+ * question `SaveStatus` asks below to decide what earns a Retry, deliberately
+ * one list rather than two that could answer differently.
+ */
+export const SAVE_FAILURES = new Set<AccountSaveStatus>([
+  "offline",
+  "error",
+  "conflict",
+  "adoption",
+]);
+
+export const SAVE_STATUS_LABEL: Record<AccountSaveStatus, string> = {
   saving: "Saving…",
   saved: "Saved",
   offline: "Offline — changes pending",
@@ -54,9 +72,6 @@ const STATUS_LABEL: Record<AccountSaveStatus, string> = {
   conflict: "Newer version found",
   adoption: "Finish saving to your account",
 };
-
-/** Statuses that mean something went wrong and can be tried again. */
-const RETRYABLE = new Set<AccountSaveStatus>(["error", "conflict", "adoption", "offline"]);
 
 /**
  * What is happening to this document, said where the account is.
@@ -83,7 +98,7 @@ function SaveStatus({
   status: AccountSaveStatus;
   onRetry?: () => void;
 }) {
-  const failed = RETRYABLE.has(status);
+  const failed = SAVE_FAILURES.has(status);
   const icon =
     status === "saving" ? (
       <SpinnerIcon size={ICON_SIZE.sm} />
@@ -95,7 +110,7 @@ function SaveStatus({
     return (
       <span className="rp-save-status" role="status" aria-live="polite">
         {icon}
-        {STATUS_LABEL[status]}
+        {SAVE_STATUS_LABEL[status]}
       </span>
     );
   }
@@ -107,7 +122,7 @@ function SaveStatus({
       onClick={onRetry}
       aria-live="polite"
     >
-      {STATUS_LABEL[status]}
+      {SAVE_STATUS_LABEL[status]}
       <span className="rp-save-status__retry">Retry</span>
     </button>
   );
@@ -170,6 +185,7 @@ export function AccountControl({
            for a browser with no record of an account, or in the moment before
            the chunk lands for one that has. */
         <IconButton
+          data-rp-avatar
           className="border border-line bg-card text-ink-soft hover:text-ink hover:border-ink-soft"
           aria-label="Sign in to Recipe Printer"
           title="Sign in to Recipe Printer"
@@ -178,7 +194,7 @@ export function AccountControl({
             setShowMenu(true);
           }}
         >
-          <AccountIcon size={ICON_SIZE.lg} />
+          <AccountIcon size={ICON_SIZE.md} />
         </IconButton>
       )}
     </div>

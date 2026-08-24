@@ -2,7 +2,7 @@
 
 import type { Dispatch, ReactNode, SetStateAction } from "react";
 import { Checkbox, CheckboxGroup, SelectTile } from "@/components/Controls";
-import { Select } from "@/components/Select";
+import { SelectMenu } from "@/components/Select";
 import {
   PRINT_CARD_SIZE_OPTIONS,
   type PrintCardSize,
@@ -34,6 +34,8 @@ interface PrintSetupControlsProps {
  * settings slot, and the plain-cards Include toggles (photo / link). The theme
  * grid and the Print button live alongside this in the panel.
  */
+const PRINT_CARD_SIZE_LABELS = PRINT_CARD_SIZE_OPTIONS.map(({ id, label }) => ({ id, label }));
+
 export function PrintSetupControls({
   cookbookMode,
   cardSize,
@@ -57,19 +59,16 @@ export function PrintSetupControls({
           <label className="recipe-config-label" htmlFor="recipe-print-size">
             Size
           </label>
-          <Select
+          {/* Our own menu rather than the OS's, so the list matches every other
+              menu in the workspace. Labels only — each size also carries a
+              `detail`, but "Full page" and "6 x 4 card" already say it. */}
+          <SelectMenu
             id="recipe-print-size"
-            className="field"
-            variant="compact"
+            label="Card size"
             value={cardSize}
-            onChange={(event) => setCardSize(event.target.value as PrintCardSize)}
-          >
-            {PRINT_CARD_SIZE_OPTIONS.map((option) => (
-              <option key={option.id} value={option.id}>
-                {option.label}
-              </option>
-            ))}
-          </Select>
+            options={PRINT_CARD_SIZE_LABELS}
+            onChange={(next) => setCardSize(next as PrintCardSize)}
+          />
         </div>
       )}
 

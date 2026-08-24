@@ -64,6 +64,12 @@ interface UseDeckScrollerOptions {
   singleRecipePrintView: boolean;
   pageWidth: number;
   pageHeight: number;
+  /** Anything outside this hook that changes how much room the deck has —
+      folding a side panel away, for instance. The ResizeObserver alone is not
+      enough: collapsing a grid column settles over more than one frame, and the
+      observation that lands can be the one taken before the track resolved,
+      leaving the scale sized for the old width. Changing this re-measures. */
+  layoutKey?: string;
 }
 
 // One pending "restore snapping" cleanup per deck, so back-to-back programmatic
@@ -117,6 +123,7 @@ export function useDeckScroller({
   singleRecipePrintView,
   pageWidth,
   pageHeight,
+  layoutKey,
 }: UseDeckScrollerOptions) {
   const [canvasSide, setCanvasSide] = useState<"front" | "back">("front");
   const [deckScale, setDeckScale] = useState(0.5);
@@ -222,7 +229,20 @@ export function useDeckScroller({
       if (availW > 0 && availH > 0) {
         const widthScale = availW / pageWidth;
         const heightScale = (availH * (mobile ? 0.86 : 0.74)) / pageHeight;
-        const scale = Math.max(0.12, Math.min(1.05, widthScale, heightScale));
+        // A page can never be taller than the SNAPPORT. `scroll-snap-align:
+        // center` centres against the snapport, so a page taller than it
+        // cannot be centred without eating into the inset — and the top half
+        // of that inset is the room the floating Edit control sits in, which
+        // would then be clipped by the deck's own overflow. This does not bind
+        // at the budget above; it is the guard that keeps the two rules
+        // consistent if the deck is ever short enough that it would.
+        const snapportScale = mobile
+          ? Infinity
+          : (availH - DECK_SCROLL_PADDING_TOP * 2) / pageHeight;
+        const scale = Math.max(
+          0.12,
+          Math.min(1.05, widthScale, heightScale, snapportScale),
+        );
         setDeckScale(scale);
         // Give the CSS top padding (see `--deck-top-pad` in globals.css) the
         // exact offset that centres the first slide, computed analytically
@@ -231,12 +251,14 @@ export function useDeckScroller({
         // resting position, with no gap above it left to overscroll into.
         if (!mobile) {
           // Centre the first card inside the SNAPPORT (the viewport inset by
-          // `scroll-padding-top`), not the raw viewport — the same geometry
-          // `snapScrollTopFor` uses. Centring against the raw viewport put the
-          // first slide's resting place half the padding away from its own snap
-          // point, so it drifted the moment snapping re-engaged. The padding
-          // itself is the control clearance, so this can never fall below it.
-          const snapportHeight = availH - DECK_SCROLL_PADDING_TOP;
+          // `scroll-padding-top` AND `-bottom`), not the raw viewport — the
+          // same geometry `snapScrollTopFor` uses. Centring against the raw
+          // viewport put the first slide's resting place half the padding away
+          // from its own snap point, so it drifted the moment snapping
+          // re-engaged. The inset is equal at both ends, so the snapport's
+          // centre is the deck's centre and the top inset still guarantees the
+          // control clearance.
+          const snapportHeight = availH - DECK_SCROLL_PADDING_TOP * 2;
           const topPad =
             DECK_SCROLL_PADDING_TOP +
             Math.max(0, (snapportHeight - pageHeight * scale) / 2);
@@ -248,7 +270,7 @@ export function useDeckScroller({
     const observer = new ResizeObserver(update);
     observer.observe(el);
     return () => observer.disconnect();
-  }, [deckNode, cardSize, sheetsLength, pageWidth, pageHeight]);
+  }, [deckNode, cardSize, sheetsLength, pageWidth, pageHeight, layoutKey]);
 
   const centerSlide = useCallback(
     (index: number, behavior: ScrollBehavior = "auto") => {

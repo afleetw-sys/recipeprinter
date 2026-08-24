@@ -277,6 +277,8 @@ export function PageRail(props: PageRailProps) {
     { x: number; y: number; ids: string[]; label: string } | null
   >(null);
   const tileMenuRef = useRef<HTMLDivElement | null>(null);
+  const addMenuTriggerRef = useRef<HTMLButtonElement | null>(null);
+  const addMenuPanelRef = useRef<HTMLDivElement | null>(null);
 
   function openTileMenu(event: ReactMouseEvent, recipeId: string, label: string) {
     event.preventDefault();
@@ -302,6 +304,36 @@ export function PageRail(props: PageRailProps) {
     node.style.left = `${Math.max(8, Math.min(tileMenu.x, window.innerWidth - rect.width - 8))}px`;
     node.style.top = `${Math.max(8, Math.min(tileMenu.y, window.innerHeight - rect.height - 8))}px`;
   }, [tileMenu]);
+
+  /* The Add overflow is portalled to the body and placed by hand.
+     It used to be an absolutely-positioned child of the add row, which put it
+     inside `.recipe-page-rail` — and that is the rail's scroll container
+     (`overflow-y: auto`, which forces overflow-x to compute to auto too), so
+     the menu was clipped at the rail's edge and never actually seen. It also
+     opened UPWARD, from when Add was pinned to the BOTTOM of the rail; with the
+     button at the top, that put the menu off the top of the panel.
+
+     Now: fixed, below the caret, right edge aligned to it, clamped to the
+     viewport. Reposition on scroll and resize so it tracks the trigger. */
+  useLayoutEffect(() => {
+    if (!addMenuOpen) return;
+    function place() {
+      const panel = addMenuPanelRef.current;
+      const trigger = addMenuTriggerRef.current;
+      if (!panel || !trigger) return;
+      const t = trigger.getBoundingClientRect();
+      const p = panel.getBoundingClientRect();
+      panel.style.left = `${Math.max(8, Math.min(t.right - p.width, window.innerWidth - p.width - 8))}px`;
+      panel.style.top = `${Math.max(8, Math.min(t.bottom + 6, window.innerHeight - p.height - 8))}px`;
+    }
+    place();
+    window.addEventListener("resize", place);
+    window.addEventListener("scroll", place, true);
+    return () => {
+      window.removeEventListener("resize", place);
+      window.removeEventListener("scroll", place, true);
+    };
+  }, [addMenuOpen]);
 
   useEffect(() => {
     if (!tileMenu) return;
@@ -342,6 +374,22 @@ export function PageRail(props: PageRailProps) {
       })
     : [];
 
+  /**
+   * The page number a thumbnail stands for.
+   *
+   * Not its position in the rail. Those are different numbers and they drift
+   * apart in both directions: the rail counts the cover and the contents,
+   * which print no folio, so it runs ahead — and a facing full-page photo has
+   * no tile of its own, so it runs behind.
+   *
+   * Front matter says nothing rather than borrowing a position and calling it
+   * a page.
+   */
+  const railPageLabel = (navItem: NavItem): string => {
+    const page = sheets[navItem.sheetIndex]?.pageNumber;
+    return page === undefined ? "" : String(page);
+  };
+
   return (
         <nav
           ref={railScrollRef}
@@ -350,6 +398,106 @@ export function PageRail(props: PageRailProps) {
           }`}
           aria-label="Pages"
         >
+          {/* What is in this project, and the two things you do to it as a
+              WHOLE — add to it, and rearrange it. They were at the very bottom
+              of the rail, below every thumbnail, which put "Add recipes" an
+              entire book's worth of scrolling away from the top of the list it
+              adds to. Sticky rather than moved outside the scroller: this
+              `<nav>` IS the scroll container (`railScrollRef`, which the deck's
+              scroll-sync reads), and lifting the header out of it would mean
+              restructuring that relationship for a visual result sticky already
+              gives. */}
+          {!organizeMode && (
+            <div className="recipe-page-rail__head">
+              {/* Adding a recipe gets the rail's full width. It had been
+                  squeezed onto one line beside a recipe count, which cost the
+                  primary action of this panel most of its size to state a
+                  number you can also just see in the list underneath. */}
+              <div className="recipe-page-rail__head-actions">
+            <div className="recipe-page-rail__add-row" ref={addMenuRef}>
+              <button
+                type="button"
+                /* `btn-compact` like every other button in the chrome; it was
+                   the only one without it and sat a size larger than Save and
+                   Print for no visible reason. */
+                className={`btn btn-neutral btn-compact recipe-page-rail__add-main ${
+                  projectMeta.meta.cookbookMode ? "recipe-page-rail__add-main--paired" : ""
+                }`}
+                onClick={() => {
+                  setAddMenuOpen(false);
+                  openAddRecipeBelow();
+                }}
+              >
+                {/* `md`, the size Save and Buy & Print use for theirs. The type
+                    already matched them; the icon was a step down, which made the
+                    whole button read as smaller than the ones in the header. */}
+                <PlusIcon size={ICON_SIZE.md} />
+                Add recipes
+              </button>
+              {/* "Add section" is NOT here. This whole header only renders when
+                  `!organizeMode`, so the copy that used to sit at this spot was
+                  gated on `organizeMode` inside a block that guarantees the
+                  opposite — unreachable, and the button simply vanished from the
+                  organizer. It lives in the organizer's own toolbar now, which
+                  is the only place it was ever meant to appear. */}
+              {projectMeta.meta.cookbookMode && !organizeMode && (
+                <>
+                  <button
+                    ref={addMenuTriggerRef}
+                    type="button"
+                    className="recipe-page-rail__add-menu-trigger"
+                    aria-haspopup="menu"
+                    aria-expanded={addMenuOpen}
+                    aria-label="More add options"
+                    onClick={() => setAddMenuOpen((open) => !open)}
+                  >
+                    <ChevronDownIcon size={ICON_SIZE.sm} />
+                  </button>
+                  {addMenuOpen &&
+                    createPortal(
+                      <div ref={addMenuPanelRef} className="recipe-page-rail__add-menu" role="menu">
+                        <button
+                          type="button"
+                          role="menuitem"
+                          onClick={() => {
+                            setAddMenuOpen(false);
+                            addSectionDivider();
+                          }}
+                        >
+                          <PlusIcon size={ICON_SIZE.sm} />
+                          Add section
+                        </button>
+                      </div>,
+                      document.body,
+                    )}
+                </>
+              )}
+            </div>
+            </div>
+            {/* The collapse arrow is NOT here. It lives on the rail's own edge
+                (see `.recipe-panel-toggle`), where it stays put whether the
+                rail is open or folded — an arrow inside the panel can only be
+                the one that closes it, so it has to be replaced by a different
+                control somewhere else the moment it works. */}
+            {projectMeta.meta.cookbookMode && (
+                <button
+                  type="button"
+                  className="btn btn-secondary btn-compact recipe-page-rail__organize"
+                  onClick={enterOrganizeMode}
+                >
+                  {/* Just "Organize". Stacked under "Add recipes" in a panel that
+                      holds nothing but recipes, the second "recipes" said nothing
+                      the first had not — and the view it opens announces itself as
+                      "Organize recipes" once you are there. Add keeps its noun,
+                      because there it separates the button from the "Add section"
+                      in its own overflow. */}
+                  <span>Organize</span>
+                  <ChevronRightIcon size={ICON_SIZE.sm} />
+                </button>
+              )}
+            </div>
+          )}
+
           {organizeMode && (
             <div className="recipe-organize-bar">
               <div className="recipe-organize-bar__heading">
@@ -408,11 +556,34 @@ export function PageRail(props: PageRailProps) {
                     Undo. */}
                 <button
                   type="button"
-                  className="recipe-organize-bar__auto"
+                  className="btn btn-secondary btn-compact recipe-organize-bar__auto"
                   onClick={canUndoOrganization ? undoCookbookOrganization : suggestCookbookLayout}
                 >
-                  <RefreshIcon size={ICON_SIZE.sm} />
+                  <RefreshIcon size={ICON_SIZE.md} />
                   <span>{canUndoOrganization ? "Undo organizing" : "Organize it for me"}</span>
+                </button>
+                {/* Sections are made in here, so the control to make one is in
+                    here too. Two jobs, one button: with recipes selected it
+                    wraps THOSE into a new section, and with nothing selected it
+                    drops an empty one — which is why it sits beside the other
+                    whole-book actions rather than on any single section. */}
+                <button
+                  type="button"
+                  className="btn btn-secondary btn-compact recipe-organize-bar__add-section"
+                  data-rail-new-section
+                  onClick={() => {
+                    if (effectiveRailSelection.size > 0) makeSectionFromSelection();
+                    else addSectionDivider();
+                  }}
+                >
+                  <PlusIcon size={ICON_SIZE.md} />
+                  {/* One label, not one per branch. A label that changes with
+                      the selection re-widths the button, and the toolbar it
+                      shares a row with reflows around it — at which point
+                      "Organize recipes" wraps to two lines every time you tick
+                      a recipe. The behaviour still reads: you selected some
+                      recipes, you pressed Add section, they are in it. */}
+                  <span>Add section</span>
                 </button>
                 {/* Icon-only, so it wears the icon button rather than a
                     button-shaped exception beside Sort and Organize. */}
@@ -430,13 +601,13 @@ export function PageRail(props: PageRailProps) {
           {projectMeta.meta.cookbookMode && !projectMeta.meta.cover && (
             <button
               type="button"
-              className="recipe-page-rail__add-cover"
+              className="btn btn-secondary btn-compact recipe-page-rail__add-cover"
               onClick={() => {
                 setAddMenuOpen(false);
                 addCover();
               }}
             >
-              <PlusIcon size={ICON_SIZE.sm} />
+              <PlusIcon size={ICON_SIZE.md} />
               Add cover
             </button>
           )}
@@ -463,7 +634,13 @@ export function PageRail(props: PageRailProps) {
                 // (dedication + contents, or two different recipes) splits into
                 // one single-page thumbnail each.
                 type RailUnit = {
-                  num: number;
+                  /** The page this tile starts at. A tile can hold two pages —
+                      a photo and its recipe, an opener and its facing photo —
+                      and it is labelled with the first of them, so the numbers
+                      down the rail read 8, 10, 12 rather than 8–9, 10–11. The
+                      second page of a pair has no separate tile to sit on, so
+                      naming it would be labelling something you cannot go to. */
+                  num: string;
                   index: number;
                   focusSheet: number | null;
                   nav: NavItem | null;
@@ -472,9 +649,17 @@ export function PageRail(props: PageRailProps) {
                   soleUnit: boolean;
                   sectionId: string | null;
                 };
+                /** The first page a tile stands for, or nothing when it stands
+                    for front matter that carries no folio. */
+                const startPageLabel = (thumbSheets: number[]): string => {
+                  const pages = thumbSheets
+                    .map((sheetIndex) => sheets[sheetIndex]?.pageNumber)
+                    .filter((page): page is number => page !== undefined);
+                  return pages.length === 0 ? "" : String(Math.min(...pages));
+                };
                 const rawUnits: RailUnit[] = [];
                 const addUnit = (unit: Omit<RailUnit, "num">) =>
-                  rawUnits.push({ ...unit, num: rawUnits.length + 1 });
+                  rawUnits.push({ ...unit, num: startPageLabel(unit.thumbSheets) });
                 spreads.forEach((spread, index) => {
                   const leftNav = navFor(spread.left);
                   const rightNav = navFor(spread.right);
@@ -557,10 +742,12 @@ export function PageRail(props: PageRailProps) {
                     // would overflow it, and adds nothing to a stand-in.
                     previous.thumbSheets = [...previous.thumbSheets, ...unit.thumbSheets].slice(0, 2);
                     // The merged tile now owns its whole spread position.
+                    // The merged tile now starts where its first face does.
+                    previous.num = startPageLabel(previous.thumbSheets);
                     previous.soleUnit = true;
                     return;
                   }
-                  units.push({ ...unit, num: units.length + 1 });
+                  units.push({ ...unit });
                 });
                 const groups: Array<{ key: string; sectionId: string | null; units: RailUnit[] }> = [];
                 units.forEach((unit) => {
@@ -569,7 +756,7 @@ export function PageRail(props: PageRailProps) {
                     previous.units.push(unit);
                   } else {
                     groups.push({
-                      key: unit.sectionId ? `${unit.sectionId}-${unit.num}` : `unit-${unit.num}`,
+                      key: unit.sectionId ? `${unit.sectionId}-${unit.index}` : `unit-${unit.index}`,
                       sectionId: unit.sectionId,
                       units: [unit],
                     });
@@ -665,8 +852,14 @@ export function PageRail(props: PageRailProps) {
                       } ${(recipeNav || dividerSection) ? "recipe-page-rail__item--draggable" : ""} ${
                         recipeNav && railShake?.recipeId === recipeNav.recipeId ? "is-shaking" : ""
                       } ${recipeNav && effectiveRailSelection.has(recipeNav.recipeId) ? "is-selected" : ""}`}
+                      /* Right-click moves a recipe to a section in the page
+                         rail as well as in the organizer. It was gated on
+                         organize mode, so the same gesture on the same tile
+                         did something in one view and nothing in the other —
+                         and the rail is where you spend your time, so it was
+                         missing from the place people would try it first. */
                       onContextMenu={
-                        organizeMode && recipeNav
+                        recipeNav
                           ? (event) => openTileMenu(event, recipeNav.recipeId, `“${unit.label}”`)
                           : undefined
                       }
@@ -820,7 +1013,7 @@ export function PageRail(props: PageRailProps) {
                       goToSlide(index);
                     }}
                   >
-                    <span className="recipe-page-rail__num">{index + 1}</span>
+                    <span className="recipe-page-rail__num">{railPageLabel(navItem)}</span>
                     <LazyRailThumb
                       scrollRef={railScrollRef}
                       className="recipe-page-rail__thumb"
@@ -859,79 +1052,6 @@ export function PageRail(props: PageRailProps) {
               exists yet. The real page appears only once parsing completes. */}
           {!pendingAddAfterRecipeId && <PendingImportRows items={pendingImportItems} canRetry={queue.canRetry} onRetry={queue.retry} onRemove={queue.remove} />}
 
-          <div className="recipe-page-rail__footer">
-            <div className="recipe-page-rail__add-row" ref={addMenuRef}>
-              <button
-                type="button"
-                className={`btn btn-secondary recipe-page-rail__add-main ${
-                  projectMeta.meta.cookbookMode ? "recipe-page-rail__add-main--paired" : ""
-                }`}
-                onClick={() => {
-                  setAddMenuOpen(false);
-                  openAddRecipeBelow();
-                }}
-              >
-                <PlusIcon size={ICON_SIZE.md} />
-                Add recipes
-              </button>
-              {/* In a cookbook the section action folds into a split-button
-                  overflow, so the primary control reads plainly as "Add recipes". */}
-              {projectMeta.meta.cookbookMode && organizeMode && (
-                <button
-                  type="button"
-                  className="btn btn-secondary recipe-page-rail__add-section"
-                  data-rail-new-section
-                  onClick={() => {
-                    if (effectiveRailSelection.size > 0) makeSectionFromSelection();
-                    else addSectionDivider();
-                  }}
-                >
-                  <PlusIcon size={ICON_SIZE.md} />
-                  Add section
-                </button>
-              )}
-              {projectMeta.meta.cookbookMode && !organizeMode && (
-                <>
-                  <button
-                    type="button"
-                    className="recipe-page-rail__add-menu-trigger"
-                    aria-haspopup="menu"
-                    aria-expanded={addMenuOpen}
-                    aria-label="More add options"
-                    onClick={() => setAddMenuOpen((open) => !open)}
-                  >
-                    <ChevronDownIcon size={ICON_SIZE.sm} />
-                  </button>
-                  {addMenuOpen && (
-                    <div className="recipe-page-rail__add-menu" role="menu">
-                      <button
-                        type="button"
-                        role="menuitem"
-                        onClick={() => {
-                          setAddMenuOpen(false);
-                          addSectionDivider();
-                        }}
-                      >
-                        <PlusIcon size={ICON_SIZE.sm} />
-                        Add section
-                      </button>
-                    </div>
-                  )}
-                </>
-              )}
-            </div>
-            {projectMeta.meta.cookbookMode && (
-              <button
-                type="button"
-                className="recipe-page-rail__organize"
-                onClick={enterOrganizeMode}
-              >
-                <span>Organize recipes</span>
-                <ChevronRightIcon size={ICON_SIZE.sm} />
-              </button>
-            )}
-
-          </div>
           {tileMenu &&
             createPortal(
               <div

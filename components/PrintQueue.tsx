@@ -39,6 +39,20 @@ function RecipeCardItem({
 }) {
   const itemRef = useRef<HTMLLIElement | null>(null);
   const [shaking, setShaking] = useState(false);
+  /**
+   * The cover image asked for one and never arrived.
+   *
+   * A recipe's `image` is a URL on someone else's site, so "we have one" and
+   * "it loads" are different facts. Plenty of them 404, get moved, or refuse
+   * to be hotlinked, and the browser's answer to that is a broken-image glyph
+   * — which reads as OUR page being broken rather than as their photo being
+   * gone. The no-image fallback was already sitting right here for recipes
+   * that never had one; this just routes failures into it too.
+   *
+   * Keyed by URL so a retry, or an edit that changes the photo, gets a fresh
+   * attempt instead of inheriting the previous one's failure.
+   */
+  const [failedImage, setFailedImage] = useState<string | null>(null);
   const ready = item.status === "ready";
   const recipe = item.recipe;
   const time = totalTime(recipe);
@@ -67,7 +81,7 @@ function RecipeCardItem({
       <div className="block w-full text-left rounded-xl overflow-hidden bg-card border border-line">
         {/* Cover */}
         <div className="relative aspect-[3/2] bg-page overflow-hidden">
-          {recipe?.image ? (
+          {recipe?.image && failedImage !== recipe.image ? (
             // eslint-disable-next-line @next/next/no-img-element
             <img
               src={recipe.image}
@@ -75,6 +89,7 @@ function RecipeCardItem({
               loading="lazy"
               decoding="async"
               className="w-full h-full object-cover"
+              onError={() => setFailedImage(recipe.image ?? null)}
             />
           ) : (
             <div className="w-full h-full grid place-items-center opacity-40">

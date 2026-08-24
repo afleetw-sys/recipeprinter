@@ -7,10 +7,18 @@ import type { SVGProps } from "react";
 // close buttons at both 16 and 17, and meta icons split between 13 and 14).
 // Icons that intentionally stand out on their own — empty-state graphics,
 // the upload dropzone glyph — size themselves directly instead of using this.
+// Which step a given icon takes is decided by WHAT IT SITS IN, not by the call
+// site, or the same button ends up with a 16px glyph on one side and a 14px one
+// on the other (the rail's Add carried exactly that pair):
+//   - a LEADING icon takes its control's size — `md` inside any .btn, so Save,
+//     Print, Add recipes, Add cover and Organize it for me all match;
+//   - a TRAILING disclosure chevron takes the TEXT's size (`sm`), because it
+//     belongs to the label rather than to the button;
+//   - meta icons beside small text are `sm`; glyphs inside a status chip `xs`.
 export const ICON_SIZE = {
   xs: 12, // micro badges, inline chip checkmarks
-  sm: 14, // meta icons (clock/servings/external-link) next to small text
-  md: 16, // buttons, close icons, standard controls
+  sm: 14, // meta icons (clock/servings/external-link), trailing chevrons
+  md: 16, // leading icons in buttons, close icons, standard controls
   lg: 18, // default size — nav/toolbar icons, matches Base's own default
 } as const;
 
@@ -144,6 +152,16 @@ export const PrintIcon = (p: IconProps) => (
     <path d="M7 9V3h10v6" />
     <path d="M7 19H5a2 2 0 01-2-2v-4a2 2 0 012-2h14a2 2 0 012 2v4a2 2 0 01-2 2h-2" />
     <rect x="7" y="15" width="10" height="6" rx="1" />
+  </Base>
+);
+
+/** Floppy disk — the conventional "save" glyph, and the only one people read
+    as save rather than as download or upload. */
+export const SaveIcon = (p: IconProps) => (
+  <Base {...p}>
+    <path d="M5 3h11l5 5v13a1 1 0 01-1 1H5a1 1 0 01-1-1V4a1 1 0 011-1z" />
+    <path d="M8 3v6h7V3" />
+    <path d="M8 21v-7h8v7" />
   </Base>
 );
 

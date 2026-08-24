@@ -42,7 +42,10 @@ const TEMPLATE_THUMB_SIZE: PrintCardSize = "card-6x4";
 // edges running off under a soft mask fade. Bumping ZOOM trades how much of the
 // card is visible for how large the type reads.
 const TEMPLATE_THUMB_ZOOM = 1.95;
-const TEMPLATE_THUMB_HEIGHT = 86;
+// Taller shows more of the card — the header plus a few rows of ingredients
+// and steps, rather than stopping just past the title. The zoom above is what
+// keeps the type legible; this is how much of the card that type belongs to.
+const TEMPLATE_THUMB_HEIGHT = 108;
 
 export function TemplateThumbnail({ template }: { template: RecipePrintTemplate }) {
   const dims = PAGE_DIMS[TEMPLATE_THUMB_SIZE];

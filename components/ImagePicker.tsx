@@ -71,7 +71,12 @@ export function ImagePicker({
   // caller drives it through `gridActive`.
   const selectedGrid = (gridImages ?? []).filter(Boolean);
   const gridMode = gridActive && Boolean(onGridChange);
-  const placementNone = recipeMode && placement === "none";
+  /* "None" hides the photo, so there is nothing to pick a photo FOR — unless
+     there is no photo yet, in which case hiding the picker is the thing that
+     traps you: the dialog offers three placements, two of them do nothing
+     visible without a photo, and the one control that would give you one is
+     the control being hidden. With no photo, the upload always shows. */
+  const placementNone = recipeMode && placement === "none" && Boolean(current);
   // The "Photo grid" choice shows for the cover always, and for a placement
   // dialog only under Full page — where it toggles the single facing photo into
   // a collage. (Recipes pass no `onSelectGrid`, so it never shows for them.)
@@ -180,7 +185,7 @@ export function ImagePicker({
 
         {placementNone ? (
           <p className="image-picker__placement-note">
-            No photo here. Pick a placement above to add one.
+            This recipe&rsquo;s photo is hidden. Pick a placement above to show it.
           </p>
         ) : (
         <>
