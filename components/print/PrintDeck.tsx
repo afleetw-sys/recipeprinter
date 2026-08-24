@@ -52,6 +52,16 @@ type CoverSide = "front" | "back" | "dedication";
 const DECK_WINDOW = 2;
 
 /**
+ * How far the pointer has to travel before a press counts as a drag across
+ * text rather than a click that wobbled. Matches the slop browsers themselves
+ * allow before they start extending a selection.
+ */
+const TEXT_DRAG_SLOP = 6;
+
+/** The recipe's two text columns — the only places a drag means "edit this". */
+const TEXT_COLUMNS = ".recipe-card__ingredients, .recipe-card__method";
+
+/**
  * The exact box a real page occupies, with nothing in it.
  *
  * `.recipe-page-scaler` takes its size purely from these three custom
@@ -521,6 +531,48 @@ export function PrintDeck(props: PrintDeckProps) {
     setEditingCoverSide(coverSideFromNavItem(navItem));
   };
 
+  /**
+   * Dragging across a recipe's ingredients or steps opens its editor too.
+   * Sweeping the pointer over a line is the same instinct the double-click
+   * serves — you are pointing at the words you mean to change — just said as
+   * "select this bit so I can fix it". The selection itself doesn't survive
+   * the lines turning into fields, and doesn't need to: the field they were
+   * aiming at is now sitting under the cursor, one click from a caret.
+   *
+   * Only the two text columns. A drag over the title, the photo, or the
+   * margins is far more often someone scrolling or nudging the page than
+   * someone aiming at text, and making those flip a mode would leave the deck
+   * feeling booby-trapped.
+   */
+  const openEditOnTextDrag =
+    (navItem: NavItem, focused: boolean) => (event: ReactMouseEvent) => {
+      // Never the second press of a double-click: that gesture is already
+      // handled above, and letting both fire would turn edit mode on and then
+      // straight back off.
+      if (event.button !== 0 || event.detail >= 2) return;
+      // Edit mode applies to the focused page, so an unfocused one would open
+      // the wrong recipe's editor — and the click that focuses it resets edit
+      // mode anyway. The first drag focuses the page; a second one edits it.
+      if (!focused || pageEditMode) return;
+      // A continued page is the runover of a recipe edited from its first page.
+      if (navItem.kind !== "recipe" || navItem.continued) return;
+      const target = event.target as HTMLElement;
+      if (!target.closest(TEXT_COLUMNS)) return;
+      if (target.closest("button, a, input, textarea")) return;
+      const startX = event.clientX;
+      const startY = event.clientY;
+      // Listened for on the window, not the page: a selection dragged off the
+      // edge of the card ends its mouseup out there, and is still a selection.
+      const onMouseUp = (up: MouseEvent) => {
+        window.removeEventListener("mouseup", onMouseUp);
+        if (Math.hypot(up.clientX - startX, up.clientY - startY) < TEXT_DRAG_SLOP) return;
+        const selection = window.getSelection();
+        if (!selection || selection.isCollapsed) return;
+        togglePageEditMode();
+      };
+      window.addEventListener("mouseup", onMouseUp);
+    };
+
   return (
         <section
           className="recipe-page-canvas"
@@ -708,6 +760,7 @@ export function PrintDeck(props: PrintDeckProps) {
                         // does nothing, which is right — there is no text there
                         // to have been aiming at.
                         onDoubleClick={openEditOnDoubleClick(pageNav)}
+                        onMouseDown={openEditOnTextDrag(pageNav, isFocused)}
                       >
                         {renderDeckPage(pageNav, pageSheet, isFocused, role)}
                       </div>
@@ -791,6 +844,7 @@ export function PrintDeck(props: PrintDeckProps) {
                     goToSlide(index);
                   }}
                   onDoubleClick={openEditOnDoubleClick(navItem)}
+                  onMouseDown={openEditOnTextDrag(navItem, isActive)}
                   role="button"
                   tabIndex={0}
                   aria-current={isActive}
