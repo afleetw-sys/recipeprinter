@@ -36,6 +36,11 @@
   --cp-overlay-hover: rgba(127, 127, 127, 0.08);
   --cp-overlay-hover-strong: rgba(127, 127, 127, 0.1);
   --cp-surface-muted: #f6f8fa;
+  /* The fill behind .btn-neutral. A true neutral, not a mix off --cp-ink-soft:
+     a filled button wants to read as a plain grey chip, and the blue cast that
+     suits a page background made it look tinted at this size. */
+  --cp-surface-strong: #efefef;
+  --cp-surface-strong-hover: #e4e4e4;
 
   /* ── Font-size scale ──────────────────────────────────────────────────────
      One shared type scale so titles, buttons, labels, and body copy read as
@@ -889,6 +894,19 @@
   .btn-primary {
     background: var(--cp-ink);
     color: var(--cp-card);
+  }
+
+  /* Filled neutral — a third weight, between the ink primary and the outlined
+     secondary. Use it where a control has to be FOUND but is not the page's
+     one main action: a filled chip separates from a white surface in a way an
+     outline never does, without claiming the weight that ink does. */
+  .btn-neutral {
+    border: 1px solid transparent;
+    background: var(--cp-surface-strong);
+    color: var(--cp-ink);
+  }
+  .btn-neutral:hover:not(:disabled) {
+    background: var(--cp-surface-strong-hover);
   }
 
   /* Outlined, secondary action */
