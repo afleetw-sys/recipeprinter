@@ -434,22 +434,12 @@ export function PageRail(props: PageRailProps) {
                 <PlusIcon size={ICON_SIZE.md} />
                 Add recipes
               </button>
-              {/* In a cookbook the section action folds into a split-button
-                  overflow, so the primary control reads plainly as "Add recipes". */}
-              {projectMeta.meta.cookbookMode && organizeMode && (
-                <button
-                  type="button"
-                  className="btn btn-secondary recipe-page-rail__add-section"
-                  data-rail-new-section
-                  onClick={() => {
-                    if (effectiveRailSelection.size > 0) makeSectionFromSelection();
-                    else addSectionDivider();
-                  }}
-                >
-                  <PlusIcon size={ICON_SIZE.md} />
-                  Add section
-                </button>
-              )}
+              {/* "Add section" is NOT here. This whole header only renders when
+                  `!organizeMode`, so the copy that used to sit at this spot was
+                  gated on `organizeMode` inside a block that guarantees the
+                  opposite — unreachable, and the button simply vanished from the
+                  organizer. It lives in the organizer's own toolbar now, which
+                  is the only place it was ever meant to appear. */}
               {projectMeta.meta.cookbookMode && !organizeMode && (
                 <>
                   <button
@@ -566,6 +556,29 @@ export function PageRail(props: PageRailProps) {
                 >
                   <RefreshIcon size={ICON_SIZE.md} />
                   <span>{canUndoOrganization ? "Undo organizing" : "Organize it for me"}</span>
+                </button>
+                {/* Sections are made in here, so the control to make one is in
+                    here too. Two jobs, one button: with recipes selected it
+                    wraps THOSE into a new section, and with nothing selected it
+                    drops an empty one — which is why it sits beside the other
+                    whole-book actions rather than on any single section. */}
+                <button
+                  type="button"
+                  className="btn btn-secondary btn-compact recipe-organize-bar__add-section"
+                  data-rail-new-section
+                  onClick={() => {
+                    if (effectiveRailSelection.size > 0) makeSectionFromSelection();
+                    else addSectionDivider();
+                  }}
+                >
+                  <PlusIcon size={ICON_SIZE.md} />
+                  {/* One label, not one per branch. A label that changes with
+                      the selection re-widths the button, and the toolbar it
+                      shares a row with reflows around it — at which point
+                      "Organize recipes" wraps to two lines every time you tick
+                      a recipe. The behaviour still reads: you selected some
+                      recipes, you pressed Add section, they are in it. */}
+                  <span>Add section</span>
                 </button>
                 {/* Icon-only, so it wears the icon button rather than a
                     button-shaped exception beside Sort and Organize. */}

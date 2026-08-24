@@ -152,6 +152,13 @@
   white-space: nowrap;
 }
 
+/* Joins that toolbar on the same terms — a shared compact button, laid out
+   only so it does not wrap or stretch. */
+.recipe-organize-bar__add-section {
+  flex: 0 0 auto;
+  white-space: nowrap;
+}
+
 /* ── In-page Organize mode ──────────────────────────────────────────────────
    This is the same navigator and the same thumbnail DOM. The grid's first
    track widens while the other two contract, then the existing section groups
@@ -843,7 +850,10 @@
   z-index: 2;
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  /* Add and Organize are two different jobs — one puts recipes in, the other
+     rearranges what is already there — so they should read as two things. At
+     6px they looked like one control split in half. */
+  gap: 10px;
   margin: -16px -16px 8px -4px;
   /* No rule under it. The header is still sticky and still carries the card
      background, so thumbnails scrolling beneath it stay covered — the line was
