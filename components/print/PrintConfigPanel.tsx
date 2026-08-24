@@ -9,6 +9,7 @@ import {
   XIcon,
 } from "@/components/icons";
 import { PrintSetupControls } from "@/components/print/PrintSetupControls";
+import { collapseAnchor } from "@/lib/collapseAnchor";
 import { ThemePicker } from "@/components/print/ThemePicker";
 import { COOKBOOK_ENABLED } from "@/lib/cookbookProduct";
 import type { PhotoStyle } from "@/lib/project";
@@ -16,8 +17,9 @@ import type { PrintCardSize, RecipePrintTemplate } from "@/components/RecipeCard
 
 interface PrintConfigPanelProps {
   configPanelRef: RefObject<HTMLElement>;
-  /** Fold the panel away, giving its width back to the page. */
-  onCollapse: () => void;
+  /** Fold the panel away, giving its width back to the page. `top` is this
+      control's own centre, measured from the shell — see `collapseAnchor`. */
+  onCollapse: (top: number) => void;
   mobileDrawer: "template" | null;
   setMobileDrawer: Dispatch<SetStateAction<"template" | null>>;
   cookbookMode: boolean;
@@ -135,7 +137,7 @@ export function PrintConfigPanel({
           className="recipe-config-panel__collapse icon-button no-print"
           aria-label="Hide settings"
           title="Hide settings"
-          onClick={onCollapse}
+          onClick={(event) => onCollapse(collapseAnchor(event.currentTarget))}
         >
           <ChevronRightIcon size={ICON_SIZE.md} />
         </button>

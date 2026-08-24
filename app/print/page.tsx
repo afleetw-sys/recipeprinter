@@ -358,6 +358,10 @@ export default function PrintPage() {
   // to look at a page, not how you want the workspace set up from now on.
   const [railCollapsed, setRailCollapsed] = useState(false);
   const [panelCollapsed, setPanelCollapsed] = useState(false);
+  // Where each collapse arrow was, so its restore tab appears in the same
+  // place rather than at some unrelated height. See lib/collapseAnchor.
+  const [railTabTop, setRailTabTop] = useState<number | null>(null);
+  const [panelTabTop, setPanelTabTop] = useState<number | null>(null);
   const [addMenuOpen, setAddMenuOpen] = useState(false);
   const addMenuRef = useRef<HTMLDivElement | null>(null);
   const [pendingAddSectionId, setPendingAddSectionId] = useState<string | null>(null);
@@ -3626,6 +3630,7 @@ export default function PrintPage() {
           <button
             type="button"
             className="recipe-panel-restore recipe-panel-restore--left no-print"
+            style={railTabTop == null ? undefined : { top: railTabTop }}
             onClick={() => setRailCollapsed(false)}
             aria-label="Show pages"
             title="Show pages"
@@ -3637,6 +3642,7 @@ export default function PrintPage() {
           <button
             type="button"
             className="recipe-panel-restore recipe-panel-restore--right no-print"
+            style={panelTabTop == null ? undefined : { top: panelTabTop }}
             onClick={() => setPanelCollapsed(false)}
             aria-label={cookbookMode ? "Show cookbook settings" : "Show print setup"}
             title={cookbookMode ? "Show cookbook settings" : "Show print setup"}
@@ -3645,7 +3651,10 @@ export default function PrintPage() {
           </button>
         )}
         <PageRail
-          onCollapse={() => setRailCollapsed(true)}
+          onCollapse={(top) => {
+            setRailTabTop(top);
+            setRailCollapsed(true);
+          }}
           railScrollRef={railScrollRef}
           railDrag={railDrag}
           railSelection={railSelection}
@@ -3780,7 +3789,10 @@ export default function PrintPage() {
         )}
 
         <PrintConfigPanel
-          onCollapse={() => setPanelCollapsed(true)}
+          onCollapse={(top) => {
+            setPanelTabTop(top);
+            setPanelCollapsed(true);
+          }}
           configPanelRef={configPanelRef}
           mobileDrawer={mobileDrawer}
           setMobileDrawer={setMobileDrawer}

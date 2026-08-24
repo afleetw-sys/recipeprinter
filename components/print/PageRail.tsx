@@ -25,6 +25,7 @@ import {
   TrashIcon,
 } from "@/components/icons";
 import { IconButton } from "@/components/Controls";
+import { collapseAnchor } from "@/lib/collapseAnchor";
 import { ScaledPage } from "@/components/print/ScaledPage";
 import { PendingImportRows } from "@/components/print/PendingImportRows";
 import { PAGE_DIMS } from "@/lib/printGeometry";
@@ -120,8 +121,10 @@ interface PageRailProps {
   continueOnBack: boolean;
   previewSourceUrlOn: boolean;
   organizeMode: boolean;
-  /** Fold the rail away, giving its width back to the page. */
-  onCollapse: () => void;
+  /** Fold the rail away, giving its width back to the page. `top` is this
+      control's own centre, measured from the shell — the restore tab uses it
+      so it appears exactly where the arrow you pressed was. */
+  onCollapse: (top: number) => void;
   enterOrganizeMode: () => void;
   exitOrganizeMode: () => void;
   projectMeta: ReturnType<typeof useProjectMeta>;
@@ -499,7 +502,7 @@ export function PageRail(props: PageRailProps) {
               )}
               <IconButton
                 className="recipe-page-rail__collapse"
-                onClick={onCollapse}
+                onClick={(event) => onCollapse(collapseAnchor(event.currentTarget))}
                 aria-label="Hide pages"
                 title="Hide pages"
               >

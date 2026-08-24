@@ -1550,6 +1550,9 @@
      panel's own tab rather than a button floating over the deck. */
   .recipe-panel-restore {
     position: absolute;
+    /* Overridden inline with the arrow's own centre the moment it is pressed
+       (see lib/collapseAnchor). 50% is the fallback for a panel collapsed
+       before any arrow has reported a position. */
     top: 50%;
     z-index: 3;
     display: grid;
@@ -5843,6 +5846,14 @@ textarea.recipe-card__toc-title {
 /* The 6x4 classic card is tight — drop the header divider so the title sits
    closer to the ingredients and steps. */
 .recipe-print-preview--card-6x4 .recipe-template--classic .recipe-card__header {
+  border-bottom: 0;
+}
+
+/* And drop it whenever Classic's header carries a photo, at any size. The rule
+   is there to close off the title block; a photo already gives that block a
+   bottom edge of its own, so the line ends up as a second boundary a few
+   millimetres under the first. */
+.recipe-template--classic .recipe-card__header--with-photo {
   border-bottom: 0;
 }
 
