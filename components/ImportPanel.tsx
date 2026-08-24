@@ -7,6 +7,7 @@ import {
   type ComponentType,
   type DragEvent,
   type FormEvent,
+  type MutableRefObject,
 } from "react";
 import dynamic from "next/dynamic";
 import type { ImportMethod } from "@/types/recipe";
@@ -78,6 +79,7 @@ export function ImportPanel({
   onAddText,
   onAddCookPilotRecipes,
   onRemoveRecipe,
+  commitRef,
 }: {
   items: QueueItem[];
   workspace?: boolean;
@@ -91,6 +93,9 @@ export function ImportPanel({
   onAddText: (text: string) => void;
   onAddCookPilotRecipes: (recipes: QueueItem[]) => number;
   onRemoveRecipe: (id: string) => void;
+  /** Filled in by this panel with a function that submits whatever is in the
+      form, so a parent's own "done" button can finish the job. */
+  commitRef?: MutableRefObject<(() => boolean) | null>;
 }) {
   useEffect(() => {
     // CookPilot is a primary import option, but its Firebase/Auth code is large
@@ -151,8 +156,9 @@ export function ImportPanel({
     if (error) setError(null);
   }
 
-  async function handleSubmit(e: FormEvent) {
-    e.preventDefault();
+  /** `e` is optional so this can be called imperatively — see `commitRef`. */
+  async function handleSubmit(e?: FormEvent) {
+    e?.preventDefault();
     if (busy) return;
     setError(null);
 
@@ -249,6 +255,45 @@ export function ImportPanel({
     setImageFiles(images);
     resetError();
   }
+
+  /**
+   * Whether there is something typed, pasted or chosen that has not been added.
+   *
+   * The CookPilot picker is excluded on purpose: it adds through its own list
+   * rather than through this form, so there is never anything of its own left
+   * sitting in the field.
+   */
+  function hasUncommittedInput(): boolean {
+    if (mode === "url") return url.trim().length > 0;
+    if (mode === "text") return text.trim().length > 0;
+    if (mode === "image") return imageFiles.length > 0;
+    return false;
+  }
+
+  /**
+   * Lets a parent commit whatever is in the form without pressing Add.
+   *
+   * The add dialog's "Done" closes it, and someone who has pasted a link and
+   * gone straight for Done has plainly asked for that link — they just used
+   * the button that finishes the job rather than the one that starts it. This
+   * hands Done the same code path Add uses, validation and all, instead of a
+   * second implementation that would drift from it.
+   *
+   * Returns whether there was anything to commit, so a Done pressed over an
+   * empty form stays a plain close and does not raise "Paste a recipe URL
+   * first" at someone who is leaving.
+   */
+  useEffect(() => {
+    if (!commitRef) return;
+    commitRef.current = () => {
+      if (busy || !hasUncommittedInput()) return false;
+      void handleSubmit();
+      return true;
+    };
+    return () => {
+      commitRef.current = null;
+    };
+  });
 
   function onDrop(e: DragEvent<HTMLLabelElement>) {
     e.preventDefault();

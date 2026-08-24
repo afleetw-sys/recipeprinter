@@ -2,10 +2,14 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties, type Dispatch, type MutableRefObject, type ReactNode, type RefObject, type SetStateAction } from "react";
 import { flushSync } from "react-dom";
-import { useSearchParams } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import dynamic from "next/dynamic";
 import { SiteHeader } from "@/components/SiteHeader";
+import { SAVE_FAILURES, SAVE_STATUS_LABEL } from "@/components/AccountControl";
+import { ProjectHeading } from "@/components/print/ProjectHeading";
+import { flyIntoProfile, visibleDeckPage } from "@/lib/flyIntoProfile";
+import { fileProjectLocally } from "@/lib/localProjects";
 import type { AccountSaveStatus } from "@/components/AccountControl";
 import { FeedbackDialog } from "@/components/FeedbackButton";
 import { PrintDialogs } from "@/components/PrintDialogs";
@@ -41,6 +45,7 @@ import {
 import {
   buildSections,
   namedSectionCount,
+  projectDisplayTitle,
   defaultSectionGridImages,
   resolveSectionPhotoMode,
   useProjectMeta,
@@ -78,10 +83,14 @@ import {
 import {
   CheckIcon,
   BookIcon,
+  ChevronLeftIcon,
+  ChevronRightIcon,
   ICON_SIZE,
   ImageIcon,
   LinkIcon,
   PlusIcon,
+  PrintIcon,
+  SaveIcon,
   SizeIcon,
   SpinnerIcon,
   TemplateIcon,
@@ -162,6 +171,15 @@ const COOKBOOK_TEMPLATE_ROTATION: RecipePrintTemplate[] = [
   "counter",
   "keepsake",
 ];
+/**
+ * How many recipes before the workspace suggests binding them.
+ *
+ * Three, because that is the point where a stack of cards starts to look like
+ * a collection. Below it the suggestion is a pitch at someone who has printed
+ * one thing; at or above it, it names something they have already half done.
+ */
+const COOKBOOK_SUGGESTION_MIN = 3;
+
 const COOKBOOK_TEMPLATE_ROTATION_KEY = "recipeprinter:cookbook-template-rotation";
 
 // A ready-made dedication seeded when the page is turned on — real, editable
@@ -233,6 +251,7 @@ export default function PrintPage() {
     return () => window.clearTimeout(stableTimer);
   }, []);
 
+  const router = useRouter();
   const params = useSearchParams();
   const idsParam = params.get("ids") ?? "";
   const accountProjectId = params.get("project");
@@ -334,6 +353,11 @@ export default function PrintPage() {
     "front" | "back" | "dedication" | null
   >(null);
   const [editingToc, setEditingToc] = useState(false);
+  // Either side panel can be folded away to give the page more room. Session
+  // state on purpose, not a stored preference: collapsing is something you do
+  // to look at a page, not how you want the workspace set up from now on.
+  const [railCollapsed, setRailCollapsed] = useState(false);
+  const [panelCollapsed, setPanelCollapsed] = useState(false);
   const [addMenuOpen, setAddMenuOpen] = useState(false);
   const addMenuRef = useRef<HTMLDivElement | null>(null);
   const [pendingAddSectionId, setPendingAddSectionId] = useState<string | null>(null);
@@ -1593,7 +1617,7 @@ export default function PrintPage() {
     );
     projectMeta.setSectionStructure(next);
     track("relayout_applied", { sectionCount: next.length });
-    showToast("Cookbook organized");
+    showToast(cookbookMode ? "Cookbook organized" : "Recipes organized");
   }
 
   function undoCookbookOrganization() {
@@ -1667,7 +1691,7 @@ export default function PrintPage() {
     showToast(ids.length > 1 ? `Moved ${ids.length} recipes${where}` : `Moved${where}`);
   }
 
-  function currentProject(): PrintProject | null {
+  function currentProject(idOverride?: string): PrintProject | null {
     if (!cookPilotUser || !items?.length) return null;
     /**
      * A book set aside is still a book.
@@ -1695,7 +1719,10 @@ export default function PrintPage() {
     return assemblePrintProject({
       // projectMeta owns the working copy's identity. It can intentionally
       // differ from the URL after a saved cookbook is converted to cards.
-      id: savedProjectIdRef.current ?? cookbookProjectId ?? accountProjectId,
+      // The override wins: when leaving files this content back over an
+      // earlier project, the account copy has to go to that same document or
+      // the library gains the duplicate the shelf just avoided.
+      id: idOverride ?? savedProjectIdRef.current ?? cookbookProjectId ?? accountProjectId,
       ownerUid: cookPilotUser.uid,
       title: defaultTitle,
       sections,
@@ -1730,7 +1757,9 @@ export default function PrintPage() {
     });
   }
 
-  async function handleSaveProject() {
+  /** `projectIdOverride` points this save at a specific document — used when
+      leaving files the content back over the project it already was. */
+  async function handleSaveProject(projectIdOverride?: string) {
     if (!cookPilotUser) {
       saveAfterLoginRef.current = true;
       setCookPilotLoginReason("default");
@@ -1741,7 +1770,7 @@ export default function PrintPage() {
       saveQueuedRef.current = true;
       return;
     }
-    const baseProject = currentProject();
+    const baseProject = currentProject(projectIdOverride);
     if (!baseProject) return;
     saveInFlightRef.current = true;
     setSaveStatus("saving");
@@ -1793,6 +1822,63 @@ export default function PrintPage() {
         window.setTimeout(() => latestSaveRef.current(), 0);
       }
     }
+  }
+
+  /**
+   * Going home: put this project away, show it going, and start a fresh one.
+   *
+   * Three things have to happen in the right order, and the order is chosen
+   * around what is safe to lose.
+   *
+   * The DEVICE copy is written first and synchronously, and clearing is gated
+   * on it. That is what makes this safe: the desk is only wiped once the
+   * project is definitely on the shelf, so a failed write (private mode, quota)
+   * leaves the working copy exactly where it was rather than destroying it. The
+   * homepage will try again on arrival and reach the same conclusion.
+   *
+   * The ACCOUNT copy is fired and deliberately not awaited. It is not
+   * load-bearing — the device copy already made this safe — and waiting on a
+   * network round trip before navigating would make going home feel broken on
+   * a bad connection. This is a client-side navigation, so the request survives
+   * it, and the existing `pagehide` flush covers a genuine tab close. A
+   * signed-in cook therefore ends up with both copies, and the local one is
+   * swept on the next library load.
+   *
+   * The FLIGHT overlaps both, so the animation costs no extra wait: by the time
+   * the project has finished travelling into the profile, the writes have
+   * usually already happened.
+   */
+  const [leavingHome, setLeavingHome] = useState(false);
+
+  async function handleNavigateHome() {
+    if (leavingHome) return;
+    setLeavingHome(true);
+
+    const printable = queue.items.some((item) => item.status === "ready" && item.recipe);
+    if (!printable) {
+      // Nothing made, nothing to file, nothing to show travelling.
+      router.push("/");
+      return;
+    }
+
+    const flight = flyIntoProfile(visibleDeckPage());
+    // Files under the project this content already is, if it has been printed
+    // before — so the account save below is pointed at the same document
+    // rather than creating its own copy of it.
+    const filed = fileProjectLocally(queue.items, projectMeta.meta);
+    if (filed) projectMeta.setProjectId(filed);
+    if (cookPilotUser && filed) void handleSaveProject(filed);
+
+    await flight;
+
+    // Only now is the desk safe to clear — and releasing the project id is the
+    // half that makes the next import a NEW project rather than another edit
+    // of this one.
+    if (filed) {
+      queue.clear();
+      projectMeta.startNewProject();
+    }
+    router.push("/");
   }
 
   // A save queued during an in-flight request must serialize the newest render,
@@ -1877,7 +1963,9 @@ export default function PrintPage() {
     // revision, then write the edits in front of the cook on top of it.
     if (isCookbookDocument) {
       const loadNewer = window.confirm(
-        "This cookbook was updated in another tab. Choose OK to load that version, or Cancel to keep the edits in front of you and overwrite it.",
+        `${
+          cookbookMode ? "This cookbook" : "This project"
+        } was updated in another tab. Choose OK to load that version, or Cancel to keep the edits in front of you and overwrite it.`,
       );
       if (loadNewer && savedProjectId) {
         window.location.assign(`/print?project=${encodeURIComponent(savedProjectId)}`);
@@ -2125,6 +2213,19 @@ export default function PrintPage() {
    */
   const printWatermarked = templateLocked || cookbookLocked;
 
+  /**
+   * What the header calls this project. Inherits the cookbook's cover title
+   * unless it has been renamed, and falls back to the recipes themselves —
+   * "Banana Bread + 2 more" tells you which project this is, and "Recipe cards"
+   * does not.
+   */
+  const firstRecipeTitle = items?.find((item) => item.recipe)?.recipe?.title;
+  const headingTitle = projectDisplayTitle(
+    projectMeta.meta,
+    firstRecipeTitle,
+    Math.max((items?.length ?? 0) - 1, 0),
+  );
+
   const printBlocked = purchaseBusy || claimBusy || cookbookPurchaseBusy;
   const printSpinner = printBlocked || printPending;
 
@@ -2369,7 +2470,24 @@ export default function PrintPage() {
    * from local storage anyway, which is the part people actually rely on.
    *
    */
-  const autosaveEnabled = Boolean(cookPilotUser) && isCookbookDocument;
+  /**
+   * Whether this project exists in the account — not merely whether someone is
+   * signed in. `savedProjectId` is set by a save, by adopting an anonymous
+   * draft, and by opening a project from the profile; it is null for a draft
+   * nobody has kept yet.
+   *
+   * Two things hang off it. The bar shows the project's NAME only once there is
+   * a project to name (until then the name is a stand-in derived from the first
+   * recipe, and renaming it would change something nothing remembers). And
+   * saving becomes automatic: once a copy exists, every later edit belongs to
+   * it, and asking someone to press Save again to keep a book they already told
+   * us to keep is asking them to do our bookkeeping.
+   */
+  const savedToProfile = Boolean(cookPilotUser) && savedProjectId !== null;
+
+  // Cookbooks autosave from the first edit — a book is by nature a thing you
+  // come back to — and everything else joins them the moment it is saved once.
+  const autosaveEnabled = Boolean(cookPilotUser) && (isCookbookDocument || savedToProfile);
 
   useEffect(() => {
     if (projectLoading || !projectAttachChecked || !items?.length) return;
@@ -2925,11 +3043,18 @@ export default function PrintPage() {
   function setRecipePhotoMode(recipeId: string, mode: PhotoStyle) {
     if (pageEditMode && activeRecipeId === recipeId) keepEditingRef.current = recipeId;
     setPendingFocusRecipeId(recipeId);
-    if (mode === photoStyle) {
+    const image = items?.find((item) => item.id === recipeId)?.recipe?.image;
+    // Clearing the override lets the page follow the book — but only when the
+    // book default would actually RESOLVE to the mode just chosen. "Full page"
+    // falls back to a plain card for a recipe with no photo yet (see
+    // `cookbookResolution`), so clearing here snapped the choice straight back
+    // to None: the one placement you might pick in order to add a photo was
+    // the one placement you could not pick until you had one.
+    if (mode === photoStyle && (mode !== "full" || image)) {
       projectMeta.setItemPlacement(recipeId, undefined);
       return;
     }
-    const hero = mode === "full" ? items?.find((item) => item.id === recipeId)?.recipe?.image : undefined;
+    const hero = mode === "full" ? image : undefined;
     projectMeta.setItemPhotoMode(recipeId, mode, hero);
   }
   // The per-recipe photo placement toggle (cookbook): an always-present
@@ -3032,6 +3157,7 @@ export default function PrintPage() {
     singleRecipePrintView,
     pageWidth: cookbookView ? spreadWidth : PAGE_DIMS[previewCardSize].w,
     pageHeight: cookbookView ? previewDims.h : PAGE_DIMS[previewCardSize].h,
+    layoutKey: `${railCollapsed ? "r" : ""}${panelCollapsed ? "p" : ""}`,
   });
 
   // The page (sheet) inside the active spread the controls act on. Clicking a
@@ -3113,9 +3239,37 @@ export default function PrintPage() {
   // Set when a recipe is moved by a placement change while being edited, so the
   // inline editor keeps it in edit mode as focus follows it to its new page.
   const keepEditingRef = useRef<string | null>(null);
+  /**
+   * Choosing a photo for one recipe is choosing to SHOW it on that recipe.
+   *
+   * Photos have a book-wide default and a per-recipe override, and picking a
+   * custom photo only ever wrote the photo — never the override. So with the
+   * book default off, going to the trouble of uploading a picture for one
+   * recipe appeared to do nothing at all: it was stored, and then hidden by a
+   * setting the cook had made before they had a photo to show. The only way to
+   * see it was to turn photos on for the whole book, which is the opposite of
+   * what "just this one" means.
+   *
+   * Only when this recipe is currently showing NO photo. A recipe already set
+   * to a full-page spread has made a more specific choice than this one, and
+   * replacing its picture must not quietly demote it to an in-card thumbnail.
+   */
+  const updateRecipeAndRevealPhoto = useCallback(
+    (id: string, next: Recipe) => {
+      const previous = items?.find((item) => item.id === id)?.recipe;
+      queue.updateRecipe(id, next);
+      if (next.image && next.image !== previous?.image && photoModeFor(id) === "none") {
+        projectMeta.setItemPhotoMode(id, "card");
+      }
+    },
+    // `setItemPhotoMode` and `updateRecipe` are stable; the rest is read fresh.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [items, photoModeFor, queue.updateRecipe, projectMeta.setItemPhotoMode],
+  );
+
   const { pageEditMode, togglePageEditMode, activeInlineEdit } = useRecipeInlineEditor({
     items,
-    updateRecipe: queue.updateRecipe,
+    updateRecipe: updateRecipeAndRevealPhoto,
     activeRecipeId,
     activeRecipeItem,
     resetKey: String(activeNavIndex),
@@ -3187,7 +3341,12 @@ export default function PrintPage() {
     if (!addMenuOpen && !hasSelection) return;
     function onPointerDown(event: PointerEvent) {
       const target = event.target as Node;
-      if (addMenuOpen && !addMenuRef.current?.contains(target)) setAddMenuOpen(false);
+      // The menu itself is portalled to the body, so containment in the add row
+      // no longer covers it — a click on "Add section" would close the menu
+      // before its own handler ran.
+      const inMenu =
+        target instanceof Element && target.closest(".recipe-page-rail__add-menu") !== null;
+      if (addMenuOpen && !inMenu && !addMenuRef.current?.contains(target)) setAddMenuOpen(false);
     }
     function onKeyDown(event: KeyboardEvent) {
       if (event.key !== "Escape") return;
@@ -3311,35 +3470,127 @@ export default function PrintPage() {
         <SiteHeader
           compact
           sticky
-          /* Right-aligned, so the cookbook CTA lands beside the save state and
-             the avatar rather than floating in the middle of the bar. */
-          actions={
-            COOKBOOK_ENABLED && !cookbookMode && items?.length ? (
-              <button
-                type="button"
-                /* Outlined, not primary: Print is the primary action on this
-                   page, and two solid buttons competing at the top would argue
-                   about which one the page is for. `mr-cp-2` keeps it off the
-                   avatar — the header's own gap reads as too tight for a button
-                   sitting next to a circular control. */
-                className="btn btn-secondary btn-compact mr-cp-2"
-                onClick={startCookbook}
-              >
-                Make it a cookbook
-                <span className="recipe-cookbook-cta__badge">New</span>
-              </button>
+          /*
+            The top left says WHICH document this is, in place of the product's
+            own name — on this page you already know what app you are in, and
+            the thing you don't know is which project is open. The mark stays
+            beside it as the way home. The right says what you can DO to it, in
+            the order you'd reach for them: how it stands, then the action that
+            finishes it.
+          */
+          center={
+            items?.length ? (
+              <ProjectHeading
+                title={headingTitle}
+                showTitle={savedToProfile}
+                onRename={projectMeta.setProjectTitle}
+                cookbookMode={cookbookMode}
+                canBecomeCookbook={COOKBOOK_ENABLED}
+                onSwitchToCards={exitCookbookToCards}
+                onSwitchToCookbook={startCookbook}
+              />
             ) : undefined
           }
-          saveStatus={saveStatus}
-          onRetrySave={handleRetrySave}
-          /* The only Save button left: a cookbook belonging to someone who
-             isn't signed in. Signed in it autosaves, so a button would be a
-             control for something already done. */
-          onSave={
-            COOKBOOK_ENABLED && isCookbookDocument && !cookPilotUser && items?.length
-              ? () => void handleSaveProject()
-              : undefined
+          actions={
+            items?.length ? (
+              <>
+                {/* The "Make it a cookbook" button that sat here is gone: the
+                    kind control in the middle of the bar now shows both kinds
+                    side by side while you are in recipe cards, so the offer is
+                    already visible and two controls for it in one bar was one
+                    too many. See ProjectHeading. */
+                }
+                {/*
+                  How this project stands, to the LEFT of the action rather than
+                  out by the avatar. It reads as part of the same sentence as
+                  Print, and the avatar goes back to being only the account.
+
+                  Two shapes, because there are two situations. A signed-in
+                  cookbook autosaves, so there is nothing to press and the word
+                  is the whole story. Anything that does NOT autosave — every
+                  card job, and a book belonging to someone signed out — gets a
+                  real button, because for those "saved" is something you have
+                  to ask for. Leaving the workspace files either of them anyway
+                  (see `handleNavigateHome`); this is for saving without leaving.
+                */}
+                {autosaveEnabled
+                  ? saveStatus &&
+                    /* A button only when there is something to retry — a
+                       focusable control that does nothing when activated is
+                       worse than plain text. */
+                    (SAVE_FAILURES.has(saveStatus) ? (
+                      <button
+                        type="button"
+                        className="rp-save-state rp-save-state--failed"
+                        onClick={handleRetrySave}
+                        aria-live="polite"
+                      >
+                        {SAVE_STATUS_LABEL[saveStatus]}
+                      </button>
+                    ) : (
+                      <span className="rp-save-state" role="status" aria-live="polite">
+                        {saveStatus === "saving" ? (
+                          <SpinnerIcon size={ICON_SIZE.sm} />
+                        ) : saveStatus === "saved" ? (
+                          <CheckIcon size={ICON_SIZE.sm} />
+                        ) : null}
+                        {SAVE_STATUS_LABEL[saveStatus]}
+                      </span>
+                    ))
+                  : (
+                      <button
+                        type="button"
+                        className="btn btn-secondary btn-compact"
+                        onClick={() => void handleSaveProject()}
+                      >
+                        <SaveIcon size={ICON_SIZE.md} />
+                        Save
+                      </button>
+                    )}
+
+                {/*
+                  One button, not two. Buying and printing are not separate
+                  actions here — if the book has not been paid for, printing IS
+                  the purchase, and the label has always said so. Splitting them
+                  would put a Purchase button beside a Print button that does the
+                  same thing when pressed, and leave someone unsure which one had
+                  just charged them.
+                */}
+                <button
+                  type="button"
+                  className="btn btn-primary btn-compact"
+                  disabled={printBlocked}
+                  onClick={() => void handlePrint()}
+                >
+                  {printSpinner ? (
+                    <SpinnerIcon size={ICON_SIZE.md} />
+                  ) : (
+                    <PrintIcon size={ICON_SIZE.md} />
+                  )}
+                  {/* Shorter than "Purchase & Print", and still says that money
+                      is involved — which it has to. A button that charges has
+                      to say so before it is pressed, however clearly the price
+                      was stated on the way in: someone reopening a book days
+                      later has not just read that dialog.
+
+                      The price is deliberately NOT in the label. `cookbookPrice`
+                      is a hardcoded fallback, not the customer's price — see
+                      `COOKBOOK_PRICE_FALLBACK`, which exists because loading the
+                      live one would configure the purchase SDK for anyone who
+                      merely opens a cookbook. Printing a number here would quote
+                      the wrong currency and the wrong amount to anyone outside
+                      the US, and would go stale the moment the product's price
+                      changes. Checkout states the authoritative price. */}
+                  {cookbookLocked
+                    ? "Buy & Print"
+                    : templateLocked
+                      ? "Unlock & Print"
+                      : "Print"}
+                </button>
+              </>
+            ) : undefined
           }
+          onNavigateHome={() => void handleNavigateHome()}
         />
 
         {/* One-line "back up your cookbook" bar under the toolbar, shown to any
@@ -3365,7 +3616,7 @@ export default function PrintPage() {
             </span>
             <button
               type="button"
-              className="btn btn-primary btn-compact"
+              className="btn btn-secondary btn-compact recipe-protect-bar__action"
               onClick={() => {
                 track("protect_prompt_clicked", { source: "cookbook_banner" });
                 setCookPilotLoginReason("purchase");
@@ -3387,8 +3638,45 @@ export default function PrintPage() {
           organizeMode ? "recipe-print-shell--organizing" : ""
         } ${organizeWide ? "recipe-print-shell--organize-wide" : ""} ${
           organizeAnimating ? "recipe-print-shell--organize-animating" : ""
+        } ${railCollapsed ? "recipe-print-shell--rail-collapsed" : ""} ${
+          panelCollapsed ? "recipe-print-shell--panel-collapsed" : ""
         }`}
       >
+        {/* One control per side, and it does not move when the panel does.
+            It rides the panel's own edge — `left: var(--rail-w)` — so folding
+            the column to zero carries it to the page edge without anything
+            having to remember where it was. An arrow INSIDE a panel can only
+            ever be the one that closes it, and then has to be replaced by a
+            different control somewhere else the moment it works; this is the
+            same button throughout, and only the chevron turns round. */}
+        <button
+          type="button"
+          className="recipe-panel-toggle recipe-panel-toggle--left no-print"
+          onClick={() => setRailCollapsed((collapsed) => !collapsed)}
+          aria-expanded={!railCollapsed}
+          aria-label={railCollapsed ? "Show pages" : "Hide pages"}
+          title={railCollapsed ? "Show pages" : "Hide pages"}
+        >
+          {railCollapsed ? (
+            <ChevronRightIcon size={ICON_SIZE.md} />
+          ) : (
+            <ChevronLeftIcon size={ICON_SIZE.md} />
+          )}
+        </button>
+        <button
+          type="button"
+          className="recipe-panel-toggle recipe-panel-toggle--right no-print"
+          onClick={() => setPanelCollapsed((collapsed) => !collapsed)}
+          aria-expanded={!panelCollapsed}
+          aria-label={`${panelCollapsed ? "Show" : "Hide"} ${cookbookMode ? "cookbook settings" : "print setup"}`}
+          title={`${panelCollapsed ? "Show" : "Hide"} ${cookbookMode ? "cookbook settings" : "print setup"}`}
+        >
+          {panelCollapsed ? (
+            <ChevronLeftIcon size={ICON_SIZE.md} />
+          ) : (
+            <ChevronRightIcon size={ICON_SIZE.md} />
+          )}
+        </button>
         <PageRail
           railScrollRef={railScrollRef}
           railDrag={railDrag}
@@ -3444,6 +3732,9 @@ export default function PrintPage() {
 
         {/* Center: large preview of the selected page */}
         <PrintDeck
+          printBlocked={printBlocked}
+          printSpinner={printSpinner}
+          templateLocked={templateLocked}
           singleRecipePrintView={singleRecipePrintView}
           cookbookView={cookbookView}
           previewMeasuring={previewMeasuring}
@@ -3506,10 +3797,7 @@ export default function PrintPage() {
           hasPrintSettingsFields={hasPrintSettingsFields}
           renderPrintSettingsFields={renderPrintSettingsFields}
           handleMobilePrint={handleMobilePrint}
-          printBlocked={printBlocked}
-          printSpinner={printSpinner}
           cookbookLocked={cookbookLocked}
-          templateLocked={templateLocked}
           renderAllPages={renderAllPages}
         />
 
@@ -3529,7 +3817,6 @@ export default function PrintPage() {
           setMobileDrawer={setMobileDrawer}
           cookbookMode={cookbookMode}
           cookbookLocked={cookbookLocked}
-          bookTitle={projectMeta.meta.cover?.title}
           cardSize={cardSize}
           setCardSize={setCardSize}
           anyRecipeHasImage={anyRecipeHasImage}
@@ -3548,16 +3835,11 @@ export default function PrintPage() {
           freeTemplateBannerDismissed={freeTemplateBannerDismissed}
           setFreeTemplateBannerDismissed={setFreeTemplateBannerDismissed}
           setToastMessage={setToastMessage}
-          handlePrint={handlePrint}
-          printBlocked={printBlocked}
-          printSpinner={printSpinner}
-          templateLocked={templateLocked}
           isRecipePrinterAdmin={isRecipePrinterAdmin}
           canShareActiveRecipe={Boolean(activeRecipeItem?.recipe)}
           setShowShareDialog={setShowShareDialog}
           hasPrintSettingsFields={hasPrintSettingsFields}
           setPrintSettingsOpen={setPrintSettingsOpen}
-          onSwitchToCards={exitCookbookToCards}
         />
 
         <Dialog

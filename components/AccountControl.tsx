@@ -5,6 +5,7 @@ import { useEffect, useState } from "react";
 import { IconButton } from "@/components/Controls";
 import { AccountIcon, CheckIcon, ICON_SIZE, SpinnerIcon } from "@/components/icons";
 import { readCookPilotWasSignedIn } from "@/lib/cookPilotSession";
+import { SignInButton } from "@/components/SignInButton";
 
 /**
  * The header's right-hand side: save state, and the way in to your account.
@@ -46,7 +47,25 @@ export type AccountSaveStatus =
   | "conflict"
   | "adoption";
 
-const STATUS_LABEL: Record<AccountSaveStatus, string> = {
+/**
+ * Statuses that mean something actually went wrong.
+ *
+ * The workspace surfaces the save state only for these. Leaving now files the
+ * project on the way out, so "Saving…" and "Saved" narrate work nobody asked
+ * about — but a failure is the one case where silence costs someone their book,
+ * so it still has to be said. Kept beside the labels so the two lists cannot
+ * drift into disagreeing about what counts as failure — and it is the same
+ * question `SaveStatus` asks below to decide what earns a Retry, deliberately
+ * one list rather than two that could answer differently.
+ */
+export const SAVE_FAILURES = new Set<AccountSaveStatus>([
+  "offline",
+  "error",
+  "conflict",
+  "adoption",
+]);
+
+export const SAVE_STATUS_LABEL: Record<AccountSaveStatus, string> = {
   saving: "Saving…",
   saved: "Saved",
   offline: "Offline — changes pending",
@@ -54,9 +73,6 @@ const STATUS_LABEL: Record<AccountSaveStatus, string> = {
   conflict: "Newer version found",
   adoption: "Finish saving to your account",
 };
-
-/** Statuses that mean something went wrong and can be tried again. */
-const RETRYABLE = new Set<AccountSaveStatus>(["error", "conflict", "adoption", "offline"]);
 
 /**
  * What is happening to this document, said where the account is.
@@ -83,7 +99,7 @@ function SaveStatus({
   status: AccountSaveStatus;
   onRetry?: () => void;
 }) {
-  const failed = RETRYABLE.has(status);
+  const failed = SAVE_FAILURES.has(status);
   const icon =
     status === "saving" ? (
       <SpinnerIcon size={ICON_SIZE.sm} />
@@ -95,7 +111,7 @@ function SaveStatus({
     return (
       <span className="rp-save-status" role="status" aria-live="polite">
         {icon}
-        {STATUS_LABEL[status]}
+        {SAVE_STATUS_LABEL[status]}
       </span>
     );
   }
@@ -107,7 +123,7 @@ function SaveStatus({
       onClick={onRetry}
       aria-live="polite"
     >
-      {STATUS_LABEL[status]}
+      {SAVE_STATUS_LABEL[status]}
       <span className="rp-save-status__retry">Retry</span>
     </button>
   );
@@ -129,6 +145,19 @@ export function AccountControl({
   const [showMenu, setShowMenu] = useState(false);
   /** A click that landed before the menu chunk did, replayed once it mounts. */
   const [pendingClick, setPendingClick] = useState(false);
+  /**
+   * Has this browser ever been signed in? Read after mount, never during
+   * render: it comes from storage, and answering it on the server (where the
+   * answer is always "no") would make the first client render disagree with
+   * the HTML. So the very first paint shows the sign-in button, and a returning
+   * account corrects to the avatar a tick later — which is the right way round,
+   * since the button is also the honest answer for anyone who never signs in.
+   */
+  const [wasSignedIn, setWasSignedIn] = useState(false);
+
+  useEffect(() => {
+    setWasSignedIn(readCookPilotWasSignedIn());
+  }, []);
 
   useEffect(() => {
     if (showMenu) return;
@@ -164,22 +193,35 @@ export function AccountControl({
           activateOnReady={pendingClick}
           onActivated={() => setPendingClick(false)}
         />
-      ) : (
-        /* Same size and shape as the real avatar, so nothing shifts when the
-           menu takes over. Signed-out styling on purpose: this only renders
-           for a browser with no record of an account, or in the moment before
-           the chunk lands for one that has. */
+      ) : wasSignedIn ? (
+        /* This browser HAS an account, so an avatar is what's coming. Same size
+           and shape as the real one, so nothing shifts when the menu takes
+           over — and, importantly, not a "Sign in" button, which would be both
+           wrong and a visible flicker on the way to the avatar. */
         <IconButton
+          data-rp-avatar
           className="border border-line bg-card text-ink-soft hover:text-ink hover:border-ink-soft"
-          aria-label="Sign in to Recipe Printer"
-          title="Sign in to Recipe Printer"
+          aria-label="Recipe Printer account"
+          title="Recipe Printer account"
           onClick={() => {
             setPendingClick(true);
             setShowMenu(true);
           }}
         >
-          <AccountIcon size={ICON_SIZE.lg} />
+          <AccountIcon size={ICON_SIZE.md} />
         </IconButton>
+      ) : (
+        /* No record of an account on this browser, so this is almost certainly
+           where they'll stay — and it's the same button `AccountMenu` renders
+           once it arrives, so the swap is invisible. The click is remembered
+           and replayed (`activateOnReady`), so the dialog still opens from one
+           press even though the chunk isn't here yet. */
+        <SignInButton
+          onClick={() => {
+            setPendingClick(true);
+            setShowMenu(true);
+          }}
+        />
       )}
     </div>
   );

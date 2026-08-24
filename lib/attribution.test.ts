@@ -41,6 +41,8 @@ describe("referrer classification", () => {
     expect(matchReferrer("l.instagram.com")).toBe("Instagram");
     expect(matchReferrer("peerlist.io")).toBe("Peerlist");
     expect(matchReferrer("www.peerlist.io")).toBe("Peerlist");
+    expect(matchReferrer("peerpush.net")).toBe("PeerPush");
+    expect(matchReferrer("www.peerpush.net")).toBe("PeerPush");
     expect(matchReferrer("uneed.best")).toBe("Uneed");
     expect(matchReferrer("www.uneed.best")).toBe("Uneed");
     expect(matchReferrer("cookpilotapp.com")).toBe("CookPilot");
@@ -86,6 +88,7 @@ describe("precedence", () => {
     expect(land("/", "https://www.reddit.com/r/cooking").source).toBe("Reddit");
     expect(land("/", "https://peerlist.io/ameliaw/project/recipeprinter").source).toBe("Peerlist");
     expect(land("/", "https://www.uneed.best/tool/recipeprinter").source).toBe("Uneed");
+    expect(land("/", "https://peerpush.net/p/recipeprinter").source).toBe("PeerPush");
     expect(land("/", "https://some-blog.example.com/post").source).toBe("Referral");
     expect(land("/").source).toBe("Direct / Unknown");
   });
@@ -122,6 +125,7 @@ describe("category rollup", () => {
     expect(categoryOf("Google Search")).toBe("Search");
     expect(categoryOf("Pinterest")).toBe("Social");
     expect(categoryOf("Peerlist")).toBe("Launch");
+    expect(categoryOf("PeerPush")).toBe("Launch");
     expect(categoryOf("Uneed")).toBe("Launch");
     expect(categoryOf("Email")).toBe("Email");
     expect(categoryOf("CookPilot")).toBe("Referral");

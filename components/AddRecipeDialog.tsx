@@ -55,6 +55,8 @@ export function AddRecipeDialog({
   // Ids that were already in the queue when this dialog opened. Everything
   // else is something added in this sitting, which is exactly the list worth
   // showing — the whole queue would just be the deck the dialog is covering.
+  /** Filled in by the import panel; lets Done finish an unadded entry. */
+  const commitImportRef = useRef<(() => boolean) | null>(null);
   const baselineRef = useRef<Set<string>>(new Set());
   const [sessionIds, setSessionIds] = useState<string[]>([]);
   const [duplicateTitle, setDuplicateTitle] = useState<string | null>(null);
@@ -144,6 +146,7 @@ export function AddRecipeDialog({
       </div>
       <div className="recipe-add-dialog__body">
         <ImportPanel
+          commitRef={commitImportRef}
           items={items}
           onAddUrl={handleAddUrl}
           onAddImages={handleAddImages}
@@ -218,7 +221,19 @@ export function AddRecipeDialog({
           count is the reassurance that the work landed — the deck behind is
           covered, so "Done" alone would be a leap of faith. */}
       <div className="recipe-add-dialog__footer">
-        <button type="button" className="btn btn-primary w-full" onClick={onClose}>
+        <button
+          type="button"
+          className="btn btn-primary w-full"
+          onClick={() => {
+            // Someone who has pasted a link and gone straight for Done has
+            // asked for that link — they just used the button that finishes
+            // the job rather than the one that starts it. Losing it and
+            // closing would be the dialog quietly throwing away their work.
+            // No-ops on an empty form, so Done stays a plain close.
+            commitImportRef.current?.();
+            onClose();
+          }}
+        >
           {addedCount > 0
             ? `Done · ${addedCount} added`
             : "Done"}

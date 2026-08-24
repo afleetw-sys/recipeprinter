@@ -54,6 +54,8 @@
 }
 
 .recipe-print-shell {
+  /* Positioning context for the collapsed-panel restore tabs. */
+  position: relative;
   display: grid;
   grid-template-columns: 190px minmax(0, 1fr) minmax(250px, 330px);
   align-items: start;
@@ -75,8 +77,23 @@
     grid-template-rows: auto minmax(0, 1fr);
   }
 
+  /* The two side columns are variables so either can fold to nothing and the
+     middle takes back exactly what it gave up — no second `grid-template-
+     columns` to keep in step with this one. The deck's own ResizeObserver
+     re-scales the page as the column settles. */
   .recipe-print-page .recipe-print-shell {
-    grid-template-columns: 220px calc(100% - 550px) 330px;
+    --rail-w: 220px;
+    --panel-w: 330px;
+    grid-template-columns:
+      var(--rail-w)
+      calc(100% - var(--rail-w) - var(--panel-w))
+      var(--panel-w);
+    /* No transition on the tracks. `grid-template-columns` does not interpolate
+       reliably between calc() tracks — the same reason the organizer's
+       expansion is animated per-frame in JS (see `--organize-wide` below) — and
+       here it left the computed value stuck at the pre-collapse widths, so the
+       panel faded out and its column stayed. The panel's own fade carries the
+       change; the tracks snap under it. */
     gap: 0;
     height: 100%;
     min-height: 0;
@@ -96,87 +113,67 @@
   top: 86px;
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 8px;
   max-height: calc(100dvh - 110px);
   padding: 16px 16px 16px 4px;
   overflow-y: auto;
   scrollbar-gutter: stable;
 }
 
+/* Layout only. The box, corner, type and hover all come from
+   `.btn.btn-secondary.btn-compact` on the element itself — this used to
+   restate every one of them at values that had drifted from the shared
+   button, which is the whole reason the rail and the header stopped
+   matching. */
 .recipe-page-rail__add-cover {
   flex-shrink: 0;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 7px;
+  width: 100%;
   margin: 0 0 2px;
-  padding: 9px 10px;
-  border: 1px solid var(--cp-line-strong);
-  border-radius: 10px;
-  background: var(--cp-card);
-  color: var(--cp-ink);
-  font-size: var(--cp-fs-caption);
-  font-weight: 700;
-  transition:
-    border-color 150ms ease,
-    background 150ms ease,
-    color 150ms ease;
 }
 
-/* Matches the "Print settings" link in recipe-cards mode: centered, muted,
-   caption-sized. Centered under the Add recipe button. */
+/* Layout only — see the note on `__add-cover`. The trailing chevron hugs the
+   label rather than taking the button's own 8px gap: it is an affordance on
+   the label, not a second item beside it. */
 .recipe-page-rail__organize {
-  flex-shrink: 0;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 3px;
-  width: 100%;
-  padding: 6px 8px;
-  border: 0;
+  flex: 1 1 auto;
+  min-width: 0;
+  gap: 4px;
+}
+
+/* Sort, Collapse and each section's Delete sit in rows with 30px buttons, so
+   in here the icon button takes that box — and with it the 8px corner the
+   radius scale gives a 30px control, rather than the 12px a 40px one gets.
+   Scoped to the organizer on purpose: elsewhere .icon-button is a 40px touch
+   target rather than a member of a button row. */
+.recipe-print-shell--organizing .icon-button {
+  width: 30px;
+  height: 30px;
+  border-color: var(--cp-line-strong);
   border-radius: 8px;
   background: transparent;
-  color: var(--cp-ink-soft);
-  font-size: var(--cp-fs-caption);
-  font-weight: 700;
 }
 
-.recipe-page-rail__organize:hover {
-  color: var(--cp-ink);
+.recipe-print-shell--organizing .icon-button:hover:not(:disabled) {
+  background: var(--cp-overlay-hover);
 }
 
-/* Auto-organize / Undo, in the organizer's own toolbar beside Sort and the
+/* Auto-organize / Undo, in the organizer's toolbar beside Sort and the
    collapse control. Quiet by default — the cook is already arranging things by
-   hand in here, so this offers to help rather than announcing itself. It wears
-   the icon button's own treatment (same height, card face, hairline, ink-soft
-   glyph) so the toolbar reads as one row of controls, just a wider one that
-   happens to carry a label. */
+   hand in here, so this offers to help rather than announcing itself.
+
+   Layout only: it is a `.btn.btn-secondary.btn-compact`, so the box, corner,
+   hover and focus ring all arrive with the shared button. The organizer had
+   grown its own dialect — 40px pills on a softer hairline — and opening it
+   meant walking from one button language into another. */
 .recipe-organize-bar__auto {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  height: 40px;
-  padding: 0 14px;
-  border: 1px solid var(--cp-line);
-  border-radius: 999px;
-  background: var(--cp-card);
-  color: var(--cp-ink-soft);
-  font-size: var(--cp-fs-caption);
-  font-weight: 700;
   white-space: nowrap;
-  transition:
-    color 150ms ease,
-    border-color 150ms ease;
 }
 
-.recipe-organize-bar__auto:hover {
-  border-color: var(--cp-line-strong);
-  color: var(--cp-ink);
-}
-
-.recipe-organize-bar__auto:focus-visible {
-  outline: var(--cp-focus-ring);
-  outline-offset: var(--cp-focus-ring-offset);
+/* Joins that toolbar on the same terms — a shared compact button, laid out
+   only so it does not wrap or stretch. */
+.recipe-organize-bar__add-section {
+  flex: 0 0 auto;
+  white-space: nowrap;
 }
 
 /* ── In-page Organize mode ──────────────────────────────────────────────────
@@ -457,7 +454,7 @@
     display: none;
   }
 
-  .recipe-print-shell--organizing .recipe-page-rail__footer {
+  .recipe-print-shell--organizing .recipe-page-rail__head {
     position: static;
     margin: 0;
     padding: 4px 0 0;
@@ -547,9 +544,9 @@
 .recipe-page-rail__item {
   display: grid;
   grid-template-columns: 1fr;
-  gap: 8px;
-  row-gap: 8px;
-  padding: 10px;
+  gap: 6px;
+  row-gap: 6px;
+  padding: 8px;
   border: 1px solid var(--cp-line);
   border-radius: 12px;
   background: var(--cp-card);
@@ -628,7 +625,7 @@
   min-width: 0;
   height: 74px;
   display: grid;
-  grid-template-columns: repeat(var(--section-grid-cols, 2), 1fr);
+  grid-template-columns: repeat(2, 1fr);
   grid-auto-rows: 1fr;
   gap: 1px;
   border-radius: 5px;
@@ -709,16 +706,20 @@
 }
 
 .recipe-page-rail__section-delete:hover {
-  color: var(--cp-danger, #b42318);
+  color: var(--cp-error);
 }
 
+/* A real aria-pressed toggle, so it takes a corner. A pill is reserved for
+   the status chips (Purchased, Premium, the drag count), which are labels
+   rather than controls — keeping that line is what lets the chips stay round
+   without reading as leftovers. */
 .recipe-page-rail__section-opener {
   margin-left: auto;
   padding: 3px 6px;
-  border-radius: 999px;
+  border-radius: 6px;
   color: var(--cp-ink-soft);
   font-size: var(--cp-fs-label);
-  font-weight: 750;
+  font-weight: 700;
   white-space: nowrap;
 }
 
@@ -855,23 +856,78 @@
    padding keeps the button aligned with the thumbnails above it. */
 /* Pinned bottom band: Add recipe row + Reorder recipes, with the selection pill
    floating above it. Bleeds to the rail padding edges so it's a solid footer. */
-.recipe-page-rail__footer {
+/* Was `__footer`, pinned to the bottom of the rail. Same sticky trick, other
+   end: what it holds — the recipe count, Add, and Organize — describes and acts
+   on the whole list, so it belongs above the list rather than after it. The
+   negative margins bleed it to the rail's edges so the hairline reaches both
+   sides, and it must clear the rail's own top padding, hence `top: -16px`. */
+.recipe-page-rail__head {
   position: sticky;
-  bottom: -16px;
+  top: -16px;
   z-index: 2;
   display: flex;
   flex-direction: column;
-  gap: 8px;
-  margin: 4px -16px -16px -4px;
-  padding: 12px 16px 16px 4px;
-  border-top: 1px solid var(--cp-line);
+  /* Add and Organize are two different jobs — one puts recipes in, the other
+     rearranges what is already there — so they should read as two things. At
+     6px they looked like one control split in half. */
+  gap: 10px;
+  margin: -16px -16px 8px -4px;
+  /* No rule under it. The header is still sticky and still carries the card
+     background, so thumbnails scrolling beneath it stay covered — the line was
+     only ever drawing a boundary the gap already makes. */
+  padding: 16px 16px 12px 4px;
   background: var(--cp-card);
+}
+
+.recipe-page-rail__head-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
 }
 
 .recipe-page-rail__add-row {
   position: relative;
   display: flex;
   gap: 0;
+}
+
+/* The organizer's own toolbar — "Organize it for me", Sort, the collapse
+   control — settled on a shape that works: a pill, a hairline in `--cp-line`
+   rather than the heavier `--cp-line-strong`, a card fill, and caption-sized
+   text at 700. The rail's controls were the shared button component instead,
+   so opening the organizer meant walking from one button language into
+   another. These two now speak the organizer's.
+
+   Height stays 30px, not the organizer's 40px. In there the toolbar is the
+   only chrome on a wide sheet; out here these sit in a 220px rail beside a
+   row of 30px buttons in the header, and matching that row matters more than
+   matching the organizer's scale. */
+/* Colour comes from .btn-neutral (see globals.css) — this is the shared
+   filled-neutral button, not a one-off. What stays here is the geometry of
+   the split: the two halves round only their outer corners, and the seam
+   between them is a deeper wash of the fill rather than a line laid over it.
+
+   Only in the paired state, which is the only state that HAS a second half.
+   Outside a cookbook there is no "Add section", so no caret is rendered, and
+   this used to leave a button squared off down its right edge against
+   nothing — a split button with the split hidden. */
+.recipe-page-rail__head .recipe-page-rail__add-main--paired {
+  border-radius: 8px 0 0 8px;
+}
+
+.recipe-page-rail__head .recipe-page-rail__add-menu-trigger {
+  border: 1px solid transparent;
+  border-left: 1px solid color-mix(in srgb, var(--cp-ink) 14%, var(--cp-surface-strong));
+  border-radius: 0 8px 8px 0;
+  background: var(--cp-surface-strong);
+  color: var(--cp-ink);
+}
+
+.recipe-page-rail__head .recipe-page-rail__add-menu-trigger:hover:not(:disabled) {
+  /* Re-stated so the divider survives the hover, which would otherwise repaint
+     every edge including the one holding the two halves apart. */
+  border-left-color: color-mix(in srgb, var(--cp-ink) 14%, var(--cp-surface-strong));
+  background: var(--cp-surface-strong-hover);
 }
 
 /* Fills the row on its own (no cookbook mode → no chevron trigger next to
@@ -881,21 +937,31 @@
   flex: 1 1 auto;
 }
 
+/* Square where the two halves meet, and no border on that edge: the trigger
+   beside it draws the divider. With both drawing one, the seam was two 1px
+   lines against each other — a double rule down the middle of a single
+   control. */
 .recipe-page-rail__add-main--paired {
   border-top-right-radius: 0;
   border-bottom-right-radius: 0;
+  border-right: 0;
 }
 
 /* Paired siblings of the .btn.btn-secondary main button — matched to its 1px
    outline so the merged seam reads as one control, with the same neutral
    hover. */
 .recipe-page-rail__add-menu-trigger {
-  flex: 0 0 42px;
+  /* Narrower to match the compact half beside it — the chevron's box was
+     sized against the taller button this used to be. */
+  /* Just wide enough for the chevron. It was sized for the taller, wider
+     button this used to be, so beside a short "Add" it read as half the
+     control rather than an attachment to it. */
+  flex: 0 0 24px;
   display: grid;
   place-items: center;
   border: 1px solid var(--cp-line-strong);
   border-left: 0;
-  border-radius: 0 12px 12px 0;
+  border-radius: 0 8px 8px 0;
   background: transparent;
   color: var(--cp-ink);
 }
@@ -910,11 +976,11 @@
   min-width: 0;
 }
 
+/* Portalled to the body and placed from JS — see the note on the placement
+   effect in PageRail. `fixed` so no scroll container can clip it. */
 .recipe-page-rail__add-menu {
-  position: absolute;
-  left: 4px;
-  bottom: calc(100% + 6px);
-  z-index: 4;
+  position: fixed;
+  z-index: 1200;
   min-width: 132px;
   padding: 6px;
   border: 1px solid var(--cp-line);
@@ -987,6 +1053,24 @@
      leaves room for them. Paired with the floored `--deck-top-pad`. */
   .recipe-page-deck {
     scroll-padding-top: 72px;
+    /* The SAME inset at the bottom, and it is what keeps the snapped page
+       centred. `scroll-snap-align: center` centres against the SNAPPORT, so a
+       top-only inset moved the snapport's middle 36px down the deck: the page
+       rested low, with a wide band above it and the next page pushed out of
+       sight below. Insetting both ends puts the snapport's centre back on the
+       deck's centre while the top inset still holds the floating controls
+       clear of the header. */
+    scroll-padding-bottom: 72px;
+    /* Fill the canvas instead of guessing at the chrome above it.
+       The base rule is `height: calc(100dvh - 132px)`, and 132 is a hard-coded
+       stand-in for the header plus the back-up banner — which is wrong in both
+       directions: the banner only shows to a signed-out owner, and the header
+       is 56px now. The deck was ending ~29px above the canvas with the banner
+       up and ~76px above it without, so a page scrolling past the bottom was
+       clipped with dead grey underneath it. The grid already gives this column
+       a definite height; taking it is exact in every case and needs no
+       constant to maintain. */
+    height: 100%;
   }
 }
 
@@ -1120,12 +1204,15 @@
   gap: 4px;
 }
 
+/* A track holding ~25px segments with 3px of padding, so the outer corner is
+   the inner one plus that padding — 6 + 3 — rather than a pill wrapped around
+   rectangles. */
 .recipe-page-layout-picker {
   display: inline-flex;
   align-items: center;
   padding: 3px;
   border: 1px solid var(--cp-line);
-  border-radius: 999px;
+  border-radius: 9px;
   background: var(--cp-card);
 }
 
@@ -1138,7 +1225,7 @@
 
 .recipe-spread__blank-grid {
   display: grid;
-  grid-template-columns: repeat(var(--section-grid-cols, 3), 1fr);
+  grid-template-columns: repeat(3, 1fr);
   grid-auto-rows: 1fr;
   gap: 2px;
   width: 100%;
@@ -1167,11 +1254,12 @@
   flex: none;
   padding: 3px 10px;
   border: 0;
-  border-radius: 999px;
+  border-radius: 6px;
   background: transparent;
   color: var(--cp-ink-soft);
   font-size: var(--cp-fs-caption);
-  font-weight: 800;
+  /* 700, matching the segmented control — this is the same kind of control. */
+  font-weight: 700;
   /* Never let the labels wrap: when a recipe switches from a full-page spread
      (double-wide controls) back to a single card page, the controls row halves
      in width and the picker would otherwise smoosh the labels onto two lines. */
@@ -1185,8 +1273,8 @@
 }
 
 .recipe-page-layout-picker__btn:disabled {
-  opacity: 0.4;
-  cursor: not-allowed;
+  opacity: .5;
+  cursor: default;
 }
 
 .recipe-page-canvas__controls .recipe-card-side-nav,
@@ -1195,17 +1283,21 @@
   pointer-events: auto;
 }
 
+/* The same box as every other 30px control — it floats over the page, but it
+   is still a button and it is read alongside the header's. It was a pill at
+   weight 800, which made the chrome over the card heavier than Print. */
 .recipe-page-edit-toggle {
   display: inline-flex;
   align-items: center;
-  gap: 5px;
-  padding: 5px 12px;
+  gap: 6px;
+  min-height: 30px;
+  padding: 0 11px;
   border: 1px solid var(--cp-line);
-  border-radius: 999px;
+  border-radius: 8px;
   background: var(--cp-card);
   color: var(--cp-ink-soft);
-  font-size: var(--cp-fs-caption);
-  font-weight: 800;
+  font-size: var(--cp-fs-small);
+  font-weight: 600;
 }
 
 .recipe-page-edit-toggle.is-active {
@@ -1381,8 +1473,8 @@
   display: flex;
   flex-direction: column;
   max-height: calc(100dvh - 104px);
-  margin: 16px 0;
-  padding: 16px;
+  margin: 12px 0;
+  padding: 12px 14px 14px;
   border: 1px solid var(--cp-line);
   border-radius: 18px;
   background:
@@ -1423,6 +1515,62 @@
     border-width: 0 0 0 1px;
     border-radius: 0;
   }
+
+  /* Folded away. `overflow: hidden` is what lets the width reach zero without
+     the panel's content spilling across the page on the way down, and the
+     border goes with it — otherwise a 1px line is left standing where a panel
+     used to be. */
+  /* `.recipe-print-page` prefix on purpose: the variables are declared on
+     `.recipe-print-page .recipe-print-shell`, so a bare class here loses the
+     specificity tie and the column never actually shrinks — the panel would
+     fade out and leave its width behind as empty space. */
+  .recipe-print-page .recipe-print-shell--rail-collapsed { --rail-w: 0px; }
+  .recipe-print-page .recipe-print-shell--panel-collapsed { --panel-w: 0px; }
+
+  .recipe-print-shell--rail-collapsed > .recipe-page-rail,
+  .recipe-print-shell--panel-collapsed > .recipe-config-panel {
+    overflow: hidden;
+    padding-inline: 0;
+    border-width: 0;
+    opacity: 0;
+    pointer-events: none;
+  }
+
+  /* Rides the boundary between the panel and the page, near the top of both —
+     `left`/`right` are the same column variables the grid uses, so folding the
+     column to zero walks the button out to the page edge with it. Floating
+     over the line rather than inside the panel is what lets one control both
+     close and reopen: it is still there when the panel is not. */
+  .recipe-panel-toggle {
+    position: absolute;
+    top: 18px;
+    z-index: 3;
+    display: grid;
+    place-items: center;
+    width: 20px;
+    height: 40px;
+    border: 1px solid var(--cp-line);
+    background: var(--cp-card);
+    color: var(--cp-ink-soft);
+    transition:
+      color 150ms ease,
+      border-color 150ms ease;
+  }
+  .recipe-panel-toggle:hover {
+    border-color: var(--cp-line-strong);
+    color: var(--cp-ink);
+  }
+  .recipe-panel-toggle--left {
+    left: var(--rail-w);
+    border-left: 0;
+    border-radius: 0 8px 8px 0;
+  }
+  .recipe-panel-toggle--right {
+    right: var(--panel-w);
+    border-right: 0;
+    border-radius: 8px 0 0 8px;
+  }
+
 }
 
 .recipe-config-panel__header {
@@ -1433,7 +1581,7 @@
   align-items: center;
   justify-content: space-between;
   gap: 10px;
-  padding-bottom: 12px;
+  padding-bottom: 10px;
   border-bottom: 1px solid var(--cp-line);
 }
 
@@ -1441,9 +1589,13 @@
   flex: 1 1 auto;
   display: flex;
   flex-direction: column;
-  gap: 20px;
+  /* One source of separation between sections. This gap and a 14px margin-top
+     on adjacent sections were both in force, so settings sat 34px apart in a
+     330px panel — the single biggest reason it still read loose after the
+     density pass. */
+  gap: 18px;
   min-height: 0;
-  padding-top: 16px;
+  padding-top: 10px;
   /* Horizontal breathing room so keyboard :focus-visible outlines on full-width
      children (theme cards, the size/paper dropdowns) aren't clipped at the
      edges — overflow-y:auto forces overflow-x to compute to auto, which clips. */
@@ -1452,14 +1604,17 @@
   scrollbar-gutter: stable;
 }
 
+/* No rule across the top. It used to separate the settings above from Print
+   below it; Print is in the header now, so the line was dividing the settings
+   from a couple of quiet text links — a boundary where there is no longer a
+   change of kind. */
 .recipe-config-panel__footer {
   flex: 0 0 auto;
   display: flex;
   flex-direction: column;
   gap: 10px;
-  margin-top: 12px;
-  padding-top: 14px;
-  border-top: 1px solid var(--cp-line);
+  margin-top: 10px;
+  padding-top: 2px;
 }
 
 .recipe-cookpilot-account {
@@ -1540,10 +1695,29 @@
   line-height: 1.4;
 }
 
+/* ── Workspace density ────────────────────────────────────────────────────
+   A tool panel reads as a tool by its RHYTHM, not by being uniformly small:
+   quiet labels, rows close enough to scan as one group, and clear air between
+   groups. So the space WITHIN a setting tightens and the space BETWEEN
+   settings holds. Shrinking both equally just makes a smaller version of the
+   same page and loses the grouping that makes a dense panel readable.
+
+   Nothing here touches the deck. The page being printed is the work, not the
+   chrome around it, and it stays exactly the size it was. */
 .recipe-config-section {
   display: flex;
   flex-direction: column;
-  gap: 9px;
+  gap: 6px;
+}
+
+/* The panel names itself, but not louder than the product or the document.
+   The class on the element asks for the 19.84px dialog title, which is a
+   DOCUMENT convention — it announces the thing you are reading, and this panel
+   is not that; the page is. Body size was the other extreme: it left the panel
+   with no heading to speak of. This is the step directly below the wordmark
+   (16.8px), which is where a panel title belongs. */
+.recipe-config-panel h2 {
+  font-size: var(--cp-fs-body-lg);
 }
 .control-checkbox-group.recipe-config-section {
   gap: 0;
@@ -1552,7 +1726,9 @@
 .recipe-config-label {
   color: var(--cp-ink-soft);
   font-size: var(--cp-fs-label);
-  font-weight: 800;
+  /* Matches .control-checkbox-group__label — see the note there on why an
+     eyebrow does not carry the panel title's weight. */
+  font-weight: 700;
   letter-spacing: 0.08em;
   text-transform: uppercase;
 }
@@ -1621,25 +1797,27 @@
   font-weight: 650;
 }
 
+/* Drawn in the banner's own hue rather than in page-primary black. This bar is
+   a standing note about where the book lives, not the page's climax — and the
+   climax, Buy & Print, is a black button sitting directly above it. Two of
+   those stacked made the quieter message look like the louder one. Accent
+   outline on the accent tint keeps the whole bar one calm object while leaving
+   the action plainly clickable. */
+.recipe-protect-bar__action {
+  border-color: color-mix(in srgb, var(--cp-accent) 55%, transparent);
+  background: var(--cp-card);
+  color: var(--cp-accent-ink);
+}
+
+.recipe-protect-bar__action:hover:not(:disabled) {
+  border-color: var(--cp-accent);
+  background: var(--cp-card);
+  color: var(--cp-accent-ink);
+}
+
 /* Quiet "you own this" acknowledgement in the Book Settings header, so a
    purchased cookbook reads as paid-for even for a signed-in owner (who never
    sees the back-up bar). */
-/* "New" flag on the cookbook CTA — the same treatment the retired Recipe
-   cards / Cookbook toggle carried, now on the button that replaced it. Accent
-   on the dark primary button, so it reads as a flag rather than a second
-   label competing with the action. */
-.recipe-cookbook-cta__badge {
-  padding: 2px 6px;
-  border-radius: 999px;
-  background: var(--cp-accent);
-  color: var(--cp-ink);
-  font-size: 0.62rem;
-  font-weight: 800;
-  letter-spacing: 0.02em;
-  line-height: 1;
-  text-transform: uppercase;
-}
-
 .recipe-purchased-chip {
   display: inline-flex;
   align-items: center;
@@ -1651,78 +1829,6 @@
   color: var(--cp-accent-ink);
   font-size: var(--cp-fs-caption);
   font-weight: 700;
-}
-
-.recipe-toggle,
-.control-checkbox {
-  display: grid;
-  grid-template-columns: 20px 1fr;
-  align-items: center;
-  gap: 10px;
-  color: var(--cp-ink);
-  cursor: pointer;
-}
-
-.recipe-toggle:has(small),
-.control-checkbox:has(small) {
-  align-items: start;
-}
-
-.recipe-toggle input,
-.control-checkbox input {
-  position: relative;
-  width: 20px;
-  height: 20px;
-  margin-top: 0;
-  appearance: none;
-  border: 1px solid var(--cp-line-strong);
-  border-radius: 5px;
-  background: var(--cp-card);
-}
-
-.recipe-toggle:has(small) input,
-.control-checkbox:has(small) input {
-  margin-top: 2px;
-}
-
-.recipe-toggle input:checked,
-.control-checkbox input:checked {
-  border-color: var(--cp-accent);
-  background: var(--cp-accent);
-}
-
-.recipe-toggle input:checked::after,
-.control-checkbox input:checked::after {
-  content: "";
-  position: absolute;
-  left: 6px;
-  top: 2px;
-  width: 6px;
-  height: 11px;
-  /* Dark tick on the vivid teal fill — white would only hit 1.95:1. */
-  border: solid #0c3a37;
-  border-width: 0 3px 3px 0;
-  transform: rotate(45deg);
-}
-
-.recipe-toggle span,
-.control-checkbox span {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-}
-
-.recipe-toggle strong,
-.control-checkbox strong {
-  font-size: var(--cp-fs-small);
-  line-height: 1.25;
-}
-
-.recipe-toggle small,
-.control-checkbox small {
-  color: var(--cp-ink-soft);
-  font-size: var(--cp-fs-label);
-  line-height: 1.3;
 }
 
 /* Book-wide "Photos" style (cookbook Print setup) — three visual tiles, each a
@@ -2071,8 +2177,8 @@
   width: 26px;
   height: 26px;
   border: 1px solid var(--cp-line);
-  border-radius: 999px;
-  background: #fff;
+  border-radius: 6px;
+  background: var(--cp-card);
   color: var(--cp-ink-soft);
 }
 
@@ -2149,7 +2255,7 @@
     width: 40px;
     height: 40px;
     border: 1px solid var(--cp-line);
-    border-radius: 999px;
+    border-radius: var(--cp-radius-control);
     background: var(--cp-card);
     color: var(--cp-ink);
     transition:
@@ -2246,7 +2352,7 @@
     place-items: center;
     width: 46px;
     height: 46px;
-    border-radius: 14px;
+    border-radius: var(--cp-radius-control);
     color: var(--cp-ink);
     transition:
       background 150ms ease,
@@ -2474,47 +2580,6 @@
     border-color: var(--cp-selected-border);
   }
 
-  .recipe-structure-sheet__opener {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    padding: 4px 6px 8px;
-    color: var(--cp-ink-soft);
-    font-size: var(--cp-fs-caption);
-    font-weight: 600;
-  }
-
-  /* Match the app's custom checkbox (see `.recipe-toggle input`) so the opener
-     toggle isn't a stray OS-blue box next to the teal Table-of-contents one. */
-  .recipe-structure-sheet__opener input {
-    position: relative;
-    flex: 0 0 auto;
-    width: 18px;
-    height: 18px;
-    margin: 0;
-    appearance: none;
-    border: 1px solid var(--cp-line-strong);
-    border-radius: 5px;
-    background: var(--cp-card);
-  }
-
-  .recipe-structure-sheet__opener input:checked {
-    border-color: var(--cp-accent);
-    background: var(--cp-accent);
-  }
-
-  .recipe-structure-sheet__opener input:checked::after {
-    content: "";
-    position: absolute;
-    left: 5px;
-    top: 2px;
-    width: 5px;
-    height: 10px;
-    border: solid #0c3a37;
-    border-width: 0 2.5px 2.5px 0;
-    transform: rotate(45deg);
-  }
-
   .recipe-structure-sheet__recipes {
     display: flex;
     flex-direction: column;
@@ -2588,13 +2653,14 @@
     width: 38px;
     height: 38px;
     border: 1px solid var(--cp-line);
-    border-radius: 10px;
+    border-radius: var(--cp-radius-control);
     background: var(--cp-card);
     color: var(--cp-ink);
   }
 
   .recipe-structure-sheet__move button:disabled {
-    opacity: 0.35;
+    opacity: .5;
+    cursor: default;
   }
 
   .recipe-structure-sheet__move-up svg {
@@ -3083,7 +3149,7 @@
 }
 
 .recipe-card-side-nav__button:disabled {
-  opacity: 0.38;
+  opacity: .5;
   cursor: default;
 }
 
@@ -5759,6 +5825,14 @@ textarea.recipe-card__toc-title {
   border-bottom: 0;
 }
 
+/* And drop it whenever Classic's header carries a photo, at any size. The rule
+   is there to close off the title block; a photo already gives that block a
+   bottom edge of its own, so the line ends up as a second boundary a few
+   millimetres under the first. */
+.recipe-template--classic .recipe-card__header--with-photo {
+  border-bottom: 0;
+}
+
 /* 6x4 is landscape with room to spare, so on the clean-frame templates lead
    with a larger photo to the left of the title instead of a small corner
    thumbnail — it fills the otherwise-empty header band. */
@@ -6119,31 +6193,21 @@ textarea.recipe-card__toc-title {
   border-radius: 0;
 }
 
-/* ── Letter banner photo ──────────────────────────────────────────────────
-   Letter pages have room to lead with the photo as a wide, short band above
-   the title. Only the templates with a plain rectangular frame read well this
-   way (classic, counter); the tilted/taped snapshot templates (heirloom,
-   bistro, pantry) keep their corner thumbnail, and 6x4 stays a thumbnail too. */
-.recipe-print-preview--letter .recipe-template--classic .recipe-card__header--with-photo,
-.recipe-print-preview--letter .recipe-template--counter .recipe-card__header--with-photo {
-  flex-direction: column-reverse;
-  align-items: stretch;
-  gap: 0.16in;
-}
+/* ── One photo treatment, every template ──────────────────────────────────
+   Letter pages used to lead with a wide, short banner photo above the title on
+   the two templates with a plain rectangular frame (classic and counter),
+   while the tilted/taped snapshot templates kept a corner thumbnail. So the
+   same recipe with the same photo was a different KIND of page depending on
+   which theme you picked, and switching themes moved the photo rather than
+   redressing it.
 
-.recipe-print-preview--letter .recipe-template--classic .recipe-card__header--with-photo .recipe-card__photo,
-.recipe-print-preview--letter .recipe-template--counter .recipe-card__header--with-photo .recipe-card__photo {
-  width: 100%;
-  height: 2.5in;
-  margin-top: 0;
-}
+   Every template now uses the in-card thumbnail — the treatment bistro and the
+   rest already had. Themes still differ in how the photo is framed (mats,
+   tape, tilt, tonal treatment, which is the point of a theme) and no longer in
+   where it goes.
 
-/* Trim the top padding on the banner templates so the taller photo has room
-   without pushing the recipe text down as much. */
-.recipe-print-preview--letter .recipe-template--classic .recipe-card,
-.recipe-print-preview--letter .recipe-template--counter .recipe-card {
-  --recipe-card-padding-top: 0.42in;
-}
+   The padding trim that went with the banner goes too: it existed to make room
+   for a 2.5in band, and left without one the title sat too high. */
 
 /* Without a photo, that trimmed padding leaves the title sitting right under
    the checkerboard band with barely any breathing room. Give the header

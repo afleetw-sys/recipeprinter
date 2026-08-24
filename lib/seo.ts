@@ -31,7 +31,7 @@ export const SITE_TAGLINE = "Print recipes worth keeping";
  */
 export const SITE_DESCRIPTION =
   "Paste recipes from websites, social links, photos, or text and turn them " +
-  "into printable recipe cards, pages, and PDFs worth keeping.";
+  "into printable recipe cards, pages, PDFs, and bound cookbooks worth keeping.";
 
 /**
  * Search intents we want the product to be the natural answer for. These are
@@ -62,6 +62,12 @@ export const SITE_KEYWORDS = [
   "print recipe without pictures",
   "recipe PDF",
   "convert recipe to PDF",
+  "make a cookbook",
+  "create a cookbook",
+  "cookbook maker",
+  "recipe book maker",
+  "print your own cookbook",
+  "family cookbook",
   "organize recipes",
   "recipe binder",
   "Just the Recipe alternative",
@@ -127,7 +133,7 @@ export const NAV_LINKS: NavLink[] = [
   {
     href: "/faq",
     label: "FAQ",
-    blurb: "Answers about recipe URLs, PDFs, social recipes, binders, and privacy.",
+    blurb: "Answers about recipe URLs, PDFs, cookbooks, social recipes, binders, and privacy.",
   },
   {
     href: "/about",
@@ -202,6 +208,11 @@ export const FAQ: FaqItem[] = [
       "Yes. RecipePrinter can create letter-size recipe pages, recipe cards, and PDFs that work well for binders, folders, recipe boxes, and family collections.",
   },
   {
+    question: "Can I make a cookbook from my recipes?",
+    answer:
+      "Yes. Group your recipes into chapters, add a cover, and RecipePrinter builds a cookbook with an automatic table of contents. You can export it as a print-ready PDF to print at home in US Letter, or as a full-bleed 8 x 10 file to order a bound hardcover from a print-on-demand service like Lulu or Blurb.",
+  },
+  {
     question: "Why print recipes instead of cooking from a phone?",
     answer:
       "Printed recipes do not lock, dim, run out of battery, disappear under notifications, or make you scroll with messy hands. They are also easier to mark up and keep.",
@@ -229,11 +240,12 @@ export const FAQ: FaqItem[] = [
   {
     question: "Are my recipes stored on your servers?",
     answer:
-      "No. Your print queue lives in your browser for the current session only and is not stored permanently on our servers.",
+      "Only if you choose to save them. Used without an account, your print queue lives in your browser for the current session only and is never stored on our servers. If you sign in and save a project or build a cookbook, that project is stored in your account so you can reopen it from any device.",
   },
   {
     question: "Is RecipePrinter free?",
-    answer: "Yes. RecipePrinter is free to use.",
+    answer:
+      "Printing recipes is free and does not require an account. There are two optional one-time purchases: premium print themes, and the cookbook builder that turns a set of recipes into a bound book. Current prices are shown in the app before you buy.",
   },
   {
     question: "Is RecipePrinter a recipe app?",
@@ -326,6 +338,8 @@ export function webApplicationNode() {
       "Paste recipe text and print it",
       "Print multiple recipes at once",
       "Build printable recipe collections and binders",
+      "Make a cookbook with a cover, chapters, and an automatic table of contents",
+      "Export a print-ready cookbook PDF for home printing or professional binding",
     ],
     publisher: { "@id": ORG_ID },
   };
