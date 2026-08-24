@@ -34,6 +34,8 @@ interface PrintSetupControlsProps {
  * settings slot, and the plain-cards Include toggles (photo / link). The theme
  * grid and the Print button live alongside this in the panel.
  */
+const PRINT_CARD_SIZE_LABELS = PRINT_CARD_SIZE_OPTIONS.map(({ id, label }) => ({ id, label }));
+
 export function PrintSetupControls({
   cookbookMode,
   cardSize,
@@ -57,14 +59,14 @@ export function PrintSetupControls({
           <label className="recipe-config-label" htmlFor="recipe-print-size">
             Size
           </label>
-          {/* Our own menu, not the OS's — and the reason is in the data: each
-              size carries a `detail` ("Letter paper", "Landscape recipe card")
-              that a native <option> has nowhere to show. */}
+          {/* Our own menu rather than the OS's, so the list matches every other
+              menu in the workspace. Labels only — each size also carries a
+              `detail`, but "Full page" and "6 x 4 card" already say it. */}
           <SelectMenu
             id="recipe-print-size"
             label="Card size"
             value={cardSize}
-            options={PRINT_CARD_SIZE_OPTIONS}
+            options={PRINT_CARD_SIZE_LABELS}
             onChange={(next) => setCardSize(next as PrintCardSize)}
           />
         </div>
