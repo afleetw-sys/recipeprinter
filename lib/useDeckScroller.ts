@@ -64,6 +64,9 @@ interface UseDeckScrollerOptions {
   singleRecipePrintView: boolean;
   pageWidth: number;
   pageHeight: number;
+  /** Two pages drawn side by side (a cookbook), rather than one. Changes which
+      dimension limits the deck's scale — see the height budget below. */
+  spread?: boolean;
 }
 
 // One pending "restore snapping" cleanup per deck, so back-to-back programmatic
@@ -117,6 +120,7 @@ export function useDeckScroller({
   singleRecipePrintView,
   pageWidth,
   pageHeight,
+  spread = false,
 }: UseDeckScrollerOptions) {
   const [canvasSide, setCanvasSide] = useState<"front" | "back">("front");
   const [deckScale, setDeckScale] = useState(0.5);
@@ -221,15 +225,17 @@ export function useDeckScroller({
       const availH = el.clientHeight;
       if (availW > 0 && availH > 0) {
         const widthScale = availW / pageWidth;
-        // 0.82, not 0.74. A cookbook spread is width-bound — two pages side by
-        // side — so the old budget left ~180px of vertical slack nothing could
-        // use, and it still capped the scale below what the width allowed once
-        // the canvas padding came down. Deliberately not pushed further: this
-        // number is what sizes a SINGLE recipe card, where height is the
-        // binding constraint, and the neighbours above and below have to keep
-        // peeking in or nothing implies the deck scrolls. At 0.82 they show
-        // about 53px each.
-        const heightScale = (availH * (mobile ? 0.86 : 0.82)) / pageHeight;
+        // Two budgets, because the two views are limited by different things.
+        //
+        // A cookbook spread is WIDTH-bound — two pages side by side — so its
+        // height budget never binds; 0.82 only has to stay out of the width's
+        // way. A single recipe card is the opposite: it uses barely half the
+        // deck's width, so every pixel it gains has to come out of the height,
+        // and it gets the larger share. What stops that going to 1 is the
+        // peek — the neighbours above and below have to stay visible or
+        // nothing implies the deck scrolls. 0.88 leaves ~35px of each.
+        const heightBudget = mobile ? 0.86 : spread ? 0.82 : 0.88;
+        const heightScale = (availH * heightBudget) / pageHeight;
         const scale = Math.max(0.12, Math.min(1.05, widthScale, heightScale));
         setDeckScale(scale);
         // Give the CSS top padding (see `--deck-top-pad` in globals.css) the
@@ -256,7 +262,7 @@ export function useDeckScroller({
     const observer = new ResizeObserver(update);
     observer.observe(el);
     return () => observer.disconnect();
-  }, [deckNode, cardSize, sheetsLength, pageWidth, pageHeight]);
+  }, [deckNode, cardSize, sheetsLength, pageWidth, pageHeight, spread]);
 
   const centerSlide = useCallback(
     (index: number, behavior: ScrollBehavior = "auto") => {

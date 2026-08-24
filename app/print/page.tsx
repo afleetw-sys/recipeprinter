@@ -3120,6 +3120,7 @@ export default function PrintPage() {
     singleRecipePrintView,
     pageWidth: cookbookView ? spreadWidth : PAGE_DIMS[previewCardSize].w,
     pageHeight: cookbookView ? previewDims.h : PAGE_DIMS[previewCardSize].h,
+    spread: cookbookView,
   });
 
   // The page (sheet) inside the active spread the controls act on. Clicking a
