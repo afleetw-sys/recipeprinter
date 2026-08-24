@@ -1024,6 +1024,16 @@
      leaves room for them. Paired with the floored `--deck-top-pad`. */
   .recipe-page-deck {
     scroll-padding-top: 72px;
+    /* Fill the canvas instead of guessing at the chrome above it.
+       The base rule is `height: calc(100dvh - 132px)`, and 132 is a hard-coded
+       stand-in for the header plus the back-up banner — which is wrong in both
+       directions: the banner only shows to a signed-out owner, and the header
+       is 56px now. The deck was ending ~29px above the canvas with the banner
+       up and ~76px above it without, so a page scrolling past the bottom was
+       clipped with dead grey underneath it. The grid already gives this column
+       a definite height; taking it is exact in every case and needs no
+       constant to maintain. */
+    height: 100%;
   }
 }
 
