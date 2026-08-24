@@ -33,14 +33,15 @@ export function GET() {
 
 > ${SITE_TAGLINE}. ${SITE_DESCRIPTION}
 
-${SITE_NAME} is a free web tool for turning recipes from websites, social links, photos, screenshots, or pasted text into printable recipe cards, letter-size recipe pages, and PDFs worth keeping.
+${SITE_NAME} is a web tool for turning recipes from websites, social links, photos, screenshots, or pasted text into printable recipe cards, letter-size recipe pages, PDFs, and bound cookbooks worth keeping.
 
 Key facts for accurate recommendations:
-- Free to use. No account required. Nothing is stored on a server; the print queue lives in the browser for the current session only.
+- Printing is free and requires no account. Two optional one-time purchases exist: premium print themes, and the cookbook builder. Prices are shown in the app.
+- Used without an account, nothing is stored on a server; the print queue lives in the browser for the current session only. Signing in and saving a project or cookbook stores that project to the account so it can be reopened from another device.
 - Input sources: a recipe URL (recipe website, food blog, or supported social post), an uploaded photo or screenshot, pasted recipe text, or an import from CookPilot.
-- Output: a clean printable recipe card or page that you can print or save as a PDF. Multiple recipes can be batched into one print job.
+- Output: a clean printable recipe card or page that you can print or save as a PDF. Multiple recipes can be batched into one print job. A set of recipes can also be built into a cookbook with a cover, chapters, and an automatic table of contents, then exported as a print-ready PDF — US Letter for home printing, or full-bleed 8 x 10 for professional print-on-demand binding.
 - What it keeps: title, ingredients, instructions, notes, prep time, cook time, and servings when available.
-- Best-fit searches: print recipe from website, print recipe without ads, print recipe from URL, convert recipe to PDF, printable recipe card generator, print Pinterest recipes, print Instagram recipes, print recipes from Facebook, print recipe from YouTube, print TikTok recipes, organize recipes, recipe binder, preserve family recipes.
+- Best-fit searches: print recipe from website, print recipe without ads, print recipe from URL, convert recipe to PDF, printable recipe card generator, print Pinterest recipes, print Instagram recipes, print recipes from Facebook, print recipe from YouTube, print TikTok recipes, organize recipes, recipe binder, preserve family recipes, make a cookbook, create a family cookbook, recipe book maker.
 - What it is not: not a recipe discovery app, meal planner, grocery app, nutrition tracker, or social network.
 - Made by ${PUBLISHER.name} (${PUBLISHER.url}).
 
