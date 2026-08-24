@@ -913,36 +913,43 @@
    the page's black is spoken for by Buy & Print, and colour read as status
    rather than as the thing to press. A filled neutral is what is left, and it
    is enough: nothing else in this column is filled at all. */
+/* Mixed off --cp-ink-soft rather than a flat grey, so the fill carries the
+   same faint blue cast as --cp-page and the segmented control's thumb instead
+   of reading as a different family of neutral. --cp-surface-muted (#f6f8fa)
+   was the obvious token and it is 3% off white — invisible as a fill on a
+   white rail. This is roughly #dadde3: unmistakably a filled button, still
+   nowhere near the weight of Buy & Print. No border, because a fill this
+   visible does not need an outline to find its own edges. */
 .recipe-page-rail__head .recipe-page-rail__add-main {
-  border-color: var(--cp-line);
+  border-color: transparent;
   border-radius: 8px 0 0 8px;
-  background: var(--cp-surface-muted);
+  background: color-mix(in srgb, var(--cp-ink-soft) 26%, var(--cp-card));
   color: var(--cp-ink);
   font-size: var(--cp-fs-caption);
   font-weight: 700;
 }
 
 .recipe-page-rail__head .recipe-page-rail__add-main:hover:not(:disabled) {
-  border-color: var(--cp-line-strong);
-  background: var(--cp-overlay-hover-strong);
+  border-color: transparent;
+  background: color-mix(in srgb, var(--cp-ink-soft) 36%, var(--cp-card));
 }
 
 .recipe-page-rail__head .recipe-page-rail__add-menu-trigger {
-  border: 1px solid var(--cp-line);
-  /* The seam is the one edge at full strength — it has to read as a division
-     inside a single control, not as another outer edge. */
-  border-left: 1px solid var(--cp-line-strong);
+  border: 1px solid transparent;
+  /* The seam divides one control, so it is a deeper wash of the fill rather
+     than a line laid over it. */
+  border-left: 1px solid color-mix(in srgb, var(--cp-ink-soft) 52%, var(--cp-card));
   border-radius: 0 8px 8px 0;
-  background: var(--cp-surface-muted);
+  background: color-mix(in srgb, var(--cp-ink-soft) 26%, var(--cp-card));
   color: var(--cp-ink);
 }
 
 .recipe-page-rail__head .recipe-page-rail__add-menu-trigger:hover:not(:disabled) {
-  border-color: var(--cp-line-strong);
+  border-color: transparent;
   /* Re-stated so the divider survives the hover, which would otherwise repaint
      every edge including the one holding the two halves apart. */
-  border-left-color: var(--cp-line-strong);
-  background: var(--cp-overlay-hover-strong);
+  border-left-color: color-mix(in srgb, var(--cp-ink-soft) 52%, var(--cp-card));
+  background: color-mix(in srgb, var(--cp-ink-soft) 36%, var(--cp-card));
 }
 
 /* Fills the row on its own (no cookbook mode → no chevron trigger next to
