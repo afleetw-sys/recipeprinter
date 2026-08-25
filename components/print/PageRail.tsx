@@ -1,6 +1,7 @@
 "use client";
 
 import {
+  Fragment,
   useEffect,
   useLayoutEffect,
   useRef,
@@ -772,7 +773,20 @@ export function PageRail(props: PageRailProps) {
                       ? "recipe-page-rail__section-group--ungrouped"
                       : ""} ${railDrag.draggingKind === "section" && railDrag.draggingId === group.sectionId ? "is-dragging" : ""}`}
                   >
-                  {group.units.map((unit, unitIdx) => {
+                  {(() => {
+                  // Same rule as the flat rail below: anchor to the LAST unit
+                  // for that recipe so a two-page recipe draws one spinner.
+                  const pendingAnchorUnitIdx = pendingAddAfterRecipeId
+                    ? group.units.reduce(
+                        (last, entry, i) =>
+                          (entry.nav?.kind === "recipe" || entry.nav?.kind === "divider") &&
+                          entry.nav.recipeId === pendingAddAfterRecipeId
+                            ? i
+                            : last,
+                        -1,
+                      )
+                    : -1;
+                  return group.units.map((unit, unitIdx) => {
                 const recipeNav = unit.nav?.kind === "recipe" ? unit.nav : null;
                 const dividerNav = unit.nav?.kind === "divider" ? unit.nav : null;
                 const dividerSection = dividerNav ? sectionForNavItem(dividerNav) : null;
@@ -799,8 +813,8 @@ export function PageRail(props: PageRailProps) {
                   unit.index === activeNavIndex && (unit.soleUnit || focusedSheet === unit.focusSheet);
                 const isSpreadThumb = unit.thumbSheets.length === 2;
                 return (
+                  <Fragment key={`rail-unit-${unit.num}`}>
                   <div
-                    key={`rail-unit-${unit.num}`}
                     data-rail-kind={unit.nav?.kind ?? "page"}
                     className={`recipe-page-rail__row ${
                       nested ? "recipe-page-rail__row--section-child" : ""
@@ -943,10 +957,12 @@ export function PageRail(props: PageRailProps) {
                         </span>
                       </button>
                     </div>
-                    {(recipeNav?.recipeId ?? dividerNav?.recipeId) === pendingAddAfterRecipeId && <PendingImportRows items={pendingImportItems} canRetry={queue.canRetry} onRetry={queue.retry} onRemove={queue.remove} />}
                   </div>
+                  {unitIdx === pendingAnchorUnitIdx && <PendingImportRows items={pendingImportItems} canRetry={queue.canRetry} onRetry={queue.retry} onRemove={queue.remove} />}
+                  </Fragment>
                 );
-                  })}
+                  });
+                  })()}
                   {organizeMode && group.sectionId && (
                     <button
                       type="button"
@@ -967,7 +983,24 @@ export function PageRail(props: PageRailProps) {
                   </div>
                 ));
               })()
-            : railRows.map(({ header, navItem, index }) => {
+            : (() => {
+              /**
+               * The row the pending imports hang under: the LAST one belonging
+               * to that recipe, not every one of them.
+               *
+               * A recipe that runs to two pages is two rows carrying the same
+               * `recipeId`, so a plain equality test was true for both and drew
+               * the spinner once under each page. The anchor is a position, not
+               * an id, which is the only way to say "after this recipe" when a
+               * recipe is more than one row.
+               */
+              const pendingAnchorRowIndex = pendingAddAfterRecipeId
+                ? railRows.reduce(
+                    (last, row, i) => (row.navItem.recipeId === pendingAddAfterRecipeId ? i : last),
+                    -1,
+                  )
+                : -1;
+              return railRows.map(({ header, navItem, index }, rowIndex) => {
             const headerSectionId =
               header && navItem.kind === "recipe" ? sectionAndIndexForItem(navItem.recipeId)?.sectionId : null;
             const currentSection = sectionForNavItem(navItem);
@@ -976,8 +1009,8 @@ export function PageRail(props: PageRailProps) {
               navItem.kind === "recipe" &&
               Boolean(currentSection && sectionTitleForId(currentSection.id) !== "section");
             return (
+              <Fragment key={`${sheets[navItem.sheetIndex]?.id}-${navItem.slotIndex}`}>
               <div
-                key={`${sheets[navItem.sheetIndex]?.id}-${navItem.slotIndex}`}
                 className={isSectionChild ? "recipe-page-rail__row recipe-page-rail__row--section-child" : "recipe-page-rail__row"}
               >
                 {header && headerSectionId && (
@@ -1043,10 +1076,12 @@ export function PageRail(props: PageRailProps) {
                     </span>
                   </button>
                 </div>
-                {navItem.recipeId === pendingAddAfterRecipeId && <PendingImportRows items={pendingImportItems} canRetry={queue.canRetry} onRetry={queue.retry} onRemove={queue.remove} />}
               </div>
+              {rowIndex === pendingAnchorRowIndex && <PendingImportRows items={pendingImportItems} canRetry={queue.canRetry} onRetry={queue.retry} onRemove={queue.remove} />}
+              </Fragment>
             );
-          })}
+          });
+            })()}
 
           {/* Keep pending imports visible without pretending a page or image
               exists yet. The real page appears only once parsing completes. */}
