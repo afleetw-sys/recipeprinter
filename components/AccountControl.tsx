@@ -130,10 +130,15 @@ function SaveStatus({
 }
 
 export function AccountControl({
+  compact = false,
   saveStatus,
   onRetry,
   onSave,
 }: {
+  /** App chrome rather than a page — see `SiteHeader`, which decides it. Sizes
+      every control in here to the bar it is in: 30px `.btn-compact` in the
+      workspace, the full 34px `.btn` on the marketing pages. */
+  compact?: boolean;
   saveStatus?: AccountSaveStatus | null;
   onRetry?: () => void;
   /** Save the current project. Given only by surfaces that have something
@@ -182,7 +187,11 @@ export function AccountControl({
           screens the way the bare status text is — it's the only way to save
           a project there. */}
       {!saveStatus && onSave && (
-        <button type="button" className="btn btn-secondary btn-compact" onClick={onSave}>
+        <button
+          type="button"
+          className={`btn btn-secondary${compact ? " btn-compact" : ""}`}
+          onClick={onSave}
+        >
           Save
         </button>
       )}
@@ -190,6 +199,7 @@ export function AccountControl({
 
       {showMenu ? (
         <AccountMenu
+          compact={compact}
           activateOnReady={pendingClick}
           onActivated={() => setPendingClick(false)}
         />
@@ -199,7 +209,7 @@ export function AccountControl({
            over — and, importantly, not a "Sign in" button, which would be both
            wrong and a visible flicker on the way to the avatar. */
         <IconButton
-          data-rp-avatar
+          data-rp-avatar={compact ? "compact" : "full"}
           className="border border-line bg-card text-ink-soft hover:text-ink hover:border-ink-soft"
           aria-label="Recipe Printer account"
           title="Recipe Printer account"
@@ -217,6 +227,7 @@ export function AccountControl({
            and replayed (`activateOnReady`), so the dialog still opens from one
            press even though the chunk isn't here yet. */
         <SignInButton
+          compact={compact}
           onClick={() => {
             setPendingClick(true);
             setShowMenu(true);

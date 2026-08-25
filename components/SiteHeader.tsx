@@ -102,7 +102,16 @@ export function SiteHeader({
       )}
       <div className="relative z-[1] flex items-center gap-cp-2 sm:gap-cp-3 flex-nowrap justify-end shrink-0">
         {actions && !centerActions ? actions : null}
-        <AccountControl saveStatus={saveStatus} onRetry={onRetrySave} onSave={onSave} />
+        {/* `compact` is this bar's answer to "am I app chrome or a page?",
+            and the controls inside it need it for the same reason the bar and
+            the wordmark do — otherwise the account control is workspace-sized
+            on a marketing page and reads 4px short beside the CTA. */}
+        <AccountControl
+          compact={compact}
+          saveStatus={saveStatus}
+          onRetry={onRetrySave}
+          onSave={onSave}
+        />
       </div>
     </header>
   );
