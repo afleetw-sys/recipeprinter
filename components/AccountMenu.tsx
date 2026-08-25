@@ -15,6 +15,7 @@ import { IconButton } from "@/components/Controls";
 import { RecipeLoadingState } from "@/components/RecipeLoadingState";
 import { SignInButton } from "@/components/SignInButton";
 import { readCookPilotWasSignedIn } from "@/lib/cookPilotSession";
+import { withTimeout } from "@/lib/withTimeout";
 
 // Two initials from the signed-in identity — first+last of a display name, else
 // the first letter of the email — so a logged-in avatar shows who's signed in.
@@ -40,6 +41,28 @@ function accountInitials(user: User): string {
 // the fresh window before it shows on reopen — fine for a convenience list.
 const projectsCache = new Map<string, { projects: PrintProject[]; at: number }>();
 const PROJECTS_FRESH_MS = 10_000;
+
+/**
+ * How long to wait for the saved-projects read before calling it dead.
+ *
+ * Both reads inside `loadPrintProjects` are `.catch`-guarded, so a Firestore
+ * that *fails* is handled. The case this exists for is a Firestore that never
+ * answers at all: `getDocs` has no timeout of its own, so a blocked or dropped
+ * connection leaves the promise pending forever — and "Loading…" sat under both
+ * headings for as long as the menu stayed open, with nothing to click and
+ * nothing said. Long enough not to trip on a slow phone; short enough that
+ * nobody watches it and concludes their cookbooks are gone.
+ */
+const PROJECTS_TIMEOUT_MS = 12_000;
+
+/**
+ * How long the full-page "Opening…" cover waits for a navigation that may
+ * never come. It is torn down by this component unmounting when the new route
+ * renders, so a navigation that stalls — a chunk that 404s after a deploy, a
+ * dead connection — used to leave a full-screen spinner with no way out but a
+ * reload. Generous, because the destination is the heaviest page in the app.
+ */
+const OPENING_TIMEOUT_MS = 15_000;
 
 /**
  * The account avatar, its dropdown, and the sign-in dialog.
@@ -73,6 +96,10 @@ export default function AccountMenu({
   const [showLogin, setShowLogin] = useState(false);
   const [projects, setProjects] = useState<PrintProject[]>([]);
   const [loadingProjects, setLoadingProjects] = useState(false);
+  /** The read didn't answer. Distinct from "no projects" — see the render. */
+  const [projectsFailed, setProjectsFailed] = useState(false);
+  /** Bumped by Retry to re-run the load effect. */
+  const [reloadProjects, setReloadProjects] = useState(0);
   const [openingProjectId, setOpeningProjectId] = useState<string | null>(null);
   const rootRef = useRef<HTMLDivElement>(null);
   // Stale forks left by an old autosave bug are hidden here as well as on
@@ -105,9 +132,11 @@ export default function AccountMenu({
     return () => window.removeEventListener("pointerdown", close);
   }, [open]);
 
+  // Keyed on the uid, not the `user` object, which Firebase replaces on every
+  // token refresh — the same fix the other account-keyed effects already got.
+  const uid = user?.uid;
   useEffect(() => {
-    if (!open || !user || !COOKBOOK_ENABLED) return;
-    const uid = user.uid;
+    if (!open || !uid || !COOKBOOK_ENABLED) return;
     const cached = projectsCache.get(uid);
     if (cached) {
       // Show the last-known list immediately — no empty flash — and skip the
@@ -117,14 +146,23 @@ export default function AccountMenu({
     }
     let cancelled = false;
     setLoadingProjects(!cached);
-    loadPrintProjects(uid)
+    setProjectsFailed(false);
+    // `getDocs` never settles against a Firestore it cannot reach, so the
+    // deadline is the only thing that can end this — see lib/withTimeout.
+    withTimeout(loadPrintProjects(uid), PROJECTS_TIMEOUT_MS)
       .then((next) => {
         projectsCache.set(uid, { projects: next, at: Date.now() });
         if (!cancelled) setProjects(next);
       })
       .catch(() => {
         // Keep whatever was cached on a transient failure rather than blanking.
-        if (!cancelled && !cached) setProjects([]);
+        // With nothing cached there is nothing honest to show, so say so and
+        // offer the read again rather than claiming an empty library.
+        if (cancelled) return;
+        if (!cached) {
+          setProjects([]);
+          setProjectsFailed(true);
+        }
       })
       .finally(() => {
         if (!cancelled) setLoadingProjects(false);
@@ -132,7 +170,46 @@ export default function AccountMenu({
     return () => {
       cancelled = true;
     };
-  }, [open, user]);
+  }, [open, uid, reloadProjects]);
+
+  /**
+   * The cover over a navigation that never arrived.
+   *
+   * `openingProjectId` is cleared by this component unmounting as the new route
+   * renders — which is the whole design, and fine right up until the navigation
+   * stalls. Then a `fixed inset-0` spinner owns the entire viewport and the only
+   * way out is a reload. So: a deadline, and Escape, both of which put the page
+   * back exactly as it was. Clicking the project again is a fair second try.
+   */
+  useEffect(() => {
+    if (!openingProjectId) return;
+    const timer = window.setTimeout(() => setOpeningProjectId(null), OPENING_TIMEOUT_MS);
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") setOpeningProjectId(null);
+    };
+    window.addEventListener("keydown", onKeyDown);
+    return () => {
+      window.clearTimeout(timer);
+      window.removeEventListener("keydown", onKeyDown);
+    };
+  }, [openingProjectId]);
+
+  /* The read behind both lists is a single call, so both say the same thing
+     when it doesn't answer: what happened, and the way to ask again. Never an
+     empty state — "Your saved cookbooks will appear here" under a failed read
+     tells someone their library is empty when we simply don't know. */
+  const projectsUnavailable = (
+    <div className="mt-2">
+      <p className="text-cp-small text-ink-soft">We couldn’t load your projects.</p>
+      <button
+        type="button"
+        className="btn btn-secondary btn-compact mt-2"
+        onClick={() => setReloadProjects((count) => count + 1)}
+      >
+        Try again
+      </button>
+    </div>
+  );
 
   return (
     <div ref={rootRef} className="relative flex items-center">
@@ -205,6 +282,8 @@ export default function AccountMenu({
               </strong>
               {loadingProjects ? (
                 <p className="mt-2 text-cp-small text-ink-soft">Loading…</p>
+              ) : projectsFailed ? (
+                projectsUnavailable
               ) : cookbooks.length ? (
                 <div className="mt-2 flex max-h-56 flex-col overflow-y-auto">
                   {cookbooks.map((project) => (
@@ -235,6 +314,8 @@ export default function AccountMenu({
               </strong>
               {loadingProjects ? (
                 <p className="mt-2 text-cp-small text-ink-soft">Loading…</p>
+              ) : projectsFailed ? (
+                projectsUnavailable
               ) : printProjects.length ? (
                 <div className="mt-2 flex max-h-56 flex-col overflow-y-auto">
                   {printProjects.map((project) => (
