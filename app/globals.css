@@ -1015,25 +1015,38 @@
       color 150ms ease,
       border-color 150ms ease;
   }
-  /* The account control sits in a row of compact buttons, so it matches them
-     rather than standing a third taller than everything beside it.
-     Deliberately scoped to the avatar and not to `.icon-button` at large:
-     the other icon buttons live in dialogs and the rail, where 40px is a
-     touch target rather than a size choice. */
+  /* The account control takes the size of the buttons it sits beside, rather
+     than standing a third taller than all of them at `.icon-button`'s 40px.
+     Which size that is depends on the bar: a marketing header is a row of
+     full `.btn`s, the workspace is a row of `.btn-compact` chrome. Same rule
+     the buttons themselves follow, applied to the one control in the row that
+     isn't one — see `SiteHeader`'s `compact`, which decides it.
+
+     Deliberately scoped to the avatar and not to `.icon-button` at large: the
+     other icon buttons live in dialogs and the rail, where 40px is a touch
+     target rather than a size choice.
+
+     Squared rather than kept a circle, at either size: it stands in a row with
+     Start printing, Save and Buy & Print, and a lone pill among rounded
+     rectangles read as a different kind of thing than the buttons beside it.
+     The corner scales with the box, like the rest of the family.
+
+     Type is sized off the ramp rather than off the avatar's width, which is
+     what the round version needed: a circle makes the corners unusable, so two
+     letters had to stay well inside the diameter. Squared, the full width is
+     available and the initials can simply match the labels next to them. */
   [data-rp-avatar] {
+    width: 34px;
+    height: 34px;
+    border-radius: var(--cp-radius-control);
+    font-size: var(--cp-fs-body);
+  }
+  [data-rp-avatar="compact"] {
     width: 30px;
     height: 30px;
-    /* Squared to `.btn-compact`'s 8px rather than kept a circle: it stands in
-       a row with Save and Buy & Print, and a lone pill among rounded rectangles
-       read as a different kind of thing than the buttons it sits with. */
     border-radius: 8px;
+    font-size: var(--cp-fs-small);
   }
-  /* Same size as the text in the buttons it sits beside. Sized off the type
-     ramp rather than off the avatar's width, which is what the round version
-     needed: a circle makes the corners unusable, so two letters had to stay
-     well inside the diameter. Squared to 8px, the full width is available and
-     the initials can simply match Save and Buy & Print. */
-  [data-rp-avatar] { font-size: var(--cp-fs-small); }
 
   .icon-button:hover:not(:disabled),
   .icon-close-btn:hover:not(:disabled) {

@@ -75,9 +75,15 @@ const OPENING_TIMEOUT_MS = 15_000;
  * arrives.
  */
 export default function AccountMenu({
+  compact = false,
   activateOnReady,
   onActivated,
 }: {
+  /** Sizes the avatar and the sign-in button to the bar they are in — handed
+      down from `SiteHeader` through `AccountControl`, which renders the very
+      same two controls while this chunk is still loading. They have to agree,
+      or the handover is a visible resize. */
+  compact?: boolean;
   /** A click landed on the placeholder avatar before this chunk arrived. Act on
       it as soon as auth resolves — the dropdown if they're signed in, the sign-in
       dialog if not, which is exactly what the real button would have done. */
@@ -228,7 +234,7 @@ export default function AccountMenu({
       */}
       {user || (!ready && wasSignedIn) ? (
         <IconButton
-          data-rp-avatar
+          data-rp-avatar={compact ? "compact" : "full"}
           className={`${
             user
               ? "border border-transparent bg-[var(--cp-accent)] text-[var(--cp-ink)] font-bold tracking-tight"
@@ -249,6 +255,7 @@ export default function AccountMenu({
         </IconButton>
       ) : (
         <SignInButton
+          compact={compact}
           onClick={() => {
             if (!ready) return;
             setShowLogin(true);
