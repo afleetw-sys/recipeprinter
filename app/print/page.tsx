@@ -3609,10 +3609,16 @@ export default function PrintPage() {
             lib/localProjects), and an account is how it stops being only there. */}
         {projectMeta.meta.cookbookMode && !cookPilotUser && (
           <div className="recipe-protect-bar no-print" role="status">
+            {/* "Create a free account" assumed nobody reading this had one,
+                which is wrong for every returning customer who is simply
+                signed out on this browser — and the dialog behind the button
+                has always handled both. So the ask is to SIGN IN, which is
+                true whether the account exists yet or not. "Only on this
+                device" stays: it is the fact that makes the ask worth making. */}
             <span className="recipe-protect-bar__text">
               {cookbookLocked
-                ? "Your cookbook is saved only on this device. Create a free account so you don’t lose it."
-                : "Your cookbook and your purchase are saved only on this device. Create a free account to keep them."}
+                ? "This cookbook is saved only on this device. Sign in to keep it in your account."
+                : "This cookbook and your purchase are saved only on this device. Sign in to keep them in your account."}
             </span>
             <button
               type="button"
@@ -3623,7 +3629,7 @@ export default function PrintPage() {
                 setShowCookPilotLogin(true);
               }}
             >
-              Create free account
+              Save to your account
             </button>
           </div>
         )}
