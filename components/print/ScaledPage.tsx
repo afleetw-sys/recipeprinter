@@ -547,13 +547,20 @@ export const ScaledPage = memo(function ScaledPage({
               }`}
               data-preview-hidden={activeSide !== "front" ? "true" : undefined}
             >
-              {/* A photo page carries a page NUMBER (so the strip below the deck
-                  can say which page it is) but prints no folio and no running
-                  head — a full-bleed picture with a numeral over it is not a
-                  book, it's a mistake. `layoutKind` is what makes it a photo
-                  page; before numbering was decoupled from the contents, the
-                  absence of a number did this job by accident. */}
-              {sheet.pageNumber !== undefined && !sheet.layoutKind && (
+              {/* Book furniture, so it prints only in a book. Every sheet is
+                  numbered in both modes — the strip below the deck says which
+                  page you are on for recipe cards too — but a stack of cards is
+                  not paginated: they get cut apart, stuck to a fridge, handed to
+                  someone. A folio in the corner of one is furniture from a
+                  different object. Numbering stopped implying a book when it was
+                  decoupled from the contents, and this is the other half of that
+                  change: the sheet knows its number, the page decides whether to
+                  print it.
+
+                  A photo page has a number and still shows nothing — a full-bleed
+                  picture with a numeral over it is not a book, it's a mistake.
+                  `layoutKind` is what makes it a photo page. */}
+              {cookbookMode && sheet.pageNumber !== undefined && !sheet.layoutKind && (
                 <>
                   {sheet.runningHeader && (
                     <div className="recipe-book-runhead" aria-hidden>
