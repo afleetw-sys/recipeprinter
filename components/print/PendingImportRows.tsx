@@ -1,6 +1,5 @@
 "use client";
 
-import { RefreshIcon, TrashIcon, ICON_SIZE } from "@/components/icons";
 import { RecipeLoadingState } from "@/components/RecipeLoadingState";
 import type { QueueItem } from "@/types/recipe";
 
@@ -33,16 +32,25 @@ export function PendingImportRows({ items, canRetry, onRetry, onRemove }: Pendin
                 <RecipeLoadingState className="recipe-page-rail__loading-status" />
               ) : (
                 <div className="recipe-page-rail__import-error" role="alert">
-                  <strong>Couldn&apos;t import recipe</strong>
-                  <span>{item.error || "Check the source and try again."}</span>
+                  {/* "recipe" was doing nothing: the sentence under it says so,
+                      and the tile sits in a rail of recipes. */}
+                  <strong>Couldn&apos;t import</strong>
+                  {/* Clamped to two lines in the rail; the full message stays
+                      reachable rather than truncated away. */}
+                  <span title={item.error || undefined}>
+                    {item.error || "Check the source and try again."}
+                  </span>
                   <div className="recipe-page-rail__import-error-actions">
                     {canRetry(item) && (
                       <button type="button" className="btn btn-secondary btn-compact" onClick={() => onRetry(item.id)}>
-                        <RefreshIcon size={ICON_SIZE.sm} /> Retry
+                        Retry
                       </button>
                     )}
+                    {/* Plain ghost, not the danger tier: nothing is lost by
+                        dismissing an import that never produced anything, and a
+                        second red on an already-red tile is noise, not warning. */}
                     <button type="button" className="btn btn-ghost btn-compact" onClick={() => onRemove(item.id)}>
-                      <TrashIcon size={ICON_SIZE.sm} /> Remove
+                      Remove
                     </button>
                   </div>
                 </div>
