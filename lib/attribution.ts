@@ -43,8 +43,10 @@ export type KnownTrafficSource =
   | "Peerlist"
   | "PeerPush"
   | "Uneed"
+  | "UI Comet"
   | "Email"
   | "CookPilot"
+  | "Shared Card"
   | "Referral"
   | "Direct / Unknown";
 
@@ -87,6 +89,24 @@ export const REFERRER_RULES: ReadonlyArray<{
   { source: "Peerlist", pattern: /(^|\.)peerlist\.io$/ },
   { source: "PeerPush", pattern: /(^|\.)peerpush\.net$/ },
   { source: "Uneed", pattern: /(^|\.)uneed\.best$/ },
+  // UI Comet's launch feed lives on `launches.uicomet.com`; the studio's own
+  // site is the apex, and either can send a click.
+  { source: "UI Comet", pattern: /(^|\.)uicomet\.com$/ },
+  // --- Android in-app browsers. Tapping a link inside an app hands us
+  // `android-app://<package>` as the referrer, so the "hostname" is a package
+  // name and none of the domain rules above can ever match it. Without these
+  // rows Instagram, Facebook and Gmail traffic all landed in the generic
+  // "Referral" bucket — present in the numbers, but anonymous inside it.
+  { source: "Instagram", pattern: /^com\.instagram\.android$/ },
+  { source: "Facebook", pattern: /^com\.facebook\.(katana|orca|lite)$/ },
+  { source: "Pinterest", pattern: /^com\.pinterest$/ },
+  { source: "Reddit", pattern: /^com\.reddit\.frontpage$/ },
+  { source: "ChatGPT", pattern: /^com\.openai\.chatgpt$/ },
+  // The Gmail app is the one email client that announces itself. Gmail on the
+  // WEB cannot be told apart from search — see `classifyTrafficSource`.
+  { source: "Email", pattern: /^com\.google\.android\.gm$/ },
+  { source: "Google Search", pattern: /^com\.google\.android\.googlequicksearchbox$/ },
+
   // --- Our sister product; a link from CookPilot is a known, valuable path.
   { source: "CookPilot", pattern: /(^|\.)cookpilotapp\.com$/ },
 ];
@@ -116,8 +136,11 @@ export const UTM_SOURCE_ALIASES: ReadonlyArray<{
   { source: "Peerlist", keywords: ["peerlist"] },
   { source: "PeerPush", keywords: ["peerpush"] },
   { source: "Uneed", keywords: ["uneed"] },
+  { source: "UI Comet", keywords: ["uicomet", "ui-comet"] },
   { source: "Email", keywords: ["email", "e-mail", "newsletter", "klaviyo", "mailchimp", "substack"] },
   { source: "CookPilot", keywords: ["cookpilot"] },
+  // Our own share links (see components/AdminShareLinkDialog).
+  { source: "Shared Card", keywords: ["shared_card", "shared-card"] },
 ];
 
 /**
@@ -183,8 +206,10 @@ const CATEGORY_BY_SOURCE: Readonly<Record<KnownTrafficSource, TrafficCategory>> 
   Peerlist: "Launch",
   PeerPush: "Launch",
   Uneed: "Launch",
+  "UI Comet": "Launch",
   Email: "Email",
   CookPilot: "Referral",
+  "Shared Card": "Referral",
   Referral: "Referral",
   "Direct / Unknown": "Direct",
 };
@@ -213,6 +238,9 @@ export interface Attribution {
   utmCampaign: string | null;
   gclid: string | null;
   fbclid: string | null;
+  /** The raw `?ref=`/`via=`/`source=` tag, kept as sent so an unrecognized one
+      is still readable on the event rather than only in its resolved form. */
+  refParam: string | null;
 }
 
 function stripWww(host: string): string {
@@ -236,18 +264,73 @@ function isEmailMedium(medium: string | null): boolean {
   return m === "email" || m === "e-mail" || m === "newsletter";
 }
 
+/** A source name we recognize, or null. Strict: no title-casing fallback, so a
+    caller that must not invent sources (see `normalizeRefParam`) can say no. */
+export function matchUtmAlias(value: string): KnownTrafficSource | null {
+  const src = value.toLowerCase().trim();
+  for (const { source, keywords } of UTM_SOURCE_ALIASES) {
+    if (keywords.some((k) => src === k || src.includes(k))) return source;
+  }
+  return null;
+}
+
 /** Map a `utm_source` onto a normalized source, or title-case it if unknown. */
 export function normalizeUtmSource(
   utmSource: string,
   utmMedium: string | null,
 ): TrafficSource {
-  const src = utmSource.toLowerCase().trim();
-  for (const { source, keywords } of UTM_SOURCE_ALIASES) {
-    if (keywords.some((k) => src === k || src.includes(k))) return source;
-  }
+  const matched = matchUtmAlias(utmSource);
+  if (matched) return matched;
   if (isEmailMedium(utmMedium)) return "Email";
   // Unknown but tagged: keep the campaign's own name rather than hiding it.
   return titleCase(utmSource);
+}
+
+/**
+ * A hostname pulled out of a loose value, or null if it isn't one.
+ *
+ * `?ref=` carries whatever its author felt like: a bare host
+ * (`launches.uicomet.com`), a full URL, or a word (`newsletter`). A dot is what
+ * separates the first two from the third — without that check `?ref=newsletter`
+ * parses as a hostname called "newsletter" and gets matched against domain
+ * rules it can never satisfy.
+ */
+function hostFromLooseValue(value: string): string | null {
+  const candidate = value.includes("://") ? value : `https://${value}`;
+  try {
+    const host = new URL(candidate).hostname.toLowerCase();
+    return host.includes(".") ? host : null;
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * `?ref=` → a source, or null to keep looking.
+ *
+ * Plenty of launch directories and indie listings tag outbound links with
+ * `ref` rather than `utm_source` — `?ref=launches.uicomet.com` is a real visit
+ * we filed as Direct, on a link that named its own source in the URL.
+ *
+ * Resolved to the SAME name a real referrer would have produced, so a UI Comet
+ * click is "UI Comet" whether it arrived tagged or with a referrer intact and
+ * the two don't split one source into two rows.
+ *
+ * Deliberately below `utm_source` in the ladder: `ref` is an ad-hoc convention
+ * that also gets used for affiliate and referral codes, so a campaign that
+ * bothered with a real UTM outranks it.
+ */
+export function normalizeRefParam(raw: string, utmMedium: string | null): TrafficSource | null {
+  const value = raw.trim();
+  if (!value) return null;
+  const host = hostFromLooseValue(value);
+  if (host) return matchReferrer(host) ?? "Referral";
+  // Not a host. Recognize it or decline — never title-case, because `ref` is
+  // also where affiliate and referral CODES live, and inventing a source per
+  // code would bury the real names under a tail of one-visit rows. The raw tag
+  // still rides on the event as `refParam`, so an unrecognized one is readable
+  // and can earn a rule later.
+  return matchUtmAlias(value) ?? (isEmailMedium(utmMedium) ? "Email" : null);
 }
 
 /** Match a referrer hostname against the ordered rule list. */
@@ -264,16 +347,30 @@ export function matchReferrer(host: string): KnownTrafficSource | null {
  *   1. An explicit `utm_source` — the campaign told us, so believe it.
  *   2. An email `utm_medium` with no source — still clearly email.
  *   3. A paid click id — `gclid` is Google, `fbclid` is Facebook.
- *   4. The referrer hostname, matched against REFERRER_RULES; an unmatched
+ *   4. A `?ref=` style tag — the link named its own source (see
+ *      `normalizeRefParam`). Below the UTMs because it is a convention rather
+ *      than a standard, and above the referrer because a link that says where
+ *      it came from beats guessing from a hostname that may not survive the hop.
+ *   5. The referrer hostname, matched against REFERRER_RULES; an unmatched
  *      external referrer is a generic "Referral".
- *   5. Nothing to go on → "Direct / Unknown".
+ *   6. Nothing to go on → "Direct / Unknown".
  * A self-referral (someone already on our domain) counts as no referrer.
+ *
+ * One thing this ladder deliberately does NOT try: telling Gmail on the web
+ * apart from Google Search. Gmail sends its clicks through
+ * `google.com/url?q=…`, and by the time the browser reports a referrer it is
+ * the bare `google.com` origin, identical to a search click. A path-sniffing
+ * rule would fire almost never and would mislabel real search traffic as email
+ * when it did. The Gmail APP is catchable (it names its own package) and
+ * anything we send ourselves should carry a UTM; web Gmail stays in Search,
+ * and that is the honest answer rather than a guess dressed up as one.
  */
 export function classifyTrafficSource(p: {
   utmSource: string | null;
   utmMedium: string | null;
   gclid: string | null;
   fbclid: string | null;
+  refParam: string | null;
   referrerHost: string | null;
   isSelfReferral: boolean;
 }): TrafficSource {
@@ -281,6 +378,10 @@ export function classifyTrafficSource(p: {
   if (isEmailMedium(p.utmMedium)) return "Email";
   if (p.gclid) return "Google Search";
   if (p.fbclid) return "Facebook";
+  if (p.refParam) {
+    const tagged = normalizeRefParam(p.refParam, p.utmMedium);
+    if (tagged) return tagged;
+  }
   if (p.referrerHost && !p.isSelfReferral) {
     return matchReferrer(p.referrerHost) ?? "Referral";
   }
@@ -328,15 +429,30 @@ export function resolveAttribution(input: AttributionInput): Attribution {
   const utmCampaign = param(params, "utm_campaign");
   const gclid = param(params, "gclid");
   const fbclid = param(params, "fbclid");
+  // Three spellings of the same idea. First one present wins; `utm_source`
+  // still outranks all of them in the ladder below.
+  const refParam =
+    param(params, "ref") ?? param(params, "via") ?? param(params, "source");
 
   const source = classifyTrafficSource({
     utmSource,
     utmMedium,
     gclid,
     fbclid,
+    refParam,
     referrerHost,
     isSelfReferral,
   });
 
-  return { source, referrer, landingPage, utmSource, utmMedium, utmCampaign, gclid, fbclid };
+  return {
+    source,
+    referrer,
+    landingPage,
+    utmSource,
+    utmMedium,
+    utmCampaign,
+    gclid,
+    fbclid,
+    refParam,
+  };
 }
