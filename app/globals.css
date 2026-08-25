@@ -1059,6 +1059,22 @@
     box-shadow: var(--cp-selected-ring);
     color: var(--cp-selected-text);
   }
+  /* Filled neutral, the icon-button counterpart to `.btn-neutral`: for a
+     control that has to be FOUND but is not the page's main action. The
+     signed-out account avatar is the case it exists for — a person glyph in an
+     outlined white box reads as an empty slot, where a filled one reads as a
+     control holding something. Signed IN, the same box takes the accent and
+     your initials, so the fill is the constant and the colour says which. */
+  .icon-button--filled {
+    border-color: transparent;
+    background: var(--cp-surface-strong);
+    color: var(--cp-ink-soft);
+  }
+  .icon-button--filled:hover:not(:disabled) {
+    background: var(--cp-surface-strong-hover);
+    border-color: transparent;
+    color: var(--cp-ink);
+  }
   .icon-button--danger:hover:not(:disabled) {
     border-color: var(--cp-error-border);
     background: var(--cp-error-soft);
