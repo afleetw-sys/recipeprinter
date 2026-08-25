@@ -477,6 +477,11 @@ function applyTrafficAttribution(client: PostHog, input: AttributionInput): void
     utm_campaign: a.utmCampaign,
     gclid: a.gclid,
     fbclid: a.fbclid,
+    /* The raw tag, not just what it resolved to. An unrecognized `ref` is
+       classified as Direct on purpose (see `normalizeRefParam`), so this is
+       the only place its value survives — and it is what tells us a new
+       directory is sending traffic and deserves a rule. */
+    ref: a.refParam,
   });
 }
 

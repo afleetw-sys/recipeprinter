@@ -82,7 +82,15 @@ export function AdminShareLinkDialog({
     }
   }
 
-  const shareUrl = savedSlug ? `${window.location.origin}/print/${savedSlug}` : null;
+  /* Tagged, because this is the one channel where we control the link and
+     still learn nothing. A share link is pasted into Messages, WhatsApp, an
+     email — none of which pass a referrer — so every visit from one arrived
+     as "Direct / Unknown" and the whole channel was invisible. `utm_source` is
+     the top of the attribution ladder (see lib/attribution), so this survives
+     even when the referrer doesn't. */
+  const shareUrl = savedSlug
+    ? `${window.location.origin}/print/${savedSlug}?utm_source=shared_card`
+    : null;
 
   return (
     <Dialog

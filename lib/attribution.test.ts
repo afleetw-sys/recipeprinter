@@ -154,9 +154,71 @@ describe("classifyTrafficSource guards", () => {
         utmMedium: "email",
         gclid: null,
         fbclid: null,
+      refParam: null,
         referrerHost: null,
         isSelfReferral: false,
       }),
     ).toBe("Email");
+  });
+});
+
+describe("?ref= tags", () => {
+  // The visit that prompted all of this: a link that named its own source in
+  // the URL, filed as Direct because nothing read the tag.
+  it("reads a host-shaped ref the way it would read that referrer", () => {
+    expect(land("/?ref=launches.uicomet.com").source).toBe("UI Comet");
+    expect(land("/?ref=https://launches.uicomet.com/products/x").source).toBe("UI Comet");
+    // Same name whether it arrived tagged or with the referrer intact, so one
+    // source never splits into two rows.
+    expect(land("/", "https://launches.uicomet.com/products/x").source).toBe("UI Comet");
+  });
+
+  it("accepts via= and source= as the same idea", () => {
+    expect(land("/?via=pinterest.com").source).toBe("Pinterest");
+    expect(land("/?source=reddit.com").source).toBe("Reddit");
+  });
+
+  it("resolves a recognized word tag", () => {
+    expect(land("/?ref=newsletter").source).toBe("Email");
+    expect(land("/?ref=cookpilot").source).toBe("CookPilot");
+  });
+
+  it("declines an unrecognized code rather than inventing a source", () => {
+    // Affiliate/referral codes live in `ref` too. Title-casing them would bury
+    // the real sources under a tail of one-visit rows.
+    expect(land("/?ref=a83kfj20").source).toBe("Direct / Unknown");
+    expect(land("/?ref=a83kfj20").refParam).toBe("a83kfj20");
+  });
+
+  it("keeps utm_source above ref, and ref above the referrer", () => {
+    expect(land("/?utm_source=reddit&ref=pinterest.com").source).toBe("Reddit");
+    expect(land("/?ref=pinterest.com", "https://www.google.com/").source).toBe("Pinterest");
+  });
+
+  it("files an unmatched host-shaped ref as a plain Referral", () => {
+    expect(land("/?ref=somewhere-new.example").source).toBe("Referral");
+  });
+});
+
+describe("android in-app browsers", () => {
+  // Tapping a link inside an app hands us `android-app://<package>`, so the
+  // "hostname" is a package name and no domain rule can match it.
+  it("names the app instead of burying it in Referral", () => {
+    expect(land("/", "android-app://com.instagram.android").source).toBe("Instagram");
+    expect(land("/", "android-app://com.facebook.katana").source).toBe("Facebook");
+    expect(land("/", "android-app://com.google.android.gm").source).toBe("Email");
+    expect(land("/", "android-app://com.reddit.frontpage").source).toBe("Reddit");
+  });
+
+  it("still calls an unknown app a Referral, not Direct", () => {
+    expect(land("/", "android-app://com.example.unknown").source).toBe("Referral");
+  });
+});
+
+describe("our own share links", () => {
+  it("attributes a shared card, which carries no referrer anywhere it gets pasted", () => {
+    const a = land("/print/abc123?utm_source=shared_card");
+    expect(a.source).toBe("Shared Card");
+    expect(categoryOf(a.source)).toBe("Referral");
   });
 });
