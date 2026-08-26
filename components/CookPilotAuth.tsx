@@ -32,7 +32,7 @@ import { Dialog } from "@/components/Dialog";
 import { ICON_SIZE, SpinnerIcon, XIcon } from "@/components/icons";
 
 /* ──────────────────────────────────────────────────────────────────────────
-   Shared Recipe Printer login: same Firebase project, same providers, same
+   Shared RecipePrinter login: same Firebase project, same providers, same
    email-enumeration-safe provider check as CookPilotWeb's own auth. Used by
    both the CookPilot recipe importer and the print page's "Already
    purchased?" template-purchase recovery flow — one implementation so the
@@ -157,7 +157,7 @@ function startAuthSubscription(): void {
       // hostage. Rules allow only these harmless timestamps; server-owned
       // purchases, entitlements, grants, and roles cannot be changed here.
       void ensureRecipePrinterAccount(nextUser).catch((error) => {
-        console.warn("Could not initialize Recipe Printer account metadata.", error);
+        console.warn("Could not initialize RecipePrinter account metadata.", error);
       });
     }
     publishAuthState({ user: nextUser ?? null, ready: true });
@@ -412,7 +412,7 @@ export function CookPilotLoginDialog({
     <Dialog
       onClose={onClose}
       closeDisabled={busy}
-      label={reason === "purchase" ? "Protect your purchase" : "Sign in to Recipe Printer"}
+      label={reason === "purchase" ? "Protect your purchase" : "Sign in or create an account"}
       portal
       className="fixed inset-0 z-50 flex items-stretch sm:items-center justify-center bg-ink/30 p-0 sm:px-cp-4 sm:py-cp-6"
       panelClassName="panel panel--modal w-full sm:max-w-[420px] h-full sm:h-auto rounded-none border-0 sm:rounded-2xl sm:border p-cp-5 flex flex-col gap-cp-4 relative overflow-y-auto"
@@ -428,12 +428,12 @@ export function CookPilotLoginDialog({
 
         <div className="pr-cp-7">
           <h3 className="font-extrabold tracking-[-0.02em] text-cp-dialog-title">
-            {reason === "purchase" ? "Don’t lose your purchase" : "Sign in to Recipe Printer"}
+            {reason === "purchase" ? "Don’t lose your purchase" : "Sign in or create an account"}
           </h3>
           <p className="text-cp-small text-ink-soft mt-1">
             {reason === "purchase"
               ? "Create a free account or sign in so you can access your purchase on another device."
-              : "Your account saves cookbooks and restores templates across devices."}
+              : "Keeps this project, your cookbooks and your templates across devices. New here? Entering an email creates the account."}
           </p>
         </div>
 

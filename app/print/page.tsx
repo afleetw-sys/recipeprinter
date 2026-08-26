@@ -1778,6 +1778,19 @@ export default function PrintPage() {
     });
   }
 
+  /**
+   * Walking away from the sign-in dialog cancels the save that opened it.
+   *
+   * `handleSaveProject` arms `saveAfterLoginRef` before showing the dialog, and
+   * nothing disarmed it: someone who closed the dialog without making an
+   * account left the intent live, so the next sign-in — for anything, any time
+   * later — silently wrote that project to the account they had just declined
+   * to create it for.
+   */
+  function cancelSaveAfterLogin() {
+    saveAfterLoginRef.current = false;
+  }
+
   /** `projectIdOverride` points this save at a specific document — used when
       leaving files the content back over the project it already was. */
   async function handleSaveProject(projectIdOverride?: string) {
@@ -3462,7 +3475,10 @@ export default function PrintPage() {
         </div>
         {showCookPilotLogin && !cookPilotUser && (
           <CookPilotLoginDialog
-            onClose={() => setShowCookPilotLogin(false)}
+            onClose={() => {
+              setShowCookPilotLogin(false);
+              cancelSaveAfterLogin();
+            }}
             onAuthenticated={() => setShowCookPilotLogin(false)}
             reason={cookPilotLoginReason}
           />
@@ -4152,7 +4168,10 @@ export default function PrintPage() {
       />
       {showCookPilotLogin && !cookPilotUser && (
         <CookPilotLoginDialog
-          onClose={() => setShowCookPilotLogin(false)}
+          onClose={() => {
+            setShowCookPilotLogin(false);
+            cancelSaveAfterLogin();
+          }}
           onAuthenticated={() => setShowCookPilotLogin(false)}
           reason={cookPilotLoginReason}
         />
