@@ -433,7 +433,7 @@ export function CookPilotLoginDialog({
           <p className="text-cp-small text-ink-soft mt-1">
             {reason === "purchase"
               ? "Create a free account or sign in so you can access your purchase on another device."
-              : "Your account keeps these projects on every device you use."}
+              : "An account keeps these projects saved on every device you use."}
           </p>
         </div>
 
