@@ -101,7 +101,8 @@ export function recipePagePlacementHasValues(placement: RecipePagePlacement): bo
     placement.heroFocusX !== undefined ||
     placement.heroFocusY !== undefined ||
     placement.heroZoom !== undefined ||
-    placement.showPhoto !== undefined
+    placement.showPhoto !== undefined ||
+    (placement.photoHistory?.length ?? 0) > 0
   );
 }
 

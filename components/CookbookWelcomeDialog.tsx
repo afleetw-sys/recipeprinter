@@ -63,15 +63,18 @@ export function CookbookWelcomeDialog({
       </div>
       <div className="cookbook-welcome__copy">
         <div className="cookbook-welcome__lede">
+          {/* This screen now opens ON TOP of the built book rather than in
+              front of the idea of one, so it describes what is already on the
+              screen behind it. */}
           <h2 id="cookbook-welcome-title">
             {purchased
               ? "Your cookbook is right where you left it."
-              : "Turn your favorite recipes into a cookbook you'll keep forever."}
+              : "Here is your cookbook."}
           </h2>
           <p>
             {purchased
-              ? "Your cover, chapters and layout were kept. Open it back up and carry on."
-              : "A beautifully designed cookbook you'll be proud to print, gift, and pass down."}
+              ? "Your cover, chapters and layout were kept. Carry on where you stopped."
+              : "Your recipes, laid out with a cover and chapters. Keep going and make it yours."}
           </p>
         </div>
         <ul className="cookbook-feature-chips">
@@ -94,9 +97,9 @@ export function CookbookWelcomeDialog({
         </div>
         <div className="cookbook-welcome__actions">
           <button type="button" className="btn btn-primary" onClick={onStart}>
-            {purchased ? "Open my cookbook" : "Create my cookbook"}
+            {purchased ? "Open my cookbook" : "Keep going"}
           </button>
-          <button type="button" className="btn btn-ghost" onClick={onClose}>Not now</button>
+          <button type="button" className="btn btn-ghost" onClick={onClose}>Back to recipe cards</button>
         </div>
       </div>
     </Dialog>

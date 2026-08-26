@@ -42,7 +42,7 @@ const MODES: {
   label: string;
   icon: ComponentType<{ size?: number; className?: string }>;
 }[] = [
-  { id: "url", label: "URL", icon: LinkIcon },
+  { id: "url", label: "Link", icon: LinkIcon },
   { id: "cookpilot", label: "CookPilot", icon: CookPilotLogoIcon },
   { id: "image", label: "Image", icon: ImageIcon },
   { id: "text", label: "Paste Text", icon: TextIcon },
@@ -73,6 +73,9 @@ export function ImportPanel({
   workspace = false,
   initialMode = "url",
   submitLabel = "Add",
+  hideSubmit = false,
+  showAllModes = false,
+  onModeChange,
   autoFocusUrl = true,
   onAddUrl,
   onAddImages,
@@ -85,6 +88,16 @@ export function ImportPanel({
   workspace?: boolean;
   initialMode?: ImportMethod;
   submitLabel?: string;
+  /** Drop the panel's own submit button: the surface around it owns the action
+      (the add dialog puts one Add at the bottom instead of two buttons). */
+  hideSubmit?: boolean;
+  /** Show every source, whatever is already in the queue. The overflow exists to
+      keep the workspace rail quiet; a dialog whose only job is adding has no
+      rail to keep quiet. */
+  showAllModes?: boolean;
+  /** Which source is showing. The add dialog sizes itself to it: a paste box
+      wants far more room than a URL field. */
+  onModeChange?: (mode: ImportMethod) => void;
   /** Autofocus the URL input on mount. Off on SEO capture blocks, where the panel
       can sit below the fold and stealing focus would scroll the page on load. */
   autoFocusUrl?: boolean;
@@ -125,7 +138,8 @@ export function ImportPanel({
   const overflowActive = OVERFLOW_MODES.some((option) => option.id === mode);
   // While the print list is empty, surface every import option so people learn
   // what's available; once a recipe is added, tuck the extras into the overflow.
-  const expanded = items.length === 0;
+  // Inside the add dialog that rule inverts — see `showAllModes`.
+  const expanded = showAllModes || items.length === 0;
 
   useEffect(() => {
     function onPointerDown(event: PointerEvent) {
@@ -148,6 +162,7 @@ export function ImportPanel({
 
   function chooseMode(nextMode: ImportMethod) {
     setMode(nextMode);
+    onModeChange?.(nextMode);
     setOverflowOpen(false);
     resetError();
   }
@@ -410,14 +425,16 @@ export function ImportPanel({
                   resetError();
                 }}
               />
-              <button
-                type="submit"
-                className="btn btn-primary rp-import-submit w-full lg:w-auto lg:shrink-0"
-                disabled={busy}
-              >
-                {busy ? <SpinnerIcon size={ICON_SIZE.md} /> : <PlusIcon size={ICON_SIZE.md} />}
-                {submitLabel}
-              </button>
+              {!hideSubmit && (
+                <button
+                  type="submit"
+                  className="btn btn-primary rp-import-submit w-full lg:w-auto lg:shrink-0"
+                  disabled={busy}
+                >
+                  {busy ? <SpinnerIcon size={ICON_SIZE.md} /> : <PlusIcon size={ICON_SIZE.md} />}
+                  {submitLabel}
+                </button>
+              )}
             </div>
             {error && <p className="field-error" role="alert">{error}</p>}
           </div>
@@ -481,7 +498,7 @@ export function ImportPanel({
           </div>
         )}
 
-        {mode !== "url" && (
+        {mode !== "url" && !hideSubmit && (
           <button type="submit" className="btn btn-primary rp-import-submit w-full" disabled={busy}>
             {busy ? <SpinnerIcon size={ICON_SIZE.md} /> : <PlusIcon size={ICON_SIZE.md} />}
             {submitLabel}

@@ -216,6 +216,21 @@ const COUNTER_BAND_TOOTH = 0.16;
 const COUNTER_BAND_THIRD = 0.08;
 const COUNTER_BAND_COLOR = "#2f2f2f";
 
+/* Letters, not rules. Stacked lines read as text ALIGNMENT — the toolbar
+   convention for left/centre/right — which is the wrong question entirely.
+   "Aa" and "H" are how every editor says body versus heading. */
+function BodyTextGlyph() {
+  return <span className="recipe-card__line-kind-glyph" aria-hidden>Aa</span>;
+}
+
+function HeadingGlyph() {
+  return (
+    <span className="recipe-card__line-kind-glyph recipe-card__line-kind-glyph--heading" aria-hidden>
+      H
+    </span>
+  );
+}
+
 function CounterCheckerBand() {
   const teeth = Array.from({ length: COUNTER_BAND_TEETH }, (_, i) => i);
   return (
@@ -742,16 +757,68 @@ export const RecipeCardFace = memo(function RecipeCardFace({
       );
     }
     return (
-      <textarea
-        ref={focusIfEditing(target)}
-        className="recipe-card__inline-textarea recipe-card__section-title"
-        rows={1}
-        value={inlineEdit.value}
-        aria-label="Section title"
-        onChange={(event) => inlineEdit.onValueChange(event.target.value)}
-        onBlur={commitEdit}
-        onKeyDown={handleEditKeyDown}
-      />
+      /* The switch lives here too, so a heading can go back to being a line —
+         without it the conversion was one-way. */
+      <span className="recipe-card__section-title-edit">
+        <textarea
+          ref={focusIfEditing(target)}
+          className="recipe-card__inline-textarea recipe-card__section-title"
+          rows={1}
+          value={inlineEdit.value}
+          aria-label="Section title"
+          onChange={(event) => inlineEdit.onValueChange(event.target.value)}
+          onBlur={commitEdit}
+          onKeyDown={handleEditKeyDown}
+        />
+        {lineKindSwitch(target)}
+      </span>
+    );
+  }
+
+  /**
+   * The kind switch that floats above the field being edited: is this line
+   * body text, or a heading of its own?
+   *
+   * Sections previously existed only if the imported recipe already had them —
+   * nothing in the editor could start one. `onMouseDown`, not `onClick`: the
+   * button steals focus from the field, and mousedown fires before the blur so
+   * the in-progress text is still there to become the heading.
+   */
+  function lineKindSwitch(target: RecipeCardEditTarget) {
+    if (!canEdit || !inlineEdit) return null;
+    if (!sameTarget(inlineEdit.editingTarget, target)) return null;
+    const isHeading = target.kind === "ingredientSection" || target.kind === "instructionSection";
+    return (
+      <span className="recipe-card__line-kind no-print" role="group" aria-label="Line type">
+        {/* Heading first: it is the one being reached for. Body is where the
+            line already is. */}
+        <button
+          type="button"
+          className={`recipe-card__line-kind-btn ${isHeading ? "is-active" : ""}`}
+          aria-label="Heading"
+          aria-pressed={isHeading}
+          title="Heading"
+          onMouseDown={(event) => {
+            event.preventDefault();
+            if (!isHeading) inlineEdit.onSetLineKind(target, "heading");
+          }}
+        >
+          <HeadingGlyph />
+        </button>
+        <button
+          type="button"
+          className={`recipe-card__line-kind-btn ${isHeading ? "" : "is-active"}`}
+          aria-label="Body text"
+          aria-pressed={!isHeading}
+          title="Body text"
+          onMouseDown={(event) => {
+            event.preventDefault();
+            if (isHeading) inlineEdit.onSetLineKind(target, "body");
+          }}
+        >
+          <BodyTextGlyph />
+        </button>
+      </span>
     );
   }
 
@@ -777,7 +844,8 @@ export const RecipeCardFace = memo(function RecipeCardFace({
         ) : (
           text
         )}
-        {addLine("ingredient", index + 1)}
+        {lineKindSwitch(target)}
+        {!isEditingThis && addLine("ingredient", index + 1)}
       </li>
     );
   }
@@ -812,7 +880,8 @@ export const RecipeCardFace = memo(function RecipeCardFace({
         ) : (
           <span>{step.text}</span>
         )}
-        {addLine("step", index + 1)}
+        {lineKindSwitch(target)}
+        {!isEditingThis && addLine("step", index + 1)}
       </li>
     );
   }

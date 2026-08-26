@@ -82,6 +82,12 @@ export const XIcon = (p: IconProps) => (
   </Base>
 );
 
+export const MinusIcon = (p: IconProps) => (
+  <Base {...p}>
+    <path d="M5 12h14" />
+  </Base>
+);
+
 export const PlusIcon = (p: IconProps) => (
   <Base {...p}>
     <path d="M12 5v14" />
@@ -298,4 +304,38 @@ export const SpinnerIcon = ({ size = 18, className = "", ...p }: IconProps) => (
     <circle cx="12" cy="12" r="9" stroke="currentColor" strokeOpacity="0.2" strokeWidth="2.5" />
     <path d="M21 12a9 9 0 00-9-9" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" />
   </svg>
+);
+
+/** Google's four-colour G, drawn rather than fetched — the sign-in dialog is
+    the only place it appears, and a remote asset there would be a blank square
+    on the slowest connections. */
+export function GoogleIcon({ size = ICON_SIZE.md }: { size?: number }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 18 18" aria-hidden focusable="false">
+      <path fill="#4285F4" d="M17.64 9.2c0-.64-.06-1.25-.16-1.84H9v3.49h4.84a4.14 4.14 0 0 1-1.8 2.72v2.26h2.92c1.7-1.57 2.68-3.88 2.68-6.63Z" />
+      <path fill="#34A853" d="M9 18c2.43 0 4.47-.8 5.96-2.17l-2.92-2.26c-.81.54-1.84.86-3.04.86-2.34 0-4.32-1.58-5.03-3.7H.96v2.33A9 9 0 0 0 9 18Z" />
+      <path fill="#FBBC05" d="M3.97 10.73a5.4 5.4 0 0 1 0-3.46V4.94H.96a9 9 0 0 0 0 8.12l3.01-2.33Z" />
+      <path fill="#EA4335" d="M9 3.58c1.32 0 2.5.45 3.44 1.35l2.58-2.59C13.46.89 11.43 0 9 0A9 9 0 0 0 .96 4.94l3.01 2.33C4.68 5.16 6.66 3.58 9 3.58Z" />
+    </svg>
+  );
+}
+
+/** The Apple mark, in currentColor so it inherits the button's ink. */
+export function AppleIcon({ size = ICON_SIZE.md }: { size?: number }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 18 18" fill="currentColor" aria-hidden focusable="false">
+      <path d="M13.19 9.56c-.02-1.96 1.6-2.9 1.67-2.95-.91-1.33-2.33-1.51-2.83-1.53-1.2-.12-2.35.71-2.96.71-.61 0-1.55-.7-2.55-.68-1.31.02-2.52.76-3.2 1.93-1.36 2.37-.35 5.87 1.98 7.79.71.62 1.55 1.32 2.66 1.28 1.07-.04 1.47-.69 2.76-.69s1.66.69 2.79.67c1.15-.02 1.88-.63 2.58-1.26.81-.73 1.15-1.44 1.17-1.48-.03-.01-2.24-.86-2.27-3.4ZM11.3 3.6c.55-.66.92-1.58.82-2.5-.79.03-1.75.53-2.32 1.19-.51.58-.95 1.52-.83 2.42.88.07 1.78-.45 2.33-1.11Z" />
+    </svg>
+  );
+}
+
+/** Sliders — the print settings that live behind a dialog rather than in the
+    panel itself (cut lines, double-sided, source URL). */
+export const SlidersIcon = (p: IconProps) => (
+  <Base {...p}>
+    <path d="M4 6h10M18 6h2M4 12h2M10 12h10M4 18h8M16 18h4" />
+    <circle cx="16" cy="6" r="2" />
+    <circle cx="8" cy="12" r="2" />
+    <circle cx="14" cy="18" r="2" />
+  </Base>
 );

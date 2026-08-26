@@ -61,8 +61,9 @@ export function ImagePicker({
   // isn't one of the passed candidates — e.g. a section cover / cover photo the
   // cook UPLOADED (a Storage URL, not a recipe image). Without this the photo is
   // visibly on the page yet the picker shows nothing selected, reading as "no
-  // photo". Skipped in recipe-photo mode, whose grid is deliberately just "this
-  // recipe's photo" (a custom upload lives behind the Custom photo tile there).
+  // photo". Skipped in recipe-photo mode, which passes its own candidates: the
+  // recipe's current photo plus the ones it has worn before (`photoHistory`),
+  // so the current one is already among them.
   const uniqueImages = Array.from(
     new Set([...(current && !recipeMode ? [current] : []), ...images].filter(Boolean)),
   );

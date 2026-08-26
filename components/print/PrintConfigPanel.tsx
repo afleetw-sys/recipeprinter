@@ -6,6 +6,7 @@ import {
   CheckIcon,
   ICON_SIZE,
   XIcon,
+  SlidersIcon,
 } from "@/components/icons";
 import { PrintSetupControls } from "@/components/print/PrintSetupControls";
 import { ThemePicker } from "@/components/print/ThemePicker";
@@ -123,6 +124,22 @@ export function PrintConfigPanel({
             Purchased
           </span>
         )}
+        {/* The rest of the print settings — cut lines, double-sided, source URL
+            — behind one icon, in line with the heading of the panel they belong
+            to. They used to sit at the very bottom as a text link, below a
+            scroll, which is the last place someone looks for a setting. */}
+        {hasPrintSettingsFields && (
+          <button
+            type="button"
+            className="recipe-config-panel__settings icon-button"
+            aria-haspopup="dialog"
+            aria-label="Print settings"
+            title="Print settings"
+            onClick={() => setPrintSettingsOpen(true)}
+          >
+            <SlidersIcon size={ICON_SIZE.md} />
+          </button>
+        )}
         <button
           type="button"
           className="recipe-config-panel__close icon-close-btn"
@@ -182,16 +199,6 @@ export function PrintConfigPanel({
             onClick={() => setShowShareDialog(true)}
           >
             Save as share link
-          </button>
-        )}
-        {hasPrintSettingsFields && (
-          <button
-            type="button"
-            className="recipe-print-settings-link"
-            aria-haspopup="dialog"
-            onClick={() => setPrintSettingsOpen(true)}
-          >
-            Print settings
           </button>
         )}
       </div>

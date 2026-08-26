@@ -692,6 +692,8 @@ export interface RecipeCardInlineEdit {
   onValueChange: (value: string) => void;
   onCommit: (value?: string) => void;
   onImageChange: (url: string) => void;
+  /** Body ↔ heading for the field being edited (see `setLineKind`). */
+  onSetLineKind: (target: RecipeCardEditTarget, kind: "body" | "heading") => void;
   onCancel: () => void;
   onInsertIngredient: (index: number) => void;
   onInsertStep: (index: number) => void;
