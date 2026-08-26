@@ -271,7 +271,11 @@ export default function PrintPage() {
   const [doubleSided, setDoubleSided] = useState(true);
   const [showCutLines, setShowCutLines] = useState(false);
   const [printSettingsOpen, setPrintSettingsOpen] = useState(false);
-  const [showPhoto, setShowPhoto] = useState(false);
+  /* On by default: a recipe that came in with a photo should print with it
+     until someone says otherwise. Off meant the common case — import, print —
+     dropped the picture silently, and the only clue was a checkbox two panels
+     away. A stored preference still wins on the next visit. */
+  const [showPhoto, setShowPhoto] = useState(true);
   const [showSourceUrl, setShowSourceUrl] = useState(false);
   const [showDonateDialog, setShowDonateDialog] = useState(false);
   const [showCookbookOfferDialog, setShowCookbookOfferDialog] = useState(false);
@@ -3275,13 +3279,21 @@ export default function PrintPage() {
     (id: string, next: Recipe) => {
       const previous = items?.find((item) => item.id === id)?.recipe;
       queue.updateRecipe(id, next);
-      if (next.image && next.image !== previous?.image && photoModeFor(id) === "none") {
-        projectMeta.setItemPhotoMode(id, "card");
+      if (!next.image || next.image === previous?.image) return;
+      if (cookbookMode) {
+        if (photoModeFor(id) === "none") projectMeta.setItemPhotoMode(id, "card");
+        return;
       }
+      /* Recipe cards have no per-recipe override — `photoOnFor` in
+         usePrintSheets only consults `itemPlacements` for cookbook layouts — so
+         the placement written above was invisible here, and picking a photo
+         with "Include recipe photo" off still showed nothing at all. In cards
+         mode the equivalent of "show this" is the setting itself. */
+      if (!showPhoto) setShowPhoto(true);
     },
     // `setItemPhotoMode` and `updateRecipe` are stable; the rest is read fresh.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [items, photoModeFor, queue.updateRecipe, projectMeta.setItemPhotoMode],
+    [items, photoModeFor, cookbookMode, showPhoto, queue.updateRecipe, projectMeta.setItemPhotoMode],
   );
 
   const { pageEditMode, togglePageEditMode, activeInlineEdit } = useRecipeInlineEditor({
