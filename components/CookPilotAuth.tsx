@@ -29,7 +29,7 @@ import {
   rememberCookPilotSignedIn,
 } from "@/lib/cookPilotSession";
 import { Dialog } from "@/components/Dialog";
-import { ICON_SIZE, SpinnerIcon, XIcon } from "@/components/icons";
+import { AppleIcon, GoogleIcon, ICON_SIZE, SpinnerIcon, XIcon } from "@/components/icons";
 
 /* ──────────────────────────────────────────────────────────────────────────
    Shared RecipePrinter login: same Firebase project, same providers, same
@@ -433,7 +433,7 @@ export function CookPilotLoginDialog({
           <p className="text-cp-small text-ink-soft mt-1">
             {reason === "purchase"
               ? "Create a free account or sign in so you can access your purchase on another device."
-              : "Keeps this project, your cookbooks and your templates across devices. New here? Entering an email creates the account."}
+              : "Your account keeps these projects on every device you use."}
           </p>
         </div>
 
@@ -470,12 +470,16 @@ export function CookPilotLoginDialog({
               or
               <span className="h-px flex-1 bg-line" />
             </div>
-            <button type="button" className="btn btn-secondary w-full" onClick={handleGoogle} disabled={busy}>
-              Continue with Google
-            </button>
-            <button type="button" className="btn btn-secondary w-full" onClick={handleApple} disabled={busy}>
-              Continue with Apple
-            </button>
+            <div className="grid grid-cols-2 gap-cp-2">
+              <button type="button" className="btn btn-secondary w-full" onClick={handleGoogle} disabled={busy}>
+                <GoogleIcon size={ICON_SIZE.md} />
+                Google
+              </button>
+              <button type="button" className="btn btn-secondary w-full" onClick={handleApple} disabled={busy}>
+                <AppleIcon size={ICON_SIZE.md} />
+                Apple
+              </button>
+            </div>
           </form>
         ) : (
           <form className="flex flex-col gap-cp-3" onSubmit={handlePasswordSubmit}>
