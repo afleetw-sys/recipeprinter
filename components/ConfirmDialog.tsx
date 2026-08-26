@@ -13,6 +13,8 @@ export function ConfirmDialog({
   busy = false,
   tone = "danger",
   confirmIcon,
+  secondaryLabel,
+  onSecondary,
   onCancel,
   onConfirm,
 }: {
@@ -23,6 +25,10 @@ export function ConfirmDialog({
   busy?: boolean;
   tone?: "danger" | "primary";
   confirmIcon?: ReactNode;
+  /** A third way out, between cancelling and confirming — "leave anyway" to a
+      dialog whose confirm is "sign in and keep it". */
+  secondaryLabel?: string;
+  onSecondary?: () => void;
   onCancel: () => void;
   onConfirm: () => void;
 }) {
@@ -52,6 +58,16 @@ export function ConfirmDialog({
         <button type="button" className="btn btn-ghost" disabled={busy} onClick={onCancel}>
           Cancel
         </button>
+        {secondaryLabel && onSecondary && (
+          <button
+            type="button"
+            className="btn btn-ghost--danger"
+            disabled={busy}
+            onClick={onSecondary}
+          >
+            {secondaryLabel}
+          </button>
+        )}
         <button
           type="button"
           className={`btn ${tone === "danger" ? "btn-danger" : "btn-primary"}`}

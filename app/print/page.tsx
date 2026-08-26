@@ -14,6 +14,7 @@ import type { AccountSaveStatus } from "@/components/AccountControl";
 import { FeedbackDialog } from "@/components/FeedbackButton";
 import { PrintDialogs } from "@/components/PrintDialogs";
 import { AddRecipeDialog } from "@/components/AddRecipeDialog";
+import { ConfirmDialog } from "@/components/ConfirmDialog";
 import { CookbookBuildReveal, CookbookWelcomeDialog } from "@/components/CookbookWelcomeDialog";
 import { CookbookReadyDialog } from "@/components/CookbookReadyDialog";
 import {
@@ -1883,12 +1884,27 @@ export default function PrintPage() {
    * usually already happened.
    */
   const [leavingHome, setLeavingHome] = useState(false);
+  /** Leaving with work that only exists in this browser — see `handleNavigateHome`. */
+  const [confirmLeave, setConfirmLeave] = useState(false);
 
-  async function handleNavigateHome() {
+  async function handleNavigateHome(options?: { confirmed?: boolean }) {
     if (leavingHome) return;
-    setLeavingHome(true);
 
     const printable = queue.items.some((item) => item.status === "ready" && item.recipe);
+    /**
+     * Signed out, this project is filed to the device and nowhere else, and
+     * there is no library on the way out to find it in again. Watched in a
+     * session replay: an hour of editing, one click on the logo, gone.
+     *
+     * So ask — and make signing in the way out of the question, since that is
+     * the thing that actually keeps the work.
+     */
+    if (printable && !cookPilotUser && !options?.confirmed) {
+      setConfirmLeave(true);
+      return;
+    }
+
+    setLeavingHome(true);
     if (!printable) {
       // Nothing made, nothing to file, nothing to show travelling.
       router.push("/");
@@ -4107,6 +4123,33 @@ export default function PrintPage() {
         onCancelDeleteRecipe={() => setPendingDelete(null)}
         onConfirmDeleteRecipe={confirmPendingDelete}
         onConfirmDeleteSectionRecipes={confirmDeleteSectionRecipes}
+      />
+      {/* Leaving with a project that only exists in this browser. Truthful
+          about where it goes — it IS filed on the device and reopenable from
+          Projects — while making signing in the obvious way to keep it. */}
+      <ConfirmDialog
+        open={confirmLeave}
+        tone="primary"
+        title="Keep this project?"
+        description={
+          <>
+            It will be filed on this device and you can reopen it from Projects. Sign in and
+            it is saved to your account instead, on any device you use.
+          </>
+        }
+        confirmLabel="Sign in and save it"
+        secondaryLabel="Leave without saving"
+        onSecondary={() => {
+          setConfirmLeave(false);
+          void handleNavigateHome({ confirmed: true });
+        }}
+        onCancel={() => setConfirmLeave(false)}
+        onConfirm={() => {
+          setConfirmLeave(false);
+          // Arms `saveAfterLoginRef` and opens the sign-in dialog; the save
+          // runs itself the moment an account exists.
+          void handleSaveProject();
+        }}
       />
       <CookbookWelcomeDialog
         open={showCookbookOfferDialog}

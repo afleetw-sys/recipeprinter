@@ -2,17 +2,42 @@
 
 import { useState, type DragEvent, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
-import { ArrowRightIcon, ICON_SIZE, SpinnerIcon, UploadIcon } from "@/components/icons";
+import {
+  ArrowRightIcon,
+  ICON_SIZE,
+  ImageIcon,
+  LinkIcon,
+  SpinnerIcon,
+  TextIcon,
+  UploadIcon,
+} from "@/components/icons";
 import { stashPendingImport } from "@/lib/pendingImport";
 import { imageLabel, partitionImageFiles, prepareImageDataUrls, validateImageFiles } from "@/lib/imageImport";
 import type { ImportMethod } from "@/types/recipe";
 
-// A deliberately minimal capture for the SEO landing pages: just the one input
-// that matches the page's intent (a URL field, a paste box, or a photo dropzone)
-// plus an import button, no mode toggles, no other options. On submit it stashes
-// the payload and hands off to the app at "/", which finishes the import. The full
-// multi-source importer lives on the app itself, not on the marketing pages.
+// Capture for the SEO landing pages: a link field, a paste box, or a photo
+// dropzone, with the page's own intent preselected. All three are offered
+// because a page's headline intent is not the only way its visitors have the
+// recipe — someone reading about preserving family recipes has a photograph of
+// a card AND a link from a cousin, and a page that shows one field is telling
+// them the other is not supported.
+//
+// CookPilot is the one import method deliberately left out: it needs an
+// account, and there is no account on a marketing page.
+//
+// On submit it stashes the payload and hands off to the app at "/", which
+// finishes the import.
 type CaptureMode = "url" | "text" | "image";
+
+const MODES: {
+  id: CaptureMode;
+  label: string;
+  icon: (p: { size?: number }) => JSX.Element;
+}[] = [
+  { id: "url", label: "Link", icon: LinkIcon },
+  { id: "image", label: "Photo", icon: ImageIcon },
+  { id: "text", label: "Paste text", icon: TextIcon },
+];
 
 function resolveMode(method?: ImportMethod): CaptureMode {
   if (method === "text") return "text";
@@ -22,15 +47,21 @@ function resolveMode(method?: ImportMethod): CaptureMode {
 
 export function SeoCapture({
   initialMode = "url",
+  modes,
   submitLabel = "Start printing",
   placeholder,
 }: {
   initialMode?: ImportMethod;
+  /** Which sources this page offers, in order. Defaults to all three. */
+  modes?: ImportMethod[];
   submitLabel?: string;
   placeholder?: string;
 }) {
   const router = useRouter();
-  const mode = resolveMode(initialMode);
+  const offered = modes?.length
+    ? MODES.filter((option) => modes.some((wanted) => resolveMode(wanted) === option.id))
+    : MODES;
+  const [mode, setMode] = useState<CaptureMode>(resolveMode(initialMode));
   const [url, setUrl] = useState("");
   const [text, setText] = useState("");
   const [files, setFiles] = useState<File[]>([]);
@@ -105,7 +136,7 @@ export function SeoCapture({
   const submitButton = (
     <button
       type="submit"
-      className={`btn btn-primary rp-import-submit w-full ${mode === "url" ? "lg:w-auto" : ""}`}
+      className={`btn btn-primary rp-import-submit w-full ${mode === "url" ? "lg:w-auto lg:shrink-0" : ""}`}
       disabled={busy}
     >
       {submitLabel}
@@ -115,28 +146,55 @@ export function SeoCapture({
 
   return (
     <form className="flex flex-col gap-cp-4" onSubmit={handleSubmit}>
+      <div
+        className="mode-toggle mode-toggle--seo"
+        role="group"
+        aria-label="How do you have the recipe?"
+        /* Column count follows the number of sources offered, so a two-source
+           page gets two full-width halves rather than two thirds and a gap. */
+        style={{ gridTemplateColumns: `repeat(${offered.length}, minmax(0, 1fr))` }}
+      >
+        {offered.map(({ id, label, icon: Icon }) => (
+          <button
+            key={id}
+            type="button"
+            aria-pressed={mode === id}
+            disabled={busy}
+            className={`mode-toggle__item ${mode === id ? "is-active" : ""}`}
+            onClick={() => {
+              setMode(id);
+              setError(null);
+            }}
+          >
+            <Icon size={18} />
+            <span>{label}</span>
+          </button>
+        ))}
+      </div>
+
       {mode === "url" && (
         <div className="flex flex-col">
           <label htmlFor="seo-url" className="field-label">
             Recipe URL
           </label>
-          <div className="flex flex-col gap-cp-4 lg:flex-row lg:items-start lg:gap-cp-2">
-            <div className="flex-1">
-              <input
-                id="seo-url"
-                type="url"
-                className="field w-full"
-                placeholder={placeholder ?? "Paste recipe URL here"}
-                value={url}
-                onChange={(e) => {
-                  setUrl(e.target.value);
-                  if (error) setError(null);
-                }}
-              />
-              {error && <p className="field-error" role="alert">{error}</p>}
-            </div>
+          {/* The button sits centred on the field, not aligned to its top, and
+              the error message lives OUTSIDE the row — inside it, an error
+              grew the input's column and pushed the button off centre. */}
+          <div className="flex flex-col gap-cp-4 lg:flex-row lg:items-center lg:gap-cp-2">
+            <input
+              id="seo-url"
+              type="url"
+              className="field w-full lg:flex-1 lg:min-w-0"
+              placeholder={placeholder ?? "Paste recipe URL here"}
+              value={url}
+              onChange={(e) => {
+                setUrl(e.target.value);
+                if (error) setError(null);
+              }}
+            />
             {submitButton}
           </div>
+          {error && <p className="field-error" role="alert">{error}</p>}
         </div>
       )}
 

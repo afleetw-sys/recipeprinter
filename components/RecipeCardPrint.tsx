@@ -216,21 +216,18 @@ const COUNTER_BAND_TOOTH = 0.16;
 const COUNTER_BAND_THIRD = 0.08;
 const COUNTER_BAND_COLOR = "#2f2f2f";
 
-/** Body text: three lines of copy. */
+/* Letters, not rules. Stacked lines read as text ALIGNMENT — the toolbar
+   convention for left/centre/right — which is the wrong question entirely.
+   "Aa" and "H" are how every editor says body versus heading. */
 function BodyTextGlyph() {
-  return (
-    <svg viewBox="0 0 16 16" width="12" height="12" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" aria-hidden>
-      <path d="M2.5 4.5h11M2.5 8h11M2.5 11.5h7" />
-    </svg>
-  );
+  return <span className="recipe-card__line-kind-glyph" aria-hidden>Aa</span>;
 }
 
-/** Heading: a short rule over a shorter one, the shape of a title. */
 function HeadingGlyph() {
   return (
-    <svg viewBox="0 0 16 16" width="12" height="12" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" aria-hidden>
-      <path d="M2.5 4h11M2.5 8h6" />
-    </svg>
+    <span className="recipe-card__line-kind-glyph recipe-card__line-kind-glyph--heading" aria-hidden>
+      H
+    </span>
   );
 }
 
@@ -760,16 +757,21 @@ export const RecipeCardFace = memo(function RecipeCardFace({
       );
     }
     return (
-      <textarea
-        ref={focusIfEditing(target)}
-        className="recipe-card__inline-textarea recipe-card__section-title"
-        rows={1}
-        value={inlineEdit.value}
-        aria-label="Section title"
-        onChange={(event) => inlineEdit.onValueChange(event.target.value)}
-        onBlur={commitEdit}
-        onKeyDown={handleEditKeyDown}
-      />
+      /* The switch lives here too, so a heading can go back to being a line —
+         without it the conversion was one-way. */
+      <span className="recipe-card__section-title-edit">
+        <textarea
+          ref={focusIfEditing(target)}
+          className="recipe-card__inline-textarea recipe-card__section-title"
+          rows={1}
+          value={inlineEdit.value}
+          aria-label="Section title"
+          onChange={(event) => inlineEdit.onValueChange(event.target.value)}
+          onBlur={commitEdit}
+          onKeyDown={handleEditKeyDown}
+        />
+        {lineKindSwitch(target)}
+      </span>
     );
   }
 

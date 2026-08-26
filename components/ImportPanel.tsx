@@ -74,6 +74,7 @@ export function ImportPanel({
   initialMode = "url",
   submitLabel = "Add",
   hideSubmit = false,
+  onModeChange,
   autoFocusUrl = true,
   onAddUrl,
   onAddImages,
@@ -89,6 +90,9 @@ export function ImportPanel({
   /** Drop the panel's own submit button: the surface around it owns the action
       (the add dialog puts one Add at the bottom instead of two buttons). */
   hideSubmit?: boolean;
+  /** Which source is showing. The add dialog sizes itself to it: a paste box
+      wants far more room than a URL field. */
+  onModeChange?: (mode: ImportMethod) => void;
   /** Autofocus the URL input on mount. Off on SEO capture blocks, where the panel
       can sit below the fold and stealing focus would scroll the page on load. */
   autoFocusUrl?: boolean;
@@ -152,6 +156,7 @@ export function ImportPanel({
 
   function chooseMode(nextMode: ImportMethod) {
     setMode(nextMode);
+    onModeChange?.(nextMode);
     setOverflowOpen(false);
     resetError();
   }

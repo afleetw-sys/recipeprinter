@@ -1,5 +1,5 @@
 import Image from "next/image";
-import { PRINTED_CARDS } from "@/components/seo/ProductMockup";
+import { PRINTED_CARDS, PROOF_IMAGES } from "@/components/seo/ProductMockup";
 import {
   BookIcon,
   CheckIcon,
@@ -71,25 +71,35 @@ export function Placeholder({
   );
 }
 
+// What each placeholder is waiting for, in the words of the shot itself, so the
+// gap on the page names the photograph that fills it.
+const PROOF_LABELS: Record<SeoProofKind, string> = {
+  "before-after": "A cluttered recipe page, and the card printed from it",
+  card: "A printed 4×6 card, in the kitchen",
+  queue: "Several cards from one print run",
+  pdf: "The recipe saved as a PDF",
+  social: "A social recipe post, and its printed card",
+  video: "A cooking video, and the printed recipe",
+  scan: "Taking a photo of a handwritten card",
+  photo: "A photo on a printed recipe page",
+  binder: "Recipe pages filed in a binder",
+  book: "A page inside the bound cookbook",
+  "book-home": "Printed at home, and bound",
+  devices: "The app open on a laptop and a phone",
+  steps: "The importer, in the app",
+  deck: "Choosing the size and format, in the app",
+  templates: "The template picker, in the app",
+};
+
 function proofLabel(proof?: SeoProofKind): string {
-  switch (proof) {
-    case "before-after":
-      return "Cluttered page → clean printable";
-    case "card":
-      return "A printable 4×6 recipe card";
-    case "pdf":
-      return "The recipe saved as a PDF";
-    case "book":
-      return "A page in a bound cookbook";
-    case "photo":
-      return "Photos on a recipe page";
-    case "social":
-      return "Importing from a social post";
-    case "binder":
-      return "Recipe pages in a binder";
-    default:
-      return "The tool in action";
-  }
+  return proof ? PROOF_LABELS[proof] : "The tool in action";
+}
+
+/** Photograph or product screenshot — so the shot list reads itself off the page. */
+function proofTitle(proof?: SeoProofKind): string {
+  return proof === "steps" || proof === "deck" || proof === "templates" || proof === "devices"
+    ? "Product screenshot"
+    : "Photograph";
 }
 
 /**
@@ -103,15 +113,21 @@ export function HeroProductPhoto({
   annotation,
   priority = false,
   wide = false,
+  tall = false,
 }: {
   cardKey?: string;
   annotation?: string;
   priority?: boolean;
   wide?: boolean;
+  /** Take a taller crop out of the portrait source, for heroes whose copy
+      column carries a dropzone or a paste box rather than a single field.
+      Without it the photo is either half the height of the column beside it
+      or twice it, depending on which capture mode the page opens on. */
+  tall?: boolean;
 }) {
   const card = PRINTED_CARDS[cardKey] ?? PRINTED_CARDS.korean;
   return (
-    <div className={`relative mx-auto w-full ${wide ? "max-w-[860px]" : "max-w-[460px]"}`}>
+    <div className={`relative mx-auto w-full ${wide ? "max-w-[560px]" : "max-w-[460px]"}`}>
       <div className="overflow-hidden rounded-2xl border border-line bg-white p-1.5">
         <Image
           src={card.src}
@@ -120,7 +136,14 @@ export function HeroProductPhoto({
           alt={card.alt}
           sizes="(max-width: 1023px) 90vw, 460px"
           priority={priority}
-          className="aspect-[4/3] w-full rounded-xl object-cover [object-position:50%_86%]"
+          /* The crops all keep the card whole: in these photos it sits between
+             roughly 40% and 81% down the frame, so a shorter window has to be
+             positioned higher up, not just cropped in from the same 86%. */
+          className={`aspect-[4/3] w-full rounded-xl object-cover [object-position:50%_86%] ${
+            tall
+              ? "lg:aspect-square lg:[object-position:50%_72%]"
+              : "lg:aspect-[16/10] lg:[object-position:50%_70%]"
+          }`}
         />
       </div>
       {annotation && (
@@ -158,6 +181,36 @@ export function HowItWorks({ steps }: { steps: { name: string; text: string }[] 
   );
 }
 
+
+/**
+ * The proof beside a feature claim: the real asset once it exists, and until
+ * then a placeholder naming the shot that belongs there.
+ */
+function Proof({ proof, className = "" }: { proof?: SeoProofKind; className?: string }) {
+  const asset = proof ? PROOF_IMAGES[proof] : undefined;
+  // Held a little inside its column rather than filling it edge to edge: the
+  // claim is the point, and a proof that matches the text block's weight reads
+  // as evidence rather than as the subject.
+  return (
+    <div className={`mx-auto w-full max-w-[500px] ${className}`}>
+      {asset ? (
+        <div className="overflow-hidden rounded-2xl border border-line bg-white p-1.5">
+          <Image
+            src={asset.src}
+            width={asset.width}
+            height={asset.height}
+            alt={asset.alt}
+            sizes="(max-width: 1023px) 90vw, 500px"
+            className="w-full rounded-xl"
+          />
+        </div>
+      ) : (
+        <Placeholder label={proofTitle(proof)} sublabel={proofLabel(proof)} />
+      )}
+    </div>
+  );
+}
+
 /**
  * Feature deep-dives as clean editorial rows: a strong heading on the left, body
  * on the right, separated by hairlines. Strong hierarchy and whitespace keep it
@@ -171,13 +224,31 @@ export function FeatureRows({
 }) {
   return (
     <div className="flex flex-col gap-cp-7">
+      {/* The claim gets the larger share, and the gutter is the grid gap rather
+          than the grid gap plus whatever the capped image left over. */}
       {features.map((feature, index) => (
-        <div key={feature.heading} className="grid items-center gap-cp-5 lg:grid-cols-2 lg:gap-cp-7">
+        <div
+          key={feature.heading}
+          /* The template flips with the row, not just the order: swapping only
+             the order left the text in the narrow column on every second row,
+             so the claim was 662px wide going one way and 490 the other. */
+          className={`grid items-center gap-cp-5 lg:gap-[48px] ${
+            index % 2 === 1
+              ? "lg:grid-cols-[minmax(0,0.85fr)_minmax(0,1.15fr)]"
+              : "lg:grid-cols-[minmax(0,1.15fr)_minmax(0,0.85fr)]"
+          }`}
+        >
           <div className={index % 2 === 1 ? "lg:order-2" : ""}>
             <h3 className="text-cp-h2-lg font-extrabold tracking-[-0.03em]">{feature.heading}</h3>
             <p className="mt-cp-3 text-ink-soft text-cp-body-lg leading-relaxed">{feature.body}</p>
           </div>
-          <Placeholder sublabel={proofLabel(feature.proof)} className={index % 2 === 1 ? "lg:order-1" : ""} />
+          {/* Capped narrower than its column, so it has to be pushed to the
+              OUTER margin: centred, it floated away from the page edge the
+              text above and below it lines up with. */}
+          <Proof
+            proof={feature.proof}
+            className={index % 2 === 1 ? "lg:order-1 lg:ml-0 lg:mr-auto" : "lg:ml-auto lg:mr-0"}
+          />
         </div>
       ))}
     </div>

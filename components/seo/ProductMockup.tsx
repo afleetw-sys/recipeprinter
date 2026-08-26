@@ -50,3 +50,32 @@ export const PRINTED_CARDS: Record<string, PrintedCard> = {
 };
 
 
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Proof assets: the real photograph or product screenshot behind a
+// `SeoProofKind`. A kind with an entry here renders the image; a kind without
+// one renders the labelled placeholder naming the shot it is waiting for, so
+// the two can be filled in one at a time as the photos are taken.
+// ─────────────────────────────────────────────────────────────────────────────
+
+type ProofAsset = {
+  src: string;
+  width: number;
+  height: number;
+  alt: string;
+};
+
+export const PROOF_IMAGES: Partial<Record<string, ProofAsset>> = {
+  book: {
+    src: "/images/cookbook-on-counter.png",
+    width: 1448,
+    height: 1086,
+    alt: "A cookbook printed with RecipePrinter, open flat on a kitchen counter at a blueberry pie recipe, with a full-page photo facing the ingredients and steps.",
+  },
+  devices: {
+    src: "/images/app-on-laptop-and-phone.png",
+    width: 1536,
+    height: 1024,
+    alt: "RecipePrinter open in a browser on a laptop and on a phone, with recipes queued to print on both.",
+  },
+};

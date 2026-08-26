@@ -201,8 +201,8 @@ export function AccountControl({
         <IconButton
           data-rp-avatar
           className="border border-line bg-card text-ink-soft hover:text-ink hover:border-ink-soft"
-          aria-label="Recipe Printer account"
-          title="Recipe Printer account"
+          aria-label="RecipePrinter account"
+          title="RecipePrinter account"
           onClick={() => {
             setPendingClick(true);
             setShowMenu(true);

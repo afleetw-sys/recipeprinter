@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import type { ImportMethod } from "@/types/recipe";
 import { ImportPanel } from "@/components/ImportPanel";
 import { ICON_SIZE, XIcon } from "@/components/icons";
 import { Dialog } from "@/components/Dialog";
@@ -38,6 +39,8 @@ export function AddRecipeDialog({
   /** Filled in by the import panel; lets Add finish the entry in the form. */
   const commitImportRef = useRef<(() => boolean) | null>(null);
   const [duplicateTitle, setDuplicateTitle] = useState<string | null>(null);
+  /** A URL field needs one line; a paste box and a dropzone need a dialog. */
+  const [mode, setMode] = useState<ImportMethod>("url");
   const seenFocusNonceRef = useRef(focusNonce);
 
   // A re-import of something already in the job doesn't add a second copy —
@@ -79,7 +82,9 @@ export function AddRecipeDialog({
       labelledBy="recipe-add-dialog-title"
       className="recipe-add-dialog no-print"
       backdropClassName="recipe-add-dialog__backdrop"
-      panelClassName="recipe-add-dialog__panel"
+      panelClassName={`recipe-add-dialog__panel ${
+        mode === "text" || mode === "image" ? "recipe-add-dialog__panel--roomy" : ""
+      } ${mode === "text" ? "recipe-add-dialog__panel--paste" : ""}`}
     >
       <div className="recipe-add-dialog__header">
         <h2 id="recipe-add-dialog-title">Add recipes</h2>
@@ -96,6 +101,7 @@ export function AddRecipeDialog({
         <ImportPanel
           commitRef={commitImportRef}
           hideSubmit
+          onModeChange={setMode}
           items={items}
           onAddUrl={handleAddUrl}
           onAddImages={handleAddImages}

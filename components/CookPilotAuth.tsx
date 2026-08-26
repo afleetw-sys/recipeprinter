@@ -412,7 +412,7 @@ export function CookPilotLoginDialog({
     <Dialog
       onClose={onClose}
       closeDisabled={busy}
-      label={reason === "purchase" ? "Protect your purchase" : "Sign in or create an account"}
+      label={reason === "purchase" ? "Protect your purchase" : "Create an account or sign in"}
       portal
       className="fixed inset-0 z-50 flex items-stretch sm:items-center justify-center bg-ink/30 p-0 sm:px-cp-4 sm:py-cp-6"
       panelClassName="panel panel--modal w-full sm:max-w-[420px] h-full sm:h-auto rounded-none border-0 sm:rounded-2xl sm:border p-cp-5 flex flex-col gap-cp-4 relative overflow-y-auto"
@@ -428,7 +428,7 @@ export function CookPilotLoginDialog({
 
         <div className="pr-cp-7">
           <h3 className="font-extrabold tracking-[-0.02em] text-cp-dialog-title">
-            {reason === "purchase" ? "Don’t lose your purchase" : "Sign in or create an account"}
+            {reason === "purchase" ? "Don’t lose your purchase" : "Create an account or sign in"}
           </h3>
           <p className="text-cp-small text-ink-soft mt-1">
             {reason === "purchase"

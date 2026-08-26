@@ -234,8 +234,8 @@ export default function AccountMenu({
               ? "border border-transparent bg-[var(--cp-accent)] text-[var(--cp-ink)] font-bold tracking-tight"
               : "border border-line bg-card text-ink-soft"
           }`}
-          aria-label="Recipe Printer account"
-          title="Recipe Printer account"
+          aria-label="RecipePrinter account"
+          title="RecipePrinter account"
           onClick={() => {
             if (!ready || !user) return;
             setOpen((value) => !value);
@@ -261,7 +261,7 @@ export default function AccountMenu({
           <div className="flex items-start justify-between gap-cp-3">
             <div className="min-w-0">
               <strong className="block truncate">
-                {user.displayName || "Recipe Printer account"}
+                {user.displayName || "RecipePrinter account"}
               </strong>
               <span className="block truncate text-cp-small text-ink-soft">
                 {user.email || "Signed in"}
