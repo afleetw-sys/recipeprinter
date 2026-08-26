@@ -42,7 +42,7 @@ const MODES: {
   label: string;
   icon: ComponentType<{ size?: number; className?: string }>;
 }[] = [
-  { id: "url", label: "URL", icon: LinkIcon },
+  { id: "url", label: "Link", icon: LinkIcon },
   { id: "cookpilot", label: "CookPilot", icon: CookPilotLogoIcon },
   { id: "image", label: "Image", icon: ImageIcon },
   { id: "text", label: "Paste Text", icon: TextIcon },
@@ -73,6 +73,7 @@ export function ImportPanel({
   workspace = false,
   initialMode = "url",
   submitLabel = "Add",
+  hideSubmit = false,
   autoFocusUrl = true,
   onAddUrl,
   onAddImages,
@@ -85,6 +86,9 @@ export function ImportPanel({
   workspace?: boolean;
   initialMode?: ImportMethod;
   submitLabel?: string;
+  /** Drop the panel's own submit button: the surface around it owns the action
+      (the add dialog puts one Add at the bottom instead of two buttons). */
+  hideSubmit?: boolean;
   /** Autofocus the URL input on mount. Off on SEO capture blocks, where the panel
       can sit below the fold and stealing focus would scroll the page on load. */
   autoFocusUrl?: boolean;
@@ -410,14 +414,16 @@ export function ImportPanel({
                   resetError();
                 }}
               />
-              <button
-                type="submit"
-                className="btn btn-primary rp-import-submit w-full lg:w-auto lg:shrink-0"
-                disabled={busy}
-              >
-                {busy ? <SpinnerIcon size={ICON_SIZE.md} /> : <PlusIcon size={ICON_SIZE.md} />}
-                {submitLabel}
-              </button>
+              {!hideSubmit && (
+                <button
+                  type="submit"
+                  className="btn btn-primary rp-import-submit w-full lg:w-auto lg:shrink-0"
+                  disabled={busy}
+                >
+                  {busy ? <SpinnerIcon size={ICON_SIZE.md} /> : <PlusIcon size={ICON_SIZE.md} />}
+                  {submitLabel}
+                </button>
+              )}
             </div>
             {error && <p className="field-error" role="alert">{error}</p>}
           </div>
@@ -481,7 +487,7 @@ export function ImportPanel({
           </div>
         )}
 
-        {mode !== "url" && (
+        {mode !== "url" && !hideSubmit && (
           <button type="submit" className="btn btn-primary rp-import-submit w-full" disabled={busy}>
             {busy ? <SpinnerIcon size={ICON_SIZE.md} /> : <PlusIcon size={ICON_SIZE.md} />}
             {submitLabel}

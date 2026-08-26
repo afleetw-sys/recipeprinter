@@ -4140,13 +4140,10 @@ export default function PrintPage() {
         items={queue.items}
         focusedItemId={queue.focusedItemId}
         focusNonce={queue.focusNonce}
-        canRetry={queue.canRetry}
-        onRetry={queue.retry}
         onAddUrl={queue.addUrl}
         onAddImages={queue.addImages}
         onAddText={queue.addText}
         onAddCookPilotRecipes={queue.addCookPilotRecipes}
-        onRemoveRecipe={queue.remove}
       />
       <FeedbackDialog
         open={showFeedbackDialog}
