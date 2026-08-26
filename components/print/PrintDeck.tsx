@@ -408,7 +408,16 @@ export function PrintDeck(props: PrintDeckProps) {
           ? {
               ...activeInlineEdit,
               // The recipe's own photo only (plus upload), not other recipes'.
-              recipeImages: activeRecipeItem?.recipe?.image ? [activeRecipeItem.recipe.image] : [],
+              // Same list the full-page picker offers: this recipe's photo,
+              // then the ones it has worn before.
+              recipeImages: Array.from(
+                new Set([
+                  ...(activeRecipeItem?.recipe?.image ? [activeRecipeItem.recipe.image] : []),
+                  ...(activeRecipeItem
+                    ? projectMeta.meta.itemPlacements?.[activeRecipeItem.id]?.photoHistory ?? []
+                    : []),
+                ]),
+              ),
               // Placement lives in the in-card Photo dialog too, so every mode's
               // "Photo" button opens the same None/In-card/Full-page + source UI.
               photoPlacement: photoModeFor(navItem.recipeId),
@@ -492,8 +501,13 @@ export function PrintDeck(props: PrintDeckProps) {
               // Only this recipe's own photo (plus upload) — never a grid of
               // OTHER recipes' images, which isn't what "change this photo" means.
               images: (() => {
+                // This recipe's photo, then any it has worn before — a photo
+                // replaced by a custom upload stays offered rather than being
+                // gone the moment it is swapped.
                 const own = items?.find((item) => item.id === navItem.recipeId)?.recipe?.image;
-                return own ? [own] : [];
+                const history =
+                  projectMeta.meta.itemPlacements?.[navItem.recipeId]?.photoHistory ?? [];
+                return Array.from(new Set([...(own ? [own] : []), ...history]));
               })(),
               // Pick a new full-page photo, or clear it to drop back to no photo.
               onImageChange: (url) =>

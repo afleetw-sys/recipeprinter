@@ -3329,6 +3329,25 @@ export default function PrintPage() {
     (id: string, next: Recipe) => {
       const previous = items?.find((item) => item.id === id)?.recipe;
       queue.updateRecipe(id, next);
+      /**
+       * Keep the photo being replaced, so it stays pickable.
+       *
+       * The recipe photo picker's candidate list for a recipe is literally
+       * `[recipe.image]`, and choosing a custom photo overwrites that — so the
+       * imported photo left the dialog the moment it was replaced, with no way
+       * back short of re-importing the recipe.
+       */
+      if (previous?.image && previous.image !== next.image) {
+        const kept = projectMeta.meta.itemPlacements?.[id]?.photoHistory ?? [];
+        if (!kept.includes(previous.image)) {
+          projectMeta.setItemPlacement(id, {
+            // Newest first: the photo just replaced is the likeliest one to want
+            // back, and the list is capped so a cook cycling through uploads
+            // doesn't accumulate a wall of tiles.
+            photoHistory: [previous.image, ...kept.filter((url) => url !== next.image)].slice(0, 8),
+          });
+        }
+      }
       if (!next.image || next.image === previous?.image) return;
       if (cookbookMode) {
         if (photoModeFor(id) === "none") projectMeta.setItemPhotoMode(id, "card");
