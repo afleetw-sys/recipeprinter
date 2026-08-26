@@ -790,19 +790,8 @@ export const RecipeCardFace = memo(function RecipeCardFace({
     const isHeading = target.kind === "ingredientSection" || target.kind === "instructionSection";
     return (
       <span className="recipe-card__line-kind no-print" role="group" aria-label="Line type">
-        <button
-          type="button"
-          className={`recipe-card__line-kind-btn ${isHeading ? "" : "is-active"}`}
-          aria-label="Body text"
-          aria-pressed={!isHeading}
-          title="Body text"
-          onMouseDown={(event) => {
-            event.preventDefault();
-            if (isHeading) inlineEdit.onSetLineKind(target, "body");
-          }}
-        >
-          <BodyTextGlyph />
-        </button>
+        {/* Heading first: it is the one being reached for. Body is where the
+            line already is. */}
         <button
           type="button"
           className={`recipe-card__line-kind-btn ${isHeading ? "is-active" : ""}`}
@@ -815,6 +804,19 @@ export const RecipeCardFace = memo(function RecipeCardFace({
           }}
         >
           <HeadingGlyph />
+        </button>
+        <button
+          type="button"
+          className={`recipe-card__line-kind-btn ${isHeading ? "" : "is-active"}`}
+          aria-label="Body text"
+          aria-pressed={!isHeading}
+          title="Body text"
+          onMouseDown={(event) => {
+            event.preventDefault();
+            if (isHeading) inlineEdit.onSetLineKind(target, "body");
+          }}
+        >
+          <BodyTextGlyph />
         </button>
       </span>
     );

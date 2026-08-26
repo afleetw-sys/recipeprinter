@@ -6613,7 +6613,9 @@ textarea.recipe-card__toc-title {
 .recipe-card__line-kind {
   position: absolute;
   left: 0;
-  top: -13px;
+  /* Clear of the field entirely: `top: -13px` overlapped the line above it,
+     so the switch sat on top of text it had nothing to do with. */
+  bottom: calc(100% + 2px);
   z-index: 6;
   display: inline-flex;
   gap: 1px;
@@ -7107,6 +7109,17 @@ textarea.recipe-card__toc-title {
 /* A URL field is one line; a paste box and a dropzone are the whole point of
    the dialog. Widen for both, and give the paste box real depth — someone
    pasting a recipe is looking at a wall of text and needs to see it. */
+/* The settings trigger sits at the end of the panel's heading row, so the
+   heading takes the space and this stays put on the right. 30px to match the
+   compact controls in the panel rather than the 40px icon button default. */
+.recipe-config-panel__settings {
+  margin-left: auto;
+  flex: none;
+  width: 30px;
+  height: 30px;
+  border-radius: 8px;
+}
+
 .recipe-add-dialog__panel--roomy {
   width: min(100%, 640px);
 }

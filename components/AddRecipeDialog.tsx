@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import type { ImportMethod } from "@/types/recipe";
+import { useCookPilotAuth } from "@/components/CookPilotAuth";
 import { ImportPanel } from "@/components/ImportPanel";
 import { ICON_SIZE, XIcon } from "@/components/icons";
 import { Dialog } from "@/components/Dialog";
@@ -41,6 +42,13 @@ export function AddRecipeDialog({
   const [duplicateTitle, setDuplicateTitle] = useState<string | null>(null);
   /** A URL field needs one line; a paste box and a dropzone need a dialog. */
   const [mode, setMode] = useState<ImportMethod>("url");
+  const { user: cookPilotUser } = useCookPilotAuth();
+  /**
+   * CookPilot signed out shows a sign-in prompt, not a form — there is nothing
+   * for Add to submit, so offering it is offering a button that does nothing.
+   * Recipes chosen from a signed-in CookPilot library add themselves on pick.
+   */
+  const canAdd = mode !== "cookpilot" || Boolean(cookPilotUser);
   const seenFocusNonceRef = useRef(focusNonce);
 
   // A re-import of something already in the job doesn't add a second copy —
@@ -122,6 +130,7 @@ export function AddRecipeDialog({
           button drives it, so there is no "Add, then Done" pair to work out
           the difference between: adding IS finishing. Whatever is happening to
           the recipe afterwards shows on the deck this dialog was covering. */}
+      {canAdd && (
       <div className="recipe-add-dialog__footer">
         <button
           type="button"
@@ -134,6 +143,7 @@ export function AddRecipeDialog({
           Add
         </button>
       </div>
+      )}
     </Dialog>
   );
 }

@@ -25,8 +25,9 @@ export function ConfirmDialog({
   busy?: boolean;
   tone?: "danger" | "primary";
   confirmIcon?: ReactNode;
-  /** A third way out, between cancelling and confirming — "leave anyway" to a
-      dialog whose confirm is "sign in and keep it". */
+  /** The way out, in place of Cancel — "leave without saving" to a dialog
+      whose confirm is "sign in and save it". Not a danger tone: leaving is a
+      choice here, not a demolition. */
   secondaryLabel?: string;
   onSecondary?: () => void;
   onCancel: () => void;
@@ -55,17 +56,15 @@ export function ConfirmDialog({
       </h2>
       <div className="mt-cp-3 text-cp-body leading-relaxed text-ink-soft">{description}</div>
       <div className="mt-cp-6 flex flex-wrap justify-end gap-cp-3">
-        <button type="button" className="btn btn-ghost" disabled={busy} onClick={onCancel}>
-          Cancel
-        </button>
-        {secondaryLabel && onSecondary && (
-          <button
-            type="button"
-            className="btn btn-ghost--danger"
-            disabled={busy}
-            onClick={onSecondary}
-          >
+        {/* A dialog with a third action doesn't need Cancel as well: the
+            secondary IS the way out, and the X still closes. */}
+        {secondaryLabel && onSecondary ? (
+          <button type="button" className="btn btn-secondary" disabled={busy} onClick={onSecondary}>
             {secondaryLabel}
+          </button>
+        ) : (
+          <button type="button" className="btn btn-ghost" disabled={busy} onClick={onCancel}>
+            Cancel
           </button>
         )}
         <button

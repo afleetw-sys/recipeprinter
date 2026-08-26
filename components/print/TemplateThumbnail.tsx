@@ -45,7 +45,12 @@ const TEMPLATE_THUMB_ZOOM = 1.95;
 // Taller shows more of the card — the header plus a few rows of ingredients
 // and steps, rather than stopping just past the title. The zoom above is what
 // keeps the type legible; this is how much of the card that type belongs to.
-const TEMPLATE_THUMB_HEIGHT = 108;
+//
+// 84, not 108: a row of these sits in a panel of 30px controls, and at 108 the
+// thumbnails were the tallest thing in the workspace by some way. Still deep
+// enough to show the header and the first rows under it, which is what tells
+// two templates apart.
+const TEMPLATE_THUMB_HEIGHT = 84;
 
 export function TemplateThumbnail({ template }: { template: RecipePrintTemplate }) {
   const dims = PAGE_DIMS[TEMPLATE_THUMB_SIZE];
