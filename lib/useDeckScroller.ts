@@ -70,6 +70,8 @@ interface UseDeckScrollerOptions {
       observation that lands can be the one taken before the track resolved,
       leaving the scale sized for the old width. Changing this re-measures. */
   layoutKey?: string;
+  /** The cook's own zoom, multiplied onto the fit-to-viewport scale. 1 is fit. */
+  zoom?: number;
 }
 
 // One pending "restore snapping" cleanup per deck, so back-to-back programmatic
@@ -124,6 +126,7 @@ export function useDeckScroller({
   pageWidth,
   pageHeight,
   layoutKey,
+  zoom = 1,
 }: UseDeckScrollerOptions) {
   const [canvasSide, setCanvasSide] = useState<"front" | "back">("front");
   const [deckScale, setDeckScale] = useState(0.5);
@@ -239,10 +242,15 @@ export function useDeckScroller({
         const snapportScale = mobile
           ? Infinity
           : (availH - DECK_SCROLL_PADDING_TOP * 2) / pageHeight;
-        const scale = Math.max(
+        // The fit, then the cook's zoom on top of it. Clamping BEFORE the
+        // multiply is what makes 100% mean "as large as this window allows"
+        // and 150% mean half again — rather than the ceiling swallowing the
+        // zoom whole on a small card.
+        const fit = Math.max(
           0.12,
           Math.min(1.05, widthScale, heightScale, snapportScale),
         );
+        const scale = fit * zoom;
         setDeckScale(scale);
         // Give the CSS top padding (see `--deck-top-pad` in globals.css) the
         // exact offset that centres the first slide, computed analytically
@@ -270,7 +278,7 @@ export function useDeckScroller({
     const observer = new ResizeObserver(update);
     observer.observe(el);
     return () => observer.disconnect();
-  }, [deckNode, cardSize, sheetsLength, pageWidth, pageHeight, layoutKey]);
+  }, [deckNode, cardSize, sheetsLength, pageWidth, pageHeight, layoutKey, zoom]);
 
   const centerSlide = useCallback(
     (index: number, behavior: ScrollBehavior = "auto") => {

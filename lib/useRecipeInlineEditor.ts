@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState, type MutableRefObject } from "react";
 import { printableRecipe } from "@/lib/queue";
+import { ingredientText } from "@/lib/recipeCardLayout";
 import type { RecipeCardEditTarget, RecipeCardInlineEdit } from "@/lib/recipeCardLayout";
 import type { QueueItem, Recipe } from "@/types/recipe";
 
@@ -36,6 +37,42 @@ function applySectionTitleEdit<T extends { section?: string }>(
     next[i] = { ...next[i], section: trimmedNewTitle };
   }
   return next;
+}
+
+/**
+ * Turn a row into a section heading, or a heading back into a row.
+ *
+ * Sections are not objects: a group is a run of consecutive items sharing the
+ * same `section` string (see `sectionGroups`). So "make this line a heading"
+ * means removing the line and stamping its text onto the run that followed it,
+ * and "make this heading a line" means clearing that run and putting the words
+ * back as an ordinary item.
+ */
+export function promoteLineToSection<T extends { section?: string }>(items: T[], index: number, title: string): T[] {
+  const original = items[index]?.section?.trim() || undefined;
+  const next = items.slice();
+  next.splice(index, 1);
+  for (let i = index; i < next.length; i++) {
+    if ((next[i].section?.trim() || undefined) !== original) break;
+    next[i] = { ...next[i], section: title };
+  }
+  return next;
+}
+
+export function demoteSectionToLine<T extends { section?: string }>(
+  items: T[],
+  index: number,
+  makeItem: (text: string, section: string | undefined) => T,
+): { items: T[]; title: string } {
+  const title = items[index]?.section?.trim() ?? "";
+  const original = items[index]?.section?.trim() || undefined;
+  const next = items.slice();
+  for (let i = index; i < next.length; i++) {
+    if ((next[i].section?.trim() || undefined) !== original) break;
+    next[i] = { ...next[i], section: items[index - 1]?.section };
+  }
+  next.splice(index, 0, makeItem(title, items[index - 1]?.section));
+  return { items: next, title };
 }
 
 function applyRecipeTargetEdit(recipe: Recipe, target: RecipeCardEditTarget, value: string): Recipe {
@@ -222,6 +259,81 @@ export function useRecipeInlineEditor({
     [activeRecipeItem, applyRecipeUpdate],
   );
 
+  /**
+   * The body/heading switch on the field being edited.
+   *
+   * Reads the in-progress text rather than the committed value: the toolbar
+   * click blurs the field a beat before it fires, so building from the live
+   * edit is what stops "Butter, softened" becoming a heading called whatever
+   * the row said before this keystroke.
+   */
+  const setLineKind = useCallback(
+    (target: RecipeCardEditTarget, kind: "body" | "heading") => {
+      if (!activeRecipeItem?.recipe) return;
+      const recipe =
+        editingEdit?.recipeId === activeRecipeItem.id
+          ? applyRecipeTargetEdit(activeRecipeItem.recipe, editingEdit.target, editValue)
+          : activeRecipeItem.recipe;
+
+      if (kind === "heading" && (target.kind === "ingredient" || target.kind === "step")) {
+        const list = target.kind === "ingredient" ? recipe.ingredients : recipe.instructions;
+        const source = list[target.index];
+        if (!source) return;
+        const title =
+          target.kind === "ingredient"
+            ? ingredientText(recipe.ingredients[target.index])
+            : recipe.instructions[target.index]?.text ?? "";
+        if (!title.trim()) return;
+        const next =
+          target.kind === "ingredient"
+            ? { ...recipe, ingredients: promoteLineToSection(recipe.ingredients, target.index, title.trim()) }
+            : { ...recipe, instructions: promoteLineToSection(recipe.instructions, target.index, title.trim()) };
+        applyRecipeUpdate(activeRecipeItem.id, printableRecipe(next));
+        setEditingEdit({
+          recipeId: activeRecipeItem.id,
+          target: {
+            kind: target.kind === "ingredient" ? "ingredientSection" : "instructionSection",
+            index: target.index,
+          },
+        });
+        setEditValue(title.trim());
+        return;
+      }
+
+      if (
+        kind === "body" &&
+        (target.kind === "ingredientSection" || target.kind === "instructionSection")
+      ) {
+        if (target.kind === "ingredientSection") {
+          const { items: ingredients, title } = demoteSectionToLine(
+            recipe.ingredients,
+            target.index,
+            (text, section) => ({ raw: text, name: text, section }),
+          );
+          applyRecipeUpdate(activeRecipeItem.id, printableRecipe({ ...recipe, ingredients }));
+          setEditingEdit({
+            recipeId: activeRecipeItem.id,
+            target: { kind: "ingredient", index: target.index },
+          });
+          setEditValue(title);
+          return;
+        }
+        const { items: instructions, title } = demoteSectionToLine(
+          recipe.instructions,
+          target.index,
+          (text, section) => ({ step: 0, text, section }),
+        );
+        applyRecipeUpdate(activeRecipeItem.id, printableRecipe({ ...recipe, instructions }));
+        setEditingEdit({
+          recipeId: activeRecipeItem.id,
+          target: { kind: "step", index: target.index },
+        });
+        setEditValue(title);
+      }
+    },
+    [activeRecipeItem, editingEdit, editValue, applyRecipeUpdate],
+  );
+
   const insertIngredientAt = useCallback(
     (index: number) => {
       if (!activeRecipeItem?.recipe) return;
@@ -318,6 +430,7 @@ export function useRecipeInlineEditor({
       onValueChange: setEditValue,
       onCommit: commitEditTarget,
       onImageChange: changeRecipeImage,
+      onSetLineKind: setLineKind,
       onCancel: cancelEditTarget,
       onInsertIngredient: insertIngredientAt,
       onInsertStep: insertStepAt,
@@ -331,6 +444,7 @@ export function useRecipeInlineEditor({
     startEditTarget,
     commitEditTarget,
     changeRecipeImage,
+    setLineKind,
     cancelEditTarget,
     insertIngredientAt,
     insertStepAt,

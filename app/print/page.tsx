@@ -14,6 +14,7 @@ import type { AccountSaveStatus } from "@/components/AccountControl";
 import { FeedbackDialog } from "@/components/FeedbackButton";
 import { PrintDialogs } from "@/components/PrintDialogs";
 import { AddRecipeDialog } from "@/components/AddRecipeDialog";
+import { ConfirmDialog } from "@/components/ConfirmDialog";
 import { CookbookBuildReveal, CookbookWelcomeDialog } from "@/components/CookbookWelcomeDialog";
 import { CookbookReadyDialog } from "@/components/CookbookReadyDialog";
 import {
@@ -245,6 +246,10 @@ function printProjectFingerprint(
 }
 
 
+/** How far the deck's zoom can travel either side of fit-to-window. */
+const DECK_ZOOM_MIN = 0.5;
+const DECK_ZOOM_MAX = 2;
+
 export default function PrintPage() {
   useEffect(() => {
     const stableTimer = window.setTimeout(markPrintPreviewStable, PRINT_PREVIEW_STABILITY_MS);
@@ -271,7 +276,11 @@ export default function PrintPage() {
   const [doubleSided, setDoubleSided] = useState(true);
   const [showCutLines, setShowCutLines] = useState(false);
   const [printSettingsOpen, setPrintSettingsOpen] = useState(false);
-  const [showPhoto, setShowPhoto] = useState(false);
+  /* On by default: a recipe that came in with a photo should print with it
+     until someone says otherwise. Off meant the common case — import, print —
+     dropped the picture silently, and the only clue was a checkbox two panels
+     away. A stored preference still wins on the next visit. */
+  const [showPhoto, setShowPhoto] = useState(true);
   const [showSourceUrl, setShowSourceUrl] = useState(false);
   const [showDonateDialog, setShowDonateDialog] = useState(false);
   const [showCookbookOfferDialog, setShowCookbookOfferDialog] = useState(false);
@@ -1119,7 +1128,7 @@ export default function PrintPage() {
     return bookTemplate;
   }
 
-  function beginCookbookBuild() {
+  function beginCookbookBuild({ offerAfter = false }: { offerAfter?: boolean } = {}) {
     setShowCookbookOfferDialog(false);
     setCookbookBuilding(true);
     window.setTimeout(() => {
@@ -1133,12 +1142,19 @@ export default function PrintPage() {
         template: bookTemplate ?? template,
       });
     }, 180);
-    window.setTimeout(() => setCookbookBuilding(false), 1650);
+    window.setTimeout(() => {
+      setCookbookBuilding(false);
+      if (!offerAfter) return;
+      // The offer lands on top of the finished book, not in front of an idea of
+      // one. See `startCookbook`.
+      track("cookbook_welcome_shown", { price: cookbookPrice, recipeCount: items?.length ?? 0 });
+      setShowCookbookOfferDialog(true);
+    }, 1650);
   }
 
   /**
-   * "Make it a cookbook". One path, every time: the offer screen, then the
-   * build reveal.
+   * Switching the kind control from Recipe cards to Cookbook. One path, every
+   * time: the build reveal, then the offer over the finished book.
    *
    * This used to fork three ways on whether the welcome had been seen and
    * whether a stash existed, and two of those forks were worse. A returning
@@ -1152,8 +1168,18 @@ export default function PrintPage() {
    * restore-vs-fresh on its own, from `stashedCookbook`.
    */
   function startCookbook() {
-    track("cookbook_welcome_shown", { price: cookbookPrice, recipeCount: items?.length ?? 0 });
-    setShowCookbookOfferDialog(true);
+    // Build first, ask second.
+    //
+    // The offer used to open the moment the kind control moved to Cookbook, on
+    // top of a screen of loose cards: someone had to buy the idea of a book
+    // before ever seeing one. Switching the mode first means
+    // the reveal runs, their own recipes assemble into a cover and chapters,
+    // and the offer arrives over the finished article.
+    //
+    // Safe to show the book before the money: `cookbookLocked` only watermarks
+    // the PRINT, and the switch is reversible either way — the book is stashed
+    // on the same project id, so "Back to recipe cards" puts everything back.
+    beginCookbookBuild({ offerAfter: true });
   }
 
   /**
@@ -1757,6 +1783,19 @@ export default function PrintPage() {
     });
   }
 
+  /**
+   * Walking away from the sign-in dialog cancels the save that opened it.
+   *
+   * `handleSaveProject` arms `saveAfterLoginRef` before showing the dialog, and
+   * nothing disarmed it: someone who closed the dialog without making an
+   * account left the intent live, so the next sign-in — for anything, any time
+   * later — silently wrote that project to the account they had just declined
+   * to create it for.
+   */
+  function cancelSaveAfterLogin() {
+    saveAfterLoginRef.current = false;
+  }
+
   /** `projectIdOverride` points this save at a specific document — used when
       leaving files the content back over the project it already was. */
   async function handleSaveProject(projectIdOverride?: string) {
@@ -1849,12 +1888,27 @@ export default function PrintPage() {
    * usually already happened.
    */
   const [leavingHome, setLeavingHome] = useState(false);
+  /** Leaving with work that only exists in this browser — see `handleNavigateHome`. */
+  const [confirmLeave, setConfirmLeave] = useState(false);
 
-  async function handleNavigateHome() {
+  async function handleNavigateHome(options?: { confirmed?: boolean }) {
     if (leavingHome) return;
-    setLeavingHome(true);
 
     const printable = queue.items.some((item) => item.status === "ready" && item.recipe);
+    /**
+     * Signed out, this project is filed to the device and nowhere else, and
+     * there is no library on the way out to find it in again. Watched in a
+     * session replay: an hour of editing, one click on the logo, gone.
+     *
+     * So ask — and make signing in the way out of the question, since that is
+     * the thing that actually keeps the work.
+     */
+    if (printable && !cookPilotUser && !options?.confirmed) {
+      setConfirmLeave(true);
+      return;
+    }
+
+    setLeavingHome(true);
     if (!printable) {
       // Nothing made, nothing to file, nothing to show travelling.
       router.push("/");
@@ -2708,7 +2762,7 @@ export default function PrintPage() {
      owner are not that.
 
      Both halves are now what they always were — actions — and live with the
-     other actions in the print panel: "Make it a cookbook" creates, "Print as
+     other actions in the print panel: the kind control creates, "Print as
      recipe cards instead" leaves. Creating a SEPARATE book is "New cookbook" in
      the library. The header is left to say which document you're in and let you
      get back to the rest of them. */
@@ -3147,6 +3201,22 @@ export default function PrintPage() {
     return map;
   }, [navItems]);
 
+  /**
+   * Deck zoom. 1 is "fit this window", which is where the deck has always sat;
+   * the buttons step out from there in 10% notches. Deliberately not persisted:
+   * it is how you are looking at the page right now, not a fact about the
+   * document.
+   */
+  const [deckZoom, setDeckZoom] = useState(1);
+  const stepDeckZoom = useCallback((direction: 1 | -1) => {
+    setDeckZoom((current) =>
+      Math.min(
+        DECK_ZOOM_MAX,
+        Math.max(DECK_ZOOM_MIN, Math.round((current + direction * 0.1) * 10) / 10),
+      ),
+    );
+  }, []);
+
   const { canvasSide, setCanvasSide, deckScale, deckRef, slideRefs, goToSlide } = useDeckScroller({
     activeNavIndex,
     setActiveNavIndex,
@@ -3158,6 +3228,7 @@ export default function PrintPage() {
     pageWidth: cookbookView ? spreadWidth : PAGE_DIMS[previewCardSize].w,
     pageHeight: cookbookView ? previewDims.h : PAGE_DIMS[previewCardSize].h,
     layoutKey: `${railCollapsed ? "r" : ""}${panelCollapsed ? "p" : ""}`,
+    zoom: deckZoom,
   });
 
   // The page (sheet) inside the active spread the controls act on. Clicking a
@@ -3258,13 +3329,40 @@ export default function PrintPage() {
     (id: string, next: Recipe) => {
       const previous = items?.find((item) => item.id === id)?.recipe;
       queue.updateRecipe(id, next);
-      if (next.image && next.image !== previous?.image && photoModeFor(id) === "none") {
-        projectMeta.setItemPhotoMode(id, "card");
+      /**
+       * Keep the photo being replaced, so it stays pickable.
+       *
+       * The recipe photo picker's candidate list for a recipe is literally
+       * `[recipe.image]`, and choosing a custom photo overwrites that — so the
+       * imported photo left the dialog the moment it was replaced, with no way
+       * back short of re-importing the recipe.
+       */
+      if (previous?.image && previous.image !== next.image) {
+        const kept = projectMeta.meta.itemPlacements?.[id]?.photoHistory ?? [];
+        if (!kept.includes(previous.image)) {
+          projectMeta.setItemPlacement(id, {
+            // Newest first: the photo just replaced is the likeliest one to want
+            // back, and the list is capped so a cook cycling through uploads
+            // doesn't accumulate a wall of tiles.
+            photoHistory: [previous.image, ...kept.filter((url) => url !== next.image)].slice(0, 8),
+          });
+        }
       }
+      if (!next.image || next.image === previous?.image) return;
+      if (cookbookMode) {
+        if (photoModeFor(id) === "none") projectMeta.setItemPhotoMode(id, "card");
+        return;
+      }
+      /* Recipe cards have no per-recipe override — `photoOnFor` in
+         usePrintSheets only consults `itemPlacements` for cookbook layouts — so
+         the placement written above was invisible here, and picking a photo
+         with "Include recipe photo" off still showed nothing at all. In cards
+         mode the equivalent of "show this" is the setting itself. */
+      if (!showPhoto) setShowPhoto(true);
     },
     // `setItemPhotoMode` and `updateRecipe` are stable; the rest is read fresh.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [items, photoModeFor, queue.updateRecipe, projectMeta.setItemPhotoMode],
+    [items, photoModeFor, cookbookMode, showPhoto, queue.updateRecipe, projectMeta.setItemPhotoMode],
   );
 
   const { pageEditMode, togglePageEditMode, activeInlineEdit } = useRecipeInlineEditor({
@@ -3288,6 +3386,19 @@ export default function PrintPage() {
         target instanceof HTMLElement &&
         (target.tagName === "INPUT" || target.tagName === "TEXTAREA" || target.isContentEditable);
       if (isEditable) return;
+      /**
+       * Selected text means the keystroke is aimed at words, not at the recipe.
+       *
+       * Dragging across two steps selects across two separate textareas, so the
+       * drag ends outside the field it began in: the inline editor commits and
+       * closes, focus falls back to the document, and `isEditable` above is
+       * false by the time the cook presses Backspace to delete what they just
+       * highlighted. Watched in a session replay — someone selecting a few
+       * steps to delete them got the delete-this-recipe confirm instead, and
+       * took it.
+       */
+      const selection = window.getSelection();
+      if (selection && !selection.isCollapsed && selection.toString().trim()) return;
       if (!activeNavItem) return;
       if (
         showAddRecipeDialog ||
@@ -3420,7 +3531,10 @@ export default function PrintPage() {
         </div>
         {showCookPilotLogin && !cookPilotUser && (
           <CookPilotLoginDialog
-            onClose={() => setShowCookPilotLogin(false)}
+            onClose={() => {
+              setShowCookPilotLogin(false);
+              cancelSaveAfterLogin();
+            }}
             onAuthenticated={() => setShowCookPilotLogin(false)}
             reason={cookPilotLoginReason}
           />
@@ -3609,16 +3723,10 @@ export default function PrintPage() {
             lib/localProjects), and an account is how it stops being only there. */}
         {projectMeta.meta.cookbookMode && !cookPilotUser && (
           <div className="recipe-protect-bar no-print" role="status">
-            {/* "Create a free account" assumed nobody reading this had one,
-                which is wrong for every returning customer who is simply
-                signed out on this browser — and the dialog behind the button
-                has always handled both. So the ask is to SIGN IN, which is
-                true whether the account exists yet or not. "Only on this
-                device" stays: it is the fact that makes the ask worth making. */}
             <span className="recipe-protect-bar__text">
               {cookbookLocked
-                ? "This cookbook is saved only on this device. Sign in to keep it in your account."
-                : "This cookbook and your purchase are saved only on this device. Sign in to keep them in your account."}
+                ? "Your cookbook is saved only on this device. Create a free account so you don’t lose it."
+                : "Your cookbook and your purchase are saved only on this device. Create a free account to keep them."}
             </span>
             <button
               type="button"
@@ -3629,7 +3737,7 @@ export default function PrintPage() {
                 setShowCookPilotLogin(true);
               }}
             >
-              Save to your account
+              Create free account
             </button>
           </div>
         )}
@@ -3768,6 +3876,9 @@ export default function PrintPage() {
           canvasSide={canvasSide}
           setCanvasSide={setCanvasSide}
           deckScale={deckScale}
+          deckZoom={deckZoom}
+          onZoomStep={stepDeckZoom}
+          onZoomSet={setDeckZoom}
           deckRef={deckRef}
           slideRefs={slideRefs}
           goToSlide={goToSlide}
@@ -3869,7 +3980,7 @@ export default function PrintPage() {
         </Dialog>
 
         <div className="recipe-mobile-actions no-print">
-          {/* No "Make it a cookbook" here on purpose. Building a book — covers,
+          {/* No way into a cookbook here on purpose. Building a book — covers,
               chapters, page layouts, the organizer — is not something the phone
               layout does well yet, and selling someone a $19.99 document they
               then can't comfortably edit is worse than not offering it. The
@@ -4056,6 +4167,33 @@ export default function PrintPage() {
         onConfirmDeleteRecipe={confirmPendingDelete}
         onConfirmDeleteSectionRecipes={confirmDeleteSectionRecipes}
       />
+      {/* Leaving with a project that only exists in this browser. Truthful
+          about where it goes — it IS filed on the device and reopenable from
+          Projects — while making signing in the obvious way to keep it. */}
+      <ConfirmDialog
+        open={confirmLeave}
+        tone="primary"
+        title="Keep this project?"
+        description={
+          <>
+            It will be filed on this device and you can reopen it from Projects. Sign in and
+            it is saved to your account instead, on any device you use.
+          </>
+        }
+        confirmLabel="Sign in and save it"
+        secondaryLabel="Leave without saving"
+        onSecondary={() => {
+          setConfirmLeave(false);
+          void handleNavigateHome({ confirmed: true });
+        }}
+        onCancel={() => setConfirmLeave(false)}
+        onConfirm={() => {
+          setConfirmLeave(false);
+          // Arms `saveAfterLoginRef` and opens the sign-in dialog; the save
+          // runs itself the moment an account exists.
+          void handleSaveProject();
+        }}
+      />
       <CookbookWelcomeDialog
         open={showCookbookOfferDialog}
         cover={projectMeta.meta.cover ?? defaultCover()}
@@ -4067,9 +4205,12 @@ export default function PrintPage() {
         onClose={() => {
           track("cookbook_onboarding_dismissed", { price: cookbookPrice });
           setShowCookbookOfferDialog(false);
+          // Declining after the reveal has to actually undo the switch, or
+          // "Not now" leaves someone in the thing they just declined.
+          exitCookbookToCards();
         }}
         onStart={() => {
-          beginCookbookBuild();
+          setShowCookbookOfferDialog(false);
         }}
       />
       <CookbookBuildReveal open={cookbookBuilding} images={coverPhotoCandidates} />
@@ -4101,13 +4242,10 @@ export default function PrintPage() {
         items={queue.items}
         focusedItemId={queue.focusedItemId}
         focusNonce={queue.focusNonce}
-        canRetry={queue.canRetry}
-        onRetry={queue.retry}
         onAddUrl={queue.addUrl}
         onAddImages={queue.addImages}
         onAddText={queue.addText}
         onAddCookPilotRecipes={queue.addCookPilotRecipes}
-        onRemoveRecipe={queue.remove}
       />
       <FeedbackDialog
         open={showFeedbackDialog}
@@ -4116,7 +4254,10 @@ export default function PrintPage() {
       />
       {showCookPilotLogin && !cookPilotUser && (
         <CookPilotLoginDialog
-          onClose={() => setShowCookPilotLogin(false)}
+          onClose={() => {
+            setShowCookPilotLogin(false);
+            cancelSaveAfterLogin();
+          }}
           onAuthenticated={() => setShowCookPilotLogin(false)}
           reason={cookPilotLoginReason}
         />

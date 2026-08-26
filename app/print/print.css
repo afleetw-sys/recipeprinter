@@ -6597,11 +6597,73 @@ textarea.recipe-card__toc-title {
   cursor: pointer;
 }
 
+/* Hover, or the button's own keyboard focus — deliberately NOT
+   `:focus-within`. In edit mode every line is a real field, so focus-within
+   meant "someone is typing in this row", and Add below appeared under the
+   caret in the one moment it is certainly not what they are reaching for. */
 .recipe-card__editable-line:hover > .recipe-card__add-line,
-.recipe-card__editable-line:focus-within > .recipe-card__add-line,
 .recipe-card__add-line:focus-visible {
   opacity: 1;
   pointer-events: auto;
+}
+
+/* ── Body / heading switch, floating above the field being edited ─────────────
+   Sat above the row rather than beside it: the rows are a measured column and
+   anything inline would change the wrap. */
+.recipe-card__line-kind {
+  position: absolute;
+  left: 0;
+  /* Clear of the field entirely: `top: -13px` overlapped the line above it,
+     so the switch sat on top of text it had nothing to do with. */
+  bottom: calc(100% + 2px);
+  z-index: 6;
+  display: inline-flex;
+  gap: 1px;
+  padding: 1px;
+  border: 1px solid color-mix(in srgb, var(--recipe-accent) 28%, transparent);
+  border-radius: 999px;
+  background: var(--recipe-bg);
+}
+
+.recipe-card__line-kind-glyph {
+  font-family: var(--font-manrope), system-ui, sans-serif;
+  font-size: 8px;
+  line-height: 1;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+}
+
+.recipe-card__line-kind-glyph--heading {
+  font-size: 9px;
+  font-weight: 800;
+}
+
+.recipe-card__line-kind-btn {
+  display: grid;
+  place-items: center;
+  width: 20px;
+  height: 15px;
+  border: 0;
+  border-radius: 999px;
+  background: transparent;
+  color: color-mix(in srgb, var(--recipe-accent) 70%, transparent);
+  cursor: pointer;
+}
+
+.recipe-card__line-kind-btn.is-active {
+  background: color-mix(in srgb, var(--recipe-accent) 16%, transparent);
+  color: var(--recipe-accent);
+}
+
+.recipe-card__line-kind-btn:hover {
+  color: var(--recipe-accent);
+}
+
+/* The section title's own field needs to be the positioning context for the
+   switch, since the title is not inside an `.recipe-card__editable-line`. */
+.recipe-card__section-title-edit {
+  position: relative;
+  display: block;
 }
 
 .recipe-card__add-line:hover,
@@ -7042,6 +7104,153 @@ textarea.recipe-card__toc-title {
   box-shadow: var(--cp-shadow-xl);
   animation: print-success-pop 260ms cubic-bezier(0.2, 0.8, 0.2, 1) both;
   overflow: hidden;
+}
+
+/* A URL field is one line; a paste box and a dropzone are the whole point of
+   the dialog. Widen for both, and give the paste box real depth — someone
+   pasting a recipe is looking at a wall of text and needs to see it. */
+/* The settings trigger sits at the end of the panel's heading row, so the
+   heading takes the space and this stays put on the right. 30px to match the
+   compact controls in the panel rather than the 40px icon button default. */
+/* ── Deck zoom ──────────────────────────────────────────────────────────────
+   Floating bottom-right of the deck it zooms. Above the pages, below any menu
+   or dialog, and out of the way of the page controls that sit top-centre. */
+.recipe-deck-zoom {
+  position: absolute;
+  right: 16px;
+  bottom: 16px;
+  z-index: 6;
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  padding: 3px;
+  border: 1px solid var(--cp-line);
+  border-radius: 999px;
+  background: var(--cp-card);
+  box-shadow: var(--cp-shadow-sm);
+}
+
+.recipe-deck-zoom__btn,
+.recipe-deck-zoom__value {
+  display: grid;
+  place-items: center;
+  height: 26px;
+  border: 0;
+  border-radius: 999px;
+  background: transparent;
+  color: var(--cp-ink-soft);
+  cursor: pointer;
+}
+
+.recipe-deck-zoom__btn {
+  width: 26px;
+}
+
+.recipe-deck-zoom__value {
+  min-width: 46px;
+  padding: 0 4px;
+  font-size: var(--cp-fs-caption);
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  color: var(--cp-ink);
+}
+
+.recipe-deck-zoom__btn:hover:not(:disabled),
+.recipe-deck-zoom__value:hover {
+  background: var(--cp-overlay-hover);
+  color: var(--cp-ink);
+}
+
+.recipe-deck-zoom__btn:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+
+.recipe-deck-zoom__picker {
+  position: relative;
+}
+
+/* Opens UPWARD: the cluster sits at the bottom of the deck, so a menu below it
+   would hang off the page. Scrolls once the list outgrows it, which it will as
+   soon as another step is added. */
+.recipe-deck-zoom__menu {
+  position: absolute;
+  bottom: calc(100% + 8px);
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 7;
+  display: flex;
+  flex-direction: column;
+  min-width: 108px;
+  max-height: 208px;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding: 4px;
+  border: 1px solid var(--cp-line);
+  border-radius: 12px;
+  background: var(--cp-card);
+  box-shadow: var(--cp-shadow-lg);
+}
+
+.recipe-deck-zoom__option {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  min-height: 30px;
+  padding: 0 8px;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--cp-ink);
+  font-size: var(--cp-fs-small);
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  text-align: left;
+  cursor: pointer;
+}
+
+.recipe-deck-zoom__option:hover {
+  background: var(--cp-overlay-hover);
+}
+
+.recipe-deck-zoom__option.is-active {
+  background: var(--cp-selected-fill);
+  color: var(--cp-selected-text);
+}
+
+.recipe-deck-zoom__option-note {
+  font-size: var(--cp-fs-caption);
+  font-weight: 700;
+  color: var(--cp-ink-soft);
+}
+
+.recipe-deck-zoom__option.is-active .recipe-deck-zoom__option-note {
+  color: var(--cp-selected-text);
+}
+
+@media (max-width: 900px) {
+  /* The phone layout has its own toolbars over the deck; a floating cluster
+     there would land on top of them. */
+  .recipe-deck-zoom {
+    display: none;
+  }
+}
+
+.recipe-config-panel__settings {
+  margin-left: auto;
+  flex: none;
+  width: 30px;
+  height: 30px;
+  border-radius: 8px;
+}
+
+.recipe-add-dialog__panel--roomy {
+  width: min(100%, 640px);
+}
+
+.recipe-add-dialog__panel--paste .field {
+  min-height: 340px;
 }
 
 .recipe-add-dialog__header {

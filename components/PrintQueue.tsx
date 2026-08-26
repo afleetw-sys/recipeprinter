@@ -148,7 +148,9 @@ function RecipeCardItem({
         aria-label="Remove recipe"
         title="Remove"
         tone="danger"
-        className="absolute top-1 right-1 bg-card/90"
+        /* 8px in, not 4: at 4 the 40px button crowds the card's own rounded
+           corner and reads as clipped against the photo behind it. */
+        className="absolute top-2 right-2 bg-card/90"
       >
         <TrashIcon size={ICON_SIZE.md} />
       </IconButton>

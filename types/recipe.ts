@@ -175,6 +175,16 @@ export interface RecipePagePlacement {
       force this recipe's header photo on/off regardless. Ignored for
       `image-spread`, whose photo IS the facing page. */
   showPhoto?: boolean;
+  /**
+   * Photos this recipe has worn, oldest first, minus whichever is current.
+   *
+   * Choosing a custom photo overwrites `recipe.image`, and the picker's list of
+   * candidates for a recipe IS `[recipe.image]` — so the imported photo left
+   * the dialog the moment it was replaced, with no way back to it short of
+   * re-importing the recipe. Kept here rather than on the recipe because it is
+   * a fact about this project's presentation, not about the recipe itself.
+   */
+  photoHistory?: string[];
 }
 
 export interface CoverConfig {

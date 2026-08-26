@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect, useRef, useState } from "react";
 import type {
   ComponentProps,
   CSSProperties,
@@ -18,6 +19,8 @@ import {
   PrintIcon,
   SettingsIcon,
   SpinnerIcon,
+  MinusIcon,
+  PlusIcon,
 } from "@/components/icons";
 import { RecipeLoadingState } from "@/components/RecipeLoadingState";
 import { ScaledPage } from "@/components/print/ScaledPage";
@@ -57,6 +60,10 @@ const DECK_WINDOW = 2;
  * allow before they start extending a selection.
  */
 const TEXT_DRAG_SLOP = 6;
+
+/** What the zoom menu offers. 1 is fit-to-window, which is where the deck sits
+    with no zoom applied. */
+const DECK_ZOOM_STEPS = [0.5, 0.75, 1, 1.25, 1.5, 1.75, 2];
 
 /** The recipe's two text columns — the only places a drag means "edit this". */
 const TEXT_COLUMNS = ".recipe-card__ingredients, .recipe-card__method";
@@ -117,6 +124,10 @@ interface PrintDeckProps {
   canvasSide: ReturnType<typeof useDeckScroller>["canvasSide"];
   setCanvasSide: ReturnType<typeof useDeckScroller>["setCanvasSide"];
   deckScale: ReturnType<typeof useDeckScroller>["deckScale"];
+  /** The cook's zoom on the deck, and the controls that move it. 1 is fit. */
+  deckZoom: number;
+  onZoomStep: (direction: 1 | -1) => void;
+  onZoomSet: (zoom: number) => void;
   deckRef: ReturnType<typeof useDeckScroller>["deckRef"];
   slideRefs: ReturnType<typeof useDeckScroller>["slideRefs"];
   goToSlide: ReturnType<typeof useDeckScroller>["goToSlide"];
@@ -177,6 +188,25 @@ interface PrintDeckProps {
 // controls, and the front/back side switcher. Verbatim move out of the print
 // god-file; `renderActiveControls` and `renderDeckPage` moved in as internals.
 export function PrintDeck(props: PrintDeckProps) {
+  const [zoomMenuOpen, setZoomMenuOpen] = useState(false);
+  const zoomMenuRef = useRef<HTMLDivElement | null>(null);
+  // Click-away and Escape, the same contract the deck's other menus have.
+  useEffect(() => {
+    if (!zoomMenuOpen) return;
+    function onPointerDown(event: PointerEvent) {
+      if (!zoomMenuRef.current?.contains(event.target as Node)) setZoomMenuOpen(false);
+    }
+    function onKeyDown(event: KeyboardEvent) {
+      if (event.key === "Escape") setZoomMenuOpen(false);
+    }
+    document.addEventListener("pointerdown", onPointerDown);
+    document.addEventListener("keydown", onKeyDown);
+    return () => {
+      document.removeEventListener("pointerdown", onPointerDown);
+      document.removeEventListener("keydown", onKeyDown);
+    };
+  }, [zoomMenuOpen]);
+
   const {
     singleRecipePrintView,
     cookbookView,
@@ -205,6 +235,9 @@ export function PrintDeck(props: PrintDeckProps) {
     canvasSide,
     setCanvasSide,
     deckScale,
+    deckZoom,
+    onZoomStep,
+    onZoomSet,
     deckRef,
     slideRefs,
     goToSlide,
@@ -375,7 +408,16 @@ export function PrintDeck(props: PrintDeckProps) {
           ? {
               ...activeInlineEdit,
               // The recipe's own photo only (plus upload), not other recipes'.
-              recipeImages: activeRecipeItem?.recipe?.image ? [activeRecipeItem.recipe.image] : [],
+              // Same list the full-page picker offers: this recipe's photo,
+              // then the ones it has worn before.
+              recipeImages: Array.from(
+                new Set([
+                  ...(activeRecipeItem?.recipe?.image ? [activeRecipeItem.recipe.image] : []),
+                  ...(activeRecipeItem
+                    ? projectMeta.meta.itemPlacements?.[activeRecipeItem.id]?.photoHistory ?? []
+                    : []),
+                ]),
+              ),
               // Placement lives in the in-card Photo dialog too, so every mode's
               // "Photo" button opens the same None/In-card/Full-page + source UI.
               photoPlacement: photoModeFor(navItem.recipeId),
@@ -459,8 +501,13 @@ export function PrintDeck(props: PrintDeckProps) {
               // Only this recipe's own photo (plus upload) — never a grid of
               // OTHER recipes' images, which isn't what "change this photo" means.
               images: (() => {
+                // This recipe's photo, then any it has worn before — a photo
+                // replaced by a custom upload stays offered rather than being
+                // gone the moment it is swapped.
                 const own = items?.find((item) => item.id === navItem.recipeId)?.recipe?.image;
-                return own ? [own] : [];
+                const history =
+                  projectMeta.meta.itemPlacements?.[navItem.recipeId]?.photoHistory ?? [];
+                return Array.from(new Set([...(own ? [own] : []), ...history]));
               })(),
               // Pick a new full-page photo, or clear it to drop back to no photo.
               onImageChange: (url) =>
@@ -579,6 +626,66 @@ export function PrintDeck(props: PrintDeckProps) {
           aria-label="Selected page"
           data-single-recipe={singleRecipePrintView ? "true" : "false"}
         >
+          {/* Zoom, on the deck it zooms and nowhere else. Minus, the size, plus
+              — and the percentage doubles as the way back to fit, since after
+              a few steps "100%" is the number you are looking for anyway. */}
+          <div className="recipe-deck-zoom no-print" role="group" aria-label="Zoom">
+            <button
+              type="button"
+              className="recipe-deck-zoom__btn"
+              aria-label="Zoom out"
+              title="Zoom out"
+              disabled={deckZoom <= 0.5}
+              onClick={() => onZoomStep(-1)}
+            >
+              <MinusIcon size={ICON_SIZE.sm} />
+            </button>
+            <div className="recipe-deck-zoom__picker" ref={zoomMenuRef}>
+              <button
+                type="button"
+                className="recipe-deck-zoom__value"
+                aria-haspopup="menu"
+                aria-expanded={zoomMenuOpen}
+                aria-label={`Zoom, ${Math.round(deckZoom * 100)} percent`}
+                onClick={() => setZoomMenuOpen((open) => !open)}
+              >
+                {Math.round(deckZoom * 100)}%
+              </button>
+              {zoomMenuOpen && (
+                <div className="recipe-deck-zoom__menu" role="menu" aria-label="Zoom level">
+                  {DECK_ZOOM_STEPS.map((step) => (
+                    <button
+                      key={step}
+                      type="button"
+                      role="menuitemradio"
+                      aria-checked={Math.round(deckZoom * 100) === Math.round(step * 100)}
+                      className={`recipe-deck-zoom__option ${
+                        Math.round(deckZoom * 100) === Math.round(step * 100) ? "is-active" : ""
+                      }`}
+                      onClick={() => {
+                        onZoomSet(step);
+                        setZoomMenuOpen(false);
+                      }}
+                    >
+                      {Math.round(step * 100)}%
+                      {step === 1 && <span className="recipe-deck-zoom__option-note">Fit</span>}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+            <button
+              type="button"
+              className="recipe-deck-zoom__btn"
+              aria-label="Zoom in"
+              title="Zoom in"
+              disabled={deckZoom >= 2}
+              onClick={() => onZoomStep(1)}
+            >
+              <PlusIcon size={ICON_SIZE.sm} />
+            </button>
+          </div>
+
           {(sizeMenuOpen || settingsMenuOpen) && (
             <button
               type="button"
