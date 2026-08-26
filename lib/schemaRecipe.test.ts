@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   jsonDataBlocksFromHtml,
   jsonLdBlocksFromHtml,
+  pickBestRecipe,
   recipeFromJsonLd,
 } from "@/lib/schemaRecipe";
 
@@ -48,13 +49,63 @@ describe("jsonLdBlocksFromHtml", () => {
     expect(recipeFromJsonLd(jsonLdBlocksFromHtml(html)[0], "https://example.com/x")?.title).toBe("Borscht");
   });
 
-  it("rejects a partial recipe so the fuller parser gets a turn", () => {
-    // Ingredients but no steps — returning this as-is would strand the cook with
-    // half a recipe rather than falling through to CookPilot.
+  it("keeps a recipe that lists ingredients but no steps", () => {
+    // Half a recipe still prints, and the cook can fill in the rest. Refusing
+    // it only means the import fails outright.
     const [block] = jsonLdBlocksFromHtml(
       script("application/ld+json", { "@type": "Recipe", name: "Half", recipeIngredient: ["2 beets"] }),
     );
+    const recipe = recipeFromJsonLd(block, "https://example.com/x");
+    expect(recipe?.title).toBe("Half");
+    expect(recipe?.ingredients).toHaveLength(1);
+    expect(recipe?.instructions).toHaveLength(0);
+  });
+
+  it("keeps a recipe that has steps but no ingredient list", () => {
+    const [block] = jsonLdBlocksFromHtml(
+      script("application/ld+json", {
+        "@type": "Recipe",
+        name: "Method only",
+        recipeInstructions: [{ "@type": "HowToStep", text: "Simmer everything." }],
+      }),
+    );
+    const recipe = recipeFromJsonLd(block, "https://example.com/x");
+    expect(recipe?.title).toBe("Method only");
+    expect(recipe?.ingredients).toHaveLength(0);
+    expect(recipe?.instructions).toHaveLength(1);
+  });
+
+  it("rejects a recipe node with neither ingredients nor steps", () => {
+    const [block] = jsonLdBlocksFromHtml(
+      script("application/ld+json", { "@type": "Recipe", name: "Nothing to print" }),
+    );
     expect(recipeFromJsonLd(block, "https://example.com/x")).toBeNull();
+  });
+});
+
+describe("pickBestRecipe", () => {
+  const at = (url: string, node: unknown) =>
+    recipeFromJsonLd(jsonLdBlocksFromHtml(script("application/ld+json", node))[0], url)!;
+
+  const STUB = { "@type": "Recipe", name: "Stub", recipeIngredient: ["2 beets"] };
+
+  it("prefers a complete recipe over a partial one that came first", () => {
+    const candidates = [at("https://example.com/x", STUB), at("https://example.com/x", RECIPE_NODE)];
+    expect(pickBestRecipe(candidates)?.title).toBe("Borscht");
+  });
+
+  it("falls back to a partial recipe when that is all the page has", () => {
+    expect(pickBestRecipe([at("https://example.com/x", STUB)])?.title).toBe("Stub");
+  });
+
+  it("keeps document order among equally complete recipes", () => {
+    const first = at("https://example.com/x", { ...RECIPE_NODE, name: "First" });
+    const second = at("https://example.com/x", RECIPE_NODE);
+    expect(pickBestRecipe([first, second])?.title).toBe("First");
+  });
+
+  it("returns undefined when the page yielded nothing", () => {
+    expect(pickBestRecipe([])).toBeUndefined();
   });
 });
 

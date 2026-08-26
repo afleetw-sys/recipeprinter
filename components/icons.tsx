@@ -82,6 +82,12 @@ export const XIcon = (p: IconProps) => (
   </Base>
 );
 
+export const MinusIcon = (p: IconProps) => (
+  <Base {...p}>
+    <path d="M5 12h14" />
+  </Base>
+);
+
 export const PlusIcon = (p: IconProps) => (
   <Base {...p}>
     <path d="M12 5v14" />

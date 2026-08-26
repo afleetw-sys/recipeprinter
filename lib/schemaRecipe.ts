@@ -184,10 +184,13 @@ export function recipeFromJsonLd(value: unknown, sourceUrl: string): Recipe | nu
     }),
   );
 
-  // A usable recipe needs both; a partial JSON-LD hit (e.g. ingredients but no
-  // instructions) should fall through to CookPilot's full parser rather than
-  // being returned as-is.
-  if (ingredients.length === 0 || instructions.length === 0) return null;
+  // Either half is enough. Plenty of real recipes are a list of ingredients
+  // with the method written into the description, or a set of steps that name
+  // their own quantities as they go, and half a recipe the cook can finish
+  // beats an import that refuses to happen. Only a node with neither is
+  // nothing to print. Where a page offers both a partial and a complete
+  // recipe, `pickBestRecipe` takes the complete one.
+  if (ingredients.length === 0 && instructions.length === 0) return null;
 
   const yieldValues = asStringArray(recipeNode.recipeYield);
   const tags = asStringArray(recipeNode.keywords)
@@ -215,6 +218,24 @@ export function recipeFromJsonLd(value: unknown, sourceUrl: string): Recipe | nu
     author: nameFrom(recipeNode.author),
     datePublished: asString(recipeNode.datePublished),
   };
+}
+
+/**
+ * Which of a page's structured-data recipes to import.
+ *
+ * `recipeFromJsonLd` keeps a node that has only ingredients or only steps, so
+ * the ordering question is new: a site that emits several blocks sometimes
+ * leads with a stub (a card plugin's placeholder, a "related recipe" teaser)
+ * and carries the real thing further down. A complete candidate therefore wins
+ * over a partial one wherever the two sit relative to each other; among equals,
+ * document order decides.
+ */
+export function pickBestRecipe(candidates: Recipe[]): Recipe | undefined {
+  return (
+    candidates.find(
+      (candidate) => candidate.ingredients.length > 0 && candidate.instructions.length > 0,
+    ) ?? candidates[0]
+  );
 }
 
 export function jsonLdBlocksFromHtml(html: string): unknown[] {

@@ -7112,6 +7112,68 @@ textarea.recipe-card__toc-title {
 /* The settings trigger sits at the end of the panel's heading row, so the
    heading takes the space and this stays put on the right. 30px to match the
    compact controls in the panel rather than the 40px icon button default. */
+/* ── Deck zoom ──────────────────────────────────────────────────────────────
+   Floating bottom-right of the deck it zooms. Above the pages, below any menu
+   or dialog, and out of the way of the page controls that sit top-centre. */
+.recipe-deck-zoom {
+  position: absolute;
+  right: 16px;
+  bottom: 16px;
+  z-index: 6;
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  padding: 3px;
+  border: 1px solid var(--cp-line);
+  border-radius: 999px;
+  background: var(--cp-card);
+  box-shadow: var(--cp-shadow-sm);
+}
+
+.recipe-deck-zoom__btn,
+.recipe-deck-zoom__value {
+  display: grid;
+  place-items: center;
+  height: 26px;
+  border: 0;
+  border-radius: 999px;
+  background: transparent;
+  color: var(--cp-ink-soft);
+  cursor: pointer;
+}
+
+.recipe-deck-zoom__btn {
+  width: 26px;
+}
+
+.recipe-deck-zoom__value {
+  min-width: 46px;
+  padding: 0 4px;
+  font-size: var(--cp-fs-caption);
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  color: var(--cp-ink);
+}
+
+.recipe-deck-zoom__btn:hover:not(:disabled),
+.recipe-deck-zoom__value:hover {
+  background: var(--cp-overlay-hover);
+  color: var(--cp-ink);
+}
+
+.recipe-deck-zoom__btn:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+
+@media (max-width: 900px) {
+  /* The phone layout has its own toolbars over the deck; a floating cluster
+     there would land on top of them. */
+  .recipe-deck-zoom {
+    display: none;
+  }
+}
+
 .recipe-config-panel__settings {
   margin-left: auto;
   flex: none;

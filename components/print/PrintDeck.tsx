@@ -18,6 +18,8 @@ import {
   PrintIcon,
   SettingsIcon,
   SpinnerIcon,
+  MinusIcon,
+  PlusIcon,
 } from "@/components/icons";
 import { RecipeLoadingState } from "@/components/RecipeLoadingState";
 import { ScaledPage } from "@/components/print/ScaledPage";
@@ -117,6 +119,10 @@ interface PrintDeckProps {
   canvasSide: ReturnType<typeof useDeckScroller>["canvasSide"];
   setCanvasSide: ReturnType<typeof useDeckScroller>["setCanvasSide"];
   deckScale: ReturnType<typeof useDeckScroller>["deckScale"];
+  /** The cook's zoom on the deck, and the controls that move it. 1 is fit. */
+  deckZoom: number;
+  onZoomStep: (direction: 1 | -1) => void;
+  onZoomReset: () => void;
   deckRef: ReturnType<typeof useDeckScroller>["deckRef"];
   slideRefs: ReturnType<typeof useDeckScroller>["slideRefs"];
   goToSlide: ReturnType<typeof useDeckScroller>["goToSlide"];
@@ -205,6 +211,9 @@ export function PrintDeck(props: PrintDeckProps) {
     canvasSide,
     setCanvasSide,
     deckScale,
+    deckZoom,
+    onZoomStep,
+    onZoomReset,
     deckRef,
     slideRefs,
     goToSlide,
@@ -579,6 +588,41 @@ export function PrintDeck(props: PrintDeckProps) {
           aria-label="Selected page"
           data-single-recipe={singleRecipePrintView ? "true" : "false"}
         >
+          {/* Zoom, on the deck it zooms and nowhere else. Minus, the size, plus
+              — and the percentage doubles as the way back to fit, since after
+              a few steps "100%" is the number you are looking for anyway. */}
+          <div className="recipe-deck-zoom no-print" role="group" aria-label="Zoom">
+            <button
+              type="button"
+              className="recipe-deck-zoom__btn"
+              aria-label="Zoom out"
+              title="Zoom out"
+              disabled={deckZoom <= 0.5}
+              onClick={() => onZoomStep(-1)}
+            >
+              <MinusIcon size={ICON_SIZE.sm} />
+            </button>
+            <button
+              type="button"
+              className="recipe-deck-zoom__value"
+              aria-label={`Zoom ${Math.round(deckZoom * 100)}%. Reset to fit.`}
+              title="Reset to fit"
+              onClick={onZoomReset}
+            >
+              {Math.round(deckZoom * 100)}%
+            </button>
+            <button
+              type="button"
+              className="recipe-deck-zoom__btn"
+              aria-label="Zoom in"
+              title="Zoom in"
+              disabled={deckZoom >= 2}
+              onClick={() => onZoomStep(1)}
+            >
+              <PlusIcon size={ICON_SIZE.sm} />
+            </button>
+          </div>
+
           {(sizeMenuOpen || settingsMenuOpen) && (
             <button
               type="button"

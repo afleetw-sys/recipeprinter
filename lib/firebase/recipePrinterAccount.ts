@@ -46,7 +46,7 @@ function recentlySeen(uid: string): boolean {
 }
 
 /**
- * Creates the small Recipe Printer account shell when a real Firebase user
+ * Creates the small RecipePrinter account shell when a real Firebase user
  * signs in. Purchases, grants, roles, and entitlements remain server-owned.
  */
 export function ensureRecipePrinterAccount(user: User): Promise<void> {

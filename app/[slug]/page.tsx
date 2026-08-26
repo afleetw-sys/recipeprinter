@@ -5,6 +5,7 @@ import { SiteFooter } from "@/components/SiteFooter";
 import { SiteHeader } from "@/components/SiteHeader";
 import { SeoCapture } from "@/components/seo/SeoCapture";
 import { Breadcrumb, type Crumb } from "@/components/seo/Breadcrumb";
+import { FaqAnswer } from "@/components/seo/FaqAnswer";
 import {
   FeatureRows,
   HeroProductPhoto,
@@ -91,7 +92,7 @@ function LandingCta({
     <Link
       href={CAPTURE_HREF}
       className={`btn ${variant === "primary" ? "btn-primary" : "btn-secondary"}${
-        compact ? " px-cp-3 text-cp-small sm:px-[18px] sm:text-cp-body" : ""
+        compact ? " hidden sm:inline-flex px-cp-3 text-cp-small sm:px-[18px] sm:text-cp-body" : ""
       }`}
     >
       <PrintIcon size={ICON_SIZE.md} />
@@ -109,20 +110,9 @@ function CaptureBlock({ page }: { page: SeoLandingPage }) {
     <div id="rp-capture" className="scroll-mt-24">
       <SeoCapture
         initialMode={page.initialImportMode ?? "url"}
+        modes={page.captureModes}
         submitLabel={page.importSubmitLabel ?? "Start printing"}
       />
-      {page.captureReassurance !== false && (
-        <p className="mt-cp-3 text-cp-small text-ink-soft">
-          {page.captureReassurance ?? "Free to use. No account, no clutter."}
-        </p>
-      )}
-      {page.importHint && (
-        <p
-          className={`${page.captureReassurance === false ? "mt-cp-3" : "mt-cp-2"} text-cp-small text-ink-soft`}
-        >
-          {page.importHint}
-        </p>
-      )}
     </div>
   );
 }
@@ -132,6 +122,7 @@ export default function SeoLandingPage({ params }: PageProps) {
   if (!page) notFound();
 
   const isGuide = layoutForPage(page) === "guide-first";
+  const closingHeading = page.captureHeading ?? "Start with one recipe";
 
   return (
     <div className="min-h-screen flex flex-col">
@@ -140,15 +131,19 @@ export default function SeoLandingPage({ params }: PageProps) {
         dangerouslySetInnerHTML={{ __html: JSON.stringify(pageJsonLd(page)) }}
       />
 
-      <SiteHeader actions={<LandingCta label="Go to printer" compact />} />
+      <SiteHeader actions={<LandingCta label="Start printing" compact />} />
 
       <main className="flex-1 px-cp-6 sm:px-cp-7 lg:px-[40px]">
-        <div className="max-w-content mx-auto flex flex-col gap-[72px] pt-cp-5 pb-[80px]">
+        {/* Section rhythm: the gap is what separates one argument from the next,
+            so it opens up once there is room for it. */}
+        <div className="max-w-content mx-auto flex flex-col gap-[80px] pt-cp-5 pb-[96px] lg:gap-[104px]">
           {/* ── Hero ──────────────────────────────────────────────────────── */}
           <div className="flex flex-col gap-cp-6">
             <Breadcrumb trail={breadcrumbTrail(page)} />
             <section
-              className="grid items-center gap-cp-7 py-cp-3 lg:grid-cols-2 lg:gap-[64px]"
+              /* The copy carries the heading, the lede and the whole importer,
+                 so it takes the larger share; the photo takes what is left. */
+              className="grid items-center gap-cp-7 py-cp-3 lg:grid-cols-[minmax(0,1.18fr)_minmax(0,0.82fr)] lg:gap-[56px]"
               aria-labelledby="landing-heading"
             >
               <div>
@@ -161,68 +156,47 @@ export default function SeoLandingPage({ params }: PageProps) {
                 <p className="mt-cp-4 max-w-[40rem] text-cp-body-lg leading-relaxed text-ink-soft">
                   {page.lede}
                 </p>
-                {isGuide ? (
-                  <div className="mt-cp-5 flex flex-wrap items-center gap-cp-3">
-                    <LandingCta label={page.importSubmitLabel ?? "Start your cookbook"} />
-                    {page.howTo && page.howTo.length > 0 && (
-                      <Link href="#howto-heading" className="btn btn-secondary">
-                        See how it works
-                      </Link>
-                    )}
-                  </div>
-                ) : (
-                  <div className="mt-cp-5">
-                    <CaptureBlock page={page} />
-                  </div>
-                )}
-                {page.statusNote && (
-                  <p className="mt-cp-5 max-w-[40rem] border-l-2 border-line pl-cp-4 text-cp-small leading-relaxed text-ink-soft">
-                    {page.statusNote}
-                  </p>
-                )}
+                <div className="mt-cp-5">
+                  <CaptureBlock page={page} />
+                </div>
               </div>
               <HeroProductPhoto
-                cardKey={isGuide ? "pesto" : "korean"}
-                annotation={isGuide ? "Ready for a family cookbook" : "Printed from a recipe link"}
+                cardKey={page.heroCard}
+                annotation={page.heroAnnotation}
                 priority
                 wide
+                tall={page.initialImportMode === "image" || page.initialImportMode === "text"}
               />
             </section>
           </div>
 
-          {page.intro && (
-            <p className="max-w-[46rem] text-cp-h2-lg font-semibold leading-snug tracking-[-0.02em] text-ink">
-              {page.intro}
-            </p>
-          )}
-
-          {page.howTo && page.howTo.length > 0 && (
+          {/* The intro belongs TO the steps, not between two sections: on its own
+              it sat in 72px of air top and bottom and read as a stray line. */}
+          {page.howTo && page.howTo.length > 0 ? (
             <section aria-labelledby="howto-heading">
               <div id="howto-heading">
                 <SectionHeading>How it works</SectionHeading>
               </div>
+              {page.intro && (
+                <p className="mt-cp-2 text-cp-body-lg leading-relaxed text-ink-soft">
+                  {page.intro}
+                </p>
+              )}
               <div className="mt-cp-6">
                 <HowItWorks steps={page.howTo} />
               </div>
             </section>
+          ) : (
+            page.intro && (
+              <p className="text-cp-body-lg leading-relaxed text-ink-soft">
+                {page.intro}
+              </p>
+            )
           )}
 
           {page.featureSections && page.featureSections.length > 0 && (
             <section aria-label="Features">
               <FeatureRows features={page.featureSections} />
-            </section>
-          )}
-
-          {isGuide && (
-            <section className="border-y border-line py-[64px]" aria-labelledby="guide-capture-heading">
-              <div className="grid gap-cp-6 lg:grid-cols-[minmax(0,0.7fr)_minmax(0,1.3fr)] lg:items-center lg:gap-[88px]">
-                <div>
-                  <h2 id="guide-capture-heading" className="text-cp-h2-lg font-extrabold tracking-[-0.03em]">
-                    Start your family cookbook
-                  </h2>
-                </div>
-                <CaptureBlock page={page} />
-              </div>
             </section>
           )}
 
@@ -232,7 +206,7 @@ export default function SeoLandingPage({ params }: PageProps) {
                 <SectionHeading>Real cards, really printed</SectionHeading>
               </div>
               <p className="mt-cp-2 text-ink-soft text-cp-body leading-relaxed">
-                Actual recipe cards printed with Recipe Printer, no mockups.
+                Actual recipe cards printed with RecipePrinter, no mockups.
               </p>
               <div className="mt-cp-6">
                 <PhotoGallery cardKeys={page.examples} />
@@ -261,17 +235,38 @@ export default function SeoLandingPage({ params }: PageProps) {
                     <span className="pt-1">{item.question}</span>
                   </dt>
                   <dd className="mt-cp-3 border-t border-line pt-cp-3 text-ink-soft text-cp-body leading-relaxed">
-                    {item.answer}
+                    {item.emphasize === false ? (
+                      item.answer
+                    ) : (
+                      <FaqAnswer answer={item.answer} lead={item.emphasize} />
+                    )}
                   </dd>
                 </div>
               ))}
             </dl>
           </section>
 
+          {/* ── Closing action ────────────────────────────────────────────── */}
+          <section className="border-t border-line pt-[48px]" aria-labelledby="closing-heading">
+            <h2 id="closing-heading" className="text-cp-h2-lg font-extrabold tracking-[-0.03em]">
+              {closingHeading}
+            </h2>
+            <p className="mt-cp-2 text-ink-soft text-cp-body leading-relaxed">
+              Nothing to install and no account needed. Paste a link, upload a photo of a
+              recipe, or paste the text.
+            </p>
+            <div className="mt-cp-4">
+              {/* Never the same words as the heading directly above it. */}
+              <LandingCta
+                label={page.ctaLabel && page.ctaLabel !== closingHeading ? page.ctaLabel : "Start printing"}
+              />
+            </div>
+          </section>
+
           {/* ── Related ───────────────────────────────────────────────────── */}
           <section aria-labelledby="related-heading">
             <div id="related-heading">
-              <h2 className="text-cp-h2 font-extrabold tracking-[-0.02em]">More ways to use Recipe Printer</h2>
+              <h2 className="text-cp-h2 font-extrabold tracking-[-0.02em]">More ways to use RecipePrinter</h2>
             </div>
             <div className="mt-cp-4 flex flex-wrap gap-cp-3">
               {page.links.map((link) => (

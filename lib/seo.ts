@@ -210,7 +210,7 @@ export const FAQ: FaqItem[] = [
   {
     question: "Can I make a cookbook from my recipes?",
     answer:
-      "Yes. Group your recipes into chapters, add a cover, and RecipePrinter builds a cookbook with an automatic table of contents. You can export it as a print-ready PDF to print at home in US Letter, or as a full-bleed 8 x 10 file to order a bound hardcover from a print-on-demand service like Lulu or Blurb.",
+      "Yes. Group your recipes into chapters, add a cover, and RecipePrinter builds a cookbook with an automatic table of contents. You can export it as a print-ready PDF to print at home in US Letter, or as a full-bleed 8 x 10 file to have it bound by a printer like Lulu or Staples.",
   },
   {
     question: "Why print recipes instead of cooking from a phone?",

@@ -246,6 +246,10 @@ function printProjectFingerprint(
 }
 
 
+/** How far the deck's zoom can travel either side of fit-to-window. */
+const DECK_ZOOM_MIN = 0.5;
+const DECK_ZOOM_MAX = 2;
+
 export default function PrintPage() {
   useEffect(() => {
     const stableTimer = window.setTimeout(markPrintPreviewStable, PRINT_PREVIEW_STABILITY_MS);
@@ -3197,6 +3201,22 @@ export default function PrintPage() {
     return map;
   }, [navItems]);
 
+  /**
+   * Deck zoom. 1 is "fit this window", which is where the deck has always sat;
+   * the buttons step out from there in 10% notches. Deliberately not persisted:
+   * it is how you are looking at the page right now, not a fact about the
+   * document.
+   */
+  const [deckZoom, setDeckZoom] = useState(1);
+  const stepDeckZoom = useCallback((direction: 1 | -1) => {
+    setDeckZoom((current) =>
+      Math.min(
+        DECK_ZOOM_MAX,
+        Math.max(DECK_ZOOM_MIN, Math.round((current + direction * 0.1) * 10) / 10),
+      ),
+    );
+  }, []);
+
   const { canvasSide, setCanvasSide, deckScale, deckRef, slideRefs, goToSlide } = useDeckScroller({
     activeNavIndex,
     setActiveNavIndex,
@@ -3208,6 +3228,7 @@ export default function PrintPage() {
     pageWidth: cookbookView ? spreadWidth : PAGE_DIMS[previewCardSize].w,
     pageHeight: cookbookView ? previewDims.h : PAGE_DIMS[previewCardSize].h,
     layoutKey: `${railCollapsed ? "r" : ""}${panelCollapsed ? "p" : ""}`,
+    zoom: deckZoom,
   });
 
   // The page (sheet) inside the active spread the controls act on. Clicking a
@@ -3836,6 +3857,9 @@ export default function PrintPage() {
           canvasSide={canvasSide}
           setCanvasSide={setCanvasSide}
           deckScale={deckScale}
+          deckZoom={deckZoom}
+          onZoomStep={stepDeckZoom}
+          onZoomReset={() => setDeckZoom(1)}
           deckRef={deckRef}
           slideRefs={slideRefs}
           goToSlide={goToSlide}

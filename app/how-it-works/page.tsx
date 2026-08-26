@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import type { ComponentType } from "react";
 import Link from "next/link";
-import { PageShell, PageHeader, StartPrintingCta } from "@/components/PageShell";
+import { PageShell, PageHeader, SectionHeading, ClosingAction } from "@/components/PageShell";
 import {
   LinkIcon,
   ImageIcon,
@@ -12,9 +12,9 @@ import { pageMetadata } from "@/lib/seo";
 import { SEO_LANDING_PAGES } from "@/lib/seoLandingPages";
 
 export const metadata: Metadata = pageMetadata({
-  title: "How Recipe Printer Works",
+  title: "How RecipePrinter Works",
   description:
-    "See how Recipe Printer turns recipes from links, screenshots, photos, and text into printable recipe cards, pages, and PDFs.",
+    "See how RecipePrinter turns recipes from links, screenshots, photos, and text into printable recipe cards, pages, and PDFs.",
   path: "/how-it-works",
 });
 
@@ -33,12 +33,12 @@ const SOURCES: Source[] = [
   {
     icon: ImageIcon,
     label: "Upload a photo or screenshot",
-    body: "Use a cookbook page, old recipe card, screenshot, or saved image. RecipePrinter reads the recipe and turns it into something clean you can print.",
+    body: "Use a cookbook page, a handwritten recipe card, a screenshot, or a saved image. RecipePrinter reads the recipe off the picture and sets it on a page you can print.",
   },
   {
     icon: TextIcon,
     label: "Paste recipe text",
-    body: "Have a recipe from a message, email, document, or site we do not recognize? Paste the text and RecipePrinter will format it into a printable recipe card or page.",
+    body: "Have a recipe from a message, email, document, or a site that won't import? Paste the text and RecipePrinter formats it into a printable recipe card or page.",
   },
   {
     icon: CookPilotLogoIcon,
@@ -59,22 +59,18 @@ const RELATED_GUIDES = [
 
 export default function HowItWorksPage() {
   return (
-    <PageShell>
+    <PageShell crumb="How it works" path="/how-it-works">
       <PageHeader
         title="From recipe link to printed recipe card"
         lede="RecipePrinter turns recipes from websites, social links, screenshots, photos, and text into printable recipe cards, pages, and PDFs you can cook from and keep."
       />
 
-      <div className="flex flex-col gap-cp-7">
         <section aria-labelledby="step-1">
-          <h2
-            id="step-1"
-            className="text-cp-h2-lg font-extrabold tracking-[-0.03em]"
-          >
+          <SectionHeading id="step-1">
             1. Add a recipe link, photo, screenshot, or text
-          </h2>
+          </SectionHeading>
 
-          <p className="mt-cp-3 text-ink-soft text-cp-body leading-relaxed">
+          <p className="mt-cp-3 max-w-[680px] text-ink-soft text-cp-body leading-relaxed">
             Start with a recipe you already want to keep. RecipePrinter begins
             after discovery: when a recipe has earned a place on paper, in your
             kitchen, or in your collection.
@@ -99,20 +95,17 @@ export default function HowItWorksPage() {
         </section>
 
         <section aria-labelledby="step-2">
-          <h2
-            id="step-2"
-            className="text-cp-h2-lg font-extrabold tracking-[-0.03em]"
-          >
+          <SectionHeading id="step-2">
             2. Turn the recipe into a printable card or page
-          </h2>
+          </SectionHeading>
 
-          <p className="mt-cp-3 text-ink-soft text-cp-body leading-relaxed">
+          <p className="mt-cp-3 max-w-[680px] text-ink-soft text-cp-body leading-relaxed">
             Recipe websites and social posts are made for screens, not kitchen
             counters. RecipePrinter keeps the useful recipe details and formats
             them into something readable on paper.
           </p>
 
-          <p className="mt-cp-3 text-ink-soft text-cp-body leading-relaxed">
+          <p className="mt-cp-3 max-w-[680px] text-ink-soft text-cp-body leading-relaxed">
             You get a printable recipe with the title, ingredients,
             instructions, notes, prep time, cook time, servings, and other
             useful details when they&apos;re available.
@@ -120,39 +113,35 @@ export default function HowItWorksPage() {
         </section>
 
         <section aria-labelledby="step-3">
-          <h2
-            id="step-3"
-            className="text-cp-h2-lg font-extrabold tracking-[-0.03em]"
-          >
+          <SectionHeading id="step-3">
             3. Print it, save it as a PDF, or add it to your binder
-          </h2>
+          </SectionHeading>
 
-          <p className="mt-cp-3 text-ink-soft text-cp-body leading-relaxed">
+          <p className="mt-cp-3 max-w-[680px] text-ink-soft text-cp-body leading-relaxed">
             Preview your recipe as a clean printable recipe card or letter-size
             recipe page, then send it to your printer. You can also choose{" "}
             <span className="font-semibold text-ink">Save as PDF</span> in the
             print dialog to keep a clean recipe PDF on your device.
           </p>
 
-          <p className="mt-cp-3 text-ink-soft text-cp-body leading-relaxed">
+          <p className="mt-cp-3 max-w-[680px] text-ink-soft text-cp-body leading-relaxed">
             Printing several recipes? Add them to your print queue and print the
             whole batch at once. It works well for a recipe binder, a week of
             dinners, a family cookbook, or the recipes you keep coming back to.
           </p>
 
-          <p className="mt-cp-3 text-ink-soft text-cp-body leading-relaxed">
-            No account required. Nothing saved to our servers. Just printable
-            recipes designed for real kitchens instead of open browser tabs.
+          <p className="mt-cp-3 max-w-[680px] text-ink-soft text-cp-body leading-relaxed">
+            Printing is free and needs no account. Used without one, nothing is
+            stored on our servers: the print queue lives in your browser for the
+            session. Sign in and a project you save is kept to your account, so
+            you can reopen it from another device.
           </p>
         </section>
 
         <section aria-labelledby="related-guides-heading">
-          <h2
-            id="related-guides-heading"
-            className="text-cp-h2-lg font-extrabold tracking-[-0.03em]"
-          >
+          <SectionHeading id="related-guides-heading">
             More ways to use RecipePrinter
-          </h2>
+          </SectionHeading>
 
           <div className="mt-cp-4 grid gap-cp-3 sm:grid-cols-2">
             {RELATED_GUIDES.map((page) => (
@@ -167,10 +156,7 @@ export default function HowItWorksPage() {
           </div>
         </section>
 
-        <div className="pt-cp-2">
-          <StartPrintingCta />
-        </div>
-      </div>
+      <ClosingAction />
     </PageShell>
   );
 }

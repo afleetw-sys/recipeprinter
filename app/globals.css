@@ -62,7 +62,7 @@
   --cp-fs-h2-lg: clamp(1.2rem, 1rem + 1vw, 1.4rem); /* step numbers, emphasis headings */
   --cp-fs-hero-sm: clamp(1.9rem, 1.5rem + 2vw, 2.5rem); /* article page H1 (features/about/faq/how-it-works) */
   --cp-fs-hero: clamp(2rem, 1.1rem + 4vw, 2.75rem); /* app/home page H1 */
-  --cp-fs-hero-lg: clamp(2.15rem, 0.9rem + 6vw, 4rem); /* marketing landing page H1 */
+  --cp-fs-hero-lg: clamp(2rem, 1.2rem + 3.2vw, 3.1rem); /* marketing landing page H1 */
   --cp-fs-wordmark: 1.2rem;
   --cp-fs-wordmark-compact: 1.05rem;
 
@@ -1381,6 +1381,22 @@
      2×2 on small screens, a single row once there's room. */
   .mode-toggle.mode-toggle--expanded {
     grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  /* SEO capture: three sources, no overflow menu and no CookPilot (there is no
+     account on a landing page), so all three stay on one row at every width.
+     Labels are short enough to survive a 375px screen at three across. */
+  .mode-toggle.mode-toggle--seo {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+  @media (max-width: 420px) {
+    /* Three across on a 375px screen: the labels stay on one line and the type
+       steps down rather than "Paste text" wrapping into a two-line button. */
+    .mode-toggle.mode-toggle--seo .mode-toggle__item {
+      padding: 0 6px;
+      gap: 5px;
+      font-size: var(--cp-fs-caption);
+      white-space: nowrap;
+    }
   }
   .mode-toggle__item {
     @apply inline-flex items-center justify-center gap-2 rounded font-bold transition-colors;

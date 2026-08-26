@@ -1,8 +1,9 @@
 import type { Metadata } from "next";
 import type { ComponentType } from "react";
 import Link from "next/link";
-import { PageShell, PageHeader, StartPrintingCta } from "@/components/PageShell";
+import { PageShell, PageHeader, SectionHeading, ClosingAction } from "@/components/PageShell";
 import {
+  BookIcon,
   CheckIcon,
   LinkIcon,
   ImageIcon,
@@ -35,7 +36,7 @@ const FEATURES: Feature[] = [
   {
     icon: ImageIcon,
     title: "Print from a photo or screenshot",
-    body: "Upload a cookbook page, old recipe card, saved image, or recipe screenshot and turn it into a readable recipe you can print, save, or add to a binder.",
+    body: "Upload a cookbook page, a handwritten recipe card, a saved image, or a recipe screenshot and turn it into a readable recipe you can print, save, or add to a binder.",
   },
   {
     icon: TextIcon,
@@ -57,6 +58,11 @@ const FEATURES: Feature[] = [
     title: "Print multiple recipes at once",
     body: "Build a print queue from different sources, select the recipes you want, and print the whole batch in one job for a recipe binder, family cookbook, or week of dinners.",
   },
+  {
+    icon: BookIcon,
+    title: "Bind a collection into a cookbook",
+    body: "Group a set of recipes into chapters, add a cover and a dedication, and RecipePrinter builds a cookbook with an automatic table of contents. Export it print-ready: US Letter to print at home, or full-bleed 8 x 10 to order a bound copy.",
+  },
 ];
 
 const UTILITY_GUIDES = SEO_LANDING_PAGES.filter(
@@ -65,7 +71,7 @@ const UTILITY_GUIDES = SEO_LANDING_PAGES.filter(
 
 export default function FeaturesPage() {
   return (
-    <PageShell>
+    <PageShell crumb="Features" path="/features">
       <PageHeader
         title="A recipe printing tool for recipes worth keeping"
         lede="RecipePrinter turns websites, social links, photos, screenshots, and text into printable recipe cards, pages, PDFs, and batches you can cook from, save, and collect."
@@ -87,13 +93,8 @@ export default function FeaturesPage() {
         ))}
       </ul>
 
-      <section aria-labelledby="printing-guides-heading" className="mt-cp-7">
-        <h2
-          id="printing-guides-heading"
-          className="font-extrabold tracking-[-0.02em] text-cp-h2"
-        >
-          Choose how you found the recipe
-        </h2>
+      <section aria-labelledby="printing-guides-heading">
+        <SectionHeading id="printing-guides-heading">Choose how you found the recipe</SectionHeading>
         <p className="mt-cp-2 text-ink-soft text-cp-body leading-relaxed">
           Start with the way you found the recipe, then turn it into something
           easier to cook from and keep.
@@ -113,14 +114,9 @@ export default function FeaturesPage() {
 
       <section
         aria-labelledby="privacy-heading"
-        className="mt-cp-7 card p-cp-6 bg-brand-50 border-transparent"
+        className="card p-cp-6 bg-brand-50 border-transparent"
       >
-        <h2
-          id="privacy-heading"
-          className="font-extrabold tracking-[-0.02em] text-cp-h2"
-        >
-          Built for real kitchens, not web browsers
-        </h2>
+        <SectionHeading id="privacy-heading">Built for real kitchens, not web browsers</SectionHeading>
         <p className="mt-cp-2 text-ink-soft text-cp-body leading-relaxed">
           RecipePrinter is not a recipe discovery app, meal planner, grocery
           app, or social network. It exists for what happens after you&apos;ve
@@ -128,15 +124,16 @@ export default function FeaturesPage() {
           than an open browser tab.
         </p>
         <p className="mt-cp-3 text-ink-soft text-cp-body leading-relaxed">
-          No account required. Nothing saved to our servers. Your print queue
-          lives in your browser for the current session only, so the recipes you
-          print, save, and collect stay yours.
+          Printing is free and needs no account. Used without one, nothing is
+          stored on our servers: your print queue lives in your browser for the
+          current session only. Sign in and a project you save is kept to your
+          account, so you can reopen it from another device. Two optional
+          one-time purchases exist: premium print themes, and the cookbook
+          builder.
         </p>
       </section>
 
-      <div className="mt-cp-7">
-        <StartPrintingCta />
-      </div>
+      <ClosingAction />
     </PageShell>
   );
 }

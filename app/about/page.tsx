@@ -1,6 +1,5 @@
 import type { Metadata } from "next";
-import Link from "next/link";
-import { PageShell, PageHeader, StartPrintingCta } from "@/components/PageShell";
+import { PageShell, PageHeader, Prose, ClosingAction } from "@/components/PageShell";
 import { pageMetadata } from "@/lib/seo";
 
 export const metadata: Metadata = pageMetadata({
@@ -12,17 +11,13 @@ export const metadata: Metadata = pageMetadata({
 
 export default function AboutPage() {
   return (
-    <PageShell>
+    <PageShell crumb="About" path="/about">
       <PageHeader
   title="About RecipePrinter"
   lede="RecipePrinter started with a simple frustration: printing recipes from the internet was still a terrible experience."
 />
 
-      <div className="flex justify-center">
-<div className="my-cp-6 h-px w-full bg-slate-200" />
-      </div>
-      
-      <div className="flex flex-col gap-cp-5 text-ink-soft leading-relaxed">
+      <Prose className="flex flex-col gap-cp-5 text-ink-soft leading-relaxed">
         <p>
           I built RecipePrinter after building CookPilot, a recipe app for
           saving and organizing recipes.
@@ -80,18 +75,9 @@ export default function AboutPage() {
           RecipePrinter exists for the recipes that have earned a place outside
           the screen.
         </p>
-      </div>
+      </Prose>
 
-      <div className="mt-cp-7 flex flex-wrap items-center gap-cp-4">
-        <StartPrintingCta />
-
-        <Link
-          href="/how-it-works"
-          className="text-cp-small font-semibold text-brand-ink hover:underline"
-        >
-          See how it works →
-        </Link>
-      </div>
+      <ClosingAction />
     </PageShell>
   );
 }
