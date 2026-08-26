@@ -1119,7 +1119,7 @@ export default function PrintPage() {
     return bookTemplate;
   }
 
-  function beginCookbookBuild() {
+  function beginCookbookBuild({ offerAfter = false }: { offerAfter?: boolean } = {}) {
     setShowCookbookOfferDialog(false);
     setCookbookBuilding(true);
     window.setTimeout(() => {
@@ -1133,12 +1133,19 @@ export default function PrintPage() {
         template: bookTemplate ?? template,
       });
     }, 180);
-    window.setTimeout(() => setCookbookBuilding(false), 1650);
+    window.setTimeout(() => {
+      setCookbookBuilding(false);
+      if (!offerAfter) return;
+      // The offer lands on top of the finished book, not in front of an idea of
+      // one. See `startCookbook`.
+      track("cookbook_welcome_shown", { price: cookbookPrice, recipeCount: items?.length ?? 0 });
+      setShowCookbookOfferDialog(true);
+    }, 1650);
   }
 
   /**
-   * "Make it a cookbook". One path, every time: the offer screen, then the
-   * build reveal.
+   * Switching the kind control from Recipe cards to Cookbook. One path, every
+   * time: the build reveal, then the offer over the finished book.
    *
    * This used to fork three ways on whether the welcome had been seen and
    * whether a stash existed, and two of those forks were worse. A returning
@@ -1152,8 +1159,18 @@ export default function PrintPage() {
    * restore-vs-fresh on its own, from `stashedCookbook`.
    */
   function startCookbook() {
-    track("cookbook_welcome_shown", { price: cookbookPrice, recipeCount: items?.length ?? 0 });
-    setShowCookbookOfferDialog(true);
+    // Build first, ask second.
+    //
+    // The offer used to open the moment the kind control moved to Cookbook, on
+    // top of a screen of loose cards: someone had to buy the idea of a book
+    // before ever seeing one. Switching the mode first means
+    // the reveal runs, their own recipes assemble into a cover and chapters,
+    // and the offer arrives over the finished article.
+    //
+    // Safe to show the book before the money: `cookbookLocked` only watermarks
+    // the PRINT, and the switch is reversible either way — the book is stashed
+    // on the same project id, so "Back to recipe cards" puts everything back.
+    beginCookbookBuild({ offerAfter: true });
   }
 
   /**
@@ -2708,7 +2725,7 @@ export default function PrintPage() {
      owner are not that.
 
      Both halves are now what they always were — actions — and live with the
-     other actions in the print panel: "Make it a cookbook" creates, "Print as
+     other actions in the print panel: the kind control creates, "Print as
      recipe cards instead" leaves. Creating a SEPARATE book is "New cookbook" in
      the library. The header is left to say which document you're in and let you
      get back to the rest of them. */
@@ -3288,6 +3305,19 @@ export default function PrintPage() {
         target instanceof HTMLElement &&
         (target.tagName === "INPUT" || target.tagName === "TEXTAREA" || target.isContentEditable);
       if (isEditable) return;
+      /**
+       * Selected text means the keystroke is aimed at words, not at the recipe.
+       *
+       * Dragging across two steps selects across two separate textareas, so the
+       * drag ends outside the field it began in: the inline editor commits and
+       * closes, focus falls back to the document, and `isEditable` above is
+       * false by the time the cook presses Backspace to delete what they just
+       * highlighted. Watched in a session replay — someone selecting a few
+       * steps to delete them got the delete-this-recipe confirm instead, and
+       * took it.
+       */
+      const selection = window.getSelection();
+      if (selection && !selection.isCollapsed && selection.toString().trim()) return;
       if (!activeNavItem) return;
       if (
         showAddRecipeDialog ||
@@ -3863,7 +3893,7 @@ export default function PrintPage() {
         </Dialog>
 
         <div className="recipe-mobile-actions no-print">
-          {/* No "Make it a cookbook" here on purpose. Building a book — covers,
+          {/* No way into a cookbook here on purpose. Building a book — covers,
               chapters, page layouts, the organizer — is not something the phone
               layout does well yet, and selling someone a $19.99 document they
               then can't comfortably edit is worse than not offering it. The
@@ -4061,9 +4091,12 @@ export default function PrintPage() {
         onClose={() => {
           track("cookbook_onboarding_dismissed", { price: cookbookPrice });
           setShowCookbookOfferDialog(false);
+          // Declining after the reveal has to actually undo the switch, or
+          // "Not now" leaves someone in the thing they just declined.
+          exitCookbookToCards();
         }}
         onStart={() => {
-          beginCookbookBuild();
+          setShowCookbookOfferDialog(false);
         }}
       />
       <CookbookBuildReveal open={cookbookBuilding} images={coverPhotoCandidates} />
