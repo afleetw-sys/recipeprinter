@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect, useRef, useState } from "react";
 import type {
   ComponentProps,
   CSSProperties,
@@ -59,6 +60,10 @@ const DECK_WINDOW = 2;
  * allow before they start extending a selection.
  */
 const TEXT_DRAG_SLOP = 6;
+
+/** What the zoom menu offers. 1 is fit-to-window, which is where the deck sits
+    with no zoom applied. */
+const DECK_ZOOM_STEPS = [0.5, 0.75, 1, 1.25, 1.5, 1.75, 2];
 
 /** The recipe's two text columns — the only places a drag means "edit this". */
 const TEXT_COLUMNS = ".recipe-card__ingredients, .recipe-card__method";
@@ -122,7 +127,7 @@ interface PrintDeckProps {
   /** The cook's zoom on the deck, and the controls that move it. 1 is fit. */
   deckZoom: number;
   onZoomStep: (direction: 1 | -1) => void;
-  onZoomReset: () => void;
+  onZoomSet: (zoom: number) => void;
   deckRef: ReturnType<typeof useDeckScroller>["deckRef"];
   slideRefs: ReturnType<typeof useDeckScroller>["slideRefs"];
   goToSlide: ReturnType<typeof useDeckScroller>["goToSlide"];
@@ -183,6 +188,25 @@ interface PrintDeckProps {
 // controls, and the front/back side switcher. Verbatim move out of the print
 // god-file; `renderActiveControls` and `renderDeckPage` moved in as internals.
 export function PrintDeck(props: PrintDeckProps) {
+  const [zoomMenuOpen, setZoomMenuOpen] = useState(false);
+  const zoomMenuRef = useRef<HTMLDivElement | null>(null);
+  // Click-away and Escape, the same contract the deck's other menus have.
+  useEffect(() => {
+    if (!zoomMenuOpen) return;
+    function onPointerDown(event: PointerEvent) {
+      if (!zoomMenuRef.current?.contains(event.target as Node)) setZoomMenuOpen(false);
+    }
+    function onKeyDown(event: KeyboardEvent) {
+      if (event.key === "Escape") setZoomMenuOpen(false);
+    }
+    document.addEventListener("pointerdown", onPointerDown);
+    document.addEventListener("keydown", onKeyDown);
+    return () => {
+      document.removeEventListener("pointerdown", onPointerDown);
+      document.removeEventListener("keydown", onKeyDown);
+    };
+  }, [zoomMenuOpen]);
+
   const {
     singleRecipePrintView,
     cookbookView,
@@ -213,7 +237,7 @@ export function PrintDeck(props: PrintDeckProps) {
     deckScale,
     deckZoom,
     onZoomStep,
-    onZoomReset,
+    onZoomSet,
     deckRef,
     slideRefs,
     goToSlide,
@@ -602,15 +626,40 @@ export function PrintDeck(props: PrintDeckProps) {
             >
               <MinusIcon size={ICON_SIZE.sm} />
             </button>
-            <button
-              type="button"
-              className="recipe-deck-zoom__value"
-              aria-label={`Zoom ${Math.round(deckZoom * 100)}%. Reset to fit.`}
-              title="Reset to fit"
-              onClick={onZoomReset}
-            >
-              {Math.round(deckZoom * 100)}%
-            </button>
+            <div className="recipe-deck-zoom__picker" ref={zoomMenuRef}>
+              <button
+                type="button"
+                className="recipe-deck-zoom__value"
+                aria-haspopup="menu"
+                aria-expanded={zoomMenuOpen}
+                aria-label={`Zoom, ${Math.round(deckZoom * 100)} percent`}
+                onClick={() => setZoomMenuOpen((open) => !open)}
+              >
+                {Math.round(deckZoom * 100)}%
+              </button>
+              {zoomMenuOpen && (
+                <div className="recipe-deck-zoom__menu" role="menu" aria-label="Zoom level">
+                  {DECK_ZOOM_STEPS.map((step) => (
+                    <button
+                      key={step}
+                      type="button"
+                      role="menuitemradio"
+                      aria-checked={Math.round(deckZoom * 100) === Math.round(step * 100)}
+                      className={`recipe-deck-zoom__option ${
+                        Math.round(deckZoom * 100) === Math.round(step * 100) ? "is-active" : ""
+                      }`}
+                      onClick={() => {
+                        onZoomSet(step);
+                        setZoomMenuOpen(false);
+                      }}
+                    >
+                      {Math.round(step * 100)}%
+                      {step === 1 && <span className="recipe-deck-zoom__option-note">Fit</span>}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
             <button
               type="button"
               className="recipe-deck-zoom__btn"

@@ -3859,7 +3859,7 @@ export default function PrintPage() {
           deckScale={deckScale}
           deckZoom={deckZoom}
           onZoomStep={stepDeckZoom}
-          onZoomReset={() => setDeckZoom(1)}
+          onZoomSet={setDeckZoom}
           deckRef={deckRef}
           slideRefs={slideRefs}
           goToSlide={goToSlide}

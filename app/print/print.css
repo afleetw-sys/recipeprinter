@@ -7166,6 +7166,69 @@ textarea.recipe-card__toc-title {
   cursor: default;
 }
 
+.recipe-deck-zoom__picker {
+  position: relative;
+}
+
+/* Opens UPWARD: the cluster sits at the bottom of the deck, so a menu below it
+   would hang off the page. Scrolls once the list outgrows it, which it will as
+   soon as another step is added. */
+.recipe-deck-zoom__menu {
+  position: absolute;
+  bottom: calc(100% + 8px);
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 7;
+  display: flex;
+  flex-direction: column;
+  min-width: 108px;
+  max-height: 208px;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding: 4px;
+  border: 1px solid var(--cp-line);
+  border-radius: 12px;
+  background: var(--cp-card);
+  box-shadow: var(--cp-shadow-lg);
+}
+
+.recipe-deck-zoom__option {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  min-height: 30px;
+  padding: 0 8px;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--cp-ink);
+  font-size: var(--cp-fs-small);
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  text-align: left;
+  cursor: pointer;
+}
+
+.recipe-deck-zoom__option:hover {
+  background: var(--cp-overlay-hover);
+}
+
+.recipe-deck-zoom__option.is-active {
+  background: var(--cp-selected-fill);
+  color: var(--cp-selected-text);
+}
+
+.recipe-deck-zoom__option-note {
+  font-size: var(--cp-fs-caption);
+  font-weight: 700;
+  color: var(--cp-ink-soft);
+}
+
+.recipe-deck-zoom__option.is-active .recipe-deck-zoom__option-note {
+  color: var(--cp-selected-text);
+}
+
 @media (max-width: 900px) {
   /* The phone layout has its own toolbars over the deck; a floating cluster
      there would land on top of them. */
