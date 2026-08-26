@@ -74,6 +74,7 @@ export function ImportPanel({
   initialMode = "url",
   submitLabel = "Add",
   hideSubmit = false,
+  showAllModes = false,
   onModeChange,
   autoFocusUrl = true,
   onAddUrl,
@@ -90,6 +91,10 @@ export function ImportPanel({
   /** Drop the panel's own submit button: the surface around it owns the action
       (the add dialog puts one Add at the bottom instead of two buttons). */
   hideSubmit?: boolean;
+  /** Show every source, whatever is already in the queue. The overflow exists to
+      keep the workspace rail quiet; a dialog whose only job is adding has no
+      rail to keep quiet. */
+  showAllModes?: boolean;
   /** Which source is showing. The add dialog sizes itself to it: a paste box
       wants far more room than a URL field. */
   onModeChange?: (mode: ImportMethod) => void;
@@ -133,7 +138,8 @@ export function ImportPanel({
   const overflowActive = OVERFLOW_MODES.some((option) => option.id === mode);
   // While the print list is empty, surface every import option so people learn
   // what's available; once a recipe is added, tuck the extras into the overflow.
-  const expanded = items.length === 0;
+  // Inside the add dialog that rule inverts — see `showAllModes`.
+  const expanded = showAllModes || items.length === 0;
 
   useEffect(() => {
     function onPointerDown(event: PointerEvent) {

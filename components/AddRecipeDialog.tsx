@@ -109,6 +109,7 @@ export function AddRecipeDialog({
         <ImportPanel
           commitRef={commitImportRef}
           hideSubmit
+          showAllModes
           onModeChange={setMode}
           items={items}
           onAddUrl={handleAddUrl}
