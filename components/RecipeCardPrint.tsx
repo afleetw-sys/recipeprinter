@@ -216,6 +216,24 @@ const COUNTER_BAND_TOOTH = 0.16;
 const COUNTER_BAND_THIRD = 0.08;
 const COUNTER_BAND_COLOR = "#2f2f2f";
 
+/** Body text: three lines of copy. */
+function BodyTextGlyph() {
+  return (
+    <svg viewBox="0 0 16 16" width="12" height="12" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" aria-hidden>
+      <path d="M2.5 4.5h11M2.5 8h11M2.5 11.5h7" />
+    </svg>
+  );
+}
+
+/** Heading: a short rule over a shorter one, the shape of a title. */
+function HeadingGlyph() {
+  return (
+    <svg viewBox="0 0 16 16" width="12" height="12" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" aria-hidden>
+      <path d="M2.5 4h11M2.5 8h6" />
+    </svg>
+  );
+}
+
 function CounterCheckerBand() {
   const teeth = Array.from({ length: COUNTER_BAND_TEETH }, (_, i) => i);
   return (
@@ -755,6 +773,51 @@ export const RecipeCardFace = memo(function RecipeCardFace({
     );
   }
 
+  /**
+   * The kind switch that floats above the field being edited: is this line
+   * body text, or a heading of its own?
+   *
+   * Sections previously existed only if the imported recipe already had them —
+   * nothing in the editor could start one. `onMouseDown`, not `onClick`: the
+   * button steals focus from the field, and mousedown fires before the blur so
+   * the in-progress text is still there to become the heading.
+   */
+  function lineKindSwitch(target: RecipeCardEditTarget) {
+    if (!canEdit || !inlineEdit) return null;
+    if (!sameTarget(inlineEdit.editingTarget, target)) return null;
+    const isHeading = target.kind === "ingredientSection" || target.kind === "instructionSection";
+    return (
+      <span className="recipe-card__line-kind no-print" role="group" aria-label="Line type">
+        <button
+          type="button"
+          className={`recipe-card__line-kind-btn ${isHeading ? "" : "is-active"}`}
+          aria-label="Body text"
+          aria-pressed={!isHeading}
+          title="Body text"
+          onMouseDown={(event) => {
+            event.preventDefault();
+            if (isHeading) inlineEdit.onSetLineKind(target, "body");
+          }}
+        >
+          <BodyTextGlyph />
+        </button>
+        <button
+          type="button"
+          className={`recipe-card__line-kind-btn ${isHeading ? "is-active" : ""}`}
+          aria-label="Heading"
+          aria-pressed={isHeading}
+          title="Heading"
+          onMouseDown={(event) => {
+            event.preventDefault();
+            if (!isHeading) inlineEdit.onSetLineKind(target, "heading");
+          }}
+        >
+          <HeadingGlyph />
+        </button>
+      </span>
+    );
+  }
+
   function renderIngredientItem(ing: Recipe["ingredients"][number], index: number): ReactNode {
     const target: RecipeCardEditTarget = { kind: "ingredient", index };
     const text = ingredientText(ing);
@@ -777,7 +840,8 @@ export const RecipeCardFace = memo(function RecipeCardFace({
         ) : (
           text
         )}
-        {addLine("ingredient", index + 1)}
+        {lineKindSwitch(target)}
+        {!isEditingThis && addLine("ingredient", index + 1)}
       </li>
     );
   }
@@ -812,7 +876,8 @@ export const RecipeCardFace = memo(function RecipeCardFace({
         ) : (
           <span>{step.text}</span>
         )}
-        {addLine("step", index + 1)}
+        {lineKindSwitch(target)}
+        {!isEditingThis && addLine("step", index + 1)}
       </li>
     );
   }

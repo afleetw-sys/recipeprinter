@@ -6597,11 +6597,58 @@ textarea.recipe-card__toc-title {
   cursor: pointer;
 }
 
+/* Hover, or the button's own keyboard focus — deliberately NOT
+   `:focus-within`. In edit mode every line is a real field, so focus-within
+   meant "someone is typing in this row", and Add below appeared under the
+   caret in the one moment it is certainly not what they are reaching for. */
 .recipe-card__editable-line:hover > .recipe-card__add-line,
-.recipe-card__editable-line:focus-within > .recipe-card__add-line,
 .recipe-card__add-line:focus-visible {
   opacity: 1;
   pointer-events: auto;
+}
+
+/* ── Body / heading switch, floating above the field being edited ─────────────
+   Sat above the row rather than beside it: the rows are a measured column and
+   anything inline would change the wrap. */
+.recipe-card__line-kind {
+  position: absolute;
+  left: 0;
+  top: -13px;
+  z-index: 6;
+  display: inline-flex;
+  gap: 1px;
+  padding: 1px;
+  border: 1px solid color-mix(in srgb, var(--recipe-accent) 28%, transparent);
+  border-radius: 999px;
+  background: var(--recipe-bg);
+}
+
+.recipe-card__line-kind-btn {
+  display: grid;
+  place-items: center;
+  width: 18px;
+  height: 15px;
+  border: 0;
+  border-radius: 999px;
+  background: transparent;
+  color: color-mix(in srgb, var(--recipe-accent) 70%, transparent);
+  cursor: pointer;
+}
+
+.recipe-card__line-kind-btn.is-active {
+  background: color-mix(in srgb, var(--recipe-accent) 16%, transparent);
+  color: var(--recipe-accent);
+}
+
+.recipe-card__line-kind-btn:hover {
+  color: var(--recipe-accent);
+}
+
+/* The section title's own field needs to be the positioning context for the
+   switch, since the title is not inside an `.recipe-card__editable-line`. */
+.recipe-card__section-title-edit {
+  position: relative;
+  display: block;
 }
 
 .recipe-card__add-line:hover,
