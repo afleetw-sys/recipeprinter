@@ -45,3 +45,69 @@ describe("adaptCookPilotRecipes", () => {
     expect(adaptCookPilotRecipes({ recipe: { title: "", ingredientSections: [], instructionSections: [] } })).toEqual([]);
   });
 });
+
+describe("a section named after the dish", () => {
+  // Real response from parseSocialRecipe for a pasted salad-dressing recipe:
+  // the parser found no internal headings, so it titled the one section with
+  // the recipe's own name. Rendered, the dish's name appeared twice on the
+  // card — once as the title, once as a heading over the first ingredient.
+  const body = {
+    recipe: {
+      title: "Homemade Salad Dressing",
+      ingredientSections: [
+        {
+          title: "Homemade Salad Dressing",
+          ingredients: [{ amount: "1/2", unit: "cup", name: "olive oil" }],
+        },
+        {
+          title: "Optional",
+          ingredients: [{ amount: "1", unit: "tsp", name: "oregano" }],
+        },
+      ],
+      instructionSections: [],
+    },
+  };
+
+  it("loses the heading but keeps the ingredient", () => {
+    const recipe = adaptCookPilotRecipe(body);
+    expect(recipe?.ingredients).toHaveLength(2);
+    expect(recipe?.ingredients[0].section).toBeUndefined();
+    expect(recipe?.ingredients[0].raw).toBe("1/2 cup olive oil");
+  });
+
+  it("keeps a heading that says something the title does not", () => {
+    const recipe = adaptCookPilotRecipe(body);
+    expect(recipe?.ingredients[1].section).toBe("Optional");
+  });
+
+  it("matches on case and trailing punctuation", () => {
+    const shouty = adaptCookPilotRecipe({
+      recipe: {
+        title: "Homemade Salad Dressing",
+        ingredientSections: [
+          {
+            title: "HOMEMADE SALAD DRESSING:",
+            ingredients: [{ name: "olive oil" }],
+          },
+        ],
+        instructionSections: [],
+      },
+    });
+    expect(shouty?.ingredients[0].section).toBeUndefined();
+  });
+
+  it("does the same for instruction sections", () => {
+    const recipe = adaptCookPilotRecipe({
+      recipe: {
+        title: "Borscht",
+        ingredientSections: [],
+        instructionSections: [
+          { title: "Borscht", instructions: [{ text: "Simmer the beets." }] },
+          { title: "To serve", instructions: [{ text: "Add sour cream." }] },
+        ],
+      },
+    });
+    expect(recipe?.instructions[0].section).toBeUndefined();
+    expect(recipe?.instructions[1].section).toBe("To serve");
+  });
+});

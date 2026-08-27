@@ -29,13 +29,43 @@ function sectionTitle(section: AnyRecord): string | undefined {
   );
 }
 
-function flattenIngredients(sections: unknown): RecipeIngredient[] {
+/** Loose enough to catch "Homemade Salad Dressing" against "HOMEMADE SALAD DRESSING:". */
+function sameHeading(a: string, b: string): boolean {
+  const norm = (value: string) =>
+    value
+      .toLowerCase()
+      .replace(/[:\u2013\u2014-]+\s*$/, "")
+      .replace(/\s+/g, " ")
+      .trim();
+  return norm(a) === norm(b);
+}
+
+/**
+ * A section named after the dish is not a group.
+ *
+ * The parser hands back one section per heading it finds, and for a recipe
+ * with no internal headings that section is titled with the recipe's own name.
+ * Rendered, that put the dish's name twice on the card: once as the title, and
+ * again as a group heading over the first ingredient. It reads as though the
+ * card is claiming a structure the cook never wrote.
+ *
+ * Dropping the label rather than the section: the ingredients under it are
+ * real and stay exactly where they are, they just stop being "grouped" under
+ * a heading that says nothing the title has not already said.
+ */
+function groupLabel(title: string | undefined, recipeTitle: string | undefined): string | undefined {
+  if (!title) return undefined;
+  if (recipeTitle && sameHeading(title, recipeTitle)) return undefined;
+  return title;
+}
+
+function flattenIngredients(sections: unknown, recipeTitle?: string): RecipeIngredient[] {
   if (!Array.isArray(sections)) return [];
   const out: RecipeIngredient[] = [];
   for (const section of sections) {
     if (!section || typeof section !== "object") continue;
     const sectionNode = section as AnyRecord;
-    const title = sectionTitle(sectionNode);
+    const title = groupLabel(sectionTitle(sectionNode), recipeTitle);
     const list = sectionNode?.ingredients;
     if (!Array.isArray(list)) continue;
     for (const ing of list) {
@@ -68,14 +98,14 @@ function ingredientRawLine(
   return [quantity, name].filter(Boolean).join(" ") + (note ? `, ${note}` : "");
 }
 
-function flattenInstructions(sections: unknown): RecipeInstruction[] {
+function flattenInstructions(sections: unknown, recipeTitle?: string): RecipeInstruction[] {
   if (!Array.isArray(sections)) return [];
   const out: RecipeInstruction[] = [];
   let step = 1;
   for (const section of sections) {
     if (!section || typeof section !== "object") continue;
     const sectionNode = section as AnyRecord;
-    const title = sectionTitle(sectionNode);
+    const title = groupLabel(sectionTitle(sectionNode), recipeTitle);
     const list = sectionNode?.instructions;
     if (!Array.isArray(list)) continue;
     for (const ins of list) {
@@ -125,8 +155,9 @@ export function adaptCookPilotRecipe(body: unknown, sourceUrl?: string): Recipe 
   }
 
   // CookPilot RecipeData (section-based).
-  const ingredients = flattenIngredients(data.ingredientSections);
-  const instructions = flattenInstructions(data.instructionSections);
+  const recipeTitle = asString(data.title);
+  const ingredients = flattenIngredients(data.ingredientSections, recipeTitle);
+  const instructions = flattenInstructions(data.instructionSections, recipeTitle);
   if (ingredients.length === 0 && instructions.length === 0 && !asString(data.title)) {
     return null;
   }
