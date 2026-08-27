@@ -67,7 +67,7 @@ export const SAVE_FAILURES = new Set<AccountSaveStatus>([
 export const SAVE_STATUS_LABEL: Record<AccountSaveStatus, string> = {
   saving: "Saving…",
   saved: "Saved",
-  offline: "Offline — changes pending",
+  offline: "Offline, changes pending",
   error: "Couldn’t save",
   conflict: "Newer version found",
   adoption: "Finish saving to your account",

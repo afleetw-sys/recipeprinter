@@ -31,12 +31,10 @@ export const COOKBOOK_ENABLED = true;
 // One purchase unlocks one stable cookbook project. The RevenueCat web product
 // behind this identifier must be configured as a repeat-purchasable consumable;
 // the permanent ownership record is our project-scoped unlock, not a global
-// cookbook entitlement. `RECIPEPRINTER_COOKBOOK_ENTITLEMENT_ID` remains only
-// for grandfathering customers who bought the former account-wide unlock.
+// cookbook entitlement — there is no account-wide entitlement to read.
 export const RECIPEPRINTER_COOKBOOK_OFFERING_ID = "cookbook";
 export const RECIPEPRINTER_COOKBOOK_PACKAGE_ID = "cookbook";
 export const RECIPEPRINTER_COOKBOOK_PRODUCT_ID = "cookbook";
-export const RECIPEPRINTER_COOKBOOK_ENTITLEMENT_ID = "cookbook";
 
 // The cookbook's price, shown wherever we name it ourselves (e.g. the welcome
 // dialog). Checkout states the authoritative price; keep this in sync with the

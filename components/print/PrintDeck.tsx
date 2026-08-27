@@ -14,7 +14,6 @@ import { LogoMark, Wordmark } from "@/components/Logo";
 import {
   ChevronLeftIcon,
   ChevronRightIcon,
-  EditIcon,
   ICON_SIZE,
   PrintIcon,
   SettingsIcon,
@@ -481,7 +480,6 @@ export function PrintDeck(props: PrintDeckProps) {
                   }
                 }}
               >
-                <EditIcon size={ICON_SIZE.md} />
                 {editing ? "Done" : "Edit"}
               </button>
             </div>

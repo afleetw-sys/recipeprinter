@@ -186,7 +186,7 @@ const COOKBOOK_TEMPLATE_ROTATION_KEY = "recipeprinter:cookbook-template-rotation
 // A ready-made dedication seeded when the page is turned on — real, editable
 // content (not a hidden placeholder), so a cook who likes it can just keep it
 // and it prints as-is.
-const DEFAULT_DEDICATION_BODY = "For the ones who taught us to cook — and who made every table feel like home.";
+const DEFAULT_DEDICATION_BODY = "For the ones who taught us to cook, and who made every table feel like home.";
 function nextCookbookTemplate(): RecipePrintTemplate {
   if (typeof window === "undefined") return COOKBOOK_TEMPLATE_ROTATION[0];
   const prev = Number(window.localStorage.getItem(COOKBOOK_TEMPLATE_ROTATION_KEY));
@@ -3491,7 +3491,7 @@ export default function PrintPage() {
       },
       missing: {
         title: "We couldn't find that project",
-        body: "It might be saved to a different account — signing in with that one will bring it back.",
+        body: "It might be saved to a different account. Signing in with that one will bring it back.",
         action: "Try another account",
       },
       failed: {
@@ -4210,10 +4210,16 @@ export default function PrintPage() {
            FROM recipe-cards mode, where `cookbookMode` is false. */
         purchased={isCookbookProjectUnlocked(cookbookProjectId)}
         onClose={() => {
+          // The X, Escape and the backdrop only dismiss the panel. The cook
+          // just watched this book get built; closing the thing sitting on top
+          // of it is not a decision to throw it away.
           track("cookbook_onboarding_dismissed", { price: cookbookPrice });
           setShowCookbookOfferDialog(false);
-          // Declining after the reveal has to actually undo the switch, or
-          // "Not now" leaves someone in the thing they just declined.
+        }}
+        onLeave={() => {
+          // Only the button that says "Back to recipe cards" undoes the switch.
+          track("cookbook_onboarding_dismissed", { price: cookbookPrice });
+          setShowCookbookOfferDialog(false);
           exitCookbookToCards();
         }}
         onStart={() => {

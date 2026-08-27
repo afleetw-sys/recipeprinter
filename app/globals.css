@@ -1288,27 +1288,32 @@
      panel, where it is a primary choice with room around it; here it sits in a
      62px bar beside the document's name, so it takes the chip's scale.
 
-     The hairline is what makes the pair read as one control with a selection
-     inside it rather than two buttons that happen to be adjacent. Only the
-     selected tab is filled, and it slides. */
+     A recessed grey track with the selected tab lifted out of it in card
+     white. The track is what makes the pair read as one control with a
+     selection inside rather than two buttons that happen to be adjacent, and
+     the lift is what says which one you are on without needing a colour. */
   .rp-project-heading__kinds {
     flex: 0 0 auto;
     margin-left: 8px;
     padding: 3px;
-    border: 1px solid var(--cp-line-strong);
-    border-radius: 11px;
+    border-radius: 999px;
+    background: var(--cp-surface-strong);
   }
 
   .rp-project-heading__kinds .segmented-control__option {
     min-height: 30px;
-    padding: 0 12px;
+    padding: 0 14px;
     font-size: var(--cp-fs-small);
     font-weight: 700;
-    border-radius: 8px;
+    border-radius: 999px;
   }
 
+  /* The one tab that is raised, so it takes the shadow the rest of the family
+     gives a small floating control. Nothing else here casts one. */
   .rp-project-heading__kinds .segmented-control__thumb {
-    border-radius: 8px;
+    border-radius: 999px;
+    background: var(--cp-card);
+    box-shadow: var(--cp-shadow-sm);
   }
 
   /* Accent fill on a tab that is otherwise plain text, so it reads as a flag

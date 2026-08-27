@@ -1573,7 +1573,7 @@ export const CoverFace = memo(function CoverFace({
             <textarea
               className="recipe-card__inline-textarea recipe-card__cover-blurb recipe-card__cover-dedication-text"
               value={draft.blurb ?? ""}
-              placeholder="For the ones who taught us to cook — and who made every table feel like home."
+              placeholder="For the ones who taught us to cook, and who made every table feel like home."
               aria-label="Dedication"
               onChange={(event) => set({ blurb: event.target.value || undefined })}
             />

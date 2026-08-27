@@ -16,7 +16,6 @@ import {
 import { isProductionRuntime } from "@/lib/appEnvironment";
 import { localStore } from "@/lib/storage";
 import {
-  RECIPEPRINTER_COOKBOOK_ENTITLEMENT_ID,
   RECIPEPRINTER_COOKBOOK_OFFERING_ID,
   RECIPEPRINTER_COOKBOOK_PACKAGE_ID,
   RECIPEPRINTER_COOKBOOK_PRODUCT_ID,
@@ -360,11 +359,6 @@ async function packageForCookbook(purchases: Purchases): Promise<Package> {
   if (!rcPackage) throw new Error("The cookbook upgrade isn't ready to buy yet.");
   return rcPackage;
 }
-
-export function hasCookbookEntitlement(customerInfo: CustomerInfo | null): boolean {
-  return Boolean(customerInfo?.entitlements.active[RECIPEPRINTER_COOKBOOK_ENTITLEMENT_ID]);
-}
-
 
 export async function purchaseRecipePrinterCookbook({
   userId,

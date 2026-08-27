@@ -49,7 +49,7 @@ export function ThemePicker({
           <CrownIcon size={ICON_SIZE.md} />
           <div className="recipe-free-template-banner__copy">
             <strong>Thanks for being a CookPilot member!</strong>
-            <span>Enjoy a free lifetime template, on us — pick any premium design below.</span>
+            <span>Enjoy a free lifetime template, on us. Pick any premium design below.</span>
           </div>
           <button
             type="button"
@@ -64,7 +64,7 @@ export function ThemePicker({
       <h3 className="recipe-config-label">Themes</h3>
       {!cookbookMode && (
         <p className="recipe-template-caption">
-          Premium themes are $1.99 — yours for life.
+          Premium themes are $1.99, and yours for life.
         </p>
       )}
       <div className="recipe-template-list">

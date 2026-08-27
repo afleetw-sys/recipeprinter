@@ -13,6 +13,7 @@ export function CookbookWelcomeDialog({
   purchased = false,
   onStart,
   onClose,
+  onLeave,
 }: {
   open: boolean;
   cover: CoverConfig;
@@ -26,7 +27,15 @@ export function CookbookWelcomeDialog({
    */
   purchased?: boolean;
   onStart: () => void;
+  /**
+   * Dismiss and stay in the book. This fires for the X, Escape and the
+   * backdrop — every gesture that means "get this panel off my screen". It
+   * used to also switch back to recipe cards, which threw away the book the
+   * cook had just watched being built because they closed a panel.
+   */
   onClose: () => void;
+  /** Leave the book for recipe cards. Only the button that says so. */
+  onLeave: () => void;
 }) {
   return (
     <Dialog
@@ -69,16 +78,20 @@ export function CookbookWelcomeDialog({
           <h2 id="cookbook-welcome-title">
             {purchased
               ? "Your cookbook is right where you left it."
-              : "Here is your cookbook."}
+              : "Your cookbook is built."}
           </h2>
           <p>
             {purchased
-              ? "Your cover, chapters and layout were kept. Carry on where you stopped."
-              : "Your recipes, laid out with a cover and chapters. Keep going and make it yours."}
+              ? "Your cover, chapters and layout are all still here."
+              : "Your recipes are laid out behind this, with a cover and chapters. Everything on it is yours to change."}
           </p>
         </div>
         <ul className="cookbook-feature-chips">
-          {["Professionally designed", "Automatically organized", "Ready for hardcover or spiral printing"].map((item) => (
+          {[
+            "A cover you can put your own photo on",
+            "Chapters and a table of contents, sorted for you",
+            "Sized to print at Lulu, Staples or your own printer",
+          ].map((item) => (
             <li key={item}><CheckIcon size={ICON_SIZE.sm} />{item}</li>
           ))}
         </ul>
@@ -86,20 +99,20 @@ export function CookbookWelcomeDialog({
           {purchased ? (
             <span className="cookbook-welcome__owned">
               <CheckIcon size={ICON_SIZE.sm} />
-              You own this cookbook — export it as often as you like.
+              You own this cookbook. Export it as often as you like.
             </span>
           ) : (
             <>
               <b>{price}</b>
-              <span>Pay only when you first export. One purchase per cookbook.</span>
+              <span>Paid once, the first time you export this cookbook. Editing it is free until then.</span>
             </>
           )}
         </div>
         <div className="cookbook-welcome__actions">
           <button type="button" className="btn btn-primary" onClick={onStart}>
-            {purchased ? "Open my cookbook" : "Keep going"}
+            {purchased ? "Open my cookbook" : "Start editing"}
           </button>
-          <button type="button" className="btn btn-ghost" onClick={onClose}>Back to recipe cards</button>
+          <button type="button" className="btn btn-ghost" onClick={onLeave}>Back to recipe cards</button>
         </div>
       </div>
     </Dialog>
