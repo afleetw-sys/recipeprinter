@@ -72,8 +72,8 @@ export function SiteFooter({ isHome = false }: { isHome?: boolean }) {
               className="text-brand-ink hover:underline font-semibold"
             >
               {PUBLISHER.name}
-            </a>{" "}
-            product.
+            </a>
+            .
           </span>
           <span>
             © {new Date().getFullYear()} {PUBLISHER.name}
