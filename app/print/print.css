@@ -6616,9 +6616,10 @@ textarea.recipe-card__toc-title {
   min-height: 16px;
   margin: 0;
   padding: 1px 5px;
-  border: 1px solid color-mix(in srgb, var(--recipe-accent) 28%, transparent);
+  border: 1px solid var(--cp-line);
   border-radius: 999px;
-  background: var(--recipe-bg);
+  background: var(--cp-card);
+  box-shadow: var(--cp-shadow-xs);
   opacity: 0;
   pointer-events: none;
   cursor: pointer;
@@ -6647,9 +6648,14 @@ textarea.recipe-card__toc-title {
   display: inline-flex;
   gap: 1px;
   padding: 1px;
-  border: 1px solid color-mix(in srgb, var(--recipe-accent) 28%, transparent);
+  /* App chrome, not card artwork: `--recipe-accent` and `--recipe-bg` are the
+     TEMPLATE's palette, so this control turned red on one theme and blue on
+     another while doing the same job. The editor's own tokens keep it the same
+     control whatever the card underneath is wearing. */
+  border: 1px solid var(--cp-line);
   border-radius: 999px;
-  background: var(--recipe-bg);
+  background: var(--cp-card);
+  box-shadow: var(--cp-shadow-xs);
 }
 
 .recipe-card__line-kind-glyph {
@@ -6673,17 +6679,18 @@ textarea.recipe-card__toc-title {
   border: 0;
   border-radius: 999px;
   background: transparent;
-  color: color-mix(in srgb, var(--recipe-accent) 70%, transparent);
+  color: var(--cp-ink-soft);
   cursor: pointer;
 }
 
 .recipe-card__line-kind-btn.is-active {
-  background: color-mix(in srgb, var(--recipe-accent) 16%, transparent);
-  color: var(--recipe-accent);
+  background: var(--cp-selected-fill);
+  color: var(--cp-selected-text);
 }
 
 .recipe-card__line-kind-btn:hover {
-  color: var(--recipe-accent);
+  background: var(--cp-overlay-hover);
+  color: var(--cp-ink);
 }
 
 /* The section title's own field needs to be the positioning context for the
@@ -6695,14 +6702,14 @@ textarea.recipe-card__toc-title {
 
 .recipe-card__add-line:hover,
 .recipe-card__add-line:focus-visible {
-  border-color: color-mix(in srgb, var(--recipe-accent) 55%, transparent);
-  background: color-mix(in srgb, var(--recipe-accent) 10%, transparent);
+  border-color: var(--cp-line-strong);
+  background: var(--cp-overlay-hover);
 }
 
 .recipe-card__add-line-text {
   font-size: 6.5pt;
   font-weight: 800;
-  color: var(--recipe-accent);
+  color: var(--cp-ink-soft);
   white-space: nowrap;
 }
 
