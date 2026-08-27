@@ -187,17 +187,60 @@ async function gcsDelete(name) {
 }
 
 /**
- * Firestore, only when something is actually going to be written.
- *
- * Its client insists on a certificate credential or real ADC and will not take
- * the short-lived token from `--use-cli-login`, which Storage accepts happily.
- * A dry run only needs to LIST a bucket, so it should not be blocked by the
- * credential the write pass needs.
+ * Firestore goes through its REST API, for the same reason Storage does: the
+ * Admin SDK's client insists on a certificate or real ADC and will not take a
+ * bearer token, which is all a `firebase login` can produce. Going direct
+ * means one credential path for the whole script instead of a dry run that
+ * works on this machine and a write pass that does not.
  */
-let dbInstance = null;
-function firestore() {
-  if (!dbInstance) dbInstance = admin.firestore();
-  return dbInstance;
+const FIRESTORE = `https://firestore.googleapis.com/v1/projects/${PROJECT_ID}/databases/(default)/documents`;
+
+/** JS value to Firestore's typed JSON. Only the shapes a row actually uses. */
+function toFirestoreValue(value) {
+  if (value === null || value === undefined) return { nullValue: null };
+  if (value instanceof Date) return { timestampValue: value.toISOString() };
+  if (typeof value === "boolean") return { booleanValue: value };
+  if (typeof value === "number") {
+    return Number.isInteger(value) ? { integerValue: String(value) } : { doubleValue: value };
+  }
+  return { stringValue: String(value) };
+}
+
+async function firestoreCreate(collection, row) {
+  const fields = Object.fromEntries(
+    Object.entries(row).map(([key, value]) => [key, toFirestoreValue(value)]),
+  );
+  const response = await fetch(`${FIRESTORE}/${collection}`, {
+    method: "POST",
+    headers: { ...(await bearer()), "Content-Type": "application/json" },
+    body: JSON.stringify({ fields }),
+  });
+  if (!response.ok) {
+    throw new Error(`Write failed (${response.status} ${(await response.text()).slice(0, 200)})`);
+  }
+}
+
+/** Every `storagePath` already in the collection, for the re-run guard. */
+async function firestoreStoragePaths(collection) {
+  const paths = new Set();
+  let pageToken;
+  do {
+    const url = new URL(`${FIRESTORE}/${collection}`);
+    url.searchParams.set("pageSize", "300");
+    url.searchParams.append("mask.fieldPaths", "storagePath");
+    if (pageToken) url.searchParams.set("pageToken", pageToken);
+    const response = await fetch(url, { headers: await bearer() });
+    if (!response.ok) {
+      throw new Error(`Read failed (${response.status} ${(await response.text()).slice(0, 200)})`);
+    }
+    const body = await response.json();
+    for (const doc of body.documents ?? []) {
+      const value = doc.fields?.storagePath?.stringValue;
+      if (value) paths.add(value);
+    }
+    pageToken = body.nextPageToken;
+  } while (pageToken);
+  return paths;
 }
 
 /**
@@ -244,12 +287,7 @@ async function readFolders() {
  */
 async function readMigratedPaths() {
   try {
-    const snap = await firestore()
-      .collection("debugInbox")
-      .where("product", "==", "recipeprinter")
-      .select("storagePath")
-      .get();
-    return { paths: new Set(snap.docs.map((d) => d.get("storagePath")).filter(Boolean)), known: true };
+    return { paths: await firestoreStoragePaths("debugInbox"), known: true };
   } catch (error) {
     if (APPLY) throw error;
     console.warn(
@@ -315,9 +353,9 @@ async function main() {
       imageCount: images.length,
       user: meta.user ?? "",
       userAgent: String(meta.userAgent ?? "").slice(0, 300),
-      createdAt: capturedAt
-        ? admin.firestore.Timestamp.fromDate(capturedAt)
-        : admin.firestore.FieldValue.serverTimestamp(),
+      // The capture's own moment when the folder name carries one, so the rows
+      // land in their real place in the history rather than all on today.
+      createdAt: capturedAt ?? new Date(),
       // Both the dedupe key for a re-run and the audit trail for where this
       // row came from. Rows written by the live app do not carry it.
       storagePath: payload.name,
@@ -334,7 +372,7 @@ async function main() {
     }
 
     try {
-      await firestore().collection("debugInbox").add(row);
+      await firestoreCreate("debugInbox", row);
       stats.moved += 1;
       if (images.length > 0) stats.copied += 1;
       if (DELETE) {
