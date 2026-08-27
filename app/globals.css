@@ -1285,33 +1285,40 @@
   }
 
   /* Header-sized tabs. The shared segmented control is built for a settings
-     panel, where it is a primary choice with room around it; here it sits in a
-     62px bar beside the document's name, so it takes the chip's scale.
+     panel, where it is a primary choice with room around it and deliberately
+     has no track; here it sits in a 62px bar beside the document's name, and
+     it is the control that says WHICH DOCUMENT you are looking at, so it
+     takes a tab bar's shape instead: a recessed grey track with the selected
+     tab lifted out of it in card white.
 
-     A recessed grey track with the selected tab lifted out of it in card
-     white. The track is what makes the pair read as one control with a
-     selection inside rather than two buttons that happen to be adjacent, and
-     the lift is what says which one you are on without needing a colour. */
-  .rp-project-heading__kinds {
+     The selector doubles up on `.segmented-control` on purpose. The base rule
+     in print.css sets `background: transparent` at the same specificity and
+     loads after this file, so a single class here silently lost the track and
+     left the pair looking like two bare labels.
+
+     Sizing follows the zoom control and the page toolbar, which are the other
+     two clusters of small controls in this app: 4px of padding, a 14px
+     shell, 8px on the things inside it. */
+  .segmented-control.rp-project-heading__kinds {
     flex: 0 0 auto;
     margin-left: 8px;
-    padding: 3px;
-    border-radius: 999px;
+    padding: 4px;
+    border-radius: 14px;
     background: var(--cp-surface-strong);
   }
 
   .rp-project-heading__kinds .segmented-control__option {
     min-height: 30px;
-    padding: 0 14px;
+    padding: 0 12px;
     font-size: var(--cp-fs-small);
     font-weight: 700;
-    border-radius: 999px;
+    border-radius: 8px;
   }
 
   /* The one tab that is raised, so it takes the shadow the rest of the family
-     gives a small floating control. Nothing else here casts one. */
-  .rp-project-heading__kinds .segmented-control__thumb {
-    border-radius: 999px;
+     gives a small floating control. Nothing else in the bar casts one. */
+  .segmented-control.rp-project-heading__kinds .segmented-control__thumb {
+    border-radius: 8px;
     background: var(--cp-card);
     box-shadow: var(--cp-shadow-sm);
   }
