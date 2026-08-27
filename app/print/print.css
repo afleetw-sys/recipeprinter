@@ -1395,8 +1395,17 @@
   padding: 4px 8px;
 }
 
+/* A failed import is a tile that did not become a page. It is not an alarm,
+   and it should not be the loudest thing in a rail full of finished recipes.
+
+   The hairline was `--cp-error` at full strength, which is the ink colour for
+   the WORD "error", not for a border — every other error surface in the app
+   (see `.cookbook-ready__error`) uses the 16% `--cp-error-border` against the
+   6% `--cp-error-soft` fill. This one was simply the outlier, and at rail width
+   a saturated outline around a pink block reads as a warning about the whole
+   project rather than a note about one link. */
 .recipe-page-rail__item--error {
-  border-color: var(--cp-error);
+  border-color: var(--cp-error-border);
   background: var(--cp-error-soft);
 }
 
@@ -1404,23 +1413,49 @@
   grid-column: 1 / -1;
   display: flex;
   flex-direction: column;
-  gap: 5px;
+  gap: 4px;
   min-width: 0;
   padding: 4px 8px;
-  color: var(--cp-ink);
+  color: var(--cp-ink-soft);
   font-size: var(--cp-fs-caption);
   line-height: 1.35;
 }
 
+/* Sized off the rail's own eyebrow, not left at the body weight it inherited.
+   It sits directly above the sentence that says the same thing at greater
+   length, so its job is to be scannable, not to be read twice. */
 .recipe-page-rail__import-error strong {
   color: var(--cp-error);
+  font-size: var(--cp-fs-label);
+  font-weight: 700;
+  letter-spacing: 0.01em;
 }
 
+/* The parser's message is the useful part, but at 220px wide it ran to four
+   lines and made this tile twice the height of a recipe. Two lines here, the
+   whole message in the tooltip and still in full on the queue. */
+.recipe-page-rail__import-error span {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  overflow: hidden;
+}
+
+/* One row. They wrapped to two because two bordered buttons with icons cannot
+   fit the rail's width, and a stacked pair is most of why this tile towered
+   over its neighbours. */
 .recipe-page-rail__import-error-actions {
   display: flex;
-  flex-wrap: wrap;
-  gap: 6px;
-  margin-top: 3px;
+  flex-wrap: nowrap;
+  gap: 4px;
+  margin-top: 2px;
+}
+
+.recipe-page-rail__import-error-actions .btn {
+  min-height: 26px;
+  padding: 0 8px;
+  font-size: var(--cp-fs-label);
 }
 
 .recipe-page-scaler__inner {
