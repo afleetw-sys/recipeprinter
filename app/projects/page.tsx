@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { SiteHeader } from "@/components/SiteHeader";
+import { SiteFooter } from "@/components/SiteFooter";
 import { ConfirmDialog } from "@/components/ConfirmDialog";
 import { Badge, IconButton } from "@/components/Controls";
 import { CookPilotLoginDialog, useCookPilotAuth } from "@/components/CookPilotAuth";
@@ -414,6 +415,11 @@ export default function ProjectsPage() {
           </>
         )}
       </main>
+
+      {/* The same footer the rest of the site has. This page is where someone
+          goes looking for work they cannot find, which is exactly when they
+          want Contact us and the FAQ — and it was the one page without them. */}
+      <SiteFooter />
 
       <ConfirmDialog
         open={pendingDelete !== null}

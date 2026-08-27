@@ -4,6 +4,7 @@ import { FeedbackButton } from "@/components/FeedbackButton";
 import { NAV_LINKS, PUBLISHER, SITE_NAME } from "@/lib/seo";
 
 const COFFEE_URL = "https://buymeacoffee.com/recipeprinter";
+const CONTACT_EMAIL = "recipeprinter@goodproblem.studio";
 const COFFEE_LOGO_SRC = "/images/buy-me-a-coffee-logo.png";
 
 // Shared footer + primary site navigation. Keeping the deeper pages here (rather
@@ -27,6 +28,15 @@ export function SiteFooter({ isHome = false }: { isHome?: boolean }) {
             </Link>
           ))}
           <FeedbackButton />
+          {/* Feedback goes in a form we read in aggregate; this is the way to
+              reach a person about one specific thing. Both belong here, next to
+              each other, so neither is the only door. */}
+          <a
+            href={`mailto:${CONTACT_EMAIL}`}
+            className="text-cp-small font-semibold text-ink-soft hover:text-ink transition-colors"
+          >
+            Contact us
+          </a>
           <a
             href={COFFEE_URL}
             target="_blank"
@@ -54,7 +64,7 @@ export function SiteFooter({ isHome = false }: { isHome?: boolean }) {
                 recipe printer
               </Link>
             )}{" "}
-            for websites, blogs, and social recipes — a{" "}
+            for websites, blogs, and social recipes, from{" "}
             <a
               href={PUBLISHER.url}
               target="_blank"

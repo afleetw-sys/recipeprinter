@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { signOut } from "firebase/auth";
-import { AccountIcon, ICON_SIZE, SpinnerIcon, XIcon } from "@/components/icons";
+import { AccountIcon, ChevronRightIcon, ICON_SIZE, SpinnerIcon, XIcon } from "@/components/icons";
 import { CookPilotLoginDialog, useCookPilotAuth } from "@/components/CookPilotAuth";
 import { getFirebaseAuth } from "@/lib/firebase/client";
 import { loadPrintProjects } from "@/lib/printProjects";
@@ -323,9 +323,14 @@ export default function AccountMenu({
                       absence of something. */}
                   {cookbooks.length > 0 && (
                     <>
-                      <strong className="block text-cp-small">
-                        {user ? "My cookbooks" : "Cookbooks in this browser"}
-                      </strong>
+                      <Link
+                        href="/projects"
+                        className="flex items-center justify-between gap-2 text-cp-small font-bold hover:text-brand-ink"
+                        onClick={() => setOpen(false)}
+                      >
+                        Cookbooks
+                        <ChevronRightIcon size={ICON_SIZE.sm} />
+                      </Link>
                       <div className="mt-2 flex max-h-56 flex-col overflow-y-auto">
                         {cookbooks.map((project) => (
                           <Link
@@ -351,15 +356,16 @@ export default function AccountMenu({
                   )}
                   {printProjects.length > 0 && (
                     <>
-                      <strong
-                        className={
-                          cookbooks.length > 0
-                            ? "mt-cp-4 block border-t border-line pt-cp-3 text-cp-small"
-                            : "block text-cp-small"
-                        }
+                      <Link
+                        href="/projects"
+                        className={`flex items-center justify-between gap-2 text-cp-small font-bold hover:text-brand-ink ${
+                          cookbooks.length > 0 ? "mt-cp-4 border-t border-line pt-cp-3" : ""
+                        }`}
+                        onClick={() => setOpen(false)}
                       >
-                        {user ? "My recipe cards" : "Recipe cards in this browser"}
-                      </strong>
+                        Recipe cards
+                        <ChevronRightIcon size={ICON_SIZE.sm} />
+                      </Link>
                       <div className="mt-2 flex max-h-56 flex-col overflow-y-auto">
                         {printProjects.map((project) => (
                           <Link
@@ -391,13 +397,16 @@ export default function AccountMenu({
                   )}
                 </>
               )}
-              <Link
-                href="/projects"
-                className="btn btn-secondary btn-compact mt-cp-3 w-full"
-                onClick={() => setOpen(false)}
-              >
-                View all projects
-              </Link>
+              {/* Signed out, every project in this list lives in one browser's
+                  storage and nothing else. Said once at the foot of the list,
+                  where it reads as a fact about the list rather than a warning
+                  attached to each item. */}
+              {!user && listed.length > 0 && (
+                <p className="mt-cp-3 border-t border-line pt-cp-3 text-cp-caption text-ink-soft leading-relaxed">
+                  These are kept in this browser. Clearing your browsing data removes them,
+                  and they will not be on your other devices.
+                </p>
+              )}
             </div>
           )}
           {user && (
