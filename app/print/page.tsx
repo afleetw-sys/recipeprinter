@@ -3502,7 +3502,7 @@ export default function PrintPage() {
     }[projectAccess];
     return (
       <div className="h-full flex flex-col">
-        <SiteHeader compact sticky />
+        <SiteHeader compact sticky wordmark={false} />
         <div className="flex-1 flex flex-col items-center justify-center gap-cp-4 text-center px-cp-6">
           <div className="flex h-16 w-16 items-center justify-center rounded-full bg-[var(--cp-accent-soft)]">
             <BookIcon size={28} className="text-[var(--cp-accent-ink)]" />
@@ -3546,7 +3546,7 @@ export default function PrintPage() {
   if (items === null || projectLoading || cookbookAccessStatus === "loading") {
     return (
       <div className="h-full flex flex-col">
-        <SiteHeader compact sticky />
+        <SiteHeader compact sticky wordmark={false} />
         <RecipeLoadingState
           className="flex-1"
           label={accountProjectId ? "Loading your project…" : "Preparing…"}
@@ -3558,7 +3558,7 @@ export default function PrintPage() {
   if (items.length === 0) {
     return (
       <div className="h-full flex flex-col">
-        <SiteHeader compact sticky />
+        <SiteHeader compact sticky wordmark={false} />
         <div className="flex-1 flex flex-col items-center justify-center gap-cp-4 text-center px-cp-6">
           <p className="font-bold text-cp-h2">Nothing to print</p>
           <p className="text-ink-soft max-w-sm">
@@ -3584,6 +3584,7 @@ export default function PrintPage() {
         <SiteHeader
           compact
           sticky
+          wordmark={false}
           /*
             The top left says WHICH document this is, in place of the product's
             own name — on this page you already know what app you are in, and
@@ -3592,7 +3593,7 @@ export default function PrintPage() {
             the order you'd reach for them: how it stands, then the action that
             finishes it.
           */
-          center={
+          lead={
             items?.length ? (
               <ProjectHeading
                 title={headingTitle}

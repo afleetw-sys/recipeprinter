@@ -291,6 +291,22 @@ export function PrintDeck(props: PrintDeckProps) {
   // spelled out at six call sites (class, aria-pressed and label, twice over
   // for the mobile copy of the bar) — which is exactly how the two copies
   // drifted apart. One predicate, asked everywhere.
+  /**
+   * What the recipe photo pickers offer: this recipe's photo, then the ones it
+   * has worn before (`photoHistory`). Never another recipe's.
+   *
+   * Defined once because it was written twice — and the second copy, the one
+   * the narrow layout renders, had only the current photo. So whether a
+   * replaced photo stayed reachable depended on how wide the window was.
+   */
+  const recipePhotoChoices = (itemId: string | undefined, current: string | undefined) =>
+    Array.from(
+      new Set([
+        ...(current ? [current] : []),
+        ...(itemId ? projectMeta.meta.itemPlacements?.[itemId]?.photoHistory ?? [] : []),
+      ]),
+    );
+
   const isEditingNavItem = (navItem: NavItem) =>
     (navItem.kind === "recipe" && pageEditMode) ||
     (navItem.kind === "divider" && editingSectionId === navItem.recipeId) ||
@@ -520,17 +536,7 @@ export function PrintDeck(props: PrintDeckProps) {
         pageEditMode && focused && activeRecipeItem?.id === navItem.recipeId && activeInlineEdit
           ? {
               ...activeInlineEdit,
-              // The recipe's own photo only (plus upload), not other recipes'.
-              // Same list the full-page picker offers: this recipe's photo,
-              // then the ones it has worn before.
-              recipeImages: Array.from(
-                new Set([
-                  ...(activeRecipeItem?.recipe?.image ? [activeRecipeItem.recipe.image] : []),
-                  ...(activeRecipeItem
-                    ? projectMeta.meta.itemPlacements?.[activeRecipeItem.id]?.photoHistory ?? []
-                    : []),
-                ]),
-              ),
+              recipeImages: recipePhotoChoices(activeRecipeItem?.id, activeRecipeItem?.recipe?.image),
               // Placement lives in the in-card Photo dialog too, so every mode's
               // "Photo" button opens the same None/In-card/Full-page + source UI.
               photoPlacement: photoModeFor(navItem.recipeId),
@@ -1126,8 +1132,7 @@ export function PrintDeck(props: PrintDeckProps) {
                       pageEditMode && isActive && activeRecipeItem?.id === navItem.recipeId && activeInlineEdit
                         ? {
               ...activeInlineEdit,
-              // The recipe's own photo only (plus upload), not other recipes'.
-              recipeImages: activeRecipeItem?.recipe?.image ? [activeRecipeItem.recipe.image] : [],
+              recipeImages: recipePhotoChoices(activeRecipeItem?.id, activeRecipeItem?.recipe?.image),
             }
                         : undefined
                     }

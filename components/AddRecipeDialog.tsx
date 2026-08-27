@@ -91,8 +91,8 @@ export function AddRecipeDialog({
       className="recipe-add-dialog no-print"
       backdropClassName="recipe-add-dialog__backdrop"
       panelClassName={`recipe-add-dialog__panel ${
-        mode === "text" || mode === "image" ? "recipe-add-dialog__panel--roomy" : ""
-      } ${mode === "text" ? "recipe-add-dialog__panel--paste" : ""}`}
+        mode === "text" ? "recipe-add-dialog__panel--paste" : ""
+      }`}
     >
       <div className="recipe-add-dialog__header">
         <h2 id="recipe-add-dialog-title">Add recipes</h2>

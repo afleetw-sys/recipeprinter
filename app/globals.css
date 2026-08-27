@@ -1488,11 +1488,17 @@
     margin-left: 6px;
   }
 
+  /* Tabs, not chips. At 3px of padding this sat visibly shorter than the 30px
+     buttons either side of it, which made the one control that says WHICH
+     DOCUMENT you are editing look like the smallest thing in the bar. 30px
+     matches `.btn-compact`, and the corner follows the same rule the rest of
+     the family uses at that size. */
   .rp-project-heading__kinds .segmented-control__option {
-    padding: 3px 9px;
-    font-size: var(--cp-fs-caption);
+    min-height: 30px;
+    padding: 0 12px;
+    font-size: var(--cp-fs-small);
     font-weight: 700;
-    border-radius: 6px;
+    border-radius: 8px;
   }
 
   /* Accent fill on a tab that is otherwise plain text, so it reads as a flag
@@ -1515,7 +1521,7 @@
   }
 
   .rp-project-heading__kinds .segmented-control__thumb {
-    border-radius: 6px;
+    border-radius: 8px;
   }
 
   .rp-project-heading__kind {
