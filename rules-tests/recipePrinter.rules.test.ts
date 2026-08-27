@@ -211,6 +211,60 @@ describe("Recipe Printer Firestore namespace", () => {
   });
 });
 
+describe("debugInbox drop box", () => {
+  const row = {
+    product: "recipeprinter",
+    source: "url",
+    category: "no_recipe",
+    reason: "no recipe found",
+    payload: "https://example.org/soup",
+    payloadTruncated: false,
+    payloadLength: 24,
+    imagePath: null,
+    imageCount: 0,
+    user: "",
+    userAgent: "test",
+    createdAt: serverTimestamp(),
+  };
+
+  // The whole point: the visitor we most need to hear from has no account.
+  test("a signed-out visitor can file a failed import", async () => {
+    const guest = environment.unauthenticatedContext().firestore();
+    await assertSucceeds(setDoc(doc(guest, "debugInbox/guest-row"), row));
+  });
+
+  test("nothing filed here can be read, changed or removed by a client", async () => {
+    await environment.withSecurityRulesDisabled(async (admin) => {
+      await setDoc(doc(admin.firestore(), "debugInbox/existing"), row);
+    });
+    const guest = environment.unauthenticatedContext().firestore();
+    await assertFails(getDoc(doc(guest, "debugInbox/existing")));
+    await assertFails(updateDoc(doc(guest, "debugInbox/existing"), { reason: "changed" }));
+    await assertFails(deleteDoc(doc(guest, "debugInbox/existing")));
+  });
+
+  // Free document storage is the failure mode a create-only rule invites.
+  test("it will not take a row that is the wrong shape", async () => {
+    const guest = environment.unauthenticatedContext().firestore();
+    await assertFails(
+      setDoc(doc(guest, "debugInbox/extra-field"), { ...row, smuggled: "anything" }),
+    );
+    await assertFails(
+      setDoc(doc(guest, "debugInbox/huge"), { ...row, payload: "x".repeat(20_001) }),
+    );
+    await assertFails(
+      setDoc(doc(guest, "debugInbox/wrong-product"), { ...row, product: "somethingelse" }),
+    );
+    await assertFails(
+      setDoc(doc(guest, "debugInbox/no-category"), {
+        product: "recipeprinter",
+        source: "url",
+        createdAt: serverTimestamp(),
+      }),
+    );
+  });
+});
+
 describe("Recipe Printer Storage namespace", () => {
   test("existing CookPilot recipe images remain owner-only", async () => {
     const ownerStorage = environment.authenticatedContext("owner").storage();

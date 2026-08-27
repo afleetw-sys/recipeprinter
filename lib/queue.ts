@@ -4,7 +4,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import type { ImportMethod, QueueItem, Recipe } from "@/types/recipe";
 import { track, truncateReason } from "@/lib/analytics";
 import { ImportError, parseImages, parseText, parseUrlAll } from "@/lib/parser";
-import { captureFailedImportImages, captureFailedImportText } from "@/lib/failedImportCapture";
+import { captureFailedImportImages, recordFailedImport } from "@/lib/failedImportCapture";
 import { placeholderHostMessage } from "@/lib/friendlyErrors";
 import { normalizeImportURL } from "@/lib/cookpilot";
 import { hostnameOf as rawHostnameOf } from "@/lib/url";
@@ -318,11 +318,17 @@ export function useQueue() {
         // Best-effort: stash the failed input and link the event to it. `await`
         // only to attach the path — capture never throws (see module).
         const captureMeta = { source: origin.source, category, reason };
+        // Bytes to Storage (only an image has any), then one row in
+        // `debugInbox` either way, carrying the URL or the pasted text itself
+        // and a pointer to those bytes.
         const debugPath = opts?.failedImages?.length
           ? await captureFailedImportImages(opts.failedImages, captureMeta)
-          : opts?.failedText
-            ? await captureFailedImportText(opts.failedText, captureMeta)
-            : null;
+          : null;
+        await recordFailedImport(captureMeta, {
+          payload: opts?.failedText,
+          imagePath: debugPath,
+          imageCount: opts?.failedImages?.length ?? 0,
+        });
         track("recipe_import_failed", {
           ...origin,
           reason,
