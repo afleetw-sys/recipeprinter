@@ -3211,14 +3211,15 @@
    artwork rather than in a panel, and the two are read together even though
    they do different jobs. */
 .recipe-deck-zoom {
-  /* A floating capsule: no border, a card-white ground, and a shadow deep
-     enough to hold the edge over both the grey deck and a white card. The
-     border it used to have was doing work the shadow does better — a hairline
-     against artwork reads as a seam. */
+  /* A grey capsule on a soft shadow: no border, `--cp-surface-strong` rather
+     than white, so it separates from the card behind it by TONE instead of by
+     a hairline or a heavy shadow. White needed a deep shadow to hold its edge
+     over white artwork; grey holds it on its own and the shadow only has to
+     lift it. */
   border: 0;
   border-radius: 999px;
-  background: var(--cp-card);
-  box-shadow: var(--cp-shadow-md);
+  background: var(--cp-surface-strong);
+  box-shadow: var(--cp-shadow-sm);
   color: var(--cp-ink);
   font-size: var(--cp-fs-small);
   font-weight: 600;
@@ -7201,7 +7202,7 @@ textarea.recipe-card__toc-title {
 
 .recipe-deck-zoom__btn:hover:not(:disabled),
 .recipe-deck-zoom__value:hover {
-  background: var(--cp-overlay-hover);
+  background: var(--cp-card);
   color: var(--cp-ink);
 }
 
