@@ -1,7 +1,7 @@
 "use client";
 
 import dynamic from "next/dynamic";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { IconButton } from "@/components/Controls";
 import { AccountIcon, CheckIcon, ICON_SIZE, SpinnerIcon } from "@/components/icons";
 import { readCookPilotWasSignedIn } from "@/lib/cookPilotSession";
@@ -33,8 +33,10 @@ import { readCookPilotWasSignedIn } from "@/lib/cookPilotSession";
 
 const AccountMenu = dynamic(() => import("@/components/AccountMenu"), {
   ssr: false,
-  // The placeholder is rendered by this component instead (see below), so the
-  // avatar never disappears and the header never changes width while loading.
+  // Nothing, deliberately: the placeholder below stays on screen until the real
+  // menu has actually mounted (`menuMounted`), rather than being swapped out
+  // the instant `showMenu` flips. Rendering a second avatar here would put two
+  // of them in the row for as long as the chunk takes to arrive.
   loading: () => null,
 });
 
@@ -149,6 +151,19 @@ export function AccountControl({
   const [showMenu, setShowMenu] = useState(false);
   /** A click that landed before the menu chunk did, replayed once it mounts. */
   const [pendingClick, setPendingClick] = useState(false);
+  /**
+   * Has the real menu actually mounted?
+   *
+   * `showMenu` only means "start loading it". It used to also swap the
+   * placeholder out, and the dynamic import renders nothing while it loads —
+   * so on any visit where the chunk was not already cached, clicking the avatar
+   * made the avatar vanish until the download finished. The placeholder stays
+   * until this says the real one is on screen; `AccountMenu` reports it from a
+   * layout effect, so the handover happens before a paint and the two are never
+   * both visible.
+   */
+  const [menuMounted, setMenuMounted] = useState(false);
+  const handleMenuMounted = useCallback(() => setMenuMounted(true), []);
   useEffect(() => {
     if (showMenu) return;
     // Only for a browser that has an account behind it. Everyone else waits
@@ -182,22 +197,25 @@ export function AccountControl({
       )}
       {saveStatus && <SaveStatus status={saveStatus} onRetry={onRetry} />}
 
-      {showMenu ? (
+      {showMenu && (
         <AccountMenu
           compact={compact}
           activateOnReady={pendingClick}
           onActivated={() => setPendingClick(false)}
+          onMounted={handleMenuMounted}
         />
-      ) : (
+      )}
+      {!menuMounted && (
         /* The same control either way, because it is the same control: the way
            in to your account. Signed out it holds a person rather than your
            initials, which is the only honest difference — a button reading
            "Sign in" made the signed-out state a different shape in the row, and
            the shape then had to change again the moment auth resolved.
 
-           `AccountMenu` renders this same button once its chunk lands, so the
+           `AccountMenu` renders this same button once its chunk lands, and this
+           one is removed in the same commit (see `menuMounted`), so the
            handover is invisible. The click is remembered and replayed
-           (`activateOnReady`), so the dialog still opens from one press even
+           (`activateOnReady`), so the menu still opens from one press even
            though the chunk isn't here yet. */
         <IconButton
           data-rp-avatar={compact ? "compact" : "full"}

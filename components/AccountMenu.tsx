@@ -1,12 +1,13 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { signOut } from "firebase/auth";
 import { AccountIcon, BookIcon, ICON_SIZE, PrintIcon, SpinnerIcon, XIcon } from "@/components/icons";
 import { CookPilotLoginDialog, useCookPilotAuth } from "@/components/CookPilotAuth";
 import { getFirebaseAuth } from "@/lib/firebase/client";
 import { loadPrintProjects } from "@/lib/printProjects";
+import { loadLocalProjects } from "@/lib/localProjects";
 import { groupDuplicateProjects } from "@/lib/duplicateProjects";
 import { COOKBOOK_ENABLED } from "@/lib/cookbookProduct";
 import type { PrintProject } from "@/types/recipe";
@@ -76,6 +77,7 @@ export default function AccountMenu({
   compact = false,
   activateOnReady,
   onActivated,
+  onMounted,
 }: {
   /** Sizes the avatar and the sign-in button to the bar they are in — handed
       down from `SiteHeader` through `AccountControl`, which renders the very
@@ -87,8 +89,18 @@ export default function AccountMenu({
       button would have done. */
   activateOnReady?: boolean;
   onActivated?: () => void;
+  /** Fired once, from a layout effect, so `AccountControl` can drop its
+      placeholder avatar in the same commit this one appears in. */
+  onMounted?: () => void;
 }) {
   const { user, ready } = useCookPilotAuth();
+  // Layout, not passive: the placeholder this replaces must go before a paint,
+  // or both avatars are briefly in the row.
+  const mountedRef = useRef(onMounted);
+  mountedRef.current = onMounted;
+  useLayoutEffect(() => {
+    mountedRef.current?.();
+  }, []);
   const [open, setOpen] = useState(false);
   const [showLogin, setShowLogin] = useState(false);
   const [projects, setProjects] = useState<PrintProject[]>([]);
@@ -107,8 +119,24 @@ export default function AccountMenu({
     () => groupDuplicateProjects(projects).map((group) => group.keeper),
     [projects],
   );
-  const cookbooks = visible.filter((project) => project.kind !== "printProject");
-  const printProjects = visible.filter((project) => project.kind === "printProject");
+  /**
+   * Signed out, the same two sections list what is saved in THIS browser.
+   * `/projects` has always shown these; the menu simply never asked for them,
+   * so the one place a visitor looks for their work had nothing in it while
+   * the page one click further on was full.
+   */
+  const [localProjects, setLocalProjects] = useState<PrintProject[]>([]);
+  useEffect(() => {
+    if (!open || user) return;
+    setLocalProjects(loadLocalProjects());
+  }, [open, user]);
+
+  const listed = user ? visible : localProjects;
+  const cookbooks = listed.filter((project) => project.kind !== "printProject");
+  const printProjects = listed.filter((project) => project.kind === "printProject");
+  /** Signed out with an empty shelf there is nothing to head, so the whole
+      block goes rather than sitting there as two "will appear here" lines. */
+  const showProjectSections = COOKBOOK_ENABLED && (user ? true : listed.length > 0);
 
   // The click that arrived before this chunk did. Waits for `ready` so it can
   // route to the same place the real button would have: the dropdown when
@@ -242,59 +270,49 @@ export default function AccountMenu({
         )}
       </IconButton>
 
-      {/* Signed out: the sign-in offer, and the way to the projects already on
-          this device. Sign in is the big one because it is the thing worth
-          doing; the projects link is quiet because most visitors have nothing
-          on the shelf yet. */}
-      {open && !user && (
-        <div className="absolute right-0 top-11 z-50 w-[min(300px,calc(100vw-2rem))] rounded-2xl border border-line bg-card p-cp-4 shadow-cp-lg">
-          <strong className="block">Keep your projects</strong>
-          <p className="mt-1 text-cp-small text-ink-soft leading-relaxed">
-            An account keeps these projects saved on every device you use.
-          </p>
-          <button
-            type="button"
-            className="btn btn-primary mt-cp-4 w-full"
-            onClick={() => {
-              setOpen(false);
-              setShowLogin(true);
-            }}
-          >
-            Sign in or create an account
-          </button>
-          <Link
-            href="/projects"
-            className="btn btn-ghost btn-compact mt-cp-2 w-full"
-            onClick={() => setOpen(false)}
-          >
-            Projects on this device
-          </Link>
-        </div>
-      )}
-
-      {open && user && (
+      {/* One dropdown, both states. It is the same panel doing the same job —
+          here is your work, here is the account it belongs to — so signed out
+          it wears the same box and the same two project sections rather than a
+          smaller card of its own. */}
+      {open && (
         <div className="absolute right-0 top-11 z-50 w-[min(340px,calc(100vw-2rem))] rounded-2xl border border-line bg-card p-cp-4 shadow-cp-lg">
           <div className="flex items-start justify-between gap-cp-3">
             <div className="min-w-0">
               <strong className="block truncate">
-                {user.displayName || "Recipe Printer account"}
+                {user ? user.displayName || "Recipe Printer account" : "Keep your projects"}
               </strong>
               <span className="block truncate text-cp-small text-ink-soft">
-                {user.email || "Signed in"}
+                {user
+                  ? user.email || "Signed in"
+                  : listed.length > 0
+                    ? "Saved in this browser for now."
+                    : "An account keeps them on every device."}
               </span>
             </div>
             <IconButton onClick={() => setOpen(false)} aria-label="Close account menu">
               <XIcon size={ICON_SIZE.sm} />
             </IconButton>
           </div>
+          {!user && (
+            <button
+              type="button"
+              className="btn btn-primary mt-cp-4 w-full"
+              onClick={() => {
+                setOpen(false);
+                setShowLogin(true);
+              }}
+            >
+              Sign in or create an account
+            </button>
+          )}
           {/* Hidden until the cookbook feature launches — gated by the same
               COOKBOOK_ENABLED flag as the print-page toggle so relaunch is a
               one-line flip. (Also lists saved recipe cards, so restoring
               it brings back the saved-projects list too.) */}
-          {COOKBOOK_ENABLED && (
+          {showProjectSections && (
             <div className="mt-cp-4 border-t border-line pt-cp-3">
               <strong className="flex items-center gap-2 text-cp-small">
-                <BookIcon size={ICON_SIZE.md} /> My cookbooks
+                <BookIcon size={ICON_SIZE.md} /> {user ? "My cookbooks" : "Cookbooks in this browser"}
               </strong>
               {loadingProjects ? (
                 <p className="mt-2 text-cp-small text-ink-soft">Loading…</p>
@@ -323,10 +341,12 @@ export default function AccountMenu({
                   ))}
                 </div>
               ) : (
-                <p className="mt-2 text-cp-small text-ink-soft">Your saved cookbooks will appear here.</p>
+                <p className="mt-2 text-cp-small text-ink-soft">
+                  {user ? "Your saved cookbooks will appear here." : "No cookbooks in this browser."}
+                </p>
               )}
               <strong className="mt-cp-4 flex items-center gap-2 border-t border-line pt-cp-3 text-cp-small">
-                <PrintIcon size={ICON_SIZE.md} /> My recipe cards
+                <PrintIcon size={ICON_SIZE.md} /> {user ? "My recipe cards" : "Recipe cards in this browser"}
               </strong>
               {loadingProjects ? (
                 <p className="mt-2 text-cp-small text-ink-soft">Loading…</p>
@@ -355,7 +375,9 @@ export default function AccountMenu({
                   ))}
                 </div>
               ) : (
-                <p className="mt-2 text-cp-small text-ink-soft">Recipe cards you saved before will appear here.</p>
+                <p className="mt-2 text-cp-small text-ink-soft">
+                  {user ? "Recipe cards you saved before will appear here." : "No recipe cards in this browser."}
+                </p>
               )}
               <Link
                 href="/projects"
@@ -366,13 +388,15 @@ export default function AccountMenu({
               </Link>
             </div>
           )}
-          <button
-            type="button"
-            className="btn-ghost btn-compact mt-cp-3 w-full"
-            onClick={() => void signOut(getFirebaseAuth()).then(() => setOpen(false))}
-          >
-            Sign out
-          </button>
+          {user && (
+            <button
+              type="button"
+              className="btn-ghost btn-compact mt-cp-3 w-full"
+              onClick={() => void signOut(getFirebaseAuth()).then(() => setOpen(false))}
+            >
+              Sign out
+            </button>
+          )}
         </div>
       )}
 
