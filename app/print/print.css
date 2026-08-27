@@ -1173,26 +1173,127 @@
   bottom: calc(100% + 16px);
   left: calc(50% + var(--preview-offset, 0px));
   z-index: 3;
-  display: grid;
-  grid-template-columns: 1fr auto 1fr;
+  display: flex;
+  justify-content: center;
   align-items: center;
   width: min(100%, var(--preview-w, 100%));
   transform: translateX(-50%);
   pointer-events: none;
 }
 
-.recipe-page-canvas__controls-center {
-  grid-column: 2;
-  justify-self: center;
-  min-height: 38px;
-}
+/* ── The page toolbar ────────────────────────────────────────────────────────
+   One bar, not two islands. Front/Back floated centred over the page while
+   Edit floated at its right edge: two controls acting on the same page, far
+   enough apart to read as unrelated chrome. Grouped into one bar they read as
+   a set of tools — and there is now somewhere for a group to APPEAR, which is
+   what the line-kind switch does while a line is being edited instead of
+   opening a third island over the artwork.
 
-.recipe-page-canvas__controls-right {
-  grid-column: 3;
-  justify-self: end;
+   Wider and taller than the 32px pills it replaces: a bar that holds four
+   groups needs the room, and these are the primary controls on the page. */
+.recipe-page-toolbar {
   display: inline-flex;
   align-items: center;
-  gap: 8px;
+  max-width: 100%;
+  padding: 5px;
+  border: 0;
+  border-radius: 16px;
+  background: var(--cp-card);
+  /* It floats over printed artwork, so it takes the elevation the flat rule
+     reserves for floating things. Everything INSIDE it separates with a
+     hairline. */
+  box-shadow: var(--cp-shadow-md);
+  color: var(--cp-ink);
+  pointer-events: auto;
+}
+
+.recipe-page-toolbar__group {
+  /* Never squish: when the bar runs out of room it scrolls (see the phone
+     block), rather than compressing Front/Back into two half-arrows. */
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  padding: 0 5px;
+}
+
+.recipe-page-toolbar__group:first-child { padding-left: 0; }
+.recipe-page-toolbar__group:last-child { padding-right: 0; }
+
+/* The divider between groups. A line rather than a gap: at this size a gap
+   alone reads as sloppy spacing, and the reference toolbars this follows all
+   rule between their groups. */
+.recipe-page-toolbar__group + .recipe-page-toolbar__group {
+  border-left: 1px solid var(--cp-line);
+}
+
+.recipe-page-toolbar__btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  min-height: 34px;
+  padding: 0 12px;
+  border: 0;
+  border-radius: 10px;
+  background: transparent;
+  color: var(--cp-ink);
+  font-size: var(--cp-fs-caption);
+  font-weight: 700;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+/* Square, for the ones that are a glyph and nothing else. */
+.recipe-page-toolbar__btn--icon {
+  width: 34px;
+  padding: 0;
+  color: var(--cp-ink-soft);
+}
+
+.recipe-page-toolbar__btn:hover:not(:disabled) {
+  background: var(--cp-overlay-hover);
+  color: var(--cp-ink);
+}
+
+.recipe-page-toolbar__btn:disabled {
+  opacity: .5;
+  cursor: default;
+}
+
+.recipe-page-toolbar__btn.is-active {
+  background: var(--cp-selected-fill);
+  color: var(--cp-selected-text);
+}
+
+/* Front / Back. Fixed width so stepping between the two sides doesn't shuffle
+   every control to its right by the difference between the two words. */
+.recipe-page-toolbar__label {
+  min-width: 42px;
+  padding: 0 2px;
+  font-size: var(--cp-fs-caption);
+  font-weight: 700;
+  text-align: center;
+}
+
+/* The photo picker is a segmented control, and stays one inside the bar — but
+   on a track rather than behind a hairline, since a bordered white box on a
+   white bar is a shape you have to look for. Sized to the bar's 34px rhythm;
+   its own rules are tuned for a 25px pill floating on artwork. */
+.recipe-page-toolbar .recipe-page-layout-control {
+  display: inline-flex;
+}
+
+.recipe-page-toolbar .recipe-page-layout-picker {
+  border: 0;
+  border-radius: 10px;
+  background: var(--cp-surface-muted);
+}
+
+.recipe-page-toolbar .recipe-page-layout-picker__btn {
+  min-height: 28px;
+  padding: 0 10px;
+  border-radius: 7px;
 }
 
 /* Per-recipe page-layout picker (Phase 2b): a small segmented control shown
@@ -1277,32 +1378,7 @@
   cursor: default;
 }
 
-.recipe-page-canvas__controls .recipe-card-side-nav,
-.recipe-page-canvas__controls button,
-.recipe-page-canvas__controls label {
-  pointer-events: auto;
-}
 
-/* The same box as every other 30px control — it floats over the page, but it
-   is still a button and it is read alongside the header's. It was a pill at
-   weight 800, which made the chrome over the card heavier than Print. */
-.recipe-page-edit-toggle {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  min-height: 32px;
-  padding: 0 12px;
-}
-
-.recipe-page-edit-toggle.is-active {
-  border: 1px solid var(--cp-selected-border);
-  background: var(--cp-selected-fill);
-  /* Keeps the elevation it shares with the other floating controls. The
-     selected ring is `none` in this theme, so taking it alone would drop the
-     shadow and make the ACTIVE state the flat one. */
-  box-shadow: var(--cp-shadow-sm);
-  color: var(--cp-selected-text);
-}
 
 /* The first slide's controls float above the card like every other slide's —
    NOT pushed into normal flow. They used to be `position: static` for the first
@@ -1442,10 +1518,6 @@
   border: 0;
   border-radius: 0;
   box-shadow: none;
-}
-
-.recipe-page-scaler .recipe-card-side-nav {
-  display: none;
 }
 
 .rp-queue-item--focused > button:first-of-type {
@@ -2749,6 +2821,18 @@
     transform: translateX(-50%);
   }
 
+  /* Front/Back + line kind + photo + Done is more than a phone is wide. The
+     bar scrolls inside itself rather than running off the screen edge, and
+     hides the scrollbar — it is chrome over artwork, not a list. */
+  .recipe-page-toolbar {
+    overflow-x: auto;
+    scrollbar-width: none;
+  }
+
+  .recipe-page-toolbar::-webkit-scrollbar {
+    display: none;
+  }
+
   .recipe-config-panel {
     position: fixed;
     top: auto;
@@ -3118,33 +3202,29 @@
   height: 0.105in;
 }
 
-/* ── Floating deck controls ─────────────────────────────────────────────────
-   Front/Back, Edit and the zoom cluster all float over the same pages, and had
-   drifted into three different controls: 999px against 8px corners, one with a
-   shadow and two without, 26px against 30px boxes, and caption/small type at
-   600, 800 and 900. One recipe now, so they read as a set of tools belonging to
-   the same surface.
+/* ── The zoom cluster ───────────────────────────────────────────────────────
+   The one floating control that is NOT part of the page toolbar, and shouldn't
+   be: zoom acts on the deck, not on the page you happen to be looking at, and
+   it stays put while the toolbar follows the active page around.
 
-   Pills, because these sit ON the artwork rather than in a panel — a rounded
-   rectangle over a card reads as part of the card. */
-.recipe-card-side-nav,
-.recipe-deck-zoom,
-.recipe-page-edit-toggle {
-  /* A soft filled pill rather than a hairline one: these float over printed
-     artwork, and a white control with a thin border against a white card is a
-     shape you have to look for. The fill and the shadow do the separating, so
-     no border is needed to hold the edge. */
+   Still a pill, and still the toolbar's type and elevation — it sits ON the
+   artwork rather than in a panel, and the two are read together even though
+   they do different jobs. */
+.recipe-deck-zoom {
+  /* A floating capsule: no border, a card-white ground, and a shadow deep
+     enough to hold the edge over both the grey deck and a white card. The
+     border it used to have was doing work the shadow does better — a hairline
+     against artwork reads as a seam. */
   border: 0;
   border-radius: 999px;
-  background: var(--cp-surface-muted);
-  box-shadow: var(--cp-shadow-sm);
+  background: var(--cp-card);
+  box-shadow: var(--cp-shadow-md);
   color: var(--cp-ink);
-  font-size: var(--cp-fs-caption);
-  font-weight: 700;
+  font-size: var(--cp-fs-small);
+  font-weight: 600;
 }
 
-/* The tappable things inside them. */
-.recipe-card-side-nav__button,
+/* The tappable things inside it. */
 .recipe-deck-zoom__btn,
 .recipe-deck-zoom__value {
   min-height: 26px;
@@ -3152,34 +3232,6 @@
   border-radius: 999px;
   font-size: var(--cp-fs-caption);
   font-weight: 700;
-}
-
-.recipe-card-side-nav {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  align-self: center;
-  /* 26px buttons plus this padding make 32, the Edit toggle's height. */
-  padding: 3px 10px;
-}
-
-.recipe-card-side-nav__button {
-  display: grid;
-  place-items: center;
-  width: 26px;
-  background: transparent;
-  color: var(--cp-ink-soft);
-  line-height: 1;
-}
-
-.recipe-card-side-nav__button:hover:not(:disabled) {
-  background: var(--cp-overlay-hover);
-  color: var(--cp-ink);
-}
-
-.recipe-card-side-nav__button:disabled {
-  opacity: .5;
-  cursor: default;
 }
 
 .recipe-template--heirloom {
@@ -6637,68 +6689,27 @@ textarea.recipe-card__toc-title {
   pointer-events: auto;
 }
 
-/* ── Body / heading switch, floating above the field being edited ─────────────
-   Sat above the row rather than beside it: the rows are a measured column and
-   anything inline would change the wrap. */
-.recipe-card__line-kind {
-  position: absolute;
-  left: 0;
-  /* Clear of the field entirely: `top: -13px` overlapped the line above it,
-     so the switch sat on top of text it had nothing to do with. */
-  bottom: calc(100% + 2px);
-  z-index: 6;
-  display: inline-flex;
-  gap: 1px;
-  padding: 1px;
-  /* App chrome, not card artwork: `--recipe-accent` and `--recipe-bg` are the
-     TEMPLATE's palette, so this control turned red on one theme and blue on
-     another while doing the same job. The editor's own tokens keep it the same
-     control whatever the card underneath is wearing. */
-  border: 1px solid var(--cp-line);
-  border-radius: 999px;
-  background: var(--cp-card);
-  box-shadow: var(--cp-shadow-xs);
-}
+/* ── Body / heading glyphs ───────────────────────────────────────────────────
+   The switch itself now lives in the page toolbar; only the letters are still
+   the card's. They were 8px because the switch had to fit in the gap between
+   two rows of a measured column — in the toolbar they can be read at the size
+   of the labels beside them.
 
+   Letter-spacing on "Aa" so it doesn't out-weigh the single "H" next to it. */
 .recipe-card__line-kind-glyph {
   font-family: var(--font-manrope), system-ui, sans-serif;
-  font-size: 8px;
+  font-size: 11px;
   line-height: 1;
   font-weight: 700;
   letter-spacing: -0.01em;
 }
 
 .recipe-card__line-kind-glyph--heading {
-  font-size: 9px;
+  font-size: 13px;
   font-weight: 800;
 }
 
-.recipe-card__line-kind-btn {
-  display: grid;
-  place-items: center;
-  width: 20px;
-  height: 15px;
-  border: 0;
-  border-radius: 999px;
-  background: transparent;
-  color: var(--cp-ink-soft);
-  cursor: pointer;
-}
-
-.recipe-card__line-kind-btn.is-active {
-  background: var(--cp-selected-fill);
-  color: var(--cp-selected-text);
-}
-
-.recipe-card__line-kind-btn:hover {
-  background: var(--cp-overlay-hover);
-  color: var(--cp-ink);
-}
-
-/* The section title's own field needs to be the positioning context for the
-   switch, since the title is not inside an `.recipe-card__editable-line`. */
 .recipe-card__section-title-edit {
-  position: relative;
   display: block;
 }
 
@@ -7159,7 +7170,7 @@ textarea.recipe-card__toc-title {
   display: inline-flex;
   align-items: center;
   gap: 2px;
-  padding: 3px 5px;
+  padding: 4px 6px;
 }
 
 .recipe-deck-zoom__btn,
@@ -7171,12 +7182,18 @@ textarea.recipe-card__toc-title {
   cursor: pointer;
 }
 
+/* Thin strokes, so the signs sit beside the number rather than competing with
+   it. The icons come in at the shared 1.8 weight everything else uses. */
+.recipe-deck-zoom__btn svg {
+  stroke-width: 1.6;
+}
+
 .recipe-deck-zoom__btn {
-  width: 26px;
+  width: 28px;
 }
 
 .recipe-deck-zoom__value {
-  min-width: 46px;
+  min-width: 52px;
   padding: 0 4px;
   font-variant-numeric: tabular-nums;
   color: var(--cp-ink);

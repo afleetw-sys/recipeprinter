@@ -28,6 +28,8 @@ import { PHOTO_STYLE_OPTIONS } from "@/components/print/photoStyle";
 import { PAGE_DIMS } from "@/lib/printGeometry";
 import { gutterSideForRole } from "@/lib/cookbookPresets";
 import {
+  BodyTextGlyph,
+  HeadingGlyph,
   RECIPE_PRINT_TEMPLATE_OPTIONS,
   type PrintCardSize,
   type RecipePrintTemplate,
@@ -280,105 +282,193 @@ export function PrintDeck(props: PrintDeckProps) {
     renderAllPages,
   } = props;
 
+  // Whether this page's edit surface is live. The same four-way question was
+  // spelled out at six call sites (class, aria-pressed and label, twice over
+  // for the mobile copy of the bar) — which is exactly how the two copies
+  // drifted apart. One predicate, asked everywhere.
+  const isEditingNavItem = (navItem: NavItem) =>
+    (navItem.kind === "recipe" && pageEditMode) ||
+    (navItem.kind === "divider" && editingSectionId === navItem.recipeId) ||
+    (navItem.kind === "cover" && editingCoverSide === coverSideFromNavItem(navItem)) ||
+    (navItem.kind === "toc" && editingToc);
+
+  /**
+   * Body ↔ heading for the line being edited, as a group in the toolbar.
+   *
+   * It used to float directly above the field (`.recipe-card__line-kind`),
+   * which meant it jumped to a new spot on every click, had to stay 20×15 to
+   * fit in the gap between two rows of a measured column, and still sat on top
+   * of the line above. In the bar it holds still, at the size of every other
+   * control, and the card underneath is just the card.
+   *
+   * `onMouseDown` with `preventDefault`, not `onClick`: the button would
+   * otherwise pull focus off the textarea, and blur commits the edit — so the
+   * line would be written back before the kind change ever reached it.
+   */
+  const renderLineKindControl = (navItem: NavItem) => {
+    // Mirrors the gate on ScaledPage's `inlineEdit` below: the switch belongs
+    // to the recipe actually being edited, not to whatever page has focus.
+    if (navItem.kind !== "recipe" || !pageEditMode) return null;
+    if (!activeInlineEdit || activeRecipeItem?.id !== navItem.recipeId) return null;
+    const target = activeInlineEdit.editingTarget;
+    if (!target) return null;
+    // Only a line has a kind to change. The title, description, times and the
+    // link are themselves and can't become headings.
+    if (
+      target.kind !== "ingredient" &&
+      target.kind !== "step" &&
+      target.kind !== "ingredientSection" &&
+      target.kind !== "instructionSection"
+    ) {
+      return null;
+    }
+    const isHeading =
+      target.kind === "ingredientSection" || target.kind === "instructionSection";
+    return (
+      <div className="recipe-page-toolbar__group" role="group" aria-label="Line type">
+        {/* Heading first: it is the one being reached for. Body is where the
+            line already is. */}
+        <button
+          type="button"
+          className={`recipe-page-toolbar__btn recipe-page-toolbar__btn--icon ${
+            isHeading ? "is-active" : ""
+          }`}
+          aria-label="Heading"
+          aria-pressed={isHeading}
+          title="Heading"
+          onMouseDown={(event) => {
+            event.preventDefault();
+            if (!isHeading) activeInlineEdit.onSetLineKind(target, "heading");
+          }}
+        >
+          <HeadingGlyph />
+        </button>
+        <button
+          type="button"
+          className={`recipe-page-toolbar__btn recipe-page-toolbar__btn--icon ${
+            isHeading ? "" : "is-active"
+          }`}
+          aria-label="Body text"
+          aria-pressed={!isHeading}
+          title="Body text"
+          onMouseDown={(event) => {
+            event.preventDefault();
+            if (isHeading) activeInlineEdit.onSetLineKind(target, "body");
+          }}
+        >
+          <BodyTextGlyph />
+        </button>
+      </div>
+    );
+  };
+
+  /**
+   * One bar holding everything that acts on the page you're looking at.
+   *
+   * Front/Back used to sit centred over the page while Edit sat off at its
+   * right edge — two floating islands doing the same job for the same page,
+   * reading as unrelated chrome. As one bar with hairline dividers they read
+   * as a set of tools, and there is somewhere for a group to APPEAR: the
+   * line-kind switch joins the bar while a line is being edited instead of
+   * opening a third island over the artwork.
+   *
+   * Returns null when there would be nothing to hold. An empty bar used to be
+   * harmless (the wrapper had no background of its own); now it would be a
+   * visible empty box floating over an art page.
+   */
   const renderActiveControls = (
     navItem: NavItem,
     previewW: number,
     horizontalOffset = 0,
-  ) => (
-    <div
-      className="recipe-page-canvas__controls no-print"
-      style={{
-        "--preview-w": `${previewW}px`,
-        "--preview-offset": `${horizontalOffset}px`,
-      } as CSSProperties}
-    >
-      <div className="recipe-page-canvas__controls-center">
-        {navItem.flip && (
-          <div className="recipe-card-side-nav" aria-label="Sheet sides">
-            <button
-              type="button"
-              className="recipe-card-side-nav__button"
-              aria-label="Show front"
-              disabled={canvasSide === "front"}
-              onClick={(event) => {
-                event.stopPropagation();
-                setCanvasSide("front");
-              }}
-            >
-              <ChevronLeftIcon size={ICON_SIZE.md} />
-            </button>
-            <span>{canvasSide === "front" ? "Front" : "Back"}</span>
-            <button
-              type="button"
-              className="recipe-card-side-nav__button"
-              aria-label="Show back"
-              disabled={canvasSide === "back"}
-              onClick={(event) => {
-                event.stopPropagation();
-                setCanvasSide("back");
-              }}
-            >
-              <ChevronRightIcon size={ICON_SIZE.md} />
-            </button>
-          </div>
-        )}
-      </div>
-      {navItem.kind !== "image" && navItem.kind !== "section-photo" && !navItem.continued && (
-        <div className="recipe-page-canvas__controls-right">
-          {/* The placement toggle appears next to Edit once you're editing the
-              recipe — one click to move the photo between None, In card, and
-              Full page — matching the "Edit first, then adjust" flow. */}
-          {projectMeta.meta.cookbookMode &&
-            navItem.kind === "recipe" &&
-            pageEditMode &&
-            renderPagePhotoControl(navItem.recipeId)}
-          {projectMeta.meta.cookbookMode &&
-            navItem.kind === "divider" &&
-            editingSectionId === navItem.recipeId &&
-            renderSectionPhotoControl(navItem.recipeId)}
-          <button
-            type="button"
-            className={`recipe-page-edit-toggle ${
-              (navItem.kind === "recipe" && pageEditMode) ||
-              (navItem.kind === "divider" && editingSectionId === navItem.recipeId) ||
-              (navItem.kind === "cover" && editingCoverSide === coverSideFromNavItem(navItem)) ||
-              (navItem.kind === "toc" && editingToc)
-                ? "is-active"
-                : ""
-            }`}
-            aria-pressed={
-              (navItem.kind === "recipe" && pageEditMode) ||
-              (navItem.kind === "divider" && editingSectionId === navItem.recipeId) ||
-              (navItem.kind === "cover" && editingCoverSide === coverSideFromNavItem(navItem)) ||
-              (navItem.kind === "toc" && editingToc)
-            }
-            onClick={(event) => {
-              event.stopPropagation();
-              if (navItem.kind === "recipe") {
-                togglePageEditMode();
-              } else if (navItem.kind === "divider") {
-                if (editingSectionId === navItem.recipeId) commitSectionEdit();
-                else startSectionEdit(navItem.recipeId);
-              } else if (navItem.kind === "toc") {
-                setEditingToc((current) => !current);
-              } else {
-                const side = coverSideFromNavItem(navItem);
-                setEditingCoverSide((current) => (current === side ? null : side));
-              }
-            }}
-          >
-            <EditIcon size={ICON_SIZE.md} />
-            {(navItem.kind === "recipe" && pageEditMode) ||
-            (navItem.kind === "divider" && editingSectionId === navItem.recipeId) ||
-            (navItem.kind === "cover" && editingCoverSide === coverSideFromNavItem(navItem)) ||
-            (navItem.kind === "toc" && editingToc)
-              ? "Done"
-              : "Edit"}
-          </button>
+  ) => {
+    // Art pages and continuation sheets have no edit surface of their own.
+    const editable =
+      navItem.kind !== "image" && navItem.kind !== "section-photo" && !navItem.continued;
+    const editing = isEditingNavItem(navItem);
+    // The placement toggle appears once you're editing — one click to move the
+    // photo between None, In card and Full page — matching "Edit first, then
+    // adjust".
+    const photoControl = !projectMeta.meta.cookbookMode
+      ? null
+      : navItem.kind === "recipe" && pageEditMode
+        ? renderPagePhotoControl(navItem.recipeId)
+        : navItem.kind === "divider" && editingSectionId === navItem.recipeId
+          ? renderSectionPhotoControl(navItem.recipeId)
+          : null;
+    const lineKind = editable ? renderLineKindControl(navItem) : null;
+    if (!navItem.flip && !editable) return null;
+    return (
+      <div
+        className="recipe-page-canvas__controls no-print"
+        style={{
+          "--preview-w": `${previewW}px`,
+          "--preview-offset": `${horizontalOffset}px`,
+        } as CSSProperties}
+      >
+        <div className="recipe-page-toolbar">
+          {navItem.flip && (
+            <div className="recipe-page-toolbar__group" role="group" aria-label="Sheet sides">
+              <button
+                type="button"
+                className="recipe-page-toolbar__btn recipe-page-toolbar__btn--icon"
+                aria-label="Show front"
+                disabled={canvasSide === "front"}
+                onClick={(event) => {
+                  event.stopPropagation();
+                  setCanvasSide("front");
+                }}
+              >
+                <ChevronLeftIcon size={ICON_SIZE.md} />
+              </button>
+              <span className="recipe-page-toolbar__label">
+                {canvasSide === "front" ? "Front" : "Back"}
+              </span>
+              <button
+                type="button"
+                className="recipe-page-toolbar__btn recipe-page-toolbar__btn--icon"
+                aria-label="Show back"
+                disabled={canvasSide === "back"}
+                onClick={(event) => {
+                  event.stopPropagation();
+                  setCanvasSide("back");
+                }}
+              >
+                <ChevronRightIcon size={ICON_SIZE.md} />
+              </button>
+            </div>
+          )}
+          {lineKind}
+          {photoControl && <div className="recipe-page-toolbar__group">{photoControl}</div>}
+          {editable && (
+            <div className="recipe-page-toolbar__group">
+              <button
+                type="button"
+                className={`recipe-page-toolbar__btn ${editing ? "is-active" : ""}`}
+                aria-pressed={editing}
+                onClick={(event) => {
+                  event.stopPropagation();
+                  if (navItem.kind === "recipe") {
+                    togglePageEditMode();
+                  } else if (navItem.kind === "divider") {
+                    if (editingSectionId === navItem.recipeId) commitSectionEdit();
+                    else startSectionEdit(navItem.recipeId);
+                  } else if (navItem.kind === "toc") {
+                    setEditingToc((current) => !current);
+                  } else {
+                    const side = coverSideFromNavItem(navItem);
+                    setEditingCoverSide((current) => (current === side ? null : side));
+                  }
+                }}
+              >
+                <EditIcon size={ICON_SIZE.md} />
+                {editing ? "Done" : "Edit"}
+              </button>
+            </div>
+          )}
         </div>
-      )}
-    </div>
-  );
+      </div>
+    );
+  };
   // One page's ScaledPage with all its edit wiring. `focused` = this is the page
   // the controls act on (drives the active side + which edit surface is live).
   const renderDeckPage = (
@@ -970,99 +1060,16 @@ export function PrintDeck(props: PrintDeckProps) {
                     goToSlide(index);
                   }}
                 >
-                  {isActive && (
-                    <div
-                      className="recipe-page-canvas__controls no-print"
-                      style={
-                        {
-                          "--preview-w": `${PAGE_DIMS[previewCardSize].w * deckScale}px`,
-                        } as CSSProperties
-                      }
-                    >
-                      <div className="recipe-page-canvas__controls-center">
-                        {navItem.flip && (
-                          <div className="recipe-card-side-nav" aria-label="Sheet sides">
-                            <button
-                              type="button"
-                              className="recipe-card-side-nav__button"
-                              aria-label="Show front"
-                              disabled={canvasSide === "front"}
-                              onClick={(event) => {
-                                event.stopPropagation();
-                                setCanvasSide("front");
-                              }}
-                            >
-                              ←
-                            </button>
-                            <span>{canvasSide === "front" ? "Front" : "Back"}</span>
-                            <button
-                              type="button"
-                              className="recipe-card-side-nav__button"
-                              aria-label="Show back"
-                              disabled={canvasSide === "back"}
-                              onClick={(event) => {
-                                event.stopPropagation();
-                                setCanvasSide("back");
-                              }}
-                            >
-                              →
-                            </button>
-                          </div>
-                        )}
-                      </div>
-                      {activeNavItem && activeNavItem.kind !== "image" && !activeNavItem.continued && (
-                        <div className="recipe-page-canvas__controls-right">
-                          {projectMeta.meta.cookbookMode &&
-                            activeNavItem.kind === "recipe" &&
-                            pageEditMode &&
-                            renderPagePhotoControl(activeNavItem.recipeId)}
-                          {projectMeta.meta.cookbookMode &&
-                            activeNavItem.kind === "divider" &&
-                            editingSectionId === activeNavItem.recipeId &&
-                            renderSectionPhotoControl(activeNavItem.recipeId)}
-                          <button
-                            type="button"
-                            className={`recipe-page-edit-toggle ${
-                              (activeNavItem.kind === "recipe" && pageEditMode) ||
-                              (activeNavItem.kind === "divider" && editingSectionId === activeNavItem.recipeId) ||
-                              (activeNavItem.kind === "cover" && editingCoverSide === coverSideFromNavItem(activeNavItem)) ||
-                              (activeNavItem.kind === "toc" && editingToc)
-                                ? "is-active"
-                                : ""
-                            }`}
-                            aria-pressed={
-                              (activeNavItem.kind === "recipe" && pageEditMode) ||
-                              (activeNavItem.kind === "divider" && editingSectionId === activeNavItem.recipeId) ||
-                              (activeNavItem.kind === "cover" && editingCoverSide === coverSideFromNavItem(activeNavItem)) ||
-                              (activeNavItem.kind === "toc" && editingToc)
-                            }
-                            onClick={(event) => {
-                              event.stopPropagation();
-                              if (activeNavItem.kind === "recipe") {
-                                togglePageEditMode();
-                              } else if (activeNavItem.kind === "divider") {
-                                if (editingSectionId === activeNavItem.recipeId) commitSectionEdit();
-                                else startSectionEdit(activeNavItem.recipeId);
-                              } else if (activeNavItem.kind === "toc") {
-                                setEditingToc((current) => !current);
-                              } else {
-                                const side = coverSideFromNavItem(activeNavItem);
-                                setEditingCoverSide((current) => (current === side ? null : side));
-                              }
-                            }}
-                          >
-                            <EditIcon size={ICON_SIZE.md} />
-                            {(activeNavItem.kind === "recipe" && pageEditMode) ||
-                            (activeNavItem.kind === "divider" && editingSectionId === activeNavItem.recipeId) ||
-                            (activeNavItem.kind === "cover" && editingCoverSide === coverSideFromNavItem(activeNavItem)) ||
-                            (activeNavItem.kind === "toc" && editingToc)
-                              ? "Done"
-                              : "Edit"}
-                          </button>
-                        </div>
-                      )}
-                    </div>
-                  )}
+                  {/* Same bar as the spread view, from the same function —
+                      this copy had been hand-maintained alongside it and had
+                      already drifted (text arrows instead of chevrons, and no
+                      exclusion for a section's art page). */}
+                  {isActive &&
+                    activeNavItem &&
+                    renderActiveControls(
+                      activeNavItem,
+                      PAGE_DIMS[previewCardSize].w * deckScale,
+                    )}
                   {!(renderAllPages || Math.abs(index - activeNavIndex) <= DECK_WINDOW) ? (
                     <PagePlaceholder
                       width={PAGE_DIMS[previewCardSize].w}
