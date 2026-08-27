@@ -59,8 +59,40 @@ service cloud.firestore {
       allow read, write: if false;
     }
 
+    // Write-only drop box for a failed import, and the thing a human actually
+    // reads when the parser gives up. One row per failure: the URL or the
+    // pasted text, the category, and for an image failure a pointer to the
+    // bytes in Storage (see storage.rules).
+    //
+    // Deliberately unauthenticated, for the same reason as the Storage drop
+    // box: a signed-out visitor hitting a broken importer is the failure most
+    // worth capturing, and requiring an account would blind us to exactly the
+    // people we cannot email to ask.
+    //
+    // What bounds it is not this rule. `read` is denied, so nothing written
+    // here can be read back out by a client, and `update`/`delete` are denied,
+    // so a row cannot be altered or removed once collected. The shape check
+    // below keeps it from becoming free document storage: a fixed set of
+    // fields, a capped payload, and `product` pinned to this app so a
+    // RecipePrinter row can never be mistaken for a CookPilot one. VOLUME is
+    // App Check enforcement on the project, which is a console setting rather
+    // than a line in this file.
     match /debugInbox/{docId} {
-      allow read, write: if false;
+      allow read, update, delete: if false;
+      allow create: if request.resource.data.product == "recipeprinter"
+        && request.resource.data.keys().hasOnly([
+          "product", "source", "category", "reason", "payload", "payloadTruncated",
+          "payloadLength", "imagePath", "imageCount", "user", "userAgent", "createdAt"
+        ])
+        && request.resource.data.keys().hasAll(["product", "source", "category", "createdAt"])
+        && request.resource.data.source is string
+        && request.resource.data.source.size() <= 20
+        && request.resource.data.category is string
+        && request.resource.data.category.size() <= 40
+        && request.resource.data.payload is string
+        && request.resource.data.payload.size() <= 20000
+        && request.resource.data.reason is string
+        && request.resource.data.reason.size() <= 500;
     }
 
     match /sharedRecipes/{shareId} {

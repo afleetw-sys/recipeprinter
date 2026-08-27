@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { SiteHeader } from "@/components/SiteHeader";
+import { SiteFooter } from "@/components/SiteFooter";
 import { ConfirmDialog } from "@/components/ConfirmDialog";
 import { Badge, IconButton } from "@/components/Controls";
 import { CookPilotLoginDialog, useCookPilotAuth } from "@/components/CookPilotAuth";
@@ -262,9 +263,6 @@ export default function ProjectsPage() {
         <header className="mb-cp-7 flex flex-wrap items-start justify-between gap-cp-4">
           <div>
             <h1 className="text-cp-hero-sm font-extrabold tracking-[-0.04em] leading-[1.08]">Projects</h1>
-            <p className="mt-cp-3 text-cp-body-lg text-ink-soft leading-relaxed">
-              Open or remove your saved cookbooks and recipe cards.
-            </p>
           </div>
         </header>
 
@@ -331,7 +329,7 @@ export default function ProjectsPage() {
                 {groupedProjects.length === 0 ? (
                   <p className="rounded-xl border border-dashed border-line-strong px-cp-5 py-cp-5 text-cp-small text-ink-soft">
                     {isCookbook
-                      ? "No cookbooks yet. A set of recipes can become one at any time."
+                      ? "No cookbooks yet. Any set of recipes can be laid out as one."
                       : "No recipe cards yet."}
                   </p>
                 ) : (
@@ -417,6 +415,11 @@ export default function ProjectsPage() {
           </>
         )}
       </main>
+
+      {/* The same footer the rest of the site has. This page is where someone
+          goes looking for work they cannot find, which is exactly when they
+          want Contact us and the FAQ — and it was the one page without them. */}
+      <SiteFooter />
 
       <ConfirmDialog
         open={pendingDelete !== null}

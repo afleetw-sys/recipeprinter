@@ -5,15 +5,25 @@ import { firebaseConfigured } from "./firebase/client";
 import { RECIPE_PRINTER_DEBUG_ROOT } from "./firebase/recipePrinterPaths";
 
 // When an import fails — the browser can't decode an image, or the parser can't
-// find a recipe in whatever it was handed — we stash the exact input that failed
-// so the failure is actually reproducible/debuggable, instead of only a PostHog
-// event saying "no_recipe" with no way to see what the user saw. Every source is
-// covered: image bytes, a pasted-text payload, or the URL that wouldn't parse.
-// Everything lands in Firebase Storage under
-// `recipeprinter/debug/failed-imports/<category>/…`,
-// each object carrying its failure reason etc. as metadata; the returned path is
-// attached to the `recipe_import_failed` event so a failed event links straight
-// to its input.
+// find a recipe in whatever it was handed — we keep the exact input that failed,
+// so the failure is reproducible instead of being a PostHog event saying
+// "no_recipe" with no way to see what the user saw.
+//
+// TWO PLACES, on purpose:
+//
+//   Firestore `debugInbox` gets a row for EVERY failure, whatever the source.
+//   It is the thing you actually read: one document per failure, sortable by
+//   time, filterable by category, with the URL or the pasted text right there
+//   in the field. A folder of files in Storage is not a list you can query.
+//
+//   Storage `recipeprinter/debug/failed-imports/<category>/…` gets IMAGE BYTES
+//   only, because bytes are the one thing a Firestore document cannot hold.
+//   The row in `debugInbox` carries the folder path, so a failure links to its
+//   photographs.
+//
+// Text and URLs no longer go to Storage at all. They were being written as
+// `payload.txt` files nobody could browse, next to a Firestore collection that
+// was the obvious place to look and was empty.
 //
 // Everything here is strictly best-effort: a capture problem must never throw
 // into, delay meaningfully, or mask the real import failure the user is seeing.
@@ -28,11 +38,15 @@ type FailedCaptureMeta = {
 };
 
 const CAPTURE_ROOT = RECIPE_PRINTER_DEBUG_ROOT;
+/** Shared with CookPilot; every row here carries `product` to tell them apart. */
+const DEBUG_INBOX_COLLECTION = "debugInbox";
 // A hard cap so a pathological upload can't balloon: skip anything over this.
 const MAX_CAPTURE_BYTES = 12 * 1024 * 1024;
-// Text is tiny next to images, but someone pasting an entire webpage shouldn't
-// dump megabytes into the debug bucket. Truncate past this (and flag that we did).
-const MAX_TEXT_CAPTURE_CHARS = 200_000;
+// A Firestore document is capped at 1 MB, and a debug row that large is
+// unreadable anyway. Long enough to hold any recipe someone actually pasted,
+// short enough that the collection stays browsable. Truncation is flagged on
+// the row rather than being silent.
+const MAX_TEXT_CAPTURE_CHARS = 20_000;
 // The caller awaits this only to attach the path to the failure event, so it
 // must not hang that event on a slow upload. If capture outruns this, the
 // uploads still finish in the background — we just don't report the path.
@@ -138,36 +152,49 @@ export async function captureFailedImportImages(
 }
 
 /**
- * Uploads the failed text payload to Firebase Storage — the pasted recipe text,
- * or the URL that wouldn't parse. Returns the folder path (for the analytics
- * event), or null if there was nothing to capture. Same best-effort contract as
- * the image capture: never throws, never blocks the real failure.
+ * Writes one row to Firestore `debugInbox` for a failed import.
+ *
+ * This is the record you read. Every failure gets one, whatever the source:
+ * the URL that would not parse, the text that was pasted, or a note that the
+ * bytes are in Storage at `imagePath`.
+ *
+ * Best-effort like everything else here — it is awaited only so the caller can
+ * report success, and a rejection is swallowed rather than surfaced to a cook
+ * who is already looking at a failed import.
  */
-export async function captureFailedImportText(
-  payload: string,
+export async function recordFailedImport(
   meta: FailedCaptureMeta,
-): Promise<string | null> {
-  if (typeof window === "undefined" || !firebaseConfigured()) return null;
-  const text = payload?.trim();
-  if (!text) return null;
+  detail: { payload?: string; imagePath?: string | null; imageCount?: number } = {},
+): Promise<boolean> {
+  if (typeof window === "undefined" || !firebaseConfigured()) return false;
   try {
-    const truncated = text.length > MAX_TEXT_CAPTURE_CHARS;
-    const folder = newCaptureFolder(meta.category);
-    const storage = getFirebaseStorage();
-    const blob = new Blob([truncated ? text.slice(0, MAX_TEXT_CAPTURE_CHARS) : text], {
-      type: "text/plain",
+    const [{ addDoc, collection, serverTimestamp }, { getDb }] = await Promise.all([
+      import("firebase/firestore"),
+      import("./firebase/db"),
+    ]);
+    const raw = detail.payload?.trim() ?? "";
+    const truncated = raw.length > MAX_TEXT_CAPTURE_CHARS;
+    await addDoc(collection(getDb(), DEBUG_INBOX_COLLECTION), {
+      // Two products share this collection and this Firestore. Without it a
+      // RecipePrinter failure is indistinguishable from a CookPilot one.
+      product: "recipeprinter",
+      source: meta.source,
+      category: meta.category,
+      reason: meta.reason.slice(0, 500),
+      payload: truncated ? raw.slice(0, MAX_TEXT_CAPTURE_CHARS) : raw,
+      payloadTruncated: truncated,
+      payloadLength: raw.length,
+      // Where the bytes are, for an image failure. Null for everything else.
+      imagePath: detail.imagePath ?? null,
+      imageCount: detail.imageCount ?? 0,
+      user: currentUserEmail(),
+      userAgent: typeof navigator !== "undefined" ? navigator.userAgent.slice(0, 300) : "",
+      createdAt: serverTimestamp(),
     });
-    const upload = uploadBytes(ref(storage, `${folder}/payload.txt`), blob, {
-      contentType: "text/plain; charset=utf-8",
-      customMetadata: captureMetadata(meta, {
-        length: String(text.length),
-        truncated: String(truncated),
-      }),
-    });
-    return raceCapture(upload, folder);
+    return true;
   } catch (err) {
     warnSkipped(err);
-    return null;
+    return false;
   }
 }
 

@@ -4,7 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import type { User } from "firebase/auth";
 import type { CustomerInfo } from "@revenuecat/purchases-js";
 import { RECIPE_PRINT_TEMPLATE_OPTIONS, type RecipePrintTemplate } from "@/components/RecipeCardPrint";
-import { track } from "@/lib/analytics";
+import { track, truncateReason } from "@/lib/analytics";
 import { friendlyClaimError, friendlyPurchaseSetupError } from "@/lib/friendlyErrors";
 import { isPremiumTemplate, type PremiumRecipePrintTemplate } from "@/lib/premiumTemplates";
 import {
@@ -144,6 +144,15 @@ export function usePremiumTemplatePurchase({
       onFreshPurchase();
       printNow();
     } catch (error) {
+      // The money may well have moved. RevenueCat and Stripe both record a
+      // charge the moment it clears; if the SDK then throws on the way back
+      // (a dropped connection, a closed window after payment), this is the
+      // only place that knows, and it used to end at a toast.
+      track("purchase_failed", {
+        product: "premium_template",
+        template: premiumTemplate,
+        reason: truncateReason(error),
+      });
       showToast(friendlyPurchaseError(error));
     } finally {
       setPurchaseBusy(false);

@@ -128,6 +128,16 @@ type EventProps = {
   purchase_started: { product: PurchasedProduct; template?: RecipePrintTemplate };
   purchase_completed: { product: PurchasedProduct; template?: RecipePrintTemplate };
   purchase_cancelled: { product: PurchasedProduct; template?: RecipePrintTemplate };
+  /**
+   * Checkout threw something that wasn't a cancellation.
+   *
+   * Without this a purchase that succeeds at Stripe and RevenueCat but fails
+   * on the way back to the browser is INVISIBLE here: the buyer gets a toast,
+   * we record nothing, and the money exists in two systems with no matching
+   * event in this one. `purchase_started` with no third event was the only
+   * trace, and reading an absence is not the same as reading a failure.
+   */
+  purchase_failed: { product: PurchasedProduct; template?: RecipePrintTemplate; reason: string };
   /** Claimed via a CookPilot entitlement rather than paid for. */
   free_template_claimed: { template: RecipePrintTemplate };
 
@@ -269,10 +279,11 @@ function urlFlag(params: URLSearchParams, key: string): boolean | null {
  *   2. `?optout` on the live site sets PostHog's own persisted opt-out, so
  *      this browser stops sending anything. Survives reloads; dies if we
  *      clear site data.
- *   3. `?internal` instead tags every future event with `internal: true`,
- *      which the PostHog project's "internal and test users" filter hides.
- *      Preferable to (2) — tagged events can be un-hidden later, dropped
- *      events are gone forever.
+ *   3. `?internal` tags this session's events with `internal: true`, which the
+ *      PostHog project's "internal and test users" filter hides. Preferable to
+ *      (2) — tagged events can be un-hidden later, dropped events are gone
+ *      forever. Session-scoped on purpose; see `bootPostHog` for what the
+ *      permanent version cost.
  */
 export function initAnalytics(): void {
   if (loadStarted || typeof window === "undefined") return;
@@ -359,9 +370,37 @@ function bootPostHog(
   if (optOut === true) client.opt_out_capturing();
   if (optOut === false) client.opt_in_capturing();
 
+  /**
+   * `?internal` tags this SESSION, not this browser forever.
+   *
+   * It used to call `register`, which writes a super property that persists
+   * across sessions until something explicitly removes it. Nothing ever did.
+   * So one `?internal` visit months ago quietly tagged every event that
+   * browser sent afterwards, and the project's "internal and test users"
+   * filter then hid all of it from every insight, funnel and replay — for a
+   * browser that had long since gone back to being an ordinary one. A real
+   * purchase went missing that way: the money was in Stripe and RevenueCat,
+   * and PostHog had captured the events and was hiding them.
+   *
+   * `register_for_session` expires with the session, so the flag can no longer
+   * outlive the testing it was for. Add `?internal` when a testing session
+   * starts; it holds across navigation within that session.
+   */
   const internal = urlFlag(params, "internal");
-  if (internal === true) client.register({ internal: true });
-  if (internal === false) client.unregister("internal");
+  if (internal === true) client.register_for_session({ internal: true });
+  if (internal === false) {
+    client.unregister_for_session("internal");
+    client.unregister("internal");
+  }
+
+  // Clear the persistent flag left behind by the old behaviour. A browser
+  // carrying one is invisible in every dashboard and gives no sign of it, so
+  // it is cleared on sight rather than waiting for someone to guess and visit
+  // `?internal=0`. The line above re-tags the session when `?internal` is on
+  // this URL, so a real testing session is unaffected.
+  if (internal !== true && client.get_property("internal")) {
+    client.unregister("internal");
+  }
 
   // Register attribution BEFORE flushing the queue so the very first replayed
   // $pageview already carries the first_*/latest_* super properties.

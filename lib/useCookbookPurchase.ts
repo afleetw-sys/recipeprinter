@@ -5,7 +5,7 @@ import type { User } from "firebase/auth";
 import type { CustomerInfo } from "@revenuecat/purchases-js";
 import { COOKBOOK_PRICE_FALLBACK } from "@/lib/cookbookProduct";
 import { friendlyPurchaseSetupError } from "@/lib/friendlyErrors";
-import { track } from "@/lib/analytics";
+import { track, truncateReason } from "@/lib/analytics";
 import {
   purchaseRecipePrinterCookbook,
 } from "@/lib/recipePrinterPurchases";
@@ -186,6 +186,9 @@ export function useCookbookPurchase({
       onFreshPurchase();
       onUnlocked(true);
     } catch (error) {
+      // See the same catch in usePremiumTemplatePurchase: a charge that
+      // clears upstream and then throws here left no event at all.
+      track("purchase_failed", { product: "cookbook", reason: truncateReason(error) });
       showToast(friendlyPurchaseSetupError(error));
     } finally {
       setCookbookPurchaseBusy(false);

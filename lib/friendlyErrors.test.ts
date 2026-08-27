@@ -5,6 +5,7 @@ import {
   friendlyPurchaseSetupError,
   friendlyRecipeLibraryError,
   friendlyShareLinkError,
+  placeholderHostMessage,
 } from "./friendlyErrors";
 
 describe("user-facing errors", () => {
@@ -34,5 +35,24 @@ describe("user-facing errors", () => {
     expect(friendlyPhotoUploadError(new Error("internal stack trace"))).toBe(
       "We couldn't add that photo. Please try again.",
     );
+  });
+});
+
+describe("placeholderHostMessage", () => {
+  it("answers every reserved documentation domain by name", () => {
+    for (const host of ["example.com", "example.org", "example.net", "example.edu"]) {
+      expect(placeholderHostMessage(host)).toContain(host);
+    }
+  });
+
+  it("ignores the www prefix and the casing", () => {
+    expect(placeholderHostMessage("WWW.Example.com")).toBe(placeholderHostMessage("example.com"));
+  });
+
+  // A real site that merely contains the word must still get the real error.
+  it("leaves a genuine host alone", () => {
+    expect(placeholderHostMessage("allrecipes.com")).toBeNull();
+    expect(placeholderHostMessage("example.com.recipes.io")).toBeNull();
+    expect(placeholderHostMessage("myexample.com")).toBeNull();
   });
 });

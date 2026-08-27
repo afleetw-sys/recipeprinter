@@ -15,7 +15,7 @@ import type { QueueItem } from "@/types/recipe";
 import { track, truncateReason, type ImportFailureCode } from "@/lib/analytics";
 import { ImportError } from "@/lib/parser";
 import { normalizeImportURL } from "@/lib/cookpilot";
-import { captureFailedImportImages } from "@/lib/failedImportCapture";
+import { captureFailedImportImages, recordFailedImport } from "@/lib/failedImportCapture";
 import {
   imageLabel,
   partitionImageFiles,
@@ -217,10 +217,18 @@ export function ImportPanel({
         // The image never decoded, so there's no compressed payload — stash the
         // *originals* (unless they were merely too large) so a decode/HEIC bug
         // is reproducible. Best-effort; the failure log fires either way.
+        const captureMeta = { source: "image", category, reason };
         if (category === "too_large") {
+          // Nothing to keep: the file was over the cap before it was read. The
+          // row still goes in so the failure is in the same list as the rest.
+          await recordFailedImport(captureMeta, { imageCount: files.length });
           trackImageFailure(category, reason);
         } else {
-          const debugPath = await captureFailedImportImages(files, { source: "image", category, reason });
+          const debugPath = await captureFailedImportImages(files, captureMeta);
+          await recordFailedImport(captureMeta, {
+            imagePath: debugPath,
+            imageCount: files.length,
+          });
           trackImageFailure(category, reason, debugPath ?? undefined);
         }
       } finally {
