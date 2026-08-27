@@ -342,7 +342,9 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
     ],
     intent: "Utility SEO",
     eyebrow: "Social recipe printer",
-    initialImportMode: "text",
+    initialImportMode: "url",
+    importHint:
+      "Reels and posts don't always give up their text. If the link won't import, paste the caption or upload a screenshot.",
     title: "Free Instagram Recipe Printer",
     description:
       "Turn Instagram recipe captions, screenshots, links, or pasted text into printable recipes you can cook from.",
@@ -378,7 +380,9 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
     ],
     intent: "Utility SEO",
     eyebrow: "Social recipe printer",
-    initialImportMode: "text",
+    initialImportMode: "url",
+    importHint:
+      "Group posts often block importers. If the link won't import, paste the post's text or upload a screenshot.",
     title: "Free Facebook Recipe Printer",
     description:
       "Turn Facebook recipe posts, Reels, screenshots, links, or copied text into printable recipe cards, pages, and PDFs.",
@@ -415,7 +419,9 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
     ],
     intent: "Utility SEO",
     eyebrow: "Social recipe printer",
-    initialImportMode: "text",
+    initialImportMode: "url",
+    importHint:
+      "A video has no page to read. If the link won't import, paste the caption or upload screenshots of the steps.",
     title: "Free TikTok Recipe Printer",
     description:
       "Turn TikTok recipe captions, screenshots, links, or pasted text into printable recipe cards, pages, and PDFs.",
@@ -451,7 +457,9 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
     ],
     intent: "Utility SEO",
     eyebrow: "Video recipe printer",
-    initialImportMode: "text",
+    initialImportMode: "url",
+    importHint:
+      "The recipe usually lives in the description. If the link won't import, paste that text in instead.",
     title: "Free YouTube Recipe Printer",
     description:
       "Turn YouTube recipe descriptions, transcripts, screenshots, links, or copied notes into printable recipes.",
