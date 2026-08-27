@@ -5082,9 +5082,11 @@ textarea.recipe-card__toc-title {
   bottom: 0;
   left: 0;
   border-radius: 12px;
-  /* Soft light-gray pill (cool, to match the palette); the active label sits on
-     it in dark ink. Slightly darker than the track so the selection reads. */
-  background: color-mix(in srgb, var(--cp-ink-soft) 22%, var(--cp-card));
+  /* The app's one grey: the same `--cp-surface-strong` behind `.btn-neutral`
+     and the signed-out avatar. This was a color-mix off `--cp-ink-soft`, which
+     is blue-tinted — so the selected tab was a different grey from the buttons
+     it sits beside, in a bar where they are read together. */
+  background: var(--cp-surface-strong);
   transition:
     transform 0.26s cubic-bezier(0.4, 0, 0.2, 1),
     width 0.26s cubic-bezier(0.4, 0, 0.2, 1);

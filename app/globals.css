@@ -1479,25 +1479,30 @@
     margin-left: 0;
   }
 
-  /* Header-sized: the shared segmented control is built for a settings panel,
-     where it is a primary choice with room around it. Here it sits in a 62px
-     bar beside the document's name, so it takes the chip's scale rather than
-     the panel's. */
+  /* Header-sized tabs. The shared segmented control is built for a settings
+     panel, where it is a primary choice with room around it; here it sits in a
+     62px bar beside the document's name, so it takes the chip's scale.
+
+     The hairline is what makes the pair read as one control with a selection
+     inside it rather than two buttons that happen to be adjacent. Only the
+     selected tab is filled, and it slides. */
   .rp-project-heading__kinds {
     flex: 0 0 auto;
-    margin-left: 6px;
+    margin-left: 8px;
+    padding: 3px;
+    border: 1px solid var(--cp-line-strong);
+    border-radius: 11px;
   }
 
-  /* Tabs, not chips. At 3px of padding this sat visibly shorter than the 30px
-     buttons either side of it, which made the one control that says WHICH
-     DOCUMENT you are editing look like the smallest thing in the bar. 30px
-     matches `.btn-compact`, and the corner follows the same rule the rest of
-     the family uses at that size. */
   .rp-project-heading__kinds .segmented-control__option {
     min-height: 30px;
     padding: 0 12px;
     font-size: var(--cp-fs-small);
     font-weight: 700;
+    border-radius: 8px;
+  }
+
+  .rp-project-heading__kinds .segmented-control__thumb {
     border-radius: 8px;
   }
 
@@ -1520,9 +1525,7 @@
     text-transform: uppercase;
   }
 
-  .rp-project-heading__kinds .segmented-control__thumb {
-    border-radius: 8px;
-  }
+
 
   .rp-project-heading__kind {
     @apply relative flex items-center;
