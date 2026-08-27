@@ -129,3 +129,18 @@ export function friendlyShareLinkError(error: unknown): string {
 
   return "We couldn't create that link right now. Please try again.";
 }
+
+/**
+ * RFC 2606 reserves these names for documentation, so none of them is ever a
+ * real site. Someone pasting one is trying the box out rather than importing
+ * anything, and "We couldn't find that page. Check the link and try again."
+ * answers them as though they made a mistake with a real link.
+ */
+const PLACEHOLDER_HOSTS = new Set(["example.com", "example.org", "example.net", "example.edu"]);
+
+/** The reply for a placeholder domain, or null for a host worth parsing. */
+export function placeholderHostMessage(hostname: string): string | null {
+  const host = hostname.trim().toLowerCase().replace(/^www\./, "");
+  if (!PLACEHOLDER_HOSTS.has(host)) return null;
+  return `${host} is the internet's placeholder address. Nobody has ever cooked anything there, so try a real recipe link.`;
+}

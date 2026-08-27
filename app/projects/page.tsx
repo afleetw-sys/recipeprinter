@@ -262,9 +262,6 @@ export default function ProjectsPage() {
         <header className="mb-cp-7 flex flex-wrap items-start justify-between gap-cp-4">
           <div>
             <h1 className="text-cp-hero-sm font-extrabold tracking-[-0.04em] leading-[1.08]">Projects</h1>
-            <p className="mt-cp-3 text-cp-body-lg text-ink-soft leading-relaxed">
-              Open or remove your saved cookbooks and recipe cards.
-            </p>
           </div>
         </header>
 

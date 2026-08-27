@@ -5,6 +5,7 @@ import type { ImportMethod, QueueItem, Recipe } from "@/types/recipe";
 import { track, truncateReason } from "@/lib/analytics";
 import { ImportError, parseImages, parseText, parseUrlAll } from "@/lib/parser";
 import { captureFailedImportImages, captureFailedImportText } from "@/lib/failedImportCapture";
+import { placeholderHostMessage } from "@/lib/friendlyErrors";
 import { normalizeImportURL } from "@/lib/cookpilot";
 import { hostnameOf as rawHostnameOf } from "@/lib/url";
 import { uid } from "@/lib/ids";
@@ -299,12 +300,18 @@ export function useQueue() {
           });
         }
       } catch (err) {
+        // A reserved documentation domain gets its own answer. The generic
+        // "check the link and try again" treats a deliberate placeholder as a
+        // typo in a real address, and it is the one failure where we know
+        // exactly what happened.
+        const placeholder = origin.hostname ? placeholderHostMessage(origin.hostname) : null;
         patch(id, {
           status: "error",
           error:
-            err instanceof ImportError
+            placeholder ??
+            (err instanceof ImportError
               ? err.message
-              : "We couldn't import that recipe. Check the source and try again.",
+              : "We couldn't import that recipe. Check the source and try again."),
         });
         const reason = truncateReason(err);
         const category = err instanceof ImportError ? err.code : "unknown";

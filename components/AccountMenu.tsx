@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { signOut } from "firebase/auth";
-import { AccountIcon, BookIcon, ICON_SIZE, PrintIcon, SpinnerIcon, XIcon } from "@/components/icons";
+import { AccountIcon, ICON_SIZE, SpinnerIcon, XIcon } from "@/components/icons";
 import { CookPilotLoginDialog, useCookPilotAuth } from "@/components/CookPilotAuth";
 import { getFirebaseAuth } from "@/lib/firebase/client";
 import { loadPrintProjects } from "@/lib/printProjects";
@@ -311,73 +311,85 @@ export default function AccountMenu({
               it brings back the saved-projects list too.) */}
           {showProjectSections && (
             <div className="mt-cp-4 border-t border-line pt-cp-3">
-              <strong className="flex items-center gap-2 text-cp-small">
-                <BookIcon size={ICON_SIZE.md} /> {user ? "My cookbooks" : "Cookbooks in this browser"}
-              </strong>
               {loadingProjects ? (
-                <p className="mt-2 text-cp-small text-ink-soft">Loading…</p>
+                <p className="text-cp-small text-ink-soft">Loading…</p>
               ) : projectsFailed ? (
                 projectsUnavailable
-              ) : cookbooks.length ? (
-                <div className="mt-2 flex max-h-56 flex-col overflow-y-auto">
-                  {cookbooks.map((project) => (
-                    <Link
-                      key={project.id}
-                      href={`/print?project=${encodeURIComponent(project.id)}`}
-                      className="rounded-lg px-2 py-2 hover:bg-page"
-                      aria-busy={openingProjectId === project.id}
-                      onClick={() => {
-                        setOpeningProjectId(project.id);
-                        setOpen(false);
-                      }}
-                    >
-                      <span className="block truncate text-cp-small font-semibold">
-                        {openingProjectId === project.id ? (
-                          <span className="inline-flex items-center gap-2"><SpinnerIcon size={ICON_SIZE.sm} /> Opening cookbook…</span>
-                        ) : project.title || "Untitled cookbook"}
-                      </span>
-                      <span className="text-cp-caption text-ink-soft">Cookbook</span>
-                    </Link>
-                  ))}
-                </div>
               ) : (
-                <p className="mt-2 text-cp-small text-ink-soft">
-                  {user ? "Your saved cookbooks will appear here." : "No cookbooks in this browser."}
-                </p>
-              )}
-              <strong className="mt-cp-4 flex items-center gap-2 border-t border-line pt-cp-3 text-cp-small">
-                <PrintIcon size={ICON_SIZE.md} /> {user ? "My recipe cards" : "Recipe cards in this browser"}
-              </strong>
-              {loadingProjects ? (
-                <p className="mt-2 text-cp-small text-ink-soft">Loading…</p>
-              ) : projectsFailed ? (
-                projectsUnavailable
-              ) : printProjects.length ? (
-                <div className="mt-2 flex max-h-56 flex-col overflow-y-auto">
-                  {printProjects.map((project) => (
-                    <Link
-                      key={project.id}
-                      href={`/print?project=${encodeURIComponent(project.id)}`}
-                      className="rounded-lg px-2 py-2 hover:bg-page"
-                      aria-busy={openingProjectId === project.id}
-                      onClick={() => {
-                        setOpeningProjectId(project.id);
-                        setOpen(false);
-                      }}
-                    >
-                      <span className="block truncate text-cp-small font-semibold">
-                        {openingProjectId === project.id ? (
-                          <span className="inline-flex items-center gap-2"><SpinnerIcon size={ICON_SIZE.sm} /> Opening project…</span>
-                        ) : project.title || "Untitled recipe cards"}
-                      </span>
-                      <span className="text-cp-caption text-ink-soft">Recipe cards</span>
-                    </Link>
-                  ))}
-                </div>
-              ) : (
-                <p className="mt-2 text-cp-small text-ink-soft">
-                  {user ? "Recipe cards you saved before will appear here." : "No recipe cards in this browser."}
-                </p>
+                <>
+                  {/* A heading over nothing is not information. An empty
+                      section used to sit here saying it was empty, which in a
+                      dropdown this small is most of the panel spent on the
+                      absence of something. */}
+                  {cookbooks.length > 0 && (
+                    <>
+                      <strong className="block text-cp-small">
+                        {user ? "My cookbooks" : "Cookbooks in this browser"}
+                      </strong>
+                      <div className="mt-2 flex max-h-56 flex-col overflow-y-auto">
+                        {cookbooks.map((project) => (
+                          <Link
+                            key={project.id}
+                            href={`/print?project=${encodeURIComponent(project.id)}`}
+                            className="rounded-lg px-2 py-2 hover:bg-page"
+                            aria-busy={openingProjectId === project.id}
+                            onClick={() => {
+                              setOpeningProjectId(project.id);
+                              setOpen(false);
+                            }}
+                          >
+                            <span className="block truncate text-cp-small font-semibold">
+                              {openingProjectId === project.id ? (
+                                <span className="inline-flex items-center gap-2"><SpinnerIcon size={ICON_SIZE.sm} /> Opening cookbook…</span>
+                              ) : project.title || "Untitled cookbook"}
+                            </span>
+                            <span className="text-cp-caption text-ink-soft">Cookbook</span>
+                          </Link>
+                        ))}
+                      </div>
+                    </>
+                  )}
+                  {printProjects.length > 0 && (
+                    <>
+                      <strong
+                        className={
+                          cookbooks.length > 0
+                            ? "mt-cp-4 block border-t border-line pt-cp-3 text-cp-small"
+                            : "block text-cp-small"
+                        }
+                      >
+                        {user ? "My recipe cards" : "Recipe cards in this browser"}
+                      </strong>
+                      <div className="mt-2 flex max-h-56 flex-col overflow-y-auto">
+                        {printProjects.map((project) => (
+                          <Link
+                            key={project.id}
+                            href={`/print?project=${encodeURIComponent(project.id)}`}
+                            className="rounded-lg px-2 py-2 hover:bg-page"
+                            aria-busy={openingProjectId === project.id}
+                            onClick={() => {
+                              setOpeningProjectId(project.id);
+                              setOpen(false);
+                            }}
+                          >
+                            <span className="block truncate text-cp-small font-semibold">
+                              {openingProjectId === project.id ? (
+                                <span className="inline-flex items-center gap-2"><SpinnerIcon size={ICON_SIZE.sm} /> Opening project…</span>
+                              ) : project.title || "Untitled recipe cards"}
+                            </span>
+                            <span className="text-cp-caption text-ink-soft">Recipe cards</span>
+                          </Link>
+                        ))}
+                      </div>
+                    </>
+                  )}
+                  {/* Signed in with an empty account: one line, not two empty
+                      sections. Signed out this branch is unreachable, because
+                      the whole block is hidden with nothing on the shelf. */}
+                  {cookbooks.length === 0 && printProjects.length === 0 && (
+                    <p className="text-cp-small text-ink-soft">Projects you save will appear here.</p>
+                  )}
+                </>
               )}
               <Link
                 href="/projects"
