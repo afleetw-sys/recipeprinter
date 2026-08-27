@@ -4253,21 +4253,26 @@ export default function PrintPage() {
         onConfirmDeleteRecipe={confirmPendingDelete}
         onConfirmDeleteSectionRecipes={confirmDeleteSectionRecipes}
       />
-      {/* Leaving with a project that only exists in this browser. Truthful
-          about where it goes — it IS filed on the device and reopenable from
-          Projects — while making signing in the obvious way to keep it. */}
+      {/* Leaving with a project that only exists in this browser.
+          
+          The old copy contradicted its own button: the description said the
+          project would be kept on this device while the button underneath said
+          "Leave without saving". Nothing is lost by leaving, and saying so is
+          what makes the real difference (this browser vs every device) worth
+          reading. */}
       <ConfirmDialog
         open={confirmLeave}
         tone="primary"
         title="Keep this project?"
         description={
           <>
-            It will be filed on this device and you can reopen it from Projects. Sign in and
-            it is saved to your account instead, on any device you use.
+            This project stays in this browser, and you can open it again from Projects.
+            Signing in keeps it in your account instead, so it is there on your phone and
+            any other computer too.
           </>
         }
         confirmLabel="Sign in and save it"
-        secondaryLabel="Leave without saving"
+        secondaryLabel="Leave it in this browser"
         onSecondary={() => {
           setConfirmLeave(false);
           void handleNavigateHome({ confirmed: true });

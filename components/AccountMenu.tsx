@@ -82,9 +82,9 @@ export default function AccountMenu({
       same two controls while this chunk is still loading. They have to agree,
       or the handover is a visible resize. */
   compact?: boolean;
-  /** A click landed on the placeholder avatar before this chunk arrived. Act on
-      it as soon as auth resolves — the dropdown if they're signed in, the sign-in
-      dialog if not, which is exactly what the real button would have done. */
+  /** A click landed on the placeholder avatar before this chunk arrived. Open
+      the dropdown as soon as auth resolves, which is exactly what the real
+      button would have done. */
   activateOnReady?: boolean;
   onActivated?: () => void;
 }) {
@@ -115,8 +115,10 @@ export default function AccountMenu({
   // signed in, the sign-in dialog when not.
   useEffect(() => {
     if (!activateOnReady || !ready) return;
-    if (user) setOpen(true);
-    else setShowLogin(true);
+    // The menu either way. Signed out this used to jump to the sign-in dialog,
+    // which is the behaviour the button itself no longer has — a replayed click
+    // has to land where a live one would.
+    setOpen(true);
     onActivated?.();
   }, [activateOnReady, ready, user, onActivated]);
 
@@ -222,12 +224,15 @@ export default function AccountMenu({
             ? "border border-transparent bg-[var(--cp-accent)] text-[var(--cp-ink)] font-bold tracking-tight"
             : "icon-button--filled"
         }
-        aria-label={user ? "Recipe Printer account" : "Sign in to Recipe Printer"}
-        title={user ? "Recipe Printer account" : "Sign in to Recipe Printer"}
+        aria-label="Recipe Printer account"
+        title="Recipe Printer account"
         onClick={() => {
+          // Signed out, this used to go straight to the sign-in dialog, so the
+          // avatar was a door with exactly one thing behind it. A visitor with
+          // projects saved on this device had no way to reach them: /projects
+          // lists them without an account, but nothing in the app linked there.
           if (!ready) return;
-          if (user) setOpen((value) => !value);
-          else setShowLogin(true);
+          setOpen((value) => !value);
         }}
       >
         {user && accountInitials(user) ? (
@@ -236,6 +241,36 @@ export default function AccountMenu({
           <AccountIcon size={ICON_SIZE.md} />
         )}
       </IconButton>
+
+      {/* Signed out: the sign-in offer, and the way to the projects already on
+          this device. Sign in is the big one because it is the thing worth
+          doing; the projects link is quiet because most visitors have nothing
+          on the shelf yet. */}
+      {open && !user && (
+        <div className="absolute right-0 top-11 z-50 w-[min(300px,calc(100vw-2rem))] rounded-2xl border border-line bg-card p-cp-4 shadow-cp-lg">
+          <strong className="block">Keep your projects</strong>
+          <p className="mt-1 text-cp-small text-ink-soft leading-relaxed">
+            An account keeps these projects saved on every device you use.
+          </p>
+          <button
+            type="button"
+            className="btn btn-primary mt-cp-4 w-full"
+            onClick={() => {
+              setOpen(false);
+              setShowLogin(true);
+            }}
+          >
+            Sign in or create an account
+          </button>
+          <Link
+            href="/projects"
+            className="btn btn-ghost btn-compact mt-cp-2 w-full"
+            onClick={() => setOpen(false)}
+          >
+            Projects on this device
+          </Link>
+        </div>
+      )}
 
       {open && user && (
         <div className="absolute right-0 top-11 z-50 w-[min(340px,calc(100vw-2rem))] rounded-2xl border border-line bg-card p-cp-4 shadow-cp-lg">
