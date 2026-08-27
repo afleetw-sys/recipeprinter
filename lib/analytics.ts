@@ -125,9 +125,26 @@ type EventProps = {
   // price and backed out" signal is `purchase_cancelled`. (The old
   // `paywall_shown`/`paywall_dismissed` declarations were unfireable dead type
   // surface once the dialog was removed — see lib/usePremiumTemplatePurchase.ts.)
-  purchase_started: { product: PurchasedProduct; template?: RecipePrintTemplate };
-  purchase_completed: { product: PurchasedProduct; template?: RecipePrintTemplate };
-  purchase_cancelled: { product: PurchasedProduct; template?: RecipePrintTemplate };
+  /**
+   * `customerId` is the RevenueCat app user id, and it is the whole point of
+   * these three carrying it.
+   *
+   * Nothing else in this file can be matched against money. A person is
+   * identified only on CookPilot sign-in, and only by the opaque Firebase uid
+   * — deliberately no email — while `person_profiles: "identified_only"` means
+   * a signed-out buyer has no person record at all. Signed-out buying is
+   * supported. So given a charge in Stripe with an email attached, there was
+   * previously NOTHING in PostHog to look it up by: not the person, not the
+   * event, not the recording. The purchase looked like it had never happened.
+   *
+   * This id is the one string that appears on both sides. Paste it from the
+   * RevenueCat customer page into PostHog and the events and session are
+   * there. Opaque either way (an anonymous RC id, or the Firebase uid), so no
+   * PII crosses over.
+   */
+  purchase_started: { product: PurchasedProduct; template?: RecipePrintTemplate; customerId?: string };
+  purchase_completed: { product: PurchasedProduct; template?: RecipePrintTemplate; customerId?: string };
+  purchase_cancelled: { product: PurchasedProduct; template?: RecipePrintTemplate; customerId?: string };
   /**
    * Checkout threw something that wasn't a cancellation.
    *
@@ -137,7 +154,12 @@ type EventProps = {
    * event in this one. `purchase_started` with no third event was the only
    * trace, and reading an absence is not the same as reading a failure.
    */
-  purchase_failed: { product: PurchasedProduct; template?: RecipePrintTemplate; reason: string };
+  purchase_failed: {
+    product: PurchasedProduct;
+    template?: RecipePrintTemplate;
+    reason: string;
+    customerId?: string;
+  };
   /** Claimed via a CookPilot entitlement rather than paid for. */
   free_template_claimed: { template: RecipePrintTemplate };
 

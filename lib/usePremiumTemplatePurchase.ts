@@ -120,7 +120,11 @@ export function usePremiumTemplatePurchase({
         return;
       }
 
-      track("purchase_started", { product: "premium_template", template: premiumTemplate });
+      track("purchase_started", {
+        product: "premium_template",
+        template: premiumTemplate,
+        customerId: revenueCatUserId,
+      });
       const result = await purchaseRecipePrinterTemplate({
         userId: revenueCatUserId,
         email: cookPilotUser?.email,
@@ -129,12 +133,20 @@ export function usePremiumTemplatePurchase({
       setCustomerInfo(result.customerInfo);
 
       if (result.cancelled) {
-        track("purchase_cancelled", { product: "premium_template", template: premiumTemplate });
+        track("purchase_cancelled", {
+          product: "premium_template",
+          template: premiumTemplate,
+          customerId: revenueCatUserId,
+        });
         showToast("Purchase cancelled. Your recipe cards are still here when you're ready.");
         return;
       }
 
-      track("purchase_completed", { product: "premium_template", template: premiumTemplate });
+      track("purchase_completed", {
+        product: "premium_template",
+        template: premiumTemplate,
+        customerId: revenueCatUserId,
+      });
 
       if (!hasTemplateEntitlement(result.customerInfo, premiumTemplate)) {
         showToast("Your purchase went through, but the template isn't ready yet. Wait a moment, then tap Print again.");
@@ -152,6 +164,7 @@ export function usePremiumTemplatePurchase({
         product: "premium_template",
         template: premiumTemplate,
         reason: truncateReason(error),
+        customerId: revenueCatUserId,
       });
       showToast(friendlyPurchaseError(error));
     } finally {
