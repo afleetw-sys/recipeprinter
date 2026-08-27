@@ -4218,7 +4218,7 @@ export default function PrintPage() {
           setShowCookbookOfferDialog(false);
         }}
       />
-      <CookbookBuildReveal open={cookbookBuilding} images={coverPhotoCandidates} />
+      <CookbookBuildReveal open={cookbookBuilding} />
       <CookbookReadyDialog
         open={showCookbookPrintDialog}
         justPurchased={cookbookJustPurchased}

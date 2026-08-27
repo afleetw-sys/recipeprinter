@@ -106,78 +106,37 @@ export function CookbookWelcomeDialog({
   );
 }
 
-export function CookbookBuildReveal({
-  open,
-  images,
-}: {
-  open: boolean;
-  /** The cook's own recipe photos — gathered into a stack while the book
-      assembles. Repeated to fill the pile when there are only a few. */
-  images: string[];
-}) {
-  const pics = Array.from(new Set(images.filter(Boolean)));
+export function CookbookBuildReveal({ open }: { open: boolean }) {
   /**
-   * There is usually nothing to gather.
+   * One reveal, whatever the book has in it.
    *
-   * The pile is seven cards cycling through the cook's photos, which is a fine
-   * picture of assembling a book FROM a collection — and most people meet this
-   * screen with one recipe, or one without a photo. Repeating a single picture
-   * seven times says "here are your seven recipes" to someone who has one, and
-   * an empty pile says even less.
+   * This used to gather a pile of the cook's recipe photos — a good picture of
+   * assembling a book FROM a collection, and the wrong one for the person
+   * meeting this screen, who usually has one recipe and often no photo. The
+   * fix was briefly a second animation for that case, which made the wait look
+   * like two different operations depending on how much you happened to have.
    *
-   * So the gather is for a real collection, and everything else gets the
-   * ordinary spinner. Nothing is being gathered, so nothing should mime it.
+   * It is the same operation. It gets the same spinner.
    */
-  const gathering = pics.length >= 3;
-  const CARD_COUNT = 7;
-  const cards = Array.from({ length: CARD_COUNT }, (_, index) =>
-    pics.length ? pics[index % pics.length] : null,
-  );
   return (
     <Dialog
       open={open}
       onClose={() => undefined}
       closeDisabled
-      label="Building your cookbook"
+      label="Making your cookbook"
       className="cookbook-build-reveal no-print"
       portal
     >
       <div className="cookbook-build-reveal__glow" aria-hidden />
       <div className="cookbook-build-reveal__content">
-        {!gathering && (
-          <span className="cookbook-build-reveal__spinner" aria-hidden>
-            <SpinnerIcon size={32} />
-          </span>
-        )}
-        {gathering && (
-        <div className="cookbook-gather" aria-hidden>
-          <div className="cookbook-gather__base" />
-          <div className="cookbook-gather__stack">
-            {cards.map((src, index) => (
-              <div
-                className="cookbook-gather__card"
-                key={index}
-                style={{ "--i": index } as CSSProperties}
-              >
-                <div className="cookbook-gather__card-inner">
-                  {src ? (
-                    // eslint-disable-next-line @next/next/no-img-element
-                    <img src={src} alt="" />
-                  ) : null}
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-        )}
+        <span className="cookbook-build-reveal__spinner" aria-hidden>
+          <SpinnerIcon size={32} />
+        </span>
         <div className="cookbook-build-reveal__copy">
-          {/* One line when there is nothing to gather: an eyebrow saying
-              "Making your cookbook" over a heading saying "Creating your
-              cookbook" is the same sentence twice. */}
-          {gathering && <span>Gathering your recipes</span>}
           <strong>Making your cookbook…</strong>
         </div>
       </div>
     </Dialog>
   );
 }
+
