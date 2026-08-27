@@ -1295,7 +1295,7 @@
 }
 
 .recipe-page-edit-toggle.is-active {
-  border-color: var(--cp-selected-border);
+  border: 1px solid var(--cp-selected-border);
   background: var(--cp-selected-fill);
   /* Keeps the elevation it shares with the other floating controls. The
      selected ring is `none` in this theme, so taking it alone would drop the
@@ -3130,11 +3130,15 @@
 .recipe-card-side-nav,
 .recipe-deck-zoom,
 .recipe-page-edit-toggle {
-  border: 1px solid var(--cp-line);
+  /* A soft filled pill rather than a hairline one: these float over printed
+     artwork, and a white control with a thin border against a white card is a
+     shape you have to look for. The fill and the shadow do the separating, so
+     no border is needed to hold the edge. */
+  border: 0;
   border-radius: 999px;
-  background: var(--cp-card);
+  background: var(--cp-surface-muted);
   box-shadow: var(--cp-shadow-sm);
-  color: var(--cp-ink-soft);
+  color: var(--cp-ink);
   font-size: var(--cp-fs-caption);
   font-weight: 700;
 }
@@ -3155,10 +3159,8 @@
   align-items: center;
   gap: 8px;
   align-self: center;
-  /* 2px, not 3: the 26px buttons plus this padding plus the hairline make 32,
-     which is the Edit toggle's height. At 3 the two controls sat 2px apart in a
-     row where they are read side by side. */
-  padding: 2px 10px;
+  /* 26px buttons plus this padding make 32, the Edit toggle's height. */
+  padding: 3px 10px;
 }
 
 .recipe-card-side-nav__button {
@@ -7157,7 +7159,7 @@ textarea.recipe-card__toc-title {
   display: inline-flex;
   align-items: center;
   gap: 2px;
-  padding: 3px;
+  padding: 3px 5px;
 }
 
 .recipe-deck-zoom__btn,

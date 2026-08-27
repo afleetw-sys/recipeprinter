@@ -3,7 +3,7 @@
 import Image from "next/image";
 import type { CSSProperties } from "react";
 import { Dialog } from "@/components/Dialog";
-import { CheckIcon, ICON_SIZE, XIcon } from "@/components/icons";
+import { CheckIcon, ICON_SIZE, SpinnerIcon, XIcon } from "@/components/icons";
 import type { CoverConfig } from "@/types/recipe";
 
 export function CookbookWelcomeDialog({
@@ -126,8 +126,7 @@ export function CookbookBuildReveal({
    * an empty pile says even less.
    *
    * So the gather is for a real collection, and everything else gets the
-   * binding instead: a cover closing over a page. It is the same promise, made
-   * quietly, and it does not need any material to be true.
+   * ordinary spinner. Nothing is being gathered, so nothing should mime it.
    */
   const gathering = pics.length >= 3;
   const CARD_COUNT = 7;
@@ -146,19 +145,9 @@ export function CookbookBuildReveal({
       <div className="cookbook-build-reveal__glow" aria-hidden />
       <div className="cookbook-build-reveal__content">
         {!gathering && (
-          <div className="cookbook-bind" aria-hidden>
-            <div className="cookbook-bind__base" />
-            <div className="cookbook-bind__book">
-              <div className="cookbook-bind__page" />
-              <div className="cookbook-bind__cover">
-                {pics[0] ? (
-                  // eslint-disable-next-line @next/next/no-img-element
-                  <img src={pics[0]} alt="" />
-                ) : null}
-              </div>
-              <div className="cookbook-bind__spine" />
-            </div>
-          </div>
+          <span className="cookbook-build-reveal__spinner" aria-hidden>
+            <SpinnerIcon size={32} />
+          </span>
         )}
         {gathering && (
         <div className="cookbook-gather" aria-hidden>
@@ -182,8 +171,11 @@ export function CookbookBuildReveal({
         </div>
         )}
         <div className="cookbook-build-reveal__copy">
-          <span>{gathering ? "Gathering your recipes" : "Making a cover and chapters"}</span>
-          <strong>Creating your cookbook…</strong>
+          {/* One line when there is nothing to gather: an eyebrow saying
+              "Making your cookbook" over a heading saying "Creating your
+              cookbook" is the same sentence twice. */}
+          {gathering && <span>Gathering your recipes</span>}
+          <strong>Making your cookbook…</strong>
         </div>
       </div>
     </Dialog>
