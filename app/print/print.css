@@ -1196,9 +1196,12 @@
   display: inline-flex;
   align-items: center;
   max-width: 100%;
-  padding: 5px;
+  /* 28px buttons in 4px of padding: 36 tall, where this was 44. It floats over
+     the page it acts on, so every pixel of it is a pixel of the card it is
+     covering. */
+  padding: 4px;
   border: 0;
-  border-radius: 16px;
+  border-radius: 14px;
   background: var(--cp-card);
   /* It floats over printed artwork, so it takes the elevation the flat rule
      reserves for floating things. Everything INSIDE it separates with a
@@ -1215,7 +1218,7 @@
   display: inline-flex;
   align-items: center;
   gap: 2px;
-  padding: 0 5px;
+  padding: 0 4px;
 }
 
 .recipe-page-toolbar__group:first-child { padding-left: 0; }
@@ -1233,10 +1236,10 @@
   align-items: center;
   justify-content: center;
   gap: 6px;
-  min-height: 34px;
-  padding: 0 12px;
+  min-height: 28px;
+  padding: 0 10px;
   border: 0;
-  border-radius: 10px;
+  border-radius: 8px;
   background: transparent;
   color: var(--cp-ink);
   font-size: var(--cp-fs-caption);
@@ -1247,7 +1250,7 @@
 
 /* Square, for the ones that are a glyph and nothing else. */
 .recipe-page-toolbar__btn--icon {
-  width: 34px;
+  width: 28px;
   padding: 0;
   color: var(--cp-ink-soft);
 }
@@ -1388,20 +1391,6 @@
 }
 
 
-
-/* The zoom cluster is the third floating control, alongside the page toolbar
-   and its groups — so it takes the toolbar's own recipe rather than one of its
-   own: white capsule, `--cp-shadow-md`, hairline-free, with the same 34px
-   buttons inside it. */
-.recipe-deck-zoom {
-  border: 0;
-  border-radius: 16px;
-  background: var(--cp-card);
-  box-shadow: var(--cp-shadow-md);
-  color: var(--cp-ink);
-  font-size: var(--cp-fs-caption);
-  font-weight: 700;
-}
 
 .recipe-page-canvas__controls-center {
   grid-column: 2;
@@ -3237,37 +3226,6 @@
 .recipe-card__photo-edit svg {
   width: 0.105in;
   height: 0.105in;
-}
-
-/* ── The zoom cluster ───────────────────────────────────────────────────────
-   The one floating control that is NOT part of the page toolbar, and shouldn't
-   be: zoom acts on the deck, not on the page you happen to be looking at, and
-   it stays put while the toolbar follows the active page around.
-
-   Still a pill, and still the toolbar's type and elevation — it sits ON the
-   artwork rather than in a panel, and the two are read together even though
-   they do different jobs. */
-.recipe-deck-zoom {
-  /* A flat grey capsule: no border, no shadow. It separates from the near-white
-     ground behind it by TONE alone, which is the whole reason the ground is
-     near-white — a control that needs a shadow to be found is a control sitting
-     on the wrong colour. */
-  border: 0;
-  border-radius: 999px;
-  background: var(--cp-surface-strong);
-  color: var(--cp-ink);
-  font-size: var(--cp-fs-small);
-  font-weight: 600;
-}
-
-/* The tappable things inside it. */
-.recipe-deck-zoom__btn,
-.recipe-deck-zoom__value {
-  min-height: 26px;
-  border: 0;
-  border-radius: 999px;
-  font-size: var(--cp-fs-caption);
-  font-weight: 700;
 }
 
 .recipe-template--heirloom {
@@ -7239,6 +7197,10 @@ textarea.recipe-card__toc-title {
 /* ── Deck zoom ──────────────────────────────────────────────────────────────
    Floating bottom-right of the deck it zooms. Above the pages, below any menu
    or dialog, and out of the way of the page controls that sit top-centre. */
+/* The other floating control, and deliberately the same object as the page
+   toolbar: white capsule, 14px corner, `--cp-shadow-md`, 28px buttons in 4px
+   of padding. They sit over the same pages and are read together, so one is
+   defined in the other's terms rather than beside it. */
 .recipe-deck-zoom {
   position: absolute;
   right: 16px;
@@ -7247,16 +7209,23 @@ textarea.recipe-card__toc-title {
   display: inline-flex;
   align-items: center;
   gap: 2px;
-  padding: 5px;
+  padding: 4px;
+  border: 0;
+  border-radius: 14px;
+  background: var(--cp-card);
+  box-shadow: var(--cp-shadow-md);
+  color: var(--cp-ink);
+  font-size: var(--cp-fs-caption);
+  font-weight: 700;
 }
 
 .recipe-deck-zoom__btn,
 .recipe-deck-zoom__value {
   display: grid;
   place-items: center;
-  min-height: 34px;
+  min-height: 28px;
   border: 0;
-  border-radius: 10px;
+  border-radius: 8px;
   background: transparent;
   color: var(--cp-ink-soft);
   font-size: var(--cp-fs-caption);
@@ -7271,7 +7240,7 @@ textarea.recipe-card__toc-title {
 }
 
 .recipe-deck-zoom__btn {
-  width: 34px;
+  width: 28px;
 }
 
 .recipe-deck-zoom__value {
