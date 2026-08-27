@@ -114,6 +114,18 @@ export const ArrowRightIcon = (p: IconProps) => (
   </Base>
 );
 
+/* Two arrows swapping places: "move this to the other chapter". A folder read
+   as filing the whole project away and a single arrow as navigation; the pair
+   says the thing changes which group it is in. */
+export const MoveToSectionIcon = (p: IconProps) => (
+  <Base {...p}>
+    <path d="M4 8h13" />
+    <path d="M14 5l3 3-3 3" />
+    <path d="M20 16H7" />
+    <path d="M10 13l-3 3 3 3" />
+  </Base>
+);
+
 export const ChevronDownIcon = (p: IconProps) => (
   <Base {...p}>
     <path d="M6 9l6 6 6-6" />
@@ -274,13 +286,6 @@ export const TemplateIcon = (p: IconProps) => (
     <rect x="3.5" y="3.5" width="17" height="17" rx="2.5" />
     <path d="M3.5 9.5h17" />
     <path d="M9.7 9.5v11" />
-  </Base>
-);
-
-export const EditIcon = (p: IconProps) => (
-  <Base {...p}>
-    <path d="M12 20h9" />
-    <path d="M16.5 3.5a2.1 2.1 0 013 3L7 19l-4 1 1-4L16.5 3.5z" />
   </Base>
 );
 

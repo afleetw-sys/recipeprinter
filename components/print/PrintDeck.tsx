@@ -14,13 +14,14 @@ import { LogoMark, Wordmark } from "@/components/Logo";
 import {
   ChevronLeftIcon,
   ChevronRightIcon,
-  EditIcon,
   ICON_SIZE,
   PrintIcon,
   SettingsIcon,
   SpinnerIcon,
   MinusIcon,
+  MoveToSectionIcon,
   PlusIcon,
+  TrashIcon,
 } from "@/components/icons";
 import { RecipeLoadingState } from "@/components/RecipeLoadingState";
 import { ScaledPage } from "@/components/print/ScaledPage";
@@ -28,6 +29,8 @@ import { PHOTO_STYLE_OPTIONS } from "@/components/print/photoStyle";
 import { PAGE_DIMS } from "@/lib/printGeometry";
 import { gutterSideForRole } from "@/lib/cookbookPresets";
 import {
+  BodyTextGlyph,
+  HeadingGlyph,
   RECIPE_PRINT_TEMPLATE_OPTIONS,
   type PrintCardSize,
   type RecipePrintTemplate,
@@ -126,6 +129,18 @@ interface PrintDeckProps {
   deckScale: ReturnType<typeof useDeckScroller>["deckScale"];
   /** The cook's zoom on the deck, and the controls that move it. 1 is fit. */
   deckZoom: number;
+  /** Delete whatever page the toolbar belongs to — opens the same confirm the
+      Delete key does. */
+  onRequestDelete: (navItem: NavItem) => void;
+  /** Move one recipe into another chapter. Cookbook only — a deck of loose
+      cards has no sections to move between. `undefined` there rather than a
+      no-op, so the control is absent rather than present and inert. */
+  onMoveRecipeToSection?: (recipeId: string, sectionId: string) => void;
+  /** Make a new chapter and move this recipe into it, from the same menu. */
+  onMoveRecipeToNewSection?: (recipeId: string) => void;
+  /** Set when a placement was chosen for a recipe with no photo; opens that
+      recipe's picker. See `setRecipePhotoMode`. */
+  photoPrompt?: { recipeId: string; tick: number } | null;
   onZoomStep: (direction: 1 | -1) => void;
   onZoomSet: (zoom: number) => void;
   deckRef: ReturnType<typeof useDeckScroller>["deckRef"];
@@ -207,6 +222,24 @@ export function PrintDeck(props: PrintDeckProps) {
     };
   }, [zoomMenuOpen]);
 
+  const [moveMenuOpen, setMoveMenuOpen] = useState(false);
+  const moveMenuRef = useRef<HTMLDivElement | null>(null);
+  useEffect(() => {
+    if (!moveMenuOpen) return;
+    function onPointerDown(event: PointerEvent) {
+      if (!moveMenuRef.current?.contains(event.target as Node)) setMoveMenuOpen(false);
+    }
+    function onKeyDown(event: KeyboardEvent) {
+      if (event.key === "Escape") setMoveMenuOpen(false);
+    }
+    document.addEventListener("pointerdown", onPointerDown);
+    document.addEventListener("keydown", onKeyDown);
+    return () => {
+      document.removeEventListener("pointerdown", onPointerDown);
+      document.removeEventListener("keydown", onKeyDown);
+    };
+  }, [moveMenuOpen]);
+
   const {
     singleRecipePrintView,
     cookbookView,
@@ -236,6 +269,10 @@ export function PrintDeck(props: PrintDeckProps) {
     setCanvasSide,
     deckScale,
     deckZoom,
+    onRequestDelete,
+    onMoveRecipeToSection,
+    onMoveRecipeToNewSection,
+    photoPrompt,
     onZoomStep,
     onZoomSet,
     deckRef,
@@ -280,105 +317,329 @@ export function PrintDeck(props: PrintDeckProps) {
     renderAllPages,
   } = props;
 
+  // Whether this page's edit surface is live. The same four-way question was
+  // spelled out at six call sites (class, aria-pressed and label, twice over
+  // for the mobile copy of the bar) — which is exactly how the two copies
+  // drifted apart. One predicate, asked everywhere.
+  /**
+   * What the recipe photo pickers offer: this recipe's photo, then the ones it
+   * has worn before (`photoHistory`). Never another recipe's.
+   *
+   * Defined once because it was written twice — and the second copy, the one
+   * the narrow layout renders, had only the current photo. So whether a
+   * replaced photo stayed reachable depended on how wide the window was.
+   */
+  const recipePhotoChoices = (itemId: string | undefined, current: string | undefined) =>
+    Array.from(
+      new Set([
+        ...(current ? [current] : []),
+        ...(itemId ? projectMeta.meta.itemPlacements?.[itemId]?.photoHistory ?? [] : []),
+      ]),
+    );
+
+  const isEditingNavItem = (navItem: NavItem) =>
+    (navItem.kind === "recipe" && pageEditMode) ||
+    (navItem.kind === "divider" && editingSectionId === navItem.recipeId) ||
+    (navItem.kind === "cover" && editingCoverSide === coverSideFromNavItem(navItem)) ||
+    (navItem.kind === "toc" && editingToc);
+
+  /**
+   * Body ↔ heading for the line being edited, as a group in the toolbar.
+   *
+   * It used to float directly above the field (`.recipe-card__line-kind`),
+   * which meant it jumped to a new spot on every click, had to stay 20×15 to
+   * fit in the gap between two rows of a measured column, and still sat on top
+   * of the line above. In the bar it holds still, at the size of every other
+   * control, and the card underneath is just the card.
+   *
+   * `onMouseDown` with `preventDefault`, not `onClick`: the button would
+   * otherwise pull focus off the textarea, and blur commits the edit — so the
+   * line would be written back before the kind change ever reached it.
+   */
+  const renderLineKindControl = (navItem: NavItem) => {
+    // Mirrors the gate on ScaledPage's `inlineEdit` below: the switch belongs
+    // to the recipe actually being edited, not to whatever page has focus.
+    if (navItem.kind !== "recipe" || !pageEditMode) return null;
+    if (!activeInlineEdit || activeRecipeItem?.id !== navItem.recipeId) return null;
+    const target = activeInlineEdit.editingTarget;
+    if (!target) return null;
+    // Only a line has a kind to change. The title, description, times and the
+    // link are themselves and can't become headings.
+    if (
+      target.kind !== "ingredient" &&
+      target.kind !== "step" &&
+      target.kind !== "ingredientSection" &&
+      target.kind !== "instructionSection"
+    ) {
+      return null;
+    }
+    const isHeading =
+      target.kind === "ingredientSection" || target.kind === "instructionSection";
+    return (
+      <div className="recipe-page-toolbar__group" role="group" aria-label="Line type">
+        {/* Heading first: it is the one being reached for. Body is where the
+            line already is. */}
+        <button
+          type="button"
+          className={`recipe-page-toolbar__btn recipe-page-toolbar__btn--icon ${
+            isHeading ? "is-active" : ""
+          }`}
+          aria-label="Heading"
+          aria-pressed={isHeading}
+          title="Heading"
+          onMouseDown={(event) => {
+            event.preventDefault();
+            if (!isHeading) activeInlineEdit.onSetLineKind(target, "heading");
+          }}
+        >
+          <HeadingGlyph />
+        </button>
+        <button
+          type="button"
+          className={`recipe-page-toolbar__btn recipe-page-toolbar__btn--icon ${
+            isHeading ? "" : "is-active"
+          }`}
+          aria-label="Body text"
+          aria-pressed={!isHeading}
+          title="Body text"
+          onMouseDown={(event) => {
+            event.preventDefault();
+            if (isHeading) activeInlineEdit.onSetLineKind(target, "body");
+          }}
+        >
+          <BodyTextGlyph />
+        </button>
+      </div>
+    );
+  };
+
+  /**
+   * One bar holding everything that acts on the page you're looking at.
+   *
+   * Front/Back used to sit centred over the page while Edit sat off at its
+   * right edge — two floating islands doing the same job for the same page,
+   * reading as unrelated chrome. As one bar with hairline dividers they read
+   * as a set of tools, and there is somewhere for a group to APPEAR: the
+   * line-kind switch joins the bar while a line is being edited instead of
+   * opening a third island over the artwork.
+   *
+   * Returns null when there would be nothing to hold. An empty bar used to be
+   * harmless (the wrapper had no background of its own); now it would be a
+   * visible empty box floating over an art page.
+   */
   const renderActiveControls = (
     navItem: NavItem,
     previewW: number,
     horizontalOffset = 0,
-  ) => (
-    <div
-      className="recipe-page-canvas__controls no-print"
-      style={{
-        "--preview-w": `${previewW}px`,
-        "--preview-offset": `${horizontalOffset}px`,
-      } as CSSProperties}
-    >
-      <div className="recipe-page-canvas__controls-center">
-        {navItem.flip && (
-          <div className="recipe-card-side-nav" aria-label="Sheet sides">
+  ) => {
+    // Art pages and continuation sheets have no edit surface of their own.
+    const editable =
+      navItem.kind !== "image" && navItem.kind !== "section-photo" && !navItem.continued;
+    const editing = isEditingNavItem(navItem);
+    // The placement toggle appears once you're editing — one click to move the
+    // photo between None, In card and Full page — matching "Edit first, then
+    // adjust".
+    const photoControl = !projectMeta.meta.cookbookMode
+      ? null
+      : navItem.kind === "recipe" && pageEditMode
+        ? renderPagePhotoControl(navItem.recipeId)
+        : navItem.kind === "divider" && editingSectionId === navItem.recipeId
+          ? renderSectionPhotoControl(navItem.recipeId)
+          : null;
+    const lineKind = editable ? renderLineKindControl(navItem) : null;
+
+    /**
+     * The chapters this recipe could move to, or null outside a cookbook and
+     * on anything that isn't a recipe. An untitled section is the implicit
+     * ungrouped pool, so it is offered under the name the rail gives it rather
+     * than as a blank row.
+     *
+     * Present even with nowhere to move to. A book that has not been divided
+     * yet is exactly when you want to divide it, and hiding the control until
+     * chapters exist meant the one place you would look for "put this in a
+     * chapter" was empty until you had already been somewhere else and made
+     * one. "New chapter" is always the last item.
+     */
+    const moveSections =
+      onMoveRecipeToSection && projectMeta.meta.cookbookMode && navItem.kind === "recipe"
+        ? {
+            recipeId: navItem.recipeId,
+            currentId: sections.find((section) =>
+              section.items.some((item) => item.id === navItem.recipeId),
+            )?.id,
+            options: sections.map((section) => ({
+              id: section.id,
+              title: section.title?.trim() || "Ungrouped",
+            })),
+          }
+        : null;
+
+    if (!navItem.flip && !editable) return null;
+    return (
+      <div
+        className="recipe-page-canvas__controls no-print"
+        style={{
+          "--preview-w": `${previewW}px`,
+          "--preview-offset": `${horizontalOffset}px`,
+        } as CSSProperties}
+      >
+        <div className="recipe-page-toolbar">
+          {navItem.flip && (
+            <div
+              className="recipe-page-toolbar__group recipe-page-toolbar__group--view"
+              role="group"
+              aria-label="Sheet sides"
+            >
+              <button
+                type="button"
+                className="recipe-page-toolbar__btn recipe-page-toolbar__btn--icon"
+                aria-label="Show front"
+                disabled={canvasSide === "front"}
+                onClick={(event) => {
+                  event.stopPropagation();
+                  setCanvasSide("front");
+                }}
+              >
+                <ChevronLeftIcon size={ICON_SIZE.md} />
+              </button>
+              <span className="recipe-page-toolbar__label">
+                {canvasSide === "front" ? "Front" : "Back"}
+              </span>
+              <button
+                type="button"
+                className="recipe-page-toolbar__btn recipe-page-toolbar__btn--icon"
+                aria-label="Show back"
+                disabled={canvasSide === "back"}
+                onClick={(event) => {
+                  event.stopPropagation();
+                  setCanvasSide("back");
+                }}
+              >
+                <ChevronRightIcon size={ICON_SIZE.md} />
+              </button>
+            </div>
+          )}
+          {lineKind}
+          {photoControl && <div className="recipe-page-toolbar__group">{photoControl}</div>}
+          {editable && (
+            <div className="recipe-page-toolbar__group">
+              <button
+                type="button"
+                className={`recipe-page-toolbar__btn ${editing ? "is-active" : ""}`}
+                aria-pressed={editing}
+                onClick={(event) => {
+                  event.stopPropagation();
+                  if (navItem.kind === "recipe") {
+                    togglePageEditMode();
+                  } else if (navItem.kind === "divider") {
+                    if (editingSectionId === navItem.recipeId) commitSectionEdit();
+                    else startSectionEdit(navItem.recipeId);
+                  } else if (navItem.kind === "toc") {
+                    setEditingToc((current) => !current);
+                  } else {
+                    const side = coverSideFromNavItem(navItem);
+                    setEditingCoverSide((current) => (current === side ? null : side));
+                  }
+                }}
+              >
+                {editing ? "Done" : "Edit"}
+              </button>
+            </div>
+          )}
+          {/* Move this recipe into another chapter.
+              
+              Until now the only way was the Organize panel: leave the page you
+              are looking at, find the recipe again in a different
+              representation, and drag it. But "this belongs in Desserts" is a
+              thought you have while looking AT the recipe, which is where this
+              bar already is.
+              
+              Recipes only. A divider, the cover and the contents page have no
+              chapter to be moved between. */}
+          {moveSections && (
+            <div className="recipe-page-toolbar__group">
+              <div className="recipe-page-toolbar__picker" ref={moveMenuRef}>
+                <button
+                  type="button"
+                  className={`recipe-page-toolbar__btn recipe-page-toolbar__btn--icon ${
+                    moveMenuOpen ? "is-active" : ""
+                  }`}
+                  aria-haspopup="menu"
+                  aria-expanded={moveMenuOpen}
+                  aria-label="Move to another chapter"
+                  title="Move to another chapter"
+                  onClick={(event) => {
+                    event.stopPropagation();
+                    setMoveMenuOpen((open) => !open);
+                  }}
+                >
+                  <MoveToSectionIcon size={ICON_SIZE.md} />
+                </button>
+                {moveMenuOpen && (
+                  <div className="recipe-page-toolbar__menu" role="menu" aria-label="Move to chapter">
+                    {moveSections.options.map((section) => (
+                      <button
+                        key={section.id}
+                        type="button"
+                        role="menuitemradio"
+                        aria-checked={section.id === moveSections.currentId}
+                        disabled={section.id === moveSections.currentId}
+                        className={`recipe-page-toolbar__option ${
+                          section.id === moveSections.currentId ? "is-active" : ""
+                        }`}
+                        onClick={(event) => {
+                          event.stopPropagation();
+                          setMoveMenuOpen(false);
+                          if (section.id !== moveSections.currentId) {
+                            onMoveRecipeToSection?.(moveSections.recipeId, section.id);
+                          }
+                        }}
+                      >
+                        {section.title}
+                      </button>
+                    ))}
+                    {onMoveRecipeToNewSection && (
+                      <button
+                        type="button"
+                        role="menuitem"
+                        className="recipe-page-toolbar__option recipe-page-toolbar__option--new"
+                        onClick={(event) => {
+                          event.stopPropagation();
+                          setMoveMenuOpen(false);
+                          onMoveRecipeToNewSection(moveSections.recipeId);
+                        }}
+                      >
+                        <PlusIcon size={ICON_SIZE.sm} />
+                        New chapter
+                      </button>
+                    )}
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+          {/* Delete, last and on its own: the Delete key already did this, and
+              a key is not a control anyone finds. Its own group so it is not
+              adjacent to Edit — the two are one pixel apart otherwise, and one
+              of them is not undoable. */}
+          <div className="recipe-page-toolbar__group">
             <button
               type="button"
-              className="recipe-card-side-nav__button"
-              aria-label="Show front"
-              disabled={canvasSide === "front"}
+              className="recipe-page-toolbar__btn recipe-page-toolbar__btn--icon recipe-page-toolbar__btn--danger"
+              aria-label={`Delete ${navItem.label ?? "this page"}`}
+              title="Delete"
               onClick={(event) => {
                 event.stopPropagation();
-                setCanvasSide("front");
+                onRequestDelete(navItem);
               }}
             >
-              <ChevronLeftIcon size={ICON_SIZE.md} />
-            </button>
-            <span>{canvasSide === "front" ? "Front" : "Back"}</span>
-            <button
-              type="button"
-              className="recipe-card-side-nav__button"
-              aria-label="Show back"
-              disabled={canvasSide === "back"}
-              onClick={(event) => {
-                event.stopPropagation();
-                setCanvasSide("back");
-              }}
-            >
-              <ChevronRightIcon size={ICON_SIZE.md} />
+              <TrashIcon size={ICON_SIZE.md} />
             </button>
           </div>
-        )}
-      </div>
-      {navItem.kind !== "image" && navItem.kind !== "section-photo" && !navItem.continued && (
-        <div className="recipe-page-canvas__controls-right">
-          {/* The placement toggle appears next to Edit once you're editing the
-              recipe — one click to move the photo between None, In card, and
-              Full page — matching the "Edit first, then adjust" flow. */}
-          {projectMeta.meta.cookbookMode &&
-            navItem.kind === "recipe" &&
-            pageEditMode &&
-            renderPagePhotoControl(navItem.recipeId)}
-          {projectMeta.meta.cookbookMode &&
-            navItem.kind === "divider" &&
-            editingSectionId === navItem.recipeId &&
-            renderSectionPhotoControl(navItem.recipeId)}
-          <button
-            type="button"
-            className={`recipe-page-edit-toggle ${
-              (navItem.kind === "recipe" && pageEditMode) ||
-              (navItem.kind === "divider" && editingSectionId === navItem.recipeId) ||
-              (navItem.kind === "cover" && editingCoverSide === coverSideFromNavItem(navItem)) ||
-              (navItem.kind === "toc" && editingToc)
-                ? "is-active"
-                : ""
-            }`}
-            aria-pressed={
-              (navItem.kind === "recipe" && pageEditMode) ||
-              (navItem.kind === "divider" && editingSectionId === navItem.recipeId) ||
-              (navItem.kind === "cover" && editingCoverSide === coverSideFromNavItem(navItem)) ||
-              (navItem.kind === "toc" && editingToc)
-            }
-            onClick={(event) => {
-              event.stopPropagation();
-              if (navItem.kind === "recipe") {
-                togglePageEditMode();
-              } else if (navItem.kind === "divider") {
-                if (editingSectionId === navItem.recipeId) commitSectionEdit();
-                else startSectionEdit(navItem.recipeId);
-              } else if (navItem.kind === "toc") {
-                setEditingToc((current) => !current);
-              } else {
-                const side = coverSideFromNavItem(navItem);
-                setEditingCoverSide((current) => (current === side ? null : side));
-              }
-            }}
-          >
-            <EditIcon size={ICON_SIZE.md} />
-            {(navItem.kind === "recipe" && pageEditMode) ||
-            (navItem.kind === "divider" && editingSectionId === navItem.recipeId) ||
-            (navItem.kind === "cover" && editingCoverSide === coverSideFromNavItem(navItem)) ||
-            (navItem.kind === "toc" && editingToc)
-              ? "Done"
-              : "Edit"}
-          </button>
         </div>
-      )}
-    </div>
-  );
+      </div>
+    );
+  };
   // One page's ScaledPage with all its edit wiring. `focused` = this is the page
   // the controls act on (drives the active side + which edit surface is live).
   const renderDeckPage = (
@@ -407,17 +668,7 @@ export function PrintDeck(props: PrintDeckProps) {
         pageEditMode && focused && activeRecipeItem?.id === navItem.recipeId && activeInlineEdit
           ? {
               ...activeInlineEdit,
-              // The recipe's own photo only (plus upload), not other recipes'.
-              // Same list the full-page picker offers: this recipe's photo,
-              // then the ones it has worn before.
-              recipeImages: Array.from(
-                new Set([
-                  ...(activeRecipeItem?.recipe?.image ? [activeRecipeItem.recipe.image] : []),
-                  ...(activeRecipeItem
-                    ? projectMeta.meta.itemPlacements?.[activeRecipeItem.id]?.photoHistory ?? []
-                    : []),
-                ]),
-              ),
+              recipeImages: recipePhotoChoices(activeRecipeItem?.id, activeRecipeItem?.recipe?.image),
               // Placement lives in the in-card Photo dialog too, so every mode's
               // "Photo" button opens the same None/In-card/Full-page + source UI.
               photoPlacement: photoModeFor(navItem.recipeId),
@@ -428,6 +679,8 @@ export function PrintDeck(props: PrintDeckProps) {
               })),
               onPhotoPlacementChange: (mode) =>
                 setRecipePhotoMode(navItem.recipeId, mode as PhotoStyle),
+              photoPromptSignal:
+                photoPrompt?.recipeId === navItem.recipeId ? photoPrompt.tick : undefined,
             }
           : undefined
       }
@@ -970,99 +1223,16 @@ export function PrintDeck(props: PrintDeckProps) {
                     goToSlide(index);
                   }}
                 >
-                  {isActive && (
-                    <div
-                      className="recipe-page-canvas__controls no-print"
-                      style={
-                        {
-                          "--preview-w": `${PAGE_DIMS[previewCardSize].w * deckScale}px`,
-                        } as CSSProperties
-                      }
-                    >
-                      <div className="recipe-page-canvas__controls-center">
-                        {navItem.flip && (
-                          <div className="recipe-card-side-nav" aria-label="Sheet sides">
-                            <button
-                              type="button"
-                              className="recipe-card-side-nav__button"
-                              aria-label="Show front"
-                              disabled={canvasSide === "front"}
-                              onClick={(event) => {
-                                event.stopPropagation();
-                                setCanvasSide("front");
-                              }}
-                            >
-                              ←
-                            </button>
-                            <span>{canvasSide === "front" ? "Front" : "Back"}</span>
-                            <button
-                              type="button"
-                              className="recipe-card-side-nav__button"
-                              aria-label="Show back"
-                              disabled={canvasSide === "back"}
-                              onClick={(event) => {
-                                event.stopPropagation();
-                                setCanvasSide("back");
-                              }}
-                            >
-                              →
-                            </button>
-                          </div>
-                        )}
-                      </div>
-                      {activeNavItem && activeNavItem.kind !== "image" && !activeNavItem.continued && (
-                        <div className="recipe-page-canvas__controls-right">
-                          {projectMeta.meta.cookbookMode &&
-                            activeNavItem.kind === "recipe" &&
-                            pageEditMode &&
-                            renderPagePhotoControl(activeNavItem.recipeId)}
-                          {projectMeta.meta.cookbookMode &&
-                            activeNavItem.kind === "divider" &&
-                            editingSectionId === activeNavItem.recipeId &&
-                            renderSectionPhotoControl(activeNavItem.recipeId)}
-                          <button
-                            type="button"
-                            className={`recipe-page-edit-toggle ${
-                              (activeNavItem.kind === "recipe" && pageEditMode) ||
-                              (activeNavItem.kind === "divider" && editingSectionId === activeNavItem.recipeId) ||
-                              (activeNavItem.kind === "cover" && editingCoverSide === coverSideFromNavItem(activeNavItem)) ||
-                              (activeNavItem.kind === "toc" && editingToc)
-                                ? "is-active"
-                                : ""
-                            }`}
-                            aria-pressed={
-                              (activeNavItem.kind === "recipe" && pageEditMode) ||
-                              (activeNavItem.kind === "divider" && editingSectionId === activeNavItem.recipeId) ||
-                              (activeNavItem.kind === "cover" && editingCoverSide === coverSideFromNavItem(activeNavItem)) ||
-                              (activeNavItem.kind === "toc" && editingToc)
-                            }
-                            onClick={(event) => {
-                              event.stopPropagation();
-                              if (activeNavItem.kind === "recipe") {
-                                togglePageEditMode();
-                              } else if (activeNavItem.kind === "divider") {
-                                if (editingSectionId === activeNavItem.recipeId) commitSectionEdit();
-                                else startSectionEdit(activeNavItem.recipeId);
-                              } else if (activeNavItem.kind === "toc") {
-                                setEditingToc((current) => !current);
-                              } else {
-                                const side = coverSideFromNavItem(activeNavItem);
-                                setEditingCoverSide((current) => (current === side ? null : side));
-                              }
-                            }}
-                          >
-                            <EditIcon size={ICON_SIZE.md} />
-                            {(activeNavItem.kind === "recipe" && pageEditMode) ||
-                            (activeNavItem.kind === "divider" && editingSectionId === activeNavItem.recipeId) ||
-                            (activeNavItem.kind === "cover" && editingCoverSide === coverSideFromNavItem(activeNavItem)) ||
-                            (activeNavItem.kind === "toc" && editingToc)
-                              ? "Done"
-                              : "Edit"}
-                          </button>
-                        </div>
-                      )}
-                    </div>
-                  )}
+                  {/* Same bar as the spread view, from the same function —
+                      this copy had been hand-maintained alongside it and had
+                      already drifted (text arrows instead of chevrons, and no
+                      exclusion for a section's art page). */}
+                  {isActive &&
+                    activeNavItem &&
+                    renderActiveControls(
+                      activeNavItem,
+                      PAGE_DIMS[previewCardSize].w * deckScale,
+                    )}
                   {!(renderAllPages || Math.abs(index - activeNavIndex) <= DECK_WINDOW) ? (
                     <PagePlaceholder
                       width={PAGE_DIMS[previewCardSize].w}
@@ -1096,8 +1266,7 @@ export function PrintDeck(props: PrintDeckProps) {
                       pageEditMode && isActive && activeRecipeItem?.id === navItem.recipeId && activeInlineEdit
                         ? {
               ...activeInlineEdit,
-              // The recipe's own photo only (plus upload), not other recipes'.
-              recipeImages: activeRecipeItem?.recipe?.image ? [activeRecipeItem.recipe.image] : [],
+              recipeImages: recipePhotoChoices(activeRecipeItem?.id, activeRecipeItem?.recipe?.image),
             }
                         : undefined
                     }

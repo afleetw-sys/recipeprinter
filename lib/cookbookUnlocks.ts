@@ -233,15 +233,3 @@ export async function loadCookbookProjectUnlockIds(ownerUid: string): Promise<Se
   return ids;
 }
 
-export async function hasAnyCookbookProjectUnlock(ownerUid: string): Promise<boolean> {
-  const [{ collection, getDocs, limit, query }, { getDb }] = await Promise.all([
-    import("firebase/firestore"),
-    import("@/lib/firebase/db"),
-  ]);
-  const db = getDb();
-  const [namespaced, legacy] = await Promise.all([
-    getDocs(query(collection(db, ...recipePrinterUnlocksPath(ownerUid)), limit(1))).catch(() => null),
-    getDocs(query(collection(db, "users", ownerUid, "cookbookUnlocks"), limit(1))),
-  ]);
-  return Boolean(namespaced && !namespaced.empty) || !legacy.empty;
-}

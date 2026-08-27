@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Dialog } from "@/components/Dialog";
 import { IconButton } from "@/components/Controls";
 import { CheckIcon, ICON_SIZE, ImageIcon, UploadIcon, XIcon } from "@/components/icons";
@@ -20,6 +20,7 @@ export function ImagePicker({
   placement,
   placementOptions,
   onPlacementChange,
+  openSignal,
   label = "Choose photo",
   className = "",
 }: {
@@ -46,10 +47,18 @@ export function ImagePicker({
   placement?: string;
   placementOptions?: Array<{ id: string; label: string; hint?: string }>;
   onPlacementChange?: (id: string) => void;
+  /** Opens the dialog from outside. Choosing "In card" or "Full page" for a
+      recipe that has no photo yet is a request for a photo, so the thing that
+      asks for one opens by itself instead of leaving a placement set to
+      nothing. Each new value opens it once; closing is still the dialog's. */
+  openSignal?: number;
   label?: string;
   className?: string;
 }) {
   const [open, setOpen] = useState(false);
+  useEffect(() => {
+    if (openSignal) setOpen(true);
+  }, [openSignal]);
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [failedImages, setFailedImages] = useState<Set<string>>(() => new Set());

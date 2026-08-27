@@ -388,6 +388,16 @@ export function usePrintSheets({
   // recipe actually has a photo, otherwise a plain full card. A cookbook always
   // gives each recipe its own full page. Outside cookbook mode everything is
   // `full`.
+  //
+  // An image spread WITHOUT a photo resolves to `full`, whether the layout was
+  // chosen explicitly or inherited. The book-wide fallback already checked for
+  // a photo; the explicit override did not, and that hole was a dead end:
+  // `image-spread` makes the card drop its header photo AND hide its "Add
+  // photo" button (the control belongs on the facing page instead), while
+  // `planCookbookSheets` emits no facing page at all with no `heroImageUrl` to
+  // put on it. So choosing "Full page" on a recipe that had no photo yet took
+  // away the only control that could give it one. The stored intent is kept —
+  // add a photo and the spread appears on its own.
   const cookbookResolution = useMemo(() => {
     const layoutOf = new Map<string, RecipePageLayout>();
     if (!cookbookLayouts) return { layoutOf };
@@ -396,7 +406,9 @@ export function usePrintSheets({
       if (!item.recipe) continue;
       const fallback: RecipePageLayout =
         defaultFullPage && item.recipe.image ? "image-spread" : "full";
-      layoutOf.set(item.id, itemPlacements?.[item.id]?.pageLayout || fallback);
+      const resolved = itemPlacements?.[item.id]?.pageLayout || fallback;
+      const hero = itemPlacements?.[item.id]?.heroImageUrl || item.recipe.image;
+      layoutOf.set(item.id, resolved === "image-spread" && !hero ? "full" : resolved);
     }
     return { layoutOf };
   }, [cookbookLayouts, allItems, itemPlacements, defaultFullPage]);

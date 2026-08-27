@@ -119,7 +119,7 @@ export function PrintConfigPanel({
               : "Print setup"}
         </h2>
         {cookbookMode && !cookbookLocked && mobileDrawer !== "template" && (
-          <span className="recipe-purchased-chip" title="You own this cookbook — export it as often as you like">
+          <span className="recipe-purchased-chip" title="You own this cookbook. Export it as often as you like">
             <CheckIcon size={ICON_SIZE.xs} />
             Purchased
           </span>

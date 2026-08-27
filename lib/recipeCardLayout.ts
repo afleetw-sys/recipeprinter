@@ -685,6 +685,9 @@ export interface RecipeCardInlineEdit {
       changes the photo's source. */
   photoPlacement?: string;
   photoPlacementOptions?: Array<{ id: string; label: string; hint?: string }>;
+  /** Bumped when a placement was chosen for a recipe with no photo yet, so the
+      picker opens instead of leaving the placement pointing at nothing. */
+  photoPromptSignal?: number;
   onPhotoPlacementChange?: (id: string) => void;
   editingTarget: RecipeCardEditTarget | null;
   value: string;
@@ -951,7 +954,14 @@ export function assembleSpreads(pages: BookPageKind[]): BookSpread[] {
       cursor += pairs ? 2 : 1;
       continue;
     }
-    if (pages[cursor + 1] === "toc") {
+    /**
+     * Only a contents that RUNS LONG needs its preceding page held back. A
+     * one-page contents has nothing to pair with itself, so reserving a spread
+     * for it produced two half-empty openings in a row — the dedication facing
+     * a blank, then the contents facing a blank — where the two belong side by
+     * side. That is also how a printed book sets them.
+     */
+    if (pages[cursor + 1] === "toc" && pages[cursor + 2] === "toc") {
       spreads.push({ left: cursor, right: null, single: false });
       cursor += 1;
       continue;

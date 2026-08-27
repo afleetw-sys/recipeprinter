@@ -3,7 +3,7 @@
 import Image from "next/image";
 import type { CSSProperties } from "react";
 import { Dialog } from "@/components/Dialog";
-import { CheckIcon, ICON_SIZE, XIcon } from "@/components/icons";
+import { CheckIcon, ICON_SIZE, SpinnerIcon, XIcon } from "@/components/icons";
 import type { CoverConfig } from "@/types/recipe";
 
 export function CookbookWelcomeDialog({
@@ -13,6 +13,7 @@ export function CookbookWelcomeDialog({
   purchased = false,
   onStart,
   onClose,
+  onLeave,
 }: {
   open: boolean;
   cover: CoverConfig;
@@ -26,7 +27,15 @@ export function CookbookWelcomeDialog({
    */
   purchased?: boolean;
   onStart: () => void;
+  /**
+   * Dismiss and stay in the book. This fires for the X, Escape and the
+   * backdrop — every gesture that means "get this panel off my screen". It
+   * used to also switch back to recipe cards, which threw away the book the
+   * cook had just watched being built because they closed a panel.
+   */
   onClose: () => void;
+  /** Leave the book for recipe cards. Only the button that says so. */
+  onLeave: () => void;
 }) {
   return (
     <Dialog
@@ -69,16 +78,20 @@ export function CookbookWelcomeDialog({
           <h2 id="cookbook-welcome-title">
             {purchased
               ? "Your cookbook is right where you left it."
-              : "Here is your cookbook."}
+              : "Your cookbook is built."}
           </h2>
           <p>
             {purchased
-              ? "Your cover, chapters and layout were kept. Carry on where you stopped."
-              : "Your recipes, laid out with a cover and chapters. Keep going and make it yours."}
+              ? "Your cover, chapters and layout are all still here."
+              : "Your recipes are laid out behind this, with a cover and chapters. Everything on it is yours to change."}
           </p>
         </div>
         <ul className="cookbook-feature-chips">
-          {["Professionally designed", "Automatically organized", "Ready for hardcover or spiral printing"].map((item) => (
+          {[
+            "A cover you can put your own photo on",
+            "Chapters and a table of contents, sorted for you",
+            "Sized to print at Lulu, Staples or your own printer",
+          ].map((item) => (
             <li key={item}><CheckIcon size={ICON_SIZE.sm} />{item}</li>
           ))}
         </ul>
@@ -86,77 +99,57 @@ export function CookbookWelcomeDialog({
           {purchased ? (
             <span className="cookbook-welcome__owned">
               <CheckIcon size={ICON_SIZE.sm} />
-              You own this cookbook — export it as often as you like.
+              You own this cookbook. Export it as often as you like.
             </span>
           ) : (
             <>
               <b>{price}</b>
-              <span>Pay only when you first export. One purchase per cookbook.</span>
+              <span>Paid once, the first time you export this cookbook. Editing it is free until then.</span>
             </>
           )}
         </div>
         <div className="cookbook-welcome__actions">
           <button type="button" className="btn btn-primary" onClick={onStart}>
-            {purchased ? "Open my cookbook" : "Keep going"}
+            {purchased ? "Open my cookbook" : "Start editing"}
           </button>
-          <button type="button" className="btn btn-ghost" onClick={onClose}>Back to recipe cards</button>
+          <button type="button" className="btn btn-ghost" onClick={onLeave}>Back to recipe cards</button>
         </div>
       </div>
     </Dialog>
   );
 }
 
-export function CookbookBuildReveal({
-  open,
-  images,
-}: {
-  open: boolean;
-  /** The cook's own recipe photos — gathered into a stack while the book
-      assembles. Repeated to fill the pile when there are only a few. */
-  images: string[];
-}) {
-  const pics = Array.from(new Set(images.filter(Boolean)));
-  // A tidy pile of ~7 cards; cycle through the recipe photos (repeating when
-  // there are fewer) so it always reads as a full gather, never a lone card.
-  const CARD_COUNT = 7;
-  const cards = Array.from({ length: CARD_COUNT }, (_, index) =>
-    pics.length ? pics[index % pics.length] : null,
-  );
+export function CookbookBuildReveal({ open }: { open: boolean }) {
+  /**
+   * One reveal, whatever the book has in it.
+   *
+   * This used to gather a pile of the cook's recipe photos — a good picture of
+   * assembling a book FROM a collection, and the wrong one for the person
+   * meeting this screen, who usually has one recipe and often no photo. The
+   * fix was briefly a second animation for that case, which made the wait look
+   * like two different operations depending on how much you happened to have.
+   *
+   * It is the same operation. It gets the same spinner.
+   */
   return (
     <Dialog
       open={open}
       onClose={() => undefined}
       closeDisabled
-      label="Building your cookbook"
+      label="Making your cookbook"
       className="cookbook-build-reveal no-print"
       portal
     >
       <div className="cookbook-build-reveal__glow" aria-hidden />
       <div className="cookbook-build-reveal__content">
-        <div className="cookbook-gather" aria-hidden>
-          <div className="cookbook-gather__base" />
-          <div className="cookbook-gather__stack">
-            {cards.map((src, index) => (
-              <div
-                className="cookbook-gather__card"
-                key={index}
-                style={{ "--i": index } as CSSProperties}
-              >
-                <div className="cookbook-gather__card-inner">
-                  {src ? (
-                    // eslint-disable-next-line @next/next/no-img-element
-                    <img src={src} alt="" />
-                  ) : null}
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
+        <span className="cookbook-build-reveal__spinner" aria-hidden>
+          <SpinnerIcon size={32} />
+        </span>
         <div className="cookbook-build-reveal__copy">
-          <span>Gathering your recipes</span>
-          <strong>Creating your cookbook…</strong>
+          <strong>Making your cookbook…</strong>
         </div>
       </div>
     </Dialog>
   );
 }
+

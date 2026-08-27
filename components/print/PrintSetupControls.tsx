@@ -73,8 +73,15 @@ export function PrintSetupControls({
       )}
 
       {/* Cookbook photos are a book-wide choice (None / header / full page),
-          overridable per page; plain cards keep the simple on/off checkbox. */}
-      {anyRecipeHasImage && cookbookMode && (
+          overridable per page; plain cards keep the simple on/off checkbox.
+          
+          Shown whether or not anything has a photo yet. This is where the book
+          says how photos are laid out, so gating it on `anyRecipeHasImage`
+          meant the setting vanished from the panel for a new book and came
+          back later on its own — which reads as a control that was removed,
+          not one that is waiting. It also has to be settable BEFORE the photos
+          arrive, since it is what every photo added afterwards inherits. */}
+      {cookbookMode && (
         <div className="recipe-config-section recipe-config-section--photos">
           <span className="recipe-config-label" id="recipe-photos-label">
             Photos

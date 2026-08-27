@@ -218,12 +218,16 @@ const COUNTER_BAND_COLOR = "#2f2f2f";
 
 /* Letters, not rules. Stacked lines read as text ALIGNMENT — the toolbar
    convention for left/centre/right — which is the wrong question entirely.
-   "Aa" and "H" are how every editor says body versus heading. */
-function BodyTextGlyph() {
+   "Aa" and "H" are how every editor says body versus heading.
+
+   Exported because the switch itself now lives in the page toolbar (see
+   PrintDeck's `renderLineKindControl`) rather than above the field. The glyphs
+   stay here, next to the card they describe. */
+export function BodyTextGlyph() {
   return <span className="recipe-card__line-kind-glyph" aria-hidden>Aa</span>;
 }
 
-function HeadingGlyph() {
+export function HeadingGlyph() {
   return (
     <span className="recipe-card__line-kind-glyph recipe-card__line-kind-glyph--heading" aria-hidden>
       H
@@ -718,11 +722,23 @@ export const RecipeCardFace = memo(function RecipeCardFace({
           variant === "empty" ? "recipe-card__add-line--empty" : ""
         }`}
         aria-label={label}
-        onClick={(event) => {
+        /**
+         * `onMouseDown` with `preventDefault`, not `onClick`.
+         *
+         * A click blurs the field first, which commits the row being edited and
+         * clears the editor's in-progress state — so the insert then ran against
+         * whichever of those two updates React had applied, and the row above
+         * came back duplicated. Holding focus removes the race entirely: the
+         * insert reads the live edit, writes it, and puts the caret in the new
+         * blank row itself.
+         */
+        onMouseDown={(event) => {
+          event.preventDefault();
           event.stopPropagation();
           if (kind === "ingredient") insertIngredientAt(index);
           else insertStepAt(index);
         }}
+        onClick={(event) => event.stopPropagation()}
       >
         <span className="recipe-card__add-line-text">{variant === "empty" ? `+ ${label}` : "+ Add below"}</span>
       </button>
@@ -757,8 +773,9 @@ export const RecipeCardFace = memo(function RecipeCardFace({
       );
     }
     return (
-      /* The switch lives here too, so a heading can go back to being a line —
-         without it the conversion was one-way. */
+      /* Still a heading being edited, and the toolbar's line-kind switch is
+         what turns it back into a line — the conversion stays two-way, it just
+         happens in the bar rather than in a control pinned over the card. */
       <span className="recipe-card__section-title-edit">
         <textarea
           ref={focusIfEditing(target)}
@@ -770,54 +787,6 @@ export const RecipeCardFace = memo(function RecipeCardFace({
           onBlur={commitEdit}
           onKeyDown={handleEditKeyDown}
         />
-        {lineKindSwitch(target)}
-      </span>
-    );
-  }
-
-  /**
-   * The kind switch that floats above the field being edited: is this line
-   * body text, or a heading of its own?
-   *
-   * Sections previously existed only if the imported recipe already had them —
-   * nothing in the editor could start one. `onMouseDown`, not `onClick`: the
-   * button steals focus from the field, and mousedown fires before the blur so
-   * the in-progress text is still there to become the heading.
-   */
-  function lineKindSwitch(target: RecipeCardEditTarget) {
-    if (!canEdit || !inlineEdit) return null;
-    if (!sameTarget(inlineEdit.editingTarget, target)) return null;
-    const isHeading = target.kind === "ingredientSection" || target.kind === "instructionSection";
-    return (
-      <span className="recipe-card__line-kind no-print" role="group" aria-label="Line type">
-        {/* Heading first: it is the one being reached for. Body is where the
-            line already is. */}
-        <button
-          type="button"
-          className={`recipe-card__line-kind-btn ${isHeading ? "is-active" : ""}`}
-          aria-label="Heading"
-          aria-pressed={isHeading}
-          title="Heading"
-          onMouseDown={(event) => {
-            event.preventDefault();
-            if (!isHeading) inlineEdit.onSetLineKind(target, "heading");
-          }}
-        >
-          <HeadingGlyph />
-        </button>
-        <button
-          type="button"
-          className={`recipe-card__line-kind-btn ${isHeading ? "" : "is-active"}`}
-          aria-label="Body text"
-          aria-pressed={!isHeading}
-          title="Body text"
-          onMouseDown={(event) => {
-            event.preventDefault();
-            if (isHeading) inlineEdit.onSetLineKind(target, "body");
-          }}
-        >
-          <BodyTextGlyph />
-        </button>
       </span>
     );
   }
@@ -844,7 +813,6 @@ export const RecipeCardFace = memo(function RecipeCardFace({
         ) : (
           text
         )}
-        {lineKindSwitch(target)}
         {!isEditingThis && addLine("ingredient", index + 1)}
       </li>
     );
@@ -880,7 +848,6 @@ export const RecipeCardFace = memo(function RecipeCardFace({
         ) : (
           <span>{step.text}</span>
         )}
-        {lineKindSwitch(target)}
         {!isEditingThis && addLine("step", index + 1)}
       </li>
     );
@@ -974,6 +941,7 @@ export const RecipeCardFace = memo(function RecipeCardFace({
           placement={inlineEdit.photoPlacement}
           placementOptions={inlineEdit.photoPlacementOptions}
           onPlacementChange={inlineEdit.onPhotoPlacementChange}
+          openSignal={inlineEdit.photoPromptSignal}
           /* Says which job it is doing: there is nothing to change yet when the
              recipe came in without a photo. */
           label={recipe.image ? "Photo" : "Add photo"}
@@ -1606,7 +1574,7 @@ export const CoverFace = memo(function CoverFace({
             <textarea
               className="recipe-card__inline-textarea recipe-card__cover-blurb recipe-card__cover-dedication-text"
               value={draft.blurb ?? ""}
-              placeholder="For the ones who taught us to cook — and who made every table feel like home."
+              placeholder="For the ones who taught us to cook, and who made every table feel like home."
               aria-label="Dedication"
               onChange={(event) => set({ blurb: event.target.value || undefined })}
             />
