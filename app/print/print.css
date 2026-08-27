@@ -1011,6 +1011,7 @@
   position: sticky;
   top: 86px;
   min-width: 0;
+  background: var(--cp-deck-ground);
 }
 
 /* Vertical deck of pages: the centred one is selected, neighbours peek in. */
@@ -1379,6 +1380,98 @@
 }
 
 
+
+/* The controls floating over a page — Front/Back, Edit, and the zoom cluster
+   at the deck's corner — are one family. Flat grey capsules on the near-white
+   deck ground: they separate by TONE, so none of them needs a border or a
+   shadow to be found. */
+.recipe-card-side-nav,
+.recipe-deck-zoom,
+.recipe-page-edit-toggle {
+  border: 0;
+  border-radius: 999px;
+  background: var(--cp-surface-strong);
+  color: var(--cp-ink);
+  font-size: var(--cp-fs-small);
+  font-weight: 600;
+}
+
+/* The tappable things inside them. */
+.recipe-card-side-nav__button,
+.recipe-deck-zoom__btn,
+.recipe-deck-zoom__value {
+  min-height: 28px;
+  border: 0;
+  border-radius: 999px;
+  font-size: var(--cp-fs-small);
+  font-weight: 600;
+}
+
+.recipe-page-canvas__controls-center {
+  grid-column: 2;
+  justify-self: center;
+  min-height: 38px;
+}
+
+.recipe-page-canvas__controls-right {
+  grid-column: 3;
+  justify-self: end;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.recipe-page-canvas__controls .recipe-card-side-nav,
+.recipe-page-canvas__controls button,
+.recipe-page-canvas__controls label {
+  pointer-events: auto;
+}
+
+.recipe-card-side-nav {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  align-self: center;
+  /* 28px buttons plus this padding make 36, the Edit toggle's height. */
+  padding: 4px 10px;
+}
+
+.recipe-card-side-nav__button {
+  display: grid;
+  place-items: center;
+  width: 28px;
+  background: transparent;
+  color: var(--cp-ink-soft);
+  line-height: 1;
+}
+
+.recipe-card-side-nav__button:hover:not(:disabled) {
+  background: var(--cp-card);
+  color: var(--cp-ink);
+}
+
+.recipe-card-side-nav__button:disabled {
+  opacity: .5;
+  cursor: default;
+}
+
+.recipe-page-scaler .recipe-card-side-nav {
+  display: none;
+}
+
+/* Its own geometry; the shared floating-control rule above owns the rest. */
+.recipe-page-edit-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 36px;
+  padding: 0 14px;
+}
+
+.recipe-page-edit-toggle.is-active {
+  background: var(--cp-selected-fill);
+  color: var(--cp-selected-text);
+}
 
 /* The first slide's controls float above the card like every other slide's —
    NOT pushed into normal flow. They used to be `position: static` for the first
@@ -3211,15 +3304,13 @@
    artwork rather than in a panel, and the two are read together even though
    they do different jobs. */
 .recipe-deck-zoom {
-  /* A grey capsule on a soft shadow: no border, `--cp-surface-strong` rather
-     than white, so it separates from the card behind it by TONE instead of by
-     a hairline or a heavy shadow. White needed a deep shadow to hold its edge
-     over white artwork; grey holds it on its own and the shadow only has to
-     lift it. */
+  /* A flat grey capsule: no border, no shadow. It separates from the near-white
+     ground behind it by TONE alone, which is the whole reason the ground is
+     near-white — a control that needs a shadow to be found is a control sitting
+     on the wrong colour. */
   border: 0;
   border-radius: 999px;
   background: var(--cp-surface-strong);
-  box-shadow: var(--cp-shadow-sm);
   color: var(--cp-ink);
   font-size: var(--cp-fs-small);
   font-weight: 600;
@@ -6697,6 +6788,47 @@ textarea.recipe-card__toc-title {
    of the labels beside them.
 
    Letter-spacing on "Aa" so it doesn't out-weigh the single "H" next to it. */
+/* ── Body / heading switch ─────────────────────────────────────────────────
+   App chrome, not card artwork: `--recipe-accent` and `--recipe-bg` are the
+   TEMPLATE's palette, so this control turned red on one theme and blue on
+   another while doing the same job. Floats clear above the field being edited
+   rather than over the line above it. */
+.recipe-card__line-kind {
+  position: absolute;
+  left: 0;
+  bottom: calc(100% + 2px);
+  z-index: 6;
+  display: inline-flex;
+  gap: 1px;
+  padding: 1px;
+  border: 1px solid var(--cp-line);
+  border-radius: 999px;
+  background: var(--cp-card);
+  box-shadow: var(--cp-shadow-xs);
+}
+
+.recipe-card__line-kind-btn {
+  display: grid;
+  place-items: center;
+  width: 20px;
+  height: 15px;
+  border: 0;
+  border-radius: 999px;
+  background: transparent;
+  color: var(--cp-ink-soft);
+  cursor: pointer;
+}
+
+.recipe-card__line-kind-btn.is-active {
+  background: var(--cp-selected-fill);
+  color: var(--cp-selected-text);
+}
+
+.recipe-card__line-kind-btn:hover {
+  background: var(--cp-overlay-hover);
+  color: var(--cp-ink);
+}
+
 .recipe-card__line-kind-glyph {
   font-family: var(--font-manrope), system-ui, sans-serif;
   font-size: 11px;
