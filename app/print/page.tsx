@@ -3596,7 +3596,12 @@ export default function PrintPage() {
             items?.length ? (
               <ProjectHeading
                 title={headingTitle}
-                showTitle={savedToProfile}
+                /* A cookbook is a named thing you come back to, so its name
+                   belongs in the bar. A card job is not: "Banana Bread + 2
+                   more" is a description of the queue, not a title anyone
+                   chose, and it was showing there the moment the project
+                   happened to be saved. */
+                showTitle={savedToProfile && cookbookMode}
                 onRename={projectMeta.setProjectTitle}
                 cookbookMode={cookbookMode}
                 canBecomeCookbook={COOKBOOK_ENABLED}

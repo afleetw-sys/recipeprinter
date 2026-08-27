@@ -1290,20 +1290,17 @@
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  min-height: 30px;
-  padding: 0 11px;
-  border: 1px solid var(--cp-line);
-  border-radius: 8px;
-  background: var(--cp-card);
-  color: var(--cp-ink-soft);
-  font-size: var(--cp-fs-small);
-  font-weight: 600;
+  min-height: 32px;
+  padding: 0 12px;
 }
 
 .recipe-page-edit-toggle.is-active {
   border-color: var(--cp-selected-border);
   background: var(--cp-selected-fill);
-  box-shadow: var(--cp-selected-ring);
+  /* Keeps the elevation it shares with the other floating controls. The
+     selected ring is `none` in this theme, so taking it alone would drop the
+     shadow and make the ACTIVE state the flat one. */
+  box-shadow: var(--cp-shadow-sm);
   color: var(--cp-selected-text);
 }
 
@@ -3121,31 +3118,61 @@
   height: 0.105in;
 }
 
+/* ── Floating deck controls ─────────────────────────────────────────────────
+   Front/Back, Edit and the zoom cluster all float over the same pages, and had
+   drifted into three different controls: 999px against 8px corners, one with a
+   shadow and two without, 26px against 30px boxes, and caption/small type at
+   600, 800 and 900. One recipe now, so they read as a set of tools belonging to
+   the same surface.
+
+   Pills, because these sit ON the artwork rather than in a panel — a rounded
+   rectangle over a card reads as part of the card. */
+.recipe-card-side-nav,
+.recipe-deck-zoom,
+.recipe-page-edit-toggle {
+  border: 1px solid var(--cp-line);
+  border-radius: 999px;
+  background: var(--cp-card);
+  box-shadow: var(--cp-shadow-sm);
+  color: var(--cp-ink-soft);
+  font-size: var(--cp-fs-caption);
+  font-weight: 700;
+}
+
+/* The tappable things inside them. */
+.recipe-card-side-nav__button,
+.recipe-deck-zoom__btn,
+.recipe-deck-zoom__value {
+  min-height: 26px;
+  border: 0;
+  border-radius: 999px;
+  font-size: var(--cp-fs-caption);
+  font-weight: 700;
+}
+
 .recipe-card-side-nav {
   display: inline-flex;
   align-items: center;
   gap: 8px;
   align-self: center;
-  padding: 5px 7px;
-  border: 1px solid var(--cp-line);
-  border-radius: 999px;
-  background: var(--cp-card);
-  color: var(--cp-ink-soft);
-  font-size: var(--cp-fs-caption);
-  font-weight: 800;
+  /* 2px, not 3: the 26px buttons plus this padding plus the hairline make 32,
+     which is the Edit toggle's height. At 3 the two controls sat 2px apart in a
+     row where they are read side by side. */
+  padding: 2px 10px;
 }
 
 .recipe-card-side-nav__button {
   display: grid;
   place-items: center;
   width: 26px;
-  height: 26px;
-  border: 0;
-  border-radius: 999px;
-  background: color-mix(in srgb, var(--cp-accent) 10%, var(--cp-card));
-  color: var(--cp-blue);
-  font-weight: 900;
+  background: transparent;
+  color: var(--cp-ink-soft);
   line-height: 1;
+}
+
+.recipe-card-side-nav__button:hover:not(:disabled) {
+  background: var(--cp-overlay-hover);
+  color: var(--cp-ink);
 }
 
 .recipe-card-side-nav__button:disabled {
@@ -7124,19 +7151,12 @@ textarea.recipe-card__toc-title {
   align-items: center;
   gap: 2px;
   padding: 3px;
-  border: 1px solid var(--cp-line);
-  border-radius: 999px;
-  background: var(--cp-card);
-  box-shadow: var(--cp-shadow-sm);
 }
 
 .recipe-deck-zoom__btn,
 .recipe-deck-zoom__value {
   display: grid;
   place-items: center;
-  height: 26px;
-  border: 0;
-  border-radius: 999px;
   background: transparent;
   color: var(--cp-ink-soft);
   cursor: pointer;
@@ -7149,8 +7169,6 @@ textarea.recipe-card__toc-title {
 .recipe-deck-zoom__value {
   min-width: 46px;
   padding: 0 4px;
-  font-size: var(--cp-fs-caption);
-  font-weight: 700;
   font-variant-numeric: tabular-nums;
   color: var(--cp-ink);
 }
