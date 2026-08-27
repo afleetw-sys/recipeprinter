@@ -116,8 +116,20 @@ export function CookbookBuildReveal({
   images: string[];
 }) {
   const pics = Array.from(new Set(images.filter(Boolean)));
-  // A tidy pile of ~7 cards; cycle through the recipe photos (repeating when
-  // there are fewer) so it always reads as a full gather, never a lone card.
+  /**
+   * There is usually nothing to gather.
+   *
+   * The pile is seven cards cycling through the cook's photos, which is a fine
+   * picture of assembling a book FROM a collection — and most people meet this
+   * screen with one recipe, or one without a photo. Repeating a single picture
+   * seven times says "here are your seven recipes" to someone who has one, and
+   * an empty pile says even less.
+   *
+   * So the gather is for a real collection, and everything else gets the
+   * binding instead: a cover closing over a page. It is the same promise, made
+   * quietly, and it does not need any material to be true.
+   */
+  const gathering = pics.length >= 3;
   const CARD_COUNT = 7;
   const cards = Array.from({ length: CARD_COUNT }, (_, index) =>
     pics.length ? pics[index % pics.length] : null,
@@ -133,6 +145,22 @@ export function CookbookBuildReveal({
     >
       <div className="cookbook-build-reveal__glow" aria-hidden />
       <div className="cookbook-build-reveal__content">
+        {!gathering && (
+          <div className="cookbook-bind" aria-hidden>
+            <div className="cookbook-bind__base" />
+            <div className="cookbook-bind__book">
+              <div className="cookbook-bind__page" />
+              <div className="cookbook-bind__cover">
+                {pics[0] ? (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img src={pics[0]} alt="" />
+                ) : null}
+              </div>
+              <div className="cookbook-bind__spine" />
+            </div>
+          </div>
+        )}
+        {gathering && (
         <div className="cookbook-gather" aria-hidden>
           <div className="cookbook-gather__base" />
           <div className="cookbook-gather__stack">
@@ -152,8 +180,9 @@ export function CookbookBuildReveal({
             ))}
           </div>
         </div>
+        )}
         <div className="cookbook-build-reveal__copy">
-          <span>Gathering your recipes</span>
+          <span>{gathering ? "Gathering your recipes" : "Making a cover and chapters"}</span>
           <strong>Creating your cookbook…</strong>
         </div>
       </div>
