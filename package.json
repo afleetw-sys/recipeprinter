@@ -11,6 +11,7 @@
     "verify": "tsc --noEmit && next lint && vitest run && node scripts/design-system-audit.mjs",
     "audit:design-system": "node scripts/design-system-audit.mjs",
     "audit:unlocks": "npx --yes --package firebase-admin -c \"node scripts/cookbook-unlock-audit.mjs\"",
+    "backfill:debug-inbox": "npx --yes --package firebase-admin -c \"node scripts/debug-inbox-backfill.mjs\"",
     "test:rules": "npx firebase-tools@14.27.0 --config firebase.rules-test.json emulators:exec --only firestore,storage \"vitest run --config vitest.rules.config.ts\"",
     "test:watch": "vitest",
     "pdf:dev": "node scripts/pdf-renderer-dev.mjs"
