@@ -128,6 +128,16 @@ type EventProps = {
   purchase_started: { product: PurchasedProduct; template?: RecipePrintTemplate };
   purchase_completed: { product: PurchasedProduct; template?: RecipePrintTemplate };
   purchase_cancelled: { product: PurchasedProduct; template?: RecipePrintTemplate };
+  /**
+   * Checkout threw something that wasn't a cancellation.
+   *
+   * Without this a purchase that succeeds at Stripe and RevenueCat but fails
+   * on the way back to the browser is INVISIBLE here: the buyer gets a toast,
+   * we record nothing, and the money exists in two systems with no matching
+   * event in this one. `purchase_started` with no third event was the only
+   * trace, and reading an absence is not the same as reading a failure.
+   */
+  purchase_failed: { product: PurchasedProduct; template?: RecipePrintTemplate; reason: string };
   /** Claimed via a CookPilot entitlement rather than paid for. */
   free_template_claimed: { template: RecipePrintTemplate };
 

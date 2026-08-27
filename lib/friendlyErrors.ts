@@ -142,5 +142,5 @@ const PLACEHOLDER_HOSTS = new Set(["example.com", "example.org", "example.net", 
 export function placeholderHostMessage(hostname: string): string | null {
   const host = hostname.trim().toLowerCase().replace(/^www\./, "");
   if (!PLACEHOLDER_HOSTS.has(host)) return null;
-  return `${host} is the internet's placeholder address. Nobody has ever cooked anything there, so try a real recipe link.`;
+  return `${host} is the address the web uses in its own examples, so there is nothing behind it to read. Paste a link to a real recipe and it will come straight in.`;
 }
