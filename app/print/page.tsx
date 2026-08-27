@@ -3882,6 +3882,7 @@ export default function PrintPage() {
           setCanvasSide={setCanvasSide}
           deckScale={deckScale}
           deckZoom={deckZoom}
+          onRequestDelete={requestDeleteNavItem}
           onZoomStep={stepDeckZoom}
           onZoomSet={setDeckZoom}
           deckRef={deckRef}

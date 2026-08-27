@@ -1262,6 +1262,14 @@
   cursor: default;
 }
 
+/* The one destructive thing in the bar. Quiet until reached for, the tier
+   `.btn-ghost--danger` uses elsewhere — a red button sitting permanently in a
+   toolbar reads as a warning about the page rather than an action on it. */
+.recipe-page-toolbar__btn--danger:hover:not(:disabled) {
+  background: var(--cp-error-soft);
+  color: var(--cp-error);
+}
+
 .recipe-page-toolbar__btn.is-active {
   background: var(--cp-selected-fill);
   color: var(--cp-selected-text);
@@ -1381,30 +1389,18 @@
 
 
 
-/* The controls floating over a page — Front/Back, Edit, and the zoom cluster
-   at the deck's corner — are one family. Flat grey capsules on the near-white
-   deck ground: they separate by TONE, so none of them needs a border or a
-   shadow to be found. */
-.recipe-card-side-nav,
-.recipe-deck-zoom,
-.recipe-page-edit-toggle {
+/* The zoom cluster is the third floating control, alongside the page toolbar
+   and its groups — so it takes the toolbar's own recipe rather than one of its
+   own: white capsule, `--cp-shadow-md`, hairline-free, with the same 34px
+   buttons inside it. */
+.recipe-deck-zoom {
   border: 0;
-  border-radius: 999px;
-  background: var(--cp-surface-strong);
+  border-radius: 16px;
+  background: var(--cp-card);
+  box-shadow: var(--cp-shadow-md);
   color: var(--cp-ink);
-  font-size: var(--cp-fs-small);
-  font-weight: 600;
-}
-
-/* The tappable things inside them. */
-.recipe-card-side-nav__button,
-.recipe-deck-zoom__btn,
-.recipe-deck-zoom__value {
-  min-height: 28px;
-  border: 0;
-  border-radius: 999px;
-  font-size: var(--cp-fs-small);
-  font-weight: 600;
+  font-size: var(--cp-fs-caption);
+  font-weight: 700;
 }
 
 .recipe-page-canvas__controls-center {
@@ -1419,58 +1415,6 @@
   display: inline-flex;
   align-items: center;
   gap: 8px;
-}
-
-.recipe-page-canvas__controls .recipe-card-side-nav,
-.recipe-page-canvas__controls button,
-.recipe-page-canvas__controls label {
-  pointer-events: auto;
-}
-
-.recipe-card-side-nav {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  align-self: center;
-  /* 28px buttons plus this padding make 36, the Edit toggle's height. */
-  padding: 4px 10px;
-}
-
-.recipe-card-side-nav__button {
-  display: grid;
-  place-items: center;
-  width: 28px;
-  background: transparent;
-  color: var(--cp-ink-soft);
-  line-height: 1;
-}
-
-.recipe-card-side-nav__button:hover:not(:disabled) {
-  background: var(--cp-card);
-  color: var(--cp-ink);
-}
-
-.recipe-card-side-nav__button:disabled {
-  opacity: .5;
-  cursor: default;
-}
-
-.recipe-page-scaler .recipe-card-side-nav {
-  display: none;
-}
-
-/* Its own geometry; the shared floating-control rule above owns the rest. */
-.recipe-page-edit-toggle {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  min-height: 36px;
-  padding: 0 14px;
-}
-
-.recipe-page-edit-toggle.is-active {
-  background: var(--cp-selected-fill);
-  color: var(--cp-selected-text);
 }
 
 /* The first slide's controls float above the card like every other slide's —
@@ -7303,15 +7247,20 @@ textarea.recipe-card__toc-title {
   display: inline-flex;
   align-items: center;
   gap: 2px;
-  padding: 4px 6px;
+  padding: 5px;
 }
 
 .recipe-deck-zoom__btn,
 .recipe-deck-zoom__value {
   display: grid;
   place-items: center;
+  min-height: 34px;
+  border: 0;
+  border-radius: 10px;
   background: transparent;
   color: var(--cp-ink-soft);
+  font-size: var(--cp-fs-caption);
+  font-weight: 700;
   cursor: pointer;
 }
 
@@ -7322,7 +7271,7 @@ textarea.recipe-card__toc-title {
 }
 
 .recipe-deck-zoom__btn {
-  width: 28px;
+  width: 34px;
 }
 
 .recipe-deck-zoom__value {
@@ -7334,7 +7283,7 @@ textarea.recipe-card__toc-title {
 
 .recipe-deck-zoom__btn:hover:not(:disabled),
 .recipe-deck-zoom__value:hover {
-  background: var(--cp-card);
+  background: var(--cp-overlay-hover);
   color: var(--cp-ink);
 }
 

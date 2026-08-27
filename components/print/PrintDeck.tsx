@@ -21,6 +21,7 @@ import {
   SpinnerIcon,
   MinusIcon,
   PlusIcon,
+  TrashIcon,
 } from "@/components/icons";
 import { RecipeLoadingState } from "@/components/RecipeLoadingState";
 import { ScaledPage } from "@/components/print/ScaledPage";
@@ -128,6 +129,9 @@ interface PrintDeckProps {
   deckScale: ReturnType<typeof useDeckScroller>["deckScale"];
   /** The cook's zoom on the deck, and the controls that move it. 1 is fit. */
   deckZoom: number;
+  /** Delete whatever page the toolbar belongs to — opens the same confirm the
+      Delete key does. */
+  onRequestDelete: (navItem: NavItem) => void;
   onZoomStep: (direction: 1 | -1) => void;
   onZoomSet: (zoom: number) => void;
   deckRef: ReturnType<typeof useDeckScroller>["deckRef"];
@@ -238,6 +242,7 @@ export function PrintDeck(props: PrintDeckProps) {
     setCanvasSide,
     deckScale,
     deckZoom,
+    onRequestDelete,
     onZoomStep,
     onZoomSet,
     deckRef,
@@ -465,6 +470,24 @@ export function PrintDeck(props: PrintDeckProps) {
               </button>
             </div>
           )}
+          {/* Delete, last and on its own: the Delete key already did this, and
+              a key is not a control anyone finds. Its own group so it is not
+              adjacent to Edit — the two are one pixel apart otherwise, and one
+              of them is not undoable. */}
+          <div className="recipe-page-toolbar__group">
+            <button
+              type="button"
+              className="recipe-page-toolbar__btn recipe-page-toolbar__btn--icon recipe-page-toolbar__btn--danger"
+              aria-label={`Delete ${navItem.label ?? "this page"}`}
+              title="Delete"
+              onClick={(event) => {
+                event.stopPropagation();
+                onRequestDelete(navItem);
+              }}
+            >
+              <TrashIcon size={ICON_SIZE.md} />
+            </button>
+          </div>
         </div>
       </div>
     );
