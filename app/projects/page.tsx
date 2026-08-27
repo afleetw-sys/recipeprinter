@@ -329,7 +329,7 @@ export default function ProjectsPage() {
                 {groupedProjects.length === 0 ? (
                   <p className="rounded-xl border border-dashed border-line-strong px-cp-5 py-cp-5 text-cp-small text-ink-soft">
                     {isCookbook
-                      ? "No cookbooks yet. Any set of recipes can be laid out as one."
+                      ? "No cookbooks yet. Any set of recipes can be made into a cookbook."
                       : "No recipe cards yet."}
                   </p>
                 ) : (
