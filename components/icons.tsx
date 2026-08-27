@@ -114,14 +114,15 @@ export const ArrowRightIcon = (p: IconProps) => (
   </Base>
 );
 
-/* A chapter with an arrow into it: "put this recipe somewhere else in the
-   book". A plain folder would read as filing the whole project away, and a
-   plain arrow as navigation. */
+/* Two arrows swapping places: "move this to the other chapter". A folder read
+   as filing the whole project away and a single arrow as navigation; the pair
+   says the thing changes which group it is in. */
 export const MoveToSectionIcon = (p: IconProps) => (
   <Base {...p}>
-    <path d="M3 7.5V18a1.5 1.5 0 001.5 1.5h15A1.5 1.5 0 0021 18v-7.5a1.5 1.5 0 00-1.5-1.5h-7l-2-2.5H4.5A1.5 1.5 0 003 7.5z" />
-    <path d="M9.5 14.5h5" />
-    <path d="M12.5 12.5l2 2-2 2" />
+    <path d="M4 8h13" />
+    <path d="M14 5l3 3-3 3" />
+    <path d="M20 16H7" />
+    <path d="M10 13l-3 3 3 3" />
   </Base>
 );
 

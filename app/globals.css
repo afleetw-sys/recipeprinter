@@ -238,19 +238,18 @@
   position: relative;
   display: grid;
   place-items: center;
-  gap: 1.15rem;
+  gap: .75rem;
   text-align: center;
   animation: cookbook-reveal-book 640ms cubic-bezier(.2, .8, .2, 1) both;
 }
-/* The build overlay gathers the cook's own recipe photos into a neat pile, as
-   if collecting them into the book. No progress bar — the pile keeps filling
-   (cycling the photos, repeating when there are only a few) until it's ready. */
+/* The build overlay: one spinner, whatever is in the book. No progress bar,
+   because there is no honest number to show. */
 .cookbook-build-reveal__spinner {
   display: grid;
   place-items: center;
-  /* Half the pile's box: enough that the panel doesn't collapse around a
-     32px spinner, not so much that it looks like something failed to load. */
-  height: 96px;
+  /* Room around the 32px spinner without the panel collapsing to it. Was 96,
+     sized for a photo pile this no longer draws. */
+  height: 56px;
   color: var(--cp-accent-ink);
 }
 .cookbook-build-reveal__copy {
@@ -266,10 +265,13 @@
   letter-spacing: .16em;
   text-transform: uppercase;
 }
+/* A dialog title, at the scale every other dialog title uses. This was
+   clamp(1.4rem, 3vw, 1.95rem) — up to 31px, larger than any heading the app
+   shows anywhere else — for a line that says a spinner is spinning. */
 .cookbook-build-reveal__copy strong {
-  font-size: clamp(1.4rem, 3vw, 1.95rem);
-  font-weight: 850;
-  letter-spacing: -.02em;
+  font-size: var(--cp-fs-h2);
+  font-weight: 800;
+  letter-spacing: -.01em;
 }
 @keyframes cookbook-reveal-in {
   from { opacity: 0; }
@@ -1302,13 +1304,19 @@
      tallest thing in a 62px bar. The tabs carry the padding instead, so the
      OUTER height is 30px and the row lines up. Radius follows the family's
      rule of inner + padding, so the track's corner stays concentric with the
-     tab's. */
+     tab's.
+
+     The shell is `.btn-secondary`: transparent on a hairline. The fill is
+     spent on the selected tab instead, which is the thing worth pointing at.
+     A filled track with a white tab in it puts the strongest value in the
+     part that carries no information. */
   .segmented-control.rp-project-heading__kinds {
     flex: 0 0 auto;
     margin-left: 8px;
     padding: 3px;
+    border: 1px solid var(--cp-line);
     border-radius: 11px;
-    background: var(--cp-surface-strong);
+    background: transparent;
   }
 
   .rp-project-heading__kinds .segmented-control__option {
@@ -1319,19 +1327,20 @@
     border-radius: 8px;
   }
 
-  /* The one tab that is raised, so it takes the shadow the rest of the family
-     gives a small floating control. Nothing else in the bar casts one.
+  /* The selected tab is the only filled thing here, in the app's one grey.
+     No shadow: it sits IN the control rather than over it, and the flat rule
+     keeps elevation for things that actually float.
 
      `inset` matters: the base thumb is `top: 0; bottom: 0` because the base
      track has no padding. Here it does, so an unadjusted thumb spanned the
-     full 38px shell while the tab it marks was 30px — the white pill sat
-     taller than its own label and read as misaligned rather than as a tab. */
+     full shell while the tab it marks was shorter — the pill sat taller than
+     its own label and read as misaligned rather than as a tab. */
   .segmented-control.rp-project-heading__kinds .segmented-control__thumb {
     top: 3px;
     bottom: 3px;
     border-radius: 8px;
-    background: var(--cp-card);
-    box-shadow: var(--cp-shadow-sm);
+    background: var(--cp-surface-strong);
+    box-shadow: none;
   }
 
   /* Accent fill on a tab that is otherwise plain text, so it reads as a flag
@@ -1363,39 +1372,42 @@
      does beside a file name — rather than as part of the title. That also
      makes it obviously pressable, which bare text next to a name was not:
      nothing said the kind could be changed. */
+  /* This is the SAME control as the kind tabs, collapsed because the bar ran
+     out of room — so it is the same size and wears the same frame. It used to
+     be a 22px chip in a row of 30px controls, which made the document's own
+     name look like a footnote next to Save and Print, and made the two ways of
+     showing one choice look like two different things. */
   .rp-project-heading__kind-trigger {
     @apply inline-flex items-center gap-1 font-bold transition-colors;
-    /* No border. The fill alone is enough to enclose it at this size, and a
-       hairline around a 22px pill reads as a tiny button competing with the
-       real ones — the chip is a label you can press, not a control in the
-       toolbar's sense. The padding absorbs the pixel the border was taking so
-       the chip stays the same size. */
-    padding: 3px 6px 3px 8px;
-    border: 0;
-    border-radius: 6px;
-    background: var(--cp-surface-muted);
-    color: var(--cp-ink-soft);
-    font-size: var(--cp-fs-caption);
-    line-height: 1.25;
+    min-height: 30px;
+    padding: 0 8px 0 12px;
+    border: 1px solid var(--cp-line);
+    border-radius: 11px;
+    background: transparent;
+    color: var(--cp-ink);
+    font-size: var(--cp-fs-small);
+    line-height: 1;
   }
 
   .rp-project-heading__kind-trigger:hover {
-    background: var(--cp-overlay-hover-strong);
+    background: var(--cp-overlay-hover);
     color: var(--cp-ink);
   }
 
-  /* A ring, not a border colour: there is no border left to recolour, and a
-     chip that grew one only when focused would jump by a pixel. */
   .rp-project-heading__kind-trigger:focus-visible {
     outline: var(--cp-focus-ring);
     outline-offset: 1px;
   }
 
+  /* Left-anchored, not centred. This menu's trigger is the first thing in the
+     header, hard against the left edge, and the menu is up to 20rem wide — so
+     centring it on the trigger hung most of it off the left of the window,
+     with the option labels cut in half. It grows rightward into the header
+     instead, where there is nothing but room. */
   .rp-project-heading__menu {
     position: absolute;
     top: calc(100% + 8px);
-    left: 50%;
-    transform: translateX(-50%);
+    left: 0;
     z-index: 20;
     width: max-content;
     max-width: min(20rem, calc(100vw - 2rem));

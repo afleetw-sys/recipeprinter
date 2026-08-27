@@ -331,4 +331,12 @@ describe("a contents page that runs long", () => {
     const spreads = assembleSpreads(["cover", "toc", "chapter", "content"]);
     expect(spreads).toContainEqual(spread(1, null));
   });
+
+  // A one-page contents has nothing to pair with itself, so it faces the
+  // opening page rather than leaving two half-empty spreads in a row.
+  it("sets a one-page contents facing the opening page", () => {
+    const spreads = assembleSpreads(["cover", "dedication", "toc", "chapter", "content"]);
+    expect(spreads).toContainEqual(spread(1, 2));
+    expect(spreads).not.toContainEqual(spread(1, null));
+  });
 });

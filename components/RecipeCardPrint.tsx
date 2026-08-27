@@ -941,6 +941,7 @@ export const RecipeCardFace = memo(function RecipeCardFace({
           placement={inlineEdit.photoPlacement}
           placementOptions={inlineEdit.photoPlacementOptions}
           onPlacementChange={inlineEdit.onPhotoPlacementChange}
+          openSignal={inlineEdit.photoPromptSignal}
           /* Says which job it is doing: there is nothing to change yet when the
              recipe came in without a photo. */
           label={recipe.image ? "Photo" : "Add photo"}

@@ -136,6 +136,11 @@ interface PrintDeckProps {
       cards has no sections to move between. `undefined` there rather than a
       no-op, so the control is absent rather than present and inert. */
   onMoveRecipeToSection?: (recipeId: string, sectionId: string) => void;
+  /** Make a new chapter and move this recipe into it, from the same menu. */
+  onMoveRecipeToNewSection?: (recipeId: string) => void;
+  /** Set when a placement was chosen for a recipe with no photo; opens that
+      recipe's picker. See `setRecipePhotoMode`. */
+  photoPrompt?: { recipeId: string; tick: number } | null;
   onZoomStep: (direction: 1 | -1) => void;
   onZoomSet: (zoom: number) => void;
   deckRef: ReturnType<typeof useDeckScroller>["deckRef"];
@@ -266,6 +271,8 @@ export function PrintDeck(props: PrintDeckProps) {
     deckZoom,
     onRequestDelete,
     onMoveRecipeToSection,
+    onMoveRecipeToNewSection,
+    photoPrompt,
     onZoomStep,
     onZoomSet,
     deckRef,
@@ -442,25 +449,29 @@ export function PrintDeck(props: PrintDeckProps) {
     const lineKind = editable ? renderLineKindControl(navItem) : null;
 
     /**
-     * The chapters this recipe could move to, or null when moving makes no
-     * sense: outside a cookbook, on anything that isn't a recipe, or when the
-     * book has only the one chapter to be in. An untitled section is the
-     * implicit ungrouped pool, so it is offered under the name the rail gives
-     * it rather than as a blank row.
+     * The chapters this recipe could move to, or null outside a cookbook and
+     * on anything that isn't a recipe. An untitled section is the implicit
+     * ungrouped pool, so it is offered under the name the rail gives it rather
+     * than as a blank row.
+     *
+     * Present even with nowhere to move to. A book that has not been divided
+     * yet is exactly when you want to divide it, and hiding the control until
+     * chapters exist meant the one place you would look for "put this in a
+     * chapter" was empty until you had already been somewhere else and made
+     * one. "New chapter" is always the last item.
      */
     const moveSections =
       onMoveRecipeToSection && projectMeta.meta.cookbookMode && navItem.kind === "recipe"
-        ? (() => {
-            const options = sections.map((section) => ({
+        ? {
+            recipeId: navItem.recipeId,
+            currentId: sections.find((section) =>
+              section.items.some((item) => item.id === navItem.recipeId),
+            )?.id,
+            options: sections.map((section) => ({
               id: section.id,
               title: section.title?.trim() || "Ungrouped",
-            }));
-            if (options.length < 2) return null;
-            const currentId = sections.find((section) =>
-              section.items.some((item) => item.id === navItem.recipeId),
-            )?.id;
-            return { recipeId: navItem.recipeId, currentId, options };
-          })()
+            })),
+          }
         : null;
 
     if (!navItem.flip && !editable) return null;
@@ -587,6 +598,21 @@ export function PrintDeck(props: PrintDeckProps) {
                         {section.title}
                       </button>
                     ))}
+                    {onMoveRecipeToNewSection && (
+                      <button
+                        type="button"
+                        role="menuitem"
+                        className="recipe-page-toolbar__option recipe-page-toolbar__option--new"
+                        onClick={(event) => {
+                          event.stopPropagation();
+                          setMoveMenuOpen(false);
+                          onMoveRecipeToNewSection(moveSections.recipeId);
+                        }}
+                      >
+                        <PlusIcon size={ICON_SIZE.sm} />
+                        New chapter
+                      </button>
+                    )}
                   </div>
                 )}
               </div>
@@ -653,6 +679,8 @@ export function PrintDeck(props: PrintDeckProps) {
               })),
               onPhotoPlacementChange: (mode) =>
                 setRecipePhotoMode(navItem.recipeId, mode as PhotoStyle),
+              photoPromptSignal:
+                photoPrompt?.recipeId === navItem.recipeId ? photoPrompt.tick : undefined,
             }
           : undefined
       }

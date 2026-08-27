@@ -545,7 +545,6 @@ export default function PrintPage() {
     spreads,
     previewConfig,
     awaitingFirstLayout,
-    resolvedLayouts,
     measurers,
   } = usePrintSheets({
     sections,
@@ -1214,14 +1213,30 @@ export default function PrintPage() {
   // "none" (no photo), "card" (header photo), "full" (a full-page facing photo /
   // image-spread). Derived from the resolved layout + the per-recipe header
   // override, falling back to the book default.
+  /**
+   * What the placement switch shows for one recipe: the stored INTENT, not
+   * what the page happens to render today.
+   *
+   * This used to read `resolvedLayouts`, which is the rendering decision. A
+   * "Full page" recipe with no photo yet resolves to a plain card (see
+   * `cookbookResolution` in usePrintSheets), so asking the renderer meant the
+   * switch snapped back to None the instant you pressed Full page — the one
+   * placement you would pick in order to go and find a photo was the one that
+   * would not stick.
+   *
+   * `setItemPhotoMode` always writes `pageLayout`, so an absent one means this
+   * recipe is following the book rather than having chosen None.
+   */
   const photoModeFor = useCallback(
     (recipeId: string): PhotoStyle => {
-      if (resolvedLayouts.get(recipeId) === "image-spread") return "full";
-      const override = projectMeta.meta.itemPlacements?.[recipeId]?.showPhoto;
-      const headerOn = override ?? photoStyle === "card";
-      return headerOn ? "card" : "none";
+      const placement = projectMeta.meta.itemPlacements?.[recipeId];
+      if (placement?.pageLayout === "image-spread") return "full";
+      if (placement?.pageLayout === "full") {
+        return (placement.showPhoto ?? photoStyle === "card") ? "card" : "none";
+      }
+      return photoStyle;
     },
-    [resolvedLayouts, projectMeta.meta.itemPlacements, photoStyle],
+    [projectMeta.meta.itemPlacements, photoStyle],
   );
 
 
@@ -1382,6 +1397,26 @@ export default function PrintPage() {
     },
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [projectMeta, sectionTitleForId],
+  );
+
+  /**
+   * Make a chapter and put this recipe in it, from the toolbar's move menu.
+   *
+   * Named "New section", the same as "Add section" — an UNTITLED section is
+   * the implicit ungrouped pool, gets no opener page and shows nothing in the
+   * rail, so creating one here looked like the button had done nothing at all.
+   * The rail opens on its title for renaming.
+   */
+  const moveRecipeToNewSection = useCallback(
+    (recipeId: string) => {
+      const sectionId = projectMeta.addSection("New section");
+      projectMeta.moveItems([recipeId], sectionId, 0);
+      setEditingSectionId(sectionId);
+      setEditingSectionTitle("New section");
+      showToast("New chapter added. Give it a name.");
+    },
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [projectMeta],
   );
 
   const requestDeleteNavItem = useCallback((navItem: NavItem) => {
@@ -3115,10 +3150,26 @@ export default function PrintPage() {
   // The recipe usually moves to a different page (its full-page photo appears or
   // vanishes), so follow it there and keep it selected — and, if we're mid-edit,
   // keep it in edit mode across the jump.
+  /**
+   * A placement chosen for a recipe that has no photo yet, as a counter the
+   * card's picker watches. Choosing "In card" or "Full page" IS the request
+   * for a photo — the placement on its own points at nothing, and the cook is
+   * left to find the small button that would have supplied one. The counter
+   * rather than a boolean so choosing the same placement twice still opens it.
+   */
+  const [photoPrompt, setPhotoPrompt] = useState<{ recipeId: string; tick: number } | null>(null);
+
   function setRecipePhotoMode(recipeId: string, mode: PhotoStyle) {
     if (pageEditMode && activeRecipeId === recipeId) keepEditingRef.current = recipeId;
     setPendingFocusRecipeId(recipeId);
     const image = items?.find((item) => item.id === recipeId)?.recipe?.image;
+    if (mode !== "none" && !image) {
+      setPhotoPrompt((current) =>
+        current?.recipeId === recipeId
+          ? { recipeId, tick: current.tick + 1 }
+          : { recipeId, tick: 1 },
+      );
+    }
     // Clearing the override lets the page follow the book — but only when the
     // book default would actually RESOLVE to the mode just chosen. "Full page"
     // falls back to a plain card for a recipe with no photo yet (see
@@ -3139,7 +3190,11 @@ export default function PrintPage() {
   // (placement + which photo). Shared desktop + mobile.
   const renderPagePhotoControl = (recipeId: string) => {
     const recipe = items?.find((item) => item.id === recipeId && item.recipe)?.recipe;
-    if (!recipe?.image) return null;
+    // Every recipe page, photo or not. This used to bail on `!recipe.image`,
+    // which hid the placement switch from exactly the recipes whose placement
+    // you might want to set before finding a photo for them — and left the
+    // toolbar looking as though the control had been taken out.
+    if (!recipe) return null;
     const mode = photoModeFor(recipeId);
     return (
       <div className="recipe-page-layout-control">
@@ -3906,6 +3961,8 @@ export default function PrintPage() {
           deckZoom={deckZoom}
           onRequestDelete={requestDeleteNavItem}
           onMoveRecipeToSection={moveRecipeToSection}
+          onMoveRecipeToNewSection={moveRecipeToNewSection}
+          photoPrompt={photoPrompt}
           onZoomStep={stepDeckZoom}
           onZoomSet={setDeckZoom}
           deckRef={deckRef}

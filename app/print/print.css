@@ -1096,7 +1096,10 @@
   display: flex;
   justify-content: center;
   align-items: center;
-  width: min(100%, var(--preview-w, 100%));
+  /* At least wide enough for a full row of controls, and never wider than the
+     canvas. Tied strictly to the page width, a small page forced the bar to
+     wrap even with plenty of empty canvas either side of it. */
+  width: min(100%, max(var(--preview-w, 100%), 420px));
   transform: translateX(-50%);
   pointer-events: none;
 }
@@ -1128,6 +1131,18 @@
   box-shadow: var(--cp-shadow-md);
   color: var(--cp-ink);
   pointer-events: auto;
+  /* Wraps to a second row rather than letting its own buttons render outside
+     the shell. Front/Back + the photo placement + Done + Move + Delete is
+     wider than a narrow page, and the bar is capped to the page it floats
+     over, so Move and Delete were being drawn outside the white box:
+     invisible, and unclickable.
+     
+     Wrapping rather than scrolling because the Move button opens a menu, and
+     `overflow` on this element would clip it — a scrolling box cannot also let
+     a popover out of it. */
+  flex-wrap: wrap;
+  justify-content: center;
+  row-gap: 2px;
 }
 
 .recipe-page-toolbar__group {
@@ -1209,6 +1224,19 @@
 
 .recipe-page-toolbar__option:hover:not(:disabled) {
   background: var(--cp-overlay-hover);
+}
+
+/* "New chapter", under a rule: it makes something rather than picking
+   something, so it is not one more row in the list of chapters. */
+.recipe-page-toolbar__option--new {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 4px;
+  padding-top: 8px;
+  border-top: 1px solid var(--cp-line);
+  border-radius: 0 0 8px 8px;
+  color: var(--cp-ink-soft);
 }
 
 /* The chapter it is already in. Marked, and not offered as a destination. */
@@ -2630,18 +2658,6 @@
     z-index: 6;
     width: min(calc(100vw - 32px), var(--preview-w, 100%));
     transform: translateX(-50%);
-  }
-
-  /* Front/Back + line kind + photo + Done is more than a phone is wide. The
-     bar scrolls inside itself rather than running off the screen edge, and
-     hides the scrollbar — it is chrome over artwork, not a list. */
-  .recipe-page-toolbar {
-    overflow-x: auto;
-    scrollbar-width: none;
-  }
-
-  .recipe-page-toolbar::-webkit-scrollbar {
-    display: none;
   }
 
   .recipe-config-panel {
