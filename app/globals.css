@@ -284,8 +284,7 @@
 }
 
 .cookbook-welcome,
-.cookbook-ready,
-.cookbook-organize {
+.cookbook-ready {
   position: fixed;
   inset: 0;
   z-index: 90;
@@ -294,208 +293,14 @@
   padding: 24px;
 }
 .cookbook-welcome__backdrop,
-.cookbook-ready__backdrop,
-.cookbook-organize__backdrop {
+.cookbook-ready__backdrop {
   position: absolute;
   inset: 0;
   background: rgba(17, 24, 39, 0.34);
   backdrop-filter: blur(5px);
 }
 
-/* Organize is a REAL full-screen dialog (portaled over everything, no app nav):
-   X + title on top, a scrolling section grid in the middle, Save/Cancel on the
-   bottom. Welcome/Ready keep the centred-card treatment from the shared group. */
-.cookbook-organize {
-  padding: 0;
-  place-items: stretch;
-}
-.cookbook-organize__panel {
-  position: relative;
-  z-index: 1;
-  display: grid;
-  grid-template-rows: auto minmax(0, 1fr) auto;
-  width: 100vw;
-  height: 100dvh;
-  overflow: hidden;
-  background: var(--cp-card);
-  color: var(--cp-ink);
-}
-.cookbook-organize__header {
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 1rem;
-  padding: 18px 24px;
-  border-bottom: 1px solid var(--cp-line);
-}
-.cookbook-organize__header h2 {
-  margin: 0;
-  font-size: var(--cp-fs-dialog-title);
-  font-weight: 800;
-  letter-spacing: -.02em;
-}
-.cookbook-organize__header p {
-  margin-top: .25rem;
-  color: var(--cp-ink-soft);
-  font-size: var(--cp-fs-small);
-}
-.cookbook-organize__sections {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(248px, 1fr));
-  align-content: start;
-  align-items: start;
-  gap: 12px;
-  width: min(1180px, 100%);
-  margin: 0 auto;
-  overflow: auto;
-  padding: 22px 24px 28px;
-}
-.cookbook-organize__section {
-  min-width: 0;
-  padding: 10px;
-  border: 1px solid var(--cp-line);
-  border-radius: var(--cp-radius-control);
-  background: color-mix(in srgb, var(--cp-page) 48%, var(--cp-card));
-}
-.cookbook-organize__section.is-uncategorized {
-  border-style: dashed;
-  border-color: var(--cp-line-strong);
-  background: var(--cp-card);
-}
-.cookbook-organize__section-heading {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-}
-.cookbook-organize__section-heading input {
-  min-width: 0;
-  flex: 1;
-  border: 0;
-  border-bottom: 1px solid transparent;
-  background: transparent;
-  color: var(--cp-ink);
-  font-weight: 850;
-}
-.cookbook-organize__section-heading input:focus {
-  border-bottom-color: var(--cp-accent);
-}
-.cookbook-organize__section-heading input:focus-visible {
-  outline: var(--cp-focus-ring);
-  outline-offset: var(--cp-focus-ring-offset);
-}
-.cookbook-organize__section-heading > span {
-  display: grid;
-  place-items: center;
-  min-width: 24px;
-  height: 24px;
-  border-radius: 999px;
-  background: var(--cp-page);
-  color: var(--cp-ink-soft);
-  font-size: var(--cp-fs-label);
-  font-weight: 800;
-}
-.cookbook-organize__order {
-  display: flex;
-}
-.cookbook-organize__order button {
-  width: 24px;
-  height: 24px;
-  color: var(--cp-ink-soft);
-}
-.cookbook-organize__order button:disabled {
-  opacity: .5;
-}
-.cookbook-organize__opener {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  margin: 9px 0;
-  color: var(--cp-ink-soft);
-  font-size: var(--cp-fs-label);
-  font-weight: 700;
-}
-.cookbook-organize__recipes {
-  display: grid;
-  gap: 6px;
-  min-height: 46px;
-}
-.cookbook-organize__recipes > p {
-  padding: 12px;
-  border: 1px dashed var(--cp-line-strong);
-  border-radius: var(--cp-radius-thumbnail);
-  color: var(--cp-ink-soft);
-  font-size: var(--cp-fs-label);
-  text-align: center;
-}
-.cookbook-organize__recipe {
-  display: grid;
-  grid-template-columns: auto 40px minmax(0, 1fr);
-  align-items: center;
-  gap: 9px;
-  padding: 6px 9px 6px 6px;
-  border: 1px solid var(--cp-line);
-  border-radius: var(--cp-radius-thumbnail);
-  background: var(--cp-card);
-  cursor: grab;
-}
-.cookbook-organize__recipe:active {
-  cursor: grabbing;
-}
-.cookbook-organize__recipe.is-dragging {
-  opacity: 0.45;
-}
-.cookbook-organize__recipe > svg {
-  color: var(--cp-ink-soft);
-}
-.cookbook-organize__recipe img,
-.cookbook-organize__recipe-placeholder {
-  width: 40px;
-  height: 40px;
-  border-radius: var(--cp-radius-thumbnail);
-  background: var(--cp-page);
-  object-fit: cover;
-}
-.cookbook-organize__recipe-title {
-  overflow: hidden;
-  font-size: var(--cp-fs-caption);
-  font-weight: 700;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-.cookbook-organize__add {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 6px;
-  min-height: 42px;
-  border: 1px dashed var(--cp-line-strong);
-  border-radius: var(--cp-radius-control);
-  color: var(--cp-ink-soft);
-  font-size: var(--cp-fs-caption);
-  font-weight: 750;
-}
-.cookbook-organize__actions {
-  display: flex;
-  justify-content: flex-end;
-  gap: 8px;
-  padding: 12px 16px;
-  border-top: 1px solid var(--cp-line);
-}
-
-/* A section highlights while a recipe is being dragged, so the drop target
-   reads clearly. */
-.cookbook-organize__section.is-drop-target {
-  border-color: color-mix(in srgb, var(--cp-accent) 55%, var(--cp-line));
-  background: color-mix(in srgb, var(--cp-accent) 6%, var(--cp-card));
-}
 @media (max-width: 760px) {
-  .cookbook-organize__header {
-    padding: 16px 18px;
-  }
-  .cookbook-organize__sections {
-    grid-template-columns: 1fr;
-    padding: 16px 18px 24px;
-  }
 }
 .cookbook-welcome__panel,
 .cookbook-ready__panel {
@@ -1525,8 +1330,6 @@
     text-transform: uppercase;
   }
 
-
-
   .rp-project-heading__kind {
     @apply relative flex items-center;
     flex: 0 0 auto;
@@ -1618,7 +1421,6 @@
     color: var(--cp-ink-soft);
     line-height: 1.4;
   }
-
 
   /* How the project stands, sitting to the left of Print. Quiet by default;
      the failure state is the only one that asks for anything. */
@@ -1768,10 +1570,6 @@
     border: 1px solid color-mix(in srgb, var(--cp-accent) 28%, transparent);
     background: var(--cp-accent-soft);
   }
-  .state--error {
-    border-color: var(--cp-error-border);
-    background: var(--cp-error-soft);
-  }
   .field-error {
     @apply mt-1 text-cp-small leading-relaxed;
     color: var(--cp-error);
@@ -1798,29 +1596,6 @@
   .rp-workspace-import,
   .rp-workspace-project {
     min-width: 0;
-  }
-
-  /* "Your cookbook is saved in your projects" — shown once, on arriving here
-     from a book that was just filed to this device's shelf. A hairline panel
-     rather than a floating toast: it answers a question ("wasn't I editing a
-     book?") that stays worth answering after a toast would have timed out. */
-  .rp-workspace-filed {
-    @apply flex flex-wrap items-center justify-between gap-cp-3 rounded-xl border border-line px-cp-4 py-cp-3;
-    background: var(--cp-accent-soft);
-    /* The workspace becomes a two-column grid at ≥1024px (see below). This is a
-       banner over both of them, not a third panel competing for a cell —
-       without this it took the import column's slot and pushed the whole
-       layout across by one. Harmless in the flex column below that breakpoint. */
-    grid-column: 1 / -1;
-  }
-
-  .rp-workspace-filed__text {
-    @apply text-cp-small;
-    min-width: 0;
-  }
-
-  .rp-workspace-filed__actions {
-    @apply flex items-center gap-cp-2 flex-shrink-0;
   }
 
   .rp-mobile-print-tray {
@@ -2120,7 +1895,6 @@
     animation: rp-attention-ring 0.6s ease both;
   }
 }
-
 
 /* Site-wide print rules. The recipe card/template/print-page CSS that used to
    follow here now lives in app/print/print.css, loaded only by the print

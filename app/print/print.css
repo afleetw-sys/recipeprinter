@@ -201,10 +201,6 @@
   letter-spacing: -0.02em;
   line-height: 1.15;
 }
-.recipe-organize-bar__hint {
-  font-size: var(--cp-fs-caption);
-  color: var(--cp-ink-soft);
-}
 .recipe-organize-bar__actions {
   display: inline-flex;
   align-items: center;
@@ -466,17 +462,6 @@
     display: none;
   }
 
-  .recipe-print-shell--organizing .recipe-page-rail__section-opener {
-    display: none;
-  }
-
-  .recipe-print-shell--organizing .recipe-page-rail__add-section {
-    flex: 1 1 0;
-    min-width: 0;
-    border: 1px solid var(--cp-line-strong);
-    border-radius: 12px;
-  }
-
   .recipe-print-shell--organizing .recipe-page-rail__add-main {
     display: none;
   }
@@ -529,7 +514,7 @@
   .recipe-organize-bar {
     align-items: flex-start;
   }
-  .recipe-organize-bar__hint,
+
   .recipe-organize-bar__actions .btn-ghost {
     display: none;
   }
@@ -618,31 +603,6 @@
   mask-composite: add;
 }
 
-/* A section opener's facing photo-grid page, drawn beside the opener in the
-   mini-spread (the grid is a rendered blank in the deck, not a real sheet). */
-.recipe-page-rail__thumb-grid {
-  flex: 0 1 112px;
-  min-width: 0;
-  height: 74px;
-  display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  grid-auto-rows: 1fr;
-  gap: 1px;
-  border-radius: 5px;
-  overflow: hidden;
-  -webkit-mask-image: linear-gradient(to bottom, #000 74%, transparent);
-  mask-image: linear-gradient(to bottom, #000 74%, transparent);
-}
-.recipe-page-rail__thumb-grid img {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  display: block;
-}
-.recipe-page-rail__thumb-grid img.is-wide {
-  grid-column: 1 / -1;
-}
-
 .recipe-page-rail__label {
   grid-column: 2;
   display: flex;
@@ -707,26 +667,6 @@
 
 .recipe-page-rail__section-delete:hover {
   color: var(--cp-error);
-}
-
-/* A real aria-pressed toggle, so it takes a corner. A pill is reserved for
-   the status chips (Purchased, Premium, the drag count), which are labels
-   rather than controls — keeping that line is what lets the chips stay round
-   without reading as leftovers. */
-.recipe-page-rail__section-opener {
-  margin-left: auto;
-  padding: 3px 6px;
-  border-radius: 6px;
-  color: var(--cp-ink-soft);
-  font-size: var(--cp-fs-label);
-  font-weight: 700;
-  white-space: nowrap;
-}
-
-.recipe-page-rail__section-opener:hover,
-.recipe-page-rail__section-opener[aria-pressed="true"] {
-  background: color-mix(in srgb, var(--cp-accent) 12%, transparent);
-  color: var(--cp-accent-ink);
 }
 
 /* Pointer drag-to-reorder (cookbook rail). The grabbed row/section dims in
@@ -806,15 +746,6 @@
 .recipe-page-rail__grip:hover {
   color: var(--cp-ink);
   background: color-mix(in srgb, var(--cp-accent) 10%, transparent);
-}
-
-.recipe-page-rail__section-drop {
-  height: 10px;
-  border-radius: 999px;
-}
-
-.recipe-page-rail__section-drop:hover {
-  background: var(--cp-accent-soft);
 }
 
 .recipe-page-rail__section-group {
@@ -968,12 +899,6 @@
 
 .recipe-page-rail__add-menu-trigger:hover {
   background: var(--cp-overlay-hover);
-}
-
-.recipe-page-rail__add-section {
-  flex: 1 1 auto;
-  width: 100%;
-  min-width: 0;
 }
 
 /* Portalled to the body and placed from JS — see the note on the placement
@@ -1150,12 +1075,6 @@
   border: 1px solid var(--cp-line);
   border-radius: 8px;
   background: #fff;
-}
-
-/* The section photo-grid page is part of its chapter opener — clicking it
-   focuses the opener, so give it the same affordance as a real page. */
-.recipe-spread__blank--linked {
-  cursor: pointer;
 }
 
 /* Snap the whole spread to center (the base rule snaps a lone `.recipe-page-
@@ -1339,27 +1258,6 @@
   print-color-adjust: exact;
 }
 
-.recipe-spread__blank-grid {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  grid-auto-rows: 1fr;
-  gap: 2px;
-  width: 100%;
-  height: 100%;
-  padding: 5%;
-}
-
-.recipe-spread__blank-grid img {
-  width: 100%;
-  height: 100%;
-  min-height: 0;
-  object-fit: cover;
-}
-/* Banner photo that fills the odd-one-out row (e.g. 3 = banner + 2). */
-.recipe-spread__blank-grid img.is-wide {
-  grid-column: 1 / -1;
-}
-
 .recipe-spread__blank-decoration {
   width: 100%;
   height: 100%;
@@ -1391,22 +1289,6 @@
 .recipe-page-layout-picker__btn:disabled {
   opacity: .5;
   cursor: default;
-}
-
-
-
-.recipe-page-canvas__controls-center {
-  grid-column: 2;
-  justify-self: center;
-  min-height: 38px;
-}
-
-.recipe-page-canvas__controls-right {
-  grid-column: 3;
-  justify-self: end;
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
 }
 
 /* The first slide's controls float above the card like every other slide's —
@@ -1715,46 +1597,6 @@
   padding-top: 2px;
 }
 
-.recipe-cookpilot-account {
-  margin-top: 10px;
-  padding-top: 10px;
-  border-top: 1px solid var(--cp-line);
-}
-
-.recipe-cookpilot-account__signed-in {
-  color: var(--cp-ink-soft);
-  font-size: var(--cp-fs-caption);
-}
-
-.recipe-cookpilot-account__link {
-  color: var(--cp-ink-soft);
-  font-size: var(--cp-fs-caption);
-  font-weight: 600;
-  text-decoration: underline;
-  text-underline-offset: 2px;
-}
-
-.recipe-cookpilot-account__link:hover {
-  color: var(--cp-ink);
-}
-
-.recipe-cookpilot-account__prompt {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: baseline;
-  gap: 4px;
-}
-
-.recipe-cookpilot-account__hint {
-  color: var(--cp-ink-soft);
-  font-size: var(--cp-fs-caption);
-}
-
-.recipe-print-button {
-  width: 100%;
-  justify-content: center;
-}
-
 .recipe-print-settings-link {
   display: block;
   width: 100%;
@@ -1973,127 +1815,6 @@
   color: var(--cp-selected-text);
 }
 
-/* ── Format download buttons on the "Print your cookbook" screen ──────────── */
-.cookbook-print-dialog__formats {
-  display: grid;
-  gap: 8px;
-  margin-top: 6px;
-  text-align: left;
-}
-
-.cookbook-format-download {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-  width: 100%;
-  padding: 12px 14px;
-  border: 1px solid var(--cp-line);
-  border-radius: 10px;
-  background: var(--cp-card);
-  cursor: pointer;
-  text-align: left;
-}
-
-.cookbook-format-download:hover {
-  border-color: var(--cp-selected-border);
-  background: var(--cp-selected-fill);
-}
-
-.cookbook-format-download:focus-visible {
-  outline: var(--cp-focus-ring);
-  outline-offset: var(--cp-focus-ring-offset);
-}
-
-.cookbook-format-download__text {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-  min-width: 0;
-}
-
-.cookbook-format-download__name {
-  font-size: var(--cp-fs-small);
-  font-weight: 800;
-  color: var(--cp-ink);
-}
-
-.cookbook-format-download__trim {
-  font-size: var(--cp-fs-caption);
-  color: var(--cp-ink-soft);
-}
-
-.cookbook-format-download__cta {
-  flex: none;
-  font-size: var(--cp-fs-caption);
-  font-weight: 800;
-  color: var(--cp-selected-text);
-}
-
-/* ── "Print your cookbook" post-export dialog ─────────────────────────────── */
-.cookbook-print-dialog__hint {
-  font-size: var(--cp-fs-small);
-  color: var(--cp-ink-soft);
-  text-align: center;
-}
-
-.cookbook-print-dialog__printers {
-  margin-top: 8px;
-  text-align: left;
-}
-
-.cookbook-print-dialog__printers-label {
-  display: block;
-  margin-bottom: 8px;
-  font-size: var(--cp-fs-caption);
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
-  color: var(--cp-ink-soft);
-}
-
-.cookbook-print-dialog__printer-list {
-  display: grid;
-  gap: 8px;
-  margin: 0;
-  padding: 0;
-  list-style: none;
-}
-
-.cookbook-print-dialog__printer {
-  display: flex;
-  align-items: baseline;
-  justify-content: space-between;
-  gap: 12px;
-  padding: 10px 12px;
-  border: 1px solid var(--cp-line);
-  border-radius: 10px;
-  background: var(--cp-card);
-  text-decoration: none;
-}
-
-.cookbook-print-dialog__printer:hover {
-  border-color: var(--cp-accent);
-}
-
-.cookbook-print-dialog__printer-name {
-  font-size: var(--cp-fs-small);
-  font-weight: 800;
-  color: var(--cp-ink);
-}
-
-.cookbook-print-dialog__printer-note {
-  font-size: var(--cp-fs-caption);
-  color: var(--cp-ink-soft);
-}
-
-.cookbook-print-dialog__disclaimer {
-  margin-top: 10px;
-  font-size: var(--cp-fs-caption);
-  line-height: 1.4;
-  color: var(--cp-ink-soft);
-}
-
 /* The mini page illustration inside a tile (also reusable elsewhere). */
 .recipe-photo-preview {
   display: flex;
@@ -2235,13 +1956,6 @@
   border-radius: 999px;
   background: #eefaf9;
   color: #267c77;
-}
-
-.recipe-template-note {
-  margin-top: 8px;
-  color: var(--cp-ink-soft);
-  font-size: var(--cp-fs-caption);
-  line-height: 1.35;
 }
 
 .recipe-toast {
@@ -3455,29 +3169,6 @@
   position: relative;
 }
 
-.recipe-card__divider-content {
-  position: relative;
-  z-index: 1;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  width: min(100%, 6.2in);
-  gap: 0.18in;
-  padding: 0.46in 0.58in;
-  color: var(--recipe-ink);
-}
-
-.recipe-card__divider-kicker,
-.recipe-card__divider-count {
-  margin: 0;
-  font-size: 0.13in;
-  font-weight: 850;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
-  color: var(--recipe-accent);
-}
-
 /* Shared by the read-mode `<h1>` and its editing `<input>` (see
    `.recipe-card__inline-input` in the recipe-card rules below, and its
    comment) — the same box either way, editing swaps the element only.
@@ -3495,50 +3186,6 @@
   color: var(--recipe-ink);
   text-align: center;
   field-sizing: content;
-}
-
-.recipe-card__divider-recipes {
-  width: min(100%, 4.8in);
-  margin-top: 0.04in;
-  padding-top: 0.18in;
-  border-top: 1px solid var(--recipe-line);
-}
-
-.recipe-card__divider-count {
-  color: var(--recipe-muted);
-}
-
-.recipe-card__divider-recipe-list {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 0.07in 0.26in;
-  margin: 0.14in 0 0;
-  padding: 0;
-  list-style: none;
-  font-size: 0.145in;
-  line-height: 1.25;
-  color: var(--recipe-ink);
-  text-align: left;
-  counter-reset: divider-recipes;
-}
-
-.recipe-card__divider-recipe-list li {
-  position: relative;
-  min-width: 0;
-  padding-left: 0.3in;
-  overflow-wrap: anywhere;
-  counter-increment: divider-recipes;
-}
-
-.recipe-card__divider-recipe-list li::before {
-  content: counter(divider-recipes, decimal-leading-zero);
-  position: absolute;
-  left: 0;
-  top: 0.02in;
-  font-size: 0.095in;
-  font-weight: 850;
-  letter-spacing: 0.04em;
-  color: var(--recipe-accent);
 }
 
 /* ── Chapter opener ───────────────────────────────────────────────────────
@@ -4558,12 +4205,6 @@
   bottom: 0.62in;
 }
 
-.recipe-print-preview--card-6x4 .recipe-card__divider-content {
-  width: min(100%, 5.3in);
-  padding: 0.3in 0.42in;
-  gap: 0.11in;
-}
-
 /* The cover is book-trim furniture; if it ever renders at 6x4, pull the lockup
    insets in so it doesn't crowd the smaller card. */
 .recipe-print-preview--card-6x4 .recipe-card__cover-content {
@@ -4842,12 +4483,6 @@
   border-radius: 50%;
   background: var(--cp-accent-ink);
   color: var(--cp-card);
-}
-.image-picker__error {
-  margin: 14px 0 0;
-  color: var(--cp-error);
-  font-size: var(--cp-fs-caption);
-  font-weight: 700;
 }
 /* Cover-collage multi-select: an order badge on each chosen photo, plus a
    dimmed state once the collage is full. */
@@ -5147,30 +4782,8 @@ textarea.recipe-card__toc-title {
   font-size: 0.135in;
 }
 
-.recipe-print-preview--card-6x4 .recipe-card__divider-kicker,
-.recipe-print-preview--card-6x4 .recipe-card__divider-count,
 .recipe-print-preview--card-6x4 .recipe-card__cover-author {
   font-size: 0.095in;
-}
-
-.recipe-print-preview--card-6x4 .recipe-card__divider-recipes {
-  width: min(100%, 4.5in);
-  padding-top: 0.1in;
-}
-
-.recipe-print-preview--card-6x4 .recipe-card__divider-recipe-list {
-  grid-template-columns: 1fr;
-  gap: 0.035in;
-  margin-top: 0.075in;
-  font-size: 0.105in;
-}
-
-.recipe-print-preview--card-6x4 .recipe-card__divider-recipe-list li {
-  padding-left: 0.22in;
-}
-
-.recipe-print-preview--card-6x4 .recipe-card__divider-recipe-list li::before {
-  font-size: 0.075in;
 }
 
 .recipe-card__accent {
@@ -5329,11 +4942,6 @@ textarea.recipe-card__toc-title {
   color: var(--recipe-accent);
   font-weight: 900;
   text-transform: uppercase;
-}
-
-.recipe-template--bistro .recipe-card__divider-kicker,
-.recipe-template--bistro .recipe-card__divider-count {
-  color: var(--recipe-ink);
 }
 
 .recipe-template--bistro .recipe-card__label {
@@ -5841,18 +5449,10 @@ textarea.recipe-card__toc-title {
   -webkit-text-stroke: 0.4px var(--recipe-accent);
 }
 
-.recipe-template--cookout .recipe-card--divider .recipe-card__divider-kicker,
-.recipe-template--cookout .recipe-card--divider .recipe-card__divider-count,
-.recipe-template--cookout .recipe-card--divider .recipe-card__divider-recipe-list li::before,
 .recipe-template--cookout .recipe-card--cover .recipe-card__cover-author {
   font-family: var(--font-gochi-hand), "Segoe Print", "Comic Sans MS", cursive;
   color: var(--recipe-accent);
   letter-spacing: 0.04em;
-}
-
-.recipe-template--cookout .recipe-card--divider .recipe-card__divider-recipe-list {
-  font-family: var(--font-gochi-hand), "Segoe Print", "Comic Sans MS", cursive;
-  font-size: 0.17in;
 }
 
 .recipe-print-preview--card-6x4 .recipe-template--cookout .recipe-card--divider .recipe-card__divider-title,
@@ -6016,20 +5616,7 @@ textarea.recipe-card__toc-title {
   overflow: hidden;
 }
 
-.recipe-card__photo-placeholder {
-  display: grid;
-  place-items: center;
-  width: 100%;
-  height: 100%;
-  color: var(--recipe-muted);
-  font-size: var(--recipe-card-label-size);
-  font-weight: 800;
-  text-transform: uppercase;
-  background: rgba(255, 255, 255, 0.58);
-}
-
-.recipe-card__photo-edit,
-.recipe-card__photo-remove {
+.recipe-card__photo-edit {
   position: absolute;
   z-index: 2;
   border: 1px solid var(--cp-line-strong);
@@ -6076,38 +5663,6 @@ textarea.recipe-card__toc-title {
 .recipe-card__photo-add svg {
   width: 0.13in;
   height: 0.13in;
-}
-
-.recipe-card__photo-remove {
-  top: 0.04in;
-  right: 0.04in;
-  display: grid;
-  place-items: center;
-  width: 0.18in;
-  height: 0.18in;
-  padding: 0;
-}
-
-/* Upload failure, anchored just below the (fixed-size) photo box so it can't
-   resize or be clipped by the card. Editing-only, so never printed. */
-.recipe-card__photo-error {
-  position: absolute;
-  z-index: 3;
-  top: calc(100% + 0.05in);
-  left: 50%;
-  transform: translateX(-50%);
-  width: max-content;
-  max-width: 1.9in;
-  margin: 0;
-  padding: 0.05in 0.07in;
-  border-radius: 0.06in;
-  background: rgba(255, 255, 255, 0.96);
-  box-shadow: 0 0.04in 0.14in rgba(0, 0, 0, 0.2);
-  color: #b42318;
-  font-size: 0.11in;
-  font-weight: 700;
-  line-height: 1.3;
-  text-align: center;
 }
 
 /* ── Classic: a crisp, modern cookbook print — white mat, teal hairline ───── */
@@ -6403,7 +5958,6 @@ textarea.recipe-card__toc-title {
   text-align: inherit;
 }
 
-.recipe-card__inline-input--line,
 .recipe-card__inline-textarea--line {
   flex: 1 1 auto;
   line-height: inherit;
@@ -6700,41 +6254,6 @@ textarea.recipe-card__toc-title {
    TEMPLATE's palette, so this control turned red on one theme and blue on
    another while doing the same job. Floats clear above the field being edited
    rather than over the line above it. */
-.recipe-card__line-kind {
-  position: absolute;
-  left: 0;
-  bottom: calc(100% + 2px);
-  z-index: 6;
-  display: inline-flex;
-  gap: 1px;
-  padding: 1px;
-  border: 1px solid var(--cp-line);
-  border-radius: 999px;
-  background: var(--cp-card);
-  box-shadow: var(--cp-shadow-xs);
-}
-
-.recipe-card__line-kind-btn {
-  display: grid;
-  place-items: center;
-  width: 20px;
-  height: 15px;
-  border: 0;
-  border-radius: 999px;
-  background: transparent;
-  color: var(--cp-ink-soft);
-  cursor: pointer;
-}
-
-.recipe-card__line-kind-btn.is-active {
-  background: var(--cp-selected-fill);
-  color: var(--cp-selected-text);
-}
-
-.recipe-card__line-kind-btn:hover {
-  background: var(--cp-overlay-hover);
-  color: var(--cp-ink);
-}
 
 .recipe-card__line-kind-glyph {
   font-family: var(--font-manrope), system-ui, sans-serif;
@@ -7084,48 +6603,6 @@ textarea.recipe-card__toc-title {
   min-width: 0;
 }
 
-.cookbook-benefits {
-  display: flex;
-  flex-direction: column;
-  gap: 9px;
-  margin: 18px 0 4px;
-  padding: 0;
-  list-style: none;
-  text-align: left;
-}
-
-.cookbook-benefits li {
-  display: flex;
-  align-items: center;
-  gap: 7px;
-  font-size: var(--cp-fs-body);
-  font-weight: 700;
-  color: var(--cp-ink);
-}
-
-.cookbook-benefits li svg {
-  flex: none;
-  color: var(--cp-accent);
-}
-
-.cookbook-offer-dialog__closer {
-  margin-top: 14px;
-  font-weight: 650;
-  color: var(--cp-ink);
-}
-
-.cookbook-offer-dialog__price {
-  margin-top: 14px;
-  font-size: var(--cp-fs-price);
-  font-weight: 850;
-}
-
-.cookbook-offer-dialog__price-note {
-  margin-top: 2px;
-  color: var(--cp-ink-soft);
-  font-size: var(--cp-fs-caption);
-}
-
 @keyframes print-success-fade {
   from {
     opacity: 0;
@@ -7345,10 +6822,6 @@ textarea.recipe-card__toc-title {
   border-radius: 8px;
 }
 
-.recipe-add-dialog__panel--roomy {
-  width: min(100%, 640px);
-}
-
 .recipe-add-dialog__panel--paste .field {
   min-height: 340px;
 }
@@ -7403,88 +6876,6 @@ textarea.recipe-card__toc-title {
   margin-top: 14px;
   color: var(--cp-ink-soft);
   font-size: var(--cp-fs-small);
-}
-
-.recipe-add-dialog__added {
-  margin-top: 18px;
-  padding-top: 16px;
-  border-top: 1px solid var(--cp-line);
-}
-
-.recipe-add-dialog__added-title {
-  margin: 0 0 8px;
-  color: var(--cp-ink-soft);
-  font-size: var(--cp-fs-label);
-  font-weight: 700;
-  letter-spacing: 0.02em;
-  text-transform: uppercase;
-}
-
-.recipe-add-dialog__added-list {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-  margin: 0;
-  padding: 0;
-  list-style: none;
-}
-
-.recipe-add-dialog__added-row {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  min-width: 0;
-  padding: 8px 4px;
-}
-
-.recipe-add-dialog__added-row + .recipe-add-dialog__added-row {
-  border-top: 1px solid color-mix(in srgb, var(--cp-line) 60%, transparent);
-}
-
-.recipe-add-dialog__added-icon {
-  display: grid;
-  flex: 0 0 auto;
-  place-items: center;
-  width: 22px;
-  height: 22px;
-  border-radius: 999px;
-  background: var(--cp-page);
-  color: var(--cp-ink-soft);
-}
-
-.recipe-add-dialog__added-row.is-ready .recipe-add-dialog__added-icon {
-  background: color-mix(in srgb, var(--cp-accent) 26%, transparent);
-  color: var(--cp-accent-ink);
-}
-
-.recipe-add-dialog__added-row.is-error .recipe-add-dialog__added-icon {
-  background: color-mix(in srgb, var(--cp-error) 14%, transparent);
-  color: var(--cp-error);
-}
-
-.recipe-add-dialog__added-text {
-  display: flex;
-  flex-direction: column;
-  gap: 1px;
-  min-width: 0;
-  margin-right: auto;
-}
-
-.recipe-add-dialog__added-name {
-  overflow: hidden;
-  font-size: var(--cp-fs-small);
-  font-weight: 650;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.recipe-add-dialog__added-status {
-  color: var(--cp-ink-soft);
-  font-size: var(--cp-fs-caption);
-}
-
-.recipe-add-dialog__added-row.is-error .recipe-add-dialog__added-status {
-  color: var(--cp-error);
 }
 
 /* Outside `__body` so it stays put while the added list scrolls. */
@@ -7649,7 +7040,6 @@ textarea.recipe-card__toc-title {
     width: auto !important;
     transform: none !important;
   }
-
 
   .recipe-print-page,
   .recipe-print-shell {
