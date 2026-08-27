@@ -71,18 +71,134 @@ try {
   process.exit(1);
 }
 
-if (!process.env.GOOGLE_APPLICATION_CREDENTIALS && !process.env.FIREBASE_CONFIG) {
+/**
+ * Falls back to the Firebase CLI's own login when there is no service account
+ * and no ADC — which is the normal state of a laptop that has only ever run
+ * `firebase login`.
+ *
+ * It reads the refresh token the CLI already stores, exchanges it with Google
+ * for a short-lived access token, and hands that to the Admin SDK. Nothing is
+ * written: no new credential file, no token in the output, no token on disk.
+ * The exchange is the same one the CLI performs on every command it runs.
+ *
+ * Opt in with --use-cli-login, so using a personal Google identity to write to
+ * production is always something someone chose rather than something that
+ * happened because a variable was unset.
+ */
+async function cliLoginCredential() {
+  const { readFileSync } = await import("node:fs");
+  const { homedir } = await import("node:os");
+  const { join } = await import("node:path");
+  const configPath = join(homedir(), ".config", "configstore", "firebase-tools.json");
+
+  let refreshToken;
+  try {
+    refreshToken = JSON.parse(readFileSync(configPath, "utf8"))?.tokens?.refresh_token;
+  } catch {
+    throw new Error(`Could not read the Firebase CLI login at ${configPath}. Run \`firebase login\`.`);
+  }
+  if (!refreshToken) throw new Error("The Firebase CLI is not logged in. Run `firebase login`.");
+
+  // firebase-tools' own public OAuth client. Public by design: it identifies
+  // the CLI, it does not authorize anything on its own.
+  const CLIENT_ID = "563584335869-fgrhgmd47bqnekij5i8b5pr03ho849e6.apps.googleusercontent.com";
+  const CLIENT_SECRET = "j9iVZfS8kkCEFUPaAeJV0sAi";
+
+  // `admin.credential.refreshToken` is the supported way to authenticate as a
+  // human rather than a service account, and it takes the credential as an
+  // object — so this stays in memory. Nothing is written to disk, and neither
+  // the refresh token nor any access token is ever printed.
+  return admin.credential.refreshToken({
+    type: "authorized_user",
+    client_id: CLIENT_ID,
+    client_secret: CLIENT_SECRET,
+    refresh_token: refreshToken,
+  });
+}
+
+const USE_CLI_LOGIN = process.argv.includes("--use-cli-login");
+const hasAppCredentials =
+  Boolean(process.env.GOOGLE_APPLICATION_CREDENTIALS) || Boolean(process.env.FIREBASE_CONFIG);
+
+if (!hasAppCredentials && !USE_CLI_LOGIN) {
   console.error(
-    "No credentials found. Set GOOGLE_APPLICATION_CREDENTIALS to a service-account\n" +
-      "key with Firestore write and Storage admin access, or run\n" +
-      "`gcloud auth application-default login`.\n",
+    "No credentials found. Either:\n\n" +
+      "  GOOGLE_APPLICATION_CREDENTIALS=/path/to/serviceAccount.json node scripts/debug-inbox-backfill.mjs\n\n" +
+      "or, to borrow the login the Firebase CLI already has on this machine:\n\n" +
+      "  node scripts/debug-inbox-backfill.mjs --use-cli-login\n",
   );
   process.exit(1);
 }
 
-admin.initializeApp({ projectId: PROJECT_ID, storageBucket: BUCKET });
-const db = admin.firestore();
-const bucket = admin.storage().bucket();
+const credential = hasAppCredentials
+  ? admin.credential.applicationDefault()
+  : await cliLoginCredential();
+
+admin.initializeApp({ projectId: PROJECT_ID, storageBucket: BUCKET, credential });
+
+/**
+ * Storage goes through the JSON API rather than the Admin SDK.
+ *
+ * `admin.storage()` refuses anything that is not a certificate or real ADC, so
+ * on a laptop with only a `firebase login` it cannot list a bucket at all. The
+ * REST endpoints take a plain bearer token, which every credential type can
+ * produce — so a dry run works with whatever is already on the machine, and
+ * nothing has to be written to disk to make it work.
+ */
+async function bearer() {
+  const { access_token } = await credential.getAccessToken();
+  return { Authorization: `Bearer ${access_token}` };
+}
+
+const GCS = "https://storage.googleapis.com/storage/v1/b";
+
+async function gcsList(prefix) {
+  const out = [];
+  let pageToken;
+  do {
+    const url = new URL(`${GCS}/${encodeURIComponent(BUCKET)}/o`);
+    url.searchParams.set("prefix", prefix);
+    url.searchParams.set("maxResults", "1000");
+    if (pageToken) url.searchParams.set("pageToken", pageToken);
+    const response = await fetch(url, { headers: await bearer() });
+    if (!response.ok) {
+      throw new Error(`Listing ${prefix} failed (${response.status} ${await response.text()})`);
+    }
+    const body = await response.json();
+    for (const item of body.items ?? []) out.push(item);
+    pageToken = body.nextPageToken;
+  } while (pageToken);
+  return out;
+}
+
+async function gcsDownload(name) {
+  const url = `${GCS}/${encodeURIComponent(BUCKET)}/o/${encodeURIComponent(name)}?alt=media`;
+  const response = await fetch(url, { headers: await bearer() });
+  if (!response.ok) throw new Error(`Download failed (${response.status})`);
+  return response.text();
+}
+
+async function gcsDelete(name) {
+  const url = `${GCS}/${encodeURIComponent(BUCKET)}/o/${encodeURIComponent(name)}`;
+  const response = await fetch(url, { method: "DELETE", headers: await bearer() });
+  if (!response.ok && response.status !== 404) {
+    throw new Error(`Delete failed (${response.status})`);
+  }
+}
+
+/**
+ * Firestore, only when something is actually going to be written.
+ *
+ * Its client insists on a certificate credential or real ADC and will not take
+ * the short-lived token from `--use-cli-login`, which Storage accepts happily.
+ * A dry run only needs to LIST a bucket, so it should not be blocked by the
+ * credential the write pass needs.
+ */
+let dbInstance = null;
+function firestore() {
+  if (!dbInstance) dbInstance = admin.firestore();
+  return dbInstance;
+}
 
 /**
  * `<root>/<category>/<2026-08-27T17-44-03-665Z>_<id>/payload.txt`
@@ -107,8 +223,7 @@ function parseFolder(folder) {
 async function readFolders() {
   const folders = new Map();
   for (const prefix of ROOTS) {
-    const [files] = await bucket.getFiles({ prefix });
-    for (const file of files) {
+    for (const file of await gcsList(prefix)) {
       const slash = file.name.lastIndexOf("/");
       if (slash < 0) continue;
       const folder = file.name.slice(0, slash + 1);
@@ -121,14 +236,28 @@ async function readFolders() {
   return [...folders.values()];
 }
 
-/** Rows already migrated, so a second run is a no-op rather than a duplicate. */
+/**
+ * Rows already migrated, so a second run is a no-op rather than a duplicate.
+ *
+ * A dry run continues without this if Firestore is out of reach — it only
+ * makes the preview over-count, and it says so rather than pretending.
+ */
 async function readMigratedPaths() {
-  const snap = await db
-    .collection("debugInbox")
-    .where("product", "==", "recipeprinter")
-    .select("storagePath")
-    .get();
-  return new Set(snap.docs.map((d) => d.get("storagePath")).filter(Boolean));
+  try {
+    const snap = await firestore()
+      .collection("debugInbox")
+      .where("product", "==", "recipeprinter")
+      .select("storagePath")
+      .get();
+    return { paths: new Set(snap.docs.map((d) => d.get("storagePath")).filter(Boolean)), known: true };
+  } catch (error) {
+    if (APPLY) throw error;
+    console.warn(
+      `  ! could not read debugInbox (${error.message.split("\n")[0]}).\n` +
+        "    Continuing: this preview cannot tell which rows were migrated already.\n",
+    );
+    return { paths: new Set(), known: false };
+  }
 }
 
 async function main() {
@@ -138,8 +267,12 @@ async function main() {
   );
 
   const folders = await readFolders();
-  const migrated = await readMigratedPaths();
-  console.log(`${folders.length} capture folders found, ${migrated.size} already migrated.\n`);
+  const { paths: migrated, known } = await readMigratedPaths();
+  console.log(
+    `${folders.length} capture folders found` +
+      (known ? `, ${migrated.size} already migrated.` : ", migrated count unknown.") +
+      "\n",
+  );
 
   const stats = { moved: 0, copied: 0, skipped: 0, imagesKept: 0, deleted: 0, failed: 0 };
 
@@ -161,10 +294,8 @@ async function main() {
     let text = "";
     let meta = {};
     try {
-      const [buf] = await payload.download();
-      text = buf.toString("utf8");
-      const [metadata] = await payload.getMetadata();
-      meta = metadata.metadata ?? {};
+      text = await gcsDownload(payload.name);
+      meta = payload.metadata ?? {};
     } catch (error) {
       console.warn(`  ! could not read ${payload.name}: ${error.message}`);
       stats.failed += 1;
@@ -203,13 +334,13 @@ async function main() {
     }
 
     try {
-      await db.collection("debugInbox").add(row);
+      await firestore().collection("debugInbox").add(row);
       stats.moved += 1;
       if (images.length > 0) stats.copied += 1;
       if (DELETE) {
         // Only ever the payload object. The image files in this folder are
         // deliberately untouched.
-        await payload.delete();
+        await gcsDelete(payload.name);
         stats.deleted += 1;
       }
       console.log(`  moved ${label}  ${preview}`);
