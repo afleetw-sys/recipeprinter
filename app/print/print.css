@@ -1273,9 +1273,12 @@
   color: var(--cp-error);
 }
 
+/* Pressed, not a different kind of thing: the fill says which button is on and
+   the label stays the colour it was. "Done" going teal made a mode toggle read
+   as a status. */
 .recipe-page-toolbar__btn.is-active {
   background: var(--cp-selected-fill);
-  color: var(--cp-selected-text);
+  color: var(--cp-ink);
 }
 
 /* Front / Back. Fixed width so stepping between the two sides doesn't shuffle

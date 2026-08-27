@@ -279,7 +279,9 @@ export const TemplateIcon = (p: IconProps) => (
 
 export const EditIcon = (p: IconProps) => (
   <Base {...p}>
-    <path d="M12 20h9" />
+    {/* The pencil alone. Feather's edit-3 draws a rule under it as well, which
+        beside a text label reads as a stray underscore rather than as part of
+        the icon. */}
     <path d="M16.5 3.5a2.1 2.1 0 013 3L7 19l-4 1 1-4L16.5 3.5z" />
   </Base>
 );

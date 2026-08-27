@@ -722,11 +722,23 @@ export const RecipeCardFace = memo(function RecipeCardFace({
           variant === "empty" ? "recipe-card__add-line--empty" : ""
         }`}
         aria-label={label}
-        onClick={(event) => {
+        /**
+         * `onMouseDown` with `preventDefault`, not `onClick`.
+         *
+         * A click blurs the field first, which commits the row being edited and
+         * clears the editor's in-progress state — so the insert then ran against
+         * whichever of those two updates React had applied, and the row above
+         * came back duplicated. Holding focus removes the race entirely: the
+         * insert reads the live edit, writes it, and puts the caret in the new
+         * blank row itself.
+         */
+        onMouseDown={(event) => {
+          event.preventDefault();
           event.stopPropagation();
           if (kind === "ingredient") insertIngredientAt(index);
           else insertStepAt(index);
         }}
+        onClick={(event) => event.stopPropagation()}
       >
         <span className="recipe-card__add-line-text">{variant === "empty" ? `+ ${label}` : "+ Add below"}</span>
       </button>
