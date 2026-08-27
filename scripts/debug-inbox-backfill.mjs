@@ -324,7 +324,27 @@ async function main() {
       continue;
     }
     if (migrated.has(payload.name)) {
-      stats.skipped += 1;
+      // Already recorded, which makes this exactly the set that is safe to
+      // remove. Without this the documented two-pass flow did nothing on the
+      // second pass: everything migrated by `--apply` was skipped, so
+      // `--apply --delete` deleted zero objects.
+      if (DELETE) {
+        if (!APPLY) {
+          console.log(`  would delete ${payload.name}`);
+          stats.deleted += 1;
+        } else {
+          try {
+            await gcsDelete(payload.name);
+            stats.deleted += 1;
+            console.log(`  deleted ${payload.name}`);
+          } catch (error) {
+            console.warn(`  ! could not delete ${payload.name}: ${error.message}`);
+            stats.failed += 1;
+          }
+        }
+      } else {
+        stats.skipped += 1;
+      }
       continue;
     }
 
