@@ -1296,28 +1296,39 @@
      loads after this file, so a single class here silently lost the track and
      left the pair looking like two bare labels.
 
-     Sizing follows the zoom control and the page toolbar, which are the other
-     two clusters of small controls in this app: 4px of padding, a 14px
-     shell, 8px on the things inside it. */
+     Sizing is measured against the buttons beside it, not against the zoom
+     control: Save, Print and the avatar are all 30px, and a track that wraps
+     30px tabs is 38px, which made the one control naming the document the
+     tallest thing in a 62px bar. The tabs carry the padding instead, so the
+     OUTER height is 30px and the row lines up. Radius follows the family's
+     rule of inner + padding, so the track's corner stays concentric with the
+     tab's. */
   .segmented-control.rp-project-heading__kinds {
     flex: 0 0 auto;
     margin-left: 8px;
-    padding: 4px;
-    border-radius: 14px;
+    padding: 3px;
+    border-radius: 11px;
     background: var(--cp-surface-strong);
   }
 
   .rp-project-heading__kinds .segmented-control__option {
-    min-height: 30px;
-    padding: 0 12px;
+    min-height: 24px;
+    padding: 0 10px;
     font-size: var(--cp-fs-small);
     font-weight: 700;
     border-radius: 8px;
   }
 
   /* The one tab that is raised, so it takes the shadow the rest of the family
-     gives a small floating control. Nothing else in the bar casts one. */
+     gives a small floating control. Nothing else in the bar casts one.
+
+     `inset` matters: the base thumb is `top: 0; bottom: 0` because the base
+     track has no padding. Here it does, so an unadjusted thumb spanned the
+     full 38px shell while the tab it marks was 30px — the white pill sat
+     taller than its own label and read as misaligned rather than as a tab. */
   .segmented-control.rp-project-heading__kinds .segmented-control__thumb {
+    top: 3px;
+    bottom: 3px;
     border-radius: 8px;
     background: var(--cp-card);
     box-shadow: var(--cp-shadow-sm);

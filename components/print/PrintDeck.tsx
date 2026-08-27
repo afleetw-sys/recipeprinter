@@ -19,6 +19,7 @@ import {
   SettingsIcon,
   SpinnerIcon,
   MinusIcon,
+  MoveToSectionIcon,
   PlusIcon,
   TrashIcon,
 } from "@/components/icons";
@@ -131,6 +132,10 @@ interface PrintDeckProps {
   /** Delete whatever page the toolbar belongs to — opens the same confirm the
       Delete key does. */
   onRequestDelete: (navItem: NavItem) => void;
+  /** Move one recipe into another chapter. Cookbook only — a deck of loose
+      cards has no sections to move between. `undefined` there rather than a
+      no-op, so the control is absent rather than present and inert. */
+  onMoveRecipeToSection?: (recipeId: string, sectionId: string) => void;
   onZoomStep: (direction: 1 | -1) => void;
   onZoomSet: (zoom: number) => void;
   deckRef: ReturnType<typeof useDeckScroller>["deckRef"];
@@ -212,6 +217,24 @@ export function PrintDeck(props: PrintDeckProps) {
     };
   }, [zoomMenuOpen]);
 
+  const [moveMenuOpen, setMoveMenuOpen] = useState(false);
+  const moveMenuRef = useRef<HTMLDivElement | null>(null);
+  useEffect(() => {
+    if (!moveMenuOpen) return;
+    function onPointerDown(event: PointerEvent) {
+      if (!moveMenuRef.current?.contains(event.target as Node)) setMoveMenuOpen(false);
+    }
+    function onKeyDown(event: KeyboardEvent) {
+      if (event.key === "Escape") setMoveMenuOpen(false);
+    }
+    document.addEventListener("pointerdown", onPointerDown);
+    document.addEventListener("keydown", onKeyDown);
+    return () => {
+      document.removeEventListener("pointerdown", onPointerDown);
+      document.removeEventListener("keydown", onKeyDown);
+    };
+  }, [moveMenuOpen]);
+
   const {
     singleRecipePrintView,
     cookbookView,
@@ -242,6 +265,7 @@ export function PrintDeck(props: PrintDeckProps) {
     deckScale,
     deckZoom,
     onRequestDelete,
+    onMoveRecipeToSection,
     onZoomStep,
     onZoomSet,
     deckRef,
@@ -416,6 +440,29 @@ export function PrintDeck(props: PrintDeckProps) {
           ? renderSectionPhotoControl(navItem.recipeId)
           : null;
     const lineKind = editable ? renderLineKindControl(navItem) : null;
+
+    /**
+     * The chapters this recipe could move to, or null when moving makes no
+     * sense: outside a cookbook, on anything that isn't a recipe, or when the
+     * book has only the one chapter to be in. An untitled section is the
+     * implicit ungrouped pool, so it is offered under the name the rail gives
+     * it rather than as a blank row.
+     */
+    const moveSections =
+      onMoveRecipeToSection && projectMeta.meta.cookbookMode && navItem.kind === "recipe"
+        ? (() => {
+            const options = sections.map((section) => ({
+              id: section.id,
+              title: section.title?.trim() || "Ungrouped",
+            }));
+            if (options.length < 2) return null;
+            const currentId = sections.find((section) =>
+              section.items.some((item) => item.id === navItem.recipeId),
+            )?.id;
+            return { recipeId: navItem.recipeId, currentId, options };
+          })()
+        : null;
+
     if (!navItem.flip && !editable) return null;
     return (
       <div
@@ -427,7 +474,11 @@ export function PrintDeck(props: PrintDeckProps) {
       >
         <div className="recipe-page-toolbar">
           {navItem.flip && (
-            <div className="recipe-page-toolbar__group" role="group" aria-label="Sheet sides">
+            <div
+              className="recipe-page-toolbar__group recipe-page-toolbar__group--view"
+              role="group"
+              aria-label="Sheet sides"
+            >
               <button
                 type="button"
                 className="recipe-page-toolbar__btn recipe-page-toolbar__btn--icon"
@@ -482,6 +533,63 @@ export function PrintDeck(props: PrintDeckProps) {
               >
                 {editing ? "Done" : "Edit"}
               </button>
+            </div>
+          )}
+          {/* Move this recipe into another chapter.
+              
+              Until now the only way was the Organize panel: leave the page you
+              are looking at, find the recipe again in a different
+              representation, and drag it. But "this belongs in Desserts" is a
+              thought you have while looking AT the recipe, which is where this
+              bar already is.
+              
+              Recipes only. A divider, the cover and the contents page have no
+              chapter to be moved between. */}
+          {moveSections && (
+            <div className="recipe-page-toolbar__group">
+              <div className="recipe-page-toolbar__picker" ref={moveMenuRef}>
+                <button
+                  type="button"
+                  className={`recipe-page-toolbar__btn recipe-page-toolbar__btn--icon ${
+                    moveMenuOpen ? "is-active" : ""
+                  }`}
+                  aria-haspopup="menu"
+                  aria-expanded={moveMenuOpen}
+                  aria-label="Move to another chapter"
+                  title="Move to another chapter"
+                  onClick={(event) => {
+                    event.stopPropagation();
+                    setMoveMenuOpen((open) => !open);
+                  }}
+                >
+                  <MoveToSectionIcon size={ICON_SIZE.md} />
+                </button>
+                {moveMenuOpen && (
+                  <div className="recipe-page-toolbar__menu" role="menu" aria-label="Move to chapter">
+                    {moveSections.options.map((section) => (
+                      <button
+                        key={section.id}
+                        type="button"
+                        role="menuitemradio"
+                        aria-checked={section.id === moveSections.currentId}
+                        disabled={section.id === moveSections.currentId}
+                        className={`recipe-page-toolbar__option ${
+                          section.id === moveSections.currentId ? "is-active" : ""
+                        }`}
+                        onClick={(event) => {
+                          event.stopPropagation();
+                          setMoveMenuOpen(false);
+                          if (section.id !== moveSections.currentId) {
+                            onMoveRecipeToSection?.(moveSections.recipeId, section.id);
+                          }
+                        }}
+                      >
+                        {section.title}
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
             </div>
           )}
           {/* Delete, last and on its own: the Delete key already did this, and

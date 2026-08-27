@@ -1363,6 +1363,27 @@ export default function PrintPage() {
     setPendingFocusNavId("cover-dedication");
   }
 
+  /**
+   * Move one recipe into another chapter, from the page toolbar.
+   *
+   * Appends to the destination rather than asking where in it: from the page
+   * you are looking at, "put this in Desserts" is the whole thought, and a
+   * second question about position would be answered by dragging in the rail
+   * anyway. `moveItems` is the same commit a rail drag makes, so this lands
+   * in the project the same way and gets the same undo.
+   */
+  const moveRecipeToSection = useCallback(
+    (recipeId: string, sectionId: string) => {
+      const destination = projectMeta.meta.sections.find((section) => section.id === sectionId);
+      if (!destination) return;
+      projectMeta.moveItems([recipeId], sectionId, destination.itemIds.length);
+      const name = sectionTitleForId(sectionId);
+      showToast(name ? `Moved to ${name}` : "Moved");
+    },
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [projectMeta, sectionTitleForId],
+  );
+
   const requestDeleteNavItem = useCallback((navItem: NavItem) => {
     if (navItem.kind === "recipe") {
       const item = items?.find((candidate) => candidate.id === navItem.recipeId && candidate.recipe);
@@ -3884,6 +3905,7 @@ export default function PrintPage() {
           deckScale={deckScale}
           deckZoom={deckZoom}
           onRequestDelete={requestDeleteNavItem}
+          onMoveRecipeToSection={moveRecipeToSection}
           onZoomStep={stepDeckZoom}
           onZoomSet={setDeckZoom}
           deckRef={deckRef}

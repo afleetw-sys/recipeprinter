@@ -114,6 +114,17 @@ export const ArrowRightIcon = (p: IconProps) => (
   </Base>
 );
 
+/* A chapter with an arrow into it: "put this recipe somewhere else in the
+   book". A plain folder would read as filing the whole project away, and a
+   plain arrow as navigation. */
+export const MoveToSectionIcon = (p: IconProps) => (
+  <Base {...p}>
+    <path d="M3 7.5V18a1.5 1.5 0 001.5 1.5h15A1.5 1.5 0 0021 18v-7.5a1.5 1.5 0 00-1.5-1.5h-7l-2-2.5H4.5A1.5 1.5 0 003 7.5z" />
+    <path d="M9.5 14.5h5" />
+    <path d="M12.5 12.5l2 2-2 2" />
+  </Base>
+);
+
 export const ChevronDownIcon = (p: IconProps) => (
   <Base {...p}>
     <path d="M6 9l6 6 6-6" />

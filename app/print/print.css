@@ -1150,6 +1150,74 @@
   border-left: 1px solid var(--cp-line);
 }
 
+/* Two zones, not five equal groups.
+   
+   Front/Back changes WHAT YOU ARE LOOKING AT and costs nothing. Edit, Move and
+   Delete change the DOCUMENT, and one of them cannot be taken back. A uniform
+   hairline between every group said those two kinds of thing were the same
+   kind of thing; a wider gutter around the one rule that matters says they
+   are not. */
+.recipe-page-toolbar__group--view {
+  padding-right: 8px;
+}
+
+.recipe-page-toolbar__group--view + .recipe-page-toolbar__group {
+  padding-left: 8px;
+}
+
+/* Anchor for the move menu. */
+.recipe-page-toolbar__picker {
+  position: relative;
+  display: inline-flex;
+}
+
+/* Drops from the toolbar rather than rising from it — the bar floats near the
+   top of the page it acts on. Otherwise the zoom menu's recipe. */
+.recipe-page-toolbar__menu {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  z-index: 7;
+  display: flex;
+  flex-direction: column;
+  min-width: 168px;
+  max-height: 260px;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding: 4px;
+  border: 1px solid var(--cp-line);
+  border-radius: 12px;
+  background: var(--cp-card);
+  box-shadow: var(--cp-shadow-lg);
+}
+
+.recipe-page-toolbar__option {
+  display: block;
+  width: 100%;
+  min-height: 32px;
+  padding: 0 10px;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--cp-ink);
+  font-size: var(--cp-fs-caption);
+  font-weight: 700;
+  text-align: left;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.recipe-page-toolbar__option:hover:not(:disabled) {
+  background: var(--cp-overlay-hover);
+}
+
+/* The chapter it is already in. Marked, and not offered as a destination. */
+.recipe-page-toolbar__option.is-active {
+  background: var(--cp-selected-fill);
+  color: var(--cp-selected-text);
+  cursor: default;
+}
+
 .recipe-page-toolbar__btn {
   display: inline-flex;
   align-items: center;
