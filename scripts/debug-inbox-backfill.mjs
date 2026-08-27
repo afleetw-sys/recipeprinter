@@ -220,6 +220,41 @@ async function firestoreCreate(collection, row) {
   }
 }
 
+/**
+ * Is this exact payload confirmed present in the collection?
+ *
+ * Asked immediately before deleting the object, per object. The first run of
+ * this script trusted its own success counter instead: it reported 33 rows
+ * written and 0 failures, and 32 landed. The counter is not evidence, and
+ * "probably written" is not a good enough reason to delete the only copy.
+ *
+ * `runQuery` rather than the list endpoint because it is strongly consistent.
+ */
+async function firestoreHasStoragePath(collection, storagePath) {
+  const body = {
+    structuredQuery: {
+      from: [{ collectionId: collection }],
+      where: {
+        fieldFilter: {
+          field: { fieldPath: "storagePath" },
+          op: "EQUAL",
+          value: { stringValue: storagePath },
+        },
+      },
+      limit: 1,
+    },
+  };
+  const response = await fetch(`${FIRESTORE}:runQuery`, {
+    method: "POST",
+    headers: { ...(await bearer()), "Content-Type": "application/json" },
+    body: JSON.stringify(body),
+  });
+  if (!response.ok) {
+    throw new Error(`Verify failed (${response.status} ${(await response.text()).slice(0, 200)})`);
+  }
+  return (await response.json()).some((row) => row.document);
+}
+
 /** Every `storagePath` already in the collection, for the re-run guard. */
 async function firestoreStoragePaths(collection) {
   const paths = new Set();
@@ -312,7 +347,7 @@ async function main() {
       "\n",
   );
 
-  const stats = { moved: 0, copied: 0, skipped: 0, imagesKept: 0, deleted: 0, failed: 0 };
+  const stats = { moved: 0, copied: 0, skipped: 0, imagesKept: 0, deleted: 0, failed: 0, unverified: 0 };
 
   for (const entry of folders.slice(0, LIMIT === Infinity ? undefined : LIMIT)) {
     const { folder, payload, images } = entry;
@@ -334,9 +369,15 @@ async function main() {
           stats.deleted += 1;
         } else {
           try {
-            await gcsDelete(payload.name);
-            stats.deleted += 1;
-            console.log(`  deleted ${payload.name}`);
+            // Confirm the row is really there before removing the only copy.
+            if (!(await firestoreHasStoragePath("debugInbox", payload.name))) {
+              console.warn(`  ! KEPT ${payload.name}: no debugInbox row found for it`);
+              stats.unverified += 1;
+            } else {
+              await gcsDelete(payload.name);
+              stats.deleted += 1;
+              console.log(`  deleted ${payload.name}`);
+            }
           } catch (error) {
             console.warn(`  ! could not delete ${payload.name}: ${error.message}`);
             stats.failed += 1;
@@ -394,6 +435,7 @@ async function main() {
     try {
       await firestoreCreate("debugInbox", row);
       stats.moved += 1;
+      // Deleting in the same pass still verifies first, below.
       if (images.length > 0) stats.copied += 1;
       if (DELETE) {
         // Only ever the payload object. The image files in this folder are
@@ -414,7 +456,8 @@ async function main() {
       `${stats.deleted} deleted from Storage, ` +
       `${stats.skipped} skipped, ` +
       `${stats.imagesKept} image files left in place, ` +
-      `${stats.failed} failed.`,
+      `${stats.failed} failed` +
+      (stats.unverified ? `, ${stats.unverified} KEPT because no row was found for them.` : "."),
   );
   if (!APPLY) console.log("Nothing was changed. Re-run with --apply to write the rows.");
   else if (!DELETE) console.log("Storage untouched. Re-run with --apply --delete to remove the migrated payloads.");

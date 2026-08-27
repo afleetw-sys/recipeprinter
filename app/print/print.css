@@ -759,6 +759,15 @@
    rows only, starting in the gap just below the section/opener page above them
    (bridged up 10px, the group's row gap), so the recipes read as "under" that
    title page rather than the line running alongside the title itself. */
+/* A pending import is rendered INSIDE the row it follows (see `PageRail`), so
+   it is not a flex child of the rail and the rail's own 8px gap never reaches
+   it. Without this it sits flush against the card above, touching it, in both
+   the spinner and the error state. Only the nested case: a pending row with no
+   card to follow is a direct child and already gets the gap. */
+.recipe-page-rail__row .recipe-page-rail__row[data-pending-import] {
+  margin-top: 8px;
+}
+
 .recipe-page-rail__row--section-child {
   position: relative;
   padding-left: 12px;

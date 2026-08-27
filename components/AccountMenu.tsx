@@ -403,8 +403,7 @@ export default function AccountMenu({
                   attached to each item. */}
               {!user && listed.length > 0 && (
                 <p className="mt-cp-3 border-t border-line pt-cp-3 text-cp-caption text-ink-soft leading-relaxed">
-                  These are kept in this browser. Clearing your browsing data removes them,
-                  and they will not be on your other devices.
+                  Kept in this browser only.
                 </p>
               )}
             </div>

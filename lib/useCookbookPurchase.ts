@@ -153,7 +153,7 @@ export function useCookbookPurchase({
         return;
       }
 
-      track("purchase_started", { product: "cookbook" });
+      track("purchase_started", { product: "cookbook", customerId: revenueCatUserId });
       const result = await purchaseRecipePrinterCookbook({
         userId: revenueCatUserId,
         email: cookPilotUser?.email,
@@ -161,12 +161,12 @@ export function useCookbookPurchase({
       });
 
       if (result.cancelled) {
-        track("purchase_cancelled", { product: "cookbook" });
+        track("purchase_cancelled", { product: "cookbook", customerId: revenueCatUserId });
         showToast("Purchase cancelled. Your cookbook is still here when you're ready.");
         return;
       }
 
-      track("purchase_completed", { product: "cookbook" });
+      track("purchase_completed", { product: "cookbook", customerId: revenueCatUserId });
 
       markCookbookUnlockPending(projectId);
       markCookbookProjectUnlockedLocal(projectId);
@@ -188,7 +188,11 @@ export function useCookbookPurchase({
     } catch (error) {
       // See the same catch in usePremiumTemplatePurchase: a charge that
       // clears upstream and then throws here left no event at all.
-      track("purchase_failed", { product: "cookbook", reason: truncateReason(error) });
+      track("purchase_failed", {
+        product: "cookbook",
+        reason: truncateReason(error),
+        customerId: revenueCatUserId,
+      });
       showToast(friendlyPurchaseSetupError(error));
     } finally {
       setCookbookPurchaseBusy(false);
