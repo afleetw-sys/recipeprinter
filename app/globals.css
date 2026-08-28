@@ -1323,11 +1323,10 @@
     padding: 3px;
     border: 0;
     border-radius: 11px;
-    /* A filled track rather than a hairline. The frame drew a box around the
-       pair and then asked the selection to be read inside it; a solid ground
-       does the grouping on its own, and the selected tab reads as sitting in
-       a channel rather than as one of two things in a container. */
-    background: var(--cp-surface-soft);
+    /* Our own grey as the ground, the selection lifted out of it in card
+       white. The track does the grouping so no frame is needed, and the
+       white tab is the only thing that has to be found. */
+    background: var(--cp-surface-strong);
   }
 
   .rp-project-heading__kinds .segmented-control__option {
@@ -1349,8 +1348,11 @@
   .segmented-control.rp-project-heading__kinds .segmented-control__thumb {
     top: 3px;
     bottom: 3px;
+    /* 8px inside 11px outside: the same inner + padding relationship the zoom
+       control and the page toolbar use, so the corner stays concentric. */
     border-radius: 8px;
-    background: var(--cp-surface-strong);
+    border: 1px solid var(--cp-line);
+    background: var(--cp-card);
     box-shadow: none;
   }
 

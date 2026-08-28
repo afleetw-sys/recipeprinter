@@ -811,11 +811,15 @@
      rearranges what is already there — so they should read as two things. At
      6px they looked like one control split in half. */
   gap: 10px;
-  margin: -16px -16px 8px -4px;
+  /* No bottom margin: the rail's own 8px gap already separates this from the
+     first thumbnail, and stacking a margin on top of the header's bottom
+     padding put 28px between "Add recipes" and the first recipe — far more
+     air than anywhere else in the column. */
+  margin: -16px -16px 0 -4px;
   /* No rule under it. The header is still sticky and still carries the card
      background, so thumbnails scrolling beneath it stay covered — the line was
      only ever drawing a boundary the gap already makes. */
-  padding: 16px 16px 12px 4px;
+  padding: 16px 16px 8px 4px;
   background: var(--cp-card);
 }
 
@@ -1753,6 +1757,17 @@
   display: flex;
   flex-direction: column;
   gap: 6px;
+}
+
+/* The size choice is two short labels ("Full page", "6 x 4 card"), and a
+   full-width field for that much text reads as a text input waiting to be
+   filled rather than a menu with two answers. Half the column is more than
+   enough for the longer of them, and it lets the section's own label sit
+   beside open space instead of over a bar. */
+.recipe-config-section--size .select-menu,
+.recipe-config-section--size .select-menu__trigger {
+  width: 50%;
+  min-width: 140px;
 }
 
 /* The panel names itself, but not louder than the product or the document.
