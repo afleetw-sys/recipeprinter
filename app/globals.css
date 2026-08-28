@@ -833,6 +833,19 @@
      outlined white box reads as an empty slot, where a filled one reads as a
      control holding something. Signed IN, the same box takes the accent and
      your initials, so the fill is the constant and the colour says which. */
+  /* No box at all: for an icon button that sits INSIDE a heading rather than
+     in a row of controls, where the outline draws a second shape around a
+     glyph that is already reading as one thing with the words beside it.
+     Keeps the same hit area -- it is only the border and fill that go. */
+  .icon-button--bare {
+    border-color: transparent;
+    background: transparent;
+  }
+  .icon-button--bare:hover:not(:disabled) {
+    border-color: transparent;
+    background: var(--cp-surface-strong);
+  }
+
   .icon-button--filled {
     border-color: transparent;
     background: var(--cp-surface-strong);

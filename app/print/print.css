@@ -1,8 +1,11 @@
 /* Sits with the title, not with the actions: it leaves the organizer, which is
-   a different move from folding the panel (that arrow is on the rail's edge). */
+   a different move from folding the panel (that arrow is on the rail's edge).
+   Pulled left by its own padding so the ARROW lines up with the left edge of
+   the section cards below it -- the button box starting there put the glyph
+   7px inside, and the header read as indented from the thing it heads. */
 .recipe-organize-bar__back {
   flex: 0 0 auto;
-  margin-left: -4px;
+  margin-left: -9px;
 }
 
 /* ──────────────────────────────────────────────────────────────────────────
@@ -162,6 +165,13 @@
 
 .recipe-print-shell--organizing .icon-button:hover:not(:disabled) {
   background: var(--cp-overlay-hover);
+}
+
+/* ...except the bare ones, which are bare in here too. The rule above is more
+   specific than `.icon-button--bare`, so without this the organizer hands the
+   border back to every button it contains. */
+.recipe-print-shell--organizing .icon-button--bare {
+  border-color: transparent;
 }
 
 /* Auto-organize / Undo, in the organizer's toolbar beside Sort and the
@@ -375,12 +385,18 @@
      so their re-scale isn't a distraction and the organizer reads as taking
      over. Fades across the whole expansion. */
   .recipe-print-shell--organize-wide > .recipe-page-canvas,
-  .recipe-print-shell--organize-wide > .recipe-config-panel {
+  .recipe-print-shell--organize-wide > .recipe-config-panel,
+  /* The settings panel's own collapse arrow recedes WITH the panel it opens.
+     It floats on the boundary rather than inside the panel, so it is a sibling
+     here, not a child -- it was the one control left at full strength on a
+     surface that had gone quiet. */
+  .recipe-print-shell--organize-wide > .recipe-panel-toggle--right {
     opacity: 0.35;
     pointer-events: none;
   }
   .recipe-print-shell > .recipe-page-canvas,
-  .recipe-print-shell > .recipe-config-panel {
+  .recipe-print-shell > .recipe-config-panel,
+  .recipe-print-shell > .recipe-panel-toggle--right {
     transition: opacity 460ms ease;
   }
 
