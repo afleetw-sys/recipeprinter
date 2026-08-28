@@ -1766,7 +1766,7 @@
    beside open space instead of over a bar. */
 .recipe-config-section--size .select-menu,
 .recipe-config-section--size .select-menu__trigger {
-  width: 50%;
+  width: 60%;
   min-width: 140px;
 }
 
