@@ -1,3 +1,10 @@
+/* Sits with the title, not with the actions: it leaves the organizer, which is
+   a different move from folding the panel (that arrow is on the rail's edge). */
+.recipe-organize-bar__back {
+  flex: 0 0 auto;
+  margin-left: -4px;
+}
+
 /* ──────────────────────────────────────────────────────────────────────────
    Recipe card, template, and print-page CSS. Imported by app/print/layout.tsx
    rather than the root layout, so it only loads on /print and /print/[slug].
@@ -190,10 +197,11 @@
   flex: 0 0 auto;
   padding: 2px 2px 8px;
 }
+/* A row now: Back sits beside the title rather than above it. */
 .recipe-organize-bar__heading {
   display: flex;
-  flex-direction: column;
-  gap: 2px;
+  align-items: center;
+  gap: 4px;
 }
 .recipe-organize-bar__title {
   font-size: var(--cp-fs-h2-lg);
@@ -355,6 +363,12 @@
      the expansion. This class is the end state the JS animates toward. */
   .recipe-print-page .recipe-print-shell--organize-wide {
     grid-template-columns: 50% 30% 20%;
+    /* The collapse arrow rides `--rail-w`, so widening the column without
+       moving this variable strands the arrow mid-panel instead of on its edge.
+       It has to be the same number the first track uses. `--rail-collapsed`
+       wins over this further down, which is what keeps folding the rail while
+       the organizer is open walking the arrow out to the page edge. */
+    --rail-w: 50%;
   }
 
   /* While the organizer is open the preview + settings recede to a quiet peek,
@@ -420,7 +434,11 @@
 
   .recipe-page-rail__section-add-card {
     display: flex;
-    min-height: 132px;
+    /* A FLOOR, not a height. As a grid item this stretches to its row, so the
+       number only has to be smaller than a recipe tile -- at 132px it was
+       taller than the 115px tiles and dragged its whole row up with it, so the
+       one tile sharing that row came out a different size from every other. */
+    min-height: 88px;
     align-items: center;
     justify-content: center;
     flex-direction: column;
@@ -1204,6 +1222,10 @@
 .recipe-page-toolbar__menu {
   position: absolute;
   top: calc(100% + 8px);
+  /* Anchored to the trigger's own side. Right-aligned suits the buttons at the
+     end of the bar (Move), but the photo picker is the FIRST control, and a
+     right-aligned menu there hangs off the left of the bar and gets clipped by
+     the panel beside it. */
   right: 0;
   z-index: 7;
   display: flex;
@@ -1217,6 +1239,12 @@
   border-radius: 12px;
   background: var(--cp-card);
   box-shadow: var(--cp-shadow-lg);
+}
+
+/* Opens rightward from a trigger that starts the bar. */
+.recipe-page-toolbar__picker--start .recipe-page-toolbar__menu {
+  right: auto;
+  left: 0;
 }
 
 .recipe-page-toolbar__option {
@@ -1319,56 +1347,6 @@
   text-align: center;
 }
 
-/* The photo picker is a segmented control, and stays one inside the bar — but
-   on a track rather than behind a hairline, since a bordered white box on a
-   white bar is a shape you have to look for. Sized to the bar's 34px rhythm;
-   its own rules are tuned for a 25px pill floating on artwork. */
-.recipe-page-toolbar .recipe-page-layout-control {
-  display: inline-flex;
-}
-
-.recipe-page-toolbar .recipe-page-layout-picker {
-  border: 0;
-  border-radius: 10px;
-  background: var(--cp-surface-muted);
-}
-
-.recipe-page-toolbar .recipe-page-layout-picker__btn {
-  min-height: 28px;
-  padding: 0 10px;
-  border-radius: 7px;
-}
-
-/* Per-recipe page-layout picker (Phase 2b): a small segmented control shown
-   next to Edit in cookbook mode, with an optional feedback note below it. */
-.recipe-page-layout-control {
-  /* A row, not a column: this sits inside the page toolbar, which is one line
-     of controls, and stacking put the group half a line taller than everything
-     beside it. */
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-}
-
-/* Names what the three options are choosing. Quieter than the options
-   themselves — it is the question, and they are the answer. */
-.recipe-page-layout-control__label {
-  min-width: 0;
-  color: var(--cp-ink-soft);
-}
-
-/* A track holding ~25px segments with 3px of padding, so the outer corner is
-   the inner one plus that padding — 6 + 3 — rather than a pill wrapped around
-   rectangles. */
-.recipe-page-layout-picker {
-  display: inline-flex;
-  align-items: center;
-  padding: 3px;
-  border: 1px solid var(--cp-line);
-  border-radius: 9px;
-  background: var(--cp-card);
-}
-
 .recipe-spread__blank--designed {
   overflow: hidden;
   background: var(--recipe-bg, var(--cp-card));
@@ -1380,33 +1358,6 @@
   width: 100%;
   height: 100%;
   background: var(--recipe-bg, var(--cp-card));
-}
-
-.recipe-page-layout-picker__btn {
-  flex: none;
-  padding: 3px 10px;
-  border: 0;
-  border-radius: 6px;
-  background: transparent;
-  color: var(--cp-ink-soft);
-  font-size: var(--cp-fs-caption);
-  /* 700, matching the segmented control — this is the same kind of control. */
-  font-weight: 700;
-  /* Never let the labels wrap: when a recipe switches from a full-page spread
-     (double-wide controls) back to a single card page, the controls row halves
-     in width and the picker would otherwise smoosh the labels onto two lines. */
-  white-space: nowrap;
-  cursor: pointer;
-}
-
-.recipe-page-layout-picker__btn.is-active {
-  background: var(--cp-selected-fill);
-  color: var(--cp-selected-text);
-}
-
-.recipe-page-layout-picker__btn:disabled {
-  opacity: .5;
-  cursor: default;
 }
 
 /* The first slide's controls float above the card like every other slide's —
@@ -1634,14 +1585,14 @@
     pointer-events: none;
   }
 
-  /* Rides the boundary between the panel and the page, near the top of both —
+  /* Rides the boundary between the panel and the page, low on both —
      `left`/`right` are the same column variables the grid uses, so folding the
      column to zero walks the button out to the page edge with it. Floating
      over the line rather than inside the panel is what lets one control both
      close and reopen: it is still there when the panel is not. */
   .recipe-panel-toggle {
     position: absolute;
-    top: 18px;
+    bottom: 24px;
     z-index: 3;
     display: grid;
     place-items: center;

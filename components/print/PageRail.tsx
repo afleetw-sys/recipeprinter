@@ -476,7 +476,7 @@ export function PageRail(props: PageRailProps) {
             </div>
             {/* The collapse arrow is NOT here. It lives on the rail's own edge
                 (see `.recipe-panel-toggle`), where it stays put whether the
-                rail is open or folded — an arrow inside the panel can only be
+                rail is open or folded -- an arrow inside the panel can only be
                 the one that closes it, so it has to be replaced by a different
                 control somewhere else the moment it works. */}
             {projectMeta.meta.cookbookMode && (
@@ -501,6 +501,18 @@ export function PageRail(props: PageRailProps) {
           {organizeMode && (
             <div className="recipe-organize-bar">
               <div className="recipe-organize-bar__heading">
+                {/* Leaving the organizer is a NAMED action, so it says its
+                    name. It was a bare chevron sitting at the end of a row of
+                    real buttons, one icon away from the arrow that folds the
+                    whole panel — two different retreats, indistinguishable. */}
+                <IconButton
+                  className="recipe-organize-bar__back"
+                  onClick={exitOrganizeMode}
+                  aria-label="Back to pages"
+                  title="Back to pages"
+                >
+                  <ChevronLeftIcon size={ICON_SIZE.md} />
+                </IconButton>
                 <span className="recipe-organize-bar__title">Organize recipes</span>
               </div>
               <div className="recipe-organize-bar__actions">
@@ -585,16 +597,6 @@ export function PageRail(props: PageRailProps) {
                       recipes, you pressed Add section, they are in it. */}
                   <span>Add section</span>
                 </button>
-                {/* Icon-only, so it wears the icon button rather than a
-                    button-shaped exception beside Sort and Organize. */}
-                <IconButton
-                  className="recipe-organize-bar__collapse"
-                  onClick={exitOrganizeMode}
-                  aria-label="Collapse organizer"
-                  title="Collapse organizer"
-                >
-                  <ChevronLeftIcon size={ICON_SIZE.md} />
-                </IconButton>
               </div>
             </div>
           )}
