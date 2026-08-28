@@ -3165,31 +3165,6 @@
   --recipe-radius: 0.2in;
 }
 
-.recipe-template--fruit {
-  --recipe-bg: #fff6dd;
-  --recipe-ink: #342c22;
-  --recipe-muted: #648040;
-  --recipe-accent: #b93f47;
-  --recipe-accent-2: #4d843f;
-  --recipe-line: rgba(105, 137, 54, 0.28);
-  --recipe-step-bg: #f6dfad;
-  --recipe-footer: #7b824e;
-  --recipe-radius: 0.12in;
-}
-
-.recipe-template--cookout {
-  --recipe-bg: #fff8ee;
-  --recipe-ink: #3f352a;
-  --recipe-muted: #d9561f;
-  --recipe-accent: #d9561f;
-  --recipe-accent-2: #f2bd45;
-  --recipe-line: rgba(63, 53, 42, 0.24);
-  --recipe-step-bg: #efd8b5;
-  --recipe-footer: #d9561f;
-  --recipe-radius: 0.04in;
-  --recipe-title-font: var(--font-birthstone), "Brush Script MT", "Segoe Script", cursive;
-}
-
 .recipe-card {
   box-sizing: border-box;
   position: relative;
@@ -3602,16 +3577,13 @@
   background: var(--recipe-bg);
 }
 
-/* Heirloom and Cookout carry a solid accent spine — the cloth-and-foil look of
-   an older cookbook — so their type flips to the paper colour. */
-.recipe-template--heirloom .recipe-card--spine,
-.recipe-template--cookout .recipe-card--spine {
+/* Heirloom carries a solid accent spine — the cloth-and-foil look of an older
+   cookbook — so its type flips to the paper colour. */
+.recipe-template--heirloom .recipe-card--spine {
   background: var(--recipe-accent);
 }
 .recipe-template--heirloom .recipe-card__spine-title,
-.recipe-template--cookout .recipe-card__spine-title,
-.recipe-template--heirloom .recipe-card__spine-author,
-.recipe-template--cookout .recipe-card__spine-author {
+.recipe-template--heirloom .recipe-card__spine-author {
   color: var(--recipe-bg);
 }
 
@@ -3815,8 +3787,8 @@
    The base cover/chapter above is Classic's photo-forward treatment. Each
    template below reshapes that same markup into its own vibe — framed paper
    for Heirloom/Keepsake, a checker band for Bistro, split blocks for Counter,
-   stripes for Cookout — using the decorative hook elements (frame, ornament)
-   that render hidden by default. */
+   using the decorative hook elements (frame, ornament) that render hidden by
+   default. */
 .recipe-card__cover-frame,
 .recipe-card__chapter-frame,
 .recipe-card__cover-ornament,
@@ -3996,62 +3968,6 @@
   display: none;
 }
 
-/* Cookout — playful stripe band, dashed frame, big script title, centered. */
-.recipe-template--cookout .recipe-card__cover-band {
-  height: 0.4in;
-  background: repeating-linear-gradient(
-    90deg,
-    var(--recipe-accent) 0 0.4in,
-    var(--recipe-accent-2) 0.4in 0.8in
-  );
-}
-.recipe-template--cookout .recipe-card__cover-photo {
-  background: linear-gradient(
-    160deg,
-    color-mix(in srgb, var(--recipe-accent-2) 26%, var(--recipe-bg)),
-    color-mix(in srgb, var(--recipe-accent) 14%, var(--recipe-bg))
-  );
-}
-.recipe-template--cookout .recipe-card__cover-scrim {
-  display: none;
-}
-.recipe-template--cookout .recipe-card__cover-frame {
-  display: block;
-  position: absolute;
-  inset: 0.5in;
-  z-index: 2;
-  border: 3px dashed var(--recipe-accent);
-}
-.recipe-template--cookout .recipe-card__cover-content {
-  inset: 0.5in;
-  left: 0.5in;
-  right: 0.5in;
-  bottom: auto;
-  top: 0;
-  height: 100%;
-  align-items: center;
-  justify-content: center;
-  text-align: center;
-  color: var(--recipe-accent);
-}
-.recipe-template--cookout .recipe-card__cover-title {
-  color: var(--recipe-accent);
-  text-shadow: none;
-  font-size: calc(var(--recipe-card-title-size) * 2.6);
-  line-height: 0.82;
-  text-align: center;
-}
-.recipe-template--cookout .recipe-card__cover-subtitle,
-.recipe-template--cookout .recipe-card__cover-author {
-  color: var(--recipe-muted);
-  text-shadow: none;
-  opacity: 1;
-  text-align: center;
-}
-.recipe-template--cookout .recipe-card__cover-rule {
-  display: none;
-}
-
 /* ── Per-theme chapter openers ────────────────────────────────────────────
    Framed themes drop the photo band and center on paper (rules above); the
    band themes restyle the top band to match their cover. */
@@ -4087,37 +4003,6 @@
   border: 2px solid var(--recipe-accent);
 }
 
-/* Cookout chapter — dashed frame + script title, centered. */
-.recipe-template--cookout .recipe-card__chapter-photo {
-  display: none;
-}
-.recipe-template--cookout .recipe-card--chapter {
-  display: block;
-}
-.recipe-template--cookout .recipe-card__chapter-frame {
-  display: block;
-  position: absolute;
-  inset: 0.5in;
-  z-index: 0;
-  border: 3px dashed var(--recipe-accent);
-}
-.recipe-template--cookout .recipe-card__chapter-body {
-  position: absolute;
-  inset: 0.5in;
-  align-items: center;
-  justify-content: center;
-  text-align: center;
-}
-.recipe-template--cookout .recipe-card--chapter .recipe-card__divider-title {
-  text-align: center;
-  font-size: calc(var(--recipe-card-title-size) * 2.4);
-  line-height: 0.82;
-}
-.recipe-template--cookout .recipe-card__chapter-eyebrow,
-.recipe-template--cookout .recipe-card__chapter-intro {
-  text-align: center;
-}
-
 /* Bistro & Counter chapters keep the photo band but tint it to their palette
    (handled by the base gradient reading their --recipe-accent vars); Counter
    makes it a solid block to match its cover. */
@@ -4125,7 +4010,7 @@
   background: var(--recipe-accent);
 }
 
-/* Framed openers (heirloom/keepsake/cookout) drop the full-width band by design,
+/* Framed openers (heirloom/keepsake) drop the full-width band by design,
    which meant selecting "In card" for a chapter photo showed NOTHING on the
    opener — the photo only appeared as a Full-page facing sheet. When an in-card
    photo IS set, show it as a centered framed image above the title instead of
@@ -4134,8 +4019,7 @@
    without asking CSS to infer application state from the DOM.
    (Print-only geometry — verify on a re-export.) */
 .recipe-template--heirloom .recipe-card--chapter-with-photo,
-.recipe-template--keepsake .recipe-card--chapter-with-photo,
-.recipe-template--cookout .recipe-card--chapter-with-photo {
+.recipe-template--keepsake .recipe-card--chapter-with-photo {
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -4144,8 +4028,7 @@
   padding: 0.9in;
 }
 .recipe-template--heirloom .recipe-card--chapter-with-photo .recipe-card__chapter-body,
-.recipe-template--keepsake .recipe-card--chapter-with-photo .recipe-card__chapter-body,
-.recipe-template--cookout .recipe-card--chapter-with-photo .recipe-card__chapter-body {
+.recipe-template--keepsake .recipe-card--chapter-with-photo .recipe-card__chapter-body {
   position: static;
   inset: auto;
   padding: 0;
@@ -4153,8 +4036,7 @@
   text-align: center;
 }
 .recipe-template--heirloom .recipe-card--chapter-with-photo .recipe-card__chapter-photo,
-.recipe-template--keepsake .recipe-card--chapter-with-photo .recipe-card__chapter-photo,
-.recipe-template--cookout .recipe-card--chapter-with-photo .recipe-card__chapter-photo {
+.recipe-template--keepsake .recipe-card--chapter-with-photo .recipe-card__chapter-photo {
   display: block;
   position: relative;
   flex: none;
@@ -4331,14 +4213,6 @@
   color: var(--recipe-muted);
   font-variant-numeric: tabular-nums;
   pointer-events: none;
-}
-
-/* Cookout's illustrated lower border is substantially taller than the other
-   themes. Keep cookbook furniture above the icons instead of printing the
-   section name and folio through them. */
-.recipe-card-page:has(.recipe-template--cookout) .recipe-book-runhead,
-.recipe-card-page:has(.recipe-template--cookout) .recipe-book-folio {
-  bottom: 0.68in;
 }
 
 /* Heirloom's utensil row occupies the lower decorative margin. Keep the
@@ -5176,8 +5050,8 @@ textarea.recipe-card__toc-title {
    `background-position`) sits a bit below the card's own top edge, not
    flush against it, and the real card should match.
 
-   Template-gated exactly like the Bistro spine (`.recipe-card__checker`) and the
-   Cookout border (`.recipe-card__bbq-border`): every decoration is `display:none`
+   Template-gated exactly like the Bistro spine (`.recipe-card__checker`):
+   every decoration is `display:none`
    by default and turned on ONLY under its own `.recipe-template--<id>` wrapper. A
    stray `CounterCheckerBand` node (e.g. one emitted from a stale cover
    `draft.template`) must never paint on a non-counter page — this is the guard
@@ -5299,113 +5173,8 @@ textarea.recipe-card__toc-title {
   font-weight: 850;
 }
 
-.recipe-template--fruit .recipe-card {
-  overflow: hidden;
-  background:
-    linear-gradient(180deg, #f9c766 0 0.14in, transparent 0.14in calc(100% - 0.11in), #68a755 calc(100% - 0.11in)),
-    linear-gradient(90deg, rgba(104, 167, 85, 0.86) 0 0.07in, transparent 0.07in calc(100% - 0.07in), rgba(104, 167, 85, 0.86) calc(100% - 0.07in)),
-    radial-gradient(circle at 18% 22%, rgba(116, 78, 38, 0.04) 0 1px, transparent 1.4px) 0 0 / 0.22in 0.22in,
-    var(--recipe-bg);
-  border-color: rgba(105, 137, 54, 0.32);
-  box-shadow:
-    inset 0 0 0 0.025in rgba(216, 79, 82, 0.16),
-    inset 0 0 0 0.045in rgba(255, 253, 244, 0.68);
-}
-
-.recipe-template--fruit .recipe-card > * {
-  position: relative;
-  z-index: 1;
-}
-
-.recipe-template--fruit .recipe-card::before {
-  top: 0.19in;
-  right: 0.2in;
-  left: auto;
-  width: 0.95in;
-  height: 0.65in;
-  z-index: 0;
-  background: url("/images/fruit-summer-corner.svg") right top / contain no-repeat;
-  opacity: 0.58;
-}
-
-.recipe-template--fruit .recipe-card::after {
-  content: "";
-  position: absolute;
-  right: 0.24in;
-  bottom: 0.18in;
-  left: 0.24in;
-  z-index: 0;
-  width: auto;
-  height: 0.08in;
-  background:
-    radial-gradient(circle at 0.04in 50%, #d84f52 0 0.025in, transparent 0.03in) 0 0 / 0.28in 0.08in repeat-x,
-    linear-gradient(90deg, rgba(104, 167, 85, 0.32), rgba(249, 199, 102, 0.38));
-  opacity: 1;
-  pointer-events: none;
-  -webkit-print-color-adjust: exact;
-  print-color-adjust: exact;
-}
-
-.recipe-template--fruit .recipe-card__header {
-  padding-right: 1.02in;
-  border-bottom: 0;
-}
-
-.recipe-template--fruit .recipe-card__header--with-photo,
-.recipe-template--fruit .recipe-card--continued .recipe-card__header {
-  padding-right: 0;
-}
-
-.recipe-template--fruit .recipe-card:has(.recipe-card__header--with-photo)::before,
-.recipe-template--fruit .recipe-card--continued::before {
-  content: none;
-}
-
-.recipe-template--fruit .recipe-card__title {
-  color: var(--recipe-accent);
-  font-weight: 760;
-}
-
-.recipe-template--fruit .recipe-card__label,
-.recipe-template--fruit .recipe-card__section-title {
-  color: var(--recipe-accent-2);
-}
-
-.recipe-template--fruit .recipe-card__ingredients li::before {
-  background: var(--recipe-accent);
-}
-
-.recipe-template--fruit .recipe-card__step-number {
-  background: #f7e7c3;
-  color: var(--recipe-accent);
-  border-color: rgba(184, 59, 70, 0.22);
-}
-
-.recipe-template--cookout {
-  --bbq-edge-h: 0.54in;
-  --bbq-edge-w: 0.46in;
-}
-
-.recipe-template--cookout .recipe-card {
-  overflow: hidden;
-  background: var(--recipe-bg);
-  border-color: rgba(217, 86, 31, 0.32);
-  /* Less than the strip thickness on purpose: the content sits *over* the
-     inner reach of the border frame (icons render behind it, at reduced
-     opacity) rather than the whole strip being walled off in a dead margin.
-     That lets every icon sit fully inside the card — nothing has to be jammed
-     against the clipped edge and sliced in half. */
-  padding: calc(var(--bbq-edge-h) * 0.92) calc(var(--bbq-edge-w) * 1.18) calc(var(--bbq-edge-h) * 0.92)
-    calc(var(--bbq-edge-w) * 1.18);
-}
-
-.recipe-template--cookout .recipe-card > * {
-  position: relative;
-  z-index: 1;
-}
-
 /* The `.recipe-template--X .recipe-card > * { position: relative }` rules above
-   (heirloom/keepsake/fruit/cookout) exist to layer a RECIPE card's content above
+   (heirloom/keepsake) exist to layer a RECIPE card's content above
    its decorative `::before` background. They also catch the COVER's own
    absolutely-positioned pieces, though, and collapse them into normal flow — a
    grid-photo cover then sizes to its (square) images and shoves the title lockup
@@ -5440,200 +5209,6 @@ textarea.recipe-card__toc-title {
 .recipe-card--chapter-with-photo .recipe-card__chapter-image {
   position: absolute;
   inset: 0;
-}
-
-/* A hand-drawn-BBQ-icon border running along all four edges. The icons are
-   interleaved with flexible spacers (`.recipe-card__bbq-gap`, one before each
-   icon plus a trailing one) whose `flex-grow` is that icon's `gap` weight — so
-   flexbox shares the strip's leftover room out *unevenly*: the space before
-   every icon differs and 0-weight spacers collapse into deliberate clusters,
-   instead of the machine-even `space-evenly` grid this used to be. Size
-   (`--icon-scale`), rotation, an occasional flip, and a small perpendicular
-   jitter (all inline per icon in CookoutBbqBorder) vary on top of that.
-   Rendered as real <img> elements rather than background-images because none
-   of that per-icon variation is expressible through background-position. */
-.recipe-template--cookout .recipe-card__bbq-border {
-  position: absolute;
-  inset: 0;
-  z-index: 0;
-  pointer-events: none;
-  overflow: hidden;
-}
-
-.recipe-template--cookout .recipe-card__bbq-edge {
-  position: absolute;
-  display: flex;
-  align-items: center;
-}
-
-/* Flexible gap between border icons; `flex-grow` is set inline per icon (its
-   `gap` weight), so all the spacing comes from that weight. */
-.recipe-template--cookout .recipe-card__bbq-gap {
-  flex-shrink: 0;
-  flex-basis: 0;
-}
-
-.recipe-template--cookout .recipe-card__bbq-edge--top,
-.recipe-template--cookout .recipe-card__bbq-edge--bottom {
-  left: 0.05in;
-  right: 0.05in;
-  height: var(--bbq-edge-h);
-  align-items: center;
-}
-
-.recipe-template--cookout .recipe-card__bbq-edge--top {
-  top: 0.05in;
-}
-
-.recipe-template--cookout .recipe-card__bbq-edge--bottom {
-  bottom: 0.05in;
-}
-
-.recipe-template--cookout .recipe-card__bbq-edge--left,
-.recipe-template--cookout .recipe-card__bbq-edge--right {
-  top: 0.05in;
-  bottom: 0.05in;
-  width: var(--bbq-edge-w);
-  flex-direction: column;
-  align-items: center;
-}
-
-.recipe-template--cookout .recipe-card__bbq-edge--left {
-  left: 0.05in;
-}
-
-.recipe-template--cookout .recipe-card__bbq-edge--right {
-  right: 0.05in;
-}
-
-/* The photo thumbnail sits in the top-right of the header, so the top and
-   right strips pull back short of it instead of running underneath. */
-.recipe-template--cookout .recipe-card__bbq-border--with-photo .recipe-card__bbq-edge--top {
-  right: calc(var(--recipe-card-photo-size) + 0.3in);
-}
-
-.recipe-template--cookout .recipe-card__bbq-border--with-photo .recipe-card__bbq-edge--right {
-  top: calc(var(--recipe-card-photo-size) + 0.2in);
-}
-
-.recipe-template--cookout .recipe-card__bbq-icon {
-  flex: 0 0 auto;
-  --icon-scale: 1;
-  /* Near-full strength so the frame reads as a bold, intentional BBQ border
-     (like the reference card) rather than a faint watermark. The content
-     padding below keeps text clear of the strip, so the icons don't need to be
-     knocked back to avoid fighting it. */
-  opacity: 0.92;
-  -webkit-print-color-adjust: exact;
-  print-color-adjust: exact;
-}
-
-.recipe-template--cookout .recipe-card__bbq-edge--top .recipe-card__bbq-icon,
-.recipe-template--cookout .recipe-card__bbq-edge--bottom .recipe-card__bbq-icon {
-  height: calc(var(--bbq-edge-h) * 0.9 * var(--icon-scale));
-  width: auto;
-}
-
-/* Left/right icons are capped on both axes (rather than sized by width
-   alone) so a tall, narrow icon like the kabob skewer — whose native aspect
-   ratio is nothing like the roughly-square grill/tomato/steak icons —
-   shrinks to fit the cap instead of blowing up to several times the others'
-   height. */
-.recipe-template--cookout .recipe-card__bbq-edge--left .recipe-card__bbq-icon,
-.recipe-template--cookout .recipe-card__bbq-edge--right .recipe-card__bbq-icon {
-  width: auto;
-  height: auto;
-  max-width: calc(var(--bbq-edge-w) * 0.98 * var(--icon-scale));
-  max-height: calc(var(--bbq-edge-w) * 1.55 * var(--icon-scale));
-}
-
-.recipe-template--cookout .recipe-card__header {
-  border-bottom: 0;
-}
-
-.recipe-template--cookout .recipe-card__header--with-photo,
-.recipe-template--cookout .recipe-card--continued .recipe-card__header {
-  padding-right: 0;
-}
-
-.recipe-template--cookout .recipe-card__title {
-  color: var(--recipe-accent);
-  font-size: calc(var(--recipe-card-title-size) * 1.55);
-  font-weight: 700;
-  line-height: 0.92;
-  text-transform: none;
-  -webkit-text-stroke: 0.4px var(--recipe-accent);
-}
-
-.recipe-template--cookout .recipe-card__meta {
-  color: var(--recipe-accent);
-  font-family: var(--font-gochi-hand), "Segoe Print", "Comic Sans MS", cursive;
-}
-
-.recipe-template--cookout .recipe-card__label,
-.recipe-template--cookout .recipe-card__section-title {
-  color: var(--recipe-accent);
-  font-family: var(--font-gochi-hand), "Segoe Print", "Comic Sans MS", cursive;
-  font-size: calc(var(--recipe-card-label-size) * 1.35);
-  letter-spacing: 0.04em;
-}
-
-.recipe-template--cookout .recipe-card--divider,
-.recipe-template--cookout .recipe-card--cover {
-  justify-content: center;
-}
-
-.recipe-template--cookout .recipe-card--divider .recipe-card__divider-title,
-.recipe-template--cookout .recipe-card--cover .recipe-card__cover-title {
-  color: var(--recipe-accent);
-  font-size: calc(var(--recipe-card-title-size) * 1.78);
-  font-weight: 700;
-  line-height: 0.92;
-  -webkit-text-stroke: 0.4px var(--recipe-accent);
-}
-
-.recipe-template--cookout .recipe-card--cover .recipe-card__cover-author {
-  font-family: var(--font-gochi-hand), "Segoe Print", "Comic Sans MS", cursive;
-  color: var(--recipe-accent);
-  letter-spacing: 0.04em;
-}
-
-.recipe-print-preview--card-6x4 .recipe-template--cookout .recipe-card--divider .recipe-card__divider-title,
-.recipe-print-preview--card-6x4 .recipe-template--cookout .recipe-card--cover .recipe-card__cover-title {
-  font-size: calc(var(--recipe-card-title-size) * 1.72);
-}
-
-.recipe-template--cookout .recipe-card__ingredients li::before {
-  background: var(--recipe-accent);
-}
-
-.recipe-template--cookout .recipe-card__step-number {
-  background: #fff1db;
-  color: var(--recipe-accent);
-  border-color: rgba(217, 86, 31, 0.26);
-}
-
-.recipe-print-preview--card-6x4 .recipe-template--fruit .recipe-card::before {
-  top: 0.16in;
-  right: 0.14in;
-  width: 0.64in;
-  height: 0.44in;
-}
-
-/* Same clustered-border idea as the letter size above but scaled down for
-   the much smaller 6x4 card via the shared --bbq-edge-* variables — no
-   per-icon overrides needed since sizes/positions all derive from those. */
-.recipe-print-preview--card-6x4 .recipe-template--cookout {
-  --bbq-edge-h: 0.24in;
-  --bbq-edge-w: 0.2in;
-}
-
-.recipe-print-preview--card-6x4 .recipe-template--fruit .recipe-card__header {
-  padding-right: 0.78in;
-}
-
-.recipe-print-preview--card-6x4 .recipe-template--fruit .recipe-card__header--with-photo {
-  padding-right: 0;
 }
 
 .recipe-card__header {
@@ -5690,9 +5265,7 @@ textarea.recipe-card__toc-title {
 }
 
 .recipe-print-preview--card-6x4 .recipe-template--pantry .recipe-card__header--with-photo .recipe-card__photo,
-.recipe-print-preview--card-6x4 .recipe-template--bistro .recipe-card__header--with-photo .recipe-card__photo,
-.recipe-print-preview--card-6x4 .recipe-template--fruit .recipe-card__header--with-photo .recipe-card__photo,
-.recipe-print-preview--card-6x4 .recipe-template--cookout .recipe-card__header--with-photo .recipe-card__photo {
+.recipe-print-preview--card-6x4 .recipe-template--bistro .recipe-card__header--with-photo .recipe-card__photo {
   width: 0.8in;
   height: 0.8in;
 }
@@ -5922,55 +5495,6 @@ textarea.recipe-card__toc-title {
   border-radius: 0;
 }
 
-/* ── Fruit Stand: quiet market-stationery photo with a produce-label edge ─── */
-.recipe-template--fruit .recipe-card__header--with-photo {
-  align-items: center;
-}
-
-.recipe-template--fruit .recipe-card__header--with-photo .recipe-card__headline {
-  align-self: stretch;
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-}
-
-.recipe-template--fruit .recipe-card__photo {
-  padding: 3px;
-  overflow: hidden;
-  background: #fffdf6;
-  border: 1px solid rgba(101, 135, 85, 0.3);
-  border-radius: 7px;
-  box-shadow:
-    0 0 0 2px rgba(255, 253, 246, 0.82),
-    0 2px 0 rgba(101, 135, 85, 0.12);
-}
-.recipe-template--fruit .recipe-card__photo-img {
-  border-radius: 5px;
-}
-
-/* ── Cookout: sturdy menu-board photo with a restrained ink shadow ───────── */
-.recipe-template--cookout .recipe-card__header--with-photo {
-  align-items: center;
-}
-
-.recipe-template--cookout .recipe-card__header--with-photo .recipe-card__headline {
-  align-self: stretch;
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-}
-
-.recipe-template--cookout .recipe-card__photo {
-  padding: 3px;
-  background: #fff8ee;
-  border: 1.5px solid rgba(54, 49, 43, 0.8);
-  border-radius: 2px;
-  box-shadow: 3px 3px 0 rgba(153, 66, 60, 0.18);
-}
-.recipe-template--cookout .recipe-card__photo-img {
-  border-radius: 0;
-}
-
 /* ── One photo treatment, every template ──────────────────────────────────
    Letter pages used to lead with a wide, short banner photo above the title on
    the two templates with a plain rectangular frame (classic and counter),
@@ -5997,18 +5521,14 @@ textarea.recipe-card__toc-title {
 .recipe-print-preview--letter .recipe-template--heirloom .recipe-card__header--with-photo,
 .recipe-print-preview--letter .recipe-template--bistro .recipe-card__header--with-photo,
 .recipe-print-preview--letter .recipe-template--pantry .recipe-card__header--with-photo,
-.recipe-print-preview--letter .recipe-template--keepsake .recipe-card__header--with-photo,
-.recipe-print-preview--letter .recipe-template--fruit .recipe-card__header--with-photo,
-.recipe-print-preview--letter .recipe-template--cookout .recipe-card__header--with-photo {
+.recipe-print-preview--letter .recipe-template--keepsake .recipe-card__header--with-photo {
   align-items: center;
 }
 
 .recipe-print-preview--letter .recipe-template--heirloom .recipe-card__header--with-photo .recipe-card__headline,
 .recipe-print-preview--letter .recipe-template--bistro .recipe-card__header--with-photo .recipe-card__headline,
 .recipe-print-preview--letter .recipe-template--pantry .recipe-card__header--with-photo .recipe-card__headline,
-.recipe-print-preview--letter .recipe-template--keepsake .recipe-card__header--with-photo .recipe-card__headline,
-.recipe-print-preview--letter .recipe-template--fruit .recipe-card__header--with-photo .recipe-card__headline,
-.recipe-print-preview--letter .recipe-template--cookout .recipe-card__header--with-photo .recipe-card__headline {
+.recipe-print-preview--letter .recipe-template--keepsake .recipe-card__header--with-photo .recipe-card__headline {
   align-self: stretch;
   display: flex;
   flex-direction: column;
@@ -6524,9 +6044,7 @@ textarea.recipe-card__toc-title {
   .recipe-template--heirloom,
   .recipe-template--bistro,
   .recipe-template--counter,
-  .recipe-template--keepsake,
-  .recipe-template--fruit,
-  .recipe-template--cookout
+  .recipe-template--keepsake
 ) .recipe-card__footer {
   display: none;
 }
@@ -6536,9 +6054,7 @@ textarea.recipe-card__toc-title {
   .recipe-template--heirloom,
   .recipe-template--bistro,
   .recipe-template--counter,
-  .recipe-template--keepsake,
-  .recipe-template--fruit,
-  .recipe-template--cookout
+  .recipe-template--keepsake
 ) .recipe-card__footer:has(.recipe-card__footer-source) {
   display: flex;
 }
@@ -6548,9 +6064,7 @@ textarea.recipe-card__toc-title {
   .recipe-template--heirloom,
   .recipe-template--bistro,
   .recipe-template--counter,
-  .recipe-template--keepsake,
-  .recipe-template--fruit,
-  .recipe-template--cookout
+  .recipe-template--keepsake
 ) .recipe-card__footer-brand {
   display: none;
 }
@@ -6583,9 +6097,7 @@ textarea.recipe-card__toc-title {
    footer is a direct child of the card, so in normal flow it already starts at
    the content's left edge; zero the offset so the link lines up with it. */
 .recipe-template--heirloom .recipe-card__footer,
-.recipe-template--keepsake .recipe-card__footer,
-.recipe-template--fruit .recipe-card__footer,
-.recipe-template--cookout .recipe-card__footer {
+.recipe-template--keepsake .recipe-card__footer {
   left: 0;
   right: 0;
 }

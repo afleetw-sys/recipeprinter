@@ -269,8 +269,61 @@ export async function parseImages(images: string[]): Promise<Recipe> {
   }
 }
 
+/**
+ * Unicode vulgar fractions, written the way a parser can read them.
+ *
+ * `1/2 cup olive oil` parses. `\u00bd cup lemon juice` does not: the parser matches
+ * ASCII quantities, and a line whose quantity it cannot read is DISCARDED
+ * rather than kept. A real paste lost three of its nine ingredients that way
+ * and the import still reported success, so the cook saw a finished card with
+ * a third of the recipe missing.
+ *
+ * These characters arrive constantly — iOS autocorrect turns `1/2` into
+ * `\u00bd` as you type, and most recipe sites publish them. Rewriting them before
+ * the text is sent is lossless (\u00bd and 1/2 are the same quantity) and does not
+ * need CookPilot to ship anything.
+ *
+ * `1\u00bd` becomes `1 1/2`, not `11/2`: a digit immediately before the glyph is
+ * a whole number, and running them together would silently multiply the
+ * amount by more than twenty.
+ */
+const VULGAR_FRACTIONS: Record<string, string> = {
+  "\u00bd": "1/2",
+  "\u2153": "1/3",
+  "\u2154": "2/3",
+  "\u00bc": "1/4",
+  "\u00be": "3/4",
+  "\u2155": "1/5",
+  "\u2156": "2/5",
+  "\u2157": "3/5",
+  "\u2158": "4/5",
+  "\u2159": "1/6",
+  "\u215a": "5/6",
+  "\u2150": "1/7",
+  "\u215b": "1/8",
+  "\u215c": "3/8",
+  "\u215d": "5/8",
+  "\u215e": "7/8",
+  "\u2151": "1/9",
+  "\u2152": "1/10",
+  "\u2189": "0/3",
+};
+
+export function normalizeFractions(text: string): string {
+  return text
+    // U+2044 FRACTION SLASH: "1⁄2" reads as a fraction to a human and as
+    // punctuation to a parser.
+    .replace(/\u2044/g, "/")
+    .replace(
+      new RegExp(`(\\d?)\\s*([${Object.keys(VULGAR_FRACTIONS).join("")}])`, "g"),
+      (_match, lead: string, glyph: string) =>
+        lead ? `${lead} ${VULGAR_FRACTIONS[glyph]}` : VULGAR_FRACTIONS[glyph],
+    );
+}
+
 /** Pasted-text import, CookPilot's `parseSocialRecipe` (free text as caption). */
-export async function parseText(text: string): Promise<Recipe> {
+export async function parseText(rawText: string): Promise<Recipe> {
+  const text = normalizeFractions(rawText);
   try {
     const data = await callCookPilotParser("parseSocialRecipe", {
       platform: "other",

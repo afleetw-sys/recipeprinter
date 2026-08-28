@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { ImportError } from "@/lib/parser";
-import { parseUrlAll } from "@/lib/parser";
+import { normalizeFractions, parseUrlAll } from "@/lib/parser";
 
 // What these tests are about is one decision: after `/api/parse` fails, do we
 // go on to run CookPilot's parser AGAIN through its client callable? The route
@@ -136,4 +136,35 @@ describe("parseUrlAll — analytics buckets for suppressed retries", () => {
       expect(callable).not.toHaveBeenCalled();
     });
   }
+});
+
+describe("normalizeFractions", () => {
+  // The exact paste that lost three of its nine ingredients in production.
+  it("rewrites the glyphs that were being discarded", () => {
+    expect(normalizeFractions("¼ cup red wine or balsamic dressing")).toBe(
+      "1/4 cup red wine or balsamic dressing",
+    );
+    expect(normalizeFractions("½ lemon juice")).toBe("1/2 lemon juice");
+  });
+
+  // Running these together would multiply the amount by more than twenty.
+  it("keeps a whole number apart from its fraction", () => {
+    expect(normalizeFractions("1½ cups flour")).toBe("1 1/2 cups flour");
+    expect(normalizeFractions("2 ¾ tsp salt")).toBe("2 3/4 tsp salt");
+  });
+
+  it("handles the fraction slash", () => {
+    expect(normalizeFractions("1⁄2 cup sugar")).toBe("1/2 cup sugar");
+  });
+
+  it("leaves ASCII fractions and ordinary text alone", () => {
+    expect(normalizeFractions("1/2 cup olive oil")).toBe("1/2 cup olive oil");
+    expect(normalizeFractions("Salt/pepper to taste")).toBe("Salt/pepper to taste");
+  });
+
+  it("covers every glyph it claims to", () => {
+    for (const glyph of ["½", "⅓", "⅔", "¼", "¾", "⅕", "⅙", "⅛", "⅜", "⅝", "⅞"]) {
+      expect(normalizeFractions(`${glyph} cup`)).toMatch(/^\d+\/\d+ cup$/);
+    }
+  });
 });

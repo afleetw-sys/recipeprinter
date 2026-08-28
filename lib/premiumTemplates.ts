@@ -7,8 +7,6 @@ export const PREMIUM_TEMPLATE_ENTITLEMENTS = {
   bistro: "template_bistro",
   counter: "template_counter",
   keepsake: "template_keepsake",
-  fruit: "template_fruit",
-  cookout: "template_cookout",
 } as const satisfies Partial<Record<RecipePrintTemplate, string>>;
 
 export const PREMIUM_TEMPLATE_PACKAGE_IDS = {
@@ -16,8 +14,6 @@ export const PREMIUM_TEMPLATE_PACKAGE_IDS = {
   bistro: "bistro",
   counter: "counter",
   keepsake: "keepsake",
-  fruit: "fruit",
-  cookout: "cookout",
 } as const satisfies Partial<Record<RecipePrintTemplate, string>>;
 
 export const PREMIUM_TEMPLATE_PRODUCT_IDS = {
@@ -25,8 +21,6 @@ export const PREMIUM_TEMPLATE_PRODUCT_IDS = {
   bistro: "bistro",
   counter: "counter",
   keepsake: "keepsake",
-  fruit: "fruit",
-  cookout: "cookout",
 } as const satisfies Partial<Record<RecipePrintTemplate, string>>;
 
 export type PremiumRecipePrintTemplate = keyof typeof PREMIUM_TEMPLATE_ENTITLEMENTS;
