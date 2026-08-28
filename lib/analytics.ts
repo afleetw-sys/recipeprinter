@@ -611,3 +611,24 @@ export function identifyUser(distinctId: string): void {
 export function capturePageview(url: string): void {
   enqueue((client) => client.capture("$pageview", { $current_url: url }));
 }
+
+/**
+ * Closes the pageview above when a CLIENT-SIDE route change ends it.
+ *
+ * posthog-js only ever fires `$pageleave` from its unload handler — verified
+ * in both 1.406 and 1.422, where the only two `capture($pageleave)` calls sit
+ * in `_handle_unload`. On a site that navigates with the history API that is
+ * once per DOCUMENT, while `$pageview` fires once per ROUTE. The counts then
+ * disagree by a wide margin, which is what PostHog's Installation Health
+ * reports as "without $pageleave events, bounce rate and session duration
+ * might be inaccurate", and it is not something `capture_pageleave: true`
+ * can fix: that setting decides WHETHER the unload handler fires, not how
+ * often.
+ *
+ * So the route-change half is ours to send, since the manual `$pageview` is
+ * ours too. The unload half stays with posthog-js, and the two do not
+ * overlap: React cleanup does not run on a real page unload.
+ */
+export function capturePageleave(url: string): void {
+  enqueue((client) => client.capture("$pageleave", { $current_url: url }));
+}
