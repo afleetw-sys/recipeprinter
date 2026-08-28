@@ -506,7 +506,7 @@ export function PageRail(props: PageRailProps) {
                     real buttons, one icon away from the arrow that folds the
                     whole panel — two different retreats, indistinguishable. */}
                 <IconButton
-                  className="recipe-organize-bar__back"
+                  className="icon-button--bare recipe-organize-bar__back"
                   onClick={exitOrganizeMode}
                   aria-label="Back to pages"
                   title="Back to pages"
