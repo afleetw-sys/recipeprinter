@@ -11,7 +11,7 @@ import type { SVGProps } from "react";
 // site, or the same button ends up with a 16px glyph on one side and a 14px one
 // on the other (the rail's Add carried exactly that pair):
 //   - a LEADING icon takes its control's size — `md` inside any .btn, so Save,
-//     Print, Add recipes, Add cover and Organize it for me all match;
+//     Print, Add recipes, Add cover and Organize for me all match;
 //   - a TRAILING disclosure chevron takes the TEXT's size (`sm`), because it
 //     belongs to the label rather than to the button;
 //   - meta icons beside small text are `sm`; glyphs inside a status chip `xs`.

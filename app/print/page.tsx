@@ -1121,6 +1121,18 @@ export default function PrintPage() {
         body: "",
       });
     }
+    // Chapter the book they already have. Turning a stack of recipes into a
+    // cookbook and handing back one undivided run of pages leaves the cook to
+    // do by hand the thing the book was for — and "Organize for me" is a button
+    // they have to find, in a panel they have to open, to get a result we could
+    // already have given them. Only for a book with enough recipes to group,
+    // and never over chapters they made themselves.
+    if (
+      namedSectionCount(sections) === 0 &&
+      (items ?? []).filter((item) => item.recipe).length >= 2
+    ) {
+      applyCookbookOrganization({ automatic: true });
+    }
     projectMeta.setCookbookWelcomeCompleted(true);
     // Every recipe gets its own full page — no auto-pairing. The cook can turn
     // an individual recipe into a full-page photo spread from the page controls.
@@ -1685,17 +1697,24 @@ export default function PrintPage() {
     });
   }
 
-  // The ONE place the recommended structure is applied — an explicit opt-in,
-  // snapshotting the current sections so the single Undo can restore them.
-  function suggestCookbookLayout() {
+  // The ONE place the recommended structure is applied. Always snapshots the
+  // current sections first, so the single Undo can restore them — that matters
+  // MORE when this runs by itself at build time, because nobody asked for it.
+  function applyCookbookOrganization({ automatic = false }: { automatic?: boolean } = {}) {
     setOrganizationUndo(structuredClone(projectMeta.meta.sections));
     const next = organizationSectionsForApply(
       suggestCookbookOrganization(items ?? []),
       (items ?? []).filter((item) => item.recipe).map((item) => item.id),
     );
     projectMeta.setSectionStructure(next);
-    track("relayout_applied", { sectionCount: next.length });
-    showToast(cookbookMode ? "Cookbook organized" : "Recipes organized");
+    track("relayout_applied", { sectionCount: next.length, automatic });
+    // No toast for the automatic run: it lands mid-build-reveal, where it would
+    // be a notification about something the cook is already watching happen.
+    if (!automatic) showToast(cookbookMode ? "Cookbook organized" : "Recipes organized");
+  }
+
+  function suggestCookbookLayout() {
+    applyCookbookOrganization();
   }
 
   function undoCookbookOrganization() {
@@ -1713,7 +1732,7 @@ export default function PrintPage() {
   // Sorting is a real reorder, not a view: the organizer shows the book, so A–Z
   // has to move the pages themselves — otherwise the tiles and the printed
   // order would disagree. Each section sorts within itself; section order is
-  // the cook's own (and "Organize it for me" above owns that question).
+  // the cook's own (and "Organize for me" above owns that question).
   function applyRailSort(mode: RailSortMode) {
     if (mode === railSortMode) return;
     if (mode === "title") {

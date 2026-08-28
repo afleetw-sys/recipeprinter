@@ -202,7 +202,10 @@ type EventProps = {
   cookbook_recipes_moved_to_section: { count: number; via: "tile_menu" };
   cookbook_ready_shown: { freshPurchase: boolean };
   relayout_started: {};
-  relayout_applied: { sectionCount: number };
+  /** `automatic` separates the chaptering a fresh cookbook does for itself at
+      build time from the cook pressing "Organize for me" — the second is a
+      signal about the first not having been good enough. */
+  relayout_applied: { sectionCount: number; automatic: boolean };
 
   /** Stale forks of a book that an old autosave bug saved into an account, then
       silently deleted on the cook's next visit to Projects (lib/duplicateProjects).
