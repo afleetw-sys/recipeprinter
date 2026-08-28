@@ -148,8 +148,8 @@ interface PrintDeckProps {
   goToSlide: ReturnType<typeof useDeckScroller>["goToSlide"];
   // Inline editing
   projectMeta: ReturnType<typeof useProjectMeta>;
-  pageEditMode: ReturnType<typeof useRecipeInlineEditor>["pageEditMode"];
-  togglePageEditMode: ReturnType<typeof useRecipeInlineEditor>["togglePageEditMode"];
+  showEmptyFields: ReturnType<typeof useRecipeInlineEditor>["showEmptyFields"];
+  toggleShowEmptyFields: ReturnType<typeof useRecipeInlineEditor>["toggleShowEmptyFields"];
   activeInlineEdit: ReturnType<typeof useRecipeInlineEditor>["activeInlineEdit"];
   editingSectionId: string | null;
   setEditingSectionId: Dispatch<SetStateAction<string | null>>;
@@ -279,8 +279,8 @@ export function PrintDeck(props: PrintDeckProps) {
     slideRefs,
     goToSlide,
     projectMeta,
-    pageEditMode,
-    togglePageEditMode,
+    showEmptyFields,
+    toggleShowEmptyFields,
     activeInlineEdit,
     editingSectionId,
     setEditingSectionId,
@@ -338,7 +338,7 @@ export function PrintDeck(props: PrintDeckProps) {
     );
 
   const isEditingNavItem = (navItem: NavItem) =>
-    (navItem.kind === "recipe" && pageEditMode) ||
+    (navItem.kind === "recipe" && showEmptyFields) ||
     (navItem.kind === "divider" && editingSectionId === navItem.recipeId) ||
     (navItem.kind === "cover" && editingCoverSide === coverSideFromNavItem(navItem)) ||
     (navItem.kind === "toc" && editingToc);
@@ -359,7 +359,7 @@ export function PrintDeck(props: PrintDeckProps) {
   const renderLineKindControl = (navItem: NavItem) => {
     // Mirrors the gate on ScaledPage's `inlineEdit` below: the switch belongs
     // to the recipe actually being edited, not to whatever page has focus.
-    if (navItem.kind !== "recipe" || !pageEditMode) return null;
+    if (navItem.kind !== "recipe") return null;
     if (!activeInlineEdit || activeRecipeItem?.id !== navItem.recipeId) return null;
     const target = activeInlineEdit.editingTarget;
     if (!target) return null;
@@ -532,7 +532,7 @@ export function PrintDeck(props: PrintDeckProps) {
                 onClick={(event) => {
                   event.stopPropagation();
                   if (navItem.kind === "recipe") {
-                    togglePageEditMode();
+                    toggleShowEmptyFields();
                   } else if (navItem.kind === "divider") {
                     if (editingSectionId === navItem.recipeId) commitSectionEdit();
                     else startSectionEdit(navItem.recipeId);
@@ -544,7 +544,19 @@ export function PrintDeck(props: PrintDeckProps) {
                   }
                 }}
               >
-                {editing ? "Done" : "Edit"}
+                {/* On a recipe this no longer opens an editor -- the text is
+                    already editable by clicking it. What is left for it to do
+                    is show the fields this recipe does NOT have, which cannot
+                    be clicked into existence because they take up no room. The
+                    cover, contents and chapter openers still have a real edit
+                    mode, and still say Edit. */}
+                {navItem.kind === "recipe"
+                  ? editing
+                    ? "Done"
+                    : "All fields"
+                  : editing
+                    ? "Done"
+                    : "Edit"}
               </button>
             </div>
           )}
@@ -661,13 +673,14 @@ export function PrintDeck(props: PrintDeckProps) {
       doubleSided={continueOnBack}
       gutterSide={gutterSideForRole(role)}
       cookbookMode={Boolean(projectMeta.meta.cookbookMode)}
+      showEmptyFields={showEmptyFields}
       showSourceUrl={
         sourceUrlOn ||
-        (showSourceUrl && pageEditMode && focused && activeRecipeItem?.id === navItem.recipeId)
+        (showSourceUrl && showEmptyFields && focused && activeRecipeItem?.id === navItem.recipeId)
       }
       showCutLines={showCutLines && cardSize === "card-6x4"}
       inlineEdit={
-        pageEditMode && focused && activeRecipeItem?.id === navItem.recipeId && activeInlineEdit
+        focused && activeRecipeItem?.id === navItem.recipeId && activeInlineEdit
           ? {
               ...activeInlineEdit,
               recipeImages: recipePhotoChoices(activeRecipeItem?.id, activeRecipeItem?.recipe?.image),
@@ -737,11 +750,11 @@ export function PrintDeck(props: PrintDeckProps) {
           : undefined
       }
       imageEdit={
-        // Photo controls (drag-to-reposition + the "Photo" button) appear once
-        // you're editing the recipe — the same "Edit first, then adjust" flow as
-        // the placement toggle — and live right here on the image, not orphaned
-        // inside the facing recipe card.
-        focused && navItem.kind === "image" && pageEditMode
+        // Photo controls (drag-to-reposition + the "Photo" button) live right
+        // here on the image, not orphaned inside the facing recipe card. An
+        // image page has no text on it, so there is no click-to-edit for the
+        // drag to compete with and no reason to make it wait behind a reveal.
+        focused && navItem.kind === "image"
           ? {
               focusX: projectMeta.meta.itemPlacements?.[navItem.recipeId]?.heroFocusX ?? 50,
               focusY: projectMeta.meta.itemPlacements?.[navItem.recipeId]?.heroFocusY ?? 50,
@@ -818,10 +831,10 @@ export function PrintDeck(props: PrintDeckProps) {
     if (navItem.kind === "image" || navItem.kind === "section-photo" || navItem.continued) return;
     // Not on the floating controls that sit over the page.
     if ((event.target as HTMLElement).closest("button, a, input, textarea")) return;
-    if (navItem.kind === "recipe") {
-      if (!pageEditMode) togglePageEditMode();
-      return;
-    }
+    // Recipes are absent on purpose: their text is editable by clicking it, so
+    // a double-click already lands a caret in the field under the cursor. There
+    // is no mode left for this gesture to open.
+    if (navItem.kind === "recipe") return;
     if (navItem.kind === "divider") {
       if (editingSectionId !== navItem.recipeId) startSectionEdit(navItem.recipeId);
       return;
@@ -832,48 +845,6 @@ export function PrintDeck(props: PrintDeckProps) {
     }
     setEditingCoverSide(coverSideFromNavItem(navItem));
   };
-
-  /**
-   * Dragging across a recipe's ingredients or steps opens its editor too.
-   * Sweeping the pointer over a line is the same instinct the double-click
-   * serves — you are pointing at the words you mean to change — just said as
-   * "select this bit so I can fix it". The selection itself doesn't survive
-   * the lines turning into fields, and doesn't need to: the field they were
-   * aiming at is now sitting under the cursor, one click from a caret.
-   *
-   * Only the two text columns. A drag over the title, the photo, or the
-   * margins is far more often someone scrolling or nudging the page than
-   * someone aiming at text, and making those flip a mode would leave the deck
-   * feeling booby-trapped.
-   */
-  const openEditOnTextDrag =
-    (navItem: NavItem, focused: boolean) => (event: ReactMouseEvent) => {
-      // Never the second press of a double-click: that gesture is already
-      // handled above, and letting both fire would turn edit mode on and then
-      // straight back off.
-      if (event.button !== 0 || event.detail >= 2) return;
-      // Edit mode applies to the focused page, so an unfocused one would open
-      // the wrong recipe's editor — and the click that focuses it resets edit
-      // mode anyway. The first drag focuses the page; a second one edits it.
-      if (!focused || pageEditMode) return;
-      // A continued page is the runover of a recipe edited from its first page.
-      if (navItem.kind !== "recipe" || navItem.continued) return;
-      const target = event.target as HTMLElement;
-      if (!target.closest(TEXT_COLUMNS)) return;
-      if (target.closest("button, a, input, textarea")) return;
-      const startX = event.clientX;
-      const startY = event.clientY;
-      // Listened for on the window, not the page: a selection dragged off the
-      // edge of the card ends its mouseup out there, and is still a selection.
-      const onMouseUp = (up: MouseEvent) => {
-        window.removeEventListener("mouseup", onMouseUp);
-        if (Math.hypot(up.clientX - startX, up.clientY - startY) < TEXT_DRAG_SLOP) return;
-        const selection = window.getSelection();
-        if (!selection || selection.isCollapsed) return;
-        togglePageEditMode();
-      };
-      window.addEventListener("mouseup", onMouseUp);
-    };
 
   return (
         <section
@@ -1122,7 +1093,6 @@ export function PrintDeck(props: PrintDeckProps) {
                         // does nothing, which is right — there is no text there
                         // to have been aiming at.
                         onDoubleClick={openEditOnDoubleClick(pageNav)}
-                        onMouseDown={openEditOnTextDrag(pageNav, isFocused)}
                       >
                         {renderDeckPage(pageNav, pageSheet, isFocused, role)}
                       </div>
@@ -1206,7 +1176,6 @@ export function PrintDeck(props: PrintDeckProps) {
                     goToSlide(index);
                   }}
                   onDoubleClick={openEditOnDoubleClick(navItem)}
-                  onMouseDown={openEditOnTextDrag(navItem, isActive)}
                   role="button"
                   tabIndex={0}
                   aria-current={isActive}
@@ -1252,6 +1221,7 @@ export function PrintDeck(props: PrintDeckProps) {
                     template={previewTemplate}
                     doubleSided={continueOnBack}
                     cookbookMode={Boolean(projectMeta.meta.cookbookMode)}
+                    showEmptyFields={showEmptyFields}
                     // While actively editing with the checkbox on, keep the link
                     // field visible even if deleting it just made this the only
                     // recipe without one (which flips the cross-recipe
@@ -1261,11 +1231,11 @@ export function PrintDeck(props: PrintDeckProps) {
                     // link field the user has turned off.
                     showSourceUrl={
                       sourceUrlOn ||
-                      (showSourceUrl && pageEditMode && isActive && activeRecipeItem?.id === navItem.recipeId)
+                      (showSourceUrl && showEmptyFields && isActive && activeRecipeItem?.id === navItem.recipeId)
                     }
                     showCutLines={showCutLines && cardSize === "card-6x4"}
                     inlineEdit={
-                      pageEditMode && isActive && activeRecipeItem?.id === navItem.recipeId && activeInlineEdit
+                      isActive && activeRecipeItem?.id === navItem.recipeId && activeInlineEdit
                         ? {
               ...activeInlineEdit,
               recipeImages: recipePhotoChoices(activeRecipeItem?.id, activeRecipeItem?.recipe?.image),

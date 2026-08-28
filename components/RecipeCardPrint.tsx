@@ -5,7 +5,9 @@ import {
   memo,
   useId,
   useMemo,
+  useRef,
   type CSSProperties,
+  type MouseEvent as ReactMouseEvent,
   type ReactNode,
 } from "react";
 import { formatRecipeTime } from "@/lib/time";
@@ -253,6 +255,7 @@ export const RecipeCardFace = memo(function RecipeCardFace({
   template,
   showDecoration = true,
   cookbookMode = false,
+  showEmptyFields = false,
 }: {
   recipe: Recipe;
   ingredients: Recipe["ingredients"];
@@ -280,15 +283,24 @@ export const RecipeCardFace = memo(function RecipeCardFace({
       doesn't compete with the page-number folio), and the "Printed with
       RecipePrinter" footer is dropped entirely — even on free templates. */
   cookbookMode?: boolean;
+  /** Reveal the fields this recipe does NOT have yet -- an empty ingredient
+      list, a missing cook time, no source link. They occupy zero height when
+      absent, so unlike text that is already here they cannot be clicked into
+      existence; this is the one job that still needs a mode behind it. */
+  showEmptyFields?: boolean;
 }) {
   const source = sourceLabel(recipe);
   const meta = metaBits(recipe);
+  // "This text can be clicked and typed into." True for the active card at all
+  // times now -- see `activeInlineEdit`.
   const canEdit = Boolean(inlineEdit);
-  // While editing, a section with nothing in it yet still gets a slot (with
-  // just an "Add ingredient"/"Add step" prompt) so there's somewhere to
-  // start — otherwise an empty recipe would never get past its first field.
-  const showEmptyIngredients = canEdit && recipe.ingredients.length === 0;
-  const showEmptyInstructions = canEdit && recipe.instructions.length === 0;
+  // "Show me what isn't here yet." Only ever true while the reveal is on.
+  const showEmpty = canEdit && showEmptyFields;
+  // A recipe with no ingredients at all still gets a slot (an "Add ingredient"
+  // prompt) so there is somewhere to start — otherwise an empty recipe could
+  // never get past its first field.
+  const showEmptyIngredients = showEmpty && recipe.ingredients.length === 0;
+  const showEmptyInstructions = showEmpty && recipe.instructions.length === 0;
   const hasIngredientsSection = ingredients.length > 0 || showEmptyIngredients;
   const hasInstructionsSection = instructions.length > 0 || showEmptyInstructions;
   const ingredientsOnly = hasIngredientsSection && !hasInstructionsSection;
@@ -322,7 +334,7 @@ export const RecipeCardFace = memo(function RecipeCardFace({
   // header (see `--with-photo-add`) rather than loose under the meta line,
   // where it read as a stray button with no relationship to anything.
   const showPhotoAdd =
-    showHeader && !cookbookMode && !showPhoto && !photoOnFacingPage && canEdit && Boolean(inlineEdit);
+    showHeader && !cookbookMode && !showPhoto && !photoOnFacingPage && showEmpty;
   /* A cookbook's photo control, which is NOT conditional on there already
      being a photo — that was the bug. It hung off `showPhoto`, which requires
      `recipe.image`, so a recipe that arrived without one showed no photo
@@ -332,7 +344,7 @@ export const RecipeCardFace = memo(function RecipeCardFace({
      Suppressed only when the photo has a page of its own, where the control
      belongs on that page instead (see `imageEdit`). */
   const showCookbookPhotoEdit =
-    showHeader && cookbookMode && !photoOnFacingPage && canEdit && Boolean(inlineEdit);
+    showHeader && cookbookMode && !photoOnFacingPage && showEmpty;
 
   // Shrink-to-fit for content pagination can't rescue (see
   // `RecipeFace.contentScale`). Laid out at `1 / scale` of the normal width and
@@ -365,7 +377,38 @@ export const RecipeCardFace = memo(function RecipeCardFace({
     return true;
   }
 
-  function startEdit(target: RecipeCardEditTarget, value: string) {
+  /**
+   * Where the caret should land in the field that is about to mount.
+   *
+   * A field now appears in response to the click that asks for it, so the
+   * click itself can't place a caret in it — it lands at offset 0, and typing
+   * after clicking the middle of "2 cups flour" would insert at the front.
+   * So the offset is read off the text node WHILE IT IS STILL TEXT, and
+   * applied once the field exists (see `focusIfEditing`).
+   */
+  const pendingCaret = useRef<number | null>(null);
+
+  function caretOffsetFromClick(event: ReactMouseEvent): number | null {
+    // `caretRangeFromPoint` is the WebKit/Blink spelling; Firefox has
+    // `caretPositionFromPoint`. Neither is required for correctness — without
+    // one the caret goes to the end of the field, which is still a reasonable
+    // place to start typing.
+    const doc = document as Document & {
+      caretRangeFromPoint?: (x: number, y: number) => Range | null;
+      caretPositionFromPoint?: (x: number, y: number) => { offsetNode: Node; offset: number } | null;
+    };
+    if (typeof doc.caretRangeFromPoint === "function") {
+      const range = doc.caretRangeFromPoint(event.clientX, event.clientY);
+      if (range?.startContainer.nodeType === Node.TEXT_NODE) return range.startOffset;
+      return null;
+    }
+    const position = doc.caretPositionFromPoint?.(event.clientX, event.clientY);
+    if (position?.offsetNode.nodeType === Node.TEXT_NODE) return position.offset;
+    return null;
+  }
+
+  function startEdit(target: RecipeCardEditTarget, value: string, event?: ReactMouseEvent) {
+    pendingCaret.current = event ? caretOffsetFromClick(event) : null;
     inlineEdit?.onFocusTarget(target, value);
   }
 
@@ -375,27 +418,45 @@ export const RecipeCardFace = memo(function RecipeCardFace({
 
   function renderCookbookDescription() {
     if (!cookbookMode || !showHeader) return null;
-    if (canEdit && inlineEdit) {
+    const target: RecipeCardEditTarget = { kind: "description" };
+    // A field only while it is the one being edited. A note runs to several
+    // lines more often than anything else on the card, and `rows` counts hard
+    // newlines rather than wrapped ones — a permanently-mounted textarea would
+    // print the first line and hide the rest behind `overflow: hidden`.
+    if (canEdit && inlineEdit && sameTarget(inlineEdit.editingTarget, target)) {
       return (
         <textarea
-          rows={1}
+          ref={focusIfEditing(target)}
+          rows={Math.max(1, inlineEdit.value.split(/\r?\n/).length)}
           className="recipe-card__inline-textarea recipe-card__headnote"
-          value={
-            sameTarget(inlineEdit.editingTarget, { kind: "description" })
-              ? inlineEdit.value
-              : recipe.description ?? ""
-          }
+          value={inlineEdit.value}
           placeholder="Add a note or memory…"
           aria-label="Recipe description"
-          onFocus={() => startEdit({ kind: "description" }, recipe.description ?? "")}
           onChange={(event) => inlineEdit.onValueChange(event.target.value)}
           onBlur={commitEdit}
-          onKeyDown={(event) => handleEditKeyDown(event, { kind: "description" })}
+          onKeyDown={(event) => handleEditKeyDown(event, target)}
         />
       );
     }
-    return recipe.description ? (
-      <p className="recipe-card__headnote">{recipe.description}</p>
+    if (recipe.description) {
+      return (
+        <p
+          className={`recipe-card__headnote ${canEdit ? "recipe-card__headnote--editable" : ""}`}
+          onClick={canEdit ? (event) => startEdit(target, recipe.description ?? "", event) : undefined}
+        >
+          {recipe.description}
+        </p>
+      );
+    }
+    // Nothing written yet, so there is nothing to click. This is the empty half
+    // the reveal exists for.
+    return showEmpty ? (
+      <p
+        className="recipe-card__headnote recipe-card__headnote--empty"
+        onClick={() => startEdit(target, "")}
+      >
+        Add a note or memory…
+      </p>
     ) : null;
   }
 
@@ -403,11 +464,11 @@ export const RecipeCardFace = memo(function RecipeCardFace({
     if (!cookbookMode) return null;
     const time = formatRecipeTime(recipe.totalTime || recipe.cookTime || recipe.prepTime) || "";
     const servings = recipe.servings ?? recipe.yield;
-    if (!canEdit && !time && !servings) return null;
+    if (!showEmpty && !time && !servings) return null;
 
     return (
       <div className="recipe-card__facts" aria-label="Recipe details">
-        {(canEdit || time) && (
+        {(showEmpty || time) && (
           <span className="recipe-card__fact">
             <span className="recipe-card__fact-label">Cook time</span>
             {canEdit && inlineEdit ? (
@@ -435,7 +496,7 @@ export const RecipeCardFace = memo(function RecipeCardFace({
             )}
           </span>
         )}
-        {(canEdit || servings) && (
+        {(showEmpty || servings) && (
           <span className="recipe-card__fact">
             <span className="recipe-card__fact-label">Serves</span>
             {canEdit && inlineEdit ? (
@@ -502,6 +563,16 @@ export const RecipeCardFace = memo(function RecipeCardFace({
     return (el: HTMLInputElement | HTMLTextAreaElement | null) => {
       if (el && inlineEdit && sameTarget(inlineEdit.editingTarget, target) && document.activeElement !== el) {
         el.focus();
+        // Put the caret where the click was, or at the end when the browser
+        // couldn't tell us — never at 0, which is the one place the person
+        // was definitely not pointing.
+        const caret = pendingCaret.current ?? el.value.length;
+        pendingCaret.current = null;
+        try {
+          el.setSelectionRange(caret, caret);
+        } catch {
+          // Some input types refuse setSelectionRange; focus alone is enough.
+        }
       }
     };
   }
@@ -600,16 +671,23 @@ export const RecipeCardFace = memo(function RecipeCardFace({
     const text = ingredientText(ing);
     const isEditingThis = inlineEdit && sameTarget(inlineEdit.editingTarget, target);
     const displayValue = isEditingThis ? inlineEdit!.value : text;
+    // The click target is the <li>, not a wrapper around the text: the hidden
+    // measurement probe renders this line as bare text in an <li> (see
+    // `renderIngredientProbeItem`), so adding an element here would measure one
+    // thing and print another.
     return (
-      <li key={index} className="recipe-card__editable-line">
-        {canEdit && inlineEdit ? (
+      <li
+        key={index}
+        className={`recipe-card__editable-line ${canEdit ? "recipe-card__editable-line--editable" : ""}`}
+        onClick={canEdit && !isEditingThis ? (event) => startEdit(target, text, event) : undefined}
+      >
+        {canEdit && inlineEdit && isEditingThis ? (
           <textarea
             ref={focusIfEditing(target)}
             className="recipe-card__inline-textarea recipe-card__inline-textarea--line"
             value={displayValue}
             aria-label="Ingredient"
             rows={Math.max(1, displayValue.split(/\r?\n/).length)}
-            onFocus={() => startEdit(target, text)}
             onChange={(event) => inlineEdit.onValueChange(event.target.value)}
             onBlur={commitEdit}
             onKeyDown={(event) => handleEditKeyDown(event, target)}
@@ -635,16 +713,19 @@ export const RecipeCardFace = memo(function RecipeCardFace({
     const isEditingThis = inlineEdit && sameTarget(inlineEdit.editingTarget, target);
     const displayValue = isEditingThis ? inlineEdit!.value : step.text;
     return (
-      <li key={`${step.step}-${step.text.slice(0, 24)}`} className="recipe-card__editable-line">
+      <li
+        key={`${step.step}-${step.text.slice(0, 24)}`}
+        className={`recipe-card__editable-line ${canEdit ? "recipe-card__editable-line--editable" : ""}`}
+        onClick={canEdit && !isEditingThis ? (event) => startEdit(target, step.text, event) : undefined}
+      >
         <span className="recipe-card__step-number">{step.step}</span>
-        {canEdit && inlineEdit ? (
+        {canEdit && inlineEdit && isEditingThis ? (
           <textarea
             ref={focusIfEditing(target)}
             className="recipe-card__inline-textarea recipe-card__inline-textarea--line"
             value={displayValue}
             aria-label="Step"
             rows={Math.max(1, displayValue.split(/\r?\n/).length)}
-            onFocus={() => startEdit(target, step.text)}
             onChange={(event) => inlineEdit.onValueChange(event.target.value)}
             onBlur={commitEdit}
             onKeyDown={(event) => handleEditKeyDown(event, target)}
@@ -760,26 +841,42 @@ export const RecipeCardFace = memo(function RecipeCardFace({
           } ${showPhotoAdd ? "recipe-card__header--with-photo-add" : ""}`}
         >
           <div className="recipe-card__headline">
-            {canEdit && inlineEdit ? (
+            {/* A real field only while it IS the field being edited — the same
+                on-demand swap `sectionTitle` makes, and for the same two
+                reasons. A permanently-mounted textarea is structural churn
+                `useWideColumns` re-measures on, and it has to PRINT: `rows` is
+                computed from hard newlines, so a title that wraps would be
+                clipped by `overflow: hidden` on paper. The <h1> is what prints,
+                every time. */}
+            {canEdit && inlineEdit && sameTarget(inlineEdit.editingTarget, { kind: "title" }) ? (
               <textarea
-                autoFocus
+                ref={focusIfEditing({ kind: "title" })}
                 className="recipe-card__inline-textarea recipe-card__title"
                 rows={1}
-                value={sameTarget(inlineEdit.editingTarget, { kind: "title" }) ? inlineEdit.value : recipe.title}
+                value={inlineEdit.value}
                 aria-label="Recipe title"
-                onFocus={() => startEdit({ kind: "title" }, recipe.title)}
                 onChange={(event) => inlineEdit.onValueChange(event.target.value)}
                 onBlur={commitEdit}
                 onKeyDown={handleEditKeyDown}
               />
             ) : (
-              <h1 className="recipe-card__title">{recipe.title}</h1>
+              <h1
+                className={`recipe-card__title ${canEdit ? "recipe-card__title--editable" : ""}`}
+                onClick={canEdit ? (event) => startEdit({ kind: "title" }, recipe.title, event) : undefined}
+              >
+                {recipe.title}
+              </h1>
             )}
             {/* Cookbook pages use an editorial header hierarchy: title,
                 description, then cook time and servings. Plain recipe cards
                 remain title → meta with no description added. */}
             {renderCookbookDescription()}
-            {cookbookMode ? renderCookbookFacts() : canEdit && inlineEdit ? (
+            {/* The one field group that stays behind the reveal. Read mode
+                joins cook time and servings into a single "20 min · 4" string
+                while the editor splits them into two inputs, so there is no
+                version of this that is directly clickable without permanently
+                showing both slots — including the empty one. */}
+            {cookbookMode ? renderCookbookFacts() : canEdit && inlineEdit && showEmpty ? (
               <p className="recipe-card__meta recipe-card__meta--editable-targets">
                 <input
                   className="recipe-card__inline-input recipe-card__inline-input--meta"
@@ -824,7 +921,10 @@ export const RecipeCardFace = memo(function RecipeCardFace({
                 line, instead of in the footer where it competes with the page
                 folio. Same content/edit target as the footer version below. */}
             {cookbookMode && showSourceUrl && showHeader && (
-              canEdit && inlineEdit ? (
+              // Editable in place when there is a link; behind the reveal when
+              // there is not, so an empty "Add link" placeholder never sits on
+              // a page that is meant to be showing what prints.
+              canEdit && inlineEdit && (showEmpty || recipe.sourceUrl) ? (
                 <input
                   className="recipe-card__inline-input recipe-card__source-line"
                   value={
@@ -1064,7 +1164,7 @@ export const RecipeCardFace = memo(function RecipeCardFace({
         <footer className="recipe-card__footer">
           <span className="recipe-card__footer-brand">Printed with RecipePrinter</span>
           {showSourceUrl && showHeader && (
-            canEdit && inlineEdit ? (
+            canEdit && inlineEdit && (showEmpty || recipe.sourceUrl) ? (
               <input
                 className="recipe-card__inline-input recipe-card__footer-source"
                 value={

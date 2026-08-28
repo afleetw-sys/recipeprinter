@@ -3197,7 +3197,7 @@ export default function PrintPage() {
   const [photoPrompt, setPhotoPrompt] = useState<{ recipeId: string; tick: number } | null>(null);
 
   function setRecipePhotoMode(recipeId: string, mode: PhotoStyle) {
-    if (pageEditMode && activeRecipeId === recipeId) keepEditingRef.current = recipeId;
+    if (showEmptyFields && activeRecipeId === recipeId) keepEditingRef.current = recipeId;
     setPendingFocusRecipeId(recipeId);
     const image = items?.find((item) => item.id === recipeId)?.recipe?.image;
     if (mode !== "none" && !image) {
@@ -3479,7 +3479,7 @@ export default function PrintPage() {
     [items, photoModeFor, cookbookMode, showPhoto, queue.updateRecipe, projectMeta.setItemPhotoMode],
   );
 
-  const { pageEditMode, togglePageEditMode, activeInlineEdit } = useRecipeInlineEditor({
+  const { showEmptyFields, toggleShowEmptyFields, activeInlineEdit } = useRecipeInlineEditor({
     items,
     updateRecipe: updateRecipeAndRevealPhoto,
     activeRecipeId,
@@ -4007,8 +4007,8 @@ export default function PrintPage() {
           slideRefs={slideRefs}
           goToSlide={goToSlide}
           projectMeta={projectMeta}
-          pageEditMode={pageEditMode}
-          togglePageEditMode={togglePageEditMode}
+          showEmptyFields={showEmptyFields}
+          toggleShowEmptyFields={toggleShowEmptyFields}
           activeInlineEdit={activeInlineEdit}
           editingSectionId={editingSectionId}
           setEditingSectionId={setEditingSectionId}

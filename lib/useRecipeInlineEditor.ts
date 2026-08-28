@@ -422,7 +422,14 @@ export function useRecipeInlineEditor({
   // memo() actually skip work instead of re-rendering the active card on
   // every keystroke and every unrelated state change on this page.
   const activeInlineEdit = useMemo<RecipeCardInlineEdit | undefined>(() => {
-    if (!pageEditMode || !activeRecipeItem) return undefined;
+    // No longer gated on a mode. Text that is ALREADY on the card is editable
+    // by clicking it, because the inline editors are a full visual reset
+    // (`font: inherit`, no box, no outline until focus) -- a live field and the
+    // text it replaces are the same pixels. What still needs a mode is the
+    // empty half: a recipe with no note has zero height where the note would
+    // go, and there is no way to hover something that is not there. That is
+    // `showEmptyFields`, passed to the card separately.
+    if (!activeRecipeItem) return undefined;
     return {
       editingTarget: editingEdit?.recipeId === activeRecipeItem.id ? editingEdit.target : null,
       value: editValue,
@@ -437,7 +444,6 @@ export function useRecipeInlineEditor({
       onSplitLine: splitEditLine,
     };
   }, [
-    pageEditMode,
     activeRecipeItem,
     editingEdit,
     editValue,
@@ -480,14 +486,14 @@ export function useRecipeInlineEditor({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [resetOn]);
 
-  function togglePageEditMode() {
+  function toggleShowEmptyFields() {
     if (pageEditMode && editingEdit) {
-      // Unmounting a focused field on toggle-off isn't guaranteed to fire a
-      // blur event in every browser, so commit explicitly before hiding it.
+      // A field being hidden by the toggle isn't guaranteed to fire a blur in
+      // every browser, so commit explicitly before it goes.
       commitEditTarget(editValue);
     }
     setPageEditMode((mode) => !mode);
   }
 
-  return { pageEditMode, togglePageEditMode, activeInlineEdit };
+  return { showEmptyFields: pageEditMode, toggleShowEmptyFields, activeInlineEdit };
 }
