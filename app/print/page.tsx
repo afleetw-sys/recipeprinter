@@ -1121,6 +1121,18 @@ export default function PrintPage() {
         body: "",
       });
     }
+    // Chapter the book they already have. Turning a stack of recipes into a
+    // cookbook and handing back one undivided run of pages leaves the cook to
+    // do by hand the thing the book was for — and "Organize for me" is a button
+    // they have to find, in a panel they have to open, to get a result we could
+    // already have given them. Only for a book with enough recipes to group,
+    // and never over chapters they made themselves.
+    if (
+      namedSectionCount(sections) === 0 &&
+      (items ?? []).filter((item) => item.recipe).length >= 2
+    ) {
+      applyCookbookOrganization({ automatic: true });
+    }
     projectMeta.setCookbookWelcomeCompleted(true);
     // Every recipe gets its own full page — no auto-pairing. The cook can turn
     // an individual recipe into a full-page photo spread from the page controls.
@@ -1282,33 +1294,29 @@ export default function PrintPage() {
     if (!section.photoUrl && ownImages.length === 0) return null;
     const resolved = resolveSectionPhotoMode(section, photoStyle);
     const active: SectionPhotoMode = resolved === "grid" ? "full" : resolved;
+    // The toolbar button opens the SAME dialog the art itself opens -- photo
+    // placement on top, then which photo, plus the chapter's collage. Built at
+    // the "art" surface because that is the one that always offers a photo to
+    // pick; the "opener" surface withholds it outside band mode, which in a
+    // toolbar would be a picker that cannot pick.
+    const edit = buildSectionPhotoEdit(section, "art");
     return (
-      <div className="recipe-page-layout-control">
-        <div className="recipe-page-layout-picker" role="group" aria-label="Photo">
-          {SECTION_PHOTO_OPTIONS.map((option) => (
-            <button
-              key={option.id}
-              type="button"
-              className={`recipe-page-layout-picker__btn ${active === option.id ? "is-active" : ""}`}
-              aria-pressed={active === option.id}
-              onClick={(event) => {
-                event.stopPropagation();
-                if (option.id === "none") {
-                  projectMeta.setSectionPhotoMode(sectionId, "none");
-                } else {
-                  // band / full — seed the photo so the band/page is never blank,
-                  // matching buildSectionPhotoEdit's placement change.
-                  projectMeta.setSectionPhotoMode(sectionId, option.id, {
-                    photoUrl: section.photoUrl ?? ownImages[0],
-                  });
-                }
-              }}
-            >
-              {option.label}
-            </button>
-          ))}
-        </div>
-      </div>
+      <ImagePicker
+        current={edit.photoUrl}
+        images={edit.recipeImages ?? []}
+        onSelect={(url) => edit.onPhotoChange?.(url)}
+        placement={edit.placement}
+        placementOptions={edit.placementOptions}
+        onPlacementChange={edit.onPlacementChange}
+        gridActive={edit.gridActive}
+        onSelectGrid={edit.onSelectGrid}
+        onExitGrid={edit.onExitGrid}
+        gridImages={edit.gridImages}
+        onGridChange={edit.onGridChange}
+        gridMax={edit.gridMax}
+        label={section.photoUrl ? "Photo" : "Add photo"}
+        className="recipe-page-toolbar__photo"
+      />
     );
   };
 
@@ -1689,17 +1697,24 @@ export default function PrintPage() {
     });
   }
 
-  // The ONE place the recommended structure is applied — an explicit opt-in,
-  // snapshotting the current sections so the single Undo can restore them.
-  function suggestCookbookLayout() {
+  // The ONE place the recommended structure is applied. Always snapshots the
+  // current sections first, so the single Undo can restore them — that matters
+  // MORE when this runs by itself at build time, because nobody asked for it.
+  function applyCookbookOrganization({ automatic = false }: { automatic?: boolean } = {}) {
     setOrganizationUndo(structuredClone(projectMeta.meta.sections));
     const next = organizationSectionsForApply(
       suggestCookbookOrganization(items ?? []),
       (items ?? []).filter((item) => item.recipe).map((item) => item.id),
     );
     projectMeta.setSectionStructure(next);
-    track("relayout_applied", { sectionCount: next.length });
-    showToast(cookbookMode ? "Cookbook organized" : "Recipes organized");
+    track("relayout_applied", { sectionCount: next.length, automatic });
+    // No toast for the automatic run: it lands mid-build-reveal, where it would
+    // be a notification about something the cook is already watching happen.
+    if (!automatic) showToast(cookbookMode ? "Cookbook organized" : "Recipes organized");
+  }
+
+  function suggestCookbookLayout() {
+    applyCookbookOrganization();
   }
 
   function undoCookbookOrganization() {
@@ -1717,7 +1732,7 @@ export default function PrintPage() {
   // Sorting is a real reorder, not a view: the organizer shows the book, so A–Z
   // has to move the pages themselves — otherwise the tiles and the printed
   // order would disagree. Each section sorts within itself; section order is
-  // the cook's own (and "Organize it for me" above owns that question).
+  // the cook's own (and "Organize for me" above owns that question).
   function applyRailSort(mode: RailSortMode) {
     if (mode === railSortMode) return;
     if (mode === "title") {
@@ -2365,6 +2380,28 @@ export default function PrintPage() {
   }, [printPending, printLayoutReady, purchaseBusy, cookbookPurchaseBusy]);
 
   const moveProjectItem = projectMeta.moveItem;
+
+  /**
+   * Show the loading state the moment a DIFFERENT project is asked for.
+   *
+   * `projectLoading` is seeded from `useState(Boolean(accountProjectId))`,
+   * which only runs when this page mounts. Opening a project from the account
+   * menu while already on /print is a client-side navigation: the query
+   * changes, the component does not remount, and the initialiser never runs
+   * again. So the deck went on painting the project already open until the
+   * load below finished and swapped it — the flash of the wrong book.
+   *
+   * Keyed on the id rather than on a boolean, so re-landing on the project
+   * that is already open stays quiet instead of flashing a loader at someone
+   * who is already looking at what they asked for.
+   */
+  const loadedProjectIdRef = useRef<string | null>(accountProjectId);
+  useEffect(() => {
+    if (!accountProjectId) return;
+    if (loadedProjectIdRef.current === accountProjectId) return;
+    loadedProjectIdRef.current = accountProjectId;
+    setProjectLoading(true);
+  }, [accountProjectId]);
 
   useEffect(() => {
     if (!accountProjectId || !cookPilotAuthReady || !projectMeta.hydrated || !queue.hydrated) return;
@@ -3195,26 +3232,27 @@ export default function PrintPage() {
     // you might want to set before finding a photo for them — and left the
     // toolbar looking as though the control had been taken out.
     if (!recipe) return null;
-    const mode = photoModeFor(recipeId);
+    const own = recipe.image;
+    const history = projectMeta.meta.itemPlacements?.[recipeId]?.photoHistory ?? [];
     return (
-      <div className="recipe-page-layout-control">
-        <div className="recipe-page-layout-picker" role="group" aria-label="Photo">
-          {PHOTO_STYLE_OPTIONS.map((option) => (
-            <button
-              key={option.id}
-              type="button"
-              className={`recipe-page-layout-picker__btn ${mode === option.id ? "is-active" : ""}`}
-              aria-pressed={mode === option.id}
-              onClick={(event) => {
-                event.stopPropagation();
-                setRecipePhotoMode(recipeId, option.id);
-              }}
-            >
-              {option.short}
-            </button>
-          ))}
-        </div>
-      </div>
+      <ImagePicker
+        current={own}
+        // The recipe's own photo plus the ones it has worn before, so a photo
+        // replaced by an upload stays reachable instead of vanishing.
+        images={Array.from(new Set([...(own ? [own] : []), ...history]))}
+        onSelect={(url) => updateRecipeAndRevealPhoto(recipeId, { ...recipe, image: url ?? "" })}
+        placement={photoModeFor(recipeId)}
+        placementOptions={PHOTO_STYLE_OPTIONS.map((option) => ({
+          id: option.id,
+          label: option.short,
+          hint: option.hint,
+        }))}
+        onPlacementChange={(mode) => setRecipePhotoMode(recipeId, mode as PhotoStyle)}
+        // Says which job it is doing: there is nothing to change yet when the
+        // recipe came in without a photo.
+        label={own ? "Photo" : "Add photo"}
+        className="recipe-page-toolbar__photo"
+      />
     );
   };
   const [activeNavIndex, setActiveNavIndex] = useState(0);

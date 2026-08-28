@@ -436,14 +436,16 @@ export function PrintDeck(props: PrintDeckProps) {
     const editable =
       navItem.kind !== "image" && navItem.kind !== "section-photo" && !navItem.continued;
     const editing = isEditingNavItem(navItem);
-    // The placement toggle appears once you're editing — one click to move the
-    // photo between None, In card and Full page — matching "Edit first, then
-    // adjust".
+    // Always present on the pages that have a photo to place, not only while
+    // you happen to be editing them. Hiding it behind Edit meant the toolbar
+    // changed shape depending on a mode you were not thinking about, and the
+    // question "where does the photo go" had to be asked through a button that
+    // says "Edit". The placements themselves live inside the picker's menu.
     const photoControl = !projectMeta.meta.cookbookMode
       ? null
-      : navItem.kind === "recipe" && pageEditMode
+      : navItem.kind === "recipe"
         ? renderPagePhotoControl(navItem.recipeId)
-        : navItem.kind === "divider" && editingSectionId === navItem.recipeId
+        : navItem.kind === "divider"
           ? renderSectionPhotoControl(navItem.recipeId)
           : null;
     const lineKind = editable ? renderLineKindControl(navItem) : null;
