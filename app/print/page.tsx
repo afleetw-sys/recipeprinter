@@ -33,7 +33,6 @@ import {
   type RecipePrintTemplate,
 } from "@/components/RecipeCardPrint";
 import { TemplateThumbnail } from "@/components/print/TemplateThumbnail";
-import { PhotoPlacementPicker } from "@/components/print/PhotoPlacementPicker";
 import { PHOTO_STYLE_OPTIONS } from "@/components/print/photoStyle";
 import { MobileStructureSheet } from "@/components/print/MobileStructureSheet";
 import { PrintConfigPanel } from "@/components/print/PrintConfigPanel";
@@ -1283,22 +1282,28 @@ export default function PrintPage() {
     if (!section.photoUrl && ownImages.length === 0) return null;
     const resolved = resolveSectionPhotoMode(section, photoStyle);
     const active: SectionPhotoMode = resolved === "grid" ? "full" : resolved;
+    // The toolbar button opens the SAME dialog the art itself opens -- photo
+    // placement on top, then which photo, plus the chapter's collage. Built at
+    // the "art" surface because that is the one that always offers a photo to
+    // pick; the "opener" surface withholds it outside band mode, which in a
+    // toolbar would be a picker that cannot pick.
+    const edit = buildSectionPhotoEdit(section, "art");
     return (
-      <PhotoPlacementPicker
-        label="Opener photo"
-        options={SECTION_PHOTO_OPTIONS}
-        active={active}
-        onSelect={(id) => {
-          if (id === "none") {
-            projectMeta.setSectionPhotoMode(sectionId, "none");
-            return;
-          }
-          // band / full — seed the photo so the band/page is never blank,
-          // matching buildSectionPhotoEdit's placement change.
-          projectMeta.setSectionPhotoMode(sectionId, id as SectionPhotoMode, {
-            photoUrl: section.photoUrl ?? ownImages[0],
-          });
-        }}
+      <ImagePicker
+        current={edit.photoUrl}
+        images={edit.recipeImages ?? []}
+        onSelect={(url) => edit.onPhotoChange?.(url)}
+        placement={edit.placement}
+        placementOptions={edit.placementOptions}
+        onPlacementChange={edit.onPlacementChange}
+        gridActive={edit.gridActive}
+        onSelectGrid={edit.onSelectGrid}
+        onExitGrid={edit.onExitGrid}
+        gridImages={edit.gridImages}
+        onGridChange={edit.onGridChange}
+        gridMax={edit.gridMax}
+        label={section.photoUrl ? "Photo" : "Add photo"}
+        className="recipe-page-toolbar__photo"
       />
     );
   };
@@ -3208,16 +3213,26 @@ export default function PrintPage() {
     // you might want to set before finding a photo for them — and left the
     // toolbar looking as though the control had been taken out.
     if (!recipe) return null;
-    const mode = photoModeFor(recipeId);
+    const own = recipe.image;
+    const history = projectMeta.meta.itemPlacements?.[recipeId]?.photoHistory ?? [];
     return (
-      <PhotoPlacementPicker
-        options={PHOTO_STYLE_OPTIONS.map((option) => ({
+      <ImagePicker
+        current={own}
+        // The recipe's own photo plus the ones it has worn before, so a photo
+        // replaced by an upload stays reachable instead of vanishing.
+        images={Array.from(new Set([...(own ? [own] : []), ...history]))}
+        onSelect={(url) => updateRecipeAndRevealPhoto(recipeId, { ...recipe, image: url ?? "" })}
+        placement={photoModeFor(recipeId)}
+        placementOptions={PHOTO_STYLE_OPTIONS.map((option) => ({
           id: option.id,
           label: option.short,
           hint: option.hint,
         }))}
-        active={mode}
-        onSelect={(id) => setRecipePhotoMode(recipeId, id as PhotoStyle)}
+        onPlacementChange={(mode) => setRecipePhotoMode(recipeId, mode as PhotoStyle)}
+        // Says which job it is doing: there is nothing to change yet when the
+        // recipe came in without a photo.
+        label={own ? "Photo" : "Add photo"}
+        className="recipe-page-toolbar__photo"
       />
     );
   };
