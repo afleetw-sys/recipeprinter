@@ -5827,6 +5827,23 @@ textarea.recipe-card__toc-title {
   border-radius: 3px;
 }
 
+/* Cover lines behave like a recipe's: click the text to edit it, and a line
+   nobody has written appears only under the reveal, as its own prompt. */
+.recipe-card__cover-field--editable {
+  cursor: pointer;
+}
+
+.recipe-card__cover-field--editable:hover {
+  outline: 1px solid color-mix(in srgb, var(--cp-accent) 40%, transparent);
+  outline-offset: 2px;
+  border-radius: 3px;
+}
+
+.recipe-card__cover-field--empty {
+  opacity: 0.55;
+  cursor: pointer;
+}
+
 /* The one placeholder that IS shown rather than typed into: the prompt for a
    note this recipe does not have. Only ever rendered while the reveal is on. */
 .recipe-card__headnote--empty {

@@ -358,9 +358,6 @@ export default function PrintPage() {
   }, [jobIds]);
   const [editingSectionId, setEditingSectionId] = useState<string | null>(null);
   const [editingSectionTitle, setEditingSectionTitle] = useState("");
-  const [editingCoverSide, setEditingCoverSide] = useState<
-    "front" | "back" | "dedication" | null
-  >(null);
   const [editingToc, setEditingToc] = useState(false);
   // Either side panel can be folded away to give the page more room. Session
   // state on purpose, not a stored preference: collapsing is something you do
@@ -1367,7 +1364,6 @@ export default function PrintPage() {
   function addCover() {
     const cover = projectMeta.meta.cover ?? defaultCover();
     projectMeta.setCover(cover);
-    setEditingCoverSide("front");
     setPendingFocusNavId("cover-front");
   }
 
@@ -1377,12 +1373,10 @@ export default function PrintPage() {
     if (projectMeta.meta.frontMatter || projectMeta.meta.dedication) {
       projectMeta.setFrontMatter(undefined);
       projectMeta.setDedication(undefined);
-      setEditingCoverSide((current) => (current === "dedication" ? null : current));
       return;
     }
     projectMeta.setFrontMatter({ kind: "dedication", heading: "Dedication", body: DEFAULT_DEDICATION_BODY });
     track("cookbook_front_matter_enabled", { kind: "dedication" });
-    setEditingCoverSide("dedication");
     setPendingFocusNavId("cover-dedication");
   }
 
@@ -1473,14 +1467,11 @@ export default function PrintPage() {
       projectMeta.deleteSection(pendingDelete.id);
     } else if (pendingDelete.side === "back") {
       projectMeta.setBackCover(undefined);
-      setEditingCoverSide((side) => (side === "back" ? null : side));
     } else if (pendingDelete.side === "dedication") {
       projectMeta.setDedication(undefined);
       projectMeta.setFrontMatter(undefined);
-      setEditingCoverSide((side) => (side === "dedication" ? null : side));
     } else {
       projectMeta.setCover(undefined);
-      setEditingCoverSide((side) => (side === "front" ? null : side));
     }
     setPendingDelete(null);
   }
@@ -3255,6 +3246,57 @@ export default function PrintPage() {
       />
     );
   };
+  // The cover's photo control, in the page toolbar rather than floating on the
+  // artwork. Same button, same dialog, same place as a recipe's — a title page
+  // is a page with a picture on it, and there is no reason its picture is
+  // changed somewhere else.
+  const renderCoverPhotoControl = (side: "front" | "back" | "dedication") => {
+    const cover = coverForSide(side) ?? defaultCover();
+    const gridImages = (cover.gridImages ?? []).filter(Boolean);
+    const candidates = coverPhotoCandidates;
+    return (
+      <ImagePicker
+        current={cover.imageUrl}
+        images={candidates}
+        gridActive={cover.layout === "collage" && gridImages.length > 0}
+        gridImages={gridImages}
+        onSelect={(imageUrl) =>
+          setCoverForSide(side, {
+            ...cover,
+            imageUrl,
+            gridImages: undefined,
+            layout: imageUrl ? "photo" : "typographic",
+          })
+        }
+        onGridChange={(urls) =>
+          setCoverForSide(side, {
+            ...cover,
+            gridImages: urls.length ? urls : undefined,
+            imageUrl: undefined,
+            layout: urls.length ? "collage" : "typographic",
+          })
+        }
+        onSelectGrid={
+          candidates.length >= 2
+            ? () => {
+                // Seed the collage with a sensible starting set; the cook then
+                // curates how many and which ones in the picker.
+                const count = candidates.length >= 6 ? 6 : candidates.length >= 4 ? 4 : 2;
+                setCoverForSide(side, {
+                  ...cover,
+                  gridImages: candidates.slice(0, count),
+                  imageUrl: undefined,
+                  layout: "collage",
+                });
+              }
+            : undefined
+        }
+        label={cover.imageUrl || gridImages.length ? "Photo" : "Add photo"}
+        className="recipe-page-toolbar__photo"
+      />
+    );
+  };
+
   const [activeNavIndex, setActiveNavIndex] = useState(0);
   // Publish the setter through a ref in an effect rather than during render, so
   // the ref callers (`activeNavIndexResetRef.current?.(0)`) always read a value
@@ -4017,8 +4059,6 @@ export default function PrintPage() {
           editSectionTitle={editSectionTitle}
           commitSectionEdit={commitSectionEdit}
           startSectionEdit={startSectionEdit}
-          editingCoverSide={editingCoverSide}
-          setEditingCoverSide={setEditingCoverSide}
           editingToc={editingToc}
           setEditingToc={setEditingToc}
           coverSideFromNavItem={coverSideFromNavItem}
@@ -4028,6 +4068,7 @@ export default function PrintPage() {
           coverPhotoCandidates={coverPhotoCandidates}
           renderPagePhotoControl={renderPagePhotoControl}
           renderSectionPhotoControl={renderSectionPhotoControl}
+          renderCoverPhotoControl={renderCoverPhotoControl}
           buildSectionPhotoEdit={buildSectionPhotoEdit}
           photoModeFor={photoModeFor}
           setRecipePhotoMode={setRecipePhotoMode}

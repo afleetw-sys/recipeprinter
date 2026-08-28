@@ -502,6 +502,7 @@ export const ScaledPage = memo(function ScaledPage({
                     side={anySlot.side}
                     template={template}
                     showDecoration={showDecoration}
+                    showEmptyFields={showEmptyFields}
                     inlineEdit={coverEdit?.side === anySlot.side ? coverEdit : undefined}
                   />
                 )}

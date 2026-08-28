@@ -6,6 +6,7 @@ import {
   useId,
   useMemo,
   useRef,
+  useState,
   type CSSProperties,
   type MouseEvent as ReactMouseEvent,
   type ReactNode,
@@ -329,22 +330,12 @@ export const RecipeCardFace = memo(function RecipeCardFace({
   // the source image 404s or is hotlink-blocked we drop it rather than print a
   // broken-image box.
   const showPhoto = showHeader && (showImage && Boolean(recipe.image));
-  // No photo yet, but this card could take one: the "Add photo" control stands
-  // in for the missing thumbnail. It sits in the photo's own corner of the
-  // header (see `--with-photo-add`) rather than loose under the meta line,
-  // where it read as a stray button with no relationship to anything.
-  const showPhotoAdd =
-    showHeader && !cookbookMode && !showPhoto && !photoOnFacingPage && showEmpty;
-  /* A cookbook's photo control, which is NOT conditional on there already
-     being a photo — that was the bug. It hung off `showPhoto`, which requires
-     `recipe.image`, so a recipe that arrived without one showed no photo
-     affordance at all while editing: nothing to press, and therefore no way to
-     add the photo that would have made the control appear. Recipe-cards mode
-     never had this hole; it has `showPhotoAdd` for exactly this case.
-     Suppressed only when the photo has a page of its own, where the control
-     belongs on that page instead (see `imageEdit`). */
-  const showCookbookPhotoEdit =
-    showHeader && cookbookMode && !photoOnFacingPage && showEmpty;
+  // There is no in-card photo affordance any more, in either mode. The page
+  // toolbar carries ONE photo button, permanently, for every recipe and chapter
+  // opener — so a photo is added, replaced and placed from the same control
+  // whether or not the recipe already has one, and the card itself stays a card.
+  // It is emphatically not part of the empty-field reveal: the button is always
+  // there, so there is no empty slot for the reveal to fill.
 
   // Shrink-to-fit for content pagination can't rescue (see
   // `RecipeFace.contentScale`). Laid out at `1 / scale` of the normal width and
@@ -815,30 +806,11 @@ export const RecipeCardFace = memo(function RecipeCardFace({
         continued={continued}
         withPhotoGap={showPhoto}
       />
-      {/* Cookbook in-card "Photo" button: at the card corner (not inside the
-          small, clipped header photo), sized for the screen — opens the same
-          placement + source dialog as the full-page image control. */}
-      {showCookbookPhotoEdit && inlineEdit && (
-        <ImagePicker
-          current={recipe.image}
-          images={inlineEdit.recipeImages ?? []}
-          onSelect={(url) => inlineEdit.onImageChange(url ?? "")}
-          placement={inlineEdit.photoPlacement}
-          placementOptions={inlineEdit.photoPlacementOptions}
-          onPlacementChange={inlineEdit.onPhotoPlacementChange}
-          openSignal={inlineEdit.photoPromptSignal}
-          /* Says which job it is doing: there is nothing to change yet when the
-             recipe came in without a photo. */
-          label={recipe.image ? "Photo" : "Add photo"}
-          className="recipe-card__cook-photo-edit"
-        />
-      )}
-
       {showHeader ? (
         <header
           className={`recipe-card__header ${
             showPhoto ? "recipe-card__header--with-photo" : ""
-          } ${showPhotoAdd ? "recipe-card__header--with-photo-add" : ""}`}
+          }`}
         >
           <div className="recipe-card__headline">
             {/* A real field only while it IS the field being edited — the same
@@ -957,29 +929,7 @@ export const RecipeCardFace = memo(function RecipeCardFace({
                 onError={(event) => markImageUnavailable(event.currentTarget)}
               />
               <span className="photo-unavailable-message">Photo unavailable</span>
-              {/* Recipe-cards mode keeps its small in-frame "Change" control.
-                  Cookbook mode uses the larger, unclipped "Photo" button at the
-                  card corner below (this header photo is tiny + clipped). */}
-              {!cookbookMode && canEdit && inlineEdit && (
-                <ImagePicker
-                  current={recipe.image}
-                  images={inlineEdit.recipeImages ?? []}
-                  onSelect={(url) => inlineEdit.onImageChange(url ?? "")}
-                  label="Change"
-                  className="recipe-card__photo-edit"
-                />
-              )}
             </span>
-          )}
-          {/* "Add photo" only belongs in plain recipe-cards mode; in a cookbook,
-              adding/placing a photo is the job of the page's "Photo" dialog. */}
-          {showPhotoAdd && inlineEdit && (
-            <ImagePicker
-              images={inlineEdit.recipeImages ?? []}
-              onSelect={(url) => inlineEdit.onImageChange(url ?? "")}
-              label="Add photo"
-              className="recipe-card__photo-add"
-            />
           )}
         </header>
       ) : null}
@@ -1428,6 +1378,7 @@ export const CoverFace = memo(function CoverFace({
   previewHidden = false,
   inlineEdit,
   showDecoration = true,
+  showEmptyFields = false,
 }: {
   cover: CoverConfig;
   side: "front" | "back" | "dedication";
@@ -1438,13 +1389,91 @@ export const CoverFace = memo(function CoverFace({
   previewHidden?: boolean;
   /** See `TemplateDecoration` — false on surfaces that never show it. */
   showDecoration?: boolean;
+  /** Reveal the cover lines nobody has written yet — see RecipeCardPrint. */
+  showEmptyFields?: boolean;
   inlineEdit?: CoverCardInlineEdit;
 }) {
   const canEdit = Boolean(inlineEdit);
+  const showEmpty = canEdit && showEmptyFields;
   const draft = inlineEdit?.cover ?? cover;
+  // Which cover field is open, if any. Local because a cover writes straight
+  // through `onChange` — there is no editing target to share with the deck, only
+  // "which of these lines is a field right now".
+  const [editingField, setEditingField] = useState<string | null>(null);
 
   function set(patch: Partial<CoverConfig>) {
     inlineEdit?.onChange({ ...draft, ...patch });
+  }
+
+  /**
+   * One cover line: text you can click into, a field while you are in it, and
+   * — when there is nothing written and nothing to click — a prompt that only
+   * appears under the reveal. The same three states a recipe's fields have.
+   */
+  function coverField({
+    name,
+    value,
+    placeholder,
+    ariaLabel,
+    onChange,
+    className,
+    rows = 1,
+    fallback,
+    as: Tag = "p",
+  }: {
+    name: string;
+    value: string;
+    placeholder: string;
+    ariaLabel: string;
+    onChange: (value: string) => void;
+    className: string;
+    rows?: number;
+    /** Read-mode stand-in for a field that reads fine empty (the dedication
+        heading prints as "Dedication" whether or not anyone typed it). */
+    fallback?: string;
+    as?: "p" | "h1";
+  }) {
+    if (canEdit && editingField === name) {
+      return (
+        // autoFocus is safe here precisely because this mounts on the click
+        // that asks for it, rather than sitting there for every idle cover.
+        <textarea
+          autoFocus
+          rows={rows}
+          className={`recipe-card__inline-textarea ${className}`}
+          value={value}
+          placeholder={placeholder}
+          aria-label={ariaLabel}
+          onChange={(event) => onChange(event.target.value)}
+          onBlur={() => setEditingField(null)}
+          onKeyDown={(event) => {
+            if (event.key === "Escape") {
+              event.preventDefault();
+              setEditingField(null);
+            }
+          }}
+        />
+      );
+    }
+    const text = value || fallback || "";
+    if (text) {
+      return (
+        <Tag
+          className={`${className} ${canEdit ? "recipe-card__cover-field--editable" : ""}`}
+          onClick={canEdit ? () => setEditingField(name) : undefined}
+        >
+          {text}
+        </Tag>
+      );
+    }
+    return showEmpty ? (
+      <Tag
+        className={`${className} recipe-card__cover-field--empty`}
+        onClick={() => setEditingField(name)}
+      >
+        {placeholder}
+      </Tag>
+    ) : null;
   }
 
   // Dedication: a quiet front-matter page on the template's own paper — a short,
@@ -1462,45 +1491,32 @@ export const CoverFace = memo(function CoverFace({
         />
         <div className="recipe-card__cover-band" aria-hidden />
         <div className="recipe-card__cover-back-content">
-          {canEdit ? (
-            <textarea
-              rows={1}
-              className="recipe-card__inline-textarea recipe-card__cover-dedication-label"
-              value={draft.title}
-              placeholder="Opening page heading"
-              aria-label="Opening page heading"
-              onChange={(event) => set({ title: event.target.value })}
-            />
-          ) : (
-            <p className="recipe-card__cover-dedication-label">{draft.title || "Dedication"}</p>
-          )}
-          {canEdit ? (
-            <textarea
-              className="recipe-card__inline-textarea recipe-card__cover-blurb recipe-card__cover-dedication-text"
-              value={draft.blurb ?? ""}
-              placeholder="For the ones who taught us to cook, and who made every table feel like home."
-              aria-label="Dedication"
-              onChange={(event) => set({ blurb: event.target.value || undefined })}
-            />
-          ) : (
-            draft.blurb && (
-              <p className="recipe-card__cover-blurb recipe-card__cover-dedication-text">{draft.blurb}</p>
-            )
-          )}
-          {canEdit ? (
-            <textarea
-              rows={1}
-              className="recipe-card__inline-textarea recipe-card__cover-from recipe-card__cover-dedication-sign"
-              value={draft.author ?? ""}
-              placeholder="— The Smith Family (optional)"
-              aria-label="Dedication signature"
-              onChange={(event) => set({ author: event.target.value || undefined })}
-            />
-          ) : (
-            draft.author && (
-              <p className="recipe-card__cover-from recipe-card__cover-dedication-sign">{draft.author}</p>
-            )
-          )}
+          {coverField({
+            name: "dedication-heading",
+            value: draft.title,
+            fallback: "Dedication",
+            placeholder: "Opening page heading",
+            ariaLabel: "Opening page heading",
+            className: "recipe-card__cover-dedication-label",
+            onChange: (value) => set({ title: value }),
+          })}
+          {coverField({
+            name: "dedication-text",
+            value: draft.blurb ?? "",
+            placeholder: "For the ones who taught us to cook, and who made every table feel like home.",
+            ariaLabel: "Dedication",
+            className: "recipe-card__cover-blurb recipe-card__cover-dedication-text",
+            rows: 3,
+            onChange: (value) => set({ blurb: value || undefined }),
+          })}
+          {coverField({
+            name: "dedication-signature",
+            value: draft.author ?? "",
+            placeholder: "— The Smith Family (optional)",
+            ariaLabel: "Dedication signature",
+            className: "recipe-card__cover-from recipe-card__cover-dedication-sign",
+            onChange: (value) => set({ author: value || undefined }),
+          })}
         </div>
       </article>
     );
@@ -1521,29 +1537,23 @@ export const CoverFace = memo(function CoverFace({
         />
         <div className="recipe-card__cover-band" aria-hidden />
         <div className="recipe-card__cover-back-content">
-          {canEdit ? (
-            <textarea
-              className="recipe-card__inline-textarea recipe-card__cover-blurb"
-              value={draft.blurb ?? ""}
-              placeholder="A closing line…"
-              aria-label="Back cover blurb"
-              onChange={(event) => set({ blurb: event.target.value || undefined })}
-            />
-          ) : (
-            draft.blurb && <p className="recipe-card__cover-blurb">{draft.blurb}</p>
-          )}
-          {canEdit ? (
-            <textarea
-              rows={1}
-              className="recipe-card__inline-textarea recipe-card__cover-from"
-              value={draft.author ?? ""}
-              placeholder="From the kitchen of…"
-              aria-label="Back cover credit"
-              onChange={(event) => set({ author: event.target.value || undefined })}
-            />
-          ) : (
-            draft.author && <p className="recipe-card__cover-from">{draft.author}</p>
-          )}
+          {coverField({
+            name: "back-blurb",
+            value: draft.blurb ?? "",
+            placeholder: "A closing line…",
+            ariaLabel: "Back cover blurb",
+            className: "recipe-card__cover-blurb",
+            rows: 3,
+            onChange: (value) => set({ blurb: value || undefined }),
+          })}
+          {coverField({
+            name: "back-credit",
+            value: draft.author ?? "",
+            placeholder: "From the kitchen of…",
+            ariaLabel: "Back cover credit",
+            className: "recipe-card__cover-from",
+            onChange: (value) => set({ author: value || undefined }),
+          })}
         </div>
       </article>
     );
@@ -1599,44 +1609,8 @@ export const CoverFace = memo(function CoverFace({
       </div>
       <div className="recipe-card__cover-scrim" aria-hidden />
       <div className="recipe-card__cover-band" aria-hidden />
-      {canEdit && (
-        <ImagePicker
-          current={draft.imageUrl}
-          gridActive={coverMode === "grid"}
-          images={candidateImages}
-          className="recipe-card__cover-photopicker"
-          onSelect={(imageUrl) =>
-            set({
-              imageUrl,
-              gridImages: undefined,
-              layout: imageUrl ? "photo" : "typographic",
-            })
-          }
-          gridImages={gridImages}
-          onGridChange={(urls) =>
-            set({
-              gridImages: urls.length ? urls : undefined,
-              imageUrl: undefined,
-              layout: urls.length ? "collage" : "typographic",
-            })
-          }
-          onSelectGrid={
-            candidateImages.length >= 2
-              ? () => {
-                  // Seed the collage with a sensible starting set; the user then
-                  // curates exactly how many and which ones in the picker.
-                  const count =
-                    candidateImages.length >= 6 ? 6 : candidateImages.length >= 4 ? 4 : 2;
-                  set({
-                    gridImages: candidateImages.slice(0, count),
-                    imageUrl: undefined,
-                    layout: "collage",
-                  });
-                }
-              : undefined
-          }
-        />
-      )}
+      {/* The cover's photo is changed from the page toolbar, like every other
+          page's — not from a button floating on the artwork. */}
       {/* Decorative hooks the per-theme CSS turns on (frames/ornaments for
           Heirloom, Keepsake, etc.); hidden by default on photo-forward themes. */}
       <div className="recipe-card__cover-frame" aria-hidden />
@@ -1646,57 +1620,41 @@ export const CoverFace = memo(function CoverFace({
       />
       <div className="recipe-card__cover-content">
         <span className="recipe-card__cover-ornament" aria-hidden />
-        {canEdit ? (
-          <textarea
-            rows={1}
-            className="recipe-card__inline-textarea recipe-card__cover-subtitle"
-            value={draft.subtitle ?? ""}
-            placeholder="A family cookbook"
-            aria-label="Cover kicker"
-            onChange={(event) => set({ subtitle: event.target.value || undefined })}
-          />
-        ) : (
-          draft.subtitle && <p className="recipe-card__cover-subtitle">{draft.subtitle}</p>
-        )}
-        {canEdit ? (
-          <textarea
-            autoFocus
-            rows={1}
-            className="recipe-card__inline-textarea recipe-card__cover-title"
-            value={draft.title}
-            placeholder="Cover title"
-            aria-label="Cover title"
-            onChange={(event) => set({ title: event.target.value })}
-          />
-        ) : (
-          draft.title && <h1 className="recipe-card__cover-title">{draft.title}</h1>
-        )}
+        {coverField({
+          name: "cover-kicker",
+          value: draft.subtitle ?? "",
+          placeholder: "A family cookbook",
+          ariaLabel: "Cover kicker",
+          className: "recipe-card__cover-subtitle",
+          onChange: (value) => set({ subtitle: value || undefined }),
+        })}
+        {coverField({
+          name: "cover-title",
+          value: draft.title,
+          placeholder: "Cover title",
+          ariaLabel: "Cover title",
+          className: "recipe-card__cover-title",
+          as: "h1",
+          onChange: (value) => set({ title: value }),
+        })}
         <div className="recipe-card__cover-rule" aria-hidden />
-        {canEdit ? (
-          <textarea
-            rows={1}
-            className="recipe-card__inline-textarea recipe-card__cover-author"
-            value={draft.author ?? ""}
-            placeholder="Compiled by the Smith family"
-            aria-label="Cover byline"
-            onChange={(event) => set({ author: event.target.value || undefined })}
-          />
-        ) : (
-          // Whatever they typed, verbatim — no forced "Compiled by" prefix.
-          draft.author && <p className="recipe-card__cover-author">{draft.author}</p>
-        )}
-        {canEdit ? (
-          <textarea
-            rows={1}
-            className="recipe-card__inline-textarea recipe-card__cover-edition"
-            value={draft.edition ?? ""}
-            placeholder="Edition or year (optional)"
-            aria-label="Cover edition or year"
-            onChange={(event) => set({ edition: event.target.value || undefined })}
-          />
-        ) : (
-          draft.edition && <p className="recipe-card__cover-edition">{draft.edition}</p>
-        )}
+        {/* Whatever they typed, verbatim — no forced "Compiled by" prefix. */}
+        {coverField({
+          name: "cover-byline",
+          value: draft.author ?? "",
+          placeholder: "Compiled by the Smith family",
+          ariaLabel: "Cover byline",
+          className: "recipe-card__cover-author",
+          onChange: (value) => set({ author: value || undefined }),
+        })}
+        {coverField({
+          name: "cover-edition",
+          value: draft.edition ?? "",
+          placeholder: "Edition or year (optional)",
+          ariaLabel: "Cover edition or year",
+          className: "recipe-card__cover-edition",
+          onChange: (value) => set({ edition: value || undefined }),
+        })}
       </div>
     </article>
   );

@@ -160,8 +160,6 @@ interface PrintDeckProps {
   editSectionTitle: (sectionId: string, value: string) => void;
   commitSectionEdit: () => void;
   startSectionEdit: (sectionId: string) => void;
-  editingCoverSide: CoverSide | null;
-  setEditingCoverSide: Dispatch<SetStateAction<CoverSide | null>>;
   editingToc: boolean;
   setEditingToc: Dispatch<SetStateAction<boolean>>;
   coverSideFromNavItem: (navItem: NavItem) => CoverSide;
@@ -172,6 +170,7 @@ interface PrintDeckProps {
   // Photo controls / helpers (defined in the page)
   renderPagePhotoControl: (recipeId: string) => ReactNode;
   renderSectionPhotoControl: (sectionId: string) => ReactNode;
+  renderCoverPhotoControl: (side: "front" | "back" | "dedication") => ReactNode;
   buildSectionPhotoEdit: (
     section: Section | undefined,
     /** Which surface the picker is rendered on — the opener card, or the
@@ -289,8 +288,6 @@ export function PrintDeck(props: PrintDeckProps) {
     editSectionTitle,
     commitSectionEdit,
     startSectionEdit,
-    editingCoverSide,
-    setEditingCoverSide,
     editingToc,
     setEditingToc,
     coverSideFromNavItem,
@@ -300,6 +297,7 @@ export function PrintDeck(props: PrintDeckProps) {
     coverPhotoCandidates,
     renderPagePhotoControl,
     renderSectionPhotoControl,
+    renderCoverPhotoControl,
     buildSectionPhotoEdit,
     photoModeFor,
     setRecipePhotoMode,
@@ -340,7 +338,7 @@ export function PrintDeck(props: PrintDeckProps) {
   const isEditingNavItem = (navItem: NavItem) =>
     (navItem.kind === "recipe" && showEmptyFields) ||
     (navItem.kind === "divider" && editingSectionId === navItem.recipeId) ||
-    (navItem.kind === "cover" && editingCoverSide === coverSideFromNavItem(navItem)) ||
+    (navItem.kind === "cover" && showEmptyFields) ||
     (navItem.kind === "toc" && editingToc);
 
   /**
@@ -447,7 +445,9 @@ export function PrintDeck(props: PrintDeckProps) {
         ? renderPagePhotoControl(navItem.recipeId)
         : navItem.kind === "divider"
           ? renderSectionPhotoControl(navItem.recipeId)
-          : null;
+          : navItem.kind === "cover"
+            ? renderCoverPhotoControl(coverSideFromNavItem(navItem))
+            : null;
     const lineKind = editable ? renderLineKindControl(navItem) : null;
 
     /**
@@ -522,7 +522,6 @@ export function PrintDeck(props: PrintDeckProps) {
             </div>
           )}
           {lineKind}
-          {photoControl && <div className="recipe-page-toolbar__group">{photoControl}</div>}
           {editable && (
             <div className="recipe-page-toolbar__group">
               <button
@@ -539,8 +538,7 @@ export function PrintDeck(props: PrintDeckProps) {
                   } else if (navItem.kind === "toc") {
                     setEditingToc((current) => !current);
                   } else {
-                    const side = coverSideFromNavItem(navItem);
-                    setEditingCoverSide((current) => (current === side ? null : side));
+                    toggleShowEmptyFields();
                   }
                 }}
               >
@@ -548,9 +546,9 @@ export function PrintDeck(props: PrintDeckProps) {
                     already editable by clicking it. What is left for it to do
                     is show the fields this recipe does NOT have, which cannot
                     be clicked into existence because they take up no room. The
-                    cover, contents and chapter openers still have a real edit
+                    contents page and chapter openers still have a real edit
                     mode, and still say Edit. */}
-                {navItem.kind === "recipe"
+                {navItem.kind === "recipe" || navItem.kind === "cover"
                   ? editing
                     ? "Done"
                     : "All fields"
@@ -560,6 +558,10 @@ export function PrintDeck(props: PrintDeckProps) {
               </button>
             </div>
           )}
+          {/* After Edit, with Move and Delete: this is an icon among icons, and
+              it led the bar only because that is where the placement toggle it
+              replaced used to sit. */}
+          {photoControl && <div className="recipe-page-toolbar__group">{photoControl}</div>}
           {/* Move this recipe into another chapter.
               
               Until now the only way was the Organize panel: leave the page you
@@ -740,7 +742,7 @@ export function PrintDeck(props: PrintDeckProps) {
           : undefined
       }
       coverEdit={
-        focused && navItem.kind === "cover" && editingCoverSide === coverSideFromNavItem(navItem)
+        focused && navItem.kind === "cover"
           ? {
               side: coverSideFromNavItem(navItem),
               cover: coverForSide(coverSideFromNavItem(navItem)) ?? defaultCover(),
@@ -831,19 +833,15 @@ export function PrintDeck(props: PrintDeckProps) {
     if (navItem.kind === "image" || navItem.kind === "section-photo" || navItem.continued) return;
     // Not on the floating controls that sit over the page.
     if ((event.target as HTMLElement).closest("button, a, input, textarea")) return;
-    // Recipes are absent on purpose: their text is editable by clicking it, so
-    // a double-click already lands a caret in the field under the cursor. There
-    // is no mode left for this gesture to open.
-    if (navItem.kind === "recipe") return;
+    // Recipes and covers are absent on purpose: their text is editable by
+    // clicking it, so a double-click already lands a caret in the field under
+    // the cursor. There is no mode left for this gesture to open.
+    if (navItem.kind === "recipe" || navItem.kind === "cover") return;
     if (navItem.kind === "divider") {
       if (editingSectionId !== navItem.recipeId) startSectionEdit(navItem.recipeId);
       return;
     }
-    if (navItem.kind === "toc") {
-      setEditingToc(true);
-      return;
-    }
-    setEditingCoverSide(coverSideFromNavItem(navItem));
+    if (navItem.kind === "toc") setEditingToc(true);
   };
 
   return (
@@ -1277,7 +1275,7 @@ export function PrintDeck(props: PrintDeckProps) {
                         : undefined
                     }
                     coverEdit={
-                      isActive && navItem.kind === "cover" && editingCoverSide === coverSideFromNavItem(navItem)
+                      isActive && navItem.kind === "cover"
                         ? {
                             side: coverSideFromNavItem(navItem),
                             cover: coverForSide(coverSideFromNavItem(navItem)) ?? defaultCover(),
