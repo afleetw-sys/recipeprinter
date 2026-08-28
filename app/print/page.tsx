@@ -1284,6 +1284,14 @@ export default function PrintPage() {
     const active: SectionPhotoMode = resolved === "grid" ? "full" : resolved;
     return (
       <div className="recipe-page-layout-control">
+        {/* Three adjectives with nothing to attach them to: "None / In card /
+            Full page" reads as a choice about the PAGE until something says it
+            is about the photo. The group already carried that meaning for a
+            screen reader through `aria-label`; this is the same word, said
+            where everyone can see it. */}
+        <span className="recipe-page-toolbar__label recipe-page-layout-control__label">
+          Image
+        </span>
         <div className="recipe-page-layout-picker" role="group" aria-label="Photo">
           {SECTION_PHOTO_OPTIONS.map((option) => (
             <button
@@ -2365,6 +2373,28 @@ export default function PrintPage() {
   }, [printPending, printLayoutReady, purchaseBusy, cookbookPurchaseBusy]);
 
   const moveProjectItem = projectMeta.moveItem;
+
+  /**
+   * Show the loading state the moment a DIFFERENT project is asked for.
+   *
+   * `projectLoading` is seeded from `useState(Boolean(accountProjectId))`,
+   * which only runs when this page mounts. Opening a project from the account
+   * menu while already on /print is a client-side navigation: the query
+   * changes, the component does not remount, and the initialiser never runs
+   * again. So the deck went on painting the project already open until the
+   * load below finished and swapped it — the flash of the wrong book.
+   *
+   * Keyed on the id rather than on a boolean, so re-landing on the project
+   * that is already open stays quiet instead of flashing a loader at someone
+   * who is already looking at what they asked for.
+   */
+  const loadedProjectIdRef = useRef<string | null>(accountProjectId);
+  useEffect(() => {
+    if (!accountProjectId) return;
+    if (loadedProjectIdRef.current === accountProjectId) return;
+    loadedProjectIdRef.current = accountProjectId;
+    setProjectLoading(true);
+  }, [accountProjectId]);
 
   useEffect(() => {
     if (!accountProjectId || !cookPilotAuthReady || !projectMeta.hydrated || !queue.hydrated) return;
