@@ -1342,10 +1342,19 @@
 /* Per-recipe page-layout picker (Phase 2b): a small segmented control shown
    next to Edit in cookbook mode, with an optional feedback note below it. */
 .recipe-page-layout-control {
+  /* A row, not a column: this sits inside the page toolbar, which is one line
+     of controls, and stacking put the group half a line taller than everything
+     beside it. */
   display: inline-flex;
-  flex-direction: column;
-  align-items: flex-end;
-  gap: 4px;
+  align-items: center;
+  gap: 6px;
+}
+
+/* Names what the three options are choosing. Quieter than the options
+   themselves — it is the question, and they are the answer. */
+.recipe-page-layout-control__label {
+  min-width: 0;
+  color: var(--cp-ink-soft);
 }
 
 /* A track holding ~25px segments with 3px of padding, so the outer corner is
