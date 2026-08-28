@@ -33,6 +33,7 @@ import {
   type RecipePrintTemplate,
 } from "@/components/RecipeCardPrint";
 import { TemplateThumbnail } from "@/components/print/TemplateThumbnail";
+import { PhotoPlacementPicker } from "@/components/print/PhotoPlacementPicker";
 import { PHOTO_STYLE_OPTIONS } from "@/components/print/photoStyle";
 import { MobileStructureSheet } from "@/components/print/MobileStructureSheet";
 import { PrintConfigPanel } from "@/components/print/PrintConfigPanel";
@@ -1283,40 +1284,22 @@ export default function PrintPage() {
     const resolved = resolveSectionPhotoMode(section, photoStyle);
     const active: SectionPhotoMode = resolved === "grid" ? "full" : resolved;
     return (
-      <div className="recipe-page-layout-control">
-        {/* Three adjectives with nothing to attach them to: "None / In card /
-            Full page" reads as a choice about the PAGE until something says it
-            is about the photo. The group already carried that meaning for a
-            screen reader through `aria-label`; this is the same word, said
-            where everyone can see it. */}
-        <span className="recipe-page-toolbar__label recipe-page-layout-control__label">
-          Image
-        </span>
-        <div className="recipe-page-layout-picker" role="group" aria-label="Photo">
-          {SECTION_PHOTO_OPTIONS.map((option) => (
-            <button
-              key={option.id}
-              type="button"
-              className={`recipe-page-layout-picker__btn ${active === option.id ? "is-active" : ""}`}
-              aria-pressed={active === option.id}
-              onClick={(event) => {
-                event.stopPropagation();
-                if (option.id === "none") {
-                  projectMeta.setSectionPhotoMode(sectionId, "none");
-                } else {
-                  // band / full — seed the photo so the band/page is never blank,
-                  // matching buildSectionPhotoEdit's placement change.
-                  projectMeta.setSectionPhotoMode(sectionId, option.id, {
-                    photoUrl: section.photoUrl ?? ownImages[0],
-                  });
-                }
-              }}
-            >
-              {option.label}
-            </button>
-          ))}
-        </div>
-      </div>
+      <PhotoPlacementPicker
+        label="Opener photo"
+        options={SECTION_PHOTO_OPTIONS}
+        active={active}
+        onSelect={(id) => {
+          if (id === "none") {
+            projectMeta.setSectionPhotoMode(sectionId, "none");
+            return;
+          }
+          // band / full — seed the photo so the band/page is never blank,
+          // matching buildSectionPhotoEdit's placement change.
+          projectMeta.setSectionPhotoMode(sectionId, id as SectionPhotoMode, {
+            photoUrl: section.photoUrl ?? ownImages[0],
+          });
+        }}
+      />
     );
   };
 
@@ -3227,24 +3210,15 @@ export default function PrintPage() {
     if (!recipe) return null;
     const mode = photoModeFor(recipeId);
     return (
-      <div className="recipe-page-layout-control">
-        <div className="recipe-page-layout-picker" role="group" aria-label="Photo">
-          {PHOTO_STYLE_OPTIONS.map((option) => (
-            <button
-              key={option.id}
-              type="button"
-              className={`recipe-page-layout-picker__btn ${mode === option.id ? "is-active" : ""}`}
-              aria-pressed={mode === option.id}
-              onClick={(event) => {
-                event.stopPropagation();
-                setRecipePhotoMode(recipeId, option.id);
-              }}
-            >
-              {option.short}
-            </button>
-          ))}
-        </div>
-      </div>
+      <PhotoPlacementPicker
+        options={PHOTO_STYLE_OPTIONS.map((option) => ({
+          id: option.id,
+          label: option.short,
+          hint: option.hint,
+        }))}
+        active={mode}
+        onSelect={(id) => setRecipePhotoMode(recipeId, id as PhotoStyle)}
+      />
     );
   };
   const [activeNavIndex, setActiveNavIndex] = useState(0);

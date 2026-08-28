@@ -1392,18 +1392,22 @@
      showing one choice look like two different things. */
   .rp-project-heading__kind-trigger {
     @apply inline-flex items-center gap-1 font-bold transition-colors;
-    min-height: 30px;
-    padding: 0 8px 0 12px;
-    border: 1px solid var(--cp-line);
-    border-radius: 11px;
-    background: transparent;
+    /* Filled, not outlined, and tighter than the tabs it stands in for. This
+       is the collapsed form of the kind control, and the expanded one is a
+       filled grey track — an outline here made the same choice look like a
+       different kind of control depending on how much room the bar had. */
+    min-height: 22px;
+    padding: 0 5px 0 8px;
+    border: 0;
+    border-radius: 7px;
+    background: var(--cp-surface-strong);
     color: var(--cp-ink);
-    font-size: var(--cp-fs-small);
+    font-size: var(--cp-fs-caption);
     line-height: 1;
   }
 
   .rp-project-heading__kind-trigger:hover {
-    background: var(--cp-overlay-hover);
+    background: var(--cp-surface-strong-hover);
     color: var(--cp-ink);
   }
 
