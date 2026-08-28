@@ -400,10 +400,13 @@
     transition: opacity 460ms ease;
   }
 
+  /* Keeps the rail's own white. Organizing widens this panel; it does not turn
+     it into a different surface, and dropping to the page grey read as the
+     recipes having been tipped out onto the page behind them. The section cards
+     separate on their hairline border, as everything else here does. */
   .recipe-print-shell--organizing > .recipe-page-rail {
     min-width: 0;
     padding: 18px 20px;
-    background: var(--cp-page);
   }
 
   .recipe-print-shell--organizing .recipe-page-rail__section-group {
