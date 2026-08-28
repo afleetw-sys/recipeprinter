@@ -30,10 +30,10 @@ import type { PrintCardSize, RecipePrintTemplate } from "@/components/RecipeCard
  *
  * Deliberately swept over every `RecipePrintTemplate` rather than
  * `RECIPE_PRINT_TEMPLATE_OPTIONS` (which the harness uses): the options list
- * is the *picker*, and templates get withheld from it while still rendering
- * for projects already saved on them — `fruit` is withheld right now. Testing
- * the picker would silently stop covering a template the moment it's gated,
- * which is the opposite of what you want from a regression net.
+ * is the *picker*, and a template can be withheld from it while still
+ * rendering for projects already saved on one. Testing the picker would
+ * silently stop covering a template the moment it's gated, which is the
+ * opposite of what you want from a regression net.
  */
 const SIZES: PrintCardSize[] = ["letter", "card-6x4"];
 const TEMPLATES: RecipePrintTemplate[] = [
@@ -43,8 +43,6 @@ const TEMPLATES: RecipePrintTemplate[] = [
   "pantry",
   "counter",
   "keepsake",
-  "fruit",
-  "cookout",
 ];
 const PHOTO_OPTIONS = [false, true];
 const SOURCE_URL_OPTIONS = [false, true];

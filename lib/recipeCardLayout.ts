@@ -98,7 +98,6 @@ const TEMPLATE_STACKED_FRONT_GUTTER_RESERVE: Partial<
 > = {
   bistro: { "card-6x4": 25 },
   pantry: { "card-6x4": 35 },
-  cookout: { "card-6x4": 30 },
 };
 
 interface SplitOptions {

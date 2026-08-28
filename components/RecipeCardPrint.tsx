@@ -3,12 +3,8 @@
 import {
   Fragment,
   memo,
-  useEffect,
   useId,
-  useLayoutEffect,
   useMemo,
-  useRef,
-  useState,
   type CSSProperties,
   type ReactNode,
 } from "react";
@@ -73,9 +69,7 @@ export type RecipePrintTemplate =
   | "bistro"
   | "pantry"
   | "counter"
-  | "keepsake"
-  | "fruit"
-  | "cookout";
+  | "keepsake";
 export type CardSectionLayout = "standard" | "stacked";
 
 export const RECIPE_PRINT_TEMPLATE_OPTIONS: Array<{
@@ -89,76 +83,8 @@ export const RECIPE_PRINT_TEMPLATE_OPTIONS: Array<{
   { id: "heirloom", label: "Heirloom", detail: "Cream stock, red utensil keepsake" },
   { id: "keepsake", label: "Keepsake", detail: "Cream recipe-box card with classic family style" },
   { id: "bistro", label: "Bistro", detail: "Blue checks, tomato red, playful kitchen card" },
-  // Fruit Stand and Cookout are withheld from the picker for now — not ready to
-  // launch. Only this list is gated: the `fruit`/`cookout` template ids, their
-  // styles and premium mappings all stay, so a project already saved on one keeps
-  // rendering (and printing) exactly as before instead of falling back to a
-  // different look. Re-launching either is a one-line restore.
-  // { id: "cookout", label: "Cookout", detail: "Warm BBQ card with a grilled-icon border" },
 ];
 
-// A BBQ-icon border for the cookout template, running continuously along
-// all four edges (`justify-content: space-evenly` in globals.css, so it
-// actually reads as a full border rather than a few clusters with bare card
-// between them). Each icon still varies independently in size (`scale`,
-// against the edge's base thickness via `--icon-scale`), rotation, an
-// occasional horizontal flip, and a small perpendicular `jitter` (in
-// inches, nudging it off the strip's centerline) so the even center-to-
-// center spacing doesn't read as a mechanical, perfectly-repeating strip.
-interface BbqIcon {
-  src: string;
-  rotate: number;
-  flip?: boolean;
-  scale?: number;
-  /** Perpendicular offset off the strip's centerline, in inches. */
-  jitter?: number;
-  /** Relative weight of the flexible space *before* this icon. The strip's
-      leftover room is shared out to these weights, so the gap ahead of every
-      icon is genuinely different (not an even grid) — and a weight of 0 tucks
-      the icon right up against its neighbour to read as a deliberate cluster. */
-  gap?: number;
-}
-
-// Every `gap` is a different weight so the space ahead of each icon differs —
-// no even grid. The 0s are deliberate clusters (two icons tucked together),
-// which is the "some go together, then a different gap" rhythm of the reference
-// card. Scales vary too, and nothing is pinned to a corner.
-const BBQ_EDGE_TOP: BbqIcon[] = [
-  { src: "/images/bbq-grill.svg", rotate: -9, scale: 1.05, jitter: 0.03, gap: 0.5 },
-  { src: "/images/bbq-steak.svg", rotate: 13, flip: true, scale: 0.8, jitter: -0.04, gap: 0 },
-  { src: "/images/bbq-kabob.svg", rotate: -7, scale: 0.72, jitter: 0.05, gap: 1.9 },
-  { src: "/images/bbq-tomato.svg", rotate: 11, scale: 0.78, jitter: -0.02, gap: 1.1 },
-  { src: "/images/bbq-tools.svg", rotate: 9, scale: 0.95, jitter: -0.03, gap: 2.3 },
-  { src: "/images/bbq-steak.svg", rotate: -13, flip: true, scale: 0.82, jitter: 0.03, gap: 0 },
-  { src: "/images/bbq-sauce.svg", rotate: 7, scale: 0.78, jitter: -0.03, gap: 1.5 },
-  { src: "/images/bbq-kabob.svg", rotate: -15, flip: true, scale: 0.7, jitter: 0.03, gap: 0.8 },
-];
-const BBQ_EDGE_BOTTOM: BbqIcon[] = [
-  { src: "/images/bbq-tools.svg", rotate: -12, flip: true, scale: 1.0, jitter: -0.03, gap: 1.3 },
-  { src: "/images/bbq-steak.svg", rotate: 10, scale: 0.82, jitter: 0.02, gap: 2.1 },
-  { src: "/images/bbq-kabob.svg", rotate: 14, scale: 0.7, jitter: 0.03, gap: 0 },
-  { src: "/images/bbq-tomato.svg", rotate: -9, scale: 0.78, jitter: -0.02, gap: 1.7 },
-  { src: "/images/bbq-grill.svg", rotate: 8, flip: true, scale: 1.02, jitter: 0.03, gap: 0.9 },
-  { src: "/images/bbq-steak.svg", rotate: 9, scale: 0.82, jitter: 0.02, gap: 2.4 },
-  { src: "/images/bbq-sauce.svg", rotate: -11, scale: 0.78, jitter: -0.02, gap: 0 },
-  { src: "/images/bbq-kabob.svg", rotate: -15, flip: true, scale: 0.7, jitter: -0.03, gap: 1.4 },
-];
-const BBQ_EDGE_LEFT: BbqIcon[] = [
-  { src: "/images/bbq-grill.svg", rotate: -9, scale: 1.02, jitter: 0.03, gap: 0.7 },
-  { src: "/images/bbq-steak.svg", rotate: 13, flip: true, scale: 0.82, jitter: -0.04, gap: 2.2 },
-  { src: "/images/bbq-kabob.svg", rotate: -7, scale: 0.72, jitter: 0.03, gap: 0 },
-  { src: "/images/bbq-tools.svg", rotate: 10, scale: 0.95, jitter: -0.03, gap: 1.6 },
-  { src: "/images/bbq-tomato.svg", rotate: 11, scale: 0.78, jitter: 0.03, gap: 1.0 },
-  { src: "/images/bbq-sauce.svg", rotate: 8, scale: 0.78, jitter: -0.04, gap: 2.0 },
-];
-const BBQ_EDGE_RIGHT: BbqIcon[] = [
-  { src: "/images/bbq-steak.svg", rotate: 9, scale: 0.82, jitter: -0.03, gap: 1.2 },
-  { src: "/images/bbq-kabob.svg", rotate: -12, flip: true, scale: 0.72, jitter: 0.04, gap: 0 },
-  { src: "/images/bbq-grill.svg", rotate: 8, flip: true, scale: 1.02, jitter: -0.03, gap: 2.3 },
-  { src: "/images/bbq-tools.svg", rotate: 6, flip: true, scale: 0.95, jitter: -0.02, gap: 0.9 },
-  { src: "/images/bbq-tomato.svg", rotate: 10, scale: 0.78, jitter: -0.03, gap: 1.8 },
-  { src: "/images/bbq-sauce.svg", rotate: -8, flip: true, scale: 0.78, jitter: 0.02, gap: 1.4 },
-];
 
 // A tiled SVG `<pattern>` (not a background-image tile, which Chrome's print
 // pipeline pre-rasterizes to a low-DPI bitmap). Pure vector, so it stays crisp
@@ -272,131 +198,10 @@ function CounterCheckerBand() {
   );
 }
 
-// `axis` says which direction this icon's edge runs, so `jitter` (always
-// "perpendicular to the strip") lands on the right transform axis: a
-// horizontal top/bottom strip jitters vertically, a vertical left/right one
-// jitters horizontally.
-function BbqIconImg({ icon, axis, iconKey }: { icon: BbqIcon; axis: "x" | "y"; iconKey: string }) {
-  const jitter = icon.jitter ?? 0;
-  const translate = axis === "y" ? `translateY(${jitter}in)` : `translateX(${jitter}in)`;
-  return (
-    // eslint-disable-next-line @next/next/no-img-element
-    <img
-      key={iconKey}
-      className="recipe-card__bbq-icon"
-      src={icon.src}
-      alt=""
-      style={
-        {
-          transform: `${translate} rotate(${icon.rotate}deg)${icon.flip ? " scaleX(-1)" : ""}`,
-          "--icon-scale": icon.scale ?? 1,
-        } as CSSProperties
-      }
-    />
-  );
-}
-
-// Target center-to-center spacing between border icons, in CSS inches (where
-// 1in === 96px, regardless of paper size or print DPI). Each edge's icon
-// *count* is derived from its own measured length against this, so the tall
-// letter card's long sides stay as densely filled as its short top/bottom
-// instead of stranding four lonely icons down an 11-inch run — while a short
-// 6x4 landscape side, measured the same way, simply gets fewer.
-const BBQ_ICON_SPACING_IN = 0.52;
-const CSS_PX_PER_IN = 96;
-
-// `typeof window` picks `useEffect` on the server so the layout-effect warning
-// never fires during SSR; on the client `useLayoutEffect` sets the real count
-// before paint, so the strip never flashes its unmeasured default first.
-const useIsomorphicLayoutEffect = typeof window !== "undefined" ? useLayoutEffect : useEffect;
-
-// Measures a strip's length and repeats the edge's base icon list (cycling
-// through it so rotation/flip/jitter/gap keep varying) to fill it at roughly
-// `BBQ_ICON_SPACING_IN`. Between and around the icons sit flexible spacers
-// whose `flex-grow` is the upcoming icon's `gap` weight, so flexbox shares the
-// strip's leftover room out unevenly — the space before each icon genuinely
-// differs, and a 0-weight spacer collapses so two icons cluster. The strip is
-// absolutely positioned and `pointer-events: none`, so re-rendering more icons
-// never touches the card's content flow or the pagination measurement.
-function BbqEdge({
-  side,
-  base,
-}: {
-  side: "top" | "bottom" | "left" | "right";
-  base: BbqIcon[];
-}) {
-  const horizontal = side === "top" || side === "bottom";
-  const ref = useRef<HTMLDivElement | null>(null);
-  const [count, setCount] = useState(base.length);
-
-  useIsomorphicLayoutEffect(() => {
-    const el = ref.current;
-    if (!el) return;
-    const measure = () => {
-      // `offsetWidth`/`offsetHeight` (not `getBoundingClientRect`) so the count
-      // comes from the card's intrinsic print-space size, not its on-screen
-      // size: previews and thumbnails are the same full-size card shrunk with
-      // `transform: scale()`, which `getBoundingClientRect` would report at the
-      // scaled size — handing each a different icon count and making the
-      // preview diverge from the print. `offset*` ignores the transform, so
-      // every instance (thumbnail, preview, printed page) measures identically.
-      const lengthPx = horizontal ? el.offsetWidth : el.offsetHeight;
-      // 0 while the face is hidden (`display: none` decks) — leave the current
-      // count and let the ResizeObserver re-measure once it's actually shown.
-      if (lengthPx === 0) return;
-      const next = Math.round(lengthPx / CSS_PX_PER_IN / BBQ_ICON_SPACING_IN);
-      setCount(Math.max(3, next));
-    };
-    measure();
-    if (typeof ResizeObserver === "undefined") return;
-    const observer = new ResizeObserver(measure);
-    observer.observe(el);
-    return () => observer.disconnect();
-  }, [horizontal]);
-
-  return (
-    <div ref={ref} className={`recipe-card__bbq-edge recipe-card__bbq-edge--${side}`}>
-      {Array.from({ length: count }, (_, i) => {
-        const icon = base[i % base.length];
-        return (
-          <Fragment key={`${side}-${i}`}>
-            <span className="recipe-card__bbq-gap" style={{ flexGrow: icon.gap ?? 1 }} />
-            <BbqIconImg iconKey={`${side}-${i}`} icon={icon} axis={horizontal ? "y" : "x"} />
-          </Fragment>
-        );
-      })}
-      {/* Trailing spacer so the last icon isn't jammed against the far corner. */}
-      <span className="recipe-card__bbq-gap" style={{ flexGrow: 1.3 }} />
-    </div>
-  );
-}
-
-// Shared by RecipeCardFace, DividerFace, and CoverFace so section dividers
-// and covers pick up the same cookout border instead of going bare.
-// `withPhotoGap` is only relevant on a recipe front face — it pulls the top
-// and right strips back so they don't run under the corner photo thumbnail.
-// No dedicated corner icons: an earlier version pinned a grill to each corner,
-// but that read as too rigidly, symmetrically "framed" — the reference card
-// isn't cornered like that. The strips just run edge to edge and the corners
-// are whatever their end icons happen to be.
-function CookoutBbqBorder({ withPhotoGap = false }: { withPhotoGap?: boolean }) {
-  return (
-    <div
-      className={`recipe-card__bbq-border ${withPhotoGap ? "recipe-card__bbq-border--with-photo" : ""}`}
-      aria-hidden
-    >
-      <BbqEdge side="top" base={BBQ_EDGE_TOP} />
-      <BbqEdge side="bottom" base={BBQ_EDGE_BOTTOM} />
-      <BbqEdge side="left" base={BBQ_EDGE_LEFT} />
-      <BbqEdge side="right" base={BBQ_EDGE_RIGHT} />
-    </div>
-  );
-}
-
 /**
  * The template's decorative layer — the one part of a card that is pure
  * ornament, and by far the most expensive: bistro's checker spine is 240 SVG
- * nodes per face, cookout's border ~40 `<img>`s plus four ResizeObservers.
+ * nodes per face.
  *
  * `show={false}` drops it entirely, for the two places that render a full card
  * but never display this layer:
@@ -419,14 +224,13 @@ function TemplateDecoration({
 }: {
   template?: RecipePrintTemplate;
   show?: boolean;
-  /** Cookout's border is a front-face motif; continuation faces go without. */
+  /** A decorative motif belongs to the front face; continuations go without. */
   continued?: boolean;
   withPhotoGap?: boolean;
 }) {
   if (!show) return null;
   if (template === "bistro") return <BistroCheckerSpine />;
   if (template === "counter") return <CounterCheckerBand />;
-  if (template === "cookout" && !continued) return <CookoutBbqBorder withPhotoGap={withPhotoGap} />;
   return null;
 }
 
