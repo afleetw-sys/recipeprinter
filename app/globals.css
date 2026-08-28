@@ -40,6 +40,13 @@
      a filled button wants to read as a plain grey chip, and the blue cast that
      suits a page background made it look tinted at this size. */
   --cp-surface-strong: #efefef;
+  /* One step lighter than --cp-surface-strong and in the SAME neutral family.
+     A recessed track behind a --cp-surface-strong selection needs to be
+     lighter than it, and the existing pale greys (--cp-surface-muted,
+     --cp-page) are blue-tinted — behind a neutral thumb they reintroduce
+     exactly the two-different-greys mismatch that made the header look
+     unfinished. */
+  --cp-surface-soft: #f7f7f7;
   /* The studio's middle column. Near-white rather than the page's blue-grey:
      the deck is a stack of white pages, and a tinted ground behind them made
      the paper look tinted too. Light enough to read as "white", dark enough
@@ -1314,9 +1321,13 @@
     flex: 0 0 auto;
     margin-left: 8px;
     padding: 3px;
-    border: 1px solid var(--cp-line);
+    border: 0;
     border-radius: 11px;
-    background: transparent;
+    /* A filled track rather than a hairline. The frame drew a box around the
+       pair and then asked the selection to be read inside it; a solid ground
+       does the grouping on its own, and the selected tab reads as sitting in
+       a channel rather than as one of two things in a container. */
+    background: var(--cp-surface-soft);
   }
 
   .rp-project-heading__kinds .segmented-control__option {
