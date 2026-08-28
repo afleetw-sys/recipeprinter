@@ -869,7 +869,7 @@
   gap: 0;
 }
 
-/* The organizer's own toolbar — "Organize it for me", Sort, the collapse
+/* The organizer's own toolbar — "Organize for me", Sort, the collapse
    control — settled on a shape that works: a pill, a hairline in `--cp-line`
    rather than the heavier `--cp-line-strong`, a card fill, and caption-sized
    text at 700. The rail's controls were the shared button component instead,

@@ -572,7 +572,7 @@ export function PageRail(props: PageRailProps) {
                   onClick={canUndoOrganization ? undoCookbookOrganization : suggestCookbookLayout}
                 >
                   <RefreshIcon size={ICON_SIZE.md} />
-                  <span>{canUndoOrganization ? "Undo organizing" : "Organize it for me"}</span>
+                  <span>{canUndoOrganization ? "Undo organizing" : "Organize for me"}</span>
                 </button>
                 {/* Sections are made in here, so the control to make one is in
                     here too. Two jobs, one button: with recipes selected it

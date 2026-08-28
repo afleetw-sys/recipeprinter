@@ -265,7 +265,7 @@ export function MobileStructureSheet({
               onClick={canUndoOrganization ? undoCookbookOrganization : suggestCookbookLayout}
             >
               <RefreshIcon size={ICON_SIZE.sm} />
-              {canUndoOrganization ? "Undo organizing" : "Organize it for me"}
+              {canUndoOrganization ? "Undo organizing" : "Organize for me"}
             </button>
           </footer>
         </aside>
