@@ -39,6 +39,12 @@ export type SeoLandingPage = {
    */
   layout?: "capture-first" | "guide-first";
   eyebrow: string;
+  /** Overrides the hero photo (a key in `PRINTED_CARDS`) for pages whose
+      subject is the recipe you already have rather than one we printed. */
+  heroCard?: string;
+  /** The pill under the hero photo. Must describe what the photo actually
+      shows: "Printed from a recipe link" over a handwritten card is a lie. */
+  heroAnnotation?: string;
   statusNote?: string;
   initialImportMode?: ImportMethod;
   importSubmitLabel?: string;
@@ -550,6 +556,8 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
   },
   {
     slug: "preserve-family-recipes",
+    heroCard: "jackie",
+    heroAnnotation: "The card this book starts from",
     primaryKeyword: "preserve family recipes",
     secondaryKeywords: [
       "handwritten recipe preservation",
@@ -587,6 +595,8 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
   },
   {
     slug: "family-recipe-book",
+    heroCard: "jackie",
+    heroAnnotation: "The card this book starts from",
     primaryKeyword: "family recipe book",
     secondaryKeywords: [
       "create a family cookbook",

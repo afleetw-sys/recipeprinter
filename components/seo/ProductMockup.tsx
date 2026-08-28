@@ -23,6 +23,24 @@ type PrintedCard = {
 // The real card photos. Dimensions are the portrait phone-camera aspect (3:4);
 // next/image only uses the ratio, so approximate is fine.
 export const PRINTED_CARDS: Record<string, PrintedCard> = {
+  /**
+   * The one SOURCE photo in here, and the odd one out on purpose: a
+   * handwritten card in someone's own hand, not a card RecipePrinter printed.
+   *
+   * It belongs on the family pages, where the subject is the recipe you
+   * already have rather than the one you are about to make. `recipe` and
+   * `template` describe what the photo IS — they are only rendered by the
+   * examples gallery, which this is deliberately kept out of, because "Peanut
+   * Butter Cookies · Heirloom layout" would claim we printed it.
+   */
+  jackie: {
+    src: "/images/jackie-card.jpeg",
+    width: 3763,
+    height: 2822,
+    recipe: "Peanut Butter Cookies",
+    template: "Handwritten",
+    alt: "A handwritten recipe card for peanut butter cookies, signed \"From Jackie (Nana)\", lying on a wooden board beside a floral recipe tin.",
+  },
   caprese: {
     src: "/images/card-caprese-pasta-salad.jpeg",
     width: 1200,

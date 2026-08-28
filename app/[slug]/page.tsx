@@ -182,8 +182,11 @@ export default function SeoLandingPage({ params }: PageProps) {
                 )}
               </div>
               <HeroProductPhoto
-                cardKey={isGuide ? "pesto" : "korean"}
-                annotation={isGuide ? "Ready for a family cookbook" : "Printed from a recipe link"}
+                cardKey={page.heroCard ?? (isGuide ? "pesto" : "korean")}
+                annotation={
+                  page.heroAnnotation ??
+                  (isGuide ? "Ready for a family cookbook" : "Printed from a recipe link")
+                }
                 priority
                 wide
               />
