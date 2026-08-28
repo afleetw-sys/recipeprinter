@@ -40,6 +40,13 @@
      a filled button wants to read as a plain grey chip, and the blue cast that
      suits a page background made it look tinted at this size. */
   --cp-surface-strong: #efefef;
+  /* One step lighter than --cp-surface-strong and in the SAME neutral family.
+     A recessed track behind a --cp-surface-strong selection needs to be
+     lighter than it, and the existing pale greys (--cp-surface-muted,
+     --cp-page) are blue-tinted — behind a neutral thumb they reintroduce
+     exactly the two-different-greys mismatch that made the header look
+     unfinished. */
+  --cp-surface-soft: #f7f7f7;
   /* The studio's middle column. Near-white rather than the page's blue-grey:
      the deck is a stack of white pages, and a tinted ground behind them made
      the paper look tinted too. Light enough to read as "white", dark enough
@@ -1314,9 +1321,12 @@
     flex: 0 0 auto;
     margin-left: 8px;
     padding: 3px;
-    border: 1px solid var(--cp-line);
+    border: 0;
     border-radius: 11px;
-    background: transparent;
+    /* Our own grey as the ground, the selection lifted out of it in card
+       white. The track does the grouping so no frame is needed, and the
+       white tab is the only thing that has to be found. */
+    background: var(--cp-surface-strong);
   }
 
   .rp-project-heading__kinds .segmented-control__option {
@@ -1338,8 +1348,11 @@
   .segmented-control.rp-project-heading__kinds .segmented-control__thumb {
     top: 3px;
     bottom: 3px;
+    /* 8px inside 11px outside: the same inner + padding relationship the zoom
+       control and the page toolbar use, so the corner stays concentric. */
     border-radius: 8px;
-    background: var(--cp-surface-strong);
+    border: 1px solid var(--cp-line);
+    background: var(--cp-card);
     box-shadow: none;
   }
 
