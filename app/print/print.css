@@ -1257,12 +1257,6 @@
   box-shadow: var(--cp-shadow-lg);
 }
 
-/* Opens rightward from a trigger that starts the bar. */
-.recipe-page-toolbar__picker--start .recipe-page-toolbar__menu {
-  right: auto;
-  left: 0;
-}
-
 .recipe-page-toolbar__option {
   display: block;
   width: 100%;
@@ -1325,6 +1319,35 @@
   width: 28px;
   padding: 0;
   color: var(--cp-ink-soft);
+}
+
+/* The photo dialog's own trigger, wearing the toolbar's icon button. Icon
+   only in here: the bar is a row of glyphs, and "Photo" / "Add photo" is
+   already said by the dialog it opens and by the title on hover. */
+/* Both classes: `.image-picker__trigger`'s own pill sizing is defined further
+   down this file, so a single class here loses on order rather than intent. */
+.image-picker__trigger.recipe-page-toolbar__photo {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  min-height: 28px;
+  height: 28px;
+  padding: 0;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--cp-ink-soft);
+  cursor: pointer;
+}
+
+.image-picker__trigger.recipe-page-toolbar__photo span {
+  display: none;
+}
+
+.image-picker__trigger.recipe-page-toolbar__photo:hover:not(:disabled) {
+  background: var(--cp-overlay-hover);
+  color: var(--cp-ink);
 }
 
 .recipe-page-toolbar__btn:hover:not(:disabled) {
