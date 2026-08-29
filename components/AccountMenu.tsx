@@ -252,8 +252,8 @@ export default function AccountMenu({
             ? "border border-transparent bg-[var(--cp-accent)] text-[var(--cp-ink)] font-bold tracking-tight"
             : "icon-button--filled"
         }
-        aria-label="Recipe Printer account"
-        title="Recipe Printer account"
+        aria-label="RecipePrinter account"
+        title="RecipePrinter account"
         onClick={() => {
           // Signed out, this used to go straight to the sign-in dialog, so the
           // avatar was a door with exactly one thing behind it. A visitor with
@@ -279,7 +279,7 @@ export default function AccountMenu({
           <div className="flex items-start justify-between gap-cp-3">
             <div className="min-w-0">
               <strong className="block truncate">
-                {user ? user.displayName || "Recipe Printer account" : "Keep your projects"}
+                {user ? user.displayName || "RecipePrinter account" : "Keep your projects"}
               </strong>
               <span className="block truncate text-cp-small text-ink-soft">
                 {user

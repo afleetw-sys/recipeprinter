@@ -220,8 +220,8 @@ export function AccountControl({
         <IconButton
           data-rp-avatar={compact ? "compact" : "full"}
           className="icon-button--filled"
-          aria-label="Recipe Printer account"
-          title="Recipe Printer account"
+          aria-label="RecipePrinter account"
+          title="RecipePrinter account"
           onClick={() => {
             setPendingClick(true);
             setShowMenu(true);

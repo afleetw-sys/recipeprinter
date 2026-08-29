@@ -22,7 +22,13 @@ const DEFAULT_LAST_MODIFIED = "2026-07-08";
 // the sitemap and the site navigation can never drift apart. When public recipe
 // pages (e.g. /recipes/[slug]) land later, map them in here too, the canonical
 // origin comes from lib/seo, so no redesign is needed.
-const staticRoutes: { path: string; priority: number; changeFrequency: MetadataRoute.Sitemap[number]["changeFrequency"] }[] = [
+const staticRoutes: {
+  path: string;
+  priority: number;
+  changeFrequency: MetadataRoute.Sitemap[number]["changeFrequency"];
+  /** Overrides LAST_MODIFIED. Landing pages carry their own review date. */
+  lastModified?: string;
+}[] = [
   { path: "/", priority: 1, changeFrequency: "weekly" },
   ...NAV_LINKS.map((link) => ({
     path: link.href,
@@ -33,13 +39,16 @@ const staticRoutes: { path: string; priority: number; changeFrequency: MetadataR
     path: `/${page.slug}`,
     priority: page.intent === "Utility SEO" ? 0.85 : 0.75,
     changeFrequency: "monthly" as const,
+    // A reviewed page's <lastmod> is the date we actually signed it off; the
+    // rest keep the site-wide default rather than claiming a fresh edit.
+    lastModified: page.lastReviewed,
   })),
 ];
 
 export default function sitemap(): MetadataRoute.Sitemap {
-  return staticRoutes.map(({ path, priority, changeFrequency }) => ({
+  return staticRoutes.map(({ path, priority, changeFrequency, lastModified }) => ({
     url: absoluteUrl(path),
-    lastModified: LAST_MODIFIED[path] ?? DEFAULT_LAST_MODIFIED,
+    lastModified: lastModified ?? LAST_MODIFIED[path] ?? DEFAULT_LAST_MODIFIED,
     changeFrequency,
     priority,
   }));

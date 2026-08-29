@@ -71,27 +71,6 @@ export function Placeholder({
   );
 }
 
-function proofLabel(proof?: SeoProofKind): string {
-  switch (proof) {
-    case "before-after":
-      return "Cluttered page → clean printable";
-    case "card":
-      return "A printable 4×6 recipe card";
-    case "pdf":
-      return "The recipe saved as a PDF";
-    case "book":
-      return "A page in a bound cookbook";
-    case "photo":
-      return "Photos on a recipe page";
-    case "social":
-      return "Importing from a social post";
-    case "binder":
-      return "Recipe pages in a binder";
-    default:
-      return "The tool in action";
-  }
-}
-
 /**
  * A real printed-card photo in a clean modern frame: a soft accent halo for
  * depth, a hairline-bordered image, and one floating pill that ties the photo to
@@ -158,28 +137,117 @@ export function HowItWorks({ steps }: { steps: { name: string; text: string }[] 
   );
 }
 
+type ProofImage = {
+  src: string;
+  width: number;
+  height: number;
+  alt: string;
+  /** Where the crop sits when the source shape differs from the slot's. */
+  objectPosition?: string;
+};
+
+/** One slot shape for every feature row, so the rows read as a set: a 3:2
+    landscape rectangle at a fixed width. Composed visuals are authored at 3:2
+    so nothing is cropped; the photographs are shot portrait and lean on
+    `objectPosition` to keep the part that matters inside the frame. */
+// Below `lg` the row is one full-width column, so the figure is capped to keep
+// the image from going oversized. At `lg` it fills its grid column instead: the
+// copy block already spans its column edge to edge, so a narrower image left the
+// two halves starting and ending at different places, and centring it only moved
+// the mismatch from one side to both.
+const PROOF_SLOT = "w-full max-w-[520px] mx-auto lg:max-w-none";
+const PROOF_ASPECT = "3 / 2";
+
+/**
+ * The real proof visual for each claim kind. Deliberately empty: the
+ * photographs and product screenshots don't exist yet, and a feature row whose
+ * kind isn't listed here renders as a full-width editorial block instead of a
+ * dashed box. A live marketing page is better off showing no visual than one
+ * labelled PRODUCT SCREENSHOT — the placeholder was shipping to production on
+ * /print-recipe-from-website and /family-recipe-book. Add an entry here and the
+ * row picks the two-column layout back up on its own, no page edits.
+ */
+const PROOF_IMAGES: Partial<Record<SeoProofKind, ProofImage>> = {
+  card: {
+    src: "/images/cards-on-counter.jpeg",
+    width: 1600,
+    height: 1200,
+    alt:
+      "Five printed recipe cards fanned across a wooden counter in different card designs, among them Caprese Pasta Salad, Korean Beef Bowl, Basil Pesto, and Bruschetta, beside an open recipe box of tabbed dividers holding a handwritten card from Jackie.",
+  },
+  steps: {
+    src: "/images/seo-pasted-text.png",
+    width: 2400,
+    height: 1600,
+    alt:
+      "A recipe pasted into RecipePrinter as one unbroken run of text, labelled pasted text, beside the finished card it becomes: Brown Butter Banana Bread, 55 minutes, serves 8, with seven ingredients and five numbered steps.",
+  },
+  "before-after": {
+    src: "/images/seo-before-after.png",
+    width: 2400,
+    height: 1600,
+    alt:
+      "The same banana bread recipe two ways. On the left, a pile of five printed sheets: the top one shows the blog page with its navigation bar, headline, a large photo, two paragraphs of preamble, and an advertisement slot, with four more sheets stacked behind it. On the right, one RecipePrinter card holding the whole recipe: title, 55 minutes, serves 8, seven ingredients, and five numbered steps."
+  },
+};
+
 /**
  * Feature deep-dives as clean editorial rows: a strong heading on the left, body
  * on the right, separated by hairlines. Strong hierarchy and whitespace keep it
  * scannable rather than a wall of text, and it matches how Canva's own feature
  * sections are set (text-led, no decorative imagery).
+ *
+ * A row with a real proof image sits beside it in two columns, alternating
+ * sides; a row without one runs full width at a readable measure.
  */
 export function FeatureRows({
   features,
 }: {
-  features: { heading: string; body: string; proof?: SeoProofKind }[];
+  features: { heading: string; body: string; proof?: SeoProofKind; caption?: string }[];
 }) {
   return (
     <div className="flex flex-col gap-cp-7">
-      {features.map((feature, index) => (
-        <div key={feature.heading} className="grid items-center gap-cp-5 lg:grid-cols-2 lg:gap-cp-7">
-          <div className={index % 2 === 1 ? "lg:order-2" : ""}>
+      {features.map((feature, index) => {
+        const image = feature.proof ? PROOF_IMAGES[feature.proof] : undefined;
+        const copy = (
+          <>
             <h3 className="text-cp-h2-lg font-extrabold tracking-[-0.03em]">{feature.heading}</h3>
             <p className="mt-cp-3 text-ink-soft text-cp-body-lg leading-relaxed">{feature.body}</p>
+          </>
+        );
+
+        if (!image) {
+          return (
+            <div key={feature.heading} className="max-w-[46rem]">
+              {copy}
+            </div>
+          );
+        }
+
+        return (
+          <div key={feature.heading} className="grid items-center gap-cp-5 lg:grid-cols-2 lg:gap-cp-7">
+            <div className={index % 2 === 1 ? "lg:order-2" : ""}>{copy}</div>
+            <figure className={`${PROOF_SLOT} ${index % 2 === 1 ? "lg:order-1" : ""}`}>
+              <div className="overflow-hidden rounded-2xl border border-line bg-white p-1.5">
+                <Image
+                  src={image.src}
+                  width={image.width}
+                  height={image.height}
+                  alt={image.alt}
+                  sizes="(max-width: 1023px) 92vw, 520px"
+                  className="w-full rounded-xl object-cover"
+                  style={{ aspectRatio: PROOF_ASPECT, objectPosition: image.objectPosition }}
+                />
+              </div>
+              {feature.caption && (
+                <figcaption className="mt-cp-3 text-cp-caption font-semibold text-ink-soft">
+                  {feature.caption}
+                </figcaption>
+              )}
+            </figure>
           </div>
-          <Placeholder sublabel={proofLabel(feature.proof)} className={index % 2 === 1 ? "lg:order-1" : ""} />
-        </div>
-      ))}
+        );
+      })}
     </div>
   );
 }

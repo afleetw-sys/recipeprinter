@@ -232,7 +232,7 @@ export default function SeoLandingPage({ params }: PageProps) {
                 <SectionHeading>Real cards, really printed</SectionHeading>
               </div>
               <p className="mt-cp-2 text-ink-soft text-cp-body leading-relaxed">
-                Actual recipe cards printed with Recipe Printer, no mockups.
+                Actual recipe cards printed with RecipePrinter, no mockups.
               </p>
               <div className="mt-cp-6">
                 <PhotoGallery cardKeys={page.examples} />
@@ -271,7 +271,7 @@ export default function SeoLandingPage({ params }: PageProps) {
           {/* ── Related ───────────────────────────────────────────────────── */}
           <section aria-labelledby="related-heading">
             <div id="related-heading">
-              <h2 className="text-cp-h2 font-extrabold tracking-[-0.02em]">More ways to use Recipe Printer</h2>
+              <h2 className="text-cp-h2 font-extrabold tracking-[-0.02em]">More ways to use RecipePrinter</h2>
             </div>
             <div className="mt-cp-4 flex flex-wrap gap-cp-3">
               {page.links.map((link) => (

@@ -120,23 +120,24 @@ export function SeoCapture({
           <label htmlFor="seo-url" className="field-label">
             Recipe URL
           </label>
-          <div className="flex flex-col gap-cp-4 lg:flex-row lg:items-start lg:gap-cp-2">
-            <div className="flex-1">
-              <input
-                id="seo-url"
-                type="url"
-                className="field w-full"
-                placeholder={placeholder ?? "Paste recipe URL here"}
-                value={url}
-                onChange={(e) => {
-                  setUrl(e.target.value);
-                  if (error) setError(null);
-                }}
-              />
-              {error && <p className="field-error" role="alert">{error}</p>}
-            </div>
+          {/* Same row shape as the workspace importer (see ImportPanel): the
+              button centres against the taller field, and the error sits below
+              the row so it can't push that centre around. */}
+          <div className="flex flex-col gap-cp-4 lg:flex-row lg:items-center lg:gap-cp-2">
+            <input
+              id="seo-url"
+              type="url"
+              className="field w-full lg:flex-1"
+              placeholder={placeholder ?? "Paste recipe URL here"}
+              value={url}
+              onChange={(e) => {
+                setUrl(e.target.value);
+                if (error) setError(null);
+              }}
+            />
             {submitButton}
           </div>
+          {error && <p className="field-error" role="alert">{error}</p>}
         </div>
       )}
 

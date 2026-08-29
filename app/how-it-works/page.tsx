@@ -14,7 +14,7 @@ import { SEO_LANDING_PAGES } from "@/lib/seoLandingPages";
 export const metadata: Metadata = pageMetadata({
   title: "How Recipe Printer Works",
   description:
-    "See how Recipe Printer turns recipes from links, screenshots, photos, and text into printable recipe cards, pages, and PDFs.",
+    "See how RecipePrinter turns recipes from links, screenshots, photos, and text into printable recipe cards, pages, and PDFs.",
   path: "/how-it-works",
 });
 
