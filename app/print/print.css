@@ -1310,7 +1310,10 @@
   border: 0;
   border-radius: 8px;
   background: transparent;
-  color: var(--cp-ink);
+  /* The same ink as the icon buttons beside it. This bar is one row of peers —
+     a darker word among grey glyphs read as the row's main action, which is not
+     what "More fields" or "Edit" is. Both go up to full ink on hover. */
+  color: var(--cp-ink-soft);
   font-size: var(--cp-fs-caption);
   font-weight: 700;
   white-space: nowrap;
@@ -1321,7 +1324,6 @@
 .recipe-page-toolbar__btn--icon {
   width: 28px;
   padding: 0;
-  color: var(--cp-ink-soft);
 }
 
 /* The photo dialog's own trigger, wearing the toolbar's icon button. Icon
