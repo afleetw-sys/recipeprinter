@@ -1949,7 +1949,18 @@ export default function PrintPage() {
    * the project has finished travelling into the profile, the writes have
    * usually already happened.
    */
-  const [leavingHome, setLeavingHome] = useState(false);
+  /**
+   * Non-null while a click on the logo is on its way out, and it holds the line
+   * to show while it is.
+   *
+   * Leaving clears the desk and THEN navigates, and a React render happens in
+   * between — so for a beat the page re-rendered as an emptied workspace before
+   * the home page arrived, which read as the recipes having been deleted rather
+   * than filed. (The flight into the profile used to cover this gap; nothing
+   * did once it went.) The page holds a loading state across the whole
+   * departure instead.
+   */
+  const [leavingHome, setLeavingHome] = useState<string | null>(null);
   /** Leaving with work that only exists in this browser — see `handleNavigateHome`. */
   const [confirmLeave, setConfirmLeave] = useState(false);
 
@@ -1970,9 +1981,10 @@ export default function PrintPage() {
       return;
     }
 
-    setLeavingHome(true);
+    // Says what the wait is FOR. Nothing is being filed when there was nothing
+    // made, and claiming otherwise would be the same kind of lie the flight was.
+    setLeavingHome(printable ? "Filing your recipes…" : "Going home…");
     if (!printable) {
-      // Nothing made, nothing to file, nothing to show travelling.
       router.push("/");
       return;
     }
@@ -3767,13 +3779,15 @@ export default function PrintPage() {
     );
   }
 
-  if (items === null || projectLoading || cookbookAccessStatus === "loading") {
+  if (leavingHome || items === null || projectLoading || cookbookAccessStatus === "loading") {
     return (
       <div className="h-full flex flex-col">
         <SiteHeader compact sticky wordmark={false} />
         <RecipeLoadingState
           className="flex-1"
-          label={accountProjectId ? "Loading your project…" : "Preparing…"}
+          label={
+            leavingHome ?? (accountProjectId ? "Loading your project…" : "Preparing…")
+          }
         />
       </div>
     );
