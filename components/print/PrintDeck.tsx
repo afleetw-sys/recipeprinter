@@ -1016,15 +1016,21 @@ export function PrintDeck(props: PrintDeckProps) {
                  you just emptied, not in an error. So the room stays: same
                  rail, same canvas, same settings panel — and where the pages
                  were, one page-shaped outline saying what would go there. */
-              <div className="recipe-page-empty">
-                <div
+              /* No wrapper around it. The sheet IS the deck's child, so the
+                 deck's own centring and padding place it exactly where a real
+                 page would be — anything in between only adds an offset a real
+                 page does not have. */
+              <div
                   className={`recipe-page-empty__sheet ${
                     previewCardSize === "card-6x4" ? "recipe-page-empty__sheet--card" : ""
                   }`}
-                  /* The outline stands in for the page you have actually
-                     chosen, so it takes that page's proportions — a 6×4 card
-                     and a letter sheet are not the same empty. */
+                  /* The outline stands in for a page you have not made yet, so
+                     it is the size that page WOULD be: the same
+                     `PAGE_DIMS × deckScale` a real page is laid out at, not a
+                     fixed width that happened to look about right. It follows
+                     the size control and the zoom for the same reason. */
                   style={{
+                    width: PAGE_DIMS[previewCardSize].w * deckScale,
                     aspectRatio: `${PAGE_DIMS[previewCardSize].w} / ${PAGE_DIMS[previewCardSize].h}`,
                   }}
                 >
@@ -1068,7 +1074,6 @@ export function PrintDeck(props: PrintDeckProps) {
                     </button>
                   </div>
                 </div>
-              </div>
             ) : cookbookView
               ? spreads.map((spread, index) => {
                   const isActive = index === activeNavIndex;

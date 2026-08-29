@@ -5691,20 +5691,12 @@ textarea.recipe-card__toc-title {
    canvas still reads as the place pages go rather than as a blank panel — and
    the words sit ON it, the way a page's content would. Dashed and unfilled: it
    is the shape of something absent, not a page with nothing on it. */
-.recipe-page-empty {
-  display: grid;
-  place-items: center;
-  width: 100%;
-  min-height: 60vh;
-  padding: 24px;
-}
-
 .recipe-page-empty__sheet {
   display: flex;
   flex-direction: column;
-  width: min(100%, 420px);
-  /* The aspect ratio is set inline from PAGE_DIMS — the outline is the shape of
-     the page you chose, not always a letter sheet. */
+  /* Width and aspect ratio are set inline from PAGE_DIMS × deckScale, so the
+     outline is the exact size and shape the page it stands in for would be. */
+  max-width: 100%;
   max-height: 100%;
   padding: 30px 28px;
   border: 1px dashed var(--cp-line-strong);

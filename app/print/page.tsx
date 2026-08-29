@@ -3397,8 +3397,13 @@ export default function PrintPage() {
   }, [projectMeta.meta.cookbookMode, hasRecipeBackSide, cardSize]);
 
 
+  /* `<= 1`, not `=== 1`: an empty deck behaves exactly like a one-page deck —
+     one thing centred, nothing to scroll between — and it needs the same top
+     padding, or the empty-state page sits lower than the page it stands in for.
+     The rule's other effects (`scroll-snap-align: start` on slides) are no-ops
+     when there are no slides. */
   const singleRecipePrintView =
-    (items?.filter((item) => Boolean(item.recipe)).length ?? 0) === 1;
+    (items?.filter((item) => Boolean(item.recipe)).length ?? 0) <= 1;
 
   // Cookbook "book view": the deck shows two-page SPREADS, so a deck slide is a
   // spread (not a single page). `activeNavIndex` then indexes `spreads`, and the
