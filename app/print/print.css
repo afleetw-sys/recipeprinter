@@ -2299,9 +2299,11 @@
     flex: 0 0 auto;
     gap: 8px;
     /* Bleeds past the bar's own padding so a tile can sit half-off the edge
-       rather than stopping short of it, which reads as the end of the list. */
-    margin: 0 -16px;
-    padding: 0 16px;
+       rather than stopping short of it, which reads as the end of the list.
+       The negative margin has to match the bar's inset exactly, or the first
+       tile stops lining up with the Print pill under it. */
+    margin: 0 -20px;
+    padding: 0 20px;
     overflow-x: auto;
     scrollbar-width: none;
     scroll-snap-type: x proximity;
@@ -2893,7 +2895,11 @@
     display: flex;
     flex-direction: column;
     gap: 10px;
-    padding: 10px 16px max(10px, env(safe-area-inset-bottom));
+    /* 20px, not 16: the first tile was starting hard against the screen edge
+       with nothing to read as a margin, so the row looked cut off rather than
+       inset. The Print pill below takes the same inset, so the two stay in one
+       column. */
+    padding: 10px 20px max(10px, env(safe-area-inset-bottom));
     border-top: 1px solid var(--cp-line);
     background: var(--cp-page);
   }
