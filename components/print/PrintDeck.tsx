@@ -192,6 +192,7 @@ interface PrintDeckProps {
   renderSectionPhotoControl: (sectionId: string) => ReactNode;
   renderCoverPhotoControl: (side: "front" | "back" | "dedication") => ReactNode;
   renderImagePagePhotoControl: (recipeId: string) => ReactNode;
+  openAddRecipeBelow: (navItem?: NavItem | null) => void;
   photoModeFor: (recipeId: string) => PhotoStyle;
   setRecipePhotoMode: (recipeId: string, mode: PhotoStyle) => void;
   // Mobile topbar
@@ -314,6 +315,7 @@ export function PrintDeck(props: PrintDeckProps) {
     renderSectionPhotoControl,
     renderCoverPhotoControl,
     renderImagePagePhotoControl,
+    openAddRecipeBelow,
     photoModeFor,
     setRecipePhotoMode,
     sizeMenuOpen,
@@ -1009,6 +1011,28 @@ export function PrintDeck(props: PrintDeckProps) {
           >
             {previewMeasuring ? (
               <RecipeLoadingState className="recipe-page-deck__loading" />
+            ) : navItems.length === 0 ? (
+              /* Deleting the last recipe leaves you standing in the workspace
+                 you just emptied, not in an error. So the room stays: same
+                 rail, same canvas, same settings panel — and where the pages
+                 were, one page-shaped outline saying what would go there. */
+              <div className="recipe-page-empty">
+                <div className="recipe-page-empty__sheet" aria-hidden />
+                <div className="recipe-page-empty__copy">
+                  <p className="recipe-page-empty__title">No pages yet</p>
+                  <p className="recipe-page-empty__body">
+                    Add a recipe and it will show up here, laid out and ready to print.
+                  </p>
+                  <button
+                    type="button"
+                    className="btn btn-primary btn-compact"
+                    onClick={() => openAddRecipeBelow(null)}
+                  >
+                    <PlusIcon size={ICON_SIZE.md} />
+                    Add recipes
+                  </button>
+                </div>
+              </div>
             ) : cookbookView
               ? spreads.map((spread, index) => {
                   const isActive = index === activeNavIndex;

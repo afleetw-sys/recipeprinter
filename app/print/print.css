@@ -5687,6 +5687,53 @@ textarea.recipe-card__toc-title {
   border-radius: 3px;
 }
 
+/* The emptied workspace. A page-shaped outline where the pages were, so the
+   canvas still reads as the place pages go rather than as a blank panel — and
+   the words sit ON it, the way a page's content would. Dashed and unfilled: it
+   is the shape of something absent, not a page with nothing on it. */
+.recipe-page-empty {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: 100%;
+  min-height: 60vh;
+  padding: 24px;
+}
+
+.recipe-page-empty__sheet {
+  position: absolute;
+  width: min(100%, 420px);
+  /* US Letter, so the outline is the shape of the page it stands in for. */
+  aspect-ratio: 8.5 / 11;
+  max-height: 100%;
+  border: 1px dashed var(--cp-line-strong);
+  border-radius: 12px;
+}
+
+.recipe-page-empty__copy {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  max-width: 260px;
+  text-align: center;
+}
+
+.recipe-page-empty__title {
+  color: var(--cp-ink);
+  font-size: var(--cp-fs-h2);
+  font-weight: 800;
+  letter-spacing: -0.01em;
+}
+
+.recipe-page-empty__body {
+  margin-bottom: 4px;
+  color: var(--cp-ink-soft);
+  font-size: var(--cp-fs-small);
+  line-height: 1.45;
+}
+
 /* A photo is clickable the way a line of text is, and says so the same way: a
    hairline outline on hover, never a box or a fill, so the page still looks
    like the page. Scoped to the focused page — the rail's thumbnails use these
