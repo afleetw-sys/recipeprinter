@@ -1017,7 +1017,18 @@ export function PrintDeck(props: PrintDeckProps) {
                  rail, same canvas, same settings panel — and where the pages
                  were, one page-shaped outline saying what would go there. */
               <div className="recipe-page-empty">
-                <div className="recipe-page-empty__sheet" aria-hidden>
+                <div
+                  className={`recipe-page-empty__sheet ${
+                    previewCardSize === "card-6x4" ? "recipe-page-empty__sheet--card" : ""
+                  }`}
+                  /* The outline stands in for the page you have actually
+                     chosen, so it takes that page's proportions — a 6×4 card
+                     and a letter sheet are not the same empty. */
+                  style={{
+                    aspectRatio: `${PAGE_DIMS[previewCardSize].w} / ${PAGE_DIMS[previewCardSize].h}`,
+                  }}
+                  aria-hidden
+                >
                   {/* Enough of a card to be recognisable as one and no more: a
                       title bar, a rule, and two short columns. Pale enough that
                       it reads as the shape of a page rather than a page with
@@ -1029,12 +1040,16 @@ export function PrintDeck(props: PrintDeckProps) {
                     <span className="recipe-page-empty__col">
                       <span className="recipe-page-empty__bar" />
                       <span className="recipe-page-empty__bar recipe-page-empty__bar--short" />
-                      <span className="recipe-page-empty__bar" />
+                      {previewCardSize !== "card-6x4" && (
+                        <span className="recipe-page-empty__bar" />
+                      )}
                     </span>
                     <span className="recipe-page-empty__col">
                       <span className="recipe-page-empty__bar" />
                       <span className="recipe-page-empty__bar recipe-page-empty__bar--short" />
-                      <span className="recipe-page-empty__bar" />
+                      {previewCardSize !== "card-6x4" && (
+                        <span className="recipe-page-empty__bar" />
+                      )}
                     </span>
                   </span>
                 </div>
