@@ -223,14 +223,6 @@ export function PrinterWorkspace({
         hasProject ? "rp-printer-workspace--active" : "rp-printer-workspace--landing"
       } ${skipProjectIntro ? "rp-printer-workspace--no-intro" : ""}`}
     >
-      {/* Nothing here announces the filing any more. Saying "X is saved in
-          your projects" answered a question the cook had already been made to
-          ask, on the page AFTER the one where the thing disappeared. The
-          workspace now shows it going instead — the project flies into the
-          profile as you leave (lib/flyIntoProfile) — which answers it before it
-          is asked and teaches where saved work lives, which the sentence never
-          did. */}
-
       {/* Import panel */}
       <div className="rp-workspace-import">
         <ImportPanel
