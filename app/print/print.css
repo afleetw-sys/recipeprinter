@@ -6077,18 +6077,20 @@ textarea.recipe-card__toc-title {
    any face with a source link re-shows the footer regardless of size or
    template — both mirror the display-toggling rules below. Back/continued
    faces never show a footer, so they get the full card to themselves. */
-.recipe-print-preview--letter .recipe-template--classic .recipe-card:not(.recipe-card--back):not(.recipe-card--continued) .recipe-card__cols,
-.recipe-print-preview--letter .recipe-template--pantry .recipe-card:not(.recipe-card--back):not(.recipe-card--continued) .recipe-card__cols,
+.recipe-template--classic .recipe-card:not(.recipe-card--back):not(.recipe-card--continued) .recipe-card__cols,
+.recipe-template--pantry .recipe-card:not(.recipe-card--back):not(.recipe-card--continued) .recipe-card__cols,
 .recipe-card:has(.recipe-card__footer-source) .recipe-card__cols {
   padding-bottom: var(--recipe-card-footer-reserve);
 }
 
-/* Card-6x4 and a few templates skip the "Printed with RecipePrinter" line —
-   there's no room, or it clashes with the template's own footer treatment.
-   The source link is still worth showing there when the user turns it on,
-   just on its own rather than alongside branding that was never designed in. */
+/* The PREMIUM templates skip the "Printed with RecipePrinter" line: it clashes
+   with footer treatments they design themselves, and they are paid.
+   Card-6x4 used to be in this list too, on the grounds that there was no room —
+   but that lumped a size in with a price. A free template is a free template at
+   either size, and the line belongs on both. The source link is still worth
+   showing on a premium card when the user turns it on, just on its own rather
+   than alongside branding that was never designed in. */
 :is(
-  .recipe-print-preview--card-6x4,
   .recipe-template--heirloom,
   .recipe-template--bistro,
   .recipe-template--counter,
@@ -6098,7 +6100,6 @@ textarea.recipe-card__toc-title {
 }
 
 :is(
-  .recipe-print-preview--card-6x4,
   .recipe-template--heirloom,
   .recipe-template--bistro,
   .recipe-template--counter,
@@ -6108,7 +6109,6 @@ textarea.recipe-card__toc-title {
 }
 
 :is(
-  .recipe-print-preview--card-6x4,
   .recipe-template--heirloom,
   .recipe-template--bistro,
   .recipe-template--counter,
