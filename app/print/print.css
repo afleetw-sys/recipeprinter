@@ -2286,21 +2286,7 @@
     }
   }
 
-  .recipe-mobile-settings-menu {
-    position: absolute;
-    top: calc(100% + 10px);
-    right: 0;
-    z-index: 77;
-    display: flex;
-    flex-direction: column;
-    gap: 12px;
-    min-width: 190px;
-    padding: 14px;
-    border: 1px solid var(--cp-line);
-    border-radius: 14px;
-    background: var(--cp-card);
-    box-shadow: var(--cp-shadow-lg);
-  }
+
 
   /* A row that SCROLLS rather than one that divides the width between whatever
      tools this mode happens to have. Cookbook and recipe-cards show different
@@ -2313,9 +2299,11 @@
     flex: 0 0 auto;
     gap: 8px;
     /* Bleeds past the bar's own padding so a tile can sit half-off the edge
-       rather than stopping short of it, which reads as the end of the list. */
-    margin: 0 -16px;
-    padding: 0 16px;
+       rather than stopping short of it, which reads as the end of the list.
+       The negative margin has to match the bar's inset exactly, or the first
+       tile stops lining up with the Print pill under it. */
+    margin: 0 -20px;
+    padding: 0 20px;
     overflow-x: auto;
     scrollbar-width: none;
     scroll-snap-type: x proximity;
@@ -2421,20 +2409,44 @@
     background: transparent;
   }
 
-  .recipe-mobile-size-menu {
-    position: absolute;
-    bottom: calc(100% + 10px);
+  /* ONE mobile pattern, stated once: anything opened from the bottom bar is a
+     bottom SHEET, not a popover anchored to its button. Two reasons, and the
+     second is why this changed.
+       1. It is where the thumb already is, and it is what the structure sheet
+          (`.recipe-structure-sheet`) has always been — the app should not have
+          two answers for "a tool opened from the bar".
+       2. A popover cannot live in that bar any more. The tool row scrolls
+          horizontally now, and `overflow-x: auto` computes `overflow-y` to
+          `auto` too — so a menu positioned ABOVE its button was clipped by the
+          scroller and simply never appeared. Size looked like a dead button.
+     Confirmations stay centred dialogs; they are interruptions, not tools. */
+  .recipe-mobile-size-menu,
+  .recipe-mobile-settings-menu {
+    position: fixed;
+    right: 0;
+    /* Anchored to the viewport, over the action bar rather than above it —
+       the same place `.recipe-structure-sheet` opens. Its z-index (77) already
+       clears the bar (75), so the bar is covered while a sheet is open, which
+       is what makes it feel like one surface replacing another. */
+    bottom: 0;
     left: 0;
     z-index: 77;
     display: flex;
     flex-direction: column;
     gap: 2px;
-    min-width: 168px;
-    padding: 6px;
-    border: 1px solid var(--cp-line);
-    border-radius: 14px;
+    max-height: 60dvh;
+    padding: 10px 16px calc(10px + env(safe-area-inset-bottom));
+    border-top: 1px solid var(--cp-line);
+    border-top-left-radius: 20px;
+    border-top-right-radius: 20px;
     background: var(--cp-card);
-    box-shadow: var(--cp-shadow-lg);
+    overflow-y: auto;
+    box-shadow: var(--cp-shadow-sheet);
+  }
+
+  .recipe-mobile-settings-menu {
+    gap: 12px;
+    padding: 16px 16px calc(16px + env(safe-area-inset-bottom));
   }
 
   .recipe-mobile-size-menu__option {
@@ -2883,7 +2895,11 @@
     display: flex;
     flex-direction: column;
     gap: 10px;
-    padding: 10px 16px max(10px, env(safe-area-inset-bottom));
+    /* 20px, not 16: the first tile was starting hard against the screen edge
+       with nothing to read as a margin, so the row looked cut off rather than
+       inset. The Print pill below takes the same inset, so the two stay in one
+       column. */
+    padding: 10px 20px max(10px, env(safe-area-inset-bottom));
     border-top: 1px solid var(--cp-line);
     background: var(--cp-page);
   }
@@ -6645,17 +6661,26 @@ textarea.recipe-card__toc-title {
   background: var(--cp-card);
 }
 
+/* A bottom sheet on a phone, not a full screen — the same shape as every other
+   tool opened from the bottom bar (Size, print settings, the structure sheet).
+   Full-screen made it the only overlay in the app that read as a PAGE you had
+   navigated to: no page visible behind it, nothing to dismiss it back to. A
+   sheet keeps the deck showing above it, which is the thing you are adding a
+   recipe to. */
 @media (max-width: 639px) {
   .recipe-add-dialog {
+    align-items: end;
     padding: 0;
   }
 
   .recipe-add-dialog__panel {
     width: 100%;
-    max-height: 100%;
-    height: 100%;
+    /* Not `100%`: the gap at the top is what makes it a sheet rather than a
+       screen, and it is where the deck shows through. */
+    max-height: 88dvh;
     border: 0;
-    border-radius: 0;
+    border-bottom: 0;
+    border-radius: 20px 20px 0 0;
   }
 }
 

@@ -30,7 +30,19 @@ describe("promoteLineToSection", () => {
     expect(next).toEqual(rows(["a", "Base"], ["b", "Middle"]));
   });
 
-  it("is a no-op shape when the heading ends the list", () => {
+  /* The bug this replaces: promoting the LAST line deleted it and left the
+     title nowhere to live, so the text just typed disappeared off the card. */
+  it("keeps the heading when it ends the list, on an empty row", () => {
+    const next = promoteLineToSection(
+      rows(["flour"], ["Glaze"]),
+      1,
+      "Glaze",
+      (section) => ({ name: "", section }),
+    );
+    expect(next).toEqual(rows(["flour"], ["", "Glaze"]));
+  });
+
+  it("still drops the line when no empty row can be built for it", () => {
     expect(promoteLineToSection(rows(["flour"], ["Glaze"]), 1, "Glaze")).toEqual(rows(["flour"]));
   });
 });
