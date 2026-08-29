@@ -22,7 +22,20 @@ if (typeof window !== "undefined") {
   }
 }
 
-let appCheckInstance: AppCheck | null = null;
+/**
+ * The instance lives on `globalThis`, not in a module-scoped `let`.
+ *
+ * `getFirebaseApp` reuses the app across module re-evaluation because Firebase
+ * keeps its own registry (`getApps()`), but a module-scoped guard does NOT
+ * survive one — so on every hot reload this file came back with a fresh `null`,
+ * called `initializeAppCheck` again, and handed reCAPTCHA a container it had
+ * already rendered into: "reCAPTCHA has already been rendered in this element",
+ * thrown from inside the SDK where nothing of ours could catch it.
+ *
+ * The app outlives the module, so the thing guarding it has to as well.
+ */
+const APP_CHECK_KEY = "__recipeprinterAppCheck";
+type AppCheckHost = typeof globalThis & { [APP_CHECK_KEY]?: AppCheck };
 
 // Idempotent and browser-only. Called from `getFirebaseApp()` the instant the
 // Firebase app is created — before Auth/Firestore/Storage/Functions is ever
@@ -34,27 +47,43 @@ let appCheckInstance: AppCheck | null = null;
 export function ensureAppCheck(app: FirebaseApp): AppCheck | null {
   // Server prerender never initializes App Check (no window).
   if (typeof window === "undefined") return null;
-  if (appCheckInstance) return appCheckInstance;
 
-  if (siteKey) {
-    appCheckInstance = initializeAppCheck(app, {
-      provider: new ReCaptchaV3Provider(siteKey),
-      isTokenAutoRefreshEnabled: true,
-    });
-    return appCheckInstance;
+  const host = globalThis as AppCheckHost;
+  const existing = host[APP_CHECK_KEY];
+  if (existing) return existing;
+
+  try {
+    const instance = siteKey
+      ? initializeAppCheck(app, {
+          provider: new ReCaptchaV3Provider(siteKey),
+          isTokenAutoRefreshEnabled: true,
+        })
+      : // Debug/dev mode: Firebase swaps in its debug attestation when the
+        // global token above is set, so the placeholder provider is never
+        // actually asked.
+        initializeAppCheck(app, {
+          provider: new CustomProvider({
+            getToken: () =>
+              Promise.resolve({
+                token: "debug-placeholder",
+                expireTimeMillis: Date.now() + 3_600_000,
+              }),
+          }),
+          isTokenAutoRefreshEnabled: true,
+        });
+    host[APP_CHECK_KEY] = instance;
+    return instance;
+  } catch (error) {
+    /**
+     * A second initialization is not a failure worth taking the page down for.
+     * Whatever raced us — a duplicate app, a stale widget the guard above could
+     * not see — App Check is already running from that first call, and every
+     * request the SDK makes is still attested. Requests are what this is for;
+     * the exception is bookkeeping.
+     */
+    if (process.env.NODE_ENV !== "production") {
+      console.warn("App Check was already initialized; reusing it.", error);
+    }
+    return null;
   }
-
-  // Debug/dev mode: Firebase swaps in its debug attestation when the global
-  // token above is set, so the placeholder provider is never actually asked.
-  appCheckInstance = initializeAppCheck(app, {
-    provider: new CustomProvider({
-      getToken: () =>
-        Promise.resolve({
-          token: "debug-placeholder",
-          expireTimeMillis: Date.now() + 3_600_000,
-        }),
-    }),
-    isTokenAutoRefreshEnabled: true,
-  });
-  return appCheckInstance;
 }
