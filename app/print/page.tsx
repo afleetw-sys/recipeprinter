@@ -3774,24 +3774,15 @@ export default function PrintPage() {
     );
   }
 
-  if (items.length === 0) {
-    return (
-      <div className="h-full flex flex-col">
-        <SiteHeader compact sticky wordmark={false} />
-        <div className="flex-1 flex flex-col items-center justify-center gap-cp-4 text-center px-cp-6">
-          <p className="font-bold text-cp-h2">Nothing to print</p>
-          <p className="text-ink-soft max-w-sm">
-            We couldn&apos;t find those recipes. They may have been removed, or this page was
-            opened directly.
-          </p>
-          <Link href="/" className="btn btn-primary">
-            Back to your recipes
-          </Link>
-        </div>
-      </div>
-    );
-  }
-
+  /**
+   * No "nothing to print" screen. An empty queue is not a failure, and the
+   * three ways this page CAN fail — signed out, wrong account, load error —
+   * already have their own screens above (`projectAccess`). What is left is
+   * simply a workspace with nothing in it yet, which is what it now looks
+   * like: same rail, same canvas, same settings, and an empty page in the
+   * middle. Being thrown out to a not-found screen for deleting your own last
+   * recipe read as having broken something.
+   */
   return (
     <div className={`h-dvh recipe-print-page ${printWatermarked ? "rp-print-locked" : ""}`}>
       {measurers}
@@ -4133,6 +4124,7 @@ export default function PrintPage() {
           renderSectionPhotoControl={renderSectionPhotoControl}
           renderCoverPhotoControl={renderCoverPhotoControl}
           renderImagePagePhotoControl={renderImagePagePhotoControl}
+          openAddRecipeBelow={openAddRecipeBelow}
           photoModeFor={photoModeFor}
           setRecipePhotoMode={setRecipePhotoMode}
           sizeMenuOpen={sizeMenuOpen}
