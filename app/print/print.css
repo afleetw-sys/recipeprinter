@@ -5706,8 +5706,8 @@ textarea.recipe-card__toc-title {
   flex-direction: column;
   gap: 14px;
   width: min(100%, 420px);
-  /* US Letter, so the outline is the shape of the page it stands in for. */
-  aspect-ratio: 8.5 / 11;
+  /* The aspect ratio is set inline from PAGE_DIMS — the outline is the shape of
+     the page you chose, not always a letter sheet. */
   max-height: 100%;
   padding: 34px 30px;
   border: 1px dashed var(--cp-line-strong);
@@ -5756,10 +5756,44 @@ textarea.recipe-card__toc-title {
   gap: 9px;
 }
 
+/* A 6×4 card is a third the height of a sheet, so the same ghost drawn at the
+   same scale would fill it. Everything tightens; the copy stops sitting inside
+   the outline and sits under it, because there is no middle to sit in. */
+.recipe-page-empty__sheet--card {
+  gap: 8px;
+  padding: 16px 18px;
+}
+
+.recipe-page-empty__sheet--card .recipe-page-empty__bar {
+  height: 5px;
+}
+
+.recipe-page-empty__sheet--card .recipe-page-empty__bar--title {
+  height: 10px;
+}
+
+.recipe-page-empty__sheet--card .recipe-page-empty__col {
+  gap: 7px;
+}
+
+.recipe-page-empty:has(.recipe-page-empty__sheet--card) {
+  align-content: center;
+  gap: 20px;
+}
+
+.recipe-page-empty:has(.recipe-page-empty__sheet--card) .recipe-page-empty__sheet {
+  position: static;
+}
+
+.recipe-page-empty:has(.recipe-page-empty__sheet--card) .recipe-page-empty__copy {
+  margin-top: 0;
+}
+
 .recipe-page-empty__copy {
   position: relative;
   /* Below the ghosted header, not on top of it. */
   margin-top: 18%;
+  padding: 0 12px;
   display: flex;
   flex-direction: column;
   align-items: center;
