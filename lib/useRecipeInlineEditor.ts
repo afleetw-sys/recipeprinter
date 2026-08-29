@@ -48,14 +48,37 @@ function applySectionTitleEdit<T extends { section?: string }>(
  * and "make this heading a line" means clearing that run and putting the words
  * back as an ordinary item.
  */
-export function promoteLineToSection<T extends { section?: string }>(items: T[], index: number, title: string): T[] {
+export function promoteLineToSection<T extends { section?: string }>(
+  items: T[],
+  index: number,
+  title: string,
+  /** Builds the empty row a heading needs when nothing follows it — see below.
+      Optional so the pure-shape tests can still call this without one. */
+  makeEmpty?: (section: string) => T,
+): T[] {
   const original = items[index]?.section?.trim() || undefined;
   const next = items.slice();
   next.splice(index, 1);
+  let claimed = 0;
   for (let i = index; i < next.length; i++) {
     if ((next[i].section?.trim() || undefined) !== original) break;
     next[i] = { ...next[i], section: title };
+    claimed++;
   }
+  /**
+   * Nothing followed it, so nothing carried the title away.
+   *
+   * A section is not an object here — it is a `section` string on a run of
+   * consecutive rows (see `sectionGroups`). So a heading with no rows under it
+   * cannot be represented, and turning the LAST line into one deleted the line
+   * and left the title nowhere: the text you just typed vanished.
+   *
+   * An empty row is how the model says "this section, nothing in it yet" —
+   * which is also what `insertIngredientAt` already writes when you add a line.
+   * The heading survives, and the empty row under it is the slot to type the
+   * first item into.
+   */
+  if (claimed === 0 && makeEmpty) next.splice(index, 0, makeEmpty(title));
   return next;
 }
 
@@ -277,8 +300,24 @@ export function useRecipeInlineEditor({
         if (!title.trim()) return;
         const next =
           target.kind === "ingredient"
-            ? { ...recipe, ingredients: promoteLineToSection(recipe.ingredients, target.index, title.trim()) }
-            : { ...recipe, instructions: promoteLineToSection(recipe.instructions, target.index, title.trim()) };
+            ? {
+                ...recipe,
+                ingredients: promoteLineToSection(
+                  recipe.ingredients,
+                  target.index,
+                  title.trim(),
+                  (section) => ({ raw: "", name: "", section }),
+                ),
+              }
+            : {
+                ...recipe,
+                instructions: promoteLineToSection(
+                  recipe.instructions,
+                  target.index,
+                  title.trim(),
+                  (section) => ({ step: 0, text: "", section }),
+                ),
+              };
         applyRecipeUpdate(activeRecipeItem.id, printableRecipe(next));
         setEditingEdit({
           recipeId: activeRecipeItem.id,
