@@ -1310,7 +1310,10 @@
   border: 0;
   border-radius: 8px;
   background: transparent;
-  color: var(--cp-ink);
+  /* The same ink as the icon buttons beside it. This bar is one row of peers —
+     a darker word among grey glyphs read as the row's main action, which is not
+     what "More fields" or "Edit" is. Both go up to full ink on hover. */
+  color: var(--cp-ink-soft);
   font-size: var(--cp-fs-caption);
   font-weight: 700;
   white-space: nowrap;
@@ -1321,7 +1324,6 @@
 .recipe-page-toolbar__btn--icon {
   width: 28px;
   padding: 0;
-  color: var(--cp-ink-soft);
 }
 
 /* The photo dialog's own trigger, wearing the toolbar's icon button. Icon
@@ -5806,6 +5808,50 @@ textarea.recipe-card__toc-title {
   outline: 1px solid color-mix(in srgb, var(--cp-accent) 40%, transparent);
   outline-offset: 2px;
   border-radius: 3px;
+}
+
+/* Text you can click into. The same hairline the section title uses, on the
+   fields that are now editable without a mode -- an outline, never a box or a
+   fill, because it has to be able to appear over the page WITHOUT changing
+   what the page looks like. Outlines take no layout space, so nothing moves,
+   and `no-print` is unnecessary: :hover never resolves on paper. */
+.recipe-card__title--editable,
+.recipe-card__headnote--editable,
+.recipe-card__editable-line--editable {
+  cursor: pointer;
+}
+
+.recipe-card__title--editable:hover,
+.recipe-card__headnote--editable:hover,
+.recipe-card__editable-line--editable:hover {
+  outline: 1px solid color-mix(in srgb, var(--cp-accent) 40%, transparent);
+  outline-offset: 2px;
+  border-radius: 3px;
+}
+
+/* Cover lines behave like a recipe's: click the text to edit it, and a line
+   nobody has written appears only under the reveal, as its own prompt. */
+.recipe-card__cover-field--editable {
+  cursor: pointer;
+}
+
+.recipe-card__cover-field--editable:hover {
+  outline: 1px solid color-mix(in srgb, var(--cp-accent) 40%, transparent);
+  outline-offset: 2px;
+  border-radius: 3px;
+}
+
+.recipe-card__cover-field--empty {
+  opacity: 0.55;
+  cursor: pointer;
+}
+
+/* The one placeholder that IS shown rather than typed into: the prompt for a
+   note this recipe does not have. Only ever rendered while the reveal is on. */
+.recipe-card__headnote--empty {
+  color: var(--recipe-muted);
+  opacity: 0.7;
+  cursor: pointer;
 }
 
 .recipe-card__ingredients ul {

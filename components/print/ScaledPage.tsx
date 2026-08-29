@@ -53,6 +53,7 @@ export const ScaledPage = memo(function ScaledPage({
   showCutLines,
   showDecoration = true,
   cookbookMode = false,
+  showEmptyFields = false,
   inlineEdit,
   dividerEdit,
   sectionArtEdit,
@@ -73,6 +74,8 @@ export const ScaledPage = memo(function ScaledPage({
   doubleSided: boolean;
   showSourceUrl: boolean;
   cookbookMode?: boolean;
+  /** Reveal the fields a recipe does not have yet — see RecipeCardPrint. */
+  showEmptyFields?: boolean;
   showCutLines: boolean;
   /** False for the rail thumbnails, whose ~1/11 scale renders the templates'
       decorative motifs sub-pixel — print.css paints a flat stand-in instead.
@@ -499,6 +502,7 @@ export const ScaledPage = memo(function ScaledPage({
                     side={anySlot.side}
                     template={template}
                     showDecoration={showDecoration}
+                    showEmptyFields={showEmptyFields}
                     inlineEdit={coverEdit?.side === anySlot.side ? coverEdit : undefined}
                   />
                 )}
@@ -604,6 +608,7 @@ export const ScaledPage = memo(function ScaledPage({
                     template={template}
                     showDecoration={showDecoration}
                     cookbookMode={cookbookMode}
+                    showEmptyFields={showEmptyFields}
                     previewHidden={slotIndex !== activeSlotIndex || activeSide !== "front"}
                     inlineEdit={
                       activeSide === "front" &&
@@ -639,6 +644,7 @@ export const ScaledPage = memo(function ScaledPage({
                       template={template}
                       showDecoration={showDecoration}
                       cookbookMode={cookbookMode}
+                      showEmptyFields={showEmptyFields}
                       continued
                       previewHidden={slotIndex !== activeSlotIndex || activeSide !== "back"}
                       inlineEdit={
