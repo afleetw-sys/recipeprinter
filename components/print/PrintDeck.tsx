@@ -10,6 +10,7 @@ import type {
   SetStateAction,
 } from "react";
 import Link from "next/link";
+import { AccountControl } from "@/components/AccountControl";
 import { LogoMark, Wordmark } from "@/components/Logo";
 import {
   ChevronLeftIcon,
@@ -1002,6 +1003,12 @@ export function PrintDeck(props: PrintDeckProps) {
                     ? "Unlock & Print"
                     : "Print"}
               </button>
+              {/* The same account control the desktop header carries. The two
+                  bars cannot be identical — the desktop one centres the kind
+                  tabs and still has room for Save, which 375px does not — but
+                  "where is my account" should not have a different answer on a
+                  phone, and it had none at all here. */}
+              <AccountControl compact />
             </div>
           </div>
           <div

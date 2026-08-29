@@ -6186,7 +6186,12 @@ textarea.recipe-card__toc-title {
 .print-success-dialog {
   position: fixed;
   inset: 0;
-  z-index: 50;
+  /* Above `.recipe-mobile-actions` (75) and the mobile sheets (77-81). A modal
+     is the whole screen's answer, so nothing the page was already showing may
+     sit on top of it — at 50 the phone's Recipe/Size/Themes bar was painted
+     over the bottom of every one of these. Below `.cookbook-welcome` (90),
+     which is a modal over the modals. */
+  z-index: 85;
   display: grid;
   place-items: center;
   padding: 24px;
@@ -6354,7 +6359,12 @@ textarea.recipe-card__toc-title {
 .recipe-add-dialog {
   position: fixed;
   inset: 0;
-  z-index: 50;
+  /* Above `.recipe-mobile-actions` (75) and the mobile sheets (77-81). A modal
+     is the whole screen's answer, so nothing the page was already showing may
+     sit on top of it — at 50 the phone's Recipe/Size/Themes bar was painted
+     over the bottom of every one of these. Below `.cookbook-welcome` (90),
+     which is a modal over the modals. */
+  z-index: 85;
   display: grid;
   place-items: center;
   padding: 24px;
