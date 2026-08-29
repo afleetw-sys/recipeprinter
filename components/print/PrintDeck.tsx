@@ -1017,7 +1017,27 @@ export function PrintDeck(props: PrintDeckProps) {
                  rail, same canvas, same settings panel — and where the pages
                  were, one page-shaped outline saying what would go there. */
               <div className="recipe-page-empty">
-                <div className="recipe-page-empty__sheet" aria-hidden />
+                <div className="recipe-page-empty__sheet" aria-hidden>
+                  {/* Enough of a card to be recognisable as one and no more: a
+                      title bar, a rule, and two short columns. Pale enough that
+                      it reads as the shape of a page rather than a page with
+                      something on it — nobody should look twice to check
+                      whether this is a real recipe. */}
+                  <span className="recipe-page-empty__bar recipe-page-empty__bar--title" />
+                  <span className="recipe-page-empty__rule" />
+                  <span className="recipe-page-empty__cols">
+                    <span className="recipe-page-empty__col">
+                      <span className="recipe-page-empty__bar" />
+                      <span className="recipe-page-empty__bar recipe-page-empty__bar--short" />
+                      <span className="recipe-page-empty__bar" />
+                    </span>
+                    <span className="recipe-page-empty__col">
+                      <span className="recipe-page-empty__bar" />
+                      <span className="recipe-page-empty__bar recipe-page-empty__bar--short" />
+                      <span className="recipe-page-empty__bar" />
+                    </span>
+                  </span>
+                </div>
                 <div className="recipe-page-empty__copy">
                   <p className="recipe-page-empty__title">No pages yet</p>
                   <p className="recipe-page-empty__body">
