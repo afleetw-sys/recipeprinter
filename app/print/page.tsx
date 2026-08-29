@@ -3804,7 +3804,12 @@ export default function PrintPage() {
             finishes it.
           */
           lead={
-            items?.length ? (
+            /* Rendered even with nothing in the queue. Recipe cards vs Cookbook
+               is a choice ABOUT the project, not about its contents, and an
+               emptied workspace is still a workspace — dropping the control
+               made the bar go blank at exactly the moment the page below it
+               already looked bare. */
+            (
               <ProjectHeading
                 title={headingTitle}
                 /* A cookbook is a named thing you come back to, so its name
@@ -3819,7 +3824,7 @@ export default function PrintPage() {
                 onSwitchToCards={exitCookbookToCards}
                 onSwitchToCookbook={startCookbook}
               />
-            ) : undefined
+            )
           }
           actions={
             items?.length ? (

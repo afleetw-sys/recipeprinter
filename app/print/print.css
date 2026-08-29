@@ -5702,16 +5702,64 @@ textarea.recipe-card__toc-title {
 
 .recipe-page-empty__sheet {
   position: absolute;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
   width: min(100%, 420px);
   /* US Letter, so the outline is the shape of the page it stands in for. */
   aspect-ratio: 8.5 / 11;
   max-height: 100%;
+  padding: 34px 30px;
   border: 1px dashed var(--cp-line-strong);
   border-radius: 12px;
 }
 
+/* The ghosted card inside it. One opacity on the whole group rather than a
+   paler colour per part, so the whole suggestion recedes together and no
+   single bar can start looking like real text. */
+.recipe-page-empty__sheet > * {
+  opacity: 0.45;
+}
+
+.recipe-page-empty__bar {
+  display: block;
+  height: 6px;
+  border-radius: 3px;
+  background: var(--cp-line-strong);
+}
+
+.recipe-page-empty__bar--title {
+  width: 58%;
+  height: 13px;
+  border-radius: 4px;
+}
+
+.recipe-page-empty__bar--short {
+  width: 62%;
+}
+
+.recipe-page-empty__rule {
+  display: block;
+  height: 1px;
+  background: var(--cp-line-strong);
+}
+
+.recipe-page-empty__cols {
+  display: flex;
+  gap: 22px;
+}
+
+.recipe-page-empty__col {
+  display: flex;
+  flex: 1 1 0;
+  flex-direction: column;
+  gap: 9px;
+}
+
 .recipe-page-empty__copy {
   position: relative;
+  /* Below the ghosted header, not on top of it. */
+  margin-top: 18%;
   display: flex;
   flex-direction: column;
   align-items: center;
