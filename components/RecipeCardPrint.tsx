@@ -1149,20 +1149,6 @@ export interface DividerCardInlineEdit {
   onSubtitleChange?: (value: string) => void;
   intro?: string;
   onIntroChange?: (value: string) => void;
-  photoUrl?: string;
-  recipeImages?: string[];
-  onPhotoChange?: (url: string | undefined) => void;
-  /** Unified placement (None/In-card/Full-page/Photo grid) + grid curation, so
-      the opener picker is the same dialog as a recipe's, plus the cover's grid. */
-  placement?: string;
-  placementOptions?: Array<{ id: string; label: string; hint?: string }>;
-  onPlacementChange?: (id: string) => void;
-  gridActive?: boolean;
-  gridImages?: string[];
-  onGridChange?: (urls: string[]) => void;
-  onSelectGrid?: () => void;
-  onExitGrid?: () => void;
-  gridMax?: number;
 }
 
 // A section divider is always exactly one physical page — no ingredients/
@@ -1228,24 +1214,8 @@ export const DividerFace = memo(function DividerFace({
         )}
         <span className="photo-unavailable-message">Photo unavailable</span>
       </div>
-      {inlineEdit?.onPhotoChange && (
-        <ImagePicker
-          current={photoUrl}
-          images={inlineEdit.recipeImages ?? []}
-          onSelect={inlineEdit.onPhotoChange}
-          placement={inlineEdit.placement}
-          placementOptions={inlineEdit.placementOptions}
-          onPlacementChange={inlineEdit.onPlacementChange}
-          gridActive={inlineEdit.gridActive}
-          gridImages={inlineEdit.gridImages}
-          onGridChange={inlineEdit.onGridChange}
-          onSelectGrid={inlineEdit.onSelectGrid}
-          onExitGrid={inlineEdit.onExitGrid}
-          gridMax={inlineEdit.gridMax}
-          label="Photo"
-          className="recipe-card__cook-photo-edit"
-        />
-      )}
+      {/* The chapter opener's photo is changed from the page toolbar, like
+          every other page's. */}
       <div className="recipe-card__chapter-frame" aria-hidden />
       <TemplateDecoration template={template} show={showDecoration} />
       <div className="recipe-card__chapter-body">

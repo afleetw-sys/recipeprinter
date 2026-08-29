@@ -3246,6 +3246,39 @@ export default function PrintPage() {
       />
     );
   };
+  // A full-page photo's own control. The page it sits on is the recipe's hero
+  // image, so this changes `heroImageUrl` rather than the recipe's photo, and
+  // offers the same None / In card / Full page placement as the recipe page
+  // facing it. Repositioning and zoom stay ON the artwork — those are direct
+  // manipulation of the picture, not a dialog.
+  const renderImagePagePhotoControl = (recipeId: string) => {
+    const own = items?.find((item) => item.id === recipeId)?.recipe?.image;
+    const placement = projectMeta.meta.itemPlacements?.[recipeId];
+    const history = placement?.photoHistory ?? [];
+    return (
+      <ImagePicker
+        current={placement?.heroImageUrl ?? own}
+        // Only this recipe's own photo (plus upload) — never a grid of OTHER
+        // recipes' images, which isn't what "change this photo" means.
+        images={Array.from(new Set([...(own ? [own] : []), ...history]))}
+        onSelect={(url) =>
+          url
+            ? projectMeta.setItemPhotoMode(recipeId, "full", url)
+            : setRecipePhotoMode(recipeId, "none")
+        }
+        placement={photoModeFor(recipeId)}
+        placementOptions={PHOTO_STYLE_OPTIONS.map((option) => ({
+          id: option.id,
+          label: option.short,
+          hint: option.hint,
+        }))}
+        onPlacementChange={(mode) => setRecipePhotoMode(recipeId, mode as PhotoStyle)}
+        label="Photo"
+        className="recipe-page-toolbar__photo"
+      />
+    );
+  };
+
   // The cover's photo control, in the page toolbar rather than floating on the
   // artwork. Same button, same dialog, same place as a recipe's — a title page
   // is a page with a picture on it, and there is no reason its picture is
@@ -4069,7 +4102,7 @@ export default function PrintPage() {
           renderPagePhotoControl={renderPagePhotoControl}
           renderSectionPhotoControl={renderSectionPhotoControl}
           renderCoverPhotoControl={renderCoverPhotoControl}
-          buildSectionPhotoEdit={buildSectionPhotoEdit}
+          renderImagePagePhotoControl={renderImagePagePhotoControl}
           photoModeFor={photoModeFor}
           setRecipePhotoMode={setRecipePhotoMode}
           sizeMenuOpen={sizeMenuOpen}

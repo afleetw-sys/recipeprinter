@@ -171,12 +171,7 @@ interface PrintDeckProps {
   renderPagePhotoControl: (recipeId: string) => ReactNode;
   renderSectionPhotoControl: (sectionId: string) => ReactNode;
   renderCoverPhotoControl: (side: "front" | "back" | "dedication") => ReactNode;
-  buildSectionPhotoEdit: (
-    section: Section | undefined,
-    /** Which surface the picker is rendered on — the opener card, or the
-        chapter's facing art page. See the builder in app/print/page.tsx. */
-    surface?: "opener" | "art",
-  ) => Partial<DividerEdit>;
+  renderImagePagePhotoControl: (recipeId: string) => ReactNode;
   photoModeFor: (recipeId: string) => PhotoStyle;
   setRecipePhotoMode: (recipeId: string, mode: PhotoStyle) => void;
   // Mobile topbar
@@ -298,7 +293,7 @@ export function PrintDeck(props: PrintDeckProps) {
     renderPagePhotoControl,
     renderSectionPhotoControl,
     renderCoverPhotoControl,
-    buildSectionPhotoEdit,
+    renderImagePagePhotoControl,
     photoModeFor,
     setRecipePhotoMode,
     sizeMenuOpen,
@@ -447,7 +442,15 @@ export function PrintDeck(props: PrintDeckProps) {
           ? renderSectionPhotoControl(navItem.recipeId)
           : navItem.kind === "cover"
             ? renderCoverPhotoControl(coverSideFromNavItem(navItem))
-            : null;
+            : // The art pages: a full-page recipe photo, and a chapter's facing
+              // art. These used to carry their own button ON the picture, which
+              // is the last place the dialog was reachable from anywhere but
+              // here.
+              navItem.kind === "image"
+              ? renderImagePagePhotoControl(navItem.recipeId)
+              : navItem.kind === "section-photo"
+                ? renderSectionPhotoControl(navItem.recipeId)
+                : null;
     const lineKind = editable ? renderLineKindControl(navItem) : null;
 
     /**
@@ -724,22 +727,6 @@ export function PrintDeck(props: PrintDeckProps) {
                 projectMeta.updateSection(navItem.recipeId, { subtitle: value || undefined }),
               intro: sections.find((section) => section.id === navItem.recipeId)?.intro,
               onIntroChange: (value) => projectMeta.setSectionIntro(navItem.recipeId, value || undefined),
-              ...buildSectionPhotoEdit(sections.find((section) => section.id === navItem.recipeId)),
-            }
-          : undefined
-      }
-      sectionArtEdit={
-        // The facing art page is not the focused page of a chapter spread (the
-        // opener is), so this hangs off the section being edited rather than
-        // focus — otherwise the button would only appear on the page nobody
-        // clicks.
-        navItem.kind === "section-photo" && editingSectionId === navItem.recipeId
-          ? {
-              sectionId: navItem.recipeId,
-              ...buildSectionPhotoEdit(
-                sections.find((section) => section.id === navItem.recipeId),
-                "art",
-              ),
             }
           : undefined
       }
@@ -767,34 +754,6 @@ export function PrintDeck(props: PrintDeckProps) {
               zoom: projectMeta.meta.itemPlacements?.[navItem.recipeId]?.heroZoom ?? 1,
               onZoomChange: (zoom) =>
                 projectMeta.setItemPlacement(navItem.recipeId, { heroZoom: zoom > 1 ? zoom : undefined }),
-              current:
-                projectMeta.meta.itemPlacements?.[navItem.recipeId]?.heroImageUrl ??
-                items?.find((item) => item.id === navItem.recipeId)?.recipe?.image,
-              // Only this recipe's own photo (plus upload) — never a grid of
-              // OTHER recipes' images, which isn't what "change this photo" means.
-              images: (() => {
-                // This recipe's photo, then any it has worn before — a photo
-                // replaced by a custom upload stays offered rather than being
-                // gone the moment it is swapped.
-                const own = items?.find((item) => item.id === navItem.recipeId)?.recipe?.image;
-                const history =
-                  projectMeta.meta.itemPlacements?.[navItem.recipeId]?.photoHistory ?? [];
-                return Array.from(new Set([...(own ? [own] : []), ...history]));
-              })(),
-              // Pick a new full-page photo, or clear it to drop back to no photo.
-              onImageChange: (url) =>
-                url
-                  ? projectMeta.setItemPhotoMode(navItem.recipeId, "full", url)
-                  : setRecipePhotoMode(navItem.recipeId, "none"),
-              // Placement lives in the same dialog: None / In-card / Full-page.
-              placement: photoModeFor(navItem.recipeId),
-              placementOptions: PHOTO_STYLE_OPTIONS.map((option) => ({
-                id: option.id,
-                label: option.short,
-                hint: option.hint,
-              })),
-              onPlacementChange: (mode) =>
-                setRecipePhotoMode(navItem.recipeId, mode as PhotoStyle),
             }
           : undefined
       }
@@ -1259,20 +1218,6 @@ export function PrintDeck(props: PrintDeckProps) {
                             intro: sections.find((section) => section.id === navItem.recipeId)?.intro,
                             onIntroChange: (value) =>
                               projectMeta.setSectionIntro(navItem.recipeId, value || undefined),
-                            ...buildSectionPhotoEdit(
-                              sections.find((section) => section.id === navItem.recipeId),
-                            ),
-                          }
-                        : undefined
-                    }
-                    sectionArtEdit={
-                      navItem.kind === "section-photo" && editingSectionId === navItem.recipeId
-                        ? {
-                            sectionId: navItem.recipeId,
-                            ...buildSectionPhotoEdit(
-                              sections.find((section) => section.id === navItem.recipeId),
-                              "art",
-                            ),
                           }
                         : undefined
                     }
