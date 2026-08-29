@@ -4354,6 +4354,19 @@ export default function PrintPage() {
               </button>
             )}
           </div>
+          {/* Print sits DOWN here, under the tools, not up in the top bar.
+              It is the thing this page is for and the last thing you do, and
+              on a phone the bottom of the screen is where your thumb already
+              is. Save stays at the top: it is housekeeping, not the finish. */}
+          <button
+            type="button"
+            className="recipe-mobile-actions__print"
+            onClick={handleMobilePrint}
+            disabled={printBlocked}
+          >
+            {printSpinner ? <SpinnerIcon size={ICON_SIZE.md} /> : <PrintIcon size={ICON_SIZE.md} />}
+            {cookbookLocked ? "Purchase & Print" : templateLocked ? "Unlock & Print" : "Print"}
+          </button>
         </div>
 
         <MobileStructureSheet

@@ -986,23 +986,8 @@ export function PrintDeck(props: PrintDeckProps) {
                   )}
                 </div>
               )}
-              <button
-                type="button"
-                className="btn btn-primary btn-compact recipe-mobile-topbar__print"
-                onClick={handleMobilePrint}
-                disabled={printBlocked}
-              >
-                {printSpinner ? (
-                  <SpinnerIcon size={ICON_SIZE.md} />
-                ) : (
-                  <PrintIcon size={ICON_SIZE.md} />
-                )}
-                {cookbookLocked
-                  ? "Purchase & Print"
-                  : templateLocked
-                    ? "Unlock & Print"
-                    : "Print"}
-              </button>
+              {/* Print is NOT here any more. It moved to the bottom bar, where the
+                  thumb is and where the tools it finishes already live. */}
               {/* The same account control the desktop header carries. The two
                   bars cannot be identical — the desktop one centres the kind
                   tabs and still has room for Save, which 375px does not — but
