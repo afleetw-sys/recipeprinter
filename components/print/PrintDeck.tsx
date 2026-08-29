@@ -66,6 +66,22 @@ const TEXT_DRAG_SLOP = 6;
 
 /** What the zoom menu offers. 1 is fit-to-window, which is where the deck sits
     with no zoom applied. */
+/* Every surface that renders a photo: a recipe card's header thumbnail, a
+   chapter opener's band, a cover's artwork (single or collage), and the two
+   full-page art surfaces. Double-clicking any of them opens that page's photo
+   dialog. */
+const PHOTO_SURFACES = [
+  // A recipe card's header thumbnail.
+  ".recipe-card__photo",
+  // A chapter opener's photo band.
+  ".recipe-card__chapter-photo",
+  // A cover's artwork — the single-photo and collage variants share this class.
+  ".recipe-card__cover-photo",
+  // Both full-page art surfaces: a recipe's facing photo and a chapter's.
+  // There is no `.recipe-image-spread` wrapper, only this element.
+  ".recipe-image-spread__photo",
+].join(", ");
+
 const DECK_ZOOM_STEPS = [0.5, 0.75, 1, 1.25, 1.5, 1.75, 2];
 
 /** The recipe's two text columns — the only places a drag means "edit this". */
@@ -140,7 +156,7 @@ interface PrintDeckProps {
   onMoveRecipeToNewSection?: (recipeId: string) => void;
   /** Set when a placement was chosen for a recipe with no photo; opens that
       recipe's picker. See `setRecipePhotoMode`. */
-  photoPrompt?: { recipeId: string; tick: number } | null;
+  openPhotoDialog: (key: string) => void;
   onZoomStep: (direction: 1 | -1) => void;
   onZoomSet: (zoom: number) => void;
   deckRef: ReturnType<typeof useDeckScroller>["deckRef"];
@@ -266,7 +282,7 @@ export function PrintDeck(props: PrintDeckProps) {
     onRequestDelete,
     onMoveRecipeToSection,
     onMoveRecipeToNewSection,
-    photoPrompt,
+    openPhotoDialog,
     onZoomStep,
     onZoomSet,
     deckRef,
@@ -314,22 +330,6 @@ export function PrintDeck(props: PrintDeckProps) {
   // spelled out at six call sites (class, aria-pressed and label, twice over
   // for the mobile copy of the bar) — which is exactly how the two copies
   // drifted apart. One predicate, asked everywhere.
-  /**
-   * What the recipe photo pickers offer: this recipe's photo, then the ones it
-   * has worn before (`photoHistory`). Never another recipe's.
-   *
-   * Defined once because it was written twice — and the second copy, the one
-   * the narrow layout renders, had only the current photo. So whether a
-   * replaced photo stayed reachable depended on how wide the window was.
-   */
-  const recipePhotoChoices = (itemId: string | undefined, current: string | undefined) =>
-    Array.from(
-      new Set([
-        ...(current ? [current] : []),
-        ...(itemId ? projectMeta.meta.itemPlacements?.[itemId]?.photoHistory ?? [] : []),
-      ]),
-    );
-
   const isEditingNavItem = (navItem: NavItem) =>
     (navItem.kind === "recipe" && showEmptyFields) ||
     (navItem.kind === "divider" && editingSectionId === navItem.recipeId) ||
@@ -694,24 +694,7 @@ export function PrintDeck(props: PrintDeckProps) {
       }
       showCutLines={showCutLines && cardSize === "card-6x4"}
       inlineEdit={
-        focused && activeRecipeItem?.id === navItem.recipeId && activeInlineEdit
-          ? {
-              ...activeInlineEdit,
-              recipeImages: recipePhotoChoices(activeRecipeItem?.id, activeRecipeItem?.recipe?.image),
-              // Placement lives in the in-card Photo dialog too, so every mode's
-              // "Photo" button opens the same None/In-card/Full-page + source UI.
-              photoPlacement: photoModeFor(navItem.recipeId),
-              photoPlacementOptions: PHOTO_STYLE_OPTIONS.map((option) => ({
-                id: option.id,
-                label: option.short,
-                hint: option.hint,
-              })),
-              onPhotoPlacementChange: (mode) =>
-                setRecipePhotoMode(navItem.recipeId, mode as PhotoStyle),
-              photoPromptSignal:
-                photoPrompt?.recipeId === navItem.recipeId ? photoPrompt.tick : undefined,
-            }
-          : undefined
+        focused && activeRecipeItem?.id === navItem.recipeId ? activeInlineEdit : undefined
       }
       dividerEdit={
         focused && navItem.kind === "divider" && editingSectionId === navItem.recipeId
@@ -796,11 +779,22 @@ export function PrintDeck(props: PrintDeckProps) {
    * and they are exactly the kinds that show no Edit button either.
    */
   const openEditOnDoubleClick = (navItem: NavItem) => (event: ReactMouseEvent) => {
+    // Not on the floating controls that sit over the page.
+    if ((event.target as HTMLElement).closest("button, a, input, textarea")) return;
+    // The picture answers first, on every kind of page that has one. Text is
+    // changed by clicking it, so double-click was left meaning "open the editor
+    // for this thing" — and on a photo the editor is the photo dialog. Same
+    // dialog the toolbar button opens; it is asked for by signal rather than
+    // mounted a second time here.
+    if ((event.target as HTMLElement).closest(PHOTO_SURFACES)) {
+      const key =
+        navItem.kind === "cover" ? `cover:${coverSideFromNavItem(navItem)}` : navItem.recipeId;
+      if (key) openPhotoDialog(key);
+      return;
+    }
     // A full-page photo and a chapter's facing art have no text; a continued
     // page is the runover of a recipe that is edited from its first page.
     if (navItem.kind === "image" || navItem.kind === "section-photo" || navItem.continued) return;
-    // Not on the floating controls that sit over the page.
-    if ((event.target as HTMLElement).closest("button, a, input, textarea")) return;
     // Recipes and covers are absent on purpose: their text is editable by
     // clicking it, so a double-click already lands a caret in the field under
     // the cursor. There is no mode left for this gesture to open.
@@ -1201,11 +1195,8 @@ export function PrintDeck(props: PrintDeckProps) {
                     }
                     showCutLines={showCutLines && cardSize === "card-6x4"}
                     inlineEdit={
-                      isActive && activeRecipeItem?.id === navItem.recipeId && activeInlineEdit
-                        ? {
-              ...activeInlineEdit,
-              recipeImages: recipePhotoChoices(activeRecipeItem?.id, activeRecipeItem?.recipe?.image),
-            }
+                      isActive && activeRecipeItem?.id === navItem.recipeId
+                        ? activeInlineEdit
                         : undefined
                     }
                     dividerEdit={

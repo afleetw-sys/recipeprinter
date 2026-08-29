@@ -250,15 +250,6 @@ export function useRecipeInlineEditor({
     [editValue, editingEdit, editingRecipeItem, applyRecipeUpdate],
   );
 
-  const changeRecipeImage = useCallback(
-    (url: string) => {
-      if (!activeRecipeItem?.recipe) return;
-      const nextRecipe = applyRecipeTargetEdit(activeRecipeItem.recipe, { kind: "image" }, url);
-      applyRecipeUpdate(activeRecipeItem.id, nextRecipe);
-    },
-    [activeRecipeItem, applyRecipeUpdate],
-  );
-
   /**
    * The body/heading switch on the field being edited.
    *
@@ -436,7 +427,6 @@ export function useRecipeInlineEditor({
       onFocusTarget: startEditTarget,
       onValueChange: setEditValue,
       onCommit: commitEditTarget,
-      onImageChange: changeRecipeImage,
       onSetLineKind: setLineKind,
       onCancel: cancelEditTarget,
       onInsertIngredient: insertIngredientAt,
@@ -449,7 +439,6 @@ export function useRecipeInlineEditor({
     editValue,
     startEditTarget,
     commitEditTarget,
-    changeRecipeImage,
     setLineKind,
     cancelEditTarget,
     insertIngredientAt,

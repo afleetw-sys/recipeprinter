@@ -1311,6 +1311,7 @@ export default function PrintPage() {
         gridImages={edit.gridImages}
         onGridChange={edit.onGridChange}
         gridMax={edit.gridMax}
+        openSignal={photoDialogSignal(sectionId)}
         label={section.photoUrl ? "Photo" : "Add photo"}
         className="recipe-page-toolbar__photo"
       />
@@ -3185,18 +3186,30 @@ export default function PrintPage() {
    * left to find the small button that would have supplied one. The counter
    * rather than a boolean so choosing the same placement twice still opens it.
    */
-  const [photoPrompt, setPhotoPrompt] = useState<{ recipeId: string; tick: number } | null>(null);
+  const [photoDialog, setPhotoDialog] = useState<{ key: string; tick: number } | null>(null);
+  /**
+   * Open the photo dialog for one page from outside it.
+   *
+   * The dialog belongs to the toolbar button now, so everything else that
+   * should open it — double-clicking the picture, or choosing a placement for a
+   * recipe that has no photo yet — asks through here rather than growing a
+   * second copy of the dialog. A counter rather than a boolean, so asking twice
+   * in a row still opens it.
+   */
+  function openPhotoDialog(key: string) {
+    setPhotoDialog((current) =>
+      current?.key === key ? { key, tick: current.tick + 1 } : { key, tick: 1 },
+    );
+  }
+  const photoDialogSignal = (key: string) =>
+    photoDialog?.key === key ? photoDialog.tick : undefined;
 
   function setRecipePhotoMode(recipeId: string, mode: PhotoStyle) {
     if (showEmptyFields && activeRecipeId === recipeId) keepEditingRef.current = recipeId;
     setPendingFocusRecipeId(recipeId);
     const image = items?.find((item) => item.id === recipeId)?.recipe?.image;
     if (mode !== "none" && !image) {
-      setPhotoPrompt((current) =>
-        current?.recipeId === recipeId
-          ? { recipeId, tick: current.tick + 1 }
-          : { recipeId, tick: 1 },
-      );
+      openPhotoDialog(recipeId);
     }
     // Clearing the override lets the page follow the book — but only when the
     // book default would actually RESOLVE to the mode just chosen. "Full page"
@@ -3286,6 +3299,7 @@ export default function PrintPage() {
           hint: option.hint,
         }))}
         onPlacementChange={(mode) => setRecipePhotoMode(recipeId, mode as PhotoStyle)}
+        openSignal={photoDialogSignal(recipeId)}
         label="Photo"
         className="recipe-page-toolbar__photo"
       />
@@ -3337,6 +3351,7 @@ export default function PrintPage() {
               }
             : undefined
         }
+        openSignal={photoDialogSignal(`cover:${side}`)}
         label={cover.imageUrl || gridImages.length ? "Photo" : "Add photo"}
         className="recipe-page-toolbar__photo"
       />
@@ -4088,7 +4103,7 @@ export default function PrintPage() {
           onRequestDelete={requestDeleteNavItem}
           onMoveRecipeToSection={moveRecipeToSection}
           onMoveRecipeToNewSection={moveRecipeToNewSection}
-          photoPrompt={photoPrompt}
+          openPhotoDialog={openPhotoDialog}
           onZoomStep={stepDeckZoom}
           onZoomSet={setDeckZoom}
           deckRef={deckRef}
