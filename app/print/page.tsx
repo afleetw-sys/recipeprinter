@@ -1311,6 +1311,7 @@ export default function PrintPage() {
         gridImages={edit.gridImages}
         onGridChange={edit.onGridChange}
         gridMax={edit.gridMax}
+        openSignal={photoDialogSignal(sectionId)}
         label={section.photoUrl ? "Photo" : "Add photo"}
         className="recipe-page-toolbar__photo"
       />
@@ -3185,18 +3186,30 @@ export default function PrintPage() {
    * left to find the small button that would have supplied one. The counter
    * rather than a boolean so choosing the same placement twice still opens it.
    */
-  const [photoPrompt, setPhotoPrompt] = useState<{ recipeId: string; tick: number } | null>(null);
+  const [photoDialog, setPhotoDialog] = useState<{ key: string; tick: number } | null>(null);
+  /**
+   * Open the photo dialog for one page from outside it.
+   *
+   * The dialog belongs to the toolbar button now, so everything else that
+   * should open it — double-clicking the picture, or choosing a placement for a
+   * recipe that has no photo yet — asks through here rather than growing a
+   * second copy of the dialog. A counter rather than a boolean, so asking twice
+   * in a row still opens it.
+   */
+  function openPhotoDialog(key: string) {
+    setPhotoDialog((current) =>
+      current?.key === key ? { key, tick: current.tick + 1 } : { key, tick: 1 },
+    );
+  }
+  const photoDialogSignal = (key: string) =>
+    photoDialog?.key === key ? photoDialog.tick : undefined;
 
   function setRecipePhotoMode(recipeId: string, mode: PhotoStyle) {
     if (showEmptyFields && activeRecipeId === recipeId) keepEditingRef.current = recipeId;
     setPendingFocusRecipeId(recipeId);
     const image = items?.find((item) => item.id === recipeId)?.recipe?.image;
     if (mode !== "none" && !image) {
-      setPhotoPrompt((current) =>
-        current?.recipeId === recipeId
-          ? { recipeId, tick: current.tick + 1 }
-          : { recipeId, tick: 1 },
-      );
+      openPhotoDialog(recipeId);
     }
     // Clearing the override lets the page follow the book — but only when the
     // book default would actually RESOLVE to the mode just chosen. "Full page"
@@ -3232,13 +3245,26 @@ export default function PrintPage() {
         // replaced by an upload stays reachable instead of vanishing.
         images={Array.from(new Set([...(own ? [own] : []), ...history]))}
         onSelect={(url) => updateRecipeAndRevealPhoto(recipeId, { ...recipe, image: url ?? "" })}
-        placement={photoModeFor(recipeId)}
-        placementOptions={PHOTO_STYLE_OPTIONS.map((option) => ({
-          id: option.id,
-          label: option.short,
-          hint: option.hint,
-        }))}
-        onPlacementChange={(mode) => setRecipePhotoMode(recipeId, mode as PhotoStyle)}
+        // Placement is a COOKBOOK idea. `photoOnFor` in usePrintSheets only
+        // consults `itemPlacements` for cookbook layouts, so offering None / In
+        // card / Full page on a plain recipe card would be three buttons that
+        // change nothing. In cards mode the dialog is just "which photo", and
+        // whether photos show at all is the one setting in the panel.
+        placement={cookbookMode ? photoModeFor(recipeId) : undefined}
+        placementOptions={
+          cookbookMode
+            ? PHOTO_STYLE_OPTIONS.map((option) => ({
+                id: option.id,
+                label: option.short,
+                hint: option.hint,
+              }))
+            : undefined
+        }
+        onPlacementChange={
+          cookbookMode
+            ? (mode) => setRecipePhotoMode(recipeId, mode as PhotoStyle)
+            : undefined
+        }
         // Says which job it is doing: there is nothing to change yet when the
         // recipe came in without a photo.
         label={own ? "Photo" : "Add photo"}
@@ -3246,6 +3272,40 @@ export default function PrintPage() {
       />
     );
   };
+  // A full-page photo's own control. The page it sits on is the recipe's hero
+  // image, so this changes `heroImageUrl` rather than the recipe's photo, and
+  // offers the same None / In card / Full page placement as the recipe page
+  // facing it. Repositioning and zoom stay ON the artwork — those are direct
+  // manipulation of the picture, not a dialog.
+  const renderImagePagePhotoControl = (recipeId: string) => {
+    const own = items?.find((item) => item.id === recipeId)?.recipe?.image;
+    const placement = projectMeta.meta.itemPlacements?.[recipeId];
+    const history = placement?.photoHistory ?? [];
+    return (
+      <ImagePicker
+        current={placement?.heroImageUrl ?? own}
+        // Only this recipe's own photo (plus upload) — never a grid of OTHER
+        // recipes' images, which isn't what "change this photo" means.
+        images={Array.from(new Set([...(own ? [own] : []), ...history]))}
+        onSelect={(url) =>
+          url
+            ? projectMeta.setItemPhotoMode(recipeId, "full", url)
+            : setRecipePhotoMode(recipeId, "none")
+        }
+        placement={photoModeFor(recipeId)}
+        placementOptions={PHOTO_STYLE_OPTIONS.map((option) => ({
+          id: option.id,
+          label: option.short,
+          hint: option.hint,
+        }))}
+        onPlacementChange={(mode) => setRecipePhotoMode(recipeId, mode as PhotoStyle)}
+        openSignal={photoDialogSignal(recipeId)}
+        label="Photo"
+        className="recipe-page-toolbar__photo"
+      />
+    );
+  };
+
   // The cover's photo control, in the page toolbar rather than floating on the
   // artwork. Same button, same dialog, same place as a recipe's — a title page
   // is a page with a picture on it, and there is no reason its picture is
@@ -3291,6 +3351,7 @@ export default function PrintPage() {
               }
             : undefined
         }
+        openSignal={photoDialogSignal(`cover:${side}`)}
         label={cover.imageUrl || gridImages.length ? "Photo" : "Add photo"}
         className="recipe-page-toolbar__photo"
       />
@@ -4042,7 +4103,7 @@ export default function PrintPage() {
           onRequestDelete={requestDeleteNavItem}
           onMoveRecipeToSection={moveRecipeToSection}
           onMoveRecipeToNewSection={moveRecipeToNewSection}
-          photoPrompt={photoPrompt}
+          openPhotoDialog={openPhotoDialog}
           onZoomStep={stepDeckZoom}
           onZoomSet={setDeckZoom}
           deckRef={deckRef}
@@ -4069,7 +4130,7 @@ export default function PrintPage() {
           renderPagePhotoControl={renderPagePhotoControl}
           renderSectionPhotoControl={renderSectionPhotoControl}
           renderCoverPhotoControl={renderCoverPhotoControl}
-          buildSectionPhotoEdit={buildSectionPhotoEdit}
+          renderImagePagePhotoControl={renderImagePagePhotoControl}
           photoModeFor={photoModeFor}
           setRecipePhotoMode={setRecipePhotoMode}
           sizeMenuOpen={sizeMenuOpen}

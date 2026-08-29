@@ -167,7 +167,10 @@ export function ImagePicker({
                 ? `Pick up to ${gridMax} photos for the collage — tap to add or remove.`
                 : recipeMode
                   ? "Set the placement, then pick a photo."
-                  : "Use a photo already in this cookbook or add a new one."}
+                  : // Deliberately not "in this cookbook": this dialog is the
+                    // photo control for plain recipe cards too now, where there
+                    // is no cookbook to have a photo in.
+                    "Use a photo you already have, or add a new one."}
             </p>
           </div>
           <IconButton className="image-picker__close" onClick={() => setOpen(false)} aria-label="Close">

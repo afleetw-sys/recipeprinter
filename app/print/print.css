@@ -3012,86 +3012,6 @@
   font-variant-numeric: tabular-nums;
 }
 
-/* ONE "choose photo" overlay button, reused on the cover, on full-page images,
-   and over the in-card header photo so it reads as the same control everywhere,
-   sized to match the sibling "Done"/"Edit" toggle. The px sizes here ARE the real
-   on-screen size.
-
-   The full-page-photo button is rendered OUTSIDE the page transform (a sibling of
-   the scaled `__inner`, in the scaler that's already sized to the on-screen page)
-   so it just takes plain px offsets and needs no counter-scaling — the most
-   reliable option, with a hit region that always matches what's painted.
-
-   The cover and in-card buttons still live INSIDE their transformed page, so they
-   counter its `--page-scale` with `zoom` (LAYOUT-based, unlike a paint-only
-   `transform: scale`, which would leave the hittable area at the un-scaled size).
-   Compound selectors win over the later single-class `.image-picker__trigger`. */
-.image-picker__trigger.recipe-image-spread__edit {
-  position: absolute;
-  top: 9px;
-  right: 9px;
-  z-index: 3;
-  min-height: 0;
-  gap: 5px;
-  padding: 5px 12px;
-  font-size: var(--cp-fs-caption);
-  border-radius: 999px;
-}
-.image-picker__trigger.recipe-card__cover-photopicker {
-  position: absolute;
-  top: 0.13in;
-  left: 0.17in;
-  z-index: 8;
-  zoom: calc(1 / var(--page-scale, 1));
-  min-height: 0;
-  gap: 5px;
-  padding: 5px 12px;
-  font-size: var(--cp-fs-caption);
-  border-radius: 999px;
-}
-.recipe-image-spread__edit svg,
-.recipe-card__cover-photopicker svg {
-  width: 15px;
-  height: 15px;
-}
-/* The in-card control is smaller than the full-page one — it sits over a small
-   header photo, not a whole page. */
-.image-picker__trigger.recipe-card__cook-photo-edit {
-  position: absolute;
-  top: 0.06in;
-  right: 0.06in;
-  z-index: 4;
-  zoom: calc(1 / var(--page-scale, 1));
-  min-height: 0;
-  width: 28px;
-  height: 28px;
-  padding: 0;
-  justify-content: center;
-  font-size: var(--cp-fs-label);
-  border-radius: 999px;
-}
-.recipe-card__cook-photo-edit span {
-  display: none;
-}
-.recipe-card__cook-photo-edit svg {
-  width: 13px;
-  height: 13px;
-}
-
-/* Plain recipe-card photo action. The shared picker supplies app-sized defaults
-   that are appropriate outside the artwork but oversized inside this shallow
-   photo frame, so explicitly collapse its inherited minimum height and icon. */
-.image-picker__trigger.recipe-card__photo-edit {
-  min-height: 0;
-  gap: 0.035in;
-  padding: 0.035in 0.06in;
-  font-size: calc(var(--recipe-card-label-size) * 0.72);
-}
-.recipe-card__photo-edit svg {
-  width: 0.105in;
-  height: 0.105in;
-}
-
 .recipe-template--heirloom {
   --recipe-bg: #fffaf0;
   --recipe-ink: #2d211d;
@@ -5194,19 +5114,6 @@ textarea.recipe-card__toc-title {
   position: absolute;
 }
 
-/* The same `.recipe-card > *` theme rules also catch the overlay photo-picker
-   button (the cover's "Choose photo", the chapter opener's, and the in-card
-   "Photo"), dropping it into flow at z-index 1 — where the card's own
-   absolutely-positioned lockup (`.recipe-card__cover-content` / `__chapter-body`,
-   also z-index 1 but later in the DOM) paints over it and swallows the click.
-   Re-assert the picker as an absolute overlay above that content. Same 0,2,0
-   specificity as the theme rule, placed after all four so source order wins. */
-.recipe-card > .recipe-card__cover-photopicker,
-.recipe-card > .recipe-card__cook-photo-edit {
-  position: absolute;
-  z-index: 8;
-}
-
 /* Theme decoration layers set every direct card child to `position: relative`.
    A chapter photo is one of those children, but its image must still fill the
    framed photo region instead of participating in normal flow. */
@@ -5334,55 +5241,6 @@ textarea.recipe-card__toc-title {
    image inside the frame's corners. */
 .recipe-card__photo--editable {
   overflow: hidden;
-}
-
-.recipe-card__photo-edit {
-  position: absolute;
-  z-index: 2;
-  border: 1px solid var(--cp-line-strong);
-  border-radius: 999px;
-  background: rgba(255, 255, 255, 0.92);
-  color: var(--cp-ink);
-  font-size: calc(var(--recipe-card-label-size) * 0.86);
-  font-weight: 800;
-  line-height: 1;
-  white-space: nowrap;
-}
-
-.recipe-card__photo-edit {
-  left: 50%;
-  bottom: 0.08in;
-  padding: 0.045in 0.07in;
-  transform: translateX(-50%);
-}
-
-/* Same header row as a real photo, so the control occupies the corner the
-   thumbnail will fill once one is chosen. Without this the header stayed a
-   plain block and the button dropped below the meta line, floating in the
-   card's empty middle with nothing to belong to. */
-.recipe-card__header--with-photo-add {
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: var(--recipe-card-gap);
-}
-
-.recipe-card__photo-add {
-  flex: 0 0 auto;
-  margin-top: 1px;
-}
-
-/* The shared picker's app-sized default is oversized against card type — match
-   the in-frame "Change" control's scale so it reads as part of the card. */
-.image-picker__trigger.recipe-card__photo-add {
-  min-height: 0;
-  gap: 0.05in;
-  padding: 0.05in 0.085in;
-  font-size: calc(var(--recipe-card-label-size) * 0.86);
-}
-.recipe-card__photo-add svg {
-  width: 0.13in;
-  height: 0.13in;
 }
 
 /* ── Classic: a crisp, modern cookbook print — white mat, teal hairline ───── */
@@ -5827,6 +5685,34 @@ textarea.recipe-card__toc-title {
   outline: 1px solid color-mix(in srgb, var(--cp-accent) 40%, transparent);
   outline-offset: 2px;
   border-radius: 3px;
+}
+
+/* A photo is clickable the way a line of text is, and says so the same way: a
+   hairline outline on hover, never a box or a fill, so the page still looks
+   like the page. Scoped to the focused page — the rail's thumbnails use these
+   same class names and are not click targets. `:hover` never resolves on
+   paper, so none of this needs `no-print`. */
+.recipe-page-slide.is-active .recipe-card__photo,
+.recipe-page-slide.is-active .recipe-card__chapter-photo,
+.recipe-page-slide.is-active .recipe-card__cover-photo,
+.recipe-page-slide.is-active .recipe-image-spread__photo,
+.recipe-spread__page.is-focused .recipe-card__photo,
+.recipe-spread__page.is-focused .recipe-card__chapter-photo,
+.recipe-spread__page.is-focused .recipe-card__cover-photo,
+.recipe-spread__page.is-focused .recipe-image-spread__photo {
+  cursor: pointer;
+}
+
+.recipe-page-slide.is-active .recipe-card__photo:hover,
+.recipe-page-slide.is-active .recipe-card__chapter-photo:hover,
+.recipe-page-slide.is-active .recipe-card__cover-photo:hover,
+.recipe-page-slide.is-active .recipe-image-spread__photo:hover,
+.recipe-spread__page.is-focused .recipe-card__photo:hover,
+.recipe-spread__page.is-focused .recipe-card__chapter-photo:hover,
+.recipe-spread__page.is-focused .recipe-card__cover-photo:hover,
+.recipe-spread__page.is-focused .recipe-image-spread__photo:hover {
+  outline: 1px solid color-mix(in srgb, var(--cp-accent) 40%, transparent);
+  outline-offset: 2px;
 }
 
 /* Cover lines behave like a recipe's: click the text to edit it, and a line

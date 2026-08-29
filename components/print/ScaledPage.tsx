@@ -56,7 +56,6 @@ export const ScaledPage = memo(function ScaledPage({
   showEmptyFields = false,
   inlineEdit,
   dividerEdit,
-  sectionArtEdit,
   coverEdit,
   imageEdit,
   tocKicker,
@@ -108,24 +107,6 @@ export const ScaledPage = memo(function ScaledPage({
     onExitGrid?: () => void;
     gridMax?: number;
   };
-  /** The photo picker for a chapter's FACING art page (its full-page photo or
-      collage) — the same dialog the opener's picker opens, rendered over the
-      art itself so the button is always on the picture it changes. */
-  sectionArtEdit?: {
-    sectionId: string;
-    photoUrl?: string;
-    recipeImages?: string[];
-    onPhotoChange?: (url: string | undefined) => void;
-    placement?: string;
-    placementOptions?: Array<{ id: string; label: string; hint?: string }>;
-    onPlacementChange?: (id: string) => void;
-    gridActive?: boolean;
-    gridImages?: string[];
-    onGridChange?: (urls: string[]) => void;
-    onSelectGrid?: () => void;
-    onExitGrid?: () => void;
-    gridMax?: number;
-  };
   coverEdit?: {
     side: "front" | "back" | "dedication";
     cover: CoverConfig;
@@ -142,16 +123,6 @@ export const ScaledPage = memo(function ScaledPage({
         photo can be zoomed as well as dragged. */
     zoom?: number;
     onZoomChange?: (zoom: number) => void;
-    /** Current full-page photo + candidates, so the image page can host its own
-        "Photo" control instead of the recipe card doing it off-page. */
-    current?: string;
-    images?: string[];
-    onImageChange?: (url: string | undefined) => void;
-    /** Recipe-photo placement (None/In-card/Full-page), shown inside the same
-        dialog so the photo's placement and source live in one place. */
-    placement?: string;
-    placementOptions?: Array<{ id: string; label: string; hint?: string }>;
-    onPlacementChange?: (id: string) => void;
   };
   tocKicker?: string;
   tocTitle?: string;
@@ -345,18 +316,6 @@ export const ScaledPage = memo(function ScaledPage({
             </button>
           </div>
         )}
-        {imageEdit?.onImageChange && (
-          <ImagePicker
-            current={imageEdit.current}
-            images={imageEdit.images ?? []}
-            onSelect={imageEdit.onImageChange}
-            placement={imageEdit.placement}
-            placementOptions={imageEdit.placementOptions}
-            onPlacementChange={imageEdit.onPlacementChange}
-            label="Photo"
-            className="recipe-image-spread__edit"
-          />
-        )}
       </div>
     );
   }
@@ -425,27 +384,6 @@ export const ScaledPage = memo(function ScaledPage({
             </div>
           </div>
         </div>
-        {/* Outside the scaled page, hugging the art's corner — see the
-            image-spread note above for why it can't live inside the transform.
-            The chapter's art is edited by clicking the art. */}
-        {sectionArtEdit?.sectionId === anySlot.sectionId && sectionArtEdit.onPhotoChange && (
-          <ImagePicker
-            current={sectionArtEdit.photoUrl}
-            images={sectionArtEdit.recipeImages ?? []}
-            onSelect={sectionArtEdit.onPhotoChange}
-            placement={sectionArtEdit.placement}
-            placementOptions={sectionArtEdit.placementOptions}
-            onPlacementChange={sectionArtEdit.onPlacementChange}
-            gridActive={sectionArtEdit.gridActive}
-            gridImages={sectionArtEdit.gridImages}
-            onGridChange={sectionArtEdit.onGridChange}
-            onSelectGrid={sectionArtEdit.onSelectGrid}
-            onExitGrid={sectionArtEdit.onExitGrid}
-            gridMax={sectionArtEdit.gridMax}
-            label="Photo"
-            className="recipe-image-spread__edit"
-          />
-        )}
       </div>
     );
   }

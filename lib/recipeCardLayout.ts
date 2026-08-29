@@ -677,23 +677,14 @@ export type RecipeCardEditTarget =
   | { kind: "instructionSection"; index: number };
 
 export interface RecipeCardInlineEdit {
-  /** Other photos already in this project, offered by the shared image picker. */
-  recipeImages?: string[];
-  /** Cookbook only: the recipe's photo placement + a setter, so the in-card
-      "Photo" dialog can change None/In-card/Full-page in the same place it
-      changes the photo's source. */
-  photoPlacement?: string;
-  photoPlacementOptions?: Array<{ id: string; label: string; hint?: string }>;
-  /** Bumped when a placement was chosen for a recipe with no photo yet, so the
-      picker opens instead of leaving the placement pointing at nothing. */
-  photoPromptSignal?: number;
-  onPhotoPlacementChange?: (id: string) => void;
+  /* No photo fields. A recipe's photo is changed from the page toolbar, which
+     owns the only copy of that dialog — the card itself has nothing to say
+     about it any more. */
   editingTarget: RecipeCardEditTarget | null;
   value: string;
   onFocusTarget: (target: RecipeCardEditTarget, value: string) => void;
   onValueChange: (value: string) => void;
   onCommit: (value?: string) => void;
-  onImageChange: (url: string) => void;
   /** Body ↔ heading for the field being edited (see `setLineKind`). */
   onSetLineKind: (target: RecipeCardEditTarget, kind: "body" | "heading") => void;
   onCancel: () => void;

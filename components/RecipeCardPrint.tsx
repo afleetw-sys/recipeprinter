@@ -297,6 +297,8 @@ export const RecipeCardFace = memo(function RecipeCardFace({
   const canEdit = Boolean(inlineEdit);
   // "Show me what isn't here yet." Only ever true while the reveal is on.
   const showEmpty = canEdit && showEmptyFields;
+  const metaTime = formatRecipeTime(recipe.totalTime || recipe.cookTime || recipe.prepTime) || "";
+  const metaServes = recipe.servings ?? recipe.yield;
   // A recipe with no ingredients at all still gets a slot (an "Add ingredient"
   // prompt) so there is somewhere to start — otherwise an empty recipe could
   // never get past its first field.
@@ -848,43 +850,64 @@ export const RecipeCardFace = memo(function RecipeCardFace({
                 while the editor splits them into two inputs, so there is no
                 version of this that is directly clickable without permanently
                 showing both slots — including the empty one. */}
-            {cookbookMode ? renderCookbookFacts() : canEdit && inlineEdit && showEmpty ? (
+            {/* Cook time and servings, one field each — the same per-field
+                rule the cookbook's facts follow. A value you can see is a value
+                you can click into; only a MISSING one waits for the reveal.
+                This used to swap the whole joined "20 min · Serves 4" line for
+                two inputs the moment the reveal came on, which meant the reveal
+                had something to do on every recipe, even one with nothing
+                missing. */}
+            {cookbookMode ? (
+              renderCookbookFacts()
+            ) : canEdit && inlineEdit && (showEmpty || metaTime || metaServes) ? (
               <p className="recipe-card__meta recipe-card__meta--editable-targets">
-                <input
-                  className="recipe-card__inline-input recipe-card__inline-input--meta"
-                  value={
-                    sameTarget(inlineEdit.editingTarget, { kind: "cookTime" })
-                      ? inlineEdit.value
-                      : formatRecipeTime(recipe.totalTime || recipe.cookTime || recipe.prepTime) || ""
-                  }
-                  placeholder="Cook time"
-                  aria-label="Cook time"
-                  onFocus={() =>
-                    startEdit({ kind: "cookTime" }, recipe.totalTime || recipe.cookTime || recipe.prepTime || "")
-                  }
-                  onChange={(event) => inlineEdit.onValueChange(event.target.value)}
-                  onBlur={commitEdit}
-                  onKeyDown={handleEditKeyDown}
-                />
-                <span aria-hidden> · </span>
-                <input
-                  className="recipe-card__inline-input recipe-card__inline-input--meta"
-                  value={
-                    sameTarget(inlineEdit.editingTarget, { kind: "servings" })
-                      ? inlineEdit.value
-                      : recipe.servings ?? recipe.yield
-                        ? `Serves ${recipe.servings ?? recipe.yield}`
-                        : ""
-                  }
-                  placeholder="Servings"
-                  aria-label="Servings"
-                  onFocus={() =>
-                    startEdit({ kind: "servings" }, recipe.servings === undefined ? "" : String(recipe.servings))
-                  }
-                  onChange={(event) => inlineEdit.onValueChange(event.target.value)}
-                  onBlur={commitEdit}
-                  onKeyDown={handleEditKeyDown}
-                />
+                {(showEmpty || metaTime) && (
+                  <input
+                    className="recipe-card__inline-input recipe-card__inline-input--meta"
+                    value={
+                      sameTarget(inlineEdit.editingTarget, { kind: "cookTime" })
+                        ? inlineEdit.value
+                        : metaTime
+                    }
+                    placeholder="Cook time"
+                    aria-label="Cook time"
+                    onFocus={() =>
+                      startEdit(
+                        { kind: "cookTime" },
+                        recipe.totalTime || recipe.cookTime || recipe.prepTime || "",
+                      )
+                    }
+                    onChange={(event) => inlineEdit.onValueChange(event.target.value)}
+                    onBlur={commitEdit}
+                    onKeyDown={handleEditKeyDown}
+                  />
+                )}
+                {(showEmpty || metaTime) && (showEmpty || metaServes) && (
+                  <span aria-hidden> · </span>
+                )}
+                {(showEmpty || metaServes) && (
+                  <input
+                    className="recipe-card__inline-input recipe-card__inline-input--meta"
+                    value={
+                      sameTarget(inlineEdit.editingTarget, { kind: "servings" })
+                        ? inlineEdit.value
+                        : metaServes
+                          ? `Serves ${metaServes}`
+                          : ""
+                    }
+                    placeholder="Servings"
+                    aria-label="Servings"
+                    onFocus={() =>
+                      startEdit(
+                        { kind: "servings" },
+                        recipe.servings === undefined ? "" : String(recipe.servings),
+                      )
+                    }
+                    onChange={(event) => inlineEdit.onValueChange(event.target.value)}
+                    onBlur={commitEdit}
+                    onKeyDown={handleEditKeyDown}
+                  />
+                )}
               </p>
             ) : (
               meta.length > 0 && <p className="recipe-card__meta">{meta.join("  ·  ")}</p>
@@ -1149,20 +1172,6 @@ export interface DividerCardInlineEdit {
   onSubtitleChange?: (value: string) => void;
   intro?: string;
   onIntroChange?: (value: string) => void;
-  photoUrl?: string;
-  recipeImages?: string[];
-  onPhotoChange?: (url: string | undefined) => void;
-  /** Unified placement (None/In-card/Full-page/Photo grid) + grid curation, so
-      the opener picker is the same dialog as a recipe's, plus the cover's grid. */
-  placement?: string;
-  placementOptions?: Array<{ id: string; label: string; hint?: string }>;
-  onPlacementChange?: (id: string) => void;
-  gridActive?: boolean;
-  gridImages?: string[];
-  onGridChange?: (urls: string[]) => void;
-  onSelectGrid?: () => void;
-  onExitGrid?: () => void;
-  gridMax?: number;
 }
 
 // A section divider is always exactly one physical page — no ingredients/
@@ -1228,24 +1237,8 @@ export const DividerFace = memo(function DividerFace({
         )}
         <span className="photo-unavailable-message">Photo unavailable</span>
       </div>
-      {inlineEdit?.onPhotoChange && (
-        <ImagePicker
-          current={photoUrl}
-          images={inlineEdit.recipeImages ?? []}
-          onSelect={inlineEdit.onPhotoChange}
-          placement={inlineEdit.placement}
-          placementOptions={inlineEdit.placementOptions}
-          onPlacementChange={inlineEdit.onPlacementChange}
-          gridActive={inlineEdit.gridActive}
-          gridImages={inlineEdit.gridImages}
-          onGridChange={inlineEdit.onGridChange}
-          onSelectGrid={inlineEdit.onSelectGrid}
-          onExitGrid={inlineEdit.onExitGrid}
-          gridMax={inlineEdit.gridMax}
-          label="Photo"
-          className="recipe-card__cook-photo-edit"
-        />
-      )}
+      {/* The chapter opener's photo is changed from the page toolbar, like
+          every other page's. */}
       <div className="recipe-card__chapter-frame" aria-hidden />
       <TemplateDecoration template={template} show={showDecoration} />
       <div className="recipe-card__chapter-body">
