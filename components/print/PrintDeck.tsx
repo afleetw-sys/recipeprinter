@@ -434,8 +434,15 @@ export function PrintDeck(props: PrintDeckProps) {
     // changed shape depending on a mode you were not thinking about, and the
     // question "where does the photo go" had to be asked through a button that
     // says "Edit". The placements themselves live inside the picker's menu.
+    // Recipe cards have photos too. This was cookbook-only because the control
+    // it replaced was a placement switch, which is a cookbook idea — but the
+    // dialog behind it also chooses WHICH photo, and that is how a plain card
+    // gets one. Without it here, a recipe imported without a picture had no way
+    // to be given one at all.
     const photoControl = !projectMeta.meta.cookbookMode
-      ? null
+      ? navItem.kind === "recipe"
+        ? renderPagePhotoControl(navItem.recipeId)
+        : null
       : navItem.kind === "recipe"
         ? renderPagePhotoControl(navItem.recipeId)
         : navItem.kind === "divider"

@@ -3232,13 +3232,26 @@ export default function PrintPage() {
         // replaced by an upload stays reachable instead of vanishing.
         images={Array.from(new Set([...(own ? [own] : []), ...history]))}
         onSelect={(url) => updateRecipeAndRevealPhoto(recipeId, { ...recipe, image: url ?? "" })}
-        placement={photoModeFor(recipeId)}
-        placementOptions={PHOTO_STYLE_OPTIONS.map((option) => ({
-          id: option.id,
-          label: option.short,
-          hint: option.hint,
-        }))}
-        onPlacementChange={(mode) => setRecipePhotoMode(recipeId, mode as PhotoStyle)}
+        // Placement is a COOKBOOK idea. `photoOnFor` in usePrintSheets only
+        // consults `itemPlacements` for cookbook layouts, so offering None / In
+        // card / Full page on a plain recipe card would be three buttons that
+        // change nothing. In cards mode the dialog is just "which photo", and
+        // whether photos show at all is the one setting in the panel.
+        placement={cookbookMode ? photoModeFor(recipeId) : undefined}
+        placementOptions={
+          cookbookMode
+            ? PHOTO_STYLE_OPTIONS.map((option) => ({
+                id: option.id,
+                label: option.short,
+                hint: option.hint,
+              }))
+            : undefined
+        }
+        onPlacementChange={
+          cookbookMode
+            ? (mode) => setRecipePhotoMode(recipeId, mode as PhotoStyle)
+            : undefined
+        }
         // Says which job it is doing: there is nothing to change yet when the
         // recipe came in without a photo.
         label={own ? "Photo" : "Add photo"}
