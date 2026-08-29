@@ -1027,45 +1027,46 @@ export function PrintDeck(props: PrintDeckProps) {
                   style={{
                     aspectRatio: `${PAGE_DIMS[previewCardSize].w} / ${PAGE_DIMS[previewCardSize].h}`,
                   }}
-                  aria-hidden
                 >
                   {/* Enough of a card to be recognisable as one and no more: a
-                      title bar, a rule, and two short columns. Pale enough that
-                      it reads as the shape of a page rather than a page with
-                      something on it — nobody should look twice to check
-                      whether this is a real recipe. */}
-                  <span className="recipe-page-empty__bar recipe-page-empty__bar--title" />
-                  <span className="recipe-page-empty__rule" />
-                  <span className="recipe-page-empty__cols">
-                    <span className="recipe-page-empty__col">
-                      <span className="recipe-page-empty__bar" />
-                      <span className="recipe-page-empty__bar recipe-page-empty__bar--short" />
-                      {previewCardSize !== "card-6x4" && (
-                        <span className="recipe-page-empty__bar" />
-                      )}
-                    </span>
-                    <span className="recipe-page-empty__col">
-                      <span className="recipe-page-empty__bar" />
-                      <span className="recipe-page-empty__bar recipe-page-empty__bar--short" />
-                      {previewCardSize !== "card-6x4" && (
-                        <span className="recipe-page-empty__bar" />
-                      )}
-                    </span>
-                  </span>
-                </div>
-                <div className="recipe-page-empty__copy">
-                  <p className="recipe-page-empty__title">No pages yet</p>
-                  <p className="recipe-page-empty__body">
-                    Add a recipe and it will show up here, laid out and ready to print.
-                  </p>
-                  <button
-                    type="button"
-                    className="btn btn-primary btn-compact"
-                    onClick={() => openAddRecipeBelow(null)}
-                  >
-                    <PlusIcon size={ICON_SIZE.md} />
-                    Add recipes
-                  </button>
+                      title bar, a rule, and — where there is room for them —
+                      two short columns. Pale enough that it reads as the shape
+                      of a page rather than a page with something on it. */}
+                  <div className="recipe-page-empty__ghost" aria-hidden>
+                    <span className="recipe-page-empty__bar recipe-page-empty__bar--title" />
+                    <span className="recipe-page-empty__rule" />
+                    {previewCardSize !== "card-6x4" && (
+                      <span className="recipe-page-empty__cols">
+                        <span className="recipe-page-empty__col">
+                          <span className="recipe-page-empty__bar" />
+                          <span className="recipe-page-empty__bar recipe-page-empty__bar--short" />
+                          <span className="recipe-page-empty__bar" />
+                        </span>
+                        <span className="recipe-page-empty__col">
+                          <span className="recipe-page-empty__bar" />
+                          <span className="recipe-page-empty__bar recipe-page-empty__bar--short" />
+                          <span className="recipe-page-empty__bar" />
+                        </span>
+                      </span>
+                    )}
+                  </div>
+                  {/* Inside the outline, at both sizes. The words belong ON the
+                      empty page, the way a page's content would — under it they
+                      read as a caption about the page instead. */}
+                  <div className="recipe-page-empty__copy">
+                    <p className="recipe-page-empty__title">No pages yet</p>
+                    <p className="recipe-page-empty__body">
+                      Add a recipe and it will show up here, laid out and ready to print.
+                    </p>
+                    <button
+                      type="button"
+                      className="btn btn-primary btn-compact"
+                      onClick={() => openAddRecipeBelow(null)}
+                    >
+                      <PlusIcon size={ICON_SIZE.md} />
+                      Add recipes
+                    </button>
+                  </div>
                 </div>
               </div>
             ) : cookbookView

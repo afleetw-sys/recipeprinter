@@ -5692,7 +5692,6 @@ textarea.recipe-card__toc-title {
    the words sit ON it, the way a page's content would. Dashed and unfilled: it
    is the shape of something absent, not a page with nothing on it. */
 .recipe-page-empty {
-  position: relative;
   display: grid;
   place-items: center;
   width: 100%;
@@ -5701,23 +5700,25 @@ textarea.recipe-card__toc-title {
 }
 
 .recipe-page-empty__sheet {
-  position: absolute;
   display: flex;
   flex-direction: column;
-  gap: 14px;
   width: min(100%, 420px);
   /* The aspect ratio is set inline from PAGE_DIMS — the outline is the shape of
      the page you chose, not always a letter sheet. */
   max-height: 100%;
-  padding: 34px 30px;
+  padding: 30px 28px;
   border: 1px dashed var(--cp-line-strong);
   border-radius: 12px;
 }
 
-/* The ghosted card inside it. One opacity on the whole group rather than a
-   paler colour per part, so the whole suggestion recedes together and no
-   single bar can start looking like real text. */
-.recipe-page-empty__sheet > * {
+/* The ghosted card. One opacity on the whole group rather than a paler colour
+   per part, so the suggestion recedes together and no single bar can start
+   looking like real text. */
+.recipe-page-empty__ghost {
+  display: flex;
+  flex: 0 0 auto;
+  flex-direction: column;
+  gap: 14px;
   opacity: 0.45;
 }
 
@@ -5756,49 +5757,16 @@ textarea.recipe-card__toc-title {
   gap: 9px;
 }
 
-/* A 6×4 card is a third the height of a sheet, so the same ghost drawn at the
-   same scale would fill it. Everything tightens; the copy stops sitting inside
-   the outline and sits under it, because there is no middle to sit in. */
-.recipe-page-empty__sheet--card {
-  gap: 8px;
-  padding: 16px 18px;
-}
-
-.recipe-page-empty__sheet--card .recipe-page-empty__bar {
-  height: 5px;
-}
-
-.recipe-page-empty__sheet--card .recipe-page-empty__bar--title {
-  height: 10px;
-}
-
-.recipe-page-empty__sheet--card .recipe-page-empty__col {
-  gap: 7px;
-}
-
-.recipe-page-empty:has(.recipe-page-empty__sheet--card) {
-  align-content: center;
-  gap: 20px;
-}
-
-.recipe-page-empty:has(.recipe-page-empty__sheet--card) .recipe-page-empty__sheet {
-  position: static;
-}
-
-.recipe-page-empty:has(.recipe-page-empty__sheet--card) .recipe-page-empty__copy {
-  margin-top: 0;
-}
-
+/* Takes the room the ghost leaves and centres in it, so the words land in the
+   middle of the empty page at any page size rather than at a fixed offset. */
 .recipe-page-empty__copy {
-  position: relative;
-  /* Below the ghosted header, not on top of it. */
-  margin-top: 18%;
-  padding: 0 12px;
   display: flex;
+  flex: 1 1 auto;
   flex-direction: column;
   align-items: center;
+  justify-content: center;
   gap: 8px;
-  max-width: 260px;
+  padding: 12px 0;
   text-align: center;
 }
 
@@ -5810,10 +5778,35 @@ textarea.recipe-card__toc-title {
 }
 
 .recipe-page-empty__body {
+  max-width: 260px;
   margin-bottom: 4px;
   color: var(--cp-ink-soft);
   font-size: var(--cp-fs-small);
   line-height: 1.45;
+}
+
+/* A 6×4 card is a third the height of a sheet: the ghost keeps only its header
+   (see the deck — the columns are not rendered at this size), and everything
+   tightens so the copy still has the middle of the card to sit in. */
+.recipe-page-empty__sheet--card {
+  padding: 16px 20px;
+}
+
+.recipe-page-empty__sheet--card .recipe-page-empty__ghost {
+  gap: 9px;
+}
+
+.recipe-page-empty__sheet--card .recipe-page-empty__bar--title {
+  height: 10px;
+}
+
+.recipe-page-empty__sheet--card .recipe-page-empty__copy {
+  gap: 6px;
+  padding: 8px 0 0;
+}
+
+.recipe-page-empty__sheet--card .recipe-page-empty__body {
+  margin-bottom: 2px;
 }
 
 /* A photo is clickable the way a line of text is, and says so the same way: a
