@@ -8,7 +8,6 @@ import dynamic from "next/dynamic";
 import { SiteHeader } from "@/components/SiteHeader";
 import { SAVE_FAILURES, SAVE_STATUS_LABEL } from "@/components/AccountControl";
 import { ProjectHeading } from "@/components/print/ProjectHeading";
-import { flyIntoProfile, visibleDeckPage } from "@/lib/flyIntoProfile";
 import { fileProjectLocally } from "@/lib/localProjects";
 import type { AccountSaveStatus } from "@/components/AccountControl";
 import { FeedbackDialog } from "@/components/FeedbackButton";
@@ -1978,15 +1977,18 @@ export default function PrintPage() {
       return;
     }
 
-    const flight = flyIntoProfile(visibleDeckPage());
+    // No flight into the profile on the way out. It was a promise the app can
+    // no longer keep: it showed the project travelling to the avatar, which
+    // said "this is in your projects now" — and since saving became an explicit
+    // choice, leaving does not necessarily put it there. An animation that
+    // answers a question wrongly is worse than one that never answered it.
+    //
     // Files under the project this content already is, if it has been printed
     // before — so the account save below is pointed at the same document
     // rather than creating its own copy of it.
     const filed = fileProjectLocally(queue.items, projectMeta.meta);
     if (filed) projectMeta.setProjectId(filed);
     if (cookPilotUser && filed) void handleSaveProject(filed);
-
-    await flight;
 
     // Only now is the desk safe to clear — and releasing the project id is the
     // half that makes the next import a NEW project rather than another edit
