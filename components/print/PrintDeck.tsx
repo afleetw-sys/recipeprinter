@@ -542,16 +542,18 @@ export function PrintDeck(props: PrintDeckProps) {
                   }
                 }}
               >
-                {/* On a recipe this no longer opens an editor -- the text is
-                    already editable by clicking it. What is left for it to do
-                    is show the fields this recipe does NOT have, which cannot
-                    be clicked into existence because they take up no room. The
-                    contents page and chapter openers still have a real edit
-                    mode, and still say Edit. */}
+                {/* On a recipe or a cover this no longer opens an editor --
+                    the text is already editable by clicking it. What is left
+                    for it to do is show the fields the page does NOT have
+                    filled in, which cannot be clicked into existence because
+                    they take up no room. So it says what appears rather than
+                    "Edit", which would promise a mode that is not there any
+                    more. The contents page and chapter openers DO still have a
+                    real edit mode, and still say Edit. */}
                 {navItem.kind === "recipe" || navItem.kind === "cover"
                   ? editing
                     ? "Done"
-                    : "All fields"
+                    : "More fields"
                   : editing
                     ? "Done"
                     : "Edit"}
