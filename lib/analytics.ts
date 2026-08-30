@@ -44,6 +44,9 @@ export type ImportFailureCode =
   | "too_large"
   | "backend_unavailable"
   | "timeout"
+  // A reserved name (example.com, localhost, anything under .test). Not a
+  // parser failure: nothing was ever there to parse.
+  | "placeholder"
   | "unknown";
 
 /**

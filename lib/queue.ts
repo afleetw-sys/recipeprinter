@@ -315,24 +315,34 @@ export function useQueue() {
         });
         const reason = truncateReason(err);
         const category = err instanceof ImportError ? err.code : "unknown";
-        // Best-effort: stash the failed input and link the event to it. `await`
-        // only to attach the path — capture never throws (see module).
-        const captureMeta = { source: origin.source, category, reason };
-        // Bytes to Storage (only an image has any), then one row in
-        // `debugInbox` either way, carrying the URL or the pasted text itself
-        // and a pointer to those bytes.
-        const debugPath = opts?.failedImages?.length
-          ? await captureFailedImportImages(opts.failedImages, captureMeta)
-          : null;
-        await recordFailedImport(captureMeta, {
-          payload: opts?.failedText,
-          imagePath: debugPath,
-          imageCount: opts?.failedImages?.length ?? 0,
-        });
+        // A reserved address is someone trying the box out, not a site that
+        // failed to parse, so nothing about it is worth reproducing later. It
+        // stays out of `debugInbox` entirely: the inbox is the list you read to
+        // find real bugs, and every placeholder in it is a row you have to
+        // recognise and dismiss before you reach one that matters.
+        let debugPath: string | null = null;
+        if (!placeholder) {
+          // Best-effort: stash the failed input and link the event to it. `await`
+          // only to attach the path — capture never throws (see module).
+          const captureMeta = { source: origin.source, category, reason };
+          // Bytes to Storage (only an image has any), then one row in
+          // `debugInbox` either way, carrying the URL or the pasted text itself
+          // and a pointer to those bytes.
+          debugPath = opts?.failedImages?.length
+            ? await captureFailedImportImages(opts.failedImages, captureMeta)
+            : null;
+          await recordFailedImport(captureMeta, {
+            payload: opts?.failedText,
+            imagePath: debugPath,
+            imageCount: opts?.failedImages?.length ?? 0,
+          });
+        }
         track("recipe_import_failed", {
           ...origin,
           reason,
-          category,
+          // Its own bucket, so a placeholder is never counted among the
+          // not_found and unknown failures that describe the real parser.
+          category: placeholder ? "placeholder" : category,
           ...(debugPath ? { debugPath } : {}),
         });
       }

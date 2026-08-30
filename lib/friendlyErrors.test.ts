@@ -5,6 +5,7 @@ import {
   friendlyPurchaseSetupError,
   friendlyRecipeLibraryError,
   friendlyShareLinkError,
+  isPlaceholderHost,
   placeholderHostMessage,
 } from "./friendlyErrors";
 
@@ -54,5 +55,42 @@ describe("placeholderHostMessage", () => {
     expect(placeholderHostMessage("allrecipes.com")).toBeNull();
     expect(placeholderHostMessage("example.com.recipes.io")).toBeNull();
     expect(placeholderHostMessage("myexample.com")).toBeNull();
+  });
+
+  it("answers a loopback or reserved-TLD host too", () => {
+    for (const host of ["localhost", "127.0.0.1", "recipes.test", "staging.localhost"]) {
+      expect(placeholderHostMessage(host)).toContain(host);
+    }
+  });
+});
+
+// The gate on writing a failure into `debugInbox`. A host that is reserved by
+// definition never reaches the inbox, so a probe cannot be filed as a bug.
+describe("isPlaceholderHost", () => {
+  it("catches the documentation domains and everything loopback", () => {
+    for (const host of ["example.com", "example.org", "example.net", "example.edu"]) {
+      expect(isPlaceholderHost(host)).toBe(true);
+    }
+    for (const host of ["localhost", "127.0.0.1", "0.0.0.0", "::1", "[::1]"]) {
+      expect(isPlaceholderHost(host)).toBe(true);
+    }
+  });
+
+  // RFC 6761 reserves these at the top level, so the whole tree under them goes.
+  it("catches the whole tree under a reserved TLD", () => {
+    for (const host of ["recipes.test", "anything.invalid", "app.localhost", "foo.example"]) {
+      expect(isPlaceholderHost(host)).toBe(true);
+    }
+  });
+
+  it("lets a real recipe site through", () => {
+    for (const host of ["allrecipes.com", "myexample.com", "example.com.recipes.io", "test.co.uk"]) {
+      expect(isPlaceholderHost(host)).toBe(false);
+    }
+  });
+
+  it("ignores the www prefix, the casing and stray whitespace", () => {
+    expect(isPlaceholderHost("  WWW.Example.COM ")).toBe(true);
+    expect(isPlaceholderHost("")).toBe(false);
   });
 });

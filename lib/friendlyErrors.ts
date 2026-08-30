@@ -138,9 +138,42 @@ export function friendlyShareLinkError(error: unknown): string {
  */
 const PLACEHOLDER_HOSTS = new Set(["example.com", "example.org", "example.net", "example.edu"]);
 
+/** A machine talking to itself. Reachable, but never a recipe on the web. */
+const LOOPBACK_HOSTS = new Set(["localhost", "127.0.0.1", "0.0.0.0", "::1", "[::1]"]);
+
+/**
+ * RFC 6761 reserves these at the top level, so EVERYTHING under them is a
+ * placeholder: `foo.test`, `staging.localhost` and `anything.invalid` are
+ * reserved by definition, not by a list we would have to keep current.
+ */
+const RESERVED_TLDS = new Set(["test", "invalid", "localhost", "example"]);
+
+/** Lowercased, trimmed, `www.` dropped, so every check below compares like with like. */
+function normalizeHost(hostname: string): string {
+  return hostname.trim().toLowerCase().replace(/^www\./, "");
+}
+
+/**
+ * True for a host that is reserved by definition and can never hold a recipe.
+ *
+ * The `example.*` set is an EXACT match on purpose, so `myexample.com` and
+ * `example.com.recipes.io` are still real sites worth parsing. The reserved
+ * TLDs match on the last label, because reservation there covers the whole
+ * tree beneath them.
+ */
+export function isPlaceholderHost(hostname: string): boolean {
+  const host = normalizeHost(hostname);
+  if (!host) return false;
+  if (PLACEHOLDER_HOSTS.has(host) || LOOPBACK_HOSTS.has(host)) return true;
+  return RESERVED_TLDS.has(host.split(".").pop() ?? "");
+}
+
 /** The reply for a placeholder domain, or null for a host worth parsing. */
 export function placeholderHostMessage(hostname: string): string | null {
-  const host = hostname.trim().toLowerCase().replace(/^www\./, "");
-  if (!PLACEHOLDER_HOSTS.has(host)) return null;
-  return `${host} is the address the web uses in its own examples, so there is nothing behind it to read. Paste a link to a real recipe and it will come straight in.`;
+  const host = normalizeHost(hostname);
+  if (!isPlaceholderHost(host)) return null;
+  if (PLACEHOLDER_HOSTS.has(host)) {
+    return `${host} is the address the web uses in its own examples, so there is nothing behind it to read. Paste a link to a real recipe and it will come straight in.`;
+  }
+  return `${host} is a reserved address rather than a site on the web, so there is nothing behind it to read. Paste a link to a real recipe and it will come straight in.`;
 }
