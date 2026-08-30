@@ -56,7 +56,22 @@ async function callCookPilotParser(name: string, data: unknown): Promise<unknown
   return res.data;
 }
 
-function friendlyError(err: unknown, fallback: string): ImportError {
+/**
+ * @param fallback     Copy for a failure we cannot explain (backend, unknown).
+ * @param noRecipeCopy Copy for the one case we CAN explain: the parser read the
+ *   input and found no recipe in it. Defaults to `fallback` so a caller with
+ *   nothing more specific to say behaves exactly as before.
+ *
+ * These were one string. That made every "no recipe here" message double as the
+ * message for a backend outage, so advice that only makes sense for the first
+ * (how to lay the text out) was also shown to someone whose App Check token had
+ * failed, who has nothing to fix and no reason to retype anything.
+ */
+function friendlyError(
+  err: unknown,
+  fallback: string,
+  noRecipeCopy: string = fallback,
+): ImportError {
   // A failure that already carries a code (e.g. our own "no recipe found")
   // keeps it — don't relabel it as unknown on the way out.
   if (err instanceof ImportError) return err;
@@ -129,7 +144,7 @@ function friendlyError(err: unknown, fallback: string): ImportError {
     code.includes("not-found") ||
     (code.includes("unavailable") && /no (readable )?recipe|recipe (text|content)/i.test(message))
   ) {
-    return new ImportError(fallback, "no_recipe");
+    return new ImportError(noRecipeCopy, "no_recipe");
   }
   if (/firebase|functions\/|app check|appcheck|auth\/|permission-denied|internal|stack|api key/i.test(message)) {
     return new ImportError(fallback, "backend_unavailable");
@@ -322,6 +337,29 @@ export function normalizeFractions(text: string): string {
 }
 
 /** Pasted-text import, CookPilot's `parseSocialRecipe` (free text as caption). */
+/**
+ * Both ways pasted text can come back empty say the same thing, because from
+ * the cook's side they ARE the same thing: we could not pick a recipe out of
+ * what they pasted.
+ *
+ * It used to read "Check that it includes the title, ingredients, and
+ * directions." That is an accusation the input usually disproves — a paste of
+ * "Banana Bread / 2 cups flour / Bake it." has all three and still lands here,
+ * so the message told the cook to fix something they had already done, and
+ * left them nothing to actually try.
+ *
+ * What it says now is true and actionable: the parser identifies an ingredient
+ * block by a heading or by a run of two or more measured lines, so a short
+ * recipe with a single ingredient line has nothing for it to lock onto, and
+ * labelling the parts is what gets it read.
+ */
+/** A failure we cannot attribute to the text: nothing for the cook to rewrite. */
+const COULD_NOT_READ_TEXT = "We couldn't import that recipe text right now. Please try again.";
+
+const NO_RECIPE_IN_TEXT =
+  "We couldn't pick a recipe out of that text. Adding an Ingredients heading and an " +
+  "Instructions heading above each part usually gets it read.";
+
 export async function parseText(rawText: string): Promise<Recipe> {
   const text = normalizeFractions(rawText);
   try {
@@ -332,16 +370,10 @@ export async function parseText(rawText: string): Promise<Recipe> {
     });
     const recipe = adaptCookPilotRecipe(data);
     if (!recipe) {
-      throw new ImportError(
-        "We couldn't find a complete recipe in that text. Include the title, ingredients, and directions.",
-        "no_recipe",
-      );
+      throw new ImportError(NO_RECIPE_IN_TEXT, "no_recipe");
     }
     return recipe;
   } catch (err) {
-    throw friendlyError(
-      err,
-      "We couldn't read that recipe text. Check that it includes the title, ingredients, and directions.",
-    );
+    throw friendlyError(err, COULD_NOT_READ_TEXT, NO_RECIPE_IN_TEXT);
   }
 }
