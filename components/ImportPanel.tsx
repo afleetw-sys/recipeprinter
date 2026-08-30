@@ -179,7 +179,7 @@ export function ImportPanel({
 
     if (mode === "url") {
       const trimmed = url.trim();
-      if (!trimmed) return setError("Paste a recipe URL first.");
+      if (!trimmed) return setError("Paste a recipe link first.");
       try {
         // Validate through the same normalizer the queue and parser use, so the
         // client gate can't reject a URL the pipeline would happily import (it
@@ -303,7 +303,7 @@ export function ImportPanel({
    * second implementation that would drift from it.
    *
    * Returns whether there was anything to commit, so a Done pressed over an
-   * empty form stays a plain close and does not raise "Paste a recipe URL
+   * empty form stays a plain close and does not raise "Paste a recipe link
    * first" at someone who is leaving.
    */
   useEffect(() => {
@@ -413,7 +413,7 @@ export function ImportPanel({
         {mode === "url" && (
           <div className="flex flex-col">
             <label className="field-label" htmlFor="rp-url">
-              Recipe URL
+              Recipe link
             </label>
             {/* The button is shorter than the field, so it centers against it
                 rather than sitting top-aligned. The error message lives OUTSIDE
@@ -425,7 +425,7 @@ export function ImportPanel({
                 id="rp-url"
                 type="url"
                 className="field w-full lg:flex-1 lg:min-w-0"
-                placeholder="Paste recipe URL here"
+                placeholder="Paste recipe link here"
                 value={url}
                 autoFocus={autoFocusUrl}
                 onChange={(e) => {

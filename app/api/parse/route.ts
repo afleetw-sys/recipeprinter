@@ -251,7 +251,7 @@ export async function POST(request: Request) {
   try {
     const body = (await request.json()) as { url?: unknown };
     if (typeof body.url !== "string" || !body.url.trim()) {
-      return errorResponse("Paste a recipe URL first.");
+      return errorResponse("Paste a recipe link first.");
     }
     url = new URL(normalizeImportURL(body.url));
   } catch {
