@@ -133,7 +133,7 @@ export const NAV_LINKS: NavLink[] = [
   {
     href: "/faq",
     label: "FAQ",
-    blurb: "Answers about recipe URLs, PDFs, cookbooks, social recipes, binders, and privacy.",
+    blurb: "Answers about recipe links, PDFs, cookbooks, social recipes, binders, and privacy.",
   },
   {
     href: "/about",
@@ -185,7 +185,7 @@ export const FAQ: FaqItem[] = [
   {
     question: "Can I print a recipe from a URL?",
     answer:
-      "Usually, yes. Paste a recipe URL from a recipe website, food blog, or supported social post and RecipePrinter will turn it into a clean printable recipe card or page. If a site does not import cleanly, you can paste the recipe text directly or upload a screenshot instead.",
+      "Usually, yes. Paste a recipe link from a recipe website, food blog, or supported social post and RecipePrinter will turn it into a clean printable recipe card or page. If a site does not import cleanly, you can paste the recipe text directly or upload a screenshot instead.",
   },
   {
     question: "Can I turn a recipe into a PDF?",
@@ -195,7 +195,7 @@ export const FAQ: FaqItem[] = [
   {
     question: "Can I make printable recipe cards from online recipes?",
     answer:
-      "Yes. Paste a recipe URL, upload a screenshot or photo, or paste recipe text, then choose a printable recipe card layout before printing.",
+      "Yes. Paste a recipe link, upload a screenshot or photo, or paste recipe text, then choose a printable recipe card layout before printing.",
   },
   {
     question: "Can I print recipes from Pinterest, Instagram, or TikTok?",

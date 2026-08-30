@@ -30,7 +30,7 @@ const FEATURES: Feature[] = [
   {
     icon: LinkIcon,
     title: "Print recipes from websites and social links",
-    body: "Paste a recipe URL from a food blog, recipe website, Pinterest, Instagram, TikTok, or another supported social post and RecipePrinter turns it into a printable recipe card or page.",
+    body: "Paste a recipe link from a food blog, recipe website, Pinterest, Instagram, TikTok, or another supported social post and RecipePrinter turns it into a printable recipe card or page.",
   },
   {
     icon: ImageIcon,

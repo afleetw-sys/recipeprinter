@@ -27,7 +27,7 @@ type Source = {
 const SOURCES: Source[] = [
   {
     icon: LinkIcon,
-    label: "Paste a recipe URL",
+    label: "Paste a recipe link",
     body: "Paste a link from a recipe website, food blog, or supported social post and RecipePrinter pulls out the recipe so you can print it without the ads, pop-ups, or extra pages.",
   },
   {

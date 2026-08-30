@@ -61,7 +61,7 @@ export default function AboutPage() {
         <p>So I built RecipePrinter.</p>
 
         <p>
-          Paste a recipe URL, upload a screenshot or photo, paste recipe text, or
+          Paste a recipe link, upload a screenshot or photo, paste recipe text, or
           import directly from CookPilot and RecipePrinter turns it into a clean
           printable recipe card or PDF designed for real kitchens.
         </p>

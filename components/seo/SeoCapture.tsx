@@ -71,7 +71,7 @@ export function SeoCapture({
 
     if (mode === "url") {
       const trimmed = url.trim();
-      if (!trimmed) return setError("Paste a recipe URL first.");
+      if (!trimmed) return setError("Paste a recipe link first.");
       try {
         new URL(trimmed.startsWith("http") ? trimmed : `https://${trimmed}`);
       } catch {
@@ -118,7 +118,7 @@ export function SeoCapture({
       {mode === "url" && (
         <div className="flex flex-col">
           <label htmlFor="seo-url" className="field-label">
-            Recipe URL
+            Recipe link
           </label>
           {/* Same row shape as the workspace importer (see ImportPanel): the
               button centres against the taller field, and the error sits below
@@ -128,7 +128,7 @@ export function SeoCapture({
               id="seo-url"
               type="url"
               className="field w-full lg:flex-1"
-              placeholder={placeholder ?? "Paste recipe URL here"}
+              placeholder={placeholder ?? "Paste recipe link here"}
               value={url}
               onChange={(e) => {
                 setUrl(e.target.value);
