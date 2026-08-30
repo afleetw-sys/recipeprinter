@@ -2301,9 +2301,9 @@
     /* Bleeds past the bar's own padding so a tile can sit half-off the edge
        rather than stopping short of it, which reads as the end of the list.
        The negative margin has to match the bar's inset exactly, or the first
-       tile stops lining up with the Print pill under it. */
-    margin: 0 -20px;
-    padding: 0 20px;
+       tile stops lining up with the Print button under it. */
+    margin: 0 -24px;
+    padding: 0 24px;
     overflow-x: auto;
     scrollbar-width: none;
     scroll-snap-type: x proximity;
@@ -2402,13 +2402,16 @@
     gap: 8px;
   }
 
-  /* Shape only. It is a `.btn-primary` — see the class list on the element —
-     so its colour, radius, weight and disabled state all come from there and
-     stay identical to the same button in the desktop header. */
+  /* Width only. Everything else — including the HEIGHT — is `.btn-primary`,
+     so this is the same button as the "Add" in the add-recipes sheet
+     (`btn btn-primary w-full`, 34px) and the one in the desktop header. It was
+     forcing 48px, which is taller than anything else in the app: the button
+     scale is 34px for `.btn` and 30px for `.btn-compact`, and a bespoke height
+     here made the main action of the page the one control that matched nothing
+     around it. */
   .recipe-mobile-actions__print {
     flex: 0 0 auto;
     width: 100%;
-    min-height: 48px;
   }
 
   /* An off/excluded toggle keeps its plain icon but gets a diagonal strike
@@ -2926,11 +2929,10 @@
     display: flex;
     flex-direction: column;
     gap: 10px;
-    /* 20px, not 16: the first tile was starting hard against the screen edge
-       with nothing to read as a margin, so the row looked cut off rather than
-       inset. The Print pill below takes the same inset, so the two stay in one
-       column. */
-    padding: 10px 20px max(10px, env(safe-area-inset-bottom));
+    /* 24px. At 16 the first tile started hard against the screen edge with
+       nothing to read as a margin; 20 was still not enough to see. The Print
+       button below takes the same inset, so the two stay in one column. */
+    padding: 10px 24px max(10px, env(safe-area-inset-bottom));
     border-top: 1px solid var(--cp-line);
     background: var(--cp-page);
   }
