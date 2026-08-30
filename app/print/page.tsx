@@ -4224,6 +4224,49 @@ export default function PrintPage() {
         </Dialog>
 
         <div className="recipe-mobile-actions no-print">
+          {/* On a phone a pending import had NOWHERE to appear. The rail is the
+              only thing that renders these rows and the rail is desktop-only,
+              so adding a recipe looked like nothing happening — and an import
+              that FAILED said nothing at all, which is the worse half. This
+              strip is the mobile stand-in: the same two states the rail row
+              has, in the bar the recipe was added from. */}
+          {pendingImportItems.length > 0 && (
+            <div className="recipe-mobile-pending">
+              {pendingImportItems.map((item) =>
+                item.status === "parsing" ? (
+                  <RecipeLoadingState
+                    key={`pending-${item.id}`}
+                    className="recipe-mobile-pending__loading"
+                  />
+                ) : (
+                  <div className="recipe-mobile-pending__error" role="alert" key={`pending-${item.id}`}>
+                    <span className="recipe-mobile-pending__error-text">
+                      <strong>Couldn&apos;t import</strong>
+                      {item.error || "Check the source and try again."}
+                    </span>
+                    <span className="recipe-mobile-pending__error-actions">
+                      {queue.canRetry(item) && (
+                        <button
+                          type="button"
+                          className="btn btn-secondary btn-compact"
+                          onClick={() => queue.retry(item.id)}
+                        >
+                          Try again
+                        </button>
+                      )}
+                      <button
+                        type="button"
+                        className="btn btn-ghost btn-compact"
+                        onClick={() => queue.remove(item.id)}
+                      >
+                        Remove
+                      </button>
+                    </span>
+                  </div>
+                ),
+              )}
+            </div>
+          )}
           {/* No way into a cookbook here on purpose. Building a book — covers,
               chapters, page layouts, the organizer — is not something the phone
               layout does well yet, and selling someone a $19.99 document they
@@ -4360,7 +4403,11 @@ export default function PrintPage() {
               is. Save stays at the top: it is housekeeping, not the finish. */}
           <button
             type="button"
-            className="recipe-mobile-actions__print"
+            /* The SAME button the desktop header uses, widened — not a
+               hand-rolled one that happens to look similar. The custom class
+               only carries the full-width shape now; every colour, radius and
+               weight comes from `.btn-primary`, so the two can never drift. */
+            className="btn btn-primary recipe-mobile-actions__print"
             onClick={handleMobilePrint}
             disabled={printBlocked}
           >

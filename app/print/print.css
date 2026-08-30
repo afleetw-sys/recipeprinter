@@ -2358,26 +2358,57 @@
     color: var(--cp-selected-text);
   }
 
-  /* The finishing action, full width under the tools. */
-  .recipe-mobile-actions__print {
+  /* A pending or failed import, in the bar it was added from. Sits above the
+     tools rather than over them: while an import is in flight the bar grows,
+     and the deck scrolls, so nothing is hidden behind it. */
+  .recipe-mobile-pending {
     display: flex;
     flex: 0 0 auto;
-    align-items: center;
-    justify-content: center;
+    flex-direction: column;
     gap: 8px;
-    width: 100%;
-    min-height: 48px;
-    padding: 0 18px;
-    border: 0;
-    border-radius: 999px;
-    background: var(--cp-ink);
-    color: var(--cp-card);
-    font-size: var(--cp-fs-body);
+    padding: 10px 12px;
+    border: 1px solid var(--cp-line);
+    border-radius: 14px;
+    background: var(--cp-surface-strong);
+  }
+
+  .recipe-mobile-pending__loading {
+    justify-content: flex-start;
+    padding: 0;
+  }
+
+  .recipe-mobile-pending__error {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .recipe-mobile-pending__error-text {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    color: var(--cp-ink-soft);
+    font-size: var(--cp-fs-small);
+    line-height: 1.35;
+  }
+
+  .recipe-mobile-pending__error-text strong {
+    color: var(--cp-ink);
     font-weight: 800;
   }
 
-  .recipe-mobile-actions__print:disabled {
-    opacity: 0.6;
+  .recipe-mobile-pending__error-actions {
+    display: flex;
+    gap: 8px;
+  }
+
+  /* Shape only. It is a `.btn-primary` — see the class list on the element —
+     so its colour, radius, weight and disabled state all come from there and
+     stay identical to the same button in the desktop header. */
+  .recipe-mobile-actions__print {
+    flex: 0 0 auto;
+    width: 100%;
+    min-height: 48px;
   }
 
   /* An off/excluded toggle keeps its plain icon but gets a diagonal strike
