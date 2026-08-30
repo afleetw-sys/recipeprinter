@@ -2233,6 +2233,21 @@
     background: var(--cp-card);
   }
 
+  /* The account panel opens out of this bar, so it can never stack higher than
+     the bar itself. At 6 the bar ties with `.recipe-page-canvas__controls`, and
+     a tie is settled by DOM order, which the deck wins — so the photo and
+     delete buttons painted straight over the open account panel.
+
+     Lifting the bar only WHILE the panel is open is the narrow fix. The bar
+     spends the rest of its life at 6, still under the action bar (75) and the
+     sheets and their backdrops (76-81), which are all meant to cover it. Open,
+     it goes to 84: above the toast (82), because a panel the cook deliberately
+     opened outranks a notification, and below a modal dialog (85), which is
+     still allowed to cover everything. */
+  .recipe-mobile-topbar:has([data-account-menu-open]) {
+    z-index: 84;
+  }
+
   .recipe-mobile-topbar__logo {
     display: inline-flex;
     align-items: center;

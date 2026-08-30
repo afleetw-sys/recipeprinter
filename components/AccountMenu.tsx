@@ -239,7 +239,18 @@ export default function AccountMenu({
   );
 
   return (
-    <div ref={rootRef} className="relative flex items-center">
+    <div
+      ref={rootRef}
+      className="relative flex items-center"
+      /* The panel is `z-50` inside whatever bar hosts this control, so it can
+         only ever stack as high as that bar does. On a phone the bar is
+         `.recipe-mobile-topbar` at z-index 6 — the same value as the deck's
+         floating page controls — and equal values fall back to DOM order,
+         which the deck wins. Marking the root lets the bar lift itself for as
+         long as the menu is open (see app/print/print.css) rather than sitting
+         permanently above sheets it should stay under. */
+      data-account-menu-open={open ? "" : undefined}
+    >
       {/* One control, signed in or not — see the same button in
           `AccountControl`, which draws it while this chunk is still loading.
           Signed in it holds your initials on the accent; signed out, a person
