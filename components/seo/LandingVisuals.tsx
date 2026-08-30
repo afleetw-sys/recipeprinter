@@ -167,7 +167,21 @@ const PROOF_ASPECT = "3 / 2";
  * /print-recipe-from-website and /family-recipe-book. Add an entry here and the
  * row picks the two-column layout back up on its own, no page edits.
  */
-const PROOF_IMAGES: Partial<Record<SeoProofKind, ProofImage>> = {
+/** Keyed by proof kind for the default, plus free-form keys a single feature
+    row can name directly. Keying only by kind meant two rows asking for the
+    same kind — on one page or across two — got the identical picture, which
+    reads as one visual repeated rather than two claims. */
+const FEATURE_IMAGES: Record<string, ProofImage> = {
+  "card-in-box": {
+    src: "/images/recipe-card-in-box.jpeg",
+    width: 1200,
+    height: 1600,
+    // Shot portrait: the card's title sits high and the box fills the bottom, so
+    // a centred 3:2 crop would cut the title off.
+    objectPosition: "50% 30%",
+    alt:
+      "A printed Basil Pesto recipe card being lowered into an open floral recipe box that already holds a Korean Beef Bowl card and dividers labelled Beverages and Misc.",
+  },
   card: {
     src: "/images/cards-on-counter.jpeg",
     width: 1600,
@@ -203,12 +217,22 @@ const PROOF_IMAGES: Partial<Record<SeoProofKind, ProofImage>> = {
 export function FeatureRows({
   features,
 }: {
-  features: { heading: string; body: string; proof?: SeoProofKind; caption?: string }[];
+  features: {
+    heading: string;
+    body: string;
+    proof?: SeoProofKind;
+    caption?: string;
+    image?: string;
+  }[];
 }) {
   return (
     <div className="flex flex-col gap-cp-7">
       {features.map((feature, index) => {
-        const image = feature.proof ? PROOF_IMAGES[feature.proof] : undefined;
+        const image = feature.image
+          ? FEATURE_IMAGES[feature.image]
+          : feature.proof
+            ? FEATURE_IMAGES[feature.proof]
+            : undefined;
         const copy = (
           <>
             <h3 className="text-cp-h2-lg font-extrabold tracking-[-0.03em]">{feature.heading}</h3>

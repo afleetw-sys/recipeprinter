@@ -69,6 +69,9 @@ export type SeoLandingPage = {
     body: string;
     proof?: SeoProofKind;
     caption?: string;
+    /** Names a specific visual, overriding the one `proof` would pick. Use when
+        two rows would otherwise land on the same image. */
+    image?: string;
   }[];
   /** Real printed-card photo keys (PRINTED_CARDS) for the examples gallery. */
   examples?: string[];
@@ -264,6 +267,7 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
   },
   {
     slug: "printable-recipe-card-generator",
+    lastReviewed: "2026-08-30",
     primaryKeyword: "printable recipe card generator",
     secondaryKeywords: [
       "recipe card maker",
@@ -285,7 +289,39 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
       "Make printable recipe cards from links, photos, screenshots, or text, including 4x6 and recipe-box-friendly layouts.",
     h1: "Printable recipe card generator",
     lede:
-      "Turn a recipe you found online into a printable recipe card you can cook from, share, file, or add to a recipe box. This page is focused on card layouts, recipe boxes, and small-format printouts rather than full-page recipes. Rather than build a card from a blank template, you start from a real recipe and choose the layout, so the design work is already done.",
+      "Paste a recipe link and pick a layout. You get a printable recipe card sized for a recipe box, with no blank template to design yourself.",
+    howTo: [
+      {
+        name: "Add the recipe",
+        text: "Paste a recipe link, upload a photo of an old card, or paste the text. It comes in already structured, so there is no blank template to fill in.",
+      },
+      {
+        name: "Switch to the card size",
+        text: "In print setup, choose the 6 by 4 card instead of a full page. Every recipe waiting to print changes with it.",
+      },
+      {
+        name: "Pick a theme",
+        text: "Themes change the card's type, borders, and how the photo sits. Several are free, and the premium ones are a one-time purchase.",
+      },
+      {
+        name: "Print and file it",
+        text: "Turn on cut lines if you want a trim guide, print on card stock, and file the finished card in the box.",
+      },
+    ],
+    featureSections: [
+      {
+        heading: "Sized for the box it's going in",
+        image: "card-in-box",
+        body:
+          "A 6 by 4 card is the size a standard recipe box takes, so what comes off your printer drops straight into the box or an index-card binder. Cut lines give you a trim guide when you print on card stock, and the type stays large enough to read from across the counter.",
+      },
+      {
+        heading: "Change the look, keep the recipe",
+        proof: "card",
+        body:
+          "A theme changes a card's type, its border, and how the photo sits, without touching the recipe underneath. Switch themes and every card in the batch follows, so a stack printed in one go still looks like a set rather than a pile of odds and ends.",
+      },
+    ],
     faqs: [
       {
         question: "Can I make 4x6 recipe cards from online recipes?",
