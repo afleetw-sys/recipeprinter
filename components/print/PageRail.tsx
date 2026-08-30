@@ -960,7 +960,7 @@ export function PageRail(props: PageRailProps) {
                       </button>
                     </div>
                   </div>
-                  {unitIdx === pendingAnchorUnitIdx && <PendingImportRows items={pendingImportItems} canRetry={queue.canRetry} onRetry={queue.retry} onRemove={queue.remove} />}
+                  {unitIdx === pendingAnchorUnitIdx && <PendingImportRows items={pendingImportItems} />}
                   </Fragment>
                 );
                   });
@@ -1079,7 +1079,7 @@ export function PageRail(props: PageRailProps) {
                   </button>
                 </div>
               </div>
-              {rowIndex === pendingAnchorRowIndex && <PendingImportRows items={pendingImportItems} canRetry={queue.canRetry} onRetry={queue.retry} onRemove={queue.remove} />}
+              {rowIndex === pendingAnchorRowIndex && <PendingImportRows items={pendingImportItems} />}
               </Fragment>
             );
           });
@@ -1087,7 +1087,7 @@ export function PageRail(props: PageRailProps) {
 
           {/* Keep pending imports visible without pretending a page or image
               exists yet. The real page appears only once parsing completes. */}
-          {!pendingAddAfterRecipeId && <PendingImportRows items={pendingImportItems} canRetry={queue.canRetry} onRetry={queue.retry} onRemove={queue.remove} />}
+          {!pendingAddAfterRecipeId && <PendingImportRows items={pendingImportItems} />}
 
           {tileMenu &&
             createPortal(

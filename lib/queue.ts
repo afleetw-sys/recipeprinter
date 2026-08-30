@@ -305,6 +305,8 @@ export function useQueue() {
         // typo in a real address, and it is the one failure where we know
         // exactly what happened.
         const placeholder = origin.hostname ? placeholderHostMessage(origin.hostname) : null;
+        const reason = truncateReason(err);
+        const category = err instanceof ImportError ? err.code : "unknown";
         patch(id, {
           status: "error",
           error:
@@ -312,9 +314,10 @@ export function useQueue() {
             (err instanceof ImportError
               ? err.message
               : "We couldn't import that recipe. Check the source and try again."),
+          // Carried on the item so the toast can be short without inventing a
+          // reason: a placeholder host is its own bucket, not a parse failure.
+          errorCode: placeholder ? "placeholder" : category,
         });
-        const reason = truncateReason(err);
-        const category = err instanceof ImportError ? err.code : "unknown";
         // A reserved address is someone trying the box out, not a site that
         // failed to parse, so nothing about it is worth reproducing later. It
         // stays out of `debugInbox` entirely: the inbox is the list you read to

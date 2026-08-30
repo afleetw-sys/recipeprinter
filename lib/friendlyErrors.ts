@@ -1,3 +1,5 @@
+import type { ImportFailureCode } from "@/lib/analytics";
+
 export function friendlyAuthError(error: unknown, fallback = "We couldn't sign you in. Please try again."): string {
   const code = (error as { code?: string })?.code ?? "";
   const message = error instanceof Error ? error.message : String(error || "");
@@ -176,4 +178,44 @@ export function placeholderHostMessage(hostname: string): string | null {
     return `${host} is the address the web uses in its own examples, so there is nothing behind it to read. Paste a link to a real recipe and it will come straight in.`;
   }
   return `${host} is a reserved address rather than a site on the web, so there is nothing behind it to read. Paste a link to a real recipe and it will come straight in.`;
+}
+
+/**
+ * A failed import in the fewest words that are still true.
+ *
+ * The toast is one line beside two buttons, and on a phone that line is about
+ * five words wide. It used to carry `item.error`, the full sentence written for
+ * a panel with room to explain — "We couldn't read that recipe text. Check that
+ * it includes the title, ingredients, and directions." — which wrapped to four
+ * lines and pushed Try again off the edge.
+ *
+ * So the toast says WHICH failure, and the Add recipe dialog, which stays open
+ * behind it and has the room, keeps the sentence that says what to do about it.
+ * Never a bare "Something went wrong": each of these names the actual cause.
+ */
+export function shortImportError(code: ImportFailureCode | undefined): string {
+  switch (code) {
+    case "blocked":
+      return "That site blocked the import";
+    case "not_found":
+      return "That page wouldn't open";
+    case "no_recipe":
+      return "No recipe found there";
+    case "placeholder":
+      return "That address isn't a real site";
+    case "rate_limited":
+      return "Too many imports just now";
+    case "no_files":
+      return "No photos to import";
+    case "decode_failed":
+      return "Those photos wouldn't open";
+    case "too_large":
+      return "That photo is too large";
+    case "backend_unavailable":
+      return "Importing is down right now";
+    case "timeout":
+      return "That page took too long";
+    default:
+      return "That recipe wouldn't import";
+  }
 }

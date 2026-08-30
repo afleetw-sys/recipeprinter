@@ -10,6 +10,19 @@ const PREVIEW_SELECTOR = ".recipe-page-scaler";
 const DECK_SCROLL_PADDING_TOP = 72;
 
 /**
+ * Below this the deck is a horizontal filmstrip with no rail beside it; above
+ * it, a vertical stack with the rail. Exported because the print page has to
+ * ask the same question, and a second copy of the number is a second thing to
+ * remember to change.
+ */
+export const DECK_MOBILE_QUERY = "(max-width: 820px)";
+
+/** Server-safe: false before hydration, where there is no viewport to measure. */
+export function isDeckMobile(): boolean {
+  return typeof window !== "undefined" && window.matchMedia(DECK_MOBILE_QUERY).matches;
+}
+
+/**
  * The element CSS actually snaps for this slide — which differs by mode.
  *
  * A cookbook spread snaps the SLIDE; a recipe card snaps its `.recipe-page-
@@ -223,7 +236,7 @@ export function useDeckScroller({
     const update = () => {
       // Any resize moves the slides, so the cached centers are stale.
       centersDirtyRef.current = true;
-      const mobile = window.matchMedia("(max-width: 820px)").matches;
+      const mobile = isDeckMobile();
       // On mobile each slide is narrower than the deck itself (100vw - 96px)
       // so neighbouring pages peek in on both sides; the scale must fit that
       // slide width, not the full deck width, or the card overflows its slot.
@@ -280,13 +293,17 @@ export function useDeckScroller({
     return () => observer.disconnect();
   }, [deckNode, cardSize, sheetsLength, pageWidth, pageHeight, layoutKey, zoom]);
 
-  const centerSlide = useCallback(
-    (index: number, behavior: ScrollBehavior = "auto") => {
-      const deck = deckRef.current;
-      const slide = slideRefs.current[index];
-      if (!deck || !slide) return;
-
-      if (window.matchMedia("(max-width: 820px)").matches) {
+  /**
+   * Bring one element in the deck to the position the browser would rest it at.
+   *
+   * Split out of `centerSlide` because the loading placeholder is deliberately
+   * not one of the numbered slides (see PrintDeck) and still has to be
+   * scrollable to. Nothing in here ever needed the index — only the deck and
+   * the element — so the split costs nothing.
+   */
+  const centerElement = useCallback(
+    (deck: HTMLDivElement, slide: HTMLElement, behavior: ScrollBehavior = "auto") => {
+      if (isDeckMobile()) {
         const targetLeft = slide.offsetLeft - (deck.clientWidth - slide.offsetWidth) / 2;
         const maxLeft = deck.scrollWidth - deck.clientWidth;
         // Round so the resting position is pixel-identical to the CSS snap
@@ -311,22 +328,36 @@ export function useDeckScroller({
     [],
   );
 
+  const centerSlide = useCallback(
+    (index: number, behavior: ScrollBehavior = "auto") => {
+      const deck = deckRef.current;
+      const slide = slideRefs.current[index];
+      if (!deck || !slide) return;
+      centerElement(deck, slide, behavior);
+    },
+    [centerElement],
+  );
+
   // Holds off the scroll listener until a programmatic scroll settles,
   // otherwise it overwrites our selection with whichever slide is centred
   // partway through the animation.
+  const suppressScrollSync = useCallback((behavior: ScrollBehavior) => {
+    suppressScrollSyncRef.current = true;
+    window.clearTimeout(scrollSyncTimerRef.current);
+    scrollSyncTimerRef.current = window.setTimeout(
+      () => {
+        suppressScrollSyncRef.current = false;
+      },
+      behavior === "smooth" ? 500 : 120,
+    );
+  }, []);
+
   const suppressAndCenter = useCallback(
     (index: number, behavior: ScrollBehavior) => {
-      suppressScrollSyncRef.current = true;
-      window.clearTimeout(scrollSyncTimerRef.current);
-      scrollSyncTimerRef.current = window.setTimeout(
-        () => {
-          suppressScrollSyncRef.current = false;
-        },
-        behavior === "smooth" ? 500 : 120,
-      );
+      suppressScrollSync(behavior);
       centerSlide(index, behavior);
     },
-    [centerSlide],
+    [centerSlide, suppressScrollSync],
   );
 
   // Scrolling the deck selects whichever slide is closest to the centre.
@@ -364,7 +395,7 @@ export function useDeckScroller({
     const onScroll = () => {
       if (suppressScrollSyncRef.current) return;
       if (el.scrollHeight !== measuredScrollHeightRef.current) centersDirtyRef.current = true;
-      const mobile = window.matchMedia("(max-width: 820px)").matches;
+      const mobile = isDeckMobile();
       cancelAnimationFrame(raf);
       raf = requestAnimationFrame(() => {
         const next = closestIndex(mobile);
@@ -448,6 +479,34 @@ export function useDeckScroller({
     [activeNavIndex, suppressAndCenter, setActiveNavIndex],
   );
 
+  /**
+   * Scroll to something in the deck that is not one of the numbered slides.
+   *
+   * The loading placeholder is the case this exists for. It is deliberately
+   * outside the sheets pipeline, so it has no nav index and `goToSlide` cannot
+   * reach it. Going through the same centring as a real slide is the point:
+   * a bare `scrollIntoView` would fight mandatory snapping and bring back the
+   * overshoot-then-catch that `scrollDeckTo` exists to prevent.
+   *
+   * `activeNavIndex` is left alone, because the placeholder is not a nav item
+   * and there is nothing truthful to set it to. The scroll listener settles it
+   * on whichever real slide ends up nearest once suppression lapses.
+   *
+   * Returns false when the element is not in the deck yet, so a caller that
+   * ran a frame early can tell the difference between "moved" and "missed".
+   */
+  const goToDeckElement = useCallback(
+    (selector: string, behavior: ScrollBehavior = "smooth") => {
+      const deck = deckRef.current;
+      const target = deck?.querySelector<HTMLElement>(selector);
+      if (!deck || !target) return false;
+      suppressScrollSync(behavior);
+      centerElement(deck, target, behavior);
+      return true;
+    },
+    [centerElement, suppressScrollSync],
+  );
+
   return {
     canvasSide,
     setCanvasSide,
@@ -457,5 +516,6 @@ export function useDeckScroller({
     deckRef: attachDeck,
     slideRefs,
     goToSlide,
+    goToDeckElement,
   };
 }

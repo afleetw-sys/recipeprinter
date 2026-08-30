@@ -78,6 +78,8 @@ export type ParseResponse = ParseResult | ParseError;
 
 export type ImportMethod = "url" | "image" | "text" | "cookpilot" | "shared";
 
+import type { ImportFailureCode } from "@/lib/analytics";
+
 export type QueueItemStatus = "parsing" | "ready" | "error";
 
 export interface QueueItem {
@@ -92,6 +94,9 @@ export interface QueueItem {
   title: string;
   recipe?: Recipe;
   error?: string;
+  /** The failure's bucket, for surfaces too small for `error`'s full sentence
+      (the toast). Absent on items that failed before this was recorded. */
+  errorCode?: ImportFailureCode;
   addedAt: number;
 }
 

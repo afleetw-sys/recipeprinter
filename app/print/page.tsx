@@ -36,7 +36,7 @@ import { PHOTO_STYLE_OPTIONS } from "@/components/print/photoStyle";
 import { MobileStructureSheet } from "@/components/print/MobileStructureSheet";
 import { PrintConfigPanel } from "@/components/print/PrintConfigPanel";
 import { PageRail, type RailSortMode } from "@/components/print/PageRail";
-import { PrintDeck } from "@/components/print/PrintDeck";
+import { PrintDeck, pendingSlotIndexIn } from "@/components/print/PrintDeck";
 import {
   usePrintSheets,
   type NavItem,
@@ -66,7 +66,8 @@ import { useRecipeInlineEditor } from "@/lib/useRecipeInlineEditor";
 import { useRailDrag, type RailDragKind, type RailDropResolved } from "@/lib/useRailDrag";
 import { useRailSelection } from "@/lib/useRailSelection";
 import { PAGE_DIMS } from "@/lib/printGeometry";
-import { useDeckScroller } from "@/lib/useDeckScroller";
+import { shortImportError } from "@/lib/friendlyErrors";
+import { isDeckMobile, useDeckScroller } from "@/lib/useDeckScroller";
 import { usePremiumTemplatePurchase } from "@/lib/usePremiumTemplatePurchase";
 import { useCookbookPurchase } from "@/lib/useCookbookPurchase";
 import { COOKBOOK_ENABLED } from "@/lib/cookbookProduct";
@@ -918,6 +919,10 @@ export default function PrintPage() {
   const pendingImportItems = queue.items.filter(
     (item) => item.status !== "ready" && !initialQueueIdsRef.current.has(item.id),
   );
+  // Only the ones still parsing get a placeholder page; an error gets a toast.
+  const parsingImportCount = pendingImportItems.filter(
+    (item) => item.status === "parsing",
+  ).length;
 
 
 
@@ -929,8 +934,27 @@ export default function PrintPage() {
   useEffect(() => {
     if (!erroredImport) return;
     setFailedImportId((current) => (current === erroredImport.id ? current : erroredImport.id));
-    setToastMessage(erroredImport.error || "We couldn't import that recipe.");
-  }, [erroredImport?.id, erroredImport?.error]);
+    // The short form, not `erroredImport.error`. The toast is one line beside
+    // Try again and a dismiss; the sentence belongs to the dialog, which has
+    // the room and is still open behind it. See lib/friendlyErrors.
+    setToastMessage(shortImportError(erroredImport.errorCode));
+  }, [erroredImport?.id, erroredImport?.errorCode]);
+
+  /**
+   * Whether the failure the toast is currently reporting can be retried at all.
+   *
+   * Images cannot: the files are not kept, so `queue.retry` has nothing to
+   * re-run and returns without doing anything. The rail used to ask `canRetry`
+   * before drawing its Retry button; now that the toast is the only place a
+   * failure appears, it has to ask the same question, or a failed photo import
+   * offers a Try again that quietly does nothing.
+   */
+  const canRetryFailedImport = failedImportId
+    ? (() => {
+        const item = queue.items.find((entry) => entry.id === failedImportId);
+        return item ? queue.canRetry(item) : false;
+      })()
+    : false;
 
   const sectionTitleForId = useCallback((sectionId: string): string => {
     return sections.find((section) => section.id === sectionId)?.title?.trim() || "section";
@@ -2838,10 +2862,11 @@ export default function PrintPage() {
     );
     if (!newlyErrored) return;
     toastedErrorIdsRef.current.add(newlyErrored.id);
-    setToastMessage(
-      newlyErrored.error ||
-        "That recipe looks incomplete. Add a title, ingredients, and directions, then try again.",
-    );
+    // The same short form the other failure toast uses. These two effects cover
+    // overlapping sets and both write this toast, so they have to agree: while
+    // this one still sent `item.error`, it ran second and put the full sentence
+    // back over the short one.
+    setToastMessage(shortImportError(newlyErrored.errorCode));
   }, [queue.items, showAddRecipeDialog]);
 
   // Re-importing a recipe that's already in this print job doesn't add a
@@ -3487,7 +3512,15 @@ export default function PrintPage() {
     );
   }, []);
 
-  const { canvasSide, setCanvasSide, deckScale, deckRef, slideRefs, goToSlide } = useDeckScroller({
+  const {
+    canvasSide,
+    setCanvasSide,
+    deckScale,
+    deckRef,
+    slideRefs,
+    goToSlide,
+    goToDeckElement,
+  } = useDeckScroller({
     activeNavIndex,
     setActiveNavIndex,
     navItemsLength: cookbookView ? spreads.length : navItems.length,
@@ -3693,6 +3726,53 @@ export default function PrintPage() {
     showCookPilotLogin,
     requestDeleteNavItem,
   ]);
+  /**
+   * On a phone, go and wait at the loading page.
+   *
+   * MOBILE ONLY. On a desktop the rail is right there: it scrolls its own
+   * pending row into view (see the effect above), the deck keeps the page the
+   * cook was looking at, and moving it under them would be taking the view
+   * away from someone who can already see the import is running. A phone has
+   * no rail. The deck is the whole window, it scrolls sideways, and the
+   * placeholder lands wherever the new recipe will land — which, added below a
+   * particular recipe, is somewhere off-screen with nothing to say so.
+   *
+   * Where the placeholder goes is `pendingAddAfterRecipeId`'s business
+   * (PrintDeck); this only follows it there.
+   */
+  useEffect(() => {
+    if (parsingImportCount === 0 || !isDeckMobile()) return;
+    // The placeholder mounts on the render that raises this count, so it is not
+    // in the DOM during this pass. One frame is enough; the retry covers a
+    // deck still re-measuring after the insert, which lands a frame or two
+    // later and would otherwise leave the cook staring at the old page.
+    let frame = 0;
+    let attempts = 0;
+    const tryScroll = () => {
+      if (goToDeckElement("[data-pending-page]")) {
+        // Claim the slot the recipe is about to take, WITHOUT scrolling to it.
+        //
+        // This is what stops the deck moving again once the page arrives. The
+        // placeholder is that recipe's page while it loads, so the cook is
+        // already where they asked to be, and two things would otherwise
+        // disagree: `useDeckScroller` re-centres on `activeNavIndex` whenever
+        // the deck gains a page, and the just-added-recipe effect below jumps
+        // to it. Both compare against `activeNavIndex` — pointing it at the
+        // slot now makes the first a no-op and the second skip its scroll,
+        // instead of bolting a "do not scroll" flag onto either.
+        setActiveNavIndex(pendingSlotIndexIn(navItems, pendingAddAfterRecipeId));
+        return;
+      }
+      if ((attempts += 1) > 8) return;
+      frame = window.requestAnimationFrame(tryScroll);
+    };
+    frame = window.requestAnimationFrame(tryScroll);
+    return () => window.cancelAnimationFrame(frame);
+    // navItems/anchor are read at park time only; re-running on every layout
+    // change would re-park a deck the cook has since scrolled away from.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [parsingImportCount, goToDeckElement]);
+
   // Jump to a just-added recipe once its page actually exists in the deck
   // (mirrors PowerPoint landing on a freshly inserted slide).
   useEffect(() => {
@@ -4182,9 +4262,7 @@ export default function PrintPage() {
           renderSectionPhotoControl={renderSectionPhotoControl}
           renderCoverPhotoControl={renderCoverPhotoControl}
           renderImagePagePhotoControl={renderImagePagePhotoControl}
-          parsingImportCount={
-            pendingImportItems.filter((item) => item.status === "parsing").length
-          }
+          parsingImportCount={parsingImportCount}
           pendingAddAfterRecipeId={pendingAddAfterRecipeId}
           openAddRecipeBelow={openAddRecipeBelow}
           photoModeFor={photoModeFor}
@@ -4580,7 +4658,7 @@ export default function PrintPage() {
               Undo
             </button>
           )}
-          {failedImportId && (
+          {failedImportId && canRetryFailedImport && (
             <button
               type="button"
               className="recipe-toast__action"

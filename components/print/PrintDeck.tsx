@@ -117,6 +117,38 @@ function PagePlaceholder({ width, height, scale }: { width: number; height: numb
   );
 }
 
+/**
+ * The nav item the loading placeholder follows, or null for "goes last".
+ *
+ * Exported because the print page needs the same answer: it parks the deck on
+ * the placeholder while the import runs, and to do that without a second jump
+ * when the recipe lands it has to know which slot the recipe is about to take.
+ * Two implementations of that answer would be two places for it to drift.
+ */
+export function pendingAnchorIndexIn(
+  navItems: NavItem[],
+  pendingAddAfterRecipeId: string | null,
+): number | null {
+  if (!pendingAddAfterRecipeId) return null;
+  return navItems.reduce<number | null>(
+    (last, navItem, index) => (navItem.recipeId === pendingAddAfterRecipeId ? index : last),
+    null,
+  );
+}
+
+/**
+ * The nav index the arriving recipe will occupy — the slot the placeholder is
+ * standing in. Last when the import has no anchor, which is where an
+ * unanchored import lands.
+ */
+export function pendingSlotIndexIn(
+  navItems: NavItem[],
+  pendingAddAfterRecipeId: string | null,
+): number {
+  const anchor = pendingAnchorIndexIn(navItems, pendingAddAfterRecipeId);
+  return anchor === null ? navItems.length : anchor + 1;
+}
+
 interface PrintDeckProps {
   // Layout / preview geometry
   singleRecipePrintView: boolean;
@@ -882,17 +914,19 @@ export function PrintDeck(props: PrintDeckProps) {
    * Deliberately outside the sheets pipeline: this is a placeholder and
    * nothing about it should reach pagination or measurement.
    */
-  const pendingAnchorIndex = pendingAddAfterRecipeId
-    ? navItems.reduce<number | null>(
-        (last, navItem, index) => (navItem.recipeId === pendingAddAfterRecipeId ? index : last),
-        null,
-      )
-    : null;
+  const pendingAnchorIndex = pendingAnchorIndexIn(navItems, pendingAddAfterRecipeId);
   const pendingPages =
     parsingImportCount > 0 ? (
       <>
         {Array.from({ length: parsingImportCount }).map((_, index) => (
-          <div className="recipe-page-slide recipe-page-pending" key={`parsing-page-${index}`}>
+          <div
+            className="recipe-page-slide recipe-page-pending"
+            key={`parsing-page-${index}`}
+            // The deck scrolls itself here while the import parses. Found by
+            // attribute rather than a ref because the placeholder is outside
+            // the sheets pipeline and has no slot in `slideRefs` to hold one.
+            data-pending-page={index === 0 ? "" : undefined}
+          >
             <div
               className="recipe-page-pending__sheet"
               style={{
