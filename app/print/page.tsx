@@ -401,6 +401,17 @@ export default function PrintPage() {
   const saveAfterLoginRef = useRef(false);
   const projectIdRef = useRef<string>(createPrintProjectId());
   const [toastMessage, setToastMessage] = useState<string | null>(null);
+  /**
+   * The failed import a toast is currently speaking for.
+   *
+   * An import that dies has no page to be an error ON — its placeholder is
+   * gone, which is the point: a page that never arrived should not leave a
+   * broken one behind. So the failure moves to the toast, and the toast keeps
+   * the two things the rail row offered, Try again and dismissal. Dismissing
+   * REMOVES the item, because a failed import nobody can see is the bug this
+   * replaces.
+   */
+  const [failedImportId, setFailedImportId] = useState<string | null>(null);
   const [freeTemplateStatus, setFreeTemplateStatus] = useState<RecipePrinterFreeTemplateStatus | null>(null);
   const {
     user: cookPilotUser,
@@ -909,6 +920,17 @@ export default function PrintPage() {
   );
 
 
+
+  /* An import that failed used to leave a row in the rail and, on a phone,
+     nothing at all. Its placeholder page is removed either way — a page that
+     never arrived should not leave a broken one behind — so the failure has to
+     say itself somewhere, and the toast is where. */
+  const erroredImport = pendingImportItems.find((item) => item.status === "error");
+  useEffect(() => {
+    if (!erroredImport) return;
+    setFailedImportId((current) => (current === erroredImport.id ? current : erroredImport.id));
+    setToastMessage(erroredImport.error || "We couldn't import that recipe.");
+  }, [erroredImport?.id, erroredImport?.error]);
 
   const sectionTitleForId = useCallback((sectionId: string): string => {
     return sections.find((section) => section.id === sectionId)?.title?.trim() || "section";
@@ -1512,6 +1534,7 @@ export default function PrintPage() {
 
   function showToast(message: string) {
     setToastMessage(message);
+    setFailedImportId(null);
   }
 
   // Organize is now an in-page MODE (the rail expands to a full drag-drop
@@ -3021,9 +3044,20 @@ export default function PrintPage() {
 
   useEffect(() => {
     if (!toastMessage) return;
+    /**
+     * A failed import's toast does NOT time out.
+     *
+     * It is the only thing left saying that import happened — its placeholder
+     * page is gone — and it carries the two actions that resolve it. Timing it
+     * out would take the failure off screen without answering it, and because
+     * this timer clears the message directly rather than through the toast's
+     * own dismiss, the dead item would have been left in the queue, invisible,
+     * which is the exact bug the toast exists to fix.
+     */
+    if (failedImportId) return;
     const timeout = window.setTimeout(() => setToastMessage(null), 5200);
     return () => window.clearTimeout(timeout);
-  }, [toastMessage]);
+  }, [toastMessage, failedImportId]);
 
   useEffect(() => {
     function handleBeforePrint() {
@@ -4148,6 +4182,9 @@ export default function PrintPage() {
           renderSectionPhotoControl={renderSectionPhotoControl}
           renderCoverPhotoControl={renderCoverPhotoControl}
           renderImagePagePhotoControl={renderImagePagePhotoControl}
+          parsingImportCount={
+            pendingImportItems.filter((item) => item.status === "parsing").length
+          }
           openAddRecipeBelow={openAddRecipeBelow}
           photoModeFor={photoModeFor}
           setRecipePhotoMode={setRecipePhotoMode}
@@ -4224,49 +4261,6 @@ export default function PrintPage() {
         </Dialog>
 
         <div className="recipe-mobile-actions no-print">
-          {/* On a phone a pending import had NOWHERE to appear. The rail is the
-              only thing that renders these rows and the rail is desktop-only,
-              so adding a recipe looked like nothing happening — and an import
-              that FAILED said nothing at all, which is the worse half. This
-              strip is the mobile stand-in: the same two states the rail row
-              has, in the bar the recipe was added from. */}
-          {pendingImportItems.length > 0 && (
-            <div className="recipe-mobile-pending">
-              {pendingImportItems.map((item) =>
-                item.status === "parsing" ? (
-                  <RecipeLoadingState
-                    key={`pending-${item.id}`}
-                    className="recipe-mobile-pending__loading"
-                  />
-                ) : (
-                  <div className="recipe-mobile-pending__error" role="alert" key={`pending-${item.id}`}>
-                    <span className="recipe-mobile-pending__error-text">
-                      <strong>Couldn&apos;t import</strong>
-                      {item.error || "Check the source and try again."}
-                    </span>
-                    <span className="recipe-mobile-pending__error-actions">
-                      {queue.canRetry(item) && (
-                        <button
-                          type="button"
-                          className="btn btn-secondary btn-compact"
-                          onClick={() => queue.retry(item.id)}
-                        >
-                          Try again
-                        </button>
-                      )}
-                      <button
-                        type="button"
-                        className="btn btn-ghost btn-compact"
-                        onClick={() => queue.remove(item.id)}
-                      >
-                        Remove
-                      </button>
-                    </span>
-                  </div>
-                ),
-              )}
-            </div>
-          )}
           {/* No way into a cookbook here on purpose. Building a book — covers,
               chapters, page layouts, the organizer — is not something the phone
               layout does well yet, and selling someone a $19.99 document they
@@ -4585,7 +4579,31 @@ export default function PrintPage() {
               Undo
             </button>
           )}
-          <button type="button" aria-label="Dismiss" onClick={() => setToastMessage(null)}>
+          {failedImportId && (
+            <button
+              type="button"
+              className="recipe-toast__action"
+              onClick={() => {
+                queue.retry(failedImportId);
+                setFailedImportId(null);
+                setToastMessage(null);
+              }}
+            >
+              Try again
+            </button>
+          )}
+          <button
+            type="button"
+            aria-label="Dismiss"
+            onClick={() => {
+              // Dismissing a failed import REMOVES it. Left in the queue it is
+              // invisible on a phone and blocks nothing, which is how a dead
+              // import used to sit there unnoticed.
+              if (failedImportId) queue.remove(failedImportId);
+              setFailedImportId(null);
+              setToastMessage(null);
+            }}
+          >
             <XIcon size={ICON_SIZE.sm} />
           </button>
         </div>

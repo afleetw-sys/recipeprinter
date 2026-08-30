@@ -194,6 +194,9 @@ interface PrintDeckProps {
   renderCoverPhotoControl: (side: "front" | "back" | "dedication") => ReactNode;
   renderImagePagePhotoControl: (recipeId: string) => ReactNode;
   openAddRecipeBelow: (navItem?: NavItem | null) => void;
+  /** Imports still parsing. Each gets a page-shaped placeholder at the end of
+      the deck — see the render. Errors are NOT here; they surface as a toast. */
+  parsingImportCount: number;
   photoModeFor: (recipeId: string) => PhotoStyle;
   setRecipePhotoMode: (recipeId: string, mode: PhotoStyle) => void;
   // Mobile topbar
@@ -317,6 +320,7 @@ export function PrintDeck(props: PrintDeckProps) {
     renderCoverPhotoControl,
     renderImagePagePhotoControl,
     openAddRecipeBelow,
+    parsingImportCount,
     photoModeFor,
     setRecipePhotoMode,
     sizeMenuOpen,
@@ -1001,6 +1005,11 @@ export function PrintDeck(props: PrintDeckProps) {
             id="recipe-page-deck"
             ref={deckRef}
           >
+            {/* A recipe on its way in gets a PAGE, in the deck, where its page
+                will be — not a line in a bar somewhere else. It is appended
+                because that is where an import lands. Deliberately outside the
+                sheets pipeline: this is a placeholder, and nothing about it
+                should reach pagination or measurement. */}
             {previewMeasuring ? (
               <RecipeLoadingState className="recipe-page-deck__loading" />
             ) : navItems.length === 0 ? (
@@ -1378,7 +1387,20 @@ export function PrintDeck(props: PrintDeckProps) {
                     }
                   />
                   )}
+                  {Array.from({ length: parsingImportCount }).map((_, index) => (
+              <div className="recipe-page-slide recipe-page-pending" key={`parsing-page-${index}`}>
+                <div
+                  className="recipe-page-pending__sheet"
+                  style={{
+                    width: PAGE_DIMS[previewCardSize].w * deckScale,
+                    aspectRatio: `${PAGE_DIMS[previewCardSize].w} / ${PAGE_DIMS[previewCardSize].h}`,
+                  }}
+                >
+                  <RecipeLoadingState />
                 </div>
+              </div>
+            ))}
+          </div>
               );
             })}
           </div>

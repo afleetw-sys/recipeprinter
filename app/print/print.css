@@ -2131,7 +2131,11 @@
   position: fixed;
   right: 18px;
   bottom: 18px;
-  z-index: 60;
+  /* Above the phone's action bar (75) and its sheets (77-81), below a modal
+     dialog (85) which is allowed to cover it. At 60 the bar painted straight
+     over it, so on a phone the toast was in the DOM, opaque, and invisible —
+     the same z-index mistake the dialogs had. */
+  z-index: 82;
   display: flex;
   align-items: center;
   gap: 12px;
@@ -2185,6 +2189,18 @@
 }
 
 @media screen and (max-width: 820px) {
+  /* Clear of the action bar rather than behind it. 132px is the same reserve
+     the deck already keeps for that bar (see `.recipe-print-shell`'s padding),
+     so the two cannot disagree about how tall it is.
+     This block, not the earlier max-width one: `.recipe-toast`'s base rule is
+     declared between them, and at equal specificity the later rule wins. */
+  .recipe-toast {
+    right: 16px;
+    left: 16px;
+    bottom: calc(132px + env(safe-area-inset-bottom));
+    max-width: none;
+  }
+
   .recipe-print-page {
     height: 100dvh;
     overflow: hidden;
@@ -2356,50 +2372,6 @@
   .recipe-mobile-toolbar__btn.is-active {
     background: var(--cp-selected-fill);
     color: var(--cp-selected-text);
-  }
-
-  /* A pending or failed import, in the bar it was added from. Sits above the
-     tools rather than over them: while an import is in flight the bar grows,
-     and the deck scrolls, so nothing is hidden behind it. */
-  .recipe-mobile-pending {
-    display: flex;
-    flex: 0 0 auto;
-    flex-direction: column;
-    gap: 8px;
-    padding: 10px 12px;
-    border: 1px solid var(--cp-line);
-    border-radius: 14px;
-    background: var(--cp-surface-strong);
-  }
-
-  .recipe-mobile-pending__loading {
-    justify-content: flex-start;
-    padding: 0;
-  }
-
-  .recipe-mobile-pending__error {
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
-  }
-
-  .recipe-mobile-pending__error-text {
-    display: flex;
-    flex-direction: column;
-    gap: 2px;
-    color: var(--cp-ink-soft);
-    font-size: var(--cp-fs-small);
-    line-height: 1.35;
-  }
-
-  .recipe-mobile-pending__error-text strong {
-    color: var(--cp-ink);
-    font-weight: 800;
-  }
-
-  .recipe-mobile-pending__error-actions {
-    display: flex;
-    gap: 8px;
   }
 
   /* Width only. Everything else — including the HEIGHT — is `.btn-primary`,
@@ -5901,6 +5873,24 @@ textarea.recipe-card__toc-title {
 
 .recipe-page-empty__sheet--card .recipe-page-empty__body {
   margin-bottom: 2px;
+}
+
+/* The page a recipe is arriving on. Same box the real page will occupy — same
+   PAGE_DIMS x deckScale, same aspect — so when the import lands nothing jumps:
+   the placeholder becomes the page. Dashed and unfilled, like the empty state,
+   because it is the shape of a page that is not here yet. */
+.recipe-page-pending {
+  display: flex;
+  justify-content: center;
+}
+
+.recipe-page-pending__sheet {
+  display: grid;
+  place-items: center;
+  max-width: 100%;
+  max-height: 100%;
+  border: 1px dashed var(--cp-line-strong);
+  border-radius: 12px;
 }
 
 /* A photo is clickable the way a line of text is, and says so the same way: a
