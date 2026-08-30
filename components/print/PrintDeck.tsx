@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { Fragment, useEffect, useRef, useState } from "react";
 import type {
   ComponentProps,
   CSSProperties,
@@ -197,6 +197,9 @@ interface PrintDeckProps {
   /** Imports still parsing. Each gets a page-shaped placeholder at the end of
       the deck — see the render. Errors are NOT here; they surface as a toast. */
   parsingImportCount: number;
+  /** The recipe an import was added BELOW, if any — the deck places its
+      placeholder page right after that recipe, the way the rail does. */
+  pendingAddAfterRecipeId: string | null;
   photoModeFor: (recipeId: string) => PhotoStyle;
   setRecipePhotoMode: (recipeId: string, mode: PhotoStyle) => void;
   // Mobile topbar
@@ -321,6 +324,7 @@ export function PrintDeck(props: PrintDeckProps) {
     renderImagePagePhotoControl,
     openAddRecipeBelow,
     parsingImportCount,
+    pendingAddAfterRecipeId,
     photoModeFor,
     setRecipePhotoMode,
     sizeMenuOpen,
@@ -868,6 +872,41 @@ export function PrintDeck(props: PrintDeckProps) {
     if (key) openPhotoDialog(key);
   };
 
+  /**
+   * A recipe on its way in gets a PAGE, in the deck, at the position it will
+   * actually land — not appended to the end regardless. Added below a
+   * particular recipe, it follows that recipe; added with no anchor, it goes
+   * last, which is where an unanchored import lands. Same rule the rail uses
+   * for its pending rows (`pendingAnchorRowIndex` in PageRail).
+   *
+   * Deliberately outside the sheets pipeline: this is a placeholder and
+   * nothing about it should reach pagination or measurement.
+   */
+  const pendingAnchorIndex = pendingAddAfterRecipeId
+    ? navItems.reduce<number | null>(
+        (last, navItem, index) => (navItem.recipeId === pendingAddAfterRecipeId ? index : last),
+        null,
+      )
+    : null;
+  const pendingPages =
+    parsingImportCount > 0 ? (
+      <>
+        {Array.from({ length: parsingImportCount }).map((_, index) => (
+          <div className="recipe-page-slide recipe-page-pending" key={`parsing-page-${index}`}>
+            <div
+              className="recipe-page-pending__sheet"
+              style={{
+                width: PAGE_DIMS[previewCardSize].w * deckScale,
+                aspectRatio: `${PAGE_DIMS[previewCardSize].w} / ${PAGE_DIMS[previewCardSize].h}`,
+              }}
+            >
+              <RecipeLoadingState />
+            </div>
+          </div>
+        ))}
+      </>
+    ) : null;
+
   const openEditOnDoubleClick = (navItem: NavItem) => (event: ReactMouseEvent) => {
     // Not on the floating controls that sit over the page.
     if ((event.target as HTMLElement).closest("button, a, input, textarea")) return;
@@ -1005,11 +1044,6 @@ export function PrintDeck(props: PrintDeckProps) {
             id="recipe-page-deck"
             ref={deckRef}
           >
-            {/* A recipe on its way in gets a PAGE, in the deck, where its page
-                will be — not a line in a bar somewhere else. It is appended
-                because that is where an import lands. Deliberately outside the
-                sheets pipeline: this is a placeholder, and nothing about it
-                should reach pagination or measurement. */}
             {previewMeasuring ? (
               <RecipeLoadingState className="recipe-page-deck__loading" />
             ) : navItems.length === 0 ? (
@@ -1262,8 +1296,8 @@ export function PrintDeck(props: PrintDeckProps) {
               // recipe, without the sheet printing twice.
               const isFirstOnSheet = firstNavIndexBySheet.get(navItem.sheetIndex) === index;
               return (
+                <Fragment key={`${sheet.id}-${navItem.slotIndex}`}>
                 <div
-                  key={`${sheet.id}-${navItem.slotIndex}`}
                   ref={(el) => {
                     slideRefs.current[index] = el;
                   }}
@@ -1387,22 +1421,12 @@ export function PrintDeck(props: PrintDeckProps) {
                     }
                   />
                   )}
-                  {Array.from({ length: parsingImportCount }).map((_, index) => (
-              <div className="recipe-page-slide recipe-page-pending" key={`parsing-page-${index}`}>
-                <div
-                  className="recipe-page-pending__sheet"
-                  style={{
-                    width: PAGE_DIMS[previewCardSize].w * deckScale,
-                    aspectRatio: `${PAGE_DIMS[previewCardSize].w} / ${PAGE_DIMS[previewCardSize].h}`,
-                  }}
-                >
-                  <RecipeLoadingState />
-                </div>
-              </div>
-            ))}
           </div>
+                  {index === pendingAnchorIndex && pendingPages}
+                </Fragment>
               );
             })}
+          {pendingAnchorIndex === null && pendingPages}
           </div>
         </section>
   );

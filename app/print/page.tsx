@@ -4185,6 +4185,7 @@ export default function PrintPage() {
           parsingImportCount={
             pendingImportItems.filter((item) => item.status === "parsing").length
           }
+          pendingAddAfterRecipeId={pendingAddAfterRecipeId}
           openAddRecipeBelow={openAddRecipeBelow}
           photoModeFor={photoModeFor}
           setRecipePhotoMode={setRecipePhotoMode}
