@@ -4852,7 +4852,15 @@ textarea.recipe-card__toc-title {
      meant to read; dimming the other label was doing that job a second time
      and paying contrast for it. */
   color: var(--cp-ink);
-  font-weight: 800;
+  /* 700, not 800. The tracking here is and always was normal — the same as
+     every control beside it — so "spaced out" was really "too heavy": 800 is
+     what the weight scale in globals.css reserves for panel and dialog titles,
+     while the button next to this is 600, the other segmented picker is 700,
+     and the project title it sits beside is 700. A display weight on a control
+     label, set smaller than that title, is what made the letters look pushed
+     apart. The typeface change amplified it — Karla at 800 is wider than the
+     Manrope this was drawn against. */
+  font-weight: var(--cp-fw-bold);
   font-size: var(--cp-fs-small);
   line-height: 1;
   padding: 9px 16px;
