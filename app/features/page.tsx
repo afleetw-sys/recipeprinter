@@ -74,7 +74,7 @@ export default function FeaturesPage() {
       <ul className="grid gap-cp-4 sm:grid-cols-2">
         {FEATURES.map(({ icon: Icon, title, body }) => (
           <li key={title} className="card p-cp-5 flex flex-col gap-cp-3">
-            <span className="text-brand-ink">
+            <span className="glyph-warm">
               <Icon size={22} />
             </span>
             <h2 className="font-extrabold tracking-[-0.02em] text-cp-h2">
@@ -113,7 +113,7 @@ export default function FeaturesPage() {
 
       <section
         aria-labelledby="privacy-heading"
-        className="mt-cp-7 card p-cp-6 bg-brand-50 border-transparent"
+        className="mt-cp-7 card p-cp-6 bg-[var(--cp-accent-warm-soft)] border-transparent"
       >
         <h2
           id="privacy-heading"

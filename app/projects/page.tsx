@@ -303,8 +303,8 @@ export default function ProjectsPage() {
              would be a lie — the honest answer is that their library lives in
              an account we can't see yet. */
           <div className="flex flex-col items-center rounded-xl border border-line bg-card px-cp-6 py-cp-7 text-center">
-            <div className="flex h-16 w-16 items-center justify-center rounded-full bg-[var(--cp-accent-soft)]">
-              <BookIcon size={28} className="text-[var(--cp-accent)]" />
+            <div className="flex h-16 w-16 items-center justify-center rounded-full bg-[var(--cp-accent-warm)]">
+              <BookIcon size={28} className="text-[var(--cp-on-accent-warm)]" />
             </div>
             <h2 className="mt-cp-4 text-cp-h2 font-extrabold tracking-[-0.02em]">Sign in to see your projects</h2>
             <p className="mt-cp-2 max-w-sm text-cp-body text-ink-soft leading-relaxed">
@@ -316,8 +316,8 @@ export default function ProjectsPage() {
           </div>
         ) : projects.length === 0 ? (
           <div className="flex flex-col items-center rounded-xl border border-line bg-card px-cp-6 py-cp-7 text-center">
-            <div className="flex h-16 w-16 items-center justify-center rounded-full bg-[var(--cp-accent-soft)]">
-              <BookIcon size={28} className="text-[var(--cp-accent)]" />
+            <div className="flex h-16 w-16 items-center justify-center rounded-full bg-[var(--cp-accent-warm)]">
+              <BookIcon size={28} className="text-[var(--cp-on-accent-warm)]" />
             </div>
             <h2 className="mt-cp-4 text-cp-h2 font-extrabold tracking-[-0.02em]">No saved projects yet</h2>
             <p className="mt-cp-2 max-w-sm text-cp-body text-ink-soft leading-relaxed">Build a cookbook or a set of recipe cards and it’ll show up here, ready to reopen anytime.</p>

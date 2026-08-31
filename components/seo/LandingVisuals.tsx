@@ -22,7 +22,13 @@ import type { ComparisonValue, SeoIconKey, SeoProofKind } from "@/lib/seoLanding
 // so the pages read as intentionally designed rather than auto-generated.
 // ─────────────────────────────────────────────────────────────────────────────
 
-const accentOnPaper = { color: "var(--cp-accent)" } as const;
+/* The step counter is a NUMBER — text — so the clay is in its tint and its
+   edge, and the digit stays ink. See docs/color-roles.md. */
+const stepCounter = {
+  borderColor: "var(--cp-accent-warm)",
+  background: "var(--cp-accent-warm-soft)",
+  color: "var(--cp-ink)",
+} as const;
 
 function FileGlyph({ size = 18 }: { size?: number }) {
   return (
@@ -120,8 +126,8 @@ export function HowItWorks({ steps }: { steps: { name: string; text: string }[] 
         <li key={step.name} className="relative">
           <div className="flex items-center gap-cp-3">
             <span
-              className="grid h-10 w-10 flex-none place-items-center rounded-full border border-line bg-card text-cp-small font-black"
-              style={accentOnPaper}
+              className="grid h-10 w-10 flex-none place-items-center rounded-full border text-cp-small font-black"
+              style={stepCounter}
             >
               {index + 1}
             </span>
@@ -342,7 +348,7 @@ export function ComparisonTable({
   // The tint that makes our column a single vertical band. Applied to every
   // cell in the column, including the header and the group-label rows, so it
   // never breaks.
-  const ours = "bg-[var(--cp-accent-soft)]";
+  const ours = "bg-[var(--cp-accent-warm-soft)]";
 
   const cell = (v: ComparisonValue, mine: boolean) => (
     <td
@@ -360,7 +366,7 @@ export function ComparisonTable({
         </span>
       ) : (
         <span className="inline-flex items-baseline gap-cp-2">
-          <span className="flex-none translate-y-0.5 text-[var(--cp-accent)]">
+          <span className="glyph-warm flex-none translate-y-0.5">
             <CheckIcon size={ICON_SIZE.sm} />
           </span>
           <span className="sr-only">Yes</span>

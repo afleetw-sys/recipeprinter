@@ -82,7 +82,7 @@ export default function HowItWorksPage() {
           <ul className="mt-cp-4 grid gap-cp-3 sm:grid-cols-2">
             {SOURCES.map(({ icon: Icon, label, body }) => (
               <li key={label} className="card p-cp-5 flex gap-cp-4">
-                <span className="text-brand-ink shrink-0 mt-[2px]">
+                <span className="glyph-warm shrink-0 mt-[2px]">
                   <Icon size={20} />
                 </span>
 

@@ -3871,8 +3871,8 @@ export default function PrintPage() {
       <div className="h-full flex flex-col">
         <SiteHeader compact sticky wordmark={false} />
         <div className="flex-1 flex flex-col items-center justify-center gap-cp-4 text-center px-cp-6">
-          <div className="flex h-16 w-16 items-center justify-center rounded-full bg-[var(--cp-accent-soft)]">
-            <BookIcon size={28} className="text-[var(--cp-accent)]" />
+          <div className="flex h-16 w-16 items-center justify-center rounded-full bg-[var(--cp-accent-warm)]">
+            <BookIcon size={28} className="text-[var(--cp-on-accent-warm)]" />
           </div>
           <p className="font-bold text-cp-h2">{copy.title}</p>
           <p className="text-ink-soft max-w-sm leading-relaxed">{copy.body}</p>

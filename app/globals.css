@@ -1289,6 +1289,15 @@
     letter-spacing: 0.12em;
   }
 
+  /* A clay glyph. A class rather than an inline colour because clay is never a
+     WORD: `color: clay` on a <span> is indistinguishable — to a reader and to
+     the audit — from colouring text. Scoping it to the svg states the intent
+     and keeps the check honest. Clay is 3.7:1 on card, past the 3:1 a graphic
+     answers to and nowhere near the 4.5:1 a word needs. */
+  .glyph-warm > svg {
+    color: var(--cp-accent-warm);
+  }
+
   /* ── Button toggle ───────────────────────────────────────────────────────
      The app's one segmented picker: a row of equal buttons where exactly one
      is chosen. Rendered by <ButtonToggle>; see components/ButtonToggle.tsx.

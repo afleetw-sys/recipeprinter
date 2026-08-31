@@ -274,7 +274,7 @@ export default function SeoLandingPage({ params }: PageProps) {
                 >
                   <dt className="flex items-start gap-cp-3 text-cp-body-lg font-extrabold leading-snug tracking-[-0.02em]">
                     <span
-                      className="grid h-8 w-8 flex-none place-items-center rounded-full bg-[var(--cp-accent-soft)] text-cp-small font-black text-[var(--cp-ink)]"
+                      className="grid h-8 w-8 flex-none place-items-center rounded-full border border-[var(--cp-accent-warm)] bg-[var(--cp-accent-warm-soft)] text-cp-small font-black text-[var(--cp-ink)]"
                       aria-hidden
                     >
                       {index + 1}

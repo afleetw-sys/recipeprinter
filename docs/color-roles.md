@@ -13,9 +13,15 @@ version you can actually check: ask whether you click the thing.
 
 | | Cornflower `--cp-accent` | Clay `--cp-accent-warm` |
 |---|---|---|
-| Is for | things you **act on** | things that **tell you something** |
-| Test | clicking it does something | you read it and move on |
-| Examples | buttons, links, selection, focus, drag targets, editable fields | tags and banners — new, free, priced, protected — and decorative art |
+| Is for | things you **act on** | **everything else the eye should catch** |
+| Test | clicking it does something | you look at it and move on |
+| Examples | buttons, links, selection, focus, drag targets, editable fields | empty-state art, step counters, feature marks, highlight panels, tags and banners, printed bullets |
+
+Read clay's half widely. Scoped to "tags and banners" it had almost nothing to
+do — the homepage showed none of it and the workspace showed one chip,
+sometimes. Every non-interactive thing meant to draw the eye is clay's:
+illustration, counters, marks, highlights, and the warm panels behind them.
+That is what makes the product feel like the logo instead of like a blue form.
 
 A button inside a clay banner is still cornflower. The banner is the message;
 the button is the thing you press. Getting that backwards is what made the
@@ -48,9 +54,24 @@ colour — ink on a plain neutral. It also has to be told apart at a glance from
 the gold premium badge on the same grid, which colouring both of them warm
 defeated.
 
-If you only remember one line: **cornflower for what you press, clay for what
-you're told, gold for what costs money, red for what broke, neutral for what's
-already settled.**
+If you only remember one line: **cornflower for what you press, clay for
+everything else worth looking at, gold for what costs money, red for what
+broke, neutral for what's already settled.**
+
+## What clay physically cannot do
+
+Worth knowing before reaching for it, because it is a property of the colour
+rather than a rule anyone chose. Clay is 3.72:1 on white. That clears the 3:1
+a border, a rule or an ICON answers to, and nothing else. So:
+
+- **Not a button.** A filled clay button with white on it is 3.72:1 against the
+  4.5:1 its label needs. Primary actions are ink, and that is why.
+- **Not a word**, on any light ground. Use `.glyph-warm` for a clay icon, which
+  is scoped to the `svg` so the intent is stated rather than guessed.
+- **Not a text background** at UI sizes — a tinted panel with an ink word is the
+  way to make something warm and readable at once.
+
+Everywhere it *can* go, it should.
 
 ## Fill or edge? (the selected-state question)
 
