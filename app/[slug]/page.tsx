@@ -6,6 +6,7 @@ import { SiteHeader } from "@/components/SiteHeader";
 import { SeoCapture } from "@/components/seo/SeoCapture";
 import { Breadcrumb, type Crumb } from "@/components/seo/Breadcrumb";
 import {
+  ComparisonTable,
   FeatureRows,
   HeroProductPhoto,
   HowItWorks,
@@ -222,6 +223,19 @@ export default function SeoLandingPage({ params }: PageProps) {
                   </h2>
                 </div>
                 <CaptureBlock page={page} />
+              </div>
+            </section>
+          )}
+
+          {page.comparison && (
+            <section aria-labelledby="comparison-heading">
+              <div id="comparison-heading">
+                <SectionHeading>
+                  RecipePrinter and {page.comparison.competitor}, side by side
+                </SectionHeading>
+              </div>
+              <div className="mt-cp-6">
+                <ComparisonTable {...page.comparison} />
               </div>
             </section>
           )}

@@ -305,3 +305,107 @@ export function PhotoGallery({ cardKeys }: { cardKeys: string[] }) {
     </div>
   );
 }
+
+/**
+ * A head-to-head feature table for a competitor comparison page.
+ *
+ * One <table> serving two layouts. At `sm` and up it is an ordinary three
+ * column table. Below that it restacks into a block per feature, because three
+ * columns inside a phone's width wrapped nearly every cell onto its own line
+ * and pushed rows past 120px tall. Restacking keeps one DOM (and one copy of
+ * the text for a crawler) instead of rendering a mobile duplicate, so the
+ * product names move into per-cell labels that only show once the header row
+ * is hidden.
+ *
+ * Cells take `true`, `false`, or a short phrase. A phrase almost always reads
+ * better than a bare tick: "Included with Premium" and "iOS and Android" are
+ * the facts a reader is actually weighing, and a tick would flatten both into
+ * the same mark. The table stays honest only if the competitor wins the rows
+ * it genuinely wins, so those render exactly like ours.
+ */
+export function ComparisonTable({
+  competitor,
+  checked,
+  rows,
+}: {
+  competitor: string;
+  checked: string;
+  rows: { feature: string; us: boolean | string; them: boolean | string }[];
+}) {
+  const value = (v: boolean | string, mine: boolean) => {
+    if (v === true) {
+      return (
+        <span className="inline-flex items-center gap-cp-2 font-semibold text-ink">
+          <CheckIcon size={ICON_SIZE.sm} />
+          Yes
+        </span>
+      );
+    }
+    // A quiet "no": a row the other tool loses should not shout, or the whole
+    // table reads as a pitch rather than a comparison.
+    if (v === false) return <span className="text-ink-soft">Not offered</span>;
+    return <span className={mine ? "font-semibold text-ink" : "text-ink-soft"}>{v}</span>;
+  };
+
+  const cell = (v: boolean | string, mine: boolean) => (
+    <td
+      className={`px-cp-4 py-cp-3 text-cp-body leading-snug max-sm:flex max-sm:items-baseline max-sm:justify-between max-sm:gap-cp-4 max-sm:py-cp-2 ${
+        mine ? "bg-[var(--cp-accent-soft)]" : ""
+      }`}
+    >
+      <span className="hidden font-semibold text-ink-soft max-sm:inline">
+        {mine ? "RecipePrinter" : competitor}
+      </span>
+      {value(v, mine)}
+    </td>
+  );
+
+  return (
+    <div>
+      <div className="overflow-hidden rounded-2xl border border-line bg-card">
+        <table className="w-full border-collapse text-left max-sm:block">
+          <caption className="sr-only">
+            RecipePrinter compared with {competitor}, feature by feature
+          </caption>
+          <thead className="max-sm:hidden">
+            <tr className="border-b border-line-strong">
+              <th scope="col" className="px-cp-4 py-cp-3 text-cp-caption font-bold uppercase tracking-wide text-ink-soft">
+                Feature
+              </th>
+              <th
+                scope="col"
+                className="bg-[var(--cp-accent-soft)] px-cp-4 py-cp-3 text-cp-body font-extrabold tracking-[-0.02em] text-[var(--cp-accent-ink)]"
+              >
+                RecipePrinter
+              </th>
+              <th scope="col" className="px-cp-4 py-cp-3 text-cp-body font-extrabold tracking-[-0.02em] text-ink">
+                {competitor}
+              </th>
+            </tr>
+          </thead>
+          <tbody className="max-sm:block">
+            {rows.map((row) => (
+              <tr
+                key={row.feature}
+                className="border-b border-line last:border-b-0 max-sm:block max-sm:py-cp-2"
+              >
+                <th
+                  scope="row"
+                  className="px-cp-4 py-cp-3 text-cp-body font-semibold leading-snug text-ink max-sm:block max-sm:pb-cp-1"
+                >
+                  {row.feature}
+                </th>
+                {cell(row.us, true)}
+                {cell(row.them, false)}
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+      <p className="mt-cp-3 text-cp-caption text-ink-soft">
+        {competitor}&rsquo;s features and pricing checked {checked}. Tools change, so check their
+        current plans before deciding.
+      </p>
+    </div>
+  );
+}

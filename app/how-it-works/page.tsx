@@ -49,7 +49,6 @@ const SOURCES: Source[] = [
 
 const RELATED_GUIDES = [
   "print-recipe-from-website",
-  "print-recipe-from-url",
   "convert-recipe-to-pdf",
   "printable-recipe-card-generator",
   "recipe-binder",

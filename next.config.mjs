@@ -26,6 +26,25 @@ const nextConfig = {
       },
     ];
   },
+  // Retired SEO pages. A landing page that gets folded into a stronger one
+  // keeps its URL working and passes its ranking on, rather than 404ing and
+  // dropping whatever it had earned. Permanent, because these are not coming
+  // back: the page was removed from SEO_LANDING_PAGES, so the route and the
+  // sitemap entry are already gone.
+  async redirects() {
+    return [
+      {
+        // "Print recipe from a URL" and "print recipe from a website" are the
+        // same job, and two pages split the signal for it. The website page
+        // had the depth, so it absorbed the URL phrasing and this one folded
+        // into it.
+        source: "/print-recipe-from-url",
+        destination: "/print-recipe-from-website",
+        permanent: true,
+      },
+    ];
+  },
+
   // PostHog's API is trailing-slash sensitive; Next's default redirect breaks it.
   skipTrailingSlashRedirect: true,
 };

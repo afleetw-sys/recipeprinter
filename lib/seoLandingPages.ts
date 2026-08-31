@@ -73,6 +73,19 @@ export type SeoLandingPage = {
         two rows would otherwise land on the same image. */
     image?: string;
   }[];
+  /**
+   * Head-to-head feature table for a competitor page. Only worth adding when
+   * we can state the other tool's behaviour accurately, including the rows it
+   * wins: a table where one column is all ticks reads as a pitch, and a
+   * visitor who already uses the competitor knows which claims are wrong.
+   * `checked` is when their site and pricing were last read, and it is shown,
+   * because a comparison with no date is a comparison you cannot trust.
+   */
+  comparison?: {
+    competitor: string;
+    checked: string;
+    rows: { feature: string; us: boolean | string; them: boolean | string }[];
+  };
   /** Real printed-card photo keys (PRINTED_CARDS) for the examples gallery. */
   examples?: string[];
   faqs: { question: string; answer: string }[];
@@ -89,6 +102,13 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
       "print recipe from recipe site",
       "print recipe website without clutter",
       "website to print recipes",
+      // Absorbed from the retired /print-recipe-from-url page. Pasting a link
+      // and pasting a URL are the same job, and two pages split the signal for
+      // it; this one had the depth, so it took the phrasing too.
+      "print recipe from URL",
+      "recipe URL printer",
+      "print recipe link",
+      "printable recipe from link",
     ],
     intent: "Utility SEO",
     eyebrow: "Recipe printing tool",
@@ -149,9 +169,14 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
         answer:
           "Yes. RecipePrinter builds a print-ready page, so in the print dialog you can choose Save as PDF and keep a clean copy on your phone or computer to print whenever you want.",
       },
+      {
+        question: "Can I print a recipe from a URL?",
+        answer:
+          "Yes. Any recipe link works the same way, whether you copied it from your browser's address bar, a text message, a saved note, or a share button in another app. Paste it in and you get the same printable card or page.",
+      },
     ],
     links: [
-      { href: "/print-recipe-from-url", label: "Print a recipe from a URL" },
+      { href: "/printable-recipe-card-generator", label: "Make printable recipe cards" },
       { href: "/print-recipe-without-ads", label: "Print recipes without ads" },
       { href: "/convert-recipe-to-pdf", label: "Convert a recipe to PDF" },
     ],
@@ -190,42 +215,6 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
       { href: "/print-recipe-from-website", label: "Print from a website" },
       { href: "/just-the-recipe-alternative", label: "Just the Recipe alternative" },
       { href: "/convert-recipe-to-pdf", label: "Save recipe as PDF" },
-    ],
-  },
-  {
-    slug: "print-recipe-from-url",
-    primaryKeyword: "print recipe from URL",
-    secondaryKeywords: [
-      "print recipe link",
-      "recipe URL printer",
-      "import recipe from website",
-      "printable recipe from link",
-    ],
-    intent: "Utility SEO",
-    eyebrow: "Recipe printing tool",
-    initialImportMode: "url",
-    title: "Free Recipe URL Printer",
-    description:
-      "Paste a recipe URL and make a printable recipe card, page, or PDF you can cook from and keep. Free, no account required.",
-    h1: "Print a recipe from a URL",
-    lede:
-      "Have the recipe link but not a good print button? RecipePrinter turns a URL from a browser, message, saved note, or social app into a printable recipe card or page.",
-    faqs: [
-      {
-        question: "What kinds of recipe URLs can I use?",
-        answer:
-          "You can start with recipe websites, food blogs, and supported social links. If a link is blocked or incomplete, paste the recipe text or upload a screenshot.",
-      },
-      {
-        question: "Does RecipePrinter keep the original recipe link?",
-        answer:
-          "When available, the printed recipe can include source details so you know where the recipe came from.",
-      },
-    ],
-    links: [
-      { href: "/print-recipe-from-website", label: "Print from a website" },
-      { href: "/print-recipe-without-ads", label: "Print without ads" },
-      { href: "/print-pinterest-recipes", label: "Print Pinterest recipes" },
     ],
   },
   {
@@ -335,7 +324,7 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
       },
     ],
     links: [
-      { href: "/print-recipe-from-url", label: "Print from a URL" },
+      { href: "/print-recipe-from-website", label: "Print from a website" },
       { href: "/print-recipe-without-ads", label: "Print without ads" },
       { href: "/recipe-binder", label: "Make a recipe binder" },
     ],
@@ -722,39 +711,90 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
   },
   {
     slug: "just-the-recipe-alternative",
+    lastReviewed: "2026-08-30",
     primaryKeyword: "Just the Recipe alternative",
+    // Deliberately narrow. This page used to also claim "print recipe without
+    // ads" and "print recipe from website", both of which are other pages'
+    // primaries, so three pages were bidding for the same two queries and the
+    // thinnest of them was this one. It competes on the brand query only.
     secondaryKeywords: [
-      "recipe printer alternative",
-      "print recipe without ads",
-      "print recipe from website",
-      "clean printable recipes",
-      "just the recipe alternative for printing",
+      "JustTheRecipe alternative",
+      "alternative to Just the Recipe",
+      "Just the Recipe app alternative",
+      "free recipe printing tool",
     ],
     intent: "Utility SEO",
-    eyebrow: "Recipe tool alternative",
+    eyebrow: "Recipe tool comparison",
     initialImportMode: "url",
-    title: "Just the Recipe Alternative",
+    title: "Just the Recipe Alternative for Printing",
     description:
-      "Looking for a Just the Recipe alternative? RecipePrinter turns online recipes into printable cards, pages, and PDFs worth keeping.",
-    h1: "A Just the Recipe alternative for printable recipes",
+      "Comparing RecipePrinter and JustTheRecipe: both clean up a recipe page, and they differ on printing, what you can bring in, and what the free tier does.",
+    h1: "A Just the Recipe alternative built for printing",
     lede:
-      "RecipePrinter is for cooks who want a clean recipe plus a real print layout. Paste a recipe link and turn it into a printable card, page, or PDF for your kitchen.",
-    faqs: [
+      "Both tools do the same first thing: paste a recipe link and get the ingredients and steps without the backstory. They part company after that, mostly around paper.",
+    featureSections: [
       {
-        question: "How is RecipePrinter different from Just the Recipe?",
-        answer:
-          "RecipePrinter focuses on turning recipes from links, photos, screenshots, and text into printable recipe cards, pages, and PDFs for cooking, saving, and collecting.",
+        heading: "The same first step, a different second one",
+        proof: "before-after",
+        body:
+          "JustTheRecipe is a good reader. It strips a recipe page down to what you cook from and keeps it on your phone, and its apps are genuinely nice to use in the kitchen. RecipePrinter is aimed at the moment after that, when you want the recipe on paper: a card for the box, a full page for the binder, or a batch of both for the week.",
       },
       {
-        question: "Can RecipePrinter print recipes without page clutter?",
+        heading: "More ways in than a link",
+        proof: "steps",
+        body:
+          "A link is the only way into most recipe cleaners. RecipePrinter also reads a photo of a handwritten card, a screenshot from a group chat, and text you paste straight in, so the recipes that never had a URL can end up on the same printed page as the ones that did.",
+      },
+      {
+        heading: "Made to come out of a printer",
+        image: "card-in-box",
+        body:
+          "Choose a 6 by 4 card sized for a recipe box or a full letter page, pick a theme, turn on cut lines for card stock, and print several recipes in one job. Printing is free and works without an account, so you can try it on the recipe you were about to print anyway.",
+      },
+    ],
+    comparison: {
+      competitor: "JustTheRecipe",
+      checked: "August 2026",
+      rows: [
+        { feature: "Clean up a recipe from a link", us: true, them: true },
+        { feature: "Print the result", us: "Free, no account", them: "Included with Premium" },
+        { feature: "What the free tier does", us: "Print anything, unlimited", them: "View and save up to 20 recipes" },
+        { feature: "From a photo or screenshot", us: true, them: "Works from a link" },
+        { feature: "From text you paste in", us: true, them: "Works from a link" },
+        { feature: "Recipe card sizes and themes", us: true, them: false },
+        { feature: "Print several recipes at once", us: true, them: false },
+        { feature: "Bound cookbook with a cover and chapters", us: "$19.99 per book", them: false },
+        { feature: "Adjust serving sizes", us: false, them: "Included with Premium" },
+        { feature: "Phone and tablet apps", us: "Works in a phone browser", them: "iOS and Android" },
+      ],
+    },
+    examples: ["caprese", "korean", "pesto"],
+    faqs: [
+      {
+        question: "Is JustTheRecipe free?",
         answer:
-          "Yes. RecipePrinter formats the recipe itself for paper, so ads, pop-ups, comments, and extra web page clutter stay off the printed recipe.",
+          "Reading a decluttered recipe is free, and a free account saves up to 20 recipes and syncs them across your devices. Printing, unlimited saves, and serving-size adjustments are part of their paid Premium plan, with prices shown inside their app.",
+      },
+      {
+        question: "Can I print recipes for free with RecipePrinter?",
+        answer:
+          "Yes. Printing is free and does not need an account, however many recipes you print. The two optional one-time purchases are premium print themes and the cookbook builder.",
+      },
+      {
+        question: "Which one should I use?",
+        answer:
+          "If you cook from your phone and want a tidy reader with native apps, JustTheRecipe is built for that. If you want the recipe on paper, in a card box, a binder, or a bound cookbook, that is what RecipePrinter is for. Plenty of people use both.",
+      },
+      {
+        question: "Can RecipePrinter print recipes from a photo of an old recipe card?",
+        answer:
+          "Yes. Upload a photo of a handwritten card, a cookbook page, or a screenshot, and RecipePrinter reads the recipe and sets it as a printable card or page.",
       },
     ],
     links: [
       { href: "/print-recipe-from-website", label: "Print a recipe from a website" },
       { href: "/print-recipe-without-ads", label: "Print without ads" },
-      { href: "/convert-recipe-to-pdf", label: "Convert a recipe to PDF" },
+      { href: "/printable-recipe-card-generator", label: "Make printable recipe cards" },
     ],
   },
   {
