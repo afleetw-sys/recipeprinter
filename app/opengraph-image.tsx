@@ -57,14 +57,14 @@ export default function OpengraphImage() {
           display: "flex",
           alignItems: "center",
           gap: "28px",
-          padding: "48px",
+          padding: "72px",
           background: PAGE,
           color: INK,
           fontFamily: "Karla",
         }}
       >
         {/* ── The words ──────────────────────────────────────────────────── */}
-        <div style={{ display: "flex", flexDirection: "column", width: "456px" }}>
+        <div style={{ display: "flex", flexDirection: "column", width: "408px" }}>
           <div style={{ display: "flex", alignItems: "center", gap: "16px" }}>
             {/* Not next/image, and the LCP advice that rule gives doesn't apply
                 here: this tree is never rendered in a browser. Satori
@@ -83,7 +83,7 @@ export default function OpengraphImage() {
             style={{
               display: "flex",
               marginTop: "44px",
-              fontSize: "52px",
+              fontSize: "46px",
               fontWeight: 800,
               lineHeight: 1.05,
               letterSpacing: "-0.03em",
@@ -96,7 +96,7 @@ export default function OpengraphImage() {
             style={{
               display: "flex",
               marginTop: "26px",
-              fontSize: "23px",
+              fontSize: "22px",
               fontWeight: 400,
               lineHeight: 1.4,
               color: MUTED,
@@ -112,7 +112,7 @@ export default function OpengraphImage() {
             real "continued on back" overflow. Two of them, fanned: a single
             rectangle is the stock product shot, and a short stack says the
             plural thing the product makes. */}
-        <div style={{ display: "flex", position: "relative", width: "604px", height: "400px" }}>
+        <div style={{ display: "flex", position: "relative", width: "620px", height: "400px" }}>
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
             src={cardUrl}
