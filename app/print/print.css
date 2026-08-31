@@ -2121,10 +2121,14 @@
   place-items: center;
   width: 22px;
   height: 22px;
-  border: 1px solid color-mix(in srgb, var(--cp-teal) 58%, #fff);
+  /* The only accent surface left in this file that had baked-in teal — a
+     tint, a border, and an ink, all three the default theme's brand colour
+     written out. Mixed against the accent and the card instead, so the marker
+     follows the UI theme like every other accent surface does. */
+  border: 1px solid color-mix(in srgb, var(--cp-accent) 58%, var(--cp-card));
   border-radius: 999px;
-  background: #eefaf9;
-  color: #267c77;
+  background: color-mix(in srgb, var(--cp-accent) 10%, var(--cp-card));
+  color: var(--cp-accent-ink);
 }
 
 .recipe-toast {
@@ -2964,6 +2968,13 @@
   --recipe-footer: #aaa;
   --recipe-radius: 14px;
   --recipe-title-font: var(--font-playfair), Georgia, serif;
+  /* Pinned, not inherited. A card's body copy used to take whatever `body {
+     @apply font-sans }` resolved to, which was always Manrope — until UI
+     themes made `font-sans` read `--rp-ui-font` (see the UI THEMES section of
+     globals.css). Without this, choosing the monospace Thermal Roll skin would
+     set every printed recipe in monospace too. A card's typography belongs to
+     its template; the app around it can wear whatever it likes. */
+  font-family: var(--font-manrope), system-ui, sans-serif;
   display: flex;
   flex-direction: column;
   align-items: center;

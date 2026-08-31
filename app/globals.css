@@ -123,12 +123,22 @@
   --cp-shadow-xl: 0 24px 80px rgba(15, 23, 42, 0.22); /* modal dialogs */
   --cp-shadow-sheet: 0 -18px 48px rgba(15, 23, 42, 0.18); /* bottom sheets/drawers */
 
-  /* Semantic radii for authored CSS. Tailwind utilities expose the same
-     numeric scale, while these names keep component intent visible. */
+  /* Radii, in two layers. The numeric scale is what the Tailwind utilities
+     (rounded-sm … rounded-2xl) resolve to; the semantic names below alias it
+     so authored CSS keeps saying what it means. Both are variables rather than
+     literals because corner radius is one of the strongest era signals a UI
+     has — a 1990s receipt-printer interface is square, a mid-century one is
+     generously rounded — so a UI theme can move the whole family at once
+     instead of hunting individual rules. Values here are unchanged. */
+  --cp-radius-sm: 10px;
+  --cp-radius-md: 14px;
+  --cp-radius-lg: 18px;
+  --cp-radius-xl: 24px;
+  --cp-radius-2xl: 28px;
   --cp-radius-control: 12px;
-  --cp-radius-thumbnail: 10px;
-  --cp-radius-card: 24px;
-  --cp-radius-dialog: 28px;
+  --cp-radius-thumbnail: var(--cp-radius-sm);
+  --cp-radius-card: var(--cp-radius-xl);
+  --cp-radius-dialog: var(--cp-radius-2xl);
   --cp-radius-sheet: 20px;
 
   /* ── Interaction states ──────────────────────────────────────────────────
@@ -167,6 +177,203 @@
      KeyboardInsetWatcher. Fixed-position bottom bars sit above this instead
      of `bottom: 0`, so the keyboard doesn't cover or scroll them away. */
   --rp-keyboard-inset: 0px;
+
+  /* ── UI typeface ─────────────────────────────────────────────────────────
+     The one font the app chrome is set in, behind a variable so a UI theme can
+     swap it. `fontFamily.sans` in tailwind.config.ts resolves to this, which
+     is what `body { @apply font-sans }` picks up, so everything follows.
+     PRINTED artwork does not: `.recipe-card-set` in print.css pins itself back
+     to Manrope, because a card's typography belongs to its template, not to
+     whatever theme the surrounding app is wearing. */
+  --rp-ui-font: var(--font-manrope), system-ui, sans-serif;
+}
+
+/* ══════════════════════════════════════════════════════════════════════════
+   UI THEMES — experimental
+
+   Everything above this line is the product's real design system. Everything
+   below is a set of alternate skins for it, selected by `data-ui-theme` on
+   <html> (see components/ThemeLab.tsx and lib/uiThemes.ts). No theme adds a
+   rule; each one only restates :root tokens, which is the whole point — if a
+   theme needs a new selector to look right, that's a token the system is
+   missing, not something to paper over here.
+
+   Deliberately NOT themed: `--recipe-*`. Those are a printed card template's
+   own palette, and the page that comes out of the printer must not change
+   because of what the app around it is wearing. `.recipe-card-set` in
+   print.css pins its font back to Manrope for the same reason.
+
+   Contrast was checked, not eyeballed. Every ink/ink-soft/accent-ink pairing
+   below clears WCAG AA (4.5:1) against its own theme's --cp-card. --cp-accent
+   is the exception, and deliberately so: it is the DECORATIVE half of the pair
+   (borders, fills, rules), and the default theme's own teal sits at 1.95:1 as
+   a filled chip. The three themes here land at 8.4 (Atomic Age), 5.1 (Sunroom)
+   and 4.5 (Thermal Roll) on that same measure, so each is better than what
+   ships; accent-coloured TEXT still goes through --cp-accent-ink everywhere.
+   ══════════════════════════════════════════════════════════════════════════ */
+
+/* ── Atomic Age (1950s–60s) ────────────────────────────────────────────────
+   Ivory modernism: warm paper, deep navy, atomic red, bright mustard. Navy is
+   the accent because it is the one palette colour that works as both a fill
+   and as text; red is spent on --cp-error, where a period-correct red is
+   genuinely the right red; and mustard is the tint, so a selected control
+   glows warm inside a navy border instead of restating the navy. Corners are
+   the era's generous curve, one step rounder than the default family. */
+[data-ui-theme="atomic-age"] {
+  --rp-ui-font: var(--font-jost), Futura, system-ui, sans-serif;
+
+  --cp-accent: #1a4e78;
+  --cp-accent-ink: #15406a;
+  --cp-accent-soft: rgba(240, 192, 48, 0.22);
+  --cp-blue: #15406a;
+  --cp-teal: #1a4e78;
+  --cp-mint: #1a4e78;
+
+  --cp-ink: #383838;
+  --cp-ink-soft: #6b6558;
+  --cp-line: rgba(56, 56, 56, 0.14);
+  --cp-line-strong: rgba(56, 56, 56, 0.24);
+
+  --cp-page: #f4f0e6;
+  --cp-card: #fdfbf4;
+  --cp-body-background: #f4f0e6;
+  --cp-deck-ground: #f8f5ec;
+  --cp-surface-muted: #efe9db;
+  --cp-surface-soft: #f1ebdd;
+  --cp-surface-strong: #e6dfcd;
+  --cp-surface-strong-hover: #ddd4be;
+
+  --cp-error: #c83838;
+  --cp-overlay-hover: rgba(56, 56, 56, 0.06);
+  --cp-overlay-hover-strong: rgba(56, 56, 56, 0.09);
+  --cp-scrim: rgba(56, 48, 34, 0.4);
+
+  /* Mustard fill, navy border and text — the selected-state contract in
+     globals.css :root, wearing this palette's warm half. */
+  --cp-selected-fill: color-mix(in srgb, #f0c030 20%, var(--cp-card));
+
+  --cp-shadow-xs: 0 2px 8px rgba(56, 48, 34, 0.1);
+  --cp-shadow-sm: 0 4px 12px rgba(56, 48, 34, 0.1);
+  --cp-shadow-md: 0 10px 30px rgba(56, 48, 34, 0.12);
+  --cp-shadow-lg: 0 18px 48px rgba(56, 48, 34, 0.2);
+  --cp-shadow-xl: 0 24px 80px rgba(56, 48, 34, 0.24);
+  --cp-shadow-sheet: 0 -18px 48px rgba(56, 48, 34, 0.2);
+
+  --cp-radius-sm: 12px;
+  --cp-radius-md: 16px;
+  --cp-radius-lg: 22px;
+  --cp-radius-xl: 26px;
+  --cp-radius-2xl: 30px;
+  --cp-radius-control: 14px;
+  --cp-radius-sheet: 22px;
+}
+
+/* ── Thermal Roll (early web) ──────────────────────────────────────────────
+   A receipt coming out of a dot-matrix printer: yellowed thermal stock, slate
+   ink, monospaced everything. The two moves that carry this one are the mono
+   UI face and the corners — 2px, because nothing in 1996 had a 24px radius.
+   Shadows are hard-offset with zero blur, the way a Windows 3.1 menu dropped
+   its shadow, rather than the soft ambient blur the default system uses. */
+[data-ui-theme="thermal-roll"] {
+  --rp-ui-font: var(--font-plex-mono), ui-monospace, "Courier New", monospace;
+
+  --cp-accent: #407888;
+  --cp-accent-ink: #33606e;
+  --cp-accent-soft: rgba(184, 120, 64, 0.18);
+  --cp-blue: #33606e;
+  --cp-teal: #407888;
+  --cp-mint: #407888;
+
+  --cp-ink: #202830;
+  /* The palette's khaki (#6a7060) lands at 4.65:1 on thermal stock, which
+     passes but leaves nothing in hand; this is the same hue a step darker. */
+  --cp-ink-soft: #5f6555;
+  --cp-line: rgba(32, 40, 48, 0.16);
+  --cp-line-strong: rgba(32, 40, 48, 0.3);
+
+  --cp-page: #e9e6da;
+  --cp-card: #f5f4ee;
+  --cp-body-background: #e9e6da;
+  --cp-deck-ground: #f0eee3;
+  --cp-surface-muted: #edebe0;
+  --cp-surface-soft: #f0eee4;
+  --cp-surface-strong: #ddd9c9;
+  --cp-surface-strong-hover: #d2cdb9;
+
+  --cp-error: #a8452c;
+  --cp-overlay-hover: rgba(32, 40, 48, 0.06);
+  --cp-overlay-hover-strong: rgba(32, 40, 48, 0.1);
+  --cp-scrim: rgba(32, 40, 48, 0.44);
+
+  --cp-selected-fill: color-mix(in srgb, #b87840 14%, var(--cp-card));
+
+  --cp-shadow-xs: 1px 1px 0 rgba(32, 40, 48, 0.18);
+  --cp-shadow-sm: 2px 2px 0 rgba(32, 40, 48, 0.16);
+  --cp-shadow-md: 3px 3px 0 rgba(32, 40, 48, 0.14);
+  --cp-shadow-lg: 4px 4px 0 rgba(32, 40, 48, 0.22);
+  --cp-shadow-xl: 6px 6px 0 rgba(32, 40, 48, 0.26);
+  --cp-shadow-sheet: 0 -3px 0 rgba(32, 40, 48, 0.2);
+
+  --cp-radius-sm: 2px;
+  --cp-radius-md: 2px;
+  --cp-radius-lg: 3px;
+  --cp-radius-xl: 3px;
+  --cp-radius-2xl: 4px;
+  --cp-radius-control: 2px;
+  --cp-radius-sheet: 4px;
+}
+
+/* ── Sunroom ───────────────────────────────────────────────────────────────
+   Pale mint ground with clay warming one side and cornflower cooling the
+   other. The gentlest of the three and the only one that keeps a true white
+   card, so the paper in the deck still reads as paper. Cornflower is the
+   accent, clay is the tint and the error red, and the corners sit a step
+   tighter than the default rather than looser. */
+[data-ui-theme="sunroom"] {
+  --rp-ui-font: var(--font-karla), system-ui, sans-serif;
+
+  --cp-accent: #4a6fa8;
+  --cp-accent-ink: #3f6094;
+  --cp-accent-soft: rgba(201, 106, 76, 0.16);
+  --cp-blue: #3f6094;
+  --cp-teal: #4a6fa8;
+  --cp-mint: #4a6fa8;
+
+  --cp-ink: #22303a;
+  --cp-ink-soft: #5f6f79;
+  --cp-line: rgba(34, 48, 58, 0.11);
+  --cp-line-strong: rgba(34, 48, 58, 0.2);
+
+  --cp-page: #f4f7f3;
+  --cp-card: #ffffff;
+  --cp-body-background: #f4f7f3;
+  --cp-deck-ground: #fbfdfa;
+  --cp-surface-muted: #eef3ec;
+  --cp-surface-soft: #f2f6f1;
+  --cp-surface-strong: #e5eae4;
+  --cp-surface-strong-hover: #d8ded6;
+
+  --cp-error: #a94e30;
+  --cp-overlay-hover: rgba(34, 48, 58, 0.06);
+  --cp-overlay-hover-strong: rgba(34, 48, 58, 0.09);
+  --cp-scrim: rgba(34, 48, 58, 0.36);
+
+  --cp-selected-fill: color-mix(in srgb, #c96a4c 10%, var(--cp-card));
+
+  --cp-shadow-xs: 0 2px 8px rgba(34, 48, 58, 0.08);
+  --cp-shadow-sm: 0 4px 12px rgba(34, 48, 58, 0.08);
+  --cp-shadow-md: 0 10px 30px rgba(34, 48, 58, 0.1);
+  --cp-shadow-lg: 0 18px 48px rgba(34, 48, 58, 0.18);
+  --cp-shadow-xl: 0 24px 80px rgba(34, 48, 58, 0.22);
+  --cp-shadow-sheet: 0 -18px 48px rgba(34, 48, 58, 0.18);
+
+  --cp-radius-sm: 8px;
+  --cp-radius-md: 12px;
+  --cp-radius-lg: 16px;
+  --cp-radius-xl: 20px;
+  --cp-radius-2xl: 24px;
+  --cp-radius-control: 10px;
+  --cp-radius-sheet: 18px;
 }
 
 /* Saved-project cover thumbnails use persisted cover data without importing
