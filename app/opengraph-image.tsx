@@ -2,9 +2,9 @@ import { ImageResponse } from "next/og";
 import { SITE_NAME, SITE_TAGLINE } from "@/lib/seo";
 import { OPENGRAPH_IMAGE_LOGO_BASE64 } from "@/app/opengraph-image-logo-base64";
 import {
-  OPENGRAPH_MANROPE_EXTRABOLD_BASE64,
-  OPENGRAPH_MANROPE_REGULAR_BASE64,
-} from "@/app/opengraph-image-manrope-base64";
+  OPENGRAPH_KARLA_EXTRABOLD_BASE64,
+  OPENGRAPH_KARLA_REGULAR_BASE64,
+} from "@/app/opengraph-image-karla-base64";
 
 // A branded 1200x630 social card, generated at request time. Using next/og
 // keeps it in sync with the product name/tagline and avoids shipping a binary
@@ -23,29 +23,53 @@ import {
 const logoUrl = `data:image/png;base64,${OPENGRAPH_IMAGE_LOGO_BASE64}`;
 
 // Satori takes font data, not a CSS family name — without these the card
-// renders in its bundled Noto Sans, which is nowhere else in the product. See
-// opengraph-image-manrope-base64.ts.
+// renders in its bundled Noto Sans. See opengraph-image-karla-base64.ts.
 function fontData(base64: string): ArrayBuffer {
   const binary = Buffer.from(base64, "base64");
   return binary.buffer.slice(binary.byteOffset, binary.byteOffset + binary.byteLength) as ArrayBuffer;
 }
 
-// Lifted from the print themes rather than picked fresh, so the card people see
-// in a shared link is set on the same stock as the thing they'll actually print.
-// `paper`/`ink`/`muted` are Keepsake's card values (print.css); `accent` is
-// Classic's teal. The previous version of this card was a teal gradient with
-// white type — a graphic that could have fronted any product. Cream paper and
-// the card's own hairline header rule is the print side of the product showing
-// through. Colour lands once, on that rule; a separate accent bar under the
-// headline just read as a stray underline against the descenders.
-const PAPER = "#fbf7ee";
-const INK = "#242424";
-const MUTED = "#64615b";
-const ACCENT = "#2f7d78";
+// The app's own tokens, spelled out because Satori has no :root to read from.
+// Keep in step with `:root` in app/globals.css — these are the same five values
+// (docs/color-roles.md), not a palette picked for this file.
+const PAGE = "#f4f7f3"; // Pale Mint
+const CARD = "#ffffff";
+const INK = "#22303a"; // Slate
+const MUTED = "#5f6f79"; // Stone
+const ACCENT = "#4a6fa8"; // Cornflower
+const ACCENT_DEEP = "#3f6094"; // the Classic card's printed-label blue
+const CLAY = "#c96a4c";
+const LINE = "rgba(34, 48, 58, 0.11)";
 
 export const alt = `${SITE_NAME}: ${SITE_TAGLINE}`;
 export const size = { width: 1200, height: 630 };
 export const contentType = "image/png";
+
+/**
+ * A ruled line standing in for a line of recipe text in the card mockup.
+ * `w` is a percentage so the ragged right edge reads as real copy rather than
+ * a stack of identical bars.
+ */
+function Rule({ w, bullet = false }: { w: string; bullet?: boolean }) {
+  return (
+    <div style={{ display: "flex", alignItems: "center", gap: "7px", height: "11px" }}>
+      {bullet ? (
+        <div
+          style={{
+            display: "flex",
+            width: "5px",
+            height: "5px",
+            borderRadius: "999px",
+            // The Classic card's ingredient bullets, which are the one place
+            // clay appears on paper (--recipe-bullet in print.css).
+            background: CLAY,
+          }}
+        />
+      ) : null}
+      <div style={{ display: "flex", width: w, height: "5px", borderRadius: "999px", background: LINE }} />
+    </div>
+  );
+}
 
 export default function OpengraphImage() {
   return new ImageResponse(
@@ -55,83 +79,162 @@ export default function OpengraphImage() {
           width: "100%",
           height: "100%",
           display: "flex",
-          flexDirection: "column",
-          justifyContent: "center",
-          padding: "88px",
-          background: PAPER,
+          alignItems: "center",
+          gap: "40px",
+          padding: "72px",
+          background: PAGE,
           color: INK,
-          fontFamily: "Manrope",
+          fontFamily: "Karla",
         }}
       >
-        <div
-          style={{
-            display: "flex",
-            alignItems: "center",
-            gap: "22px",
-            paddingBottom: "32px",
-            // The recipe card's own header divider (`.recipe-card__header`
-            // carries this same hairline), not a decorative flourish — struck
-            // in the accent so the card's one note of colour is part of the
-            // structure rather than an ornament floating beside it.
-            borderBottom: `2px solid ${ACCENT}`,
-          }}
-        >
-          {/* Not next/image, and the LCP advice the rule is giving doesn't
-              apply here: this tree is never rendered in a browser. Satori
-              rasterizes it to a PNG inside `ImageResponse`, and it supports
-              a small subset of HTML/CSS in which `next/image` — a React
-              client component — cannot run at all. `<img>` with a base64
-              data URI is the documented way to place an image in an OG
-              card. */}
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img
-            src={logoUrl}
-            alt=""
-            width="64"
-            height="64"
+        {/* ── The words ──────────────────────────────────────────────────── */}
+        <div style={{ display: "flex", flexDirection: "column", width: "556px" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: "16px" }}>
+            {/* Not next/image, and the LCP advice that rule gives doesn't apply
+                here: this tree is never rendered in a browser. Satori
+                rasterizes it to a PNG inside `ImageResponse`, and supports a
+                small subset of HTML/CSS in which `next/image` — a React client
+                component — cannot run at all. `<img>` with a base64 data URI is
+                the documented way to place an image in an OG card. */}
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src={logoUrl} alt="" width="46" height="46" style={{ objectFit: "contain" }} />
+            <div style={{ display: "flex", fontSize: "29px", fontWeight: 800, letterSpacing: "0" }}>
+              {SITE_NAME}
+            </div>
+          </div>
+
+          <div
             style={{
-              objectFit: "contain",
+              display: "flex",
+              marginTop: "44px",
+              fontSize: "68px",
+              fontWeight: 800,
+              lineHeight: 1.05,
+              letterSpacing: "-0.03em",
+            }}
+          >
+            Print the recipes worth making again.
+          </div>
+
+          <div
+            style={{
+              display: "flex",
+              marginTop: "26px",
+              fontSize: "27px",
+              fontWeight: 400,
+              lineHeight: 1.4,
+              color: MUTED,
+            }}
+          >
+            Turn web and social recipe links into printable recipe cards and PDFs.
+          </div>
+        </div>
+
+        {/* ── The thing you actually get ─────────────────────────────────────
+            The old card was a headline on a slab of cream with a rule under the
+            wordmark: a layout that would have fronted any product at all, which
+            is what made it read as generic. This is the Classic recipe card
+            instead — its real accent bar, its cornflower section labels, its
+            clay bullets — because the product is a printed card and the social
+            card should show one.
+
+            Two of them, fanned. A single floating rectangle is the stock
+            product-shot composition; a short stack says the plural thing the
+            product actually makes, and fills a right-hand third that was
+            otherwise empty air. */}
+        <div style={{ display: "flex", position: "relative", width: "420px", height: "300px" }}>
+          {/* The one behind. Only its edge shows, so it carries no content —
+              Satori draws exactly what it is told and an unseen column of rules
+              is just rasterizer time. */}
+          <div
+            style={{
+              display: "flex",
+              position: "absolute",
+              top: "16px",
+              left: "6px",
+              width: "372px",
+              height: "268px",
+              background: CARD,
+              borderRadius: "16px",
+              border: `1px solid ${LINE}`,
+              boxShadow: "0 18px 44px rgba(34, 48, 58, 0.12)",
+              transform: "rotate(-5deg)",
             }}
           />
           <div
             style={{
               display: "flex",
-              fontSize: "36px",
-              // Matches `Wordmark` in components/Logo.tsx: extrabold, no tracking.
-              fontWeight: 800,
-              letterSpacing: "0",
+              flexDirection: "column",
+              position: "absolute",
+              top: "0px",
+              left: "34px",
+              width: "372px",
+              background: CARD,
+              borderRadius: "16px",
+              border: `1px solid ${LINE}`,
+              boxShadow: "0 26px 62px rgba(34, 48, 58, 0.18)",
+              overflow: "hidden",
+              transform: "rotate(2deg)",
             }}
           >
-            {SITE_NAME}
+            {/* The Classic card's header bar: two shades of the dark blue,
+                never a hue change. See `.recipe-card__accent` in print.css. */}
+            <div
+              style={{
+                display: "flex",
+                height: "8px",
+                background: `linear-gradient(90deg, ${ACCENT_DEEP}, ${INK})`,
+              }}
+            />
+            <div style={{ display: "flex", flexDirection: "column", padding: "26px 26px 30px" }}>
+              <div style={{ display: "flex", fontSize: "27px", fontWeight: 800, letterSpacing: "-0.02em" }}>
+                Buttermilk Biscuits
+              </div>
+              <div style={{ display: "flex", marginTop: "7px", fontSize: "13px", color: MUTED }}>
+                25 min · Serves 8
+              </div>
+
+              <div style={{ display: "flex", gap: "22px", marginTop: "24px" }}>
+                <div style={{ display: "flex", flexDirection: "column", width: "144px", gap: "9px" }}>
+                  <div
+                    style={{
+                      display: "flex",
+                      fontSize: "11px",
+                      fontWeight: 800,
+                      letterSpacing: "0.12em",
+                      color: ACCENT_DEEP,
+                    }}
+                  >
+                    INGREDIENTS
+                  </div>
+                  <Rule w="118px" bullet />
+                  <Rule w="96px" bullet />
+                  <Rule w="126px" bullet />
+                  <Rule w="86px" bullet />
+                  <Rule w="110px" bullet />
+                </div>
+
+                <div style={{ display: "flex", flexDirection: "column", width: "144px", gap: "9px" }}>
+                  <div
+                    style={{
+                      display: "flex",
+                      fontSize: "11px",
+                      fontWeight: 800,
+                      letterSpacing: "0.12em",
+                      color: ACCENT_DEEP,
+                    }}
+                  >
+                    STEPS
+                  </div>
+                  <Rule w="140px" />
+                  <Rule w="122px" />
+                  <Rule w="136px" />
+                  <Rule w="104px" />
+                  <Rule w="130px" />
+                </div>
+              </div>
+            </div>
           </div>
-        </div>
-
-        <div
-          style={{
-            display: "flex",
-            marginTop: "52px",
-            fontSize: "82px",
-            fontWeight: 800,
-            lineHeight: 1.04,
-            letterSpacing: "-0.025em",
-            maxWidth: "880px",
-          }}
-        >
-          Print the recipes worth making again.
-        </div>
-
-        <div
-          style={{
-            display: "flex",
-            marginTop: "34px",
-            fontSize: "33px",
-            fontWeight: 400,
-            lineHeight: 1.35,
-            color: MUTED,
-            maxWidth: "820px",
-          }}
-        >
-          Turn web and social recipe links into printable recipe cards and PDFs.
         </div>
       </div>
     ),
@@ -139,14 +242,14 @@ export default function OpengraphImage() {
       ...size,
       fonts: [
         {
-          name: "Manrope",
-          data: fontData(OPENGRAPH_MANROPE_REGULAR_BASE64),
+          name: "Karla",
+          data: fontData(OPENGRAPH_KARLA_REGULAR_BASE64),
           weight: 400,
           style: "normal",
         },
         {
-          name: "Manrope",
-          data: fontData(OPENGRAPH_MANROPE_EXTRABOLD_BASE64),
+          name: "Karla",
+          data: fontData(OPENGRAPH_KARLA_EXTRABOLD_BASE64),
           weight: 800,
           style: "normal",
         },
