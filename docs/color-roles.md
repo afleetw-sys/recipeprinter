@@ -72,9 +72,17 @@ answers to, and stops there.
 and works anywhere. White on clay is 3.7:1, which clears WCAG's 3:1 bar for
 **large text** — 18.66px bold or 24px regular — but not the 4.5:1 that normal
 text needs. So a big filled clay chip with white on it is correct and is what
-`--cp-on-accent-warm` is for. A small one is not: the "NEW" flag beside the
-Cookbook tab is 9.9px, less than half the large-text line, so it takes a clay
-tint with a clay edge and an ink word instead.
+`--cp-on-accent-warm` is for. A small one is not — with one
+recorded exception.
+
+**The one accepted exception.** The "NEW" flag beside the Cookbook tab is
+solid clay with white on it at 9.9px, which is 3.72:1 against a 4.5:1
+requirement. It is the only surface in the app that does not clear AA. That
+was a deliberate call: the alternatives were an accessible tint, or growing the
+flag past 18.66px so white-on-clay passes, and a 19px flag would out-shout the
+12.8px tab it rides on. Every other word-carrying chip in the notice family —
+Purchased, Free template, the protect bar — stays a tint with an ink word.
+If you are auditing and find this, it is known; don't silently change it.
 
 `--cp-on-accent` and `--cp-on-accent-warm` both resolve to the card. They are
 two names rather than one because that size rule differs, and because naming

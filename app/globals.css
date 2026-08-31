@@ -185,21 +185,29 @@
      accent ink, never the raw teal (which fails contrast). Focus is a single
      accent outline shown only on keyboard nav (:focus-visible). */
   --cp-selected-border: var(--cp-accent);
-  /* The mark is cool, the paper under it is warm. Border and text are what
-     carry the MEANING of "selected", so they stay on the cool accent; the fill
-     is just tinted paper, which is where the warm half can sit without the
-     state itself changing colour. Kept low — this lands on small controls in
-     rows, where a stronger tint stops reading as paper and starts reading as a
-     second colour of button. Surfaces that show a DOCUMENT rather than a
-     control opt out entirely (see the page rail in print.css): tinting the
-     sheet a preview sits on misrepresents the page. */
-  --cp-selected-fill: color-mix(in srgb, var(--cp-accent-warm) 10%, var(--cp-card));
+  /* Selection is ONE colour. This used to be a clay tint inside a cornflower
+     border — the two accents in one control, which read as a blue box with
+     something orange leaking into it rather than as a single selected thing.
+     Cornflower throughout: the border, the tint, and (via the token below) the
+     ring. Kept low, because this lands on small controls sitting in rows,
+     where a stronger tint stops reading as paper and starts reading as a
+     second colour of button.
+
+     Surfaces showing a DOCUMENT rather than a control opt out of the fill
+     entirely — see the page rail in print.css. */
+  --cp-selected-fill: color-mix(in srgb, var(--cp-accent) 8%, var(--cp-card));
   /* Flat by design: selection reads from the accent border + fill + ink text,
      not a shadow. Kept as a no-op token so the many `box-shadow:
      var(--cp-selected-ring)` call sites stay valid; set it to a real ring only
      if a control ever needs one without an accompanying border. */
   --cp-selected-ring: none;
-  --cp-selected-text: var(--cp-accent);
+  /* Slate, not cornflower. This label lands on --cp-selected-fill, and
+     cornflower on a cornflower tint is 4.3-4.5:1 depending on the ground
+     underneath — it fails over the page everywhere useful. The border and the
+     tint already say "selected"; the word only has to be readable.
+     A selected control with NO fill is the exception and sets its own colour:
+     see .btn-toggle__option.is-active. */
+  --cp-selected-text: var(--cp-ink);
   /* Focus uses the vivid brand accent so it matches the selected-state border
      (e.g. the mode-toggle tabs), which also uses --cp-accent — a focus ring in
      the darker ink sibling read as a different, "wrong" colour next to it.
@@ -1292,10 +1300,15 @@
   .btn-toggle__option.is-active {
     /* Edge and label, not fill. The border carries the state (5.1:1 on the
        card, well over the 3:1 WCAG asks of a non-text indicator) and the label
-       shifts to the AA-safe accent ink — a colour change, not a weight or size
-       change, so choosing an option never reflows the row. */
+       goes cornflower — a colour change, not a weight or size change, so
+       choosing an option never reflows the row.
+
+       Cornflower rather than --cp-selected-text, and this is the reason that
+       token is Slate: everything else wearing it sits on --cp-selected-fill,
+       where cornflower fails. This control has no fill, so its label is on
+       plain card at 5.1:1 and can keep the accent. */
     border-color: var(--cp-selected-border);
-    color: var(--cp-selected-text);
+    color: var(--cp-accent);
   }
   .btn-toggle__option--icon {
     padding: 0;
@@ -1469,24 +1482,35 @@
      rather than a second word in the label. WARM, because "new" is the product
      announcing something rather than the system reporting state.
 
-     A clay TINT with a clay edge, not a solid clay fill — because of the SIZE,
-     not the colour. White on clay is 3.7:1, which is fine for large text
-     (>=18.66px bold) and is exactly how a big clay chip should be built. This
-     flag is 9.9px, less than half that, so it needs the 4.5:1 normal-text bar
-     and has to get its colour from the tint and its word from --cp-ink. */
+     Solid clay with white on it, at 3.7:1 — and that is a DELIBERATE
+     exception, not an oversight, so please don't quietly "fix" it. White on
+     clay clears WCAG's 3:1 for large text but this flag is 9.9px, which is
+     held to 4.5:1. Amelia was shown the number and the two alternatives (keep
+     the accessible tint, or grow the flag past 18.66px so it passes) and chose
+     the solid chip, because it is the shape the brand mark wants and a 19px
+     flag would out-shout the 12.8px tab it rides on.
+
+     It is the one surface in the app that does not clear AA. Everything else
+     the notice family paints — Purchased, Free template, the protect bar —
+     stays a tint with an ink word, because none of those had a reason to
+     spend the same exception. */
   .rp-project-heading__new {
     margin-left: 5px;
     padding: 1px 5px;
     border: 1px solid var(--cp-accent-warm);
     border-radius: 999px;
-    background: var(--cp-accent-warm-soft);
-    color: var(--cp-ink);
+    background: var(--cp-accent-warm);
+    color: var(--cp-on-accent-warm);
     /* A flag has to sit well under the label it rides on or it stops reading as
        a flag. `--cp-fs-label` was only a step below the 12.8px tab, which is
        close enough to look like a second word; this is the ramp's badge
        step. */
     font-size: var(--cp-fs-micro);
-    font-weight: 800;
+    /* 700, down from 800. Worth knowing alongside the contrast note above:
+       this chip is already the app's one AA exception at 3.7:1, and thinner
+       strokes do not help that. It is a two-letter flag at a size nobody
+       reads for meaning, so the trade is acceptable — but it IS a trade. */
+    font-weight: var(--cp-fw-bold);
     letter-spacing: .02em;
     line-height: 1.1;
     text-transform: uppercase;
