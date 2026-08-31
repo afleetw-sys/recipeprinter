@@ -2115,13 +2115,17 @@
   min-width: 22px;
   height: 22px;
   padding: 0 6px;
-  /* Was three hardcoded golds. "Costs money" belongs to the same warm notice
-     family as "you own this" directly below, and a stray gold chip in the
-     middle of six template tiles was the one accent surface following nothing. */
-  border: 1px solid color-mix(in srgb, var(--cp-accent-warm) 68%, var(--cp-card));
+  /* SOLID clay with a white glyph, not a tint. This badge holds a crown and
+     nothing else — no words — so it answers to WCAG's 3:1 bar for non-text
+     graphics rather than the 4.5:1 text needs, and white on clay is 3.7:1.
+     That is the whole reason the tinted treatment next door exists on the
+     chips that DO carry a word: the constraint was never the colour, it was
+     whether something in the box has to be read as language.
+     (Was three hardcoded golds before any of this.) */
+  border: 1px solid var(--cp-accent-warm);
   border-radius: 999px;
-  background: var(--cp-accent-warm-soft);
-  color: var(--cp-ink);
+  background: var(--cp-accent-warm);
+  color: var(--cp-on-accent-warm);
   font-size: var(--cp-fs-label);
   font-weight: 900;
   line-height: 1;
@@ -2136,12 +2140,13 @@
   place-items: center;
   width: 22px;
   height: 22px;
-  /* Warm: "you own this" is the notice half of the palette, not a piece of
-     system state. Was three literals of the old brand teal. */
-  border: 1px solid color-mix(in srgb, var(--cp-accent-warm) 58%, var(--cp-card));
+  /* Solid, for the same reason as the premium badge above: a tick and nothing
+     else, so 3:1 applies and white on clay clears it. "You own this" is the
+     notice half of the palette, not a piece of system state. */
+  border: 1px solid var(--cp-accent-warm);
   border-radius: 999px;
-  background: color-mix(in srgb, var(--cp-accent-warm) 10%, var(--cp-card));
-  color: var(--cp-ink);
+  background: var(--cp-accent-warm);
+  color: var(--cp-on-accent-warm);
 }
 
 .recipe-toast {
@@ -4837,7 +4842,14 @@ textarea.recipe-card__toc-title {
   gap: 6px;
   border: 0;
   background: transparent;
-  color: var(--cp-ink-soft);
+  /* Ink, not ink-soft. The `--kinds` variant of this control has a grey track
+     (--cp-surface-strong), and Stone on it is 4.25:1 — a fail, and one that
+     only appears once a project can become a cookbook, which is why earlier
+     sweeps of this page never saw it. Selection is carried by the white thumb
+     sliding under the chosen label, which is how a track-and-thumb control is
+     meant to read; dimming the other label was doing that job a second time
+     and paying contrast for it. */
+  color: var(--cp-ink);
   font-weight: 800;
   font-size: var(--cp-fs-small);
   line-height: 1;
