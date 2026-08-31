@@ -27,30 +27,19 @@ export type SeoProofKind =
   | "steps";
 
 /**
- * How fully a product does the thing a comparison row names.
+ * One cell of a comparison row.
  *
- * Three states rather than two, because the interesting rows are not binary.
- * "Yes, if you subscribe" and "yes, for the first twenty" are not the same
- * answer as "yes", and a yes/no column flattens exactly the differences a
- * reader came to the page to find.
+ * `true` is a plain tick, `false` a dash, and a string is a tick plus the terms
+ * it comes on ("Free, no account"). Tick-and-dash is the convention every
+ * comparison table uses because it needs no decoding; an earlier three-state
+ * scale of filled, half-filled and empty dots was more precise and had to be
+ * explained by a legend before it could be read at all.
  *
- * `limited` means available with a real condition attached: a paid plan, a cap,
- * or a partial version of the thing. It applies to us on the same terms it
- * applies to anyone else, so our own paid cookbook is `limited` too. A scale
- * that grades the competitor's paywall harder than our own is not a scale.
+ * Where a row is not a plain yes on either side, both cells take a string, and
+ * the two strings answer the same question: "Free, no account" against "Paid
+ * plan", not against a bare tick.
  */
-export type ComparisonLevel = "full" | "limited" | "none";
-
-/**
- * One cell: a level, plus the short phrase that says what the condition is.
- *
- * Deliberately not a free string. Letting each cell write its own phrasing
- * produced rows that answered different questions on each side — "Yes" facing
- * "Included with Premium" — which reads as two products being described rather
- * than compared. The level is what a reader scans down the column; the note is
- * what they stop on when a row matters to them.
- */
-export type ComparisonValue = ComparisonLevel | { level: ComparisonLevel; note: string };
+export type ComparisonValue = boolean | string;
 
 export type SeoLandingPage = {
   slug: string;
@@ -110,7 +99,13 @@ export type SeoLandingPage = {
   comparison?: {
     competitor: string;
     checked: string;
-    rows: { feature: string; us: ComparisonValue; them: ComparisonValue }[];
+    /** Labelled groups, not a flat list: a run of ten unbroken rows is the
+        thing readers skim past. Order them by what a visitor is deciding, not
+        by where we look best. */
+    groups: {
+      title: string;
+      rows: { feature: string; us: ComparisonValue; them: ComparisonValue }[];
+    }[];
   };
   /** Real printed-card photo keys (PRINTED_CARDS) for the examples gallery. */
   examples?: string[];
@@ -781,37 +776,41 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
     comparison: {
       competitor: "JustTheRecipe",
       checked: "August 2026",
-      rows: [
-        { feature: "Recipes from a link", us: "full", them: "full" },
-        { feature: "Recipes from a photo or screenshot", us: "full", them: "none" },
-        { feature: "Recipes from text you paste in", us: "full", them: "none" },
+      groups: [
         {
-          feature: "Printing",
-          us: { level: "full", note: "Free, no account" },
-          them: { level: "limited", note: "On the paid plan" },
-        },
-        { feature: "Recipe card sizes and themes", us: "full", them: "none" },
-        { feature: "Printing several recipes in one job", us: "full", them: "none" },
-        {
-          feature: "Saving recipes to come back to",
-          us: { level: "full", note: "With a free account" },
-          them: { level: "limited", note: "20 on the free plan" },
+          title: "Getting recipes in",
+          rows: [
+            // Kept even though both sides tick it. Opening on the thing both
+            // tools do says the table is a comparison rather than a pitch, and
+            // it is the row a reader checks first.
+            { feature: "From a recipe link", us: true, them: true },
+            { feature: "From a photo or screenshot", us: true, them: false },
+            { feature: "From text you paste in", us: true, them: false },
+            { feature: "From a photo of a handwritten card", us: true, them: false },
+          ],
         },
         {
-          feature: "Bound cookbook with a cover and chapters",
-          // Our own paid feature is graded the same way theirs is.
-          us: { level: "limited", note: "$19.99 per book" },
-          them: "none",
+          title: "Printing",
+          rows: [
+            { feature: "Printing a recipe", us: "Free, no account", them: "Paid plan" },
+            { feature: "Recipe card sizes and themes", us: true, them: false },
+            { feature: "Cut lines for card stock", us: true, them: false },
+            { feature: "Printing several recipes in one job", us: true, them: false },
+          ],
         },
         {
-          feature: "Adjusting serving sizes",
-          us: "none",
-          them: { level: "limited", note: "On the paid plan" },
+          title: "Keeping them",
+          rows: [
+            { feature: "Saving recipes to come back to", us: "Free account", them: "20 free, then paid" },
+            { feature: "Bound cookbook with a cover and chapters", us: "$19.99 per book", them: false },
+          ],
         },
         {
-          feature: "Phone and tablet apps",
-          us: { level: "limited", note: "Works in a phone browser" },
-          them: { level: "full", note: "iOS and Android" },
+          title: "In the kitchen",
+          rows: [
+            { feature: "Using it on a phone", us: "Any browser", them: "iOS and Android apps" },
+            { feature: "Adjusting serving sizes", us: false, them: "Paid plan" },
+          ],
         },
       ],
     },

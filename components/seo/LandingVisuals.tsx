@@ -12,7 +12,7 @@ import {
   TextIcon,
   UsersIcon,
 } from "@/components/icons";
-import type { ComparisonLevel, ComparisonValue, SeoIconKey, SeoProofKind } from "@/lib/seoLandingPages";
+import type { ComparisonValue, SeoIconKey, SeoProofKind } from "@/lib/seoLandingPages";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // SEO landing-page visual system, clean, modern, and built only from real
@@ -306,86 +306,63 @@ export function PhotoGallery({ cardKeys }: { cardKeys: string[] }) {
   );
 }
 
-const COMPARISON_LEVELS: Record<ComparisonLevel, { label: string; className: string }> = {
-  full: { label: "Included", className: "text-[var(--cp-accent-ink)]" },
-  limited: { label: "Limited or paid extra", className: "text-ink" },
-  none: { label: "Not available", className: "text-ink-soft opacity-60" },
-};
-
-/**
- * The mark itself: a filled dot for included, a half-filled one for limited,
- * an empty ring for not available.
- *
- * A shape rather than a word, because the column only becomes scannable once
- * the eye can run down it without reading. "Yes" next to a tick said the same
- * thing twice and still left "yes, if you subscribe" looking identical to a
- * plain yes.
- */
-function ComparisonMark({
-  level,
-  /** The legend prints the label beside the mark, so the mark must not also
-      carry it: a screen reader read every legend entry twice. */
-  decorative = false,
-}: {
-  level: ComparisonLevel;
-  decorative?: boolean;
-}) {
-  const { label, className } = COMPARISON_LEVELS[level];
-  return (
-    <span className={`inline-flex flex-none items-center ${className}`}>
-      <svg width="14" height="14" viewBox="0 0 16 16" aria-hidden>
-        <circle cx="8" cy="8" r="6.5" fill="none" stroke="currentColor" strokeWidth="1.6" />
-        {level === "full" && <circle cx="8" cy="8" r="4.25" fill="currentColor" />}
-        {/* Half-filled: the right side of the disc, so "some of it" is literal. */}
-        {level === "limited" && <path d="M8 3.75 A4.25 4.25 0 0 1 8 12.25 Z" fill="currentColor" />}
-      </svg>
-      {!decorative && <span className="sr-only">{label}</span>}
-    </span>
-  );
-}
-
 /**
  * A head-to-head feature table for a competitor comparison page.
  *
- * One <table> serving two layouts. At `sm` and up it is an ordinary three
- * column table. Below that it restacks into a block per feature, because three
- * columns inside a phone's width wrapped nearly every cell onto its own line
- * and pushed rows past 120px tall. Restacking keeps one DOM (and one copy of
- * the text for a crawler) instead of rendering a mobile duplicate, so the
- * product names move into per-cell labels that only show once the header row
- * is hidden.
+ * Tick, dash, or a tick with the terms attached. That is the convention every
+ * comparison table uses, and its whole virtue is that nobody has to be taught
+ * it. Rows sit in labelled groups, because ten unbroken rows is the shape a
+ * reader skims past rather than reads.
  *
- * The table stays worth reading only if the competitor wins the rows it
- * genuinely wins, so those render exactly like ours, in the same marks.
+ * One <table> serves two layouts. At `sm` and up it is an ordinary three
+ * column table. Below that it restacks into a block per feature, since three
+ * columns inside a phone's width wrapped nearly every cell onto its own line.
+ * Restacking keeps one DOM, and one copy of the text for a crawler, instead of
+ * rendering a mobile duplicate, so the product names move into per-cell labels
+ * that only appear once the header row is hidden.
+ *
+ * The table is worth reading only if the competitor wins the rows it genuinely
+ * wins, so those render exactly like ours.
  */
 export function ComparisonTable({
   competitor,
   checked,
-  rows,
+  groups,
 }: {
   competitor: string;
   checked: string;
-  rows: { feature: string; us: ComparisonValue; them: ComparisonValue }[];
+  groups: {
+    title: string;
+    rows: { feature: string; us: ComparisonValue; them: ComparisonValue }[];
+  }[];
 }) {
-  const cell = (v: ComparisonValue, mine: boolean) => {
-    const level = typeof v === "string" ? v : v.level;
-    const note = typeof v === "string" ? undefined : v.note;
-    return (
-      <td
-        className={`px-cp-4 py-cp-3 align-middle max-sm:flex max-sm:items-center max-sm:justify-between max-sm:gap-cp-4 max-sm:py-cp-2 ${
-          mine ? "bg-[var(--cp-accent-soft)]" : ""
-        }`}
-      >
-        <span className="hidden text-cp-small font-semibold text-ink-soft max-sm:inline">
-          {mine ? "RecipePrinter" : competitor}
+  const cell = (v: ComparisonValue, mine: boolean) => (
+    <td
+      className={`px-cp-4 py-cp-3 align-middle max-sm:flex max-sm:items-center max-sm:justify-between max-sm:gap-cp-4 max-sm:py-cp-1 ${
+        mine ? "bg-[var(--cp-accent-soft)]" : ""
+      }`}
+    >
+      <span className="hidden text-cp-small font-semibold text-ink-soft max-sm:inline">
+        {mine ? "RecipePrinter" : competitor}
+      </span>
+      {v === false ? (
+        <span className="inline-flex items-center">
+          <span className="h-px w-3.5 bg-line-strong" aria-hidden />
+          <span className="sr-only">No</span>
         </span>
+      ) : (
         <span className="inline-flex items-center gap-cp-2">
-          <ComparisonMark level={level} />
-          {note && <span className="text-cp-small leading-snug text-ink-soft">{note}</span>}
+          <span className="flex-none text-[var(--cp-accent-ink)]">
+            <CheckIcon size={ICON_SIZE.sm} />
+          </span>
+          <span className="sr-only">Yes</span>
+          {typeof v === "string" && (
+            <span className="text-cp-small leading-snug text-ink-soft">{v}</span>
+          )}
         </span>
-      </td>
-    );
-  };
+      )}
+    </td>
+  );
 
   return (
     <div>
@@ -410,34 +387,37 @@ export function ComparisonTable({
               </th>
             </tr>
           </thead>
-          <tbody className="max-sm:block">
-            {rows.map((row) => (
-              <tr
-                key={row.feature}
-                className="border-b border-line last:border-b-0 max-sm:block max-sm:py-cp-2"
-              >
+          {groups.map((group) => (
+            <tbody key={group.title} className="max-sm:block">
+              <tr className="max-sm:block">
                 <th
-                  scope="row"
-                  className="px-cp-4 py-cp-3 text-cp-body font-semibold leading-snug text-ink max-sm:block max-sm:pb-cp-1"
+                  scope="colgroup"
+                  colSpan={3}
+                  className="border-y border-line bg-[var(--cp-page)] px-cp-4 py-cp-2 text-cp-caption font-bold uppercase tracking-[0.1em] text-ink-soft max-sm:block"
                 >
-                  {row.feature}
+                  {group.title}
                 </th>
-                {cell(row.us, true)}
-                {cell(row.them, false)}
               </tr>
-            ))}
-          </tbody>
+              {group.rows.map((row) => (
+                <tr
+                  key={row.feature}
+                  className="border-b border-line last:border-b-0 max-sm:block max-sm:py-cp-2"
+                >
+                  <th
+                    scope="row"
+                    className="px-cp-4 py-cp-3 text-cp-body font-semibold leading-snug text-ink max-sm:block max-sm:pb-cp-1"
+                  >
+                    {row.feature}
+                  </th>
+                  {cell(row.us, true)}
+                  {cell(row.them, false)}
+                </tr>
+              ))}
+            </tbody>
+          ))}
         </table>
       </div>
-      <div className="mt-cp-3 flex flex-wrap items-center gap-x-cp-5 gap-y-cp-2">
-        {(Object.keys(COMPARISON_LEVELS) as ComparisonLevel[]).map((level) => (
-          <span key={level} className="inline-flex items-center gap-cp-2 text-cp-caption text-ink-soft">
-            <ComparisonMark level={level} decorative />
-            {COMPARISON_LEVELS[level].label}
-          </span>
-        ))}
-      </div>
-      <p className="mt-cp-2 text-cp-caption text-ink-soft">
+      <p className="mt-cp-3 text-cp-caption text-ink-soft">
         {competitor}&rsquo;s features and pricing checked {checked}. Tools change, so check their
         current plans before deciding.
       </p>
