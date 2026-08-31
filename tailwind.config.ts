@@ -40,7 +40,14 @@ const config: Config = {
           // The cool accent: borders, fills, rings, accent bars. For
           // accent-coloured *text* prefer `brand.ink`, the darkened sibling.
           DEFAULT: token("--cp-accent"),
-          ink: token("--cp-accent-ink"),
+          // Was --cp-accent-ink, which no longer exists: the darkened siblings
+          // were removed when the palette went back to its five values, and
+          // this reference outlived them. An undefined var() fails silently —
+          // the colour is simply not applied and the element inherits — so
+          // `text-brand-ink` had quietly stopped doing anything at eight call
+          // sites. Cornflower is the right answer anyway: every one of them is
+          // accent text on plain paper, which is exactly where it belongs.
+          ink: token("--cp-accent"),
           // Two tints of the accent, mixed against the card so they follow the
           // theme's paper as well as its accent. Were #eef9f8 / #d6f0ee.
           50: "color-mix(in srgb, var(--cp-accent) 8%, var(--cp-card))",

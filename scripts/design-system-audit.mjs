@@ -148,6 +148,26 @@ for (const target of cssTargets) {
       }
     });
   }
+  // tailwind.config.ts reads tokens too, and it was the blind spot: `brand.ink`
+  // went on pointing at --cp-accent-ink for a while after that token was
+  // deleted. An undefined var() fails silently — the declaration is dropped and
+  // the element inherits — so `text-brand-ink` looked plausible everywhere it
+  // was used and did nothing at eight call sites. Nothing else catches this:
+  // it is not a contrast bug, so a rendered-DOM sweep sees a passing colour.
+  {
+    const file = path.join(root, "tailwind.config.ts");
+    stripJsComments(fs.readFileSync(file, "utf8")).split("\n").forEach((line, index) => {
+      // Both spellings: a literal `var(--x)` string, and `token("--x")`, which
+      // builds the var() at runtime. Matching only the first is why this check
+      // stayed silent the first time it was pointed at this file.
+      for (const match of line.matchAll(/var\(\s*(--[\w-]+)|["'`](--[\w-]+)["'`]/g)) {
+        const name = match[1] ?? match[2];
+        if (!defined.has(name)) {
+          report(file, index + 1, `${name} is not defined in :root`);
+        }
+      }
+    });
+  }
 }
 
 // ── A shared component is defined once, in globals.css ──
@@ -233,7 +253,9 @@ for (const target of cssTargets) {
   }
 
   // 1b. And no colour literal of ANY kind outside :root — not just the five
-  //     palette values. The rule the palette is meant to enforce is "no new
+  //     palette values. The reserved semantics (--cp-error, --cp-premium) live
+  //     in :root like everything else, so they are covered by the same rule:
+  //     defined once, referenced by name everywhere. The rule the palette is meant to enforce is "no new
   //     colours", and checking only the known five let a NEW one through: a
   //     darkened clay, say, is not a palette value and so matched nothing.
   //     Everything a UI rule paints is a token or a color-mix of tokens.

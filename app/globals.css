@@ -8,17 +8,30 @@
    ────────────────────────────────────────────────────────────────────────── */
 :root {
   color-scheme: light;
-  /* ── The palette has two voices ──────────────────────────────────────────
-     --cp-accent (cornflower) is the SYSTEM talking about itself: what is
-     selected, focused, being dragged onto, editable, linked. Quiet, and on
-     screen constantly.
-     --cp-accent-warm (clay) is the PRODUCT talking to you: what is new, free,
-     owned, purchased, priced, or being offered, plus decorative art that isn't
-     reporting state. Rare, and loud when it turns up.
+  /* ── Cornflower acts, clay informs ───────────────────────────────────────
+     The split is INTERACTIVITY, which is how most design systems draw it and
+     is the version you can actually check: ask whether you click the thing.
 
-     These are the palette's own values, not shades of them. Darkened siblings
-     lived here for a while (--cp-accent-ink, --cp-accent-warm-ink) and turned
-     out to be solving a problem a rule solves better:
+       --cp-accent (cornflower)  things you ACT ON. Buttons, links, selection,
+                                 focus, drag targets. If clicking it does
+                                 something, it is cornflower.
+       --cp-accent-warm (clay)   things that TELL YOU something and that you do
+                                 not act on. Tags and banners — new, free,
+                                 priced, protected — plus decorative art.
+
+     A button inside a clay banner is still cornflower. The banner is the
+     message; the button is the thing you press. Getting that backwards is what
+     made the protect bar's action read as part of the notice rather than as
+     the way out of it.
+
+     Two things sit outside both, each meaning exactly one thing, each a colour
+     the five-value palette does not carry: --cp-error (something failed) and
+     --cp-premium (this costs money). And a SETTLED state — owned, purchased —
+     is neutral: it is the absence of anything to notice, so it gets the
+     absence of a colour.
+
+     Each accent has a -soft tint. Neither has a darkened sibling, because two
+     rules do that work instead:
 
        · Cornflower is TEXT only on plain paper — card or page, where it is
          5.1:1 and 4.7:1. On a tinted surface it falls to 4.4:1, so text there
@@ -26,17 +39,30 @@
        · Clay carries text only at LARGE sizes. White on clay is 3.7:1, which
          clears WCAG's 3:1 bar for large text (>=18.66px bold, or >=24px
          regular) and for non-text — borders, rules, icons — but not the 4.5:1
-         normal text needs. So a big filled clay chip with white on it is fine
-         and is what --cp-on-accent-warm is for; a small one is not. Words on a
-         clay TINT are --cp-ink, 11:1 against it.
+         normal text needs. Words on a clay TINT are --cp-ink, 11:1 against it.
 
-     The accents mark things; Slate says them. One sentence to hold instead of
-     four hexes to keep in sync — and the reason neither accent needs a second
-     version of itself. */
+     The accents mark things; Slate says them. */
   --cp-accent: #4a6fa8;
   --cp-accent-soft: rgba(74, 111, 168, 0.12);
   --cp-accent-warm: #c96a4c;
   --cp-accent-warm-soft: rgba(201, 106, 76, 0.18);
+  /* ── Premium: a reserved semantic, not an accent ─────────────────────────
+     "This costs money" is a meaning the five-colour palette does not carry,
+     exactly like "this failed" — so it gets its own colour for the same reason
+     --cp-error does, rather than borrowing one of the accents.
+
+     Which is what the gold always was. I removed it earlier calling it a stray
+     chip following nothing; that was wrong. It was following its meaning, and
+     putting the marker on clay made "costs money" and "is new" the same colour
+     while a badge is the one place a colour should mean exactly one thing.
+
+     Tint, edge and ink, never a solid fill: the badge carries a crown and no
+     words, so 4.4:1 of ink on its own tint is well past the 3:1 a graphic
+     answers to. The edge is the ink rather than the lighter #d7a94c it used to
+     be, which was 2.17:1 on card and too faint to be the chip's boundary. */
+  --cp-premium: #9b6a12;
+  --cp-premium-soft: #fff8dc;
+
   /* The text that sits ON a filled accent: white either way — 5.1:1 on
      cornflower (where --cp-ink is 2.7:1) and 3.7:1 on clay. Named so the
      pairing is not re-decided by hand at each call site.
@@ -586,8 +612,10 @@
   transition: border-color 120ms ease, background 120ms ease;
 }
 .cookbook-format-card:hover {
-  border-color: var(--cp-accent-warm);
-  background: var(--cp-accent-warm-soft);
+  /* Cornflower: this whole card is a button you press to choose a format, and
+     a hover state is the control answering you. */
+  border-color: var(--cp-accent);
+  background: var(--cp-accent-soft);
 }
 .cookbook-format-card__text {
   display: grid;

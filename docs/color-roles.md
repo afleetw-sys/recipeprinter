@@ -1,98 +1,56 @@
 # Blue or orange?
 
-The palette has two accents, and the question "which one goes here?" has a
-single answer that doesn't depend on taste. Source of truth for the values is
-`:root` in `app/globals.css`; this file is the *rule*.
+The palette has two accents plus two reserved semantics, and "which one goes
+here?" has a single answer that doesn't depend on taste. Source of truth for
+the values is `:root` in `app/globals.css`; this file is the *rule*.
 
 ## The rule
 
-**Cornflower is the system talking about itself. Clay is the product talking to
-you.**
+**Cornflower acts. Clay informs.**
 
-| | Cornflower (`--cp-accent`) | Clay (`--cp-accent-warm`) |
+The split is INTERACTIVITY, which is how most design systems draw it and is the
+version you can actually check: ask whether you click the thing.
+
+| | Cornflower `--cp-accent` | Clay `--cp-accent-warm` |
 |---|---|---|
-| Says | "here is where you are" | "here is something worth noticing" |
-| Triggered by | the user's own action | a fact about the product |
-| Frequency | constantly on screen | rare |
-| Examples | selected, focused, active page, drag target, editable, hovered drop zone, links | new, free, owned, purchased, priced, being offered, and decorative art that reports nothing |
+| Is for | things you **act on** | things that **tell you something** |
+| Test | clicking it does something | you read it and move on |
+| Examples | buttons, links, selection, focus, drag targets, editable fields | tags and banners — new, free, priced, protected — and decorative art |
 
-If a surface changes because someone clicked, dragged, or tabbed, it is
-cornflower. If it would look the same to a user who never touched anything —
-because it is describing what the product *is* or *costs* — it is clay.
+A button inside a clay banner is still cornflower. The banner is the message;
+the button is the thing you press. Getting that backwards is what made the
+protect bar's action read as part of the notice rather than as the way out of
+it.
 
-Two tests for the edge cases:
+## The two reserved semantics
 
-- **Would it still be there on a screenshot with nothing selected?** Yes → clay.
-- **Is it reporting a fact the user just created, or one we're telling them?**
-  Created → cornflower. Told → clay.
+Some meanings the five-colour palette simply doesn't carry. Those get their own
+colour rather than borrowing an accent, and each means exactly one thing:
 
-Worked examples, all live in the product:
-
-- The page rail's active thumbnail → **cornflower**. You put it there.
-- The "premium" marker on a template tile → **clay**. It costs money whether
-  you look at it or not.
-- The "NEW" flag on the Cookbook tab → **clay**. We're announcing.
-- A multi-select halo → **cornflower**. You cmd-clicked.
-- The empty project cover art → **clay**. Decoration, reporting nothing.
-- The free-template banner and the protect bar → **clay**. Both are us telling
-  you something about the product.
-- `.status-badge--success` → **cornflower**. "That worked" is the system
-  reporting on your action, not a product announcement.
-
-Neither accent is ever the answer for a *primary action*. Those are ink
-(`.btn-primary`) — a filled dark button — in both voices' territory, because
-"the main thing to do here" is a third thing and always has been. Error is its
-own true red (`--cp-error`), deliberately not a deepened clay: a failure must
-not speak in the accent's voice.
-
-## Picking the right variable
-
-There are **five colours and white**. No darkened siblings, no tints invented
-per component — everything below is one of those or a `color-mix` of them.
-
-| Painting | Cornflower | Clay |
+| Token | Colour | Means |
 |---|---|---|
-| A border, a rule, an icon | `--cp-accent` | `--cp-accent-warm` |
-| A low-alpha wash behind something | `--cp-accent-soft` | `--cp-accent-warm-soft` |
-| A solid fill | `--cp-accent` | `--cp-accent-warm` |
-| Text sitting on that solid fill | `--cp-on-accent` | `--cp-on-accent-warm` (large text only) |
-| Text on plain card or page | `--cp-accent` | — use `--cp-ink` |
-| Text on a tint | `--cp-ink` | `--cp-ink` |
+| `--cp-error` | a true red | something failed |
+| `--cp-premium` | gold | this costs money |
 
-Two rules make that table work, and they replace what a set of darkened
-siblings used to buy:
+This is the normal shape in mature systems — Primer reserves a distinct hue for
+"attention" and another for "done"; Polaris badges take a status tone rather
+than the brand colour. A badge is the one place a colour should mean exactly
+one thing, so premium is gold and nothing else in the product is.
 
-**The accents mark things; Slate says them.** Cornflower is a word only on
-plain paper — 5.1:1 on card, 4.7:1 on page, but 4.4:1 the moment it sits on any
-tint, so text on a tinted surface is `--cp-ink`. Clay is never a word on a
-light ground at all: 3.7:1 clears the 3:1 that a border, a rule or an icon
-answers to, and stops there.
+Putting the premium marker on clay broke that: "costs money" and "is new"
+became the same colour a few pixels apart.
 
-**White on a filled accent depends on the size.** White on cornflower is 5.1:1
-and works anywhere. White on clay is 3.7:1, which clears WCAG's 3:1 bar for
-**large text** — 18.66px bold or 24px regular — but not the 4.5:1 that normal
-text needs. So a big filled clay chip with white on it is correct and is what
-`--cp-on-accent-warm` is for. A small one is not — with one
-recorded exception.
+## And a settled state is neutral
 
-**The one accepted exception.** The "NEW" flag beside the Cookbook tab is
-solid clay with white on it at 9.9px, which is 3.72:1 against a 4.5:1
-requirement. It is the only surface in the app that does not clear AA. That
-was a deliberate call: the alternatives were an accessible tint, or growing the
-flag past 18.66px so white-on-clay passes, and a 19px flag would out-shout the
-12.8px tab it rides on. Every other word-carrying chip in the notice family —
-Purchased, Free template, the protect bar — stays a tint with an ink word.
-If you are auditing and find this, it is known; don't silently change it.
+**Owned. Purchased.** You already have it; there is nothing to buy and nothing
+to notice. That is the absence of anything to do, so it gets the absence of a
+colour — ink on a plain neutral. It also has to be told apart at a glance from
+the gold premium badge on the same grid, which colouring both of them warm
+defeated.
 
-`--cp-on-accent` and `--cp-on-accent-warm` both resolve to the card. They are
-two names rather than one because that size rule differs, and because naming
-the pairing is what stops it being re-decided by hand — against the old brand
-teal ink won at 1.95:1, against cornflower ink is 2.66:1 and white wins, and
-the signed-in avatar spent a while on the wrong side of that flip.
-
-The one colour that is not from the palette is `--cp-error`. The palette has no
-red, and a failure must not speak in the accent's voice — so it is a genuine
-sixth value rather than a shade of an existing one.
+If you only remember one line: **cornflower for what you press, clay for what
+you're told, gold for what costs money, red for what broke, neutral for what's
+already settled.**
 
 ## Fill or edge? (the selected-state question)
 

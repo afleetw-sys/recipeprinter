@@ -1925,15 +1925,17 @@
    outline on the accent tint keeps the whole bar one calm object while leaving
    the action plainly clickable. */
 .recipe-protect-bar__action {
-  border-color: color-mix(in srgb, var(--cp-accent-warm) 55%, transparent);
+  /* Cornflower on a clay banner, on purpose. The bar is the message; this is
+     the button that resolves it, and a button is something you act on. */
+  border-color: color-mix(in srgb, var(--cp-accent) 55%, transparent);
   background: var(--cp-card);
-  color: var(--cp-ink);
+  color: var(--cp-accent);
 }
 
 .recipe-protect-bar__action:hover:not(:disabled) {
-  border-color: var(--cp-accent-warm);
+  border-color: var(--cp-accent);
   background: var(--cp-card);
-  color: var(--cp-ink);
+  color: var(--cp-accent);
 }
 
 /* Quiet "you own this" acknowledgement in the Book Settings header, so a
@@ -1946,7 +1948,9 @@
   flex: 0 0 auto;
   padding: 3px 9px;
   border-radius: 999px;
-  background: var(--cp-accent-warm-soft);
+  /* Neutral, matching the owned marker on a template tile: both say "you
+     already have this", and a settled state is not a notice. */
+  background: var(--cp-surface-strong);
   color: var(--cp-ink);
   font-size: var(--cp-fs-caption);
   font-weight: 700;
@@ -2115,17 +2119,14 @@
   min-width: 22px;
   height: 22px;
   padding: 0 6px;
-  /* SOLID clay with a white glyph, not a tint. This badge holds a crown and
-     nothing else — no words — so it answers to WCAG's 3:1 bar for non-text
-     graphics rather than the 4.5:1 text needs, and white on clay is 3.7:1.
-     That is the whole reason the tinted treatment next door exists on the
-     chips that DO carry a word: the constraint was never the colour, it was
-     whether something in the box has to be read as language.
-     (Was three hardcoded golds before any of this.) */
-  border: 1px solid var(--cp-accent-warm);
+  /* Gold, which is neither accent — see --cp-premium in globals.css. "Costs
+     money" is its own meaning, and on clay it was the same colour as "is new"
+     sitting a few pixels away. Tint, edge and ink, the treatment this badge
+     had before I recoloured it. */
+  border: 1px solid var(--cp-premium);
   border-radius: 999px;
-  background: var(--cp-accent-warm);
-  color: var(--cp-on-accent-warm);
+  background: var(--cp-premium-soft);
+  color: var(--cp-premium);
   font-size: var(--cp-fs-label);
   font-weight: 900;
   line-height: 1;
@@ -2140,13 +2141,14 @@
   place-items: center;
   width: 22px;
   height: 22px;
-  /* Solid, for the same reason as the premium badge above: a tick and nothing
-     else, so 3:1 applies and white on clay clears it. "You own this" is the
-     notice half of the palette, not a piece of system state. */
-  border: 1px solid var(--cp-accent-warm);
+  /* Neutral, and deliberately quiet. "You already own this" is the absence of
+     anything to do — nothing to buy, nothing to notice — so it gets the
+     absence of a colour. It also has to be told apart at a glance from the
+     gold badge above on the same grid, which colouring both warm defeated. */
+  border: 1px solid var(--cp-line-strong);
   border-radius: 999px;
-  background: var(--cp-accent-warm);
-  color: var(--cp-on-accent-warm);
+  background: var(--cp-surface-strong);
+  color: var(--cp-ink);
 }
 
 .recipe-toast {

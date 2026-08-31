@@ -371,7 +371,11 @@ export default function AccountMenu({
                     <>
                       <Link
                         href="/projects"
-                        className="flex items-center justify-between gap-2 text-cp-small font-bold hover:text-brand-ink"
+                        /* `text-ink`, because the global `a { color: var(--cp-blue) }`
+                           makes every anchor cornflower — right for a link inside a
+                           sentence, wrong for a row in a menu, where it turned the
+                           whole panel blue. The accent comes back on hover. */
+                        className="flex items-center justify-between gap-2 text-cp-small font-bold text-ink hover:text-brand-ink"
                         onClick={() => setOpen(false)}
                       >
                         Cookbooks
@@ -382,19 +386,22 @@ export default function AccountMenu({
                           <Link
                             key={project.id}
                             href={`/print?project=${encodeURIComponent(project.id)}`}
-                            className="rounded-lg px-2 py-2 hover:bg-page"
+                            className="rounded-lg px-2 py-2 text-ink hover:bg-page"
                             aria-busy={openingProjectId === project.id}
                             onClick={() => {
                               setOpeningProjectId(project.id);
                               setOpen(false);
                             }}
                           >
+                            {/* No "Cookbook" line under the title. It sat under
+                                every row of a section already headed Cookbooks,
+                                so it said nothing the heading hadn't, twice per
+                                row, in a panel this size. */}
                             <span className="block truncate text-cp-small font-semibold">
                               {openingProjectId === project.id ? (
                                 <span className="inline-flex items-center gap-2"><SpinnerIcon size={ICON_SIZE.sm} /> Opening cookbook…</span>
                               ) : project.title || "Untitled cookbook"}
                             </span>
-                            <span className="text-cp-caption text-ink-soft">Cookbook</span>
                           </Link>
                         ))}
                       </div>
@@ -404,7 +411,7 @@ export default function AccountMenu({
                     <>
                       <Link
                         href="/projects"
-                        className={`flex items-center justify-between gap-2 text-cp-small font-bold hover:text-brand-ink ${
+                        className={`flex items-center justify-between gap-2 text-cp-small font-bold text-ink hover:text-brand-ink ${
                           cookbooks.length > 0 ? "mt-cp-4 border-t border-line pt-cp-3" : ""
                         }`}
                         onClick={() => setOpen(false)}
@@ -417,7 +424,7 @@ export default function AccountMenu({
                           <Link
                             key={project.id}
                             href={`/print?project=${encodeURIComponent(project.id)}`}
-                            className="rounded-lg px-2 py-2 hover:bg-page"
+                            className="rounded-lg px-2 py-2 text-ink hover:bg-page"
                             aria-busy={openingProjectId === project.id}
                             onClick={() => {
                               setOpeningProjectId(project.id);
@@ -429,7 +436,6 @@ export default function AccountMenu({
                                 <span className="inline-flex items-center gap-2"><SpinnerIcon size={ICON_SIZE.sm} /> Opening project…</span>
                               ) : project.title || "Untitled recipe cards"}
                             </span>
-                            <span className="text-cp-caption text-ink-soft">Recipe cards</span>
                           </Link>
                         ))}
                       </div>
