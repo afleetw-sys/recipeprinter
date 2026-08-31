@@ -15,7 +15,8 @@
     "test:rules": "npx firebase-tools@14.27.0 --config firebase.rules-test.json emulators:exec --only firestore,storage \"vitest run --config vitest.rules.config.ts\"",
     "test:watch": "vitest",
     "pdf:dev": "node scripts/pdf-renderer-dev.mjs",
-    "logo:build": "node scripts/build-logo-assets.mjs"
+    "logo:build": "node scripts/build-logo-assets.mjs",
+    "og:card": "node scripts/build-og-card.mjs"
   },
   "dependencies": {
     "@revenuecat/purchases-js": "^1.46.0",

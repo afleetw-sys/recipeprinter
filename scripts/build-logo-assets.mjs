@@ -235,11 +235,9 @@ async function main() {
   // The OG renderer wants the FULL mark at full resolution — a social card is
   // big, and it is the one place the whole printer should appear.
   const b64 = logo.toString("base64");
-  const lines = b64.match(/.{1,120}/g) ?? [b64];
-  const module =
-    BASE64_MODULE_HEADER +
-    lines.map((l, i) => `  ${i === 0 ? '"' : '"'}${l}"`).join(" +\n") +
-    ";\n";
+  // One string literal — see the note in build-og-card.mjs: a `+` chain of
+  // this length overflows the lint parser's stack.
+  const module = BASE64_MODULE_HEADER + "  " + JSON.stringify(b64) + ";\n";
   writeFileSync(resolve(ROOT, "app/opengraph-image-logo-base64.ts"), module);
   written.push(`app/opengraph-image-logo-base64.ts (${b64.length} chars)`);
 

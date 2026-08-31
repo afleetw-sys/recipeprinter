@@ -169,7 +169,7 @@ export default function ProjectsPage() {
     return merged.sort(
       (a, b) => Number(b.updatedAt ?? b.createdAt ?? 0) - Number(a.updatedAt ?? a.createdAt ?? 0),
     );
-  }, [accountProjects, localProjects, localOnlyIds]);
+  }, [accountProjects, localProjects]);
 
   const cookbooks = projects.filter((project) => project.kind !== "printProject");
   const recipeCardProjects = projects.filter((project) => project.kind === "printProject");
