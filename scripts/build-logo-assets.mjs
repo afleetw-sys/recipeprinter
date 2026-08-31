@@ -1,12 +1,24 @@
 #!/usr/bin/env node
 /**
- * Regenerates every derived logo asset from one source file.
+ * Regenerates every derived brand asset from two source files.
  *
  *   npm run logo:build
  *
- * The source of truth is public/images/recipeprinter-logo.png. Replace that
- * one file and run this; everything below is derived from it, so the six
- * copies of the mark scattered around the repo can never drift apart again:
+ * TWO sources, because a tab icon and a logo are not the same picture. The
+ * full mark is a printer with produce in its tray: legible on a header, and at
+ * 16px a blue rounded blob with something indistinct in the middle. The icon
+ * mark drops the printer and keeps the produce — two high-contrast shapes that
+ * still read at 16px.
+ *
+ *   public/images/recipeprinter-logo.png     the full mark. Header, print
+ *                                            dialog, OG image, schema.org logo.
+ *   public/images/recipeprinter-favicon.png  the icon mark. Everything a
+ *                                            browser or an OS shows small.
+ *
+ * If the icon source is missing the script falls back to the full mark and
+ * says so, so this never half-breaks — it just goes back to one picture.
+ *
+ * Derived, so the copies scattered around the repo cannot drift apart:
  *
  *   app/icon.png                        the <link rel="icon"> Next generates
  *   app/apple-icon.png                  180x180 home-screen icon
@@ -14,6 +26,9 @@
  *   public/favicon-32x32.png            declared in app/layout.tsx
  *   public/favicon.ico                  the /favicon.ico browsers ask for
  *   app/opengraph-image-logo-base64.ts  inlined for the OG image renderer
+ *
+ * Bump the ?v= on the icon URLs in app/layout.tsx whenever the icon mark
+ * changes, or nobody who has already visited will ever see it.
  *
  * Rendering is done in headless Chrome rather than with `sips`, for one
  * reason that matters: the mark is not square (420x427), and every icon
@@ -30,7 +45,8 @@ import { fileURLToPath } from "node:url";
 import puppeteer from "puppeteer-core";
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..");
-const SOURCE = resolve(ROOT, "public/images/recipeprinter-logo.png");
+const LOGO_SOURCE = resolve(ROOT, "public/images/recipeprinter-logo.png");
+const ICON_SOURCE = resolve(ROOT, "public/images/recipeprinter-favicon.png");
 
 const CHROME_CANDIDATES = [
   "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome",
@@ -40,22 +56,30 @@ const CHROME_CANDIDATES = [
   "/usr/bin/chromium",
 ];
 
-/** Square icon targets. `pad` letterboxes onto a transparent canvas. */
+/** Square icon targets, letterboxed onto a canvas of `background`.
+ *
+ *  The apple icon is the one that must NOT be transparent: iOS composites a
+ *  transparent apple-touch-icon onto black, which would put a navy-and-orange
+ *  mark on a black tile. Browser favicons keep their alpha so they sit on
+ *  whatever the tab strip is. */
 const TARGETS = [
-  { out: "app/apple-icon.png", size: 180 },
-  { out: "public/favicon-32x32.png", size: 32 },
-  { out: "public/favicon-16x16.png", size: 16 },
+  { out: "app/apple-icon.png", size: 180, background: "#ffffff", pad: 0.12 },
+  { out: "public/favicon-32x32.png", size: 32, background: "transparent" },
+  { out: "public/favicon-16x16.png", size: 16, background: "transparent" },
 ];
 
 /** The non-square one: icon.png keeps the mark's own proportions. */
 const ICON_MAX = 168;
 
-async function shoot(page, dataUri, width, height, objectFit) {
+async function shoot(page, dataUri, width, height, objectFit, background = "transparent", pad = 0) {
   await page.setViewport({ width, height, deviceScaleFactor: 1 });
+  const inset = Math.round(width * pad);
   await page.setContent(
     `<style>
-       html,body{margin:0;padding:0;background:transparent}
-       img{display:block;width:${width}px;height:${height}px;object-fit:${objectFit}}
+       html,body{margin:0;padding:0;background:${background}}
+       img{display:block;
+           width:${width - inset * 2}px;height:${height - inset * 2}px;
+           margin:${inset}px;object-fit:${objectFit}}
      </style>
      <img src="${dataUri}">`,
     { waitUntil: "load" },
@@ -66,7 +90,10 @@ async function shoot(page, dataUri, width, height, objectFit) {
     const img = document.querySelector("img");
     return img.complete ? null : img.decode();
   });
-  return page.screenshot({ type: "png", omitBackground: true });
+  // Only when the target actually wants alpha. `omitBackground: true` forces a
+  // transparent capture, which would have quietly thrown away the white tile
+  // the apple icon is given precisely so iOS doesn't composite it onto black.
+  return page.screenshot({ type: "png", omitBackground: background === "transparent" });
 }
 
 /**
@@ -114,8 +141,8 @@ export const OPENGRAPH_IMAGE_LOGO_BASE64 =
 `;
 
 async function main() {
-  if (!existsSync(SOURCE)) {
-    console.error(`Source not found: ${SOURCE}`);
+  if (!existsSync(LOGO_SOURCE)) {
+    console.error(`Source not found: ${LOGO_SOURCE}`);
     process.exit(1);
   }
   const executablePath =
@@ -125,30 +152,45 @@ async function main() {
     process.exit(1);
   }
 
-  const source = readFileSync(SOURCE);
-  const dataUri = `data:image/png;base64,${source.toString("base64")}`;
+  const logo = readFileSync(LOGO_SOURCE);
+  const logoUri = `data:image/png;base64,${logo.toString("base64")}`;
+
+  const hasIconSource = existsSync(ICON_SOURCE);
+  const icon = hasIconSource ? readFileSync(ICON_SOURCE) : logo;
+  const iconUri = hasIconSource
+    ? `data:image/png;base64,${icon.toString("base64")}`
+    : logoUri;
+  console.log(
+    hasIconSource
+      ? "icon mark: public/images/recipeprinter-favicon.png"
+      : "icon mark: MISSING — falling back to the full logo. Save the icon " +
+        "artwork to public/images/recipeprinter-favicon.png and re-run.",
+  );
 
   const browser = await puppeteer.launch({ executablePath, headless: true });
   const page = await browser.newPage();
 
   // Natural size, so the non-square target keeps the mark's proportions.
-  const { w: srcW, h: srcH } = await page.evaluate(
-    (uri) =>
-      new Promise((res) => {
-        const img = new Image();
-        img.onload = () => res({ w: img.naturalWidth, h: img.naturalHeight });
-        img.src = uri;
-      }),
-    dataUri,
-  );
-  console.log(`source ${srcW}x${srcH}`);
+  const measure = (uri) =>
+    page.evaluate(
+      (u) =>
+        new Promise((res) => {
+          const img = new Image();
+          img.onload = () => res({ w: img.naturalWidth, h: img.naturalHeight });
+          img.src = u;
+        }),
+      uri,
+    );
+  const { w: srcW, h: srcH } = await measure(iconUri);
+  const logoSize = await measure(logoUri);
+  console.log(`logo ${logoSize.w}x${logoSize.h}  ·  icon ${srcW}x${srcH}`);
 
   const written = [];
   const icoParts = [];
 
-  for (const { out, size } of TARGETS) {
+  for (const { out, size, background, pad } of TARGETS) {
     // `contain` letterboxes rather than cropping or squashing.
-    const png = await shoot(page, dataUri, size, size, "contain");
+    const png = await shoot(page, iconUri, size, size, "contain", background, pad);
     writeFileSync(resolve(ROOT, out), png);
     written.push(`${out} (${size}x${size}, ${png.length} B)`);
     if (size === 16 || size === 32) icoParts.push({ size, data: png });
@@ -156,7 +198,7 @@ async function main() {
 
   const iconW = srcW >= srcH ? ICON_MAX : Math.round((srcW / srcH) * ICON_MAX);
   const iconH = srcW >= srcH ? Math.round((srcH / srcW) * ICON_MAX) : ICON_MAX;
-  const iconPng = await shoot(page, dataUri, iconW, iconH, "fill");
+  const iconPng = await shoot(page, iconUri, iconW, iconH, "fill");
   writeFileSync(resolve(ROOT, "app/icon.png"), iconPng);
   written.push(`app/icon.png (${iconW}x${iconH}, ${iconPng.length} B)`);
 
@@ -165,8 +207,9 @@ async function main() {
   writeFileSync(resolve(ROOT, "public/favicon.ico"), ico);
   written.push(`public/favicon.ico (${icoParts.map((p) => p.size).join(" + ")}, ${ico.length} B)`);
 
-  // The OG renderer wants the full-resolution mark, not an icon crop.
-  const b64 = source.toString("base64");
+  // The OG renderer wants the FULL mark at full resolution — a social card is
+  // big, and it is the one place the whole printer should appear.
+  const b64 = logo.toString("base64");
   const lines = b64.match(/.{1,120}/g) ?? [b64];
   const module =
     BASE64_MODULE_HEADER +
