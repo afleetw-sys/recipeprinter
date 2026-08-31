@@ -8,12 +8,11 @@ import {
   ICON_SIZE,
   ImageIcon,
   LinkIcon,
-  MinusIcon,
   PrintIcon,
   TextIcon,
   UsersIcon,
 } from "@/components/icons";
-import type { ComparisonValue, SeoIconKey, SeoProofKind } from "@/lib/seoLandingPages";
+import type { ComparisonLevel, ComparisonValue, SeoIconKey, SeoProofKind } from "@/lib/seoLandingPages";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // SEO landing-page visual system, clean, modern, and built only from real
@@ -307,6 +306,44 @@ export function PhotoGallery({ cardKeys }: { cardKeys: string[] }) {
   );
 }
 
+const COMPARISON_LEVELS: Record<ComparisonLevel, { label: string; className: string }> = {
+  full: { label: "Included", className: "text-[var(--cp-accent-ink)]" },
+  limited: { label: "Limited or paid extra", className: "text-ink" },
+  none: { label: "Not available", className: "text-ink-soft opacity-60" },
+};
+
+/**
+ * The mark itself: a filled dot for included, a half-filled one for limited,
+ * an empty ring for not available.
+ *
+ * A shape rather than a word, because the column only becomes scannable once
+ * the eye can run down it without reading. "Yes" next to a tick said the same
+ * thing twice and still left "yes, if you subscribe" looking identical to a
+ * plain yes.
+ */
+function ComparisonMark({
+  level,
+  /** The legend prints the label beside the mark, so the mark must not also
+      carry it: a screen reader read every legend entry twice. */
+  decorative = false,
+}: {
+  level: ComparisonLevel;
+  decorative?: boolean;
+}) {
+  const { label, className } = COMPARISON_LEVELS[level];
+  return (
+    <span className={`inline-flex flex-none items-center ${className}`}>
+      <svg width="14" height="14" viewBox="0 0 16 16" aria-hidden>
+        <circle cx="8" cy="8" r="6.5" fill="none" stroke="currentColor" strokeWidth="1.6" />
+        {level === "full" && <circle cx="8" cy="8" r="4.25" fill="currentColor" />}
+        {/* Half-filled: the right side of the disc, so "some of it" is literal. */}
+        {level === "limited" && <path d="M8 3.75 A4.25 4.25 0 0 1 8 12.25 Z" fill="currentColor" />}
+      </svg>
+      {!decorative && <span className="sr-only">{label}</span>}
+    </span>
+  );
+}
+
 /**
  * A head-to-head feature table for a competitor comparison page.
  *
@@ -318,11 +355,8 @@ export function PhotoGallery({ cardKeys }: { cardKeys: string[] }) {
  * product names move into per-cell labels that only show once the header row
  * is hidden.
  *
- * Cells take `true`, `false`, or a short phrase. A phrase almost always reads
- * better than a bare tick: "Included with Premium" and "iOS and Android" are
- * the facts a reader is actually weighing, and a tick would flatten both into
- * the same mark. The table stays honest only if the competitor wins the rows
- * it genuinely wins, so those render exactly like ours.
+ * The table stays worth reading only if the competitor wins the rows it
+ * genuinely wins, so those render exactly like ours, in the same marks.
  */
 export function ComparisonTable({
   competitor,
@@ -333,38 +367,25 @@ export function ComparisonTable({
   checked: string;
   rows: { feature: string; us: ComparisonValue; them: ComparisonValue }[];
 }) {
-  // Every cell answers the same question the same way: yes or no first, in the
-  // same place on both sides, with any qualifier below it. A cell that wrote
-  // its own phrasing ("Included with Premium" facing a bare "Yes") described
-  // two products instead of comparing them.
-  const value = (v: ComparisonValue) => {
-    const yes = typeof v === "boolean" ? v : v.yes;
-    const note = typeof v === "boolean" ? undefined : v.note;
+  const cell = (v: ComparisonValue, mine: boolean) => {
+    const level = typeof v === "string" ? v : v.level;
+    const note = typeof v === "string" ? undefined : v.note;
     return (
-      <span className="flex flex-col gap-0.5">
-        <span
-          className={`inline-flex items-center gap-cp-2 font-semibold ${yes ? "text-ink" : "text-ink-soft"}`}
-        >
-          {yes ? <CheckIcon size={ICON_SIZE.sm} /> : <MinusIcon size={ICON_SIZE.sm} />}
-          {yes ? "Yes" : "No"}
+      <td
+        className={`px-cp-4 py-cp-3 align-middle max-sm:flex max-sm:items-center max-sm:justify-between max-sm:gap-cp-4 max-sm:py-cp-2 ${
+          mine ? "bg-[var(--cp-accent-soft)]" : ""
+        }`}
+      >
+        <span className="hidden text-cp-small font-semibold text-ink-soft max-sm:inline">
+          {mine ? "RecipePrinter" : competitor}
         </span>
-        {note && <span className="text-cp-caption text-ink-soft">{note}</span>}
-      </span>
+        <span className="inline-flex items-center gap-cp-2">
+          <ComparisonMark level={level} />
+          {note && <span className="text-cp-small leading-snug text-ink-soft">{note}</span>}
+        </span>
+      </td>
     );
   };
-
-  const cell = (v: ComparisonValue, mine: boolean) => (
-    <td
-      className={`px-cp-4 py-cp-3 text-cp-body leading-snug max-sm:flex max-sm:items-baseline max-sm:justify-between max-sm:gap-cp-4 max-sm:py-cp-2 ${
-        mine ? "bg-[var(--cp-accent-soft)]" : ""
-      }`}
-    >
-      <span className="hidden font-semibold text-ink-soft max-sm:inline">
-        {mine ? "RecipePrinter" : competitor}
-      </span>
-      {value(v)}
-    </td>
-  );
 
   return (
     <div>
@@ -408,7 +429,15 @@ export function ComparisonTable({
           </tbody>
         </table>
       </div>
-      <p className="mt-cp-3 text-cp-caption text-ink-soft">
+      <div className="mt-cp-3 flex flex-wrap items-center gap-x-cp-5 gap-y-cp-2">
+        {(Object.keys(COMPARISON_LEVELS) as ComparisonLevel[]).map((level) => (
+          <span key={level} className="inline-flex items-center gap-cp-2 text-cp-caption text-ink-soft">
+            <ComparisonMark level={level} decorative />
+            {COMPARISON_LEVELS[level].label}
+          </span>
+        ))}
+      </div>
+      <p className="mt-cp-2 text-cp-caption text-ink-soft">
         {competitor}&rsquo;s features and pricing checked {checked}. Tools change, so check their
         current plans before deciding.
       </p>

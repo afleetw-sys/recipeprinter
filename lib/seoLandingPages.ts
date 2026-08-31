@@ -27,15 +27,30 @@ export type SeoProofKind =
   | "steps";
 
 /**
- * One cell of a comparison table: yes or no, with an optional qualifier.
+ * How fully a product does the thing a comparison row names.
+ *
+ * Three states rather than two, because the interesting rows are not binary.
+ * "Yes, if you subscribe" and "yes, for the first twenty" are not the same
+ * answer as "yes", and a yes/no column flattens exactly the differences a
+ * reader came to the page to find.
+ *
+ * `limited` means available with a real condition attached: a paid plan, a cap,
+ * or a partial version of the thing. It applies to us on the same terms it
+ * applies to anyone else, so our own paid cookbook is `limited` too. A scale
+ * that grades the competitor's paywall harder than our own is not a scale.
+ */
+export type ComparisonLevel = "full" | "limited" | "none";
+
+/**
+ * One cell: a level, plus the short phrase that says what the condition is.
  *
  * Deliberately not a free string. Letting each cell write its own phrasing
  * produced rows that answered different questions on each side — "Yes" facing
  * "Included with Premium" — which reads as two products being described rather
- * than compared. Forcing every cell onto the same yes/no axis, with the nuance
- * in a note underneath, means a reader can scan one column against the other.
+ * than compared. The level is what a reader scans down the column; the note is
+ * what they stop on when a row matters to them.
  */
-export type ComparisonValue = boolean | { yes: boolean; note: string };
+export type ComparisonValue = ComparisonLevel | { level: ComparisonLevel; note: string };
 
 export type SeoLandingPage = {
   slug: string;
@@ -767,28 +782,37 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
       competitor: "JustTheRecipe",
       checked: "August 2026",
       rows: [
-        { feature: "Recipes from a link", us: true, them: true },
-        { feature: "Recipes from a photo or screenshot", us: true, them: false },
-        { feature: "Recipes from text you paste in", us: true, them: false },
+        { feature: "Recipes from a link", us: "full", them: "full" },
+        { feature: "Recipes from a photo or screenshot", us: "full", them: "none" },
+        { feature: "Recipes from text you paste in", us: "full", them: "none" },
         {
           feature: "Printing",
-          us: { yes: true, note: "Free, no account" },
-          them: { yes: true, note: "On the paid plan" },
+          us: { level: "full", note: "Free, no account" },
+          them: { level: "limited", note: "On the paid plan" },
         },
+        { feature: "Recipe card sizes and themes", us: "full", them: "none" },
+        { feature: "Printing several recipes in one job", us: "full", them: "none" },
         {
           feature: "Saving recipes to come back to",
-          us: { yes: true, note: "With a free account" },
-          them: { yes: true, note: "Up to 20 free" },
+          us: { level: "full", note: "With a free account" },
+          them: { level: "limited", note: "20 on the free plan" },
         },
-        { feature: "Recipe card sizes and themes", us: true, them: false },
-        { feature: "Printing several recipes in one job", us: true, them: false },
         {
           feature: "Bound cookbook with a cover and chapters",
-          us: { yes: true, note: "$19.99 per book" },
-          them: false,
+          // Our own paid feature is graded the same way theirs is.
+          us: { level: "limited", note: "$19.99 per book" },
+          them: "none",
         },
-        { feature: "Adjusting serving sizes", us: false, them: { yes: true, note: "On the paid plan" } },
-        { feature: "Phone and tablet apps", us: false, them: { yes: true, note: "iOS and Android" } },
+        {
+          feature: "Adjusting serving sizes",
+          us: "none",
+          them: { level: "limited", note: "On the paid plan" },
+        },
+        {
+          feature: "Phone and tablet apps",
+          us: { level: "limited", note: "Works in a phone browser" },
+          them: { level: "full", note: "iOS and Android" },
+        },
       ],
     },
     faqs: [
