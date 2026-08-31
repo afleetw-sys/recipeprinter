@@ -2028,9 +2028,9 @@ export default function PrintPage() {
       return;
     }
 
-    // Says what the wait is FOR. Nothing is being filed when there was nothing
+    // Says what the wait is FOR. Nothing is being kept when there was nothing
     // made, and claiming otherwise would be the same kind of lie the flight was.
-    setLeavingHome(printable ? "Filing your recipes…" : "Going home…");
+    setLeavingHome(printable ? "Saving your recipes…" : "Going home…");
     if (!printable) {
       router.push("/");
       return;
@@ -2047,7 +2047,24 @@ export default function PrintPage() {
     // rather than creating its own copy of it.
     const filed = fileProjectLocally(queue.items, projectMeta.meta);
     if (filed) projectMeta.setProjectId(filed);
-    if (cookPilotUser && filed) void handleSaveProject(filed);
+    /**
+     * Leaving does not put a draft in the account.
+     *
+     * This used to be `cookPilotUser && filed`, so being signed in was the
+     * whole condition: print a few cards, click the logo, and a copy landed in
+     * the profile of someone who never asked for one. Signing in is how you
+     * reach your saved work, not a standing instruction to keep everything you
+     * touch, and a library that fills itself with every Tuesday's dinner prints
+     * is a log rather than a library.
+     *
+     * `autosaveEnabled` is the existing answer to "did the cook ask us to keep
+     * this" — a cookbook, which was deliberate to create, or a project already
+     * saved once. Reusing it rather than restating the condition keeps the two
+     * from drifting apart. The local shelf below is unaffected: that is the
+     * working copy people rely on when they reopen /print, and it never leaves
+     * the device.
+     */
+    if (filed && autosaveEnabled) void handleSaveProject(filed);
 
     // Only now is the desk safe to clear — and releasing the project id is the
     // half that makes the next import a NEW project rather than another edit
