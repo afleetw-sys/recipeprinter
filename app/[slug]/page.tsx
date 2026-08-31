@@ -191,6 +191,23 @@ export default function SeoLandingPage({ params }: PageProps) {
             </section>
           </div>
 
+          {/* Straight after the hero on a comparison page. Someone who searched
+              for a competitor's name came to see the two side by side, so the
+              table is the answer to their question, not a footnote below three
+              feature sections arguing for one of the columns. */}
+          {page.comparison && (
+            <section aria-labelledby="comparison-heading">
+              <div id="comparison-heading">
+                <SectionHeading>
+                  RecipePrinter and {page.comparison.competitor}, side by side
+                </SectionHeading>
+              </div>
+              <div className="mt-cp-6">
+                <ComparisonTable {...page.comparison} />
+              </div>
+            </section>
+          )}
+
           {page.intro && (
             <p className="max-w-[46rem] text-cp-h2-lg font-semibold leading-snug tracking-[-0.02em] text-ink">
               {page.intro}
@@ -223,19 +240,6 @@ export default function SeoLandingPage({ params }: PageProps) {
                   </h2>
                 </div>
                 <CaptureBlock page={page} />
-              </div>
-            </section>
-          )}
-
-          {page.comparison && (
-            <section aria-labelledby="comparison-heading">
-              <div id="comparison-heading">
-                <SectionHeading>
-                  RecipePrinter and {page.comparison.competitor}, side by side
-                </SectionHeading>
-              </div>
-              <div className="mt-cp-6">
-                <ComparisonTable {...page.comparison} />
               </div>
             </section>
           )}

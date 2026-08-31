@@ -8,11 +8,12 @@ import {
   ICON_SIZE,
   ImageIcon,
   LinkIcon,
+  MinusIcon,
   PrintIcon,
   TextIcon,
   UsersIcon,
 } from "@/components/icons";
-import type { SeoIconKey, SeoProofKind } from "@/lib/seoLandingPages";
+import type { ComparisonValue, SeoIconKey, SeoProofKind } from "@/lib/seoLandingPages";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // SEO landing-page visual system, clean, modern, and built only from real
@@ -330,24 +331,29 @@ export function ComparisonTable({
 }: {
   competitor: string;
   checked: string;
-  rows: { feature: string; us: boolean | string; them: boolean | string }[];
+  rows: { feature: string; us: ComparisonValue; them: ComparisonValue }[];
 }) {
-  const value = (v: boolean | string, mine: boolean) => {
-    if (v === true) {
-      return (
-        <span className="inline-flex items-center gap-cp-2 font-semibold text-ink">
-          <CheckIcon size={ICON_SIZE.sm} />
-          Yes
+  // Every cell answers the same question the same way: yes or no first, in the
+  // same place on both sides, with any qualifier below it. A cell that wrote
+  // its own phrasing ("Included with Premium" facing a bare "Yes") described
+  // two products instead of comparing them.
+  const value = (v: ComparisonValue) => {
+    const yes = typeof v === "boolean" ? v : v.yes;
+    const note = typeof v === "boolean" ? undefined : v.note;
+    return (
+      <span className="flex flex-col gap-0.5">
+        <span
+          className={`inline-flex items-center gap-cp-2 font-semibold ${yes ? "text-ink" : "text-ink-soft"}`}
+        >
+          {yes ? <CheckIcon size={ICON_SIZE.sm} /> : <MinusIcon size={ICON_SIZE.sm} />}
+          {yes ? "Yes" : "No"}
         </span>
-      );
-    }
-    // A quiet "no": a row the other tool loses should not shout, or the whole
-    // table reads as a pitch rather than a comparison.
-    if (v === false) return <span className="text-ink-soft">Not offered</span>;
-    return <span className={mine ? "font-semibold text-ink" : "text-ink-soft"}>{v}</span>;
+        {note && <span className="text-cp-caption text-ink-soft">{note}</span>}
+      </span>
+    );
   };
 
-  const cell = (v: boolean | string, mine: boolean) => (
+  const cell = (v: ComparisonValue, mine: boolean) => (
     <td
       className={`px-cp-4 py-cp-3 text-cp-body leading-snug max-sm:flex max-sm:items-baseline max-sm:justify-between max-sm:gap-cp-4 max-sm:py-cp-2 ${
         mine ? "bg-[var(--cp-accent-soft)]" : ""
@@ -356,7 +362,7 @@ export function ComparisonTable({
       <span className="hidden font-semibold text-ink-soft max-sm:inline">
         {mine ? "RecipePrinter" : competitor}
       </span>
-      {value(v, mine)}
+      {value(v)}
     </td>
   );
 

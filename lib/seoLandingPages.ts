@@ -26,6 +26,17 @@ export type SeoProofKind =
   | "book"
   | "steps";
 
+/**
+ * One cell of a comparison table: yes or no, with an optional qualifier.
+ *
+ * Deliberately not a free string. Letting each cell write its own phrasing
+ * produced rows that answered different questions on each side — "Yes" facing
+ * "Included with Premium" — which reads as two products being described rather
+ * than compared. Forcing every cell onto the same yes/no axis, with the nuance
+ * in a note underneath, means a reader can scan one column against the other.
+ */
+export type ComparisonValue = boolean | { yes: boolean; note: string };
+
 export type SeoLandingPage = {
   slug: string;
   /**
@@ -84,7 +95,7 @@ export type SeoLandingPage = {
   comparison?: {
     competitor: string;
     checked: string;
-    rows: { feature: string; us: boolean | string; them: boolean | string }[];
+    rows: { feature: string; us: ComparisonValue; them: ComparisonValue }[];
   };
   /** Real printed-card photo keys (PRINTED_CARDS) for the examples gallery. */
   examples?: string[];
@@ -756,19 +767,30 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
       competitor: "JustTheRecipe",
       checked: "August 2026",
       rows: [
-        { feature: "Clean up a recipe from a link", us: true, them: true },
-        { feature: "Print the result", us: "Free, no account", them: "Included with Premium" },
-        { feature: "What the free tier does", us: "Print anything, unlimited", them: "View and save up to 20 recipes" },
-        { feature: "From a photo or screenshot", us: true, them: "Works from a link" },
-        { feature: "From text you paste in", us: true, them: "Works from a link" },
+        { feature: "Recipes from a link", us: true, them: true },
+        { feature: "Recipes from a photo or screenshot", us: true, them: false },
+        { feature: "Recipes from text you paste in", us: true, them: false },
+        {
+          feature: "Printing",
+          us: { yes: true, note: "Free, no account" },
+          them: { yes: true, note: "On the paid plan" },
+        },
+        {
+          feature: "Saving recipes to come back to",
+          us: { yes: true, note: "With a free account" },
+          them: { yes: true, note: "Up to 20 free" },
+        },
         { feature: "Recipe card sizes and themes", us: true, them: false },
-        { feature: "Print several recipes at once", us: true, them: false },
-        { feature: "Bound cookbook with a cover and chapters", us: "$19.99 per book", them: false },
-        { feature: "Adjust serving sizes", us: false, them: "Included with Premium" },
-        { feature: "Phone and tablet apps", us: "Works in a phone browser", them: "iOS and Android" },
+        { feature: "Printing several recipes in one job", us: true, them: false },
+        {
+          feature: "Bound cookbook with a cover and chapters",
+          us: { yes: true, note: "$19.99 per book" },
+          them: false,
+        },
+        { feature: "Adjusting serving sizes", us: false, them: { yes: true, note: "On the paid plan" } },
+        { feature: "Phone and tablet apps", us: false, them: { yes: true, note: "iOS and Android" } },
       ],
     },
-    examples: ["caprese", "korean", "pesto"],
     faqs: [
       {
         question: "Is JustTheRecipe free?",
