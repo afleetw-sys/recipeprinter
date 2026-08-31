@@ -80,7 +80,7 @@ export const RECIPE_PRINT_TEMPLATE_OPTIONS: Array<{
   label: string;
   detail: string;
 }> = [
-  { id: "classic", label: "Classic", detail: "Bright blue, clean cookbook card" },
+  { id: "classic", label: "Classic", detail: "Cornflower and slate, clean cookbook card" },
   { id: "pantry", label: "Pantry", detail: "Fine ruled lines with small ingredient sketches" },
   { id: "counter", label: "Counter", detail: "Black-and-white notes with tiny counter details" },
   { id: "heirloom", label: "Heirloom", detail: "Cream stock, red utensil keepsake" },

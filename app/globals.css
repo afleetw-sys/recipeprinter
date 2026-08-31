@@ -45,19 +45,24 @@
      won, against cornflower ink is 2.66:1 and white wins at 5.08:1. Naming it
      is what stops the next accent change from silently breaking both. */
   --cp-on-accent: var(--cp-card);
+  /* Same job on the warm side. Note which value a SOLID warm chip fills with:
+     --cp-accent-warm-ink, not --cp-accent-warm. Raw clay behind white text is
+     3.7:1; the ink sibling is 6.25:1 and still unmistakably orange. So clay
+     has exactly two jobs — tint and border — and its ink has three: text on
+     light, and the fill plus nothing else on solid. */
+  --cp-on-accent-warm: var(--cp-card);
   /* Back-compat aliases for older rules. --cp-blue resolves to the accent ink
      so any lingering text use stays legible. */
   --cp-blue: #3f6094;
   --cp-teal: #4a6fa8;
   --cp-mint: #4a6fa8;
   --cp-ink: #22303a;
-  /* The palette's stone, darkened one step from the #5f6f79 it was drawn from.
-     Secondary text lands on surfaces as dark as --cp-surface-strong (filled
-     icon buttons, chips, the scrubber track), and at the original value that
-     pairing was 4.27:1 — a fail on the exact surfaces where it is hardest to
-     read. This clears 4.5:1 on every surface in the set, --cp-surface-strong-
-     hover included (4.74:1), so "muted" never means "borderline". */
-  --cp-ink-soft: #526069;
+  /* Stone, exactly as the palette specifies. It was darkened for a while to
+     survive sitting on --cp-surface-strong (4.27:1 there), but that was fixing
+     the wrong end: the only thing putting muted text on a filled surface was
+     .icon-button--filled, whose glyph should never have been muted in the
+     first place. That rule takes --cp-ink now, so the palette value stands. */
+  --cp-ink-soft: #5f6f79;
   --cp-line: rgba(34, 48, 58, 0.11);
   --cp-line-strong: rgba(34, 48, 58, 0.2);
   --cp-page: #f4f7f3;
@@ -1435,13 +1440,16 @@
   }
 
   /* Accent fill on a tab that is otherwise plain text, so it reads as a flag
-     rather than a second word in the label. */
+     rather than a second word in the label. WARM, because "new" is the product
+     announcing something rather than the system reporting state — see the
+     two-voice note at the top of this file. Filled, so it takes the ink value
+     as its background (6.25:1 with white on it). */
   .rp-project-heading__new {
     margin-left: 5px;
     padding: 1px 5px;
     border-radius: 999px;
-    background: var(--cp-accent);
-    color: var(--cp-on-accent);
+    background: var(--cp-accent-warm-ink);
+    color: var(--cp-on-accent-warm);
     /* A flag has to sit well under the label it rides on or it stops reading as
        a flag. `--cp-fs-label` was only a step below the 12.8px tab, which is
        close enough to look like a second word; this is the ramp's badge

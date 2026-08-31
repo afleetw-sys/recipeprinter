@@ -2964,21 +2964,30 @@
 
 .recipe-card-set {
   --recipe-bg: #ffffff;
-  --recipe-ink: #1a1a1a;
-  --recipe-muted: #6b7280;
-  /* Classic card: accent is the accessible teal-ink for printed labels/text;
-     accent-2 is the vivid brand teal for dots, rules, and the header bar. */
-  --recipe-accent: #2f7d78;
-  --recipe-accent-2: #60cac4;
-  --recipe-line: rgba(17, 17, 17, 0.12);
+  --recipe-ink: #22303a;
+  --recipe-muted: #5f6f79;
+  /* Classic card, in the app's own palette rather than the teal it shipped in.
+     --recipe-accent is what printed LABELS, section titles and step badges are
+     set in, so it has to be legible on white (6.3:1); --recipe-accent-2 is
+     purely decorative on this template — the far end of the header bar, the
+     photo mat's border, the small dots.
+
+     Both are shades of the same dark blue ON PURPOSE. The header bar is a
+     gradient between them, and a bar that ran blue-to-orange read as a second
+     piece of artwork competing with the recipe; a blue-into-slate ramp reads
+     as one edge. Clay stays off the printed card entirely and does its work in
+     the app (see docs/color-roles.md). */
+  --recipe-accent: #3f6094;
+  --recipe-accent-2: #22303a;
+  --recipe-line: rgba(34, 48, 58, 0.12);
   /* Opaque, not the translucent rgba this used to be: low-alpha fills on the
      step-number badge would wash out to white on some physical printers
      (their ink-saving thresholding drops faint fills but keeps edges/borders,
      leaving a hollow ring instead of a filled circle) even though the same
      page renders correctly to PDF or on screen. Flattened against
      --recipe-bg so it looks identical but survives print. */
-  --recipe-step-bg: #e2f5f4;
-  --recipe-footer: #aaa;
+  --recipe-step-bg: #e6ecf5;
+  --recipe-footer: #9aa7ad;
   --recipe-radius: 14px;
   --recipe-title-font: var(--font-playfair), Georgia, serif;
   /* Pinned, not inherited, and load-bearing: `body { @apply font-sans }` is
@@ -5293,18 +5302,8 @@ textarea.recipe-card__toc-title {
 
 /* 6x4 is landscape with room to spare, so on the clean-frame templates lead
    with a larger photo to the left of the title instead of a small corner
-   thumbnail — it fills the otherwise-empty header band. */
-.recipe-print-preview--card-6x4 .recipe-card__header--with-photo {
-  align-items: center;
-}
-
-.recipe-print-preview--card-6x4 .recipe-card__header--with-photo .recipe-card__headline {
-  align-self: stretch;
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-}
-
+   thumbnail — it fills the otherwise-empty header band. (The centring this
+   rule used to also declare is now in the base `--with-photo` rule.) */
 .recipe-print-preview--card-6x4 .recipe-template--classic .recipe-card__header--with-photo,
 .recipe-print-preview--card-6x4 .recipe-template--counter .recipe-card__header--with-photo {
   justify-content: flex-start;
@@ -5316,7 +5315,6 @@ textarea.recipe-card__toc-title {
   order: -1;
   width: 0.82in;
   height: 0.82in;
-  margin-top: 0;
 }
 
 .recipe-print-preview--card-6x4 .recipe-template--counter .recipe-card__header--with-photo .recipe-card__photo {
@@ -5334,20 +5332,27 @@ textarea.recipe-card__toc-title {
   width: 0.78in;
   height: 0.78in;
   padding: 4px 4px 10px;
-  margin-top: 0;
 }
 
 .recipe-print-preview--card-6x4 .recipe-template--keepsake .recipe-card__header--with-photo .recipe-card__photo {
   width: 0.72in;
   height: 0.72in;
-  margin-top: 0;
 }
 
 /* When a recipe photo is shown, the title/meta share the header row with a
-   square thumbnail tucked into the otherwise-empty top-right corner. */
+   square thumbnail tucked into the otherwise-empty top-right corner.
+
+   The headline sits vertically CENTRED against that photo, every template and
+   every size. This used to be `flex-start` here with five separate overrides
+   restating the centred version — 6x4 for all templates, letter for four of
+   them, then Keepsake and Bistro again at every size — which left Classic and
+   Counter top-aligned at letter while their neighbours were centred. Title and
+   meta are one block of type beside one square of image; there is no template
+   where hanging that block off the top of the square is the right answer, so
+   it belongs here rather than being opted into five times. */
 .recipe-card__header--with-photo {
   display: flex;
-  align-items: flex-start;
+  align-items: center;
   justify-content: space-between;
   gap: var(--recipe-card-gap);
 }
@@ -5355,6 +5360,17 @@ textarea.recipe-card__toc-title {
 .recipe-card__headline {
   flex: 1 1 auto;
   min-width: 0;
+}
+
+/* `stretch` + centre rather than relying on the parent's align-items alone:
+   the headline is a column (title, optional description, meta) and has to
+   centre its OWN contents inside the full header height, otherwise a short
+   title centres but a two-line one pushes the meta off the photo's midline. */
+.recipe-card__header--with-photo .recipe-card__headline {
+  align-self: stretch;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
 }
 
 /* The photo wrapper is a positioned frame so each template can dress the image
@@ -5367,7 +5383,11 @@ textarea.recipe-card__toc-title {
   flex: 0 0 auto;
   width: var(--recipe-card-photo-size);
   height: var(--recipe-card-photo-size);
-  margin-top: 1px;
+  /* No `margin-top: 1px`. That nudge existed to optically settle the photo
+     against the title's cap-height while the header was top-aligned; against a
+     centred headline it is just a 1px drop off the midline, which is the exact
+     thing this alignment pass is removing. Several 6x4 rules were already
+     zeroing it back out for the same reason. */
 }
 
 .recipe-card__photo-img {
@@ -5418,17 +5438,6 @@ textarea.recipe-card__toc-title {
 }
 
 /* ── Keepsake: a small inset photo window built into the recipe card ─────── */
-.recipe-template--keepsake .recipe-card__header--with-photo {
-  align-items: center;
-}
-
-.recipe-template--keepsake .recipe-card__header--with-photo .recipe-card__headline {
-  align-self: stretch;
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-}
-
 .recipe-template--keepsake .recipe-card__photo {
   padding: 2px;
   overflow: hidden;
@@ -5448,17 +5457,6 @@ textarea.recipe-card__toc-title {
 }
 
 /* ── Bistro: a bold blue-framed menu snapshot with a playful offset & tilt ─── */
-.recipe-template--bistro .recipe-card__header--with-photo {
-  align-items: center;
-}
-
-.recipe-template--bistro .recipe-card__header--with-photo .recipe-card__headline {
-  align-self: stretch;
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-}
-
 .recipe-template--bistro .recipe-card__photo {
   padding: 4px;
   background: #fff;
@@ -5527,23 +5525,6 @@ textarea.recipe-card__toc-title {
    more room to clear it when there's no photo pushing things down instead. */
 .recipe-print-preview--letter .recipe-template--counter .recipe-card__header:not(.recipe-card__header--with-photo) {
   margin-top: 0.5in;
-}
-
-.recipe-print-preview--letter .recipe-template--heirloom .recipe-card__header--with-photo,
-.recipe-print-preview--letter .recipe-template--bistro .recipe-card__header--with-photo,
-.recipe-print-preview--letter .recipe-template--pantry .recipe-card__header--with-photo,
-.recipe-print-preview--letter .recipe-template--keepsake .recipe-card__header--with-photo {
-  align-items: center;
-}
-
-.recipe-print-preview--letter .recipe-template--heirloom .recipe-card__header--with-photo .recipe-card__headline,
-.recipe-print-preview--letter .recipe-template--bistro .recipe-card__header--with-photo .recipe-card__headline,
-.recipe-print-preview--letter .recipe-template--pantry .recipe-card__header--with-photo .recipe-card__headline,
-.recipe-print-preview--letter .recipe-template--keepsake .recipe-card__header--with-photo .recipe-card__headline {
-  align-self: stretch;
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
 }
 
 .recipe-card__title {

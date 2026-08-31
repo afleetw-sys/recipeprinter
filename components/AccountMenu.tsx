@@ -274,7 +274,11 @@ export default function AccountMenu({
         data-rp-avatar={compact ? "compact" : "full"}
         className={
           user
-            ? "border border-transparent bg-[var(--cp-accent)] text-[var(--cp-ink)] font-bold tracking-tight"
+            /* --cp-on-accent, not --cp-ink. Ink on the accent is 2.66:1 —
+               your initials were the least legible text in the app. The token
+               exists precisely so this pairing is not re-decided by hand at
+               each call site; it resolves to white here, 5.08:1. */
+            ? "border border-transparent bg-[var(--cp-accent)] text-[var(--cp-on-accent)] font-bold tracking-tight"
             : "icon-button--filled"
         }
         aria-label="RecipePrinter account"
