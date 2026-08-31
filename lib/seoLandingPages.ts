@@ -93,11 +93,13 @@ export type SeoLandingPage = {
    * we can state the other tool's behaviour accurately, including the rows it
    * wins: a table where one column is all ticks reads as a pitch, and a
    * visitor who already uses the competitor knows which claims are wrong.
-   * `checked` is when their site and pricing were last read, and it is shown,
-   * because a comparison with no date is a comparison you cannot trust.
    */
   comparison?: {
     competitor: string;
+    /** When the competitor's site and pricing were last read. Not rendered —
+        it records who the claims were checked against and when, the same way
+        `lastReviewed` records a content pass, so a stale table is greppable
+        rather than invisible. */
     checked: string;
     /** Labelled groups, not a flat list: a run of ten unbroken rows is the
         thing readers skim past. Order them by what a visitor is deciding, not

@@ -314,6 +314,11 @@ export function PhotoGallery({ cardKeys }: { cardKeys: string[] }) {
  * it. Rows sit in labelled groups, because ten unbroken rows is the shape a
  * reader skims past rather than reads.
  *
+ * Our column is one unbroken tinted band from the header to the last row. The
+ * group labels sit on it rather than cutting across it: a full-width banded
+ * row chopped the column into four disconnected blocks and made the whole
+ * thing read as a spreadsheet.
+ *
  * One <table> serves two layouts. At `sm` and up it is an ordinary three
  * column table. Below that it restacks into a block per feature, since three
  * columns inside a phone's width wrapped nearly every cell onto its own line.
@@ -326,38 +331,41 @@ export function PhotoGallery({ cardKeys }: { cardKeys: string[] }) {
  */
 export function ComparisonTable({
   competitor,
-  checked,
   groups,
 }: {
   competitor: string;
-  checked: string;
   groups: {
     title: string;
     rows: { feature: string; us: ComparisonValue; them: ComparisonValue }[];
   }[];
 }) {
+  // The tint that makes our column a single vertical band. Applied to every
+  // cell in the column, including the header and the group-label rows, so it
+  // never breaks.
+  const ours = "bg-[var(--cp-accent-soft)]";
+
   const cell = (v: ComparisonValue, mine: boolean) => (
     <td
-      className={`px-cp-4 py-cp-3 align-middle max-sm:flex max-sm:items-center max-sm:justify-between max-sm:gap-cp-4 max-sm:py-cp-1 ${
-        mine ? "bg-[var(--cp-accent-soft)]" : ""
+      className={`px-cp-4 py-cp-4 align-middle max-sm:flex max-sm:items-center max-sm:justify-between max-sm:gap-cp-4 max-sm:py-cp-1 ${
+        mine ? ours : ""
       }`}
     >
       <span className="hidden text-cp-small font-semibold text-ink-soft max-sm:inline">
         {mine ? "RecipePrinter" : competitor}
       </span>
       {v === false ? (
-        <span className="inline-flex items-center">
-          <span className="h-px w-3.5 bg-line-strong" aria-hidden />
+        <span className="inline-flex items-center" title="Not offered">
+          <span className="h-px w-4 rounded bg-line-strong" aria-hidden />
           <span className="sr-only">No</span>
         </span>
       ) : (
-        <span className="inline-flex items-center gap-cp-2">
-          <span className="flex-none text-[var(--cp-accent-ink)]">
+        <span className="inline-flex items-baseline gap-cp-2">
+          <span className="flex-none translate-y-0.5 text-[var(--cp-accent-ink)]">
             <CheckIcon size={ICON_SIZE.sm} />
           </span>
           <span className="sr-only">Yes</span>
           {typeof v === "string" && (
-            <span className="text-cp-small leading-snug text-ink-soft">{v}</span>
+            <span className="text-cp-small font-medium leading-snug text-ink">{v}</span>
           )}
         </span>
       )}
@@ -365,62 +373,64 @@ export function ComparisonTable({
   );
 
   return (
-    <div>
-      <div className="overflow-hidden rounded-2xl border border-line bg-card">
-        <table className="w-full border-collapse text-left max-sm:block">
-          <caption className="sr-only">
-            RecipePrinter compared with {competitor}, feature by feature
-          </caption>
-          <thead className="max-sm:hidden">
-            <tr className="border-b border-line-strong">
-              <th scope="col" className="px-cp-4 py-cp-3 text-cp-caption font-bold uppercase tracking-wide text-ink-soft">
-                Feature
-              </th>
+    <div className="overflow-hidden rounded-2xl border border-line bg-card">
+      <table className="w-full border-collapse text-left max-sm:block">
+        <caption className="sr-only">
+          RecipePrinter compared with {competitor}, feature by feature
+        </caption>
+        <colgroup>
+          <col />
+          <col className="w-[26%]" />
+          <col className="w-[26%]" />
+        </colgroup>
+        <thead className="max-sm:hidden">
+          <tr>
+            <th scope="col" className="border-b border-line-strong px-cp-4 pb-cp-3 pt-cp-4" aria-label="Feature" />
+            <th
+              scope="col"
+              className={`${ours} border-b border-line-strong px-cp-4 pb-cp-3 pt-cp-4 text-cp-body font-extrabold tracking-[-0.02em] text-[var(--cp-accent-ink)]`}
+            >
+              RecipePrinter
+            </th>
+            <th scope="col" className="border-b border-line-strong px-cp-4 pb-cp-3 pt-cp-4 text-cp-body font-extrabold tracking-[-0.02em] text-ink">
+              {competitor}
+            </th>
+          </tr>
+        </thead>
+        {groups.map((group, groupIndex) => (
+          <tbody key={group.title} className="max-sm:block">
+            <tr className="max-sm:block">
               <th
-                scope="col"
-                className="bg-[var(--cp-accent-soft)] px-cp-4 py-cp-3 text-cp-body font-extrabold tracking-[-0.02em] text-[var(--cp-accent-ink)]"
+                scope="colgroup"
+                className={`px-cp-4 pb-cp-2 text-cp-caption font-bold uppercase tracking-[0.11em] text-ink-soft max-sm:block ${
+                  groupIndex === 0 ? "pt-cp-3" : "pt-cp-6"
+                }`}
               >
-                RecipePrinter
+                {group.title}
               </th>
-              <th scope="col" className="px-cp-4 py-cp-3 text-cp-body font-extrabold tracking-[-0.02em] text-ink">
-                {competitor}
-              </th>
+              {/* Empty, but tinted and padded to match, so the band and the
+                  row rhythm both continue through the label. */}
+              <td className={`${ours} max-sm:hidden`} aria-hidden />
+              <td className="max-sm:hidden" aria-hidden />
             </tr>
-          </thead>
-          {groups.map((group) => (
-            <tbody key={group.title} className="max-sm:block">
-              <tr className="max-sm:block">
+            {group.rows.map((row) => (
+              <tr
+                key={row.feature}
+                className="border-t border-line max-sm:block max-sm:py-cp-2"
+              >
                 <th
-                  scope="colgroup"
-                  colSpan={3}
-                  className="border-y border-line bg-[var(--cp-page)] px-cp-4 py-cp-2 text-cp-caption font-bold uppercase tracking-[0.1em] text-ink-soft max-sm:block"
+                  scope="row"
+                  className="px-cp-4 py-cp-4 text-cp-body font-medium leading-snug text-ink max-sm:block max-sm:pb-cp-1 max-sm:font-semibold"
                 >
-                  {group.title}
+                  {row.feature}
                 </th>
+                {cell(row.us, true)}
+                {cell(row.them, false)}
               </tr>
-              {group.rows.map((row) => (
-                <tr
-                  key={row.feature}
-                  className="border-b border-line last:border-b-0 max-sm:block max-sm:py-cp-2"
-                >
-                  <th
-                    scope="row"
-                    className="px-cp-4 py-cp-3 text-cp-body font-semibold leading-snug text-ink max-sm:block max-sm:pb-cp-1"
-                  >
-                    {row.feature}
-                  </th>
-                  {cell(row.us, true)}
-                  {cell(row.them, false)}
-                </tr>
-              ))}
-            </tbody>
-          ))}
-        </table>
-      </div>
-      <p className="mt-cp-3 text-cp-caption text-ink-soft">
-        {competitor}&rsquo;s features and pricing checked {checked}. Tools change, so check their
-        current plans before deciding.
-      </p>
+            ))}
+          </tbody>
+        ))}
+      </table>
     </div>
   );
 }

@@ -203,7 +203,10 @@ export default function SeoLandingPage({ params }: PageProps) {
                 </SectionHeading>
               </div>
               <div className="mt-cp-6">
-                <ComparisonTable {...page.comparison} />
+                <ComparisonTable
+                  competitor={page.comparison.competitor}
+                  groups={page.comparison.groups}
+                />
               </div>
             </section>
           )}
