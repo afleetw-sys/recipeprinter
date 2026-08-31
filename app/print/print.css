@@ -329,11 +329,12 @@
   background: var(--cp-line);
 }
 .rail-tile-menu__new {
+  /* Warm: "new", not "selected". */
   margin-top: 4px;
   border-top: 1px solid var(--cp-line);
   border-radius: 0 0 7px 7px;
   padding-top: 10px;
-  color: var(--cp-accent-ink);
+  color: var(--cp-accent-warm-ink);
 }
 
 .recipe-page-rail__section-title-input {
@@ -1855,14 +1856,17 @@
 }
 
 .recipe-free-template-banner {
+  /* Warm — the whole notice/ownership family below runs on the palette's
+     warm half: free, protected, purchased, owned. See --cp-accent-warm in
+     globals.css for the split. */
   display: flex;
   align-items: flex-start;
   gap: 10px;
   padding: 12px;
-  border: 1px solid color-mix(in srgb, var(--cp-accent) 28%, transparent);
-  background: var(--cp-accent-soft);
+  border: 1px solid color-mix(in srgb, var(--cp-accent-warm) 28%, transparent);
+  background: var(--cp-accent-warm-soft);
   border-radius: 12px;
-  color: var(--cp-accent-ink);
+  color: var(--cp-accent-warm-ink);
 }
 
 .recipe-free-template-banner__copy {
@@ -1894,9 +1898,9 @@
   align-items: center;
   gap: 12px;
   padding: 8px clamp(16px, 4vw, 24px);
-  border-bottom: 1px solid color-mix(in srgb, var(--cp-accent) 32%, transparent);
-  background: var(--cp-accent-soft);
-  color: var(--cp-accent-ink);
+  border-bottom: 1px solid color-mix(in srgb, var(--cp-accent-warm) 32%, transparent);
+  background: var(--cp-accent-warm-soft);
+  color: var(--cp-accent-warm-ink);
 }
 
 .recipe-protect-bar__text {
@@ -1913,15 +1917,15 @@
    outline on the accent tint keeps the whole bar one calm object while leaving
    the action plainly clickable. */
 .recipe-protect-bar__action {
-  border-color: color-mix(in srgb, var(--cp-accent) 55%, transparent);
+  border-color: color-mix(in srgb, var(--cp-accent-warm) 55%, transparent);
   background: var(--cp-card);
-  color: var(--cp-accent-ink);
+  color: var(--cp-accent-warm-ink);
 }
 
 .recipe-protect-bar__action:hover:not(:disabled) {
-  border-color: var(--cp-accent);
+  border-color: var(--cp-accent-warm);
   background: var(--cp-card);
-  color: var(--cp-accent-ink);
+  color: var(--cp-accent-warm-ink);
 }
 
 /* Quiet "you own this" acknowledgement in the Book Settings header, so a
@@ -1934,8 +1938,8 @@
   flex: 0 0 auto;
   padding: 3px 9px;
   border-radius: 999px;
-  background: var(--cp-accent-soft);
-  color: var(--cp-accent-ink);
+  background: var(--cp-accent-warm-soft);
+  color: var(--cp-accent-warm-ink);
   font-size: var(--cp-fs-caption);
   font-weight: 700;
 }
@@ -2103,10 +2107,10 @@
   min-width: 22px;
   height: 22px;
   padding: 0 6px;
-  border: 1px solid color-mix(in srgb, #d7a94c 68%, #fff);
+  border: 1px solid color-mix(in srgb, var(--cp-premium-line) 68%, var(--cp-card));
   border-radius: 999px;
-  background: #fff8dc;
-  color: #9b6a12;
+  background: var(--cp-premium-fill);
+  color: var(--cp-premium-ink);
   font-size: var(--cp-fs-label);
   font-weight: 900;
   line-height: 1;
@@ -2123,12 +2127,12 @@
   height: 22px;
   /* The only accent surface left in this file that had baked-in teal — a
      tint, a border, and an ink, all three the default theme's brand colour
-     written out. Mixed against the accent and the card instead, so the marker
-     follows the UI theme like every other accent surface does. */
-  border: 1px solid color-mix(in srgb, var(--cp-accent) 58%, var(--cp-card));
+     written out. Mixed against the WARM accent and the card instead: "you own
+     this" is the notice half of the palette, not a piece of system state. */
+  border: 1px solid color-mix(in srgb, var(--cp-accent-warm) 58%, var(--cp-card));
   border-radius: 999px;
-  background: color-mix(in srgb, var(--cp-accent) 10%, var(--cp-card));
-  color: var(--cp-accent-ink);
+  background: color-mix(in srgb, var(--cp-accent-warm) 10%, var(--cp-card));
+  color: var(--cp-accent-warm-ink);
 }
 
 .recipe-toast {

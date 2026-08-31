@@ -170,11 +170,17 @@ function ThemeCard({
 
 /**
  * A miniature of the workspace, built from the same tokens the real one uses:
- * a top bar with the product's name, a sheet of paper on the deck ground, and
- * the two button weights (`.btn-primary`, `.btn-secondary`) side by side. This
- * is what actually differs between the themes — paper colour, ink, corner
- * radius, and typeface — rather than a swatch row, which every theme would
- * make look equally good.
+ * a top bar, a selected sheet on the deck ground, a notice banner, and the two
+ * button weights (`.btn-primary`, `.btn-secondary`) side by side. This is what
+ * actually differs between the themes — paper colour, ink, corner radius, and
+ * typeface — rather than a swatch row, which every theme would make look
+ * equally good.
+ *
+ * It shows BOTH accents on purpose. The palettes each have a cool half and a
+ * warm one (see --cp-accent-warm in globals.css), and a preview that only ever
+ * painted the cool one is what let Sunroom ship reading as a blue app on mint
+ * paper. The selected card here carries the cool border and the warm fill; the
+ * banner under it is the warm notice family in full.
  */
 function ChromePreview({ name }: { name: string }) {
   return (
@@ -184,20 +190,48 @@ function ChromePreview({ name }: { name: string }) {
         <span className="text-cp-micro font-extrabold text-ink">{name}</span>
         <span className="ml-auto text-cp-micro font-bold text-brand-ink">Print</span>
       </div>
-      <div className="bg-[var(--cp-deck-ground)] px-2 py-2">
-        <div className="rounded border border-line bg-card px-2 py-1.5">
-          <div className="text-cp-micro font-extrabold text-ink">Buttermilk Biscuits</div>
+      <div className="space-y-1.5 bg-[var(--cp-deck-ground)] px-2 py-2">
+        {/* Selected: cool border and text, warm fill. */}
+        <div
+          className="rounded border px-2 py-1.5"
+          style={{
+            borderColor: "var(--cp-selected-border)",
+            background: "var(--cp-selected-fill)",
+          }}
+        >
+          <div
+            className="text-cp-micro font-extrabold"
+            style={{ color: "var(--cp-selected-text)" }}
+          >
+            Buttermilk Biscuits
+          </div>
           <div className="mt-1 space-y-1" aria-hidden="true">
             <span className="block h-1 w-full rounded-full bg-[var(--cp-line-strong)]" />
             <span className="block h-1 w-4/5 rounded-full bg-line" />
             <span className="block h-1 w-3/5 rounded-full bg-line" />
           </div>
         </div>
+        {/* The warm notice family: tint, border, ink. */}
+        <div
+          className="flex items-center gap-1 rounded px-2 py-1 text-cp-micro font-bold"
+          style={{
+            border: "1px solid color-mix(in srgb, var(--cp-accent-warm) 28%, transparent)",
+            background: "var(--cp-accent-warm-soft)",
+            color: "var(--cp-accent-warm-ink)",
+          }}
+        >
+          <span>Free template</span>
+          <span className="ml-auto uppercase tracking-wide">New</span>
+        </div>
       </div>
       <div className="flex items-center gap-1.5 border-t border-line px-2 py-1.5">
         <span className="btn btn-primary !min-h-0 !px-2 !py-1 text-cp-micro">Print</span>
         <span className="btn btn-secondary !min-h-0 !px-2 !py-1 text-cp-micro">Edit</span>
-        <span className="ml-auto h-3 w-6 rounded-full bg-[var(--cp-accent-soft)]" aria-hidden="true" />
+        <span
+          className="ml-auto h-3 w-6 rounded-full"
+          style={{ background: "var(--cp-accent-warm-soft)" }}
+          aria-hidden="true"
+        />
       </div>
     </div>
   );

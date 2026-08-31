@@ -15,6 +15,39 @@
   --cp-accent: #60cac4;
   --cp-accent-ink: #2f7d78;
   --cp-accent-soft: rgba(96, 202, 196, 0.12);
+  /* ── The palette's second voice ──────────────────────────────────────────
+     --cp-accent is the SYSTEM talking about itself: what is selected, focused,
+     being dragged onto, editable, linked. Quiet, and on screen constantly.
+     --cp-accent-warm is the PRODUCT talking to you: what is new, free, owned,
+     purchased, priced, or being offered, plus decorative art that isn't
+     reporting state. Rare, and loud when it turns up.
+
+     RecipePrinter's own palette has one brand colour, so warm aliases cool
+     here and the shipping design is unchanged. It earns its keep in the UI
+     themes below, whose palettes each carry a warm half that would otherwise
+     sit unused — mustard, amber, clay.
+
+     One constraint, and it's a contrast fact rather than a preference: warm is
+     a TINT, a BORDER, and an INK. It is never a solid fill behind text. The
+     mid-tone warms real palettes use (clay #c96a4c, amber #b87840) fail AA
+     both ways as a text background — 3.6:1 with dark ink, 3.7:1 with light —
+     so filled controls stay on the cool accent, which every theme keeps
+     legible. Warm may fill something that carries no text at all (a glow, a
+     cover, a rule). */
+  --cp-accent-warm: var(--cp-accent);
+  --cp-accent-warm-ink: var(--cp-accent-ink);
+  --cp-accent-warm-soft: var(--cp-accent-soft);
+
+  /* The "costs money" marker on a premium template tile. A deliberate gold
+     that predates any of this and was written as three literals inside
+     print.css, so it was the one accent surface with no way to follow
+     anything. Kept exactly as it was here — RecipePrinter's premium colour is
+     gold on purpose — and pointed at each UI theme's warm half below, since a
+     theme that has its own warm colour should not have a stray gold chip in
+     the middle of six template tiles. */
+  --cp-premium-line: #d7a94c;
+  --cp-premium-fill: #fff8dc;
+  --cp-premium-ink: #9b6a12;
   /* Back-compat aliases for older rules. --cp-blue now resolves to the
      accessible accent ink so any lingering text use stays legible. */
   --cp-blue: #2f7d78;
@@ -149,7 +182,12 @@
      accent ink, never the raw teal (which fails contrast). Focus is a single
      accent outline shown only on keyboard nav (:focus-visible). */
   --cp-selected-border: var(--cp-accent);
-  --cp-selected-fill: color-mix(in srgb, var(--cp-accent) 8%, var(--cp-card));
+  /* The mark is cool, the paper under it is warm. Border and text are what
+     carry the MEANING of "selected", so they stay on the system's own accent;
+     the fill is just tinted paper, which is where a two-colour palette can put
+     its warm half without the state itself changing colour. Identical to the
+     cool tint here, since warm aliases cool in this theme. */
+  --cp-selected-fill: color-mix(in srgb, var(--cp-accent-warm) 8%, var(--cp-card));
   /* Flat by design: selection reads from the accent border + fill + ink text,
      not a shadow. Kept as a no-op token so the many `box-shadow:
      var(--cp-selected-ring)` call sites stay valid; set it to a real ring only
@@ -212,6 +250,16 @@
    ships; accent-coloured TEXT still goes through --cp-accent-ink everywhere.
    ══════════════════════════════════════════════════════════════════════════ */
 
+/* Shared by every theme below, and only by them: the premium marker joins the
+   warm notice family (free / new / owned / purchased / priced) rather than
+   staying gold. Bare `[data-ui-theme]`, so a theme opts in simply by existing
+   and none of them has to restate it. */
+[data-ui-theme] {
+  --cp-premium-line: var(--cp-accent-warm);
+  --cp-premium-fill: var(--cp-accent-warm-soft);
+  --cp-premium-ink: var(--cp-accent-warm-ink);
+}
+
 /* ── Atomic Age (1950s–60s) ────────────────────────────────────────────────
    Ivory modernism: warm paper, deep navy, atomic red, bright mustard. Navy is
    the accent because it is the one palette colour that works as both a fill
@@ -224,7 +272,15 @@
 
   --cp-accent: #1a4e78;
   --cp-accent-ink: #15406a;
-  --cp-accent-soft: rgba(240, 192, 48, 0.22);
+  --cp-accent-soft: rgba(26, 78, 120, 0.1);
+  /* Mustard is the warm half. Its ink is the same hue run down to a deep
+     ochre (6.2:1 on ivory) — the raw mustard is 1.7:1 and can only ever be a
+     fill or a tint. Red stays out of this pair entirely: it is --cp-error
+     below, which is the one job a period-correct atomic red is exactly right
+     for, and a palette should not say "new" and "broken" in the same colour. */
+  --cp-accent-warm: #f0c030;
+  --cp-accent-warm-ink: #7a5a10;
+  --cp-accent-warm-soft: rgba(240, 192, 48, 0.24);
   --cp-blue: #15406a;
   --cp-teal: #1a4e78;
   --cp-mint: #1a4e78;
@@ -248,9 +304,7 @@
   --cp-overlay-hover-strong: rgba(56, 56, 56, 0.09);
   --cp-scrim: rgba(56, 48, 34, 0.4);
 
-  /* Mustard fill, navy border and text — the selected-state contract in
-     globals.css :root, wearing this palette's warm half. */
-  --cp-selected-fill: color-mix(in srgb, #f0c030 20%, var(--cp-card));
+  --cp-selected-fill: color-mix(in srgb, var(--cp-accent-warm) 20%, var(--cp-card));
 
   --cp-shadow-xs: 0 2px 8px rgba(56, 48, 34, 0.1);
   --cp-shadow-sm: 0 4px 12px rgba(56, 48, 34, 0.1);
@@ -279,7 +333,12 @@
 
   --cp-accent: #407888;
   --cp-accent-ink: #33606e;
-  --cp-accent-soft: rgba(184, 120, 64, 0.18);
+  --cp-accent-soft: rgba(64, 120, 136, 0.16);
+  /* Amber is the warm half; its ink is the same hue darkened to 5.4:1 on
+     thermal stock. */
+  --cp-accent-warm: #b87840;
+  --cp-accent-warm-ink: #8f5626;
+  --cp-accent-warm-soft: rgba(184, 120, 64, 0.2);
   --cp-blue: #33606e;
   --cp-teal: #407888;
   --cp-mint: #407888;
@@ -300,12 +359,15 @@
   --cp-surface-strong: #ddd9c9;
   --cp-surface-strong-hover: #d2cdb9;
 
-  --cp-error: #a8452c;
+  /* Pushed redder than the brick it was (#a8452c). That value sat a hair from
+     --cp-accent-warm-ink, so a failed import and a "free template" banner read
+     as the same brown. */
+  --cp-error: #a63a24;
   --cp-overlay-hover: rgba(32, 40, 48, 0.06);
   --cp-overlay-hover-strong: rgba(32, 40, 48, 0.1);
   --cp-scrim: rgba(32, 40, 48, 0.44);
 
-  --cp-selected-fill: color-mix(in srgb, #b87840 14%, var(--cp-card));
+  --cp-selected-fill: color-mix(in srgb, var(--cp-accent-warm) 14%, var(--cp-card));
 
   --cp-shadow-xs: 1px 1px 0 rgba(32, 40, 48, 0.18);
   --cp-shadow-sm: 2px 2px 0 rgba(32, 40, 48, 0.16);
@@ -327,14 +389,20 @@
    Pale mint ground with clay warming one side and cornflower cooling the
    other. The gentlest of the three and the only one that keeps a true white
    card, so the paper in the deck still reads as paper. Cornflower is the
-   accent, clay is the tint and the error red, and the corners sit a step
-   tighter than the default rather than looser. */
+   accent and clay is the warm half, and the corners sit a step tighter than
+   the default rather than looser. */
 [data-ui-theme="sunroom"] {
   --rp-ui-font: var(--font-karla), system-ui, sans-serif;
 
   --cp-accent: #4a6fa8;
   --cp-accent-ink: #3f6094;
-  --cp-accent-soft: rgba(201, 106, 76, 0.16);
+  --cp-accent-soft: rgba(74, 111, 168, 0.12);
+  /* Clay is the warm half, and this theme is the reason the warm token exists:
+     cornflower alone had the run of the UI and the palette read as a blue app
+     on mint paper. Its ink is clay darkened to 5.5:1 on white. */
+  --cp-accent-warm: #c96a4c;
+  --cp-accent-warm-ink: #a94e30;
+  --cp-accent-warm-soft: rgba(201, 106, 76, 0.18);
   --cp-blue: #3f6094;
   --cp-teal: #4a6fa8;
   --cp-mint: #4a6fa8;
@@ -353,12 +421,14 @@
   --cp-surface-strong: #e5eae4;
   --cp-surface-strong-hover: #d8ded6;
 
-  --cp-error: #a94e30;
+  /* A true red, not the deepened clay it was: that value is now
+     --cp-accent-warm-ink, and error must not speak in the accent's voice. */
+  --cp-error: #a8322a;
   --cp-overlay-hover: rgba(34, 48, 58, 0.06);
   --cp-overlay-hover-strong: rgba(34, 48, 58, 0.09);
   --cp-scrim: rgba(34, 48, 58, 0.36);
 
-  --cp-selected-fill: color-mix(in srgb, #c96a4c 10%, var(--cp-card));
+  --cp-selected-fill: color-mix(in srgb, var(--cp-accent-warm) 14%, var(--cp-card));
 
   --cp-shadow-xs: 0 2px 8px rgba(34, 48, 58, 0.08);
   --cp-shadow-sm: 0 4px 12px rgba(34, 48, 58, 0.08);
@@ -400,8 +470,9 @@
 .project-cover--empty {
   gap: 0;
   place-items: center;
-  background: var(--cp-accent-soft);
-  color: var(--cp-accent-ink);
+  /* Warm: this is cover art for a project with no pages yet, not a status. */
+  background: var(--cp-accent-warm-soft);
+  color: var(--cp-accent-warm-ink);
 }
 
 /* ── Cookbook premium workspace ───────────────────────────────────────── */
@@ -433,7 +504,7 @@
   width: min(64vw, 640px);
   aspect-ratio: 1;
   border-radius: 50%;
-  background: radial-gradient(circle, color-mix(in srgb, var(--cp-accent) 26%, transparent), transparent 66%);
+  background: radial-gradient(circle, color-mix(in srgb, var(--cp-accent-warm) 26%, transparent), transparent 66%);
   filter: blur(32px);
   animation: cookbook-reveal-drift 6.5s ease-in-out infinite alternate;
 }
@@ -444,7 +515,7 @@
   width: 68%;
   aspect-ratio: 1;
   border-radius: 50%;
-  background: radial-gradient(circle, color-mix(in srgb, var(--cp-accent-ink) 20%, transparent), transparent 64%);
+  background: radial-gradient(circle, color-mix(in srgb, var(--cp-accent-warm-ink) 20%, transparent), transparent 64%);
   filter: blur(30px);
   animation: cookbook-reveal-drift 8s ease-in-out infinite alternate-reverse;
 }
@@ -464,7 +535,7 @@
   /* Room around the 32px spinner without the panel collapsing to it. Was 96,
      sized for a photo pile this no longer draws. */
   height: 56px;
-  color: var(--cp-accent-ink);
+  color: var(--cp-accent-warm-ink);
 }
 .cookbook-build-reveal__copy {
   display: grid;
@@ -473,7 +544,7 @@
   color: var(--cp-ink);
 }
 .cookbook-build-reveal__copy span {
-  color: var(--cp-accent-ink);
+  color: var(--cp-accent-warm-ink);
   font-size: var(--cp-fs-label);
   font-weight: 800;
   letter-spacing: .16em;
@@ -617,13 +688,13 @@
 }
 .cookbook-feature-chips li svg {
   flex: none;
-  color: var(--cp-accent);
+  color: var(--cp-accent-warm);
 }
 .cookbook-welcome__price {
   display: grid;
   gap: .3rem;
   padding-left: 1rem;
-  border-left: 3px solid var(--cp-accent);
+  border-left: var(--cp-accent-warm);
   color: var(--cp-ink-soft);
   font-size: var(--cp-fs-body);
   line-height: 1.4;
@@ -667,7 +738,7 @@
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  color: var(--cp-accent-ink);
+  color: var(--cp-accent-warm-ink);
   font-weight: 650;
 }
 .cookbook-welcome__actions {
@@ -713,8 +784,8 @@
   transition: border-color 120ms ease, background 120ms ease;
 }
 .cookbook-format-card:hover {
-  border-color: var(--cp-accent);
-  background: var(--cp-accent-soft);
+  border-color: var(--cp-accent-warm);
+  background: var(--cp-accent-warm-soft);
 }
 .cookbook-format-card__text {
   display: grid;
