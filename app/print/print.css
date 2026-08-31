@@ -4295,6 +4295,39 @@
   box-shadow: var(--cp-shadow-xl);
   color: var(--cp-ink);
 }
+/* Drag and drop. The veil covers the viewport, not just the panel, because the
+   picker accepts a drop anywhere while it is open: releasing a photo beside the
+   panel should add it, not send the browser off to the file's own URL. */
+.image-picker__dropveil {
+  position: fixed;
+  inset: 0;
+  z-index: 3;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+  /* The cursor must keep reaching the elements underneath, or crossing the veil
+     itself would fire another dragenter/dragleave pair and flicker it. */
+  pointer-events: none;
+  background: color-mix(in srgb, var(--cp-accent) 14%, rgba(17, 24, 39, 0.44));
+  backdrop-filter: blur(2px);
+}
+.image-picker__dropveil-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  max-width: 320px;
+  padding: 22px 28px;
+  border: 1.5px dashed color-mix(in srgb, var(--cp-accent) 58%, var(--cp-line));
+  border-radius: 18px;
+  background: var(--cp-card);
+  box-shadow: var(--cp-shadow-xl);
+  color: var(--cp-ink);
+  font-size: var(--cp-fs-body);
+  font-weight: 800;
+  line-height: 1.3;
+  text-align: center;
+}
 .image-picker__heading {
   display: flex;
   align-items: flex-start;

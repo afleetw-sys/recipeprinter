@@ -1,10 +1,11 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Dialog } from "@/components/Dialog";
 import { IconButton } from "@/components/Controls";
 import { CheckIcon, ICON_SIZE, ImageIcon, UploadIcon, XIcon } from "@/components/icons";
 import { friendlyPhotoUploadError } from "@/lib/friendlyErrors";
+import { partitionImageFiles } from "@/lib/imageImport";
 import { uploadPhotoFile } from "@/lib/photoStorage";
 
 export function ImagePicker({
@@ -60,6 +61,7 @@ export function ImagePicker({
     if (openSignal) setOpen(true);
   }, [openSignal]);
   const [uploading, setUploading] = useState(false);
+  const [dragging, setDragging] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [failedImages, setFailedImages] = useState<Set<string>>(() => new Set());
   // Recipe-photo mode: placement (None/In-card/Full-page) on top, then the
@@ -73,14 +75,23 @@ export function ImagePicker({
   // photo". Skipped in recipe-photo mode, which passes its own candidates: the
   // recipe's current photo plus the ones it has worn before (`photoHistory`),
   // so the current one is already among them.
-  const uniqueImages = Array.from(
-    new Set([...(current && !recipeMode ? [current] : []), ...images].filter(Boolean)),
-  );
   // Grid multi-select: the cover reaches it via its standalone "Photo grid"
   // choice; a section opener reaches it as a Full-page sub-mode. Either way the
   // caller drives it through `gridActive`.
   const selectedGrid = (gridImages ?? []).filter(Boolean);
   const gridMode = gridActive && Boolean(onGridChange);
+  const uniqueImages = Array.from(
+    new Set(
+      [
+        ...(current && !recipeMode ? [current] : []),
+        // The same reason, for the collage: a photo uploaded or dropped straight
+        // into the grid is not one of the passed candidates either, and with no
+        // tile of its own it could be added and then never taken back out.
+        ...(gridMode ? selectedGrid : []),
+        ...images,
+      ].filter(Boolean),
+    ),
+  );
   /* "None" hides the photo, so there is nothing to pick a photo FOR — unless
      there is no photo yet, in which case hiding the picker is the thing that
      traps you: the dialog offers three placements, two of them do nothing
@@ -126,6 +137,107 @@ export function ImagePicker({
     setOpen(false);
   }
 
+  /**
+   * The one upload path, shared by the Upload tile's file input and by dropping
+   * files onto the open dialog.
+   *
+   * Grid mode takes as many as the collage still has room for and stays open so
+   * the cook can keep curating; a single-photo picker takes the first image and
+   * closes, the same as choosing an existing tile does.
+   */
+  async function addFiles(list: FileList | null) {
+    // `placementNone` hides the upload control, since the photo is set to
+    // hidden and there is nothing to pick one for. A drop follows it rather
+    // than uploading into a placement that shows nothing; the panel is already
+    // saying, in that state, to pick a placement first.
+    if (uploading || placementNone) return;
+    const { images: files, rejected } = partitionImageFiles(list);
+    if (files.length === 0) {
+      if (rejected > 0) setError("Those files aren't photos we can read. Choose JPG or PNG images.");
+      return;
+    }
+    setError(null);
+    setUploading(true);
+    try {
+      if (gridMode && onGridChange) {
+        const room = Math.max(0, gridMax - selectedGrid.length);
+        if (room === 0) {
+          setError(`The collage already holds ${gridMax} photos. Remove one to add another.`);
+          return;
+        }
+        const added: string[] = [];
+        for (const file of files.slice(0, room)) added.push(await uploadPhotoFile(file));
+        onGridChange([...selectedGrid, ...added]);
+      } else {
+        onSelect(await uploadPhotoFile(files[0]));
+        setOpen(false);
+      }
+    } catch (uploadError) {
+      console.warn("RecipePrinter: image upload failed", uploadError);
+      setError(friendlyPhotoUploadError(uploadError));
+    } finally {
+      setUploading(false);
+    }
+  }
+
+  /* Drag and drop.
+     The listeners sit on the window rather than on the panel because the dialog
+     owns the whole screen while it is open, and a photo released just beside the
+     panel would otherwise hit the browser's own default: navigating the tab to
+     the dropped file, taking the unsaved book with it. Catching the drop
+     anywhere is both the forgiving target and the guard against that, which is
+     why they stay attached even when `addFiles` will refuse the file. */
+  const addFilesRef = useRef(addFiles);
+  useEffect(() => {
+    addFilesRef.current = addFiles;
+  });
+  useEffect(() => {
+    if (!open) {
+      setDragging(false);
+      return;
+    }
+    // dragenter/dragleave fire per element crossed, so a plain boolean flickers
+    // off every time the pointer moves between the panel and a tile. Count the
+    // crossings instead and only clear at zero.
+    let depth = 0;
+    const carriesFiles = (event: DragEvent) =>
+      Array.from(event.dataTransfer?.types ?? []).includes("Files");
+    const onEnter = (event: DragEvent) => {
+      if (!carriesFiles(event)) return;
+      depth += 1;
+      setDragging(true);
+    };
+    const onOver = (event: DragEvent) => {
+      if (!carriesFiles(event)) return;
+      // Without this the drop event never fires at all.
+      event.preventDefault();
+      if (event.dataTransfer) event.dataTransfer.dropEffect = "copy";
+    };
+    const onLeave = (event: DragEvent) => {
+      if (!carriesFiles(event)) return;
+      depth = Math.max(0, depth - 1);
+      if (depth === 0) setDragging(false);
+    };
+    const onDrop = (event: DragEvent) => {
+      event.preventDefault();
+      depth = 0;
+      setDragging(false);
+      if (!carriesFiles(event)) return;
+      void addFilesRef.current(event.dataTransfer?.files ?? null);
+    };
+    window.addEventListener("dragenter", onEnter);
+    window.addEventListener("dragover", onOver);
+    window.addEventListener("dragleave", onLeave);
+    window.addEventListener("drop", onDrop);
+    return () => {
+      window.removeEventListener("dragenter", onEnter);
+      window.removeEventListener("dragover", onOver);
+      window.removeEventListener("dragleave", onLeave);
+      window.removeEventListener("drop", onDrop);
+      setDragging(false);
+    };
+  }, [open]);
+
   return (
     <>
       <button
@@ -157,6 +269,17 @@ export function ImagePicker({
         backdropClassName="image-picker__backdrop"
         panelClassName="image-picker__panel"
       >
+        {/* Painted over the whole screen, matching the window-wide drop target
+            below, so the dialog says plainly that letting go here works. */}
+        {dragging && !uploading && !placementNone && (
+          <div className="image-picker__dropveil" aria-hidden>
+            <div className="image-picker__dropveil-card">
+              <UploadIcon size={26} />
+              <span>{gridMode ? "Drop photos to add them to the collage" : "Drop a photo to use it"}</span>
+            </div>
+          </div>
+        )}
+
         <div className="image-picker__heading">
           <div>
             <h2 id="image-picker-title">
@@ -164,13 +287,13 @@ export function ImagePicker({
             </h2>
             <p>
               {gridMode
-                ? `Pick up to ${gridMax} photos for the collage — tap to add or remove.`
+                ? `Pick up to ${gridMax} photos for the collage. Tap to add or remove, or drag photos in.`
                 : recipeMode
-                  ? "Set the placement, then pick a photo."
+                  ? "Set the placement, then pick a photo or drag one in."
                   : // Deliberately not "in this cookbook": this dialog is the
                     // photo control for plain recipe cards too now, where there
                     // is no cookbook to have a photo in.
-                    "Use a photo you already have, or add a new one."}
+                    "Use a photo you already have, or drag in a new one."}
             </p>
           </div>
           <IconButton className="image-picker__close" onClick={() => setOpen(false)} aria-label="Close">
@@ -321,26 +444,15 @@ export function ImagePicker({
                 accept="image/*"
                 hidden
                 disabled={uploading}
-                onChange={async (event) => {
-                  const file = event.target.files?.[0];
+                multiple={gridMode}
+                onChange={(event) => {
+                  // Read the selection before clearing: `value = ""` empties the
+                  // live FileList too. `addFiles` copies it out synchronously,
+                  // before its first await, so this order is safe.
+                  void addFiles(event.target.files);
+                  // Clear so picking the SAME file again still fires onChange,
+                  // otherwise a retry after an error is a silent no-op.
                   event.target.value = "";
-                  if (!file) return;
-                  setError(null);
-                  setUploading(true);
-                  try {
-                    const url = await uploadPhotoFile(file);
-                    if (gridMode && onGridChange) {
-                      if (selectedGrid.length < gridMax) onGridChange([...selectedGrid, url]);
-                    } else {
-                      onSelect(url);
-                      setOpen(false);
-                    }
-                  } catch (uploadError) {
-                    console.warn("RecipePrinter: image upload failed", uploadError);
-                    setError(friendlyPhotoUploadError(uploadError));
-                  } finally {
-                    setUploading(false);
-                  }
                 }}
               />
             </label>
