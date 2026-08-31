@@ -2988,6 +2988,10 @@
      --recipe-bg so it looks identical but survives print. */
   --recipe-step-bg: #e6ecf5;
   --recipe-footer: #9aa7ad;
+  /* The ingredient bullets, split out from --recipe-accent-2 so they can be
+     coloured independently of the header bar. Every template inherits its own
+     decorative accent here; Classic overrides it to clay just below. */
+  --recipe-bullet: var(--recipe-accent-2);
   --recipe-radius: 14px;
   --recipe-title-font: var(--font-playfair), Georgia, serif;
   /* Pinned, not inherited, and load-bearing: `body { @apply font-sans }` is
@@ -4928,6 +4932,15 @@ textarea.recipe-card__toc-title {
   display: block;
 }
 
+/* Clay, and only here. The bar stays two shades of the dark blue — a gradient
+   that changed hue read as a second piece of artwork — but the bullets are
+   small, repeated marks down the ingredient column rather than a band across
+   the top, and warming them is what stops an all-blue card reading cold. This
+   is the one place clay appears on paper. */
+.recipe-template--classic {
+  --recipe-bullet: #c96a4c;
+}
+
 .recipe-template--classic .recipe-card {
   overflow: hidden;
 }
@@ -6026,7 +6039,7 @@ textarea.recipe-card__toc-title {
   width: 3pt;
   height: 3pt;
   border-radius: 50%;
-  background: var(--recipe-accent-2);
+  background: var(--recipe-bullet);
 }
 
 .recipe-card__method ol {

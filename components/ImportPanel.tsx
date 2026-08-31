@@ -33,6 +33,7 @@ import {
   TextIcon,
   UploadIcon,
 } from "@/components/icons";
+import { ButtonToggle } from "@/components/ButtonToggle";
 
 // Compact import switch: URL and CookPilot are first-class; lower-frequency
 // sources live behind an overflow menu so the workspace rail stays quiet.
@@ -343,34 +344,26 @@ export function ImportPanel({
 
       {/* Mode toggle */}
       <div className="mode-toggle-shell">
-        <div
+        <ButtonToggle
           className={`mode-toggle ${expanded ? "mode-toggle--expanded" : ""}`}
-          role="group"
-          aria-label="Import source"
+          label="Import source"
+          options={expanded ? MODES : PRIMARY_MODES}
+          value={mode}
+          onChange={chooseMode}
+          disabled={busy}
         >
-          {(expanded ? MODES : PRIMARY_MODES).map(({ id, label, icon: Icon }) => (
-            <button
-              key={id}
-              type="button"
-              aria-pressed={mode === id}
-              disabled={busy}
-              className={`mode-toggle__item ${mode === id ? "is-active" : ""}`}
-              onClick={() => chooseMode(id)}
-            >
-              <Icon size={18} />
-              <span>{label}</span>
-            </button>
-          ))}
-
           {!expanded && (
             <div ref={overflowRef} className="mode-toggle-overflow">
+              {/* Wears the option's own class so it sits in the row as a
+                  sibling, but it opens a menu rather than choosing a mode, so
+                  it is not one of the toggle's options. */}
               <button
                 type="button"
                 aria-label="More import options"
                 aria-haspopup="menu"
                 aria-expanded={overflowOpen}
                 disabled={busy}
-                className={`mode-toggle__item mode-toggle__item--icon ${
+                className={`btn-toggle__option btn-toggle__option--icon ${
                   overflowActive ? "is-active" : ""
                 }`}
                 onClick={() => setOverflowOpen((open) => !open)}
@@ -397,7 +390,7 @@ export function ImportPanel({
               )}
             </div>
           )}
-        </div>
+        </ButtonToggle>
       </div>
 
       {mode === "cookpilot" ? (

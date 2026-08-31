@@ -1246,23 +1246,29 @@
     letter-spacing: 0.12em;
   }
 
-  /* ── Import mode toggle (mirrors .cp-import-mode-toggle) ───────────────── */
-  .mode-toggle-shell {
-    position: relative;
-    width: 100%;
-  }
-  .mode-toggle {
+  /* ── Button toggle ───────────────────────────────────────────────────────
+     The app's one segmented picker: a row of equal buttons where exactly one
+     is chosen. Rendered by <ButtonToggle>; see components/ButtonToggle.tsx.
+
+     This is the ONE control that does not take --cp-selected-fill, and the
+     exception is deliberate rather than an oversight. Every segment here keeps
+     the card's own ground; the chosen one is marked by its EDGE and its LABEL
+     going accent. A tinted fill is right when you are picking a tile out of a
+     grid — a photo, a size, a template — because the tile is an object and the
+     tint is the paper it sits on. A segmented row is not a grid of objects, it
+     is one control with several faces, and tinting one face makes it read as a
+     different KIND of button from the two beside it rather than as the same
+     button, chosen. (It also had a second life as a bug: the import panel
+     carried a workspace-only override to white, so the identical control was
+     tinted in the Add-recipe dialog and untinted on the homepage.)
+
+     See docs/color-roles.md for where the two treatments each apply. */
+  .btn-toggle {
     display: grid;
-    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) 44px;
     gap: 8px;
     padding: 1px;
   }
-  /* Empty state: every import option is shown so people see what's available.
-     2×2 on small screens, a single row once there's room. */
-  .mode-toggle.mode-toggle--expanded {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-  .mode-toggle__item {
+  .btn-toggle__option {
     @apply inline-flex items-center justify-center gap-2 rounded font-bold transition-colors;
     min-height: 44px;
     padding: 0 14px;
@@ -1273,24 +1279,37 @@
     font-size: var(--cp-fs-small);
     cursor: pointer;
   }
-  .mode-toggle__item:hover:not(.is-active):not(:disabled) {
+  .btn-toggle__option:hover:not(.is-active):not(:disabled) {
     background: var(--cp-surface-muted);
   }
-  .mode-toggle__item.is-active {
-    /* Shared selected recipe: accent border + soft fill + 1px ring, label in
-       the AA-safe accent ink (a color shift, not a weight/size shift, so the
-       control doesn't reflow). */
-    background: var(--cp-selected-fill);
+  .btn-toggle__option.is-active {
+    /* Edge and label, not fill. The border carries the state (5.1:1 on the
+       card, well over the 3:1 WCAG asks of a non-text indicator) and the label
+       shifts to the AA-safe accent ink — a colour change, not a weight or size
+       change, so choosing an option never reflows the row. */
     border-color: var(--cp-selected-border);
-    box-shadow: var(--cp-selected-ring);
     color: var(--cp-selected-text);
   }
-  .mode-toggle__item--icon {
+  .btn-toggle__option--icon {
     padding: 0;
   }
-  .mode-toggle__item:disabled {
+  .btn-toggle__option:disabled {
     @apply opacity-50;
     cursor: default;
+  }
+
+  /* ── Import mode toggle: the button toggle plus an overflow menu ────────── */
+  .mode-toggle-shell {
+    position: relative;
+    width: 100%;
+  }
+  .mode-toggle {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) 44px;
+  }
+  /* Empty state: every import option is shown so people see what's available.
+     2×2 on small screens, a single row once there's room. */
+  .mode-toggle.mode-toggle--expanded {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
   /* ── The document's name and kind, centred in the workspace bar ─────────
      Built from the same parts as everything else in the bar: the menu is the
@@ -1963,18 +1982,18 @@
       grid-template-columns: repeat(4, minmax(0, 1fr));
     }
 
-    .rp-import-panel--workspace .mode-toggle__item {
+    /* Sizing only. The two background rules that used to live here — a
+       translucent white idle state and a solid white active one — were what
+       made this panel's toggle look different from the identical control in
+       the Add-recipe dialog. That treatment is now the shared default, so
+       there is nothing left to override but the height. */
+    .rp-import-panel--workspace .btn-toggle__option {
       min-height: 40px;
       padding: 0 10px;
       font-size: var(--cp-fs-caption);
-      background: rgba(255, 255, 255, 0.72);
     }
 
-    .rp-import-panel--workspace .mode-toggle__item.is-active {
-      background: var(--cp-card);
-    }
-
-    .rp-import-panel--workspace .mode-toggle__item--icon {
+    .rp-import-panel--workspace .btn-toggle__option--icon {
       padding: 0;
     }
 

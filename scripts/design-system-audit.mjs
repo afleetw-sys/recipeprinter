@@ -188,6 +188,114 @@ for (const target of cssTargets) {
   }
 }
 
+// ── Cornflower vs clay: the rules from docs/color-roles.md, enforced ──
+// A doc nobody can run is a doc that drifts. These are the three ways the
+// two-accent split has actually been broken so far, each now a build failure.
+{
+  // The palette, and the two darkened siblings derived from it. Written out
+  // rather than parsed so that renaming a token can never silently empty this
+  // list and switch the whole check off.
+  const paletteLiterals = [
+    ["#f4f7f3", "--cp-page"],
+    ["#22303a", "--cp-ink"],
+    ["#5f6f79", "--cp-ink-soft"],
+    ["#4a6fa8", "--cp-accent"],
+    ["#3f6094", "--cp-accent-ink"],
+    ["#c96a4c", "--cp-accent-warm"],
+    ["#9e4629", "--cp-accent-warm-ink"],
+  ];
+
+  // 1. A palette colour written as a literal is a copy that stops following the
+  //    token. Only :root may hold the values. print.css is exempt below the UI
+  //    ranges because printed artwork owns its own `--recipe-*` palette and
+  //    legitimately spells colours out (Classic's clay bullet, for one).
+  {
+    const file = path.join(root, "app/globals.css");
+    const lines = scannableLines(file, fs.readFileSync(file, "utf8"));
+    const rootEnd = lines.findIndex((line, index) => index > 0 && line.trim() === "}");
+    lines.forEach((line, index) => {
+      if (index <= rootEnd) return;
+      for (const [hex, token] of paletteLiterals) {
+        if (line.toLowerCase().includes(hex)) {
+          report(file, index + 1, `${hex} is the ${token} palette value — use var(${token})`);
+        }
+      }
+    });
+  }
+  for (const directory of ["app", "components"]) {
+    for (const file of walk(path.join(root, directory)).filter((n) => n.endsWith(".tsx"))) {
+      if (exemptTsx.has(path.relative(root, file))) continue;
+      scannableLines(file, fs.readFileSync(file, "utf8")).forEach((line, index) => {
+        for (const [hex, token] of paletteLiterals) {
+          if (line.toLowerCase().includes(hex)) {
+            report(file, index + 1, `${hex} is the ${token} palette value — use var(${token})`);
+          }
+        }
+      });
+    }
+  }
+
+  // 2. Neither base accent is ever TEXT. Clay is 3.7:1 on card and cornflower
+  //    is only comfortable at large sizes; both have an -ink sibling that is
+  //    AA-safe everywhere, and that is what a glyph or a label reads from.
+  for (const name of ["app/globals.css", "app/print/print.css"]) {
+    const file = path.join(root, name);
+    scannableLines(file, fs.readFileSync(file, "utf8")).forEach((line, index) => {
+      const match = line.match(/(?:^|[\s;{])color\s*:\s*var\(\s*(--cp-accent|--cp-accent-warm)\s*\)/);
+      if (match) {
+        report(file, index + 1, `${match[1]} is a fill and a border, never text — use ${match[1]}-ink`);
+      }
+    });
+  }
+  for (const directory of ["app", "components"]) {
+    for (const file of walk(path.join(root, directory)).filter((n) => n.endsWith(".tsx"))) {
+      if (exemptTsx.has(path.relative(root, file))) continue;
+      scannableLines(file, fs.readFileSync(file, "utf8")).forEach((line, index) => {
+        const match = line.match(/text-\[var\((--cp-accent|--cp-accent-warm)\)\]/);
+        if (match) {
+          report(file, index + 1, `${match[1]} is a fill and a border, never text — use ${match[1]}-ink`);
+        }
+      });
+    }
+  }
+
+  // 3. Text sitting ON a filled accent takes the on-accent token. The right
+  //    answer flips with the accent — against the old teal, ink won at 1.95:1;
+  //    against cornflower, ink is 2.66:1 and white wins — so hand-picking it at
+  //    each call site is how the signed-in avatar ended up as the least legible
+  //    text in the app.
+  const onAccent = [
+    ["--cp-accent", "--cp-on-accent"],
+    ["--cp-accent-warm-ink", "--cp-on-accent-warm"],
+  ];
+  for (const name of ["app/globals.css", "app/print/print.css"]) {
+    const file = path.join(root, name);
+    const text = stripCssComments(fs.readFileSync(file, "utf8"));
+    for (const block of text.matchAll(/\{([^{}]*)\}/g)) {
+      const body = block[1];
+      const colour = body.match(/(?:^|[\s;])color\s*:\s*([^;]+)/)?.[1].trim();
+      if (!colour) continue;
+      for (const [fill, expected] of onAccent) {
+        const filled = new RegExp(`background(?:-color)?\\s*:\\s*var\\(\\s*${fill}\\s*\\)`).test(body);
+        if (filled && colour !== `var(${expected})`) {
+          const line = text.slice(0, block.index).split("\n").length;
+          report(file, line, `text on a filled ${fill} must be var(${expected}), not ${colour}`);
+        }
+      }
+    }
+  }
+  for (const directory of ["app", "components"]) {
+    for (const file of walk(path.join(root, directory)).filter((n) => n.endsWith(".tsx"))) {
+      if (exemptTsx.has(path.relative(root, file))) continue;
+      scannableLines(file, fs.readFileSync(file, "utf8")).forEach((line, index) => {
+        if (/bg-\[var\(--cp-accent\)\]/.test(line) && /text-\[var\(--cp-(?:ink|accent-ink)/.test(line)) {
+          report(file, index + 1, "text on a filled --cp-accent must be var(--cp-on-accent)");
+        }
+      });
+    }
+  }
+}
+
 if (failures.length) {
   console.error("Design-system audit failed:\n");
   console.error(failures.map((failure) => `  ${failure}`).join("\n"));
