@@ -64,16 +64,7 @@ export function SiteFooter({ isHome = false }: { isHome?: boolean }) {
                 recipe printer
               </Link>
             )}{" "}
-            for websites, blogs, and social recipes, from{" "}
-            <a
-              href={PUBLISHER.url}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-brand-ink hover:underline font-semibold"
-            >
-              {PUBLISHER.name}
-            </a>
-            .
+            for websites, blogs, and social recipes.
           </span>
           <span>
             © {new Date().getFullYear()} {PUBLISHER.name}
