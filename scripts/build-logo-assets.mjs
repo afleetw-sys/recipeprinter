@@ -62,26 +62,49 @@ const CHROME_CANDIDATES = [
  *  transparent apple-touch-icon onto black, which would put a navy-and-orange
  *  mark on a black tile. Browser favicons keep their alpha so they sit on
  *  whatever the tab strip is. */
+/** Corner rounding for browser favicons, as a fraction of the icon's width.
+ *  Nothing masks these — a tab shows exactly the bitmap it is given. */
+const ICON_RADIUS = 0.2;
+
 const TARGETS = [
+  // NOT rounded, deliberately: iOS applies its own squircle mask to an
+  // apple-touch-icon, so a pre-rounded one gets rounded twice and comes out
+  // with clipped, lumpy corners.
   { out: "app/apple-icon.png", size: 180, background: "#ffffff", pad: 0.12 },
-  { out: "public/favicon-32x32.png", size: 32, background: "transparent" },
-  { out: "public/favicon-16x16.png", size: 16, background: "transparent" },
+  { out: "public/favicon-32x32.png", size: 32, background: "transparent", radius: ICON_RADIUS },
+  { out: "public/favicon-16x16.png", size: 16, background: "transparent", radius: ICON_RADIUS },
 ];
+
 
 /** The non-square one: icon.png keeps the mark's own proportions. */
 const ICON_MAX = 168;
 
-async function shoot(page, dataUri, width, height, objectFit, background = "transparent", pad = 0) {
+async function shoot(
+  page,
+  dataUri,
+  width,
+  height,
+  objectFit,
+  background = "transparent",
+  pad = 0,
+  radius = 0,
+) {
   await page.setViewport({ width, height, deviceScaleFactor: 1 });
   const inset = Math.round(width * pad);
+  // The radius goes on a wrapper that CLIPS, not on the image itself: the
+  // artwork bleeds to all four edges, so rounding has to cut the corners off
+  // the picture rather than round a box drawn behind it.
+  const corner = radius ? `${(width * radius).toFixed(2)}px` : "0";
   await page.setContent(
     `<style>
-       html,body{margin:0;padding:0;background:${background}}
+       html,body{margin:0;padding:0;background:transparent}
+       .frame{width:${width}px;height:${height}px;overflow:hidden;
+              border-radius:${corner};background:${background}}
        img{display:block;
            width:${width - inset * 2}px;height:${height - inset * 2}px;
            margin:${inset}px;object-fit:${objectFit}}
      </style>
-     <img src="${dataUri}">`,
+     <div class="frame"><img src="${dataUri}"></div>`,
     { waitUntil: "load" },
   );
   // The <img> decoding is what we are actually waiting for; `load` on
@@ -188,9 +211,9 @@ async function main() {
   const written = [];
   const icoParts = [];
 
-  for (const { out, size, background, pad } of TARGETS) {
+  for (const { out, size, background, pad, radius } of TARGETS) {
     // `contain` letterboxes rather than cropping or squashing.
-    const png = await shoot(page, iconUri, size, size, "contain", background, pad);
+    const png = await shoot(page, iconUri, size, size, "contain", background, pad, radius);
     writeFileSync(resolve(ROOT, out), png);
     written.push(`${out} (${size}x${size}, ${png.length} B)`);
     if (size === 16 || size === 32) icoParts.push({ size, data: png });
@@ -198,7 +221,9 @@ async function main() {
 
   const iconW = srcW >= srcH ? ICON_MAX : Math.round((srcW / srcH) * ICON_MAX);
   const iconH = srcW >= srcH ? Math.round((srcH / srcW) * ICON_MAX) : ICON_MAX;
-  const iconPng = await shoot(page, iconUri, iconW, iconH, "fill");
+  const iconPng = await shoot(
+    page, iconUri, iconW, iconH, "fill", "transparent", 0, ICON_RADIUS,
+  );
   writeFileSync(resolve(ROOT, "app/icon.png"), iconPng);
   written.push(`app/icon.png (${iconW}x${iconH}, ${iconPng.length} B)`);
 

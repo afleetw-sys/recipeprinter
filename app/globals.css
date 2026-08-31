@@ -16,44 +16,37 @@
      owned, purchased, priced, or being offered, plus decorative art that isn't
      reporting state. Rare, and loud when it turns up.
 
-     Each has an -ink sibling for TEXT and a -soft low-alpha tint. Use the ink
-     for anything a person reads; the base value is for borders, rules, and
-     fills. Both bases clear AA on white in their own right, which the old
-     brand teal never did (1.95:1), so the ink siblings are now headroom rather
-     than a rescue.
+     These are the palette's own values, not shades of them. Darkened siblings
+     lived here for a while (--cp-accent-ink, --cp-accent-warm-ink) and turned
+     out to be solving a problem a rule solves better:
 
-     One constraint on warm, and it's a contrast fact rather than a preference:
-     warm is a TINT, a BORDER, and an INK, never a solid fill behind text. Clay
-     is 3.6:1 against our ink and 3.7:1 against white, so it fails AA both ways
-     as a text background. Filled controls stay on the cool accent. Warm may
-     fill something that carries no text at all (a glow, a cover, a rule). */
+       · Cornflower is TEXT only on plain paper — card or page, where it is
+         5.1:1 and 4.7:1. On a tinted surface it falls to 4.4:1, so text there
+         is --cp-ink like any other text.
+       · Clay carries text only at LARGE sizes. White on clay is 3.7:1, which
+         clears WCAG's 3:1 bar for large text (>=18.66px bold, or >=24px
+         regular) and for non-text — borders, rules, icons — but not the 4.5:1
+         normal text needs. So a big filled clay chip with white on it is fine
+         and is what --cp-on-accent-warm is for; a small one is not. Words on a
+         clay TINT are --cp-ink, 11:1 against it.
+
+     The accents mark things; Slate says them. One sentence to hold instead of
+     four hexes to keep in sync — and the reason neither accent needs a second
+     version of itself. */
   --cp-accent: #4a6fa8;
-  --cp-accent-ink: #3f6094;
   --cp-accent-soft: rgba(74, 111, 168, 0.12);
   --cp-accent-warm: #c96a4c;
-  /* Darkened one step from the #a94e30 clay reads as. The notice family always
-     sets this ink ON --cp-accent-warm-soft — a free-template banner, the
-     protect bar, a purchased chip — and at the lighter value that self-pairing
-     was 4.17:1 over the page ground: the token failed against its own tint.
-     Now 4.74:1 there and 5.08:1 over card, so ink-on-its-own-tint is safe by
-     construction rather than by luck of which surface it lands on. */
-  --cp-accent-warm-ink: #9e4629;
   --cp-accent-warm-soft: rgba(201, 106, 76, 0.18);
-  /* The text/glyph colour that sits ON a filled --cp-accent surface. This is
-     the token two rules used to guess at, and the right answer flipped when
-     the accent changed: against the old brand teal white was 1.95:1 and ink
-     won, against cornflower ink is 2.66:1 and white wins at 5.08:1. Naming it
-     is what stops the next accent change from silently breaking both. */
+  /* The text that sits ON a filled accent: white either way — 5.1:1 on
+     cornflower (where --cp-ink is 2.7:1) and 3.7:1 on clay. Named so the
+     pairing is not re-decided by hand at each call site.
+
+     Neither is a new colour; both resolve to the card. They are two names
+     because the SIZE RULE differs: cornflower takes white at any size, clay
+     only at large text. */
   --cp-on-accent: var(--cp-card);
-  /* Same job on the warm side. Note which value a SOLID warm chip fills with:
-     --cp-accent-warm-ink, not --cp-accent-warm. Raw clay behind white text is
-     3.7:1; the ink sibling is 6.25:1 and still unmistakably orange. So clay
-     has exactly two jobs — tint and border — and its ink has three: text on
-     light, and the fill plus nothing else on solid. */
   --cp-on-accent-warm: var(--cp-card);
-  /* Back-compat aliases for older rules. --cp-blue resolves to the accent ink
-     so any lingering text use stays legible. */
-  --cp-blue: #3f6094;
+  --cp-blue: var(--cp-accent);
   --cp-teal: #4a6fa8;
   --cp-mint: #4a6fa8;
   --cp-ink: #22303a;
@@ -78,24 +71,24 @@
      surfaces, tokenized so chrome stops hardcoding them. Values unchanged. */
   --cp-overlay-hover: rgba(34, 48, 58, 0.06);
   --cp-overlay-hover-strong: rgba(34, 48, 58, 0.09);
-  --cp-surface-muted: #eef3ec;
+  --cp-surface-muted: color-mix(in srgb, var(--cp-ink) 3%, var(--cp-page));
   /* The fill behind .btn-neutral. A true neutral, not a mix off --cp-ink-soft:
      a filled button wants to read as a plain grey chip, and the blue cast that
      suits a page background made it look tinted at this size. */
-  --cp-surface-strong: #e5eae4;
+  --cp-surface-strong: color-mix(in srgb, var(--cp-ink) 7%, var(--cp-page));
   /* One step lighter than --cp-surface-strong and in the SAME neutral family.
      A recessed track behind a --cp-surface-strong selection needs to be
      lighter than it, and the existing pale greys (--cp-surface-muted,
      --cp-page) are blue-tinted — behind a neutral thumb they reintroduce
      exactly the two-different-greys mismatch that made the header look
      unfinished. */
-  --cp-surface-soft: #f2f6f1;
+  --cp-surface-soft: color-mix(in srgb, var(--cp-ink) 1%, var(--cp-page));
   /* The studio's middle column. Near-white rather than the page's blue-grey:
      the deck is a stack of white pages, and a tinted ground behind them made
      the paper look tinted too. Light enough to read as "white", dark enough
      that a page's own edge still shows against it. */
-  --cp-deck-ground: #fbfdfa;
-  --cp-surface-strong-hover: #d8ded6;
+  --cp-deck-ground: color-mix(in srgb, var(--cp-ink) 2%, var(--cp-card));
+  --cp-surface-strong-hover: color-mix(in srgb, var(--cp-ink) 14%, var(--cp-page));
 
   /* ── Font-size scale ──────────────────────────────────────────────────────
      One shared type scale so titles, buttons, labels, and body copy read as
@@ -206,7 +199,7 @@
      var(--cp-selected-ring)` call sites stay valid; set it to a real ring only
      if a control ever needs one without an accompanying border. */
   --cp-selected-ring: none;
-  --cp-selected-text: var(--cp-accent-ink);
+  --cp-selected-text: var(--cp-accent);
   /* Focus uses the vivid brand accent so it matches the selected-state border
      (e.g. the mode-toggle tabs), which also uses --cp-accent — a focus ring in
      the darker ink sibling read as a different, "wrong" colour next to it.
@@ -254,9 +247,10 @@
 .project-cover--empty {
   gap: 0;
   place-items: center;
-  /* Warm: this is cover art for a project with no pages yet, not a status. */
+  /* Warm: this is cover art for a project with no pages yet, not a status.
+     The glyph on it is --cp-ink, because clay is a tint here, not a text. */
   background: var(--cp-accent-warm-soft);
-  color: var(--cp-accent-warm-ink);
+  color: var(--cp-ink);
 }
 
 /* ── Cookbook premium workspace ───────────────────────────────────────── */
@@ -299,7 +293,7 @@
   width: 68%;
   aspect-ratio: 1;
   border-radius: 50%;
-  background: radial-gradient(circle, color-mix(in srgb, var(--cp-accent-warm-ink) 20%, transparent), transparent 64%);
+  background: radial-gradient(circle, color-mix(in srgb, var(--cp-accent-warm) 20%, transparent), transparent 64%);
   filter: blur(30px);
   animation: cookbook-reveal-drift 8s ease-in-out infinite alternate-reverse;
 }
@@ -313,13 +307,19 @@
 }
 /* The build overlay: one spinner, whatever is in the book. No progress bar,
    because there is no honest number to show. */
+.cookbook-build-reveal__spinner svg {
+  color: var(--cp-accent-warm);
+}
+
 .cookbook-build-reveal__spinner {
   display: grid;
   place-items: center;
+  /* Clay lives on the child svg, not here: a spinner is a graphic and clears
+     the 3:1 bar, but the rule painting it has to say so — see the clay check
+     in scripts/design-system-audit.mjs. */
   /* Room around the 32px spinner without the panel collapsing to it. Was 96,
      sized for a photo pile this no longer draws. */
   height: 56px;
-  color: var(--cp-accent-warm-ink);
 }
 .cookbook-build-reveal__copy {
   display: grid;
@@ -328,7 +328,7 @@
   color: var(--cp-ink);
 }
 .cookbook-build-reveal__copy span {
-  color: var(--cp-accent-warm-ink);
+  color: var(--cp-ink);
   font-size: var(--cp-fs-label);
   font-weight: 800;
   letter-spacing: .16em;
@@ -367,8 +367,8 @@
 .cookbook-ready__backdrop {
   position: absolute;
   inset: 0;
-  background: rgba(17, 24, 39, 0.34);
-  backdrop-filter: blur(5px);
+  background: var(--cp-scrim);
+  backdrop-filter: var(--cp-scrim-blur);
 }
 
 @media (max-width: 760px) {
@@ -417,7 +417,9 @@
 .cookbook-welcome__visual {
   min-height: 440px;
   overflow: hidden;
-  background: #ddd3c4;
+  /* Warm ground behind the photo, mixed from the palette rather than picked:
+     it shows only while the image loads. */
+  background: color-mix(in srgb, var(--cp-accent-warm) 28%, var(--cp-page));
 }
 .cookbook-welcome__visual img {
   width: 100%;
@@ -475,7 +477,7 @@
   /* The ink sibling, not the base: these ticks carry the meaning "included",
      so they are read rather than decorative. Raw clay is 3.7:1 on card — over
      the 3:1 icon bar but under the bar for anything load-bearing. */
-  color: var(--cp-accent-warm-ink);
+  color: var(--cp-accent-warm);
 }
 .cookbook-welcome__price {
   display: grid;
@@ -521,12 +523,17 @@
   min-width: 0;
 }
 
+/* "You own this" — a word, so Slate; the tick beside it is a glyph and keeps
+   the clay. Same split as everywhere else: the accent marks, Slate says. */
 .cookbook-welcome__owned {
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  color: var(--cp-accent-warm-ink);
+  color: var(--cp-ink);
   font-weight: 650;
+}
+.cookbook-welcome__owned svg {
+  color: var(--cp-accent-warm);
 }
 .cookbook-welcome__actions {
   display: flex;
@@ -609,7 +616,7 @@
   line-height: 1.55;
 }
 .cookbook-ready__printer-link {
-  color: var(--cp-accent-ink);
+  color: var(--cp-accent);
   font-weight: 700;
   text-decoration: underline;
   text-underline-offset: 2px;
@@ -811,7 +818,7 @@
     color: var(--cp-card);
   }
   .btn-danger:hover:not(:disabled) {
-    background: color-mix(in srgb, var(--cp-error) 88%, #000);
+    background: color-mix(in srgb, var(--cp-error) 88%, var(--cp-ink));
   }
   .btn-ghost--danger {
     color: var(--cp-error);
@@ -952,7 +959,7 @@
   .status-badge--success {
     border-color: color-mix(in srgb, var(--cp-accent) 38%, var(--cp-line));
     background: var(--cp-accent-soft);
-    color: var(--cp-accent-ink);
+    color: var(--cp-ink);
   }
 
   /* Shared checkbox: one semantic component and one visual recipe for every
@@ -1460,15 +1467,20 @@
 
   /* Accent fill on a tab that is otherwise plain text, so it reads as a flag
      rather than a second word in the label. WARM, because "new" is the product
-     announcing something rather than the system reporting state — see the
-     two-voice note at the top of this file. Filled, so it takes the ink value
-     as its background (6.25:1 with white on it). */
+     announcing something rather than the system reporting state.
+
+     A clay TINT with a clay edge, not a solid clay fill — because of the SIZE,
+     not the colour. White on clay is 3.7:1, which is fine for large text
+     (>=18.66px bold) and is exactly how a big clay chip should be built. This
+     flag is 9.9px, less than half that, so it needs the 4.5:1 normal-text bar
+     and has to get its colour from the tint and its word from --cp-ink. */
   .rp-project-heading__new {
     margin-left: 5px;
     padding: 1px 5px;
+    border: 1px solid var(--cp-accent-warm);
     border-radius: 999px;
-    background: var(--cp-accent-warm-ink);
-    color: var(--cp-on-accent-warm);
+    background: var(--cp-accent-warm-soft);
+    color: var(--cp-ink);
     /* A flag has to sit well under the label it rides on or it stops reading as
        a flag. `--cp-fs-label` was only a step below the 12.8px tab, which is
        close enough to look like a second word; this is the ramp's badge
@@ -1799,7 +1811,7 @@
       overflow: hidden;
       border: 1px solid var(--cp-line-strong);
       border-radius: 18px;
-      background: rgba(255, 255, 255, 0.96);
+      background: color-mix(in srgb, var(--cp-card) 96%, transparent);
       box-shadow: var(--cp-shadow-lg);
       pointer-events: auto;
       backdrop-filter: blur(14px);
@@ -1864,8 +1876,8 @@
        primary action — accent fill instead of the ink-black shared by every
        other primary button. */
     .rp-mobile-print-tray__print--ready {
-      background: var(--cp-accent-ink);
-      color: var(--cp-card);
+      background: var(--cp-accent);
+      color: var(--cp-on-accent);
     }
 
     .rp-mobile-print-tray__content {
@@ -1957,7 +1969,7 @@
       border: 1px solid var(--cp-line);
       border-radius: 28px;
       background:
-        linear-gradient(180deg, rgba(255, 255, 255, 0.78), rgba(255, 255, 255, 0.42)),
+        linear-gradient(180deg, color-mix(in srgb, var(--cp-card) 78%, transparent), color-mix(in srgb, var(--cp-card) 42%, transparent)),
         color-mix(in srgb, var(--cp-page) 86%, var(--cp-card));
     }
 
@@ -2000,7 +2012,7 @@
     .rp-import-panel--workspace .field {
       min-height: 44px;
       padding: 12px 14px;
-      background: rgba(255, 255, 255, 0.82);
+      background: color-mix(in srgb, var(--cp-card) 82%, transparent);
     }
 
     .rp-import-panel--workspace textarea.field {
@@ -2010,7 +2022,7 @@
     .rp-import-panel--workspace .dropzone {
       min-height: 128px;
       padding: 18px 14px;
-      background: rgba(255, 255, 255, 0.72);
+      background: color-mix(in srgb, var(--cp-card) 72%, transparent);
     }
   }
 }

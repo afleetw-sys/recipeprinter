@@ -280,7 +280,7 @@ export default function ProjectsPage() {
              an account we can't see yet. */
           <div className="flex flex-col items-center rounded-xl border border-line bg-card px-cp-6 py-cp-7 text-center">
             <div className="flex h-16 w-16 items-center justify-center rounded-full bg-[var(--cp-accent-soft)]">
-              <BookIcon size={28} className="text-[var(--cp-accent-ink)]" />
+              <BookIcon size={28} className="text-[var(--cp-accent)]" />
             </div>
             <h2 className="mt-cp-4 text-cp-h2 font-extrabold tracking-[-0.02em]">Sign in to see your projects</h2>
             <p className="mt-cp-2 max-w-sm text-cp-body text-ink-soft leading-relaxed">
@@ -293,7 +293,7 @@ export default function ProjectsPage() {
         ) : projects.length === 0 ? (
           <div className="flex flex-col items-center rounded-xl border border-line bg-card px-cp-6 py-cp-7 text-center">
             <div className="flex h-16 w-16 items-center justify-center rounded-full bg-[var(--cp-accent-soft)]">
-              <BookIcon size={28} className="text-[var(--cp-accent-ink)]" />
+              <BookIcon size={28} className="text-[var(--cp-accent)]" />
             </div>
             <h2 className="mt-cp-4 text-cp-h2 font-extrabold tracking-[-0.02em]">No saved projects yet</h2>
             <p className="mt-cp-2 max-w-sm text-cp-body text-ink-soft leading-relaxed">Build a cookbook or a set of recipe cards and it’ll show up here, ready to reopen anytime.</p>
@@ -338,7 +338,7 @@ export default function ProjectsPage() {
                 <li key={project.id} className="group relative flex min-h-44 flex-col overflow-hidden rounded-xl border border-line bg-card transition-colors hover:border-line-strong">
                   <Link
                     href={`/print?project=${encodeURIComponent(project.id)}`}
-                    className="absolute inset-0 z-10 rounded-xl focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--cp-accent-ink)]"
+                    className="absolute inset-0 z-10 rounded-xl focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--cp-accent)]"
                     aria-label={`Open ${project.title || (project.kind === "printProject" ? "Untitled recipe cards" : "Untitled cookbook")}`}
                   />
                   <ProjectCover project={project} />

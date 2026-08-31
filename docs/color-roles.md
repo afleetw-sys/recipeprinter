@@ -47,33 +47,44 @@ not speak in the accent's voice.
 
 ## Picking the right variable
 
-Each accent is three values, and which one you want depends on what you're
-painting, not on how it looks:
+There are **five colours and white**. No darkened siblings, no tints invented
+per component — everything below is one of those or a `color-mix` of them.
 
 | Painting | Cornflower | Clay |
 |---|---|---|
-| A border, a rule, a tint at full strength | `--cp-accent` | `--cp-accent-warm` |
+| A border, a rule, an icon | `--cp-accent` | `--cp-accent-warm` |
 | A low-alpha wash behind something | `--cp-accent-soft` | `--cp-accent-warm-soft` |
-| Text or a glyph a person reads | `--cp-accent-ink` | `--cp-accent-warm-ink` |
-| A **solid fill** with text on it | `--cp-accent` | `--cp-accent-warm-ink` |
-| Text sitting on that solid fill | `--cp-on-accent` | `--cp-on-accent-warm` |
+| A solid fill | `--cp-accent` | `--cp-accent-warm` |
+| Text sitting on that solid fill | `--cp-on-accent` | `--cp-on-accent-warm` (large text only) |
+| Text on plain card or page | `--cp-accent` | — use `--cp-ink` |
+| Text on a tint | `--cp-ink` | `--cp-ink` |
 
-The one asymmetry is worth knowing rather than rediscovering: a solid clay chip
-fills with `--cp-accent-warm-ink`, *not* `--cp-accent-warm`. Clay #c96a4c behind
-white text is 3.7:1 and behind our ink 3.6:1 — it fails AA both ways, so it can
-never be a text background at UI sizes. `--cp-accent-warm-ink` is the same hue
-run darker (both sit at ~16-17° hue), reads unmistakably orange, and carries
-white at 6.25:1. Cornflower has no such problem (5.08:1 with white), so its base
-value fills directly, which is the whole reason the two accents are used
-differently rather than symmetrically.
+Two rules make that table work, and they replace what a set of darkened
+siblings used to buy:
 
-Clay itself — the exact #c96a4c from the palette — is what you see on every
-tint, border and rule. It is only the *solid small chip* that has to darken, and
-only because 10px bold text needs 4.5:1.
+**The accents mark things; Slate says them.** Cornflower is a word only on
+plain paper — 5.1:1 on card, 4.7:1 on page, but 4.4:1 the moment it sits on any
+tint, so text on a tinted surface is `--cp-ink`. Clay is never a word on a
+light ground at all: 3.7:1 clears the 3:1 that a border, a rule or an icon
+answers to, and stops there.
 
-Every pairing in the table clears WCAG AA on every surface in the set, including
-each ink on its own `-soft` tint, which is the pairing the whole notice family
-uses. That was checked by measuring the rendered DOM, not by eye.
+**White on a filled accent depends on the size.** White on cornflower is 5.1:1
+and works anywhere. White on clay is 3.7:1, which clears WCAG's 3:1 bar for
+**large text** — 18.66px bold or 24px regular — but not the 4.5:1 that normal
+text needs. So a big filled clay chip with white on it is correct and is what
+`--cp-on-accent-warm` is for. A small one is not: the "NEW" flag beside the
+Cookbook tab is 9.9px, less than half the large-text line, so it takes a clay
+tint with a clay edge and an ink word instead.
+
+`--cp-on-accent` and `--cp-on-accent-warm` both resolve to the card. They are
+two names rather than one because that size rule differs, and because naming
+the pairing is what stops it being re-decided by hand — against the old brand
+teal ink won at 1.95:1, against cornflower ink is 2.66:1 and white wins, and
+the signed-in avatar spent a while on the wrong side of that flip.
+
+The one colour that is not from the palette is `--cp-error`. The palette has no
+red, and a failure must not speak in the accent's voice — so it is a genuine
+sixth value rather than a shade of an existing one.
 
 ## Fill or edge? (the selected-state question)
 
@@ -128,16 +139,17 @@ palette moves, these tokens are what move with it.
 ## This file is enforced
 
 `npm run audit:design-system` (part of `npm run verify`, so it runs in CI)
-fails the build on the three ways this has actually been broken:
+fails the build on:
 
-1. **A palette colour written as a literal** anywhere but `:root` — a copy that
-   stops following the token.
-2. **`--cp-accent` or `--cp-accent-warm` used as text.** Both are fills and
-   borders; text reads from the `-ink` sibling.
-3. **Text on a filled accent that isn't the on-accent token.** The right answer
-   flips when the accent changes — against the old teal, ink won at 1.95:1;
-   against cornflower, ink is 2.66:1 and white wins — which is exactly how the
-   signed-in avatar became the least legible text in the app.
+1. **Any colour literal outside `:root`** — not just the palette values. The
+   rule is "no new colours", and checking only the known five let a *new* one
+   through: a darkened clay is not a palette value, so it matched nothing.
+   `@media print` is exempt and has to be, since it forces white paper and
+   near-black ink that must not follow the screen palette.
+2. **Clay used as a word.** Allowed only where the selector is an `svg`, which
+   is the one case that is provably a glyph rather than text.
+3. **Cornflower used as a word on a tinted surface**, where it is 4.4:1.
+4. **Text on a filled accent that isn't the matching on-accent token.**
 
 Each rule was checked by introducing the violation and confirming the audit
 catches it, so none of them is a check that can only pass.

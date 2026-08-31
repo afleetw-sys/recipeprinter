@@ -189,25 +189,22 @@ for (const target of cssTargets) {
 }
 
 // ── Cornflower vs clay: the rules from docs/color-roles.md, enforced ──
-// A doc nobody can run is a doc that drifts. These are the three ways the
-// two-accent split has actually been broken so far, each now a build failure.
+// A doc nobody can run is a doc that drifts. These are the ways the two-accent
+// split has actually been broken, each now a build failure.
 {
-  // The palette, and the two darkened siblings derived from it. Written out
-  // rather than parsed so that renaming a token can never silently empty this
-  // list and switch the whole check off.
+  // The palette. Five values and white — no darkened siblings, which is the
+  // point: the rules below are what those siblings used to buy.
   const paletteLiterals = [
     ["#f4f7f3", "--cp-page"],
     ["#22303a", "--cp-ink"],
     ["#5f6f79", "--cp-ink-soft"],
     ["#4a6fa8", "--cp-accent"],
-    ["#3f6094", "--cp-accent-ink"],
     ["#c96a4c", "--cp-accent-warm"],
-    ["#9e4629", "--cp-accent-warm-ink"],
   ];
 
-  // 1. A palette colour written as a literal is a copy that stops following the
-  //    token. Only :root may hold the values. print.css is exempt below the UI
-  //    ranges because printed artwork owns its own `--recipe-*` palette and
+  // 1. A palette colour written as a literal is a copy that stops following
+  //    the token. Only :root may hold the values. print.css below the UI
+  //    ranges is exempt: printed artwork owns its own `--recipe-*` palette and
   //    legitimately spells colours out (Classic's clay bullet, for one).
   {
     const file = path.join(root, "app/globals.css");
@@ -235,39 +232,43 @@ for (const target of cssTargets) {
     }
   }
 
-  // 2. Neither base accent is ever TEXT. Clay is 3.7:1 on card and cornflower
-  //    is only comfortable at large sizes; both have an -ink sibling that is
-  //    AA-safe everywhere, and that is what a glyph or a label reads from.
-  for (const name of ["app/globals.css", "app/print/print.css"]) {
-    const file = path.join(root, name);
-    scannableLines(file, fs.readFileSync(file, "utf8")).forEach((line, index) => {
-      const match = line.match(/(?:^|[\s;{])color\s*:\s*var\(\s*(--cp-accent|--cp-accent-warm)\s*\)/);
-      if (match) {
-        report(file, index + 1, `${match[1]} is a fill and a border, never text — use ${match[1]}-ink`);
+  // 1b. And no colour literal of ANY kind outside :root — not just the five
+  //     palette values. The rule the palette is meant to enforce is "no new
+  //     colours", and checking only the known five let a NEW one through: a
+  //     darkened clay, say, is not a palette value and so matched nothing.
+  //     Everything a UI rule paints is a token or a color-mix of tokens.
+  //
+  //     `@media print` is exempt and has to be: it forces white paper and
+  //     near-black ink, which must not follow the screen palette anywhere.
+  {
+    const file = path.join(root, "app/globals.css");
+    const lines = scannableLines(file, fs.readFileSync(file, "utf8"));
+    const rootEnd = lines.findIndex((line, index) => index > 0 && line.trim() === "}");
+    let printDepth = 0;
+    let inPrint = false;
+    lines.forEach((line, index) => {
+      if (/@media\s+print/.test(line)) { inPrint = true; printDepth = 0; }
+      if (inPrint) {
+        printDepth += (line.match(/\{/g) ?? []).length - (line.match(/\}/g) ?? []).length;
+        if (printDepth <= 0 && /\}/.test(line)) inPrint = false;
+        return;
+      }
+      if (index <= rootEnd) return;
+      const literal = line.match(/#[0-9a-fA-F]{3,8}\b|rgba?\([\d\s.,%]+\)/);
+      if (literal) {
+        report(file, index + 1, `${literal[0]} is a colour literal — paint from a token or a color-mix of tokens`);
       }
     });
   }
-  for (const directory of ["app", "components"]) {
-    for (const file of walk(path.join(root, directory)).filter((n) => n.endsWith(".tsx"))) {
-      if (exemptTsx.has(path.relative(root, file))) continue;
-      scannableLines(file, fs.readFileSync(file, "utf8")).forEach((line, index) => {
-        const match = line.match(/text-\[var\((--cp-accent|--cp-accent-warm)\)\]/);
-        if (match) {
-          report(file, index + 1, `${match[1]} is a fill and a border, never text — use ${match[1]}-ink`);
-        }
-      });
-    }
-  }
 
-  // 3. Text sitting ON a filled accent takes the on-accent token. The right
-  //    answer flips with the accent — against the old teal, ink won at 1.95:1;
-  //    against cornflower, ink is 2.66:1 and white wins — so hand-picking it at
-  //    each call site is how the signed-in avatar ended up as the least legible
-  //    text in the app.
-  const onAccent = [
-    ["--cp-accent", "--cp-on-accent"],
-    ["--cp-accent-warm-ink", "--cp-on-accent-warm"],
-  ];
+  // 2. Clay is never a word. 3.7:1 on card clears the 3:1 a border, a rule or
+  //    an ICON answers to, and nothing more — so `color` is allowed only where
+  //    the selector is an svg, which is the one case that is provably a glyph.
+  //    Text on a clay tint is --cp-ink, 11:1 against it.
+  //
+  // 3. Cornflower is a word only on plain paper. 5.1:1 on card and 4.7:1 on
+  //    page, but 4.4:1 once it sits on any tint — so a rule that paints a
+  //    tinted background may not also set cornflower as its colour.
   for (const name of ["app/globals.css", "app/print/print.css"]) {
     const file = path.join(root, name);
     const text = stripCssComments(fs.readFileSync(file, "utf8"));
@@ -275,10 +276,27 @@ for (const target of cssTargets) {
       const body = block[1];
       const colour = body.match(/(?:^|[\s;])color\s*:\s*([^;]+)/)?.[1].trim();
       if (!colour) continue;
-      for (const [fill, expected] of onAccent) {
+      const before = text.slice(0, block.index);
+      const line = before.split("\n").length;
+      const selector = before.split("}").pop().split("*/").pop().trim();
+
+      if (colour === "var(--cp-accent-warm)" && !selector.endsWith("svg")) {
+        report(file, line, "clay is a fill, a border and an icon — never a word. Text on a clay tint is var(--cp-ink)");
+      }
+      const tinted = /background(?:-color)?\s*:\s*(?:var\(--cp-(?:accent-soft|accent-warm-soft)\)|color-mix)/.test(body);
+      if (colour === "var(--cp-accent)" && tinted) {
+        report(file, line, "cornflower is 4.4:1 on a tint — text on a tinted surface is var(--cp-ink)");
+      }
+      // 4. Text ON a filled accent takes the on-accent token. The right answer
+      //    flips with the accent — against the old teal ink won at 1.95:1;
+      //    against cornflower ink is 2.66:1 and white wins — which is how the
+      //    signed-in avatar became the least legible text in the app.
+      for (const [fill, expected] of [
+        ["--cp-accent", "--cp-on-accent"],
+        ["--cp-accent-warm", "--cp-on-accent-warm"],
+      ]) {
         const filled = new RegExp(`background(?:-color)?\\s*:\\s*var\\(\\s*${fill}\\s*\\)`).test(body);
         if (filled && colour !== `var(${expected})`) {
-          const line = text.slice(0, block.index).split("\n").length;
           report(file, line, `text on a filled ${fill} must be var(${expected}), not ${colour}`);
         }
       }
@@ -288,7 +306,13 @@ for (const target of cssTargets) {
     for (const file of walk(path.join(root, directory)).filter((n) => n.endsWith(".tsx"))) {
       if (exemptTsx.has(path.relative(root, file))) continue;
       scannableLines(file, fs.readFileSync(file, "utf8")).forEach((line, index) => {
-        if (/bg-\[var\(--cp-accent\)\]/.test(line) && /text-\[var\(--cp-(?:ink|accent-ink)/.test(line)) {
+        if (/text-\[var\(--cp-accent-warm\)\]/.test(line)) {
+          report(file, index + 1, "clay is a fill, a border and an icon — never a word");
+        }
+        if (/bg-\[var\(--cp-accent(?:-warm)?-soft\)\]/.test(line) && /text-\[var\(--cp-accent\)\]/.test(line)) {
+          report(file, index + 1, "cornflower is 4.4:1 on a tint — text there is var(--cp-ink)");
+        }
+        if (/bg-\[var\(--cp-accent\)\]/.test(line) && /text-\[var\(--cp-ink\)\]/.test(line)) {
           report(file, index + 1, "text on a filled --cp-accent must be var(--cp-on-accent)");
         }
       });

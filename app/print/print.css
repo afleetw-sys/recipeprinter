@@ -334,7 +334,7 @@
   border-top: 1px solid var(--cp-line);
   border-radius: 0 0 7px 7px;
   padding-top: 10px;
-  color: var(--cp-accent-warm-ink);
+  color: var(--cp-ink);
 }
 
 .recipe-page-rail__section-title-input {
@@ -476,7 +476,7 @@
   .recipe-page-rail__section-add-card:hover {
     border-color: var(--cp-accent);
     background: var(--cp-accent-soft);
-    color: var(--cp-accent-ink);
+    color: var(--cp-ink);
   }
 
   .recipe-print-shell--organizing .recipe-page-rail__section-title-input {
@@ -571,7 +571,7 @@
 .recipe-page-rail__add-cover:hover {
   border-color: color-mix(in srgb, var(--cp-accent) 46%, var(--cp-line));
   background: var(--cp-overlay-hover);
-  color: var(--cp-accent-ink);
+  color: var(--cp-accent);
 }
 
 .recipe-page-rail__item {
@@ -1797,7 +1797,7 @@
   border: 1px solid color-mix(in srgb, var(--cp-accent) 28%, transparent);
   background: var(--cp-accent-soft);
   border-radius: 12px;
-  color: var(--cp-accent-ink);
+  color: var(--cp-ink);
   font-size: var(--cp-fs-label);
   line-height: 1.4;
 }
@@ -1874,7 +1874,7 @@
   border: 1px solid color-mix(in srgb, var(--cp-accent-warm) 28%, transparent);
   background: var(--cp-accent-warm-soft);
   border-radius: 12px;
-  color: var(--cp-accent-warm-ink);
+  color: var(--cp-ink);
 }
 
 .recipe-free-template-banner__copy {
@@ -1908,7 +1908,7 @@
   padding: 8px clamp(16px, 4vw, 24px);
   border-bottom: 1px solid color-mix(in srgb, var(--cp-accent-warm) 32%, transparent);
   background: var(--cp-accent-warm-soft);
-  color: var(--cp-accent-warm-ink);
+  color: var(--cp-ink);
 }
 
 .recipe-protect-bar__text {
@@ -1927,13 +1927,13 @@
 .recipe-protect-bar__action {
   border-color: color-mix(in srgb, var(--cp-accent-warm) 55%, transparent);
   background: var(--cp-card);
-  color: var(--cp-accent-warm-ink);
+  color: var(--cp-ink);
 }
 
 .recipe-protect-bar__action:hover:not(:disabled) {
   border-color: var(--cp-accent-warm);
   background: var(--cp-card);
-  color: var(--cp-accent-warm-ink);
+  color: var(--cp-ink);
 }
 
 /* Quiet "you own this" acknowledgement in the Book Settings header, so a
@@ -1947,7 +1947,7 @@
   padding: 3px 9px;
   border-radius: 999px;
   background: var(--cp-accent-warm-soft);
-  color: var(--cp-accent-warm-ink);
+  color: var(--cp-ink);
   font-size: var(--cp-fs-caption);
   font-weight: 700;
 }
@@ -2121,7 +2121,7 @@
   border: 1px solid color-mix(in srgb, var(--cp-accent-warm) 68%, var(--cp-card));
   border-radius: 999px;
   background: var(--cp-accent-warm-soft);
-  color: var(--cp-accent-warm-ink);
+  color: var(--cp-ink);
   font-size: var(--cp-fs-label);
   font-weight: 900;
   line-height: 1;
@@ -2141,7 +2141,7 @@
   border: 1px solid color-mix(in srgb, var(--cp-accent-warm) 58%, var(--cp-card));
   border-radius: 999px;
   background: color-mix(in srgb, var(--cp-accent-warm) 10%, var(--cp-card));
-  color: var(--cp-accent-warm-ink);
+  color: var(--cp-ink);
 }
 
 .recipe-toast {
@@ -2187,7 +2187,7 @@
 .recipe-toast .recipe-toast__action {
   width: auto;
   padding: 0 10px;
-  color: var(--cp-accent-ink);
+  color: var(--cp-accent);
   font-size: var(--cp-fs-caption);
   font-weight: 800;
 }
@@ -4299,7 +4299,7 @@
   border: 1px solid var(--cp-line-strong);
   border-radius: 999px;
   background: var(--cp-card);
-  color: var(--cp-accent-ink);
+  color: var(--cp-accent);
   font-size: var(--cp-fs-small);
   font-weight: 800;
   line-height: 1;
@@ -4584,8 +4584,8 @@
   width: 22px;
   height: 22px;
   border-radius: 50%;
-  background: var(--cp-accent-ink);
-  color: var(--cp-card);
+  background: var(--cp-accent);
+  color: var(--cp-on-accent);
 }
 /* Cover-collage multi-select: an order badge on each chosen photo, plus a
    dimmed state once the collage is full. */
@@ -4599,8 +4599,8 @@
   height: 22px;
   padding: 0 6px;
   border-radius: 999px;
-  background: var(--cp-accent-ink);
-  color: var(--cp-card);
+  background: var(--cp-accent);
+  color: var(--cp-on-accent);
   font-size: var(--cp-fs-caption);
   font-weight: 800;
   line-height: 1;

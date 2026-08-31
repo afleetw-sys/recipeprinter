@@ -22,7 +22,7 @@ import type { ComparisonValue, SeoIconKey, SeoProofKind } from "@/lib/seoLanding
 // so the pages read as intentionally designed rather than auto-generated.
 // ─────────────────────────────────────────────────────────────────────────────
 
-const accentInk = { color: "var(--cp-accent-ink)" } as const;
+const accentOnPaper = { color: "var(--cp-accent)" } as const;
 
 function FileGlyph({ size = 18 }: { size?: number }) {
   return (
@@ -121,7 +121,7 @@ export function HowItWorks({ steps }: { steps: { name: string; text: string }[] 
           <div className="flex items-center gap-cp-3">
             <span
               className="grid h-10 w-10 flex-none place-items-center rounded-full border border-line bg-card text-cp-small font-black"
-              style={accentInk}
+              style={accentOnPaper}
             >
               {index + 1}
             </span>
@@ -360,7 +360,7 @@ export function ComparisonTable({
         </span>
       ) : (
         <span className="inline-flex items-baseline gap-cp-2">
-          <span className="flex-none translate-y-0.5 text-[var(--cp-accent-ink)]">
+          <span className="flex-none translate-y-0.5 text-[var(--cp-accent)]">
             <CheckIcon size={ICON_SIZE.sm} />
           </span>
           <span className="sr-only">Yes</span>
@@ -388,7 +388,7 @@ export function ComparisonTable({
             <th scope="col" className="border-b border-line-strong px-cp-4 pb-cp-3 pt-cp-4" aria-label="Feature" />
             <th
               scope="col"
-              className={`${ours} border-b border-line-strong px-cp-4 pb-cp-3 pt-cp-4 text-cp-body font-extrabold tracking-[-0.02em] text-[var(--cp-accent-ink)]`}
+              className={`${ours} border-b border-line-strong px-cp-4 pb-cp-3 pt-cp-4 text-cp-body font-extrabold tracking-[-0.02em] text-[var(--cp-ink)]`}
             >
               RecipePrinter
             </th>
