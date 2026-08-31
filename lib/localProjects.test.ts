@@ -3,6 +3,7 @@ import {
   MAX_LOCAL_PROJECTS,
   deleteLocalProject,
   fileProjectLocally,
+  listableLocalProjects,
   loadLocalProject,
   loadLocalProjects,
   pruneLocalProjects,
@@ -230,5 +231,37 @@ describe("filing the same recipes twice", () => {
     fileProjectLocally([recipeItem("r1", "Sourdough")], cards);
     fileProjectLocally([recipeItem("r2", "Focaccia")], { ...cards, projectId: "second-project" });
     expect(loadLocalProjects()).toHaveLength(2);
+  });
+});
+
+describe("listableLocalProjects", () => {
+  const paid = new Set(["book-paid"]);
+  const isPaid = (id: string) => paid.has(id);
+  const shelf = [
+    project({ id: "cards-unsaved", kind: "printProject" }),
+    project({ id: "book-unpaid", kind: "cookbook" }),
+    project({ id: "book-paid", kind: "cookbook" }),
+  ];
+
+  it("lists a paid cookbook and nothing else", () => {
+    expect(listableLocalProjects(shelf, new Set(), isPaid).map((p) => p.id)).toEqual(["book-paid"]);
+  });
+
+  it("hides recipe cards that were only filed by leaving the workspace", () => {
+    // The whole point: reaching your projects means you pressed Save.
+    expect(listableLocalProjects(shelf, new Set(), isPaid).some((p) => p.kind === "printProject")).toBe(false);
+  });
+
+  it("hides an unpaid cookbook even though it is on the shelf", () => {
+    expect(listableLocalProjects(shelf, new Set(), isPaid).map((p) => p.id)).not.toContain("book-unpaid");
+  });
+
+  it("drops a paid cookbook the account already holds, so it is not listed twice", () => {
+    expect(listableLocalProjects(shelf, new Set(["book-paid"]), isPaid)).toEqual([]);
+  });
+
+  it("never lets a paid RECIPE CARD project through — only cookbooks are bought", () => {
+    const odd = [project({ id: "cards-paid", kind: "printProject" })];
+    expect(listableLocalProjects(odd, new Set(), () => true)).toEqual([]);
   });
 });

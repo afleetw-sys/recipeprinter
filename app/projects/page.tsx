@@ -22,6 +22,7 @@ import { track } from "@/lib/analytics";
 import { isCookbookProjectUnlocked, loadCookbookProjectUnlockIds } from "@/lib/cookbookUnlocks";
 import {
   deleteLocalProject,
+  listableLocalProjects,
   loadLocalProjects,
   pruneLocalProjects,
 } from "@/lib/localProjects";
@@ -109,9 +110,8 @@ export default function ProjectsPage() {
   const [accountProjects, setAccountProjects] = useState<PrintProject[]>([]);
   /**
    * Books filed on this device (lib/localProjects) — everything the workspace
-   * released without an account behind it. Read synchronously and shown to
-   * everyone, signed in or not, because these belong to the browser rather than
-   * to an account.
+   * released without an account behind it. Still written, still read; what
+   * changed is that almost none of it is SHOWN. See `projects` below.
    */
   const [localProjects, setLocalProjects] = useState<PrintProject[]>([]);
   const [loading, setLoading] = useState(true);
@@ -136,11 +136,35 @@ export default function ProjectsPage() {
    * One list, newest first. A book the account already holds wins over this
    * device's copy of it — same id, same document, and the account copy is the
    * one that stays current across devices.
+   *
+   * WHAT GETS LISTED. Everything in the account, plus exactly one kind of
+   * local-only thing: a cookbook that has been PAID FOR.
+   *
+   * The workspace files a copy of any project on this device when you leave it
+   * — a safety net, not a decision you made — and this page used to list those
+   * copies beside real saved work, labelled "On this device" and "Saved on this
+   * device only". So a cookbook you never bought and never saved sat in your
+   * projects looking saved, while telling you it wasn't. Two badges to explain
+   * one thing that shouldn't have been there.
+   *
+   * Recipe cards are now in your projects because you pressed Save, and for no
+   * other reason. The exception is a paid cookbook, and it is not a
+   * half-measure: a signed-out purchase records its unlock in the LOCAL map
+   * (lib/cookbookUnlocks) against the local project id, so hiding that project
+   * would hide the thing the money bought. It stays listed until the account
+   * has it.
+   *
+   * Nothing is deleted here. The local shelf is untouched on disk; a draft you
+   * didn't save simply stops pretending it is filed.
    */
   const projects = useMemo(() => {
     const merged = [
       ...accountProjects,
-      ...localProjects.filter((project) => localOnlyIds.has(project.id)),
+      ...listableLocalProjects(
+        localProjects,
+        new Set(accountProjects.map((project) => project.id)),
+        isCookbookProjectUnlocked,
+      ),
     ];
     return merged.sort(
       (a, b) => Number(b.updatedAt ?? b.createdAt ?? 0) - Number(a.updatedAt ?? a.createdAt ?? 0),
@@ -375,7 +399,12 @@ export default function ProjectsPage() {
                             the account's unlock collections) can't speak for
                             it. Its unlock lives in the local map — which is
                             exactly where a signed-out purchase is recorded
-                            until the webhook's TRANSFER event lands. */}
+                            until the webhook's TRANSFER event lands.
+
+                            No "On this device" badge any more: the only
+                            local-only book that reaches this list is a paid
+                            one, and where the bytes happen to sit is our
+                            problem rather than something to label. */}
                         {(localOnlyIds.has(project.id)
                           ? isCookbookProjectUnlocked(project.id)
                           : purchasedIds.has(project.id)) ? (
@@ -383,26 +412,24 @@ export default function ProjectsPage() {
                         ) : (
                           <Badge>Not purchased</Badge>
                         )}
-                        {localOnlyIds.has(project.id) && <Badge>On this device</Badge>}
                       </div>
                     )}
-                    {/* Says where the book is and what to do about it, on the
-                        book itself — rather than making "sign in" the price of
-                        keeping it at the moment they were leaving. */}
-                    {localOnlyIds.has(project.id) && (
+                    {/* A paid book that the account does not hold yet is the
+                        one case worth a line, and the line is about the
+                        PURCHASE, not about storage: signing in is how it
+                        follows you to another device. "Open it and it'll save
+                        to your account" is gone — a click that silently
+                        changes where your work lives is not an explanation. */}
+                    {localOnlyIds.has(project.id) && !user && (
                       <p className="mt-cp-2 text-cp-caption text-ink-soft leading-snug">
-                        Saved on this device only.{" "}
-                        {user ? (
-                          <>Open it and it’ll save to your account.</>
-                        ) : (
-                          <button
-                            type="button"
-                            className="relative z-20 underline underline-offset-2"
-                            onClick={() => setShowLogin(true)}
-                          >
-                            Sign in to keep it safe.
-                          </button>
-                        )}
+                        <button
+                          type="button"
+                          className="relative z-20 underline underline-offset-2"
+                          onClick={() => setShowLogin(true)}
+                        >
+                          Sign in
+                        </button>{" "}
+                        to keep this on your other devices.
                       </p>
                     )}
                   </div>

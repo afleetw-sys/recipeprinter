@@ -238,3 +238,33 @@ export function fileProjectLocally(items: QueueItem[], meta: ProjectMeta): strin
   rememberProjectId(contentKey, project.id);
   return project.id;
 }
+
+/**
+ * The local-only projects that belong in a LIST of your work.
+ *
+ * The device shelf is a safety net — the workspace files a copy of whatever
+ * you were doing when you leave it, which is not a decision you made — so
+ * almost none of it should appear beside things you actually saved. Recipe
+ * cards reach your projects because you pressed Save, and for no other reason.
+ *
+ * The exception is a cookbook that has been PAID FOR, and it is not a
+ * half-measure. A signed-out purchase records its unlock in the local map
+ * (lib/cookbookUnlocks) against the local project id, so hiding that project
+ * would hide the thing the money bought. It stays listed until the account
+ * holds it.
+ *
+ * Nothing here deletes: the shelf is untouched on disk, and a draft you didn't
+ * save simply stops presenting itself as filed.
+ */
+export function listableLocalProjects(
+  localProjects: readonly PrintProject[],
+  accountProjectIds: ReadonlySet<string>,
+  isPaidCookbook: (projectId: string) => boolean,
+): PrintProject[] {
+  return localProjects.filter(
+    (project) =>
+      !accountProjectIds.has(project.id) &&
+      project.kind !== "printProject" &&
+      isPaidCookbook(project.id),
+  );
+}

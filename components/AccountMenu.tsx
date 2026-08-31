@@ -7,7 +7,12 @@ import { AccountIcon, ChevronRightIcon, ICON_SIZE, SpinnerIcon, XIcon } from "@/
 import { CookPilotLoginDialog, useCookPilotAuth } from "@/components/CookPilotAuth";
 import { getFirebaseAuth } from "@/lib/firebase/client";
 import { loadPrintProjects } from "@/lib/printProjects";
-import { loadLocalProjects } from "@/lib/localProjects";
+import { listableLocalProjects, loadLocalProjects } from "@/lib/localProjects";
+
+/** This branch only runs signed OUT, where there is no account list to dedupe
+    the device shelf against. */
+const EMPTY_ACCOUNT: ReadonlySet<string> = new Set();
+import { isCookbookProjectUnlocked } from "@/lib/cookbookUnlocks";
 import { groupDuplicateProjects } from "@/lib/duplicateProjects";
 import { COOKBOOK_ENABLED } from "@/lib/cookbookProduct";
 import type { PrintProject } from "@/types/recipe";
@@ -133,7 +138,14 @@ export default function AccountMenu({
     setLocalProjects(loadLocalProjects());
   }, [open, user]);
 
-  const listed = user ? visible : localProjects;
+  /* Same rule the /projects page follows: the device shelf is a safety net,
+     not a list of your saved work, so the only local-only thing that surfaces
+     is a cookbook that has been PAID FOR — hiding that would hide what the
+     money bought. Everything else a signed-out visitor has is a draft, and the
+     menu no longer offers it as though it were filed. */
+  const listed = user
+    ? visible
+    : listableLocalProjects(localProjects, EMPTY_ACCOUNT, isCookbookProjectUnlocked);
   const cookbooks = listed.filter((project) => project.kind !== "printProject");
   const printProjects = listed.filter((project) => project.kind === "printProject");
   /** Signed out with an empty shelf there is nothing to head, so the whole
