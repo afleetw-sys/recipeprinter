@@ -15,10 +15,10 @@ import type { TocEntry } from "@/lib/usePrintSheets";
  * declaration over there; keep the two in step.
  */
 
-// The cookbook page and its contents padding: 10.75in tall, 1.05in top and
+// The cookbook page and its contents padding: 10.75in tall, 0.8in top and
 // bottom (`.recipe-print-preview--letter`, `.recipe-card--toc`).
 const PAGE_HEIGHT_IN = 10.75;
-const PAGE_PADDING_Y_IN = 1.05;
+const PAGE_PADDING_Y_IN = 0.8;
 const CONTENT_HEIGHT_IN = PAGE_HEIGHT_IN - PAGE_PADDING_Y_IN * 2;
 
 // First page: the "CONTENTS" kicker (0.13in type on a 0.195in line, 0.08in

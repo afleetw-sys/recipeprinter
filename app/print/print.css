@@ -4064,7 +4064,12 @@
    Skinned by the same --recipe-* vars as every other page, so it matches the
    chosen template. Chapters as headings, recipes indented with dot leaders. */
 .recipe-card--toc {
-  padding: 1.05in 0.85in;
+  /* Was 1.05in top and bottom, which set the contents page further in from the
+     edges than any other page in the book (a full-page recipe sits at 0.6in /
+     0.5in) and read as a short list stranded in the middle of the sheet.
+     `PAGE_PADDING_Y_IN` in lib/tocPagination.ts is this number; keep the two
+     in step or the page budget stops matching the page. */
+  padding: 0.8in 0.85in;
   overflow: hidden;
 }
 .recipe-card__toc-content {
