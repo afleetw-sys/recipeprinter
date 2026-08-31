@@ -138,6 +138,15 @@ export async function loadPrintProjects(ownerUid: string): Promise<PrintProject[
     getDocs(query(collection(db, "users", ownerUid, PRINT_PROJECTS_COLLECTION), orderBy("updatedAt", "desc")))
       .catch(() => null),
   ]);
+  // Fault isolation is for ONE half failing. When neither answered there is no
+  // answer at all, and resolving `[]` here made that indistinguishable from an
+  // account with nothing in it: the caller cached the empty list, the account
+  // menu hid both sections, and someone with a shelf full of cookbooks was
+  // shown a dropdown that quietly said they had none. Rejecting hands them the
+  // "couldn't load / try again" both callers already know how to render.
+  if (!namespaced && !legacy) {
+    throw new Error("Couldn't read saved projects.");
+  }
   const byId = new Map<string, PrintProject>();
   legacy?.docs.forEach((snap) => byId.set(snap.id, snap.data() as PrintProject));
   namespaced?.docs.forEach((snap) => byId.set(snap.id, snap.data() as PrintProject));

@@ -102,6 +102,8 @@ export default function AccountMenu({
     mountedRef.current?.();
   }, []);
   const [open, setOpen] = useState(false);
+  /** A press that landed before auth resolved, opened once it has. */
+  const [openWhenReady, setOpenWhenReady] = useState(false);
   const [showLogin, setShowLogin] = useState(false);
   const [projects, setProjects] = useState<PrintProject[]>([]);
   const [loadingProjects, setLoadingProjects] = useState(false);
@@ -149,6 +151,18 @@ export default function AccountMenu({
     setOpen(true);
     onActivated?.();
   }, [activateOnReady, ready, user, onActivated]);
+
+  /* The avatar used to drop any press that arrived before auth resolved, which
+     is a real window on a prerendered page: the SEO landing pages ship no
+     Firebase at all, so the first press often lands while the auth chunk is
+     still in flight and the control did nothing whatsoever. Remember it and
+     open on `ready` instead — the same treatment `activateOnReady` already
+     gives a press that beat this chunk to the page. */
+  useEffect(() => {
+    if (!openWhenReady || !ready) return;
+    setOpenWhenReady(false);
+    setOpen(true);
+  }, [openWhenReady, ready]);
 
   useEffect(() => {
     if (!open) return;
@@ -265,12 +279,17 @@ export default function AccountMenu({
         }
         aria-label="RecipePrinter account"
         title="RecipePrinter account"
+        aria-busy={openWhenReady || undefined}
         onClick={() => {
           // Signed out, this used to go straight to the sign-in dialog, so the
           // avatar was a door with exactly one thing behind it. A visitor with
           // projects saved on this device had no way to reach them: /projects
           // lists them without an account, but nothing in the app linked there.
-          if (!ready) return;
+          if (!ready) {
+            setOpenWhenReady(true);
+            return;
+          }
+          setOpenWhenReady(false);
           setOpen((value) => !value);
         }}
       >
