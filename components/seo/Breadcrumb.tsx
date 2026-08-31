@@ -17,7 +17,7 @@ export function Breadcrumb({ trail }: { trail: Crumb[] }) {
           return (
             <li key={crumb.name} className="flex items-center gap-x-1.5">
               {index > 0 && (
-                <ChevronRightIcon size={12} className="text-ink-soft/60" aria-hidden />
+                <ChevronRightIcon size={12} className="text-ink-soft/75" aria-hidden />
               )}
               {crumb.href && !isLast ? (
                 <Link href={crumb.href} className="hover:text-ink transition-colors">

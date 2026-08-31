@@ -595,17 +595,25 @@
   transform: translateY(-1px);
 }
 
+/* Marked by its edge, not by its fill. Every other single-select control in
+   the product takes `--cp-selected-fill`, but those are CONTROLS; a rail item
+   is a thumbnail of a printed page, and tinting the surface behind it made the
+   paper look like it had been printed on coloured stock. The doubled accent
+   edge says "currently viewing" without touching the sheet, and reads more
+   clearly than the tint did — the thumbnail's own white now stands against the
+   rail instead of blending into it. */
 .recipe-page-rail__item.is-active {
   border-color: var(--cp-selected-border);
-  background: var(--cp-selected-fill);
-  box-shadow: var(--cp-selected-ring);
+  box-shadow: 0 0 0 1px var(--cp-selected-border);
 }
 
-/* Cmd/Ctrl multi-select ring — distinct from the single is-active page so a
-   selection reads as "picked for a bulk action", not "currently viewing". */
+/* Cmd/Ctrl multi-select — still distinct from the single is-active page above,
+   now that it is edge-marked too: this one is a soft HALO around the tile
+   ("picked for a bulk action"), that one a hard doubled edge ("currently
+   viewing"). Different enough to tell apart at a glance down a column. */
 .recipe-page-rail__item.is-selected {
   border-color: var(--cp-accent);
-  box-shadow: 0 0 0 2px color-mix(in srgb, var(--cp-accent) 38%, transparent);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--cp-accent) 30%, transparent);
 }
 
 .recipe-page-rail__item-main {
@@ -2107,10 +2115,13 @@
   min-width: 22px;
   height: 22px;
   padding: 0 6px;
-  border: 1px solid color-mix(in srgb, var(--cp-premium-line) 68%, var(--cp-card));
+  /* Was three hardcoded golds. "Costs money" belongs to the same warm notice
+     family as "you own this" directly below, and a stray gold chip in the
+     middle of six template tiles was the one accent surface following nothing. */
+  border: 1px solid color-mix(in srgb, var(--cp-accent-warm) 68%, var(--cp-card));
   border-radius: 999px;
-  background: var(--cp-premium-fill);
-  color: var(--cp-premium-ink);
+  background: var(--cp-accent-warm-soft);
+  color: var(--cp-accent-warm-ink);
   font-size: var(--cp-fs-label);
   font-weight: 900;
   line-height: 1;
@@ -2125,10 +2136,8 @@
   place-items: center;
   width: 22px;
   height: 22px;
-  /* The only accent surface left in this file that had baked-in teal — a
-     tint, a border, and an ink, all three the default theme's brand colour
-     written out. Mixed against the WARM accent and the card instead: "you own
-     this" is the notice half of the palette, not a piece of system state. */
+  /* Warm: "you own this" is the notice half of the palette, not a piece of
+     system state. Was three literals of the old brand teal. */
   border: 1px solid color-mix(in srgb, var(--cp-accent-warm) 58%, var(--cp-card));
   border-radius: 999px;
   background: color-mix(in srgb, var(--cp-accent-warm) 10%, var(--cp-card));
@@ -2972,12 +2981,10 @@
   --recipe-footer: #aaa;
   --recipe-radius: 14px;
   --recipe-title-font: var(--font-playfair), Georgia, serif;
-  /* Pinned, not inherited. A card's body copy used to take whatever `body {
-     @apply font-sans }` resolved to, which was always Manrope — until UI
-     themes made `font-sans` read `--rp-ui-font` (see the UI THEMES section of
-     globals.css). Without this, choosing the monospace Thermal Roll skin would
-     set every printed recipe in monospace too. A card's typography belongs to
-     its template; the app around it can wear whatever it likes. */
+  /* Pinned, not inherited, and load-bearing: `body { @apply font-sans }` is
+     Karla now, and a card's body copy would silently follow it. A card's
+     typography belongs to its template — Manrope beside Playfair titles — and
+     has to stay put while the app around it changes. */
   font-family: var(--font-manrope), system-ui, sans-serif;
   display: flex;
   flex-direction: column;

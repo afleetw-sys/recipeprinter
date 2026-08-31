@@ -5,9 +5,8 @@ import type { Config } from "tailwindcss";
 //
 // These colours used to be literal hex, duplicating the tokens rather than
 // reading them, so `bg-card` and `var(--cp-card)` were two independent copies
-// of white and only one of them could ever be re-skinned. Every colour below
-// now resolves through its token, which is what lets a `data-ui-theme` on
-// <html> move the whole UI at once (see the UI THEMES section in globals.css).
+// of white and a palette change had to be made in two places to stick. Every
+// colour below now resolves through its token.
 //
 // `token()` exists so Tailwind's slash-opacity syntax keeps working: with a
 // bare `var(--x)` string, `bg-ink/30` silently drops the /30. Tailwind hands
@@ -38,10 +37,8 @@ const config: Config = {
           soft: token("--cp-ink-soft"),
         },
         brand: {
-          // The accent used for decorative surfaces only (borders, fills,
-          // rings, accent bars) — in the default theme it's a vivid teal that
-          // fails text contrast on white (1.95:1). For accent-coloured *text*
-          // use `brand.ink`, the darkened sibling every theme keeps AA-safe.
+          // The cool accent: borders, fills, rings, accent bars. For
+          // accent-coloured *text* prefer `brand.ink`, the darkened sibling.
           DEFAULT: token("--cp-accent"),
           ink: token("--cp-accent-ink"),
           // Two tints of the accent, mixed against the card so they follow the
@@ -62,12 +59,10 @@ const config: Config = {
         "line-strong": token("--cp-line-strong"),
       },
       fontFamily: {
-        // The UI face, via --rp-ui-font so a theme can swap it (it defaults to
-        // Manrope, matching CookPilot). The fallbacks live inside the token,
-        // because a mono theme wants a mono fallback, not system-ui.
-        sans: ["var(--rp-ui-font)"],
-        // Reserved for printed recipe titles (cookbook identity). Not themed:
-        // printed artwork keeps its template's typography.
+        // Karla, the UI face. Printed cards deliberately do NOT follow it —
+        // `.recipe-card-set` in print.css pins itself to Manrope.
+        sans: ["var(--font-karla)", "system-ui", "sans-serif"],
+        // Reserved for printed recipe titles (cookbook identity).
         serif: ["var(--font-playfair)", "Georgia", "serif"],
       },
       fontSize: {
@@ -87,11 +82,9 @@ const config: Config = {
         "cp-hero-lg": "var(--cp-fs-hero-lg)",
       },
       borderRadius: {
-        // Radius scale (default theme: sm 10 / md 14 / lg 18 / xl 24 / 2xl 28,
-        // controls 12), read from --cp-radius-* so a theme moves the whole
-        // family — a square 1990s skin and a rounded mid-century one are the
-        // same UI with a different corner. `full` stays literal: a pill is a
-        // pill in every era.
+        // Radius scale (sm 8 / md 12 / lg 16 / xl 20 / 2xl 24, controls 10),
+        // read from --cp-radius-* so the family moves together rather than one
+        // rule at a time. `full` stays literal: a pill is a pill.
         none: "0",
         sm: "var(--cp-radius-sm)",
         DEFAULT: "var(--cp-radius-control)",
