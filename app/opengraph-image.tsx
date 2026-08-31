@@ -26,7 +26,7 @@ const logoUrl = `data:image/png;base64,${OPENGRAPH_IMAGE_LOGO_BASE64}`;
 // loads /print, and photographs what the app renders. The version before this
 // faked a card out of grey bars, which is precisely what made the preview look
 // machine-generated — the bars were the tell.
-const cardUrl = `data:image/png;base64,${OPENGRAPH_CARD_BASE64}`;
+const cardUrl = `data:image/jpeg;base64,${OPENGRAPH_CARD_BASE64}`;
 
 // Satori takes font data, not a CSS family name — without these the card
 // renders in its bundled Noto Sans. See opengraph-image-karla-base64.ts.
@@ -56,15 +56,15 @@ export default function OpengraphImage() {
           height: "100%",
           display: "flex",
           alignItems: "center",
-          gap: "36px",
-          padding: "64px",
+          gap: "28px",
+          padding: "48px",
           background: PAGE,
           color: INK,
           fontFamily: "Karla",
         }}
       >
         {/* ── The words ──────────────────────────────────────────────────── */}
-        <div style={{ display: "flex", flexDirection: "column", width: "516px" }}>
+        <div style={{ display: "flex", flexDirection: "column", width: "456px" }}>
           <div style={{ display: "flex", alignItems: "center", gap: "16px" }}>
             {/* Not next/image, and the LCP advice that rule gives doesn't apply
                 here: this tree is never rendered in a browser. Satori
@@ -83,7 +83,7 @@ export default function OpengraphImage() {
             style={{
               display: "flex",
               marginTop: "44px",
-              fontSize: "62px",
+              fontSize: "52px",
               fontWeight: 800,
               lineHeight: 1.05,
               letterSpacing: "-0.03em",
@@ -96,7 +96,7 @@ export default function OpengraphImage() {
             style={{
               display: "flex",
               marginTop: "26px",
-              fontSize: "25px",
+              fontSize: "23px",
               fontWeight: 400,
               lineHeight: 1.4,
               color: MUTED,
@@ -112,32 +112,32 @@ export default function OpengraphImage() {
             real "continued on back" overflow. Two of them, fanned: a single
             rectangle is the stock product shot, and a short stack says the
             plural thing the product makes. */}
-        <div style={{ display: "flex", position: "relative", width: "520px", height: "340px" }}>
+        <div style={{ display: "flex", position: "relative", width: "604px", height: "400px" }}>
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
             src={cardUrl}
             alt=""
-            width="430"
-            height="280"
+            width="580"
+            height="378"
             style={{
               position: "absolute",
-              top: "42px",
+              top: "16px",
               left: "0px",
               borderRadius: "12px",
               boxShadow: "0 16px 40px rgba(34, 48, 58, 0.14)",
-              transform: "rotate(-5deg)",
+              transform: "rotate(-4deg)",
             }}
           />
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
             src={cardUrl}
             alt=""
-            width="430"
-            height="280"
+            width="580"
+            height="378"
             style={{
               position: "absolute",
-              top: "14px",
-              left: "44px",
+              top: "20px",
+              left: "40px",
               borderRadius: "12px",
               boxShadow: "0 26px 60px rgba(34, 48, 58, 0.2)",
               transform: "rotate(2deg)",

@@ -27,7 +27,11 @@ import { fileURLToPath } from "node:url";
 import puppeteer from "puppeteer-core";
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..");
-const OUT = resolve(ROOT, "public/images/og-recipe-card.png");
+// JPEG, not PNG. The card is a photograph on white once the recipe has an
+// image, and PNG was spending 174KB on it — which lands in the serverless
+// bundle as 233KB of base64, on top of the font. The rounded corners come from
+// CSS in the OG layout, so the source never needs an alpha channel.
+const OUT = resolve(ROOT, "public/images/og-recipe-card.jpg");
 const BASE = process.env.OG_CARD_URL ?? "http://localhost:3000";
 
 const CHROME_CANDIDATES = [
@@ -45,6 +49,8 @@ const step = (n, text, section) => ({ step: n, text, section });
     sections, enough steps to reach the second column, nothing invented. */
 const RECIPE = {
   title: "Bruschetta",
+  // Served from public/ by the dev server the script is pointed at.
+  image: "/images/bruschetta.jpg",
   totalTime: "PT7M",
   servings: 24,
   ingredients: [
@@ -80,9 +86,12 @@ async function main() {
 
   const browser = await puppeteer.launch({ executablePath, headless: true });
   const page = await browser.newPage();
-  // deviceScaleFactor 2 so the card survives being scaled down into a 1200px
-  // canvas without the type going soft.
-  await page.setViewport({ width: 1440, height: 1200, deviceScaleFactor: 2 });
+  // deviceScaleFactor 1, on purpose. At 2 the card came out 1160px and the OG
+  // layout showed it at 430 — a 2.7x downscale that Satori resamples crudely,
+  // which is what made the card's type look chewed. Rendering at 1 gives a
+  // 580px card that the layout then displays at exactly 580: no resampling at
+  // all, so every glyph is the browser's own rasterization untouched.
+  await page.setViewport({ width: 1440, height: 1200, deviceScaleFactor: 1 });
 
   // Seed the queue on the origin first — sessionStorage is per-origin, so this
   // has to happen on a page from the same server, not about:blank.
@@ -103,6 +112,14 @@ async function main() {
       ]),
     );
   }, RECIPE);
+
+  // Photos are a stored print setting rather than a query param, so turn the
+  // card's photo slot on the same way the app does.
+  await page.evaluate(() => {
+    const KEY = "recipeprinter:print-settings:v1";
+    const current = JSON.parse(localStorage.getItem(KEY) ?? "{}");
+    localStorage.setItem(KEY, JSON.stringify({ ...current, showPhoto: true }));
+  });
 
   // 6x4, not letter: an index card is the iconic shape of the thing, and a
   // letter sheet left two thirds of itself empty under a seven-line recipe.
@@ -150,7 +167,7 @@ async function main() {
     process.exit(1);
   }
   console.log(`found ${cards.length} cards on the page; widest is ${Math.round(widest)}px`);
-  const shot = await card.screenshot({ type: "png" });
+  const shot = await card.screenshot({ type: "jpeg", quality: 90 });
   writeFileSync(OUT, shot);
   const box = await card.boundingBox();
   console.log(`wrote ${OUT}  (${Math.round(box.width)}x${Math.round(box.height)} css px @2x, ${shot.length} B)`);
