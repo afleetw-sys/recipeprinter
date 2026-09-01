@@ -132,6 +132,20 @@ export const metadata: Metadata = {
       "max-video-preview": -1,
     },
   },
+  // Pinterest claims a website by fetching its root URL and looking for this
+  // tag in the <head>. It lives in the root layout, so it ships on every route
+  // rather than only the homepage: Pinterest re-checks the claim periodically,
+  // and a tag that exists on just one page is one refactor away from silently
+  // unclaiming the domain. The value is a public verification token, not a
+  // secret; it identifies the Pinterest account allowed to claim the domain.
+  // Claiming is what puts our logo on every Pin that links back here and turns
+  // on Pin analytics, which matters because the social landing pages target
+  // people arriving from Pinterest in the first place.
+  verification: {
+    other: {
+      "p:domain_verify": "33f6eb038e85de3d538515850ef09569",
+    },
+  },
 };
 
 export default function RootLayout({
