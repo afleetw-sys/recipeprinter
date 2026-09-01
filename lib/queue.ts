@@ -9,6 +9,7 @@ import { placeholderHostMessage } from "@/lib/friendlyErrors";
 import { normalizeImportURL } from "@/lib/cookpilot";
 import { hostnameOf as rawHostnameOf } from "@/lib/url";
 import { uid } from "@/lib/ids";
+import { deleteLocalPhoto, isBlobUrl, localPhotoUrl } from "@/lib/localPhotos";
 import { localStore, sessionStore } from "@/lib/storage";
 
 // The print queue is session-based for the MVP, no accounts, no saved library.
@@ -175,16 +176,6 @@ export function useQueue() {
   // so a failed text import can be retried within the same session.
   const textPayloads = useRef<Map<string, string>>(new Map());
 
-  // Hydrate from sessionStorage on mount (client only).
-  useEffect(() => {
-    const initial = readQueue();
-    itemsRef.current = initial;
-    serializedItemsRef.current = serializeQueue(initial);
-    setItems(initial);
-    setHydratedWithItems(initial.length > 0);
-    setHydrated(true);
-  }, []);
-
   const commit = useCallback((next: QueueItem[]) => {
     itemsRef.current = next;
     setItems(next);
@@ -193,6 +184,61 @@ export function useQueue() {
       serializedItemsRef.current = serialized;
       writeSerializedQueue(serialized);
     }
+  }, []);
+
+  /**
+   * Re-point locally-held photos at this document.
+   *
+   * A Paprika photo lives in IndexedDB and is shown through an object URL, and
+   * an object URL dies with the document that made it — so the one the queue
+   * was serialized with is a dead string in a fresh tab, and so is the one
+   * inside a project filed to the on-device shelf last week. The bytes are
+   * still there; this mints a new URL for them and patches the items.
+   *
+   * Only items carrying a `localPhotoId` are touched, and only when their
+   * image is missing or is one of those dead URLs — a photo already uploaded
+   * to Storage on save is a real URL and must be left exactly as it is.
+   *
+   * Runs on every path that brings items in from storage: the mount hydrate
+   * and `replaceAll` (opening a saved project). A photo that resolves to
+   * nothing is left alone; the recipe simply shows without it.
+   */
+  const rehydrateLocalPhotos = useCallback(
+    async (candidates: QueueItem[]) => {
+      const stale = candidates.filter(
+        (item) => item.localPhotoId && (!item.recipe?.image || isBlobUrl(item.recipe.image)),
+      );
+      if (stale.length === 0) return;
+      const resolved = new Map<string, string>();
+      for (const item of stale) {
+        const url = await localPhotoUrl(item.localPhotoId as string);
+        if (url) resolved.set(item.id, url);
+      }
+      if (resolved.size === 0) return;
+      // Applied against the live list, not the one passed in — the cook may
+      // well have added something while IndexedDB was being read.
+      commit(
+        itemsRef.current.map((item) => {
+          const url = resolved.get(item.id);
+          return url && item.recipe ? { ...item, recipe: { ...item.recipe, image: url } } : item;
+        }),
+      );
+    },
+    [commit],
+  );
+
+  // Hydrate from sessionStorage on mount (client only).
+  useEffect(() => {
+    const initial = readQueue();
+    itemsRef.current = initial;
+    serializedItemsRef.current = serializeQueue(initial);
+    setItems(initial);
+    setHydratedWithItems(initial.length > 0);
+    setHydrated(true);
+    void rehydrateLocalPhotos(initial);
+    // Mount only: `rehydrateLocalPhotos` is stable, and re-running this would
+    // overwrite the live queue with whatever storage held at the time.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const focusItem = useCallback(
@@ -433,7 +479,12 @@ export function useQueue() {
     [commit, runParse],
   );
 
-  const addCookPilotRecipes = useCallback(
+  /**
+   * Adds recipes that arrive already parsed — a CookPilot library, a Paprika
+   * export. Source-agnostic on purpose: these skip `runParse` entirely, so the
+   * only thing this needs to know is that they are finished.
+   */
+  const addReadyRecipes = useCallback(
     (recipes: QueueItem[]) => {
       if (recipes.length === 0) return 0;
       const existingIds = new Set(itemsRef.current.map((item) => item.id));
@@ -441,7 +492,7 @@ export function useQueue() {
       if (nextRecipes.length === 0) return 0;
       commit([...itemsRef.current, ...nextRecipes]);
       // These arrive already parsed, so they never touch runParse — count them
-      // here or the CookPilot path silently misses from every import total.
+      // here or the library sources silently miss from every import total.
       // No started/failed pair: there's no parse step that could fail.
       nextRecipes.forEach((recipe) => {
         track("recipe_imported", { source: recipe.method });
@@ -478,6 +529,8 @@ export function useQueue() {
   const remove = useCallback(
     (id: string) => {
       textPayloads.current.delete(id);
+      const going = itemsRef.current.find((it) => it.id === id);
+      if (going?.localPhotoId) void deleteLocalPhoto(going.localPhotoId);
       commit(itemsRef.current.filter((it) => it.id !== id));
     },
     [commit],
@@ -485,18 +538,24 @@ export function useQueue() {
 
   const clear = useCallback(() => {
     textPayloads.current.clear();
+    for (const item of itemsRef.current) {
+      if (item.localPhotoId) void deleteLocalPhoto(item.localPhotoId);
+    }
     setFocusedItemId(null);
     commit([]);
   }, [commit]);
 
-  /** Replaces the browser queue when opening a saved account project. */
+  /** Replaces the browser queue when opening a saved project. */
   const replaceAll = useCallback(
     (next: QueueItem[]) => {
       textPayloads.current.clear();
       setFocusedItemId(next[0]?.id ?? null);
       commit(next);
+      // The project may be older than this document — any photo it is still
+      // holding locally needs a URL that works here.
+      void rehydrateLocalPhotos(next);
     },
-    [commit],
+    [commit, rehydrateLocalPhotos],
   );
 
   return {
@@ -508,7 +567,7 @@ export function useQueue() {
     addUrl,
     addImages,
     addText,
-    addCookPilotRecipes,
+    addReadyRecipes,
     retry,
     canRetry,
     remove,

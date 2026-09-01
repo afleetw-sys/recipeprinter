@@ -2040,7 +2040,7 @@
       box-shadow: none;
     }
 
-    .rp-import-panel--workspace.rp-import-panel--cookpilot:has(.cookpilot-recipe-list) {
+    .rp-import-panel--workspace.rp-import-panel--apps:has(.import-recipe-list) {
       padding-bottom: 24px;
     }
 

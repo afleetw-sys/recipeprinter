@@ -10,7 +10,7 @@ import {
   type MutableRefObject,
 } from "react";
 import dynamic from "next/dynamic";
-import type { ImportMethod } from "@/types/recipe";
+import type { ImportTab } from "@/types/recipe";
 import type { QueueItem } from "@/types/recipe";
 import { track, truncateReason, type ImportFailureCode } from "@/lib/analytics";
 import { ImportError } from "@/lib/parser";
@@ -23,7 +23,7 @@ import {
   validateImageFiles,
 } from "@/lib/imageImport";
 import {
-  CookPilotLogoIcon,
+  AppsIcon,
   ICON_SIZE,
   ImageIcon,
   LinkIcon,
@@ -35,39 +35,37 @@ import {
 } from "@/components/icons";
 import { ButtonToggle } from "@/components/ButtonToggle";
 
-// Compact import switch: URL and CookPilot are first-class; lower-frequency
-// sources live behind an overflow menu so the workspace rail stays quiet.
+// Compact import switch: a link and the recipe apps are first-class;
+// lower-frequency sources live behind an overflow menu so the workspace rail
+// stays quiet.
 
 const MODES: {
-  id: ImportMethod;
+  id: ImportTab;
   label: string;
   icon: ComponentType<{ size?: number; className?: string }>;
 }[] = [
   { id: "url", label: "Link", icon: LinkIcon },
-  { id: "cookpilot", label: "CookPilot", icon: CookPilotLogoIcon },
+  { id: "apps", label: "Recipe apps", icon: AppsIcon },
   { id: "image", label: "Image", icon: ImageIcon },
   { id: "text", label: "Paste Text", icon: TextIcon },
 ];
 
-const PRIMARY_MODES = MODES.filter((mode) => mode.id === "url" || mode.id === "cookpilot");
+const PRIMARY_MODES = MODES.filter((mode) => mode.id === "url" || mode.id === "apps");
 const OVERFLOW_MODES = MODES.filter((mode) => mode.id === "image" || mode.id === "text");
 
-const loadCookPilotImport = () => import("@/components/CookPilotRecipePicker");
+const loadRecipeApps = () => import("@/components/import/RecipeAppsPanel");
 
-const CookPilotImportSource = dynamic(
-  () => loadCookPilotImport().then((mod) => mod.CookPilotImportSource),
-  {
-    ssr: false,
-    loading: () => (
-      <div className="h-40 grid place-items-center text-ink-soft rounded-2xl border border-dashed border-line-strong">
-        <span className="inline-flex items-center gap-2">
-          <SpinnerIcon size={ICON_SIZE.lg} />
-          Opening CookPilot…
-        </span>
-      </div>
-    ),
-  },
-);
+const RecipeAppsPanel = dynamic(() => loadRecipeApps().then((mod) => mod.RecipeAppsPanel), {
+  ssr: false,
+  loading: () => (
+    <div className="h-40 grid place-items-center text-ink-soft rounded-2xl border border-dashed border-line-strong">
+      <span className="inline-flex items-center gap-2">
+        <SpinnerIcon size={ICON_SIZE.lg} />
+        Opening your recipe apps…
+      </span>
+    </div>
+  ),
+});
 
 export function ImportPanel({
   items,
@@ -81,13 +79,13 @@ export function ImportPanel({
   onAddUrl,
   onAddImages,
   onAddText,
-  onAddCookPilotRecipes,
+  onAddReadyRecipes,
   onRemoveRecipe,
   commitRef,
 }: {
   items: QueueItem[];
   workspace?: boolean;
-  initialMode?: ImportMethod;
+  initialMode?: ImportTab;
   submitLabel?: string;
   /** Drop the panel's own submit button: the surface around it owns the action
       (the add dialog puts one Add at the bottom instead of two buttons). */
@@ -98,26 +96,26 @@ export function ImportPanel({
   showAllModes?: boolean;
   /** Which source is showing. The add dialog sizes itself to it: a paste box
       wants far more room than a URL field. */
-  onModeChange?: (mode: ImportMethod) => void;
+  onModeChange?: (mode: ImportTab) => void;
   /** Autofocus the URL input on mount. Off on SEO capture blocks, where the panel
       can sit below the fold and stealing focus would scroll the page on load. */
   autoFocusUrl?: boolean;
   onAddUrl: (url: string) => void;
   onAddImages: (images: string[], label: string) => void;
   onAddText: (text: string) => void;
-  onAddCookPilotRecipes: (recipes: QueueItem[]) => number;
+  onAddReadyRecipes: (recipes: QueueItem[]) => number;
   onRemoveRecipe: (id: string) => void;
   /** Filled in by this panel with a function that submits whatever is in the
       form, so a parent's own "done" button can finish the job. */
   commitRef?: MutableRefObject<(() => boolean) | null>;
 }) {
   useEffect(() => {
-    // CookPilot is a primary import option, but its Firebase/Auth code is large
-    // enough to keep out of the initial page bundle. Fetch and initialize it
-    // once the browser is idle so choosing CookPilot feels immediate without
-    // delaying first paint.
+    // The recipe-app sources are a primary import option, but CookPilot's
+    // Firebase/Auth code is large enough to keep out of the initial page
+    // bundle. Fetch and initialize it once the browser is idle so choosing the
+    // tab feels immediate without delaying first paint.
     const prewarm = () => {
-      void loadCookPilotImport().then((mod) => mod.prewarmCookPilotImport());
+      void loadRecipeApps().then((mod) => mod.prewarmCookPilotImport());
     };
     if ("requestIdleCallback" in window) {
       const idleId = window.requestIdleCallback(prewarm, { timeout: 1_500 });
@@ -127,7 +125,7 @@ export function ImportPanel({
     return () => globalThis.clearTimeout(timer);
   }, []);
 
-  const [mode, setMode] = useState<ImportMethod>(initialMode);
+  const [mode, setMode] = useState<ImportTab>(initialMode);
   const [url, setUrl] = useState("");
   const [text, setText] = useState("");
   const [imageFiles, setImageFiles] = useState<File[]>([]);
@@ -161,7 +159,7 @@ export function ImportPanel({
     };
   }, []);
 
-  function chooseMode(nextMode: ImportMethod) {
+  function chooseMode(nextMode: ImportTab) {
     setMode(nextMode);
     onModeChange?.(nextMode);
     setOverflowOpen(false);
@@ -283,9 +281,9 @@ export function ImportPanel({
   /**
    * Whether there is something typed, pasted or chosen that has not been added.
    *
-   * The CookPilot picker is excluded on purpose: it adds through its own list
-   * rather than through this form, so there is never anything of its own left
-   * sitting in the field.
+   * The recipe-app sources are excluded on purpose: they add through their own
+   * lists rather than through this form, so there is never anything of theirs
+   * left sitting in the field.
    */
   function hasUncommittedInput(): boolean {
     if (mode === "url") return url.trim().length > 0;
@@ -330,7 +328,7 @@ export function ImportPanel({
     <section
       className={`rp-import-panel panel p-0 lg:p-cp-6 animate-fade-up ${
         workspace ? "rp-import-panel--workspace" : ""
-      } ${mode === "cookpilot" ? "rp-import-panel--cookpilot" : ""}`}
+      } ${mode === "apps" ? "rp-import-panel--apps" : ""}`}
       aria-labelledby={workspace ? "rp-import-heading" : undefined}
       aria-label={workspace ? undefined : "Import recipes"}
     >
@@ -393,11 +391,11 @@ export function ImportPanel({
         </ButtonToggle>
       </div>
 
-      {mode === "cookpilot" ? (
+      {mode === "apps" ? (
         <div className="mt-cp-4">
-          <CookPilotImportSource
+          <RecipeAppsPanel
             items={items}
-            onAddRecipes={onAddCookPilotRecipes}
+            onAddRecipes={onAddReadyRecipes}
             onRemoveRecipe={onRemoveRecipe}
           />
         </div>

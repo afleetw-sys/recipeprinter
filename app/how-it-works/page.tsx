@@ -6,7 +6,7 @@ import {
   LinkIcon,
   ImageIcon,
   TextIcon,
-  CookPilotLogoIcon,
+  AppsIcon,
 } from "@/components/icons";
 import { pageMetadata } from "@/lib/seo";
 import { SEO_LANDING_PAGES } from "@/lib/seoLandingPages";
@@ -41,9 +41,9 @@ const SOURCES: Source[] = [
     body: "Have a recipe from a message, email, document, or site we do not recognize? Paste the text and RecipePrinter will format it into a printable recipe card or page.",
   },
   {
-    icon: CookPilotLogoIcon,
-    label: "Import from CookPilot",
-    body: "Already use CookPilot? Bring your saved recipes into RecipePrinter and add them straight to your print queue.",
+    icon: AppsIcon,
+    label: "Bring a library from another app",
+    body: "Already keep recipes in CookPilot or Paprika? Sign in to CookPilot, or open a Paprika export file, then add what you want straight to your print queue. A Paprika file is read in your browser, so nothing is uploaded.",
   },
 ];
 

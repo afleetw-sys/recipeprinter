@@ -44,6 +44,9 @@ export type ImportFailureCode =
   | "too_large"
   | "backend_unavailable"
   | "timeout"
+  // A recipe-app export file we couldn't read: not the archive we expected, or
+  // nothing recipe-shaped inside it. Nothing was ever parsed.
+  | "unreadable_file"
   // A reserved name (example.com, localhost, anything under .test). Not a
   // parser failure: nothing was ever there to parse.
   | "placeholder"

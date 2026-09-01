@@ -13,8 +13,8 @@ import {
   useCookPilotAuth,
 } from "@/components/CookPilotAuth";
 import {
+  cookPilotImportSummary,
   cookPilotQueueId,
-  filterCookPilotSummaries,
   getCachedCookPilotSummaries,
   hasMoreCookPilotSummaries,
   loadAllCookPilotRecipeSummaries,
@@ -23,18 +23,15 @@ import {
   loadMoreCookPilotRecipeSummaries,
   type CookPilotRecipeSummary,
 } from "@/lib/cookpilotRecipes";
+import { filterImportSummaries, type ImportSummary } from "@/lib/importSummary";
 import type { QueueItem } from "@/types/recipe";
 import { EmptyState } from "@/components/EmptyState";
+import { RecipeSourceList } from "@/components/import/RecipeSourceList";
 import {
-  CheckIcon,
-  ClockIcon,
   CookPilotLogoIcon,
   ExternalIcon,
   ICON_SIZE,
-  PlusIcon,
-  SearchIcon,
   SpinnerIcon,
-  UsersIcon,
 } from "@/components/icons";
 
 export async function prewarmCookPilotImport(): Promise<void> {
@@ -117,86 +114,6 @@ function SignedOutCookPilotImport({
   );
 }
 
-function RecipeRow({
-  summary,
-  added,
-  adding,
-  onToggle,
-}: {
-  summary: CookPilotRecipeSummary;
-  added: boolean;
-  adding: boolean;
-  onToggle: () => void;
-}) {
-  const time = formatRecipeTime(summary.totalTimeMinutes);
-  const servings = summary.preferredServings ?? summary.servings;
-
-  return (
-    <button
-      type="button"
-      onClick={onToggle}
-      disabled={adding}
-      aria-label={
-        added
-          ? `Remove ${summary.title} from print list`
-          : `Add ${summary.title} to print list`
-      }
-      className={`group flex w-full items-center gap-cp-3 rounded-xl border p-cp-2 text-left transition-colors ${
-        added
-          ? "border-brand bg-brand-50/60"
-          : "border-line bg-card hover:border-line-strong"
-      }`}
-    >
-      <div className="relative h-14 w-14 flex-shrink-0 overflow-hidden rounded-lg bg-page grid place-items-center text-brand/50">
-        {summary.imageURL ? (
-          // eslint-disable-next-line @next/next/no-img-element
-          <img
-            src={summary.imageURL}
-            alt=""
-            loading="lazy"
-            decoding="async"
-            className="h-full w-full object-cover"
-          />
-        ) : (
-          <CookPilotLogoIcon size={22} />
-        )}
-      </div>
-
-      <div className="min-w-0 flex-1">
-        <p className="text-cp-body font-bold leading-snug line-clamp-1">{summary.title}</p>
-        {(time || servings) && (
-          <p className="mt-0.5 flex flex-wrap items-center gap-x-cp-3 gap-y-0.5 text-cp-caption text-ink-soft">
-            {time && (
-              <span className="inline-flex items-center gap-1">
-                <ClockIcon size={ICON_SIZE.sm} />
-                {time}
-              </span>
-            )}
-            {servings && (
-              <span className="inline-flex items-center gap-1">
-                <UsersIcon size={ICON_SIZE.sm} />
-                Serves {servings}
-              </span>
-            )}
-          </p>
-        )}
-      </div>
-
-      {added ? (
-        <span className="inline-flex flex-shrink-0 items-center justify-center gap-1 rounded-lg bg-[var(--cp-accent-warm-soft)] px-2.5 py-1.5 text-cp-caption font-bold text-ink">
-          <CheckIcon size={ICON_SIZE.sm} />
-          Added
-        </span>
-      ) : (
-        <span className="btn btn-secondary btn-compact flex-shrink-0 pointer-events-none transition-colors group-hover:border-line-strong group-hover:bg-page">
-          {adding ? <SpinnerIcon size={ICON_SIZE.md} /> : <PlusIcon size={ICON_SIZE.md} />}
-          Add
-        </span>
-      )}
-    </button>
-  );
-}
-
 function SignedInCookPilotImport({
   user,
   items,
@@ -219,7 +136,7 @@ function SignedInCookPilotImport({
   const [hasMore, setHasMore] = useState(() => hasMoreCookPilotSummaries(user.uid));
   const [error, setError] = useState<string | null>(null);
   const [loadMoreError, setLoadMoreError] = useState<string | null>(null);
-  const sentinelRef = useRef<HTMLLIElement | null>(null);
+  const sentinelRef = useRef<HTMLDivElement | null>(null);
   const isSearching = queryText.trim().length > 0;
   // True until the component actually unmounts (or switches users) — a
   // component-level ref rather than a `let alive = true` local to each
@@ -242,15 +159,17 @@ function SignedInCookPilotImport({
   }, [user.uid]);
 
   const addedIds = useMemo(() => new Set(items.map((item) => item.id)), [items]);
-  const visibleSummaries = useMemo(
-    () => filterCookPilotSummaries(summaries, queryText),
-    [summaries, queryText],
+  // The shared list speaks `ImportSummary`; the loaders below speak CookPilot's
+  // own shape and need it back to fetch a recipe's detail, so the two are kept
+  // side by side rather than one being converted away.
+  const rows = useMemo(() => summaries.map(cookPilotImportSummary), [summaries]);
+  const byId = useMemo(
+    () => new Map(summaries.map((summary) => [summary.id, summary] as const)),
+    [summaries],
   );
-  const visibleNotAdded = useMemo(
-    () => visibleSummaries.filter((summary) => !addedIds.has(cookPilotQueueId(summary.id))),
-    [visibleSummaries, addedIds],
-  );
-  const allVisibleAdded = visibleSummaries.length > 0 && visibleNotAdded.length === 0;
+  const visibleRows = useMemo(() => filterImportSummaries(rows, queryText), [rows, queryText]);
+  const allVisibleAdded =
+    visibleRows.length > 0 && visibleRows.every((row) => addedIds.has(row.queueId));
 
   useEffect(() => {
     // Already cached from an earlier visit: state is seeded, skip the fetch.
@@ -361,11 +280,12 @@ function SignedInCookPilotImport({
       .finally(() => setLoadingMore(false));
   }
 
-  async function handleToggle(summary: CookPilotRecipeSummary) {
-    const queueId = cookPilotQueueId(summary.id);
+  async function handleToggle(row: ImportSummary) {
+    const summary = byId.get(row.id);
+    if (!summary) return;
     if (addingIds.has(summary.id)) return;
-    if (addedIds.has(queueId)) {
-      onRemoveRecipe(queueId);
+    if (addedIds.has(row.queueId)) {
+      onRemoveRecipe(row.queueId);
       return;
     }
     setError(null);
@@ -387,7 +307,7 @@ function SignedInCookPilotImport({
   async function handleAddAll() {
     if (bulkBusy) return;
     if (allVisibleAdded) {
-      visibleSummaries.forEach((summary) => onRemoveRecipe(cookPilotQueueId(summary.id)));
+      visibleRows.forEach((row) => onRemoveRecipe(row.queueId));
       return;
     }
     setError(null);
@@ -401,9 +321,10 @@ function SignedInCookPilotImport({
         setSummaries(allSummaries);
         setHasMore(false);
       }
-      const targets = filterCookPilotSummaries(allSummaries, queryText).filter(
-        (summary) => !addedIds.has(cookPilotQueueId(summary.id)),
-      );
+      const targets = filterImportSummaries(allSummaries.map(cookPilotImportSummary), queryText)
+        .filter((row) => !addedIds.has(row.queueId))
+        .map((row) => allSummaries.find((summary) => summary.id === row.id))
+        .filter((summary): summary is CookPilotRecipeSummary => Boolean(summary));
       if (targets.length === 0) return;
       const queueItems = await loadCookPilotQueueItems(user.uid, targets);
       onAddRecipes(queueItems);
@@ -415,53 +336,31 @@ function SignedInCookPilotImport({
   }
 
   return (
-    <div className="flex flex-col gap-cp-4">
-      <div className="flex items-center justify-between gap-cp-3">
-        <h3 className="field-label mb-0">
-          CookPilot recipes
-          {summaries.length > 0
-            ? ` (${summaries.length}${!isSearching && hasMore ? "+" : ""})`
-            : ""}
-        </h3>
-        {!loading && !error && visibleSummaries.length > 0 && (
-          <button
-            type="button"
-            className="btn-ghost btn-compact flex-shrink-0"
-            onClick={handleAddAll}
-            disabled={bulkBusy}
-          >
-            {bulkBusy ? <SpinnerIcon size={ICON_SIZE.sm} /> : null}
-            {allVisibleAdded ? "Remove all" : "Add all"}
-          </button>
-        )}
-      </div>
-
-      <div className="relative">
-        <SearchIcon size={ICON_SIZE.lg} className="absolute left-4 top-1/2 -translate-y-1/2 text-ink-soft" />
-        <input
-          id="cookpilot-search"
-          className="field !pl-11"
-          placeholder="Search your recipes..."
-          aria-label="Search your CookPilot recipes"
-          value={queryText}
-          onChange={(event) => setQueryText(event.target.value)}
-        />
-      </div>
-
-      {loading && (
-        <div className="h-40 grid place-items-center text-ink-soft rounded-2xl border border-dashed border-line-strong">
-          <span className="inline-flex items-center gap-2">
-            <SpinnerIcon size={ICON_SIZE.lg} />
-            Loading your recipes
-          </span>
-        </div>
-      )}
-
-      {!loading && error && (
-        <p className="field-error" role="alert">{error}</p>
-      )}
-
-      {!loading && !error && summaries.length === 0 && (
+    <RecipeSourceList
+      heading="CookPilot recipes"
+      countLabel={
+        summaries.length > 0
+          ? `(${summaries.length}${!isSearching && hasMore ? "+" : ""})`
+          : undefined
+      }
+      summaries={visibleRows}
+      addedIds={addedIds}
+      addingIds={addingIds}
+      bulkBusy={bulkBusy}
+      allVisibleAdded={allVisibleAdded}
+      onToggle={handleToggle}
+      onAddAll={handleAddAll}
+      queryText={queryText}
+      onQueryChange={setQueryText}
+      searchId="cookpilot-search"
+      searchLabel="Search your CookPilot recipes"
+      loading={loading}
+      error={error}
+      // A search that has emptied the list while the rest of the library is
+      // still arriving isn't "no matches" yet.
+      showNoMatches={!loadingMore}
+      fallbackIcon={CookPilotLogoIcon}
+      emptyState={
         <EmptyState
           title="No recipes yet"
           description={
@@ -479,47 +378,35 @@ function SignedInCookPilotImport({
             </>
           }
         />
-      )}
+      }
+      footer={
+        <>
+          {/* Sits below the list rather than inside it now that the list is
+              shared — the observer only cares that it scrolls into view. */}
+          {!isSearching && hasMore && !loading && <div ref={sentinelRef} aria-hidden className="h-px" />}
 
-      {!loading && !error && !loadingMore && summaries.length > 0 && visibleSummaries.length === 0 && (
-        <EmptyState
-          title="No matches"
-          description="Try a different title, tag, or ingredient."
-        />
-      )}
+          {!loading && loadingMore && (
+            <div className="flex items-center justify-center gap-2 py-cp-2 text-ink-soft text-cp-caption">
+              <SpinnerIcon size={ICON_SIZE.sm} />
+              Loading more recipes…
+            </div>
+          )}
 
-      {!loading && !error && visibleSummaries.length > 0 && (
-        <ul className="cookpilot-recipe-list flex flex-col gap-cp-2">
-          {visibleSummaries.map((summary) => (
-            <li key={summary.id}>
-              <RecipeRow
-                summary={summary}
-                added={addedIds.has(cookPilotQueueId(summary.id))}
-                adding={addingIds.has(summary.id)}
-                onToggle={() => handleToggle(summary)}
-              />
-            </li>
-          ))}
-          {!isSearching && hasMore && <li ref={sentinelRef} aria-hidden className="h-px" />}
-        </ul>
-      )}
-
-      {!loading && loadingMore && (
-        <div className="flex items-center justify-center gap-2 py-cp-2 text-ink-soft text-cp-caption">
-          <SpinnerIcon size={ICON_SIZE.sm} />
-          Loading more recipes…
-        </div>
-      )}
-
-      {!loading && !loadingMore && loadMoreError && (
-        <div>
-          <p className="field-error" role="alert">{loadMoreError}</p>
-          <button type="button" className="btn btn-secondary btn-compact mt-cp-3" onClick={retryLoadMore}>
-            Try again
-          </button>
-        </div>
-      )}
-    </div>
+          {!loading && !loadingMore && loadMoreError && (
+            <div>
+              <p className="field-error" role="alert">{loadMoreError}</p>
+              <button
+                type="button"
+                className="btn btn-secondary btn-compact mt-cp-3"
+                onClick={retryLoadMore}
+              >
+                Try again
+              </button>
+            </div>
+          )}
+        </>
+      }
+    />
   );
 }
 

@@ -62,8 +62,9 @@ export default function AboutPage() {
 
         <p>
           Paste a recipe link, upload a screenshot or photo, paste recipe text, or
-          import directly from CookPilot and RecipePrinter turns it into a clean
-          printable recipe card or PDF designed for real kitchens.
+          bring over a library you already keep in CookPilot or Paprika, and
+          RecipePrinter turns it into a clean printable recipe card or PDF
+          designed for real kitchens.
         </p>
 
         <p>

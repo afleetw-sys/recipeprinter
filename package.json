@@ -20,6 +20,7 @@
   },
   "dependencies": {
     "@revenuecat/purchases-js": "^1.46.0",
+    "fflate": "^0.8.3",
     "firebase": "^12.15.0",
     "heic2any": "^0.0.4",
     "next": "14.2.29",

@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { ArrowRightIcon, ICON_SIZE, SpinnerIcon, UploadIcon } from "@/components/icons";
 import { stashPendingImport } from "@/lib/pendingImport";
 import { imageLabel, partitionImageFiles, prepareImageDataUrls, validateImageFiles } from "@/lib/imageImport";
-import type { ImportMethod } from "@/types/recipe";
+import type { ImportTab } from "@/types/recipe";
 
 // A deliberately minimal capture for the SEO landing pages: just the one input
 // that matches the page's intent (a URL field, a paste box, or a photo dropzone)
@@ -14,9 +14,9 @@ import type { ImportMethod } from "@/types/recipe";
 // multi-source importer lives on the app itself, not on the marketing pages.
 type CaptureMode = "url" | "text" | "image";
 
-function resolveMode(method?: ImportMethod): CaptureMode {
-  if (method === "text") return "text";
-  if (method === "image") return "image";
+function resolveMode(tab?: ImportTab): CaptureMode {
+  if (tab === "text") return "text";
+  if (tab === "image") return "image";
   return "url";
 }
 
@@ -25,7 +25,7 @@ export function SeoCapture({
   submitLabel = "Start printing",
   placeholder,
 }: {
-  initialMode?: ImportMethod;
+  initialMode?: ImportTab;
   submitLabel?: string;
   placeholder?: string;
 }) {

@@ -15,6 +15,7 @@ import {
 } from "firebase/firestore";
 import { getDb } from "@/lib/firebase/db";
 import { adaptCookPilotRecipe } from "@/lib/cookpilot";
+import { importSearchText, type ImportSummary } from "@/lib/importSummary";
 import type { QueueItem, Recipe } from "@/types/recipe";
 
 type AnyRecord = Record<string, unknown>;
@@ -212,33 +213,24 @@ export async function loadAllCookPilotRecipeSummaries(
   return summaryCache.get(userId)?.summaries ?? [];
 }
 
-function searchTextFor(summary: CookPilotRecipeSummary): string {
-  return [
-    summary.title,
-    summary.sourceURL,
-    ...summary.tags,
-    ...summary.systemTags,
-    ...summary.ingredientNames,
-  ]
-    .filter(Boolean)
-    .join(" ")
-    .toLowerCase();
-}
-
-export function filterCookPilotSummaries(
-  summaries: CookPilotRecipeSummary[],
-  queryText: string,
-): CookPilotRecipeSummary[] {
-  const terms = queryText
-    .trim()
-    .toLowerCase()
-    .split(/\s+/)
-    .filter(Boolean);
-  if (terms.length === 0) return summaries;
-  return summaries.filter((summary) => {
-    const haystack = searchTextFor(summary);
-    return terms.every((term) => haystack.includes(term));
-  });
+/** A CookPilot recipe as the shared import list wants it. Search matches on
+    more than the title — a cook looks for "the one with the harissa". */
+export function cookPilotImportSummary(summary: CookPilotRecipeSummary): ImportSummary {
+  return {
+    id: summary.id,
+    queueId: cookPilotQueueId(summary.id),
+    title: summary.title,
+    imageURL: summary.imageURL,
+    servings: summary.preferredServings ?? summary.servings,
+    totalTimeMinutes: summary.totalTimeMinutes,
+    searchText: importSearchText(
+      summary.title,
+      summary.sourceURL,
+      ...summary.tags,
+      ...summary.systemTags,
+      ...summary.ingredientNames,
+    ),
+  };
 }
 
 function recipeFromStoredDocuments(

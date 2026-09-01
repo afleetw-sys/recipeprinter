@@ -63,16 +63,25 @@ export async function uploadPhotoFile(file: File): Promise<string> {
   return uploadBlob(await fileToCoverBlob(file));
 }
 
-export function isDataUrl(value: string | undefined | null): value is string {
-  return typeof value === "string" && value.startsWith("data:");
+/**
+ * An image that only exists in this browser: base64 bytes inline (`data:`), or
+ * a blob URL pointing at something we are holding locally and haven't uploaded
+ * (a Paprika photo — see lib/localPhotos.ts).
+ *
+ * Both are broken data in a saved document. A data URL blows Firestore's 1MB
+ * per-document limit; a blob URL is worse, because it *looks* like a URL and
+ * then resolves to nothing the moment the document that minted it is gone —
+ * on another device, in the PDF renderer, in next week's tab.
+ */
+export function isLocalImage(value: string | undefined | null): value is string {
+  return typeof value === "string" && (value.startsWith("data:") || value.startsWith("blob:"));
 }
 
-/** Uploads an existing `data:` image URL to Storage and returns its download
-    URL. Used by the save-time sweep to evict any base64 that slipped into the
-    project before it reaches the Firestore document. Non-data inputs (remote
-    URLs, empty) are returned unchanged. */
+/** Uploads a browser-local image URL to Storage and returns its download URL.
+    Used by the save-time sweep to evict anything that would not survive the
+    trip into a Firestore document. Remote URLs and empties pass through. */
 export async function materializeDataUrl(value: string | undefined): Promise<string | undefined> {
-  if (!isDataUrl(value)) return value;
+  if (!isLocalImage(value)) return value;
   const blob = await (await fetch(value)).blob();
   return uploadBlob(blob);
 }
@@ -112,11 +121,15 @@ export async function materializeProjectPhotos(project: ProjectPhotos): Promise<
       ...section,
       photoUrl: await materializeDataUrl(section.photoUrl),
       items: await Promise.all(
-        section.items.map(async (item) =>
-          item.recipe && isDataUrl(item.recipe.image)
-            ? { ...item, recipe: { ...item.recipe, image: await materializeDataUrl(item.recipe.image) } }
-            : item,
-        ),
+        section.items.map(async (item) => {
+          if (!item.recipe || !isLocalImage(item.recipe.image)) return item;
+          const image = await materializeDataUrl(item.recipe.image);
+          // The photo is in Storage now, so the local copy stops being the
+          // source: leaving `localPhotoId` on the saved item would have a
+          // later hydration replace this real URL with a browser-only one.
+          const { localPhotoId: _uploaded, ...uploadedItem } = item;
+          return { ...uploadedItem, recipe: { ...item.recipe, image } };
+        }),
       ),
     })),
   );

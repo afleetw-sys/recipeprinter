@@ -25,11 +25,12 @@ const IDB_VERSION = 1;
 const IDB_STORE = "pending-import";
 const IDB_IMAGES_KEY = "images";
 
-/** What the capture block asks the app to import on arrival. */
+/** What the capture block asks the app to import on arrival. `ready` carries
+    already-parsed recipes, whatever library they came from. */
 export type PendingImport =
   | { kind: "url"; url: string }
   | { kind: "text"; text: string }
-  | { kind: "cookpilot"; recipes: QueueItem[] }
+  | { kind: "ready"; recipes: QueueItem[] }
   | { kind: "images"; images: string[]; label: string };
 
 // The sessionStorage descriptor never carries image bytes — for `images` it holds
@@ -37,6 +38,9 @@ export type PendingImport =
 type StoredDescriptor =
   | { kind: "url"; url: string }
   | { kind: "text"; text: string }
+  | { kind: "ready"; recipes: QueueItem[] }
+  // What "ready" was called when CookPilot was the only library source. A
+  // descriptor written before a deploy can still be sitting in a tab after it.
   | { kind: "cookpilot"; recipes: QueueItem[] }
   | { kind: "images"; label: string };
 
@@ -138,6 +142,8 @@ export async function takePendingImport(): Promise<PendingImport | null> {
     if (!images || images.length === 0) return null;
     return { kind: "images", images, label: descriptor.label };
   }
+
+  if (descriptor.kind === "cookpilot") return { kind: "ready", recipes: descriptor.recipes };
 
   return descriptor;
 }

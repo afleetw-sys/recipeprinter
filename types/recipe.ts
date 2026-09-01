@@ -76,7 +76,23 @@ export type ParseResponse = ParseResult | ParseError;
    RecipePrinter's primary object is a Print Queue, not a saved library.
    Each method mirrors one of CookPilot's supported import sources.            */
 
-export type ImportMethod = "url" | "image" | "text" | "cookpilot" | "shared";
+export type ImportMethod =
+  | "url"
+  | "image"
+  | "text"
+  | "cookpilot"
+  | "paprika"
+  | "shared";
+
+/**
+ * What the import switch offers, which is not the same list as `ImportMethod`.
+ *
+ * "apps" is a tab (the integrations panel: CookPilot, Paprika) rather than a
+ * way a recipe arrived — a recipe added from it lands in the queue as
+ * `cookpilot` or `paprika`, never as "apps". Keeping the two unions apart is
+ * what stops a tab id from leaking into analytics or a saved queue item.
+ */
+export type ImportTab = "url" | "image" | "text" | "apps";
 
 import type { ImportFailureCode } from "@/lib/analytics";
 
@@ -97,6 +113,18 @@ export interface QueueItem {
   /** The failure's bucket, for surfaces too small for `error`'s full sentence
       (the toast). Absent on items that failed before this was recorded. */
   errorCode?: ImportFailureCode;
+  /**
+   * A photo this browser is holding locally and has not uploaded (the key into
+   * `lib/localPhotos.ts`). Paprika exports embed their photos as base64 inside
+   * the file, and we deliberately don't upload those on import — a photo only
+   * reaches Firebase Storage when the recipe reaches somewhere that persists
+   * it (saving a project, exporting a cookbook).
+   *
+   * While it's local, `recipe.image` is a `blob:` URL, which dies with the
+   * document. This id is what survives serialization, so the queue can rebuild
+   * that URL after a reload — and what the save-time sweep uploads from.
+   */
+  localPhotoId?: string;
   addedAt: number;
 }
 

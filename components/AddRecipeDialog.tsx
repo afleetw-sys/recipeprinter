@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import type { ImportMethod } from "@/types/recipe";
+import type { ImportTab } from "@/types/recipe";
 import { useCookPilotAuth } from "@/components/CookPilotAuth";
 import { ImportPanel } from "@/components/ImportPanel";
 import { ICON_SIZE, XIcon } from "@/components/icons";
@@ -24,7 +24,7 @@ export function AddRecipeDialog({
   onAddUrl,
   onAddImages,
   onAddText,
-  onAddCookPilotRecipes,
+  onAddReadyRecipes,
 }: {
   open: boolean;
   onClose: () => void;
@@ -35,20 +35,20 @@ export function AddRecipeDialog({
   onAddUrl: (url: string) => void;
   onAddImages: (images: string[], label: string) => void;
   onAddText: (text: string) => void;
-  onAddCookPilotRecipes: (recipes: QueueItem[]) => number;
+  onAddReadyRecipes: (recipes: QueueItem[]) => number;
 }) {
   /** Filled in by the import panel; lets Add finish the entry in the form. */
   const commitImportRef = useRef<(() => boolean) | null>(null);
   const [duplicateTitle, setDuplicateTitle] = useState<string | null>(null);
   /** A URL field needs one line; a paste box and a dropzone need a dialog. */
-  const [mode, setMode] = useState<ImportMethod>("url");
+  const [mode, setMode] = useState<ImportTab>("url");
   const { user: cookPilotUser } = useCookPilotAuth();
   /**
-   * CookPilot signed out shows a sign-in prompt, not a form — there is nothing
-   * for Add to submit, so offering it is offering a button that does nothing.
-   * Recipes chosen from a signed-in CookPilot library add themselves on pick.
+   * The recipe-app sources have no form to submit: they add on pick, straight
+   * from their own lists. Offering Add there is offering a button that does
+   * nothing, so the dialog drops it for that tab.
    */
-  const canAdd = mode !== "cookpilot" || Boolean(cookPilotUser);
+  const canAdd = mode !== "apps";
   const seenFocusNonceRef = useRef(focusNonce);
 
   // A re-import of something already in the job doesn't add a second copy —
@@ -115,7 +115,7 @@ export function AddRecipeDialog({
           onAddUrl={handleAddUrl}
           onAddImages={handleAddImages}
           onAddText={handleAddText}
-          onAddCookPilotRecipes={onAddCookPilotRecipes}
+          onAddReadyRecipes={onAddReadyRecipes}
           onRemoveRecipe={() => undefined}
         />
 

@@ -4650,7 +4650,7 @@ export default function PrintPage() {
         onAddUrl={queue.addUrl}
         onAddImages={queue.addImages}
         onAddText={queue.addText}
-        onAddCookPilotRecipes={queue.addCookPilotRecipes}
+        onAddReadyRecipes={queue.addReadyRecipes}
       />
       <FeedbackDialog
         open={showFeedbackDialog}

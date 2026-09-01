@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { pageMetadata } from "@/lib/seo";
-import type { ImportMethod } from "@/types/recipe";
+import type { ImportTab } from "@/types/recipe";
 
 /** Icon slugs a value-prop chip can use, resolved to real icons in the template. */
 export type SeoIconKey =
@@ -62,7 +62,7 @@ export type SeoLandingPage = {
   layout?: "capture-first" | "guide-first";
   eyebrow: string;
   statusNote?: string;
-  initialImportMode?: ImportMethod;
+  initialImportMode?: ImportTab;
   importSubmitLabel?: string;
   /** Reassurance below capture; false hides the default utility-page message. */
   captureReassurance?: string | false;

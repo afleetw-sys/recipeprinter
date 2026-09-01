@@ -106,12 +106,46 @@ function saveBlob(blob: Blob, fileName: string): void {
   }
 }
 
+/**
+ * A copy of the book with every browser-local image uploaded, or the book
+ * unchanged when there weren't any (the normal case, and a no-op that costs
+ * one pass over the sections).
+ *
+ * `lib/photoStorage` is loaded lazily for the same reason the auth token above
+ * is: it pulls in Firebase Storage, and the export is reachable from a page
+ * that may never need it.
+ */
+async function materializeBookPhotos(project: PrintProject): Promise<PrintProject> {
+  try {
+    const { materializeProjectPhotos } = await import("@/lib/photoStorage");
+    const materialized = await materializeProjectPhotos({
+      sections: project.sections,
+      cover: project.cover,
+      backCover: project.backCover,
+      itemPlacements: project.itemPlacements,
+    });
+    return { ...project, ...materialized };
+  } catch (error) {
+    // An upload that fails shouldn't cost the cook the whole export — the book
+    // still renders, just without whichever photo couldn't be sent ahead.
+    console.warn("RecipePrinter: could not upload local photos before export", error);
+    return project;
+  }
+}
+
 export async function downloadCookbookPdf(
-  project: PrintProject,
+  book: PrintProject,
   preset: CookbookPresetId,
   fileName: string,
 ): Promise<void> {
   const resolved = getCookbookPreset(preset);
+  // The renderer is on the server, so every image in the book has to be a URL
+  // it can fetch. A photo the browser is still holding locally (a Paprika
+  // import that hasn't been saved yet) is a `blob:` URL that means nothing
+  // outside this document — it goes to Storage now, on its way out. Saving a
+  // project runs the same sweep; a book exported without an intervening save
+  // would otherwise print with holes where its photos are.
+  const project = await materializeBookPhotos(book);
   const interior = await renderPdf({ project, preset });
   saveBlob(interior, fileName);
 

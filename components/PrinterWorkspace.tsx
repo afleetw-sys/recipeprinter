@@ -17,7 +17,7 @@ import { createCurrentPrintJob, useQueue } from "@/lib/queue";
 import { useProjectMeta } from "@/lib/project";
 import { fileProjectLocally } from "@/lib/localProjects";
 import { takePendingImport } from "@/lib/pendingImport";
-import type { ImportMethod } from "@/types/recipe";
+import type { ImportTab } from "@/types/recipe";
 
 // The interactive heart of RecipePrinter: importing recipes and managing the
 // print queue. Split out from the homepage so the page itself can stay a server
@@ -28,7 +28,7 @@ export function PrinterWorkspace({
   importSubmitLabel,
   consumePendingImport = false,
 }: {
-  initialImportMode?: ImportMethod;
+  initialImportMode?: ImportTab;
   importSubmitLabel?: string;
   /**
    * When true, on mount (after the queue hydrates) pick up any recipe a visitor
@@ -47,7 +47,7 @@ export function PrinterWorkspace({
     addUrl,
     addImages,
     addText,
-    addCookPilotRecipes,
+    addReadyRecipes,
     retry,
     canRetry,
     remove,
@@ -166,13 +166,13 @@ export function PrinterWorkspace({
       if (cancelled || !pending) return;
       if (pending.kind === "url") addUrl(pending.url);
       else if (pending.kind === "text") addText(pending.text);
-      else if (pending.kind === "cookpilot") addCookPilotRecipes(pending.recipes);
+      else if (pending.kind === "ready") addReadyRecipes(pending.recipes);
       else if (pending.kind === "images") addImages(pending.images, pending.label);
     });
     return () => {
       cancelled = true;
     };
-  }, [consumePendingImport, hydrated, addUrl, addText, addImages, addCookPilotRecipes]);
+  }, [consumePendingImport, hydrated, addUrl, addText, addImages, addReadyRecipes]);
 
   useEffect(() => {
     if (!hasProject) setMobileQueueOpen(false);
@@ -233,7 +233,7 @@ export function PrinterWorkspace({
           onAddUrl={addUrl}
           onAddImages={addImages}
           onAddText={addText}
-          onAddCookPilotRecipes={addCookPilotRecipes}
+          onAddReadyRecipes={addReadyRecipes}
           onRemoveRecipe={remove}
         />
       </div>

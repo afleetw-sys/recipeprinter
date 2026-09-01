@@ -204,6 +204,18 @@ export const CrownIcon = (p: IconProps) => (
   </Base>
 );
 
+// The "Recipe apps" import tab: the libraries you can bring recipes over from.
+// Deliberately source-neutral — it stands for CookPilot, Paprika and whatever
+// comes next, so it can't be any one of their marks.
+export const AppsIcon = (p: IconProps) => (
+  <Base {...p}>
+    <rect x="3.5" y="3.5" width="7" height="7" rx="2" />
+    <rect x="13.5" y="3.5" width="7" height="7" rx="2" />
+    <rect x="3.5" y="13.5" width="7" height="7" rx="2" />
+    <rect x="13.5" y="13.5" width="7" height="7" rx="2" />
+  </Base>
+);
+
 export const BookIcon = (p: IconProps) => (
   <Base {...p}>
     <path d="M4 5.5C4 4.67 4.67 4 5.5 4H12v16H5.5A1.5 1.5 0 014 18.5v-13z" />
