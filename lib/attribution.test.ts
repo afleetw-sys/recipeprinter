@@ -39,13 +39,53 @@ describe("referrer classification", () => {
     expect(matchReferrer("out.reddit.com")).toBe("Reddit");
     expect(matchReferrer("m.facebook.com")).toBe("Facebook");
     expect(matchReferrer("l.instagram.com")).toBe("Instagram");
+    expect(matchReferrer("cookpilotapp.com")).toBe("CookPilot");
+  });
+
+  it("names the amplification channels a launch actually runs through", () => {
+    // Every link posted to X is rewritten to a t.co shim, so that hostname is
+    // the whole channel as far as the referrer is concerned.
+    expect(matchReferrer("t.co")).toBe("X / Twitter");
+    expect(matchReferrer("x.com")).toBe("X / Twitter");
+    expect(matchReferrer("twitter.com")).toBe("X / Twitter");
+    expect(matchReferrer("bsky.app")).toBe("Bluesky");
+    expect(matchReferrer("www.threads.net")).toBe("Threads");
+    expect(matchReferrer("www.linkedin.com")).toBe("LinkedIn");
+    expect(matchReferrer("lnkd.in")).toBe("LinkedIn");
+    expect(matchReferrer("www.tiktok.com")).toBe("TikTok");
+    expect(matchReferrer("youtu.be")).toBe("YouTube");
+    // `x` must be preceded by a dot or the start, never mid-label.
+    expect(matchReferrer("fx.com")).toBeNull();
+  });
+
+  it("recognizes the launch and directory platforms", () => {
+    expect(matchReferrer("www.producthunt.com")).toBe("Product Hunt");
     expect(matchReferrer("peerlist.io")).toBe("Peerlist");
     expect(matchReferrer("www.peerlist.io")).toBe("Peerlist");
     expect(matchReferrer("peerpush.net")).toBe("PeerPush");
     expect(matchReferrer("www.peerpush.net")).toBe("PeerPush");
     expect(matchReferrer("uneed.best")).toBe("Uneed");
     expect(matchReferrer("www.uneed.best")).toBe("Uneed");
-    expect(matchReferrer("cookpilotapp.com")).toBe("CookPilot");
+    expect(matchReferrer("fazier.com")).toBe("Fazier");
+    expect(matchReferrer("microlaunch.net")).toBe("MicroLaunch");
+    expect(matchReferrer("tinylaun.ch")).toBe("TinyLaunch");
+    expect(matchReferrer("startupfame.com")).toBe("Startup Fame");
+    expect(matchReferrer("betalist.com")).toBe("BetaList");
+    expect(matchReferrer("www.indiehackers.com")).toBe("Indie Hackers");
+    expect(matchReferrer("www.saashub.com")).toBe("SaaSHub");
+    expect(matchReferrer("alternativeto.net")).toBe("AlternativeTo");
+    // Mobbin kept both domains through its move.
+    expect(matchReferrer("mobbin.com")).toBe("Mobbin");
+    expect(matchReferrer("mobbin.design")).toBe("Mobbin");
+    expect(matchReferrer("land-book.com")).toBe("Land-book");
+    expect(matchReferrer("godly.website")).toBe("Godly");
+  });
+
+  it("scopes Hacker News to the news subdomain, not all of ycombinator.com", () => {
+    expect(matchReferrer("news.ycombinator.com")).toBe("Hacker News");
+    expect(matchReferrer("hn.algolia.com")).toBe("Hacker News");
+    // A click from YC's own site is not a Show HN click.
+    expect(matchReferrer("www.ycombinator.com")).toBeNull();
   });
 
   it("does not match domains that merely contain a known name", () => {
@@ -89,6 +129,9 @@ describe("precedence", () => {
     expect(land("/", "https://peerlist.io/ameliaw/project/recipeprinter").source).toBe("Peerlist");
     expect(land("/", "https://www.uneed.best/tool/recipeprinter").source).toBe("Uneed");
     expect(land("/", "https://peerpush.net/p/recipeprinter").source).toBe("PeerPush");
+    expect(land("/", "https://www.producthunt.com/posts/recipeprinter").source).toBe("Product Hunt");
+    expect(land("/", "https://news.ycombinator.com/item?id=1").source).toBe("Hacker News");
+    expect(land("/", "https://t.co/abc123").source).toBe("X / Twitter");
     expect(land("/", "https://some-blog.example.com/post").source).toBe("Referral");
     expect(land("/").source).toBe("Direct / Unknown");
   });
@@ -127,6 +170,10 @@ describe("category rollup", () => {
     expect(categoryOf("Peerlist")).toBe("Launch");
     expect(categoryOf("PeerPush")).toBe("Launch");
     expect(categoryOf("Uneed")).toBe("Launch");
+    expect(categoryOf("Product Hunt")).toBe("Launch");
+    expect(categoryOf("Hacker News")).toBe("Launch");
+    expect(categoryOf("Mobbin")).toBe("Launch");
+    expect(categoryOf("X / Twitter")).toBe("Social");
     expect(categoryOf("Email")).toBe("Email");
     expect(categoryOf("CookPilot")).toBe("Referral");
     expect(categoryOf("Direct / Unknown")).toBe("Direct");
@@ -181,6 +228,8 @@ describe("?ref= tags", () => {
   it("resolves a recognized word tag", () => {
     expect(land("/?ref=newsletter").source).toBe("Email");
     expect(land("/?ref=cookpilot").source).toBe("CookPilot");
+    // Product Hunt appends this to every outbound link on a listing.
+    expect(land("/?ref=producthunt").source).toBe("Product Hunt");
   });
 
   it("declines an unrecognized code rather than inventing a source", () => {
@@ -208,6 +257,8 @@ describe("android in-app browsers", () => {
     expect(land("/", "android-app://com.facebook.katana").source).toBe("Facebook");
     expect(land("/", "android-app://com.google.android.gm").source).toBe("Email");
     expect(land("/", "android-app://com.reddit.frontpage").source).toBe("Reddit");
+    expect(land("/", "android-app://com.twitter.android").source).toBe("X / Twitter");
+    expect(land("/", "android-app://com.linkedin.android").source).toBe("LinkedIn");
   });
 
   it("still calls an unknown app a Referral, not Direct", () => {

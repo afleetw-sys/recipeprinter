@@ -38,12 +38,31 @@ export type KnownTrafficSource =
   | "Microsoft Copilot"
   | "Pinterest"
   | "Reddit"
+  | "Hacker News"
   | "Facebook"
   | "Instagram"
+  | "X / Twitter"
+  | "Threads"
+  | "Bluesky"
+  | "LinkedIn"
+  | "TikTok"
+  | "YouTube"
+  | "Product Hunt"
   | "Peerlist"
   | "PeerPush"
   | "Uneed"
   | "UI Comet"
+  | "Fazier"
+  | "MicroLaunch"
+  | "TinyLaunch"
+  | "Startup Fame"
+  | "BetaList"
+  | "Indie Hackers"
+  | "SaaSHub"
+  | "AlternativeTo"
+  | "Mobbin"
+  | "Land-book"
+  | "Godly"
   | "Email"
   | "CookPilot"
   | "Shared Card"
@@ -81,14 +100,53 @@ export const REFERRER_RULES: ReadonlyArray<{
   { source: "Reddit", pattern: /(^|\.)reddit\.com$/ },
   { source: "Facebook", pattern: /(^|\.)(facebook\.com|fb\.com|fb\.me)$/ },
   { source: "Instagram", pattern: /(^|\.)instagram\.com$/ },
+  // X still serves both hostnames, and every link posted to it is rewritten to
+  // a `t.co` shim — which is where the referrer comes from, so without that
+  // third alternative the entire channel reads as a generic "Referral" on
+  // exactly the days a launch is being amplified there.
+  { source: "X / Twitter", pattern: /(^|\.)(x\.com|twitter\.com|t\.co)$/ },
+  { source: "Threads", pattern: /(^|\.)threads\.(net|com)$/ },
+  { source: "Bluesky", pattern: /(^|\.)bsky\.(app|social)$/ },
+  { source: "LinkedIn", pattern: /(^|\.)(linkedin\.com|lnkd\.in)$/ },
+  { source: "TikTok", pattern: /(^|\.)tiktok\.com$/ },
+  { source: "YouTube", pattern: /(^|\.)(youtube\.com|youtu\.be)$/ },
+  // Show HN is a launch channel wearing a forum's clothes: one dated spike,
+  // no permanent listing. Bucketed under Launch for that reason (see
+  // TrafficCategory) even though the site itself is a community.
+  // Anchored on the news subdomain and the HN search mirror — a click from
+  // `ycombinator.com` itself is YC, not Hacker News.
+  { source: "Hacker News", pattern: /^(news\.ycombinator\.com|hn\.algolia\.com|hckrnews\.com)$/ },
   // --- Launch / discovery platforms. Both send a burst of traffic on launch
   // day and then a long tail from the permanent listing, which is exactly the
   // shape that gets lost inside a generic "Referral".
   // Peerlist launches send traffic from the post and the profile alike, and
   // its share links keep the referrer on peerlist.io.
+  // Product Hunt is the big one: launch-day traffic arrives from the post, and
+  // the listing keeps sending clicks for months. Its outbound links also tag
+  // themselves `?ref=producthunt` and hop through `producthunt.com/r/<id>`,
+  // both of which resolve to this same name (see UTM_SOURCE_ALIASES).
+  { source: "Product Hunt", pattern: /(^|\.)producthunt\.com$/ },
   { source: "Peerlist", pattern: /(^|\.)peerlist\.io$/ },
   { source: "PeerPush", pattern: /(^|\.)peerpush\.net$/ },
   { source: "Uneed", pattern: /(^|\.)uneed\.best$/ },
+  { source: "Fazier", pattern: /(^|\.)fazier\.com$/ },
+  { source: "MicroLaunch", pattern: /(^|\.)microlaunch\.net$/ },
+  { source: "TinyLaunch", pattern: /(^|\.)tinylaun\.ch$/ },
+  { source: "Startup Fame", pattern: /(^|\.)startupfame\.com$/ },
+  { source: "BetaList", pattern: /(^|\.)betalist\.com$/ },
+  { source: "Indie Hackers", pattern: /(^|\.)indiehackers\.com$/ },
+  // Directories rather than launch-day feeds: no spike, but a listing that
+  // ranks and sends a steady trickle. Same bucket, because the question they
+  // answer is the same one ("did submitting us anywhere do anything").
+  { source: "SaaSHub", pattern: /(^|\.)saashub\.com$/ },
+  { source: "AlternativeTo", pattern: /(^|\.)alternativeto\.net$/ },
+  // Design galleries. Mobbin indexes real product screens (it moved from
+  // mobbin.design to mobbin.com and both still resolve), Land-book and Godly
+  // index marketing pages. Their traffic is designers browsing, which is a
+  // different visitor than a launch feed sends, so each keeps its own name.
+  { source: "Mobbin", pattern: /(^|\.)mobbin\.(com|design)$/ },
+  { source: "Land-book", pattern: /(^|\.)land-book\.com$/ },
+  { source: "Godly", pattern: /(^|\.)godly\.website$/ },
   // UI Comet's launch feed lives on `launches.uicomet.com`; the studio's own
   // site is the apex, and either can send a click.
   { source: "UI Comet", pattern: /(^|\.)uicomet\.com$/ },
@@ -102,6 +160,12 @@ export const REFERRER_RULES: ReadonlyArray<{
   { source: "Pinterest", pattern: /^com\.pinterest$/ },
   { source: "Reddit", pattern: /^com\.reddit\.frontpage$/ },
   { source: "ChatGPT", pattern: /^com\.openai\.chatgpt$/ },
+  { source: "X / Twitter", pattern: /^com\.twitter\.android$/ },
+  { source: "LinkedIn", pattern: /^com\.linkedin\.android$/ },
+  { source: "TikTok", pattern: /^com\.zhiliaoapp\.musically$/ },
+  { source: "YouTube", pattern: /^com\.google\.android\.youtube$/ },
+  // Threads ships under its codename, `barcelona`.
+  { source: "Threads", pattern: /^com\.instagram\.barcelona$/ },
   // The Gmail app is the one email client that announces itself. Gmail on the
   // WEB cannot be told apart from search — see `classifyTrafficSource`.
   { source: "Email", pattern: /^com\.google\.android\.gm$/ },
@@ -133,10 +197,33 @@ export const UTM_SOURCE_ALIASES: ReadonlyArray<{
   { source: "Reddit", keywords: ["reddit"] },
   { source: "Facebook", keywords: ["facebook", "fb", "meta"] },
   { source: "Instagram", keywords: ["instagram", "ig"] },
+  // No bare "x" or "yt": these keywords are also matched as substrings, and a
+  // one- or two-letter token would swallow half the campaign tags we ever set.
+  { source: "X / Twitter", keywords: ["twitter", "x.com", "t.co"] },
+  { source: "Threads", keywords: ["threads"] },
+  { source: "Bluesky", keywords: ["bluesky", "bsky"] },
+  { source: "LinkedIn", keywords: ["linkedin"] },
+  { source: "TikTok", keywords: ["tiktok"] },
+  { source: "YouTube", keywords: ["youtube"] },
+  { source: "Hacker News", keywords: ["hackernews", "hacker-news", "hacker_news", "ycombinator"] },
+  // Product Hunt tags its own outbound links `?ref=producthunt`, which lands
+  // here rather than in the referrer rules.
+  { source: "Product Hunt", keywords: ["producthunt", "product-hunt", "product_hunt"] },
   { source: "Peerlist", keywords: ["peerlist"] },
   { source: "PeerPush", keywords: ["peerpush"] },
   { source: "Uneed", keywords: ["uneed"] },
   { source: "UI Comet", keywords: ["uicomet", "ui-comet"] },
+  { source: "Fazier", keywords: ["fazier"] },
+  { source: "MicroLaunch", keywords: ["microlaunch", "micro-launch"] },
+  { source: "TinyLaunch", keywords: ["tinylaunch", "tiny-launch", "tinylaun"] },
+  { source: "Startup Fame", keywords: ["startupfame", "startup-fame"] },
+  { source: "BetaList", keywords: ["betalist", "beta-list"] },
+  { source: "Indie Hackers", keywords: ["indiehackers", "indie-hackers"] },
+  { source: "SaaSHub", keywords: ["saashub"] },
+  { source: "AlternativeTo", keywords: ["alternativeto", "alternative-to"] },
+  { source: "Mobbin", keywords: ["mobbin"] },
+  { source: "Land-book", keywords: ["land-book", "landbook"] },
+  { source: "Godly", keywords: ["godly"] },
   { source: "Email", keywords: ["email", "e-mail", "newsletter", "klaviyo", "mailchimp", "substack"] },
   { source: "CookPilot", keywords: ["cookpilot"] },
   // Our own share links (see components/AdminShareLinkDialog).
@@ -203,10 +290,31 @@ const CATEGORY_BY_SOURCE: Readonly<Record<KnownTrafficSource, TrafficCategory>> 
   Reddit: "Social",
   Facebook: "Social",
   Instagram: "Social",
+  "X / Twitter": "Social",
+  Threads: "Social",
+  Bluesky: "Social",
+  LinkedIn: "Social",
+  TikTok: "Social",
+  YouTube: "Social",
+  // Hacker News sits in Launch, not Social: a Show HN is one dated spike, the
+  // exact shape that would distort the organic-social trend line.
+  "Hacker News": "Launch",
+  "Product Hunt": "Launch",
   Peerlist: "Launch",
   PeerPush: "Launch",
   Uneed: "Launch",
   "UI Comet": "Launch",
+  Fazier: "Launch",
+  MicroLaunch: "Launch",
+  TinyLaunch: "Launch",
+  "Startup Fame": "Launch",
+  BetaList: "Launch",
+  "Indie Hackers": "Launch",
+  SaaSHub: "Launch",
+  AlternativeTo: "Launch",
+  Mobbin: "Launch",
+  "Land-book": "Launch",
+  Godly: "Launch",
   Email: "Email",
   CookPilot: "Referral",
   "Shared Card": "Referral",
