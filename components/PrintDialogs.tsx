@@ -1,7 +1,8 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import { ICON_SIZE, TrashIcon, XIcon } from "@/components/icons";
+import { ConfirmDialog } from "@/components/ConfirmDialog";
 import { Dialog } from "@/components/Dialog";
 
 const COFFEE_URL = "https://buymeacoffee.com/recipeprinter";
@@ -32,16 +33,9 @@ export function PrintDialogs({
   onConfirmDeleteRecipe: () => void;
   onConfirmDeleteSectionRecipes?: () => void;
 }) {
-  const deleteButtonRef = useRef<HTMLButtonElement | null>(null);
   const [alsoDeleteSectionRecipes, setAlsoDeleteSectionRecipes] = useState(false);
   const showSectionRecipeCheckbox =
     sectionRecipeCount !== undefined && sectionRecipeCount > 0 && Boolean(onConfirmDeleteSectionRecipes);
-  // Runs after the Dialog's own mount-time focus (which grabs the first
-  // focusable element — the X close button) so Enter defaults to actually
-  // deleting rather than just closing, per the request that drove this dialog.
-  useEffect(() => {
-    if (showDeleteRecipeDialog) deleteButtonRef.current?.focus();
-  }, [showDeleteRecipeDialog]);
   useEffect(() => {
     if (showDeleteRecipeDialog) setAlsoDeleteSectionRecipes(false);
   }, [showDeleteRecipeDialog, sectionRecipeCount]);
@@ -84,7 +78,19 @@ export function PrintDialogs({
             </div>
             <h2 id="print-success-title">Ready for your counter, binder, or fridge door.</h2>
             <p>Support and feedback help me make RecipePrinter better.</p>
+            {/* Quieter action left, primary right — the order every dialog
+                in the app reads in. */}
             <div className="print-success-dialog__actions">
+              <button
+                type="button"
+                className="btn btn-ghost"
+                onClick={() => {
+                  onCloseDonateDialog();
+                  onOpenFeedbackDialog();
+                }}
+              >
+                Leave feedback
+              </button>
               <a
                 href={COFFEE_URL}
                 target="_blank"
@@ -102,63 +108,32 @@ export function PrintDialogs({
                 />
                 Support RecipePrinter
               </a>
-              <button
-                type="button"
-                className="btn btn-ghost"
-                onClick={() => {
-                  onCloseDonateDialog();
-                  onOpenFeedbackDialog();
-                }}
-              >
-                Leave feedback
-              </button>
             </div>
       </Dialog>
-      <Dialog
+      {/* The shared confirm, not a second one built on the panel above. */}
+      <ConfirmDialog
         open={showDeleteRecipeDialog}
-        onClose={onCancelDeleteRecipe}
-        labelledBy="recipe-delete-title"
-        className="print-success-dialog no-print"
-        backdropClassName="print-success-dialog__backdrop"
-        panelClassName="print-success-dialog__panel"
+        title={`Delete ${deleteItemTitle}?`}
+        description={deleteItemDescription}
+        confirmLabel={deletePrimaryLabel ?? "Delete"}
+        confirmIcon={<TrashIcon size={ICON_SIZE.md} />}
+        autoFocusConfirm
+        onCancel={onCancelDeleteRecipe}
+        onConfirm={confirmDelete}
       >
-            <button
-              type="button"
-              className="print-success-dialog__close icon-close-btn"
-              aria-label="Close"
-              onClick={onCancelDeleteRecipe}
-            >
-              <XIcon size={ICON_SIZE.md} />
-            </button>
-            <h2 id="recipe-delete-title">Delete {deleteItemTitle}?</h2>
-            <p>{deleteItemDescription}</p>
-            {showSectionRecipeCheckbox && (
-              <label className="print-success-dialog__checkbox">
-                <input
-                  type="checkbox"
-                  checked={alsoDeleteSectionRecipes}
-                  onChange={(event) => setAlsoDeleteSectionRecipes(event.target.checked)}
-                />
-                <span>
-                  Also delete the {sectionRecipeCount} recipe{sectionRecipeCount === 1 ? "" : "s"} in this section
-                </span>
-              </label>
-            )}
-            <div className="print-success-dialog__actions">
-              <button type="button" className="btn btn-ghost" onClick={onCancelDeleteRecipe}>
-                Cancel
-              </button>
-              <button
-                ref={deleteButtonRef}
-                type="button"
-                className="btn btn-danger"
-                onClick={confirmDelete}
-              >
-                <TrashIcon size={ICON_SIZE.md} />
-                {deletePrimaryLabel ?? "Delete"}
-              </button>
-            </div>
-      </Dialog>
+        {showSectionRecipeCheckbox && (
+          <label className="confirm-dialog__checkbox">
+            <input
+              type="checkbox"
+              checked={alsoDeleteSectionRecipes}
+              onChange={(event) => setAlsoDeleteSectionRecipes(event.target.checked)}
+            />
+            <span>
+              Also delete the {sectionRecipeCount} recipe{sectionRecipeCount === 1 ? "" : "s"} in this chapter
+            </span>
+          </label>
+        )}
+      </ConfirmDialog>
       {/* The "switch back to recipe cards?" confirm lived here. It is gone:
           before a book is bought the switch is reversible exploration and has
           nothing to warn about, and once bought there is no switch at all —

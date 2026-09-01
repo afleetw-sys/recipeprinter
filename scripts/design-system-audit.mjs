@@ -73,30 +73,63 @@ const cssTargets = [
   {
     file: "app/print/print.css",
     ranges: [[1, 2750]],
-    // Use the selector rather than a line number: printable artwork above it
-    // legitimately uses physical-unit typography and grows as themes evolve.
-    trailingUiMarker: ".print-success-dialog {",
-    trailingUiEndMarker: "@page rp-card-6x4 {",
+    // Selectors rather than line numbers: printable artwork legitimately uses
+    // physical-unit typography and its own colours, and it grows as themes
+    // evolve, so any line number written here goes stale. Each pair is a run of
+    // application UI stranded inside that artwork.
+    markerRanges: [
+      // The image picker — a dialog, not artwork. It sat outside every audited
+      // range, which is why its backdrop kept a hand-mixed gray-900 scrim long
+      // after --cp-scrim existed to be the one scrim.
+      [".image-picker__trigger {", ".recipe-card__cover-photo--grid {"],
+      [".print-success-dialog {", "@page rp-card-6x4 {"],
+    ],
   },
 ];
+
+// Colours a stylesheet may still write by hand, with the reason. Anything else
+// belongs to a token: the palette is five values and white, and a literal is
+// how a sixth gets in without anyone deciding to add one.
+const allowedColorLiterals = new Map([
+  // The print reset. Physical paper and near-black toner, deliberately not the
+  // UI's card and ink — the screen palette has no say in what a printer does.
+  ["background: #fff !important;", "print reset"],
+  ["color: #1a1a1a !important;", "print reset"],
+]);
 
 for (const target of cssTargets) {
   const file = path.join(root, target.file);
   // Stripped before the marker search too, so a selector quoted in a comment
   // can't be mistaken for the section boundary it names.
   const lines = scannableLines(file, fs.readFileSync(file, "utf8"));
-  const trailingUiStart = target.trailingUiMarker
-    ? lines.findIndex((line) => line.trim() === target.trailingUiMarker) + 1
-    : Infinity;
-  const trailingUiEnd = target.trailingUiEndMarker
-    ? lines.findIndex((line) => line.trim() === target.trailingUiEndMarker) + 1
-    : Infinity;
+  const at = (marker) => {
+    const index = lines.findIndex((line) => line.trim() === marker);
+    if (index < 0) throw new Error(`${target.file}: section marker not found: ${marker}`);
+    return index + 1;
+  };
+  const audited = [
+    ...target.ranges,
+    ...(target.markerRanges ?? []).map(([from, to]) => [at(from), at(to) - 1]),
+  ];
+  // The property each line belongs to, carried across line breaks. A colour
+  // literal means something entirely different depending on its property, and
+  // the declaration that owns it is often three lines up: the rail thumbnail's
+  // `mask-image` opens on one line and its two gradients sit on the next two,
+  // so a line-local check read those masks as four stray blacks.
+  const propertyByLine = [];
+  let open = null;
+  for (const line of lines) {
+    const property = open ?? line.match(/([\w-]+)\s*:/)?.[1] ?? null;
+    propertyByLine.push(property);
+    // A declaration runs until its semicolon, however many lines that takes.
+    // Closing on "the line held no colon" instead was wrong in exactly the case
+    // this exists for: a mask's second gradient sits on a line with no colon of
+    // its own, so the property was dropped one line before it was needed.
+    open = /[;{}]/.test(line) ? null : property;
+  }
   lines.forEach((line, index) => {
     const lineNumber = index + 1;
-    if (
-      !target.ranges.some(([start, end]) => lineNumber >= start && lineNumber <= end) &&
-      (lineNumber < trailingUiStart || lineNumber >= trailingUiEnd)
-    ) return;
+    if (!audited.some(([start, end]) => lineNumber >= start && lineNumber <= end)) return;
     const font = line.match(/font-size\s*:\s*([^;]+)/)?.[1].trim();
     // `em` (relative sizing inside printed artwork) is exempt; `rem` is NOT.
     // A bare `endsWith("em")` also matched every `rem` literal in the codebase,
@@ -108,6 +141,24 @@ for (const target of cssTargets) {
     const shadow = line.match(/box-shadow\s*:\s*([^;]+)/)?.[1].trim();
     if (shadow && !shadow.startsWith("var(--cp-") && shadow !== "none" && !shadow.startsWith("0 0 0")) {
       report(file, lineNumber, "use a --cp-shadow-* elevation token");
+    }
+    // A hand-written colour in application CSS. The .tsx pass has caught
+    // `bg-[#...]` for a while; the CSS pass checked type, elevation and
+    // undefined var() names but never colour, which is the blind spot five
+    // dialog scrims lived in — two off-palette tints (slate-900 and gray-900)
+    // across four blur radii, all of them meaning "dim the page behind this".
+    //
+    // Two properties are exempt by name. A custom property is where a literal
+    // BELONGS: `:root` is the palette, and forbidding hex there would leave the
+    // colours nowhere to be written down. A mask's #000 is an alpha stencil
+    // rather than a colour — nothing about it follows the palette.
+    const property = propertyByLine[index] ?? "";
+    const exempt = property.startsWith("--") || /mask/.test(property);
+    if (!exempt && !allowedColorLiterals.has(line.trim())) {
+      const literal = line.match(/#[0-9a-fA-F]{3,8}\b|\brgba?\([^)]*\)/)?.[0];
+      if (literal && /(?:background|color|border|outline|fill|stroke|box-shadow|-color)\s*:|color-mix|gradient/.test(line)) {
+        report(file, lineNumber, `use a --cp-* colour token, not ${literal}`);
+      }
     }
   });
 }

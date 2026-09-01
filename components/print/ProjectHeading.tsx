@@ -1,8 +1,9 @@
 "use client";
 
-import { useEffect, useLayoutEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
 import { ChevronDownIcon, ICON_SIZE } from "@/components/icons";
 import { SegmentedControl } from "@/components/Controls";
+import { useMenuDismiss } from "@/lib/useMenuDismiss";
 
 /**
  * What you are looking at, in the middle of the bar: its name, and what kind of
@@ -49,21 +50,8 @@ export function ProjectHeading({
     inputRef.current?.select();
   }, [editing]);
 
-  useEffect(() => {
-    if (!menuOpen) return;
-    const onDown = (event: MouseEvent) => {
-      if (!menuRef.current?.contains(event.target as Node)) setMenuOpen(false);
-    };
-    const onKey = (event: KeyboardEvent) => {
-      if (event.key === "Escape") setMenuOpen(false);
-    };
-    document.addEventListener("mousedown", onDown);
-    document.addEventListener("keydown", onKey);
-    return () => {
-      document.removeEventListener("mousedown", onDown);
-      document.removeEventListener("keydown", onKey);
-    };
-  }, [menuOpen]);
+  const closeMenu = useCallback(() => setMenuOpen(false), []);
+  useMenuDismiss(menuRef, closeMenu, { enabled: menuOpen });
 
   function commit() {
     setEditing(false);
@@ -175,19 +163,19 @@ export function ProjectHeading({
         </button>
 
         {menuOpen && (
-          <div className="rp-project-heading__menu" role="menu">
+          <div className="cp-menu rp-project-heading__menu" role="menu">
             <button
               type="button"
               role="menuitemradio"
               aria-checked={!cookbookMode}
-              className={`rp-project-heading__option ${!cookbookMode ? "is-active" : ""}`}
+              className={`cp-menu__item cp-menu__item--stacked ${!cookbookMode ? "is-active" : ""}`}
               onClick={() => {
                 setMenuOpen(false);
                 if (cookbookMode) onSwitchToCards();
               }}
             >
-              <span className="rp-project-heading__option-name">Recipe cards</span>
-              <span className="rp-project-heading__option-note">
+              <span className="cp-menu__label">Recipe cards</span>
+              <span className="cp-menu__note">
                 One card per recipe, free to print.
               </span>
             </button>
@@ -197,14 +185,14 @@ export function ProjectHeading({
                 type="button"
                 role="menuitemradio"
                 aria-checked={cookbookMode}
-                className={`rp-project-heading__option ${cookbookMode ? "is-active" : ""}`}
+                className={`cp-menu__item cp-menu__item--stacked ${cookbookMode ? "is-active" : ""}`}
                 onClick={() => {
                   setMenuOpen(false);
                   if (!cookbookMode) onSwitchToCookbook();
                 }}
               >
-                <span className="rp-project-heading__option-name">Cookbook</span>
-                <span className="rp-project-heading__option-note">
+                <span className="cp-menu__label">Cookbook</span>
+                <span className="cp-menu__note">
                   A bound book with a cover and chapters.
                 </span>
               </button>

@@ -257,6 +257,10 @@ export interface PrintProjectSettings {
   doubleSided: boolean;
   showPhoto: boolean;
   showSourceUrl: boolean;
+  /** Cookbook only: print each recipe's description under its title. On for
+      projects saved before the toggle existed, which is what they looked
+      like. */
+  showDescription?: boolean;
   showCutLines: boolean;
   /** Book-only settings — stay undefined/off until "Make it a cookbook" has
       been used to opt into the cookbook experience. */

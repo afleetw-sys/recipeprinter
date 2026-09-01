@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { ImportPanel } from "@/components/ImportPanel";
@@ -18,6 +18,7 @@ import { useProjectMeta } from "@/lib/project";
 import { fileProjectLocally } from "@/lib/localProjects";
 import { takePendingImport } from "@/lib/pendingImport";
 import type { ImportTab } from "@/types/recipe";
+import { useMenuDismiss } from "@/lib/useMenuDismiss";
 
 // The interactive heart of RecipePrinter: importing recipes and managing the
 // print queue. Split out from the homepage so the page itself can stay a server
@@ -191,20 +192,8 @@ export function PrinterWorkspace({
     setMobileQueueOpen(true);
   }, [hydrated, items.length]);
 
-  useEffect(() => {
-    function onPointerDown(event: PointerEvent) {
-      if (!menuRef.current?.contains(event.target as Node)) setMenuOpen(false);
-    }
-    function onKeyDown(event: KeyboardEvent) {
-      if (event.key === "Escape") setMenuOpen(false);
-    }
-    document.addEventListener("pointerdown", onPointerDown);
-    document.addEventListener("keydown", onKeyDown);
-    return () => {
-      document.removeEventListener("pointerdown", onPointerDown);
-      document.removeEventListener("keydown", onKeyDown);
-    };
-  }, []);
+  const closeMenu = useCallback(() => setMenuOpen(false), []);
+  useMenuDismiss(menuRef, closeMenu, { enabled: menuOpen });
 
   // Print takes them to the print preview, where they can review the layout and
   // trigger the actual print from the browser dialog.
@@ -267,11 +256,11 @@ export function PrinterWorkspace({
                 </button>
 
                 {menuOpen && (
-                  <div className="mode-toggle-menu mode-toggle-menu--compact" role="menu" aria-label="Recipe list actions">
+                  <div className="cp-menu mode-toggle-menu" role="menu" aria-label="Recipe list actions">
                     <button
                       type="button"
                       role="menuitem"
-                      className="mode-toggle-menu__item mode-toggle-menu__item--danger"
+                      className="cp-menu__item cp-menu__item--danger"
                       onClick={() => {
                         startOver();
                         setMenuOpen(false);

@@ -73,8 +73,6 @@
   --cp-on-accent: var(--cp-card);
   --cp-on-accent-warm: var(--cp-card);
   --cp-blue: var(--cp-accent);
-  --cp-teal: #4a6fa8;
-  --cp-mint: #4a6fa8;
   --cp-ink: #22303a;
   /* Stone, exactly as the palette specifies. It was darkened for a while to
      survive sitting on --cp-surface-strong (4.27:1 there), but that was fixing
@@ -92,7 +90,9 @@
   /* Reserved for non-field error surfaces such as failed import queue cards. */
   --cp-error-soft: color-mix(in srgb, var(--cp-error) 6%, transparent);
   --cp-error-border: color-mix(in srgb, var(--cp-error) 16%, transparent);
-  --cp-body-background: #f4f7f3;
+  /* The body is the page. Two names for one colour is how they drift apart,
+     and a second literal is a second thing to remember to change. */
+  --cp-body-background: var(--cp-page);
   /* Neutral UI-chrome values (not palette colours): hover overlays and muted
      surfaces, tokenized so chrome stops hardcoding them. Values unchanged. */
   --cp-overlay-hover: rgba(34, 48, 58, 0.06);
@@ -109,11 +109,18 @@
      exactly the two-different-greys mismatch that made the header look
      unfinished. */
   --cp-surface-soft: color-mix(in srgb, var(--cp-ink) 1%, var(--cp-page));
-  /* The studio's middle column. Near-white rather than the page's blue-grey:
-     the deck is a stack of white pages, and a tinted ground behind them made
-     the paper look tinted too. Light enough to read as "white", dark enough
-     that a page's own edge still shows against it. */
-  --cp-deck-ground: color-mix(in srgb, var(--cp-ink) 2%, var(--cp-card));
+  /* The studio's CHROME: the top bar, the page rail, the settings panel — the
+     frame around the work, not the work. Near-white, a step off both the page
+     tint the deck now carries and the white of the pages themselves, so the
+     three read as three things.
+
+     This was the deck's own ground until the tint arrived, on the argument
+     that a tinted ground behind white pages made the paper look tinted. The
+     opposite turned out to be true at this tint: the deck sat white-on-white
+     with the pages and the frame competed with both. So the roles swapped —
+     the deck takes --cp-page and the pages sit ON something, and this value
+     went to the frame, where a near-white that recedes is exactly the job. */
+  --cp-chrome-ground: color-mix(in srgb, var(--cp-ink) 2%, var(--cp-card));
   --cp-surface-strong-hover: color-mix(in srgb, var(--cp-ink) 14%, var(--cp-page));
 
   /* ── Font-size scale ──────────────────────────────────────────────────────
@@ -405,6 +412,39 @@
   backdrop-filter: var(--cp-scrim-blur);
 }
 
+/* An extra choice inside a confirm dialog — today "also delete the recipes in
+   this chapter". A slot in the shared ConfirmDialog rather than one dialog's
+   private class, which is where it lived when that dialog was private too. */
+.confirm-dialog__checkbox {
+  display: grid;
+  grid-template-columns: 18px minmax(0, 1fr);
+  align-items: start;
+  gap: 9px;
+  margin-top: 16px;
+  padding: 12px;
+  border: 1px solid var(--cp-line);
+  border-radius: 12px;
+  background: color-mix(in srgb, var(--cp-page) 72%, var(--cp-card));
+  color: var(--cp-ink);
+  font-size: var(--cp-fs-caption);
+  font-weight: 700;
+  line-height: 1.35;
+  text-align: left;
+}
+.confirm-dialog__checkbox input {
+  margin-top: 2px;
+  accent-color: var(--cp-accent);
+}
+
+/* The same scrim for dialogs whose root paints it directly rather than through
+   a backdrop element — the Tailwind-styled ones, which had no way to reach
+   `--cp-scrim` from a utility class and so kept hand-mixed dims of their own
+   (`bg-black/35` on the confirm, `bg-ink/30` on the three form dialogs). */
+.dialog-scrim {
+  background: var(--cp-scrim);
+  backdrop-filter: var(--cp-scrim-blur);
+}
+
 @media (max-width: 760px) {
 }
 .cookbook-welcome__panel,
@@ -571,6 +611,9 @@
 }
 .cookbook-welcome__actions {
   display: flex;
+  /* Right, like every other dialog's actions. The way out sits left of the
+     way forward (see the buttons' order in CookbookWelcomeDialog). */
+  justify-content: flex-end;
   align-items: center;
   gap: .5rem;
   margin-top: .1rem;
@@ -1603,57 +1646,10 @@
     position: absolute;
     top: calc(100% + 8px);
     left: 0;
-    z-index: 20;
     width: max-content;
-    max-width: min(20rem, calc(100vw - 2rem));
-    padding: 6px;
-    border: 1px solid var(--cp-line);
-    border-radius: 12px;
-    background: var(--cp-card);
-    box-shadow: var(--cp-shadow-lg);
+    max-width: min(20rem, calc(100vw - 32px));
   }
 
-  .rp-project-heading__option {
-    @apply flex w-full flex-col rounded text-left transition-colors;
-    gap: 1px;
-    padding: 8px 10px;
-    border: 1px solid transparent;
-    background: transparent;
-  }
-
-  .rp-project-heading__option:hover {
-    background: var(--cp-surface-muted);
-  }
-
-  .rp-project-heading__option.is-active {
-    border-color: var(--cp-selected-border);
-    background: var(--cp-selected-fill);
-    box-shadow: var(--cp-selected-ring);
-  }
-
-  .rp-project-heading__option.is-active .rp-project-heading__option-name {
-    color: var(--cp-selected-text);
-  }
-
-  .rp-project-heading__option:focus-visible {
-    border-color: var(--cp-accent);
-    outline: none;
-  }
-
-  .rp-project-heading__option-name {
-    @apply font-bold;
-    font-size: var(--cp-fs-small);
-    color: var(--cp-ink);
-  }
-
-  .rp-project-heading__option-note {
-    font-size: var(--cp-fs-caption);
-    color: var(--cp-ink-soft);
-    line-height: 1.4;
-  }
-
-  /* How the project stands, sitting to the left of Print. Quiet by default;
-     the failure state is the only one that asks for anything. */
   .rp-save-state {
     @apply inline-flex items-center gap-1 whitespace-nowrap border-0 bg-transparent;
     font-size: var(--cp-fs-caption);
@@ -1667,6 +1663,113 @@
     text-underline-offset: 2px;
   }
 
+  /* ── Menus ────────────────────────────────────────────────────────────────
+     One surface for every popover list in the app: the rail's right-click and
+     Add menus, the organizer's Sort, the deck's Zoom, the project-kind picker,
+     the import overflow. There were six, and the three densest were already
+     byte-identical — same padding, same radius, same 7px gap, same caption/700
+     rows — just written out three times under three names, next to three
+     others that had each picked a different radius and shadow.
+
+     What a caller still owns is WHERE it opens: absolute under a trigger,
+     fixed and placed from JS, or portalled to the body. That genuinely differs
+     and is not a style. Everything you can see is here.
+
+     Behaviour has a matching home: `useMenuDismiss` (lib/useMenuDismiss.ts)
+     closes on an outside press, Escape, scroll or resize, which each of the
+     six also used to re-implement, and not all of them the same way. */
+  .cp-menu {
+    z-index: var(--z-menu);
+    padding: 6px;
+    border: 1px solid var(--cp-line);
+    border-radius: 10px;
+    background: var(--cp-card);
+    box-shadow: var(--cp-shadow-md);
+    text-align: left;
+  }
+
+  /* Names what the list acts on. Not a row — nothing here is clickable. */
+  .cp-menu__heading {
+    padding: 6px 9px 4px;
+    color: var(--cp-ink-soft);
+    font-size: var(--cp-fs-label);
+    font-weight: 700;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .cp-menu__item {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    width: 100%;
+    min-height: 32px;
+    padding: 8px 9px;
+    border: 1px solid transparent;
+    border-radius: 7px;
+    background: transparent;
+    color: var(--cp-ink);
+    font-size: var(--cp-fs-caption);
+    font-weight: 700;
+    text-align: left;
+    cursor: pointer;
+    transition: background-color 120ms ease, border-color 120ms ease;
+  }
+
+  .cp-menu__item:hover:not(:disabled) {
+    background: var(--cp-overlay-hover);
+  }
+
+  /* The single-select convention, same tokens as every other one-of-many
+     control in the app. */
+  .cp-menu__item.is-active {
+    border-color: var(--cp-selected-border);
+    background: var(--cp-selected-fill);
+    color: var(--cp-selected-text);
+  }
+
+  /* A row that stacks a label over an explanatory line. */
+  .cp-menu__item--stacked {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 1px;
+  }
+
+  /* The row's own label, when a note sits under it. */
+  .cp-menu__label {
+    font-size: var(--cp-fs-small);
+    font-weight: 700;
+    color: inherit;
+  }
+
+  .cp-menu__note {
+    color: var(--cp-ink-soft);
+    font-size: var(--cp-fs-caption);
+    font-weight: 600;
+    line-height: 1.4;
+  }
+
+  .cp-menu__item.is-active .cp-menu__note {
+    color: var(--cp-selected-text);
+  }
+
+  /* Makes something rather than picking something, so it is not one more row
+     in the list of things you can pick. */
+  .cp-menu__item--make {
+    margin-top: 4px;
+    padding-top: 10px;
+    border-top: 1px solid var(--cp-line);
+    border-radius: 0 0 7px 7px;
+  }
+
+  /* Thumb-sized rows, for menus that open from the phone toolbars. */
+  .cp-menu--touch .cp-menu__item {
+    min-height: 44px;
+    padding: 8px 10px;
+    font-size: var(--cp-fs-small);
+  }
+
   .mode-toggle-overflow {
     position: relative;
   }
@@ -1674,50 +1777,23 @@
     position: absolute;
     top: calc(100% + 8px);
     right: 0;
-    z-index: 20;
     min-width: 190px;
-    padding: 6px;
-    border: 1px solid var(--cp-line);
-    border-radius: 12px;
-    background: var(--cp-card);
-    box-shadow: var(--cp-shadow-lg);
   }
-  .mode-toggle-menu__item {
-    @apply flex w-full items-center gap-2 rounded text-left font-bold transition-colors;
-    min-height: 44px;
-    padding: 0 14px;
-    font-size: var(--cp-fs-body);
-    color: var(--cp-ink);
-  }
-  .mode-toggle-menu__item svg,
-  .mode-toggle-menu__item img {
+  .mode-toggle-menu .cp-menu__item svg,
+  .mode-toggle-menu .cp-menu__item img {
     flex: 0 0 auto;
     width: 18px;
     height: 18px;
   }
-  /* Hover is a neutral tint; the accent selected-fill is reserved for the
-     actually-active row, so in a menu where one item is already selected the
-     hovered row and the selected row read as different states. */
-  .mode-toggle-menu__item:hover {
-    background: color-mix(in srgb, var(--cp-ink) 8%, transparent);
-  }
-  .mode-toggle-menu__item.is-active {
-    background: var(--cp-selected-fill);
-    color: var(--cp-selected-text);
-  }
   /* Destructive menu row (Clear all) — same --cp-error red as .btn-danger. */
-  .mode-toggle-menu__item--danger {
+  .cp-menu__item--danger {
     color: var(--cp-error);
   }
-  .mode-toggle-menu__item--danger:hover {
+  .cp-menu__item--danger:hover:not(:disabled) {
     color: var(--cp-error);
     background: color-mix(in srgb, var(--cp-error) 10%, transparent);
   }
-  .mode-toggle-menu--compact .mode-toggle-menu__item {
-    min-height: 40px;
-    padding: 0 10px;
-    font-size: var(--cp-fs-caption);
-  }
+
   /* ── Image dropzone (mirrors .cp-image-import__button) ────────────────── */
   .dropzone {
     @apply flex flex-col items-center justify-center gap-2.5 rounded text-center font-bold

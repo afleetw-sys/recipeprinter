@@ -1,6 +1,7 @@
 "use client";
 
 import {
+  useCallback,
   useEffect,
   useRef,
   useState,
@@ -34,6 +35,7 @@ import {
   UploadIcon,
 } from "@/components/icons";
 import { ButtonToggle } from "@/components/ButtonToggle";
+import { useMenuDismiss } from "@/lib/useMenuDismiss";
 
 // Compact import switch: a link and the recipe apps are first-class;
 // lower-frequency sources live behind an overflow menu so the workspace rail
@@ -140,24 +142,8 @@ export function ImportPanel({
   // Inside the add dialog that rule inverts — see `showAllModes`.
   const expanded = showAllModes || items.length === 0;
 
-  useEffect(() => {
-    function onPointerDown(event: PointerEvent) {
-      if (!overflowRef.current?.contains(event.target as Node)) {
-        setOverflowOpen(false);
-      }
-    }
-
-    function onKeyDown(event: KeyboardEvent) {
-      if (event.key === "Escape") setOverflowOpen(false);
-    }
-
-    document.addEventListener("pointerdown", onPointerDown);
-    document.addEventListener("keydown", onKeyDown);
-    return () => {
-      document.removeEventListener("pointerdown", onPointerDown);
-      document.removeEventListener("keydown", onKeyDown);
-    };
-  }, []);
+  const closeOverflow = useCallback(() => setOverflowOpen(false), []);
+  useMenuDismiss(overflowRef, closeOverflow, { enabled: overflowOpen });
 
   function chooseMode(nextMode: ImportTab) {
     setMode(nextMode);
@@ -370,14 +356,14 @@ export function ImportPanel({
               </button>
 
               {overflowOpen && (
-                <div className="mode-toggle-menu mode-toggle-menu--compact" role="menu" aria-label="More import options">
+                <div className="cp-menu mode-toggle-menu" role="menu" aria-label="More import options">
                   {OVERFLOW_MODES.map(({ id, label, icon: Icon }) => (
                     <button
                       key={id}
                       type="button"
                       role="menuitemradio"
                       aria-checked={mode === id}
-                      className={`mode-toggle-menu__item ${mode === id ? "is-active" : ""}`}
+                      className={`cp-menu__item ${mode === id ? "is-active" : ""}`}
                       onClick={() => chooseMode(id)}
                     >
                       <Icon size={18} />

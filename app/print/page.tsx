@@ -36,7 +36,7 @@ import { PHOTO_STYLE_OPTIONS } from "@/components/print/photoStyle";
 import { MobileStructureSheet } from "@/components/print/MobileStructureSheet";
 import { PrintConfigPanel } from "@/components/print/PrintConfigPanel";
 import { PageRail, type RailSortMode } from "@/components/print/PageRail";
-import { PrintDeck, pendingSlotIndexIn } from "@/components/print/PrintDeck";
+import { DECK_ZOOM_STEPS, PrintDeck, pendingSlotIndexIn } from "@/components/print/PrintDeck";
 import {
   usePrintSheets,
   type NavItem,
@@ -232,6 +232,7 @@ function printProjectFingerprint(
   showPhoto: boolean,
   showSourceUrl: boolean,
   showCutLines: boolean,
+  showDescription: boolean,
 ): string {
   return JSON.stringify({
     items,
@@ -242,6 +243,7 @@ function printProjectFingerprint(
     showPhoto,
     showSourceUrl,
     showCutLines,
+    showDescription,
   });
 }
 
@@ -249,6 +251,8 @@ function printProjectFingerprint(
 /** How far the deck's zoom can travel either side of fit-to-window. */
 const DECK_ZOOM_MIN = 0.5;
 const DECK_ZOOM_MAX = 2;
+/** The same bounds, as the object the pinch gesture wants. */
+const DECK_ZOOM_BOUNDS = { min: DECK_ZOOM_MIN, max: DECK_ZOOM_MAX };
 
 export default function PrintPage() {
   useEffect(() => {
@@ -282,6 +286,9 @@ export default function PrintPage() {
      away. A stored preference still wins on the next visit. */
   const [showPhoto, setShowPhoto] = useState(true);
   const [showSourceUrl, setShowSourceUrl] = useState(false);
+  /* On by default: a description under the title is what every cookbook printed
+     before this toggle existed, so a book saved then must reopen unchanged. */
+  const [showDescription, setShowDescription] = useState(true);
   const [showDonateDialog, setShowDonateDialog] = useState(false);
   const [showCookbookOfferDialog, setShowCookbookOfferDialog] = useState(false);
   const [cookbookBuilding, setCookbookBuilding] = useState(false);
@@ -462,6 +469,8 @@ export default function PrintPage() {
     items?.some((item) => Boolean(item.recipe?.image)) ?? false;
   const anyRecipeHasSourceUrl =
     items?.some((item) => Boolean(item.recipe?.sourceUrl)) ?? false;
+  const anyRecipeHasDescription =
+    items?.some((item) => Boolean(item.recipe?.description?.trim())) ?? false;
   const cookbookMode = Boolean(projectMeta.meta.cookbookMode);
   /**
    * Is this project a DOCUMENT, or is it a print run?
@@ -504,6 +513,7 @@ export default function PrintPage() {
   // the per-page picker overrides individual recipes on top of it.
   const defaultFullPage = cookbookMode && photoStyle === "full";
   const sourceUrlOn = showSourceUrl && anyRecipeHasSourceUrl;
+  const descriptionOn = cookbookMode ? showDescription : true;
   // Distinct recipe photos, offered as cover-photo choices in the cover editor.
   const coverPhotoCandidates = useMemo(
     () =>
@@ -570,6 +580,7 @@ export default function PrintPage() {
     doubleSided,
     photosOn,
     sourceUrlOn,
+    descriptionOn,
     template,
   });
 
@@ -590,6 +601,7 @@ export default function PrintPage() {
   // in usePrintSheets against the committed frame), so there's no global
   // preview-photo flag to thread to the faces anymore.
   const previewSourceUrlOn = previewConfig?.sourceUrlOn ?? sourceUrlOn;
+  const previewDescriptionOn = previewConfig?.descriptionOn ?? descriptionOn;
 
   // Every named section has an opener page, so its divider nav item carries the
   // title and recipe rows never need a synthetic section header.
@@ -777,11 +789,11 @@ export default function PrintPage() {
             return {
               indicator: { top: rect.top, left: rect.left, width: rect.width },
               commit: () => {
-                const sectionId = projectMeta.addSection("New section");
+                const sectionId = projectMeta.addSection("New chapter");
                 projectMeta.moveItems(movingIds, sectionId, 0);
                 clearRailSelection();
                 setEditingSectionId(sectionId);
-                setEditingSectionTitle("New section");
+                setEditingSectionTitle("New chapter");
                 setPendingFocusNavId(sectionId);
               },
             };
@@ -957,7 +969,7 @@ export default function PrintPage() {
     : false;
 
   const sectionTitleForId = useCallback((sectionId: string): string => {
-    return sections.find((section) => section.id === sectionId)?.title?.trim() || "section";
+    return sections.find((section) => section.id === sectionId)?.title?.trim() || "chapter";
   }, [sections]);
 
   // Touch-friendly reordering for the mobile structure sheet. The desktop rail
@@ -1000,7 +1012,7 @@ export default function PrintPage() {
 
 
   function addStructureSection() {
-    projectMeta.addSection("New section");
+    projectMeta.addSection("New chapter");
   }
 
   // Bottom-sheet reorder/structure surface for phones — the touch-native
@@ -1077,12 +1089,12 @@ export default function PrintPage() {
   }
 
   function addSectionDivider() {
-    const title = "New section";
+    const title = "New chapter";
     const sectionId = projectMeta.addSection(title);
     setEditingSectionId(sectionId);
     setEditingSectionTitle(title);
     setPendingFocusNavId(sectionId);
-    showToast("Section added. Drag recipes beneath it to group them.");
+    showToast("Chapter added. Drag recipes beneath it to group them.");
   }
 
 
@@ -1450,17 +1462,17 @@ export default function PrintPage() {
   /**
    * Make a chapter and put this recipe in it, from the toolbar's move menu.
    *
-   * Named "New section", the same as "Add section" — an UNTITLED section is
+   * Named "New chapter", the same as "Add chapter" — an UNTITLED chapter is
    * the implicit ungrouped pool, gets no opener page and shows nothing in the
    * rail, so creating one here looked like the button had done nothing at all.
    * The rail opens on its title for renaming.
    */
   const moveRecipeToNewSection = useCallback(
     (recipeId: string) => {
-      const sectionId = projectMeta.addSection("New section");
+      const sectionId = projectMeta.addSection("New chapter");
       projectMeta.moveItems([recipeId], sectionId, 0);
       setEditingSectionId(sectionId);
-      setEditingSectionTitle("New section");
+      setEditingSectionTitle("New chapter");
       showToast("New chapter added. Give it a name.");
     },
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -1873,6 +1885,7 @@ export default function PrintPage() {
         doubleSided,
         showPhoto,
         showSourceUrl,
+        showDescription,
         showCutLines,
         cookbookMode: projectMeta.meta.cookbookMode,
         tableOfContents: projectMeta.meta.tableOfContents,
@@ -1954,6 +1967,7 @@ export default function PrintPage() {
         showPhoto,
         showSourceUrl,
         showCutLines,
+        showDescription,
       );
       setSaveStatus("saved");
     } catch (error) {
@@ -2108,6 +2122,7 @@ export default function PrintPage() {
         showPhoto,
         showSourceUrl,
         showCutLines,
+        showDescription,
       );
       if (fp === lastSavedFingerprintRef.current) return;
       void handleSaveProject();
@@ -2376,6 +2391,7 @@ export default function PrintPage() {
         doubleSided,
         showPhoto,
         showSourceUrl,
+        showDescription,
         showCutLines,
         cookbookMode: true,
         tableOfContents: projectMeta.meta.tableOfContents,
@@ -2473,6 +2489,29 @@ export default function PrintPage() {
     setProjectLoading(true);
   }, [accountProjectId]);
 
+  /**
+   * Which project's recipes are actually sitting in the deck right now.
+   *
+   * `projectLoading` above cannot answer this on its own, because an effect
+   * runs AFTER the commit it belongs to: for the one render between the URL
+   * changing and that effect firing, the page is asked for project B while
+   * still holding project A's content and still believing it is not loading.
+   * The browser is free to paint that render, and it does — the flash.
+   *
+   * What it flashes depends on what was open. Switching books, it is a frame
+   * of the previous book; arriving from a workspace with nothing in it, `items`
+   * is `[]` and it is a frame of the empty state, which reads as "your cookbook
+   * is gone" for exactly as long as the load takes.
+   *
+   * So the deck's identity is compared during RENDER, where there is no gap to
+   * paint into. The ref advances in `applyProject`, when content genuinely
+   * arrives — not when the load is merely requested, or the same frame would
+   * be uncovered again one step later.
+   */
+  const appliedProjectIdRef = useRef<string | null>(null);
+  const projectContentPending =
+    Boolean(accountProjectId) && appliedProjectIdRef.current !== accountProjectId;
+
   useEffect(() => {
     if (!accountProjectId || !cookPilotAuthReady || !projectMeta.hydrated || !queue.hydrated) return;
 
@@ -2503,6 +2542,9 @@ export default function PrintPage() {
      *    account, which is the product's rule for cookbooks.
      */
     const applyProject = (project: PrintProject, source: "account" | "shelf") => {
+        // The deck now holds this project. Read during render to keep the
+        // previous project (or an empty workspace) off screen until here.
+        appliedProjectIdRef.current = accountProjectId;
         const loadedItems = project.sections.flatMap((section) => section.items);
         queue.replaceAll(loadedItems);
         setJobIds(loadedItems.map((item) => item.id));
@@ -2542,6 +2584,8 @@ export default function PrintPage() {
         setDoubleSided(project.settings.doubleSided);
         setShowPhoto(project.settings.showPhoto);
         setShowSourceUrl(project.settings.showSourceUrl);
+        // Absent on books saved before the toggle: those printed descriptions.
+        setShowDescription(project.settings.showDescription ?? true);
         setShowCutLines(project.settings.showCutLines);
         if (source === "account") {
           projectRevisionRef.current = Number(project.revision ?? 0);
@@ -2724,6 +2768,7 @@ export default function PrintPage() {
         showPhoto,
         showSourceUrl,
         showCutLines,
+        showDescription,
       );
     if (lastSavedFingerprintRef.current === "__loaded__") {
       lastSavedFingerprintRef.current = fingerprint();
@@ -2967,8 +3012,12 @@ export default function PrintPage() {
 
   function renderBookDesignSettings() {
     if (!projectMeta.meta.cookbookMode) return null;
+    /* "Include" said nothing: everything in a settings panel is something you
+       are choosing to include. These two both add a PAGE to the book, and the
+       recipe link that used to sit under them with them did not — it moved to
+       the group that changes every recipe. */
     return (
-      <CheckboxGroup label="Include" className="recipe-config-section recipe-config-section--settings">
+      <CheckboxGroup label="Extra pages" className="recipe-config-section recipe-config-section--settings">
         <Checkbox
             label="Table of contents"
             checked={Boolean(projectMeta.meta.tableOfContents)}
@@ -2979,13 +3028,6 @@ export default function PrintPage() {
             checked={Boolean(projectMeta.meta.frontMatter || projectMeta.meta.dedication)}
             onChange={toggleDedication}
         />
-        {anyRecipeHasSourceUrl && (
-          <Checkbox
-              label="Recipe link"
-              checked={showSourceUrl}
-              onChange={(event) => setShowSourceUrl(event.target.checked)}
-          />
-        )}
       </CheckboxGroup>
     );
   }
@@ -3256,11 +3298,11 @@ export default function PrintPage() {
   function makeSectionFromSelection(selection: ReadonlySet<string> = effectiveRailSelection) {
     const ids = orderedRailSelection(selection);
     if (ids.length === 0) return;
-    const sectionId = projectMeta.addSection("New section");
+    const sectionId = projectMeta.addSection("New chapter");
     ids.forEach((id, index) => moveProjectItem(id, sectionId, index));
     clearRailSelection();
     setEditingSectionId(sectionId);
-    setEditingSectionTitle("New section");
+    setEditingSectionTitle("New chapter");
     setPendingFocusNavId(sectionId);
     track("cookbook_section_created_from_selection", { count: ids.length });
   }
@@ -3549,6 +3591,9 @@ export default function PrintPage() {
     pageHeight: cookbookView ? previewDims.h : PAGE_DIMS[previewCardSize].h,
     layoutKey: `${railCollapsed ? "r" : ""}${panelCollapsed ? "p" : ""}`,
     zoom: deckZoom,
+    zoomRange: DECK_ZOOM_BOUNDS,
+    zoomPresets: DECK_ZOOM_STEPS,
+    onZoomChange: setDeckZoom,
   });
 
   // The page (sheet) inside the active spread the controls act on. Clicking a
@@ -3820,7 +3865,7 @@ export default function PrintPage() {
     function onPointerDown(event: PointerEvent) {
       const target = event.target as Node;
       // The menu itself is portalled to the body, so containment in the add row
-      // no longer covers it — a click on "Add section" would close the menu
+      // no longer covers it — a click on "Add chapter" would close the menu
       // before its own handler ran.
       const inMenu =
         target instanceof Element && target.closest(".recipe-page-rail__add-menu") !== null;
@@ -3910,7 +3955,13 @@ export default function PrintPage() {
     );
   }
 
-  if (leavingHome || items === null || projectLoading || cookbookAccessStatus === "loading") {
+  if (
+    leavingHome ||
+    items === null ||
+    projectLoading ||
+    projectContentPending ||
+    cookbookAccessStatus === "loading"
+  ) {
     return (
       <div className="h-full flex flex-col">
         <SiteHeader compact sticky wordmark={false} />
@@ -4171,6 +4222,7 @@ export default function PrintPage() {
           previewTemplate={previewTemplate}
           continueOnBack={continueOnBack}
           previewSourceUrlOn={previewSourceUrlOn}
+          previewDescriptionOn={previewDescriptionOn}
           organizeMode={organizeMode}
           enterOrganizeMode={enterOrganizeMode}
           exitOrganizeMode={exitOrganizeMode}
@@ -4232,6 +4284,7 @@ export default function PrintPage() {
           showCutLines={showCutLines}
           showSourceUrl={showSourceUrl}
           sourceUrlOn={sourceUrlOn}
+          descriptionOn={descriptionOn}
           sheets={sheets}
           navItems={navItems}
           spreads={spreads}
@@ -4315,6 +4368,9 @@ export default function PrintPage() {
           setCardSize={setCardSize}
           anyRecipeHasImage={anyRecipeHasImage}
           anyRecipeHasSourceUrl={anyRecipeHasSourceUrl}
+          anyRecipeHasDescription={anyRecipeHasDescription}
+          showDescription={showDescription}
+          setShowDescription={setShowDescription}
           bookPhotoStyle={bookPhotoStyle}
           applyBookPhotoStyle={applyBookPhotoStyle}
           showPhoto={showPhoto}
@@ -4544,14 +4600,14 @@ export default function PrintPage() {
         deleteItemTitle={pendingDelete?.title ?? "this item"}
         deleteItemDescription={
           pendingDelete?.kind === "section"
-            ? "The section page and grouping will be removed from this print project."
+            ? "The chapter page and grouping will be removed from this print project."
             : pendingDelete?.kind === "cover"
               ? "The cover page will be removed from this print project."
               : "It'll be removed from your print list. This can't be undone."
         }
         deletePrimaryLabel={
           pendingDelete?.kind === "section"
-            ? "Delete section"
+            ? "Delete chapter"
             : pendingDelete?.kind === "cover"
               ? "Delete cover"
               : "Delete recipe"

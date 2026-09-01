@@ -74,7 +74,18 @@ export function SiteHeader({
          keep the taller bar they want. */
       className={`no-print relative flex items-center justify-between gap-cp-3 sm:gap-cp-4 px-cp-4 sm:px-cp-6 flex-nowrap ${
         compact ? "min-h-[56px]" : "min-h-[62px]"
-      } ${sticky ? `sticky top-0 z-10 bg-card border-b border-line ${compact ? "py-cp-2" : "py-cp-3"}` : ""}`}
+      } ${
+        sticky
+          ? `sticky top-0 z-10 border-b border-line ${
+              /* `compact` already means "app chrome" (above), and chrome is
+                 what decides this too: in the workspace the bar is one side of
+                 the frame around the deck and takes the frame's near-white,
+                 matching the rail and the settings panel. A marketing page has
+                 no frame — its bar is a white band over the page. */
+              compact ? "bg-chrome py-cp-2" : "bg-card py-cp-3"
+            }`
+          : ""
+      }`}
     >
       {/* The left group: the way home, and — where a page provides one — what
           you are looking at, sitting where the product's name would otherwise

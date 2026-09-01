@@ -119,7 +119,7 @@ export function FeedbackDialog({ open, onClose, initialType = "idea" }: Feedback
       label="Give feedback"
       dismissOnBackdropClick
       portal
-      className="fixed inset-0 z-50 flex items-stretch sm:items-center justify-center bg-ink/30 p-0 sm:px-cp-4 sm:py-cp-6"
+      className="fixed inset-0 z-50 flex items-stretch sm:items-center justify-center dialog-scrim p-0 sm:px-cp-4 sm:py-cp-6"
       panelClassName="panel panel--modal w-full sm:max-w-[460px] h-full sm:h-auto rounded-none border-0 sm:rounded-2xl sm:border p-cp-5 flex flex-col gap-cp-4 relative overflow-y-auto"
     >
         <button

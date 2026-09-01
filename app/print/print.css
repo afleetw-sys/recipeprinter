@@ -235,45 +235,16 @@
   position: absolute;
   top: calc(100% + 6px);
   left: 0;
-  z-index: 20;
   width: 244px;
-  padding: 6px;
-  border: 1px solid var(--cp-line);
-  border-radius: 10px;
-  background: var(--cp-card);
-  box-shadow: var(--cp-shadow-md);
-  text-align: left;
 }
-.recipe-organize-bar__sort-heading {
-  padding: 6px 9px 4px;
-  color: var(--cp-ink-soft);
-  font-size: var(--cp-fs-label);
-  font-weight: 700;
-}
-.recipe-organize-bar__sort-menu button {
-  display: flex;
-  align-items: center;
-  gap: 7px;
-  width: 100%;
-  padding: 8px 9px;
-  border-radius: 7px;
-  color: var(--cp-ink);
-  font-size: var(--cp-fs-caption);
-  font-weight: 700;
-  text-align: left;
-}
-.recipe-organize-bar__sort-menu button:hover {
-  background: var(--cp-line);
-}
-.recipe-organize-bar__sort-menu button.is-active {
-  color: var(--cp-selected-text);
-}
+
 /* A fixed gutter for the tick, so the two labels line up whichever is chosen. */
 .recipe-organize-bar__sort-check {
   display: inline-flex;
   justify-content: center;
   flex: 0 0 14px;
 }
+
 /* The question this control raises is "will this shuffle my chapters?" — so it
    answers it in the menu, where the choice is made. */
 .recipe-organize-bar__sort-note {
@@ -289,52 +260,11 @@
    a book too long to drag across. Floating, so it keeps a shadow. */
 .rail-tile-menu {
   position: fixed;
-  z-index: 1200;
   min-width: 184px;
   max-width: 260px;
-  /* A long book can have more sections than fit beside the pointer. */
+  /* A long book can have more chapters than fit beside the pointer. */
   max-height: min(60vh, 420px);
   overflow-y: auto;
-  padding: 6px;
-  border: 1px solid var(--cp-line);
-  border-radius: 10px;
-  background: var(--cp-card);
-  box-shadow: var(--cp-shadow-md);
-}
-.rail-tile-menu__heading {
-  padding: 6px 9px 4px;
-  color: var(--cp-ink-soft);
-  font-size: var(--cp-fs-label);
-  font-weight: 700;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-.rail-tile-menu button {
-  display: flex;
-  align-items: center;
-  gap: 7px;
-  width: 100%;
-  padding: 8px 9px;
-  border-radius: 7px;
-  color: var(--cp-ink);
-  font-size: var(--cp-fs-caption);
-  font-weight: 700;
-  text-align: left;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-.rail-tile-menu button:hover {
-  background: var(--cp-line);
-}
-.rail-tile-menu__new {
-  /* Warm: "new", not "selected". */
-  margin-top: 4px;
-  border-top: 1px solid var(--cp-line);
-  border-radius: 0 0 7px 7px;
-  padding-top: 10px;
-  color: var(--cp-ink);
 }
 
 .recipe-page-rail__section-title-input {
@@ -872,11 +802,14 @@
      padding put 28px between "Add recipes" and the first recipe — far more
      air than anywhere else in the column. */
   margin: -16px -16px 0 -4px;
-  /* No rule under it. The header is still sticky and still carries the card
+  /* No rule under it. The header is still sticky and still carries an opaque
      background, so thumbnails scrolling beneath it stay covered — the line was
-     only ever drawing a boundary the gap already makes. */
+     only ever drawing a boundary the gap already makes. That background is the
+     RAIL's, not a card: this is the top of the rail, not something sitting on
+     it, and a white block behind Add recipes cut a lighter rectangle out of
+     the column it belongs to. */
   padding: 16px 16px 8px 4px;
-  background: var(--cp-card);
+  background: var(--cp-chrome-ground);
 }
 
 .recipe-page-rail__head-actions {
@@ -974,38 +907,14 @@
    effect in PageRail. `fixed` so no scroll container can clip it. */
 .recipe-page-rail__add-menu {
   position: fixed;
-  z-index: 1200;
   min-width: 132px;
-  padding: 6px;
-  border: 1px solid var(--cp-line);
-  border-radius: 10px;
-  background: var(--cp-card);
-  box-shadow: var(--cp-shadow-md);
-}
-
-.recipe-page-rail__add-menu button {
-  display: flex;
-  align-items: center;
-  gap: 7px;
-  width: 100%;
-  padding: 8px 9px;
-  border-radius: 7px;
-  color: var(--cp-ink);
-  font-size: var(--cp-fs-caption);
-  font-weight: 700;
-  text-align: left;
-  white-space: nowrap;
-}
-
-.recipe-page-rail__add-menu button:hover {
-  background: var(--cp-line);
 }
 
 .recipe-page-canvas {
   position: sticky;
   top: 86px;
   min-width: 0;
-  background: var(--cp-deck-ground);
+  background: var(--cp-page);
 }
 
 /* Vertical deck of pages: the centred one is selected, neighbours peek in. */
@@ -1013,7 +922,18 @@
   position: relative;
   display: flex;
   flex-direction: column;
+  /* Centred until centring would hide something, then aligned to the start.
+     A flex item wider than its container and centred overflows BOTH sides, and
+     the start-side overflow is outside the scrollable area entirely — there is
+     no scroll position that reaches it. Zoomed to 200% that left a third of the
+     page permanently unreachable: 301px of it, with `scrollLeft` already at 0.
+     `safe` says "centre, unless the item does not fit", which puts all the
+     overflow on the end side where scrolling can get to it.
+     The plain `center` above it is the fallback for browsers that do not parse
+     the `safe` keyword — without it they would drop the declaration entirely
+     and fall back to `stretch`. */
   align-items: center;
+  align-items: safe center;
   gap: 22px;
   height: calc(100dvh - 132px);
   /* Set by `useDeckScroller` to the offset that lets the first and last
@@ -1029,6 +949,28 @@
      intermediate card, then restores it the instant that scroll lands. */
   scroll-snap-type: y mandatory;
   scrollbar-width: none;
+}
+
+/* Set by `useDeckScroller` when the zoom has made a page taller than the
+   window it sits in. Snapping then has nothing useful to do — you are looking
+   at one page, not moving between them — and doing it anyway pulls you off the
+   part of the page you were trying to read. */
+.recipe-page-deck[data-free-scroll="true"] {
+  scroll-snap-type: none;
+  /* Breathing room at the ends of the pan. Scrolled fully one way, the page's
+     edge landed exactly on the deck's, with the panel-collapse tabs sitting on
+     that same line — reachable, but reading as cut off, because nothing showed
+     you where the paper stopped.
+     20px per side is the allowance `useDeckScroller` already subtracts by hand
+     when it fits a page (`clientWidth - 40`), so making it real padding costs
+     the fit scale nothing: `clientWidth` counts padding, and content width was
+     already being treated as 40px less than it. */
+  padding-inline: 20px;
+  /* And give the scrollbars back. The deck hides them because browsing a
+     snapped stack never needs them, but a page too big for the window has to
+     be panned — and horizontal panning has no wheel of its own, so without a
+     bar a mouse (as opposed to a trackpad) cannot reach the sides at all. */
+  scrollbar-width: thin;
 }
 
 /* A lone card doesn't need the ~44vh centring pad, but the floating controls
@@ -1143,7 +1085,7 @@
   flex: none;
   border: 1px solid var(--cp-line);
   border-radius: 8px;
-  background: #fff;
+  background: var(--cp-card);
 }
 
 /* Snap the whole spread to center (the base rule snaps a lone `.recipe-page-
@@ -1224,6 +1166,27 @@
   padding: 0 4px;
 }
 
+/* Not a button group but a said-thing, so it takes the bar's hairline and
+   rhythm and none of its weight: muted, regular, and wrapping rather than
+   forcing the bar wider than the page it floats over. */
+.recipe-page-toolbar__hint {
+  gap: 6px;
+  /* Narrow enough that the bar stays roughly the width of the page it floats
+     over. The floating box has a 420px floor so the BUTTONS never wrap, and a
+     hint that used all of it pushed the bar past the left edge of the deck,
+     which scrolls and therefore clips. Two short lines instead. */
+  max-width: 13rem;
+  padding-inline: 8px;
+  color: var(--cp-ink-soft);
+  font-size: var(--cp-fs-caption);
+  font-weight: 600;
+  line-height: 1.3;
+  text-wrap: pretty;
+}
+.recipe-page-toolbar__hint svg {
+  flex: none;
+}
+
 .recipe-page-toolbar__group:first-child { padding-left: 0; }
 .recipe-page-toolbar__group:last-child { padding-right: 0; }
 
@@ -1247,76 +1210,6 @@
 
 .recipe-page-toolbar__group--view + .recipe-page-toolbar__group {
   padding-left: 8px;
-}
-
-/* Anchor for the move menu. */
-.recipe-page-toolbar__picker {
-  position: relative;
-  display: inline-flex;
-}
-
-/* Drops from the toolbar rather than rising from it — the bar floats near the
-   top of the page it acts on. Otherwise the zoom menu's recipe. */
-.recipe-page-toolbar__menu {
-  position: absolute;
-  top: calc(100% + 8px);
-  /* Anchored to the trigger's own side. Right-aligned suits the buttons at the
-     end of the bar (Move), but the photo picker is the FIRST control, and a
-     right-aligned menu there hangs off the left of the bar and gets clipped by
-     the panel beside it. */
-  right: 0;
-  z-index: 7;
-  display: flex;
-  flex-direction: column;
-  min-width: 168px;
-  max-height: 260px;
-  overflow-y: auto;
-  overscroll-behavior: contain;
-  padding: 4px;
-  border: 1px solid var(--cp-line);
-  border-radius: 12px;
-  background: var(--cp-card);
-  box-shadow: var(--cp-shadow-lg);
-}
-
-.recipe-page-toolbar__option {
-  display: block;
-  width: 100%;
-  min-height: 32px;
-  padding: 0 10px;
-  border: 0;
-  border-radius: 8px;
-  background: transparent;
-  color: var(--cp-ink);
-  font-size: var(--cp-fs-caption);
-  font-weight: 700;
-  text-align: left;
-  white-space: nowrap;
-  cursor: pointer;
-}
-
-.recipe-page-toolbar__option:hover:not(:disabled) {
-  background: var(--cp-overlay-hover);
-}
-
-/* "New chapter", under a rule: it makes something rather than picking
-   something, so it is not one more row in the list of chapters. */
-.recipe-page-toolbar__option--new {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  margin-top: 4px;
-  padding-top: 8px;
-  border-top: 1px solid var(--cp-line);
-  border-radius: 0 0 8px 8px;
-  color: var(--cp-ink-soft);
-}
-
-/* The chapter it is already in. Marked, and not offered as a destination. */
-.recipe-page-toolbar__option.is-active {
-  background: var(--cp-selected-fill);
-  color: var(--cp-selected-text);
-  cursor: default;
 }
 
 .recipe-page-toolbar__btn {
@@ -1465,7 +1358,7 @@
   overflow: hidden;
   border: 1px solid var(--cp-line);
   border-radius: 8px;
-  background: #fff;
+  background: var(--cp-card);
   box-shadow: var(--cp-shadow-md);
 }
 
@@ -1624,9 +1517,10 @@
   padding: 12px 14px 14px;
   border: 1px solid var(--cp-line);
   border-radius: 18px;
-  background:
-    linear-gradient(180deg, rgba(255, 255, 255, 0.88), rgba(255, 255, 255, 0.68)),
-    color-mix(in srgb, var(--cp-page) 88%, var(--cp-card));
+  /* The chrome ground, matching the rail opposite and the bar above. Was a
+     tint under a white gradient that washed it back to within a hair of
+     white; its own border is what separates it from the deck now. */
+  background: var(--cp-chrome-ground);
 }
 
 /* Keep desktop print columns inside the main grid row. This is the only place
@@ -1653,7 +1547,10 @@
   .recipe-page-rail {
     padding: 16px;
     border-right: 1px solid var(--cp-line);
-    background: var(--cp-card);
+    /* Frame, not work — the same near-white as the top bar and the settings
+       panel opposite it, so the three sides of the frame read as one surface
+       and the tinted deck between them reads as the thing being made. */
+    background: var(--cp-chrome-ground);
   }
 
   .recipe-config-panel {
@@ -1841,6 +1738,17 @@
   gap: 0;
 }
 
+/* A field's name inside a settings group. Normal body text, sentence case:
+   the uppercase eyebrow below is what starts a SECTION, and using it here made
+   the photo tiles read as one. */
+.recipe-config-sublabel {
+  margin-top: 2px;
+  color: var(--cp-ink);
+  font-size: var(--cp-fs-caption);
+  font-weight: 600;
+  line-height: 1.3;
+}
+
 .recipe-config-label {
   color: var(--cp-ink-soft);
   font-size: var(--cp-fs-label);
@@ -2013,7 +1921,7 @@
   width: 30px;
   border: 1px solid var(--cp-line-strong);
   border-radius: 3px;
-  background: #fff;
+  background: var(--cp-card);
   padding: 4px;
   display: flex;
   flex-direction: column;
@@ -2027,14 +1935,14 @@
 
 .recipe-photo-preview__page--photo {
   border-color: var(--cp-accent);
-  background: color-mix(in srgb, var(--cp-accent) 55%, #fff);
+  background: color-mix(in srgb, var(--cp-accent) 55%, var(--cp-card));
 }
 
 .recipe-photo-preview__photo {
   height: 13px;
   margin: -1px -1px 2px;
   border-radius: 2px;
-  background: color-mix(in srgb, var(--cp-accent) 55%, #fff);
+  background: color-mix(in srgb, var(--cp-accent) 55%, var(--cp-card));
 }
 
 .recipe-photo-preview__line {
@@ -2527,7 +2435,8 @@
     z-index: 80;
     display: block;
     border: 0;
-    background: rgba(15, 23, 42, 0.4);
+    background: var(--cp-scrim);
+    backdrop-filter: var(--cp-scrim-blur);
   }
 
   .recipe-structure-sheet {
@@ -3102,45 +3011,14 @@
 /* Zoom for a full-page photo, in the opposite corner from the Photo button so
    the two never crowd each other. A sibling of the scaled page (not a child),
    like that button — a transform-scaled control paints at one size and clicks
-   at another. */
+   at another. Position only: the control itself is the shared `.cp-zoom`, the
+   same one the deck uses. It used to be a second control with bare "−"/"+"
+   glyphs, a dead percentage, and no presets. */
 .recipe-image-spread__zoom {
   position: absolute;
   right: 9px;
   bottom: 9px;
   z-index: 3;
-  display: inline-flex;
-  align-items: center;
-  gap: 2px;
-  padding: 3px;
-  border-radius: 999px;
-  background: rgba(17, 24, 39, 0.72);
-  color: #fff;
-  font-size: var(--cp-fs-caption);
-  font-weight: 700;
-}
-.recipe-image-spread__zoom button {
-  display: grid;
-  place-items: center;
-  width: 26px;
-  height: 26px;
-  border-radius: 999px;
-  color: inherit;
-  font-size: 15px;
-  line-height: 1;
-}
-.recipe-image-spread__zoom button:hover:not(:disabled) {
-  background: rgba(255, 255, 255, 0.18);
-}
-.recipe-image-spread__zoom button:disabled {
-  opacity: 0.4;
-  cursor: default;
-}
-/* Tabular-ish fixed width so stepping through 100/125/150% doesn't shuffle the
-   buttons left and right under the cook's cursor. */
-.recipe-image-spread__zoom span {
-  min-width: 3.4em;
-  text-align: center;
-  font-variant-numeric: tabular-nums;
 }
 
 .recipe-template--heirloom {
@@ -4327,8 +4205,8 @@
 .image-picker__backdrop {
   position: absolute;
   inset: 0;
-  background: rgba(17, 24, 39, 0.34);
-  backdrop-filter: blur(3px);
+  background: var(--cp-scrim);
+  backdrop-filter: var(--cp-scrim-blur);
 }
 .image-picker__panel {
   position: relative;
@@ -4355,8 +4233,8 @@
   /* The cursor must keep reaching the elements underneath, or crossing the veil
      itself would fire another dragenter/dragleave pair and flicker it. */
   pointer-events: none;
-  background: color-mix(in srgb, var(--cp-accent) 14%, rgba(17, 24, 39, 0.44));
-  backdrop-filter: blur(2px);
+  background: color-mix(in srgb, var(--cp-accent) 14%, var(--cp-scrim));
+  backdrop-filter: var(--cp-scrim-blur);
 }
 .image-picker__dropveil-card {
   display: flex;
@@ -4885,17 +4763,6 @@ textarea.recipe-card__toc-title {
   .segmented-control__thumb {
     transition: none;
   }
-}
-
-/* Edit-mode hint on the contents page: the entries are generated, not typed. */
-.recipe-card__toc-note {
-  margin: 0.34in 0 0;
-  padding: 0.12in 0.16in;
-  border-radius: 0.08in;
-  background: var(--recipe-step-bg);
-  color: var(--recipe-muted);
-  font-size: 0.12in;
-  line-height: 1.4;
 }
 
 .recipe-print-preview--card-6x4 .recipe-card__divider-title,
@@ -6373,8 +6240,8 @@ textarea.recipe-card__toc-title {
 .print-success-dialog__backdrop {
   position: absolute;
   inset: 0;
-  background: rgba(17, 24, 39, 0.34);
-  backdrop-filter: blur(5px);
+  background: var(--cp-scrim);
+  backdrop-filter: var(--cp-scrim-blur);
   animation: print-success-fade 180ms ease-out both;
 }
 
@@ -6390,7 +6257,11 @@ textarea.recipe-card__toc-title {
   border-radius: 28px;
   background: var(--cp-card);
   color: var(--cp-ink);
-  text-align: center;
+  /* Left, like every other dialog in the app. Centred text is the shape of an
+     announcement; these are questions ("Delete this recipe?") and receipts,
+     and a centred one made the pair of dialogs that share this panel read as a
+     different species from the confirm dialogs they sit beside. */
+  text-align: left;
   box-shadow: var(--cp-shadow-xl);
   animation: print-success-pop 260ms cubic-bezier(0.2, 0.8, 0.2, 1) both;
 }
@@ -6416,9 +6287,10 @@ textarea.recipe-card__toc-title {
   place-items: center;
   width: 74px;
   height: 74px;
-  margin: 0 auto 14px;
+  /* Left with the text it heads, not centred over it. */
+  margin: 0 0 14px;
   border-radius: 22px;
-  background: color-mix(in srgb, var(--cp-mint) 16%, #fff);
+  background: color-mix(in srgb, var(--cp-accent) 16%, var(--cp-card));
   animation: print-success-bounce 600ms ease-out 100ms both;
 }
 
@@ -6430,11 +6302,12 @@ textarea.recipe-card__toc-title {
 
 .print-success-dialog h2 {
   margin: 0;
-  /* Reserve space on both sides so a long, centred title can never slide
-     under the absolutely-positioned close button (top/right: 12px, 34px wide,
-     so it reaches ~46px in from the panel edge). Symmetric padding keeps the
-     text visually centred; it just wraps a line earlier instead of clipping. */
-  padding: 0 28px;
+  /* Clear the absolutely-positioned close button (top/right: 12px, 34px wide,
+     so it reaches ~46px in from the panel edge) — the title wraps a line
+     earlier instead of running under it. Right side only now the title is
+     left-aligned; the symmetric version was there to keep centred text
+     visually centred. */
+  padding: 0 28px 0 0;
   /* Fixed, not the vw-based --cp-fs-h2-lg: this heading lives in a
      fixed-width modal (390px max), not full page width, so it shouldn't
      track viewport size. */
@@ -6450,31 +6323,12 @@ textarea.recipe-card__toc-title {
   line-height: 1.5;
 }
 
-.print-success-dialog__checkbox {
-  display: grid;
-  grid-template-columns: 18px minmax(0, 1fr);
-  align-items: start;
-  gap: 9px;
-  margin-top: 16px;
-  padding: 12px;
-  border: 1px solid var(--cp-line);
-  border-radius: 12px;
-  background: color-mix(in srgb, var(--cp-page) 72%, var(--cp-card));
-  color: var(--cp-ink);
-  font-size: var(--cp-fs-caption);
-  font-weight: 700;
-  line-height: 1.35;
-  text-align: left;
-}
-
-.print-success-dialog__checkbox input {
-  margin-top: 2px;
-  accent-color: var(--cp-accent);
-}
-
 .print-success-dialog__actions {
   display: flex;
-  justify-content: center;
+  /* Right, with the commit action furthest right — the app's dialog order is
+     cancel-left / commit-right, and centring these put the two buttons
+     nowhere in particular. */
+  justify-content: flex-end;
   align-items: center;
   gap: 10px;
   margin-top: 20px;
@@ -6539,8 +6393,8 @@ textarea.recipe-card__toc-title {
 .recipe-add-dialog__backdrop {
   position: absolute;
   inset: 0;
-  background: rgba(17, 24, 39, 0.34);
-  backdrop-filter: blur(5px);
+  background: var(--cp-scrim);
+  backdrop-filter: var(--cp-scrim-blur);
   animation: print-success-fade 180ms ease-out both;
 }
 
@@ -6572,10 +6426,10 @@ textarea.recipe-card__toc-title {
    toolbar: white capsule, 14px corner, `--cp-shadow-md`, 28px buttons in 4px
    of padding. They sit over the same pages and are read together, so one is
    defined in the other's terms rather than beside it. */
-.recipe-deck-zoom {
-  position: absolute;
-  right: 16px;
-  bottom: 16px;
+/* ── Zoom control (deck, full-page photo) ─────────────────────────────────
+   One control, positioned by whoever uses it. `.recipe-deck-zoom` and
+   `.recipe-image-spread__zoom` are now nothing but that position. */
+.cp-zoom {
   z-index: 6;
   display: inline-flex;
   align-items: center;
@@ -6590,8 +6444,8 @@ textarea.recipe-card__toc-title {
   font-weight: 700;
 }
 
-.recipe-deck-zoom__btn,
-.recipe-deck-zoom__value {
+.cp-zoom__btn,
+.cp-zoom__value {
   display: grid;
   place-items: center;
   min-height: 28px;
@@ -6606,93 +6460,89 @@ textarea.recipe-card__toc-title {
 
 /* Thin strokes, so the signs sit beside the number rather than competing with
    it. The icons come in at the shared 1.8 weight everything else uses. */
-.recipe-deck-zoom__btn svg {
+.cp-zoom__btn svg {
   stroke-width: 1.6;
 }
 
-.recipe-deck-zoom__btn {
+.cp-zoom__btn {
   width: 28px;
 }
 
-.recipe-deck-zoom__value {
+.cp-zoom__value {
   min-width: 52px;
   padding: 0 4px;
   font-variant-numeric: tabular-nums;
   color: var(--cp-ink);
 }
 
-.recipe-deck-zoom__btn:hover:not(:disabled),
-.recipe-deck-zoom__value:hover {
+/* A readout, not a button: no menu behind it, so nothing to press. */
+.cp-zoom__value--static {
+  cursor: default;
+}
+
+.cp-zoom__btn:hover:not(:disabled),
+.cp-zoom__value:not(.cp-zoom__value--static):hover {
   background: var(--cp-overlay-hover);
   color: var(--cp-ink);
 }
 
-.recipe-deck-zoom__btn:disabled {
-  opacity: 0.4;
+.cp-zoom__btn:disabled {
+  opacity: 0.35;
   cursor: default;
 }
 
-.recipe-deck-zoom__picker {
+.cp-zoom__picker {
   position: relative;
+  display: inline-flex;
 }
 
-/* Opens UPWARD: the cluster sits at the bottom of the deck, so a menu below it
-   would hang off the page. Scrolls once the list outgrows it, which it will as
-   soon as another step is added. */
-.recipe-deck-zoom__menu {
+.cp-zoom__menu {
   position: absolute;
   bottom: calc(100% + 8px);
   left: 50%;
   transform: translateX(-50%);
-  z-index: 7;
-  display: flex;
-  flex-direction: column;
   min-width: 108px;
-  max-height: 208px;
+  max-height: 240px;
   overflow-y: auto;
-  overscroll-behavior: contain;
-  padding: 4px;
-  border: 1px solid var(--cp-line);
-  border-radius: 12px;
-  background: var(--cp-card);
-  box-shadow: var(--cp-shadow-lg);
 }
 
-.recipe-deck-zoom__option {
-  display: flex;
-  align-items: center;
+/* Right-aligned so the percentages line up against the label. */
+.cp-zoom__option {
   justify-content: space-between;
-  gap: 8px;
-  min-height: 30px;
-  padding: 0 8px;
-  border: 0;
-  border-radius: 8px;
-  background: transparent;
-  color: var(--cp-ink);
-  font-size: var(--cp-fs-small);
-  font-weight: 600;
   font-variant-numeric: tabular-nums;
-  text-align: left;
-  cursor: pointer;
 }
 
-.recipe-deck-zoom__option:hover {
-  background: var(--cp-overlay-hover);
+/* Smaller, for floating on a page rather than beside one. The photo's control
+   sits ON the artwork at the corner of a single page, where the deck's size
+   reads as a slab covering the picture. */
+.cp-zoom--compact {
+  gap: 1px;
+  padding: 3px;
+  border-radius: 11px;
+}
+.cp-zoom--compact .cp-zoom__btn,
+.cp-zoom--compact .cp-zoom__value {
+  min-height: 22px;
+  border-radius: 6px;
+  font-size: var(--cp-fs-label);
+}
+.cp-zoom--compact .cp-zoom__btn {
+  width: 22px;
+}
+.cp-zoom--compact .cp-zoom__btn svg {
+  width: 13px;
+  height: 13px;
+}
+.cp-zoom--compact .cp-zoom__value {
+  min-width: 40px;
+  padding: 0 3px;
 }
 
-.recipe-deck-zoom__option.is-active {
-  background: var(--cp-selected-fill);
-  color: var(--cp-selected-text);
-}
-
-.recipe-deck-zoom__option-note {
-  font-size: var(--cp-fs-caption);
-  font-weight: 700;
-  color: var(--cp-ink-soft);
-}
-
-.recipe-deck-zoom__option.is-active .recipe-deck-zoom__option-note {
-  color: var(--cp-selected-text);
+/* Where each caller puts it. */
+.recipe-deck-zoom {
+  position: absolute;
+  right: 16px;
+  bottom: 16px;
 }
 
 @media (max-width: 900px) {

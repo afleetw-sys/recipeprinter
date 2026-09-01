@@ -68,8 +68,9 @@ function faceKey(
   hasPhoto: boolean,
   sourceUrlOn: boolean,
   cookbookMode: boolean,
+  descriptionOn: boolean,
 ): string {
-  return `${id}::${size}::${template}::${hasPhoto ? 1 : 0}::${sourceUrlOn ? 1 : 0}::${cookbookMode ? 1 : 0}`;
+  return `${id}::${size}::${template}::${hasPhoto ? 1 : 0}::${sourceUrlOn ? 1 : 0}::${cookbookMode ? 1 : 0}::${descriptionOn ? 1 : 0}`;
 }
 
 // Ceiling on retained measurements, evicted oldest-first. Entries are cheap —
@@ -292,6 +293,10 @@ interface UsePrintSheetsOptions {
   doubleSided: boolean;
   photosOn: boolean;
   sourceUrlOn: boolean;
+  /** Cookbook only: print each recipe's description under its title. Part of
+      the measurement key — a paragraph is height, and a face measured with one
+      does not describe the same card without it. */
+  descriptionOn: boolean;
   template: RecipePrintTemplate;
 }
 
@@ -325,6 +330,7 @@ export function usePrintSheets({
   doubleSided,
   photosOn,
   sourceUrlOn,
+  descriptionOn,
   template,
 }: UsePrintSheetsOptions) {
   const sections = useMemo<Section[]>(() => {
@@ -374,13 +380,16 @@ export function usePrintSheets({
 
   const measuredFacesFor = useCallback(
     (id: string, recipe: Recipe, hasPhoto: boolean, size: PrintCardSize): RecipeFace[] | null => {
-      const entry = measuredFaces[faceKey(id, size, template, hasPhoto, sourceUrlOn, cookbookLayouts)];
+      const entry =
+        measuredFaces[
+          faceKey(id, size, template, hasPhoto, sourceUrlOn, cookbookLayouts, descriptionOn)
+        ];
       // Recipe CONTENT is the one discriminator a string key can't carry: an
       // inline edit keeps the same id, so a measurement of the pre-edit recipe
       // has to be rejected on identity. Everything else is in the key.
       return entry && entry.recipe === recipe ? entry.pages : null;
     },
-    [measuredFaces, sourceUrlOn, template, cookbookLayouts],
+    [measuredFaces, sourceUrlOn, template, cookbookLayouts, descriptionOn],
   );
 
   // Resolves each recipe's per-page layout: an explicit placement, else the
@@ -1054,18 +1063,19 @@ export function usePrintSheets({
         .slice(0, MEASURE_WINDOW_SIZE)
         .map(({ id, recipe, hasPhoto, size }) => (
           <RecipeFaceMeasurer
-            key={`${id}-${size}-${template}-${hasPhoto}-${sourceUrlOn}-${cookbookLayouts ? "cb" : ""}`}
+            key={`${id}-${size}-${template}-${hasPhoto}-${sourceUrlOn}-${descriptionOn}-${cookbookLayouts ? "cb" : ""}`}
             recipe={recipe}
             size={size}
             template={template}
             hasPhoto={hasPhoto}
             showSourceUrl={sourceUrlOn}
+            showDescription={descriptionOn}
             cookbookMode={cookbookLayouts}
             onSettled={(pages) =>
               setMeasuredFaces((current) =>
                 withMeasuredFace(
                   current,
-                  faceKey(id, size, template, hasPhoto, sourceUrlOn, cookbookLayouts),
+                  faceKey(id, size, template, hasPhoto, sourceUrlOn, cookbookLayouts, descriptionOn),
                   { recipe, pages },
                 ),
               )
@@ -1095,8 +1105,8 @@ export function usePrintSheets({
   // wear 6x4 chrome while still holding letter pagination — which is exactly
   // the clipping this all exists to prevent.
   const committedLayout = useMemo(
-    () => ({ sheets, navItems, spreads, cardSize, template, photosOn, sourceUrlOn, doubleSided }),
-    [sheets, navItems, spreads, cardSize, template, photosOn, sourceUrlOn, doubleSided],
+    () => ({ sheets, navItems, spreads, cardSize, template, photosOn, sourceUrlOn, descriptionOn, doubleSided }),
+    [sheets, navItems, spreads, cardSize, template, photosOn, sourceUrlOn, descriptionOn, doubleSided],
   );
   type CommittedLayout = typeof committedLayout;
   // `null` until the very first measurement lands. On a cold load there is no

@@ -16,15 +16,17 @@ import {
   ChevronLeftIcon,
   ChevronRightIcon,
   ICON_SIZE,
+  InfoIcon,
   PrintIcon,
   SettingsIcon,
   SpinnerIcon,
-  MinusIcon,
   MoveToSectionIcon,
   PlusIcon,
   TrashIcon,
 } from "@/components/icons";
 import { RecipeLoadingState } from "@/components/RecipeLoadingState";
+import { MoveToSectionMenu } from "@/components/print/MoveToSectionMenu";
+import { ZoomControl } from "@/components/print/ZoomControl";
 import { ScaledPage } from "@/components/print/ScaledPage";
 import { PHOTO_STYLE_OPTIONS } from "@/components/print/photoStyle";
 import { formatRecipeTime } from "@/lib/time";
@@ -87,7 +89,7 @@ const PHOTO_SURFACES = [
   ".recipe-image-spread__photo",
 ].join(", ");
 
-const DECK_ZOOM_STEPS = [0.5, 0.75, 1, 1.25, 1.5, 1.75, 2];
+export const DECK_ZOOM_STEPS = [0.5, 0.75, 1, 1.25, 1.5, 1.75, 2];
 
 /** The recipe's two text columns — the only places a drag means "edit this". */
 const TEXT_COLUMNS = ".recipe-card__ingredients, .recipe-card__method";
@@ -162,6 +164,7 @@ interface PrintDeckProps {
   cardSize: PrintCardSize;
   showCutLines: boolean;
   showSourceUrl: boolean;
+  descriptionOn: boolean;
   sourceUrlOn: boolean;
   // Sheets / nav / spreads
   sheets: ReturnType<typeof usePrintSheets>["sheets"];
@@ -257,43 +260,9 @@ interface PrintDeckProps {
 // controls, and the front/back side switcher. Verbatim move out of the print
 // god-file; `renderActiveControls` and `renderDeckPage` moved in as internals.
 export function PrintDeck(props: PrintDeckProps) {
-  const [zoomMenuOpen, setZoomMenuOpen] = useState(false);
-  const zoomMenuRef = useRef<HTMLDivElement | null>(null);
-  // Click-away and Escape, the same contract the deck's other menus have.
-  useEffect(() => {
-    if (!zoomMenuOpen) return;
-    function onPointerDown(event: PointerEvent) {
-      if (!zoomMenuRef.current?.contains(event.target as Node)) setZoomMenuOpen(false);
-    }
-    function onKeyDown(event: KeyboardEvent) {
-      if (event.key === "Escape") setZoomMenuOpen(false);
-    }
-    document.addEventListener("pointerdown", onPointerDown);
-    document.addEventListener("keydown", onKeyDown);
-    return () => {
-      document.removeEventListener("pointerdown", onPointerDown);
-      document.removeEventListener("keydown", onKeyDown);
-    };
-  }, [zoomMenuOpen]);
-
-  const [moveMenuOpen, setMoveMenuOpen] = useState(false);
-  const moveMenuRef = useRef<HTMLDivElement | null>(null);
-  useEffect(() => {
-    if (!moveMenuOpen) return;
-    function onPointerDown(event: PointerEvent) {
-      if (!moveMenuRef.current?.contains(event.target as Node)) setMoveMenuOpen(false);
-    }
-    function onKeyDown(event: KeyboardEvent) {
-      if (event.key === "Escape") setMoveMenuOpen(false);
-    }
-    document.addEventListener("pointerdown", onPointerDown);
-    document.addEventListener("keydown", onKeyDown);
-    return () => {
-      document.removeEventListener("pointerdown", onPointerDown);
-      document.removeEventListener("keydown", onKeyDown);
-    };
-  }, [moveMenuOpen]);
-
+  // Where the shared move menu should open, or null when it is closed. The
+  // menu closes itself on an outside press, Escape, a scroll or a resize.
+  const [moveMenuAt, setMoveMenuAt] = useState<{ x: number; y: number } | null>(null);
   const {
     singleRecipePrintView,
     cookbookView,
@@ -306,6 +275,7 @@ export function PrintDeck(props: PrintDeckProps) {
     cardSize,
     showCutLines,
     showSourceUrl,
+    descriptionOn,
     sourceUrlOn,
     sheets,
     navItems,
@@ -594,6 +564,21 @@ export function PrintDeck(props: PrintDeckProps) {
         } as CSSProperties}
       >
         <div className="recipe-page-toolbar">
+          {/* The contents page is generated, and someone in its edit mode needs
+              telling why the entries will not take a cursor. It used to say so
+              from INSIDE the page, which made a note about the workspace take
+              up space in the artwork — pushing the entries down, and counting
+              toward the layout the pagination measures.
+              It is a group in the toolbar rather than a banner of its own: the
+              bar is already the floating thing that acts on this page, it
+              already separates its groups with a hairline, and one object
+              reads as chrome where two read as an interruption. */}
+          {navItem.kind === "toc" && !navItem.continued && editingToc && (
+            <div className="recipe-page-toolbar__group recipe-page-toolbar__hint">
+              <InfoIcon size={ICON_SIZE.sm} aria-hidden />
+              <span>Edit a chapter or recipe to change these entries.</span>
+            </div>
+          )}
           {navItem.flip && (
             <div
               className="recipe-page-toolbar__group recipe-page-toolbar__group--view"
@@ -684,64 +669,51 @@ export function PrintDeck(props: PrintDeckProps) {
               chapter to be moved between. */}
           {moveSections && (
             <div className="recipe-page-toolbar__group">
-              <div className="recipe-page-toolbar__picker" ref={moveMenuRef}>
-                <button
-                  type="button"
-                  className={`recipe-page-toolbar__btn recipe-page-toolbar__btn--icon ${
-                    moveMenuOpen ? "is-active" : ""
-                  }`}
-                  aria-haspopup="menu"
-                  aria-expanded={moveMenuOpen}
-                  aria-label="Move to another chapter"
-                  title="Move to another chapter"
-                  onClick={(event) => {
-                    event.stopPropagation();
-                    setMoveMenuOpen((open) => !open);
-                  }}
-                >
-                  <MoveToSectionIcon size={ICON_SIZE.md} />
-                </button>
-                {moveMenuOpen && (
-                  <div className="recipe-page-toolbar__menu" role="menu" aria-label="Move to chapter">
-                    {moveSections.options.map((section) => (
-                      <button
-                        key={section.id}
-                        type="button"
-                        role="menuitemradio"
-                        aria-checked={section.id === moveSections.currentId}
-                        disabled={section.id === moveSections.currentId}
-                        className={`recipe-page-toolbar__option ${
-                          section.id === moveSections.currentId ? "is-active" : ""
-                        }`}
-                        onClick={(event) => {
-                          event.stopPropagation();
-                          setMoveMenuOpen(false);
-                          if (section.id !== moveSections.currentId) {
-                            onMoveRecipeToSection?.(moveSections.recipeId, section.id);
-                          }
-                        }}
-                      >
-                        {section.title}
-                      </button>
-                    ))}
-                    {onMoveRecipeToNewSection && (
-                      <button
-                        type="button"
-                        role="menuitem"
-                        className="recipe-page-toolbar__option recipe-page-toolbar__option--new"
-                        onClick={(event) => {
-                          event.stopPropagation();
-                          setMoveMenuOpen(false);
-                          onMoveRecipeToNewSection(moveSections.recipeId);
-                        }}
-                      >
-                        <PlusIcon size={ICON_SIZE.sm} />
-                        New chapter
-                      </button>
-                    )}
-                  </div>
-                )}
-              </div>
+              <button
+                type="button"
+                className={`recipe-page-toolbar__btn recipe-page-toolbar__btn--icon ${
+                  moveMenuAt ? "is-active" : ""
+                }`}
+                aria-haspopup="menu"
+                aria-expanded={Boolean(moveMenuAt)}
+                aria-label="Move to another chapter"
+                title="Move to another chapter"
+                onClick={(event) => {
+                  event.stopPropagation();
+                  if (moveMenuAt) {
+                    setMoveMenuAt(null);
+                    return;
+                  }
+                  // Under the button's bottom-left corner, which is where a
+                  // menu opened from a control belongs. The menu clamps itself
+                  // back inside the viewport from there.
+                  const rect = event.currentTarget.getBoundingClientRect();
+                  setMoveMenuAt({ x: rect.left, y: rect.bottom + 6 });
+                }}
+              >
+                <MoveToSectionIcon size={ICON_SIZE.md} />
+              </button>
+              {moveMenuAt && (
+                <MoveToSectionMenu
+                  anchor={moveMenuAt}
+                  heading={`Move ${navItem.label ? `“${navItem.label}”` : "this recipe"} to`}
+                  /* The chapter it is already in has nowhere to move it, so it
+                     is not offered. The old dropdown listed it disabled, which
+                     is a dead row where the rail's menu simply has none. */
+                  sections={moveSections.options.filter(
+                    (section) => section.id !== moveSections.currentId,
+                  )}
+                  onMove={(sectionId) =>
+                    onMoveRecipeToSection?.(moveSections.recipeId, sectionId)
+                  }
+                  onNewSection={
+                    onMoveRecipeToNewSection
+                      ? () => onMoveRecipeToNewSection(moveSections.recipeId)
+                      : undefined
+                  }
+                  onClose={() => setMoveMenuAt(null)}
+                />
+              )}
             </div>
           )}
           {/* Delete, last and on its own: the Delete key already did this, and
@@ -775,6 +747,7 @@ export function PrintDeck(props: PrintDeckProps) {
     role: "left" | "right" | "single" = "single",
   ) => (
     <ScaledPage
+      showDescription={descriptionOn}
       sheet={sheet}
       isLastSheet={navItem.sheetIndex === sheets.length - 1}
       activeSlotIndex={navItem.slotIndex}
@@ -967,62 +940,16 @@ export function PrintDeck(props: PrintDeckProps) {
           {/* Zoom, on the deck it zooms and nowhere else. Minus, the size, plus
               — and the percentage doubles as the way back to fit, since after
               a few steps "100%" is the number you are looking for anyway. */}
-          <div className="recipe-deck-zoom no-print" role="group" aria-label="Zoom">
-            <button
-              type="button"
-              className="recipe-deck-zoom__btn"
-              aria-label="Zoom out"
-              title="Zoom out"
-              disabled={deckZoom <= 0.5}
-              onClick={() => onZoomStep(-1)}
-            >
-              <MinusIcon size={ICON_SIZE.sm} />
-            </button>
-            <div className="recipe-deck-zoom__picker" ref={zoomMenuRef}>
-              <button
-                type="button"
-                className="recipe-deck-zoom__value"
-                aria-haspopup="menu"
-                aria-expanded={zoomMenuOpen}
-                aria-label={`Zoom, ${Math.round(deckZoom * 100)} percent`}
-                onClick={() => setZoomMenuOpen((open) => !open)}
-              >
-                {Math.round(deckZoom * 100)}%
-              </button>
-              {zoomMenuOpen && (
-                <div className="recipe-deck-zoom__menu" role="menu" aria-label="Zoom level">
-                  {DECK_ZOOM_STEPS.map((step) => (
-                    <button
-                      key={step}
-                      type="button"
-                      role="menuitemradio"
-                      aria-checked={Math.round(deckZoom * 100) === Math.round(step * 100)}
-                      className={`recipe-deck-zoom__option ${
-                        Math.round(deckZoom * 100) === Math.round(step * 100) ? "is-active" : ""
-                      }`}
-                      onClick={() => {
-                        onZoomSet(step);
-                        setZoomMenuOpen(false);
-                      }}
-                    >
-                      {Math.round(step * 100)}%
-                      {step === 1 && <span className="recipe-deck-zoom__option-note">Fit</span>}
-                    </button>
-                  ))}
-                </div>
-              )}
-            </div>
-            <button
-              type="button"
-              className="recipe-deck-zoom__btn"
-              aria-label="Zoom in"
-              title="Zoom in"
-              disabled={deckZoom >= 2}
-              onClick={() => onZoomStep(1)}
-            >
-              <PlusIcon size={ICON_SIZE.sm} />
-            </button>
-          </div>
+          <ZoomControl
+            className="recipe-deck-zoom"
+            value={deckZoom}
+            min={DECK_ZOOM_STEPS[0]}
+            max={DECK_ZOOM_STEPS[DECK_ZOOM_STEPS.length - 1]}
+            presets={DECK_ZOOM_STEPS}
+            presetNote={(step) => (step === 1 ? "Fit" : undefined)}
+            onStep={onZoomStep}
+            onSet={onZoomSet}
+          />
 
           {(sizeMenuOpen || settingsMenuOpen) && (
             <button
@@ -1287,10 +1214,13 @@ export function PrintDeck(props: PrintDeckProps) {
                         activeNavItem &&
                         renderActiveControls(
                           activeNavItem,
-                          isImageSpread || isSectionSpread
+                          // A linked spread is one page as far as the reader is
+                          // concerned, so its toolbar spans both sheets and sits
+                          // centred over the pair.
+                          linkedSpread
                             ? spreadWidth * deckScale
                             : previewDims.w * deckScale,
-                          isImageSpread || isSectionSpread || spread.single
+                          linkedSpread || spread.single
                             ? 0
                             : focusedSheet === spread.left
                               ? -((previewDims.w * deckScale + 12) / 2)
@@ -1384,6 +1314,7 @@ export function PrintDeck(props: PrintDeckProps) {
                     />
                   ) : (
                   <ScaledPage
+                    showDescription={descriptionOn}
                     sheet={sheet}
                     isLastSheet={navItem.sheetIndex === sheets.length - 1}
                     activeSlotIndex={navItem.slotIndex}

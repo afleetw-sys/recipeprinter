@@ -97,7 +97,7 @@ export function HeroProductPhoto({
   const card = PRINTED_CARDS[cardKey] ?? PRINTED_CARDS.korean;
   return (
     <div className={`relative mx-auto w-full ${wide ? "max-w-[860px]" : "max-w-[460px]"}`}>
-      <div className="overflow-hidden rounded-2xl border border-line bg-white p-1.5">
+      <div className="overflow-hidden rounded-2xl border border-line bg-card p-1.5">
         <Image
           src={card.src}
           width={card.width}
@@ -258,7 +258,7 @@ export function FeatureRows({
           <div key={feature.heading} className="grid items-center gap-cp-5 lg:grid-cols-2 lg:gap-cp-7">
             <div className={index % 2 === 1 ? "lg:order-2" : ""}>{copy}</div>
             <figure className={`${PROOF_SLOT} ${index % 2 === 1 ? "lg:order-1" : ""}`}>
-              <div className="overflow-hidden rounded-2xl border border-line bg-white p-1.5">
+              <div className="overflow-hidden rounded-2xl border border-line bg-card p-1.5">
                 <Image
                   src={image.src}
                   width={image.width}
@@ -292,7 +292,7 @@ export function PhotoGallery({ cardKeys }: { cardKeys: string[] }) {
         const card = PRINTED_CARDS[key];
         return (
           <figure key={key} className="flex flex-col gap-cp-3">
-            <div className="overflow-hidden rounded-xl border border-line bg-white p-1.5">
+            <div className="overflow-hidden rounded-xl border border-line bg-card p-1.5">
               <Image
                 src={card.src}
                 width={card.width}

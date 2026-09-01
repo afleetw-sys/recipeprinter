@@ -30,6 +30,9 @@ interface PrintConfigPanelProps {
   setCardSize: Dispatch<SetStateAction<PrintCardSize>>;
   anyRecipeHasImage: boolean;
   anyRecipeHasSourceUrl: boolean;
+  anyRecipeHasDescription: boolean;
+  showDescription: boolean;
+  setShowDescription: Dispatch<SetStateAction<boolean>>;
   bookPhotoStyle: PhotoStyle | null;
   applyBookPhotoStyle: (mode: PhotoStyle) => void;
   showPhoto: boolean;
@@ -70,6 +73,9 @@ export function PrintConfigPanel({
   setCardSize,
   anyRecipeHasImage,
   anyRecipeHasSourceUrl,
+  anyRecipeHasDescription,
+  showDescription,
+  setShowDescription,
   bookPhotoStyle,
   applyBookPhotoStyle,
   showPhoto,
@@ -157,6 +163,9 @@ export function PrintConfigPanel({
           setCardSize={setCardSize}
           anyRecipeHasImage={anyRecipeHasImage}
           anyRecipeHasSourceUrl={anyRecipeHasSourceUrl}
+          anyRecipeHasDescription={anyRecipeHasDescription}
+          showDescription={showDescription}
+          setShowDescription={setShowDescription}
           bookPhotoStyle={bookPhotoStyle}
           applyBookPhotoStyle={applyBookPhotoStyle}
           showPhoto={showPhoto}

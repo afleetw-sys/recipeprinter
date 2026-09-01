@@ -108,11 +108,12 @@ export function CookbookWelcomeDialog({
             </>
           )}
         </div>
+        {/* Cancel-left, commit-right, as every confirm dialog in the app is. */}
         <div className="cookbook-welcome__actions">
+          <button type="button" className="btn btn-ghost" onClick={onLeave}>Back to recipe cards</button>
           <button type="button" className="btn btn-primary" onClick={onStart}>
             {purchased ? "Open my cookbook" : "Start editing"}
           </button>
-          <button type="button" className="btn btn-ghost" onClick={onLeave}>Back to recipe cards</button>
         </div>
       </div>
     </Dialog>

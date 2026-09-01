@@ -86,7 +86,9 @@ export function MobileStructureSheet({
             <div>
               <h2>Book</h2>
               <span>
-                {recipeCount} recipes · {namedSectionCount(sections)} sections
+                {recipeCount} {recipeCount === 1 ? "recipe" : "recipes"} ·{" "}
+                {namedSectionCount(sections)}{" "}
+                {namedSectionCount(sections) === 1 ? "chapter" : "chapters"}
               </span>
             </div>
             <button
@@ -103,7 +105,11 @@ export function MobileStructureSheet({
             {/* Book-wide settings — the same controls as the desktop "Book
                 Settings" panel, which the mobile config drawer never exposes
                 (it only ever opens the Themes section). */}
+            {/* Grouped the way the desktop panel groups them: pages the book
+                gains, then what every recipe carries. Same settings, same two
+                questions, so the same two headings. */}
             <div className="recipe-structure-sheet__settings">
+              <span className="recipe-structure-sheet__group-label">Extra pages</span>
               <Checkbox
                   label="Table of contents"
                   checked={Boolean(projectMeta.meta.tableOfContents)}
@@ -116,7 +122,7 @@ export function MobileStructureSheet({
               />
               {anyRecipeHasImage && (
                 <div className="recipe-structure-sheet__photos">
-                  <span className="recipe-structure-sheet__group-label" id="sheet-photos-label">
+                  <span className="recipe-config-sublabel" id="sheet-photos-label">
                     Photos
                   </span>
                   <div
@@ -163,8 +169,8 @@ export function MobileStructureSheet({
                       <input
                         className="recipe-structure-sheet__section-title"
                         value={section.title ?? ""}
-                        placeholder="Section name"
-                        aria-label="Section name"
+                        placeholder="Chapter name"
+                        aria-label="Chapter name"
                         onChange={(event) =>
                           renameSectionEverywhere(section.id, event.target.value)
                         }
@@ -173,7 +179,7 @@ export function MobileStructureSheet({
                         <button
                           type="button"
                           className="recipe-structure-sheet__move-up"
-                          aria-label="Move section up"
+                          aria-label="Move chapter up"
                           disabled={!canSectionUp}
                           onClick={() => moveSectionInBook(section.id, -1)}
                         >
@@ -182,7 +188,7 @@ export function MobileStructureSheet({
                         <button
                           type="button"
                           className="recipe-structure-sheet__move-down"
-                          aria-label="Move section down"
+                          aria-label="Move chapter down"
                           disabled={!canSectionDown}
                           onClick={() => moveSectionInBook(section.id, 1)}
                         >
@@ -191,8 +197,8 @@ export function MobileStructureSheet({
                         <button
                           type="button"
                           className="recipe-structure-sheet__delete"
-                          aria-label={`Delete ${section.title || "section"}`}
-                          title="Delete section"
+                          aria-label={`Delete ${section.title || "chapter"}`}
+                          title="Delete chapter"
                           onClick={() => requestDeleteSection(section.id)}
                         >
                           <TrashIcon size={ICON_SIZE.sm} />
@@ -257,7 +263,7 @@ export function MobileStructureSheet({
               onClick={addStructureSection}
             >
               <PlusIcon size={ICON_SIZE.sm} />
-              Add section
+              Add chapter
             </button>
             <button
               type="button"

@@ -16,6 +16,9 @@ interface PrintSetupControlsProps {
   setCardSize: Dispatch<SetStateAction<PrintCardSize>>;
   anyRecipeHasImage: boolean;
   anyRecipeHasSourceUrl: boolean;
+  anyRecipeHasDescription: boolean;
+  showDescription: boolean;
+  setShowDescription: Dispatch<SetStateAction<boolean>>;
   bookPhotoStyle: PhotoStyle | null;
   applyBookPhotoStyle: (mode: PhotoStyle) => void;
   showPhoto: boolean;
@@ -42,6 +45,9 @@ export function PrintSetupControls({
   setCardSize,
   anyRecipeHasImage,
   anyRecipeHasSourceUrl,
+  anyRecipeHasDescription,
+  showDescription,
+  setShowDescription,
   bookPhotoStyle,
   applyBookPhotoStyle,
   showPhoto,
@@ -72,10 +78,17 @@ export function PrintSetupControls({
         </div>
       )}
 
-      {/* Cookbook photos are a book-wide choice (None / header / full page),
-          overridable per page; plain cards keep the simple on/off checkbox.
-          
-          Shown whether or not anything has a photo yet. This is where the book
+      {/* A cookbook's settings answer two different questions, and they used to
+          be shuffled together: "Photos" sat above an "Include" list holding the
+          table of contents, the opening page AND the recipe link. Two of those
+          three add a PAGE to the book; the third changes every recipe, which is
+          what the photo control above it was already doing. So they are grouped
+          by what they do — pages the book gains, then what each recipe carries.
+          `bookDesignSettings` (the pages half) comes first: it is about the
+          book's shape, which you decide before its finish. */}
+      {bookDesignSettings}
+
+      {/* Shown whether or not anything has a photo yet. This is where the book
           says how photos are laid out, so gating it on `anyRecipeHasImage`
           meant the setting vanished from the panel for a new book and came
           back later on its own — which reads as a control that was removed,
@@ -83,7 +96,25 @@ export function PrintSetupControls({
           arrive, since it is what every photo added afterwards inherits. */}
       {cookbookMode && (
         <div className="recipe-config-section recipe-config-section--photos">
-          <span className="recipe-config-label" id="recipe-photos-label">
+          <span className="recipe-config-label">Every recipe</span>
+          {anyRecipeHasDescription && (
+            <Checkbox
+                label="Description"
+                checked={showDescription}
+                onChange={(event) => setShowDescription(event.target.checked)}
+            />
+          )}
+          {anyRecipeHasSourceUrl && (
+            <Checkbox
+                label="Recipe link"
+                checked={showSourceUrl}
+                onChange={(event) => setShowSourceUrl(event.target.checked)}
+            />
+          )}
+          {/* Plain text, not a second uppercase heading: the tiles belong to
+              "Every recipe" like the checkboxes above them, and an eyebrow here
+              made them a section of their own. */}
+          <span className="recipe-config-sublabel" id="recipe-photos-label">
             Photos
           </span>
           <div
@@ -113,10 +144,12 @@ export function PrintSetupControls({
         </div>
       )}
 
-      {bookDesignSettings}
-
+      {/* Recipe cards have no pages to add, so they get only the second group —
+          and it is the same group, under the same word, holding the same
+          "Recipe link" checkbox a cookbook has. It said "Include" until the
+          cookbook's copy stopped. */}
       {!cookbookMode && (anyRecipeHasImage || anyRecipeHasSourceUrl) && (
-        <CheckboxGroup label="Include" className="recipe-config-section recipe-config-section--settings">
+        <CheckboxGroup label="Every recipe" className="recipe-config-section recipe-config-section--settings">
           {anyRecipeHasImage && (
             <Checkbox
                 label="Recipe photo"

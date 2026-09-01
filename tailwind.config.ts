@@ -53,13 +53,10 @@ const config: Config = {
           50: "color-mix(in srgb, var(--cp-accent) 8%, var(--cp-card))",
           100: "color-mix(in srgb, var(--cp-accent) 18%, var(--cp-card))",
         },
-        teal: {
-          // Alias of the brand accent (kept for existing references).
-          DEFAULT: token("--cp-accent"),
-          50: "color-mix(in srgb, var(--cp-accent) 7%, var(--cp-card))",
-        },
         page: token("--cp-page"),
         card: token("--cp-card"),
+        // The workspace frame: top bar, page rail, settings panel.
+        chrome: token("--cp-chrome-ground"),
         error: token("--cp-error"),
         // Hairline borders (--cp-line / --cp-line-strong)
         line: token("--cp-line"),

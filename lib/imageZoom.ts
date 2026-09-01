@@ -14,6 +14,11 @@ export const IMAGE_ZOOM_MAX = 3;
     making the buttons feel like they barely do anything. */
 export const IMAGE_ZOOM_STEP = 0.25;
 
+/** The steps the control's percentage offers, matching the deck's own menu.
+    1 is the cover fit and the floor (see above), so it is annotated rather
+    than being one more number in a list. */
+export const IMAGE_ZOOM_STEPS = [1, 1.5, 2, 2.5, 3] as const;
+
 export function clampImageZoom(zoom: number): number {
   if (!Number.isFinite(zoom)) return IMAGE_ZOOM_MIN;
   return Math.min(IMAGE_ZOOM_MAX, Math.max(IMAGE_ZOOM_MIN, zoom));

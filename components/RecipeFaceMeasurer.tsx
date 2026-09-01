@@ -209,6 +209,7 @@ export function RecipeFaceMeasurer({
   template,
   hasPhoto,
   showSourceUrl,
+  showDescription,
   cookbookMode = false,
   onSettled,
 }: {
@@ -217,6 +218,7 @@ export function RecipeFaceMeasurer({
   template: RecipePrintTemplate;
   hasPhoto: boolean;
   showSourceUrl: boolean;
+  showDescription: boolean;
   /** Match the real card's cookbook layout (link in header, no footer) so the
       off-screen measurement reflects what actually prints. */
   cookbookMode?: boolean;
@@ -525,6 +527,7 @@ export function RecipeFaceMeasurer({
               hasBackFace={pages.length > 1}
               showImage={i === 0 && hasPhoto}
               showSourceUrl={showSourceUrl}
+              showDescription={showDescription}
               continued={i > 0}
               contentScale={page.contentScale}
               template={template}

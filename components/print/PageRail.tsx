@@ -13,6 +13,7 @@ import {
   type SetStateAction,
 } from "react";
 import { createPortal } from "react-dom";
+import { MoveToSectionMenu } from "@/components/print/MoveToSectionMenu";
 import {
   CheckIcon,
   ChevronDownIcon,
@@ -120,6 +121,7 @@ interface PageRailProps {
   previewTemplate: RecipePrintTemplate;
   continueOnBack: boolean;
   previewSourceUrlOn: boolean;
+  previewDescriptionOn: boolean;
   organizeMode: boolean;
   enterOrganizeMode: () => void;
   exitOrganizeMode: () => void;
@@ -182,6 +184,7 @@ export function PageRail(props: PageRailProps) {
     previewTemplate,
     continueOnBack,
     previewSourceUrlOn,
+    previewDescriptionOn,
     organizeMode,
     enterOrganizeMode,
     exitOrganizeMode,
@@ -277,7 +280,6 @@ export function PageRail(props: PageRailProps) {
   const [tileMenu, setTileMenu] = useState<
     { x: number; y: number; ids: string[]; label: string } | null
   >(null);
-  const tileMenuRef = useRef<HTMLDivElement | null>(null);
   const addMenuTriggerRef = useRef<HTMLButtonElement | null>(null);
   const addMenuPanelRef = useRef<HTMLDivElement | null>(null);
 
@@ -295,16 +297,6 @@ export function PageRail(props: PageRailProps) {
       label: ids.length > 1 ? `Move ${ids.length} recipes to` : `Move ${label} to`,
     });
   }
-
-  // Keep the menu on screen: it opens at the pointer, so near the right or
-  // bottom edge it has to come back inside once its real size is known.
-  useLayoutEffect(() => {
-    const node = tileMenuRef.current;
-    if (!node || !tileMenu) return;
-    const rect = node.getBoundingClientRect();
-    node.style.left = `${Math.max(8, Math.min(tileMenu.x, window.innerWidth - rect.width - 8))}px`;
-    node.style.top = `${Math.max(8, Math.min(tileMenu.y, window.innerHeight - rect.height - 8))}px`;
-  }, [tileMenu]);
 
   /* The Add overflow is portalled to the body and placed by hand.
      It used to be an absolutely-positioned child of the add row, which put it
@@ -335,37 +327,6 @@ export function PageRail(props: PageRailProps) {
       window.removeEventListener("scroll", place, true);
     };
   }, [addMenuOpen]);
-
-  useEffect(() => {
-    if (!tileMenu) return;
-    const close = () => setTileMenu(null);
-    const onPointerDown = (event: PointerEvent) => {
-      if (!tileMenuRef.current?.contains(event.target as Node)) close();
-    };
-    // Capture Escape before the page's own handler, so closing the menu doesn't
-    // also clear the selection the menu was about to act on.
-    const onKeyDown = (event: KeyboardEvent) => {
-      if (event.key !== "Escape") return;
-      event.stopPropagation();
-      close();
-    };
-    // Anything scrolling underneath moves the tile the menu points at — except
-    // the menu's own scroll when it holds more sections than fit.
-    const onScroll = (event: Event) => {
-      if (tileMenuRef.current?.contains(event.target as Node)) return;
-      close();
-    };
-    window.addEventListener("pointerdown", onPointerDown, true);
-    window.addEventListener("keydown", onKeyDown, true);
-    window.addEventListener("resize", close);
-    document.addEventListener("scroll", onScroll, true);
-    return () => {
-      window.removeEventListener("pointerdown", onPointerDown, true);
-      window.removeEventListener("keydown", onKeyDown, true);
-      window.removeEventListener("resize", close);
-      document.removeEventListener("scroll", onScroll, true);
-    };
-  }, [tileMenu]);
 
   const tileMenuSections = tileMenu
     ? sections.filter((section) => {
@@ -435,7 +396,7 @@ export function PageRail(props: PageRailProps) {
                 <PlusIcon size={ICON_SIZE.md} />
                 Add recipes
               </button>
-              {/* "Add section" is NOT here. This whole header only renders when
+              {/* "Add chapter" is NOT here. This whole header only renders when
                   `!organizeMode`, so the copy that used to sit at this spot was
                   gated on `organizeMode` inside a block that guarantees the
                   opposite — unreachable, and the button simply vanished from the
@@ -456,17 +417,22 @@ export function PageRail(props: PageRailProps) {
                   </button>
                   {addMenuOpen &&
                     createPortal(
-                      <div ref={addMenuPanelRef} className="recipe-page-rail__add-menu" role="menu">
+                      <div
+                        ref={addMenuPanelRef}
+                        className="cp-menu recipe-page-rail__add-menu"
+                        role="menu"
+                      >
                         <button
                           type="button"
                           role="menuitem"
+                          className="cp-menu__item"
                           onClick={() => {
                             setAddMenuOpen(false);
                             addSectionDivider();
                           }}
                         >
                           <PlusIcon size={ICON_SIZE.sm} />
-                          Add section
+                          Add chapter
                         </button>
                       </div>,
                       document.body,
@@ -490,7 +456,7 @@ export function PageRail(props: PageRailProps) {
                       holds nothing but recipes, the second "recipes" said nothing
                       the first had not — and the view it opens announces itself as
                       "Organize recipes" once you are there. Add keeps its noun,
-                      because there it separates the button from the "Add section"
+                      because there it separates the button from the "Add chapter"
                       in its own overflow. */}
                   <span>Organize</span>
                   <ChevronRightIcon size={ICON_SIZE.sm} />
@@ -534,15 +500,15 @@ export function PageRail(props: PageRailProps) {
                     <SortIcon size={ICON_SIZE.md} />
                   </IconButton>
                   {sortMenuOpen && (
-                    <div className="recipe-organize-bar__sort-menu" role="menu">
-                      <p className="recipe-organize-bar__sort-heading">Sort recipes</p>
+                    <div className="cp-menu recipe-organize-bar__sort-menu" role="menu">
+                      <p className="cp-menu__heading">Sort recipes</p>
                       {RAIL_SORT_OPTIONS.map((option) => (
                         <button
                           key={option.value}
                           type="button"
                           role="menuitemradio"
                           aria-checked={railSortMode === option.value}
-                          className={railSortMode === option.value ? "is-active" : ""}
+                          className={`cp-menu__item ${railSortMode === option.value ? "is-active" : ""}`}
                           onClick={() => {
                             applyRailSort(option.value);
                             setSortMenuOpen(false);
@@ -595,8 +561,8 @@ export function PageRail(props: PageRailProps) {
                       shares a row with reflows around it — at which point
                       "Organize recipes" wraps to two lines every time you tick
                       a recipe. The behaviour still reads: you selected some
-                      recipes, you pressed Add section, they are in it. */}
-                  <span>Add section</span>
+                      recipes, you pressed Add chapter, they are in it. */}
+                  <span>Add chapter</span>
                 </button>
               </div>
             </div>
@@ -675,6 +641,12 @@ export function PageRail(props: PageRailProps) {
                     leftNav?.kind === "divider" &&
                     spread.right != null &&
                     sheets[spread.right]?.layoutKind === "section-photo";
+                  // Contents that runs onto its facing page is one opening — the
+                  // reader sees a single list across two sheets — so it takes one
+                  // rail tile, the way an image spread does. Contents that runs on
+                  // to the NEXT spread is somewhere else you turn to, and keeps a
+                  // tile of its own.
+                  const isTocSpread = leftNav?.kind === "toc" && rightNav?.kind === "toc";
                   if (leftIsImage || rightIsImage) {
                     const recipeSheet = leftIsImage ? spread.right : spread.left;
                     const recipeNav = [rightNav, leftNav].find((item) => item?.kind === "recipe") ?? null;
@@ -693,9 +665,19 @@ export function PageRail(props: PageRailProps) {
                       focusSheet: spread.left,
                       nav: leftNav,
                       thumbSheets: [spread.left, spread.right].filter((s): s is number => s != null),
-                      label: leftNav?.label ?? "Section",
+                      label: leftNav?.label ?? "Chapter",
                       soleUnit: true,
                       sectionId: namedSectionIdFor(leftNav),
+                    });
+                  } else if (isTocSpread && spread.left != null) {
+                    addUnit({
+                      index,
+                      focusSheet: spread.left,
+                      nav: leftNav,
+                      thumbSheets: [spread.left, spread.right].filter((s): s is number => s != null),
+                      label: leftNav?.label ?? "Contents",
+                      soleUnit: true,
+                      sectionId: null,
                     });
                   } else if (spread.single) {
                     const nav = rightNav ?? leftNav;
@@ -827,7 +809,7 @@ export function PageRail(props: PageRailProps) {
                         <button
                           type="button"
                           className="recipe-page-rail__grip recipe-page-rail__grip--section"
-                          aria-label={`Drag to reorder the ${section.title} section`}
+                          aria-label={`Drag to reorder the ${section.title} chapter`}
                           onPointerDown={(event) => railDrag.start(event, "section", section.id)}
                           onClick={(event) => event.stopPropagation()}
                         >
@@ -837,8 +819,8 @@ export function PageRail(props: PageRailProps) {
                           <input
                             className="recipe-page-rail__section-title-input"
                             value={section.title ?? ""}
-                            placeholder="Section name"
-                            aria-label="Section name"
+                            placeholder="Chapter name"
+                            aria-label="Chapter name"
                             onChange={(event) => renameSectionEverywhere(section.id, event.target.value)}
                             onPointerDown={(event) => event.stopPropagation()}
                           />
@@ -848,8 +830,8 @@ export function PageRail(props: PageRailProps) {
                         <IconButton
                           tone="danger"
                           className="recipe-page-rail__section-delete"
-                          aria-label={`Delete ${section.title || "section"}`}
-                          title="Delete section"
+                          aria-label={`Delete ${section.title || "chapter"}`}
+                          title="Delete chapter"
                           onClick={(event) => {
                             event.stopPropagation();
                             requestDeleteSection(section.id);
@@ -946,6 +928,7 @@ export function PageRail(props: PageRailProps) {
                                 template={previewTemplate}
                                 doubleSided={continueOnBack}
                                 showSourceUrl={previewSourceUrlOn}
+                                showDescription={previewDescriptionOn}
                                 showCutLines={false}
                                 // See the single-thumb note: flat stand-in only.
                                 showDecoration={false}
@@ -1064,6 +1047,7 @@ export function PageRail(props: PageRailProps) {
                         template={previewTemplate}
                         doubleSided={continueOnBack}
                         showSourceUrl={previewSourceUrlOn}
+                                showDescription={previewDescriptionOn}
                         showCutLines={false}
                         // Rail thumbnails paint a flat CSS stand-in for the
                         // decorative layer (print.css); rendering the real one
@@ -1089,43 +1073,16 @@ export function PageRail(props: PageRailProps) {
               exists yet. The real page appears only once parsing completes. */}
           {!pendingAddAfterRecipeId && <PendingImportRows items={pendingImportItems} />}
 
-          {tileMenu &&
-            createPortal(
-              <div
-                ref={tileMenuRef}
-                className="rail-tile-menu"
-                role="menu"
-                style={{ top: tileMenu.y, left: tileMenu.x }}
-              >
-                <p className="rail-tile-menu__heading">{tileMenu.label}</p>
-                {tileMenuSections.map((section) => (
-                  <button
-                    key={section.id}
-                    type="button"
-                    role="menuitem"
-                    onClick={() => {
-                      moveRecipesToSection(tileMenu.ids, section.id);
-                      setTileMenu(null);
-                    }}
-                  >
-                    {section.title?.trim() || "Untitled section"}
-                  </button>
-                ))}
-                <button
-                  type="button"
-                  role="menuitem"
-                  className="rail-tile-menu__new"
-                  onClick={() => {
-                    makeSectionFromSelection(new Set(tileMenu.ids));
-                    setTileMenu(null);
-                  }}
-                >
-                  <PlusIcon size={ICON_SIZE.sm} />
-                  New section
-                </button>
-              </div>,
-              document.body,
-            )}
+          {tileMenu && (
+            <MoveToSectionMenu
+              anchor={tileMenu}
+              heading={tileMenu.label}
+              sections={tileMenuSections}
+              onMove={(sectionId) => moveRecipesToSection(tileMenu.ids, sectionId)}
+              onNewSection={() => makeSectionFromSelection(new Set(tileMenu.ids))}
+              onClose={() => setTileMenu(null)}
+            />
+          )}
         </nav>
   );
 }

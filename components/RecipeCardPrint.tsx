@@ -250,6 +250,7 @@ export const RecipeCardFace = memo(function RecipeCardFace({
   showImage = false,
   photoOnFacingPage = false,
   showSourceUrl = false,
+  showDescription = true,
   continued = false,
   contentScale,
   inlineEdit,
@@ -273,6 +274,9 @@ export const RecipeCardFace = memo(function RecipeCardFace({
       "Change photo" control) live on the image page. */
   photoOnFacingPage?: boolean;
   showSourceUrl?: boolean;
+  /** Defaults on: a description printed under the title is what every book did
+      before the toggle existed, and a project saved then carries no value. */
+  showDescription?: boolean;
   continued?: boolean;
   /** Shrink-to-fit factor for this face's content — see `RecipeFace.contentScale`. */
   contentScale?: number;
@@ -410,7 +414,7 @@ export const RecipeCardFace = memo(function RecipeCardFace({
   }
 
   function renderCookbookDescription() {
-    if (!cookbookMode || !showHeader) return null;
+    if (!cookbookMode || !showHeader || !showDescription) return null;
     const target: RecipeCardEditTarget = { kind: "description" };
     // A field only while it is the one being edited. A note runs to several
     // lines more often than anything else on the card, and `rows` counts hard
@@ -1766,12 +1770,6 @@ export const TableOfContentsFace = memo(function TableOfContentsFace({
             ),
           )}
         </ol>
-        {inlineEdit && !continued && (
-          <p className="recipe-card__toc-note no-print">
-            Chapters, recipes and page numbers are pulled from your pages — to change them,
-            edit a section or recipe.
-          </p>
-        )}
       </div>
     </article>
   );

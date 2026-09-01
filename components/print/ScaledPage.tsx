@@ -19,10 +19,11 @@ import {
   IMAGE_ZOOM_MAX,
   IMAGE_ZOOM_MIN,
   IMAGE_ZOOM_STEP,
+  IMAGE_ZOOM_STEPS,
   clampImageZoom,
-  formatImageZoom,
   zoomByWheel,
 } from "@/lib/imageZoom";
+import { ZoomControl } from "@/components/print/ZoomControl";
 import { markImageAvailable, markImageUnavailable } from "@/lib/imageFailure";
 import { PAGE_DIMS } from "@/lib/printGeometry";
 import type { CoverConfig } from "@/types/recipe";
@@ -50,6 +51,7 @@ export const ScaledPage = memo(function ScaledPage({
   template,
   doubleSided,
   showSourceUrl,
+  showDescription,
   showCutLines,
   showDecoration = true,
   cookbookMode = false,
@@ -72,6 +74,7 @@ export const ScaledPage = memo(function ScaledPage({
   template: RecipePrintTemplate;
   doubleSided: boolean;
   showSourceUrl: boolean;
+  showDescription: boolean;
   cookbookMode?: boolean;
   /** Reveal the fields a recipe does not have yet — see RecipeCardPrint. */
   showEmptyFields?: boolean;
@@ -160,6 +163,13 @@ export const ScaledPage = memo(function ScaledPage({
     const onWheel = (event: WheelEvent) => {
       if (!event.ctrlKey && !event.metaKey) return;
       event.preventDefault();
+      // And stop here. The deck has its own pinch handler (useDeckScroller),
+      // and a wheel event on the photo bubbles straight up to it — so a pinch
+      // with the pointer over a full-page picture used to zoom the picture AND
+      // the whole book at once, which is what made it feel unpredictable: the
+      // gesture did different things depending on where the mouse happened to
+      // be. Over a photo, the photo wins; anywhere else, the deck does.
+      event.stopPropagation();
       onZoomChange(zoomByWheel(imageZoom, event.deltaY));
     };
     node.addEventListener("wheel", onWheel, { passive: false });
@@ -296,25 +306,20 @@ export const ScaledPage = memo(function ScaledPage({
             the same job on a trackpad; this is the part you can find without
             knowing that. */}
         {onZoomChange && (
-          <div className="recipe-image-spread__zoom no-print">
-            <button
-              type="button"
-              aria-label="Zoom out"
-              disabled={zoom <= IMAGE_ZOOM_MIN}
-              onClick={() => onZoomChange(clampImageZoom(zoom - IMAGE_ZOOM_STEP))}
-            >
-              −
-            </button>
-            <span aria-live="polite">{formatImageZoom(zoom)}</span>
-            <button
-              type="button"
-              aria-label="Zoom in"
-              disabled={zoom >= IMAGE_ZOOM_MAX}
-              onClick={() => onZoomChange(clampImageZoom(zoom + IMAGE_ZOOM_STEP))}
-            >
-              +
-            </button>
-          </div>
+          <ZoomControl
+            className="recipe-image-spread__zoom"
+            compact
+            label="Photo zoom"
+            value={zoom}
+            min={IMAGE_ZOOM_MIN}
+            max={IMAGE_ZOOM_MAX}
+            presets={IMAGE_ZOOM_STEPS}
+            presetNote={(step) => (step === IMAGE_ZOOM_MIN ? "Fit" : undefined)}
+            onStep={(direction) =>
+              onZoomChange(clampImageZoom(zoom + direction * IMAGE_ZOOM_STEP))
+            }
+            onSet={(next) => onZoomChange(clampImageZoom(next))}
+          />
         )}
       </div>
     );
@@ -542,6 +547,7 @@ export const ScaledPage = memo(function ScaledPage({
                     showImage={slot.showPhoto}
                     photoOnFacingPage={slot.hidePhoto}
                     showSourceUrl={showSourceUrl}
+                    showDescription={showDescription}
                     continued={slot.isContinuation}
                     template={template}
                     showDecoration={showDecoration}
