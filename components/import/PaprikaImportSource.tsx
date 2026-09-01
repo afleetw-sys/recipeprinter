@@ -35,10 +35,10 @@ const ACCEPT = ".paprikarecipes,.paprikarecipe,.zip";
 /**
  * Where the file is.
  *
- * This was four platforms with their own line each, which was eight lines
- * saying nearly the same thing four times: the command has one name
- * everywhere, and only its menu and its landing place differ. Two sentences
- * carry the whole of it.
+ * Numbered steps, in the order you actually press them. Prose describing the
+ * menus ("the File menu on Mac and Windows, Settings on iPhone and Android")
+ * asked the cook to work out which half of the sentence was theirs; a list you
+ * follow does not.
  *
  * It expands in place rather than opening a dialog, because on the print page
  * this panel is ALREADY inside the Add-recipe dialog and a modal over a modal
@@ -57,16 +57,12 @@ function ExportHelp() {
         Where do I find that file?
       </button>
       {open && (
-        <div className="mt-cp-2 flex flex-col gap-1 text-cp-caption text-ink-soft">
-          <p>
-            Paprika calls it Export Recipes: the File menu on Mac and Windows, Settings on
-            iPhone and Android.
-          </p>
-          <p>
-            Choose the Paprika Recipe Format and it saves one file holding every recipe.
-            iPhone puts it in Files, Android in Downloads.
-          </p>
-        </div>
+        <ol className="paprika-export-steps mt-cp-2 text-cp-caption text-ink-soft">
+          <li>Open the Paprika app.</li>
+          <li>Click the menu in the top left.</li>
+          <li>Go to Settings.</li>
+          <li>Click Export Recipes, then Export.</li>
+        </ol>
       )}
     </div>
   );

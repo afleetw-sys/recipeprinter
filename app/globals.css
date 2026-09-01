@@ -1770,6 +1770,21 @@
     font-size: var(--cp-fs-small);
   }
 
+  /* Numbered steps for finding a Paprika export. A list, so the numbers are
+     the browser's own and the order survives translation and screen readers. */
+  .paprika-export-steps {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    padding-left: 1.25rem;
+    list-style: decimal;
+    line-height: 1.45;
+  }
+  .paprika-export-steps li::marker {
+    color: var(--cp-ink-soft);
+    font-weight: 700;
+  }
+
   .mode-toggle-overflow {
     position: relative;
   }
