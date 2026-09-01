@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState, type ComponentType } from "react";
+import { useMemo, useState, type ReactNode } from "react";
 import { useCookPilotAuth } from "@/components/CookPilotAuth";
 import { CookPilotImportSource, prewarmCookPilotImport } from "@/components/CookPilotRecipePicker";
 import { PaprikaImportSource } from "@/components/import/PaprikaImportSource";
@@ -8,11 +8,11 @@ import { getCachedCookPilotSummaries } from "@/lib/cookpilotRecipes";
 import { cachedPaprikaLibrary } from "@/lib/paprikaLibrary";
 import type { QueueItem } from "@/types/recipe";
 import {
-  BookIcon,
   ChevronLeftIcon,
   ChevronRightIcon,
   CookPilotLogoIcon,
   ICON_SIZE,
+  PaprikaLogoIcon,
 } from "@/components/icons";
 
 export { prewarmCookPilotImport };
@@ -46,14 +46,18 @@ function IntegrationRow({
   description,
   status,
   addedCount,
-  icon: Icon,
+  icon,
   onOpen,
 }: {
   name: string;
   description: string;
   status: string;
   addedCount: number;
-  icon: ComponentType<{ size?: number }>;
+  /** The product's own mark, at whatever size suits it. CookPilot's is a
+      transparent glyph that wants room around it; Paprika's is a square app
+      icon that fills the tile. Passing a node rather than a component is what
+      lets each one arrive as it actually exists. */
+  icon: ReactNode;
   onOpen: () => void;
 }) {
   return (
@@ -64,8 +68,8 @@ function IntegrationRow({
         aria-label={`Import from ${name}`}
         className="group flex w-full items-center gap-cp-3 rounded-xl border border-line bg-card p-cp-3 text-left transition-colors hover:border-line-strong"
       >
-        <span className="h-11 w-11 flex-shrink-0 rounded-xl bg-page grid place-items-center text-ink">
-          <Icon size={22} />
+        <span className="h-11 w-11 flex-shrink-0 overflow-hidden rounded-xl bg-page grid place-items-center text-ink">
+          {icon}
         </span>
 
         <span className="min-w-0 flex-1">
@@ -172,7 +176,7 @@ export function RecipeAppsPanel({
           description="Your saved CookPilot recipes, ready to print."
           status={cookPilotStatus}
           addedCount={addedCounts.cookpilot}
-          icon={CookPilotLogoIcon}
+          icon={<CookPilotLogoIcon size={22} />}
           onOpen={() => open("cookpilot")}
         />
         <IntegrationRow
@@ -180,7 +184,7 @@ export function RecipeAppsPanel({
           description="Export your Paprika library and open the file here."
           status={paprikaStatus}
           addedCount={addedCounts.paprika}
-          icon={BookIcon}
+          icon={<PaprikaLogoIcon size={44} />}
           onOpen={() => open("paprika")}
         />
       </ul>

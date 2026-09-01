@@ -17,8 +17,9 @@ import {
   setPaprikaLibrary,
 } from "@/lib/paprikaLibrary";
 import type { QueueItem } from "@/types/recipe";
+import { Dialog } from "@/components/Dialog";
 import { RecipeSourceList } from "@/components/import/RecipeSourceList";
-import { BookIcon, ICON_SIZE, SpinnerIcon, UploadIcon } from "@/components/icons";
+import { BookIcon, ICON_SIZE, SpinnerIcon, UploadIcon, XIcon } from "@/components/icons";
 
 /**
  * Import from a Paprika export.
@@ -41,29 +42,56 @@ const EXPORT_STEPS: { platform: string; steps: string }[] = [
   { platform: "Android", steps: "Menu → Settings → Export Recipes. It lands in Downloads." },
 ];
 
-function ExportHelp() {
-  const [open, setOpen] = useState(false);
+/**
+ * The export steps, as a dialog rather than a disclosure under the dropzone.
+ *
+ * Someone opening this has left the app and gone to Paprika on another device
+ * — they are reading four platforms' worth of steps to find their own, not
+ * glancing at a footnote. Expanding in place pushed the dropzone they came
+ * for down the panel and, inside the Add-recipe dialog, resized it mid-read.
+ */
+function ExportHelpDialog({ onClose }: { onClose: () => void }) {
   return (
-    <div className="mt-cp-4">
+    <Dialog
+      onClose={onClose}
+      labelledBy="paprika-export-help-title"
+      dismissOnBackdropClick
+      portal
+      className="fixed inset-0 z-50 flex items-stretch sm:items-center justify-center bg-ink/30 p-0 sm:px-cp-4 sm:py-cp-6"
+      panelClassName="panel panel--modal w-full sm:max-w-[460px] h-full sm:h-auto rounded-none border-0 sm:rounded-2xl sm:border p-cp-5 flex flex-col gap-cp-4 relative overflow-y-auto"
+    >
       <button
         type="button"
-        className="btn-ghost btn-compact"
-        aria-expanded={open}
-        onClick={() => setOpen((value) => !value)}
+        className="absolute right-3 top-3 icon-close-btn"
+        onClick={onClose}
+        aria-label="Close"
       >
-        {open ? "Hide the export steps" : "Where do I find that file?"}
+        <XIcon size={ICON_SIZE.md} />
       </button>
-      {open && (
-        <dl className="mt-cp-3 flex flex-col gap-cp-2 text-left text-cp-caption">
-          {EXPORT_STEPS.map(({ platform, steps }) => (
-            <div key={platform} className="flex flex-col gap-0.5">
-              <dt className="font-bold text-ink">{platform}</dt>
-              <dd className="text-ink-soft">{steps}</dd>
-            </div>
-          ))}
-        </dl>
-      )}
-    </div>
+
+      <div className="pr-cp-7">
+        <h3 id="paprika-export-help-title" className="font-extrabold text-cp-dialog-title">
+          Exporting from Paprika
+        </h3>
+        <p className="text-cp-small text-ink-soft mt-1">
+          Choose the Paprika Recipe Format, and Paprika saves one file with every recipe in
+          it. Bring that file back here.
+        </p>
+      </div>
+
+      <dl className="flex flex-col gap-cp-3 text-cp-small">
+        {EXPORT_STEPS.map(({ platform, steps }) => (
+          <div key={platform} className="flex flex-col gap-0.5">
+            <dt className="field-label mb-0">{platform}</dt>
+            <dd className="text-ink-soft">{steps}</dd>
+          </div>
+        ))}
+      </dl>
+
+      <button type="button" className="btn btn-primary w-full" onClick={onClose}>
+        Got it
+      </button>
+    </Dialog>
   );
 }
 
@@ -77,6 +105,7 @@ function PaprikaFilePicker({
   onChoose: (file: File | null | undefined) => void;
 }) {
   const [dragging, setDragging] = useState(false);
+  const [helpOpen, setHelpOpen] = useState(false);
 
   function onDrop(event: DragEvent<HTMLLabelElement>) {
     event.preventDefault();
@@ -127,7 +156,14 @@ function PaprikaFilePicker({
           {error}
         </p>
       )}
-      <ExportHelp />
+      <button
+        type="button"
+        className="btn-ghost btn-compact mt-cp-4"
+        onClick={() => setHelpOpen(true)}
+      >
+        Where do I find that file?
+      </button>
+      {helpOpen && <ExportHelpDialog onClose={() => setHelpOpen(false)} />}
     </div>
   );
 }

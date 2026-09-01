@@ -204,6 +204,30 @@ export const CrownIcon = (p: IconProps) => (
   </Base>
 );
 
+// Paprika's own mark, desaturated, the same treatment CookPilot's gets above.
+//
+// A drawn pepper was tried first and read as generic fruit at 18px, which is
+// the size that matters — the row it names is an integrations list, where a
+// product's real icon is what people scan for. Nominative use: it identifies
+// whose recipes the row imports, nothing more, and the greyscale keeps it a
+// label rather than a badge implying they had anything to do with this.
+export const PaprikaLogoIcon = ({
+  size = 18,
+  className = "",
+}: {
+  size?: number;
+  className?: string;
+}) => (
+  // eslint-disable-next-line @next/next/no-img-element
+  <img
+    src="/images/paprika-logo-bw.png"
+    alt=""
+    aria-hidden
+    className={className}
+    style={{ width: size, height: size, objectFit: "contain", borderRadius: size * 0.22 }}
+  />
+);
+
 // The "Recipe apps" import tab: the libraries you can bring recipes over from.
 // Deliberately source-neutral — it stands for CookPilot, Paprika and whatever
 // comes next, so it can't be any one of their marks.
