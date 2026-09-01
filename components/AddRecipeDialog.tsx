@@ -2,7 +2,6 @@
 
 import { useEffect, useRef, useState } from "react";
 import type { ImportTab } from "@/types/recipe";
-import { useCookPilotAuth } from "@/components/CookPilotAuth";
 import { ImportPanel } from "@/components/ImportPanel";
 import { ICON_SIZE, XIcon } from "@/components/icons";
 import { Dialog } from "@/components/Dialog";
@@ -42,13 +41,18 @@ export function AddRecipeDialog({
   const [duplicateTitle, setDuplicateTitle] = useState<string | null>(null);
   /** A URL field needs one line; a paste box and a dropzone need a dialog. */
   const [mode, setMode] = useState<ImportTab>("url");
-  const { user: cookPilotUser } = useCookPilotAuth();
   /**
    * The recipe-app sources have no form to submit: they add on pick, straight
-   * from their own lists. Offering Add there is offering a button that does
-   * nothing, so the dialog drops it for that tab.
+   * from their own lists. So that tab's button finishes rather than adds.
+   *
+   * It used to drop the footer entirely, on the reasoning that an Add which
+   * adds nothing is a lie. True, but the fix was the wrong half: every other
+   * tab ends in a full-width button along the bottom, and taking it away left
+   * that one tab with no way out but the small X in the corner, and no signal
+   * that anything had been finished. The button belongs there; what it says is
+   * what needed to change.
    */
-  const canAdd = mode !== "apps";
+  const addsOnPick = mode === "apps";
   const seenFocusNonceRef = useRef(focusNonce);
 
   // A re-import of something already in the job doesn't add a second copy —
@@ -130,8 +134,11 @@ export function AddRecipeDialog({
       {/* One action. The panel's own submit is hidden (`hideSubmit`) and this
           button drives it, so there is no "Add, then Done" pair to work out
           the difference between: adding IS finishing. Whatever is happening to
-          the recipe afterwards shows on the deck this dialog was covering. */}
-      {canAdd && (
+          the recipe afterwards shows on the deck this dialog was covering.
+
+          `commitImportRef` no-ops when there is nothing uncommitted, which is
+          always the case on the recipe-apps tab, so the same handler serves
+          both labels. */}
       <div className="recipe-add-dialog__footer">
         <button
           type="button"
@@ -141,10 +148,9 @@ export function AddRecipeDialog({
             onClose();
           }}
         >
-          Add
+          {addsOnPick ? "Done" : "Add"}
         </button>
       </div>
-      )}
     </Dialog>
   );
 }
