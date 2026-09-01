@@ -16,10 +16,12 @@ import {
   cookPilotImportSummary,
   cookPilotQueueId,
   getCachedCookPilotSummaries,
+  getCachedCookPilotTotal,
   hasMoreCookPilotSummaries,
   loadAllCookPilotRecipeSummaries,
   loadCookPilotQueueItems,
   loadCookPilotRecipeSummaries,
+  loadCookPilotRecipeTotal,
   loadMoreCookPilotRecipeSummaries,
   type CookPilotRecipeSummary,
 } from "@/lib/cookpilotRecipes";
@@ -134,6 +136,7 @@ function SignedInCookPilotImport({
   const [loading, setLoading] = useState(() => getCachedCookPilotSummaries(user.uid) === null);
   const [loadingMore, setLoadingMore] = useState(false);
   const [hasMore, setHasMore] = useState(() => hasMoreCookPilotSummaries(user.uid));
+  const [total, setTotal] = useState<number | null>(() => getCachedCookPilotTotal(user.uid));
   const [error, setError] = useState<string | null>(null);
   const [loadMoreError, setLoadMoreError] = useState<string | null>(null);
   const sentinelRef = useRef<HTMLDivElement | null>(null);
@@ -170,6 +173,16 @@ function SignedInCookPilotImport({
   const visibleRows = useMemo(() => filterImportSummaries(rows, queryText), [rows, queryText]);
   const allVisibleAdded =
     visibleRows.length > 0 && visibleRows.every((row) => addedIds.has(row.queueId));
+
+  // The library total, fetched beside the first page rather than derived from
+  // it. Its own effect because it is independent of pagination — it does not
+  // change as pages arrive, and it must not gate the list on a count.
+  useEffect(() => {
+    if (getCachedCookPilotTotal(user.uid) !== null) return;
+    loadCookPilotRecipeTotal(user.uid).then((next) => {
+      if (aliveRef.current) setTotal(next);
+    });
+  }, [user.uid]);
 
   useEffect(() => {
     // Already cached from an earlier visit: state is seeded, skip the fetch.
@@ -338,10 +351,16 @@ function SignedInCookPilotImport({
   return (
     <RecipeSourceList
       heading="CookPilot recipes"
+      /* The size of the LIBRARY, not of what has scrolled into view. `total`
+         is the server's count and is right from the first render; the loaded
+         count is the fallback for when that query could not be answered, and
+         keeps its "+" so a partial tally never poses as a complete one. */
       countLabel={
-        summaries.length > 0
-          ? `(${summaries.length}${!isSearching && hasMore ? "+" : ""})`
-          : undefined
+        total !== null && total > 0
+          ? `(${total})`
+          : summaries.length > 0
+            ? `(${summaries.length}${!isSearching && hasMore ? "+" : ""})`
+            : undefined
       }
       summaries={visibleRows}
       addedIds={addedIds}

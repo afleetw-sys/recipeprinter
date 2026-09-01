@@ -4,6 +4,7 @@ import {
   Timestamp,
   collection,
   doc,
+  getCountFromServer,
   getDoc,
   getDocs,
   limit,
@@ -132,6 +133,49 @@ export function getCachedCookPilotSummaries(
 /** Whether there are more, not-yet-loaded summaries for this user. */
 export function hasMoreCookPilotSummaries(userId: string): boolean {
   return summaryCache.get(userId)?.hasMore ?? true;
+}
+
+// ── How many recipes the library holds ──────────────────────────────────────
+// A question pagination cannot answer: the first page is SUMMARY_PAGE_SIZE
+// docs whether the library holds 30 or 600, so a count taken from what has
+// loaded reported the page size rather than anything about the user's
+// recipes — "(30+)" for a library of 64. `getCountFromServer` is an
+// aggregation: Firestore counts server-side and sends back a number, without
+// reading (or billing for) the documents themselves. Governed by the same
+// security rule as the list it counts, which the picker already performs.
+const totalCache = new Map<string, number>();
+const totalPending = new Map<string, Promise<number | null>>();
+
+/** Synchronously read an already-fetched library total, or null if not yet known. */
+export function getCachedCookPilotTotal(userId: string): number | null {
+  return totalCache.get(userId) ?? null;
+}
+
+/**
+ * The number of recipes in the library, or null if it could not be counted.
+ *
+ * Resolves rather than rejects on failure on purpose: this number decorates a
+ * heading, and a picker whose recipes loaded perfectly well should not show an
+ * error because the tally beside the title did not arrive.
+ */
+export function loadCookPilotRecipeTotal(userId: string): Promise<number | null> {
+  const cached = totalCache.get(userId);
+  if (cached !== undefined) return Promise.resolve(cached);
+  const inFlight = totalPending.get(userId);
+  if (inFlight) return inFlight;
+
+  const pending = getCountFromServer(recipesCollection(userId))
+    .then((snapshot) => {
+      const total = snapshot.data().count;
+      totalCache.set(userId, total);
+      return total;
+    })
+    .catch(() => null)
+    .finally(() => {
+      totalPending.delete(userId);
+    });
+  totalPending.set(userId, pending);
+  return pending;
 }
 
 async function fetchSummaryPage(
