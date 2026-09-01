@@ -1,0 +1,17 @@
+{
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "mcp__Claude_Browser__.*|mcp__claude-in-chrome__.*",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "jq -r '.tool_input | tostring' | grep -qiE '(^|[^a-z0-9.-])(www\\.)?recipeprinter\\.com' && printf '%s' '{\"hookSpecificOutput\": {\"hookEventName\": \"PreToolUse\", \"permissionDecision\": \"deny\", \"permissionDecisionReason\": \"Blocked: production recipeprinter.com. Loading it boots PostHog and stores the visit as a PostHog user; ?internal only TAGS events, it does not stop them being sent. No Claude session should ever appear in PostHog. Verify with the local dev server (preview_start with a launch.json name), a Vercel preview URL, or tests. If production is genuinely the only way to check something, ask Amelia first.\"}}'; exit 0",
+            "timeout": 10,
+            "statusMessage": "Checking target host"
+          }
+        ]
+      }
+    ]
+  }
+}
