@@ -18,7 +18,7 @@ import {
 } from "@/lib/paprikaLibrary";
 import type { QueueItem } from "@/types/recipe";
 import { RecipeSourceList } from "@/components/import/RecipeSourceList";
-import { BookIcon, ICON_SIZE, SpinnerIcon, UploadIcon } from "@/components/icons";
+import { BookIcon, ChevronDownIcon, ICON_SIZE, SpinnerIcon, UploadIcon } from "@/components/icons";
 
 /**
  * Import from a Paprika export.
@@ -55,6 +55,7 @@ function ExportHelp() {
         onClick={() => setOpen((value) => !value)}
       >
         Where do I find that file?
+        <ChevronDownIcon size={ICON_SIZE.sm} className="cp-disclosure-caret" aria-hidden />
       </button>
       {open && (
         <ol className="paprika-export-steps mt-cp-2 text-cp-caption text-ink-soft">

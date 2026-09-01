@@ -738,6 +738,9 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
+  .cp-disclosure-caret {
+    transition: none;
+  }
   .recipe-print-shell,
   .cookbook-format-card {
     transition: opacity 120ms linear;
@@ -1768,6 +1771,18 @@
     min-height: 44px;
     padding: 8px 10px;
     font-size: var(--cp-fs-small);
+  }
+
+  /* The caret on a button that expands something in place. Keyed off the
+     button's own `aria-expanded`, so the arrow and the semantics cannot say
+     different things: there is no separate state class to forget. */
+  .cp-disclosure-caret {
+    flex: 0 0 auto;
+    color: var(--cp-ink-soft);
+    transition: transform 180ms ease;
+  }
+  [aria-expanded="true"] > .cp-disclosure-caret {
+    transform: rotate(180deg);
   }
 
   /* Numbered steps for finding a Paprika export. A list, so the numbers are
