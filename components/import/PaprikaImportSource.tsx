@@ -17,9 +17,8 @@ import {
   setPaprikaLibrary,
 } from "@/lib/paprikaLibrary";
 import type { QueueItem } from "@/types/recipe";
-import { Dialog } from "@/components/Dialog";
 import { RecipeSourceList } from "@/components/import/RecipeSourceList";
-import { BookIcon, ICON_SIZE, SpinnerIcon, UploadIcon, XIcon } from "@/components/icons";
+import { BookIcon, ICON_SIZE, SpinnerIcon, UploadIcon } from "@/components/icons";
 
 /**
  * Import from a Paprika export.
@@ -33,65 +32,43 @@ import { BookIcon, ICON_SIZE, SpinnerIcon, UploadIcon, XIcon } from "@/component
 
 const ACCEPT = ".paprikarecipes,.paprikarecipe,.zip";
 
-/** Where the file is, in the words each platform uses. People don't know this
-    file exists, so the panel says where to find it rather than assuming. */
-const EXPORT_STEPS: { platform: string; steps: string }[] = [
-  { platform: "Mac", steps: "File → Export Recipes, with Paprika Recipe Format selected." },
-  { platform: "Windows", steps: "File → Export → Paprika Recipe Format." },
-  { platform: "iPhone or iPad", steps: "Settings → Export Recipes, then save the file to Files." },
-  { platform: "Android", steps: "Menu → Settings → Export Recipes. It lands in Downloads." },
-];
-
 /**
- * The export steps, as a dialog rather than a disclosure under the dropzone.
+ * Where the file is.
  *
- * Someone opening this has left the app and gone to Paprika on another device
- * — they are reading four platforms' worth of steps to find their own, not
- * glancing at a footnote. Expanding in place pushed the dropzone they came
- * for down the panel and, inside the Add-recipe dialog, resized it mid-read.
+ * This was four platforms with their own line each, which was eight lines
+ * saying nearly the same thing four times: the command has one name
+ * everywhere, and only its menu and its landing place differ. Two sentences
+ * carry the whole of it.
+ *
+ * It expands in place rather than opening a dialog, because on the print page
+ * this panel is ALREADY inside the Add-recipe dialog and a modal over a modal
+ * is not a way out of a long list. Staying short is what makes that work.
  */
-function ExportHelpDialog({ onClose }: { onClose: () => void }) {
+function ExportHelp() {
+  const [open, setOpen] = useState(false);
   return (
-    <Dialog
-      onClose={onClose}
-      labelledBy="paprika-export-help-title"
-      dismissOnBackdropClick
-      portal
-      className="fixed inset-0 z-50 flex items-stretch sm:items-center justify-center bg-ink/30 p-0 sm:px-cp-4 sm:py-cp-6"
-      panelClassName="panel panel--modal w-full sm:max-w-[460px] h-full sm:h-auto rounded-none border-0 sm:rounded-2xl sm:border p-cp-5 flex flex-col gap-cp-4 relative overflow-y-auto"
-    >
+    <div className="mt-cp-4">
       <button
         type="button"
-        className="absolute right-3 top-3 icon-close-btn"
-        onClick={onClose}
-        aria-label="Close"
+        className="btn-ghost btn-compact"
+        aria-expanded={open}
+        onClick={() => setOpen((value) => !value)}
       >
-        <XIcon size={ICON_SIZE.md} />
+        Where do I find that file?
       </button>
-
-      <div className="pr-cp-7">
-        <h3 id="paprika-export-help-title" className="font-extrabold text-cp-dialog-title">
-          Exporting from Paprika
-        </h3>
-        <p className="text-cp-small text-ink-soft mt-1">
-          Choose the Paprika Recipe Format, and Paprika saves one file with every recipe in
-          it. Bring that file back here.
-        </p>
-      </div>
-
-      <dl className="flex flex-col gap-cp-3 text-cp-small">
-        {EXPORT_STEPS.map(({ platform, steps }) => (
-          <div key={platform} className="flex flex-col gap-0.5">
-            <dt className="field-label mb-0">{platform}</dt>
-            <dd className="text-ink-soft">{steps}</dd>
-          </div>
-        ))}
-      </dl>
-
-      <button type="button" className="btn btn-primary w-full" onClick={onClose}>
-        Got it
-      </button>
-    </Dialog>
+      {open && (
+        <div className="mt-cp-2 flex flex-col gap-1 text-cp-caption text-ink-soft">
+          <p>
+            Paprika calls it Export Recipes: the File menu on Mac and Windows, Settings on
+            iPhone and Android.
+          </p>
+          <p>
+            Choose the Paprika Recipe Format and it saves one file holding every recipe.
+            iPhone puts it in Files, Android in Downloads.
+          </p>
+        </div>
+      )}
+    </div>
   );
 }
 
@@ -105,7 +82,6 @@ function PaprikaFilePicker({
   onChoose: (file: File | null | undefined) => void;
 }) {
   const [dragging, setDragging] = useState(false);
-  const [helpOpen, setHelpOpen] = useState(false);
 
   function onDrop(event: DragEvent<HTMLLabelElement>) {
     event.preventDefault();
@@ -156,14 +132,7 @@ function PaprikaFilePicker({
           {error}
         </p>
       )}
-      <button
-        type="button"
-        className="btn-ghost btn-compact mt-cp-4"
-        onClick={() => setHelpOpen(true)}
-      >
-        Where do I find that file?
-      </button>
-      {helpOpen && <ExportHelpDialog onClose={() => setHelpOpen(false)} />}
+      <ExportHelp />
     </div>
   );
 }
