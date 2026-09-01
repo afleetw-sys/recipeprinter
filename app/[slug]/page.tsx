@@ -144,7 +144,14 @@ export default function SeoLandingPage({ params }: PageProps) {
       <SiteHeader actions={<LandingCta label="Go to printer" compact />} />
 
       <main className="flex-1 px-cp-6 sm:px-cp-7 lg:px-[40px]">
-        <div className="max-w-content mx-auto flex flex-col gap-[72px] pt-cp-5 pb-[80px]">
+        {/* The vertical rhythm is a three-step ladder, and each rung has to clear
+            the one below it or the grouping stops being readable: 32px between a
+            feature row's copy and its own image, 56px between one feature row and
+            the next (see FeatureRows), and 96px here between whole sections. At
+            the old 72px a section break was only 16px more than a row break, so
+            "new section" and "next row in this section" looked nearly alike.
+            Mobile steps the whole ladder down to 20 / 40 / 72. */}
+        <div className="max-w-content mx-auto flex flex-col gap-[72px] lg:gap-[96px] pt-cp-5 pb-[80px]">
           {/* ── Hero ──────────────────────────────────────────────────────── */}
           <div className="flex flex-col gap-cp-6">
             <Breadcrumb trail={breadcrumbTrail(page)} />

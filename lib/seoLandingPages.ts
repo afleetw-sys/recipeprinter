@@ -165,7 +165,7 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
         heading: "It keeps the recipe and drops everything else",
         proof: "before-after",
         body:
-          "RecipePrinter reads the page and keeps only what you cook from: the ingredient list with amounts, the numbered steps, the prep and cook times, and the servings. The blogger's backstory, the autoplay video, the comments, and the ads stay behind. You can print the original link on the card too, so the page is easy to find again.",
+          "Printed straight from the browser, that caprese pasta salad runs to 26 sheets. RecipePrinter reads the same page and keeps only what you cook from: the ingredient list with amounts, the numbered steps, the prep and cook times, and the servings. The blogger's backstory, the autoplay video, the comments, and the ads stay behind. You can print the original link on the card too, so the page is easy to find again.",
       },
       {
         heading: "Print it the way your kitchen actually works",
@@ -175,7 +175,7 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
       },
       {
         heading: "For the pages that fight back",
-        proof: "steps",
+        image: "paste-in-app",
         body:
           "Some recipes hide behind a login, sit on a site that blocks importers, or live only in a video's description. When a link won't import cleanly, paste the recipe text or upload a screenshot, and RecipePrinter structures it into the same clean printout. It works from a phone too, so you can grab a recipe on the couch and print it from the kitchen later.",
       },

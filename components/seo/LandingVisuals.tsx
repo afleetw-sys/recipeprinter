@@ -202,12 +202,19 @@ const FEATURE_IMAGES: Record<string, ProofImage> = {
     alt:
       "A recipe pasted into RecipePrinter as one unbroken run of text, labelled pasted text, beside the finished card it becomes: Brown Butter Banana Bread, 55 minutes, serves 8, with seven ingredients and five numbered steps.",
   },
-  "before-after": {
-    src: "/images/seo-before-after.png",
-    width: 2400,
-    height: 1600,
+  "paste-in-app": {
+    src: "/images/recipes-fight-back.png",
+    width: 6350,
+    height: 3800,
     alt:
-      "The same banana bread recipe two ways. On the left, a pile of five printed sheets: the top one shows the blog page with its navigation bar, headline, a large photo, two paragraphs of preamble, and an advertisement slot, with four more sheets stacked behind it. On the right, one RecipePrinter card holding the whole recipe: title, 55 minutes, serves 8, seven ingredients, and five numbered steps."
+      "The RecipePrinter app open at recipeprinter.com with the Paste Text tab selected in the Add recipes panel. A Buffalo Chicken Bake recipe has been pasted straight into the recipe text box as plain lines: a title, then greek yogurt, buffalo sauce, dijon mustard, onion and garlic powder, paprika, and shredded cheddar. A hand-drawn circle marks the panel and the Add button below it. The Ready to print panel alongside is still empty.",
+  },
+  "before-after": {
+    src: "/images/print-to-one.png",
+    width: 6000,
+    height: 3800,
+    alt:
+      "The same Caprese Pasta Salad recipe two ways. On the left, a stack of blog pages captioned 26 pages, printed from the browser: navigation bars, a star rating, four paragraphs of preamble, a large advertisement slot, and a bulleted discussion of the ingredients. On the right, one RecipePrinter card captioned 1 card, printed from RecipePrinter: the title, 10 minutes, serves 10, a photo of the salad, the ingredients grouped into pasta salad and dressing, and three numbered steps."
   },
 };
 
@@ -231,8 +238,14 @@ export function FeatureRows({
     image?: string;
   }[];
 }) {
+  // Rows sat `cp-7` apart, the same 32px that separates a row's copy from its
+  // own image, so the gap between two rows and the gap inside one row were
+  // identical and the set read as one undivided block. The vertical rhythm has
+  // to land between the two it sits among: wider than the 32px column gap so a
+  // row groups with its own image, and still short of the page's 72px gap
+  // between sections so three rows read as one section rather than three.
   return (
-    <div className="flex flex-col gap-cp-7">
+    <div className="flex flex-col gap-[40px] lg:gap-[56px]">
       {features.map((feature, index) => {
         const image = feature.image
           ? FEATURE_IMAGES[feature.image]
