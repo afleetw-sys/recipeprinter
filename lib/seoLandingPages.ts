@@ -870,7 +870,7 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
         heading: "The same first step, a different second one",
         proof: "before-after",
         body:
-          "Just the Recipe is a good reader. It strips a recipe page down to what you cook from and keeps it on your phone, and its apps are genuinely nice to use in the kitchen. RecipePrinter is aimed at the moment after that, when you want the recipe on paper: a card for the box, a full page for the binder, or a batch of both for the week.",
+          "Just the Recipe keeps the cleaned-up recipe on a screen, with serving adjustments and printing on its Premium plan. RecipePrinter is built for the paper end of it: a card for the box, a full page for the binder, or a batch of both for the week, printed free without an account.",
       },
       {
         heading: "More ways in than a link",
@@ -887,7 +887,7 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
     ],
     comparison: {
       competitor: "Just the Recipe",
-      checked: "August 2026",
+      checked: "September 2026",
       groups: [
         {
           title: "Getting recipes in",
@@ -896,9 +896,9 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
             // tools do says the table is a comparison rather than a pitch, and
             // it is the row a reader checks first.
             { feature: "From a recipe link", us: true, them: true },
-            { feature: "From a photo or screenshot", us: true, them: false },
-            { feature: "From text you paste in", us: true, them: false },
-            { feature: "From a photo of a handwritten card", us: true, them: false },
+            { feature: "Reading a recipe out of a photo", us: true, them: false },
+            { feature: "From text you paste in", us: "Read and laid out for you", them: "Typed into a form yourself" },
+            { feature: "An old handwritten card", us: "Photographed", them: "Typed in by hand" },
           ],
         },
         {
@@ -920,7 +920,7 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
         {
           title: "In the kitchen",
           rows: [
-            { feature: "Using it on a phone", us: "Any browser, any device", them: "iOS and Android apps" },
+            { feature: "Using it on a phone", us: "Any browser, no install", them: "Web, plus iOS and Android apps" },
             { feature: "Adjusting serving sizes", us: false, them: "Paid plan" },
           ],
         },
@@ -930,22 +930,22 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
       {
         question: "Is Just the Recipe free?",
         answer:
-          "Reading a decluttered recipe is free, and a free account saves up to 20 recipes and syncs them across your devices. Printing, unlimited saves, and serving-size adjustments are part of their paid Premium plan, with prices shown inside their app.",
+          "Reading a decluttered recipe is free, and a free account saves up to 20 of them. Printing, unlimited saves, and serving-size adjustments belong to their Premium plan, which they price inside the app.",
       },
       {
-        question: "Can I print recipes for free with RecipePrinter?",
+        question: "Can I print for free with RecipePrinter?",
         answer:
-          "Yes. Printing is free and does not need an account, however many recipes you print. The two optional one-time purchases are premium print themes and the cookbook builder.",
+          "Yes, without an account and with no limit on how many. The two optional one-time purchases are premium print themes and the cookbook builder.",
       },
       {
-        question: "Which one should I use?",
+        question: "Can I bring my saved Just the Recipe recipes over?",
         answer:
-          "If you cook from your phone and want a tidy reader with native apps, Just the Recipe is built for that. If you want the recipe on paper, in a card box, a binder, or a bound cookbook, that is what RecipePrinter is for. Plenty of people use both.",
+          "Not directly. There is no export from Just the Recipe that RecipePrinter can read, so the quickest route is pasting the original links in again. Paprika export files and CookPilot libraries do come straight across.",
       },
       {
-        question: "Can RecipePrinter print recipes from a photo of an old recipe card?",
+        question: "Do I have to pick one?",
         answer:
-          "Yes. Upload a photo of a handwritten card, a cookbook page, or a screenshot, and RecipePrinter reads the recipe and sets it as a printable card or page.",
+          "No. They do different halves of the same job: one keeps the recipe on a screen, the other puts it on paper. Using one does not stop you using the other.",
       },
     ],
     links: [
