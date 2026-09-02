@@ -4624,7 +4624,14 @@
   padding: 0.42in 0.6in;
   border-radius: 0.09in;
   background: color-mix(in srgb, var(--recipe-bg) 92%, transparent);
-  box-shadow: 0 0.05in 0.3in rgba(0, 0, 0, 0.28);
+  /* A hairline, not a drop shadow. This plate used to carry
+     `0 0.05in 0.3in rgba(0,0,0,0.28)`, which on screen read as a subtle lift
+     and in print did not: 0.3in of blur is a wide, genuinely dark halo at page
+     scale, and over a photo collage it looks like a grey wash someone left
+     behind the title rather than an edge. The paper is flat, so the plate gets
+     what every other separation here gets — one hairline in the template's own
+     accent, which reads as an intentional edge on any photo underneath. */
+  border: 1px solid color-mix(in srgb, var(--recipe-accent) 30%, transparent);
   color: var(--recipe-accent);
   z-index: 4;
 }
