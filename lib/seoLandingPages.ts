@@ -753,7 +753,6 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
     eyebrow: "Family recipe guide",
     initialImportMode: "image",
     importSubmitLabel: "Make a printable copy",
-    importHint: "A photo from your phone is enough. Flat light, all four corners in frame.",
     title: "Preserve Family Recipes",
     description:
       "Preserve family recipes by turning old cards, photos, screenshots, and text into printable keepsakes and a bound family cookbook.",
@@ -771,7 +770,7 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
       },
       {
         name: "Print the working copy",
-        text: "A 6 by 4 card for the box or a letter page for the binder, so the original never has to leave wherever you keep it.",
+        text: "A 6 by 4 card for the box or a letter page for the binder. The copy goes in the kitchen, and the original stays where it is.",
       },
       {
         name: "Gather them when you are ready",
