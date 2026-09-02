@@ -257,11 +257,6 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
           "RecipePrinter never prints the article. It reads the recipe out of the page and lays out a new one holding the ingredients, the steps, and the times, and nothing else. The browser's own print button has no way to do that. It prints the document it was handed, headnote, ad slots, comments and all.",
       },
       {
-        heading: "Leave the photo off and keep your colour ink",
-        body:
-          "The photo is the only part of a printed recipe that needs colour ink, and the part you look at least while cooking. Turn off Recipe photo and what prints is type alone. Recipe link has its own switch, for when you would rather not carry the URL along the bottom.",
-      },
-      {
         heading: "One page you can cook from",
         image: "counter-card",
         body:
