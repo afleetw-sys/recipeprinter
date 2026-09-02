@@ -118,7 +118,7 @@ export type SeoLandingPage = {
 export const SEO_LANDING_PAGES: SeoLandingPage[] = [
   {
     slug: "print-recipe-from-website",
-    lastReviewed: "2026-08-29",
+    lastReviewed: "2026-09-02",
     primaryKeyword: "print recipe from website",
     secondaryKeywords: [
       "print recipe from food blog",
@@ -215,6 +215,7 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
   },
   {
     slug: "print-recipe-without-ads",
+    lastReviewed: "2026-09-02",
     primaryKeyword: "print recipe without ads",
     secondaryKeywords: [
       "print recipe without pictures",
@@ -293,6 +294,7 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
   },
   {
     slug: "convert-recipe-to-pdf",
+    lastReviewed: "2026-09-02",
     primaryKeyword: "convert recipe to PDF",
     secondaryKeywords: [
       "recipe PDF generator",
@@ -372,7 +374,7 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
   },
   {
     slug: "printable-recipe-card-generator",
-    lastReviewed: "2026-08-30",
+    lastReviewed: "2026-09-02",
     primaryKeyword: "printable recipe card generator",
     secondaryKeywords: [
       "recipe card maker",
