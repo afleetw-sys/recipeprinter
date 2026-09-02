@@ -1052,7 +1052,7 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
       {
         question: "What if I only want a few recipes, not a whole book?",
         answer:
-          "That is most of the difference between them. ReciScan is organised around a finished book. RecipePrinter prints one recipe as readily as forty, so a single card for the box is an ordinary thing to do rather than a book of one.",
+          "Then print a few. RecipePrinter prints one recipe as readily as forty, so a single card for the recipe box is an ordinary thing to do. ReciScan is organised around a finished book, which is most of the difference between them.",
       },
     ],
     links: [
