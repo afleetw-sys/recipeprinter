@@ -336,9 +336,9 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
           "Saving a recipe page as a PDF the usual way saves the whole article: headnote, ad slots, comments and all. RecipePrinter builds the recipe as its own page first, so the file you keep is the size of the recipe rather than the size of the website.",
       },
       {
-        heading: "Text you can search, not a picture of one",
+        heading: "A recipe your phone can search",
         body:
-          "A screenshot of a recipe is an image. You cannot search it, select an amount out of it, or print it larger without it going soft. A PDF from RecipePrinter is real type all the way down, so it stays sharp at any size and your phone can find it by the words inside it.",
+          "A screenshot is a picture of a recipe. You cannot search it, copy an amount out of it, or make it bigger without it turning blurry. A PDF from RecipePrinter is text, so it prints crisp at any size, and searching your phone for buffalo chicken will actually find it.",
       },
     ],
     faqs: [
