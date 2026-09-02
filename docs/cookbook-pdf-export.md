@@ -124,11 +124,70 @@ Two things get it there, both in the renderer:
 - **`domcontentloaded`, not `networkidle0`.** Idling the network cost ~900ms per
   export while only *guessing* fonts and images had arrived. `/export` now
   states it exactly: `data-export-ready` waits for the measured layout,
-  `document.fonts.ready`, **and** every image to `decode()`. Dropping the network
+  `document.fonts.ready`, **and** every photo to decode. Dropping the network
   wait without that would have captured books before their photos appeared.
+  How that decode is waited on matters enormously — see below.
 
 If cold starts ever matter more than cost, `minInstances: 1` on the function
 keeps one container warm — that is a standing bill, so it is not on by default.
+
+### The 20 seconds that were not work
+
+A 3-recipe fixture has no photos, which is why the timings above looked
+finished. A real cookbook does, and every export of one spent **20.3 seconds
+waiting for nothing** — reproducibly, to within 50ms of `IMAGE_WAIT_MS`,
+whether the book held 10 recipes or 80.
+
+The deck keeps every face but the active one in a `display: none` subtree
+(`data-preview-hidden`, see `ScaledPage`), and Chromium never finishes an image
+inside one: the bytes arrive, `naturalWidth` fills in, and then `complete`
+stays false and `decode()` never settles. `/export` was calling `decode()` on
+`document.images` — so on a 40-recipe book, 34 of the 45 images on the page
+were promises that could not resolve, and the readiness signal was pinned to
+its own deadline. The photos themselves had all arrived in **996ms**.
+
+`useExportReady` now decodes one detached `Image` per distinct source instead.
+Same cache entry, and the guarantee is the one that was actually wanted: every
+photo's pixels are decoded and resident before the renderer captures, which is
+what `page.pdf()` needs when it renders in print media where nothing is hidden.
+
+Measured on a 40-recipe book with photos, hardcover 8×10, **byte-identical
+output** (45,753,225 bytes both ways):
+
+| | before | after |
+|---|---|---|
+| Layout + readiness | 20,338ms | **995ms** |
+| `page.pdf()` | 4,743ms | 4,745ms |
+| **Total** | **25,116ms** | **5,882ms** |
+
+Do not reintroduce a wait on `document.images` here. Anything hidden on screen
+cannot resolve, and the failure is silent — it costs the deadline, not the
+book, so nothing ever reports it.
+
+### What is left, in order
+
+| Cost | 40 recipes | 80 recipes |
+|---|---|---|
+| Layout + readiness | ~1.0s | ~2.2s |
+| `page.pdf()` | ~4.7s | ~9.5s |
+| File the cook then downloads | ~46MB | ~91MB |
+
+`page.pdf()` is Chromium rasterizing full-bleed photo pages; it scales with
+page count and there is no obvious slack in it.
+
+The file size is the bigger remaining cost, and it is not the PDF's overhead —
+Chromium passes each photo's **original JPEG bytes straight through**, so a
+book's file is about the sum of its photos. Ours are capped at 1600px on the
+long edge on upload (`lib/coverPhoto.ts`), but a photo imported from a recipe
+site is whatever that site served, uncapped. Normalizing those on import would
+shrink the download proportionally — at a real cost, since 1600px across an
+8.25in bleed is already only ~194dpi, so anything larger is currently printing
+better than that, not worse.
+
+Cold start is now a much larger share of a first export than it was: a 2GiB
+container that has to pull ~50MB of Chromium. `minInstances: 1` on the function
+removes it for a standing bill.
+
 
 ## Still on browser print
 

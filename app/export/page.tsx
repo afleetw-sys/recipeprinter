@@ -129,16 +129,37 @@ function useExportReady(contentReady: boolean): void {
       document.documentElement.setAttribute("data-export-ready", "true");
     };
 
-    const imagesDecoded = () =>
-      Promise.all(
-        Array.from(document.images).map((image) =>
-          // `decode()` resolves once the pixels are ready to paint, which
-          // `complete` alone does not promise. A failed image resolves too, and
-          // so does one that simply never answers — neither a broken photo nor
-          // a stalled one may hold an entire book hostage (see IMAGE_WAIT_MS).
-          withDeadline(image.decode(), IMAGE_WAIT_MS),
-        ),
+    // Decoded OFF the document, one probe per distinct photo — never by calling
+    // `decode()` on the elements themselves.
+    //
+    // The deck keeps every face but the active one in a `display: none`
+    // subtree (see ScaledPage), and Chromium never finishes an image inside
+    // one: the bytes arrive, `naturalWidth` fills in, and then `complete`
+    // stays false and `decode()` simply never settles. Waiting on the elements
+    // therefore could not succeed — every book with photos sat out the entire
+    // IMAGE_WAIT_MS deadline below, having downloaded all of them in about a
+    // second, and that dead wait was the single largest cost in an export.
+    //
+    // A detached `Image` on the same URL decodes normally, and it is the same
+    // cache entry: what this actually guarantees is that every photo's pixels
+    // are decoded and resident before the renderer captures — which is the
+    // real requirement, since `page.pdf()` renders in print media where none
+    // of this is hidden and paints each photo from that cache.
+    const imagesDecoded = () => {
+      const sources = new Set(
+        Array.from(document.images, (image) => image.currentSrc || image.src).filter(Boolean),
       );
+      return Promise.all(
+        Array.from(sources, (src) => {
+          const probe = new Image();
+          probe.src = src;
+          // A failed photo resolves too, and so does one that simply never
+          // answers — neither a broken photo nor a stalled one may hold an
+          // entire book hostage (see IMAGE_WAIT_MS).
+          return withDeadline(probe.decode(), IMAGE_WAIT_MS);
+        }),
+      );
+    };
 
     // The font wait is bounded on the same terms and for the same reason: it is
     // another promise this page does not control, and the book still reads in a
