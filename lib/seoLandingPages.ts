@@ -64,6 +64,10 @@ export type SeoLandingPage = {
   statusNote?: string;
   initialImportMode?: ImportTab;
   importSubmitLabel?: string;
+  /** A FEATURE_IMAGES key for the hero photo, when the page's subject is not
+      one of the printed cards. Without it every utility page opens on the same
+      card. */
+  heroImage?: string;
   /** Heading over the guide-first capture block. Hardcoded to "Start your
       family cookbook" until four guide pages that are not about cookbooks
       inherited it. */
@@ -742,25 +746,72 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
       "recipe memory book",
     ],
     intent: "Preservation and Gift SEO",
+    // Preservation by intent, but the thing someone wants here is to photograph
+    // the card in their hand, so capture stays in the hero.
+    layout: "capture-first",
+    heroImage: "handwritten-card",
     eyebrow: "Family recipe guide",
-    statusNote:
-      "Turn old cards, photos, screenshots, and pasted text into clean recipe pages, then gather them into a keepsake cookbook with a cover, an automatic table of contents, and chapters.",
+    initialImportMode: "image",
+    importSubmitLabel: "Read the card",
+    importHint: "A photo from your phone is enough. Flat light, all four corners in frame.",
     title: "Preserve Family Recipes",
     description:
       "Preserve family recipes by turning old cards, photos, screenshots, and text into printable keepsakes and a bound family cookbook.",
     h1: "Preserve family recipes",
     lede:
-      "Family recipes deserve more than a fading card in a drawer. RecipePrinter turns old recipe cards, photos, and text into printable pages worth keeping, then gathers them into a keepsake family cookbook.",
-    faqs: [
+      "A handwritten card only exists once. Photograph it and RecipePrinter reads it into a clean printable recipe, so the one you cook from is not the one you are trying to keep.",
+    howTo: [
       {
-        question: "Can I print recipes from old handwritten cards?",
-        answer:
-          "Yes. Upload a photo of the card and RecipePrinter can help format the recipe into a printable version.",
+        name: "Photograph the card",
+        text: "Lay it flat, get all four corners in frame, and upload the photo. Screenshots and typed-out recipes work the same way.",
       },
       {
-        question: "Can preserved recipes become a family cookbook?",
+        name: "Check what it read",
+        text: "Handwriting is handwriting. Every line is editable, so fix the word that came through wrong before it is set in anything.",
+      },
+      {
+        name: "Print the working copy",
+        text: "A 6 by 4 card for the box or a letter page for the binder, so the original can stop going near the stove.",
+      },
+      {
+        name: "Gather them when you are ready",
+        text: "Once there are enough, they can become a bound cookbook with a cover, chapters and a table of contents.",
+      },
+    ],
+    featureSections: [
+      {
+        heading: "The original stops being the working copy",
+        image: "handwritten-card",
+        body:
+          "The card in the drawer has survived this long by not being used. Every time it goes on the counter it risks the splash that takes a line off it. A printed copy takes that risk instead, and the original goes back to being the thing you keep rather than the thing you cook from.",
+      },
+      {
+        heading: "Her handwriting, and a copy you can read",
+        image: "card-in-box",
+        body:
+          "Reading it out does not replace it. Photograph the card, keep the photo, and print the typed version at a size that works across a kitchen. The measurements survive in something legible, and the hand they were written in survives in the picture.",
+      },
+    ],
+    faqs: [
+      {
+        question: "Will it read my grandmother's handwriting?",
         answer:
-          "Yes. Group them into chapters, add a cover and an automatic table of contents, and print the finished cookbook at home or through a professional printer.",
+          "Often, and not always. Cursive, faded pencil and a stained corner are all hard. Whatever comes through lands in an editable recipe, so the worst case is you correct a few lines rather than typing the whole card.",
+      },
+      {
+        question: "What about the cards that are too far gone?",
+        answer:
+          "Type it in instead. The recipe still gets the same clean page, the same card or letter layout, and the same place in a cookbook later.",
+      },
+      {
+        question: "Can I keep who it came from?",
+        answer:
+          "Yes. A recipe carries a note of its own, which is where the name goes, or the year, or the fact that she never actually measured the vanilla.",
+      },
+      {
+        question: "Do these have to become a cookbook?",
+        answer:
+          "No. Printing one card and stopping is a complete use of this. The bound book with a cover and chapters is there if you want it, at $19.99 once for that book.",
       },
     ],
     links: [

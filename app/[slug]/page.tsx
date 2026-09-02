@@ -190,6 +190,7 @@ export default function SeoLandingPage({ params }: PageProps) {
                 )}
               </div>
               <HeroProductPhoto
+                imageKey={page.heroImage}
                 cardKey={isGuide ? "pesto" : "korean"}
                 annotation={isGuide ? "Ready for a family cookbook" : "Printed from a recipe link"}
                 priority

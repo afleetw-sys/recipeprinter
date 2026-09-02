@@ -87,16 +87,27 @@ export function Placeholder({
  */
 export function HeroProductPhoto({
   cardKey = "korean",
+  imageKey,
   annotation,
   priority = false,
   wide = false,
 }: {
   cardKey?: string;
+  /** A FEATURE_IMAGES key, when a page's hero is not one of the card photos.
+      Every utility page otherwise opens on the same Korean Beef Bowl card, so a
+      page whose subject is something else (a handwritten card, say) had no way
+      to say so. Takes precedence over `cardKey`. */
+  imageKey?: string;
   annotation?: string;
   priority?: boolean;
   wide?: boolean;
 }) {
-  const card = PRINTED_CARDS[cardKey] ?? PRINTED_CARDS.korean;
+  const named = imageKey ? FEATURE_IMAGES[imageKey] : undefined;
+  const card = named ?? PRINTED_CARDS[cardKey] ?? PRINTED_CARDS.korean;
+  // The card photos are portrait with the card low in frame, so they need the
+  // 86% crop to keep it centred. A named image is composed for a landscape
+  // slot already; honour its own objectPosition, or leave it centred.
+  const objectPosition = named ? (named.objectPosition ?? "50% 50%") : "50% 86%";
   return (
     <div className={`relative mx-auto w-full ${wide ? "max-w-[860px]" : "max-w-[460px]"}`}>
       <div className="overflow-hidden rounded-2xl border border-line bg-card p-1.5">
@@ -107,7 +118,8 @@ export function HeroProductPhoto({
           alt={card.alt}
           sizes="(max-width: 1023px) 90vw, 460px"
           priority={priority}
-          className="aspect-[4/3] w-full rounded-xl object-cover [object-position:50%_86%]"
+          className="aspect-[4/3] w-full rounded-xl object-cover"
+          style={{ objectPosition }}
         />
       </div>
       {annotation && (
