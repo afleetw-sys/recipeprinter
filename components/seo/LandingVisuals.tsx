@@ -195,6 +195,15 @@ const FEATURE_IMAGES: Record<string, ProofImage> = {
     alt:
       "A printed Buffalo Chicken Bake card lying on a granite counter beside the cooking it belongs to: a board of shredded chicken with two forks in it, a measuring cup of buffalo sauce, a tub of greek yogurt, dijon mustard, three spice jars, and an empty baking dish.",
   },
+  "pdf-search": {
+    src: "/images/pdf-search.png",
+    width: 2400,
+    height: 1436,
+    // Wider than the 3:2 slot, so about 5% comes off each side. The window's
+    // own edges sit just inside that, and the circled search field survives it.
+    alt:
+      "A saved recipe PDF open in a document viewer, with sesame oil typed into the search field and the viewer reporting it found on 2 pages. Both matches are highlighted in the ingredient list of a Honey Garlic Salmon Stir Fry Noodles card, and a sidebar lists the pages they were found on.",
+  },
   "card-in-box": {
     src: "/images/recipe-card-in-box.jpg",
     width: 1448,
