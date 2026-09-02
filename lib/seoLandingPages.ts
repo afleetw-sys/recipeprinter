@@ -234,7 +234,7 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
     howTo: [
       {
         name: "Paste the recipe link",
-        text: "Copy the link from the recipe site and paste it in. RecipePrinter rebuilds the recipe on a page of its own, away from everything that surrounded it.",
+        text: "Copy the link from the recipe site and paste it in. RecipePrinter rebuilds the recipe on a page of its own.",
       },
       {
         name: "Check the preview",
