@@ -984,16 +984,10 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
       "Both read links, photos and pasted text. ReciScan turns them into a bound book and ships it to you. RecipePrinter gives you the pages: print them now, keep the PDF, or take the file to a print shop.",
     featureSections: [
       {
-        heading: "One bound book, or the pages themselves",
+        heading: "A card, a page, or the whole book",
         proof: "card",
         body:
-          "ReciScan is built to end in a bound book, ordered from its own print service, starting at $18 for fifty pages. RecipePrinter hands you the finished pages instead: run them on the printer down the hall, keep the PDF, or take the file to a print shop. You can print one recipe today and decide about a book later.",
-      },
-      {
-        heading: "A card, a page, or the whole book",
-        image: "card-in-box",
-        body:
-          "The same recipes come out as a 6 by 4 card for the box by the stove, a letter page for a binder, or a bound cookbook with a cover and chapters. Printing one card tonight does not rule out the book, and that card is already in it when you get there.",
+          "ReciScan ends in a bound book from its own press, starting at $18 for fifty pages. RecipePrinter hands you the file: a 6 by 4 card for the box by the stove, a letter page for a binder, or a bound cookbook with a cover and chapters. Printing one card tonight does not rule out the book.",
       },
       {
         heading: "Nothing to install",
