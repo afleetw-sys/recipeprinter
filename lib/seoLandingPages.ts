@@ -180,12 +180,11 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
           "Some recipes hide behind a login, sit on a site that blocks importers, or live only in a video's description. When a link won't import cleanly, paste the recipe text or upload a screenshot, and RecipePrinter structures it into the same clean printout. It works from a phone too, so you can grab a recipe on the couch and print it from the kitchen later.",
       },
     ],
-    examples: ["caprese", "korean", "pesto"],
     faqs: [
       {
-        question: "Can I print more than one recipe at once?",
+        question: "How does it know which part of the page is the recipe?",
         answer:
-          "Yes. Add several recipes and print them together, which helps when you're prepping a week of dinners or building a section for a binder.",
+          "Recipe sites publish their recipes as structured data so search engines can read them. RecipePrinter reads that same data, so the amounts and the steps arrive the way the site wrote them instead of being guessed at from the words on the page.",
       },
       {
         question: "Can I save the recipe as a PDF instead of printing?",
@@ -193,9 +192,14 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
           "Yes. RecipePrinter builds a print-ready page, so in the print dialog you can choose Save as PDF and keep a clean copy on your phone or computer to print whenever you want.",
       },
       {
-        question: "Can I print a recipe from a URL?",
+        question: "Can I do this from my phone?",
         answer:
-          "Yes. Any recipe link works the same way, whether you copied it from your browser's address bar, a text message, a saved note, or a share button in another app. Paste it in and you get the same printable card or page.",
+          "Yes. Paste the link in a phone browser and set the recipe up there, then use the phone's own print dialog to reach a wireless printer, or choose Save as PDF and print it from a computer later.",
+      },
+      {
+        question: "What happens if the original page disappears?",
+        answer:
+          "Nothing, which is the reason to print one in the first place. A recipe page can go behind a paywall, get rewritten around a new story, or go offline entirely, and none of that reaches the card already sitting in your kitchen.",
       },
     ],
     links: [
@@ -295,17 +299,17 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
     intent: "Utility SEO",
     eyebrow: "Recipe card maker",
     initialImportMode: "url",
-    importSubmitLabel: "Make printable recipe card",
+    importSubmitLabel: "Make recipe card",
     title: "Free Printable Recipe Card Maker",
     description:
       "Make printable recipe cards from links, photos, screenshots, or text, including 4x6 and recipe-box-friendly layouts.",
     h1: "Printable recipe card generator",
     lede:
-      "Paste a recipe link and pick a layout. You get a printable recipe card sized for a recipe box, with no blank template to design yourself.",
+      "Whatever form the recipe is in, it comes back as a 6 by 4 card with the ingredients and steps already set, ready for the box.",
     howTo: [
       {
         name: "Add the recipe",
-        text: "Paste a recipe link, upload a photo of an old card, or paste the text. It comes in already structured, so there is no blank template to fill in.",
+        text: "Paste a recipe link, drop in a photo of an old card, or paste the text. The ingredients and steps land where they belong.",
       },
       {
         name: "Switch to the card size",
@@ -329,21 +333,32 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
       },
       {
         heading: "Change the look, keep the recipe",
-        proof: "card",
+        image: "multi-themes",
         body:
           "A theme changes a card's type, its border, and how the photo sits, without touching the recipe underneath. Switch themes and every card in the batch follows, so a stack printed in one go still looks like a set rather than a pile of odds and ends.",
       },
     ],
+    examples: ["caprese", "korean", "pesto"],
     faqs: [
       {
-        question: "Can I make 4x6 recipe cards from online recipes?",
+        question: "What should I print recipe cards on?",
         answer:
-          "Yes. Paste a recipe link into RecipePrinter and choose a printable card layout, including card-style formats that work well for 4x6 recipe cards.",
+          "Card stock, if you want them to survive a kitchen. Feed 4x6 cards straight through a printer that takes them, or print on a letter sheet and cut the card out. Turn on cut lines and you get a dashed guide to trim along.",
       },
       {
-        question: "Can I print multiple recipe cards at once?",
+        question: "What happens when a recipe is too long for one card?",
         answer:
-          "Yes. Add several recipes to your print queue and print the batch together.",
+          "It carries on onto the back of the same card instead of being cut short. Two-sided is on by default, so set your printer to print both sides flipped on the long edge and the front and back will line up.",
+      },
+      {
+        question: "Can I fix a recipe before it prints?",
+        answer:
+          "Yes. The title, the ingredients, the steps, and the notes are editable right on the card, so you can correct an amount, drop a step you do not need, or add a note of your own before anything reaches the printer.",
+      },
+      {
+        question: "Can I print a whole stack at once?",
+        answer:
+          "Yes. Add as many recipes as you like and print them in one job. The card size and the theme apply to every recipe waiting to print, so what comes out of the printer matches.",
       },
     ],
     links: [

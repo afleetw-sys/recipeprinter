@@ -178,15 +178,26 @@ const PROOF_ASPECT = "3 / 2";
     same kind — on one page or across two — got the identical picture, which
     reads as one visual repeated rather than two claims. */
 const FEATURE_IMAGES: Record<string, ProofImage> = {
-  "card-in-box": {
-    src: "/images/recipe-card-in-box.jpeg",
-    width: 1200,
-    height: 1600,
-    // Shot portrait: the card's title sits high and the box fills the bottom, so
-    // a centred 3:2 crop would cut the title off.
-    objectPosition: "50% 30%",
+  "multi-themes": {
+    src: "/images/multi-themes.png",
+    width: 6000,
+    height: 3800,
+    // Authored wider than the 3:2 slot, so about 5% comes off each side. The
+    // composition already runs cards off both edges, so the crop takes more of
+    // an edge that was cut on purpose rather than breaking a whole card.
     alt:
-      "A printed Basil Pesto recipe card being lowered into an open floral recipe box that already holds a Korean Beef Bowl card and dividers labelled Beverages and Misc.",
+      "One recipe, Burst Cherry Tomato Basil Chicken Rigatoni, printed as six cards in six different themes and fanned across a blue background. The same title, the same 45 minutes and serves 6, and the same ingredient list appear on every one, each set in a different typeface, border, and colour, with a cream serif version enlarged in front.",
+  },
+  "card-in-box": {
+    src: "/images/recipe-card-in-box.png",
+    width: 1448,
+    height: 1086,
+    // Authored 4:3, so the 3:2 slot trims about 5% off the top and bottom and a
+    // centred crop keeps both the card's title and the box's RECIPES plate. The
+    // earlier portrait shot needed `objectPosition: 50% 30%` to save the title;
+    // this crop does not, and leaving it in would push the plate off instead.
+    alt:
+      "A printed Basil Pesto recipe card standing in an open floral recipe box on a wooden table, its ingredients and three numbered steps facing out, with tabbed dividers labelled Appetizers and Breakfast filed behind it and a brass RECIPES plate on the front of the box.",
   },
   card: {
     src: "/images/cards-on-counter.jpeg",
