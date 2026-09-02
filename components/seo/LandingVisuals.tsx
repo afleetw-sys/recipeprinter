@@ -22,12 +22,13 @@ import type { ComparisonValue, SeoIconKey, SeoProofKind } from "@/lib/seoLanding
 // so the pages read as intentionally designed rather than auto-generated.
 // ─────────────────────────────────────────────────────────────────────────────
 
-/* The step counter is a NUMBER — text — so the accent is in its tint and its
-   edge, and the digit stays ink. Cornflower rather than clay: a step number
-   counts, it does not caution. See docs/color-roles.md. */
+/* Clay in the EDGE, not behind the digit. Clay is 3.72:1, which clears the
+   3:1 a border answers to and nothing more, so it draws the ring while the
+   number stays ink on card. A tint here read as a caution around a step
+   number that is only counting. See docs/color-roles.md. */
 const stepCounter = {
-  borderColor: "var(--cp-accent)",
-  background: "var(--cp-accent-soft)",
+  borderColor: "var(--cp-accent-warm)",
+  background: "var(--cp-card)",
   color: "var(--cp-ink)",
 } as const;
 

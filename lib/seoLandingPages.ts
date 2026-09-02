@@ -1051,7 +1051,7 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
       {
         question: "What if I only want a few recipes, not a whole book?",
         answer:
-          "You can. There is no minimum and nothing to finish: print one card, print three, come back in a month. If you decide on a book later, the recipes you already printed are in it.",
+          "You can. There is no minimum and nothing to finish: print one card, print three, come back in a month. The cookbook is there when you want it, and not before.",
       },
     ],
     links: [
