@@ -851,7 +851,6 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
       "RecipePrinter turns online recipes, old cards, photos, and typed-in notes into clean, matching pages, then binds them into a cookbook with a cover, chapters, and a table of contents.",
     importSubmitLabel: "Start the book",
     captureReassurance: false,
-    importHint: "Start with one recipe.",
     howTo: [
       {
         name: "Gather the recipes",
@@ -875,7 +874,7 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
         heading: "Different sources, one consistent book",
         proof: "photo",
         body:
-          "Family recipes arrive in every format: a stained index card, a screenshot from a group chat, a link a cousin sent, a method that only lives in someone's head. RecipePrinter reads each one and sets it on a clean, consistent page, so a card from 1975 and a text from last week look like they belong in the same book instead of a pile of mismatched scraps.",
+          "Family recipes arrive in every format: a stained index card, a screenshot from a group chat, a link a cousin sent, a method that only lives in someone's head. RecipePrinter reads each one and sets it on a clean, consistent page, so a card from 1975 and a text from last week look like they belong in the same book.",
       },
       {
         heading: "Keep the details that make it yours",
