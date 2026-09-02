@@ -2,7 +2,6 @@
 
 import { useEffect, useState } from "react";
 import { usePathname } from "next/navigation";
-import { IconButton } from "@/components/Controls";
 import { ICON_SIZE, ExternalIcon, XIcon } from "@/components/icons";
 import { localStore } from "@/lib/storage";
 
@@ -62,10 +61,18 @@ export function ProductHuntBanner() {
   }
 
   return (
+    /* Full width, like the header below it: this is a band across the page,
+       not a column of content, so it takes the same edge padding the bar does
+       rather than centring itself in `max-w-content`. */
     <div className="no-print border-b border-line bg-[var(--cp-accent-warm-soft)] text-ink">
-      <div className="max-w-content mx-auto flex items-center gap-cp-3 px-cp-4 sm:px-cp-6 py-cp-2">
+      <div className="flex items-center gap-cp-3 px-cp-4 sm:px-cp-6 py-cp-2">
         <p className="min-w-0 flex-1 text-cp-small leading-snug">
-          <span className="font-bold">RecipePrinter is live on Product Hunt today.</span>{" "}
+          <span className="font-bold">RecipePrinter is on Product Hunt today.</span>{" "}
+          {/* The middle sentence is the one thing here that isn't the news or
+              the way to act on it, so it's what a narrow screen drops. */}
+          <span className="hidden text-ink-soft sm:inline">
+            A review from someone who actually prints recipes goes a long way.
+          </span>{" "}
           <a
             href={PRODUCT_HUNT_URL}
             target="_blank"
@@ -78,9 +85,18 @@ export function ProductHuntBanner() {
             <ExternalIcon size={ICON_SIZE.sm} />
           </a>
         </p>
-        <IconButton className="-mr-1 shrink-0" aria-label="Dismiss launch announcement" onClick={dismiss}>
+        {/* A bare glyph, not an `.icon-button`: that one carries a white card
+            fill and a border, which on this tint reads as a control sitting on
+            the bar rather than the bar's own way out. Negative margins keep
+            its 36px touch target from setting the height of the band. */}
+        <button
+          type="button"
+          aria-label="Dismiss launch announcement"
+          onClick={dismiss}
+          className="-my-1 -mr-2 grid h-9 w-9 shrink-0 place-items-center rounded text-ink-soft transition-colors hover:text-ink"
+        >
           <XIcon size={ICON_SIZE.md} />
-        </IconButton>
+        </button>
       </div>
     </div>
   );
