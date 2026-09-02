@@ -848,10 +848,10 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
       "Create a family recipe book from printed recipes, old cards, online favorites, photos, and kitchen notes.",
     h1: "Family recipe book ideas",
     lede:
-      "A family recipe book can start with one recipe. RecipePrinter turns online recipes, old cards, photos, and typed-in notes into clean, matching pages, then binds them into a cookbook with a cover, chapters, and a table of contents.",
+      "RecipePrinter turns online recipes, old cards, photos, and typed-in notes into clean, matching pages, then binds them into a cookbook with a cover, chapters, and a table of contents.",
     importSubmitLabel: "Start the book",
     captureReassurance: false,
-    importHint: "One recipe is enough to begin. The book grows from there.",
+    importHint: "Start with one recipe.",
     howTo: [
       {
         name: "Gather the recipes",
