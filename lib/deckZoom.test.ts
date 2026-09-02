@@ -1,8 +1,7 @@
 import { describe, expect, it } from "vitest";
-import { ZOOM_DETENT, settleZoom, zoomFromWheel } from "./deckZoom";
+import { zoomFromWheel } from "./deckZoom";
 
 const RANGE = { min: 0.25, max: 4 };
-const PRESETS = [0.5, 0.75, 1, 1.25, 1.5, 2] as const;
 
 describe("zoomFromWheel", () => {
   it("pinching open zooms in, pinching closed zooms out", () => {
@@ -45,32 +44,5 @@ describe("zoomFromWheel", () => {
     let step = 1;
     for (let i = 0; i < 30; i++) step = zoomFromWheel(step, -1, RANGE);
     expect(step).toBeCloseTo(once, 10);
-  });
-});
-
-describe("settleZoom", () => {
-  it("eases onto a preset it stopped near", () => {
-    expect(settleZoom(0.97, PRESETS)).toBe(1);
-    expect(settleZoom(1.04, PRESETS)).toBe(1);
-  });
-
-  it("leaves a zoom that stopped between presets alone", () => {
-    // 1.125 is the midpoint of 1 and 1.25, further than the detent from either.
-    expect(settleZoom(1.125, PRESETS)).toBe(1.125);
-  });
-
-  it("pulls from exactly the detent distance, and not past it", () => {
-    expect(settleZoom(1 + ZOOM_DETENT, PRESETS)).toBe(1);
-    expect(settleZoom(1 + ZOOM_DETENT + 0.001, PRESETS)).not.toBe(1);
-  });
-
-  it("picks the nearer of two presets", () => {
-    expect(settleZoom(1.21, PRESETS)).toBe(1.25);
-    expect(settleZoom(1.05, PRESETS)).toBe(1);
-  });
-
-  it("returns the zoom untouched when there are no presets", () => {
-    expect(settleZoom(1.37, undefined)).toBe(1.37);
-    expect(settleZoom(1.37, [])).toBe(1.37);
   });
 });

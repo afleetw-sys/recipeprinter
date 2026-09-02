@@ -9,7 +9,7 @@ import {
   type Dispatch,
   type SetStateAction,
 } from "react";
-import { settleZoom, zoomFromWheel } from "@/lib/deckZoom";
+import { zoomFromWheel } from "@/lib/deckZoom";
 import type { PrintCardSize } from "@/components/RecipeCardPrint";
 
 const PREVIEW_SELECTOR = ".recipe-page-scaler";
@@ -105,9 +105,6 @@ interface UseDeckScrollerOptions {
   zoom?: number;
   /** Bounds for the pinch gesture, matching the +/- control's own. */
   zoomRange?: { min: number; max: number };
-  /** The zoom menu's own steps. The gesture holds at one when it passes close
-      to it, so a pinch can land on exactly 100% instead of near it. */
-  zoomPresets?: readonly number[];
   /** Set the zoom from a trackpad pinch. Omit to leave the gesture alone. */
   onZoomChange?: (zoom: number) => void;
 }
@@ -166,7 +163,6 @@ export function useDeckScroller({
   layoutKey,
   zoom = 1,
   zoomRange,
-  zoomPresets,
   onZoomChange,
 }: UseDeckScrollerOptions) {
   const [canvasSide, setCanvasSide] = useState<"front" | "back">("front");
@@ -183,6 +179,10 @@ export function useDeckScroller({
    */
   const [fitScale, setFitScale] = useState(0.5);
   const deckScale = fitScale * zoom;
+  /** Read by the gesture-end callback, which is bound once and must not close
+      over a stale scale. */
+  const deckScaleRef = useRef(deckScale);
+  deckScaleRef.current = deckScale;
   // The deck element, held two ways on purpose. `deckRef` is what the scrolling
   // helpers below read on demand; `deckNode` is the same element as STATE, so an
   // effect that binds a listener to it re-runs when React hands us a different
@@ -480,14 +480,25 @@ export function useDeckScroller({
       onZoomChange(raw);
     };
 
-    /** The pinch is over: ease onto a preset if it stopped near one. */
-    const onGestureSettle = () => {
+    /**
+     * The pinch is over.
+     *
+     * It used to ease onto the nearest preset. A preset is what the +/- control
+     * and the menu are for; a trackpad is for landing wherever you meant to,
+     * and a gesture that tidies itself afterwards is a gesture that moved on
+     * its own after you stopped.
+     *
+     * What it still does is end the gesture, which two guards read: the scroll
+     * listener stops ignoring scrolls, and `applyDeckGeometry` may re-enable
+     * snapping. Re-run here rather than waiting for the next scale change,
+     * because zooming back to fit and stopping is exactly the case that never
+     * produces one — and free scroll would stay on with nothing to scroll.
+     */
+    const onGestureEnd = () => {
       zoomSettleRef.current = 0;
       zoomGestureRef.current = false;
-      const settled = settleZoom(rawZoomRef.current, zoomPresets);
-      rawZoomRef.current = settled;
-      if (Math.abs(settled - zoomRef.current) < 0.001) return;
-      onZoomChange(settled);
+      const deck = deckRef.current;
+      if (deck) applyDeckGeometry(deck, deckScaleRef.current);
     };
 
     const onWheel = (event: WheelEvent) => {
@@ -516,7 +527,7 @@ export function useDeckScroller({
       }
       // Restarted by every event, so it only fires once the fingers stop.
       if (zoomSettleRef.current) window.clearTimeout(zoomSettleRef.current);
-      zoomSettleRef.current = window.setTimeout(onGestureSettle, ZOOM_SETTLE_MS);
+      zoomSettleRef.current = window.setTimeout(onGestureEnd, ZOOM_SETTLE_MS);
     };
 
     el.addEventListener("wheel", onWheel, { passive: false });
@@ -529,7 +540,7 @@ export function useDeckScroller({
       zoomGestureRef.current = false;
       pendingDeltaRef.current = 0;
     };
-  }, [deckNode, onZoomChange, zoomRange, zoomPresets]);
+  }, [deckNode, onZoomChange, zoomRange, applyDeckGeometry]);
 
   /**
    * Keep the deck's padding and free-scroll in step with the scale in the SAME

@@ -36,7 +36,7 @@ import { PHOTO_STYLE_OPTIONS } from "@/components/print/photoStyle";
 import { MobileStructureSheet } from "@/components/print/MobileStructureSheet";
 import { PrintConfigPanel } from "@/components/print/PrintConfigPanel";
 import { PageRail, type RailSortMode } from "@/components/print/PageRail";
-import { DECK_ZOOM_STEPS, PrintDeck, pendingSlotIndexIn } from "@/components/print/PrintDeck";
+import { PrintDeck, pendingSlotIndexIn } from "@/components/print/PrintDeck";
 import {
   usePrintSheets,
   type NavItem,
@@ -3605,7 +3605,6 @@ export default function PrintPage() {
     layoutKey: `${railCollapsed ? "r" : ""}${panelCollapsed ? "p" : ""}`,
     zoom: deckZoom,
     zoomRange: DECK_ZOOM_BOUNDS,
-    zoomPresets: DECK_ZOOM_STEPS,
     onZoomChange: setDeckZoom,
   });
 
