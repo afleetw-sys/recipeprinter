@@ -812,17 +812,17 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
       {
         question: "What if the card is too faded to read?",
         answer:
-          "Type it in instead. The recipe still gets the same clean page, the same card or letter layout, and the same place in a cookbook later.",
+          "You can type it in, and nothing changes from there. The recipe gets the same clean page, the same card or letter layout, and the same place in a book later.",
       },
       {
         question: "Can I keep who it came from?",
         answer:
-          "Yes. A recipe carries a note of its own, which is where the name goes, or the year, or the fact that they never actually measured the vanilla.",
+          "Yes. A recipe carries a note of its own, and that is where the name goes, or the year, or the fact that they always did the vanilla by eye.",
       },
       {
         question: "Do these have to become a cookbook?",
         answer:
-          "No. Printing one card and stopping is a complete use of this. The bound book with a cover and chapters is there if you want it, at $19.99 once for that book.",
+          "No. Printing one card and stopping there is enough. The bound book with a cover and chapters is there if you ever want it, for $19.99 once.",
       },
     ],
     links: [
