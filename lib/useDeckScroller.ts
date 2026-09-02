@@ -9,6 +9,7 @@ import {
   type Dispatch,
   type SetStateAction,
 } from "react";
+import { settleZoom, zoomFromWheel } from "@/lib/deckZoom";
 import type { PrintCardSize } from "@/components/RecipeCardPrint";
 
 const PREVIEW_SELECTOR = ".recipe-page-scaler";
@@ -17,13 +18,10 @@ const PREVIEW_SELECTOR = ".recipe-page-scaler";
     Edit), which would otherwise tuck behind the sticky top bar. */
 const DECK_SCROLL_PADDING_TOP = 72;
 
-/** How fast a pinch travels. Tuned so one comfortable trackpad gesture crosses
-    roughly one preset step rather than the whole range. */
-const ZOOM_WHEEL_SENSITIVITY = 0.006;
-/** How close to a preset the gesture has to get before it holds there. The
-    presets are 25 points apart, so 6 gives each one a noticeable pull without
-    the gaps between them becoming unreachable. */
-const ZOOM_DETENT = 0.06;
+/** How long after the last pinch event the gesture counts as finished. Long
+    enough to ride out the gaps between events in a slow pinch, short enough
+    that the settle still feels like part of the same movement. */
+const ZOOM_SETTLE_MS = 140;
 
 /**
  * Below this the deck is a horizontal filmstrip with no rail beside it; above
@@ -403,15 +401,21 @@ export function useDeckScroller({
    *  2. A pinch fires far faster than the deck can re-lay-out, and every event
    *     was its own React render. They are accumulated and applied one per
    *     animation frame instead, so the work matches the display.
-   *  3. The presets pull. Within `ZOOM_DETENT` of one of them the applied zoom
-   *     IS that preset, while the raw gesture keeps accumulating underneath —
-   *     so a detent holds you at exactly 100% for a moment, then lets go when
-   *     you genuinely mean to leave, instead of stranding you at 97%.
+   *  3. The presets pull, but only once you stop. Snapping DURING the gesture
+   *     is a stutter by construction: the applied zoom holds at 100% while the
+   *     fingers keep moving, then lets go all at once, and the hand feels the
+   *     pause as the app failing to keep up. Every canvas tool zooms
+   *     continuously and reserves snapping for a keystroke. So the gesture is
+   *     continuous and unrounded, and `ZOOM_SETTLE_MS` after the last event —
+   *     the pinch is over — it eases onto a preset if it finished near one.
+   *     Landing exactly on 100% was worth keeping; paying for it mid-gesture
+   *     was not.
    */
   const rawZoomRef = useRef(zoom);
   const zoomRef = useRef(zoom);
   const pendingDeltaRef = useRef(0);
   const zoomFrameRef = useRef(0);
+  const zoomSettleRef = useRef(0);
   /** The point the gesture is zooming about, and the page box it sits in. */
   const pendingZoomAnchorRef = useRef<
     { x: number; y: number; page: HTMLElement; fx: number; fy: number } | null
@@ -433,21 +437,23 @@ export function useDeckScroller({
       const delta = pendingDeltaRef.current;
       pendingDeltaRef.current = 0;
       if (!delta) return;
-      const raw = Math.min(
-        zoomRange.max,
-        Math.max(zoomRange.min, rawZoomRef.current * Math.exp(-delta * ZOOM_WHEEL_SENSITIVITY)),
-      );
+      const raw = zoomFromWheel(rawZoomRef.current, delta, zoomRange);
       rawZoomRef.current = raw;
-      const nearest = zoomPresets?.reduce(
-        (best, step) => (Math.abs(step - raw) < Math.abs(best - raw) ? step : best),
-        zoomPresets[0],
-      );
-      const next =
-        nearest !== undefined && Math.abs(nearest - raw) <= ZOOM_DETENT
-          ? nearest
-          : Math.round(raw * 100) / 100;
-      if (Math.abs(next - zoomRef.current) < 0.005) return;
-      onZoomChange(next);
+      // Unrounded on purpose. Quantizing to whole percents put a floor under
+      // how fine the gesture could be, which reads as steps rather than as
+      // zoom. The epsilon is only here to skip a React render that would not
+      // change a pixel.
+      if (Math.abs(raw - zoomRef.current) < 0.001) return;
+      onZoomChange(raw);
+    };
+
+    /** The pinch is over: ease onto a preset if it stopped near one. */
+    const onGestureSettle = () => {
+      zoomSettleRef.current = 0;
+      const settled = settleZoom(rawZoomRef.current, zoomPresets);
+      rawZoomRef.current = settled;
+      if (Math.abs(settled - zoomRef.current) < 0.001) return;
+      onZoomChange(settled);
     };
 
     const onWheel = (event: WheelEvent) => {
@@ -473,13 +479,18 @@ export function useDeckScroller({
       if (!zoomFrameRef.current) {
         zoomFrameRef.current = requestAnimationFrame(applyPendingZoom);
       }
+      // Restarted by every event, so it only fires once the fingers stop.
+      if (zoomSettleRef.current) window.clearTimeout(zoomSettleRef.current);
+      zoomSettleRef.current = window.setTimeout(onGestureSettle, ZOOM_SETTLE_MS);
     };
 
     el.addEventListener("wheel", onWheel, { passive: false });
     return () => {
       el.removeEventListener("wheel", onWheel);
       if (zoomFrameRef.current) cancelAnimationFrame(zoomFrameRef.current);
+      if (zoomSettleRef.current) window.clearTimeout(zoomSettleRef.current);
       zoomFrameRef.current = 0;
+      zoomSettleRef.current = 0;
       pendingDeltaRef.current = 0;
     };
   }, [deckNode, onZoomChange, zoomRange, zoomPresets]);
