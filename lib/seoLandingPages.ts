@@ -847,7 +847,7 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
     // primaries, so three pages were bidding for the same two queries and the
     // thinnest of them was this one. It competes on the brand query only.
     secondaryKeywords: [
-      "JustTheRecipe alternative",
+      "Just the Recipe alternative",
       "alternative to Just the Recipe",
       "Just the Recipe app alternative",
       "free recipe printing tool",
@@ -857,16 +857,16 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
     initialImportMode: "url",
     title: "Just the Recipe Alternative for Printing",
     description:
-      "Comparing RecipePrinter and JustTheRecipe: both clean up a recipe page, and they differ on printing, what you can bring in, and what the free tier does.",
+      "Comparing RecipePrinter and Just the Recipe: both clean up a recipe page, and they differ on printing, what you can bring in, and what the free tier does.",
     h1: "A Just the Recipe alternative built for printing",
     lede:
-      "Paste a recipe link into either one and you get the ingredients and steps without the backstory. The difference comes next: JustTheRecipe keeps it on your screen, RecipePrinter puts it on paper.",
+      "Paste a recipe link into either one and you get the ingredients and steps without the backstory. The difference comes next: Just the Recipe keeps it on your screen, RecipePrinter puts it on paper.",
     featureSections: [
       {
         heading: "The same first step, a different second one",
         proof: "before-after",
         body:
-          "JustTheRecipe is a good reader. It strips a recipe page down to what you cook from and keeps it on your phone, and its apps are genuinely nice to use in the kitchen. RecipePrinter is aimed at the moment after that, when you want the recipe on paper: a card for the box, a full page for the binder, or a batch of both for the week.",
+          "Just the Recipe is a good reader. It strips a recipe page down to what you cook from and keeps it on your phone, and its apps are genuinely nice to use in the kitchen. RecipePrinter is aimed at the moment after that, when you want the recipe on paper: a card for the box, a full page for the binder, or a batch of both for the week.",
       },
       {
         heading: "More ways in than a link",
@@ -882,7 +882,7 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
       },
     ],
     comparison: {
-      competitor: "JustTheRecipe",
+      competitor: "Just the Recipe",
       checked: "August 2026",
       groups: [
         {
@@ -909,7 +909,7 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
         {
           title: "Keeping them",
           rows: [
-            { feature: "Saving recipes to come back to", us: "Free account", them: "20 free, then paid" },
+            { feature: "Saving recipes to come back to", us: "Unlimited with a free account", them: "20 free, then paid" },
             { feature: "Bound cookbook with a cover and chapters", us: "$19.99 per book", them: false },
           ],
         },
@@ -924,7 +924,7 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
     },
     faqs: [
       {
-        question: "Is JustTheRecipe free?",
+        question: "Is Just the Recipe free?",
         answer:
           "Reading a decluttered recipe is free, and a free account saves up to 20 recipes and syncs them across your devices. Printing, unlimited saves, and serving-size adjustments are part of their paid Premium plan, with prices shown inside their app.",
       },
@@ -936,7 +936,7 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
       {
         question: "Which one should I use?",
         answer:
-          "If you cook from your phone and want a tidy reader with native apps, JustTheRecipe is built for that. If you want the recipe on paper, in a card box, a binder, or a bound cookbook, that is what RecipePrinter is for. Plenty of people use both.",
+          "If you cook from your phone and want a tidy reader with native apps, Just the Recipe is built for that. If you want the recipe on paper, in a card box, a binder, or a bound cookbook, that is what RecipePrinter is for. Plenty of people use both.",
       },
       {
         question: "Can RecipePrinter print recipes from a photo of an old recipe card?",
