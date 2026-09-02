@@ -434,32 +434,31 @@ export function useDeckScroller({
    *  2. A pinch fires far faster than the deck can re-lay-out, and every event
    *     was its own React render. They are accumulated and applied one per
    *     animation frame instead, so the work matches the display.
-   *  3. The presets pull, but only once you stop. Snapping DURING the gesture
-   *     is a stutter by construction: the applied zoom holds at 100% while the
-   *     fingers keep moving, then lets go all at once, and the hand feels the
-   *     pause as the app failing to keep up. Every canvas tool zooms
-   *     continuously and reserves snapping for a keystroke. So the gesture is
-   *     continuous and unrounded, and `ZOOM_SETTLE_MS` after the last event —
-   *     the pinch is over — it eases onto a preset if it finished near one.
-   *     Landing exactly on 100% was worth keeping; paying for it mid-gesture
-   *     was not.
+   *  3. Nothing is measured or snapped mid-gesture. The zoom is continuous and
+   *     unrounded, the anchor is read once on the first event, and the presets
+   *     belong to the +/- control and the menu. Everything this used to do
+   *     between the frames of a live pinch — round to whole percents, hold at
+   *     100%, re-run getBoundingClientRect — was work done in the one place
+   *     that could least afford it.
    */
-  const rawZoomRef = useRef(zoom);
+  /** The gesture's own running value. There used to be two of these — a raw
+      accumulator and the applied zoom — because the applied one was rounded
+      and snapped to a preset and so drifted from the raw one. Neither happens
+      now, so they were the same number twice. */
   const zoomRef = useRef(zoom);
   const pendingDeltaRef = useRef(0);
   const zoomFrameRef = useRef(0);
   const zoomSettleRef = useRef(0);
-  /** The point the gesture is zooming about, and the page box it sits in. */
-  const pendingZoomAnchorRef = useRef<
-    { x: number; y: number; page: HTMLElement; fx: number; fy: number } | null
-  >(null);
-  // Kept current for the frame callback below without re-binding anything.
-  zoomRef.current = zoom;
-  // The +/- buttons and the preset menu set the zoom too; the gesture has to
-  // start from wherever they left it rather than from its own last value.
-  if (Math.abs(rawZoomRef.current - zoom) > 0.001 && !zoomFrameRef.current) {
-    rawZoomRef.current = zoom;
-  }
+  /** Measured ONCE per pinch (see `onWheel`) and re-armed from here each frame,
+      because a pinch does not move the cursor and `fx`/`fy` are fractions of
+      the page, which do not change when it scales. */
+  type ZoomAnchor = { x: number; y: number; page: HTMLElement; fx: number; fy: number };
+  const gestureAnchorRef = useRef<ZoomAnchor | null>(null);
+  /** The one-shot channel the layout effect below consumes. */
+  const pendingZoomAnchorRef = useRef<ZoomAnchor | null>(null);
+  // Outside a gesture the +/- control and the menu own the value, so adopt
+  // whatever they set. Inside one, we do, and `zoom` is only echoing us back.
+  if (!zoomGestureRef.current) zoomRef.current = zoom;
 
   useEffect(() => {
     const el = deckNode;
@@ -470,14 +469,11 @@ export function useDeckScroller({
       const delta = pendingDeltaRef.current;
       pendingDeltaRef.current = 0;
       if (!delta) return;
-      const raw = zoomFromWheel(rawZoomRef.current, delta, zoomRange);
-      rawZoomRef.current = raw;
-      // Unrounded on purpose. Quantizing to whole percents put a floor under
-      // how fine the gesture could be, which reads as steps rather than as
-      // zoom. The epsilon is only here to skip a React render that would not
-      // change a pixel.
-      if (Math.abs(raw - zoomRef.current) < 0.001) return;
-      onZoomChange(raw);
+      const next = zoomFromWheel(zoomRef.current, delta, zoomRange);
+      // The epsilon only skips a React render that would not move a pixel.
+      if (Math.abs(next - zoomRef.current) < 0.001) return;
+      zoomRef.current = next;
+      onZoomChange(next);
     };
 
     /**
@@ -497,6 +493,7 @@ export function useDeckScroller({
     const onGestureEnd = () => {
       zoomSettleRef.current = 0;
       zoomGestureRef.current = false;
+      gestureAnchorRef.current = null;
       const deck = deckRef.current;
       if (deck) applyDeckGeometry(deck, deckScaleRef.current);
     };
@@ -504,24 +501,34 @@ export function useDeckScroller({
     const onWheel = (event: WheelEvent) => {
       if (!event.ctrlKey) return;
       event.preventDefault();
-      zoomGestureRef.current = true;
       pendingDeltaRef.current += event.deltaY;
-      // Anchor to a PAGE, not to the deck. See the layout effect below.
-      const target = event.target as Element | null;
-      const page =
-        target?.closest?.<HTMLElement>(".recipe-page-slide") ??
-        el.querySelector<HTMLElement>(".recipe-page-slide");
-      const rect = page?.getBoundingClientRect();
-      pendingZoomAnchorRef.current =
-        page && rect && rect.width > 0 && rect.height > 0
-          ? {
-              x: event.clientX,
-              y: event.clientY,
-              page,
-              fx: (event.clientX - rect.left) / rect.width,
-              fy: (event.clientY - rect.top) / rect.height,
-            }
-          : null;
+      // Measured on the FIRST event of the pinch and not again. This is a
+      // getBoundingClientRect, which forces layout, and it was running on every
+      // event — sixty to a hundred and twenty forced layouts a second, in the
+      // middle of the gesture they were meant to keep smooth. Nothing it reads
+      // changes while the fingers are down: a pinch does not move the cursor,
+      // and fx/fy are fractions of the page, which is the whole reason they are
+      // fractions.
+      if (!zoomGestureRef.current) {
+        zoomGestureRef.current = true;
+        const target = event.target as Element | null;
+        const page =
+          target?.closest?.<HTMLElement>(".recipe-page-slide") ??
+          el.querySelector<HTMLElement>(".recipe-page-slide");
+        const rect = page?.getBoundingClientRect();
+        gestureAnchorRef.current =
+          page && rect && rect.width > 0 && rect.height > 0
+            ? {
+                x: event.clientX,
+                y: event.clientY,
+                page,
+                fx: (event.clientX - rect.left) / rect.width,
+                fy: (event.clientY - rect.top) / rect.height,
+              }
+            : null;
+      }
+      // Re-armed each event because the layout effect consumes it.
+      pendingZoomAnchorRef.current = gestureAnchorRef.current;
       if (!zoomFrameRef.current) {
         zoomFrameRef.current = requestAnimationFrame(applyPendingZoom);
       }
