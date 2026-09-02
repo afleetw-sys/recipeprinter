@@ -67,12 +67,9 @@ export function ProductHuntBanner() {
     <div className="no-print border-b border-line bg-[var(--cp-accent-warm-soft)] text-ink">
       <div className="flex items-center gap-cp-3 px-cp-4 sm:px-cp-6 py-cp-2">
         <p className="min-w-0 flex-1 text-cp-small leading-snug">
-          <span className="font-bold">RecipePrinter is on Product Hunt today.</span>{" "}
-          {/* The middle sentence is the one thing here that isn't the news or
-              the way to act on it, so it's what a narrow screen drops. */}
-          <span className="hidden text-ink-soft sm:inline">
-            A review from someone who actually prints recipes goes a long way.
-          </span>{" "}
+          {/* Two beats, and no third: the link already carries the ask, so a
+              sentence in between could only say it twice. */}
+          <span className="font-bold">We&rsquo;re on Product Hunt today.</span>{" "}
           <a
             href={PRODUCT_HUNT_URL}
             target="_blank"
