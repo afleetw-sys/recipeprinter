@@ -307,13 +307,20 @@ function urlFlag(params: URLSearchParams, key: string): boolean | null {
  * leaks:
  *   1. Non-production hosts never initialise at all (covers localhost and
  *      preview deploys, which is most of it).
- *   2. `?optout` on the live site sets PostHog's own persisted opt-out, so
- *      this browser stops sending anything. Survives reloads; dies if we
- *      clear site data.
+ *   2. `?optout` on the live site calls PostHog's own opt-out BEFORE the
+ *      queued first `$pageview` is flushed, so this browser sends nothing and
+ *      no person is stored. Persisted in localStorage: survives reloads, dies
+ *      if we clear site data. THIS IS THE ONE to reach for when one of us has
+ *      to open production.
  *   3. `?internal` tags this session's events with `internal: true`, which the
- *      PostHog project's "internal and test users" filter hides. Preferable to
- *      (2) — tagged events can be un-hidden later, dropped events are gone
- *      forever. Session-scoped on purpose; see `bootPostHog` for what the
+ *      PostHog project's "internal and test users" filter hides. The events are
+ *      still captured and the visitor is still stored as a user; the tag only
+ *      keeps them off the dashboards. It is for the case where the events are
+ *      the thing under test — an attribution or funnel check you need to watch
+ *      land — and never a way to browse the live site quietly. This comment
+ *      used to call it "preferable to (2)", which is how a browse-quietly habit
+ *      started; at our traffic a handful of stored sessions is a large slice of
+ *      a day. Session-scoped on purpose; see `bootPostHog` for what the
  *      permanent version cost.
  */
 export function initAnalytics(): void {
