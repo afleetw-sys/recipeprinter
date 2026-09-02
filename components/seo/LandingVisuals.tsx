@@ -22,11 +22,12 @@ import type { ComparisonValue, SeoIconKey, SeoProofKind } from "@/lib/seoLanding
 // so the pages read as intentionally designed rather than auto-generated.
 // ─────────────────────────────────────────────────────────────────────────────
 
-/* The step counter is a NUMBER — text — so the clay is in its tint and its
-   edge, and the digit stays ink. See docs/color-roles.md. */
+/* The step counter is a NUMBER — text — so the accent is in its tint and its
+   edge, and the digit stays ink. Cornflower rather than clay: a step number
+   counts, it does not caution. See docs/color-roles.md. */
 const stepCounter = {
-  borderColor: "var(--cp-accent-warm)",
-  background: "var(--cp-accent-warm-soft)",
+  borderColor: "var(--cp-accent)",
+  background: "var(--cp-accent-soft)",
   color: "var(--cp-ink)",
 } as const;
 

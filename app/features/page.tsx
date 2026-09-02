@@ -113,7 +113,7 @@ export default function FeaturesPage() {
 
       <section
         aria-labelledby="privacy-heading"
-        className="mt-cp-7 card p-cp-6 bg-[var(--cp-accent-warm-soft)] border-transparent"
+        className="mt-cp-7 card p-cp-6 bg-[var(--cp-accent-soft)] border-transparent"
       >
         <h2
           id="privacy-heading"

@@ -64,7 +64,7 @@ export function ProductHuntBanner() {
     /* Full width, like the header below it: this is a band across the page,
        not a column of content, so it takes the same edge padding the bar does
        rather than centring itself in `max-w-content`. */
-    <div className="no-print border-b border-line bg-[var(--cp-accent-warm-soft)] text-ink">
+    <div className="no-print border-b border-line bg-[var(--cp-accent-soft)] text-ink">
       <div className="flex items-center gap-cp-3 px-cp-4 sm:px-cp-6 py-cp-2">
         <p className="min-w-0 flex-1 text-cp-small leading-snug">
           <span className="font-bold">We&rsquo;re on Product Hunt today.</span>{" "}
