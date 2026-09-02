@@ -31,7 +31,7 @@ import { ScaledPage } from "@/components/print/ScaledPage";
 import { PHOTO_STYLE_OPTIONS } from "@/components/print/photoStyle";
 import { formatRecipeTime } from "@/lib/time";
 import { PAGE_DIMS } from "@/lib/printGeometry";
-import { gutterSideForRole } from "@/lib/cookbookPresets";
+import { getCookbookPreset, gutterSideForRole, presetCardDims } from "@/lib/cookbookPresets";
 import {
   BodyTextGlyph,
   HeadingGlyph,
@@ -342,6 +342,18 @@ export function PrintDeck(props: PrintDeckProps) {
     templateLocked,
     renderAllPages,
   } = props;
+
+  /**
+   * The box an undrawn page holds open.
+   *
+   * Has to be the box the REAL page occupies, or crossing DECK_WINDOW while
+   * scrolling swaps one height for another and everything below it moves.
+   * A cookbook page is the preset's own sheet (`presetCardDims`), which is
+   * what ScaledPage draws; a plain card project keeps the fixed card.
+   */
+  const placeholderDims = Boolean(projectMeta.meta.cookbookMode)
+    ? presetCardDims(getCookbookPreset(projectMeta.meta.cookbookPreset))
+    : PAGE_DIMS[previewCardSize];
 
   // Whether this page's edit surface is live. The same four-way question was
   // spelled out at six call sites (class, aria-pressed and label, twice over
@@ -1309,8 +1321,16 @@ export function PrintDeck(props: PrintDeckProps) {
                     )}
                   {!(renderAllPages || Math.abs(index - activeNavIndex) <= DECK_WINDOW) ? (
                     <PagePlaceholder
-                      width={PAGE_DIMS[previewCardSize].w}
-                      height={PAGE_DIMS[previewCardSize].h}
+                      // The SAME box the real page occupies. A cookbook page is
+                      // the preset's sheet (see `presetCardDims`), not the
+                      // fixed card, and the placeholder kept the card — so
+                      // every page crossing DECK_WINDOW while you scrolled
+                      // swapped one height for another, moved everything below
+                      // it, and left mandatory snap to re-resolve mid-gesture.
+                      // That is the scroll passing a page and being pulled
+                      // back onto it.
+                      width={placeholderDims.w}
+                      height={placeholderDims.h}
                       scale={deckScale}
                     />
                   ) : (
