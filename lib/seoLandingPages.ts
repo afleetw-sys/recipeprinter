@@ -874,7 +874,7 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
       },
       {
         heading: "Recipes that never had a link",
-        proof: "steps",
+        image: "handwritten-card",
         body:
           "Plenty of what you cook never had a URL: a handwritten card, a screenshot from a group chat, a paragraph someone texted you. RecipePrinter reads those the way it reads a link, so they end up on the same printed page as the ones that came off a website.",
       },
@@ -927,14 +927,14 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
     },
     faqs: [
       {
-        question: "Is Just the Recipe free?",
+        question: "How do I choose between them?",
         answer:
-          "Reading a decluttered recipe is free, and a free account saves up to 20 of them. Printing, unlimited saves, and serving-size adjustments belong to their Premium plan, which they price inside the app.",
+          "By where the recipe ends up. If you cook from a screen, that is what Just the Recipe does. If it ends up on paper, in a card box or a binder, that is what RecipePrinter does. Plenty of people use both.",
       },
       {
-        question: "Can I print for free with RecipePrinter?",
+        question: "What does each one cost?",
         answer:
-          "Yes, without an account and with no limit on how many. The two optional one-time purchases are premium print themes and the cookbook builder.",
+          "Just the Recipe is free to read recipes and to save up to 20; printing, unlimited saves and serving adjustments are on Premium. RecipePrinter is free to print, with no account and no limit, and sells premium themes and the cookbook builder as one-time purchases.",
       },
       {
         question: "Can I bring my saved Just the Recipe recipes over?",
@@ -942,9 +942,9 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
           "Not directly. There is no export from Just the Recipe that RecipePrinter can read, so the quickest route is pasting the original links in again. Paprika export files and CookPilot libraries do come straight across.",
       },
       {
-        question: "Do I have to pick one?",
+        question: "Does RecipePrinter have an app?",
         answer:
-          "No. They do different halves of the same job: one keeps the recipe on a screen, the other puts it on paper. Using one does not stop you using the other.",
+          "No. It runs in any browser, on a phone as readily as a computer, so there is nothing to install and nothing to sign into before you print.",
       },
     ],
     links: [

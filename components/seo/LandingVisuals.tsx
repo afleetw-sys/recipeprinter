@@ -204,6 +204,13 @@ const FEATURE_IMAGES: Record<string, ProofImage> = {
     alt:
       "A saved recipe PDF open in a document viewer, with sesame oil typed into the search field and the viewer reporting it found on 2 pages. Both matches are highlighted in the ingredient list of a Honey Garlic Salmon Stir Fry Noodles card, and a sidebar lists the pages they were found on.",
   },
+  "handwritten-card": {
+    src: "/images/jackie-card.jpeg",
+    width: 1800,
+    height: 1350,
+    alt:
+      "A handwritten recipe card for Peanut Butter Cookies, from Jackie (Nana), lying on a wooden board beside an open floral recipe box. The card is filled in by hand in cursive: cooking time, oven temperature, and an ingredient list running from flour and baking soda down to vanilla.",
+  },
   "card-in-box": {
     src: "/images/recipe-card-in-box.jpg",
     width: 1448,
