@@ -246,7 +246,7 @@ export default function SeoLandingPage({ params }: PageProps) {
               <div className="grid gap-cp-6 lg:grid-cols-[minmax(0,0.7fr)_minmax(0,1.3fr)] lg:items-center lg:gap-[88px]">
                 <div>
                   <h2 id="guide-capture-heading" className="text-cp-h2-lg font-extrabold tracking-[-0.03em]">
-                    Start your family cookbook
+                    {page.captureHeading ?? "Start here"}
                   </h2>
                 </div>
                 <CaptureBlock page={page} />

@@ -64,6 +64,10 @@ export type SeoLandingPage = {
   statusNote?: string;
   initialImportMode?: ImportTab;
   importSubmitLabel?: string;
+  /** Heading over the guide-first capture block. Hardcoded to "Start your
+      family cookbook" until four guide pages that are not about cookbooks
+      inherited it. */
+  captureHeading?: string;
   /** Reassurance below capture; false hides the default utility-page message. */
   captureReassurance?: string | false;
   /** Short hint shown under the capture block when the preselected mode needs a caveat. */
@@ -655,6 +659,7 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
   },
   {
     slug: "organize-recipes",
+    captureHeading: "Start with one recipe",
     primaryKeyword: "organize recipes",
     secondaryKeywords: [
       "recipe organization ideas",
@@ -690,6 +695,7 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
   },
   {
     slug: "recipe-binder",
+    captureHeading: "Start your binder",
     primaryKeyword: "recipe binder",
     secondaryKeywords: [
       "recipe binder ideas",
@@ -727,6 +733,7 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
   },
   {
     slug: "preserve-family-recipes",
+    captureHeading: "Start with one card",
     primaryKeyword: "preserve family recipes",
     secondaryKeywords: [
       "handwritten recipe preservation",
@@ -764,6 +771,7 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
   },
   {
     slug: "family-recipe-book",
+    captureHeading: "Start your family cookbook",
     primaryKeyword: "family recipe book",
     secondaryKeywords: [
       "create a family cookbook",
@@ -963,23 +971,91 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
       "family recipe book ideas",
     ],
     intent: "Preservation and Gift SEO",
+    // Preservation by intent, but someone searching a competitor's name wants
+    // to try the thing now, so capture stays in the hero like the other
+    // alternative page rather than waiting below an explanation.
+    layout: "capture-first",
     eyebrow: "Recipe preservation alternative",
     title: "ReciScan Alternative",
     description:
-      "Looking for a ReciScan alternative? RecipePrinter turns links, screenshots, photos, and text into printable recipe pages and cards.",
-    h1: "A ReciScan alternative for printable recipe collections",
+      "Comparing RecipePrinter and ReciScan: both read old recipe cards, and they differ on what comes out, what it costs, and how long it takes.",
+    h1: "A ReciScan alternative that prints today",
     lede:
-      "RecipePrinter helps you turn recipes from the internet, old cards, screenshots, and text into printable pages, cards, and PDFs you can cook from and keep.",
-    faqs: [
+      "Both tools read an old recipe card from a photo. ReciScan gathers them into a bound book it prints and ships; RecipePrinter puts them on cards and pages you print at home today.",
+    featureSections: [
       {
-        question: "How is RecipePrinter different from ReciScan?",
-        answer:
-          "RecipePrinter is a web-based recipe printing tool focused on turning recipe links, screenshots, photos, and pasted text into printable cards, pages, and PDFs.",
+        heading: "A book they ship, or paper you have tonight",
+        proof: "card",
+        body:
+          "ReciScan is built to end in a bound book, ordered from its print service and posted to you, from about $18 for fifty pages. RecipePrinter ends at your own printer. Both get the recipes onto paper; the difference is the waiting and what you have to commit to first.",
       },
       {
-        question: "Can RecipePrinter help preserve family recipes?",
+        heading: "A card for the box, not only a page in a book",
+        image: "card-in-box",
+        body:
+          "In a cookbook a recipe is a page inside something larger. RecipePrinter also prints a 6 by 4 card sized for a recipe box, with cut lines for card stock, so one recipe can go in the box by the stove without the other forty-nine coming along.",
+      },
+      {
+        heading: "Nothing to install",
+        body:
+          "ReciScan is an app you download to a phone. RecipePrinter is a web page, so you can photograph the card in front of you and print it from the same browser you are reading this in, without an install or an account.",
+      },
+    ],
+    comparison: {
+      competitor: "ReciScan",
+      checked: "September 2026",
+      groups: [
+        {
+          title: "Getting recipes in",
+          rows: [
+            { feature: "A photo of a handwritten card", us: true, them: true },
+            { feature: "A recipe link, or text you paste", us: true, them: true },
+          ],
+        },
+        {
+          title: "What you can print",
+          rows: [
+            { feature: "Printing at home", us: "Free, no account", them: true },
+            { feature: "A 6 by 4 card for a recipe box", us: true, them: false },
+            { feature: "Cut lines for card stock", us: true, them: false },
+          ],
+        },
+        {
+          title: "Making a book",
+          rows: [
+            { feature: "A bound book printed and posted to you", us: false, them: "From about $18" },
+            { feature: "A cookbook you print or export yourself", us: "$19.99 per book", them: "PDF download" },
+            { feature: "Inviting other people to add recipes", us: false, them: "Subscribers" },
+          ],
+        },
+        {
+          title: "Where it runs",
+          rows: [
+            { feature: "Using it", us: "Any browser, no install", them: "iPhone and Android apps" },
+          ],
+        },
+      ],
+    },
+    faqs: [
+      {
+        question: "How do I choose between them?",
         answer:
-          "Yes. You can upload a photo of an old recipe card or paste recipe text, then print a clean copy for cooking, sharing, or adding to a family collection.",
+          "By what you want at the end. If it is one bound book of the whole collection, ReciScan prints and ships that. If it is recipes on paper you can cook from this week, in a box or a binder, that is RecipePrinter.",
+      },
+      {
+        question: "What does each one cost?",
+        answer:
+          "ReciScan is free to use, with a monthly subscription for covers and contributors, and books from about $18. RecipePrinter is free to print, with no account, and charges once per cookbook if you build one.",
+      },
+      {
+        question: "Can RecipePrinter send me a printed book?",
+        answer:
+          "No. It builds the finished book as a print-ready file, which you can run on a home printer or hand to a print shop. Nothing arrives in the post from us.",
+      },
+      {
+        question: "Can it read my grandmother's handwriting?",
+        answer:
+          "Usually. Photograph the card in good light and RecipePrinter reads what it can and sets it as a printable recipe, with every line editable before you print in case a word came through wrong.",
       },
     ],
     links: [
