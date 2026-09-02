@@ -5,6 +5,7 @@ import { ScaledPage } from "@/components/print/ScaledPage";
 import { usePrintSheets } from "@/lib/usePrintSheets";
 import {
   getCookbookPreset,
+  gutterSideForRole,
   presetArtScale,
   presetSheetInches,
 } from "@/lib/cookbookPresets";
@@ -16,6 +17,37 @@ import type { QueueItem } from "@/types/recipe";
 
 /** Backstop for the paint frame only — never for fonts or images. */
 const EXPORT_READY_FALLBACK_MS = 1000;
+
+/**
+ * How long one photo may hold the whole book open.
+ *
+ * `decode()` rejects on a photo that fails, and that case was handled — but a
+ * request that never settles is not a failure, it is a promise that stays
+ * pending, and nothing downstream can tell it apart from a slow one without
+ * putting a clock on it. One such photo used to hold `Promise.all` open
+ * forever: the signal never fired, the renderer waited out its own timeout, and
+ * the cook was told the book could not be rendered. Every other page was ready.
+ *
+ * Generous on purpose. Images decode in parallel, so this is the ceiling for
+ * the whole set rather than per photo, and it sits well inside the renderer's
+ * wait — a real photo arriving slowly still lands in the book. Past it we
+ * capture what we have: a book missing one photo is worth more than no book.
+ */
+const IMAGE_WAIT_MS = 20000;
+
+/** Settles when `promise` does, or when `ms` elapses — whichever comes first,
+    and never rejects. */
+function withDeadline(promise: Promise<unknown>, ms: number): Promise<void> {
+  return new Promise<void>((resolve) => {
+    const timer = window.setTimeout(resolve, ms);
+    void promise
+      .catch(() => undefined)
+      .then(() => {
+        window.clearTimeout(timer);
+        resolve();
+      });
+  });
+}
 
 /**
  * The page the PDF renderer photographs.
@@ -102,13 +134,20 @@ function useExportReady(contentReady: boolean): void {
       Promise.all(
         Array.from(document.images).map((image) =>
           // `decode()` resolves once the pixels are ready to paint, which
-          // `complete` alone does not promise. A failed image resolves too —
-          // one broken photo must not hold an entire book hostage.
-          image.decode().catch(() => undefined),
+          // `complete` alone does not promise. A failed image resolves too, and
+          // so does one that simply never answers — neither a broken photo nor
+          // a stalled one may hold an entire book hostage (see IMAGE_WAIT_MS).
+          withDeadline(image.decode(), IMAGE_WAIT_MS),
         ),
       );
 
-    void Promise.all([document.fonts.ready, imagesDecoded()]).then(() => {
+    // The font wait is bounded on the same terms and for the same reason: it is
+    // another promise this page does not control, and the book still reads in a
+    // fallback face. Only a book that never arrives is unrecoverable.
+    void Promise.all([
+      withDeadline(document.fonts.ready, IMAGE_WAIT_MS),
+      imagesDecoded(),
+    ]).then(() => {
       if (cancelled) return;
       timer = window.setTimeout(signal, EXPORT_READY_FALLBACK_MS);
       frame = requestAnimationFrame(() => {
@@ -225,7 +264,7 @@ function InteriorDocument({ payload }: { payload: ExportPayload }) {
   const photoStyle = settings.photoStyle ?? "card";
   const headerPhotosOn = cookbookMode ? photoStyle === "card" : settings.showPhoto;
 
-  const { sheets, printLayoutReady, measurers } = usePrintSheets({
+  const { sheets, spreads, printLayoutReady, measurers } = usePrintSheets({
     sections: project.sections,
     items,
     cover: project.cover,
@@ -250,6 +289,38 @@ function InteriorDocument({ payload }: { payload: ExportPayload }) {
   });
 
   useExportReady(printLayoutReady && sheets.length > 0);
+
+  /**
+   * Which edge of each page the binding eats, keyed by sheet index.
+   *
+   * The deck works this out per spread and hands it to every page it draws
+   * (`renderSide` in PrintDeck); the export worked it out not at all. Every
+   * exported page therefore fell back to `gutterSide="none"`, no `.rp-bind-*`
+   * class was ever emitted, and the entire coil block in print.css — which is
+   * written against those classes — silently matched nothing.
+   *
+   * Bistro made that visible. Its spiral checker spine is absolutely positioned
+   * and gets its `left: 0` / `right: 0` only from an `.rp-bind-*` ancestor, so
+   * with neither offset set it fell back to its STATIC position and landed down
+   * the middle of the page, straight through the recipe. The quieter half of the
+   * same bug hit every template: content kept its plain margin on the bound
+   * edge, so the coil punched through the words instead of the decoration.
+   */
+  const gutterSides = useMemo(() => {
+    const sides = new Map<number, ReturnType<typeof gutterSideForRole>>();
+    for (const spread of spreads) {
+      // A cover or back cover stands alone and is symmetric — no gutter.
+      if (spread.single) {
+        const only = spread.right ?? spread.left;
+        if (only !== null) sides.set(only, gutterSideForRole("single"));
+        continue;
+      }
+      // A verso binds on its right (inner) edge, a recto on its left.
+      if (spread.left !== null) sides.set(spread.left, gutterSideForRole("left"));
+      if (spread.right !== null) sides.set(spread.right, gutterSideForRole("right"));
+    }
+    return sides;
+  }, [spreads]);
 
   // The same class + variable pair the deck applies for the instant it prints
   // (see `deckExportClass` in app/print/page.tsx) — here it is simply always on,
@@ -282,6 +353,7 @@ function InteriorDocument({ payload }: { payload: ExportPayload }) {
             activeSide="front"
             scale={1}
             size={cardSize}
+            gutterSide={gutterSides.get(index) ?? "none"}
             template={template}
             doubleSided={settings.doubleSided}
             cookbookMode={cookbookMode}
