@@ -192,6 +192,26 @@ export function PrinterWorkspace({
     setMobileQueueOpen(true);
   }, [hydrated, items.length]);
 
+  /**
+   * Get the mobile tray out of the way the moment someone reaches for the
+   * import panel.
+   *
+   * The tray is `position: fixed` at the bottom of the viewport under 1024px,
+   * and it auto-opens the first time a recipe lands. From then on it sat over
+   * the very controls someone taps next: the Link/Image/Paste tabs, the URL
+   * field, the textarea. With a keyboard up as well there was almost nothing
+   * left, and the page read as broken rather than as busy.
+   *
+   * Capture phase, so it still fires for controls that stop propagation, and
+   * on pointerdown rather than click so the tray is already collapsing while
+   * the tap completes. Focus covers keyboard and assistive-tech users, who
+   * never send a pointer event at all.
+   *
+   * Collapsing is not the same as dismissing: the bar itself stays put, with
+   * the count and the Print button on it, so nothing is lost.
+   */
+  const collapseMobileTray = useCallback(() => setMobileQueueOpen(false), []);
+
   const closeMenu = useCallback(() => setMenuOpen(false), []);
   useMenuDismiss(menuRef, closeMenu, { enabled: menuOpen });
 
@@ -213,7 +233,11 @@ export function PrinterWorkspace({
       } ${skipProjectIntro ? "rp-printer-workspace--no-intro" : ""}`}
     >
       {/* Import panel */}
-      <div className="rp-workspace-import">
+      <div
+        className="rp-workspace-import"
+        onPointerDownCapture={collapseMobileTray}
+        onFocusCapture={collapseMobileTray}
+      >
         <ImportPanel
           items={items}
           workspace
