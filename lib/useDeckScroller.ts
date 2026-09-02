@@ -22,6 +22,10 @@ const DECK_SCROLL_PADDING_TOP = 72;
     enough to ride out the gaps between events in a slow pinch, short enough
     that the settle still feels like part of the same movement. */
 const ZOOM_SETTLE_MS = 140;
+/** How far inside the window a page has to come back before snapping resumes.
+    Wider than any scrollbar the toggle itself adds, so leaving free scroll can
+    never immediately re-enter it. */
+const FREE_SCROLL_EXIT_SLACK = 16;
 
 /**
  * Below this the deck is a horizontal filmstrip with no rail beside it; above
@@ -205,6 +209,11 @@ export function useDeckScroller({
   // scroll-driven selection so it doesn't yank the outline back to whichever
   // page is momentarily centred mid-animation.
   const suppressScrollSyncRef = useRef(false);
+  /** True between the first wheel event of a pinch and its settle. Declared up
+      here because `applyDeckGeometry` below reads it, and a ref declared after
+      the callback that uses it only works while nothing calls that callback
+      during render. */
+  const zoomGestureRef = useRef(false);
   const scrollSyncTimerRef = useRef<number | undefined>(undefined);
   // Content-space center of each slide (top for the vertical desktop deck, left
   // for the horizontal mobile one), cached so the scroll listener can find the
@@ -326,9 +335,33 @@ export function useDeckScroller({
        * the budget to the pixel — from rounding itself into free scroll and
        * putting scrollbars on a deck at rest.
        */
-      if (pageHeight * scale > snapportHeight + 1 || pageWidth * scale > availW + 1) {
+      /**
+       * Hysteresis, and never re-snapping mid-pinch.
+       *
+       * Crossing this threshold flips three things in one frame:
+       * `scroll-snap-type` between `y mandatory` and `none`, 20px of inline
+       * padding, and the scrollbars. The third feeds back into the first —
+       * a scrollbar appearing changes `clientWidth`, which changes `availW`,
+       * which is one side of this very comparison. Sat exactly on the
+       * boundary, that is an oscillator, and the zoom that used to be rounded
+       * to whole percents now lands there and stays.
+       *
+       * So the thresholds differ by direction. Free scroll starts the moment a
+       * page genuinely overflows, and ends only once it fits with room to
+       * spare — a gap wider than any scrollbar the toggle itself can add.
+       *
+       * And snapping never comes BACK during a live pinch. Turning it off
+       * mid-gesture is what someone zooming in wants; turning it on makes the
+       * browser re-snap under fingers that are still moving, which is the
+       * lurch that reads as the zoom fighting you.
+       */
+      const free = el.dataset.freeScroll === "true";
+      const margin = free ? FREE_SCROLL_EXIT_SLACK : 1;
+      const overflows =
+        pageHeight * scale > snapportHeight + margin || pageWidth * scale > availW + margin;
+      if (overflows) {
         el.dataset.freeScroll = "true";
-      } else {
+      } else if (!zoomGestureRef.current) {
         delete el.dataset.freeScroll;
       }
     },
@@ -450,6 +483,7 @@ export function useDeckScroller({
     /** The pinch is over: ease onto a preset if it stopped near one. */
     const onGestureSettle = () => {
       zoomSettleRef.current = 0;
+      zoomGestureRef.current = false;
       const settled = settleZoom(rawZoomRef.current, zoomPresets);
       rawZoomRef.current = settled;
       if (Math.abs(settled - zoomRef.current) < 0.001) return;
@@ -459,6 +493,7 @@ export function useDeckScroller({
     const onWheel = (event: WheelEvent) => {
       if (!event.ctrlKey) return;
       event.preventDefault();
+      zoomGestureRef.current = true;
       pendingDeltaRef.current += event.deltaY;
       // Anchor to a PAGE, not to the deck. See the layout effect below.
       const target = event.target as Element | null;
@@ -491,6 +526,7 @@ export function useDeckScroller({
       if (zoomSettleRef.current) window.clearTimeout(zoomSettleRef.current);
       zoomFrameRef.current = 0;
       zoomSettleRef.current = 0;
+      zoomGestureRef.current = false;
       pendingDeltaRef.current = 0;
     };
   }, [deckNode, onZoomChange, zoomRange, zoomPresets]);
