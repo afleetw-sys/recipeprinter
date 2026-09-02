@@ -4,7 +4,6 @@ import {
   IMAGE_ZOOM_MIN,
   clampImageZoom,
   formatImageZoom,
-  zoomByWheel,
 } from "@/lib/imageZoom";
 
 describe("clampImageZoom", () => {
@@ -22,24 +21,6 @@ describe("clampImageZoom", () => {
     // silently magnify someone's photo to the maximum.
     expect(clampImageZoom(Number.NaN)).toBe(IMAGE_ZOOM_MIN);
     expect(clampImageZoom(Number.POSITIVE_INFINITY)).toBe(IMAGE_ZOOM_MIN);
-  });
-});
-
-describe("zoomByWheel", () => {
-  it("zooms in on a pinch open and out on a pinch closed", () => {
-    expect(zoomByWheel(1.5, -40)).toBeGreaterThan(1.5);
-    expect(zoomByWheel(1.5, 40)).toBeLessThan(1.5);
-  });
-
-  it("is proportional, so the same gesture feels the same at any zoom", () => {
-    const fromLow = zoomByWheel(1.2, -40) / 1.2;
-    const fromHigh = zoomByWheel(2.4, -40) / 2.4;
-    expect(fromLow).toBeCloseTo(fromHigh, 6);
-  });
-
-  it("stays inside the range however hard the gesture pushes", () => {
-    expect(zoomByWheel(1, 5000)).toBe(IMAGE_ZOOM_MIN);
-    expect(zoomByWheel(2.9, -5000)).toBe(IMAGE_ZOOM_MAX);
   });
 });
 

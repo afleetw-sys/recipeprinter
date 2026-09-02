@@ -21,7 +21,6 @@ import {
   IMAGE_ZOOM_STEP,
   IMAGE_ZOOM_STEPS,
   clampImageZoom,
-  zoomByWheel,
 } from "@/lib/imageZoom";
 import { ZoomControl } from "@/components/print/ZoomControl";
 import { markImageAvailable, markImageUnavailable } from "@/lib/imageFailure";
@@ -170,27 +169,21 @@ export const ScaledPage = memo(function ScaledPage({
   // preventDefault, and without that a pinch zooms the whole browser page
   // instead of the picture. A plain wheel is left alone so the deck still
   // scrolls with the photo under the pointer.
-  const zoomTargetRef = useRef<HTMLImageElement | null>(null);
-  const imageZoom = clampImageZoom(imageEdit?.zoom ?? 1);
+  /**
+   * A pinch anywhere on the deck zooms the DECK, photo included.
+   *
+   * This used to intercept ctrl/⌘+wheel over a full-page picture and zoom the
+   * picture instead, stopping the event before the deck saw it. It was an
+   * honest attempt at "whatever is under the pointer wins", and it made the
+   * gesture mean two different things a few hundred pixels apart — pinch over
+   * the page and the book scales, drift onto the photo and the book stops
+   * while the photo grows inside it. On a page that IS a photo, the boundary
+   * was invisible.
+   *
+   * The photo keeps its own zoom, on the Photo zoom stepper below, where it is
+   * labelled and reversible. The trackpad now only ever means the artboard.
+   */
   const onZoomChange = imageEdit?.onZoomChange;
-  useEffect(() => {
-    const node = zoomTargetRef.current;
-    if (!node || !onZoomChange) return;
-    const onWheel = (event: WheelEvent) => {
-      if (!event.ctrlKey && !event.metaKey) return;
-      event.preventDefault();
-      // And stop here. The deck has its own pinch handler (useDeckScroller),
-      // and a wheel event on the photo bubbles straight up to it — so a pinch
-      // with the pointer over a full-page picture used to zoom the picture AND
-      // the whole book at once, which is what made it feel unpredictable: the
-      // gesture did different things depending on where the mouse happened to
-      // be. Over a photo, the photo wins; anywhere else, the deck does.
-      event.stopPropagation();
-      onZoomChange(zoomByWheel(imageZoom, event.deltaY));
-    };
-    node.addEventListener("wheel", onWheel, { passive: false });
-    return () => node.removeEventListener("wheel", onWheel);
-  }, [onZoomChange, imageZoom]);
 
   const anySlot = sheet.slots.find((slot): slot is SheetSlot => slot !== null) ?? null;
   if (!anySlot) return null;
@@ -254,7 +247,6 @@ export const ScaledPage = memo(function ScaledPage({
                   draggable={false}
                   loading="lazy"
                   decoding="async"
-                  ref={zoomTargetRef}
                   style={{
                     objectPosition: `${imageEdit?.focusX ?? imageSlot.focusX ?? 50}% ${
                       imageEdit?.focusY ?? imageSlot.focusY ?? 50

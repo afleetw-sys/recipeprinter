@@ -24,17 +24,6 @@ export function clampImageZoom(zoom: number): number {
   return Math.min(IMAGE_ZOOM_MAX, Math.max(IMAGE_ZOOM_MIN, zoom));
 }
 
-/**
- * The zoom a pinch (or ctrl/⌘ + wheel) lands on. Multiplicative rather than
- * additive so a pinch feels the same at every zoom level — the same gesture
- * covers the same proportion of the range whether you are at 1.1× or 2.5×.
- * `deltaY` follows the wheel convention: negative = pinch open = zoom in.
- */
-export function zoomByWheel(current: number, deltaY: number): number {
-  return clampImageZoom(current * Math.exp(-deltaY / 220));
-}
-
-/** Rounded for display: "150%". */
 export function formatImageZoom(zoom: number): string {
   return `${Math.round(zoom * 100)}%`;
 }
