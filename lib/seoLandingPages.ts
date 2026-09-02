@@ -1016,7 +1016,7 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
         {
           title: "Making a book",
           rows: [
-            { feature: "A bound book they print and ship", us: false, them: "Starting at $18" },
+            { feature: "Printing and binding done for you", us: false, them: "Starting at $18" },
             { feature: "A cookbook you print or export yourself", us: "$19.99 once", them: "PDF download" },
             { feature: "Spiral or hardcover layout", us: "Letter spiral, 8 by 10 hardcover", them: "Coil, saddle stitch, perfect bound, hardcover" },
             { feature: "Updating the book you paid for", us: "Free, any time", them: false },
