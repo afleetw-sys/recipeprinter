@@ -180,8 +180,8 @@ const PROOF_ASPECT = "3 / 2";
 const FEATURE_IMAGES: Record<string, ProofImage> = {
   "multi-themes": {
     src: "/images/multi-themes.png",
-    width: 6000,
-    height: 3800,
+    width: 2400,
+    height: 1520,
     // Authored wider than the 3:2 slot, so about 5% comes off each side. The
     // composition already runs cards off both edges, so the crop takes more of
     // an edge that was cut on purpose rather than breaking a whole card.
@@ -190,13 +190,13 @@ const FEATURE_IMAGES: Record<string, ProofImage> = {
   },
   "counter-card": {
     src: "/images/crowded-counter.jpeg",
-    width: 4931,
-    height: 3412,
+    width: 1800,
+    height: 1245,
     alt:
       "A printed Buffalo Chicken Bake card lying on a granite counter beside the cooking it belongs to: a board of shredded chicken with two forks in it, a measuring cup of buffalo sauce, a tub of greek yogurt, dijon mustard, three spice jars, and an empty baking dish.",
   },
   "card-in-box": {
-    src: "/images/recipe-card-in-box.png",
+    src: "/images/recipe-card-in-box.jpg",
     width: 1448,
     height: 1086,
     // Authored 4:3, so the 3:2 slot trims about 5% off the top and bottom and a
@@ -222,15 +222,15 @@ const FEATURE_IMAGES: Record<string, ProofImage> = {
   },
   "paste-in-app": {
     src: "/images/recipes-fight-back.png",
-    width: 6350,
-    height: 3800,
+    width: 2400,
+    height: 1436,
     alt:
       "The RecipePrinter app open at recipeprinter.com with the Paste Text tab selected in the Add recipes panel. A Buffalo Chicken Bake recipe has been pasted straight into the recipe text box as plain lines: a title, then greek yogurt, buffalo sauce, dijon mustard, onion and garlic powder, paprika, and shredded cheddar. A hand-drawn circle marks the panel and the Add button below it. The Ready to print panel alongside is still empty.",
   },
   "before-after": {
     src: "/images/print-to-one.png",
-    width: 6000,
-    height: 3800,
+    width: 2400,
+    height: 1520,
     alt:
       "The same Caprese Pasta Salad recipe two ways. On the left, a stack of blog pages captioned 26 pages, printed from the browser: navigation bars, a star rating, four paragraphs of preamble, a large advertisement slot, and a bulleted discussion of the ingredients. On the right, one RecipePrinter card captioned 1 card, printed from RecipePrinter: the title, 10 minutes, serves 10, a photo of the salad, the ingredients grouped into pasta salad and dressing, and three numbered steps."
   },

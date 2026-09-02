@@ -62,7 +62,7 @@ export function CookbookWelcomeDialog({
             add a beat. The existing `width/height/object-fit` CSS still drives
             the layout — the width/height props are only the intrinsic ratio. */}
         <Image
-          src="/images/cookbook-onboarding-hero.png"
+          src="/images/cookbook-onboarding-hero.jpg"
           alt=""
           width={1536}
           height={1024}
