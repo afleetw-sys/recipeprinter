@@ -860,7 +860,7 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
       "Comparing RecipePrinter and JustTheRecipe: both clean up a recipe page, and they differ on printing, what you can bring in, and what the free tier does.",
     h1: "A Just the Recipe alternative built for printing",
     lede:
-      "Both tools do the same first thing: paste a recipe link and get the ingredients and steps without the backstory. They part company after that, mostly around paper.",
+      "Paste a recipe link into either one and you get the ingredients and steps without the backstory. The difference comes next: JustTheRecipe keeps it on your screen, RecipePrinter puts it on paper.",
     featureSections: [
       {
         heading: "The same first step, a different second one",
