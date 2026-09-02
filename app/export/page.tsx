@@ -5,7 +5,6 @@ import { ScaledPage } from "@/components/print/ScaledPage";
 import { usePrintSheets } from "@/lib/usePrintSheets";
 import {
   getCookbookPreset,
-  presetArtScale,
   presetSheetInches,
 } from "@/lib/cookbookPresets";
 import { isPrintCardSize, isRecipePrintTemplate } from "@/lib/printSettings";
@@ -306,6 +305,9 @@ function InteriorDocument({ payload }: { payload: ExportPayload }) {
     // Absent on books saved before the toggle existed: those printed them.
     descriptionOn: settings.showDescription ?? true,
     template,
+    // The book's real page — what every recipe is measured against, and what
+    // the preview draws too, so the two cannot disagree.
+    preset: payload.preset,
   });
 
   useExportReady(printLayoutReady && sheets.length > 0);
@@ -343,8 +345,9 @@ function InteriorDocument({ payload }: { payload: ExportPayload }) {
   // because this route exists only to be exported. `--rp-sheet-*` is why the
   // page box is pinned in absolute inches: WebKit resolves a print `100vh`
   // against the on-screen viewport, which collapses a custom trim to a sliver.
+  // There is no fill scale any more: the card is the sheet (see
+  // `presetCardDims`), so the page has nothing left to scale onto.
   const exportStyle = {
-    "--rp-art-scale": presetArtScale(preset),
     "--rp-sheet-w": presetSheetInches(preset).w,
     "--rp-sheet-h": presetSheetInches(preset).h,
   } as CSSProperties;
@@ -379,6 +382,7 @@ function InteriorDocument({ payload }: { payload: ExportPayload }) {
           <ScaledPage
             sheet={sheet}
             isLastSheet={index === sheets.length - 1}
+            preset={payload.preset}
             // -1, not 0: on screen `activeSlotIndex` hides every card but one.
             // An export wants every slot on the sheet, so match nothing.
             activeSlotIndex={-1}

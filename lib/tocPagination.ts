@@ -17,9 +17,13 @@ import type { TocEntry } from "@/lib/usePrintSheets";
 
 // The cookbook page and its contents padding: 10.75in tall, 0.8in top and
 // bottom (`.recipe-print-preview--letter`, `.recipe-card--toc`).
-const PAGE_HEIGHT_IN = 10.75;
+/** Fallback page height, for a caller that does not name one — the old fixed
+    Letter card. A cookbook always passes its preset's real page (see
+    `presetCardHeightIn`): budgeting 10.75in for a book printed on a 10.25in
+    sheet is what packed contents pages half an inch too full, and the overflow
+    was cut by the card's own `overflow: hidden` with nothing to report it. */
+const DEFAULT_PAGE_HEIGHT_IN = 10.75;
 const PAGE_PADDING_Y_IN = 0.8;
-const CONTENT_HEIGHT_IN = PAGE_HEIGHT_IN - PAGE_PADDING_Y_IN * 2;
 
 // First page: the "CONTENTS" kicker (0.13in type on a 0.195in line, 0.08in
 // below it) over the big heading (25pt × 1.5 = 0.52in, line-height 1, with
@@ -72,7 +76,11 @@ function chapterHeight(entry: TocEntry): number {
  *    read as an unlabelled list, and the reader has to turn back a page to find
  *    out whose recipes they are.
  */
-export function paginateTocEntries(entries: TocEntry[]): TocEntry[][] {
+export function paginateTocEntries(
+  entries: TocEntry[],
+  pageHeightIn: number = DEFAULT_PAGE_HEIGHT_IN,
+): TocEntry[][] {
+  const CONTENT_HEIGHT_IN = pageHeightIn - PAGE_PADDING_Y_IN * 2;
   const pages: TocEntry[][] = [];
   let page: TocEntry[] = [];
   let used = 0;

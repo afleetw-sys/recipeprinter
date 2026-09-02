@@ -748,6 +748,7 @@ export function PrintDeck(props: PrintDeckProps) {
   ) => (
     <ScaledPage
       showDescription={descriptionOn}
+      preset={projectMeta.meta.cookbookPreset}
       sheet={sheet}
       isLastSheet={navItem.sheetIndex === sheets.length - 1}
       activeSlotIndex={navItem.slotIndex}
@@ -1315,6 +1316,7 @@ export function PrintDeck(props: PrintDeckProps) {
                   ) : (
                   <ScaledPage
                     showDescription={descriptionOn}
+                    preset={projectMeta.meta.cookbookPreset}
                     sheet={sheet}
                     isLastSheet={navItem.sheetIndex === sheets.length - 1}
                     activeSlotIndex={navItem.slotIndex}

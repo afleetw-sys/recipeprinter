@@ -6847,43 +6847,26 @@ textarea.recipe-card__toc-title {
     background: var(--recipe-bg, #fff);
   }
 
-  /* Text-dominant pages (recipe, TOC, divider) FILL the sheet exactly like art:
-     the paper — and, on decorated templates, the binding-edge decoration — bleeds
-     to EVERY edge, so there's never a white margin floating the card in the page.
-     The TEXT is held off the edges only by the card's own internal padding (plus
-     the widened binding decoration on the coil side), never by a page margin.
-     Same fill scale + crop as art; the card keeps its measured Letter layout. */
-  .rp-exporting .recipe-print-preview--book-safe .recipe-card-page {
-    overflow: hidden;
-  }
-  .rp-exporting .recipe-print-preview--book-safe .recipe-card {
-    transform: scale(var(--rp-art-scale, 1));
-    transform-origin: center center;
-  }
+  /* No transform, on any page of any format — the card IS the sheet.
+     
+     Every cookbook page is now authored, measured, previewed and printed on the
+     preset's own sheet (see `presetCardDims`), so there is nothing left to fit:
+     paper and binding-edge decoration bleed to every edge because the card
+     reaches every edge, and the text is held off them by the card's own
+     padding. `overflow: hidden` stays — a full-bleed photo still crops to the
+     sheet.
 
-  /* Art pages (cover / back cover / full-page photo): scale the card to FILL the
-     sheet so the artwork bleeds to EVERY edge, cropping the overflow. Art bleeds
-     all four edges on both formats — a spiral coil just punches through it (like a
-     real spiral cookbook), a hardcover is cut at the trim. A full-page photo has
-     no `.recipe-card`; its `<img>` already fills the sheet, so it bleeds too. */
+     This replaces a fill scale that ran off a fixed 8.25 × 10.75in Letter card.
+     On hardcover the widths matched exactly, so the scale came out 1.0 and was
+     dropped as a no-op — leaving a 10.75in card on a 10.25in sheet and cutting
+     half an inch off the bottom of every text page, invisibly, because the
+     preview drew the Letter shape too. Spiral scaled up ~1.03 instead, which
+     printed the whole card but 3% larger than the preview and flattened every
+     vector decoration to a bitmap on the way (a `transform` rasterizes). Both
+     failure modes were the same mistake: a page the book does not have. */
+  .rp-exporting .recipe-print-preview--book-safe .recipe-card-page,
   .rp-exporting .recipe-print-preview--book-art .recipe-card-page {
     overflow: hidden;
-  }
-  .rp-exporting .recipe-print-preview--book-art .recipe-card {
-    transform: scale(var(--rp-art-scale, 1));
-    transform-origin: center center;
-  }
-
-  /* Hardcover's `--rp-art-scale` is exactly 1.0 — the 8.25in card already fills
-     the 8.25in (trim+bleed) sheet width — so `scale(1)` is a no-op that still
-     forces Chrome to flatten the card into a rasterized bitmap for print, which
-     is what pixelates bistro's vector checker spine (and any other SVG
-     decoration). Drop the transform for hardcover: byte-identical layout, crisp
-     vector output. Spiral keeps its ~1.03 fill scale (its slight blur is
-     mitigated by the thicker checker squares). */
-  .rp-exporting.rp-page-hardcover-8x10 .recipe-print-preview--book-safe .recipe-card,
-  .rp-exporting.rp-page-hardcover-8x10 .recipe-print-preview--book-art .recipe-card {
-    transform: none;
   }
 
   /* A book prints what the preview shows. Full stop.
@@ -6940,22 +6923,12 @@ textarea.recipe-card__toc-title {
     outline-offset: 0;
   }
 
-  .rp-exporting.rp-coil .recipe-template--bistro .recipe-card__checker {
-    display: none;
-  }
-  .rp-exporting.rp-coil .recipe-template--bistro .recipe-card-page__spine {
-    display: block;
-    position: absolute;
-    top: 0;
-    bottom: 0;
-    left: 0;
-    z-index: 3;
-    /* The in-card spine's own width, restated because a custom property set on
-       `.recipe-card__checker` doesn't reach this sibling. Keep the two in step:
-       this strip exists only to draw that one crisply. */
-    --bistro-check: 0.24in;
-    width: var(--bistro-check);
-  }
+  /* The page-level copy of bistro's spine is gone with the transform that made
+     it necessary: it existed only because a scaled card flattened the in-card
+     vector spine to a bitmap on spiral. Nothing scales now, so the in-card
+     spine is the crisp one, on every format. (`.recipe-card-page__spine` itself
+     stays defined and `display: none` — see the note by `.recipe-card__checker`
+     — because ScaledPage still renders the element.) */
 
   /* `.recipe-card-page` is the fragmentation unit that breaks pages now, not
      `.recipe-card` itself — flex + `100vh` here once broke that (see git

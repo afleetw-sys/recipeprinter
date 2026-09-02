@@ -583,6 +583,9 @@ export default function PrintPage() {
     sourceUrlOn,
     descriptionOn,
     template,
+    // The preview page IS the book's real sheet, and so is the card every
+    // recipe is measured against (see `presetCardDims`).
+    preset: projectMeta.meta.cookbookPreset,
   });
 
   // The preview is double-buffered (see `usePrintSheets`): it keeps painting the

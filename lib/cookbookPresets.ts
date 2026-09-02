@@ -216,7 +216,8 @@ export function presetCardHeightIn(preset: CookbookPreset): number {
 /** The printable SAFE box for TEXT content, inches — trim minus the margins on
     every edge, minus the binding gutter (0 for a lie-flat spiral, non-zero for a
     hardcover whose spine swallows the inner margin). Art does NOT use this box —
-    it bleeds the whole sheet (see `presetArtScale`). */
+    it bleeds the whole sheet, which the card now does by being the sheet
+    (see `presetCardDims`). */
 function presetSafeBox(preset: CookbookPreset): { w: number; h: number } {
   return {
     w: preset.trimWidthIn - preset.marginIn * 2 - preset.gutterIn,
@@ -230,17 +231,6 @@ function presetSafeBox(preset: CookbookPreset): { w: number; h: number } {
 export function presetCardScale(preset: CookbookPreset): number {
   const safe = presetSafeBox(preset);
   return Math.min(safe.w / LETTER_CARD_WIDTH_IN, safe.h / LETTER_CARD_HEIGHT_IN);
-}
-
-/** Scale for art-dominant pages (covers, full-page photos): `max` so the card
-    COVERS the whole SHEET on both axes and bleeds to every edge, overflow cropped.
-    Art bleeds all four edges on both formats — a spiral coil simply punches
-    through the artwork (exactly like a real spiral cookbook), and a hardcover is
-    trimmed at the bleed. There is no per-edge special-casing. */
-export function presetArtScale(preset: CookbookPreset): number {
-  const sheetWidth = preset.trimWidthIn + preset.bleedIn * 2;
-  const sheetHeight = preset.trimHeightIn + preset.bleedIn * 2;
-  return Math.max(sheetWidth / LETTER_CARD_WIDTH_IN, sheetHeight / LETTER_CARD_HEIGHT_IN);
 }
 
 /** Safe-area insets from the SHEET edge, in CSS inches, for a preset page.
