@@ -330,15 +330,15 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
     ],
     featureSections: [
       {
-        heading: "A one-page file, not a twenty-six-page one",
+        heading: "The recipe is on page one",
         proof: "before-after",
         body:
-          "Saving a recipe page as a PDF the usual way saves the whole article: headnote, ad slots, comments and all. RecipePrinter builds the recipe as its own page first, so the file you keep is the size of the recipe rather than the size of the website.",
+          "Save a recipe page as a PDF the usual way and you get the article. One caprese pasta salad comes to twenty-six pages, with the ingredients somewhere in the middle. RecipePrinter lays the recipe out on its own page first, so the file opens on what you came for.",
       },
       {
         heading: "A recipe your phone can search",
         body:
-          "A screenshot is a picture of a recipe. You cannot search it, copy an amount out of it, or make it bigger without it turning blurry. A PDF from RecipePrinter is text, so it prints crisp at any size, and searching your phone for buffalo chicken will actually find it.",
+          "A screenshot is a picture of a recipe. You cannot search it, copy an amount out of it, or make it bigger without it turning blurry. A PDF from RecipePrinter is text. It prints crisp however large you make it, and it turns up when you search your files for the dish.",
       },
     ],
     faqs: [

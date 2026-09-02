@@ -62,6 +62,7 @@ import {
 } from "@/lib/printProjects";
 import { adoptAnonymousProject, readAdoptionManifest } from "@/lib/anonymousProjectAdoption";
 import { loadLocalProject } from "@/lib/localProjects";
+import { printDocumentTitle } from "@/lib/printDocumentTitle";
 import { useRecipeInlineEditor } from "@/lib/useRecipeInlineEditor";
 import { useRailDrag, type RailDragKind, type RailDropResolved } from "@/lib/useRailDrag";
 import { useRailSelection } from "@/lib/useRailSelection";
@@ -1555,15 +1556,24 @@ export default function PrintPage() {
       recipeCount: items?.filter((item) => item.recipe).length ?? 0,
       cookbookPreset: cookbookMode ? activePreset.id : undefined,
     });
-    // Name the exported PDF after the cookbook. The browser seeds the Save-as-PDF
-    // filename from document.title, so this is what turns the deliverable from
-    // "Print preview · RecipePrinter.pdf" into "The Smith Family Cookbook.pdf".
-    if (cookbookMode) {
-      const bookName = projectMeta.meta.cover?.title?.trim();
-      if (bookName) {
-        previousDocTitleRef.current = document.title;
-        document.title = bookName;
-      }
+    // Name the exported PDF after what is in it. The browser seeds the
+    // Save-as-PDF filename from document.title, so this is what turns the
+    // deliverable from "Print preview · RecipePrinter.pdf" into "The Smith
+    // Family Cookbook.pdf" or "Basil Pesto and Korean Beef Bowl.pdf".
+    //
+    // Cookbooks take the book's own title. Everything else is named from the
+    // recipes being printed (see lib/printDocumentTitle): the alternative was
+    // that every plain recipe anyone saved landed in Downloads under the same
+    // generic name, which is exactly the folder our own /convert-recipe-to-pdf
+    // page sends people to.
+    const printTitle = cookbookMode
+      ? projectMeta.meta.cover?.title?.trim() || null
+      : printDocumentTitle(
+          (items ?? []).filter((item) => item.recipe).map((item) => item.recipe?.title),
+        );
+    if (printTitle) {
+      previousDocTitleRef.current = document.title;
+      document.title = printTitle;
     }
     window.print();
   }
