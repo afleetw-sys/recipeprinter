@@ -246,7 +246,7 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
       },
       {
         name: "Print it, or keep the file",
-        text: "Send it to the printer, or choose Save as PDF and keep the clean copy without spending a sheet at all.",
+        text: "Send it to the printer, or choose Save as PDF and keep the clean copy without printing anything at all.",
       },
     ],
     featureSections: [
@@ -257,7 +257,7 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
           "RecipePrinter never prints the article. It reads the recipe out of the page and lays out a new one holding the ingredients, the steps, and the times, and nothing else. The browser's own print button has no way to do that. It prints the document it was handed, headnote, ad slots, comments and all.",
       },
       {
-        heading: "It will not go dark while you cook",
+        heading: "Recipe cards don't go dark while you cook",
         image: "counter-card",
         body:
           "A card asks nothing of you: no unlocking, no clean finger, no screen timeout. It props against the backsplash and stays on the step you are on while your hands are covered in something, and nobody scrolls back up to check whether it was two teaspoons or two tablespoons.",
