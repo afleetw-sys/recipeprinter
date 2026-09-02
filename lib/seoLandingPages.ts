@@ -840,7 +840,7 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
   },
   {
     slug: "just-the-recipe-alternative",
-    lastReviewed: "2026-08-30",
+    lastReviewed: "2026-09-02",
     primaryKeyword: "Just the Recipe alternative",
     // Deliberately narrow. This page used to also claim "print recipe without
     // ads" and "print recipe from website", both of which are other pages'
