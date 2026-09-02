@@ -176,6 +176,43 @@ export function presetSheetInches(preset: CookbookPreset): { w: string; h: strin
   };
 }
 
+/**
+ * The card box a COOKBOOK page is authored, measured, previewed AND printed on:
+ * the preset's whole sheet, trim plus bleed.
+ *
+ * It used to be the fixed Letter card (8.25 × 10.75in) for every preset, with
+ * the export scaling that card onto the real sheet. On hardcover the two widths
+ * happen to be identical (8.25in), so the fill scale came out exactly 1.0 and
+ * the transform was dropped as a harmless no-op — which left a 10.75in card on
+ * a 10.25in sheet with `overflow: hidden`, quietly cutting **half an inch** off
+ * the bottom of every text page. The contents list was budgeted against 10.75in
+ * (see lib/tocPagination.ts) and a full recipe page could lose the end of its
+ * last step. None of it was visible until the PDF was open, because the preview
+ * was drawing a page shape the book does not have.
+ *
+ * Authoring on the sheet itself retires the whole class of problem: what is
+ * measured, what is on screen and what is printed are one box, and the export
+ * has nothing left to scale.
+ */
+export function presetCardDims(preset: CookbookPreset): { w: number; h: number } {
+  return presetSheetDims(preset);
+}
+
+/** The same box as the two CSS custom properties the card layout reads, for a
+    cookbook page's preview root and its off-screen measurer. Both must carry
+    it: a card measured at one height and drawn at another is the clipping bug
+    the measurement engine exists to prevent. */
+export function presetCardVars(preset: CookbookPreset): Record<string, string> {
+  const { w, h } = presetSheetInches(preset);
+  return { "--recipe-card-width": w, "--recipe-card-min-height": h };
+}
+
+/** The card's height in inches — what the contents list budgets its pages
+    against (lib/tocPagination.ts). */
+export function presetCardHeightIn(preset: CookbookPreset): number {
+  return preset.trimHeightIn + preset.bleedIn * 2;
+}
+
 /** The printable SAFE box for TEXT content, inches — trim minus the margins on
     every edge, minus the binding gutter (0 for a lie-flat spiral, non-zero for a
     hardcover whose spine swallows the inner margin). Art does NOT use this box —
