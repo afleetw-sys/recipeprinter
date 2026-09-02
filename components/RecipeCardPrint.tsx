@@ -3,7 +3,6 @@
 import {
   Fragment,
   memo,
-  useId,
   useMemo,
   useRef,
   useState,
@@ -89,42 +88,87 @@ export const RECIPE_PRINT_TEMPLATE_OPTIONS: Array<{
 ];
 
 
-// A tiled SVG `<pattern>` (not a background-image tile, which Chrome's print
-// pipeline pre-rasterizes to a low-DPI bitmap). Pure vector, so it stays crisp
-// at any print DPI — EXCEPT when an ancestor `transform: scale()` flattens it to
-// a bitmap first. The cookbook export scales the card to fill the sheet, so for
-// a SPIRAL book (a real ~1.03 scale) the in-card spine is rendered a second time
-// at the page level, OUTSIDE that transform, via `className="recipe-card-page__
-// spine"` (see the `.rp-coil` rules in print.css); hardcover's scale is exactly
-// 1.0 and its transform is dropped, so its in-card spine stays crisp as-is.
+// Bistro's checker spine, as explicit vector rects.
 //
-// The tile size is passed via the `check` prop and emitted as SVG attributes
-// (NOT CSS — browsers ignore width/height set via CSS on a `<pattern>`). The
-// pattern id is per-instance so the many spines in the deck don't collide.
+// This was a tiled CSS `background-image`, then an SVG `<pattern>` — and the
+// pattern was still wrong, just less obviously: Chrome's PDF backend serializes
+// every *shader* as a rasterized image and picks 72 DPI, and it makes no
+// distinction between a CSS tile and an SVG pattern fill. Measured on a real
+// export, this spine reached the PDF as an 18×738 bitmap on EVERY page. Two
+// rects per row instead, so the checks are real vector geometry and there is no
+// image on the page at all. (`CounterCheckerBand` below has always drawn its
+// teeth this way — that is what its "real vector rects" note is about.)
+//
+// A `transform: scale()` on an ancestor flattens vector to a bitmap regardless,
+// which is why a SPIRAL book (a real ~1.03 fill scale) draws the spine a second
+// time at page level, OUTSIDE the transform, via `className="recipe-card-page__
+// spine"` (see the `.rp-coil` rules in print.css). Hardcover's transform is
+// dropped, so its in-card spine is crisp as-is.
+//
+// The tile is emitted in inches on the rects; `--bistro-check` in the CSS sizes
+// the STRIP, and the two have to agree — keep them in step.
+const BISTRO_CHECK_IN = 0.24;
+// 48 rows covers the tallest page the spine runs down (a 10.75in card is 45);
+// the SVG viewport clips whatever is left over.
+const BISTRO_CHECK_ROWS = 48;
+
 export function BistroCheckerSpine({
   className = "recipe-card__checker",
-  check = "0.24in",
-}: { className?: string; check?: string } = {}) {
-  const patternId = useId();
-  // The tile size MUST live on SVG attributes, not CSS: browsers ignore
-  // `width`/`height` set via CSS on an SVG `<pattern>` element (they only work
-  // as presentation attributes), which silently collapses the pattern and
-  // paints nothing. Drive the geometry off the `check` prop so the tile can be
-  // sized per-instance (e.g. a wider tile on a spiral binding spine).
-  const half = `calc(${check} / 2)`;
+  checkIn = BISTRO_CHECK_IN,
+}: { className?: string; checkIn?: number } = {}) {
+  const half = checkIn / 2;
   return (
     <div className={className} aria-hidden>
       <svg width="100%" height="100%" focusable="false">
-        <defs>
-          <pattern id={patternId} width={check} height={check} patternUnits="userSpaceOnUse">
-            <rect width={check} height={check} fill="#f8fffe" />
-            <rect x={half} width={half} height={half} fill="#1479c9" />
-            <rect y={half} width={half} height={half} fill="#1479c9" />
-          </pattern>
-        </defs>
-        <rect width="100%" height="100%" fill={`url(#${patternId})`} />
+        <rect width="100%" height="100%" fill="#f8fffe" />
+        {Array.from({ length: BISTRO_CHECK_ROWS }, (_, row) => (
+          <g key={row}>
+            {/* Top-right and bottom-left of each tile — the checker offset. */}
+            <rect x={`${half}in`} y={`${row * checkIn}in`} width={`${half}in`} height={`${half}in`} fill="#1479c9" />
+            <rect x="0" y={`${row * checkIn + half}in`} width={`${half}in`} height={`${half}in`} fill="#1479c9" />
+          </g>
+        ))}
       </svg>
     </div>
+  );
+}
+
+// Bistro's cover band — coral and paper stripes along the top edge.
+//
+// Explicit rects, one per stripe. NOT an SVG `<pattern>`, and not the tiled
+// `repeating-linear-gradient` this started as: Chrome's PDF backend serializes
+// every *shader* — a CSS tiled background and an SVG pattern fill alike — as a
+// rasterized image, and it picks 72 DPI. That is why the band printed visibly
+// blocky on the cover, the first page anyone opens. Measured on a real export:
+// as a pattern it landed in the PDF as a 594×24 image; as the rects below it is
+// vector, and there is no image on the page at all.
+//
+// This is what `CounterCheckerBand` below has always done, and the reason its
+// comment says "real vector rects" — the distinction that matters is rects vs
+// shader, not SVG vs CSS.
+//
+// 20 stripes covers the widest cover a preset scales to (8.5in at 0.6in per
+// tile is 15); the rest is clipped by the band's own `overflow: hidden`.
+const BISTRO_BAND_STRIPES = 20;
+const BISTRO_BAND_TILE_IN = 0.6;
+const BISTRO_BAND_STRIPE_IN = 0.3;
+
+export function BistroCoverBandArt() {
+  return (
+    <svg className="recipe-card__cover-band-art" width="100%" height="100%" focusable="false">
+      {/* Paper under the whole band, then the coral stripes over it — the same
+          0.3in-on, 0.3in-off rhythm the gradient drew. */}
+      <rect width="100%" height="100%" fill="var(--recipe-bg)" />
+      {Array.from({ length: BISTRO_BAND_STRIPES }, (_, i) => (
+        <rect
+          key={i}
+          x={`${i * BISTRO_BAND_TILE_IN}in`}
+          width={`${BISTRO_BAND_STRIPE_IN}in`}
+          height="100%"
+          fill="var(--recipe-accent)"
+        />
+      ))}
+    </svg>
   );
 }
 
@@ -1486,7 +1530,9 @@ export const CoverFace = memo(function CoverFace({
           template={template ?? draft.template}
           show={showDecoration && (template ?? draft.template) !== "bistro"}
         />
-        <div className="recipe-card__cover-band" aria-hidden />
+        <div className="recipe-card__cover-band" aria-hidden>
+          {(template ?? draft.template) === "bistro" && <BistroCoverBandArt />}
+        </div>
         <div className="recipe-card__cover-back-content">
           {coverField({
             name: "dedication-heading",
@@ -1532,7 +1578,9 @@ export const CoverFace = memo(function CoverFace({
           template={template ?? draft.template}
           show={showDecoration && (template ?? draft.template) !== "bistro"}
         />
-        <div className="recipe-card__cover-band" aria-hidden />
+        <div className="recipe-card__cover-band" aria-hidden>
+          {(template ?? draft.template) === "bistro" && <BistroCoverBandArt />}
+        </div>
         <div className="recipe-card__cover-back-content">
           {coverField({
             name: "back-blurb",
@@ -1605,7 +1653,9 @@ export const CoverFace = memo(function CoverFace({
         {coverMode === "photo" && <span className="photo-unavailable-message">Photo unavailable</span>}
       </div>
       <div className="recipe-card__cover-scrim" aria-hidden />
-      <div className="recipe-card__cover-band" aria-hidden />
+      <div className="recipe-card__cover-band" aria-hidden>
+          {(template ?? draft.template) === "bistro" && <BistroCoverBandArt />}
+        </div>
       {/* The cover's photo is changed from the page toolbar, like every other
           page's — not from a button floating on the artwork. */}
       {/* Decorative hooks the per-theme CSS turns on (frames/ornaments for
