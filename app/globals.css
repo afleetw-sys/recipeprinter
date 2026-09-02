@@ -1344,6 +1344,16 @@
     color: var(--cp-accent-warm);
   }
 
+  /* The cornflower twin, and the same reasoning: scoped to the svg so it can
+     never quietly become a coloured WORD. Cornflower is 5.1:1 on card, which
+     clears the 4.5:1 a word answers to, let alone the 3:1 for a graphic, so
+     this one has room the clay glyph does not. Used where a mark AFFIRMS
+     rather than warns: a comparison tick is a yes, and clay reads as caution
+     next to a column of them. */
+  .glyph-accent > svg {
+    color: var(--cp-accent);
+  }
+
   /* ── Button toggle ───────────────────────────────────────────────────────
      The app's one segmented picker: a row of equal buttons where exactly one
      is chosen. Rendered by <ButtonToggle>; see components/ButtonToggle.tsx.

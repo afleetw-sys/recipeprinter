@@ -388,7 +388,11 @@ export function ComparisonTable({
   // The tint that makes our column a single vertical band. Applied to every
   // cell in the column, including the header and the group-label rows, so it
   // never breaks.
-  const ours = "bg-[var(--cp-accent-warm-soft)]";
+  //
+  // Cornflower, not clay. Clay is the system's "this TELLS you something"
+  // colour and it carries the paywall and the warnings, so a column of clay
+  // ticks reads as a column of cautions — the opposite of what a tick means.
+  const ours = "bg-[var(--cp-accent-soft)]";
 
   const cell = (v: ComparisonValue, mine: boolean) => (
     <td
@@ -406,7 +410,7 @@ export function ComparisonTable({
         </span>
       ) : (
         <span className="inline-flex items-baseline gap-cp-2">
-          <span className="glyph-warm flex-none translate-y-0.5">
+          <span className="glyph-accent flex-none translate-y-0.5">
             <CheckIcon size={ICON_SIZE.sm} />
           </span>
           <span className="sr-only">Yes</span>

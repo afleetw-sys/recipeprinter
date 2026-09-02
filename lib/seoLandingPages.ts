@@ -848,6 +848,10 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
     // thinnest of them was this one. It competes on the brand query only.
     secondaryKeywords: [
       "Just the Recipe alternative",
+      // The run-together spelling is how their domain reads and how a good
+      // share of people type it, so it stays reachable as a query. It is a
+      // keyword only: their name is never SET that way anywhere on the page.
+      "justtherecipe alternative",
       "alternative to Just the Recipe",
       "Just the Recipe app alternative",
       "free recipe printing tool",
@@ -916,7 +920,7 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
         {
           title: "In the kitchen",
           rows: [
-            { feature: "Using it on a phone", us: "Any browser", them: "iOS and Android apps" },
+            { feature: "Using it on a phone", us: "Any browser, any device", them: "iOS and Android apps" },
             { feature: "Adjusting serving sizes", us: false, them: "Paid plan" },
           ],
         },
