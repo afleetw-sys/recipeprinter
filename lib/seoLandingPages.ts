@@ -981,13 +981,13 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
       "Comparing RecipePrinter and ReciScan: both read old recipe cards, and they differ on what comes out, what it costs, and how long it takes.",
     h1: "A ReciScan alternative that prints today",
     lede:
-      "Both tools read an old recipe card from a photo. ReciScan gathers them into a bound book it prints and ships; RecipePrinter puts them on cards and pages you print at home today.",
+      "Both read links, photos and pasted text. ReciScan turns the collection into a bound book from its own press; RecipePrinter hands you the pages themselves, to print now, keep as a PDF, or take to a print shop.",
     featureSections: [
       {
-        heading: "A book they ship, or paper you have tonight",
+        heading: "One bound book, or the pages themselves",
         proof: "card",
         body:
-          "ReciScan is built to end in a bound book, ordered from its print service and posted to you, from about $18 for fifty pages. RecipePrinter ends at your own printer. Both get the recipes onto paper; the difference is the waiting and what you have to commit to first.",
+          "ReciScan is built to end in a bound book, ordered from its print service and posted to you, from about $18 for fifty pages. RecipePrinter hands you the finished pages instead: run them on the printer down the hall, keep the PDF, or take the file to a print shop. Nothing has to be settled up front.",
       },
       {
         heading: "A card for the box, not only a page in a book",
@@ -998,7 +998,7 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
       {
         heading: "Nothing to install",
         body:
-          "ReciScan is an app you download to a phone. RecipePrinter is a web page, so you can photograph the card in front of you and print it from the same browser you are reading this in, without an install or an account.",
+          "ReciScan is an app you download to a phone. RecipePrinter is a web page, so a link, a photo or a block of pasted text becomes a printable recipe in the same browser you are reading this in, without an install or an account.",
       },
     ],
     comparison: {
@@ -1008,8 +1008,8 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
         {
           title: "Getting recipes in",
           rows: [
-            { feature: "A photo of a handwritten card", us: true, them: true },
-            { feature: "A recipe link, or text you paste", us: true, them: true },
+            { feature: "Links, photos, and text you paste", us: true, them: true },
+            { feature: "Reading handwriting off an old card", us: true, them: true },
           ],
         },
         {
@@ -1050,12 +1050,12 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
       {
         question: "Can RecipePrinter send me a printed book?",
         answer:
-          "No. It builds the finished book as a print-ready file, which you can run on a home printer or hand to a print shop. Nothing arrives in the post from us.",
+          "No, and you are not tied to your own printer either. What you get is a print-ready file: run it at home, keep the PDF for later, or hand it to a print shop like any other document. Nothing arrives in the post from us.",
       },
       {
-        question: "Can it read my grandmother's handwriting?",
+        question: "What if I only want a few recipes, not a whole book?",
         answer:
-          "Usually. Photograph the card in good light and RecipePrinter reads what it can and sets it as a printable recipe, with every line editable before you print in case a word came through wrong.",
+          "That is most of the difference between them. ReciScan is organised around a finished book. RecipePrinter prints one recipe as readily as forty, so a single card for the box is an ordinary thing to do rather than a book of one.",
       },
     ],
     links: [
