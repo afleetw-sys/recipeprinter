@@ -987,13 +987,13 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
         heading: "One bound book, or the pages themselves",
         proof: "card",
         body:
-          "ReciScan is built to end in a bound book, ordered from its own print service, starting at $18 for fifty pages. RecipePrinter hands you the finished pages instead: run them on the printer down the hall, keep the PDF, or take the file to a print shop. Nothing has to be settled up front.",
+          "ReciScan is built to end in a bound book, ordered from its own print service, starting at $18 for fifty pages. RecipePrinter hands you the finished pages instead: run them on the printer down the hall, keep the PDF, or take the file to a print shop. You can print one recipe today and decide about a book later.",
       },
       {
         heading: "A card for the box, not only a page in a book",
         image: "card-in-box",
         body:
-          "In a cookbook a recipe is a page inside something larger. RecipePrinter also prints a 6 by 4 card sized for a recipe box, with cut lines for card stock, so one recipe can go in the box by the stove without the other forty-nine coming along.",
+          "In a cookbook, a recipe is a page inside something larger. RecipePrinter also prints a 6 by 4 card sized for a recipe box, with cut lines for card stock, so one recipe can go in the box by the stove without the other forty-nine coming along.",
       },
       {
         heading: "Nothing to install",
