@@ -12,7 +12,7 @@ import {
   HowItWorks,
   PhotoGallery,
 } from "@/components/seo/LandingVisuals";
-import { ICON_SIZE, PrintIcon } from "@/components/icons";
+import { ExternalIcon, ICON_SIZE, PrintIcon } from "@/components/icons";
 import {
   SEO_LANDING_PAGE_MAP,
   SEO_LANDING_PAGES,
@@ -303,6 +303,11 @@ export default function SeoLandingPage({ params }: PageProps) {
                             title={link.note}
                           >
                             {link.label}
+                            {/* These are the only links on the page that leave
+                                the site, and they open in a new tab. The mark
+                                says so before the click rather than after. */}
+                            <ExternalIcon size={ICON_SIZE.sm} aria-hidden />
+                            <span className="sr-only">(opens in a new tab)</span>
                           </a>
                         ))}
                       </span>

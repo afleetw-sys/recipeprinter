@@ -829,6 +829,12 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
   },
   {
     slug: "family-recipe-book",
+    // Signed off on the writing. The three feature rows still ask for `photo`
+    // and `book` proof kinds that have no image behind them, so they render as
+    // text-only blocks: there is no finished family cookbook to photograph yet.
+    // Register those two kinds in LandingVisuals when there is, and this page
+    // picks them up with no edit here.
+    lastReviewed: "2026-09-02",
     // Guide intent, but the input belongs at the top like everywhere else: a
     // book starts with one recipe, and asking for it below three sections of
     // explanation buried the only thing there is to do.
@@ -903,7 +909,7 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
       {
         question: "How do I actually get it printed and bound?",
         answer:
-          "Two ways. Print it at home on the Letter layout, set up for a spiral or 3-ring binder, or export the file and hand it to a print shop, where the 8 by 10 hardcover layout gives them what a case-bound book needs. Any of these will work from it.",
+          "Two ways. Print it at home on the Letter layout, set up for a spiral or 3-ring binder, or export the file and hand it to a print shop, where the 8 by 10 hardcover layout gives them what a case-bound book needs.",
         links: Object.values(PRINTERS).map((printer) => ({
           href: printer.url,
           label: printer.name,
