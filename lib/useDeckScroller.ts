@@ -607,8 +607,19 @@ export function useDeckScroller({
     if (!rect.width || !rect.height) return;
     const dx = rect.left + anchor.fx * rect.width - anchor.x;
     const dy = rect.top + anchor.fy * rect.height - anchor.y;
+    if (!dx && !dy) return;
+    // Programmatic, like a rail click: the scroll it fires is us putting the
+    // page back, not the cook choosing a different one. Released on the next
+    // frame rather than a timer, so it cannot be left standing.
+    // Restored, not cleared: a rail click's own 500ms guard can be in flight,
+    // and a zoom landing inside it must not end it early.
+    const wasSuppressed = suppressScrollSyncRef.current;
+    suppressScrollSyncRef.current = true;
     if (dx) el.scrollLeft += dx;
     if (dy) el.scrollTop += dy;
+    requestAnimationFrame(() => {
+      suppressScrollSyncRef.current = wasSuppressed;
+    });
   }, [deckScale]);
 
   /**
@@ -711,7 +722,12 @@ export function useDeckScroller({
     };
 
     const onScroll = () => {
-      if (suppressScrollSyncRef.current) return;
+      // A zoom moves every page and then nudges the scroll to hold the point
+      // under the cursor. Both fire `scroll`, and reading either as "the cook
+      // has moved to a different page" is how zooming in changed the page out
+      // from under them. Someone leaning in is examining the page they already
+      // chose.
+      if (suppressScrollSyncRef.current || zoomGestureRef.current) return;
       if (el.scrollHeight !== measuredScrollHeightRef.current) centersDirtyRef.current = true;
       const mobile = isDeckMobile();
       cancelAnimationFrame(raf);
@@ -729,7 +745,11 @@ export function useDeckScroller({
     // because that sets the selection directly, while scrolling silently stops
     // choosing anything. A real gesture settles it — the cook is driving now, so
     // their input always outranks an in-flight programmatic scroll.
-    const onUserScrollIntent = () => {
+    const onUserScrollIntent = (event: Event) => {
+      // A trackpad pinch arrives as a wheel event with `ctrlKey`, so this
+      // listener was counting every frame of a zoom as intent to scroll and
+      // dropping the guard mid-gesture. Zooming is not scrolling.
+      if ((event as WheelEvent).ctrlKey) return;
       if (!suppressScrollSyncRef.current) return;
       window.clearTimeout(scrollSyncTimerRef.current);
       suppressScrollSyncRef.current = false;
