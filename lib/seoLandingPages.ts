@@ -937,7 +937,7 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
       {
         question: "How do I choose between them?",
         answer:
-          "By where the recipe ends up. If you cook from a screen, that is what Just the Recipe does. If it ends up on paper, in a card box or a binder, that is what RecipePrinter does. Plenty of people use both.",
+          "By where the recipe ends up. If you cook from a screen, that is what Just the Recipe does. If it ends up on paper, in a card box or a binder, that is what RecipePrinter does.",
       },
       {
         question: "What does each one cost?",
@@ -990,10 +990,10 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
           "ReciScan is built to end in a bound book, ordered from its own print service, starting at $18 for fifty pages. RecipePrinter hands you the finished pages instead: run them on the printer down the hall, keep the PDF, or take the file to a print shop. You can print one recipe today and decide about a book later.",
       },
       {
-        heading: "A card for the box, not only a page in a book",
+        heading: "A card, a page, or the whole book",
         image: "card-in-box",
         body:
-          "In a cookbook, a recipe is a page inside something larger. RecipePrinter also prints a 6 by 4 card sized for a recipe box, with cut lines for card stock, so one recipe can go in the box by the stove without the other forty-nine coming along.",
+          "The same recipes come out as a 6 by 4 card for the box by the stove, a letter page for a binder, or a bound cookbook with a cover and chapters. Printing one card tonight does not rule out the book, and that card is already in it when you get there.",
       },
       {
         heading: "Nothing to install",
