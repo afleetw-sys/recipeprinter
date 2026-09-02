@@ -922,7 +922,7 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
           title: "Keeping them",
           rows: [
             { feature: "Saving recipes to come back to", us: "Unlimited with a free account", them: "20 free, then paid" },
-            { feature: "Bound cookbook with a cover and chapters", us: "$19.99 per book", them: false },
+            { feature: "Bound cookbook with a cover and chapters", us: "$19.99 once, edits included", them: false },
           ],
         },
         {
@@ -981,13 +981,13 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
       "Comparing RecipePrinter and ReciScan: both read old recipe cards, and they differ on what comes out, what it costs, and how long it takes.",
     h1: "A ReciScan alternative that prints today",
     lede:
-      "Both read links, photos and pasted text. ReciScan turns the collection into a bound book from its own press; RecipePrinter hands you the pages themselves, to print now, keep as a PDF, or take to a print shop.",
+      "Both read links, photos and pasted text. ReciScan turns them into a bound book and ships it to you. RecipePrinter gives you the pages: print them now, keep the PDF, or take the file to a print shop.",
     featureSections: [
       {
         heading: "One bound book, or the pages themselves",
         proof: "card",
         body:
-          "ReciScan is built to end in a bound book, ordered from its print service and posted to you, from about $18 for fifty pages. RecipePrinter hands you the finished pages instead: run them on the printer down the hall, keep the PDF, or take the file to a print shop. Nothing has to be settled up front.",
+          "ReciScan is built to end in a bound book, ordered from its print service and posted to you, starting at $18 for fifty pages. RecipePrinter hands you the finished pages instead: run them on the printer down the hall, keep the PDF, or take the file to a print shop. Nothing has to be settled up front.",
       },
       {
         heading: "A card for the box, not only a page in a book",
@@ -1015,16 +1015,18 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
         {
           title: "What you can print",
           rows: [
-            { feature: "Printing at home", us: "Free, no account", them: true },
             { feature: "A 6 by 4 card for a recipe box", us: true, them: false },
+            { feature: "A full letter page for a binder", us: true, them: false },
             { feature: "Cut lines for card stock", us: true, them: false },
+            { feature: "Printing it yourself", us: "Free, no account", them: true },
           ],
         },
         {
           title: "Making a book",
           rows: [
-            { feature: "A bound book printed and posted to you", us: false, them: "From about $18" },
-            { feature: "A cookbook you print or export yourself", us: "$19.99 per book", them: "PDF download" },
+            { feature: "A bound book printed and posted to you", us: false, them: "Starting at $18" },
+            { feature: "A cookbook you print or export yourself", us: "$19.99 once", them: "PDF download" },
+            { feature: "Editing it after you have paid", us: "Included, no limit", them: "A revised copy is a new order" },
             { feature: "Inviting other people to add recipes", us: false, them: "Subscribers" },
           ],
         },
@@ -1032,6 +1034,7 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
           title: "Where it runs",
           rows: [
             { feature: "Using it", us: "Any browser, no install", them: "iPhone and Android apps" },
+            { feature: "What it costs to start", us: "Free, no account", them: "Free app, $4.99 a month for extras" },
           ],
         },
       ],
@@ -1045,7 +1048,7 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
       {
         question: "What does each one cost?",
         answer:
-          "ReciScan is free to use, with a monthly subscription for covers and contributors, and books from about $18. RecipePrinter is free to print, with no account, and charges once per cookbook if you build one.",
+          "ReciScan is free to use, with a monthly subscription for covers and contributors, and printed books starting at $18. RecipePrinter is free to print with no account. A cookbook is $19.99 once, and that book stays yours to edit and add to for good.",
       },
       {
         question: "Can RecipePrinter send me a printed book?",
