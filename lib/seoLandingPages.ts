@@ -333,7 +333,7 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
         heading: "The recipe is on page one",
         proof: "before-after",
         body:
-          "Save a recipe page as a PDF the usual way and you get the article. One caprese pasta salad comes to twenty-six pages, with the ingredients somewhere in the middle. RecipePrinter lays the recipe out on its own page first, so the file opens on what you came for.",
+          "RecipePrinter lays the recipe out on its own page before anything is saved, so there is nothing to scroll past. Save the same recipe straight from the site and the PDF is the whole article. One caprese pasta salad comes to twenty-six pages, with the recipe somewhere in the middle.",
       },
       {
         heading: "A recipe your phone can search",
@@ -345,7 +345,7 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
       {
         question: "Where is the download button?",
         answer:
-          "It lives in a slightly surprising place: your browser's print dialog. Open that, choose Save as PDF instead of your printer, and the file lands wherever your downloads normally go. Every browser has it built in, so there is nothing to install.",
+          "It is in your browser's print dialog. Open that, choose Save as PDF instead of your printer, and the file lands wherever your downloads normally go. Every browser has it built in, so there is nothing to install.",
       },
       {
         question: "Can I put several recipes in one PDF?",
