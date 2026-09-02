@@ -189,6 +189,69 @@ container that has to pull ~50MB of Chromium. `minInstances: 1` on the function
 removes it for a standing bill.
 
 
+## The page is the sheet
+
+A cookbook page is authored, measured, previewed and printed on **one box**: the
+preset's own sheet, trim plus bleed (`presetCardDims`). Nothing scales anywhere
+in the export.
+
+It did not use to be. Every book was laid out on a fixed 8.25 × 10.75in Letter
+card and the export scaled that card onto the real sheet:
+
+- **Hardcover** (8.25 × 10.25in sheet) — the widths are identical, so the fill
+  scale came out exactly 1.0 and the transform was dropped as a no-op. That left
+  a 10.75in card on a 10.25in sheet, and `overflow: hidden` cut **half an inch**
+  off the bottom of every text page. `lib/tocPagination.ts` was budgeting
+  contents pages against 10.75in, so a full one lost its last entries, and a
+  full recipe page could lose the end of its last step. Nothing reported it: the
+  preview drew the Letter shape too, so the file matched the page on screen
+  right up until the part that wasn't there.
+- **Spiral** (8.5 × 11in sheet) — scaled *up* ~1.03 instead. The whole card
+  printed, 3% larger than the preview, and the transform flattened every vector
+  decoration to a bitmap on the way. That is the entire reason bistro's checker
+  spine used to be drawn a second time at page level, outside the transform.
+
+Both were the same mistake in two directions: a preview of a page shape the book
+does not have. Measured after, on the same book, hardcover 8×10 — the card, the
+contents box and the printed page agree in both media:
+
+| | preview | export |
+|---|---|---|
+| Card | 8.25 × 10.25in | 8.25 × 10.25in |
+| Contents content box | 830px | 830px |
+
+(Before: 10.75in and 878px on screen, 10.25in and 830px in the file.)
+
+Consequences worth knowing:
+
+- **Books re-flow.** A hardcover page holds half an inch less than it used to,
+  so recipes repack and page numbers move. That is the correction, not a
+  regression — those pages were being printed short all along.
+- `presetArtScale` is gone, along with the `transform: scale()` rules in the
+  print block and the coil-only page-level spine that existed to escape them.
+  `presetCardScale` remains as unreferenced specification, like the rest of the
+  geometry assertions in `lib/cookbookPresets.ts`.
+- Whatever sets the card box must set it in **both** places — the preview root
+  and the off-screen measurer (`presetCardVars` feeds both). A card measured at
+  one height and drawn at another is exactly the clipping the measurement engine
+  exists to prevent.
+
+## Vector decoration, and what rasterizes it
+
+Chrome's PDF backend serializes every **shader** as an image, at 72 DPI, and it
+draws no distinction between a tiled CSS `background-image` and an SVG
+`<pattern>` fill. Switching bistro's checker spine from a gradient to a pattern
+therefore moved that bug without fixing it — measured on a real export, the
+spine reached the file as an 18×738 bitmap on every page, and the cover's stripe
+band as a 594×24 one.
+
+What stays vector is **explicit rects**. `BistroCheckerSpine`,
+`BistroCoverBandArt` and `CounterCheckerBand` all draw them one at a time. A
+10-page bistro book went from 12 image XObjects to 0.
+
+The other thing that rasterizes is an ancestor `transform` — which is why the
+export no longer has one at all (see above).
+
 ## Still on browser print
 
 Recipe **cards** still use `window.print()`. They're a free print job on plain
