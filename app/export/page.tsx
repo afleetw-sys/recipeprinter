@@ -5,7 +5,6 @@ import { ScaledPage } from "@/components/print/ScaledPage";
 import { usePrintSheets } from "@/lib/usePrintSheets";
 import {
   getCookbookPreset,
-  gutterSideForRole,
   presetArtScale,
   presetSheetInches,
 } from "@/lib/cookbookPresets";
@@ -264,7 +263,7 @@ function InteriorDocument({ payload }: { payload: ExportPayload }) {
   const photoStyle = settings.photoStyle ?? "card";
   const headerPhotosOn = cookbookMode ? photoStyle === "card" : settings.showPhoto;
 
-  const { sheets, spreads, printLayoutReady, measurers } = usePrintSheets({
+  const { sheets, printLayoutReady, measurers } = usePrintSheets({
     sections: project.sections,
     items,
     cover: project.cover,
@@ -291,36 +290,32 @@ function InteriorDocument({ payload }: { payload: ExportPayload }) {
   useExportReady(printLayoutReady && sheets.length > 0);
 
   /**
-   * Which edge of each page the binding eats, keyed by sheet index.
+   * The spine, as a page of its own — hardcover only.
    *
-   * The deck works this out per spread and hands it to every page it draws
-   * (`renderSide` in PrintDeck); the export worked it out not at all. Every
-   * exported page therefore fell back to `gutterSide="none"`, no `.rp-bind-*`
-   * class was ever emitted, and the entire coil block in print.css — which is
-   * written against those classes — silently matched nothing.
+   * A case-bound book has a printed spine; a coil book has no spine to print.
+   * The wrap file that would normally carry it is still switched off
+   * (`COVER_WRAP_ENABLED`), so until it ships a hardcover export contains no
+   * spine artwork anywhere and there is nothing to hand a binder. This is that
+   * artwork, drawn by the same `SpineFace` the wrap uses, so the two cannot
+   * drift apart.
    *
-   * Bistro made that visible. Its spiral checker spine is absolutely positioned
-   * and gets its `left: 0` / `right: 0` only from an `.rp-bind-*` ancestor, so
-   * with neither offset set it fell back to its STATIC position and landed down
-   * the middle of the page, straight through the recipe. The quieter half of the
-   * same bug hit every template: content kept its plain margin on the bound
-   * edge, so the coil punched through the words instead of the decoration.
+   * Width is the real computed spine for this book's thickness, and it is
+   * measured from the CONTENT pages only: the spine is production artwork
+   * describing the book, not a leaf bound into it, so counting itself would
+   * make the book fractionally thicker for having been described.
+   *
+   * It goes FIRST, on a hardcover download only. Last put it behind the entire
+   * book, which is the wrong end for the one sheet whoever binds the thing
+   * needs in their hand before anything else — and on a long book it is a scroll
+   * away from everything it belongs with. Opening on it also states what the
+   * file is the moment it opens.
    */
-  const gutterSides = useMemo(() => {
-    const sides = new Map<number, ReturnType<typeof gutterSideForRole>>();
-    for (const spread of spreads) {
-      // A cover or back cover stands alone and is symmetric — no gutter.
-      if (spread.single) {
-        const only = spread.right ?? spread.left;
-        if (only !== null) sides.set(only, gutterSideForRole("single"));
-        continue;
-      }
-      // A verso binds on its right (inner) edge, a recto on its left.
-      if (spread.left !== null) sides.set(spread.left, gutterSideForRole("left"));
-      if (spread.right !== null) sides.set(spread.right, gutterSideForRole("right"));
-    }
-    return sides;
-  }, [spreads]);
+  const spine = useMemo(() => {
+    if (!preset.wrapRequired || !project.cover) return null;
+    const widthIn = coverWrapGeometry(preset, sheets.length).spineWidthIn;
+    return { widthIn, fitsTitle: spineFitsTitle(widthIn) };
+  }, [preset, project.cover, sheets.length]);
+
 
   // The same class + variable pair the deck applies for the instant it prints
   // (see `deckExportClass` in app/print/page.tsx) — here it is simply always on,
@@ -342,6 +337,22 @@ function InteriorDocument({ payload }: { payload: ExportPayload }) {
       data-export-root="true"
     >
       {measurers}
+      {spine && project.cover && (
+        <div className="recipe-page-slide">
+          {/* The template class carries the palette (paper, ink, accent), the
+              same way the deck's own blank pages get theirs. */}
+          <div className={`recipe-card-set recipe-card-set--letter recipe-template--${template}`}>
+            <div className="recipe-card-page recipe-spine-page">
+              <SpineFace
+                cover={project.cover}
+                template={template}
+                spineWidthIn={spine.widthIn}
+                showTitle={spine.fitsTitle}
+              />
+            </div>
+          </div>
+        </div>
+      )}
       {sheets.map((sheet, index) => (
         <div className="recipe-page-slide" key={`sheet-${index}`}>
           <ScaledPage
@@ -353,7 +364,6 @@ function InteriorDocument({ payload }: { payload: ExportPayload }) {
             activeSide="front"
             scale={1}
             size={cardSize}
-            gutterSide={gutterSides.get(index) ?? "none"}
             template={template}
             doubleSided={settings.doubleSided}
             cookbookMode={cookbookMode}

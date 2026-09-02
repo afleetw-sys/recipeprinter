@@ -4104,8 +4104,8 @@
      line up with the recipe content column instead of a hardcoded guess. These
      mirror the card's own content padding: `--recipe-card-padding-x` (0.58in on
      letter) plus whatever a template's spine decoration adds on top (see the
-     bistro/pantry/keepsake overrides below). The coil export push then adds
-     `--rp-bind-deco` to whichever edge is bound. */
+     bistro/pantry/keepsake overrides below). Exports use these as-is — a book
+     prints the preview's geometry, with no binding-edge shift of its own. */
   --rp-foot-inset-l: var(--recipe-card-padding-x);
   --rp-foot-inset-r: var(--recipe-card-padding-x);
 }
@@ -6876,54 +6876,60 @@ textarea.recipe-card__toc-title {
     transform: none;
   }
 
-  /* Coil/spiral EXPORT only (`.rp-coil` is set on the deck for coil formats, and
-     everything here is under `.rp-exporting`, so the on-screen deck and hardcover
-     exports are untouched — the template previews and hardcover-prints plain).
-     A spiral coil punches the binding edge, so slide the template's edge
-     decoration onto that edge and widen it to `--rp-bind-deco` — the coil bites
-     the DECORATION, not the content, which the template holds clear from inside.
-     Mirrors per verso/recto via the deck's `.rp-bind-*`. Bistro's checker spine: */
-  .rp-exporting.rp-coil {
-    --rp-bind-deco: 0.5in;
+  /* A book prints what the preview shows. Full stop.
+
+     This used to be a block of coil-only geometry: content shoved 0.5in inboard
+     off the binding edge, footers/runheads/folios shifted to match, bistro's
+     checker spine widened to 0.5in with a chunkier tile, and every one of those
+     MIRRORED per verso/recto — so bistro's spine jumped sides page to page and
+     pantry's binder rule crossed the page on a verso. All of it was invisible
+     until you opened the PDF, and none of it was in the book you approved.
+
+     The reasoning was sound in isolation (a spiral coil punches the bound edge,
+     so give it decoration to eat rather than words) but it made the file diverge
+     from the preview, which is the one promise the export has to keep. A spiral
+     coil now punches the same edge the preview draws, like any spiral notebook.
+
+     What survives is the one thing that was never about geometry: on spiral the
+     card is scaled ~1.03 to bleed, and that flattens the in-card vector spine to
+     a bitmap. So the crisp page-level spine (a card SIBLING, outside the
+     transform) still does the drawing — pinned to the SAME edge and the SAME
+     width the preview uses, so it is the preview's spine, only sharper. */
+  /* The hardcover spine page (see `spine` in app/export/page.tsx). A full book
+     sheet — same size as every other page, so the PDF stays one uniform trim —
+     carrying the spine panel at its true printed width, centred, on the book's
+     own paper. Sizing the PAGE to the spine instead would hand a printer a file
+     whose pages disagree about their trim, which is the one thing a print shop
+     cannot accept. */
+  .recipe-spine-page {
+    display: flex !important;
+    align-items: center;
+    justify-content: center;
+    background: var(--recipe-bg, #fff);
+    overflow: hidden;
   }
-  /* ALL templates: push the content INBOARD off the coil edge by the full
-     `--rp-bind-deco`, on top of the normal margin — so content visibly moves,
-     it isn't just extra dead space added on one side. Mirrored per verso/recto.
-     The non-binding edge keeps the plain margin. */
-  .rp-exporting.rp-coil .rp-bind-left .recipe-card {
-    padding-left: calc(var(--recipe-card-padding-x) + var(--rp-bind-deco));
-    padding-right: var(--recipe-card-padding-x);
+  .recipe-spine-page > .recipe-card--spine {
+    /* `display` is re-asserted, not merely set: the shared print rules force
+       every `.recipe-card` to `display: block !important` (one card per page),
+       which silently beats `.recipe-card--spine`'s own flex centring and drops
+       the title to the top of the panel. This is the same override that clips
+       the cover wrap and is why `COVER_WRAP_ENABLED` is still false — worth
+       knowing when that file is finally turned on. */
+    display: flex !important;
+    align-items: center;
+    justify-content: center;
+    width: var(--rp-spine-w);
+    height: 100%;
+    min-height: 0;
+    margin: 0;
+    /* A hairline so the panel is findable. The sheet behind it is the same
+       paper, so without an edge nobody can see where the spine actually starts
+       and ends — least of all whoever has to print it. Templates that already
+       give their spine an edge (classic, keepsake) keep theirs. */
+    outline: 1px solid var(--recipe-line, rgba(0, 0, 0, 0.18));
+    outline-offset: 0;
   }
-  .rp-exporting.rp-coil .rp-bind-right .recipe-card {
-    padding-right: calc(var(--recipe-card-padding-x) + var(--rp-bind-deco));
-    padding-left: var(--recipe-card-padding-x);
-  }
-  .rp-exporting.rp-coil .rp-bind-left .recipe-card__footer {
-    left: calc(var(--recipe-card-padding-x) + var(--rp-bind-deco));
-    right: var(--recipe-card-padding-x);
-  }
-  .rp-exporting.rp-coil .rp-bind-right .recipe-card__footer {
-    left: var(--recipe-card-padding-x);
-    right: calc(var(--recipe-card-padding-x) + var(--rp-bind-deco));
-  }
-  /* The cookbook page furniture (running section name + page folio) is anchored
-     to the sheet edge, outside `.recipe-card`, so it doesn't inherit the coil
-     push above. Move whichever sits on the BINDING edge inboard by the same
-     `--rp-bind-deco` so the bottom bar stays flush with the shifted content
-     column; the non-binding-edge item keeps its plain inset. */
-  .rp-exporting.rp-coil .rp-bind-left .recipe-book-runhead {
-    left: calc(var(--rp-foot-inset-l) + var(--rp-bind-deco));
-  }
-  .rp-exporting.rp-coil .rp-bind-right .recipe-book-folio {
-    right: calc(var(--rp-foot-inset-r) + var(--rp-bind-deco));
-  }
-  /* Templates with a vertical edge decoration fill that pushed zone so the coil
-     bites the DECORATION, not blank paper. Bistro's checker spine: */
-  /* Spiral scales the card ~1.03 to bleed, which flattens the in-card vector
-     spine to a bitmap. Hide it and render the crisp page-level `__spine` (a card
-     SIBLING, outside the transform) instead — widened to the coil zone on the
-     binding edge, with a thicker tile (two 0.25in squares, not a second grid of
-     thin ones). Hardcover keeps its in-card spine (its transform is dropped). */
+
   .rp-exporting.rp-coil .recipe-template--bistro .recipe-card__checker {
     display: none;
   }
@@ -6932,27 +6938,13 @@ textarea.recipe-card__toc-title {
     position: absolute;
     top: 0;
     bottom: 0;
-    z-index: 3;
-    width: var(--rp-bind-deco);
-    --bistro-check: var(--rp-bind-deco);
-  }
-  .rp-exporting.rp-coil .rp-bind-left .recipe-card-page__spine {
     left: 0;
-    right: auto;
-  }
-  .rp-exporting.rp-coil .rp-bind-right .recipe-card-page__spine {
-    left: auto;
-    right: 0;
-  }
-  /* Pantry's binder rule + hole ride the binding edge too (default left → mirror
-     to the right on a verso). */
-  .rp-exporting.rp-coil .rp-bind-right .recipe-template--pantry .recipe-card::before {
-    left: auto;
-    right: var(--pantry-rule-x);
-  }
-  .rp-exporting.rp-coil .rp-bind-right .recipe-template--pantry .recipe-card::after {
-    left: auto;
-    right: var(--pantry-hole-x);
+    z-index: 3;
+    /* The in-card spine's own width, restated because a custom property set on
+       `.recipe-card__checker` doesn't reach this sibling. Keep the two in step:
+       this strip exists only to draw that one crisply. */
+    --bistro-check: 0.24in;
+    width: var(--bistro-check);
   }
 
   /* `.recipe-card-page` is the fragmentation unit that breaks pages now, not
