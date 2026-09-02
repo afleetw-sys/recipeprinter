@@ -168,7 +168,19 @@ export function useDeckScroller({
   onZoomChange,
 }: UseDeckScrollerOptions) {
   const [canvasSide, setCanvasSide] = useState<"front" | "back">("front");
-  const [deckScale, setDeckScale] = useState(0.5);
+  /**
+   * How much of a page fits this window — the deck's own business, changed by
+   * resizing the window, folding a panel away, or switching card size.
+   *
+   * Held apart from the cook's zoom, which multiplies it, because the two mean
+   * different things to the deck: a new FIT is a new layout and the active page
+   * should be re-centred in it, while a zoom is someone leaning in on the page
+   * they are already looking at and must leave their position alone. Both used
+   * to arrive as one `deckScale`, so every zoom notch re-centred the active
+   * page and threw away where they were looking.
+   */
+  const [fitScale, setFitScale] = useState(0.5);
+  const deckScale = fitScale * zoom;
   // The deck element, held two ways on purpose. `deckRef` is what the scrolling
   // helpers below read on demand; `deckNode` is the same element as STATE, so an
   // effect that binds a listener to it re-runs when React hands us a different
@@ -254,6 +266,77 @@ export function useDeckScroller({
     setCanvasSide("front");
   }, [activeNavIndex, continueOnBack]);
 
+  /**
+   * The deck's own geometry for a given page scale: the pad that rests the
+   * first page in the centre, and whether a page has outgrown the window.
+   *
+   * Its own function because it has two callers that know the scale at
+   * different moments. Remeasuring the fit knows it (below), and so does a
+   * zoom, which changes the scale without changing anything measurable about
+   * the window. It used to live only in the first, so a zoom moved the pages a
+   * whole commit before the padding underneath them caught up — and the
+   * correction that keeps the page still ran in the gap between, against
+   * geometry that was about to change under it.
+   */
+  const applyDeckGeometry = useCallback(
+    (el: HTMLDivElement, scale: number) => {
+      // The mobile deck is a horizontal filmstrip with its own fixed padding
+      // and no snapport to centre anything in.
+      if (isDeckMobile()) return;
+      const availW = el.clientWidth - 40;
+      const availH = el.clientHeight;
+      if (availW <= 0 || availH <= 0) return;
+      // Centre the first card inside the SNAPPORT (the viewport inset by
+      // `scroll-padding-top` AND `-bottom`), not the raw viewport — the same
+      // geometry `snapScrollTopFor` uses. Centring against the raw viewport put
+      // the first slide's resting place half the padding away from its own snap
+      // point, so it drifted the moment snapping re-engaged. The inset is equal
+      // at both ends, so the snapport's centre is the deck's centre and the top
+      // inset still guarantees the control clearance.
+      const snapportHeight = availH - DECK_SCROLL_PADDING_TOP * 2;
+      const topPad =
+        DECK_SCROLL_PADDING_TOP + Math.max(0, (snapportHeight - pageHeight * scale) / 2);
+      // Computed analytically from the scale rather than measured post-render,
+      // so it is never a frame behind. That makes scrollTop:0 the first slide's
+      // own resting position, with no gap above it to overscroll into.
+      el.style.setProperty("--deck-top-pad", `${topPad}px`);
+
+      /**
+       * Zoomed in far enough that a page no longer fits the window.
+       *
+       * `scroll-snap-type: y mandatory` is safe while every page fits — that is
+       * the assumption written next to it in print.css, and it held until the
+       * zoom control arrived and started multiplying the fit. Past fit, a page
+       * is bigger than the window it is being snapped inside, and scrolling to
+       * look at the bottom of one gets pulled to the next snap point instead:
+       * asking for 600 landed at 843. Someone who has zoomed in is examining
+       * ONE page, not flicking between them, so the deck stops snapping until
+       * they zoom back out. Free scroll also brings back the scrollbars and the
+       * 20px of slack at the edges (see print.css) — a page too big for the
+       * window has to be pannable.
+       *
+       * BOTH axes, and the width half is what a book needs. Fitting a two-page
+       * spread is width-bound: it fills the deck exactly at 100%, and the very
+       * next notch hangs over both edges while the page still clears the
+       * snapport vertically. Asking about height alone left that whole stretch
+       * of zoom snapped and scrollbar-less — the deck pulling back to centre a
+       * spread you were trying to look across, with no bar for a mouse to pan
+       * it with. A single card is never width-bound (its fit runs out of height
+       * first), so cards never showed this and a cookbook showed nothing else.
+       *
+       * The 1px tolerance keeps an exact fit — where the binding axis lands on
+       * the budget to the pixel — from rounding itself into free scroll and
+       * putting scrollbars on a deck at rest.
+       */
+      if (pageHeight * scale > snapportHeight + 1 || pageWidth * scale > availW + 1) {
+        el.dataset.freeScroll = "true";
+      } else {
+        delete el.dataset.freeScroll;
+      }
+    },
+    [pageWidth, pageHeight],
+  );
+
   // Scale each deck page to fit the available width while leaving room above
   // and below so the previous / next pages peek in (implying you can scroll).
   useEffect(() => {
@@ -289,53 +372,15 @@ export function useDeckScroller({
           0.12,
           Math.min(1.05, widthScale, heightScale, snapportScale),
         );
-        const scale = fit * zoom;
-        setDeckScale(scale);
-        // Give the CSS top padding (see `--deck-top-pad` in globals.css) the
-        // exact offset that centres the first slide, computed analytically
-        // from the same scale rather than measured post-render, so it's
-        // never a frame behind. That makes scrollTop:0 the first slide's own
-        // resting position, with no gap above it left to overscroll into.
-        if (!mobile) {
-          // Centre the first card inside the SNAPPORT (the viewport inset by
-          // `scroll-padding-top` AND `-bottom`), not the raw viewport — the
-          // same geometry `snapScrollTopFor` uses. Centring against the raw
-          // viewport put the first slide's resting place half the padding away
-          // from its own snap point, so it drifted the moment snapping
-          // re-engaged. The inset is equal at both ends, so the snapport's
-          // centre is the deck's centre and the top inset still guarantees the
-          // control clearance.
-          const snapportHeight = availH - DECK_SCROLL_PADDING_TOP * 2;
-          const topPad =
-            DECK_SCROLL_PADDING_TOP +
-            Math.max(0, (snapportHeight - pageHeight * scale) / 2);
-          el.style.setProperty("--deck-top-pad", `${topPad}px`);
-
-          /**
-           * Zoomed in far enough that a page no longer fits the snapport.
-           *
-           * `scroll-snap-type: y mandatory` is safe while every page fits —
-           * that is the assumption written next to it in print.css, and it
-           * held until the zoom control arrived and started multiplying the
-           * fit. Past fit, a page is taller than the window it is being
-           * snapped inside, and scrolling to look at the bottom of one gets
-           * pulled to the next snap point instead: asking for 600 landed at
-           * 843. Someone who has zoomed in is examining ONE page, not flicking
-           * between them, so the deck stops snapping until they zoom back out.
-           */
-          if (pageHeight * scale > snapportHeight) {
-            el.dataset.freeScroll = "true";
-          } else {
-            delete el.dataset.freeScroll;
-          }
-        }
+        setFitScale(fit);
+        applyDeckGeometry(el, fit * zoom);
       }
     };
     update();
     const observer = new ResizeObserver(update);
     observer.observe(el);
     return () => observer.disconnect();
-  }, [deckNode, cardSize, sheetsLength, pageWidth, pageHeight, layoutKey, zoom]);
+  }, [deckNode, cardSize, sheetsLength, pageWidth, pageHeight, layoutKey, zoom, applyDeckGeometry]);
 
   /**
    * Pinch to zoom, the way every canvas tool does it.
@@ -365,15 +410,14 @@ export function useDeckScroller({
    */
   const rawZoomRef = useRef(zoom);
   const zoomRef = useRef(zoom);
-  const deckScaleRef = useRef(deckScale);
   const pendingDeltaRef = useRef(0);
   const zoomFrameRef = useRef(0);
+  /** The point the gesture is zooming about, and the page box it sits in. */
   const pendingZoomAnchorRef = useRef<
-    { x: number; y: number; scale: number } | null
+    { x: number; y: number; page: HTMLElement; fx: number; fy: number } | null
   >(null);
   // Kept current for the frame callback below without re-binding anything.
   zoomRef.current = zoom;
-  deckScaleRef.current = deckScale;
   // The +/- buttons and the preset menu set the zoom too; the gesture has to
   // start from wherever they left it rather than from its own last value.
   if (Math.abs(rawZoomRef.current - zoom) > 0.001 && !zoomFrameRef.current) {
@@ -410,12 +454,22 @@ export function useDeckScroller({
       if (!event.ctrlKey) return;
       event.preventDefault();
       pendingDeltaRef.current += event.deltaY;
-      const rect = el.getBoundingClientRect();
-      pendingZoomAnchorRef.current = {
-        x: event.clientX - rect.left,
-        y: event.clientY - rect.top,
-        scale: deckScaleRef.current,
-      };
+      // Anchor to a PAGE, not to the deck. See the layout effect below.
+      const target = event.target as Element | null;
+      const page =
+        target?.closest?.<HTMLElement>(".recipe-page-slide") ??
+        el.querySelector<HTMLElement>(".recipe-page-slide");
+      const rect = page?.getBoundingClientRect();
+      pendingZoomAnchorRef.current =
+        page && rect && rect.width > 0 && rect.height > 0
+          ? {
+              x: event.clientX,
+              y: event.clientY,
+              page,
+              fx: (event.clientX - rect.left) / rect.width,
+              fy: (event.clientY - rect.top) / rect.height,
+            }
+          : null;
       if (!zoomFrameRef.current) {
         zoomFrameRef.current = requestAnimationFrame(applyPendingZoom);
       }
@@ -431,22 +485,83 @@ export function useDeckScroller({
   }, [deckNode, onZoomChange, zoomRange, zoomPresets]);
 
   /**
+   * Keep the deck's padding and free-scroll in step with the scale in the SAME
+   * commit the pages resize in — and before the anchor correction below reads
+   * that geometry to decide where to scroll. The resize observer above cannot
+   * do this half: a zoom changes the scale without changing anything it
+   * observes, so it only hears about it a commit later.
+   */
+  useLayoutEffect(() => {
+    const el = deckRef.current;
+    if (el) applyDeckGeometry(el, deckScale);
+  }, [deckScale, applyDeckGeometry]);
+
+  /**
+   * The +/- buttons and the preset menu zoom too, and they have no cursor to
+   * zoom about — so they zoom about the middle of the window, which is where
+   * whoever pressed them is looking. Without this they left the scroll offset
+   * untouched and the page grew downward out of the window.
+   *
+   * Runs on `zoom`, which changes a render BEFORE the fit is remeasured, so the
+   * geometry it captures is still the old size. A pinch has already put its own
+   * anchor here by then and keeps it.
+   */
+  useLayoutEffect(() => {
+    if (pendingZoomAnchorRef.current) return;
+    const el = deckRef.current;
+    const page = el?.querySelector<HTMLElement>(".recipe-page-slide.is-active")
+      ?? el?.querySelector<HTMLElement>(".recipe-page-slide");
+    if (!el || !page) return;
+    const deckRect = el.getBoundingClientRect();
+    const rect = page.getBoundingClientRect();
+    if (!rect.width || !rect.height) return;
+    const x = deckRect.left + deckRect.width / 2;
+    const y = deckRect.top + deckRect.height / 2;
+    pendingZoomAnchorRef.current = {
+      x,
+      y,
+      page,
+      fx: (x - rect.left) / rect.width,
+      fy: (y - rect.top) / rect.height,
+    };
+  }, [zoom]);
+
+  /**
    * Put the anchored point back under the cursor.
    *
-   * Runs off `deckScale`, not off the zoom the gesture asked for: the fit maths
-   * above clamps, so what the deck ACTUALLY resized by is the only ratio that
-   * keeps the page still. Layout effect, so the correction is applied in the
-   * same frame the new size is painted and the page does not visibly jump.
+   * MEASURED, not derived. This used to scale the scroll offsets by the ratio
+   * the deck actually resized by — `(scrollLeft + x) * ratio - x` — which is
+   * only correct if the content's top-left corner sits at scroll origin. It
+   * does not. The deck centres its content (`align-items: safe center`) while
+   * it still fits, so horizontally the content starts at an offset that shrinks
+   * as the page grows; `--deck-top-pad` does the same job vertically and is
+   * recomputed from the new scale rather than scaled by it; and crossing into
+   * free scroll adds edge padding and scrollbars in the same frame. Every one
+   * of those breaks the assumption, so the correction was itself a jump.
+   *
+   * A book is where it showed. A spread's fit is width-bound, so a cookbook
+   * lives right on the boundary where centring gives out and every one of those
+   * terms is changing at once; a single card keeps slack on both sides for the
+   * whole range and drifts too little to see.
+   *
+   * So: remember where the cursor sat inside a real page, find that same spot
+   * after the resize, and scroll by the difference. No assumption about where
+   * the content begins — whatever moved it, this reads the result.
+   *
+   * Layout effect, so the correction lands in the frame the new size is painted
+   * and the page does not visibly jump.
    */
   useLayoutEffect(() => {
     const anchor = pendingZoomAnchorRef.current;
     const el = deckRef.current;
-    if (!anchor || !el || !anchor.scale) return;
     pendingZoomAnchorRef.current = null;
-    const ratio = deckScale / anchor.scale;
-    if (!Number.isFinite(ratio) || ratio === 1) return;
-    el.scrollLeft = (el.scrollLeft + anchor.x) * ratio - anchor.x;
-    el.scrollTop = (el.scrollTop + anchor.y) * ratio - anchor.y;
+    if (!anchor || !el || !anchor.page.isConnected) return;
+    const rect = anchor.page.getBoundingClientRect();
+    if (!rect.width || !rect.height) return;
+    const dx = rect.left + anchor.fx * rect.width - anchor.x;
+    const dy = rect.top + anchor.fy * rect.height - anchor.y;
+    if (dx) el.scrollLeft += dx;
+    if (dy) el.scrollTop += dy;
   }, [deckScale]);
 
   /**
@@ -617,9 +732,12 @@ export function useDeckScroller({
       return;
     }
     centerSlide(activeNavIndex);
-    // Only re-centre on structural / size changes, not on every selection.
+    // Only re-centre on structural / size changes, not on every selection —
+    // and `fitScale`, not `deckScale`, so a zoom is not one of them. Zoom holds
+    // its own position instead (see the anchor effect above): re-centring on it
+    // undid every pinch and pulled the page back the moment you leaned in.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [navItemsLength, deckScale, cardSize]);
+  }, [navItemsLength, fitScale, cardSize]);
 
   const goToSlide = useCallback(
     (navIndex: number) => {
