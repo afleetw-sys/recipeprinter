@@ -211,6 +211,16 @@ const FEATURE_IMAGES: Record<string, ProofImage> = {
     alt:
       "A handwritten recipe card for Peanut Butter Cookies, from Jackie (Nana), lying on a wooden board beside an open floral recipe box. The card is filled in by hand in cursive: cooking time, oven temperature, and an ingredient list running from flour and baking soda down to vanilla.",
   },
+  "mobile-vs-desktop": {
+    src: "/images/mobile-vs-desktop.png",
+    width: 2400,
+    height: 1436,
+    // Wider than the 3:2 slot, so about 5% comes off each side. Both address
+    // bars sit well inside that, which is the only part that has to survive:
+    // they are the proof this is a web page and not an app.
+    alt:
+      "RecipePrinter open in two browsers at once. Behind, a desktop window with www.recipeprinter.com in the address bar, showing the Add recipes panel and two recipes ready to print. In front, a phone with recipeprinter.com in the address bar, running the same thing: a link field, an Add button, and two more recipes waiting below.",
+  },
   "card-in-box": {
     src: "/images/recipe-card-in-box.jpg",
     width: 1448,

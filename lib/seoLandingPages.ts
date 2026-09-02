@@ -991,6 +991,7 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
       },
       {
         heading: "Nothing to install",
+        image: "mobile-vs-desktop",
         body:
           "ReciScan is an app you download to a phone. RecipePrinter is a web page, so a link, a photo or a block of pasted text becomes a printable recipe in the same browser you are reading this in, without an install or an account.",
       },
