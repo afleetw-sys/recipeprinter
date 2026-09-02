@@ -898,7 +898,7 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
             { feature: "From a recipe link", us: true, them: true },
             { feature: "Reading a recipe out of a photo", us: true, them: false },
             { feature: "From text you paste in", us: "Read and laid out for you", them: "Typed into a form yourself" },
-            { feature: "An old handwritten card", us: "Photographed", them: "Typed in by hand" },
+            { feature: "An old handwritten card", us: "Take a photo of it", them: "Type it in yourself" },
           ],
         },
         {
@@ -921,7 +921,6 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
           title: "In the kitchen",
           rows: [
             { feature: "Using it on a phone", us: "Any browser, no install", them: "Web, plus iOS and Android apps" },
-            { feature: "Adjusting serving sizes", us: false, them: "Paid plan" },
           ],
         },
       ],
