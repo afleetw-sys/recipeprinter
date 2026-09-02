@@ -26,6 +26,12 @@ import {
 import { ZoomControl } from "@/components/print/ZoomControl";
 import { markImageAvailable, markImageUnavailable } from "@/lib/imageFailure";
 import { PAGE_DIMS } from "@/lib/printGeometry";
+import {
+  getCookbookPreset,
+  presetCardDims,
+  presetCardVars,
+} from "@/lib/cookbookPresets";
+import type { CookbookPresetId } from "@/types/recipe";
 import type { CoverConfig } from "@/types/recipe";
 
 /**
@@ -64,6 +70,7 @@ export const ScaledPage = memo(function ScaledPage({
   tocTitle,
   tocEdit,
   gutterSide = "none",
+  preset,
 }: {
   sheet: PageSheet;
   isLastSheet: boolean;
@@ -138,8 +145,17 @@ export const ScaledPage = memo(function ScaledPage({
   /** Which edge carries the binding gutter, used only when an export applies a
       format (verso→right, recto→left, single/cover→none). */
   gutterSide?: "left" | "right" | "none";
+  /** The book's print format. In cookbook mode the page IS this preset's sheet
+      — see `presetCardDims`. Ignored outside cookbook mode, where a card is a
+      card and the paper it prints on is the print dialog's business. */
+  preset?: CookbookPresetId;
 }) {
-  const dims = PAGE_DIMS[size];
+  // A cookbook page is the preset's real sheet, on screen exactly as in the
+  // file — so the preview cannot show a page shape the book does not have (see
+  // `presetCardDims`). A plain card project keeps its own fixed page.
+  const bookPreset = getCookbookPreset(preset);
+  const dims = cookbookMode ? presetCardDims(bookPreset) : PAGE_DIMS[size];
+  const cardVars = cookbookMode ? (presetCardVars(bookPreset) as CSSProperties) : undefined;
   const imageSource =
     sheet.layoutKind === "image"
       ? sheet.slots.find((slot): slot is ImageSheetSlot => slot?.kind === "image")?.imageUrl
@@ -219,6 +235,7 @@ export const ScaledPage = memo(function ScaledPage({
         <div className="recipe-page-scaler__inner">
           <div
             className={`recipe-print-preview recipe-print-preview--letter ${presetBaseClass} ${presetArtClass}`}
+            style={cardVars}
             data-double-sided="false"
           >
             <div className={`recipe-card-set recipe-card-set--letter recipe-template--${template}`}>
@@ -342,6 +359,7 @@ export const ScaledPage = memo(function ScaledPage({
         <div className="recipe-page-scaler__inner">
           <div
             className={`recipe-print-preview recipe-print-preview--letter ${presetBaseClass} ${presetArtClass}`}
+            style={cardVars}
             data-double-sided="false"
           >
             <div className={`recipe-card-set recipe-card-set--letter recipe-template--${template}`}>
@@ -409,6 +427,7 @@ export const ScaledPage = memo(function ScaledPage({
         <div className="recipe-page-scaler__inner">
           <div
             className={`recipe-print-preview recipe-print-preview--${size} ${presetBaseClass} ${bucketClass}`}
+            style={cardVars}
             data-double-sided="false"
           >
             <div className={`recipe-card-set recipe-card-set--${size} recipe-template--${template}`}>
@@ -483,6 +502,7 @@ export const ScaledPage = memo(function ScaledPage({
           className={`recipe-print-preview recipe-print-preview--${size} ${presetBaseClass} ${presetSafeClass} ${
             showCutLines ? "recipe-print-preview--cut-lines" : ""
           }`}
+          style={cardVars}
           data-double-sided={doubleSided ? "true" : "false"}
         >
           <div

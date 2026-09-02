@@ -17,8 +17,14 @@ import {
   type PhotoStyle,
 } from "@/lib/project";
 import { paginateTocEntries } from "@/lib/tocPagination";
+import {
+  getCookbookPreset,
+  presetCardHeightIn,
+  presetCardVars,
+} from "@/lib/cookbookPresets";
 import { RecipeFaceMeasurer } from "@/components/RecipeFaceMeasurer";
 import type {
+  CookbookPresetId,
   CoverConfig,
   QueueItem,
   Recipe,
@@ -298,6 +304,11 @@ interface UsePrintSheetsOptions {
       does not describe the same card without it. */
   descriptionOn: boolean;
   template: RecipePrintTemplate;
+  /** The book's print format. In cookbook mode the page — and so the card every
+      recipe is measured against — IS this preset's sheet (see `presetCardDims`).
+      Absent outside cookbook mode and on books saved before presets existed,
+      both of which fall back to the default. */
+  preset?: CookbookPresetId;
 }
 
 /**
@@ -332,6 +343,7 @@ export function usePrintSheets({
   sourceUrlOn,
   descriptionOn,
   template,
+  preset,
 }: UsePrintSheetsOptions) {
   const sections = useMemo<Section[]>(() => {
     if (sectionsProp) return sectionsProp;
@@ -339,6 +351,17 @@ export function usePrintSheets({
   }, [sectionsProp, items]);
 
   const allItems = useMemo(() => sections.flatMap((section) => section.items), [sections]);
+
+  // A cookbook page is its preset's whole sheet, and that is the box a recipe
+  // has to be measured against — measuring on one page height and printing on
+  // another is precisely the clipping this hook's correction loop exists to
+  // prevent (see `presetCardDims`). Outside cookbook mode nothing carries these
+  // and the fixed card sizes in print.css apply, unchanged.
+  const bookPreset = useMemo(() => getCookbookPreset(preset), [preset]);
+  const cardVars = useMemo(
+    () => (cookbookMode ? (presetCardVars(bookPreset) as React.CSSProperties) : undefined),
+    [cookbookMode, bookPreset],
+  );
 
   // Per-recipe page layouts (`full`/`image-spread`) only apply in cookbook mode,
   // and only when the book prints on letter. Outside cookbook mode this is always
@@ -852,7 +875,7 @@ export function usePrintSheets({
         // A long book's contents runs onto as many pages as it needs. The page
         // is `overflow: hidden`, so anything past the first page's bottom edge
         // used to be silently clipped — recipes with no listing at all.
-        const tocSheets: PageSheet[] = paginateTocEntries(tocEntries).map((pageEntries, index) => ({
+        const tocSheets: PageSheet[] = paginateTocEntries(tocEntries, presetCardHeightIn(bookPreset)).map((pageEntries, index) => ({
           id: index === 0 ? "sheet-toc" : `sheet-toc-${index + 1}`,
           slots: [
             {
@@ -890,7 +913,7 @@ export function usePrintSheets({
     }
 
     return out;
-  }, [sections, allItems, cover, backCover, dedication, tableOfContents, bookTitle, cardSize, continueOnBack, photoOnFor, photoStyle, sourceUrlOn, template, measuredFacesFor, cookbookLayouts, cookbookResolution, itemPlacements]);
+  }, [sections, allItems, cover, backCover, dedication, tableOfContents, bookTitle, cardSize, continueOnBack, photoOnFor, photoStyle, sourceUrlOn, template, measuredFacesFor, cookbookLayouts, cookbookResolution, itemPlacements, bookPreset]);
 
   // What the rail and deck actually browse: one face per item, in physical
   // sheet order, except that a recipe's own faces (front + any continuations)
@@ -1071,6 +1094,7 @@ export function usePrintSheets({
             showSourceUrl={sourceUrlOn}
             showDescription={descriptionOn}
             cookbookMode={cookbookLayouts}
+            cardVars={cardVars}
             onSettled={(pages) =>
               setMeasuredFaces((current) =>
                 withMeasuredFace(

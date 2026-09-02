@@ -211,6 +211,7 @@ export function RecipeFaceMeasurer({
   showSourceUrl,
   showDescription,
   cookbookMode = false,
+  cardVars,
   onSettled,
 }: {
   recipe: Recipe;
@@ -222,6 +223,11 @@ export function RecipeFaceMeasurer({
   /** Match the real card's cookbook layout (link in header, no footer) so the
       off-screen measurement reflects what actually prints. */
   cookbookMode?: boolean;
+  /** The card BOX to measure against — a cookbook page is its preset's sheet,
+      not the fixed Letter card (see `presetCardVars`). Measuring one height and
+      printing another is exactly the clipping this component exists to catch,
+      so these have to be the same two values the preview root carries. */
+  cardVars?: React.CSSProperties;
   onSettled: (pages: RecipeFace[]) => void;
 }) {
   const initialPages = useMemo(
@@ -506,6 +512,7 @@ export function RecipeFaceMeasurer({
         visibility: "hidden",
         pointerEvents: "none",
         zIndex: -1,
+        ...cardVars,
       }}
       className={`recipe-print-preview ${previewSizeClass(size)} recipe-face-measurer`}
     >
