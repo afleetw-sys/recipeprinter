@@ -1002,16 +1002,14 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
         {
           title: "Getting recipes in",
           rows: [
-            { feature: "Links, photos, and text you paste", us: true, them: true },
-            { feature: "Reading handwriting off an old card", us: true, them: true },
+            { feature: "Links, photos, pasted text, handwritten cards", us: true, them: true },
           ],
         },
         {
           title: "What you can print",
           rows: [
-            { feature: "A 6 by 4 card for a recipe box", us: true, them: false },
+            { feature: "A 6 by 4 card for a recipe box, with cut lines", us: true, them: false },
             { feature: "A full letter page for a binder", us: true, them: false },
-            { feature: "Cut lines for card stock", us: true, them: false },
             { feature: "Printing it yourself", us: "Free, no account", them: true },
           ],
         },
