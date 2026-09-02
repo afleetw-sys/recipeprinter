@@ -859,15 +859,15 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
       },
       {
         name: "Clean up each page",
-        text: "RecipePrinter sets every recipe on a clear, consistent page, so a faded card and a copied text end up looking like they belong in the same book.",
+        text: "RecipePrinter sets every recipe on a clear, consistent page, so a faded card and a link from a group chat end up looking like they belong in the same book.",
       },
       {
-        name: "Organize into chapters",
-        text: "Group them into chapters like breakfasts, mains, and holiday baking, and add a cover and a dedication.",
+        name: "Add chapters and a cover",
+        text: "Chapters if you want them, breakfasts and mains or grouped by who they came from. A cover and a dedication go on the front.",
       },
       {
         name: "Print at home or send to a printer",
-        text: "Print the finished cookbook on your home printer, or export it and order a bound copy from a professional printer to give as a gift.",
+        text: "Print the finished cookbook at home, or export it and have a print shop bind a copy. Either one makes a gift.",
       },
     ],
     featureSections: [
