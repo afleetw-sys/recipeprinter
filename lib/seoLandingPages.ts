@@ -251,10 +251,10 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
     ],
     featureSections: [
       {
-        heading: "Why the print button gives you a stack of paper",
+        heading: "One sheet instead of twenty-six",
         proof: "before-after",
         body:
-          "A browser prints the whole document, and a recipe article is a long one. The headnote, the step photos, the ad slots, and the comments all count as page. One caprese pasta salad runs to 26 sheets that way. RecipePrinter does not print that page at all. It reads the recipe out and lays out a new one that never had the rest.",
+          "RecipePrinter never prints the article. It reads the recipe out of the page and lays out a new one holding the ingredients, the steps, and the times, and nothing else. The browser's own print button has no way to do that. It prints the document it was handed, headnote, ad slots, comments and all.",
       },
       {
         heading: "Leave the photo off and keep your colour ink",
