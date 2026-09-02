@@ -873,13 +873,13 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
           "Just the Recipe keeps the cleaned-up recipe on a screen, with serving adjustments and printing on its Premium plan. RecipePrinter is built for the paper end of it: a card for the box, a full page for the binder, or a batch of both for the week, printed free without an account.",
       },
       {
-        heading: "More ways in than a link",
+        heading: "Recipes that never had a link",
         proof: "steps",
         body:
-          "A link is the only way into most recipe cleaners. RecipePrinter also reads a photo of a handwritten card, a screenshot from a group chat, and text you paste straight in, so the recipes that never had a URL can end up on the same printed page as the ones that did.",
+          "Plenty of what you cook never had a URL: a handwritten card, a screenshot from a group chat, a paragraph someone texted you. RecipePrinter reads those the way it reads a link, so they end up on the same printed page as the ones that came off a website.",
       },
       {
-        heading: "Made to come out of a printer",
+        heading: "Card or page, cut lines, several at once",
         image: "card-in-box",
         body:
           "Choose a 6 by 4 card sized for a recipe box or a full letter page, pick a theme, turn on cut lines for card stock, and print several recipes in one job. Printing is free and works without an account, so you can try it on the recipe you were about to print anyway.",
