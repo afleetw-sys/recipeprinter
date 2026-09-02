@@ -75,6 +75,7 @@ import { COOKBOOK_ENABLED } from "@/lib/cookbookProduct";
 import {
   DEFAULT_COOKBOOK_PRESET_ID,
   getCookbookPreset,
+  presetCardDims,
 } from "@/lib/cookbookPresets";
 import { localStore } from "@/lib/storage";
 import { track } from "@/lib/analytics";
@@ -3552,12 +3553,26 @@ export default function PrintPage() {
   // spread (not a single page). `activeNavIndex` then indexes `spreads`, and the
   // controls/editing target a FOCUSED page within the active spread.
   const cookbookView = spreads.length > 0;
-  // The deck previews at Letter, always. It used to briefly carry an export
-  // preset's `@page` class and geometry vars so `window.print()` could capture
-  // a cookbook at its real trim — that round trip is gone; `/export` renders the
-  // format server-side and owns that geometry itself (see app/export/page.tsx).
-  // The deck is left doing one job: previewing.
-  const previewDims = PAGE_DIMS[previewCardSize];
+  /**
+   * The box a deck page occupies — the SAME question `ScaledPage` answers.
+   *
+   * This said "the deck previews at Letter, always", and it was true until
+   * cookbook pages moved onto the preset's own sheet. ScaledPage followed that
+   * change and this did not, so for a cookbook the deck sized every page it
+   * drew at the preset's sheet while computing its fit scale, its centring pad
+   * and its free-scroll threshold from Letter. Off by half an inch of page
+   * height on hardcover.
+   *
+   * Nothing showed it as a wrong size, because the deck also MEASURES the real
+   * slide centres to decide what is on screen. It showed up as the two
+   * disagreeing: a scroll aimed at where the padding said a page rests, landing
+   * where the page actually was, and snap pulling it back the difference. Which
+   * is why it was cookbooks only — a card project has one answer to this
+   * question and always did.
+   */
+  const previewDims = cookbookMode
+    ? presetCardDims(getCookbookPreset(projectMeta.meta.cookbookPreset))
+    : PAGE_DIMS[previewCardSize];
   const spreadWidth = previewDims.w * 2;
   // Sheet index → its representative nav item index (the first nav item on it).
   const navIndexForSheet = useMemo(() => {

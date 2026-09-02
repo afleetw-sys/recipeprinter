@@ -30,8 +30,7 @@ import { ZoomControl } from "@/components/print/ZoomControl";
 import { ScaledPage } from "@/components/print/ScaledPage";
 import { PHOTO_STYLE_OPTIONS } from "@/components/print/photoStyle";
 import { formatRecipeTime } from "@/lib/time";
-import { PAGE_DIMS } from "@/lib/printGeometry";
-import { getCookbookPreset, gutterSideForRole, presetCardDims } from "@/lib/cookbookPresets";
+import { gutterSideForRole } from "@/lib/cookbookPresets";
 import {
   BodyTextGlyph,
   HeadingGlyph,
@@ -343,17 +342,6 @@ export function PrintDeck(props: PrintDeckProps) {
     renderAllPages,
   } = props;
 
-  /**
-   * The box an undrawn page holds open.
-   *
-   * Has to be the box the REAL page occupies, or crossing DECK_WINDOW while
-   * scrolling swaps one height for another and everything below it moves.
-   * A cookbook page is the preset's own sheet (`presetCardDims`), which is
-   * what ScaledPage draws; a plain card project keeps the fixed card.
-   */
-  const placeholderDims = Boolean(projectMeta.meta.cookbookMode)
-    ? presetCardDims(getCookbookPreset(projectMeta.meta.cookbookPreset))
-    : PAGE_DIMS[previewCardSize];
 
   // Whether this page's edit surface is live. The same four-way question was
   // spelled out at six call sites (class, aria-pressed and label, twice over
@@ -916,8 +904,8 @@ export function PrintDeck(props: PrintDeckProps) {
             <div
               className="recipe-page-pending__sheet"
               style={{
-                width: PAGE_DIMS[previewCardSize].w * deckScale,
-                aspectRatio: `${PAGE_DIMS[previewCardSize].w} / ${PAGE_DIMS[previewCardSize].h}`,
+                width: previewDims.w * deckScale,
+                aspectRatio: `${previewDims.w} / ${previewDims.h}`,
               }}
             >
               <RecipeLoadingState />
@@ -1034,13 +1022,13 @@ export function PrintDeck(props: PrintDeckProps) {
                     previewCardSize === "card-6x4" ? "recipe-page-empty__sheet--card" : ""
                   }`}
                   /* The outline stands in for a page you have not made yet, so
-                     it is the size that page WOULD be: the same
-                     `PAGE_DIMS × deckScale` a real page is laid out at, not a
-                     fixed width that happened to look about right. It follows
-                     the size control and the zoom for the same reason. */
+                     it is the size that page WOULD be: `previewDims`, the
+                     same box a real page is laid out at, not a fixed width
+                     that happened to look about right. It follows the size
+                     control and the zoom for the same reason. */
                   style={{
-                    width: PAGE_DIMS[previewCardSize].w * deckScale,
-                    aspectRatio: `${PAGE_DIMS[previewCardSize].w} / ${PAGE_DIMS[previewCardSize].h}`,
+                    width: previewDims.w * deckScale,
+                    aspectRatio: `${previewDims.w} / ${previewDims.h}`,
                   }}
                 >
                   {/* Enough of a card to be recognisable as one and no more: a
@@ -1315,10 +1303,7 @@ export function PrintDeck(props: PrintDeckProps) {
                       exclusion for a section's art page). */}
                   {isActive &&
                     activeNavItem &&
-                    renderActiveControls(
-                      activeNavItem,
-                      PAGE_DIMS[previewCardSize].w * deckScale,
-                    )}
+                    renderActiveControls(activeNavItem, previewDims.w * deckScale)}
                   {!(renderAllPages || Math.abs(index - activeNavIndex) <= DECK_WINDOW) ? (
                     <PagePlaceholder
                       // The SAME box the real page occupies. A cookbook page is
@@ -1329,8 +1314,11 @@ export function PrintDeck(props: PrintDeckProps) {
                       // it, and left mandatory snap to re-resolve mid-gesture.
                       // That is the scroll passing a page and being pulled
                       // back onto it.
-                      width={placeholderDims.w}
-                      height={placeholderDims.h}
+                      // `previewDims`, so an undrawn page holds open exactly
+                      // the box the drawn one occupies. Deriving it separately
+                      // here is what let the two disagree in the first place.
+                      width={previewDims.w}
+                      height={previewDims.h}
                       scale={deckScale}
                     />
                   ) : (
