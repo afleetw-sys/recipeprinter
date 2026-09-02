@@ -188,6 +188,13 @@ const FEATURE_IMAGES: Record<string, ProofImage> = {
     alt:
       "One recipe, Burst Cherry Tomato Basil Chicken Rigatoni, printed as six cards in six different themes and fanned across a blue background. The same title, the same 45 minutes and serves 6, and the same ingredient list appear on every one, each set in a different typeface, border, and colour, with a cream serif version enlarged in front.",
   },
+  "counter-card": {
+    src: "/images/crowded-counter.jpeg",
+    width: 4931,
+    height: 3412,
+    alt:
+      "A printed Buffalo Chicken Bake card lying on a granite counter beside the cooking it belongs to: a board of shredded chicken with two forks in it, a measuring cup of buffalo sauce, a tub of greek yogurt, dijon mustard, three spice jars, and an empty baking dish.",
+  },
   "card-in-box": {
     src: "/images/recipe-card-in-box.png",
     width: 1448,

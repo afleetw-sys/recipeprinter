@@ -13,8 +13,19 @@ The earlier proposal for separate `capture-first` and `guide-first` visual ident
 3. The hero always gives the product image equal weight with the copy.
 4. All pages share typography, spacing, FAQ treatment, feature rows, navigation, and interaction patterns.
 5. A section appears only when it adds information needed for that query.
-6. SEO-page capture stays lightweight and hands the committed payload into the app; the full workspace is not embedded.
-7. Recipe text and images never appear in query strings and pending imports remain consume-and-delete.
+6. Cannibalization is a page-level problem, not a sentence-level one. It means
+   shipping two pages that compete for one query (`/print-recipe-from-url`
+   beside `/print-recipe-from-website`), and the fix is to not build the second
+   page. It does NOT mean a claim, a photograph, or an FAQ may appear only
+   once across the site. Visitors arrive on one page from search and never see
+   the others, so a page must make its own complete case: if a point or an
+   image is the best available proof for what this page argues, it belongs
+   here whether or not another page also uses it. Withholding the strongest
+   argument to keep the set tidy only weakens the page someone actually
+   landed on. Repetition still has to be avoided WITHIN a page, where a reader
+   really does meet both copies.
+7. SEO-page capture stays lightweight and hands the committed payload into the app; the full workspace is not embedded.
+8. Recipe text and images never appear in query strings and pending imports remain consume-and-delete.
 
 ## Intent behavior
 

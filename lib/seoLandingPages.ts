@@ -197,6 +197,11 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
           "Yes. Paste the link in a phone browser and set the recipe up there, then use the phone's own print dialog to reach a wireless printer, or choose Save as PDF and print it from a computer later.",
       },
       {
+        question: "Can I print several recipes in one go?",
+        answer:
+          "Yes. Paste in as many links as you want and print them as one job. That is the difference between seven trips to the printer and one, which is most of the point when you are printing a week of dinners at once.",
+      },
+      {
         question: "What happens if the original page disappears?",
         answer:
           "Nothing, which is the reason to print one in the first place. A recipe page can go behind a paywall, get rewritten around a new story, or go offline entirely, and none of that reaches the card already sitting in your kitchen.",
@@ -225,17 +230,69 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
       "Turn cluttered recipe pages into clean printable recipes without ads, pop-ups, comments, or wasted pages.",
     h1: "Print a recipe without ads",
     lede:
-      "Recipe pages can be hard to print cleanly. RecipePrinter helps pull out the ingredients, steps, notes, timing, and servings so you can print the recipe without ads, pop-ups, autoplay videos, comments, or extra page clutter.",
-    faqs: [
+      "Send a recipe page straight to the printer and the ads, the banner, and the comments come with it. RecipePrinter prints the recipe on its own, on one page you can read from across the counter.",
+    howTo: [
       {
-        question: "Can I print a recipe without pictures?",
-        answer:
-          "Yes. RecipePrinter creates a recipe-first print layout. When a photo is available, you can choose a layout that fits your needs instead of printing every image on the web page.",
+        name: "Paste the recipe link",
+        text: "Copy the link from the recipe site and paste it in. RecipePrinter rebuilds the recipe on a page of its own, away from everything that surrounded it.",
       },
       {
-        question: "Does RecipePrinter remove ads from recipe printouts?",
+        name: "Look before you print",
+        text: "The preview shows the finished page exactly as it will print, so you learn what a recipe costs in paper before you spend any of it.",
+      },
+      {
+        name: "Take out what you do not need",
+        text: "Turn off Recipe photo to save the colour ink, or Recipe link to drop the source line. What is left is the recipe.",
+      },
+      {
+        name: "Print it, or keep the file",
+        text: "Send it to the printer, or choose Save as PDF and keep the clean copy without spending a sheet at all.",
+      },
+    ],
+    featureSections: [
+      {
+        heading: "Why the print button gives you a stack of paper",
+        proof: "before-after",
+        body:
+          "A browser prints the document it was given, and a recipe article is a long document. One caprese pasta salad runs to 26 sheets that way. The headnote runs for paragraphs, the step photos are full width, the ad slots hold their space whether or not an ad loaded, and the comments are part of the page rather than an extra. Print styles are the last thing a recipe site tunes, so most of that arrives on paper exactly as it sat on screen. RecipePrinter does not print that document at all. It reads the recipe out of it and lays out a new page that never had the rest.",
+      },
+      {
+        heading: "Leave the photo off and keep your colour ink",
+        body:
+          "The finished-dish photo is the only part of a printed recipe that needs colour ink, and it is usually the part you look at least while actually cooking. Turn off Recipe photo and what prints is type alone. Recipe link sits beside it, for when you would rather not carry the source along the bottom of the card. Both are switches rather than settings you commit to, so the decision is per print job.",
+      },
+      {
+        heading: "One page you can cook from",
+        image: "counter-card",
+        body:
+          "Paper is the only thing in a kitchen that does not go dark, ask to be unlocked, or need a clean finger. A card props against the backsplash and stays on the step you are on while your hands are covered in something. You can read it from the sink, and nobody has to scroll back up to check whether it was two teaspoons or two tablespoons.",
+      },
+      {
+        heading: "Nothing prints until you have seen it",
+        body:
+          "The preview is the finished sheet, not an approximation of it, so the count you see is the count that comes out of the tray. That matters most on the recipes that go wrong quietly, the one whose ingredient list runs a few lines longer than the card holds. You find out on screen instead of finding out in the paper tray.",
+      },
+    ],
+    faqs: [
+      {
+        question: "Is this an ad blocker?",
         answer:
-          "RecipePrinter formats the recipe itself for printing, so ads, pop-ups, comments, navigation, and other page clutter stay out of the printable recipe.",
+          "No, and it does not need to be. An ad blocker hides things on the page you are looking at. RecipePrinter never prints that page: it reads the recipe out of it and builds a new one that only ever had the recipe on it.",
+      },
+      {
+        question: "Can I print the recipe without the photo?",
+        answer:
+          "Yes. Turn off Recipe photo in print setup and the recipe prints as type alone, which is the difference between a page of colour ink and a page of black. Recipe link has its own switch beside it if you would rather not print the source line.",
+      },
+      {
+        question: "What about pop-ups and cookie banners?",
+        answer:
+          "They never reach the printer. Those overlays are drawn by your browser as the page loads, and RecipePrinter reads the recipe straight from the page's own data instead, so the box you would have had to close is never in the way.",
+      },
+      {
+        question: "How much paper does one recipe take?",
+        answer:
+          "Usually one sheet. A recipe prints as a single 6 by 4 card or a single letter page, however long the article it came from happened to be.",
       },
     ],
     links: [
