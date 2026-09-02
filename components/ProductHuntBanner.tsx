@@ -70,7 +70,7 @@ export function ProductHuntBanner() {
           <span className="font-bold">We&rsquo;re on Product Hunt today.</span>{" "}
           {/* Dropped on a narrow screen: beside the chip it was pushing the
               news onto a third line to add nothing the chip doesn't say. */}
-          <span className="hidden text-ink-soft sm:inline">Tell them how it prints.</span>
+          <span className="hidden text-ink-soft sm:inline">Reviews from real cooks help us grow.</span>
         </p>
         {/* A chip rather than a run of underlined words. The sentence is the
             news and this is the way to act on it, and at that length an inline
