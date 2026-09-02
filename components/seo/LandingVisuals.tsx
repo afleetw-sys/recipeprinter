@@ -235,6 +235,13 @@ const FEATURE_IMAGES: Record<string, ProofImage> = {
     alt:
       "RecipePrinter open in two browsers at once. Behind, a desktop window with www.recipeprinter.com in the address bar, showing the Add recipes panel and two recipes ready to print. In front, a phone with recipeprinter.com in the address bar, running the same thing: a link field, an Add button, and two more recipes waiting below.",
   },
+  "bound-cookbook": {
+    src: "/images/cookbook-onboarding-hero.jpg",
+    width: 1536,
+    height: 1024,
+    alt:
+      "A finished hardcover family cookbook lying open on a kitchen counter, a full-page photo of bourbon chicken on the left and the typed recipe on the right, with a checked spine stripe down the page edge and OUR FAVORITE RECIPES along the foot.",
+  },
   "card-in-box": {
     src: "/images/recipe-card-in-box.jpg",
     width: 1448,

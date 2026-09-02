@@ -821,7 +821,11 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
   },
   {
     slug: "family-recipe-book",
-    captureHeading: "Start your family cookbook",
+    // Guide intent, but the input belongs at the top like everywhere else: a
+    // book starts with one recipe, and asking for it below three sections of
+    // explanation buried the only thing there is to do.
+    layout: "capture-first",
+    heroImage: "bound-cookbook",
     primaryKeyword: "family recipe book",
     secondaryKeywords: [
       "create a family cookbook",
@@ -837,8 +841,9 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
     h1: "Family recipe book ideas",
     lede:
       "A family recipe book can start with one recipe. RecipePrinter turns online recipes, old cards, photos, and typed-in notes into clean, matching pages, then binds them into a cookbook with a cover, chapters, and a table of contents.",
+    importSubmitLabel: "Start the book",
     captureReassurance: false,
-    importHint: "Start here, then add as many recipes as you like.",
+    importHint: "One recipe is enough to begin. The book grows from there.",
     howTo: [
       {
         name: "Gather the recipes",
@@ -877,17 +882,26 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
           "Print a copy on your home printer to flip through and check, then export a print-ready file to order bound books from a professional printer. A finished cookbook makes a keepsake gift for a wedding, a milestone birthday, or the holidays, and everyone who cooks from it gets their own copy in the kitchen.",
       },
     ],
-    examples: ["pesto", "caprese", "korean"],
     faqs: [
       {
-        question: "What should go in a family recipe book?",
+        question: "How many recipes make a book?",
         answer:
-          "Include the recipes people actually ask for, notes on who made them and when, substitutions and tips, holiday traditions, and photos. The small stories are what turn a stack of recipes into a book worth keeping.",
+          "Whatever you have. Eight recipes bound with a cover is a real gift, and so is forty. The table of contents renumbers itself as you add, so the size is never something you settle before you start.",
       },
       {
-        question: "Can I add recipes to the book over time?",
+        question: "Can other people in the family add theirs?",
         answer:
-          "Yes. You don't have to finish it in one sitting. Add recipes as you collect them, and the table of contents renumbers itself so the book stays in order as it grows.",
+          "Not directly, there is no invite link. What works is people sending you the recipe however they have it, a photo of a card, a screenshot, a text, and you adding it. Most of them arrive that way anyway.",
+      },
+      {
+        question: "How do I actually get it printed and bound?",
+        answer:
+          "Two ways. Print it at home on the Letter layout, set up for a spiral or 3-ring binder, or export the file for a print shop, where the 8 by 10 hardcover layout gives them what a case-bound book needs.",
+      },
+      {
+        question: "What does a cookbook cost?",
+        answer:
+          "$19.99 once for the book, and that book stays yours to edit and add to afterwards. Printing is whatever paper and ink you use at home, or whatever the print shop charges. Premium themes are $1.99 once if you want one.",
       },
     ],
     links: [
