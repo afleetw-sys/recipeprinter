@@ -893,12 +893,12 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
       {
         question: "How many recipes make a book?",
         answer:
-          "Whatever you have. Eight recipes bound with a cover is a real gift, and so is forty. The table of contents renumbers itself as you add, so the size is never something you settle before you start.",
+          "As few or as many as you like. Eight recipes with a cover on them makes a real gift, and so does forty. The contents page renumbers itself as you add, so you can keep going for as long as you want to.",
       },
       {
         question: "Can other people in the family add theirs?",
         answer:
-          "Not directly, there is no invite link. What works is people sending you the recipe however they have it, a photo of a card, a screenshot, a text, and you adding it. Most of them arrive that way anyway.",
+          "Not directly, there is no invite link. They can send you the recipe however they have it though, a photo of a card, a screenshot, a text message, and you add it to the book from there.",
       },
       {
         question: "How do I actually get it printed and bound?",
