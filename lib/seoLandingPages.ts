@@ -987,7 +987,7 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
         heading: "One bound book, or the pages themselves",
         proof: "card",
         body:
-          "ReciScan is built to end in a bound book, ordered from its print service and posted to you, starting at $18 for fifty pages. RecipePrinter hands you the finished pages instead: run them on the printer down the hall, keep the PDF, or take the file to a print shop. Nothing has to be settled up front.",
+          "ReciScan is built to end in a bound book, ordered from its own print service, starting at $18 for fifty pages. RecipePrinter hands you the finished pages instead: run them on the printer down the hall, keep the PDF, or take the file to a print shop. Nothing has to be settled up front.",
       },
       {
         heading: "A card for the box, not only a page in a book",
@@ -1024,15 +1024,16 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
         {
           title: "Making a book",
           rows: [
-            { feature: "A bound book printed and posted to you", us: false, them: "Starting at $18" },
+            { feature: "A bound book they print and ship", us: false, them: "Starting at $18" },
             { feature: "A cookbook you print or export yourself", us: "$19.99 once", them: "PDF download" },
+            { feature: "Spiral or hardcover layout", us: "Letter spiral, 8 by 10 hardcover", them: "Coil, saddle stitch, perfect bound, hardcover" },
             { feature: "Updating the book you paid for", us: "Free, any time", them: false },
           ],
         },
         {
-          title: "Where it runs",
+          title: "Getting started",
           rows: [
-            { feature: "Using it", us: "Any browser, no install", them: "iPhone and Android apps" },
+            { feature: "What you have to install", us: "Nothing, any browser", them: "The iPhone or Android app" },
             { feature: "What it costs to start", us: "Free, no account", them: "Free app, $4.99 a month for extras" },
           ],
         },
@@ -1052,7 +1053,7 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
       {
         question: "Can RecipePrinter send me a printed book?",
         answer:
-          "No, and you are not tied to your own printer either. What you get is a print-ready file: run it at home, keep the PDF for later, or hand it to a print shop like any other document. Nothing arrives in the post from us.",
+          "No, and you are not tied to your own printer either. What you get is a print-ready file: run it at home, keep the PDF for later, or hand it to a print shop like any other document. We do not ship anything ourselves.",
       },
       {
         question: "What if I only want a few recipes, not a whole book?",
