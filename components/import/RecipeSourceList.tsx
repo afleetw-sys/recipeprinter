@@ -92,7 +92,7 @@ function RecipeRow({
       </div>
 
       {added ? (
-        <span className="inline-flex flex-shrink-0 items-center justify-center gap-1 rounded-lg bg-[var(--cp-accent-warm-soft)] px-2.5 py-1.5 text-cp-caption font-bold text-ink">
+        <span className="inline-flex flex-shrink-0 items-center justify-center gap-1 rounded-lg bg-[var(--cp-accent-soft)] px-2.5 py-1.5 text-cp-caption font-bold text-ink">
           <CheckIcon size={ICON_SIZE.sm} />
           Added
         </span>

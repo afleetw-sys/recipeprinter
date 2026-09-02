@@ -76,7 +76,7 @@ function IntegrationRow({
           <span className="flex flex-wrap items-center gap-x-cp-2 gap-y-0.5">
             <span className="text-cp-body font-bold leading-snug">{name}</span>
             {addedCount > 0 && (
-              <span className="inline-flex items-center rounded-lg bg-[var(--cp-accent-warm-soft)] px-2 py-0.5 text-cp-caption font-bold text-ink">
+              <span className="inline-flex items-center rounded-lg bg-[var(--cp-accent-soft)] px-2 py-0.5 text-cp-caption font-bold text-ink">
                 {addedCount} added
               </span>
             )}
