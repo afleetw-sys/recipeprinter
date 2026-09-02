@@ -237,8 +237,8 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
         text: "Copy the link from the recipe site and paste it in. RecipePrinter rebuilds the recipe on a page of its own, away from everything that surrounded it.",
       },
       {
-        name: "Look before you print",
-        text: "The preview shows the finished page exactly as it will print, so you learn what a recipe costs in paper before you spend any of it.",
+        name: "Check the preview",
+        text: "Look at the finished card before anything prints. What you see on screen is what comes out, down to the page count.",
       },
       {
         name: "Take out what you do not need",
@@ -257,10 +257,10 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
           "RecipePrinter never prints the article. It reads the recipe out of the page and lays out a new one holding the ingredients, the steps, and the times, and nothing else. The browser's own print button has no way to do that. It prints the document it was handed, headnote, ad slots, comments and all.",
       },
       {
-        heading: "One page you can cook from",
+        heading: "It will not go dark while you cook",
         image: "counter-card",
         body:
-          "Paper does not go dark, ask to be unlocked, or need a clean finger. A card props against the backsplash and stays on the step you are on while your hands are covered in something, and nobody scrolls back up to check whether it was two teaspoons or two tablespoons.",
+          "A card asks nothing of you: no unlocking, no clean finger, no screen timeout. It props against the backsplash and stays on the step you are on while your hands are covered in something, and nobody scrolls back up to check whether it was two teaspoons or two tablespoons.",
       },
     ],
     faqs: [
