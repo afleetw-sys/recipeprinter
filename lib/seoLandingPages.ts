@@ -766,8 +766,8 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
         text: "Lay it flat, get all four corners in frame, and upload the photo. Screenshots and typed-out recipes work the same way.",
       },
       {
-        name: "Check what it read",
-        text: "Handwriting is handwriting. Every line is editable, so fix the word that came through wrong before it is set in anything.",
+        name: "Look it over",
+        text: "Some of it will come through perfectly and some will want a second look. Every line is editable, so you can correct anything before you print.",
       },
       {
         name: "Print the working copy",
@@ -796,7 +796,7 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
       {
         question: "Will it read my grandmother's handwriting?",
         answer:
-          "Often, and not always. Cursive, faded pencil and a stained corner are all hard. Whatever comes through lands in an editable recipe, so the worst case is you correct a few lines rather than typing the whole card.",
+          "Usually, though not always. Cursive, faded pencil and a stained corner are all genuinely hard to read. Whatever does come through lands in an editable recipe, so at worst you are correcting a few lines rather than typing the whole card.",
       },
       {
         question: "What if the card is too faded to read?",
