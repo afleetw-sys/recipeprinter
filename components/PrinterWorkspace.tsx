@@ -47,6 +47,7 @@ export function PrinterWorkspace({
     hydratedWithItems,
     addUrl,
     addImages,
+    addImageFiles,
     addText,
     addReadyRecipes,
     retry,
@@ -244,7 +245,7 @@ export function PrinterWorkspace({
           initialMode={initialImportMode}
           submitLabel={importSubmitLabel}
           onAddUrl={addUrl}
-          onAddImages={addImages}
+          onAddImageFiles={addImageFiles}
           onAddText={addText}
           onAddReadyRecipes={addReadyRecipes}
           onRemoveRecipe={remove}

@@ -13,16 +13,9 @@ import {
 import dynamic from "next/dynamic";
 import type { ImportTab } from "@/types/recipe";
 import type { QueueItem } from "@/types/recipe";
-import { track, truncateReason, type ImportFailureCode } from "@/lib/analytics";
-import { ImportError } from "@/lib/parser";
+import { track, type ImportFailureCode } from "@/lib/analytics";
 import { normalizeImportURL } from "@/lib/cookpilot";
-import { captureFailedImportImages, recordFailedImport } from "@/lib/failedImportCapture";
-import {
-  imageLabel,
-  partitionImageFiles,
-  prepareImageDataUrls,
-  validateImageFiles,
-} from "@/lib/imageImport";
+import { imageLabel, partitionImageFiles, validateImageFiles } from "@/lib/imageImport";
 import {
   AppsIcon,
   ICON_SIZE,
@@ -79,7 +72,7 @@ export function ImportPanel({
   onModeChange,
   autoFocusUrl = true,
   onAddUrl,
-  onAddImages,
+  onAddImageFiles,
   onAddText,
   onAddReadyRecipes,
   onRemoveRecipe,
@@ -103,7 +96,7 @@ export function ImportPanel({
       can sit below the fold and stealing focus would scroll the page on load. */
   autoFocusUrl?: boolean;
   onAddUrl: (url: string) => void;
-  onAddImages: (images: string[], label: string) => void;
+  onAddImageFiles: (files: File[], label: string) => void;
   onAddText: (text: string) => void;
   onAddReadyRecipes: (recipes: QueueItem[]) => number;
   onRemoveRecipe: (id: string) => void;
@@ -132,7 +125,6 @@ export function ImportPanel({
   const [text, setText] = useState("");
   const [imageFiles, setImageFiles] = useState<File[]>([]);
   const [dragging, setDragging] = useState(false);
-  const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [overflowOpen, setOverflowOpen] = useState(false);
   const overflowRef = useRef<HTMLDivElement | null>(null);
@@ -156,90 +148,73 @@ export function ImportPanel({
     if (error) setError(null);
   }
 
-  /** `e` is optional so this can be called imperatively — see `commitRef`. */
-  async function handleSubmit(e?: FormEvent) {
+  /**
+   * `e` is optional so this can be called imperatively — see `commitRef`.
+   *
+   * Returns whether the entry was handed off. `false` means the form rejected
+   * it and is now showing why, which is the signal a surface that closes on
+   * submit needs: the add dialog used to close on top of every one of these
+   * messages, so a photo it would not accept looked exactly like one it had.
+   *
+   * Nothing here waits on the import itself. Every source hands off the moment
+   * it validates and reports what happens next where the recipes are — a photo
+   * is read by the queue now (see `addImageFiles`), not here.
+   */
+  function handleSubmit(e?: FormEvent): boolean {
     e?.preventDefault();
-    if (busy) return;
     setError(null);
 
     if (mode === "url") {
       const trimmed = url.trim();
-      if (!trimmed) return setError("Paste a recipe link first.");
+      if (!trimmed) return fail("Paste a recipe link first.");
       try {
         // Validate through the same normalizer the queue and parser use, so the
         // client gate can't reject a URL the pipeline would happily import (it
         // was stricter here — case-sensitive scheme check, no whitespace strip).
         new URL(normalizeImportURL(trimmed));
       } catch {
-        return setError("That doesn't look like a valid URL.");
+        return fail("That doesn't look like a valid URL.");
       }
       onAddUrl(trimmed);
       setUrl("");
-    } else if (mode === "image") {
-      // A failed image import dies here in the browser, before a queue item
-      // exists — so unlike URL/text, the queue never gets to report it. Emit
-      // the started+failed pair ourselves so these don't vanish from the funnel
+      return true;
+    }
+
+    if (mode === "image") {
+      // These turn photos away before a queue item exists, so unlike every
+      // other image failure the queue never gets to report them. Emit the
+      // started+failed pair ourselves so they don't vanish from the funnel
       // (this is where "Choose at least one photo" was hiding).
       if (imageFiles.length === 0) {
         trackImageFailure("no_files", "no usable photo selected");
-        return setError("Choose at least one photo.");
+        return fail("Choose at least one photo.");
       }
       const validationError = validateImageFiles(imageFiles);
       if (validationError) {
         trackImageFailure(validationError.category, validationError.message);
-        return setError(validationError.message);
+        return fail(validationError.message);
       }
-      setBusy(true);
-      const files = imageFiles;
-      try {
-        const dataUrls = await prepareImageDataUrls(files);
-        onAddImages(dataUrls, imageLabel(files));
-        setImageFiles([]);
-      } catch (err) {
-        const category = err instanceof ImportError ? err.code : "decode_failed";
-        const reason = truncateReason(err);
-        setError(err instanceof Error ? err.message : "Couldn't read those images. Try different files.");
-        // The image never decoded, so there's no compressed payload — stash the
-        // *originals* (unless they were merely too large) so a decode/HEIC bug
-        // is reproducible. Best-effort; the failure log fires either way.
-        const captureMeta = { source: "image", category, reason };
-        if (category === "too_large") {
-          // Nothing to keep: the file was over the cap before it was read. The
-          // row still goes in so the failure is in the same list as the rest.
-          await recordFailedImport(captureMeta, { imageCount: files.length });
-          trackImageFailure(category, reason);
-        } else {
-          const debugPath = await captureFailedImportImages(files, captureMeta);
-          await recordFailedImport(captureMeta, {
-            imagePath: debugPath,
-            imageCount: files.length,
-          });
-          trackImageFailure(category, reason, debugPath ?? undefined);
-        }
-      } finally {
-        setBusy(false);
-      }
-    } else {
-      const trimmed = text.trim();
-      if (trimmed.length < 20) return setError("Paste a bit more recipe text first.");
-      onAddText(trimmed);
-      setText("");
+      onAddImageFiles(imageFiles, imageLabel(imageFiles));
+      setImageFiles([]);
+      return true;
     }
+
+    const trimmed = text.trim();
+    if (trimmed.length < 20) return fail("Paste a bit more recipe text first.");
+    onAddText(trimmed);
+    setText("");
+    return true;
   }
 
-  // Client-side image failures never reach the queue's runParse, so they'd be
-  // invisible in analytics. Fire the started+failed pair here to keep the
-  // import funnel honest across the browser/queue boundary. Only the failure
-  // branch emits — a successful prep is counted by the queue instead, so no
-  // attempt is double-reported.
-  function trackImageFailure(category: ImportFailureCode, reason: string, debugPath?: string) {
+  /** Shows why the entry was refused, and reports it as not handed off. */
+  function fail(message: string): false {
+    setError(message);
+    return false;
+  }
+
+  function trackImageFailure(category: ImportFailureCode, reason: string) {
     track("recipe_import_started", { source: "image" });
-    track("recipe_import_failed", {
-      source: "image",
-      category,
-      reason,
-      ...(debugPath ? { debugPath } : {}),
-    });
+    track("recipe_import_failed", { source: "image", category, reason });
   }
 
   // Shared by the file picker and drag-and-drop: never silently swallow a
@@ -287,17 +262,14 @@ export function ImportPanel({
    * hands Done the same code path Add uses, validation and all, instead of a
    * second implementation that would drift from it.
    *
-   * Returns whether there was anything to commit, so a Done pressed over an
-   * empty form stays a plain close and does not raise "Paste a recipe link
-   * first" at someone who is leaving.
+   * Returns whether the parent may now close: an empty form is a plain close
+   * and does not raise "Paste a recipe link first" at someone who is leaving,
+   * and a committed entry is finished. Only a refusal answers `false`, because
+   * the reason is on screen and closing would take it away with it.
    */
   useEffect(() => {
     if (!commitRef) return;
-    commitRef.current = () => {
-      if (busy || !hasUncommittedInput()) return false;
-      void handleSubmit();
-      return true;
-    };
+    commitRef.current = () => (hasUncommittedInput() ? handleSubmit() : true);
     return () => {
       commitRef.current = null;
     };
@@ -306,7 +278,6 @@ export function ImportPanel({
   function onDrop(e: DragEvent<HTMLLabelElement>) {
     e.preventDefault();
     setDragging(false);
-    if (busy) return;
     if (e.dataTransfer.files.length > 0) selectImageFiles(e.dataTransfer.files);
   }
 
@@ -334,7 +305,6 @@ export function ImportPanel({
           options={expanded ? MODES : PRIMARY_MODES}
           value={mode}
           onChange={chooseMode}
-          disabled={busy}
         >
           {!expanded && (
             <div ref={overflowRef} className="mode-toggle-overflow">
@@ -346,7 +316,6 @@ export function ImportPanel({
                 aria-label="More import options"
                 aria-haspopup="menu"
                 aria-expanded={overflowOpen}
-                disabled={busy}
                 className={`btn-toggle__option btn-toggle__option--icon ${
                   overflowActive ? "is-active" : ""
                 }`}
@@ -414,9 +383,8 @@ export function ImportPanel({
                 <button
                   type="submit"
                   className="btn btn-primary rp-import-submit w-full lg:w-auto lg:shrink-0"
-                  disabled={busy}
                 >
-                  {busy ? <SpinnerIcon size={ICON_SIZE.md} /> : <PlusIcon size={ICON_SIZE.md} />}
+                  <PlusIcon size={ICON_SIZE.md} />
                   {submitLabel}
                 </button>
               )}
@@ -432,7 +400,7 @@ export function ImportPanel({
               className={`dropzone ${dragging ? "is-dragging" : ""}`}
               onDragOver={(e) => {
                 e.preventDefault();
-                if (!busy) setDragging(true);
+                setDragging(true);
               }}
               onDragLeave={(e) => {
                 if (e.relatedTarget instanceof Node && e.currentTarget.contains(e.relatedTarget)) return;
@@ -444,7 +412,6 @@ export function ImportPanel({
                 type="file"
                 accept="image/*"
                 multiple
-                disabled={busy}
                 className="sr-only absolute h-px w-px overflow-hidden"
                 onChange={(e) => {
                   selectImageFiles(e.target.files);
@@ -484,8 +451,8 @@ export function ImportPanel({
         )}
 
         {mode !== "url" && !hideSubmit && (
-          <button type="submit" className="btn btn-primary rp-import-submit w-full" disabled={busy}>
-            {busy ? <SpinnerIcon size={ICON_SIZE.md} /> : <PlusIcon size={ICON_SIZE.md} />}
+          <button type="submit" className="btn btn-primary rp-import-submit w-full">
+            <PlusIcon size={ICON_SIZE.md} />
             {submitLabel}
           </button>
         )}

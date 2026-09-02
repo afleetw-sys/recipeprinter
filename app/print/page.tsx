@@ -4717,7 +4717,7 @@ export default function PrintPage() {
         focusedItemId={queue.focusedItemId}
         focusNonce={queue.focusNonce}
         onAddUrl={queue.addUrl}
-        onAddImages={queue.addImages}
+        onAddImageFiles={queue.addImageFiles}
         onAddText={queue.addText}
         onAddReadyRecipes={queue.addReadyRecipes}
       />

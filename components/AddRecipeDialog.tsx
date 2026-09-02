@@ -21,7 +21,7 @@ export function AddRecipeDialog({
   focusedItemId,
   focusNonce,
   onAddUrl,
-  onAddImages,
+  onAddImageFiles,
   onAddText,
   onAddReadyRecipes,
 }: {
@@ -32,7 +32,7 @@ export function AddRecipeDialog({
   focusedItemId: string | null;
   focusNonce: number;
   onAddUrl: (url: string) => void;
-  onAddImages: (images: string[], label: string) => void;
+  onAddImageFiles: (files: File[], label: string) => void;
   onAddText: (text: string) => void;
   onAddReadyRecipes: (recipes: QueueItem[]) => number;
 }) {
@@ -77,9 +77,9 @@ export function AddRecipeDialog({
     onAddUrl(url);
   }
 
-  function handleAddImages(images: string[], label: string) {
+  function handleAddImageFiles(files: File[], label: string) {
     clearDuplicate();
-    onAddImages(images, label);
+    onAddImageFiles(files, label);
   }
 
   function handleAddText(text: string) {
@@ -117,7 +117,7 @@ export function AddRecipeDialog({
           onModeChange={setMode}
           items={items}
           onAddUrl={handleAddUrl}
-          onAddImages={handleAddImages}
+          onAddImageFiles={handleAddImageFiles}
           onAddText={handleAddText}
           onAddReadyRecipes={onAddReadyRecipes}
           onRemoveRecipe={() => undefined}
@@ -138,13 +138,18 @@ export function AddRecipeDialog({
 
           `commitImportRef` no-ops when there is nothing uncommitted, which is
           always the case on the recipe-apps tab, so the same handler serves
-          both labels. */}
+          both labels.
+
+          It answers `false` when the panel refused what was in the form — an
+          unreadable photo, a link that isn't one. Closing over that message was
+          how a photo we would not accept came to look like one we had: the
+          dialog went away, and nothing anywhere said no. */}
       <div className="recipe-add-dialog__footer">
         <button
           type="button"
           className="btn btn-primary w-full"
           onClick={() => {
-            commitImportRef.current?.();
+            if (commitImportRef.current?.() === false) return;
             onClose();
           }}
         >

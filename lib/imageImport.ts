@@ -54,12 +54,105 @@ function loadImageFromBlob(blob: Blob): Promise<HTMLImageElement> {
   });
 }
 
+// ── HEIC transcode ───────────────────────────────────────────────────────────
 // heic2any wraps a ~1.5 MB libheif wasm build, so it's dynamically imported and
 // only pulled down when a file actually needs transcoding.
+//
+// It also decodes exactly ONCE per page. The library builds a single worker at
+// import time and parks it on `window.__heic2any__worker`; every call posts to
+// that one worker, and libheif inside it does not survive a decode. Measured in
+// Chrome against a real HEIC: the first photo converts, the second comes back
+// "ERR_LIBHEIF format not supported", and the third aborts the wasm module
+// outright — after which every HEIC on the page fails, including any that would
+// have worked. Two at once (which is what importing several photos does) abort
+// each other on the first try.
+//
+// So each transcode gets a CLEAN worker, and they run one at a time, because
+// there is only the one slot for the library to read. The worker's script is a
+// blob heic2any builds while it initializes; we note its URL as it goes past so
+// a fresh worker is one `new Worker` rather than re-parsing 1.3 MB of bundle.
+
+type HeicConvert = (options: {
+  blob: Blob;
+  toType?: string;
+  quality?: number;
+}) => Promise<Blob | Blob[]>;
+
+interface HeicWorkerHost {
+  __heic2any__worker?: Worker;
+}
+
+let heicLibrary: Promise<{ convert: HeicConvert; workerUrl: string | null }> | null = null;
+
+function loadHeicLibrary() {
+  heicLibrary ??= (async () => {
+    let workerUrl: string | null = null;
+    const createObjectURL = URL.createObjectURL.bind(URL);
+    // Nothing else in this pipeline ever makes an application/javascript object
+    // URL — the rest are image blobs — so this identifies the worker script
+    // without reaching into the library's internals for it.
+    URL.createObjectURL = (object: Blob | MediaSource) => {
+      const url = createObjectURL(object as Blob);
+      if (!workerUrl && object instanceof Blob && object.type === "application/javascript") {
+        workerUrl = url;
+      }
+      return url;
+    };
+    try {
+      const { default: convert } = await import("heic2any");
+      return { convert: convert as HeicConvert, workerUrl };
+    } finally {
+      URL.createObjectURL = createObjectURL;
+    }
+  })();
+  return heicLibrary;
+}
+
+/** Tail of the transcode chain — one HEIC through libheif at a time. */
+let heicChain: Promise<unknown> = Promise.resolve();
+
 async function heicToJpegBlob(file: File): Promise<Blob> {
-  const { default: heic2any } = await import("heic2any");
-  const converted = await heic2any({ blob: file, toType: "image/jpeg", quality: IMAGE_JPEG_QUALITY });
-  return Array.isArray(converted) ? converted[0] : converted;
+  const run = heicChain.then(async () => {
+    const { convert, workerUrl } = await loadHeicLibrary();
+    const host = globalThis as unknown as HeicWorkerHost;
+    // No URL means the library changed shape under us. Convert on whatever
+    // worker it made rather than failing outright: the first HEIC of the page
+    // still lands, which is what happened before this existed.
+    if (workerUrl) {
+      host.__heic2any__worker?.terminate();
+      host.__heic2any__worker = new Worker(workerUrl);
+    }
+    try {
+      const converted = await convert({
+        blob: file,
+        toType: "image/jpeg",
+        quality: IMAGE_JPEG_QUALITY,
+      });
+      return Array.isArray(converted) ? converted[0] : converted;
+    } catch (err) {
+      // heic2any rejects with a bare `{ code, message }`, which every `instanceof
+      // Error` check upstream reads as "unknown" — including the one that fills
+      // in why an import failed. Give it something that answers.
+      throw new Error(heicFailureMessage(err));
+    } finally {
+      // Nothing more will come out of this one, and it is holding the wasm heap.
+      host.__heic2any__worker?.terminate();
+      delete host.__heic2any__worker;
+    }
+  });
+  // The next transcode waits for this one either way; it must not inherit the
+  // rejection, which would fail every later photo for the first one's reason.
+  heicChain = run.catch(() => undefined);
+  return run;
+}
+
+function heicFailureMessage(err: unknown): string {
+  if (err instanceof Error) return err.message;
+  if (typeof err === "string") return err;
+  if (err && typeof err === "object" && typeof (err as { message?: unknown }).message === "string") {
+    return (err as { message: string }).message;
+  }
+  return "HEIC transcode failed";
 }
 
 // Safari can draw HEIC to a canvas natively; Chrome/Firefox/Android can't. So try

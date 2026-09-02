@@ -6,6 +6,7 @@ import { track, truncateReason } from "@/lib/analytics";
 import { ImportError, parseImages, parseText, parseUrlAll } from "@/lib/parser";
 import { captureFailedImportImages, recordFailedImport } from "@/lib/failedImportCapture";
 import { placeholderHostMessage } from "@/lib/friendlyErrors";
+import { prepareImageDataUrls } from "@/lib/imageImport";
 import { normalizeImportURL } from "@/lib/cookpilot";
 import { hostnameOf as rawHostnameOf } from "@/lib/url";
 import { uid } from "@/lib/ids";
@@ -302,9 +303,11 @@ export function useQueue() {
       // rest into their own ready items — see below.
       work: () => Promise<Recipe | Recipe[]>,
       // The exact input handed to the parser, stashed for debugging if the parse
-      // fails (see lib/failedImportCapture.ts): the compressed data-URLs for an
-      // image import, or the pasted text / URL for the others.
-      opts?: { failedImages?: string[]; failedText?: string },
+      // fails (see lib/failedImportCapture.ts): the photos for an image import,
+      // or the pasted text / URL for the others. An image import passes a live
+      // array it rewrites once the photos compress, so a decode failure keeps
+      // the originals and a parse failure keeps what the parser actually saw.
+      opts?: { failedImages?: Array<Blob | string>; failedText?: string },
     ) => {
       patch(id, { status: "parsing", error: undefined });
       track("recipe_import_started", origin);
@@ -439,9 +442,9 @@ export function useQueue() {
     [commit, focusItem, runParse],
   );
 
-  const addImages = useCallback(
-    (images: string[], label: string) => {
-      if (images.length === 0) return;
+  /** The queue item every photo import starts as, before anything is read. */
+  const queueImageItem = useCallback(
+    (label: string): string => {
       const id = uid();
       const item: QueueItem = {
         id,
@@ -452,9 +455,54 @@ export function useQueue() {
         addedAt: Date.now(),
       };
       commit([...itemsRef.current, item]);
+      return id;
+    },
+    [commit],
+  );
+
+  /**
+   * Adds photos straight from the picker — the path every importer takes.
+   *
+   * Decoding and downscaling them (HEIC transcode included) is part of the
+   * import, not a step before it. It used to run in the import form, which
+   * meant the queue item only appeared once the photos were ready: the deck sat
+   * empty through the slowest part of a photo import, and a photo the browser
+   * could not read failed in a form that had already closed behind it, so the
+   * import simply evaporated. Now the placeholder goes up first and `runParse`
+   * owns the whole job, so a photo import waits, succeeds and fails exactly the
+   * way a link does.
+   */
+  const addImageFiles = useCallback(
+    (files: File[], label: string) => {
+      if (files.length === 0) return;
+      const id = queueImageItem(label);
+      // Live array: the originals until they compress, then what the parser was
+      // actually handed. Whichever it holds when something throws is what gets
+      // stashed for debugging.
+      const failedImages: Array<Blob | string> = [...files];
+      void runParse(
+        id,
+        { source: "image" },
+        async () => {
+          const images = await prepareImageDataUrls(files);
+          failedImages.splice(0, failedImages.length, ...images);
+          return parseImages(images);
+        },
+        { failedImages },
+      );
+    },
+    [queueImageItem, runParse],
+  );
+
+  /** Photos that were already decoded elsewhere — the SEO capture block reads
+      them on its own page and hands the results over (see lib/pendingImport). */
+  const addImages = useCallback(
+    (images: string[], label: string) => {
+      if (images.length === 0) return;
+      const id = queueImageItem(label);
       void runParse(id, { source: "image" }, () => parseImages(images), { failedImages: images });
     },
-    [commit, runParse],
+    [queueImageItem, runParse],
   );
 
   const addText = useCallback(
@@ -566,6 +614,7 @@ export function useQueue() {
     hydratedWithItems,
     addUrl,
     addImages,
+    addImageFiles,
     addText,
     addReadyRecipes,
     retry,
