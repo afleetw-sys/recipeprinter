@@ -247,7 +247,7 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
       },
       {
         name: "Take out what you do not need",
-        text: "Turn off Recipe photo to save the colour ink, or Recipe link to drop the source line. What is left is the recipe.",
+        text: "Turn off Recipe photo to save the color ink, or Recipe link to drop the source line. What is left is the recipe.",
       },
       {
         name: "Print it, or keep the file",
@@ -1050,7 +1050,7 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
       {
         question: "What if I only want a few recipes, not a whole book?",
         answer:
-          "Then print a few. RecipePrinter prints one recipe as readily as forty, so a single card for the recipe box is an ordinary thing to do. ReciScan is organised around a finished book, which is most of the difference between them.",
+          "You can. There is no minimum and nothing to finish: print one card, print three, come back in a month. If you decide on a book later, the recipes you already printed are in it.",
       },
     ],
     links: [
