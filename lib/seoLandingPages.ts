@@ -1026,8 +1026,7 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
           rows: [
             { feature: "A bound book printed and posted to you", us: false, them: "Starting at $18" },
             { feature: "A cookbook you print or export yourself", us: "$19.99 once", them: "PDF download" },
-            { feature: "Editing it after you have paid", us: "Included, no limit", them: "A revised copy is a new order" },
-            { feature: "Inviting other people to add recipes", us: false, them: "Subscribers" },
+            { feature: "Updating the book you paid for", us: "Free, any time", them: false },
           ],
         },
         {
