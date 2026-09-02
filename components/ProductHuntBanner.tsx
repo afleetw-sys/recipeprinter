@@ -67,21 +67,25 @@ export function ProductHuntBanner() {
     <div className="no-print border-b border-line bg-[var(--cp-accent-warm-soft)] text-ink">
       <div className="flex items-center gap-cp-3 px-cp-4 sm:px-cp-6 py-cp-2">
         <p className="min-w-0 flex-1 text-cp-small leading-snug">
-          {/* Two beats, and no third: the link already carries the ask, so a
-              sentence in between could only say it twice. */}
           <span className="font-bold">We&rsquo;re on Product Hunt today.</span>{" "}
-          <a
-            href={PRODUCT_HUNT_URL}
-            target="_blank"
-            rel="noopener noreferrer"
-            /* Stays --cp-ink on hover rather than going clay: clay is a fill, a
-               border and an icon here, never a word. */
-            className="inline-flex items-center gap-1 font-semibold underline underline-offset-2 transition-opacity hover:opacity-70"
-          >
-            See the launch or leave a review
-            <ExternalIcon size={ICON_SIZE.sm} />
-          </a>
+          {/* Dropped on a narrow screen: beside the chip it was pushing the
+              news onto a third line to add nothing the chip doesn't say. */}
+          <span className="hidden text-ink-soft sm:inline">Reviews welcome.</span>
         </p>
+        {/* A chip rather than a run of underlined words. The sentence is the
+            news and this is the way to act on it, and at that length an inline
+            link turns half the bar into one long underline. `.btn-secondary`
+            because a bar is not the page's main action: outlined, transparent,
+            so the clay still reads as the background it is. */}
+        <a
+          href={PRODUCT_HUNT_URL}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="btn btn-secondary btn-compact shrink-0 text-cp-small"
+        >
+          See the launch
+          <ExternalIcon size={ICON_SIZE.sm} />
+        </a>
         {/* A bare glyph, not an `.icon-button`: that one carries a white card
             fill and a border, which on this tint reads as a control sitting on
             the bar rather than the bar's own way out. Negative margins keep
