@@ -309,17 +309,58 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
       "Turn recipes from links, photos, screenshots, or text into printable PDFs for saving, sharing, and cooking.",
     h1: "Convert a recipe to PDF",
     lede:
-      "RecipePrinter helps you turn online recipes into print-ready pages that can be saved as PDFs and kept with the rest of your recipe collection.",
-    faqs: [
+      "Turn a recipe link into a clean one-page PDF you can keep on your phone, send to someone, or print whenever you want.",
+    howTo: [
       {
-        question: "Can RecipePrinter export a recipe PDF directly?",
-        answer:
-          "RecipePrinter creates a print-ready recipe. To save it as a PDF, choose Save as PDF in your browser print dialog.",
+        name: "Paste the recipe link",
+        text: "Copy the link from the recipe site and paste it in. A screenshot, a photo of an old card, or pasted text works the same way.",
       },
       {
-        question: "Can I make PDFs from screenshots or photos?",
+        name: "Pick card or page",
+        text: "Choose a 6 by 4 card or a full letter page. Whichever you pick is the shape the PDF comes out in.",
+      },
+      {
+        name: "Choose Save as PDF",
+        text: "Open your browser's print dialog and choose Save as PDF instead of a printer. There is no plugin to install and no account to make.",
+      },
+      {
+        name: "Keep it or print it later",
+        text: "The file sits on your phone or computer, ready to open in a kitchen with no signal or go to a printer another day.",
+      },
+    ],
+    featureSections: [
+      {
+        heading: "A one-page file, not a twenty-six-page one",
+        proof: "before-after",
+        body:
+          "Saving a recipe page as a PDF the usual way saves the whole article: headnote, ad slots, comments and all. RecipePrinter builds the recipe as its own page first, so the file you keep is the size of the recipe rather than the size of the website.",
+      },
+      {
+        heading: "Text you can search, not a picture of one",
+        body:
+          "A screenshot of a recipe is an image. You cannot search it, select an amount out of it, or print it larger without it going soft. A PDF from RecipePrinter is real type all the way down, so it stays sharp at any size and your phone can find it by the words inside it.",
+      },
+    ],
+    faqs: [
+      {
+        question: "Is there a download button?",
         answer:
-          "Yes. Upload a screenshot, cookbook page, old recipe card, or saved image, then print or save the formatted result as a PDF.",
+          "No, and you do not need one. Open the print dialog and choose Save as PDF instead of a printer. Every browser on every device has it built in, so there is nothing to install.",
+      },
+      {
+        question: "Can I put several recipes in one PDF?",
+        answer:
+          "Yes. Add as many recipes as you want and save them in one go, and they arrive as one file with a recipe on each page rather than as a folder of separate downloads.",
+      },
+      {
+        question: "Can I make a PDF from a screenshot or a photo?",
+        answer:
+          "Yes. Upload a screenshot, a cookbook page, or a photo of an old recipe card, and the recipe RecipePrinter reads out of it saves the same way a link does.",
+      },
+      {
+        question: "Will the PDF still open without internet?",
+        answer:
+          "Yes. Once it is saved it is a file on your device like any other, so it opens in a basement kitchen, on a plane, or years after the original page has gone.",
       },
     ],
     links: [
