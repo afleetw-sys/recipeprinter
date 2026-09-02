@@ -260,7 +260,7 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
         heading: "Recipe cards don't go dark while you cook",
         image: "counter-card",
         body:
-          "A card asks nothing of you: no unlocking, no clean finger, no screen timeout. It props against the backsplash and stays on the step you are on while your hands are covered in something, and nobody scrolls back up to check whether it was two teaspoons or two tablespoons.",
+          "A card asks nothing of you: no unlocking, no clean finger, no screen timeout. It props against the backsplash and stays on the step you are on. Nobody scrolls back up to check whether it was two teaspoons or two tablespoons.",
       },
     ],
     faqs: [
