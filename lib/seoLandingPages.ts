@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { pageMetadata } from "@/lib/seo";
 import type { ImportTab } from "@/types/recipe";
+import { PRINTERS } from "@/lib/cookbookPresets";
 
 /** Icon slugs a value-prop chip can use, resolved to real icons in the template. */
 export type SeoIconKey =
@@ -119,7 +120,14 @@ export type SeoLandingPage = {
   };
   /** Real printed-card photo keys (PRINTED_CARDS) for the examples gallery. */
   examples?: string[];
-  faqs: { question: string; answer: string }[];
+  /** `links` hangs outbound chips under an answer, for the questions whose
+      real answer is somewhere else. The JSON-LD keeps `answer` alone: the
+      structured data is the answer, not the chrome around it. */
+  faqs: {
+    question: string;
+    answer: string;
+    links?: { href: string; label: string; note?: string }[];
+  }[];
   links: { href: string; label: string }[];
 };
 
@@ -896,12 +904,17 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
       {
         question: "How do I actually get it printed and bound?",
         answer:
-          "Two ways. Print it at home on the Letter layout, set up for a spiral or 3-ring binder, or export the file for a print shop, where the 8 by 10 hardcover layout gives them what a case-bound book needs.",
+          "Two ways. Print it at home on the Letter layout, set up for a spiral or 3-ring binder, or export the file and hand it to a print shop, where the 8 by 10 hardcover layout gives them what a case-bound book needs. Any of these will work from it.",
+        links: Object.values(PRINTERS).map((printer) => ({
+          href: printer.url,
+          label: printer.name,
+          note: printer.note,
+        })),
       },
       {
         question: "What does a cookbook cost?",
         answer:
-          "$19.99 once for the book, and that book stays yours to edit and add to afterwards. Printing is whatever paper and ink you use at home, or whatever the print shop charges. Premium themes are $1.99 once if you want one.",
+          "$19.99 once for the book, and that book stays yours to edit and add to afterwards. After that it is whatever the printing costs: paper and ink at home, or whatever the print shop charges.",
       },
     ],
     links: [

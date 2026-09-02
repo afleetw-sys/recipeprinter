@@ -291,6 +291,22 @@ export default function SeoLandingPage({ params }: PageProps) {
                   </dt>
                   <dd className="mt-cp-3 border-t border-line pt-cp-3 text-ink-soft text-cp-body leading-relaxed">
                     {item.answer}
+                    {item.links && item.links.length > 0 && (
+                      <span className="mt-cp-3 flex flex-wrap gap-cp-2">
+                        {item.links.map((link) => (
+                          <a
+                            key={link.href}
+                            href={link.href}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="btn btn-secondary btn-compact"
+                            title={link.note}
+                          >
+                            {link.label}
+                          </a>
+                        ))}
+                      </span>
+                    )}
                   </dd>
                 </div>
               ))}
