@@ -192,7 +192,17 @@ export default function SeoLandingPage({ params }: PageProps) {
               <HeroProductPhoto
                 imageKey={page.heroImage}
                 cardKey={isGuide ? "pesto" : "korean"}
-                annotation={isGuide ? "Ready for a family cookbook" : "Printed from a recipe link"}
+                // The two defaults describe the CARD photos, which is what
+                // the hero was before a page could name its own. A page that
+                // names one is showing something else, so it captions it or
+                // says nothing.
+                annotation={
+                  page.heroImage
+                    ? page.heroAnnotation
+                    : isGuide
+                      ? "Ready for a family cookbook"
+                      : "Printed from a recipe link"
+                }
                 priority
                 wide
               />

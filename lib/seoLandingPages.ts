@@ -69,6 +69,10 @@ export type SeoLandingPage = {
       one of the printed cards. Without it every utility page opens on the same
       card. */
   heroImage?: string;
+  /** The little label on the hero photo. Only read when `heroImage` is set —
+      the built-in captions describe the printed cards, and a page showing
+      something else should not inherit one. Omit for no label. */
+  heroAnnotation?: string;
   /** Heading over the guide-first capture block. Hardcoded to "Start your
       family cookbook" until four guide pages that are not about cookbooks
       inherited it. */
@@ -766,7 +770,7 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
       "Preserve family recipes by turning old cards, photos, screenshots, and text into printable keepsakes and a bound family cookbook.",
     h1: "Preserve family recipes",
     lede:
-      "Keep the handwritten card and keep cooking from it. Photograph it and RecipePrinter reads it into a clean printable recipe, so the original can stay wherever you keep it while their recipe stays in the kitchen.",
+      "Keep the handwritten card, and keep cooking what is on it. Photograph the card and RecipePrinter reads it into a clean printable recipe, so the original can stay wherever you keep it while their recipe stays in the kitchen.",
     howTo: [
       {
         name: "Photograph the card",
@@ -803,7 +807,7 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
       {
         question: "Will it read my grandmother's handwriting?",
         answer:
-          "Usually, though not always. Cursive, faded pencil and a stained corner are all genuinely hard to read. Whatever does come through lands in an editable recipe, so at worst you are correcting a few lines rather than typing the whole card.",
+          "Usually. Faded pencil and old cursive are the hard ones, and it will not always catch every word. Whatever it does read arrives as an editable recipe, so you are tidying a line here and there rather than typing the card out from scratch.",
       },
       {
         question: "What if the card is too faded to read?",
