@@ -7,7 +7,8 @@ import {
   PRINTERS,
   getCookbookPreset,
   gutterSideForRole,
-  presetArtScale,
+  presetCardDims,
+  presetCardHeightIn,
   presetCardScale,
   presetInsets,
   presetSheetDims,
@@ -102,14 +103,18 @@ describe("cookbook presets", () => {
     expect(getCookbookPreset("hardcover-8x10").coilBound).toBe(false);
   });
 
-  it("art scale fills the whole sheet so artwork bleeds every edge, both formats", () => {
+  it("the card IS the sheet, so art bleeds every edge and no text page is cropped", () => {
+    // This replaces an art-SCALE assertion. The old model authored every book on
+    // a fixed 8.25 × 10.75in Letter card and scaled it onto the sheet, which on
+    // hardcover resolved to scale 1.0 on a 10.25in sheet — a card half an inch
+    // taller than the page it printed on, silently cut by `overflow: hidden`.
+    // Nothing scales now; equality is the whole invariant.
     for (const preset of COOKBOOK_PRESETS) {
-      const scale = presetArtScale(preset);
-      const sheetWidth = preset.trimWidthIn + preset.bleedIn * 2;
-      const sheetHeight = preset.trimHeightIn + preset.bleedIn * 2;
-      // Covers both axes → art reaches (and overflows) every sheet edge.
-      expect(scale * LETTER_CARD_WIDTH_IN).toBeGreaterThanOrEqual(sheetWidth - 1e-9);
-      expect(scale * LETTER_CARD_HEIGHT_IN).toBeGreaterThanOrEqual(sheetHeight - 1e-9);
+      const card = presetCardDims(preset);
+      const sheet = presetSheetDims(preset);
+      expect(card.w).toBe(sheet.w);
+      expect(card.h).toBe(sheet.h);
+      expect(presetCardHeightIn(preset)).toBeCloseTo(preset.trimHeightIn + preset.bleedIn * 2, 9);
     }
   });
 
