@@ -336,7 +336,7 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
           "RecipePrinter lays the recipe out on its own page before anything is saved, so there is nothing to scroll past. Save the same recipe straight from the site and the PDF is the whole article. One caprese pasta salad comes to twenty-six pages, with the recipe somewhere in the middle.",
       },
       {
-        heading: "A recipe your phone can search",
+        heading: "A recipe you can search",
         body:
           "A screenshot is a picture of a recipe. You cannot search it, copy an amount out of it, or make it bigger without it turning blurry. A PDF from RecipePrinter is text. It prints crisp however large you make it, and it turns up when you search your files for the dish.",
       },
