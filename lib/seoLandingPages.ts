@@ -230,7 +230,7 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
       "Turn cluttered recipe pages into clean printable recipes without ads, pop-ups, comments, or wasted pages.",
     h1: "Print a recipe without ads",
     lede:
-      "Send a recipe page straight to the printer and the ads, the banner, and the comments come with it. RecipePrinter prints the recipe on its own, on one page you can read from across the counter.",
+      "Send a recipe page to the printer and the ads and the comments come with it. RecipePrinter prints the recipe on its own, on one page you can cook from.",
     howTo: [
       {
         name: "Paste the recipe link",
@@ -254,35 +254,30 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
         heading: "Why the print button gives you a stack of paper",
         proof: "before-after",
         body:
-          "A browser prints the document it was given, and a recipe article is a long document. One caprese pasta salad runs to 26 sheets that way. The headnote runs for paragraphs, the step photos are full width, the ad slots hold their space whether or not an ad loaded, and the comments are part of the page rather than an extra. Print styles are the last thing a recipe site tunes, so most of that arrives on paper exactly as it sat on screen. RecipePrinter does not print that document at all. It reads the recipe out of it and lays out a new page that never had the rest.",
+          "A browser prints the whole document, and a recipe article is a long one. The headnote, the step photos, the ad slots, and the comments all count as page. One caprese pasta salad runs to 26 sheets that way. RecipePrinter does not print that page at all. It reads the recipe out and lays out a new one that never had the rest.",
       },
       {
         heading: "Leave the photo off and keep your colour ink",
         body:
-          "The finished-dish photo is the only part of a printed recipe that needs colour ink, and it is usually the part you look at least while actually cooking. Turn off Recipe photo and what prints is type alone. Recipe link sits beside it, for when you would rather not carry the source along the bottom of the card. Both are switches rather than settings you commit to, so the decision is per print job.",
+          "The photo is the only part of a printed recipe that needs colour ink, and the part you look at least while cooking. Turn off Recipe photo and what prints is type alone. Recipe link has its own switch, for when you would rather not carry the URL along the bottom.",
       },
       {
         heading: "One page you can cook from",
         image: "counter-card",
         body:
-          "Paper is the only thing in a kitchen that does not go dark, ask to be unlocked, or need a clean finger. A card props against the backsplash and stays on the step you are on while your hands are covered in something. You can read it from the sink, and nobody has to scroll back up to check whether it was two teaspoons or two tablespoons.",
-      },
-      {
-        heading: "Nothing prints until you have seen it",
-        body:
-          "The preview is the finished sheet, not an approximation of it, so the count you see is the count that comes out of the tray. That matters most on the recipes that go wrong quietly, the one whose ingredient list runs a few lines longer than the card holds. You find out on screen instead of finding out in the paper tray.",
+          "Paper does not go dark, ask to be unlocked, or need a clean finger. A card props against the backsplash and stays on the step you are on while your hands are covered in something, and nobody scrolls back up to check whether it was two teaspoons or two tablespoons.",
       },
     ],
     faqs: [
       {
         question: "Is this an ad blocker?",
         answer:
-          "No, and it does not need to be. An ad blocker hides things on the page you are looking at. RecipePrinter never prints that page: it reads the recipe out of it and builds a new one that only ever had the recipe on it.",
+          "No. An ad blocker hides things on the page in front of you. RecipePrinter never prints that page at all: it reads the recipe out and builds a new one that only ever had the recipe on it.",
       },
       {
-        question: "Can I print the recipe without the photo?",
+        question: "Can I see it before I print?",
         answer:
-          "Yes. Turn off Recipe photo in print setup and the recipe prints as type alone, which is the difference between a page of colour ink and a page of black. Recipe link has its own switch beside it if you would rather not print the source line.",
+          "Yes. The preview is the finished sheet rather than an approximation of it, so the page count you see is the count that comes out of the tray.",
       },
       {
         question: "What about pop-ups and cookie banners?",
