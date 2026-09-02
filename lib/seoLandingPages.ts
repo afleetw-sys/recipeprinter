@@ -752,14 +752,14 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
     heroImage: "handwritten-card",
     eyebrow: "Family recipe guide",
     initialImportMode: "image",
-    importSubmitLabel: "Read the card",
+    importSubmitLabel: "Make a printable copy",
     importHint: "A photo from your phone is enough. Flat light, all four corners in frame.",
     title: "Preserve Family Recipes",
     description:
       "Preserve family recipes by turning old cards, photos, screenshots, and text into printable keepsakes and a bound family cookbook.",
     h1: "Preserve family recipes",
     lede:
-      "A handwritten card only exists once. Photograph it and RecipePrinter reads it into a clean printable recipe, so the one you cook from is not the one you are trying to keep.",
+      "Keep the handwritten card and keep cooking from it. Photograph it and RecipePrinter reads it into a clean printable recipe, so the original can stay wherever you keep it while their recipe stays in the kitchen.",
     howTo: [
       {
         name: "Photograph the card",
@@ -771,7 +771,7 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
       },
       {
         name: "Print the working copy",
-        text: "A 6 by 4 card for the box or a letter page for the binder, so the original can stop going near the stove.",
+        text: "A 6 by 4 card for the box or a letter page for the binder, so the original never has to leave wherever you keep it.",
       },
       {
         name: "Gather them when you are ready",
@@ -780,16 +780,16 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
     ],
     featureSections: [
       {
-        heading: "The original stops being the working copy",
+        heading: "Keep the original, cook from the copy",
         image: "handwritten-card",
         body:
-          "The card in the drawer has survived this long by not being used. Every time it goes on the counter it risks the splash that takes a line off it. A printed copy takes that risk instead, and the original goes back to being the thing you keep rather than the thing you cook from.",
+          "A printed copy does the kitchen work: the counter, the splashes, the folding into a binder, the stuck-to-the-fridge afternoons. The handwritten card stays wherever you keep it, exactly as it is. You are still cooking their recipe every time you use the copy.",
       },
       {
-        heading: "Her handwriting, and a copy you can read",
+        heading: "The handwriting comes along",
         image: "card-in-box",
         body:
-          "Reading it out does not replace it. Photograph the card, keep the photo, and print the typed version at a size that works across a kitchen. The measurements survive in something legible, and the hand they were written in survives in the picture.",
+          "Keep the photo of the card on the recipe, beside the typed version. The measurements end up in type you can read from across a kitchen, and the hand they were written in is still on the page, which is usually the part that matters most.",
       },
     ],
     faqs: [
@@ -799,14 +799,14 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
           "Often, and not always. Cursive, faded pencil and a stained corner are all hard. Whatever comes through lands in an editable recipe, so the worst case is you correct a few lines rather than typing the whole card.",
       },
       {
-        question: "What about the cards that are too far gone?",
+        question: "What if the card is too faded to read?",
         answer:
           "Type it in instead. The recipe still gets the same clean page, the same card or letter layout, and the same place in a cookbook later.",
       },
       {
         question: "Can I keep who it came from?",
         answer:
-          "Yes. A recipe carries a note of its own, which is where the name goes, or the year, or the fact that she never actually measured the vanilla.",
+          "Yes. A recipe carries a note of its own, which is where the name goes, or the year, or the fact that they never actually measured the vanilla.",
       },
       {
         question: "Do these have to become a cookbook?",
