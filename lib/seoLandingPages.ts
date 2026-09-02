@@ -343,9 +343,9 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
     ],
     faqs: [
       {
-        question: "Is there a download button?",
+        question: "Where is the download button?",
         answer:
-          "No, and you do not need one. Open the print dialog and choose Save as PDF instead of a printer. Every browser on every device has it built in, so there is nothing to install.",
+          "It lives in a slightly surprising place: your browser's print dialog. Open that, choose Save as PDF instead of your printer, and the file lands wherever your downloads normally go. Every browser has it built in, so there is nothing to install.",
       },
       {
         question: "Can I put several recipes in one PDF?",
@@ -355,7 +355,7 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
       {
         question: "Can I make a PDF from a screenshot or a photo?",
         answer:
-          "Yes. Upload a screenshot, a cookbook page, or a photo of an old recipe card, and the recipe RecipePrinter reads out of it saves the same way a link does.",
+          "Yes. Upload a screenshot, a cookbook page, or a photo of an old recipe card. RecipePrinter reads the recipe out of the picture, and from there it saves exactly the way a link does.",
       },
       {
         question: "Will the PDF still open without internet?",
