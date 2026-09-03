@@ -82,27 +82,50 @@ interface HeicWorkerHost {
   __heic2any__worker?: Worker;
 }
 
-let heicLibrary: Promise<{ convert: HeicConvert; workerUrl: string | null }> | null = null;
+/** Mutable so the capture below can fill it in AFTER the import resolves — see
+    `loadHeicLibrary`. Read at transcode time, not at load time. */
+interface HeicWorkerScript {
+  url: string | null;
+}
+
+let heicLibrary: Promise<{ convert: HeicConvert; script: HeicWorkerScript }> | null = null;
 
 function loadHeicLibrary() {
   heicLibrary ??= (async () => {
-    let workerUrl: string | null = null;
+    const script: HeicWorkerScript = { url: null };
     const createObjectURL = URL.createObjectURL.bind(URL);
-    // Nothing else in this pipeline ever makes an application/javascript object
-    // URL — the rest are image blobs — so this identifies the worker script
-    // without reaching into the library's internals for it.
+    // Nothing else in this pipeline ever makes a JavaScript object URL — the
+    // rest are image blobs — so this identifies the worker script without
+    // reaching into the library's internals for it.
+    //
+    // Matches any `*/javascript` type, not `application/javascript` alone.
+    // heic2any builds its worker blob as `text/javascript`, so the exact match
+    // this used to do never once fired, and `url` was always null. Combined
+    // with the `finally` in `heicToJpegBlob` — which terminated the worker it
+    // could then never rebuild — that made every HEIC after the FIRST one fail
+    // for the whole page session, with a bare "postMessage of undefined".
     URL.createObjectURL = (object: Blob | MediaSource) => {
       const url = createObjectURL(object as Blob);
-      if (!workerUrl && object instanceof Blob && object.type === "application/javascript") {
-        workerUrl = url;
+      if (!script.url && object instanceof Blob && /\bjavascript\b/i.test(object.type)) {
+        script.url = url;
+        // Captured; stop intercepting. This is why the patch is NOT lifted when
+        // the import resolves: heic2any builds the worker lazily on the first
+        // convert, not during module init, so a patch scoped to the import
+        // would be gone before the URL it is watching for ever goes past.
+        URL.createObjectURL = createObjectURL;
       }
       return url;
     };
     try {
       const { default: convert } = await import("heic2any");
-      return { convert: convert as HeicConvert, workerUrl };
-    } finally {
+      return { convert: convert as HeicConvert, script };
+    } catch (error) {
+      // The import failed, so nothing will ever come past the patch to remove
+      // it. Put the real one back rather than leaving the whole page with an
+      // intercepted `createObjectURL`.
       URL.createObjectURL = createObjectURL;
+      heicLibrary = null;
+      throw error;
     }
   })();
   return heicLibrary;
@@ -113,14 +136,15 @@ let heicChain: Promise<unknown> = Promise.resolve();
 
 async function heicToJpegBlob(file: File): Promise<Blob> {
   const run = heicChain.then(async () => {
-    const { convert, workerUrl } = await loadHeicLibrary();
+    const { convert, script } = await loadHeicLibrary();
     const host = globalThis as unknown as HeicWorkerHost;
-    // No URL means the library changed shape under us. Convert on whatever
-    // worker it made rather than failing outright: the first HEIC of the page
-    // still lands, which is what happened before this existed.
-    if (workerUrl) {
+    // No URL means either the library changed shape under us, or this is the
+    // very first transcode and the worker script has not been built yet.
+    // Convert on whatever worker heic2any makes for itself rather than failing
+    // outright — and, crucially, leave it alone afterwards (see the `finally`).
+    if (script.url) {
       host.__heic2any__worker?.terminate();
-      host.__heic2any__worker = new Worker(workerUrl);
+      host.__heic2any__worker = new Worker(script.url);
     }
     try {
       const converted = await convert({
@@ -135,9 +159,16 @@ async function heicToJpegBlob(file: File): Promise<Blob> {
       // in why an import failed. Give it something that answers.
       throw new Error(heicFailureMessage(err));
     } finally {
-      // Nothing more will come out of this one, and it is holding the wasm heap.
-      host.__heic2any__worker?.terminate();
-      delete host.__heic2any__worker;
+      // Nothing more will come out of this one, and it is holding the wasm heap
+      // — but only tear it down if we can build the replacement. heic2any reads
+      // its worker off this exact global on every convert, so destroying one we
+      // cannot recreate doesn't just skip the memory saving, it breaks every
+      // later transcode in the page with "postMessage of undefined". That was a
+      // silent first-photo-only failure for anyone importing HEIC.
+      if (script.url) {
+        host.__heic2any__worker?.terminate();
+        delete host.__heic2any__worker;
+      }
     }
   });
   // The next transcode waits for this one either way; it must not inherit the
