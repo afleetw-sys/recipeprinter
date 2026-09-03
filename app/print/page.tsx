@@ -470,8 +470,23 @@ export default function PrintPage() {
     items?.some((item) => Boolean(item.recipe?.image)) ?? false;
   const anyRecipeHasSourceUrl =
     items?.some((item) => Boolean(item.recipe?.sourceUrl)) ?? false;
-  const anyRecipeHasDescription =
-    items?.some((item) => Boolean(item.recipe?.description?.trim())) ?? false;
+  /**
+   * Notes still holding the blurb their website arrived with, and notes
+   * someone typed. Only the first kind is what "Clear website notes" takes.
+   *
+   * A recipe saved before `descriptionAuthored` existed has no mark on it, so
+   * it counts as the website's. That is not always true — a note typed into an
+   * older book looks identical — which is why the dialog only promises to
+   * spare written notes when it can actually see some.
+   */
+  const importedNoteCount =
+    items?.filter(
+      (item) => Boolean(item.recipe?.description?.trim()) && !item.recipe?.descriptionAuthored,
+    ).length ?? 0;
+  const authoredNoteCount =
+    items?.filter(
+      (item) => Boolean(item.recipe?.description?.trim()) && item.recipe?.descriptionAuthored,
+    ).length ?? 0;
   const cookbookMode = Boolean(projectMeta.meta.cookbookMode);
   /**
    * Is this project a DOCUMENT, or is it a print run?
@@ -2036,6 +2051,10 @@ export default function PrintPage() {
   const [leavingHome, setLeavingHome] = useState<string | null>(null);
   /** Leaving with work that only exists in this browser — see `handleNavigateHome`. */
   const [confirmLeave, setConfirmLeave] = useState(false);
+  /** "Clear website notes" is asked before it is done: the blurbs are gone for
+      good afterwards, and there is no undo in this workspace to fall back
+      on. */
+  const [confirmClearNotes, setConfirmClearNotes] = useState(false);
 
   async function handleNavigateHome(options?: { confirmed?: boolean }) {
     if (leavingHome) return;
@@ -4391,9 +4410,10 @@ export default function PrintPage() {
           setCardSize={setCardSize}
           anyRecipeHasImage={anyRecipeHasImage}
           anyRecipeHasSourceUrl={anyRecipeHasSourceUrl}
-          anyRecipeHasDescription={anyRecipeHasDescription}
           showDescription={showDescription}
           setShowDescription={setShowDescription}
+          importedNoteCount={importedNoteCount}
+          onClearImportedNotes={() => setConfirmClearNotes(true)}
           bookPhotoStyle={bookPhotoStyle}
           applyBookPhotoStyle={applyBookPhotoStyle}
           showPhoto={showPhoto}
@@ -4639,6 +4659,39 @@ export default function PrintPage() {
         onCancelDeleteRecipe={() => setPendingDelete(null)}
         onConfirmDeleteRecipe={confirmPendingDelete}
         onConfirmDeleteSectionRecipes={confirmDeleteSectionRecipes}
+      />
+      {/* Notes come in pre-filled with the website's blurb, and this is the way
+          to be rid of every one of them at once. The count is in the question
+          because that is the part worth checking before pressing it. */}
+      <ConfirmDialog
+        open={confirmClearNotes}
+        title={
+          importedNoteCount === 1 ? "Clear 1 website note?" : `Clear ${importedNoteCount} website notes?`
+        }
+        description={
+          authoredNoteCount > 0 ? (
+            <>
+              This removes the notes that came from the websites you imported from.
+              The {authoredNoteCount === 1 ? "note" : `${authoredNoteCount} notes`} you wrote
+              yourself {authoredNoteCount === 1 ? "stays" : "stay"} where {authoredNoteCount === 1 ? "it is" : "they are"}.
+            </>
+          ) : (
+            /* Nothing here is marked as written by hand, which is also what a
+               book saved before that mark existed looks like. So this says
+               what it will actually do rather than promising to tell the two
+               apart. */
+            <>
+              This removes every note in the book. You can write your own on any recipe
+              afterwards.
+            </>
+          )
+        }
+        confirmLabel="Clear notes"
+        onCancel={() => setConfirmClearNotes(false)}
+        onConfirm={() => {
+          setConfirmClearNotes(false);
+          queue.clearImportedNotes();
+        }}
       />
       {/* Leaving with a project that only exists in this browser.
           

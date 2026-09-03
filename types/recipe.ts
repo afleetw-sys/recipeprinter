@@ -26,7 +26,18 @@ export interface RecipeNutrition {
 
 export interface Recipe {
   title: string;
+  /** The note printed under the title in a cookbook ("Notes" in the UI).
+      An import fills this with whatever blurb the website carried, which is
+      usually SEO filler rather than anything worth printing — see
+      `descriptionAuthored` for how the two are told apart. */
   description?: string;
+  /** This note was typed here, rather than arriving with the import.
+      Only ever set by an inline edit, which is the one way a person can put
+      words in that field, so "Clear website notes" can spare them.
+      Undefined on every recipe saved before the flag existed — those are
+      treated as the website's, and the clear dialog says so instead of
+      promising to keep something it cannot identify. */
+  descriptionAuthored?: boolean;
   image?: string;
   sourceUrl?: string;
   sourceName?: string;
@@ -257,7 +268,7 @@ export interface PrintProjectSettings {
   doubleSided: boolean;
   showPhoto: boolean;
   showSourceUrl: boolean;
-  /** Cookbook only: print each recipe's description under its title. On for
+  /** Cookbook only: print each recipe's note under its title. On for
       projects saved before the toggle existed, which is what they looked
       like. */
   showDescription?: boolean;

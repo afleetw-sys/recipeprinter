@@ -16,9 +16,12 @@ interface PrintSetupControlsProps {
   setCardSize: Dispatch<SetStateAction<PrintCardSize>>;
   anyRecipeHasImage: boolean;
   anyRecipeHasSourceUrl: boolean;
-  anyRecipeHasDescription: boolean;
   showDescription: boolean;
   setShowDescription: Dispatch<SetStateAction<boolean>>;
+  /** How many recipes still carry the blurb their website came with. Zero
+      hides the clear action: there is nothing left for it to take. */
+  importedNoteCount: number;
+  onClearImportedNotes: () => void;
   bookPhotoStyle: PhotoStyle | null;
   applyBookPhotoStyle: (mode: PhotoStyle) => void;
   showPhoto: boolean;
@@ -45,9 +48,10 @@ export function PrintSetupControls({
   setCardSize,
   anyRecipeHasImage,
   anyRecipeHasSourceUrl,
-  anyRecipeHasDescription,
   showDescription,
   setShowDescription,
+  importedNoteCount,
+  onClearImportedNotes,
   bookPhotoStyle,
   applyBookPhotoStyle,
   showPhoto,
@@ -97,12 +101,28 @@ export function PrintSetupControls({
       {cookbookMode && (
         <div className="recipe-config-section recipe-config-section--photos">
           <span className="recipe-config-label">Every recipe</span>
-          {anyRecipeHasDescription && (
-            <Checkbox
-                label="Description"
-                checked={showDescription}
-                onChange={(event) => setShowDescription(event.target.checked)}
-            />
+          {/* Every recipe has a note slot, so this is never gated on anything
+              having one yet — same reason as the photo control above. It also
+              could not be: clearing the website blurbs would have taken the
+              checkbox away with them, leaving no way back to notes at all. */}
+          <Checkbox
+            label="Notes"
+            checked={showDescription}
+            onChange={(event) => setShowDescription(event.target.checked)}
+          />
+          {/* Notes arrive holding whatever the website wrote, which is usually
+              filler. This is the way to be rid of all of it in one go and keep
+              the field for your own — a verb, not a second setting, because
+              hiding the slot is what made this hard to say in the first
+              place. */}
+          {showDescription && importedNoteCount > 0 && (
+            <button
+              type="button"
+              className="btn-ghost btn-ghost--danger btn-compact recipe-config-inline-action"
+              onClick={onClearImportedNotes}
+            >
+              Clear website notes ({importedNoteCount})
+            </button>
           )}
           {anyRecipeHasSourceUrl && (
             <Checkbox

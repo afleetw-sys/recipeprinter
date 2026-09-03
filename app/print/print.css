@@ -1738,6 +1738,17 @@
   gap: 0;
 }
 
+/* A verb sitting under the setting it acts on ("Clear website notes" beneath
+   the Notes checkbox). The section is a flex column, so without this the
+   button stretches the full width of the panel and reads as a primary action
+   for the whole group rather than a small one belonging to the line above it.
+   The top margin cancels most of the section's own gap, which keeps it
+   attached to its checkbox instead of floating between two settings. */
+.recipe-config-inline-action {
+  align-self: flex-start;
+  margin-top: -2px;
+}
+
 /* A field's name inside a settings group. Normal body text, sentence case:
    the uppercase eyebrow below is what starts a SECTION, and using it here made
    the photo tiles read as one. */

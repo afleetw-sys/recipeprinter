@@ -473,7 +473,7 @@ export const RecipeCardFace = memo(function RecipeCardFace({
           className="recipe-card__inline-textarea recipe-card__headnote"
           value={inlineEdit.value}
           placeholder="Add a note or memory…"
-          aria-label="Recipe description"
+          aria-label="Recipe notes"
           onChange={(event) => inlineEdit.onValueChange(event.target.value)}
           onBlur={commitEdit}
           onKeyDown={(event) => handleEditKeyDown(event, target)}

@@ -466,7 +466,10 @@ export function PrintDeck(props: PrintDeckProps) {
           recipe.instructions.length === 0 ||
           !formatRecipeTime(recipe.totalTime || recipe.cookTime || recipe.prepTime) ||
           !(recipe.servings ?? recipe.yield) ||
-          (cookbook && !recipe.description) ||
+          // Only a field the book actually prints can be a missing one. With
+          // notes switched off the slot is not on the page at all, so every
+          // recipe was reporting a gap for something nobody asked it to show.
+          (cookbook && descriptionOn && !recipe.description) ||
           // The link field only exists while the source-link setting is on, so
           // a missing link is only a hidden FIELD when that field would show.
           (showSourceUrl && !recipe.sourceUrl)

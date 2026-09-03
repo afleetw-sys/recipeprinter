@@ -32,6 +32,7 @@ export function printableRecipe(recipe: Recipe): Recipe {
   return {
     title: recipe.title || "Untitled recipe",
     description: recipe.description,
+    descriptionAuthored: recipe.descriptionAuthored,
     image: recipe.image,
     sourceUrl: recipe.sourceUrl,
     sourceName: recipe.sourceName,
@@ -268,6 +269,33 @@ export function useQueue() {
     },
     [commit],
   );
+
+  /**
+   * Drop every note that came in with an import, keeping the ones someone
+   * typed themselves (`descriptionAuthored`).
+   *
+   * One commit rather than an `updateRecipe` per recipe: this runs over the
+   * whole book at once, and thirty commits would be thirty writes to storage
+   * for a single press of a single button.
+   *
+   * A recipe saved before the flag existed has no `descriptionAuthored`, so it
+   * counts as the website's and is cleared. That is why the dialog in front of
+   * this counts what it is about to remove rather than describing it — see
+   * `importedNoteCount`.
+   */
+  const clearImportedNotes = useCallback(() => {
+    let changed = false;
+    const next = itemsRef.current.map((it) => {
+      const recipe = it.recipe;
+      if (!recipe?.description || recipe.descriptionAuthored) return it;
+      changed = true;
+      return {
+        ...it,
+        recipe: { ...recipe, description: undefined, descriptionAuthored: undefined },
+      };
+    });
+    if (changed) commit(next);
+  }, [commit]);
 
   const patch = useCallback(
     (id: string, changes: Partial<QueueItem>) => {
@@ -624,5 +652,6 @@ export function useQueue() {
     replaceAll,
     focusItem,
     updateRecipe,
+    clearImportedNotes,
   };
 }

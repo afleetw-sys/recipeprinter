@@ -104,7 +104,15 @@ function applyRecipeTargetEdit(recipe: Recipe, target: RecipeCardEditTarget, val
     return printableRecipe({ ...recipe, title: trimmed || recipe.title || "Untitled recipe" });
   }
   if (target.kind === "description") {
-    return printableRecipe({ ...recipe, description: trimmed || undefined });
+    // Typing here is the one way a person authors a note, so it is the one
+    // place that can mark it as theirs — which is what keeps "Clear website
+    // notes" from taking it. Emptying the field drops the mark with the text:
+    // an empty note has no author to protect.
+    return printableRecipe({
+      ...recipe,
+      description: trimmed || undefined,
+      descriptionAuthored: trimmed ? true : undefined,
+    });
   }
   if (target.kind === "cookTime") {
     return printableRecipe({
