@@ -770,7 +770,7 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
       "Preserve family recipes by turning old cards, photos, screenshots, and text into printable keepsakes and a bound family cookbook.",
     h1: "Preserve family recipes",
     lede:
-      "Cook their recipe as often as you like. The handwritten card never has to come into the kitchen: photograph it and RecipePrinter reads it into a clean printable recipe you can print again any time.",
+      "Photograph the card and RecipePrinter turns the handwriting into a clean printable recipe. One copy in a drawer becomes one for the kitchen, and one for everyone who asks for it.",
     howTo: [
       {
         name: "Photograph the card",
@@ -807,7 +807,7 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
       {
         question: "Will it read my grandmother's handwriting?",
         answer:
-          "Usually. Faded pencil and old cursive are the hard ones, and it will not always catch every word. Whatever it does read arrives as an editable recipe, so you are tidying a line here and there rather than typing the card out from scratch.",
+          "Usually. Faded pencil and cursive are the hard ones, and it will not always catch every word. Whatever it does read arrives as an editable recipe, so you are tidying a line here and there rather than typing the card out from scratch.",
       },
       {
         question: "What if the card is too faded to read?",
