@@ -134,6 +134,72 @@ function loadHeicLibrary() {
 /** Tail of the transcode chain — one HEIC through libheif at a time. */
 let heicChain: Promise<unknown> = Promise.resolve();
 
+/**
+ * Second-chance decoder, for a HEIC `heic2any` cannot read at all.
+ *
+ * heic2any is pinned at 0.0.4 and unpublished since; the libheif inside it
+ * predates Apple's **Adaptive HDR**, where the primary image item is no longer
+ * a plain HEVC frame but a `tmap` derived from a base image plus a gain map
+ * (ftyp brands `MiHA heix MiHE MiPr … tmap`; iPhone 16 / iOS 26, and the
+ * default for every new iPhone). It can't find a decodable primary item and
+ * answers `ERR_LIBHEIF format not supported`, so the photo looked broken when
+ * it was fine — macOS opens the same file without complaint.
+ *
+ * A current libheif reads it. This one is imported ONLY after heic2any has
+ * already failed, so the 1.4MB wasm bundle is downloaded by the people whose
+ * photos need it and nobody else, and the ordinary-HEIC path keeps heic2any's
+ * off-thread worker.
+ *
+ * The cost of that ordering: this decode runs on the main thread. It is ~600ms
+ * for a 12MP photo, it is serialized behind `heicChain` with everything else,
+ * and it only happens for files that would otherwise have been rejected — a
+ * trade worth making, but the reason this is the fallback and not the default.
+ */
+let libheifModule: Promise<typeof import("libheif-js/wasm-bundle").default extends Promise<infer T> ? T : never> | null = null;
+
+async function loadLibheif() {
+  libheifModule ??= import("libheif-js/wasm-bundle")
+    .then((mod) => mod.default)
+    .catch((error) => {
+      // Let a later photo try again rather than caching the failure forever.
+      libheifModule = null;
+      throw error;
+    });
+  return libheifModule;
+}
+
+async function libheifToJpegBlob(file: File): Promise<Blob> {
+  const libheif = await loadLibheif();
+  const images = new libheif.HeifDecoder().decode(new Uint8Array(await file.arrayBuffer()));
+  // An Adaptive HDR file holds several items (the base image, the gain map, the
+  // tone-mapped result). `[0]` is the primary one, which is what the camera
+  // intends you to see.
+  const image = images?.[0];
+  if (!image) throw new Error("That HEIC file has no image inside it.");
+
+  const width = image.get_width();
+  const height = image.get_height();
+  const rendered = await new Promise<{ data: Uint8ClampedArray<ArrayBuffer> }>((resolve, reject) => {
+    image.display({ data: new Uint8ClampedArray(new ArrayBuffer(width * height * 4)), width, height }, (result) =>
+      result ? resolve(result) : reject(new Error("That HEIC file could not be rendered.")),
+    );
+  });
+
+  const canvas = document.createElement("canvas");
+  canvas.width = width;
+  canvas.height = height;
+  const context = canvas.getContext("2d");
+  if (!context) throw new Error("Canvas unavailable");
+  context.putImageData(new ImageData(rendered.data, width, height), 0, 0);
+  return new Promise<Blob>((resolve, reject) => {
+    canvas.toBlob(
+      (blob) => (blob ? resolve(blob) : reject(new Error("Could not encode image"))),
+      "image/jpeg",
+      IMAGE_JPEG_QUALITY,
+    );
+  });
+}
+
 async function heicToJpegBlob(file: File): Promise<Blob> {
   const run = heicChain.then(async () => {
     const { convert, script } = await loadHeicLibrary();
@@ -154,10 +220,24 @@ async function heicToJpegBlob(file: File): Promise<Blob> {
       });
       return Array.isArray(converted) ? converted[0] : converted;
     } catch (err) {
-      // heic2any rejects with a bare `{ code, message }`, which every `instanceof
-      // Error` check upstream reads as "unknown" — including the one that fills
-      // in why an import failed. Give it something that answers.
-      throw new Error(heicFailureMessage(err));
+      // heic2any could not read it. Before giving up, hand the file to a
+      // current libheif — this is the Adaptive HDR case, and it is the whole
+      // reason that fallback exists. Only if THAT fails too is the photo
+      // genuinely unreadable here.
+      try {
+        return await libheifToJpegBlob(file);
+      } catch (fallbackErr) {
+        // Report the fallback's reason, not heic2any's: heic2any's
+        // `ERR_LIBHEIF format not supported` describes a decoder that is four
+        // years stale, which tells nobody anything about their photo.
+        //
+        // heic2any also rejects with a bare `{ code, message }`, which every
+        // `instanceof Error` check upstream reads as "unknown" — including the
+        // one that fills in why an import failed. Give it something that answers.
+        throw new Error(
+          fallbackErr instanceof Error ? fallbackErr.message : heicFailureMessage(err),
+        );
+      }
     } finally {
       // Nothing more will come out of this one, and it is holding the wasm heap
       // — but only tear it down if we can build the replacement. heic2any reads

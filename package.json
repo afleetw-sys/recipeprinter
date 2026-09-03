@@ -23,6 +23,7 @@
     "fflate": "^0.8.3",
     "firebase": "^12.15.0",
     "heic2any": "^0.0.4",
+    "libheif-js": "^1.19.8",
     "next": "14.2.29",
     "posthog-js": "^1.422.2",
     "react": "^18",
