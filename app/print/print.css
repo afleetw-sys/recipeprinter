@@ -5910,18 +5910,24 @@ textarea.recipe-card__toc-title {
 }
 
 /* Cover lines behave like a recipe's: click the text to edit it, and a line
-   nobody has written appears only under the reveal, as its own prompt. */
-.recipe-card__cover-field--editable {
+   nobody has written appears only under the reveal, as its own prompt. Chapter
+   openers and the contents page joined them — they had an edit mode of their
+   own, reached through a button, while every other page in the book was edited
+   by being clicked. One rule now, so one hover ring, defined once. */
+.recipe-card__cover-field--editable,
+.recipe-card__opener-field--editable {
   cursor: pointer;
 }
 
-.recipe-card__cover-field--editable:hover {
+.recipe-card__cover-field--editable:hover,
+.recipe-card__opener-field--editable:hover {
   outline: 1px solid color-mix(in srgb, var(--cp-accent) 40%, transparent);
   outline-offset: 2px;
   border-radius: 3px;
 }
 
-.recipe-card__cover-field--empty {
+.recipe-card__cover-field--empty,
+.recipe-card__opener-field--empty {
   opacity: 0.55;
   cursor: pointer;
 }

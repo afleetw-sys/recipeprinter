@@ -221,8 +221,6 @@ interface PrintDeckProps {
   editSectionTitle: (sectionId: string, value: string) => void;
   commitSectionEdit: () => void;
   startSectionEdit: (sectionId: string) => void;
-  editingToc: boolean;
-  setEditingToc: Dispatch<SetStateAction<boolean>>;
   coverSideFromNavItem: (navItem: NavItem) => CoverSide;
   coverForSide: (side: CoverSide) => CoverConfig | undefined;
   defaultCover: () => CoverConfig;
@@ -318,8 +316,6 @@ export function PrintDeck(props: PrintDeckProps) {
     editSectionTitle,
     commitSectionEdit,
     startSectionEdit,
-    editingToc,
-    setEditingToc,
     coverSideFromNavItem,
     coverForSide,
     defaultCover,
@@ -349,15 +345,13 @@ export function PrintDeck(props: PrintDeckProps) {
   } = props;
 
 
-  // Whether this page's edit surface is live. The same four-way question was
-  // spelled out at six call sites (class, aria-pressed and label, twice over
-  // for the mobile copy of the bar) — which is exactly how the two copies
-  // drifted apart. One predicate, asked everywhere.
+  // Whether this page's reveal is on. Chapter openers and the contents page
+  // used to answer this with a mode of their own — an Edit button that made
+  // their text editable at all — while a recipe and a cover answered it with
+  // the reveal. Every page kind now edits by clicking its text, so there is one
+  // state left to be in, and one question to ask about it.
   const isEditingNavItem = (navItem: NavItem) =>
-    (navItem.kind === "recipe" && showEmptyFields) ||
-    (navItem.kind === "divider" && editingSectionId === navItem.recipeId) ||
-    (navItem.kind === "cover" && showEmptyFields) ||
-    (navItem.kind === "toc" && editingToc);
+    navItem.kind !== "image" && navItem.kind !== "section-photo" && showEmptyFields;
 
   /**
    * Body ↔ heading for the line being edited, as a group in the toolbar.
@@ -457,9 +451,10 @@ export function PrintDeck(props: PrintDeckProps) {
      * button that does nothing — and the reveal is the button's whole job now
      * that the text is editable by clicking it.
      *
-     * Only asked of recipes and covers. The contents page and chapter openers
-     * still have a real edit mode behind this button, which is a different
-     * question from whether anything is missing.
+     * Asked of every page that has text. It used to skip chapter openers and
+     * the contents page because those had a real edit mode behind this button,
+     * which was a different question from whether anything was missing; now
+     * that they edit by being clicked, it is the same question.
      */
     const pageHasHiddenFields = (): boolean => {
       if (navItem.kind === "recipe") {
@@ -487,6 +482,17 @@ export function PrintDeck(props: PrintDeckProps) {
         if (side === "back") return !cover.blurb || !cover.author;
         return !cover.subtitle || !cover.title || !cover.author || !cover.edition;
       }
+      if (navItem.kind === "divider") {
+        // The title always prints, and the intro prints the chapter's recipe
+        // names when nobody has written one — so the subtitle is the opener's
+        // only line that can be invisible for want of being written.
+        const section = sections.find((candidate) => candidate.id === navItem.recipeId);
+        return !section?.subtitle?.trim();
+      }
+      // Nothing on the contents page can be missing: both of its lines print a
+      // default ("Contents", "What's inside") when nobody types one, and the
+      // entries are generated.
+      if (navItem.kind === "toc") return false;
       return true;
     };
 
@@ -542,12 +548,16 @@ export function PrintDeck(props: PrintDeckProps) {
      * out loud, while that chapter is being edited and only once there is
      * something to undo, and it says the line it would restore.
      *
+     * Under the reveal, with the rest of "show me everything about this page" —
+     * an opener has no edit mode of its own left to hang it on, and a button
+     * standing there permanently would be shouting an offer nobody asked for.
+     *
      * In the toolbar rather than beside the field it resets: the card is drawn
      * at print scale, where 9px of app chrome lands at about a third of a
      * legible size.
      */
     const introReset = (() => {
-      if (navItem.kind !== "divider" || !editing) return null;
+      if (navItem.kind !== "divider" || !showEmptyFields) return null;
       const section = sections.find((candidate) => candidate.id === navItem.recipeId);
       if (!section?.intro?.trim()) return null;
       return {
@@ -594,16 +604,19 @@ export function PrintDeck(props: PrintDeckProps) {
         } as CSSProperties}
       >
         <div className="recipe-page-toolbar">
-          {/* The contents page is generated, and someone in its edit mode needs
-              telling why the entries will not take a cursor. It used to say so
-              from INSIDE the page, which made a note about the workspace take
-              up space in the artwork — pushing the entries down, and counting
-              toward the layout the pagination measures.
+          {/* The contents page is generated, and anyone looking at it needs
+              telling why the entries will not take a cursor — more so now that
+              the two lines above them will. It used to say so from INSIDE the
+              page, which made a note about the workspace take up space in the
+              artwork — pushing the entries down, and counting toward the layout
+              the pagination measures. It also used to wait for an edit mode
+              that no longer exists, which is why it is simply present on the
+              page it explains.
               It is a group in the toolbar rather than a banner of its own: the
               bar is already the floating thing that acts on this page, it
               already separates its groups with a hairline, and one object
               reads as chrome where two read as an interruption. */}
-          {navItem.kind === "toc" && !navItem.continued && editingToc && (
+          {navItem.kind === "toc" && !navItem.continued && (
             <div className="recipe-page-toolbar__group recipe-page-toolbar__hint">
               <InfoIcon size={ICON_SIZE.sm} aria-hidden />
               <span>Edit a chapter or recipe to change these entries.</span>
@@ -653,33 +666,16 @@ export function PrintDeck(props: PrintDeckProps) {
                 aria-pressed={editing}
                 onClick={(event) => {
                   event.stopPropagation();
-                  if (navItem.kind === "recipe") {
-                    toggleShowEmptyFields();
-                  } else if (navItem.kind === "divider") {
-                    if (editingSectionId === navItem.recipeId) commitSectionEdit();
-                    else startSectionEdit(navItem.recipeId);
-                  } else if (navItem.kind === "toc") {
-                    setEditingToc((current) => !current);
-                  } else {
-                    toggleShowEmptyFields();
-                  }
+                  toggleShowEmptyFields();
                 }}
               >
-                {/* On a recipe or a cover this no longer opens an editor --
-                    the text is already editable by clicking it. What is left
-                    for it to do is show the fields the page does NOT have
-                    filled in, which cannot be clicked into existence because
-                    they take up no room. So it says what appears rather than
-                    "Edit", which would promise a mode that is not there any
-                    more. The contents page and chapter openers DO still have a
-                    real edit mode, and still say Edit. */}
-                {navItem.kind === "recipe" || navItem.kind === "cover"
-                  ? editing
-                    ? "Done"
-                    : "More fields"
-                  : editing
-                    ? "Done"
-                    : "Edit"}
+                {/* This no longer opens an editor on any page -- the text is
+                    editable by clicking it. What is left for it to do is show
+                    the fields the page does NOT have filled in, which cannot be
+                    clicked into existence because they take up no room. So it
+                    says what appears rather than "Edit", which would promise a
+                    mode that is not there any more. */}
+                {editing ? "Done" : "More fields"}
               </button>
             </div>
           )}
@@ -783,6 +779,37 @@ export function PrintDeck(props: PrintDeckProps) {
       </div>
     );
   };
+  /**
+   * A chapter opener's edit wiring, shared by the spread deck and the
+   * single-page deck so the two cannot drift.
+   *
+   * Present on the focused opener whether or not anything is being typed: the
+   * three lines are click-to-edit, exactly like a recipe's and a cover's, and
+   * the card decides which of them is a field. Only the TITLE still has state
+   * up here, because renaming a chapter re-packs the book — see
+   * `DividerCardInlineEdit`.
+   */
+  const buildDividerEdit = (sectionId: string) => {
+    const section = sections.find((candidate) => candidate.id === sectionId);
+    return {
+      sectionId,
+      titleEditing: editingSectionId === sectionId,
+      titleValue: editingSectionTitle,
+      onTitleOpen: () => startSectionEdit(sectionId),
+      onTitleChange: (value: string) => editSectionTitle(sectionId, value),
+      onTitleCommit: commitSectionEdit,
+      onTitleCancel: () => {
+        setEditingSectionId(null);
+        setEditingSectionTitle("");
+      },
+      subtitle: section?.subtitle,
+      onSubtitleChange: (value: string) =>
+        projectMeta.updateSection(sectionId, { subtitle: value || undefined }),
+      intro: section?.intro,
+      onIntroChange: (value: string) => projectMeta.setSectionIntro(sectionId, value || undefined),
+    };
+  };
+
   // One page's ScaledPage with all its edit wiring. `focused` = this is the page
   // the controls act on (drives the active side + which edit surface is live).
   const renderDeckPage = (
@@ -813,30 +840,7 @@ export function PrintDeck(props: PrintDeckProps) {
       inlineEdit={
         focused && activeRecipeItem?.id === navItem.recipeId ? activeInlineEdit : undefined
       }
-      dividerEdit={
-        focused && navItem.kind === "divider" && editingSectionId === navItem.recipeId
-          ? {
-              sectionId: navItem.recipeId,
-              value: editingSectionTitle,
-              // Saves the title live (like the subtitle/intro), so blurring the
-              // field — to click the photo picker or another field — never loses
-              // or dismisses the edit. The meta write behind it is throttled in
-              // the page (see `editSectionTitle`) because each one re-packs the
-              // whole book; the field stays instant either way.
-              onChange: (value) => editSectionTitle(navItem.recipeId, value),
-              onCommit: commitSectionEdit,
-              onCancel: () => {
-                setEditingSectionId(null);
-                setEditingSectionTitle("");
-              },
-              subtitle: sections.find((section) => section.id === navItem.recipeId)?.subtitle,
-              onSubtitleChange: (value) =>
-                projectMeta.updateSection(navItem.recipeId, { subtitle: value || undefined }),
-              intro: sections.find((section) => section.id === navItem.recipeId)?.intro,
-              onIntroChange: (value) => projectMeta.setSectionIntro(navItem.recipeId, value || undefined),
-            }
-          : undefined
-      }
+      dividerEdit={focused && navItem.kind === "divider" ? buildDividerEdit(navItem.recipeId) : undefined}
       coverEdit={
         focused && navItem.kind === "cover"
           ? {
@@ -867,7 +871,7 @@ export function PrintDeck(props: PrintDeckProps) {
       tocKicker={projectMeta.meta.tocKicker}
       tocTitle={projectMeta.meta.tocTitle}
       tocEdit={
-        focused && navItem.kind === "toc" && editingToc
+        focused && navItem.kind === "toc"
           ? {
               kicker: projectMeta.meta.tocKicker ?? "Contents",
               title: projectMeta.meta.tocTitle ?? "What's inside",
@@ -879,22 +883,6 @@ export function PrintDeck(props: PrintDeckProps) {
     />
   );
 
-  /**
-   * Double-clicking a recipe's text opens edit mode, exactly as the Edit button
-   * does — because that is what people try first. The button is small, floats
-   * above the page, and is easy not to notice; the text is the thing they are
-   * looking at and want to change.
-   *
-   * Only ON, never off. Once editing, a double-click is how you select a word,
-   * and having that close the editor mid-sentence would be maddening.
-   *
-   * Every kind that has an editor, not just recipes. Covers, chapter openers
-   * and the contents each have their own idea of what "editing" means, which
-   * is why this fans out by kind — but from the cook's side there is one rule
-   * ("double-click the words to change them") rather than a rule that happens
-   * to hold on recipe pages. Kinds with nothing to type into opt out below,
-   * and they are exactly the kinds that show no Edit button either.
-   */
   /**
    * A photo opens its dialog on a single click, the way a line of text opens
    * its field on a single click. Double-click was the wrong gesture here: it is
@@ -960,22 +948,6 @@ export function PrintDeck(props: PrintDeckProps) {
       </>
     ) : null;
 
-  const openEditOnDoubleClick = (navItem: NavItem) => (event: ReactMouseEvent) => {
-    // Not on the floating controls that sit over the page.
-    if ((event.target as HTMLElement).closest("button, a, input, textarea")) return;
-    // A full-page photo and a chapter's facing art have no text; a continued
-    // page is the runover of a recipe that is edited from its first page.
-    if (navItem.kind === "image" || navItem.kind === "section-photo" || navItem.continued) return;
-    // Recipes and covers are absent on purpose: their text is editable by
-    // clicking it, so a double-click already lands a caret in the field under
-    // the cursor. There is no mode left for this gesture to open.
-    if (navItem.kind === "recipe" || navItem.kind === "cover") return;
-    if (navItem.kind === "divider") {
-      if (editingSectionId !== navItem.recipeId) startSectionEdit(navItem.recipeId);
-      return;
-    }
-    if (navItem.kind === "toc") setEditingToc(true);
-  };
 
   return (
         <section
@@ -1233,7 +1205,6 @@ export function PrintDeck(props: PrintDeckProps) {
                         // opens its editor, and double-clicking the facing photo
                         // does nothing, which is right — there is no text there
                         // to have been aiming at.
-                        onDoubleClick={openEditOnDoubleClick(pageNav)}
                       >
                         {renderDeckPage(pageNav, pageSheet, isFocused, role)}
                       </div>
@@ -1323,7 +1294,6 @@ export function PrintDeck(props: PrintDeckProps) {
                     }
                     openPhotoOnClick(navItem, true)(event);
                   }}
-                  onDoubleClick={openEditOnDoubleClick(navItem)}
                   role="button"
                   tabIndex={0}
                   aria-current={isActive}
@@ -1398,23 +1368,8 @@ export function PrintDeck(props: PrintDeckProps) {
                         : undefined
                     }
                     dividerEdit={
-                      isActive && navItem.kind === "divider" && editingSectionId === navItem.recipeId
-                        ? {
-                            sectionId: navItem.recipeId,
-                            value: editingSectionTitle,
-                            onChange: (value) => editSectionTitle(navItem.recipeId, value),
-                            onCommit: commitSectionEdit,
-                            onCancel: () => {
-                              setEditingSectionId(null);
-                              setEditingSectionTitle("");
-                            },
-                            subtitle: sections.find((section) => section.id === navItem.recipeId)?.subtitle,
-                            onSubtitleChange: (value) =>
-                              projectMeta.updateSection(navItem.recipeId, { subtitle: value || undefined }),
-                            intro: sections.find((section) => section.id === navItem.recipeId)?.intro,
-                            onIntroChange: (value) =>
-                              projectMeta.setSectionIntro(navItem.recipeId, value || undefined),
-                          }
+                      isActive && navItem.kind === "divider"
+                        ? buildDividerEdit(navItem.recipeId)
                         : undefined
                     }
                     coverEdit={
@@ -1430,7 +1385,7 @@ export function PrintDeck(props: PrintDeckProps) {
                     tocKicker={projectMeta.meta.tocKicker}
                     tocTitle={projectMeta.meta.tocTitle}
                     tocEdit={
-                      isActive && navItem.kind === "toc" && editingToc
+                      isActive && navItem.kind === "toc"
                         ? {
                             kicker: projectMeta.meta.tocKicker ?? "Contents",
                             title: projectMeta.meta.tocTitle ?? "What's inside",

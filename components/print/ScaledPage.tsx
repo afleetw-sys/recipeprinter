@@ -92,10 +92,12 @@ export const ScaledPage = memo(function ScaledPage({
   inlineEdit?: RecipeCardInlineEdit;
   dividerEdit?: {
     sectionId: string;
-    value: string;
-    onChange: (value: string) => void;
-    onCommit: () => void;
-    onCancel: () => void;
+    titleEditing: boolean;
+    titleValue: string;
+    onTitleOpen: () => void;
+    onTitleChange: (value: string) => void;
+    onTitleCommit: () => void;
+    onTitleCancel: () => void;
     subtitle?: string;
     onSubtitleChange?: (value: string) => void;
     intro?: string;
@@ -442,6 +444,7 @@ export const ScaledPage = memo(function ScaledPage({
                     intro={anySlot.intro}
                     template={template}
                     showDecoration={showDecoration}
+                    showEmptyFields={showEmptyFields}
                     inlineEdit={dividerEdit?.sectionId === anySlot.id ? dividerEdit : undefined}
                   />
                 ) : anySlot.kind === "toc" ? (

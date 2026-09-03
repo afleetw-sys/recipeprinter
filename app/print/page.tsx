@@ -367,7 +367,6 @@ export default function PrintPage() {
   }, [jobIds]);
   const [editingSectionId, setEditingSectionId] = useState<string | null>(null);
   const [editingSectionTitle, setEditingSectionTitle] = useState("");
-  const [editingToc, setEditingToc] = useState(false);
   // Either side panel can be folded away to give the page more room. Session
   // state on purpose, not a stored preference: collapsing is something you do
   // to look at a page, not how you want the workspace set up from now on.
@@ -4348,8 +4347,6 @@ export default function PrintPage() {
           editSectionTitle={editSectionTitle}
           commitSectionEdit={commitSectionEdit}
           startSectionEdit={startSectionEdit}
-          editingToc={editingToc}
-          setEditingToc={setEditingToc}
           coverSideFromNavItem={coverSideFromNavItem}
           coverForSide={coverForSide}
           defaultCover={defaultCover}

@@ -1212,11 +1212,25 @@ export const RecipeCardFace = memo(function RecipeCardFace({
 });
 
 export interface DividerCardInlineEdit {
-  value: string;
-  onChange: (value: string) => void;
-  onCommit: () => void;
-  onCancel: () => void;
-  /** Chapter-opener intro line + photo, edited alongside the title. */
+  /**
+   * The chapter title, unlike the two lines under it, is owned by the deck
+   * rather than by this card.
+   *
+   * Renaming a chapter re-packs the whole book — the grouping, the folios, the
+   * contents page — so the in-progress text lives in a throttled buffer up
+   * there (see `editSectionTitle`) and only the settled value reaches project
+   * meta. `titleValue` is that buffer, live only while `titleEditing`, which is
+   * also how "Add chapter" opens the new opener's title with nobody clicking
+   * it.
+   */
+  titleEditing: boolean;
+  titleValue: string;
+  onTitleOpen: () => void;
+  onTitleChange: (value: string) => void;
+  onTitleCommit: () => void;
+  onTitleCancel: () => void;
+  /** The two lines under the title. These write straight through: neither one
+      changes how the book is packed. */
   subtitle?: string;
   onSubtitleChange?: (value: string) => void;
   intro?: string;
@@ -1224,12 +1238,11 @@ export interface DividerCardInlineEdit {
 }
 
 // A section divider is always exactly one physical page — no ingredients/
-// instructions budget to split — so unlike RecipeCardFace's title/ingredient/
-// step fields there's just the one editable field. Same technique as the
-// recipe title, though: the wrapping field shares its typography class with the
-// `<h1>` it replaces (plus the shared `.recipe-card__inline-input` reset, see
-// its comment in globals.css) so the box is pixel-identical — editing swaps
-// the element, not the layout.
+// instructions budget to split. Its three lines are edited the way a recipe's
+// and a cover's are: click the text, and that one line becomes a field. Each
+// field shares its typography class with the element it replaces (plus the
+// shared `.recipe-card__inline-input` reset, see its comment in globals.css) so
+// the box is pixel-identical — editing swaps the element, not the layout.
 // Spelled-out chapter ordinal for the opener eyebrow ("Chapter Two"), falling
 // back to the numeral past what's spelled so it never reads "Chapter undefined".
 const CHAPTER_WORDS = [
@@ -1261,6 +1274,7 @@ export const DividerFace = memo(function DividerFace({
   inlineEdit,
   template,
   showDecoration = true,
+  showEmptyFields = false,
 }: {
   title: string;
   chapterNumber?: number;
@@ -1276,11 +1290,122 @@ export const DividerFace = memo(function DividerFace({
   template?: RecipePrintTemplate;
   /** See `TemplateDecoration` — false on surfaces that never show it. */
   showDecoration?: boolean;
+  /** Reveal the opener lines nobody has written yet — see RecipeCardPrint. */
+  showEmptyFields?: boolean;
 }) {
+  const canEdit = Boolean(inlineEdit);
+  const showEmpty = canEdit && showEmptyFields;
+  // Which of the two straight-through lines is open, if any. Local for the same
+  // reason a cover's is: they write through `onChange` with no buffer to share
+  // with the deck, so the only question here is "which of these is a field
+  // right now". The title is not in this set — the deck owns it, see
+  // `DividerCardInlineEdit`.
+  const [editingField, setEditingField] = useState<"subtitle" | "intro" | null>(null);
   // Recomputed rather than stored: the chapter's recipe list is rebuilt on
   // every pack, so this stays in step with the book without a second source of
   // truth to keep synchronized.
   const derivedIntro = useMemo(() => chapterIntroFromRecipes(recipeTitles), [recipeTitles]);
+
+  /**
+   * Move the caret between this page's lines.
+   *
+   * On `mousedown` with `preventDefault`, and closing the other field itself
+   * rather than letting a blur do it — the same technique, for the same reason,
+   * as `addLine` above. Committing a chapter rename re-packs the whole book, so
+   * a blur that lands one would re-render this card out from under the click
+   * that caused it: the title closed and the line you aimed at never opened.
+   * Nothing here waits for the `click` half of the gesture.
+   */
+  function openTitleField() {
+    setEditingField(null);
+    inlineEdit?.onTitleOpen();
+  }
+
+  function openField(name: "subtitle" | "intro") {
+    if (inlineEdit?.titleEditing) inlineEdit.onTitleCommit();
+    setEditingField(name);
+  }
+
+  function fieldOpener(open: () => void) {
+    return (event: ReactMouseEvent) => {
+      // Also stops the text-selection drag a mousedown on a paragraph starts,
+      // which would otherwise leave the words highlighted behind the field.
+      event.preventDefault();
+      open();
+    };
+  }
+
+  /**
+   * One line under the chapter title: text you can click into, a field while
+   * you are in it, and — when there is nothing written and nothing to click —
+   * a prompt that only appears under the reveal. The cover's `coverField` in
+   * the same three states, and for the same reason: an opener is a page of
+   * writing, and a page of writing should not need a mode.
+   */
+  function openerField({
+    name,
+    value,
+    placeholder,
+    ariaLabel,
+    onChange,
+    className,
+    rows = 1,
+    fallback,
+  }: {
+    name: "subtitle" | "intro";
+    value: string;
+    placeholder: string;
+    ariaLabel: string;
+    onChange: (value: string) => void;
+    className: string;
+    rows?: number;
+    /** Read-mode stand-in for a line that is never blank on the page even when
+        nobody has typed it (the intro prints the recipes' names). */
+    fallback?: string;
+  }) {
+    if (canEdit && editingField === name) {
+      return (
+        // autoFocus is safe here precisely because this mounts on the click
+        // that asks for it, rather than sitting there for every idle opener.
+        <textarea
+          autoFocus
+          rows={rows}
+          className={`recipe-card__inline-textarea ${className}`}
+          value={value}
+          placeholder={placeholder}
+          aria-label={ariaLabel}
+          onChange={(event) => onChange(event.target.value)}
+          onBlur={() => setEditingField(null)}
+          onKeyDown={(event) => {
+            if (event.key === "Escape") {
+              event.preventDefault();
+              setEditingField(null);
+            }
+          }}
+        />
+      );
+    }
+    const text = value || fallback || "";
+    if (text) {
+      return (
+        <p
+          className={`${className} ${canEdit ? "recipe-card__opener-field--editable" : ""}`}
+          onMouseDown={canEdit ? fieldOpener(() => openField(name)) : undefined}
+        >
+          {text}
+        </p>
+      );
+    }
+    return showEmpty ? (
+      <p
+        className={`${className} recipe-card__opener-field--empty`}
+        onMouseDown={fieldOpener(() => openField(name))}
+      >
+        {placeholder}
+      </p>
+    ) : null;
+  }
+
   return (
     <article
       className={`recipe-card recipe-card--divider recipe-card--chapter${photoUrl ? " recipe-card--chapter-with-photo" : ""}`}
@@ -1302,62 +1427,64 @@ export const DividerFace = memo(function DividerFace({
         {showChapterNumber && (
           <p className="recipe-card__chapter-eyebrow">Chapter {chapterWord(chapterNumber)}</p>
         )}
-        {inlineEdit ? (
+        {inlineEdit?.titleEditing ? (
           <textarea
             autoFocus
             rows={1}
             className="recipe-card__inline-textarea recipe-card__divider-title"
-            value={inlineEdit.value}
+            value={inlineEdit.titleValue}
             aria-label="Chapter title"
-            // No commit-on-blur: the title saves live via onChange, so blurring
-            // to click the photo picker or the subtitle/intro fields must NOT end
-            // the edit. Enter finishes it; Escape closes it.
-            onChange={(event) => inlineEdit.onChange(event.target.value)}
+            // Blur closes it, like every other field on the page. It used to
+            // stay open through a blur because it WAS the page's edit mode, and
+            // clicking the photo picker would otherwise have ended it; now
+            // there is no mode to lose, and the throttled write behind
+            // `onTitleChange` has already saved what was typed either way.
+            onChange={(event) => inlineEdit.onTitleChange(event.target.value)}
+            onBlur={inlineEdit.onTitleCommit}
             onKeyDown={(event) => {
               if (event.key === "Enter") {
                 event.preventDefault();
-                inlineEdit.onCommit();
+                inlineEdit.onTitleCommit();
               }
-              if (event.key === "Escape") inlineEdit.onCancel();
+              if (event.key === "Escape") inlineEdit.onTitleCancel();
             }}
           />
         ) : (
-          <h1 className="recipe-card__divider-title">{title}</h1>
+          <h1
+            className={`recipe-card__divider-title ${canEdit ? "recipe-card__opener-field--editable" : ""}`}
+            onMouseDown={canEdit ? fieldOpener(openTitleField) : undefined}
+          >
+            {title}
+          </h1>
         )}
-        {inlineEdit?.onSubtitleChange ? (
-          <textarea
-            rows={1}
-            className="recipe-card__inline-textarea recipe-card__chapter-subtitle"
-            value={inlineEdit.subtitle ?? ""}
-            placeholder="Section subtitle (optional)"
-            aria-label="Section subtitle"
-            onChange={(event) => inlineEdit.onSubtitleChange?.(event.target.value)}
-          />
-        ) : (
-          subtitle && <p className="recipe-card__chapter-subtitle">{subtitle}</p>
-        )}
-        {inlineEdit?.onIntroChange ? (
-          <textarea
-            // Two rows, unlike the other opener fields: `field-sizing: content`
-            // grows the box to the text (or the placeholder) where it's
-            // supported and ignores `rows` entirely, and where it isn't, the
-            // derived placeholder's two lines are what has to fit.
-            rows={2}
-            className="recipe-card__inline-textarea recipe-card__chapter-intro"
-            value={inlineEdit.intro ?? ""}
-            // The placeholder is the line that would actually print, not a
-            // generic prompt — an empty field here is a decision, so show its
-            // result rather than hiding it until the cook clicks away. The way
-            // back once it has been typed over lives in the page toolbar, with
-            // the rest of the app's chrome: a control in here would be drawn at
-            // the card's print scale, which is a third of a legible size.
-            placeholder={derivedIntro}
-            aria-label="Chapter intro"
-            onChange={(event) => inlineEdit.onIntroChange?.(event.target.value)}
-          />
-        ) : (
-          <p className="recipe-card__chapter-intro">{intro || derivedIntro}</p>
-        )}
+        {openerField({
+          name: "subtitle",
+          value: inlineEdit?.subtitle ?? subtitle ?? "",
+          placeholder: "Section subtitle",
+          ariaLabel: "Section subtitle",
+          className: "recipe-card__chapter-subtitle",
+          onChange: (value) => inlineEdit?.onSubtitleChange?.(value),
+        })}
+        {openerField({
+          name: "intro",
+          value: inlineEdit?.intro ?? intro ?? "",
+          // The prompt is the line that would actually print, not a generic
+          // "write something here" — an untouched intro is a decision, so show
+          // its result rather than hiding it until the cook clicks away. The
+          // way back once it HAS been typed over lives in the page toolbar,
+          // with the rest of the app's chrome: a control in here would be drawn
+          // at the card's print scale, which is a third of a legible size.
+          placeholder: derivedIntro,
+          ariaLabel: "Chapter intro",
+          className: "recipe-card__chapter-intro",
+          // Two rows, unlike the lines above it: `field-sizing: content` grows
+          // the box to the text (or the prompt) where it is supported and
+          // ignores `rows` entirely, and where it isn't, the derived line's two
+          // lines are what has to fit.
+          rows: 2,
+          fallback: derivedIntro,
+          onChange: (value) => inlineEdit?.onIntroChange?.(value),
+        })}
       </div>
     </article>
   );
@@ -1767,6 +1894,18 @@ export const TableOfContentsFace = memo(function TableOfContentsFace({
   showDecoration?: boolean;
   inlineEdit?: TableOfContentsInlineEdit;
 }) {
+  const canEdit = Boolean(inlineEdit);
+  // Which of the two headings is open, if any — local for the same reason a
+  // cover's is: they write straight through `onKickerChange`/`onTitleChange`,
+  // so the only question here is which one is a field right now.
+  const [editingField, setEditingField] = useState<"kicker" | "title" | null>(null);
+  // On mousedown with `preventDefault`, like a chapter opener's lines: these
+  // write to project meta, which re-packs the book, so a `click` that had to
+  // survive a re-render of this card would sometimes not arrive.
+  const openHeading = (name: "kicker" | "title") => (event: ReactMouseEvent) => {
+    event.preventDefault();
+    setEditingField(name);
+  };
   const kickerText = (inlineEdit ? inlineEdit.kicker : kicker) || "Contents";
   const titleText = (inlineEdit ? inlineEdit.title : title) || "What's inside";
   // The heading is set once, on the first page; a continuation just says so
@@ -1784,29 +1923,59 @@ export const TableOfContentsFace = memo(function TableOfContentsFace({
       <TemplateDecoration template={template} show={showDecoration} />
       <div className="recipe-card__toc-content">
         {heading}
-        {continued ? null : inlineEdit ? (
+        {/* Click the words to change them, as on every other page. Neither
+            line can be missing — each prints a default when nobody types one —
+            so neither has an empty state to reveal, and both are always here to
+            be clicked. The entries below them are generated and are not. */}
+        {continued ? null : canEdit && editingField === "kicker" ? (
           <textarea
+            autoFocus
             rows={1}
             className="recipe-card__inline-textarea recipe-card__toc-kicker"
-            value={inlineEdit.kicker}
+            value={inlineEdit?.kicker ?? ""}
             placeholder="Contents"
             aria-label="Contents label"
-            onChange={(event) => inlineEdit.onKickerChange(event.target.value)}
+            onChange={(event) => inlineEdit?.onKickerChange(event.target.value)}
+            onBlur={() => setEditingField(null)}
+            onKeyDown={(event) => {
+              if (event.key === "Escape" || event.key === "Enter") {
+                event.preventDefault();
+                setEditingField(null);
+              }
+            }}
           />
         ) : (
-          <p className="recipe-card__toc-kicker">{kickerText}</p>
+          <p
+            className={`recipe-card__toc-kicker ${canEdit ? "recipe-card__opener-field--editable" : ""}`}
+            onMouseDown={canEdit ? openHeading("kicker") : undefined}
+          >
+            {kickerText}
+          </p>
         )}
-        {continued ? null : inlineEdit ? (
+        {continued ? null : canEdit && editingField === "title" ? (
           <textarea
+            autoFocus
             rows={1}
             className="recipe-card__inline-textarea recipe-card__toc-title"
-            value={inlineEdit.title}
+            value={inlineEdit?.title ?? ""}
             placeholder="What's inside"
             aria-label="Contents heading"
-            onChange={(event) => inlineEdit.onTitleChange(event.target.value)}
+            onChange={(event) => inlineEdit?.onTitleChange(event.target.value)}
+            onBlur={() => setEditingField(null)}
+            onKeyDown={(event) => {
+              if (event.key === "Escape" || event.key === "Enter") {
+                event.preventDefault();
+                setEditingField(null);
+              }
+            }}
           />
         ) : (
-          <h1 className="recipe-card__toc-title">{titleText}</h1>
+          <h1
+            className={`recipe-card__toc-title ${canEdit ? "recipe-card__opener-field--editable" : ""}`}
+            onMouseDown={canEdit ? openHeading("title") : undefined}
+          >
+            {titleText}
+          </h1>
         )}
         <ol className="recipe-card__toc-list">
           {entries.map((entry, index) =>
