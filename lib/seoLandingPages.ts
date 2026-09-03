@@ -499,17 +499,74 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
       "Turn Pinterest recipe links, screenshots, or saved recipe text into printable recipe cards, pages, and PDFs.",
     h1: "Print Pinterest recipes",
     lede:
-      "Pinterest is a great place to find recipes. RecipePrinter helps move the ones you want to make from a saved pin into a printable recipe you can cook from.",
+      "Pinterest is a great place to find recipes. RecipePrinter moves the ones you actually want to make off the board and onto a printable card you can cook from.",
+    howTo: [
+      {
+        name: "Open the pin and take its link",
+        text: "Tap the pin, then copy the link to the original recipe. Pinterest shows it under the image as the source site, and the share button copies it too.",
+      },
+      {
+        name: "Paste it in",
+        text: "Paste the link into the box above. RecipePrinter opens the recipe page behind the pin and rebuilds it as a clean printable layout.",
+      },
+      {
+        name: "Pick a card or a page",
+        text: "A 4 by 6 card for the recipe box, or a full letter page for long bakes. Keep the finished-dish photo or leave it off, and edit any line before you print.",
+      },
+      {
+        name: "Print it or save it as a PDF",
+        text: "Send it to your printer, or choose Save as PDF in the print dialog to keep a copy on your phone.",
+      },
+    ],
+    featureSections: [
+      {
+        heading: "A pin points at a food blog, and food blogs print badly",
+        proof: "before-after",
+        body:
+          "Follow the pin and you land on the story, the pop-ups, the autoplay video, and the recipe somewhere near the bottom. Printed straight from the browser, one of those pages ran to 26 sheets. RecipePrinter reads the same page and keeps the part you cook from: the ingredients with their amounts, the numbered steps, the times, and the servings. Everything else stays on the website.",
+      },
+      {
+        heading: "When the pin has no link to follow",
+        image: "steps",
+        body:
+          "Plenty of recipes on Pinterest never leave the pin. The link is dead, or it drops you on a homepage, or the whole recipe is written into the image and the description. Screenshot the pin and upload it, or paste the text straight in, and it becomes the same clean printout as a link would. Nothing about the finished card says which route it took.",
+      },
+      {
+        heading: "Print the board, not one pin at a time",
+        image: "counter-card",
+        body:
+          "Boards are where recipes go to wait. Paste in as many as you want and print them as a single job, so a season of dinners takes one trip to the printer instead of fifteen. Printed cards can then be filed the way boards never quite are: a recipe box, a binder, a folder by the stove, or later a bound cookbook.",
+      },
+    ],
     faqs: [
       {
         question: "How do I print Pinterest recipes from an iPhone?",
         answer:
-          "Open the pin, use the original recipe link when Pinterest provides one, then paste that link into RecipePrinter. If the recipe is only visible in the pin or app, use a screenshot or paste the recipe text.",
+          "Open the pin in the app or in Safari, copy the link to the original recipe, and paste it into RecipePrinter in your phone browser. Set the card up there, then use the phone's print dialog to reach a wireless printer, or choose Save as PDF and print it from a computer later.",
       },
       {
-        question: "Can I organize Pinterest recipes after printing?",
+        question: "Do I have to connect my Pinterest account?",
         answer:
-          "Yes. Printed recipe cards and pages work well in binders, folders, and seasonal collections.",
+          "No. RecipePrinter never asks for access to your account or your boards. It works from a link you paste, a screenshot you upload, or text you copy across, so nothing is connected and nothing is synced.",
+      },
+      {
+        // Deliberately not "what if the pin has no link", which is the feature
+        // row above word for word. The durable-copy argument is the different
+        // point, and dead pins are the version of it Pinterest visitors have
+        // already run into.
+        question: "Why are so many of my older pins dead links?",
+        answer:
+          "Blogs move, close, or get reorganised, and the pin keeps its photograph long after the recipe behind it is gone. A printed card does not depend on any of that. Once it is in the box, it stays whatever happens to the site it came from.",
+      },
+      {
+        question: "Can I print a whole board at once?",
+        answer:
+          "Yes. Add as many recipes as you like and print them in one go. It is the difference between fifteen trips to the printer and one, which matters most when you are finally clearing out a board you have been saving to for years.",
+      },
+      {
+        question: "Will the printed card still show where the recipe came from?",
+        answer:
+          "It can. You can print the original link on the card, so the blogger the pin pointed at is credited and the page is easy to find again if you want the notes underneath it.",
       },
     ],
     links: [
@@ -749,6 +806,14 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
   },
   {
     slug: "preserve-family-recipes",
+    // Signed off on the writing. One image is still owed: "Keep the original,
+    // cook from the copy" wants a photograph of the printed copy lying beside
+    // the handwritten card it came from, which is the whole claim in one frame
+    // and does not exist yet. It borrows `counter-card` until then, because the
+    // hero already carries `handwritten-card` and a page should not show the
+    // same photograph twice. Shoot that pair, register it in LandingVisuals,
+    // and swap the key below.
+    lastReviewed: "2026-09-03",
     captureHeading: "Start with one card",
     primaryKeyword: "preserve family recipes",
     secondaryKeywords: [
@@ -792,7 +857,7 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
     featureSections: [
       {
         heading: "Keep the original, cook from the copy",
-        image: "handwritten-card",
+        image: "counter-card",
         body:
           "A printed copy does the kitchen work: the counter, the splashes, the folding into a binder, the stuck-to-the-fridge afternoons. The handwritten card stays wherever you keep it, exactly as it is. You are still cooking their recipe every time you use the copy.",
       },
