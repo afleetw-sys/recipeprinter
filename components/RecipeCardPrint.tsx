@@ -30,6 +30,7 @@ import {
 } from "@/lib/recipeCardLayout";
 import type { CoverConfig, Recipe } from "@/types/recipe";
 import { markImageAvailable, markImageUnavailable } from "@/lib/imageFailure";
+import { DEFAULT_CHAPTER_INTRO, chapterIntroFromRecipes } from "@/lib/chapterIntro";
 
 // Layout-budget engine (the character-cost heuristics that decide what fits on
 // a front/back face) lives in lib/recipeCardLayout.ts — this file re-exports
@@ -1240,12 +1241,13 @@ function chapterWord(n: number): string {
 }
 
 // Default chapter-opener copy so a section page reads as designed rather than a
-// lone title. Shown only in read-only/print; the editor still binds to the
-// section's own (empty) intro with its placeholder, so a cook can personalize
-// each opener or leave the default to print. Kept generic on purpose — it's
-// filler the cook is expected to make their own.
-export const DEFAULT_CHAPTER_INTRO =
-  "A handful of recipes worth making again and again.";
+// lone title: the recipes filed under this chapter, named. It is derived from
+// the section's own items on every pack (see `chapterIntroFromRecipes`), so
+// moving a recipe between chapters re-words the opener it left and the one it
+// joined. A cook who types their own intro keeps it; the derived line is only
+// the default, and it stands in as the editor's placeholder so they can see
+// exactly what would print if they leave the field alone.
+export { DEFAULT_CHAPTER_INTRO };
 
 export const DividerFace = memo(function DividerFace({
   title,
@@ -1254,6 +1256,7 @@ export const DividerFace = memo(function DividerFace({
   subtitle,
   photoUrl,
   intro,
+  recipeTitles,
   previewHidden = false,
   inlineEdit,
   template,
@@ -1265,7 +1268,8 @@ export const DividerFace = memo(function DividerFace({
   subtitle?: string;
   photoUrl?: string;
   intro?: string;
-  /** Kept for back-compat / TOC callers; the opener itself no longer lists them. */
+  /** Titles of the recipes filed under this chapter, in book order — what the
+      default intro names when the cook hasn't written one. */
   recipeTitles?: string[];
   previewHidden?: boolean;
   inlineEdit?: DividerCardInlineEdit;
@@ -1273,6 +1277,10 @@ export const DividerFace = memo(function DividerFace({
   /** See `TemplateDecoration` — false on surfaces that never show it. */
   showDecoration?: boolean;
 }) {
+  // Recomputed rather than stored: the chapter's recipe list is rebuilt on
+  // every pack, so this stays in step with the book without a second source of
+  // truth to keep synchronized.
+  const derivedIntro = useMemo(() => chapterIntroFromRecipes(recipeTitles), [recipeTitles]);
   return (
     <article
       className={`recipe-card recipe-card--divider recipe-card--chapter${photoUrl ? " recipe-card--chapter-with-photo" : ""}`}
@@ -1330,15 +1338,22 @@ export const DividerFace = memo(function DividerFace({
         )}
         {inlineEdit?.onIntroChange ? (
           <textarea
-            rows={1}
+            // Two rows, unlike the other opener fields: `field-sizing: content`
+            // grows the box to the text (or the placeholder) where it's
+            // supported and ignores `rows` entirely, and where it isn't, the
+            // derived placeholder's two lines are what has to fit.
+            rows={2}
             className="recipe-card__inline-textarea recipe-card__chapter-intro"
             value={inlineEdit.intro ?? ""}
-            placeholder="A short chapter intro…"
+            // The placeholder is the line that would actually print, not a
+            // generic prompt — an empty field here is a decision, so show its
+            // result rather than hiding it until the cook clicks away.
+            placeholder={derivedIntro}
             aria-label="Chapter intro"
             onChange={(event) => inlineEdit.onIntroChange?.(event.target.value)}
           />
         ) : (
-          <p className="recipe-card__chapter-intro">{intro || DEFAULT_CHAPTER_INTRO}</p>
+          <p className="recipe-card__chapter-intro">{intro || derivedIntro}</p>
         )}
       </div>
     </article>
