@@ -5736,6 +5736,19 @@ textarea.recipe-card__toc-title {
   border-radius: 3px;
 }
 
+/* ...but not once you are inside it.
+   The line is the click target and the textarea it swaps in is its child, so
+   while editing with the pointer still over the line BOTH were outlined: the
+   line's 40% hover ring and the field's 58% focus ring, each offset 2px, one
+   nested in the other. It read as two inputs, one inside the other, when it is
+   one line being typed into. The hover ring is an invitation, and it has been
+   accepted — so it stands down and the focus ring is the only box. */
+.recipe-card__title--editable:hover:focus-within,
+.recipe-card__headnote--editable:hover:focus-within,
+.recipe-card__editable-line--editable:hover:focus-within {
+  outline: none;
+}
+
 /* The emptied workspace. A page-shaped outline where the pages were, so the
    canvas still reads as the place pages go rather than as a blank panel — and
    the words sit ON it, the way a page's content would. Dashed and unfilled: it
