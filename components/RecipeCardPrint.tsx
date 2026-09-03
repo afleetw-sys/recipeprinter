@@ -211,6 +211,24 @@ export function HeadingGlyph() {
   );
 }
 
+/* Bold and italic, in the same letterform language as Aa/H above — a drawn
+   icon would be a third visual idea in a bar of two. */
+export function BoldGlyph() {
+  return (
+    <span className="recipe-card__line-kind-glyph recipe-card__line-kind-glyph--bold" aria-hidden>
+      B
+    </span>
+  );
+}
+
+export function ItalicGlyph() {
+  return (
+    <span className="recipe-card__line-kind-glyph recipe-card__line-kind-glyph--italic" aria-hidden>
+      I
+    </span>
+  );
+}
+
 function CounterCheckerBand() {
   const teeth = Array.from({ length: COUNTER_BAND_TEETH }, (_, i) => i);
   return (

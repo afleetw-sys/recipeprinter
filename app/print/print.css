@@ -1169,23 +1169,17 @@
 /* Not a button group but a said-thing, so it takes the bar's hairline and
    rhythm and none of its weight: muted, regular, and wrapping rather than
    forcing the bar wider than the page it floats over. */
-/* B / I in the toolbar's text-style group. Letterforms rather than icons: the
-   two glyphs everyone already reads as bold and italic, and they carry the
-   meaning at this size where a drawn icon would not. Serif on purpose — an italic
-   `I` in the UI's sans is nearly indistinguishable from an upright one. */
-.recipe-page-toolbar__style-glyph {
-  font-family: Georgia, "Times New Roman", serif;
-  font-size: var(--cp-fs-small);
-  line-height: 1;
+/* B and I ride on `.recipe-card__line-kind-glyph` — the same letterform
+   treatment Aa/H already use, since they sit in the same bar doing the same
+   kind of job. Only the two things that ARE the icon differ. */
+.recipe-card__line-kind-glyph--bold {
+  /* Size comes from the base glyph, like Aa. Only the weight is the icon. */
+  font-weight: 800;
 }
 
-.recipe-page-toolbar__style-glyph--bold {
-  font-weight: 700;
-}
-
-.recipe-page-toolbar__style-glyph--italic {
+.recipe-card__line-kind-glyph--italic {
   font-style: italic;
-  /* The slant leaves the glyph looking pushed left in a centred box. */
+  /* The slant leaves the glyph reading as pushed left in a centred box. */
   padding-right: 2px;
 }
 

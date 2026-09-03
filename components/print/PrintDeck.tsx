@@ -34,7 +34,9 @@ import { gutterSideForRole } from "@/lib/cookbookPresets";
 import { chapterIntroFromRecipes, chapterRecipeTitles } from "@/lib/chapterIntro";
 import {
   BodyTextGlyph,
+  BoldGlyph,
   HeadingGlyph,
+  ItalicGlyph,
   RECIPE_PRINT_TEMPLATE_OPTIONS,
   type PrintCardSize,
   type RecipePrintTemplate,
@@ -454,9 +456,7 @@ export function PrintDeck(props: PrintDeckProps) {
           title="Bold (⌘B)"
           onMouseDown={apply("bold")}
         >
-          <span className="recipe-page-toolbar__style-glyph recipe-page-toolbar__style-glyph--bold">
-            B
-          </span>
+          <BoldGlyph />
         </button>
         <button
           type="button"
@@ -465,9 +465,7 @@ export function PrintDeck(props: PrintDeckProps) {
           title="Italic (⌘I)"
           onMouseDown={apply("italic")}
         >
-          <span className="recipe-page-toolbar__style-glyph recipe-page-toolbar__style-glyph--italic">
-            I
-          </span>
+          <ItalicGlyph />
         </button>
       </div>
     );
