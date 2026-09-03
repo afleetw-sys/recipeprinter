@@ -13,6 +13,7 @@ import type { AccountSaveStatus } from "@/components/AccountControl";
 import { FeedbackDialog } from "@/components/FeedbackButton";
 import { PrintDialogs } from "@/components/PrintDialogs";
 import { AddRecipeDialog } from "@/components/AddRecipeDialog";
+import { uid } from "@/lib/ids";
 import { ConfirmDialog } from "@/components/ConfirmDialog";
 import { CookbookBuildReveal, CookbookWelcomeDialog } from "@/components/CookbookWelcomeDialog";
 import { CookbookReadyDialog } from "@/components/CookbookReadyDialog";
@@ -405,6 +406,15 @@ export default function PrintPage() {
   const saveAfterLoginRef = useRef(false);
   const projectIdRef = useRef<string>(createPrintProjectId());
   const [toastMessage, setToastMessage] = useState<string | null>(null);
+  /**
+   * Whether the toast is reporting a FAILURE or just confirming something.
+   *
+   * Tracked explicitly rather than derived from `failedImportId`, which looks
+   * like the same question and isn't: only one of the two effects that write a
+   * failure toast also sets that id, so a failure caught by the other would
+   * have come out looking exactly like "Cookbook organized".
+   */
+  const [toastTone, setToastTone] = useState<"info" | "error">("info");
   /**
    * The failed import a toast is currently speaking for.
    *
@@ -961,6 +971,7 @@ export default function PrintPage() {
     // Try again and a dismiss; the sentence belongs to the dialog, which has
     // the room and is still open behind it. See lib/friendlyErrors.
     setToastMessage(shortImportError(erroredImport.errorCode));
+    setToastTone("error");
   }, [erroredImport?.id, erroredImport?.errorCode]);
 
   /**
@@ -1587,8 +1598,50 @@ export default function PrintPage() {
     window.print();
   }
 
+  /**
+   * Starts an empty recipe on the deck — the "or add manually" way out of the
+   * Add dialog, for a recipe that is not anywhere to import FROM.
+   *
+   * Goes through `addReadyRecipes` rather than the import queue on purpose:
+   * there is nothing to parse, so `runParse` would have to be taught to skip
+   * itself, and a placeholder page would flash "importing" for a recipe that
+   * arrived complete. `status: "ready"` is the truth — it is finished, it is
+   * just empty.
+   *
+   * The blank card already knows how to be filled in: a recipe with no
+   * ingredients still renders an "Add ingredient" prompt (see RecipeCardPrint),
+   * revealed by the page's own Fields button, which shows itself because a
+   * blank recipe is nothing but hidden fields.
+   */
+  function addManualRecipe() {
+    const id = uid();
+    const added = queue.addReadyRecipes([
+      {
+        id,
+        method: "manual",
+        // No origin to name. The rail falls back to `title` for its label, and
+        // an empty one there would render a nameless row, so this says what the
+        // page is until the cook titles it.
+        source: "Added by hand",
+        status: "ready",
+        title: "Untitled recipe",
+        addedAt: Date.now(),
+        recipe: {
+          // Empty, not placeholder text: every one of these is a field the card
+          // renders as an editable, and seeding them with words would make the
+          // cook delete our copy before writing theirs.
+          title: "",
+          ingredients: [],
+          instructions: [],
+        },
+      },
+    ]);
+    if (added > 0) queue.focusItem(id);
+  }
+
   function showToast(message: string) {
     setToastMessage(message);
+    setToastTone("info");
     setFailedImportId(null);
   }
 
@@ -2945,6 +2998,7 @@ export default function PrintPage() {
     // this one still sent `item.error`, it ran second and put the full sentence
     // back over the short one.
     setToastMessage(shortImportError(newlyErrored.errorCode));
+    setToastTone("error");
   }, [queue.items, showAddRecipeDialog]);
 
   // Re-importing a recipe that's already in this print job doesn't add a
@@ -4764,6 +4818,7 @@ export default function PrintPage() {
         onAddImageFiles={queue.addImageFiles}
         onAddText={queue.addText}
         onAddReadyRecipes={queue.addReadyRecipes}
+        onAddManual={addManualRecipe}
       />
       <FeedbackDialog
         open={showFeedbackDialog}
@@ -4781,7 +4836,13 @@ export default function PrintPage() {
         />
       )}
       {toastMessage && (
-        <div className="recipe-toast no-print" role="status" aria-live="polite">
+        <div
+          className={`recipe-toast no-print ${toastTone === "error" ? "recipe-toast--error" : ""}`}
+          /* A failure interrupts; a confirmation does not. Screen readers get
+             the same distinction the colour makes for everyone else. */
+          role={toastTone === "error" ? "alert" : "status"}
+          aria-live={toastTone === "error" ? "assertive" : "polite"}
+        >
           <span>{toastMessage}</span>
           {organizationUndo && toastMessage === "Cookbook organized" && (
             <button type="button" className="recipe-toast__action" onClick={undoCookbookOrganization}>

@@ -93,7 +93,12 @@ export type ImportMethod =
   | "text"
   | "cookpilot"
   | "paprika"
-  | "shared";
+  | "shared"
+  /** Typed in by hand on the deck rather than imported from anywhere — the
+      blank recipe "or add manually" starts. Its own provenance on purpose:
+      these skip the parser entirely, so counting them as an import would put
+      recipes that were never parsed into the parser's success rate. */
+  | "manual";
 
 /**
  * What the import switch offers, which is not the same list as `ImportMethod`.

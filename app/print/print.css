@@ -2138,6 +2138,33 @@
   font-weight: 800;
 }
 
+/* Failure tone. The toast is the ONLY place an import failure appears, so a
+   failure that looks exactly like "Cookbook organized" is a failure nobody
+   reads.
+
+   Mixed into `--cp-card`, not `--cp-error-soft`: that token is a mix with
+   `transparent`, which is right for a banner sitting on a known surface and
+   wrong for a toast that floats over arbitrary page content — the page would
+   show straight through the tint. Same `--cp-error` the danger buttons and the
+   export-failure banner use, so failure reads the same colour everywhere. */
+.recipe-toast--error {
+  border-color: color-mix(in srgb, var(--cp-error) 38%, transparent);
+  background: color-mix(in srgb, var(--cp-error) 9%, var(--cp-card));
+  color: var(--cp-error);
+}
+
+/* The dismiss and Try again controls sit ON the tinted surface, so they take
+   the tint too — a `--cp-card` button on a red toast reads as a hole in it. */
+.recipe-toast--error button {
+  border-color: color-mix(in srgb, var(--cp-error) 24%, transparent);
+  background: color-mix(in srgb, var(--cp-error) 4%, var(--cp-card));
+  color: var(--cp-error);
+}
+
+.recipe-toast--error .recipe-toast__action {
+  color: var(--cp-error);
+}
+
 .recipe-mobile-topbar,
 .recipe-mobile-toolbar,
 .recipe-mobile-settings-backdrop,
@@ -6715,6 +6742,20 @@ textarea.recipe-card__toc-title {
   padding: 14px 20px calc(14px + env(safe-area-inset-bottom));
   border-top: 1px solid var(--cp-line);
   background: var(--cp-card);
+}
+
+/* "or add manually", under the primary Add.
+
+   Quiet on purpose: importing is what almost everyone is here to do, and this
+   is the exit for the one recipe that has no source to import from. Full width
+   so it reads as belonging to the button above it rather than floating loose
+   in the footer, and `--cp-fs-caption` so it sits a step below Add in the
+   hierarchy instead of competing with it. */
+.recipe-add-dialog__manual {
+  width: 100%;
+  margin-top: 6px;
+  font-size: var(--cp-fs-caption);
+  font-weight: 600;
 }
 
 /* A bottom sheet on a phone, not a full screen — the same shape as every other
