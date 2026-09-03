@@ -14,6 +14,7 @@ import { FeedbackDialog } from "@/components/FeedbackButton";
 import { PrintDialogs } from "@/components/PrintDialogs";
 import { AddRecipeDialog } from "@/components/AddRecipeDialog";
 import { uid } from "@/lib/ids";
+import { sectionOrderChanged, sortSectionsByTitle } from "@/lib/sectionSort";
 import { ConfirmDialog } from "@/components/ConfirmDialog";
 import { CookbookBuildReveal, CookbookWelcomeDialog } from "@/components/CookbookWelcomeDialog";
 import { CookbookReadyDialog } from "@/components/CookbookReadyDialog";
@@ -1860,15 +1861,7 @@ export default function PrintPage() {
     if (mode === "title") {
       setCustomOrderUndo(structuredClone(projectMeta.meta.sections));
       projectMeta.setSectionStructure(
-        projectMeta.meta.sections.map((section) => ({
-          ...section,
-          itemIds: [...section.itemIds].sort((a, b) =>
-            recipeTitleForId(a).localeCompare(recipeTitleForId(b), undefined, {
-              sensitivity: "base",
-              numeric: true,
-            }),
-          ),
-        })),
+        sortSectionsByTitle(projectMeta.meta.sections, recipeTitleForId),
       );
       setRailSortMode("title");
       track("cookbook_sorted", { mode: "title" });
@@ -1880,6 +1873,32 @@ export default function PrintPage() {
     setRailSortMode("custom");
     track("cookbook_sorted", { mode: "custom" });
   }
+
+  /**
+   * A–Z is a standing choice, not a one-off action.
+   *
+   * It used to sort once and stop, so every recipe added afterwards landed at
+   * the end of its section and every retitled one stayed where it was — the
+   * book quietly stopped being alphabetical while the control still read "A–Z",
+   * and the only fix was to open the organizer and pick the same sort again.
+   *
+   * So while the mode is on, re-apply it whenever the recipes or their titles
+   * change. Committing only a CHANGED order is what keeps this from looping:
+   * `setSectionStructure` writes a new array every time, which would re-run
+   * this effect forever if an already-sorted book still counted as a change.
+   *
+   * Dragging a recipe still ends it — `markCustomOrder` puts the mode back to
+   * custom, and this stops running.
+   */
+  useEffect(() => {
+    if (railSortMode !== "title") return;
+    const sorted = sortSectionsByTitle(projectMeta.meta.sections, recipeTitleForId);
+    if (!sectionOrderChanged(projectMeta.meta.sections, sorted)) return;
+    projectMeta.setSectionStructure(sorted);
+    // `recipeTitleForId` reads `items`, so that is the dependency that carries
+    // a rename; it is redeclared each render and cannot be one itself.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [railSortMode, projectMeta.meta.sections, items]);
 
   // A recipe placed by hand IS the custom order — so the moment the cook drags
   // one (or moves one from the tile menu), the sort goes back to reading
