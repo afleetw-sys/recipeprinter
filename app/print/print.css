@@ -1541,7 +1541,11 @@
 
   .recipe-page-canvas {
     position: relative;
-    padding-inline: clamp(16px, 2.4vw, 30px);
+    /* Named because the floating zoom cluster has to measure itself against
+       the DECK's edge, and this is the whole of the difference between the
+       two — see `.recipe-deck-zoom`. */
+    --canvas-inline-pad: clamp(16px, 2.4vw, 30px);
+    padding-inline: var(--canvas-inline-pad);
   }
 
   .recipe-page-rail {
@@ -6587,10 +6591,34 @@ textarea.recipe-card__toc-title {
 }
 
 /* Where each caller puts it. */
+/*
+ * Anchored to the DECK's bottom-right corner, which is not the canvas's.
+ *
+ * Zoomed past the point where a page fits, the deck scrolls freely and gets
+ * real scrollbars back (see `[data-free-scroll]` above), drawn just inside its
+ * own right and bottom edges. This cluster is absolutely positioned, so it
+ * measures from the canvas's padding box — and that reaches
+ * `--canvas-inline-pad` further out than the deck does. At `right: 16px` the
+ * "+", the rightmost button, came to rest directly over the vertical bar. A
+ * native scrollbar wins that hit test whatever the z-index says, so the click
+ * reached the scrollbar track instead of the button and jumped the deck to
+ * another page: zoom stopped working at exactly the zoom that needed it.
+ *
+ * The allowance is unconditional rather than scoped to `[data-free-scroll]`,
+ * even though that is the only state with bars to avoid. Scoping it means the
+ * cluster slides 44px sideways on the first press of "+", out from under the
+ * cursor that is still aiming at it — a control that moves when you use it is
+ * a worse bug than the one being fixed here.
+ *
+ * 14px is a `thin` scrollbar at its widest common rendering (macOS draws about
+ * 11, Windows about 12). Reserving slightly too much costs a few pixels of
+ * gap; reserving too little costs the click.
+ */
 .recipe-deck-zoom {
   position: absolute;
-  right: 16px;
-  bottom: 16px;
+  --deck-scrollbar: 14px;
+  right: calc(16px + var(--canvas-inline-pad, 0px) + var(--deck-scrollbar));
+  bottom: calc(16px + var(--deck-scrollbar));
 }
 
 @media (max-width: 900px) {
