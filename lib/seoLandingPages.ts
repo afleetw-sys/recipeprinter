@@ -770,7 +770,7 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
       "Preserve family recipes by turning old cards, photos, screenshots, and text into printable keepsakes and a bound family cookbook.",
     h1: "Preserve family recipes",
     lede:
-      "Keep the handwritten card, and keep cooking what is on it. Photograph the card and RecipePrinter reads it into a clean printable recipe, so the original can stay wherever you keep it while their recipe stays in the kitchen.",
+      "Cook their recipe as often as you like. The handwritten card never has to come into the kitchen: photograph it and RecipePrinter reads it into a clean printable recipe you can print again any time.",
     howTo: [
       {
         name: "Photograph the card",
