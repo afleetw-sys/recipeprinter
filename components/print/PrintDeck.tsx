@@ -79,8 +79,13 @@ const PHOTO_CLICK_SLOP = 4;
 const PHOTO_SURFACES = [
   // A recipe card's header thumbnail.
   ".recipe-card__photo",
-  // A chapter opener's photo band.
-  ".recipe-card__chapter-photo",
+  // A chapter opener's photo band — but only when the opener is the thing
+  // showing the photo. In "Full page" and "None" the band keeps its SPACE so
+  // chapter titles sit at the same height through the book, and paints nothing
+  // in it. Unqualified, that empty half of the page was a click target with a
+  // hover outline: a box over a picture that is on the facing page, or that
+  // does not exist.
+  ".recipe-card--chapter-with-photo .recipe-card__chapter-photo",
   // A cover's artwork — the single-photo and collage variants share this class.
   ".recipe-card__cover-photo",
   // Both full-page art surfaces: a recipe's facing photo and a chapter's.

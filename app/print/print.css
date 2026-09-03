@@ -5874,22 +5874,22 @@ textarea.recipe-card__toc-title {
    same class names and are not click targets. `:hover` never resolves on
    paper, so none of this needs `no-print`. */
 .recipe-page-slide.is-active .recipe-card__photo,
-.recipe-page-slide.is-active .recipe-card__chapter-photo,
+.recipe-page-slide.is-active .recipe-card--chapter-with-photo .recipe-card__chapter-photo,
 .recipe-page-slide.is-active .recipe-card__cover-photo,
 .recipe-page-slide.is-active .recipe-image-spread__photo,
 .recipe-spread__page.is-focused .recipe-card__photo,
-.recipe-spread__page.is-focused .recipe-card__chapter-photo,
+.recipe-spread__page.is-focused .recipe-card--chapter-with-photo .recipe-card__chapter-photo,
 .recipe-spread__page.is-focused .recipe-card__cover-photo,
 .recipe-spread__page.is-focused .recipe-image-spread__photo {
   cursor: pointer;
 }
 
 .recipe-page-slide.is-active .recipe-card__photo:hover,
-.recipe-page-slide.is-active .recipe-card__chapter-photo:hover,
+.recipe-page-slide.is-active .recipe-card--chapter-with-photo .recipe-card__chapter-photo:hover,
 .recipe-page-slide.is-active .recipe-card__cover-photo:hover,
 .recipe-page-slide.is-active .recipe-image-spread__photo:hover,
 .recipe-spread__page.is-focused .recipe-card__photo:hover,
-.recipe-spread__page.is-focused .recipe-card__chapter-photo:hover,
+.recipe-spread__page.is-focused .recipe-card--chapter-with-photo .recipe-card__chapter-photo:hover,
 .recipe-spread__page.is-focused .recipe-card__cover-photo:hover,
 .recipe-spread__page.is-focused .recipe-image-spread__photo:hover {
   outline: 1px solid color-mix(in srgb, var(--cp-accent) 40%, transparent);
