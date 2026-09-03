@@ -1,7 +1,7 @@
 import { getDownloadURL, ref, uploadBytes } from "firebase/storage";
 import { getFirebaseStorage } from "./firebase/storage";
 import { getFirebaseAuth, firebaseConfigured } from "./firebase/client";
-import { fileToCoverBlob } from "./coverPhoto";
+import { fileToCoverBlob, normalizePhotoBlob } from "./coverPhoto";
 import type { CoverConfig, RecipePagePlacement, Section } from "@/types/recipe";
 import { localStore } from "@/lib/storage";
 import {
@@ -79,11 +79,19 @@ export function isLocalImage(value: string | undefined | null): value is string 
 
 /** Uploads a browser-local image URL to Storage and returns its download URL.
     Used by the save-time sweep to evict anything that would not survive the
-    trip into a Firestore document. Remote URLs and empties pass through. */
+    trip into a Firestore document. Remote URLs and empties pass through.
+
+    Normalized on the way through, like every photo added by hand. This used to
+    upload the raw bytes, which made a Paprika import the one way to get an
+    uncapped full-resolution photo into a book — and the renderer passes each
+    photo's original bytes straight into the PDF, so those landed whole in the
+    file people download. `normalizePhotoBlob` is the tolerant encoder on
+    purpose: this runs mid-save and mid-export, where a photo that fails to
+    re-encode must still reach Storage rather than vanish from the book. */
 export async function materializeDataUrl(value: string | undefined): Promise<string | undefined> {
   if (!isLocalImage(value)) return value;
   const blob = await (await fetch(value)).blob();
-  return uploadBlob(blob);
+  return uploadBlob(await normalizePhotoBlob(blob));
 }
 
 async function materializeCover(cover: CoverConfig | undefined): Promise<CoverConfig | undefined> {
