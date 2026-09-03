@@ -1169,6 +1169,26 @@
 /* Not a button group but a said-thing, so it takes the bar's hairline and
    rhythm and none of its weight: muted, regular, and wrapping rather than
    forcing the bar wider than the page it floats over. */
+/* B / I in the toolbar's text-style group. Letterforms rather than icons: the
+   two glyphs everyone already reads as bold and italic, and they carry the
+   meaning at this size where a drawn icon would not. Serif on purpose — an italic
+   `I` in the UI's sans is nearly indistinguishable from an upright one. */
+.recipe-page-toolbar__style-glyph {
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: var(--cp-fs-small);
+  line-height: 1;
+}
+
+.recipe-page-toolbar__style-glyph--bold {
+  font-weight: 700;
+}
+
+.recipe-page-toolbar__style-glyph--italic {
+  font-style: italic;
+  /* The slant leaves the glyph looking pushed left in a centred box. */
+  padding-right: 2px;
+}
+
 .recipe-page-toolbar__hint {
   gap: 6px;
   /* Narrow enough that the bar stays roughly the width of the page it floats

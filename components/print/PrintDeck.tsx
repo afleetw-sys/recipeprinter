@@ -43,6 +43,7 @@ import type { NavItem, PageSheet, SheetSlot, usePrintSheets } from "@/lib/usePri
 import type { PhotoStyle, useProjectMeta } from "@/lib/project";
 import type { useDeckScroller } from "@/lib/useDeckScroller";
 import { isPhotoOpenClick, type PhotoPress } from "@/lib/photoOpenGesture";
+import { applyRichTextToField, focusedInlineField } from "@/lib/richTextField";
 import type { useRecipeInlineEditor } from "@/lib/useRecipeInlineEditor";
 import type { CoverConfig, QueueItem, Section } from "@/types/recipe";
 
@@ -423,6 +424,56 @@ export function PrintDeck(props: PrintDeckProps) {
   };
 
   /**
+   * Bold and italic for the text being edited, as a group in the toolbar.
+   *
+   * `onMouseDown` with `preventDefault`, exactly like the line-kind switch
+   * above and for the same reason: a button that took focus would blur the
+   * field, and blur commits — so the styling would land on a field already
+   * written back and closed. Keeping focus is also what lets this read the live
+   * selection straight off the focused element, instead of mirroring a
+   * selection into React state on every keystroke.
+   */
+  const renderTextStyleControl = (navItem: NavItem) => {
+    if (navItem.kind !== "recipe") return null;
+    if (!activeInlineEdit || activeRecipeItem?.id !== navItem.recipeId) return null;
+    if (!activeInlineEdit.editingTarget) return null;
+
+    const apply = (style: "bold" | "italic") => (event: ReactMouseEvent) => {
+      event.preventDefault();
+      const field = focusedInlineField();
+      if (!field) return;
+      applyRichTextToField(field, style, activeInlineEdit.onValueChange);
+    };
+
+    return (
+      <div className="recipe-page-toolbar__group" role="group" aria-label="Text style">
+        <button
+          type="button"
+          className="recipe-page-toolbar__btn recipe-page-toolbar__btn--icon"
+          aria-label="Bold"
+          title="Bold (⌘B)"
+          onMouseDown={apply("bold")}
+        >
+          <span className="recipe-page-toolbar__style-glyph recipe-page-toolbar__style-glyph--bold">
+            B
+          </span>
+        </button>
+        <button
+          type="button"
+          className="recipe-page-toolbar__btn recipe-page-toolbar__btn--icon"
+          aria-label="Italic"
+          title="Italic (⌘I)"
+          onMouseDown={apply("italic")}
+        >
+          <span className="recipe-page-toolbar__style-glyph recipe-page-toolbar__style-glyph--italic">
+            I
+          </span>
+        </button>
+      </div>
+    );
+  };
+
+  /**
    * One bar holding everything that acts on the page you're looking at.
    *
    * Front/Back used to sit centred over the page while Edit sat off at its
@@ -536,6 +587,7 @@ export function PrintDeck(props: PrintDeckProps) {
                 ? renderSectionPhotoControl(navItem.recipeId)
                 : null;
     const lineKind = editable ? renderLineKindControl(navItem) : null;
+    const textStyle = editable ? renderTextStyleControl(navItem) : null;
 
     /**
      * The way back to the derived chapter intro.
@@ -657,6 +709,7 @@ export function PrintDeck(props: PrintDeckProps) {
             </div>
           )}
           {lineKind}
+          {textStyle}
           {showFieldsButton && (
             <div className="recipe-page-toolbar__group">
               <button

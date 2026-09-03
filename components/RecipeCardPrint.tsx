@@ -11,6 +11,8 @@ import {
   type ReactNode,
 } from "react";
 import { formatRecipeTime } from "@/lib/time";
+import { RichText } from "@/components/RichText";
+import { applyRichTextToField } from "@/lib/richTextField";
 import { photoGridLayout } from "@/lib/photoGrid";
 import { ImagePicker } from "@/components/ImagePicker";
 import { useWideColumns } from "@/lib/measureHeights";
@@ -482,7 +484,7 @@ export const RecipeCardFace = memo(function RecipeCardFace({
           className={`recipe-card__headnote ${canEdit ? "recipe-card__headnote--editable" : ""}`}
           onClick={canEdit ? (event) => startEdit(target, recipe.description ?? "", event) : undefined}
         >
-          {recipe.description}
+          <RichText text={recipe.description} />
         </p>
       );
     }
@@ -572,6 +574,18 @@ export const RecipeCardFace = memo(function RecipeCardFace({
     event: React.KeyboardEvent<HTMLInputElement | HTMLTextAreaElement>,
     target?: RecipeCardEditTarget,
   ) {
+    // Cmd/Ctrl+B and Cmd/Ctrl+I, the shortcuts these mean everywhere else.
+    // Checked before Escape/Enter because a modifier chord is never either.
+    if ((event.metaKey || event.ctrlKey) && !event.altKey) {
+      const style = event.key === "b" || event.key === "B" ? "bold"
+        : event.key === "i" || event.key === "I" ? "italic"
+        : null;
+      if (style && inlineEdit) {
+        event.preventDefault();
+        applyRichTextToField(event.currentTarget, style, inlineEdit.onValueChange);
+        return;
+      }
+    }
     if (event.key === "Escape") {
       event.preventDefault();
       inlineEdit?.onCancel();
@@ -731,7 +745,7 @@ export const RecipeCardFace = memo(function RecipeCardFace({
             onKeyDown={(event) => handleEditKeyDown(event, target)}
           />
         ) : (
-          text
+          <RichText text={text} />
         )}
         {!isEditingThis && addLine("ingredient", index + 1)}
       </li>
@@ -743,7 +757,13 @@ export const RecipeCardFace = memo(function RecipeCardFace({
   // second ref/focus target fighting the real, visible one for the same
   // underlying item while it's actively being edited.
   function renderIngredientProbeItem(ing: Recipe["ingredients"][number]): ReactNode {
-    return <li className="recipe-card__editable-line">{ingredientText(ing)}</li>;
+    // The probe draws the REAL formatting, not the stripped text: bold is wider
+    // than body, and that width is exactly what this is measuring.
+    return (
+      <li className="recipe-card__editable-line">
+        <RichText text={ingredientText(ing)} />
+      </li>
+    );
   }
 
   function renderInstructionItem(step: Recipe["instructions"][number], index: number): ReactNode {
@@ -769,7 +789,9 @@ export const RecipeCardFace = memo(function RecipeCardFace({
             onKeyDown={(event) => handleEditKeyDown(event, target)}
           />
         ) : (
-          <span>{step.text}</span>
+          <span>
+            <RichText text={step.text} />
+          </span>
         )}
         {!isEditingThis && addLine("step", index + 1)}
       </li>
@@ -781,7 +803,9 @@ export const RecipeCardFace = memo(function RecipeCardFace({
     return (
       <li className="recipe-card__editable-line">
         <span className="recipe-card__step-number">{step.step}</span>
-        <span>{step.text}</span>
+        <span>
+          <RichText text={step.text} />
+        </span>
       </li>
     );
   }

@@ -1,4 +1,5 @@
 import { formatRecipeTime } from "@/lib/time";
+import { stripRichText } from "@/lib/richText";
 import type { CoverConfig, Recipe, RecipePageLayout } from "@/types/recipe";
 import type { CardSectionLayout, PrintCardSize, RecipePrintTemplate } from "@/components/RecipeCardPrint";
 
@@ -306,7 +307,11 @@ export function buildColumnChunks<T>(
 }
 
 function textCost(value: string): number {
-  return value.length + Math.max(0, value.split(/\s+/).length - 1) * 2;
+  // The markers are not printed, so they must not be counted. This is the
+  // pre-measurement GUESS; the DOM probe that follows renders the real
+  // `<strong>`/`<em>` and has the last word on where a page breaks.
+  const printed = stripRichText(value);
+  return printed.length + Math.max(0, printed.split(/\s+/).length - 1) * 2;
 }
 
 function totalTextCost<T>(items: T[], label: (item: T) => string): number {
