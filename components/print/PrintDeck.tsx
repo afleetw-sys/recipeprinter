@@ -31,6 +31,7 @@ import { ScaledPage } from "@/components/print/ScaledPage";
 import { PHOTO_STYLE_OPTIONS } from "@/components/print/photoStyle";
 import { formatRecipeTime } from "@/lib/time";
 import { gutterSideForRole } from "@/lib/cookbookPresets";
+import { chapterIntroFromRecipes, chapterRecipeTitles } from "@/lib/chapterIntro";
 import {
   BodyTextGlyph,
   HeadingGlyph,
@@ -532,6 +533,30 @@ export function PrintDeck(props: PrintDeckProps) {
     const lineKind = editable ? renderLineKindControl(navItem) : null;
 
     /**
+     * The way back to the derived chapter intro.
+     *
+     * An opener left alone names the recipes filed under it, and re-words itself
+     * whenever they move. Typing an intro of your own replaces that line for
+     * good — nothing overwrites what a cook wrote — which leaves no way back
+     * except guessing that emptying the field restores it. So the offer is made
+     * out loud, while that chapter is being edited and only once there is
+     * something to undo, and it says the line it would restore.
+     *
+     * In the toolbar rather than beside the field it resets: the card is drawn
+     * at print scale, where 9px of app chrome lands at about a third of a
+     * legible size.
+     */
+    const introReset = (() => {
+      if (navItem.kind !== "divider" || !editing) return null;
+      const section = sections.find((candidate) => candidate.id === navItem.recipeId);
+      if (!section?.intro?.trim()) return null;
+      return {
+        sectionId: section.id,
+        derived: chapterIntroFromRecipes(chapterRecipeTitles(section.items)),
+      };
+    })();
+
+    /**
      * The chapters this recipe could move to, or null outside a cookbook and
      * on anything that isn't a recipe. An untitled section is the implicit
      * ungrouped pool, so it is offered under the name the rail gives it rather
@@ -655,6 +680,21 @@ export function PrintDeck(props: PrintDeckProps) {
                   : editing
                     ? "Done"
                     : "Edit"}
+              </button>
+            </div>
+          )}
+          {introReset && (
+            <div className="recipe-page-toolbar__group">
+              <button
+                type="button"
+                className="recipe-page-toolbar__btn"
+                title={introReset.derived}
+                onClick={(event) => {
+                  event.stopPropagation();
+                  projectMeta.setSectionIntro(introReset.sectionId, undefined);
+                }}
+              >
+                Use recipe names
               </button>
             </div>
           )}

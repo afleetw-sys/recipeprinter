@@ -61,6 +61,24 @@ function line(names: string[], rest: number): string {
 }
 
 /**
+ * A chapter's recipe titles, in book order — the input the opener's default
+ * intro is built from.
+ *
+ * Structural on purpose: both callers (the packer that builds the opener sheet
+ * and the toolbar that offers to restore the derived line) hold the same
+ * section items, and reading the title the same way in one place is what keeps
+ * the line the toolbar promises identical to the line the page prints. A queue
+ * item carries its own `title` until parsing resolves the recipe's.
+ */
+export function chapterRecipeTitles(
+  items: readonly { title?: string; recipe?: { title?: string } }[],
+): string[] {
+  return items
+    .map((item) => item.recipe?.title?.trim() || item.title?.trim())
+    .filter((title): title is string => Boolean(title));
+}
+
+/**
  * The chapter opener's default intro, built from the titles of the recipes
  * filed under it (in book order).
  */

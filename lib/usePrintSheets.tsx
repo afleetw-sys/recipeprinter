@@ -17,6 +17,7 @@ import {
   type PhotoStyle,
 } from "@/lib/project";
 import { paginateTocEntries } from "@/lib/tocPagination";
+import { chapterRecipeTitles } from "@/lib/chapterIntro";
 import {
   getCookbookPreset,
   presetCardHeightIn,
@@ -751,9 +752,7 @@ export function usePrintSheets({
             // rendered on its own facing sheet below, never duplicated here.
             photoUrl: sectionPhotoMode === "band" ? sectionPhoto : undefined,
             intro: section.intro,
-            recipeTitles: section.items
-              .map((item) => item.recipe?.title?.trim() || item.title?.trim())
-              .filter((title): title is string => Boolean(title)),
+            recipeTitles: chapterRecipeTitles(section.items),
           }],
           backGroupNeeded: false,
         });

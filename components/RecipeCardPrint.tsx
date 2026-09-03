@@ -1347,7 +1347,10 @@ export const DividerFace = memo(function DividerFace({
             value={inlineEdit.intro ?? ""}
             // The placeholder is the line that would actually print, not a
             // generic prompt — an empty field here is a decision, so show its
-            // result rather than hiding it until the cook clicks away.
+            // result rather than hiding it until the cook clicks away. The way
+            // back once it has been typed over lives in the page toolbar, with
+            // the rest of the app's chrome: a control in here would be drawn at
+            // the card's print scale, which is a third of a legible size.
             placeholder={derivedIntro}
             aria-label="Chapter intro"
             onChange={(event) => inlineEdit.onIntroChange?.(event.target.value)}
