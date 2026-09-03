@@ -47,6 +47,25 @@ function minutesFromRecipeTime(value: string): number | null {
   return null;
 }
 
+/**
+ * A time somebody WROTE a qualifier into: a range, an open end, an
+ * approximation, a fraction.
+ *
+ * These must survive to the page untouched. `minutesFromRecipeTime` searches
+ * for the first number that has a unit after it, which on "12 to 24 hrs."
+ * finds the 24 and answers 1440 — so a card that says a roast can be done in
+ * twelve hours printed "24 hr", telling the cook to run a crock pot for a day.
+ * Off a pre-printed recipe card ("Cooking time ____") a range is the norm, not
+ * an edge case.
+ *
+ * Collapsing is only safe for a duration stated as ONE quantity. Anything the
+ * cook qualified says something a single number cannot, so it is passed
+ * through verbatim rather than approximated. A compound like "1 hour 30
+ * minutes" is still one duration and still normalizes.
+ */
+const AUTHORED_QUALIFIER =
+  /\d\s*(?:to|or)\b|\d\s*[-–—+/]|\b(?:at least|up to|or more|or so|about|around|roughly)\b|~/i;
+
 export function formatRecipeTime(value?: string | number | null): string | null {
   if (value === null || value === undefined) return null;
 
@@ -56,6 +75,8 @@ export function formatRecipeTime(value?: string | number | null): string | null 
 
   const trimmed = value.trim();
   if (!trimmed) return null;
+
+  if (AUTHORED_QUALIFIER.test(trimmed)) return trimmed;
 
   const minutes = minutesFromRecipeTime(trimmed);
   return minutes === null ? trimmed : formatMinutes(minutes) || trimmed;
