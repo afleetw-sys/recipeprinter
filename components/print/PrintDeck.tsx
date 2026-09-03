@@ -42,6 +42,7 @@ import {
 import type { NavItem, PageSheet, SheetSlot, usePrintSheets } from "@/lib/usePrintSheets";
 import type { PhotoStyle, useProjectMeta } from "@/lib/project";
 import type { useDeckScroller } from "@/lib/useDeckScroller";
+import { isPhotoOpenClick, type PhotoPress } from "@/lib/photoOpenGesture";
 import type { useRecipeInlineEditor } from "@/lib/useRecipeInlineEditor";
 import type { CoverConfig, QueueItem, Section } from "@/types/recipe";
 
@@ -890,17 +891,34 @@ export function PrintDeck(props: PrintDeckProps) {
    * and a drag ends in a `click` — so a pointer that travelled more than a few
    * pixels was aiming the picture, not asking to replace it.
    */
-  const photoPointerStart = useRef<{ x: number; y: number } | null>(null);
+  const photoPointerStart = useRef<PhotoPress | null>(null);
   const notePhotoPointer = (event: ReactMouseEvent) => {
-    photoPointerStart.current = { x: event.clientX, y: event.clientY };
+    const target = event.target as HTMLElement;
+    photoPointerStart.current = {
+      x: event.clientX,
+      y: event.clientY,
+      // WHICH photo was pressed, not just where. The deck scrolls natively, so
+      // a page can travel under a stationary cursor — comparing coordinates
+      // alone cannot tell that apart from a still click (see
+      // `isPhotoOpenClick`).
+      surface: target.closest(PHOTO_SURFACES),
+    };
   };
   const openPhotoOnClick = (navItem: NavItem, active: boolean) => (event: ReactMouseEvent) => {
+    const press = photoPointerStart.current;
+    // One press opens at most one photo. Left set, a stale press stays a
+    // standing invitation for whatever click arrives next.
+    photoPointerStart.current = null;
     if (!active) return;
     const target = event.target as HTMLElement;
     if (target.closest("button, a, input, textarea")) return;
-    if (!target.closest(PHOTO_SURFACES)) return;
-    const start = photoPointerStart.current;
-    if (start && Math.hypot(event.clientX - start.x, event.clientY - start.y) > PHOTO_CLICK_SLOP) {
+    if (
+      !isPhotoOpenClick({
+        press,
+        click: { x: event.clientX, y: event.clientY, surface: target.closest(PHOTO_SURFACES) },
+        slop: PHOTO_CLICK_SLOP,
+      })
+    ) {
       return;
     }
     const key =
