@@ -302,8 +302,6 @@ function InteriorDocument({ payload }: { payload: ExportPayload }) {
     doubleSided: settings.doubleSided,
     photosOn: headerPhotosOn && anyRecipeHasImage,
     sourceUrlOn: settings.showSourceUrl && anyRecipeHasSourceUrl,
-    // Absent on books saved before the toggle existed: those printed them.
-    descriptionOn: settings.showDescription ?? true,
     template,
     // The book's real page — what every recipe is measured against, and what
     // the preview draws too, so the two cannot disagree.
@@ -393,7 +391,6 @@ function InteriorDocument({ payload }: { payload: ExportPayload }) {
             doubleSided={settings.doubleSided}
             cookbookMode={cookbookMode}
             showSourceUrl={settings.showSourceUrl && anyRecipeHasSourceUrl}
-            showDescription={settings.showDescription ?? true}
             showCutLines={settings.showCutLines && cardSize === "card-6x4"}
             tocKicker={settings.tocKicker}
             tocTitle={settings.tocTitle}

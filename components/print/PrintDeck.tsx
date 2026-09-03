@@ -169,7 +169,6 @@ interface PrintDeckProps {
   cardSize: PrintCardSize;
   showCutLines: boolean;
   showSourceUrl: boolean;
-  descriptionOn: boolean;
   sourceUrlOn: boolean;
   // Sheets / nav / spreads
   sheets: ReturnType<typeof usePrintSheets>["sheets"];
@@ -278,7 +277,6 @@ export function PrintDeck(props: PrintDeckProps) {
     cardSize,
     showCutLines,
     showSourceUrl,
-    descriptionOn,
     sourceUrlOn,
     sheets,
     navItems,
@@ -466,10 +464,7 @@ export function PrintDeck(props: PrintDeckProps) {
           recipe.instructions.length === 0 ||
           !formatRecipeTime(recipe.totalTime || recipe.cookTime || recipe.prepTime) ||
           !(recipe.servings ?? recipe.yield) ||
-          // Only a field the book actually prints can be a missing one. With
-          // notes switched off the slot is not on the page at all, so every
-          // recipe was reporting a gap for something nobody asked it to show.
-          (cookbook && descriptionOn && !recipe.description) ||
+          (cookbook && !recipe.description) ||
           // The link field only exists while the source-link setting is on, so
           // a missing link is only a hidden FIELD when that field would show.
           (showSourceUrl && !recipe.sourceUrl)
@@ -822,7 +817,6 @@ export function PrintDeck(props: PrintDeckProps) {
     role: "left" | "right" | "single" = "single",
   ) => (
     <ScaledPage
-      showDescription={descriptionOn}
       preset={projectMeta.meta.cookbookPreset}
       sheet={sheet}
       isLastSheet={navItem.sheetIndex === sheets.length - 1}
@@ -1341,7 +1335,6 @@ export function PrintDeck(props: PrintDeckProps) {
                     />
                   ) : (
                   <ScaledPage
-                    showDescription={descriptionOn}
                     preset={projectMeta.meta.cookbookPreset}
                     sheet={sheet}
                     isLastSheet={navItem.sheetIndex === sheets.length - 1}

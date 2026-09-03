@@ -1742,15 +1742,31 @@
   gap: 0;
 }
 
-/* A verb sitting under the setting it acts on ("Clear website notes" beneath
-   the Notes checkbox). The section is a flex column, so without this the
-   button stretches the full width of the panel and reads as a primary action
-   for the whole group rather than a small one belonging to the line above it.
-   The top margin cancels most of the section's own gap, which keeps it
-   attached to its checkbox instead of floating between two settings. */
+/* A one-off action inside a settings group ("Clear 4 website notes"). Text,
+   not a button: as a `.btn-compact` it was a filled red box standing in a
+   column of checkboxes, which gave a thing you press once at the start of a
+   book more weight on the panel than every setting around it. At caption size
+   in the destructive colour it reads as what it is — small, available, and
+   plainly not one of the toggles.
+
+   `align-self` because the section is a flex column and a stretched action
+   reads as belonging to the whole group rather than to the line it sits on. */
 .recipe-config-inline-action {
   align-self: flex-start;
-  margin-top: -2px;
+  margin-top: 4px;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--cp-error);
+  font-size: var(--cp-fs-caption);
+  font-weight: 600;
+  line-height: 1.3;
+  text-align: left;
+  cursor: pointer;
+}
+
+.recipe-config-inline-action:hover {
+  text-decoration: underline;
 }
 
 /* A field's name inside a settings group. Normal body text, sentence case:
@@ -7058,6 +7074,42 @@ textarea.recipe-card__toc-title {
     print-color-adjust: exact;
     break-inside: avoid-page;
     page-break-inside: avoid;
+  }
+
+  /* …except a chapter opener, which is a GRID (a 56% photo band over a 44%
+     body band), not a document flow. `display: block` above flattens it: the
+     row template goes inert, and `.recipe-card__chapter-photo` — whose only
+     in-flow content is a hidden `Photo unavailable` span — collapses to ZERO
+     height, taking its `inset: 0` image down with it. So every opener printed
+     with its text jammed against the top of the sheet and no photo at all,
+     while the preview showed the band and the text 56% down. That is exactly
+     the collapse the `align-items: stretch` comment on `.recipe-card--chapter`
+     describes, reintroduced here by a rule written for recipe faces.
+
+     Re-asserted for the opener rather than narrowing the base rule, because
+     recipe faces genuinely need block layout to fragment (see above) and an
+     opener never fragments — it is one fixed-height page with
+     `break-inside: avoid-page`. Height comes from the base rule, which is what
+     makes the percentage rows resolve. */
+  .recipe-card--chapter {
+    display: grid !important;
+  }
+
+  /* The framed themes deliberately opt OUT of the band grid (see "Per-theme
+     chapter openers"): text-only they are a centered block, and with an in-card
+     photo they are a centered flex column. Those rules carry no `!important`,
+     so `.recipe-card`'s `display: block !important` above was already
+     overriding the flex one — a framed opener with an in-card photo has never
+     printed the way it previews. Restated here at matching specificity so each
+     theme keeps its own opener geometry on paper. */
+  .recipe-template--heirloom .recipe-card--chapter,
+  .recipe-template--keepsake .recipe-card--chapter {
+    display: block !important;
+  }
+
+  .recipe-template--heirloom .recipe-card--chapter-with-photo,
+  .recipe-template--keepsake .recipe-card--chapter-with-photo {
+    display: flex !important;
   }
 
   /* Matches --recipe-card-width/-min-height above (5.75in x 3.75in, not the

@@ -30,8 +30,6 @@ interface PrintConfigPanelProps {
   setCardSize: Dispatch<SetStateAction<PrintCardSize>>;
   anyRecipeHasImage: boolean;
   anyRecipeHasSourceUrl: boolean;
-  showDescription: boolean;
-  setShowDescription: Dispatch<SetStateAction<boolean>>;
   importedNoteCount: number;
   onClearImportedNotes: () => void;
   bookPhotoStyle: PhotoStyle | null;
@@ -74,8 +72,6 @@ export function PrintConfigPanel({
   setCardSize,
   anyRecipeHasImage,
   anyRecipeHasSourceUrl,
-  showDescription,
-  setShowDescription,
   importedNoteCount,
   onClearImportedNotes,
   bookPhotoStyle,
@@ -165,8 +161,6 @@ export function PrintConfigPanel({
           setCardSize={setCardSize}
           anyRecipeHasImage={anyRecipeHasImage}
           anyRecipeHasSourceUrl={anyRecipeHasSourceUrl}
-          showDescription={showDescription}
-          setShowDescription={setShowDescription}
           importedNoteCount={importedNoteCount}
           onClearImportedNotes={onClearImportedNotes}
           bookPhotoStyle={bookPhotoStyle}

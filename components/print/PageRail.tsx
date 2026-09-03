@@ -121,7 +121,6 @@ interface PageRailProps {
   previewTemplate: RecipePrintTemplate;
   continueOnBack: boolean;
   previewSourceUrlOn: boolean;
-  previewDescriptionOn: boolean;
   organizeMode: boolean;
   enterOrganizeMode: () => void;
   exitOrganizeMode: () => void;
@@ -184,7 +183,6 @@ export function PageRail(props: PageRailProps) {
     previewTemplate,
     continueOnBack,
     previewSourceUrlOn,
-    previewDescriptionOn,
     organizeMode,
     enterOrganizeMode,
     exitOrganizeMode,
@@ -928,7 +926,6 @@ export function PageRail(props: PageRailProps) {
                                 template={previewTemplate}
                                 doubleSided={continueOnBack}
                                 showSourceUrl={previewSourceUrlOn}
-                                showDescription={previewDescriptionOn}
                                 showCutLines={false}
                                 // See the single-thumb note: flat stand-in only.
                                 showDecoration={false}
@@ -1047,7 +1044,6 @@ export function PageRail(props: PageRailProps) {
                         template={previewTemplate}
                         doubleSided={continueOnBack}
                         showSourceUrl={previewSourceUrlOn}
-                                showDescription={previewDescriptionOn}
                         showCutLines={false}
                         // Rail thumbnails paint a flat CSS stand-in for the
                         // decorative layer (print.css); rendering the real one

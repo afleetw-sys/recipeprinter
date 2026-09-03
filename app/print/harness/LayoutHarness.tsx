@@ -357,7 +357,6 @@ function ComboRunner({
         template={combo.template}
         hasPhoto={combo.hasPhoto}
         showSourceUrl={combo.showSourceUrl}
-        showDescription
         onSettled={(pages) => setSettledPages((prev) => prev ?? pages)}
       />
       {settledPages && (

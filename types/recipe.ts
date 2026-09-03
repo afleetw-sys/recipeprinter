@@ -268,9 +268,12 @@ export interface PrintProjectSettings {
   doubleSided: boolean;
   showPhoto: boolean;
   showSourceUrl: boolean;
-  /** Cookbook only: print each recipe's note under its title. On for
-      projects saved before the toggle existed, which is what they looked
-      like. */
+  /** @deprecated Notes have no on/off any more — an empty note prints nothing,
+      so "hidden" and "blank" were the same page reached two ways, and the
+      switch was the half that hid the slot you write into. Still declared
+      because projects saved while it existed carry it; nothing reads it, and a
+      book that was saved with it false shows its notes again on reopening.
+      The name stays taken so it is never reused for something else. */
   showDescription?: boolean;
   showCutLines: boolean;
   /** Book-only settings — stay undefined/off until "Make it a cookbook" has

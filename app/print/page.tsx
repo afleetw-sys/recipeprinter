@@ -234,7 +234,6 @@ function printProjectFingerprint(
   showPhoto: boolean,
   showSourceUrl: boolean,
   showCutLines: boolean,
-  showDescription: boolean,
 ): string {
   return JSON.stringify({
     items,
@@ -245,7 +244,6 @@ function printProjectFingerprint(
     showPhoto,
     showSourceUrl,
     showCutLines,
-    showDescription,
   });
 }
 
@@ -288,9 +286,6 @@ export default function PrintPage() {
      away. A stored preference still wins on the next visit. */
   const [showPhoto, setShowPhoto] = useState(true);
   const [showSourceUrl, setShowSourceUrl] = useState(false);
-  /* On by default: a description under the title is what every cookbook printed
-     before this toggle existed, so a book saved then must reopen unchanged. */
-  const [showDescription, setShowDescription] = useState(true);
   const [showDonateDialog, setShowDonateDialog] = useState(false);
   const [showCookbookOfferDialog, setShowCookbookOfferDialog] = useState(false);
   const [cookbookBuilding, setCookbookBuilding] = useState(false);
@@ -529,7 +524,6 @@ export default function PrintPage() {
   // the per-page picker overrides individual recipes on top of it.
   const defaultFullPage = cookbookMode && photoStyle === "full";
   const sourceUrlOn = showSourceUrl && anyRecipeHasSourceUrl;
-  const descriptionOn = cookbookMode ? showDescription : true;
   // Distinct recipe photos, offered as cover-photo choices in the cover editor.
   const coverPhotoCandidates = useMemo(
     () =>
@@ -596,7 +590,6 @@ export default function PrintPage() {
     doubleSided,
     photosOn,
     sourceUrlOn,
-    descriptionOn,
     template,
     // The preview page IS the book's real sheet, and so is the card every
     // recipe is measured against (see `presetCardDims`).
@@ -620,7 +613,6 @@ export default function PrintPage() {
   // in usePrintSheets against the committed frame), so there's no global
   // preview-photo flag to thread to the faces anymore.
   const previewSourceUrlOn = previewConfig?.sourceUrlOn ?? sourceUrlOn;
-  const previewDescriptionOn = previewConfig?.descriptionOn ?? descriptionOn;
 
   // Every named section has an opener page, so its divider nav item carries the
   // title and recipe rows never need a synthetic section header.
@@ -1912,7 +1904,6 @@ export default function PrintPage() {
         doubleSided,
         showPhoto,
         showSourceUrl,
-        showDescription,
         showCutLines,
         cookbookMode: projectMeta.meta.cookbookMode,
         tableOfContents: projectMeta.meta.tableOfContents,
@@ -1994,7 +1985,6 @@ export default function PrintPage() {
         showPhoto,
         showSourceUrl,
         showCutLines,
-        showDescription,
       );
       setSaveStatus("saved");
     } catch (error) {
@@ -2153,7 +2143,6 @@ export default function PrintPage() {
         showPhoto,
         showSourceUrl,
         showCutLines,
-        showDescription,
       );
       if (fp === lastSavedFingerprintRef.current) return;
       void handleSaveProject();
@@ -2422,7 +2411,6 @@ export default function PrintPage() {
         doubleSided,
         showPhoto,
         showSourceUrl,
-        showDescription,
         showCutLines,
         cookbookMode: true,
         tableOfContents: projectMeta.meta.tableOfContents,
@@ -2615,8 +2603,6 @@ export default function PrintPage() {
         setDoubleSided(project.settings.doubleSided);
         setShowPhoto(project.settings.showPhoto);
         setShowSourceUrl(project.settings.showSourceUrl);
-        // Absent on books saved before the toggle: those printed descriptions.
-        setShowDescription(project.settings.showDescription ?? true);
         setShowCutLines(project.settings.showCutLines);
         if (source === "account") {
           projectRevisionRef.current = Number(project.revision ?? 0);
@@ -2799,7 +2785,6 @@ export default function PrintPage() {
         showPhoto,
         showSourceUrl,
         showCutLines,
-        showDescription,
       );
     if (lastSavedFingerprintRef.current === "__loaded__") {
       lastSavedFingerprintRef.current = fingerprint();
@@ -4266,7 +4251,6 @@ export default function PrintPage() {
           previewTemplate={previewTemplate}
           continueOnBack={continueOnBack}
           previewSourceUrlOn={previewSourceUrlOn}
-          previewDescriptionOn={previewDescriptionOn}
           organizeMode={organizeMode}
           enterOrganizeMode={enterOrganizeMode}
           exitOrganizeMode={exitOrganizeMode}
@@ -4328,7 +4312,6 @@ export default function PrintPage() {
           showCutLines={showCutLines}
           showSourceUrl={showSourceUrl}
           sourceUrlOn={sourceUrlOn}
-          descriptionOn={descriptionOn}
           sheets={sheets}
           navItems={navItems}
           spreads={spreads}
@@ -4410,8 +4393,6 @@ export default function PrintPage() {
           setCardSize={setCardSize}
           anyRecipeHasImage={anyRecipeHasImage}
           anyRecipeHasSourceUrl={anyRecipeHasSourceUrl}
-          showDescription={showDescription}
-          setShowDescription={setShowDescription}
           importedNoteCount={importedNoteCount}
           onClearImportedNotes={() => setConfirmClearNotes(true)}
           bookPhotoStyle={bookPhotoStyle}
