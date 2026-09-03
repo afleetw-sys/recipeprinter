@@ -29,6 +29,7 @@ import {
 import { IconButton } from "@/components/Controls";
 import { ScaledPage } from "@/components/print/ScaledPage";
 import { PendingImportRows } from "@/components/print/PendingImportRows";
+import { pendingAnchorIndex, sectionDrawsNestingLine } from "@/lib/railPending";
 import { PAGE_DIMS } from "@/lib/printGeometry";
 import type { PrintCardSize, RecipePrintTemplate } from "@/components/RecipeCardPrint";
 import type { NavItem, usePrintSheets } from "@/lib/usePrintSheets";
@@ -145,6 +146,9 @@ interface PageRailProps {
   goToSlide: (index: number) => void;
   railShake: { recipeId: string; nonce: number } | null;
   pendingAddAfterRecipeId: string | null;
+  /** The section an in-flight add is targeting, even when it holds no recipe
+      yet to sit under. See `pendingAnchorRowIndex`. */
+  pendingAddSectionId: string | null;
   pendingImportItems: QueueItem[];
   queue: ReturnType<typeof useQueue>;
   setPendingAddSectionId: Dispatch<SetStateAction<string | null>>;
@@ -207,6 +211,7 @@ export function PageRail(props: PageRailProps) {
     goToSlide,
     railShake,
     pendingAddAfterRecipeId,
+    pendingAddSectionId,
     pendingImportItems,
     queue,
     setPendingAddSectionId,
@@ -235,6 +240,40 @@ export function PageRail(props: PageRailProps) {
     clearRailSelection,
     orderedRailSelection,
   } = railSelection;
+
+  /**
+   * Which section the recipes currently importing are landing in, and whether
+   * that section draws the nesting line.
+   *
+   * Read from the TARGET section rather than from the row the spinner happens
+   * to sit under, because the two disagree in exactly the case that was broken:
+   * adding the FIRST recipe to a section leaves `pendingAddAfterRecipeId` null
+   * (there is no recipe to sit after), and the row it then anchors to is the
+   * chapter opener — which is not itself a section child.
+   */
+  const pendingSectionId = pendingAddAfterRecipeId
+    ? (sectionAndIndexForItem(pendingAddAfterRecipeId)?.sectionId ?? null)
+    : pendingAddSectionId;
+  // Same test `isSectionChild` makes per row: a section only draws the line
+  // once it is a real, named chapter.
+  const pendingNested = sectionDrawsNestingLine(pendingSectionId, sections, sectionTitleForId);
+
+  /**
+   * The row the spinners hang under: the LAST one belonging to that recipe, not
+   * every one of them — a recipe that runs to two pages is two rows carrying
+   * the same `recipeId`, so a plain equality test drew the spinner under both.
+   *
+   * With no recipe to sit after, fall back to the last row of the target
+   * section (its chapter opener, at minimum). Without that, the first recipe
+   * added to a section showed its spinner at the very bottom of the rail,
+   * outside the chapter it was being added to.
+   */
+  const pendingAnchorRowIndex = pendingAnchorIndex(railRows, {
+    afterRecipeId: pendingAddAfterRecipeId,
+    sectionId: pendingSectionId,
+    recipeIdOf: (row) => (row.navItem.kind === "recipe" ? row.navItem.recipeId : null),
+    sectionIdOf: (row) => sectionForNavItem(row.navItem)?.id ?? null,
+  });
 
   // A drag that started on a selected recipe carries every selected recipe, so
   // every one of them is a source and dims — not just the card under the
@@ -941,7 +980,7 @@ export function PageRail(props: PageRailProps) {
                     </div>
                   </div>
                   {unitIdx === pendingAnchorUnitIdx && (
-                    <PendingImportRows items={pendingImportItems} nested={nested} />
+                    <PendingImportRows items={pendingImportItems} nested={pendingNested} />
                   )}
                   </Fragment>
                 );
@@ -968,22 +1007,9 @@ export function PageRail(props: PageRailProps) {
                 ));
               })()
             : (() => {
-              /**
-               * The row the pending imports hang under: the LAST one belonging
-               * to that recipe, not every one of them.
-               *
-               * A recipe that runs to two pages is two rows carrying the same
-               * `recipeId`, so a plain equality test was true for both and drew
-               * the spinner once under each page. The anchor is a position, not
-               * an id, which is the only way to say "after this recipe" when a
-               * recipe is more than one row.
-               */
-              const pendingAnchorRowIndex = pendingAddAfterRecipeId
-                ? railRows.reduce(
-                    (last, row, i) => (row.navItem.recipeId === pendingAddAfterRecipeId ? i : last),
-                    -1,
-                  )
-                : -1;
+              // `pendingAnchorRowIndex` / `pendingNested` are computed once at
+              // the top of the component, so this branch and the trailing
+              // fallback below cannot disagree about where the spinner goes.
               return railRows.map(({ header, navItem, index }, rowIndex) => {
             const headerSectionId =
               header && navItem.kind === "recipe" ? sectionAndIndexForItem(navItem.recipeId)?.sectionId : null;
@@ -1062,7 +1088,7 @@ export function PageRail(props: PageRailProps) {
                 </div>
               </div>
               {rowIndex === pendingAnchorRowIndex && (
-                <PendingImportRows items={pendingImportItems} nested={isSectionChild} />
+                <PendingImportRows items={pendingImportItems} nested={pendingNested} />
               )}
               </Fragment>
             );
@@ -1071,7 +1097,9 @@ export function PageRail(props: PageRailProps) {
 
           {/* Keep pending imports visible without pretending a page or image
               exists yet. The real page appears only once parsing completes. */}
-          {!pendingAddAfterRecipeId && <PendingImportRows items={pendingImportItems} />}
+          {pendingAnchorRowIndex === -1 && (
+            <PendingImportRows items={pendingImportItems} nested={pendingNested} />
+          )}
 
           {tileMenu && (
             <MoveToSectionMenu

@@ -4329,6 +4329,7 @@ export default function PrintPage() {
           goToSlide={goToSlide}
           railShake={railShake}
           pendingAddAfterRecipeId={pendingAddAfterRecipeId}
+          pendingAddSectionId={pendingAddSectionId}
           pendingImportItems={pendingImportItems}
           queue={queue}
           setPendingAddSectionId={setPendingAddSectionId}
