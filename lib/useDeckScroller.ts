@@ -247,9 +247,30 @@ export function useDeckScroller({
     const { scrollTop, scrollLeft } = deck;
     slideCentersRef.current = slideRefs.current.map((slide) => {
       if (!slide) return { top: 0, left: 0 };
-      const preview = slide.querySelector<HTMLElement>(PREVIEW_SELECTOR);
-      if (preview) {
-        const rect = preview.getBoundingClientRect();
+      /**
+       * The centre of whatever the browser SNAPS, which is not always the
+       * page inside the slide.
+       *
+       * This used to take the first `.recipe-page-scaler` it found, always.
+       * For a recipe card that is right, because the scaler is what carries
+       * `scroll-snap-align`. For a cookbook the SLIDE carries it — and a
+       * cookbook slide is a spread, so the first scaler in it is the LEFT
+       * page, sitting off to one side of the point the browser rests at.
+       *
+       * The deck then held two different answers to "where does this slide
+       * come to rest": this one, used to decide which page you are looking
+       * at, and `snapTargetIn`, used to scroll there. Scrolling landed on the
+       * browser's answer and the deck read it against its own, which is the
+       * scroll going past a page and being pulled back onto it. Cookbooks
+       * only, because on a card the two answers are the same element.
+       *
+       * TOC pages escaped it by having no scaler to find, so they fell to the
+       * slide-based branch below, which is the right answer for a cookbook by
+       * accident.
+       */
+      const target = snapTargetIn(slide);
+      const rect = target.getBoundingClientRect();
+      if (rect.width > 0 && rect.height > 0) {
         return {
           top: rect.top - deckRect.top + scrollTop + rect.height / 2,
           left: rect.left - deckRect.left + scrollLeft + rect.width / 2,

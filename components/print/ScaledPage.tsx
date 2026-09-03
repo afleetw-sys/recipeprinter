@@ -295,7 +295,11 @@ export const ScaledPage = memo(function ScaledPage({
                 <span className="photo-unavailable-message">Photo unavailable</span>
                 {repositionable && (
                   <span className="recipe-image-spread__hint no-print">
-                    {onZoomChange ? "Drag to reposition · pinch to zoom" : "Drag to reposition"}
+                    {/* Just the drag. Pinching stopped zooming the photo when a
+                        pinch became one thing everywhere on the deck, and the
+                        hint outlived it — offering a gesture that now does
+                        something else entirely. Photo zoom is the stepper. */}
+                    Drag to reposition
                   </span>
                 )}
               </div>
