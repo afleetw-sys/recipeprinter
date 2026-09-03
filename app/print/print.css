@@ -4688,6 +4688,7 @@ textarea.recipe-card__cover-blurb,
 textarea.recipe-card__title,
 textarea.recipe-card__section-title,
 textarea.recipe-card__divider-title,
+textarea.recipe-card__chapter-subtitle,
 textarea.recipe-card__chapter-intro,
 textarea.recipe-card__toc-kicker,
 textarea.recipe-card__toc-title {
@@ -5455,7 +5456,7 @@ textarea.recipe-card__toc-title {
 }
 
 /* Every field is a real, permanently-mounted input while page edit mode is
-   on (see togglePageEditMode in app/print/page.tsx) — there's no separate
+   on (see toggleShowEmptyFields in lib/useRecipeInlineEditor.ts) — no separate
    select step, so the field itself never draws its own box; a focus outline
    is the only visual change on entering/leaving a field, and outlines don't
    take up layout space, so nothing shifts. Giving the input its own

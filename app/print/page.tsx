@@ -1034,10 +1034,9 @@ export default function PrintPage() {
   // `editingSectionTitle` — local state — so only the meta write has to wait.
   //
   // A throttle, not a resetting debounce: the write always lands within the
-  // window, so the live-save guarantee the deck's `onChange` documents (blur to
-  // click the photo picker and the title is already saved) still holds. `commit`
-  // writes the final value itself, so a cancelled trailing write is never the
-  // only copy of anything.
+  // window, so a title is saved while it is still being typed rather than only
+  // once the field closes. `commitSectionEdit` writes the final value itself,
+  // so a cancelled trailing write is never the only copy of anything.
   const SECTION_RENAME_DEBOUNCE_MS = 200;
   const pendingSectionRenameRef = useRef<{ sectionId: string; value: string } | null>(null);
   const sectionRenameTimerRef = useRef<number | undefined>(undefined);

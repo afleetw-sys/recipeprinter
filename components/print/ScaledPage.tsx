@@ -7,7 +7,10 @@ import {
   DividerFace,
   CoverFace,
   TableOfContentsFace,
+  type CoverCardInlineEdit,
+  type DividerCardInlineEdit,
   type RecipeCardInlineEdit,
+  type TableOfContentsInlineEdit,
   type PrintCardSize,
   type RecipePrintTemplate,
 } from "@/components/RecipeCardPrint";
@@ -31,7 +34,6 @@ import {
   presetCardVars,
 } from "@/lib/cookbookPresets";
 import type { CookbookPresetId } from "@/types/recipe";
-import type { CoverConfig } from "@/types/recipe";
 
 /**
  * A physical sheet rendered at true page size, scaled down by `scale` on
@@ -90,18 +92,13 @@ export const ScaledPage = memo(function ScaledPage({
       See `TemplateDecoration` in components/RecipeCardPrint.tsx. */
   showDecoration?: boolean;
   inlineEdit?: RecipeCardInlineEdit;
-  dividerEdit?: {
+  /** The opener's own edit wiring (`DividerCardInlineEdit`, handed straight to
+      `DividerFace`) plus what only this component needs: which section it
+      belongs to, and the photo controls it renders around the card. Spelling
+      the card's half out again here is how the two drifted the last time one
+      of them changed. */
+  dividerEdit?: DividerCardInlineEdit & {
     sectionId: string;
-    titleEditing: boolean;
-    titleValue: string;
-    onTitleOpen: () => void;
-    onTitleChange: (value: string) => void;
-    onTitleCommit: () => void;
-    onTitleCancel: () => void;
-    subtitle?: string;
-    onSubtitleChange?: (value: string) => void;
-    intro?: string;
-    onIntroChange?: (value: string) => void;
     photoUrl?: string;
     recipeImages?: string[];
     onPhotoChange?: (url: string | undefined) => void;
@@ -118,11 +115,9 @@ export const ScaledPage = memo(function ScaledPage({
     onExitGrid?: () => void;
     gridMax?: number;
   };
-  coverEdit?: {
+  /** As `dividerEdit`: the card's own wiring, plus the side this one is for. */
+  coverEdit?: CoverCardInlineEdit & {
     side: "front" | "back" | "dedication";
-    cover: CoverConfig;
-    onChange: (cover: CoverConfig) => void;
-    recipeImages?: string[];
   };
   /** Present when the focused full-page image-spread photo is being edited —
       enables drag-to-reposition, persisting the object-position focal point. */
@@ -137,12 +132,7 @@ export const ScaledPage = memo(function ScaledPage({
   };
   tocKicker?: string;
   tocTitle?: string;
-  tocEdit?: {
-    kicker: string;
-    title: string;
-    onKickerChange: (value: string) => void;
-    onTitleChange: (value: string) => void;
-  };
+  tocEdit?: TableOfContentsInlineEdit;
   /** Which edge carries the binding gutter, used only when an export applies a
       format (verso→right, recto→left, single/cover→none). */
   gutterSide?: "left" | "right" | "none";

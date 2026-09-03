@@ -30,7 +30,7 @@ import {
 } from "@/lib/recipeCardLayout";
 import type { CoverConfig, Recipe } from "@/types/recipe";
 import { markImageAvailable, markImageUnavailable } from "@/lib/imageFailure";
-import { DEFAULT_CHAPTER_INTRO, chapterIntroFromRecipes } from "@/lib/chapterIntro";
+import { chapterIntroFromRecipes } from "@/lib/chapterIntro";
 
 // Layout-budget engine (the character-cost heuristics that decide what fits on
 // a front/back face) lives in lib/recipeCardLayout.ts — this file re-exports
@@ -405,11 +405,11 @@ export const RecipeCardFace = memo(function RecipeCardFace({
         }
       : undefined;
 
-  // Whole-page edit mode means every field is a live input at once (see
-  // togglePageEditMode in app/print/page.tsx) — there's no separate
-  // select-then-edit step, so this only needs to tell the currently-focused
-  // field apart from the rest (to know whether to show the shared draft
-  // value or the field's live committed value).
+  // A focused page's fields are all live at once (see `toggleShowEmptyFields`
+  // in lib/useRecipeInlineEditor.ts for the reveal that goes with them) —
+  // there's no separate select-then-edit step, so this only needs to tell the
+  // currently-focused field apart from the rest (to know whether to show the
+  // shared draft value or the field's live committed value).
   function sameTarget(a: RecipeCardEditTarget | null | undefined, b: RecipeCardEditTarget): boolean {
     if (!a || a.kind !== b.kind) return false;
     if (a.kind === "ingredient" && b.kind === "ingredient") return a.index === b.index;
@@ -1253,15 +1253,6 @@ function chapterWord(n: number): string {
   return CHAPTER_WORDS[n - 1] ?? String(n);
 }
 
-// Default chapter-opener copy so a section page reads as designed rather than a
-// lone title: the recipes filed under this chapter, named. It is derived from
-// the section's own items on every pack (see `chapterIntroFromRecipes`), so
-// moving a recipe between chapters re-words the opener it left and the one it
-// joined. A cook who types their own intro keeps it; the derived line is only
-// the default, and it stands in as the editor's placeholder so they can see
-// exactly what would print if they leave the field alone.
-export { DEFAULT_CHAPTER_INTRO };
-
 export const DividerFace = memo(function DividerFace({
   title,
   chapterNumber = 1,
@@ -1301,9 +1292,17 @@ export const DividerFace = memo(function DividerFace({
   // right now". The title is not in this set — the deck owns it, see
   // `DividerCardInlineEdit`.
   const [editingField, setEditingField] = useState<"subtitle" | "intro" | null>(null);
-  // Recomputed rather than stored: the chapter's recipe list is rebuilt on
-  // every pack, so this stays in step with the book without a second source of
-  // truth to keep synchronized.
+  /**
+   * What the opener's intro line says when the cook has not written one: the
+   * recipes filed under this chapter, named.
+   *
+   * Recomputed rather than stored — the chapter's recipe list is rebuilt on
+   * every pack, so moving a recipe re-words the opener it left and the one it
+   * joined without a second source of truth to keep synchronized. A cook who
+   * types their own intro keeps it; this is only the default, and it stands in
+   * as the field's prompt so they can see exactly what would print if they
+   * leave it alone.
+   */
   const derivedIntro = useMemo(() => chapterIntroFromRecipes(recipeTitles), [recipeTitles]);
 
   /**
@@ -1872,7 +1871,7 @@ export interface TableOfContentsInlineEdit {
 // The contents page: chapters as headings, recipes indented beneath with dot
 // leaders and the printed page they land on. The heading is editable; the
 // entries themselves are generated from the sheet order in usePrintSheets and
-// are never hand-maintained (a note in edit mode says so).
+// are never hand-maintained (a note in the page's toolbar says so).
 export const TableOfContentsFace = memo(function TableOfContentsFace({
   entries,
   kicker,
