@@ -110,6 +110,9 @@ export type ImportMethod =
  */
 export type ImportTab = "url" | "image" | "text" | "apps";
 
+/** Recipe order within a section: arranged by hand, or kept alphabetical. */
+export type RailSortMode = "custom" | "title";
+
 import type { ImportFailureCode } from "@/lib/analytics";
 
 export type QueueItemStatus = "parsing" | "ready" | "error";
@@ -295,6 +298,12 @@ export interface PrintProjectSettings {
   tocKicker?: string;
   tocTitle?: string;
   photoStyle?: "none" | "card" | "full";
+  /** How the cook chose to order recipes within each section. A property of the
+      BOOK, not of the browser looking at it: "A-Z" is a standing instruction
+      that keeps sorting as recipes are added and retitled, so it has to come
+      back with the book on another day or another device. Absent = "custom",
+      which is every project saved before this and every hand-arranged one. */
+  railSortMode?: RailSortMode;
 }
 
 /**
@@ -317,6 +326,7 @@ export interface StashedCookbook {
   tableOfContents?: boolean;
   tocKicker?: string;
   tocTitle?: string;
+  railSortMode?: RailSortMode;
   sectionDividers?: boolean;
   cookbookPreset?: CookbookPresetId;
   sections: SectionMeta[];

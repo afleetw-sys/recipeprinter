@@ -6,6 +6,7 @@ import type {
   CookbookPresetId,
   CoverConfig,
   QueueItem,
+  RailSortMode,
   RecipePagePlacement,
   Section,
   SectionMeta,
@@ -137,6 +138,10 @@ export interface ProjectMeta {
       pages). Default to "Contents"/"What's inside" when unset. */
   tocKicker?: string;
   tocTitle?: string;
+  /** Recipe order within each section — see `PrintProjectSettings.railSortMode`.
+      Saved with the book, because "A-Z" keeps sorting as recipes arrive and it
+      would be a different book tomorrow if the choice lived in the tab. */
+  railSortMode?: RailSortMode;
   sectionDividers?: boolean;
   /** Opted into the cookbook experience (cover/sections) via "Make it a
       cookbook" — false/undefined means the plain print-cards UI. Gated off at
@@ -748,6 +753,16 @@ export function useProjectMeta() {
     [update],
   );
 
+  const setRailSortMode = useCallback(
+    (value: RailSortMode) => {
+      // "custom" is the absence of a choice, so it is stored as absence — that
+      // keeps a hand-arranged book's document identical to every one saved
+      // before this setting existed.
+      update((current) => ({ ...current, railSortMode: value === "custom" ? undefined : value }));
+    },
+    [update],
+  );
+
   const setTocTitle = useCallback(
     (value: string | undefined) => {
       update((current) => ({ ...current, tocTitle: value || undefined }));
@@ -798,6 +813,7 @@ export function useProjectMeta() {
         tableOfContents: current.tableOfContents,
         tocKicker: current.tocKicker,
         tocTitle: current.tocTitle,
+        railSortMode: current.railSortMode,
         sectionDividers: current.sectionDividers,
         cookbookPreset: current.cookbookPreset,
         sections: current.sections,
@@ -988,6 +1004,7 @@ export function useProjectMeta() {
     setCookbookWelcomeCompleted,
     setTableOfContents,
     setTocKicker,
+    setRailSortMode,
     setTocTitle,
     setProjectTitle,
     setSectionDividers,

@@ -37,7 +37,7 @@ import type { useProjectMeta } from "@/lib/project";
 import type { useRailDrag } from "@/lib/useRailDrag";
 import type { useRailSelection } from "@/lib/useRailSelection";
 import type { useQueue } from "@/lib/queue";
-import type { QueueItem, Section } from "@/types/recipe";
+import type { QueueItem, Section, RailSortMode } from "@/types/recipe";
 
 // Rail thumbnails target a fixed width so they always fit the rail column,
 // regardless of page aspect ratio (letter portrait vs. 6x4 landscape).
@@ -58,7 +58,9 @@ const RAIL_THUMB_OVERSCAN = "600px 0px";
 
 /** How the organizer orders the recipes inside each section: the cook's own
     arrangement, or A–Z by recipe title. Section order is never touched. */
-export type RailSortMode = "custom" | "title";
+// Owned by types/recipe.ts now that it is saved with the book; re-exported
+// here so the rail's existing importers are untouched.
+export type { RailSortMode };
 
 const RAIL_SORT_OPTIONS: Array<{ value: RailSortMode; label: string }> = [
   { value: "custom", label: "Custom order" },

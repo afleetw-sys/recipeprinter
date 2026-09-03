@@ -315,7 +315,6 @@ export default function PrintPage() {
   // hand; `title` is A–Z within every section. `customOrderUndo` holds the
   // arrangement A–Z replaced, so switching back restores it rather than leaving
   // the book alphabetized forever.
-  const [railSortMode, setRailSortMode] = useState<RailSortMode>("custom");
   const [customOrderUndo, setCustomOrderUndo] = useState<ProjectMeta["sections"] | null>(null);
   const [showShareDialog, setShowShareDialog] = useState(false);
   const [pendingDelete, setPendingDelete] = useState<
@@ -332,6 +331,16 @@ export default function PrintPage() {
   const [railShake, setRailShake] = useState<{ recipeId: string; nonce: number } | null>(null);
   const queue = useQueue();
   const projectMeta = useProjectMeta();
+  /**
+   * Recipe order within each section, read off the BOOK rather than held here.
+   *
+   * It used to be component state, so reopening a cookbook came back as
+   * "Custom order" however it had been left — and because the recipes were
+   * still sorted from last time it looked right, right up until the next
+   * recipe was added and landed at the end. A standing instruction that keeps
+   * sorting has to be part of the book it sorts.
+   */
+  const railSortMode: RailSortMode = projectMeta.meta.railSortMode ?? "custom";
   // The print job as live recipes: project each member id onto the queue's
   // content. An edit in the queue (the content owner) flows straight to the
   // deck here — there is no second copy to keep in step. Non-ready/absent ids
@@ -1863,14 +1872,14 @@ export default function PrintPage() {
       projectMeta.setSectionStructure(
         sortSectionsByTitle(projectMeta.meta.sections, recipeTitleForId),
       );
-      setRailSortMode("title");
+      projectMeta.setRailSortMode("title");
       track("cookbook_sorted", { mode: "title" });
       showToast("Sorted A–Z");
       return;
     }
     if (customOrderUndo) projectMeta.setSectionStructure(customOrderUndo);
     setCustomOrderUndo(null);
-    setRailSortMode("custom");
+    projectMeta.setRailSortMode("custom");
     track("cookbook_sorted", { mode: "custom" });
   }
 
@@ -1906,7 +1915,7 @@ export default function PrintPage() {
   // would promise an order the book no longer has.
   function markCustomOrder() {
     if (railSortMode === "custom" && !customOrderUndo) return;
-    setRailSortMode("custom");
+    projectMeta.setRailSortMode("custom");
     setCustomOrderUndo(null);
   }
 
@@ -1985,6 +1994,7 @@ export default function PrintPage() {
         tocKicker: projectMeta.meta.tocKicker,
         tocTitle: projectMeta.meta.tocTitle,
         photoStyle: projectMeta.meta.photoStyle,
+        railSortMode: projectMeta.meta.railSortMode,
       },
       itemPlacements: projectMeta.meta.itemPlacements,
       // Carries a book set aside by "switch to recipe cards". Without it the
@@ -2490,6 +2500,7 @@ export default function PrintPage() {
         tocKicker: projectMeta.meta.tocKicker,
         tocTitle: projectMeta.meta.tocTitle,
         photoStyle: projectMeta.meta.photoStyle,
+        railSortMode: projectMeta.meta.railSortMode,
       },
       itemPlacements: projectMeta.meta.itemPlacements,
     });
@@ -2649,6 +2660,7 @@ export default function PrintPage() {
           tocKicker: project.settings.tocKicker,
           tocTitle: project.settings.tocTitle,
           photoStyle: project.settings.photoStyle,
+          railSortMode: project.settings.railSortMode,
           cover: project.cover,
           backCover: project.backCover,
           dedication: project.dedication,
