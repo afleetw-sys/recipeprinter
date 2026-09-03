@@ -817,7 +817,7 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
       {
         question: "Can I keep who it came from?",
         answer:
-          "Yes. A recipe carries a note of its own, and that is where the name goes, or the year, or the fact that they always did the vanilla by eye.",
+          "Yes. A recipe carries a note of its own, and that is where the name goes, or the year, or the thing they always said about it.",
       },
       {
         question: "Do these have to become a cookbook?",
