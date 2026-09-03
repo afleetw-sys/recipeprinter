@@ -940,7 +940,9 @@ export function PageRail(props: PageRailProps) {
                       </button>
                     </div>
                   </div>
-                  {unitIdx === pendingAnchorUnitIdx && <PendingImportRows items={pendingImportItems} />}
+                  {unitIdx === pendingAnchorUnitIdx && (
+                    <PendingImportRows items={pendingImportItems} nested={nested} />
+                  )}
                   </Fragment>
                 );
                   });
@@ -1059,7 +1061,9 @@ export function PageRail(props: PageRailProps) {
                   </button>
                 </div>
               </div>
-              {rowIndex === pendingAnchorRowIndex && <PendingImportRows items={pendingImportItems} />}
+              {rowIndex === pendingAnchorRowIndex && (
+                <PendingImportRows items={pendingImportItems} nested={isSectionChild} />
+              )}
               </Fragment>
             );
           });
