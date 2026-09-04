@@ -12,6 +12,9 @@ interface LocalParseOutcome {
   /** The route already ran CookPilot's full parser and it found nothing — see
       `ParseError.parserExhausted`. */
   parserExhausted?: boolean;
+  /** The route turned us away to protect the parser budget — see
+      `ParseError.rateLimited`. */
+  rateLimited?: boolean;
 }
 
 /**
@@ -181,6 +184,7 @@ async function parseUrlLocally(url: string): Promise<LocalParseOutcome> {
       error: data.error,
       status: response.status,
       parserExhausted: data.parserExhausted,
+      rateLimited: data.rateLimited,
     };
   } catch {
     /* Fall back to CookPilot's callable parser below. */
@@ -197,6 +201,11 @@ function shouldTryUrlFallback(outcome: LocalParseOutcome): boolean {
   // Only the *reasons the answer might differ* are worth a retry, which is what
   // the two cases below are: never-consulted, or inconclusive.
   if (outcome.parserExhausted) return false;
+  // Our own limiter, not the recipe site's. The fallback reaches the same paid
+  // parser the route was protecting, so retrying there spends precisely the
+  // budget the 429 was defending. (A 429 from the *website* is different and
+  // still falls through: a different egress IP genuinely may not be blocked.)
+  if (outcome.rateLimited) return false;
   if (outcome.status === undefined) return true;
   return ![400, 413].includes(outcome.status);
 }

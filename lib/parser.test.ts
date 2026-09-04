@@ -64,6 +64,33 @@ describe("parseUrlAll — CookPilot fallback suppression", () => {
     expect(callable).not.toHaveBeenCalled();
   });
 
+  it("does not route around our own rate limit by calling the parser directly", async () => {
+    // The fallback reaches the same paid parser the 429 was protecting, so a
+    // retry here would spend exactly the budget the limit defends.
+    routeReplies(429, {
+      success: false,
+      error: "That's a lot of imports at once. Wait a moment and try again.",
+      rateLimited: true,
+    });
+
+    await expect(parseUrlAll("example.com/borscht")).rejects.toThrow(ImportError);
+    expect(callable).not.toHaveBeenCalled();
+  });
+
+  it("still falls back when the recipe SITE rate-limits us", async () => {
+    // A 429 from the website is not our limiter: CookPilot's parser egresses
+    // from somewhere else and may not be blocked, so this retry is worth it.
+    routeReplies(429, {
+      success: false,
+      error: "This website wouldn't let us read the recipe.",
+    });
+
+    const recipes = await parseUrlAll("example.com/borscht");
+
+    expect(recipes[0].title).toBe("Fallback Borscht");
+    expect(callable).toHaveBeenCalledTimes(1);
+  });
+
   it("does not re-run the parser when the route says it already found nothing", async () => {
     routeReplies(422, {
       success: false,

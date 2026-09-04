@@ -3,6 +3,7 @@ import { isIP } from "node:net";
 import { NextResponse } from "next/server";
 import { jsonDataBlocksFromHtml, jsonLdBlocksFromHtml, recipeFromJsonLd } from "@/lib/schemaRecipe";
 import { adaptCookPilotRecipes, normalizeImportURL } from "@/lib/cookpilot";
+import { callerKey, rateLimit } from "@/lib/server/rateLimit";
 import type { ParseResponse, Recipe } from "@/types/recipe";
 
 export const runtime = "nodejs";
@@ -23,6 +24,16 @@ export const runtime = "nodejs";
  * means the wait now ends in a sentence rather than a platform error.
  */
 export const maxDuration = 90;
+
+// A URL import is one paste at a time — there is no bulk-URL surface anywhere in
+// the app (lib/parser.ts:172 is the only caller). Thirty in ten minutes is far
+// above anything a person does by hand and still bounds the damage: each call
+// may spend up to 90s, and behind it sits CookPilot's paid parser reached with
+// our shared secret. Unlike /api/cookbook-pdf there is no entitlement check in
+// front of this route to remove the anonymous caller, so the limiter is the
+// only thing standing between a `for` loop and the parser bill.
+const PARSE_LIMIT = 30;
+const PARSE_WINDOW_MS = 10 * 60 * 1000;
 
 const MAX_HTML_BYTES = 2_000_000;
 const MAX_REDIRECTS = 3;
@@ -246,6 +257,18 @@ async function parseWithCookPilotServer(url: string): Promise<CookPilotServerOut
 }
 
 export async function POST(request: Request) {
+  const limit = rateLimit(`parse:${callerKey(request)}`, PARSE_LIMIT, PARSE_WINDOW_MS);
+  if (!limit.ok) {
+    return NextResponse.json(
+      {
+        success: false,
+        error: "That's a lot of imports at once. Wait a moment and try again.",
+        rateLimited: true,
+      } satisfies ParseResponse,
+      { status: 429, headers: { "retry-after": String(limit.retryAfterSeconds) } },
+    );
+  }
+
   let url: URL;
 
   try {
@@ -264,6 +287,14 @@ export async function POST(request: Request) {
   let parserExhausted = false;
 
   try {
+    // Validate BEFORE the parser call, not just inside `fetchPublicHtml`.
+    // `parseWithCookPilotServer` hands this URL to the CookPilot parser, which
+    // fetches it from *its* network with our shared secret — so leaving the
+    // check to our own outbound fetch meant `http://169.254.169.254/...` or an
+    // internal host was still reachable, just through the other leg. The
+    // blocklist has to gate every fetch of this URL, ours and theirs.
+    await validatePublicHttpUrl(url);
+
     const cookPilot = await parseWithCookPilotServer(url.toString());
     if (cookPilot.kind === "recipes") {
       return NextResponse.json({ success: true, recipes: cookPilot.recipes } satisfies ParseResponse);

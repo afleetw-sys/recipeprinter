@@ -84,6 +84,15 @@ export interface ParseError {
    * an inconclusive answer, and the fallback is still worth trying.
    */
   parserExhausted?: true;
+  /**
+   * Set when *our own* route turned the request away to protect the parser
+   * budget, before any parsing was attempted. Distinct from `parserExhausted`,
+   * which means the parser ran and answered: here nothing ran at all. The
+   * client must not treat it as a reason to reach the same parser through its
+   * callable instead — that would route around the limit and spend exactly the
+   * budget the limit exists to protect.
+   */
+  rateLimited?: true;
 }
 
 export type ParseResponse = ParseResult | ParseError;
