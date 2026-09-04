@@ -151,9 +151,11 @@ function applyRecipeTargetEdit(recipe: Recipe, target: RecipeCardEditTarget, val
         index === target.index
           ? {
               ...ingredient,
+              // The typed line IS the ingredient. Writing it to `name` as well
+              // stored the same sentence twice for every line anyone edited.
               amount: undefined,
               unit: undefined,
-              name: trimmed,
+              name: undefined,
               note: undefined,
               raw: trimmed,
             }
@@ -318,7 +320,7 @@ export function useRecipeInlineEditor({
                   recipe.ingredients,
                   target.index,
                   title.trim(),
-                  (section) => ({ raw: "", name: "", section }),
+                  (section) => ({ raw: "", section }),
                 ),
               }
             : {
@@ -388,7 +390,7 @@ export function useRecipeInlineEditor({
           : activeRecipeItem.recipe;
       const section = sectionForInsertion(recipe.ingredients, index);
       const ingredients = recipe.ingredients.slice();
-      ingredients.splice(index, 0, { raw: "", name: "", section });
+      ingredients.splice(index, 0, { raw: "", section });
       const nextRecipe = printableRecipe({ ...recipe, ingredients });
       applyRecipeUpdate(activeRecipeItem.id, nextRecipe);
       setEditingEdit({ recipeId: activeRecipeItem.id, target: { kind: "ingredient", index } });

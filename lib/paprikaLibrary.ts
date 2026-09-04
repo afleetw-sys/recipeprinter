@@ -1,5 +1,6 @@
 "use client";
 
+import { ingredientText } from "@/lib/recipeCardLayout";
 import { importSearchText, type ImportSummary } from "@/lib/importSummary";
 import type { PaprikaEntry, PaprikaLibrary } from "@/lib/paprikaImport";
 
@@ -75,7 +76,7 @@ export function paprikaImportSummary(entry: PaprikaEntry): ImportSummary {
       recipe.sourceName,
       recipe.sourceUrl,
       ...(recipe.tags ?? []),
-      ...recipe.ingredients.map((ingredient) => ingredient.name),
+      ...recipe.ingredients.map(ingredientText),
     ),
   };
 }

@@ -1,11 +1,24 @@
 import type { PrintCardSize, RecipePrintTemplate } from "@/components/RecipeCardPrint";
 
 export interface RecipeIngredient {
+  /**
+   * `raw` is the line as it will be PRINTED, and is what everything reads —
+   * see `ingredientText`, which prefers it and only composes a line out of the
+   * parts below when it is absent.
+   *
+   * So the parts are a fallback, not a second copy: an importer that hands back
+   * a parsed breakdown alongside the original line is storing the same sentence
+   * twice, and on an 80-recipe book that was 56KB of a 237KB document that
+   * nothing ever rendered. Anything writing an ingredient should set `raw` and
+   * leave the rest alone unless it genuinely has no whole line to give.
+   */
+  raw?: string;
   amount?: string;
   unit?: string;
-  name: string;
+  name?: string;
   note?: string;
-  raw?: string;
+  /** Grouping only — a run of consecutive rows sharing a heading. Never
+      redundant with `raw`, so it always survives. */
   section?: string;
 }
 

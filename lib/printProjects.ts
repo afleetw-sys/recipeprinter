@@ -36,6 +36,49 @@ function stripUndefined<T>(value: T): T {
   return value;
 }
 
+/**
+ * Drops the parsed breakdown from any ingredient that already carries the whole
+ * line.
+ *
+ * `ingredientText` prints `raw` when it exists and only composes a line from
+ * amount/unit/name/note when it does not — so for an imported recipe those
+ * parts are the same sentence stored a second time and never rendered. On a
+ * representative 80-recipe cookbook that was 56KB of a 237KB document, about a
+ * quarter of the headroom under Firestore's 1MiB per-document ceiling.
+ *
+ * Applied at the save boundary rather than on import, which means a book
+ * written before this slims itself the next time it is saved. Nothing has to
+ * migrate, and nothing is lost that anyone could see: a row keeps `raw` and
+ * `section`, and `section` is grouping rather than a duplicate.
+ */
+export function slimIngredients(project: PrintProject): PrintProject {
+  return {
+    ...project,
+    sections: project.sections.map((section) => ({
+      ...section,
+      items: section.items.map((item) => {
+        const recipe = item.recipe;
+        if (!recipe?.ingredients?.length) return item;
+        let changed = false;
+        const ingredients = recipe.ingredients.map((ingredient) => {
+          if (!ingredient.raw?.trim()) return ingredient;
+          if (
+            ingredient.amount === undefined &&
+            ingredient.unit === undefined &&
+            ingredient.name === undefined &&
+            ingredient.note === undefined
+          ) {
+            return ingredient;
+          }
+          changed = true;
+          return { raw: ingredient.raw, section: ingredient.section };
+        });
+        return changed ? { ...item, recipe: { ...recipe, ingredients } } : item;
+      }),
+    })),
+  };
+}
+
 export function createPrintProjectId(): string {
   return uid();
 }
@@ -109,14 +152,14 @@ export async function savePrintProject(project: PrintProject): Promise<PrintProj
     if (existing.exists() && remoteRevision !== expectedRevision) {
       throw new PrintProjectConflictError();
     }
-    const next = stripUndefined({
+    const next = stripUndefined(slimIngredients({
       ...project,
       revision: remoteRevision + 1,
       createdAt: existing.exists()
         ? Number((existing.data() as Partial<PrintProject>).createdAt ?? project.createdAt)
         : project.createdAt,
       updatedAt: Date.now(),
-    }) as PrintProject;
+    })) as PrintProject;
     transaction.set(ref, next);
     return next;
   });

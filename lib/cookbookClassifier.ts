@@ -1,4 +1,5 @@
 import type { Recipe } from "@/types/recipe";
+import { ingredientText } from "@/lib/recipeCardLayout";
 
 export const COOKBOOK_CATEGORIES = [
   "Breakfast",
@@ -67,7 +68,7 @@ export function classifyRecipe(recipe: Recipe): CookbookClassification {
   addMatches(scores, normalized(recipe.tags?.join(" ")), 4);
   addMatches(
     scores,
-    normalized(recipe.ingredients.map((ingredient) => `${ingredient.name} ${ingredient.raw ?? ""}`).join(" ")),
+    normalized(recipe.ingredients.map(ingredientText).join(" ")),
     1,
   );
   addMatches(scores, normalized(recipe.description), 1);

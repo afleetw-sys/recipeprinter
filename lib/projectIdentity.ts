@@ -1,5 +1,6 @@
 "use client";
 
+import { ingredientText } from "@/lib/recipeCardLayout";
 import { localStore } from "@/lib/storage";
 import type { QueueItem } from "@/types/recipe";
 
@@ -27,7 +28,7 @@ function recipeKey(item: QueueItem): string | null {
   if (!title) return null;
   const url = recipe.sourceUrl?.trim().toLowerCase();
   if (url) return `u:${url}|${title}`;
-  const first = recipe.ingredients?.[0]?.name?.trim().toLowerCase() ?? "";
+  const first = ingredientText(recipe.ingredients?.[0] ?? { }).trim().toLowerCase();
   return `t:${title}|${first}`;
 }
 
