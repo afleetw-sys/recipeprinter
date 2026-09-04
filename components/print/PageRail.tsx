@@ -7,6 +7,7 @@ import {
   useRef,
   useState,
   type Dispatch,
+  type KeyboardEvent as ReactKeyboardEvent,
   type MouseEvent as ReactMouseEvent,
   type MutableRefObject,
   type ReactNode,
@@ -390,6 +391,49 @@ export function PageRail(props: PageRailProps) {
     return page === undefined ? "" : String(page);
   };
 
+  /**
+   * Up and down walk the rail.
+   *
+   * The tiles were reachable by Tab and clickable by mouse, but a vertical list
+   * of pages that only answers to the mouse is one you have to keep reaching
+   * for the mouse to read — arrows are what anyone expects of a list like this,
+   * and holding one down is the fastest way to page through a book.
+   *
+   * Scoped to a tile, not to the `<nav>`: the rail also holds a section-title
+   * input and three menus in organize mode, and none of them should lose their
+   * own arrow behaviour to this. Reading the tiles out of the DOM rather than
+   * indexing `navItems` is deliberate too — organize mode renders the same
+   * pages grouped by chapter, so DOM order is the only order that is right in
+   * both modes, and clicking the tile reuses whatever that tile's own click
+   * already does instead of re-deriving it here.
+   */
+  const onRailKeyDown = (event: ReactKeyboardEvent<HTMLElement>) => {
+    if (event.key !== "ArrowDown" && event.key !== "ArrowUp") return;
+    // Leave the modified combinations alone: those are the browser's and the
+    // OS's (jump to top, switch desktops), not ours to take.
+    if (event.altKey || event.metaKey || event.ctrlKey || event.shiftKey) return;
+    const from = (event.target as HTMLElement | null)?.closest<HTMLButtonElement>(
+      ".recipe-page-rail__item-main",
+    );
+    if (!from) return;
+    const tiles = Array.from(
+      railScrollRef.current?.querySelectorAll<HTMLButtonElement>(
+        ".recipe-page-rail__item-main",
+      ) ?? [],
+    );
+    const index = tiles.indexOf(from);
+    if (index === -1) return;
+    // Swallow the key at both ends, so the rail never falls back to the
+    // browser's scroll and slides out from under a held arrow at the last page.
+    event.preventDefault();
+    const next = tiles[index + (event.key === "ArrowDown" ? 1 : -1)];
+    // Stop rather than wrap. In a book of eighty pages, "down" from the last
+    // one landing back on the cover reads as a glitch rather than as a loop.
+    if (!next) return;
+    next.focus();
+    next.click();
+  };
+
   return (
         <nav
           ref={railScrollRef}
@@ -397,6 +441,7 @@ export function PageRail(props: PageRailProps) {
             railDrag.draggingId ? "recipe-page-rail--dragging" : ""
           }`}
           aria-label="Pages"
+          onKeyDown={onRailKeyDown}
         >
           {/* What is in this project, and the two things you do to it as a
               WHOLE — add to it, and rearrange it. They were at the very bottom

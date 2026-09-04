@@ -546,6 +546,28 @@
   box-shadow: 0 0 0 3px color-mix(in srgb, var(--cp-accent) 30%, transparent);
 }
 
+/* The tile's focus ring belongs on the TILE, not on the button filling it.
+   That button covers the item's whole content box, so the global
+   `:focus-visible` outline drew a second accent ring 8px inside the active
+   edge above — two concentric rings, the same colour, with the tile's padding
+   between them. It read as two selection states rather than as one page that
+   is both current and focused, and arrow-key navigation made it the normal
+   case rather than the rare tabbed-into one.
+
+   An active tile is already marked by its own edge, and arrowing through the
+   rail moves the active page with the focus, so the two coincide and a second
+   ring adds nothing. Only a tile that is focused WITHOUT being current — Tab,
+   or a focused tile in a multi-selection — needs a ring of its own, and it
+   gets one outside the edge rather than floating inside the padding. */
+.recipe-page-rail__item-main:focus-visible {
+  outline: none;
+}
+
+.recipe-page-rail__item:not(.is-active):has(.recipe-page-rail__item-main:focus-visible) {
+  outline: var(--cp-focus-ring);
+  outline-offset: 2px;
+}
+
 .recipe-page-rail__item-main {
   display: grid;
   grid-template-columns: 16px 1fr;
