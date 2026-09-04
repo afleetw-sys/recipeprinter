@@ -28,6 +28,7 @@ import { ScaledPage } from "@/components/print/ScaledPage";
 import { formatRecipeTime } from "@/lib/time";
 import { gutterSideForRole } from "@/lib/cookbookPresets";
 import { chapterIntroFromRecipes, chapterRecipeTitles } from "@/lib/chapterIntro";
+import { composeNote } from "@/lib/recipeNote";
 import {
   BodyTextGlyph,
   HeadingGlyph,
@@ -461,7 +462,16 @@ export function PrintDeck(props: PrintDeckProps) {
           recipe.instructions.length === 0 ||
           !formatRecipeTime(recipe.totalTime || recipe.cookTime || recipe.prepTime) ||
           !(recipe.servings ?? recipe.yield) ||
-          (cookbook && !recipe.description) ||
+          // Ask what the note WOULD print, not whether the website blurb
+          // exists. The card shows `composeNote(description, note,
+          // showDescription)`, so a recipe that arrived with a blurb and no
+          // note of its own prints nothing once the website-description
+          // checkbox is off — an empty line with no way to reach it, because
+          // this test read the stored blurb and concluded the field was
+          // filled. Reading the composed line also stops the opposite: a cook's
+          // own note with no blurb behind it printed fine and still offered to
+          // reveal a field that was never missing.
+          (cookbook && !composeNote(recipe.description, recipe.note, showDescription).trim()) ||
           // The link field only exists while the source-link setting is on, so
           // a missing link is only a hidden FIELD when that field would show.
           (showSourceUrl && !recipe.sourceUrl)
