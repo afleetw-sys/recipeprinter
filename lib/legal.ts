@@ -11,8 +11,15 @@
 // or a subject-access request reads first. Bump it only when the text changes.
 // ─────────────────────────────────────────────────────────────────────────
 
-/** The entity that publishes RecipePrinter and acts as data controller. */
-export const LEGAL_ENTITY = "Good Problem Studio";
+/**
+ * The entity that publishes RecipePrinter and acts as data controller.
+ *
+ * The registered LLC name, not the brand. "Good Problem Studio" is how the
+ * studio presents itself and is where the contact domain comes from, but a
+ * contract has to name the party that legally exists, and that is the LLC.
+ * Don't "correct" this to the studio name.
+ */
+export const LEGAL_ENTITY = "Good Problem LLC";
 
 /**
  * Where to reach a person. One address for everything: privacy requests,
@@ -27,9 +34,17 @@ export const LEGAL_CONTACT_EMAIL = "recipeprinter@goodproblem.studio";
  * Postal address, for the GDPR Article 13 controller-identity requirement and
  * for anyone who needs to serve something on paper.
  *
- * Deliberately null rather than invented. Both pages render fine without it and
- * simply offer the address by email; fill this in when there is a real mailing
- * address to publish, and the line appears on both documents at once.
+ * Null on purpose, and it stays that way. RecipePrinter is run by one person
+ * from home, and the address on file is a home address: publishing it on a page
+ * the whole internet can read is not a trade we are making. Both documents
+ * render correctly without it and offer the address by email instead, which is
+ * enough for a data subject or a copyright claimant to reach a real person.
+ *
+ * DO NOT fill this in with a home address. If a published address is ever
+ * genuinely needed — selling to EU consumers at scale, or registering a DMCA
+ * agent — the answer is a virtual business address or an LLC registered agent,
+ * never the one someone lives at. Set that here and the line appears on both
+ * documents at once.
  */
 export const LEGAL_POSTAL_ADDRESS: string | null = null;
 

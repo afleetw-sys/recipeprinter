@@ -239,7 +239,7 @@ export default function PrivacyPage() {
           There is no advertising network on this site, no third-party ad
           cookies, and no data broker involved. Session recording is off. Broad
           automatic capture of every click and keystroke, which our analytics
-          tool offers and turns on by default, is switched off — we record only
+          tool offers and turns on by default, is switched off. We record only
           the specific events listed above. We do not collect payment card
           details, and we do not ask for information about your health, even
           though a recipe may reveal something about your diet.
@@ -258,8 +258,8 @@ export default function PrivacyPage() {
         </p>
         <LegalList>
           <li>
-            <strong>To turn your import into a recipe card</strong> — reading the
-            link, photo, or text you gave us and printing the result.{" "}
+            <strong>To turn your import into a recipe card</strong>, by reading
+            the link, photo, or text you gave us and printing the result.{" "}
             <em>Performance of a contract.</em>
           </li>
           <li>
@@ -320,8 +320,8 @@ export default function PrivacyPage() {
         <p>
           When you import a recipe, the link, text, photo, or export file goes to
           our recipe-reading service, which runs on Google Firebase and is shared
-          with CookPilot. There, an automated system — including AI models that
-          read images and text — extracts the title, ingredients, and steps and
+          with CookPilot. There, an automated system, including AI models that
+          read images and text, extracts the title, ingredients, and steps and
           sends a structured recipe back to your browser. When you import from a
           link, that service, or in some cases our own server, also fetches the
           page at that address in order to read it. That request goes to the
@@ -446,8 +446,8 @@ export default function PrivacyPage() {
           ))}
         </div>
         <p>
-          Beyond these, we will disclose information if the law requires it — a
-          valid legal request, a court order — or where it is necessary to
+          Beyond these, we will disclose information if the law requires it, such
+          as a valid legal request or a court order, or where it is necessary to
           establish or defend a legal claim, or to protect someone&apos;s safety.
           If RecipePrinter is ever sold or merged, information may transfer with
           it, and we will say so here before that takes effect.
@@ -584,8 +584,8 @@ export default function PrivacyPage() {
           Under the GDPR and UK GDPR you have the right to access your data, have
           it corrected, have it erased, restrict or object to how we use it,
           receive it in a portable format, and withdraw consent where we relied on
-          consent. Where we rely on legitimate interests — analytics and abuse
-          prevention — you can object, and the analytics opt-out in{" "}
+          consent. Where we rely on legitimate interests, meaning analytics and
+          abuse prevention, you can object, and the analytics opt-out in{" "}
           <a href="#your-choices" className="text-brand-ink hover:underline font-semibold">
             section 13
           </a>{" "}

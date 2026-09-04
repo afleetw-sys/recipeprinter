@@ -57,7 +57,7 @@ export default function TermsPage() {
     >
       <LegalSection id="agreement" index={1} title="This agreement">
         <p>
-          These Terms are an agreement between you and {LEGAL_ENTITY}
+          These Terms are an agreement between you and {LEGAL_ENTITY}{" "}
           (&ldquo;we&rdquo;, &ldquo;us&rdquo;), which operates RecipePrinter at
           recipeprinter.com. By using RecipePrinter you accept them. If you do not
           accept them, please do not use it.
@@ -72,10 +72,10 @@ export default function TermsPage() {
 
       <LegalSection id="the-service" index={2} title="What RecipePrinter is">
         <p>
-          RecipePrinter takes a recipe you already have — a link, a photo, a
-          screenshot, pasted text, or a library exported from another recipe app —
-          and lays it out as a printable recipe card, page, PDF, or bound
-          cookbook. It is a formatting and printing tool. It is not a recipe
+          RecipePrinter takes a recipe you already have, whether that is a link,
+          a photo, a screenshot, pasted text, or a library exported from another
+          recipe app, and lays it out as a printable recipe card, page, PDF, or
+          bound cookbook. It is a formatting and printing tool. It is not a recipe
           publisher, a recipe database, or a source of recipes, and it does not
           give nutritional, dietary, or medical advice.
         </p>
@@ -115,9 +115,9 @@ export default function TermsPage() {
 
       <LegalSection id="your-content" index={5} title="Your recipes stay yours">
         <p>
-          Everything you bring to RecipePrinter — recipes, photos, notes, the
-          arrangement of a cookbook you build — remains yours. We claim no
-          ownership of it.
+          Everything you bring to RecipePrinter stays yours: recipes, photos,
+          notes, and the arrangement of a cookbook you build. We claim no
+          ownership of any of it.
         </p>
         <p>
           To run the product we need your permission to handle it, so you grant us
@@ -155,7 +155,7 @@ export default function TermsPage() {
         <p>
           You are responsible for having the right to use what you import. By
           importing something you confirm that you own it, that you have
-          permission, or that your use is otherwise lawful — for most people, that
+          permission, or that your use is otherwise lawful. For most people that
           means printing a copy of a recipe for your own cooking at home.
         </p>
         <LegalCallout title="Personal use, not republication.">
@@ -260,7 +260,7 @@ export default function TermsPage() {
       <LegalSection id="refunds" index={10} title="Refunds">
         <p>
           If a paid feature does not do what we said it would, tell us at{" "}
-          <LegalContactLink /> within 30 days of the purchase and we will refund
+          <LegalContactLink /> within 14 days of the purchase and we will refund
           it. We would rather refund you than argue about it.
         </p>
         <p>
@@ -269,7 +269,7 @@ export default function TermsPage() {
           and you have simply changed your mind. Nothing here limits any refund or
           cancellation right you have under the consumer law where you live,
           including the statutory right of withdrawal for consumers in the EU and
-          UK — where that right applies, asking us to generate the file
+          UK. Where that right applies, asking us to generate the file
           immediately may end it, and we will say so at the point of sale.
         </p>
       </LegalSection>
@@ -333,9 +333,10 @@ export default function TermsPage() {
         title="Our side of the intellectual property"
       >
         <p>
-          RecipePrinter itself — the software, the page and card templates, the
-          layouts, the artwork, the name, and the look of the site — belongs to{" "}
-          {LEGAL_ENTITY} and is protected by copyright and other laws. You may use
+          RecipePrinter itself belongs to {LEGAL_ENTITY} and is protected by
+          copyright and other laws. That covers the software, the page and card
+          templates, the layouts, the artwork, the name, and the look of the
+          site. You may use
           it to make and print your own recipe cards, books, and PDFs, and those
           outputs are yours to print and keep, including for the personal purposes
           described in{" "}
@@ -393,9 +394,9 @@ export default function TermsPage() {
           , or where we are required to by law. Except where the breach is serious
           or we are legally prevented, we will tell you why and give you a chance
           to put it right and to export your projects. The sections that by their
-          nature should survive — your content licence as it applies to copies
-          already made, disclaimers, limitation of liability, indemnity, and
-          governing law — survive the end of this agreement.
+          nature should survive do survive the end of this agreement: your
+          content licence as it applies to copies already made, disclaimers,
+          limitation of liability, indemnity, and governing law.
         </p>
       </LegalSection>
 
@@ -429,7 +430,7 @@ export default function TermsPage() {
           anyone working with us is liable for indirect, incidental, special,
           consequential, exemplary, or punitive damages, or for lost profits, lost
           data, lost recipes, or the cost of substitute services, arising out of
-          your use of RecipePrinter — whether the claim is in contract, tort, or
+          your use of RecipePrinter, whether the claim is in contract, tort, or
           anything else, and even if we were told such damages were possible.
         </p>
         <p>
@@ -449,8 +450,8 @@ export default function TermsPage() {
       <LegalSection id="indemnity" index={18} title="Your indemnity to us">
         <p>
           If someone brings a claim against us because of what you uploaded,
-          printed, or distributed using RecipePrinter — for example a copyright
-          claim over a recipe or a photograph you did not have the right to use —
+          printed, or distributed using RecipePrinter, for example a copyright
+          claim over a recipe or a photograph you did not have the right to use,
           you agree to defend, indemnify, and hold us harmless against that claim
           and its reasonable costs. This does not apply to a claim caused by our
           own breach of these Terms, and it does not apply to the extent the law
