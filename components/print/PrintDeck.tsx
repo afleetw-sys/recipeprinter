@@ -34,9 +34,7 @@ import { gutterSideForRole } from "@/lib/cookbookPresets";
 import { chapterIntroFromRecipes, chapterRecipeTitles } from "@/lib/chapterIntro";
 import {
   BodyTextGlyph,
-  BoldGlyph,
   HeadingGlyph,
-  ItalicGlyph,
   RECIPE_PRINT_TEMPLATE_OPTIONS,
   type PrintCardSize,
   type RecipePrintTemplate,
@@ -45,7 +43,8 @@ import type { NavItem, PageSheet, SheetSlot, usePrintSheets } from "@/lib/usePri
 import type { PhotoStyle, useProjectMeta } from "@/lib/project";
 import type { useDeckScroller } from "@/lib/useDeckScroller";
 import { isPhotoOpenClick, type PhotoPress } from "@/lib/photoOpenGesture";
-import { applyStyleToFocusedField, readFocusedRichField } from "@/lib/richTextField";
+import { readFocusedRichField } from "@/lib/richTextField";
+import { TextStyleControl } from "@/components/print/TextStyleControl";
 import type { useRecipeInlineEditor } from "@/lib/useRecipeInlineEditor";
 import type { CoverConfig, QueueItem, Section } from "@/types/recipe";
 
@@ -426,50 +425,16 @@ export function PrintDeck(props: PrintDeckProps) {
   };
 
   /**
-   * Bold and italic for the text being edited, as a group in the toolbar.
-   *
-   * `onMouseDown` with `preventDefault`, exactly like the line-kind switch
-   * above and for the same reason: a button that took focus would blur the
-   * field, and blur commits — so the styling would land on a field already
-   * written back and closed. Keeping focus is also what lets this read the live
-   * selection straight off the focused element, instead of mirroring a
-   * selection into React state on every keystroke.
+   * The bold/italic pair, shown on the same terms as the line-kind switch:
+   * only for the recipe actually being edited, and only while a field is open.
+   * Its own component so that watching the selection cannot re-render the deck
+   * — see TextStyleControl.
    */
   const renderTextStyleControl = (navItem: NavItem) => {
     if (navItem.kind !== "recipe") return null;
     if (!activeInlineEdit || activeRecipeItem?.id !== navItem.recipeId) return null;
     if (!activeInlineEdit.editingTarget) return null;
-
-    const apply = (style: "bold" | "italic") => (event: ReactMouseEvent) => {
-      // preventDefault keeps focus in the field, which is the whole mechanism:
-      // the browser applies the style to the live selection, and nothing has to
-      // be mirrored into React to do it.
-      event.preventDefault();
-      applyStyleToFocusedField(style);
-    };
-
-    return (
-      <div className="recipe-page-toolbar__group" role="group" aria-label="Text style">
-        <button
-          type="button"
-          className="recipe-page-toolbar__btn recipe-page-toolbar__btn--icon"
-          aria-label="Bold"
-          title="Bold (⌘B)"
-          onMouseDown={apply("bold")}
-        >
-          <BoldGlyph />
-        </button>
-        <button
-          type="button"
-          className="recipe-page-toolbar__btn recipe-page-toolbar__btn--icon"
-          aria-label="Italic"
-          title="Italic (⌘I)"
-          onMouseDown={apply("italic")}
-        >
-          <ItalicGlyph />
-        </button>
-      </div>
-    );
+    return <TextStyleControl />;
   };
 
   /**
