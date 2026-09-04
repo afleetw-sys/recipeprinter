@@ -1,7 +1,7 @@
 import Link from "next/link";
 import Image from "next/image";
 import { FeedbackButton } from "@/components/FeedbackButton";
-import { NAV_LINKS, SITE_NAME } from "@/lib/seo";
+import { LEGAL_LINKS, NAV_LINKS, SITE_NAME } from "@/lib/seo";
 
 const COFFEE_URL = "https://buymeacoffee.com/recipeprinter";
 const CONTACT_EMAIL = "recipeprinter@goodproblem.studio";
@@ -18,7 +18,7 @@ export function SiteFooter({ isHome = false }: { isHome?: boolean }) {
           aria-label="Footer"
           className="flex flex-wrap items-center gap-x-cp-6 gap-y-cp-3"
         >
-          {NAV_LINKS.map(({ href, label }) => (
+          {NAV_LINKS.filter((link) => link.inFooter !== false).map(({ href, label }) => (
             <Link
               key={href}
               href={href}
@@ -66,8 +66,22 @@ export function SiteFooter({ isHome = false }: { isHome?: boolean }) {
             )}{" "}
             for websites, blogs, and social recipes.
           </span>
-          <span>
-            © {new Date().getFullYear()} {SITE_NAME}
+          {/* Legal links ride with the copyright rather than in the nav row
+              above: it is the line a reader already scans for them, and it
+              keeps the row above about the pages we want people to read. */}
+          <span className="flex flex-wrap items-center gap-x-cp-4 gap-y-cp-2">
+            {LEGAL_LINKS.map(({ href, label }) => (
+              <Link
+                key={href}
+                href={href}
+                className="font-semibold hover:text-ink transition-colors"
+              >
+                {label}
+              </Link>
+            ))}
+            <span>
+              © {new Date().getFullYear()} {SITE_NAME}
+            </span>
           </span>
         </div>
       </div>

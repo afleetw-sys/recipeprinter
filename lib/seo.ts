@@ -117,6 +117,16 @@ export interface NavLink {
   label: string;
   /** One-line summary, used in footer/links and as a fallback description. */
   blurb: string;
+  /**
+   * Whether the site's own footer links to it. Absent = yes.
+   *
+   * A page can be worth having and worth indexing without belonging in the
+   * chrome of every page on the site: the footer is a short list a visitor
+   * reads, not an index of everything published. Turning this off keeps the
+   * page in the sitemap and in llms.txt, so search engines still find it and
+   * it still ranks — it just stops competing for attention in the footer.
+   */
+  inFooter?: boolean;
 }
 
 export const NAV_LINKS: NavLink[] = [
@@ -124,6 +134,13 @@ export const NAV_LINKS: NavLink[] = [
     href: "/how-it-works",
     label: "How it works",
     blurb: "The three steps from a recipe link to a printed recipe card or PDF.",
+    // Search traffic, not site navigation. Someone who has already landed on
+    // the homepage is looking at the thing itself — the three steps are the
+    // page in front of them — so "How it works" and "Features" side by side in
+    // the footer were two doors onto the same explanation. It keeps its place
+    // in the sitemap, and /about still links to it, so it is reachable and
+    // indexable without being chrome.
+    inFooter: false,
   },
   {
     href: "/features",
@@ -139,6 +156,28 @@ export const NAV_LINKS: NavLink[] = [
     href: "/about",
     label: "About",
     blurb: "Why we built a tool for moving recipes from the internet to the kitchen.",
+  },
+];
+
+/**
+ * Legal pages. Deliberately NOT in NAV_LINKS: those are the pages we want
+ * people to read and search engines to rank, and putting a privacy policy in
+ * that row buries the FAQ next to it. These get their own quiet line beside the
+ * copyright, which is where a reader already looks for them.
+ *
+ * They still belong in the sitemap — see app/sitemap.ts, which maps this array
+ * in at a low priority so the two can never drift apart.
+ */
+export const LEGAL_LINKS: NavLink[] = [
+  {
+    href: "/privacy",
+    label: "Privacy",
+    blurb: "What happens to the recipes, photos, and details you bring to RecipePrinter.",
+  },
+  {
+    href: "/terms",
+    label: "Terms",
+    blurb: "What you can do with RecipePrinter, what stays yours, and how purchases work.",
   },
 ];
 
