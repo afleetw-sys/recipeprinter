@@ -493,7 +493,7 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
     eyebrow: "Social recipe printer",
     initialImportMode: "url",
     importHint:
-      "No clean recipe link on the pin? Paste the recipe text or upload a screenshot instead.",
+      "Nothing behind the pin? Paste the recipe text or upload a screenshot instead.",
     title: "Free Pinterest Recipe Printer",
     description:
       "Turn Pinterest recipe links, screenshots, or saved recipe text into printable recipe cards, pages, and PDFs.",
@@ -502,12 +502,12 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
       "Pinterest is a great place to find recipes. RecipePrinter moves the ones you actually want to make off the board and onto a printable card you can cook from.",
     howTo: [
       {
-        name: "Open the pin and take its link",
-        text: "Tap the pin, then copy the link to the original recipe. Pinterest shows it under the image as the source site, and the share button copies it too.",
+        name: "Copy the pin's link",
+        text: "Open the pin, tap Share, and choose Copy link. That is the pin's own link, and it is the only one you need. There is no reason to go to the recipe site yourself.",
       },
       {
         name: "Paste it in",
-        text: "Paste the link into the box above. RecipePrinter opens the recipe page behind the pin and rebuilds it as a clean printable layout.",
+        text: "Paste it into the box above. When the pin has a recipe behind it, the kind with an Open recipe button, RecipePrinter follows it through to the source and reads the recipe from there.",
       },
       {
         name: "Pick a card or a page",
@@ -523,13 +523,13 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
         heading: "A pin points at a food blog, and food blogs print badly",
         proof: "before-after",
         body:
-          "Follow the pin and you land on the story, the pop-ups, the autoplay video, and the recipe somewhere near the bottom. Printed straight from the browser, one of those pages ran to 26 sheets. RecipePrinter reads the same page and keeps the part you cook from: the ingredients with their amounts, the numbered steps, the times, and the servings. Everything else stays on the website.",
+          "Behind the pin is the story, the pop-ups, the autoplay video, and the recipe somewhere near the bottom. Printed straight from the browser, one of those pages ran to 26 sheets. RecipePrinter goes there so you do not have to, and keeps the part you cook from: the ingredients with their amounts, the numbered steps, the times, and the servings. Everything else stays on the website.",
       },
       {
-        heading: "When the pin has no link to follow",
+        heading: "When there is nothing behind the pin",
         image: "steps",
         body:
-          "Plenty of recipes on Pinterest never leave the pin. The link is dead, or it drops you on a homepage, or the whole recipe is written into the image and the description. Screenshot the pin and upload it, or paste the text straight in, and it becomes the same clean printout as a link would. Nothing about the finished card says which route it took.",
+          "Plenty of recipes on Pinterest never leave the pin. There is no Open recipe button, or the link behind it is dead, or the whole recipe is written into the image and the description. Screenshot the pin and upload it, or paste the text straight in, and it becomes the same clean printout as a link would. Nothing about the finished card says which route it took.",
       },
       {
         heading: "Print the board, not one pin at a time",
@@ -542,7 +542,7 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
       {
         question: "How do I print Pinterest recipes from an iPhone?",
         answer:
-          "Open the pin in the app or in Safari, copy the link to the original recipe, and paste it into RecipePrinter in your phone browser. Set the card up there, then use the phone's print dialog to reach a wireless printer, or choose Save as PDF and print it from a computer later.",
+          "Open the pin in the Pinterest app, tap Share, and choose Copy link. Paste that into RecipePrinter in your phone browser and set the card up there, then use the phone's print dialog to reach a wireless printer, or choose Save as PDF and print it from a computer later.",
       },
       {
         question: "Do I have to connect my Pinterest account?",
