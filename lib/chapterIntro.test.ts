@@ -17,16 +17,16 @@ describe("chapterIntroFromRecipes", () => {
         "Bourbon Chicken",
         "A", "B", "C", "D", "E",
       ]),
-    ).toBe("Authentic Italian Pizza, Bourbon Chicken, and 5 more recipes.");
+    ).toBe("Authentic Italian Pizza, Bourbon Chicken, and 5 more recipes");
   });
 
   it("lists a whole short chapter rather than trailing off into 'and 1 more'", () => {
-    expect(chapterIntroFromRecipes(["Pizza"])).toBe("Pizza.");
+    expect(chapterIntroFromRecipes(["Pizza"])).toBe("Pizza");
     expect(chapterIntroFromRecipes(["Pizza", "Bourbon Chicken"])).toBe(
-      "Pizza and Bourbon Chicken.",
+      "Pizza and Bourbon Chicken",
     );
     expect(chapterIntroFromRecipes(["Pizza", "Bourbon Chicken", "Grits"])).toBe(
-      "Pizza, Bourbon Chicken, and Grits.",
+      "Pizza, Bourbon Chicken, and Grits",
     );
     expect(
       chapterIntroFromRecipes([
@@ -34,7 +34,7 @@ describe("chapterIntroFromRecipes", () => {
         "Bourbon Chicken",
         "Buttermilk Fried Chicken Sandwiches",
       ]),
-    ).toBe("Authentic Italian Pizza, Bourbon Chicken, and Buttermilk Fried Chicken Sandwiches.");
+    ).toBe("Authentic Italian Pizza, Bourbon Chicken, and Buttermilk Fried Chicken Sandwiches");
   });
 
   it("gives up a name at a time when the titles run long", () => {
@@ -45,7 +45,7 @@ describe("chapterIntroFromRecipes", () => {
         "Buttermilk Fried Chicken Sandwiches",
         ...Array.from({ length: 20 }, (_, index) => `Filler ${index}`),
       ]),
-    ).toBe("Slow-Roasted Tomato and Garlic Soup and 21 more recipes.");
+    ).toBe("Slow-Roasted Tomato and Garlic Soup and 21 more recipes");
     // The same two names fit once the tail is short enough to keep them.
     expect(
       chapterIntroFromRecipes([
@@ -53,7 +53,7 @@ describe("chapterIntroFromRecipes", () => {
         "Buttermilk Fried Chicken",
         ...Array.from({ length: 40 }, (_, index) => `Filler ${index}`),
       ]),
-    ).toBe("Slow-Roasted Tomato Soup, Buttermilk Fried Chicken, and 40 more recipes.");
+    ).toBe("Slow-Roasted Tomato Soup, Buttermilk Fried Chicken, and 40 more recipes");
   });
 
   it("keeps the tail singular for a single unnamed recipe", () => {
@@ -64,33 +64,33 @@ describe("chapterIntroFromRecipes", () => {
         "Skillet Cornbread with Honey Butter",
         "Grits",
       ]),
-    ).toBe("Slow-Roasted Tomato and Garlic Soup and 3 more recipes.");
+    ).toBe("Slow-Roasted Tomato and Garlic Soup and 3 more recipes");
     expect(chapterIntroFromRecipes(["Pizza", "Grits", "Cornbread", "Pie"])).toBe(
-      "Pizza, Grits, and 2 more recipes.",
+      "Pizza, Grits, and 2 more recipes",
     );
   });
 
   it("summarizes by count only when a single title would overrun the line", () => {
     const paragraph =
       "Grandma Eleanor's Christmas Morning Cinnamon Roll Casserole With Extra Brown Sugar Streusel and Cream Cheese Icing";
-    expect(chapterIntroFromRecipes([paragraph])).toBe("1 recipe in this chapter.");
+    expect(chapterIntroFromRecipes([paragraph])).toBe("1 recipe in this chapter");
     expect(chapterIntroFromRecipes([paragraph, "Grits", "Pizza"])).toBe(
-      "3 recipes in this chapter.",
+      "3 recipes in this chapter",
     );
     // A merely long title is still worth naming — it fits.
     const long = "Grandma Eleanor's Christmas Morning Cinnamon Roll Casserole";
-    expect(chapterIntroFromRecipes([long])).toBe(`${long}.`);
+    expect(chapterIntroFromRecipes([long])).toBe(long);
   });
 
   it("tidies titles that carry stray whitespace or trailing punctuation", () => {
     expect(chapterIntroFromRecipes(["  Bourbon\n Chicken.  ", "Grits,"])).toBe(
-      "Bourbon Chicken and Grits.",
+      "Bourbon Chicken and Grits",
     );
   });
 
   it("names distinct dishes and lets duplicates fall into the count", () => {
     expect(chapterIntroFromRecipes(["Pizza", "pizza", "Grits", "Cornbread"])).toBe(
-      "Pizza, Grits, and 2 more recipes.",
+      "Pizza, Grits, and 2 more recipes",
     );
   });
 

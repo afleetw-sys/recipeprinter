@@ -1,7 +1,8 @@
 // The line under a chapter opener's title. Left alone, it names the recipes
 // that actually live in the chapter ("Authentic Italian Pizza, Bourbon Chicken,
-// and 5 more recipes.") rather than printing the same generic sentence in every
-// book. Derived, never stored: the opener is rebuilt from the section's items
+// and 5 more recipes") rather than printing the same generic sentence in every
+// book. No terminal period: it is a label under a title, set the way a chapter
+// opener's standfirst is set in a printed book, not a sentence in a paragraph. Derived, never stored: the opener is rebuilt from the section's items
 // on every pack, so dragging a recipe from one chapter to another re-words both
 // openers the same way it re-numbers the table of contents.
 //
@@ -11,7 +12,7 @@
 /** Printed when a chapter has no recipes under it yet — there is nothing to
     name, and a blank line under the title reads like a bug. */
 export const DEFAULT_CHAPTER_INTRO =
-  "A handful of recipes worth making again and again.";
+  "A handful of recipes worth making again and again";
 
 /**
  * The whole sentence's budget, measured in characters, not the titles' — how
@@ -26,7 +27,7 @@ export const DEFAULT_CHAPTER_INTRO =
 const LINE_BUDGET = 86;
 
 /** Two names is the house style. A chapter of three gets all three when they
-    fit, rather than the faintly silly "A, B, and 1 more recipe." */
+    fit, rather than the faintly silly "A, B, and 1 more recipe". */
 const MAX_NAMES = 2;
 const MAX_NAMES_WHEN_ALL_FIT = 3;
 
@@ -51,8 +52,8 @@ function joinNames(names: string[]): string {
 /** One candidate sentence: these names, plus however many recipes they leave
     unnamed. */
 function line(names: string[], rest: number): string {
-  if (rest === 0) return `${joinNames(names)}.`;
-  const tail = `${rest} more ${recipeWord(rest)}.`;
+  if (rest === 0) return joinNames(names);
+  const tail = `${rest} more ${recipeWord(rest)}`;
   // "Pizza, and 5 more recipes" wants the comma only once there's a list for it
   // to separate.
   return names.length === 1
@@ -109,5 +110,5 @@ export function chapterIntroFromRecipes(titles: readonly (string | undefined)[] 
     const candidate = line(distinct.slice(0, count), total - count);
     if (candidate.length <= LINE_BUDGET) return candidate;
   }
-  return `${total} ${recipeWord(total)} in this chapter.`;
+  return `${total} ${recipeWord(total)} in this chapter`;
 }
