@@ -95,6 +95,20 @@ Aim for roughly 600–800 useful words on a content-rich leaf page, but do not p
 - Replace hand-authored related rows with scoped groups.
 - Expand footer navigation only after groups are stable.
 
+### Phase 1.5: two sweeps that wait until the text is done
+
+Both of these are per-page judgement calls that depend on what a page ends up arguing, so they run once the writing is finished rather than alongside it. Neither is a find-and-replace.
+
+**Input modes.** `SeoCapture` renders exactly one input and locks it: a URL field, a paste box, or a photo dropzone, chosen by `initialImportMode`, with no way to switch. Fourteen of the fifteen pages currently land on the URL field (ten set it, four inherit it as the fallback), and only `/preserve-family-recipes` opens on the dropzone. That is the wrong offer on a lot of them. Someone arriving from a social platform often has no clean recipe link, and someone preserving a handwritten card never has one.
+
+The five social pages already show the contradiction: each carries an `importHint` telling the visitor to paste the text or upload a screenshot instead, and the page gives them no way to do either. The hint names a route that only exists after they reach the app.
+
+Go through every page, decide which inputs genuinely apply to that query, and then either offer them there or give the page a way to reach them. Whether that means mode toggles in the hero, a secondary entry below the primary one, or a handoff that opens the app already on the right tab is still open. Principle 7 holds either way: the answer is not to embed the full importer.
+
+**Hero images.** Almost every hero needs rethinking once its page's text is settled. Only `/preserve-family-recipes` and `/family-recipe-book` name their own `heroImage`. The other thirteen fall back to one of two stock card photos picked by layout alone, so eleven pages open on the same Korean Beef Bowl card and two more share the Basil Pesto one. A hero is meant to carry equal weight with the copy (principle 3) and prove something standing next to it (principle 2), and one photograph reused across eleven pages is not proof of what any particular page claims.
+
+This waits on the text because the right hero is the one showing what that page argues, which is not known until the page argues it. Expect the sweep to produce a shot list rather than a set of edits: several pages will want a photograph that does not exist yet, the way `/preserve-family-recipes` wants the printed copy lying beside the handwritten original.
+
 ### Phase 2: optional expansion
 
 - Title-tag testing.
