@@ -262,11 +262,26 @@ export function RecipeFaceMeasurer({
   useEffect(() => {
     if (fontsReady || typeof document === "undefined" || !document.fonts) return;
     let cancelled = false;
-    document.fonts.ready.then(() => {
+    const proceed = () => {
       if (!cancelled) setFontsReady(true);
-    });
+    };
+    // Both branches below have to end at `proceed`, because nothing downstream
+    // recovers from this promise not settling. `fontsReady` false makes the
+    // settle effect return early, so `onSettled` never fires, so
+    // `printLayoutReady` stays false, so the Print button spins forever with no
+    // error — a wedged font promise would strand a paid export permanently.
+    //
+    // Measuring with fallback faces is already this component's behaviour when
+    // there is no font API at all (see the initial state above), so it is a
+    // known-good degradation rather than a new one: at worst it reintroduces
+    // the late-reflow this wait exists to prevent, which is visibly better than
+    // a button that never comes back. Ten seconds is far longer than a real
+    // font load and short enough to not read as broken.
+    const deadline = setTimeout(proceed, 10_000);
+    document.fonts.ready.then(proceed).catch(proceed);
     return () => {
       cancelled = true;
+      clearTimeout(deadline);
     };
   }, [fontsReady]);
 

@@ -5,6 +5,8 @@ import { useRouter } from "next/navigation";
 import { ArrowRightIcon, ICON_SIZE, SpinnerIcon, UploadIcon } from "@/components/icons";
 import { stashPendingImport } from "@/lib/pendingImport";
 import { imageLabel, partitionImageFiles, prepareImageDataUrls, validateImageFiles } from "@/lib/imageImport";
+import { ImportError } from "@/lib/parser";
+import { normalizeImportURL } from "@/lib/cookpilot";
 import type { ImportTab } from "@/types/recipe";
 
 // A deliberately minimal capture for the SEO landing pages: just the one input
@@ -73,7 +75,16 @@ export function SeoCapture({
       const trimmed = url.trim();
       if (!trimmed) return setError("Paste a recipe link first.");
       try {
-        new URL(trimmed.startsWith("http") ? trimmed : `https://${trimmed}`);
+        // Through the same normalizer the queue and parser use, so this gate
+        // can't reject a URL the pipeline would happily import. The hand-rolled
+        // version here was the stricter one ImportPanel already replaced for
+        // exactly that reason: `startsWith("http")` is a literal-character test,
+        // so a bare domain that begins with those letters never got its scheme
+        // prepended and was rejected, and a link that wrapped across lines on
+        // its way through a message or a PDF kept the whitespace the normalizer
+        // strips. Both import fine once inside the app; only these pages, which
+        // carry the organic traffic, turned them away.
+        new URL(normalizeImportURL(trimmed));
       } catch {
         return setError("That doesn't look like a valid URL.");
       }
@@ -98,7 +109,14 @@ export function SeoCapture({
       if (!ok) setBusy(false);
     } catch (err) {
       setBusy(false);
-      setError(err instanceof Error ? err.message : "Couldn't read those images. Try different files.");
+      // Only ImportError carries a sentence written for a cook. Anything else
+      // reaching here is an unexpected throw, and its `message` is a developer
+      // string; this was the one place in the app that would have shown one.
+      setError(
+        err instanceof ImportError
+          ? err.message
+          : "Couldn't read those images. Try different files.",
+      );
     }
   }
 
