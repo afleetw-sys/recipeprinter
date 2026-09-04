@@ -5541,7 +5541,7 @@ textarea.recipe-card__toc-title {
    which silently broke the base (non-template) title's font/weight since
    this reset was added after it. Zero specificity means any single class
    beats it regardless of source order. */
-:where(.recipe-card__inline-input, .recipe-card__inline-textarea) {
+:where(.recipe-card__inline-input, .recipe-card__inline-textarea, .recipe-card__inline-rich) {
   width: 100%;
   min-width: 0;
   margin: 0;
@@ -5555,7 +5555,20 @@ textarea.recipe-card__toc-title {
   box-sizing: border-box;
 }
 
+/* The contentEditable variant. A textarea preserves its own whitespace and
+   wraps on its own; a div has to be told, or leading spaces collapse and the
+   line the cook typed is not the line that prints. `break-word` matches the
+   printed line's own wrapping so the field and the text it replaces occupy the
+   same box — the measurement probe is drawn from that same box. */
+.recipe-card__inline-rich {
+  white-space: pre-wrap;
+  overflow-wrap: break-word;
+  /* Firefox draws a resize affordance on contentEditable blocks. */
+  resize: none;
+}
+
 .recipe-card__inline-input:focus,
+.recipe-card__inline-rich:focus,
 .recipe-card__inline-textarea:focus {
   outline: 1px solid color-mix(in srgb, var(--cp-accent) 58%, transparent);
   outline-offset: 2px;

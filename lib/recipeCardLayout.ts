@@ -691,7 +691,15 @@ export interface RecipeCardInlineEdit {
   onValueChange: (value: string) => void;
   onCommit: (value?: string) => void;
   /** Body ↔ heading for the field being edited (see `setLineKind`). */
-  onSetLineKind: (target: RecipeCardEditTarget, kind: "body" | "heading") => void;
+  /** `liveValue` is the field's own current text. The rich fields are
+      uncontrolled, so the editor's state copy is stale the moment typing
+      starts — callers with access to the focused field pass what is really in
+      it. */
+  onSetLineKind: (
+    target: RecipeCardEditTarget,
+    kind: "body" | "heading",
+    liveValue?: string,
+  ) => void;
   onCancel: () => void;
   onInsertIngredient: (index: number) => void;
   onInsertStep: (index: number) => void;

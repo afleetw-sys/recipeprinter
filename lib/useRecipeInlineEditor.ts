@@ -290,11 +290,16 @@ export function useRecipeInlineEditor({
    * the row said before this keystroke.
    */
   const setLineKind = useCallback(
-    (target: RecipeCardEditTarget, kind: "body" | "heading") => {
+    (target: RecipeCardEditTarget, kind: "body" | "heading", liveValue?: string) => {
       if (!activeRecipeItem?.recipe) return;
+      // `liveValue` comes from the field itself. The rich fields are
+      // uncontrolled — React's `editValue` is whatever the edit STARTED as — so
+      // rebuilding the line from state here would discard everything typed
+      // since the field was opened.
+      const inProgress = liveValue ?? editValue;
       const recipe =
         editingEdit?.recipeId === activeRecipeItem.id
-          ? applyRecipeTargetEdit(activeRecipeItem.recipe, editingEdit.target, editValue)
+          ? applyRecipeTargetEdit(activeRecipeItem.recipe, editingEdit.target, inProgress)
           : activeRecipeItem.recipe;
 
       if (kind === "heading" && (target.kind === "ingredient" || target.kind === "step")) {

@@ -1,44 +1,41 @@
 "use client";
 
-import { toggleRichText } from "@/lib/richText";
+import { nodesToRichText } from "@/lib/richText";
 
 /**
- * Applies bold/italic to whatever is selected in a live text field.
+ * Bold/italic applied to the field that currently has focus.
  *
- * Shared by the two ways in — Cmd+B/Cmd+I inside the field, and the toolbar's
- * buttons — so the keyboard and the bar cannot disagree about what a toggle
- * does.
- *
- * The selection is restored on the next frame because the field is controlled:
- * React has to render the new value before the caret can be put back, and
- * without this a wrap left the cursor sitting inside the markers it had just
- * added.
+ * The toolbar's buttons `preventDefault` on mousedown, so focus never leaves
+ * the field they act on — which is what lets this find it at all, and why the
+ * bar and Cmd+B end up doing exactly the same thing through exactly the same
+ * browser command.
  */
-export function applyRichTextToField(
-  field: HTMLInputElement | HTMLTextAreaElement,
-  style: "bold" | "italic",
-  onValueChange: (value: string) => void,
-): void {
-  const next = toggleRichText(
-    field.value,
-    field.selectionStart ?? field.value.length,
-    field.selectionEnd ?? field.value.length,
-    style,
-  );
-  onValueChange(next.value);
-  requestAnimationFrame(() => {
-    // The field can be gone by now — a commit, a page change — and asking a
-    // detached node for a selection throws in some browsers.
-    if (!field.isConnected) return;
-    field.setSelectionRange(next.selectionStart, next.selectionEnd);
-  });
+export function applyStyleToFocusedField(style: "bold" | "italic"): boolean {
+  if (typeof document === "undefined") return false;
+  const active = document.activeElement;
+  if (!(active instanceof HTMLElement) || !active.isContentEditable) return false;
+  document.execCommand(style);
+  return true;
 }
 
-/** The focused inline field, or null when focus is somewhere else entirely.
-    The toolbar reads this: its buttons `preventDefault` on mousedown, so focus
-    is still in the field they are acting on. */
-export function focusedInlineField(): HTMLInputElement | HTMLTextAreaElement | null {
-  const active = typeof document === "undefined" ? null : document.activeElement;
-  if (active instanceof HTMLTextAreaElement || active instanceof HTMLInputElement) return active;
-  return null;
+/** Whether a rich field has focus — the toolbar group only belongs on screen
+    while one does. */
+export function hasFocusedRichField(): boolean {
+  if (typeof document === "undefined") return false;
+  const active = document.activeElement;
+  return active instanceof HTMLElement && active.isContentEditable;
+}
+
+/** The marker text currently in the focused rich field, or null when focus is
+    elsewhere.
+
+    The toolbar needs this because the field is uncontrolled: React's copy of
+    the value is whatever the edit STARTED as, so a control that rebuilt the
+    line from state would throw away everything typed since. Reading the DOM is
+    reading the truth. */
+export function readFocusedRichField(): string | null {
+  if (typeof document === "undefined") return null;
+  const active = document.activeElement;
+  if (!(active instanceof HTMLElement) || !active.isContentEditable) return null;
+  return nodesToRichText(active);
 }

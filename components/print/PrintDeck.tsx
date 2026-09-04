@@ -45,7 +45,7 @@ import type { NavItem, PageSheet, SheetSlot, usePrintSheets } from "@/lib/usePri
 import type { PhotoStyle, useProjectMeta } from "@/lib/project";
 import type { useDeckScroller } from "@/lib/useDeckScroller";
 import { isPhotoOpenClick, type PhotoPress } from "@/lib/photoOpenGesture";
-import { applyRichTextToField, focusedInlineField } from "@/lib/richTextField";
+import { applyStyleToFocusedField, readFocusedRichField } from "@/lib/richTextField";
 import type { useRecipeInlineEditor } from "@/lib/useRecipeInlineEditor";
 import type { CoverConfig, QueueItem, Section } from "@/types/recipe";
 
@@ -401,7 +401,7 @@ export function PrintDeck(props: PrintDeckProps) {
           title="Heading"
           onMouseDown={(event) => {
             event.preventDefault();
-            if (!isHeading) activeInlineEdit.onSetLineKind(target, "heading");
+            if (!isHeading) activeInlineEdit.onSetLineKind(target, "heading", readFocusedRichField() ?? undefined);
           }}
         >
           <HeadingGlyph />
@@ -416,7 +416,7 @@ export function PrintDeck(props: PrintDeckProps) {
           title="Body text"
           onMouseDown={(event) => {
             event.preventDefault();
-            if (isHeading) activeInlineEdit.onSetLineKind(target, "body");
+            if (isHeading) activeInlineEdit.onSetLineKind(target, "body", readFocusedRichField() ?? undefined);
           }}
         >
           <BodyTextGlyph />
@@ -441,10 +441,11 @@ export function PrintDeck(props: PrintDeckProps) {
     if (!activeInlineEdit.editingTarget) return null;
 
     const apply = (style: "bold" | "italic") => (event: ReactMouseEvent) => {
+      // preventDefault keeps focus in the field, which is the whole mechanism:
+      // the browser applies the style to the live selection, and nothing has to
+      // be mirrored into React to do it.
       event.preventDefault();
-      const field = focusedInlineField();
-      if (!field) return;
-      applyRichTextToField(field, style, activeInlineEdit.onValueChange);
+      applyStyleToFocusedField(style);
     };
 
     return (

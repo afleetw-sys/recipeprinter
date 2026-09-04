@@ -12,7 +12,7 @@ import {
 } from "react";
 import { formatRecipeTime } from "@/lib/time";
 import { RichText } from "@/components/RichText";
-import { applyRichTextToField } from "@/lib/richTextField";
+import { InlineRichField } from "@/components/InlineRichField";
 import { photoGridLayout } from "@/lib/photoGrid";
 import { ImagePicker } from "@/components/ImagePicker";
 import { useWideColumns } from "@/lib/measureHeights";
@@ -474,6 +474,15 @@ export const RecipeCardFace = memo(function RecipeCardFace({
     inlineEdit?.onCommit();
   }
 
+  /** The caret offset the opening click computed, consumed once. `InlineRichField`
+      focuses and places its own caret, so unlike `focusIfEditing` there is no
+      element here to hand it to. */
+  function takePendingCaret(): number | null {
+    const caret = pendingCaret.current;
+    pendingCaret.current = null;
+    return caret;
+  }
+
   function renderCookbookDescription() {
     if (!cookbookMode || !showHeader) return null;
     const target: RecipeCardEditTarget = { kind: "description" };
@@ -483,16 +492,13 @@ export const RecipeCardFace = memo(function RecipeCardFace({
     // print the first line and hide the rest behind `overflow: hidden`.
     if (canEdit && inlineEdit && sameTarget(inlineEdit.editingTarget, target)) {
       return (
-        <textarea
-          ref={focusIfEditing(target)}
-          rows={Math.max(1, inlineEdit.value.split(/\r?\n/).length)}
-          className="recipe-card__inline-textarea recipe-card__headnote"
+        <InlineRichField
+          className="recipe-card__inline-textarea recipe-card__headnote recipe-card__inline-rich"
+          ariaLabel="Recipe notes"
           value={inlineEdit.value}
-          placeholder="Add a note or memory…"
-          aria-label="Recipe notes"
-          onChange={(event) => inlineEdit.onValueChange(event.target.value)}
-          onBlur={commitEdit}
-          onKeyDown={(event) => handleEditKeyDown(event, target)}
+          caret={takePendingCaret()}
+          onCommit={(next) => inlineEdit.onCommit(next)}
+          onCancel={() => inlineEdit.onCancel()}
         />
       );
     }
@@ -592,18 +598,6 @@ export const RecipeCardFace = memo(function RecipeCardFace({
     event: React.KeyboardEvent<HTMLInputElement | HTMLTextAreaElement>,
     target?: RecipeCardEditTarget,
   ) {
-    // Cmd/Ctrl+B and Cmd/Ctrl+I, the shortcuts these mean everywhere else.
-    // Checked before Escape/Enter because a modifier chord is never either.
-    if ((event.metaKey || event.ctrlKey) && !event.altKey) {
-      const style = event.key === "b" || event.key === "B" ? "bold"
-        : event.key === "i" || event.key === "I" ? "italic"
-        : null;
-      if (style && inlineEdit) {
-        event.preventDefault();
-        applyRichTextToField(event.currentTarget, style, inlineEdit.onValueChange);
-        return;
-      }
-    }
     if (event.key === "Escape") {
       event.preventDefault();
       inlineEdit?.onCancel();
@@ -752,15 +746,14 @@ export const RecipeCardFace = memo(function RecipeCardFace({
         onClick={canEdit && !isEditingThis ? (event) => startEdit(target, text, event) : undefined}
       >
         {canEdit && inlineEdit && isEditingThis ? (
-          <textarea
-            ref={focusIfEditing(target)}
-            className="recipe-card__inline-textarea recipe-card__inline-textarea--line"
+          <InlineRichField
+            className="recipe-card__inline-textarea recipe-card__inline-textarea--line recipe-card__inline-rich"
+            ariaLabel="Ingredient"
             value={displayValue}
-            aria-label="Ingredient"
-            rows={Math.max(1, displayValue.split(/\r?\n/).length)}
-            onChange={(event) => inlineEdit.onValueChange(event.target.value)}
-            onBlur={commitEdit}
-            onKeyDown={(event) => handleEditKeyDown(event, target)}
+            caret={takePendingCaret()}
+            onCommit={(next) => inlineEdit.onCommit(next)}
+            onCancel={() => inlineEdit.onCancel()}
+            onSplit={(before, after) => inlineEdit.onSplitLine(target, before, after)}
           />
         ) : (
           <RichText text={text} />
@@ -796,15 +789,14 @@ export const RecipeCardFace = memo(function RecipeCardFace({
       >
         <span className="recipe-card__step-number">{step.step}</span>
         {canEdit && inlineEdit && isEditingThis ? (
-          <textarea
-            ref={focusIfEditing(target)}
-            className="recipe-card__inline-textarea recipe-card__inline-textarea--line"
+          <InlineRichField
+            className="recipe-card__inline-textarea recipe-card__inline-textarea--line recipe-card__inline-rich"
+            ariaLabel="Step"
             value={displayValue}
-            aria-label="Step"
-            rows={Math.max(1, displayValue.split(/\r?\n/).length)}
-            onChange={(event) => inlineEdit.onValueChange(event.target.value)}
-            onBlur={commitEdit}
-            onKeyDown={(event) => handleEditKeyDown(event, target)}
+            caret={takePendingCaret()}
+            onCommit={(next) => inlineEdit.onCommit(next)}
+            onCancel={() => inlineEdit.onCancel()}
+            onSplit={(before, after) => inlineEdit.onSplitLine(target, before, after)}
           />
         ) : (
           <span>
