@@ -203,6 +203,12 @@ function CoverWrapDocument({ payload }: { payload: ExportPayload }) {
     "--rp-wrap-h": `${geometry.sheetHeightIn}in`,
     "--rp-wrap-panel-w": `${geometry.panelWidthIn}in`,
     "--rp-wrap-panel-h": `${geometry.panelHeightIn}in`,
+    // The spine panel's width, and the one variable print.css reads that this
+    // object used to leave out. An unset `var()` is invalid at computed-value
+    // time rather than an error, so `width: var(--rp-spine-w)` silently became
+    // `width: auto` and the spine collapsed to its text — which is what put the
+    // title in the corner of the sheet instead of on the spine.
+    "--rp-spine-w": `${geometry.spineWidthIn}in`,
     "--rp-wrap-allowance": `${geometry.wrapAllowanceIn}in`,
     "--rp-sheet-w": geometry.sheetWidthIn,
     "--rp-sheet-h": geometry.sheetHeightIn,
@@ -238,7 +244,7 @@ function CoverWrapDocument({ payload }: { payload: ExportPayload }) {
           overriding them. Without both, a cover panel renders with no paper
           colour at all. */}
       <div
-        className={`cookbook-wrap recipe-card-set recipe-card-set--letter recipe-template--${template}`}
+        className={`cookbook-wrap cookbook-wrap--${preset.wrapStyle} recipe-card-set recipe-card-set--letter recipe-template--${template}`}
       >
         {/* Back cover first: a wrap is read as a flat sheet, left to right. */}
         <CoverFace cover={backCover} side="back" template={template} />
@@ -287,11 +293,23 @@ function InteriorDocument({ payload }: { payload: ExportPayload }) {
   const photoStyle = settings.photoStyle ?? "card";
   const headerPhotosOn = cookbookMode ? photoStyle === "card" : settings.showPhoto;
 
+  // A format that ships a separate cover wrap must NOT also bind the cover into
+  // the pages. Lulu says so outright ("Your cover should be completely separate
+  // from your interior file"), and every print-on-demand service works the same
+  // way: the cover is a different sheet, on different stock, and the interior is
+  // the block that goes between the two. Left in, the cover art printed twice —
+  // once as the cover, once as page 1 — and every folio in the book was off by
+  // the number of cover pages.
+  //
+  // The dedication is deliberately NOT dropped. It is an interior page that
+  // happens to reuse the cover component, and it belongs in the block.
+  const coversAreSeparate = preset.wrapRequired;
+
   const { sheets, printLayoutReady, measurers } = usePrintSheets({
     sections: project.sections,
     items,
-    cover: project.cover,
-    backCover: project.backCover,
+    cover: coversAreSeparate ? undefined : project.cover,
+    backCover: coversAreSeparate ? undefined : project.backCover,
     dedication: project.dedication,
     tableOfContents: cookbookMode ? settings.tableOfContents : false,
     bookTitle: project.cover?.title,
@@ -315,33 +333,16 @@ function InteriorDocument({ payload }: { payload: ExportPayload }) {
 
   useExportReady(printLayoutReady && sheets.length > 0);
 
-  /**
-   * The spine, as a page of its own — hardcover only.
-   *
-   * A case-bound book has a printed spine; a coil book has no spine to print.
-   * The wrap file that would normally carry it is still switched off
-   * (`COVER_WRAP_ENABLED`), so until it ships a hardcover export contains no
-   * spine artwork anywhere and there is nothing to hand a binder. This is that
-   * artwork, drawn by the same `SpineFace` the wrap uses, so the two cannot
-   * drift apart.
-   *
-   * Width is the real computed spine for this book's thickness, and it is
-   * measured from the CONTENT pages only: the spine is production artwork
-   * describing the book, not a leaf bound into it, so counting itself would
-   * make the book fractionally thicker for having been described.
-   *
-   * It goes FIRST, on a hardcover download only. Last put it behind the entire
-   * book, which is the wrong end for the one sheet whoever binds the thing
-   * needs in their hand before anything else — and on a long book it is a scroll
-   * away from everything it belongs with. Opening on it also states what the
-   * file is the moment it opens.
-   */
-  const spine = useMemo(() => {
-    if (!preset.wrapRequired || !project.cover) return null;
-    const widthIn = coverWrapGeometry(preset, sheets.length).spineWidthIn;
-    return { widthIn, fitsTitle: spineFitsTitle(widthIn) };
-  }, [preset, project.cover, sheets.length]);
+  /* The spine used to be drawn here as an extra FIRST page of the interior.
+     It was an honest stopgap: `COVER_WRAP_ENABLED` was false, so a hardcover
+     export contained no spine artwork anywhere and there was nothing to hand a
+     binder. The wrap ships now, and it carries the spine in the place a printer
+     actually expects it, between the two covers.
 
+     Leaving both would be worse than either. An interior file is the block that
+     gets bound, so a spine page in it is not a note to the binder — it is a
+     leaf of the finished book, printed before the first chapter, and it would
+     have shifted every folio in a coil book by one. */
 
   // The same class + variable pair the deck applies for the instant it prints
   // (see `deckExportClass` in app/print/page.tsx) — here it is simply always on,
@@ -364,22 +365,6 @@ function InteriorDocument({ payload }: { payload: ExportPayload }) {
       data-export-root="true"
     >
       {measurers}
-      {spine && project.cover && (
-        <div className="recipe-page-slide">
-          {/* The template class carries the palette (paper, ink, accent), the
-              same way the deck's own blank pages get theirs. */}
-          <div className={`recipe-card-set recipe-card-set--letter recipe-template--${template}`}>
-            <div className="recipe-card-page recipe-spine-page">
-              <SpineFace
-                cover={project.cover}
-                template={template}
-                spineWidthIn={spine.widthIn}
-                showTitle={spine.fitsTitle}
-              />
-            </div>
-          </div>
-        </div>
-      )}
       {sheets.map((sheet, index) => (
         <div className="recipe-page-slide" key={`sheet-${index}`}>
           <ScaledPage

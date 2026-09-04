@@ -65,11 +65,37 @@ export interface CookbookPreset {
   pageName: string;
   /**
    * Whether this format needs a separate COVER WRAP file (back | spine | front
-   * on one flat sheet). True for case binding, whose cover is glued around
-   * boards and whose spine width depends on the page count. A coil book has no
-   * spine to wrap: its cover is just the first page.
+   * on one flat sheet).
+   *
+   * True for anything going to a print-on-demand service, which is every format
+   * here except the one meant to come out of a printer at home. It used to be
+   * true for case binding alone, on the reasoning that a coil book "has no spine
+   * to wrap: its cover is just the first page". That is true of the physical
+   * object and false of the upload form. Lulu states it flatly: "Your cover
+   * should be completely separate from your interior file", and it wants that
+   * cover as one wide integrated spread whatever the binding. A coil book bound
+   * from our old single file printed the cover art twice, once as a cover and
+   * again as page 1.
+   *
+   * When this is true the interior render also DROPS its cover pages — see
+   * `InteriorDocument` in app/export/page.tsx.
    */
   wrapRequired: boolean;
+  /**
+   * How the wrap's extra material behaves, which is a different physical thing
+   * per binding and therefore a different sheet size (see lib/coverWrap.ts).
+   *
+   * `case` — a hardcover. The extra is fold-over allowance: real surface area
+   * that disappears around the board edge, so it is large (0.75in) and nothing
+   * readable may sit in it. The spine also has to carry the boards.
+   *
+   * `flat` — a coil or paperback cover, printed flat and trimmed. The extra is
+   * ordinary bleed (0.125in), art must run INTO it, and the spine is just the
+   * paper block's own thickness with no boards.
+   *
+   * Ignored when `wrapRequired` is false.
+   */
+  wrapStyle: "case" | "flat";
   /** Class placed on `.recipe-print-preview` so the `page:` binding + geometry
       rules for this preset apply (see app/print/print.css). */
   pageClass: string;
@@ -77,14 +103,35 @@ export interface CookbookPreset {
   printerIds: string[];
 }
 
+/* Deep links, not homepages. A homepage makes someone holding a finished PDF
+   hunt for the upload form, and on two of these three the page they need is
+   several clicks in. Each of these lands on the page that actually takes the
+   file for the format we sent them there for. */
 export const PRINTERS: Record<string, PrinterOption> = {
-  lulu: { id: "lulu", name: "Lulu", note: "Best for hardcover", url: "https://www.lulu.com/" },
-  blurb: { id: "blurb", name: "Blurb", note: "Premium quality", url: "https://www.blurb.com/" },
+  lulu: {
+    id: "lulu",
+    name: "Lulu",
+    note: "Coil bound, lay-flat",
+    // Their cookbook page leads with exactly our spiral format: US Letter,
+    // 8.5 × 11, coil bound, standard colour, 80# paper.
+    url: "https://www.lulu.com/create/cookbooks",
+  },
+  blurb: {
+    id: "blurb",
+    name: "Blurb",
+    note: "Hardcover, 8 × 10",
+    // The PDF upload flow. 8 × 10 is their Standard Portrait photo book and a
+    // Trade Book size, both available in hardcover.
+    url: "https://www.blurb.com/pdf-to-book",
+  },
   staples: {
     id: "staples",
     name: "Staples",
-    note: "Spiral & binder / budget",
-    url: "https://www.staples.com/services/printing/",
+    note: "Local pickup",
+    // The document upload page, where "Coil bind with spiral spine" is one of
+    // the finishing options. `/services/printing/` is the marketing index and
+    // does not take a file.
+    url: "https://www.staples.com/services/printing/copies-documents-printing/",
   },
 };
 
@@ -105,9 +152,41 @@ export const COOKBOOK_PRESETS: CookbookPreset[] = [
     gutterIn: 0,
     coilBound: true,
     wrapRequired: false,
+    wrapStyle: "flat",
     pageName: "rp-preset-us-letter",
     pageClass: "rp-page-us-letter",
-    printerIds: ["staples", "lulu", "blurb"],
+    // Blurb is not offered here: they bind softcover, hardcover and layflat, and
+    // no coil or spiral at all, so sending a spiral book to them is sending it
+    // to a shop that cannot make it.
+    printerIds: ["staples", "lulu"],
+  },
+  {
+    // The same book as `us-letter`, sized for a print service instead of a
+    // home printer. The trim is identical; what changes is that the sheet
+    // carries 0.125in of bleed on every edge, so full-page photos, chapter
+    // openers and the cover reach the trimmed edge instead of stopping short of
+    // it. Uploading the zero-bleed file to Lulu gets you a white border around
+    // every piece of art and a warning saying so.
+    id: "coil-us-letter",
+    productName: "Spiral Cookbook",
+    fileLabel: "Spiral-PrintReady",
+    trimLabel: "US Letter (8.5 × 11 in)",
+    bestFor: "Print services like Lulu — full bleed, coil bound",
+    trimWidthIn: 8.5,
+    trimHeightIn: 11,
+    bleedIn: 0.125,
+    marginIn: 0.5,
+    // Still no gutter, for the same reason `us-letter` has none: a coil book
+    // lies flat. Lulu's own guidance agrees from the other direction — the coil
+    // "bites about 0.375 in on the spine edge", and a uniform 0.5in margin
+    // already clears that.
+    gutterIn: 0,
+    coilBound: true,
+    wrapRequired: true,
+    wrapStyle: "flat",
+    pageName: "rp-preset-coil-us-letter",
+    pageClass: "rp-page-coil-us-letter",
+    printerIds: ["lulu"],
   },
   {
     id: "hardcover-8x10",
@@ -124,9 +203,15 @@ export const COOKBOOK_PRESETS: CookbookPreset[] = [
     gutterIn: 0.5,
     coilBound: false,
     wrapRequired: true,
+    wrapStyle: "case",
     pageName: "rp-preset-hardcover-8x10",
     pageClass: "rp-page-hardcover-8x10",
-    printerIds: ["lulu", "blurb", "staples"],
+    // Blurb only. 8×10 is their "Standard Portrait" photo book and a Trade Book
+    // size; Lulu's trim list has no 8×10 in it at all (7×10 and 8.5×11 are the
+    // neighbours), and Staples binds booklets rather than case-wrapped
+    // hardcovers. Listing either was sending people to a shop that cannot take
+    // the file.
+    printerIds: ["blurb"],
   },
 ];
 

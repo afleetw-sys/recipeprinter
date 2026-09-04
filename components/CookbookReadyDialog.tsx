@@ -33,7 +33,6 @@ export function CookbookReadyDialog({
   exportNeedsAccount?: boolean;
   onSignIn?: () => void;
 }) {
-  const printers = Object.values(PRINTERS);
   return (
     <Dialog
       open={open}
@@ -71,56 +70,78 @@ export function CookbookReadyDialog({
       )}
 
       <div className="cookbook-ready__formats">
-        {COOKBOOK_PRESETS.map((preset) => (
-          <button
-            key={preset.id}
-            type="button"
-            className="cookbook-format-card"
-            disabled={exportingPreset !== null}
-            onClick={() => onExport(preset.id)}
-          >
-            <span className="cookbook-format-card__text">
-              <strong>{preset.productName}</strong>
-              <small>{preset.trimLabel}</small>
-            </span>
-            <span className="cookbook-format-card__cta">
-              {exportingPreset === preset.id ? (
-                <>
-                  <SpinnerIcon size={ICON_SIZE.sm} />
-                  Preparing…
-                </>
-              ) : (
-                <>
-                  <PrintIcon size={ICON_SIZE.sm} />
-                  Save PDF
-                </>
-              )}
-            </span>
-          </button>
-        ))}
+        {COOKBOOK_PRESETS.map((preset) => {
+          // Where this particular book can actually be made. Read off the
+          // preset rather than listing every shop we know: Blurb does not bind
+          // coil at all and Lulu has no 8 × 10 trim, so an undifferentiated
+          // list sent people to a printer that could not take their file.
+          const printers = preset.printerIds
+            .map((id) => PRINTERS[id])
+            .filter((printer): printer is NonNullable<typeof printer> => Boolean(printer));
+          return (
+            <div className="cookbook-format" key={preset.id}>
+              <button
+                type="button"
+                className="cookbook-format-card"
+                disabled={exportingPreset !== null}
+                onClick={() => onExport(preset.id)}
+              >
+                <span className="cookbook-format-card__text">
+                  <strong>{preset.productName}</strong>
+                  <small>{preset.bestFor}</small>
+                </span>
+                <span className="cookbook-format-card__cta">
+                  {exportingPreset === preset.id ? (
+                    <>
+                      <SpinnerIcon size={ICON_SIZE.sm} />
+                      Preparing…
+                    </>
+                  ) : (
+                    <>
+                      <PrintIcon size={ICON_SIZE.sm} />
+                      Save PDF
+                    </>
+                  )}
+                </span>
+              </button>
+              <p className="cookbook-format__where">
+                {/* Said per format, because it is a property of the format and
+                    not a caveat. A print service wants the pages and the cover
+                    as two files, so these two save two files, and someone who
+                    is not told that will go looking for the missing one. */}
+                {preset.wrapRequired
+                  ? "Saves two files, pages and cover, the way a print service asks for them. Upload at "
+                  : "Print it at home, or upload it at "}
+                {printers.map((printer, index) => (
+                  <span key={printer.id}>
+                    <button
+                      type="button"
+                      className="cookbook-ready__printer-link"
+                      onClick={() => onPrinterClick(printer.id, printer.url)}
+                    >
+                      {printer.name}
+                    </button>
+                    {index < printers.length - 1
+                      ? index === printers.length - 2
+                        ? " or "
+                        : ", "
+                      : "."}
+                  </span>
+                ))}
+              </p>
+            </div>
+          );
+        })}
       </div>
 
-      {/* No integration with the print shops — the export is just a PDF. So the
-          honest instruction is: save it first, then upload that file yourself.
-          Worth stating that home printing IS fine from the saved file: the PDF
-          has its geometry baked in, so a printer can only scale it uniformly —
-          a slightly inset page, never the broken one it produces from the web
-          page. That's the whole reason this flow is PDF-first. */}
+      {/* The per-format lines above carry the destinations now — a single
+          sentence listing every shop could not say that Blurb has no coil
+          binding and Lulu has no 8 × 10, so it recommended both for both.
+          What is left here is the one thing true of every format: we do not
+          upload anything for you. */}
       <p className="cookbook-ready__note">
-        Once it’s saved you can print it at home, or upload it to a
-        service like{" "}
-        {printers.map((printer, index) => (
-          <span key={printer.id}>
-            <button
-              type="button"
-              className="cookbook-ready__printer-link"
-              onClick={() => onPrinterClick(printer.id, printer.url)}
-            >
-              {printer.name}
-            </button>
-            {index < printers.length - 1 ? (index === printers.length - 2 ? ", or " : ", ") : "."}
-          </span>
-        ))}
+        We don’t send anything anywhere. Saving puts the files on this device,
+        and you upload them yourself.
       </p>
     </Dialog>
   );

@@ -3434,6 +3434,23 @@
 .cookbook-wrap {
   position: relative;
   display: flex;
+  /* Both of these exist to beat `.recipe-card-set`, which this element also
+     carries for its palette (see the theme note in app/export/page.tsx). That
+     rule is written for a STACK of pages: `flex-direction: column` and
+     `max-width: 100%`. Inherited here they are fatal rather than untidy — the
+     wrap laid its three panels out vertically, and then clamped the whole
+     17.76in sheet to the width of its parent, which on the export route is
+     80px. The result was a sheet whose content box was zero wide: back cover
+     only, spine text crushed into a corner, no front cover at all. That was
+     read as a print-media bug (see `COVER_WRAP_ENABLED`) and it never was one;
+     the same collapse happens on screen. */
+  flex-direction: row;
+  max-width: none;
+  /* Third one. `.recipe-card-set` spaces a STACK of pages 24px apart, and 24px
+     is 0.25in of dead paper between the panels of a sheet whose whole purpose
+     is that the panels tile exactly. It pushed the front cover a quarter inch
+     past the edge of its own sheet. */
+  gap: 0;
   align-items: stretch;
   box-sizing: border-box;
   width: var(--rp-wrap-w);
@@ -3460,6 +3477,34 @@
 
 .cookbook-wrap > .recipe-card--spine {
   width: var(--rp-spine-w);
+}
+
+/* ── Flat wrap (coil / paperback): the allowance is BLEED, so art runs into it.
+   On a case wrap the band around the panels is fold-over material that ends up
+   glued to the inside of a board, so painting it flat paper colour is right —
+   nobody ever sees it. On a flat cover the same band is the 0.125in that gets
+   TRIMMED OFF, and leaving it flat paper is precisely the white border a print
+   service warns about ("a white Bleed margin has been added to your file").
+
+   So each panel is pulled out to the sheet edge on its three outer sides with a
+   negative margin, and grown by the same amount, which puts the cover's own art
+   under the trim line while leaving the trim box itself exactly where the
+   geometry computed it. The container keeps its padding: that is what positions
+   the panels' TRIM edges. */
+.cookbook-wrap--flat > .recipe-card {
+  height: calc(var(--rp-wrap-panel-h) + var(--rp-wrap-allowance) * 2);
+  margin-top: calc(var(--rp-wrap-allowance) * -1);
+  margin-bottom: calc(var(--rp-wrap-allowance) * -1);
+}
+
+.cookbook-wrap--flat > .recipe-card--cover-back {
+  width: calc(var(--rp-wrap-panel-w) + var(--rp-wrap-allowance));
+  margin-left: calc(var(--rp-wrap-allowance) * -1);
+}
+
+.cookbook-wrap--flat > .recipe-card--cover-front {
+  width: calc(var(--rp-wrap-panel-w) + var(--rp-wrap-allowance));
+  margin-right: calc(var(--rp-wrap-allowance) * -1);
 }
 
 /* Trim/fold guides. Screen-only: they mark where the board edge falls so the
@@ -3524,6 +3569,26 @@
     border-radius: 0 !important;
     break-inside: avoid !important;
     page-break-inside: avoid !important;
+  }
+
+  /* Re-assert the bleed the pin above just flattened. The pin exists to stop a
+     panel being re-sized by the one-card-per-page rules, and it is written with
+     `!important` for that reason — which also wipes the negative margins and
+     grown boxes a flat wrap needs. Restated here at the same weight, after it. */
+  .rp-page-cover-wrap .cookbook-wrap--flat > .recipe-card {
+    height: calc(var(--rp-wrap-panel-h) + var(--rp-wrap-allowance) * 2) !important;
+    margin-top: calc(var(--rp-wrap-allowance) * -1) !important;
+    margin-bottom: calc(var(--rp-wrap-allowance) * -1) !important;
+  }
+
+  .rp-page-cover-wrap .cookbook-wrap--flat > .recipe-card--cover-back {
+    width: calc(var(--rp-wrap-panel-w) + var(--rp-wrap-allowance)) !important;
+    margin-left: calc(var(--rp-wrap-allowance) * -1) !important;
+  }
+
+  .rp-page-cover-wrap .cookbook-wrap--flat > .recipe-card--cover-front {
+    width: calc(var(--rp-wrap-panel-w) + var(--rp-wrap-allowance)) !important;
+    margin-right: calc(var(--rp-wrap-allowance) * -1) !important;
   }
 
   .rp-page-cover-wrap .cookbook-wrap > .recipe-card--spine {
@@ -6851,6 +6916,14 @@ textarea.recipe-card__toc-title {
   size: 8.5in 11in;
   margin: 0;
 }
+@page rp-preset-coil-us-letter {
+  /* The same 8.5×11 trim as `rp-preset-us-letter`, plus 0.125in bleed per edge.
+     Lulu sizes a book by measuring the file it is given, and their own worked
+     example is exactly this: "upload a 6 x 9 inch-sized file (or 6.25 x 9.25
+     for a full bleed)". */
+  size: 8.75in 11.25in;
+  margin: 0;
+}
 @page rp-preset-hardcover-8x10 {
   /* 8×10 trim + 0.125in bleed per edge. */
   size: 8.25in 10.25in;
@@ -6979,6 +7052,10 @@ textarea.recipe-card__toc-title {
   .recipe-page-deck.rp-page-us-letter .recipe-card-page,
   .recipe-page-deck.rp-page-us-letter .recipe-spread__blank {
     page: rp-preset-us-letter;
+  }
+  .recipe-page-deck.rp-page-coil-us-letter .recipe-card-page,
+  .recipe-page-deck.rp-page-coil-us-letter .recipe-spread__blank {
+    page: rp-preset-coil-us-letter;
   }
   .recipe-page-deck.rp-page-hardcover-8x10 .recipe-card-page,
   .recipe-page-deck.rp-page-hardcover-8x10 .recipe-spread__blank {

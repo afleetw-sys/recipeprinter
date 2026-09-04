@@ -33,20 +33,24 @@
 import type { CookbookPreset } from "@/lib/cookbookPresets";
 
 /**
- * OFF until the wrap survives print media.
+ * ON.
  *
- * The geometry below is correct and tested, the renderer accepts the sheet, and
- * a wrap exports as a single page at exactly the right size. What does NOT work
- * yet is the LAYOUT under `@media print`: the print stylesheet is built around
- * one card per page and overrides the wrap's flex row with `!important`, so a
- * print-media capture currently shows the back cover only, the spine text
- * clipped into the bottom-left corner, and no front cover at all.
+ * This was off because a wrap exported as "the back cover only, the spine text
+ * clipped into the bottom-left corner, and no front cover at all", which was
+ * read as an `@media print` problem. It was not one. The same collapse happened
+ * on screen, and it had three ordinary causes, all now fixed:
  *
- * Shipping that would hand someone who paid for a hardcover a second file that
- * is worse than no file, so the second download stays off until a print-media
- * capture shows back | spine | front in their correct panels.
+ *   1. `.cookbook-wrap` also carries `.recipe-card-set` (for the palette), and
+ *      that rule is written for a STACK of pages: `flex-direction: column`,
+ *      `max-width: 100%`. The wrap never overrode either, so it laid its panels
+ *      out vertically and clamped a 17.76in sheet to its parent's width.
+ *   2. print.css reads `--rp-spine-w`, and the export route set every wrap
+ *      variable except that one. An unset `var()` is invalid at computed-value
+ *      time rather than an error, so the spine silently became `width: auto`.
+ *   3. Nothing dropped the cover pages from the interior, so a book that
+ *      produced a wrap also printed the same cover as its first page.
  */
-export const COVER_WRAP_ENABLED = false;
+export const COVER_WRAP_ENABLED = true;
 
 /**
  * Thickness of a single SHEET of the interior stock, in inches.
@@ -97,6 +101,28 @@ export const DEFAULT_COVER_WRAP_SPEC: CoverWrapSpec = {
 };
 
 /**
+ * The spec a preset's binding implies, when the caller doesn't name one.
+ *
+ * A `flat` cover (coil, paperback) is not a case wrap with smaller numbers — it
+ * is a different object. There is no fold-over: the extra material is ordinary
+ * bleed that gets trimmed off, so it comes from the preset rather than from a
+ * binding constant, and art has to run into it instead of stopping at the trim.
+ * There are no boards either, so the spine is exactly the paper block.
+ *
+ * Getting this wrong is not cosmetic. A coil cover built to the case numbers
+ * would be 1.25in too wide and 1.25in too tall on a sheet whose size the
+ * printer checks before it will accept the file.
+ */
+export function wrapSpecFor(preset: CookbookPreset): CoverWrapSpec {
+  if (preset.wrapStyle === "case") return DEFAULT_COVER_WRAP_SPEC;
+  return {
+    paperCaliperIn: DEFAULT_PAPER_CALIPER_IN,
+    wrapAllowanceIn: preset.bleedIn,
+    boardAllowanceIn: 0,
+  };
+}
+
+/**
  * Spine width for a finished book, in inches.
  *
  * `pageCount` is PAGES (sides), matching how both the printer's order form and
@@ -141,7 +167,7 @@ export interface CoverWrapGeometry {
 export function coverWrapGeometry(
   preset: CookbookPreset,
   pageCount: number,
-  spec: CoverWrapSpec = DEFAULT_COVER_WRAP_SPEC,
+  spec: CoverWrapSpec = wrapSpecFor(preset),
 ): CoverWrapGeometry {
   const spine = spineWidthIn(pageCount, spec);
   const wrap = spec.wrapAllowanceIn;

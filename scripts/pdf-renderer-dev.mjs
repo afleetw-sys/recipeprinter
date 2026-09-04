@@ -29,6 +29,8 @@ const AUTH = process.env.RECIPEPRINTER_PDF_AUTH ?? "local-dev-secret";
 // own PRESET_SHEETS — trim plus bleed.
 const PRESET_SHEETS = {
   "us-letter": { width: "8.5in", height: "11in" },
+  // Same 8.5×11 trim as `us-letter`, plus 0.125in bleed on every edge.
+  "coil-us-letter": { width: "8.75in", height: "11.25in" },
   "hardcover-8x10": { width: "8.25in", height: "10.25in" },
 };
 

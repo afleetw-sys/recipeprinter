@@ -641,6 +641,20 @@
   display: grid;
   gap: .7rem;
 }
+/* One format: the button that saves it, plus the line saying where it goes.
+   Grouped so the destinations belong to their format rather than floating
+   under the whole list, which is how one sentence ended up recommending
+   printers that cannot make the book. */
+.cookbook-format {
+  display: grid;
+  gap: .3rem;
+}
+.cookbook-format__where {
+  padding: 0 .2rem;
+  color: var(--cp-ink-soft);
+  font-size: var(--cp-fs-small);
+  line-height: 1.5;
+}
 .cookbook-format-card {
   display: flex;
   align-items: center;

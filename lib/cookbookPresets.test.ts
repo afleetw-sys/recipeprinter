@@ -141,3 +141,52 @@ describe("cookbook presets", () => {
     expect(gutterSideForRole("single")).toBe("none");
   });
 });
+
+describe("print-service presets", () => {
+  it("the coil print-service preset is the home one plus bleed on every edge", () => {
+    const home = getCookbookPreset("us-letter");
+    const service = getCookbookPreset("coil-us-letter");
+    // Same book, same trim, same lie-flat margins. The only difference is the
+    // sheet it is drawn on.
+    expect(service.trimWidthIn).toBe(home.trimWidthIn);
+    expect(service.trimHeightIn).toBe(home.trimHeightIn);
+    expect(service.marginIn).toBe(home.marginIn);
+    expect(service.gutterIn).toBe(home.gutterIn);
+    expect(home.bleedIn).toBe(0);
+    expect(service.bleedIn).toBe(0.125);
+    // Lulu sizes a book by measuring the file: 8.5x11 trim full bleed is
+    // 8.75x11.25, exactly as their own worked example describes.
+    expect(presetSheetInches(service)).toEqual({ w: "8.75in", h: "11.25in" });
+  });
+
+  it("every format bound by a print service ships its cover as a separate wrap", () => {
+    // "Your cover should be completely separate from your interior file."
+    // The home-printed format is the only one that keeps the cover inside.
+    for (const preset of COOKBOOK_PRESETS) {
+      const separate = preset.id !== "us-letter";
+      expect(preset.wrapRequired).toBe(separate);
+    }
+  });
+
+  it("a wrap style is declared wherever a wrap is produced", () => {
+    for (const preset of COOKBOOK_PRESETS.filter((p) => p.wrapRequired)) {
+      expect(["case", "flat"]).toContain(preset.wrapStyle);
+    }
+    // Coil is printed flat and trimmed; only a hardcover folds around boards.
+    expect(getCookbookPreset("coil-us-letter").wrapStyle).toBe("flat");
+    expect(getCookbookPreset("hardcover-8x10").wrapStyle).toBe("case");
+  });
+
+  it("never recommends a printer that cannot make the format", () => {
+    // Blurb binds softcover, hardcover and layflat, and no coil at all; Lulu's
+    // trim list has no 8x10 in it; Staples binds booklets, not case wraps.
+    for (const preset of COOKBOOK_PRESETS) {
+      expect(preset.printerIds.length).toBeGreaterThan(0);
+      if (preset.coilBound) expect(preset.printerIds).not.toContain("blurb");
+      if (preset.wrapStyle === "case") {
+        expect(preset.printerIds).not.toContain("staples");
+        expect(preset.printerIds).not.toContain("lulu");
+      }
+    }
+  });
+});
