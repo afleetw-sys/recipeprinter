@@ -26,6 +26,21 @@ service cloud.firestore {
       return namespacedRecipePrinterAdmin() || legacyRecipePrinterAdmin();
     }
 
+    // Recipe Printer fields carried on the shared CookPilot user document that
+    // are server-owned by contract (docs/firebase-inventory.md): the admin role
+    // is written by "server/admin only", `plusExpiresAt` by the "CookPilot
+    // backend", and the free-template claim fields by the
+    // `claimRecipePrinterFreeTemplate` callable. Nothing here is ever a client
+    // write, so the rules should say so.
+    function serverOwnedSharedUserFields() {
+      return [
+        "recipePrinterAdmin",
+        "plusExpiresAt",
+        "recipePrinterFreeTemplateGranted",
+        "recipePrinterFreeTemplateGrantedAt"
+      ];
+    }
+
     function validRecipePrinterProfile(data) {
       return (data.email == null
           || (data.email is string && data.email.size() <= 320))
@@ -40,7 +55,23 @@ service cloud.firestore {
     // ── Existing CookPilot rules ───────────────────────────────────────────
     // Kept intact while CookPilot remains on these paths.
     match /users/{userId} {
-      allow read, write: if owns(userId);
+      // `recipePrinterAdmin()` falls back to reading this document, and the
+      // free-template gate reads `plusExpiresAt` and the claim fields off it.
+      // A blanket `allow write: if owns(userId)` therefore let any signed-in
+      // user grant themselves the admin role — and with it create/update on
+      // both `sharedRecipeCards` collections, which publish public indexed
+      // pages — or fake an active CookPilot membership to reach the free
+      // premium template. The namespaced account document already pins its
+      // keys to a harmless allowlist; this document cannot, because CookPilot
+      // owns its schema and writes fields this repo does not know about. So
+      // deny the specific server-owned fields instead of allowlisting.
+      allow read: if owns(userId);
+      allow create: if owns(userId)
+        && !request.resource.data.keys().hasAny(serverOwnedSharedUserFields());
+      allow update: if owns(userId)
+        && !request.resource.data.diff(resource.data).affectedKeys()
+          .hasAny(serverOwnedSharedUserFields());
+      allow delete: if owns(userId);
 
       match /recipes/{recipeId} {
         allow read, write: if owns(userId);

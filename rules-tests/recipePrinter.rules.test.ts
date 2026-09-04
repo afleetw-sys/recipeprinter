@@ -361,3 +361,93 @@ describe("Recipe Printer Storage namespace", () => {
     await assertFails(debugRef.getDownloadURL());
   });
 });
+
+describe("server-owned fields on the shared CookPilot user document", () => {
+  // `recipePrinterAdmin()` ORs a namespaced check with a legacy one that reads
+  // `users/{uid}.recipePrinterAdmin`. The namespaced account document pins its
+  // keys to a harmless allowlist, so the flag cannot be set there — but the
+  // legacy CookPilot document it falls back to was `allow write: if owns(uid)`
+  // with no field validation at all, which let any signed-in user grant
+  // themselves the flag and then publish or overwrite shared recipe cards on
+  // the public site. The same document carries the CookPilot membership and
+  // free-template claim fields, which are server-owned for the same reason.
+  test("a signed-in user cannot grant themselves the admin role", async () => {
+    const user = environment.authenticatedContext("escalator").firestore();
+    await assertFails(
+      setDoc(doc(user, "users/escalator"), { recipePrinterAdmin: true }, { merge: true }),
+    );
+  });
+
+  test("a signed-in user cannot fake membership or a free-template grant", async () => {
+    const user = environment.authenticatedContext("faker").firestore();
+    await assertFails(
+      setDoc(doc(user, "users/faker"), { plusExpiresAt: new Date(4102444800000) }, { merge: true }),
+    );
+    await assertFails(
+      setDoc(
+        doc(user, "users/faker"),
+        { recipePrinterFreeTemplateGranted: "template_botanical" },
+        { merge: true },
+      ),
+    );
+    await assertFails(
+      setDoc(doc(user, "users/faker"), { recipePrinterFreeTemplateGrantedAt: 1 }, { merge: true }),
+    );
+  });
+
+  test("a server-owned field cannot be added on create either", async () => {
+    const user = environment.authenticatedContext("creator").firestore();
+    await assertFails(
+      setDoc(doc(user, "users/creator"), { displayName: "Cook", recipePrinterAdmin: true }),
+    );
+  });
+
+  test("the document still works for the CookPilot fields it owns", async () => {
+    const user = environment.authenticatedContext("cookpilot-user").firestore();
+    await assertSucceeds(
+      setDoc(doc(user, "users/cookpilot-user"), { displayName: "Cook", theme: "dark" }),
+    );
+    await assertSucceeds(
+      setDoc(doc(user, "users/cookpilot-user"), { theme: "light" }, { merge: true }),
+    );
+    await assertSucceeds(getDoc(doc(user, "users/cookpilot-user")));
+  });
+
+  test("an existing subscriber can still edit unrelated fields", async () => {
+    // A real subscriber has `plusExpiresAt` set by the CookPilot backend. A
+    // merge write that leaves it alone must still pass, or this rule would
+    // lock every paying CookPilot user out of their own profile.
+    await environment.withSecurityRulesDisabled(async (context) => {
+      await setDoc(doc(context.firestore(), "users/subscriber"), {
+        plusExpiresAt: new Date(4102444800000),
+        displayName: "Before",
+      });
+    });
+    const subscriber = environment.authenticatedContext("subscriber").firestore();
+    await assertSucceeds(
+      setDoc(doc(subscriber, "users/subscriber"), { displayName: "After" }, { merge: true }),
+    );
+    await assertFails(
+      setDoc(doc(subscriber, "users/subscriber"), { plusExpiresAt: new Date(4102444800001) }, { merge: true }),
+    );
+  });
+
+  test("an admin planted by the server still administers shared cards", async () => {
+    // The legacy admin read stays in place until the backfill is verified, so
+    // a flag written with the admin SDK must keep working. Only the client
+    // write path is closed.
+    await environment.withSecurityRulesDisabled(async (context) => {
+      await setDoc(doc(context.firestore(), "users/planted-admin"), {
+        recipePrinterAdmin: true,
+      });
+    });
+    const planted = environment.authenticatedContext("planted-admin").firestore();
+    await assertSucceeds(
+      setDoc(doc(planted, "products/recipePrinter/sharedRecipeCards/from-planted"), {
+        published: true,
+        createdBy: "planted-admin",
+        title: "Legitimate",
+      }),
+    );
+  });
+});
