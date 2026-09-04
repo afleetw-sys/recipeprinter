@@ -359,9 +359,9 @@ export function adaptPaprikaRecipe(value: unknown): Recipe | null {
  * dedupe recognise a recipe already added and not stack up a second copy.
  */
 function synthesizeId(recipe: Recipe): string {
-  const seed = `${recipe.title} ${recipe.ingredients.length} ${recipe.instructions
+  const seed = `${recipe.title}\x00${recipe.ingredients.length}\x00${recipe.instructions
     .map((instruction) => instruction.text)
-    .join(" ")}`;
+    .join("\x00")}`;
   let hash = 5381;
   for (let i = 0; i < seed.length; i += 1) {
     hash = ((hash * 33) ^ seed.charCodeAt(i)) >>> 0;
