@@ -499,7 +499,7 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
       "Turn Pinterest recipe links, screenshots, or saved recipe text into printable recipe cards, pages, and PDFs.",
     h1: "Print Pinterest recipes",
     lede:
-      "Pinterest is a great place to find recipes. RecipePrinter moves the ones you actually want to make off the board and onto a printable card you can cook from.",
+      "RecipePrinter moves the recipes you actually want to make off the board and onto a printable card you can cook from.",
     howTo: [
       {
         name: "Copy the pin's link",

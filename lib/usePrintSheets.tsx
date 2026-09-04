@@ -75,8 +75,14 @@ function faceKey(
   hasPhoto: boolean,
   sourceUrlOn: boolean,
   cookbookMode: boolean,
+  // The website's blurb is part of the note or it is not, and a note is the
+  // tallest thing on a card after the photo. A face measured with the box
+  // ticked describes a different card from one measured without it, so the two
+  // must never share an entry — that is the stale-height clipping this cache
+  // exists to prevent.
+  descriptionOn: boolean,
 ): string {
-  return `${id}::${size}::${template}::${hasPhoto ? 1 : 0}::${sourceUrlOn ? 1 : 0}::${cookbookMode ? 1 : 0}`;
+  return `${id}::${size}::${template}::${hasPhoto ? 1 : 0}::${sourceUrlOn ? 1 : 0}::${cookbookMode ? 1 : 0}::${descriptionOn ? 1 : 0}`;
 }
 
 // Ceiling on retained measurements, evicted oldest-first. Entries are cheap —
@@ -299,6 +305,7 @@ interface UsePrintSheetsOptions {
   doubleSided: boolean;
   photosOn: boolean;
   sourceUrlOn: boolean;
+  descriptionOn: boolean;
   template: RecipePrintTemplate;
   /** The book's print format. In cookbook mode the page — and so the card every
       recipe is measured against — IS this preset's sheet (see `presetCardDims`).
@@ -337,6 +344,7 @@ export function usePrintSheets({
   doubleSided,
   photosOn,
   sourceUrlOn,
+  descriptionOn,
   template,
   preset,
 }: UsePrintSheetsOptions) {
@@ -400,14 +408,14 @@ export function usePrintSheets({
     (id: string, recipe: Recipe, hasPhoto: boolean, size: PrintCardSize): RecipeFace[] | null => {
       const entry =
         measuredFaces[
-          faceKey(id, size, template, hasPhoto, sourceUrlOn, cookbookLayouts)
+          faceKey(id, size, template, hasPhoto, sourceUrlOn, cookbookLayouts, descriptionOn)
         ];
       // Recipe CONTENT is the one discriminator a string key can't carry: an
       // inline edit keeps the same id, so a measurement of the pre-edit recipe
       // has to be rejected on identity. Everything else is in the key.
       return entry && entry.recipe === recipe ? entry.pages : null;
     },
-    [measuredFaces, sourceUrlOn, template, cookbookLayouts],
+    [measuredFaces, sourceUrlOn, template, cookbookLayouts, descriptionOn],
   );
 
   // Resolves each recipe's per-page layout: an explicit placement, else the
@@ -1091,7 +1099,7 @@ export function usePrintSheets({
               setMeasuredFaces((current) =>
                 withMeasuredFace(
                   current,
-                  faceKey(id, size, template, hasPhoto, sourceUrlOn, cookbookLayouts),
+                  faceKey(id, size, template, hasPhoto, sourceUrlOn, cookbookLayouts, descriptionOn),
                   { recipe, pages },
                 ),
               )

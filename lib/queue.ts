@@ -32,6 +32,7 @@ export function printableRecipe(recipe: Recipe): Recipe {
   return {
     title: recipe.title || "Untitled recipe",
     description: recipe.description,
+    note: recipe.note,
     image: recipe.image,
     sourceUrl: recipe.sourceUrl,
     sourceName: recipe.sourceName,

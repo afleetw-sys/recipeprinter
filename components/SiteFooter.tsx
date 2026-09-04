@@ -1,7 +1,7 @@
 import Link from "next/link";
 import Image from "next/image";
 import { FeedbackButton } from "@/components/FeedbackButton";
-import { NAV_LINKS, PUBLISHER, SITE_NAME } from "@/lib/seo";
+import { NAV_LINKS, SITE_NAME } from "@/lib/seo";
 
 const COFFEE_URL = "https://buymeacoffee.com/recipeprinter";
 const CONTACT_EMAIL = "recipeprinter@goodproblem.studio";
@@ -67,7 +67,7 @@ export function SiteFooter({ isHome = false }: { isHome?: boolean }) {
             for websites, blogs, and social recipes.
           </span>
           <span>
-            © {new Date().getFullYear()} {PUBLISHER.name}
+            © {new Date().getFullYear()} {SITE_NAME}
           </span>
         </div>
       </div>

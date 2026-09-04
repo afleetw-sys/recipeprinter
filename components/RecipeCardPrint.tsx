@@ -11,6 +11,7 @@ import {
 } from "react";
 import { formatRecipeTime } from "@/lib/time";
 import { RichText } from "@/components/RichText";
+import { composeNote } from "@/lib/recipeNote";
 import { InlineRichField } from "@/components/InlineRichField";
 import { photoGridLayout } from "@/lib/photoGrid";
 import { useWideColumns } from "@/lib/measureHeights";
@@ -313,6 +314,7 @@ export const RecipeCardFace = memo(function RecipeCardFace({
   showImage = false,
   photoOnFacingPage = false,
   showSourceUrl = false,
+  showDescription = true,
   continued = false,
   contentScale,
   inlineEdit,
@@ -336,6 +338,10 @@ export const RecipeCardFace = memo(function RecipeCardFace({
       "Change photo" control) live on the image page. */
   photoOnFacingPage?: boolean;
   showSourceUrl?: boolean;
+  /** Include the WEBSITE's blurb in the note. The cook's own words show
+      either way — see lib/recipeNote.ts. Defaults on, which is how every book
+      saved before the checkbox existed reads. */
+  showDescription?: boolean;
   continued?: boolean;
   /** Shrink-to-fit factor for this face's content — see `RecipeFace.contentScale`. */
   contentScale?: number;
@@ -500,13 +506,18 @@ export const RecipeCardFace = memo(function RecipeCardFace({
         />
       );
     }
-    if (recipe.description) {
+    // The website's blurb and the cook's own words, stacked — the settings
+    // checkbox decides whether the first half is in. Composed here rather than
+    // stored joined so unticking the box cannot take anything away that the
+    // cook wrote (see lib/recipeNote.ts).
+    const noteText = composeNote(recipe.description, recipe.note, showDescription);
+    if (noteText) {
       return (
         <p
           className={`recipe-card__headnote ${canEdit ? "recipe-card__headnote--editable" : ""}`}
-          onClick={canEdit ? (event) => startEdit(target, recipe.description ?? "", event) : undefined}
+          onClick={canEdit ? (event) => startEdit(target, noteText, event) : undefined}
         >
-          <RichText text={recipe.description} />
+          <RichText text={noteText} />
         </p>
       );
     }

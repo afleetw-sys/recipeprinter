@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useMemo, useState, type MutableRefObject } from "react";
 import { printableRecipe } from "@/lib/queue";
 import { ingredientText } from "@/lib/recipeCardLayout";
+import { splitNote } from "@/lib/recipeNote";
 import type { RecipeCardEditTarget, RecipeCardInlineEdit } from "@/lib/recipeCardLayout";
 import type { QueueItem, Recipe } from "@/types/recipe";
 
@@ -98,19 +99,26 @@ export function demoteSectionToLine<T extends { section?: string }>(
   return { items: next, title };
 }
 
-function applyRecipeTargetEdit(recipe: Recipe, target: RecipeCardEditTarget, value: string): Recipe {
+function applyRecipeTargetEdit(
+  recipe: Recipe,
+  target: RecipeCardEditTarget,
+  value: string,
+  includeDescription: boolean,
+): Recipe {
   const trimmed = value.trim();
   if (target.kind === "title") {
     return printableRecipe({ ...recipe, title: trimmed || recipe.title || "Untitled recipe" });
   }
   if (target.kind === "description") {
-    // Typing here is the one way a person authors a note, so it is the one
-    // place that can mark it as theirs — which is what keeps "Clear website
-    // notes" from taking it. Emptying the field drops the mark with the text:
-    // an empty note has no author to protect.
+    // The field holds the website's blurb and the cook's own words stacked
+    // together, so what comes back has to be taken apart again before it is
+    // stored — see lib/recipeNote.ts for which half is which and why an edit
+    // made with the blurb switched OFF cannot touch it.
+    const split = splitNote(value, recipe.description, includeDescription);
     return printableRecipe({
       ...recipe,
-      description: trimmed || undefined,
+      description: split.description,
+      note: split.note,
     });
   }
   if (target.kind === "cookTime") {
@@ -212,6 +220,10 @@ interface UseRecipeInlineEditorOptions {
       switch between the two cards without leaving the page, so the page passes a
       per-SHEET key here — switching cards then keeps edit mode on. */
   resetKey?: string | null;
+  /** Whether the website's blurb is currently part of the note field. The
+      splitter needs it: an edit made with the blurb switched OFF was never
+      looking at it and must leave it alone. See lib/recipeNote.ts. */
+  includeDescription?: boolean;
   /** When a recipe is intentionally moved (e.g. its photo placement changed, so
       it lands on a different page), the page stashes that recipe id here so the
       leave-edit-mode reset skips ONCE as focus follows it to the new page —
@@ -236,6 +248,7 @@ export function useRecipeInlineEditor({
   activeRecipeItem,
   resetKey,
   keepEditingRef,
+  includeDescription = true,
 }: UseRecipeInlineEditorOptions) {
   const [pageEditMode, setPageEditMode] = useState(false);
   const [editingEdit, setEditingEdit] = useState<RecipeEditSelection | null>(null);
@@ -274,7 +287,7 @@ export function useRecipeInlineEditor({
     (value = editValue) => {
       if (!editingEdit || !editingRecipeItem?.recipe) return;
       const target = editingEdit.target;
-      const nextRecipe = applyRecipeTargetEdit(editingRecipeItem.recipe, target, value);
+      const nextRecipe = applyRecipeTargetEdit(editingRecipeItem.recipe, target, value, includeDescription);
       applyRecipeUpdate(editingRecipeItem.id, nextRecipe);
       setEditingEdit(null);
       setEditValue("");
@@ -300,7 +313,7 @@ export function useRecipeInlineEditor({
       const inProgress = liveValue ?? editValue;
       const recipe =
         editingEdit?.recipeId === activeRecipeItem.id
-          ? applyRecipeTargetEdit(activeRecipeItem.recipe, editingEdit.target, inProgress)
+          ? applyRecipeTargetEdit(activeRecipeItem.recipe, editingEdit.target, inProgress, includeDescription)
           : activeRecipeItem.recipe;
 
       if (kind === "heading" && (target.kind === "ingredient" || target.kind === "step")) {
@@ -386,7 +399,7 @@ export function useRecipeInlineEditor({
       // never race and recreate the preceding row.
       const recipe =
         editingEdit?.recipeId === activeRecipeItem.id
-          ? applyRecipeTargetEdit(activeRecipeItem.recipe, editingEdit.target, editValue)
+          ? applyRecipeTargetEdit(activeRecipeItem.recipe, editingEdit.target, editValue, includeDescription)
           : activeRecipeItem.recipe;
       const section = sectionForInsertion(recipe.ingredients, index);
       const ingredients = recipe.ingredients.slice();
@@ -396,7 +409,7 @@ export function useRecipeInlineEditor({
       setEditingEdit({ recipeId: activeRecipeItem.id, target: { kind: "ingredient", index } });
       setEditValue("");
     },
-    [activeRecipeItem, editValue, editingEdit, applyRecipeUpdate],
+    [activeRecipeItem, editValue, editingEdit, applyRecipeUpdate, includeDescription],
   );
 
   const insertStepAt = useCallback(
@@ -404,7 +417,7 @@ export function useRecipeInlineEditor({
       if (!activeRecipeItem?.recipe) return;
       const recipe =
         editingEdit?.recipeId === activeRecipeItem.id
-          ? applyRecipeTargetEdit(activeRecipeItem.recipe, editingEdit.target, editValue)
+          ? applyRecipeTargetEdit(activeRecipeItem.recipe, editingEdit.target, editValue, includeDescription)
           : activeRecipeItem.recipe;
       const section = sectionForInsertion(recipe.instructions, index);
       const instructions = recipe.instructions.slice();
@@ -415,7 +428,7 @@ export function useRecipeInlineEditor({
       setEditingEdit({ recipeId: activeRecipeItem.id, target: { kind: "step", index } });
       setEditValue("");
     },
-    [activeRecipeItem, editValue, editingEdit, applyRecipeUpdate],
+    [activeRecipeItem, editValue, editingEdit, applyRecipeUpdate, includeDescription],
   );
 
   // Enter mid-ingredient/mid-step splits the line at the cursor: the text

@@ -1,5 +1,3 @@
-import { getDownloadURL, ref, uploadBytes } from "firebase/storage";
-import { getFirebaseStorage } from "./firebase/storage";
 import { getFirebaseAuth, firebaseConfigured } from "./firebase/client";
 import { fileToCoverBlob, normalizePhotoBlob } from "./coverPhoto";
 import type { CoverConfig, RecipePagePlacement, Section } from "@/types/recipe";
@@ -44,6 +42,17 @@ async function uploadBlob(blob: Blob): Promise<string> {
   if (!firebaseConfigured()) {
     throw new Error("Photo uploads are temporarily unavailable.");
   }
+  // `firebase/storage` reached through `await import` rather than at module
+  // scope. This module is imported statically by the print page and the image
+  // picker, so a top-level import put the Storage SDK in front of first paint
+  // on every route that can show a photo — for a code path that does nothing
+  // until somebody actually adds one. `lib/firebase/storage.ts` is lazy about
+  // *initializing* Storage, which is a different thing from keeping it out of
+  // the bundle.
+  const [{ getDownloadURL, ref, uploadBytes }, { getFirebaseStorage }] = await Promise.all([
+    import("firebase/storage"),
+    import("./firebase/storage"),
+  ]);
   const storage = getFirebaseStorage();
   const objectRef = ref(storage, newPhotoPath());
   await uploadBytes(objectRef, blob, { contentType: blob.type || "image/jpeg" });

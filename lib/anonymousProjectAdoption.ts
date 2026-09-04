@@ -1,8 +1,6 @@
 "use client";
 
-import { getBlob, getDownloadURL, getMetadata, ref, uploadBytes } from "firebase/storage";
 import type { PrintProject } from "@/types/recipe";
-import { getFirebaseStorage } from "@/lib/firebase/storage";
 import { recipePrinterUserPhotoRoot } from "@/lib/firebase/recipePrinterPaths";
 import { localStore } from "@/lib/storage";
 import { loadPrintProject, loadPrintProjectHead, savePrintProject } from "@/lib/printProjects";
@@ -98,6 +96,12 @@ async function copyAsset(
   sourceUrl: string,
   existingDestination?: string,
 ): Promise<string> {
+  // Storage reached through `await import`, like the rest of the Firebase
+  // surface. This module is imported statically by the print page but only runs
+  // when a signed-out draft is adopted into an account, so a top-level import
+  // charged every /print load for a path most visits never take.
+  const [{ getBlob, getDownloadURL, getMetadata, ref, uploadBytes }, { getFirebaseStorage }] =
+    await Promise.all([import("firebase/storage"), import("@/lib/firebase/storage")]);
   const storage = getFirebaseStorage();
   const destinationRef = ref(
     storage,

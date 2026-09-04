@@ -57,6 +57,7 @@ export const ScaledPage = memo(function ScaledPage({
   template,
   doubleSided,
   showSourceUrl,
+  showDescription,
   showCutLines,
   showDecoration = true,
   cookbookMode = false,
@@ -80,6 +81,7 @@ export const ScaledPage = memo(function ScaledPage({
   template: RecipePrintTemplate;
   doubleSided: boolean;
   showSourceUrl: boolean;
+  showDescription: boolean;
   cookbookMode?: boolean;
   /** Reveal the fields a recipe does not have yet — see RecipeCardPrint. */
   showEmptyFields?: boolean;
@@ -553,6 +555,7 @@ export const ScaledPage = memo(function ScaledPage({
                     showImage={slot.showPhoto}
                     photoOnFacingPage={slot.hidePhoto}
                     showSourceUrl={showSourceUrl}
+                    showDescription={showDescription}
                     continued={slot.isContinuation}
                     template={template}
                     showDecoration={showDecoration}

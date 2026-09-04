@@ -34,6 +34,9 @@ interface PrintConfigPanelProps {
   showPhoto: boolean;
   setShowPhoto: Dispatch<SetStateAction<boolean>>;
   showSourceUrl: boolean;
+  showDescription: boolean;
+  setShowDescription: (value: boolean) => void;
+  anyRecipeHasDescription: boolean;
   setShowSourceUrl: Dispatch<SetStateAction<boolean>>;
   bookDesignSettings: ReactNode;
   // Theme picker
@@ -74,6 +77,9 @@ export function PrintConfigPanel({
   showPhoto,
   setShowPhoto,
   showSourceUrl,
+  showDescription,
+  setShowDescription,
+  anyRecipeHasDescription,
   setShowSourceUrl,
   bookDesignSettings,
   template,
@@ -161,6 +167,9 @@ export function PrintConfigPanel({
           showPhoto={showPhoto}
           setShowPhoto={setShowPhoto}
           showSourceUrl={showSourceUrl}
+          showDescription={showDescription}
+          setShowDescription={setShowDescription}
+          anyRecipeHasDescription={anyRecipeHasDescription}
           setShowSourceUrl={setShowSourceUrl}
           bookDesignSettings={bookDesignSettings}
         />

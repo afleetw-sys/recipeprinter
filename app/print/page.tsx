@@ -233,6 +233,7 @@ function printProjectFingerprint(
   showPhoto: boolean,
   showSourceUrl: boolean,
   showCutLines: boolean,
+  showDescription: boolean,
 ): string {
   return JSON.stringify({
     items,
@@ -243,6 +244,7 @@ function printProjectFingerprint(
     showPhoto,
     showSourceUrl,
     showCutLines,
+    showDescription,
   });
 }
 
@@ -285,6 +287,10 @@ export default function PrintPage() {
      away. A stored preference still wins on the next visit. */
   const [showPhoto, setShowPhoto] = useState(true);
   const [showSourceUrl, setShowSourceUrl] = useState(false);
+  /** Whether the WEBSITE's blurb is included in each recipe's note. The cook's
+      own words are never affected — see lib/recipeNote.ts. Defaults on, which
+      is how books saved before this already read. */
+  const [showDescription, setShowDescription] = useState(true);
   const [showDonateDialog, setShowDonateDialog] = useState(false);
   const [showCookbookOfferDialog, setShowCookbookOfferDialog] = useState(false);
   const [cookbookBuilding, setCookbookBuilding] = useState(false);
@@ -482,6 +488,10 @@ export default function PrintPage() {
     items?.some((item) => Boolean(item.recipe?.image)) ?? false;
   const anyRecipeHasSourceUrl =
     items?.some((item) => Boolean(item.recipe?.sourceUrl)) ?? false;
+  /** Whether any recipe arrived with a website blurb. With none, the checkbox
+      would govern nothing, so it is not offered. */
+  const anyRecipeHasDescription =
+    items?.some((item) => Boolean(item.recipe?.description?.trim())) ?? false;
   const cookbookMode = Boolean(projectMeta.meta.cookbookMode);
   /**
    * Is this project a DOCUMENT, or is it a print run?
@@ -590,6 +600,7 @@ export default function PrintPage() {
     doubleSided,
     photosOn,
     sourceUrlOn,
+    descriptionOn: showDescription,
     template,
     // The preview page IS the book's real sheet, and so is the card every
     // recipe is measured against (see `presetCardDims`).
@@ -1963,6 +1974,7 @@ export default function PrintPage() {
         doubleSided,
         showPhoto,
         showSourceUrl,
+        showDescription,
         showCutLines,
         cookbookMode: projectMeta.meta.cookbookMode,
         tableOfContents: projectMeta.meta.tableOfContents,
@@ -2044,6 +2056,7 @@ export default function PrintPage() {
         doubleSided,
         showPhoto,
         showSourceUrl,
+        showDescription,
         showCutLines,
       );
       setSaveStatus("saved");
@@ -2198,6 +2211,7 @@ export default function PrintPage() {
         doubleSided,
         showPhoto,
         showSourceUrl,
+        showDescription,
         showCutLines,
       );
       if (fp === lastSavedFingerprintRef.current) return;
@@ -2470,6 +2484,7 @@ export default function PrintPage() {
         doubleSided,
         showPhoto,
         showSourceUrl,
+        showDescription,
         showCutLines,
         cookbookMode: true,
         tableOfContents: projectMeta.meta.tableOfContents,
@@ -2664,6 +2679,7 @@ export default function PrintPage() {
         setDoubleSided(project.settings.doubleSided);
         setShowPhoto(project.settings.showPhoto);
         setShowSourceUrl(project.settings.showSourceUrl);
+        setShowDescription(project.settings.showDescription ?? true);
         setShowCutLines(project.settings.showCutLines);
         if (source === "account") {
           projectRevisionRef.current = Number(project.revision ?? 0);
@@ -2848,6 +2864,7 @@ export default function PrintPage() {
         doubleSided,
         showPhoto,
         showSourceUrl,
+        showDescription,
         showCutLines,
       );
     if (lastSavedFingerprintRef.current === "__loaded__") {
@@ -3827,6 +3844,7 @@ export default function PrintPage() {
     activeRecipeItem,
     resetKey: String(activeNavIndex),
     keepEditingRef,
+    includeDescription: showDescription,
   });
   // Delete/Backspace on the selected recipe opens a confirm dialog rather
   // than deleting immediately — but only when focus isn't inside an editable
@@ -4311,6 +4329,7 @@ export default function PrintPage() {
           cardSize={cardSize}
           previewTemplate={previewTemplate}
           continueOnBack={continueOnBack}
+          previewDescriptionOn={showDescription}
           previewSourceUrlOn={previewSourceUrlOn}
           organizeMode={organizeMode}
           enterOrganizeMode={enterOrganizeMode}
@@ -4369,6 +4388,7 @@ export default function PrintPage() {
           cardSize={cardSize}
           showCutLines={showCutLines}
           showSourceUrl={showSourceUrl}
+          showDescription={showDescription}
           sourceUrlOn={sourceUrlOn}
           sheets={sheets}
           navItems={navItems}
@@ -4438,6 +4458,9 @@ export default function PrintPage() {
         )}
 
         <PrintConfigPanel
+          showDescription={showDescription}
+          setShowDescription={setShowDescription}
+          anyRecipeHasDescription={anyRecipeHasDescription}
           configPanelRef={configPanelRef}
           mobileDrawer={mobileDrawer}
           setMobileDrawer={setMobileDrawer}

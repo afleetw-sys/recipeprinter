@@ -23,6 +23,9 @@ interface PrintSetupControlsProps {
   showPhoto: boolean;
   setShowPhoto: Dispatch<SetStateAction<boolean>>;
   showSourceUrl: boolean;
+  showDescription: boolean;
+  setShowDescription: (value: boolean) => void;
+  anyRecipeHasDescription: boolean;
   setShowSourceUrl: Dispatch<SetStateAction<boolean>>;
   /** The cookbook book-design settings (table of contents, opening page, …),
       rendered between the photo control and the include toggles. Passed as a
@@ -49,6 +52,9 @@ export function PrintSetupControls({
   showPhoto,
   setShowPhoto,
   showSourceUrl,
+  showDescription,
+  setShowDescription,
+  anyRecipeHasDescription,
   setShowSourceUrl,
   bookDesignSettings,
 }: PrintSetupControlsProps) {
@@ -93,6 +99,24 @@ export function PrintSetupControls({
       {cookbookMode && (
         <div className="recipe-config-section recipe-config-section--photos">
           <span className="recipe-config-label">Every recipe</span>
+          {/* The website's blurb, in or out.
+
+              The old version of this switch hid the whole note — including the
+              slot you write into — which is why it went. This one only takes
+              the imported half out of the field and leaves anything the cook
+              wrote where it is; ticking it again puts the blurb back above
+              their words. Nothing is deleted either way, so it is safe to
+              press twice (see lib/recipeNote.ts).
+
+              Only offered when there is a blurb to include. On a book of
+              hand-typed recipes the checkbox would govern nothing. */}
+          {anyRecipeHasDescription && (
+            <Checkbox
+              label="Website description"
+              checked={showDescription}
+              onChange={(event) => setShowDescription(event.target.checked)}
+            />
+          )}
           {anyRecipeHasSourceUrl && (
             <Checkbox
                 label="Recipe link"
@@ -130,16 +154,6 @@ export function PrintSetupControls({
               </SelectTile>
             ))}
           </div>
-          {/* Notes have no on/off. An empty note prints nothing, so "off" and
-              "blank" were the same page reached two ways — and the switch was
-              the half that could strand you, because it hid the slot you write
-              into. What is left is the one job the switch was really doing:
-              getting rid of the blurbs the import brought.
-
-              Last in the group, and small. It is not a setting, it is a thing
-              you do once at the start of a book and never look at again, and
-              at the top it was the loudest item under a heading full of
-              controls that matter more often. */}
         </div>
       )}
 

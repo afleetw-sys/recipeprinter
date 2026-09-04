@@ -166,6 +166,7 @@ interface PrintDeckProps {
   showCutLines: boolean;
   showSourceUrl: boolean;
   sourceUrlOn: boolean;
+  showDescription: boolean;
   // Sheets / nav / spreads
   sheets: ReturnType<typeof usePrintSheets>["sheets"];
   navItems: ReturnType<typeof usePrintSheets>["navItems"];
@@ -267,6 +268,7 @@ export function PrintDeck(props: PrintDeckProps) {
     showCutLines,
     showSourceUrl,
     sourceUrlOn,
+    showDescription,
     sheets,
     navItems,
     spreads,
@@ -826,6 +828,7 @@ export function PrintDeck(props: PrintDeckProps) {
       gutterSide={gutterSideForRole(role)}
       cookbookMode={Boolean(projectMeta.meta.cookbookMode)}
       showEmptyFields={showEmptyFields}
+      showDescription={showDescription}
       showSourceUrl={
         sourceUrlOn ||
         (showSourceUrl && showEmptyFields && focused && activeRecipeItem?.id === navItem.recipeId)
@@ -1367,6 +1370,7 @@ export function PrintDeck(props: PrintDeckProps) {
                     // hides the very field that would let the user type it back
                     // in. Gated on the checkbox itself so Edit never shows a
                     // link field the user has turned off.
+                    showDescription={showDescription}
                     showSourceUrl={
                       sourceUrlOn ||
                       (showSourceUrl && showEmptyFields && isActive && activeRecipeItem?.id === navItem.recipeId)

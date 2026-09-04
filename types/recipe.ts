@@ -43,6 +43,10 @@ export interface Recipe {
       An import fills this with whatever blurb the website carried, which is
       usually SEO filler rather than anything worth printing. */
   description?: string;
+  /** The cook's OWN words about this recipe, kept apart from the website's
+      blurb above so the settings checkbox can drop one without touching the
+      other. Shown stacked under it — see lib/recipeNote.ts. */
+  note?: string;
   image?: string;
   sourceUrl?: string;
   sourceName?: string;
@@ -292,10 +296,14 @@ export interface PrintProjectSettings {
   showSourceUrl: boolean;
   /** @deprecated Notes have no on/off any more — an empty note prints nothing,
       so "hidden" and "blank" were the same page reached two ways, and the
-      switch was the half that hid the slot you write into. Still declared
-      because projects saved while it existed carry it; nothing reads it, and a
-      book that was saved with it false shows its notes again on reopening.
-      The name stays taken so it is never reused for something else. */
+      switch was the half that hid the slot you write into.
+
+      It is back, doing the narrower job it should always have done: it includes
+      or excludes the WEBSITE's blurb, and never the cook's own note. Unticking
+      it empties that half out of the field rather than hiding the field, and
+      ticking it puts it back above whatever the cook has written (see
+      lib/recipeNote.ts). Absent = on, which is how every book saved before this
+      already reads. */
   showDescription?: boolean;
   showCutLines: boolean;
   /** Book-only settings — stay undefined/off until "Make it a cookbook" has
