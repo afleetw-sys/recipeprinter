@@ -111,7 +111,6 @@ function applyRecipeTargetEdit(recipe: Recipe, target: RecipeCardEditTarget, val
     return printableRecipe({
       ...recipe,
       description: trimmed || undefined,
-      descriptionAuthored: trimmed ? true : undefined,
     });
   }
   if (target.kind === "cookTime") {

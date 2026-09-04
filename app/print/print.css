@@ -1756,33 +1756,6 @@
   gap: 0;
 }
 
-/* A one-off action inside a settings group ("Clear 4 website notes"). Text,
-   not a button: as a `.btn-compact` it was a filled red box standing in a
-   column of checkboxes, which gave a thing you press once at the start of a
-   book more weight on the panel than every setting around it. At caption size
-   in the destructive colour it reads as what it is — small, available, and
-   plainly not one of the toggles.
-
-   `align-self` because the section is a flex column and a stretched action
-   reads as belonging to the whole group rather than to the line it sits on. */
-.recipe-config-inline-action {
-  align-self: flex-start;
-  margin-top: 4px;
-  padding: 0;
-  border: 0;
-  background: none;
-  color: var(--cp-error);
-  font-size: var(--cp-fs-caption);
-  font-weight: 600;
-  line-height: 1.3;
-  text-align: left;
-  cursor: pointer;
-}
-
-.recipe-config-inline-action:hover {
-  text-decoration: underline;
-}
-
 /* A field's name inside a settings group. Normal body text, sentence case:
    the uppercase eyebrow below is what starts a SECTION, and using it here made
    the photo tiles read as one. */

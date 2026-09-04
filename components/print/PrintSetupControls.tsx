@@ -18,8 +18,6 @@ interface PrintSetupControlsProps {
   anyRecipeHasSourceUrl: boolean;
   /** How many recipes still carry the blurb their website came with. Zero
       hides the clear action: there is nothing left for it to take. */
-  importedNoteCount: number;
-  onClearImportedNotes: () => void;
   bookPhotoStyle: PhotoStyle | null;
   applyBookPhotoStyle: (mode: PhotoStyle) => void;
   showPhoto: boolean;
@@ -46,8 +44,6 @@ export function PrintSetupControls({
   setCardSize,
   anyRecipeHasImage,
   anyRecipeHasSourceUrl,
-  importedNoteCount,
-  onClearImportedNotes,
   bookPhotoStyle,
   applyBookPhotoStyle,
   showPhoto,
@@ -144,15 +140,6 @@ export function PrintSetupControls({
               you do once at the start of a book and never look at again, and
               at the top it was the loudest item under a heading full of
               controls that matter more often. */}
-          {importedNoteCount > 0 && (
-            <button
-              type="button"
-              className="recipe-config-inline-action"
-              onClick={onClearImportedNotes}
-            >
-              Clear {importedNoteCount} website {importedNoteCount === 1 ? "note" : "notes"}
-            </button>
-          )}
         </div>
       )}
 
