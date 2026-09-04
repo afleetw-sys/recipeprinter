@@ -1,7 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState, type FormEvent } from "react";
-import { createPortal } from "react-dom";
+import { useEffect, useState, type FormEvent } from "react";
 import {
   EmailAuthProvider,
   GoogleAuthProvider,

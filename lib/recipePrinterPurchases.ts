@@ -8,7 +8,6 @@ import type {
 import {
   entitlementForTemplate,
   packageIdForTemplate,
-  PREMIUM_TEMPLATE_PACKAGE_IDS,
   productIdForTemplate,
   RECIPEPRINTER_OFFERING_ID,
   type PremiumRecipePrintTemplate,

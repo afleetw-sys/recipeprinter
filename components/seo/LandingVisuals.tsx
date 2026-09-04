@@ -1,18 +1,10 @@
 import Image from "next/image";
 import { PRINTED_CARDS } from "@/components/seo/ProductMockup";
 import {
-  BookIcon,
   CheckIcon,
-  ClockIcon,
-  CrownIcon,
   ICON_SIZE,
-  ImageIcon,
-  LinkIcon,
-  PrintIcon,
-  TextIcon,
-  UsersIcon,
 } from "@/components/icons";
-import type { ComparisonValue, SeoIconKey, SeoProofKind } from "@/lib/seoLandingPages";
+import type { ComparisonValue, SeoProofKind } from "@/lib/seoLandingPages";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // SEO landing-page visual system, clean, modern, and built only from real
@@ -31,53 +23,6 @@ const stepCounter = {
   background: "var(--cp-card)",
   color: "var(--cp-ink)",
 } as const;
-
-function FileGlyph({ size = 18 }: { size?: number }) {
-  return (
-    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
-      <path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z" />
-      <path d="M14 3v5h5" />
-    </svg>
-  );
-}
-
-const ICONS: Record<SeoIconKey, (p: { size?: number }) => JSX.Element> = {
-  link: LinkIcon,
-  image: ImageIcon,
-  text: TextIcon,
-  print: PrintIcon,
-  pdf: FileGlyph,
-  book: BookIcon,
-  clock: ClockIcon,
-  check: CheckIcon,
-  users: UsersIcon,
-  crown: CrownIcon,
-};
-
-/** A labelled placeholder for a real product screenshot to be dropped in later. */
-export function Placeholder({
-  label = "Product screenshot",
-  sublabel,
-  aspect = "4 / 3",
-  className = "",
-}: {
-  label?: string;
-  sublabel?: string;
-  aspect?: string;
-  className?: string;
-}) {
-  return (
-    <div
-      className={`grid place-items-center rounded-2xl border border-dashed border-line-strong ${className}`}
-      style={{ aspectRatio: aspect, background: "var(--cp-page)" }}
-    >
-      <div className="px-cp-5 text-center">
-        <p className="text-cp-caption font-bold uppercase tracking-[0.12em] text-ink-soft">{label}</p>
-        {sublabel && <p className="mt-1 text-cp-caption text-ink-soft">{sublabel}</p>}
-      </div>
-    </div>
-  );
-}
 
 /**
  * A real printed-card photo in a clean modern frame: a soft accent halo for

@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
+import { useCallback, useLayoutEffect, useRef, useState } from "react";
 import { ChevronDownIcon, ICON_SIZE } from "@/components/icons";
 import { SegmentedControl } from "@/components/Controls";
 import { useMenuDismiss } from "@/lib/useMenuDismiss";

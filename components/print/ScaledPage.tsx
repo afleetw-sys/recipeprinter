@@ -1,6 +1,6 @@
 "use client";
 
-import { memo, useEffect, useRef, useState, type CSSProperties } from "react";
+import { memo, useEffect, useState, type CSSProperties } from "react";
 import {
   RecipeCardFace,
   BistroCheckerSpine,
@@ -14,7 +14,6 @@ import {
   type PrintCardSize,
   type RecipePrintTemplate,
 } from "@/components/RecipeCardPrint";
-import { ImagePicker } from "@/components/ImagePicker";
 import type { PageSheet, SheetSlot, ImageSheetSlot } from "@/lib/usePrintSheets";
 import { photoGridLayout } from "@/lib/photoGrid";
 import { startFocalDrag } from "@/lib/focalDrag";

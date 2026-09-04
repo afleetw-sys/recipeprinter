@@ -3,7 +3,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import type { User } from "firebase/auth";
 import { friendlyAuthError, friendlyRecipeLibraryError } from "@/lib/friendlyErrors";
-import { formatRecipeTime } from "@/lib/time";
 import {
   appleProvider,
   CookPilotLoginDialog,
@@ -14,7 +13,6 @@ import {
 } from "@/components/CookPilotAuth";
 import {
   cookPilotImportSummary,
-  cookPilotQueueId,
   getCachedCookPilotSummaries,
   getCachedCookPilotTotal,
   hasMoreCookPilotSummaries,

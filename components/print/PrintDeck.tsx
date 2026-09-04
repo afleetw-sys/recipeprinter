@@ -1,8 +1,7 @@
 "use client";
 
-import { Fragment, useEffect, useRef, useState } from "react";
+import { Fragment, useRef, useState } from "react";
 import type {
-  ComponentProps,
   CSSProperties,
   Dispatch,
   MouseEvent as ReactMouseEvent,
@@ -17,9 +16,7 @@ import {
   ChevronRightIcon,
   ICON_SIZE,
   InfoIcon,
-  PrintIcon,
   SettingsIcon,
-  SpinnerIcon,
   MoveToSectionIcon,
   PlusIcon,
   TrashIcon,
@@ -28,7 +25,6 @@ import { RecipeLoadingState } from "@/components/RecipeLoadingState";
 import { MoveToSectionMenu } from "@/components/print/MoveToSectionMenu";
 import { ZoomControl } from "@/components/print/ZoomControl";
 import { ScaledPage } from "@/components/print/ScaledPage";
-import { PHOTO_STYLE_OPTIONS } from "@/components/print/photoStyle";
 import { formatRecipeTime } from "@/lib/time";
 import { gutterSideForRole } from "@/lib/cookbookPresets";
 import { chapterIntroFromRecipes, chapterRecipeTitles } from "@/lib/chapterIntro";
@@ -40,7 +36,7 @@ import {
   type RecipePrintTemplate,
 } from "@/components/RecipeCardPrint";
 import type { NavItem, PageSheet, SheetSlot, usePrintSheets } from "@/lib/usePrintSheets";
-import type { PhotoStyle, useProjectMeta } from "@/lib/project";
+import type { useProjectMeta } from "@/lib/project";
 import type { useDeckScroller } from "@/lib/useDeckScroller";
 import { isPhotoOpenClick, type PhotoPress } from "@/lib/photoOpenGesture";
 import { readFocusedRichField } from "@/lib/richTextField";
@@ -48,7 +44,6 @@ import { TextStyleControl } from "@/components/print/TextStyleControl";
 import type { useRecipeInlineEditor } from "@/lib/useRecipeInlineEditor";
 import type { CoverConfig, QueueItem, Section } from "@/types/recipe";
 
-type DividerEdit = NonNullable<ComponentProps<typeof ScaledPage>["dividerEdit"]>;
 type CoverSide = "front" | "back" | "dedication";
 
 /**
@@ -69,7 +64,6 @@ const DECK_WINDOW = 2;
  * text rather than a click that wobbled. Matches the slop browsers themselves
  * allow before they start extending a selection.
  */
-const TEXT_DRAG_SLOP = 6;
 
 /** What the zoom menu offers. 1 is fit-to-window, which is where the deck sits
     with no zoom applied. */
@@ -100,7 +94,6 @@ const PHOTO_SURFACES = [
 export const DECK_ZOOM_STEPS = [0.5, 0.75, 1, 1.25, 1.5, 1.75, 2];
 
 /** The recipe's two text columns — the only places a drag means "edit this". */
-const TEXT_COLUMNS = ".recipe-card__ingredients, .recipe-card__method";
 
 /**
  * The exact box a real page occupies, with nothing in it.
@@ -240,8 +233,6 @@ interface PrintDeckProps {
   /** The recipe an import was added BELOW, if any — the deck places its
       placeholder page right after that recipe, the way the rail does. */
   pendingAddAfterRecipeId: string | null;
-  photoModeFor: (recipeId: string) => PhotoStyle;
-  setRecipePhotoMode: (recipeId: string, mode: PhotoStyle) => void;
   // Mobile topbar
   sizeMenuOpen: boolean;
   setSizeMenuOpen: Dispatch<SetStateAction<boolean>>;
@@ -249,11 +240,6 @@ interface PrintDeckProps {
   setSettingsMenuOpen: Dispatch<SetStateAction<boolean>>;
   hasPrintSettingsFields: boolean;
   renderPrintSettingsFields: () => ReactNode;
-  handleMobilePrint: () => void;
-  printBlocked: boolean;
-  printSpinner: boolean;
-  cookbookLocked: boolean;
-  templateLocked: boolean;
   /** Draw every page regardless of the window — set while printing, when the
       deck IS the output and a placeholder would print blank. */
   renderAllPages: boolean;
@@ -329,19 +315,12 @@ export function PrintDeck(props: PrintDeckProps) {
     openAddRecipeBelow,
     parsingImportCount,
     pendingAddAfterRecipeId,
-    photoModeFor,
-    setRecipePhotoMode,
     sizeMenuOpen,
     setSizeMenuOpen,
     settingsMenuOpen,
     setSettingsMenuOpen,
     hasPrintSettingsFields,
     renderPrintSettingsFields,
-    handleMobilePrint,
-    printBlocked,
-    printSpinner,
-    cookbookLocked,
-    templateLocked,
     renderAllPages,
   } = props;
 

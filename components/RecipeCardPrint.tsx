@@ -1,7 +1,6 @@
 "use client";
 
 import {
-  Fragment,
   memo,
   useMemo,
   useRef,
@@ -14,7 +13,6 @@ import { formatRecipeTime } from "@/lib/time";
 import { RichText } from "@/components/RichText";
 import { InlineRichField } from "@/components/InlineRichField";
 import { photoGridLayout } from "@/lib/photoGrid";
-import { ImagePicker } from "@/components/ImagePicker";
 import { useWideColumns } from "@/lib/measureHeights";
 import {
   buildColumnChunks,
@@ -1794,7 +1792,6 @@ export const CoverFace = memo(function CoverFace({
   // Responsive collage: columns + banner adapt to the photo count so any number
   // (2, 3, 5, …) fills the frame with no empty cells. Shared with section grids.
   const { columns: gridColumns, firstSpans: gridFirstSpans } = photoGridLayout(gridImages.length);
-  const candidateImages = inlineEdit?.recipeImages ?? [];
 
   return (
     <article

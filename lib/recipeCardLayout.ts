@@ -1,6 +1,6 @@
 import { formatRecipeTime } from "@/lib/time";
 import { stripRichText } from "@/lib/richText";
-import type { CoverConfig, Recipe, RecipePageLayout } from "@/types/recipe";
+import type { Recipe, RecipePageLayout } from "@/types/recipe";
 import type { CardSectionLayout, PrintCardSize, RecipePrintTemplate } from "@/components/RecipeCardPrint";
 
 // How much ingredient/instruction text fits on the front before it must

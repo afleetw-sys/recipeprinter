@@ -10,7 +10,6 @@ import {
 } from "@/components/icons";
 import { PrintSetupControls } from "@/components/print/PrintSetupControls";
 import { ThemePicker } from "@/components/print/ThemePicker";
-import { COOKBOOK_ENABLED } from "@/lib/cookbookProduct";
 import type { PhotoStyle } from "@/lib/project";
 import type { PrintCardSize, RecipePrintTemplate } from "@/components/RecipeCardPrint";
 

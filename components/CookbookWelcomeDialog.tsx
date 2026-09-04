@@ -1,7 +1,6 @@
 "use client";
 
 import Image from "next/image";
-import type { CSSProperties } from "react";
 import { Dialog } from "@/components/Dialog";
 import { CheckIcon, ICON_SIZE, SpinnerIcon, XIcon } from "@/components/icons";
 import type { CoverConfig } from "@/types/recipe";

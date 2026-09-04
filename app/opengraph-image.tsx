@@ -41,7 +41,6 @@ function fontData(base64: string): ArrayBuffer {
 const PAGE = "#f4f7f3"; // Pale Mint
 const INK = "#22303a"; // Slate
 const MUTED = "#5f6f79"; // Stone
-const LINE = "rgba(34, 48, 58, 0.11)";
 
 export const alt = `${SITE_NAME}: ${SITE_TAGLINE}`;
 export const size = { width: 1200, height: 630 };

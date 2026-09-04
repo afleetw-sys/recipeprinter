@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties, type Dispatch, type MutableRefObject, type ReactNode, type RefObject, type SetStateAction } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { flushSync } from "react-dom";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
@@ -25,7 +25,7 @@ import {
 } from "@/lib/cookbookPdfExport";
 import { ImagePicker } from "@/components/ImagePicker";
 import { Dialog } from "@/components/Dialog";
-import { Checkbox, CheckboxGroup, IconButton } from "@/components/Controls";
+import { Checkbox, CheckboxGroup } from "@/components/Controls";
 import { RecipeLoadingState } from "@/components/RecipeLoadingState";
 import { useModalFocus } from "@/components/useModalFocus";
 import {
@@ -33,7 +33,6 @@ import {
   type PrintCardSize,
   type RecipePrintTemplate,
 } from "@/components/RecipeCardPrint";
-import { TemplateThumbnail } from "@/components/print/TemplateThumbnail";
 import { PHOTO_STYLE_OPTIONS } from "@/components/print/photoStyle";
 import { MobileStructureSheet } from "@/components/print/MobileStructureSheet";
 import { PrintConfigPanel } from "@/components/print/PrintConfigPanel";
@@ -42,7 +41,6 @@ import { PrintDeck, pendingSlotIndexIn } from "@/components/print/PrintDeck";
 import {
   usePrintSheets,
   type NavItem,
-  type ImageSheetSlot,
 } from "@/lib/usePrintSheets";
 import {
   buildSections,
@@ -99,7 +97,6 @@ import {
   SizeIcon,
   SpinnerIcon,
   TemplateIcon,
-  TrashIcon,
   XIcon,
 } from "@/components/icons";
 import { isPremiumTemplate } from "@/lib/premiumTemplates";
@@ -183,7 +180,6 @@ const COOKBOOK_TEMPLATE_ROTATION: RecipePrintTemplate[] = [
  * a collection. Below it the suggestion is a pitch at someone who has printed
  * one thing; at or above it, it names something they have already half done.
  */
-const COOKBOOK_SUGGESTION_MIN = 3;
 
 const COOKBOOK_TEMPLATE_ROTATION_KEY = "recipeprinter:cookbook-template-rotation";
 
@@ -1360,8 +1356,6 @@ export default function PrintPage() {
     // Nothing to place if the section has neither a chosen photo nor any recipe
     // image to seed one from — hide the toggle rather than offer a blank page.
     if (!section.photoUrl && ownImages.length === 0) return null;
-    const resolved = resolveSectionPhotoMode(section, photoStyle);
-    const active: SectionPhotoMode = resolved === "grid" ? "full" : resolved;
     // The toolbar button opens the SAME dialog the art itself opens -- photo
     // placement on top, then which photo, plus the chapter's collage. Built at
     // the "art" surface because that is the one that always offers a photo to
@@ -3756,11 +3750,7 @@ export default function PrintPage() {
     activeSelectableRecipeId,
   });
   const {
-    selectedRailIds,
     effectiveRailSelection,
-    setRailAnchorId,
-    toggleRailSelection,
-    selectRailRange,
     clearRailSelection,
     orderedRailSelection,
   } = railSelection;
@@ -4341,7 +4331,6 @@ export default function PrintPage() {
           pendingAddAfterRecipeId={pendingAddAfterRecipeId}
           pendingAddSectionId={pendingAddSectionId}
           pendingImportItems={pendingImportItems}
-          queue={queue}
           setPendingAddSectionId={setPendingAddSectionId}
           setPendingAddIndex={setPendingAddIndex}
           setPendingAddAfterRecipeId={setPendingAddAfterRecipeId}
@@ -4362,9 +4351,6 @@ export default function PrintPage() {
 
         {/* Center: large preview of the selected page */}
         <PrintDeck
-          printBlocked={printBlocked}
-          printSpinner={printSpinner}
-          templateLocked={templateLocked}
           singleRecipePrintView={singleRecipePrintView}
           cookbookView={cookbookView}
           previewMeasuring={previewMeasuring}
@@ -4425,16 +4411,12 @@ export default function PrintPage() {
           parsingImportCount={parsingImportCount}
           pendingAddAfterRecipeId={pendingAddAfterRecipeId}
           openAddRecipeBelow={openAddRecipeBelow}
-          photoModeFor={photoModeFor}
-          setRecipePhotoMode={setRecipePhotoMode}
           sizeMenuOpen={sizeMenuOpen}
           setSizeMenuOpen={setSizeMenuOpen}
           settingsMenuOpen={settingsMenuOpen}
           setSettingsMenuOpen={setSettingsMenuOpen}
           hasPrintSettingsFields={hasPrintSettingsFields}
           renderPrintSettingsFields={renderPrintSettingsFields}
-          handleMobilePrint={handleMobilePrint}
-          cookbookLocked={cookbookLocked}
           renderAllPages={renderAllPages}
         />
 

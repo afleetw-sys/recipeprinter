@@ -1,7 +1,6 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { ImportPanel } from "@/components/ImportPanel";
 import { PrintQueue } from "@/components/PrintQueue";
@@ -11,7 +10,6 @@ import {
   MoreVerticalIcon,
   PrintIcon,
   TrashIcon,
-  XIcon,
 } from "@/components/icons";
 import { createCurrentPrintJob, useQueue } from "@/lib/queue";
 import { useProjectMeta } from "@/lib/project";

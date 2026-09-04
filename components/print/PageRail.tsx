@@ -36,7 +36,6 @@ import type { NavItem, usePrintSheets } from "@/lib/usePrintSheets";
 import type { useProjectMeta } from "@/lib/project";
 import type { useRailDrag } from "@/lib/useRailDrag";
 import type { useRailSelection } from "@/lib/useRailSelection";
-import type { useQueue } from "@/lib/queue";
 import type { QueueItem, Section, RailSortMode } from "@/types/recipe";
 
 // Rail thumbnails target a fixed width so they always fit the rail column,
@@ -152,7 +151,6 @@ interface PageRailProps {
       yet to sit under. See `pendingAnchorRowIndex`. */
   pendingAddSectionId: string | null;
   pendingImportItems: QueueItem[];
-  queue: ReturnType<typeof useQueue>;
   setPendingAddSectionId: Dispatch<SetStateAction<string | null>>;
   setPendingAddIndex: Dispatch<SetStateAction<number | null>>;
   setPendingAddAfterRecipeId: Dispatch<SetStateAction<string | null>>;
@@ -215,7 +213,6 @@ export function PageRail(props: PageRailProps) {
     pendingAddAfterRecipeId,
     pendingAddSectionId,
     pendingImportItems,
-    queue,
     setPendingAddSectionId,
     setPendingAddIndex,
     setPendingAddAfterRecipeId,

@@ -110,11 +110,6 @@ function captureMetadata(
   };
 }
 
-/** Resolves to `folder` if the upload landed before the timeout, else null. */
-async function raceCapture(work: Promise<unknown>, folder: string): Promise<string | null> {
-  const timeout = new Promise<null>((resolve) => setTimeout(() => resolve(null), CAPTURE_TIMEOUT_MS));
-  return Promise.race([work.then(() => folder).catch(() => null), timeout]);
-}
 
 // Decode a `data:` URL to a Blob locally, rather than `fetch`-ing it back —
 // the bytes are already in memory (this is the exact compressed payload the
