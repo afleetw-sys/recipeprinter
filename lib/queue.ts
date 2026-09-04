@@ -61,6 +61,9 @@ function printableQueue(items: QueueItem[]): QueueItem[] {
 }
 
 export function readQueue(): QueueItem[] {
+  // Land anything the throttle is still holding, so this reads the queue as it
+  // actually is rather than as it was up to a quarter second ago.
+  flushQueueWrites();
   // The per-tab session copy is authoritative. Only when it's absent (a fresh
   // tab, e.g. reopened after close) do we fall back to the durable localStorage
   // mirror and reseed this tab's session from it.
@@ -83,7 +86,11 @@ export function readQueue(): QueueItem[] {
   // normalized a field — the next `commit` persists that. The one exception is
   // recovery: a fresh tab reseeding from the durable mirror writes the set into
   // this tab's own session (hydration itself doesn't persist).
-  if (recovered) writeSerializedQueue(JSON.stringify(sanitized));
+  if (recovered) {
+    const seeded = JSON.stringify(sanitized);
+    lastWrittenQueueJson = seeded;
+    writeSerializedQueue(seeded);
+  }
   return sanitized;
 }
 
@@ -106,6 +113,8 @@ function serializeQueue(items: QueueItem[]): string | null {
   }
 }
 
+let mirrorFailureWarned = false;
+
 function writeSerializedQueue(serialized: string) {
   // A failed write is survivable: the queue stays correct in memory for this
   // page, it just won't survive a navigation.
@@ -113,7 +122,71 @@ function writeSerializedQueue(serialized: string) {
   // Mirror to the durable backup so the working set survives a tab close.
   // Best-effort like the session write — if localStorage is unavailable
   // (private mode/quota) there's simply no cross-close recovery.
-  localStore.set(QUEUE_RECOVERY_STORAGE_KEY, serialized);
+  const mirrored = localStore.set(QUEUE_RECOVERY_STORAGE_KEY, serialized);
+  // `localStore.set` returns false rather than throwing, and this discarded it.
+  // The failure that matters is quota: the device shelf holds up to 40 whole
+  // projects in the same origin, so a heavy account can fill it — and from that
+  // moment the durable mirror silently stopped updating, with the working set
+  // lost on the next tab close and nothing anywhere saying so. Once per page,
+  // because a full origin fails on every write and a warning per keystroke is
+  // its own kind of useless.
+  if (!mirrored && !mirrorFailureWarned) {
+    mirrorFailureWarned = true;
+    console.warn(
+      "RecipePrinter: the durable queue mirror could not be written (storage full or unavailable) — work in this tab will not survive closing it",
+    );
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Coalesced persistence for the queue mirror.
+//
+// `commit` runs on every keystroke in an inline recipe field, and it used to
+// `JSON.stringify` EVERY item and perform two synchronous storage writes
+// between one typed character and the next. On a 200-recipe book that is a
+// ~400 kB serialize and ~800 kB of blocking main-thread I/O, per character.
+//
+// lib/project.ts already solved exactly this for project meta and its reasoning
+// applies unchanged, so this mirrors it deliberately: a "schedule on first
+// write, land on the timer" THROTTLE rather than a resetting debounce, so
+// continuous typing cannot starve the write and nothing is ever more than one
+// window away from persisted.
+//
+// The pending value is the item array, not its serialization — so the
+// stringify moves off the keystroke too, not just the write.
+//
+// Unlike the meta throttle this one also has to flush before a READ: the two
+// free functions below build on `readQueue()`, which reads storage, so a
+// pending write would let them append to a stale queue and drop recent edits.
+const QUEUE_PERSIST_THROTTLE_MS = 250;
+
+let pendingQueueItems: QueueItem[] | null = null;
+let queuePersistTimer: ReturnType<typeof setTimeout> | null = null;
+let lastWrittenQueueJson: string | null = null;
+
+/** Writes any coalesced queue straight through. Safe to call with nothing pending. */
+export function flushQueueWrites(): void {
+  if (queuePersistTimer !== null) {
+    clearTimeout(queuePersistTimer);
+    queuePersistTimer = null;
+  }
+  const pending = pendingQueueItems;
+  pendingQueueItems = null;
+  if (pending === null) return;
+  const serialized = serializeQueue(pending);
+  if (!serialized || serialized === lastWrittenQueueJson) return;
+  lastWrittenQueueJson = serialized;
+  writeSerializedQueue(serialized);
+}
+
+/** Exported for tests — the throttle is the part with no UI in front of it and
+    a working set to lose if it is wrong. `commit` is the only real caller. */
+export const __scheduleQueueWriteForTest = (items: QueueItem[]): void => scheduleQueueWrite(items);
+
+function scheduleQueueWrite(items: QueueItem[]): void {
+  pendingQueueItems = items;
+  if (queuePersistTimer !== null) return;
+  queuePersistTimer = setTimeout(flushQueueWrites, QUEUE_PERSIST_THROTTLE_MS);
 }
 
 /**
@@ -136,7 +209,10 @@ export function seedSharedQueueItem(recipe: Recipe, source: string): string {
   };
   const next = [...readQueue(), item];
   const serialized = serializeQueue(next);
-  if (serialized) writeSerializedQueue(serialized);
+  if (serialized) {
+    lastWrittenQueueJson = serialized;
+    writeSerializedQueue(serialized);
+  }
   return id;
 }
 
@@ -173,7 +249,6 @@ export function useQueue() {
   const [hydrated, setHydrated] = useState(false);
   const [hydratedWithItems, setHydratedWithItems] = useState(false);
   const itemsRef = useRef<QueueItem[]>([]);
-  const serializedItemsRef = useRef<string | null>(null);
   // Pasted text payloads are kept in memory only (too large/private to persist)
   // so a failed text import can be retried within the same session.
   const textPayloads = useRef<Map<string, string>>(new Map());
@@ -181,11 +256,9 @@ export function useQueue() {
   const commit = useCallback((next: QueueItem[]) => {
     itemsRef.current = next;
     setItems(next);
-    const serialized = serializeQueue(next);
-    if (serialized && serialized !== serializedItemsRef.current) {
-      serializedItemsRef.current = serialized;
-      writeSerializedQueue(serialized);
-    }
+    // Costs one assignment and, at most, one timer. The serialize and the two
+    // storage writes happen on the throttle — see QUEUE_PERSIST_THROTTLE_MS.
+    scheduleQueueWrite(next);
   }, []);
 
   /**
@@ -233,7 +306,7 @@ export function useQueue() {
   useEffect(() => {
     const initial = readQueue();
     itemsRef.current = initial;
-    serializedItemsRef.current = serializeQueue(initial);
+    lastWrittenQueueJson = serializeQueue(initial);
     setItems(initial);
     setHydratedWithItems(initial.length > 0);
     setHydrated(true);
@@ -241,6 +314,29 @@ export function useQueue() {
     // Mount only: `rehydrateLocalPhotos` is stable, and re-running this would
     // overwrite the live queue with whatever storage held at the time.
     // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // Queue writes are coalesced (see `QUEUE_PERSIST_THROTTLE_MS`), so the last
+  // fraction of a second of edits can still be in memory when the tab goes
+  // away. Without this the throttle would be a straight downgrade in
+  // durability: today's write is synchronous and therefore never behind.
+  //
+  // Same pair lib/project.ts uses to protect the meta mirror, for the same
+  // reason. `pagehide` is the reliable teardown signal (close, navigation, and
+  // mobile bfcache freeze); `visibilitychange` → hidden covers backgrounding,
+  // which on mobile is often the last callback before the page is discarded.
+  useEffect(() => {
+    const onVisibility = () => {
+      if (document.visibilityState === "hidden") flushQueueWrites();
+    };
+    window.addEventListener("pagehide", flushQueueWrites);
+    document.addEventListener("visibilitychange", onVisibility);
+    return () => {
+      window.removeEventListener("pagehide", flushQueueWrites);
+      document.removeEventListener("visibilitychange", onVisibility);
+      // Unmounting is itself a teardown — don't strand a pending write.
+      flushQueueWrites();
+    };
   }, []);
 
   const focusItem = useCallback(
