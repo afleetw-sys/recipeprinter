@@ -1,4 +1,4 @@
-import type { PrintProject } from "@/types/recipe";
+import type { PrintProjectSummary } from "@/types/recipe";
 import { deletePrintProject } from "@/lib/printProjects";
 import {
   markCookbookProjectUnlockedLocal,
@@ -34,20 +34,22 @@ import {
     with meaningful content of its own, which is the point. */
 const CONTAINMENT_THRESHOLD = 0.9;
 
-function projectItemIds(project: PrintProject): Set<string> {
-  return new Set(
-    project.sections.flatMap((section) => section.items.map((item) => item.id)).filter(Boolean),
-  );
+// Reads the member ids off `SectionMeta`, which is what the summary carries and
+// what this file always actually compared. It used to reach through
+// `section.items[].id`, which meant the sweeper needed every recipe of every
+// project in memory to answer a question about ids.
+function projectItemIds(project: PrintProjectSummary): Set<string> {
+  return new Set(project.sections.flatMap((section) => section.itemIds).filter(Boolean));
 }
 
-function projectKind(project: PrintProject): string {
+function projectKind(project: PrintProjectSummary): string {
   return project.kind === "printProject" ? "printProject" : "cookbook";
 }
 
 /** Share of `older`'s recipes that `keeper` also holds, 0–1. Measured against
     the older copy on purpose: the question is whether anything would be lost by
     deleting it, not how similar the two books look. */
-export function projectContainment(older: PrintProject, keeper: PrintProject): number {
+export function projectContainment(older: PrintProjectSummary, keeper: PrintProjectSummary): number {
   if (projectKind(older) !== projectKind(keeper)) return 0;
   const olderIds = projectItemIds(older);
   const keeperIds = projectItemIds(keeper);
@@ -63,14 +65,14 @@ export function projectContainment(older: PrintProject, keeper: PrintProject): n
 
 export interface DuplicateGroup {
   /** The copy that survives — the most recently updated of the lineage. */
-  keeper: PrintProject;
+  keeper: PrintProjectSummary;
   /** Copies contained in the keeper, newest first. */
-  duplicates: PrintProject[];
+  duplicates: PrintProjectSummary[];
 }
 
 /** Sorts an account's projects into one group per book. Pure — the purchase
     question is handled by `reconcileDuplicateProjects`, which can act on it. */
-export function groupDuplicateProjects(projects: PrintProject[]): DuplicateGroup[] {
+export function groupDuplicateProjects(projects: PrintProjectSummary[]): DuplicateGroup[] {
   const byRecency = [...projects].sort(
     (a, b) => Number(b.updatedAt || b.createdAt || 0) - Number(a.updatedAt || a.createdAt || 0),
   );
@@ -91,9 +93,9 @@ export function groupDuplicateProjects(projects: PrintProject[]): DuplicateGroup
 
 export interface DuplicateCleanupPlan {
   /** The projects to keep, newest first. */
-  keep: PrintProject[];
+  keep: PrintProjectSummary[];
   /** Stale forks, safe to delete. */
-  remove: PrintProject[];
+  remove: PrintProjectSummary[];
   /** Keepers that were handed the unlock of a copy being deleted, so a caller
       can show them as purchased without re-reading Firestore. */
   granted: string[];
@@ -117,10 +119,10 @@ export interface DuplicateCleanupPlan {
  */
 export async function planDuplicateCleanup(
   ownerUid: string,
-  projects: PrintProject[],
+  projects: PrintProjectSummary[],
   options: {
     /** Whether this copy carries a cookbook unlock. */
-    isPurchased?: (project: PrintProject) => boolean;
+    isPurchased?: (project: PrintProjectSummary) => boolean;
     /** Puts an unlock on the keeper. Injected so this stays testable and so the
         unlock module isn't pulled into every caller. Returns false if the write
         was refused — after the rules lockdown, that is the expected answer. */
@@ -128,8 +130,8 @@ export async function planDuplicateCleanup(
   } = {},
 ): Promise<DuplicateCleanupPlan> {
   const isPurchased = options.isPurchased ?? (() => false);
-  const keep: PrintProject[] = [];
-  const remove: PrintProject[] = [];
+  const keep: PrintProjectSummary[] = [];
+  const remove: PrintProjectSummary[] = [];
   const granted: string[] = [];
 
   for (const { keeper, duplicates } of groupDuplicateProjects(projects)) {
@@ -191,7 +193,7 @@ export async function grantCookbookUnlock(ownerUid: string, projectId: string): 
  */
 export async function deleteDuplicateProjects(
   ownerUid: string,
-  duplicates: PrintProject[],
+  duplicates: PrintProjectSummary[],
 ): Promise<number> {
   const results = await Promise.all(
     duplicates.map((project) =>

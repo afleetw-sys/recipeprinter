@@ -6,7 +6,7 @@ import { signOut } from "firebase/auth";
 import { AccountIcon, ChevronRightIcon, ICON_SIZE, SpinnerIcon, XIcon } from "@/components/icons";
 import { CookPilotLoginDialog, useCookPilotAuth } from "@/components/CookPilotAuth";
 import { getFirebaseAuth } from "@/lib/firebase/client";
-import { loadPrintProjects } from "@/lib/printProjects";
+import { loadPrintProjectSummaries, summarizePrintProject } from "@/lib/printProjects";
 import { listableLocalProjects, loadLocalProjects } from "@/lib/localProjects";
 
 /** This branch only runs signed OUT, where there is no account list to dedupe
@@ -15,7 +15,7 @@ const EMPTY_ACCOUNT: ReadonlySet<string> = new Set();
 import { isCookbookProjectUnlocked } from "@/lib/cookbookUnlocks";
 import { groupDuplicateProjects } from "@/lib/duplicateProjects";
 import { COOKBOOK_ENABLED } from "@/lib/cookbookProduct";
-import type { PrintProject } from "@/types/recipe";
+import type { PrintProjectSummary } from "@/types/recipe";
 import type { User } from "firebase/auth";
 import { IconButton } from "@/components/Controls";
 import { RecipeLoadingState } from "@/components/RecipeLoadingState";
@@ -43,13 +43,13 @@ function accountInitials(user: User): string {
 // stale reopen shows the cached list instantly (no spinner flash) while it
 // refetches in the background. A project just saved elsewhere can lag by at most
 // the fresh window before it shows on reopen — fine for a convenience list.
-const projectsCache = new Map<string, { projects: PrintProject[]; at: number }>();
+const projectsCache = new Map<string, { projects: PrintProjectSummary[]; at: number }>();
 const PROJECTS_FRESH_MS = 10_000;
 
 /**
  * How long to wait for the saved-projects read before calling it dead.
  *
- * Both reads inside `loadPrintProjects` are `.catch`-guarded, so a Firestore
+ * Both reads inside `loadPrintProjectSummaries` are `.catch`-guarded, so a Firestore
  * that *fails* is handled. The case this exists for is a Firestore that never
  * answers at all: `getDocs` has no timeout of its own, so a blocked or dropped
  * connection leaves the promise pending forever — and "Loading…" sat under both
@@ -110,7 +110,7 @@ export default function AccountMenu({
   /** A press that landed before auth resolved, opened once it has. */
   const [openWhenReady, setOpenWhenReady] = useState(false);
   const [showLogin, setShowLogin] = useState(false);
-  const [projects, setProjects] = useState<PrintProject[]>([]);
+  const [projects, setProjects] = useState<PrintProjectSummary[]>([]);
   const [loadingProjects, setLoadingProjects] = useState(false);
   /** The read didn't answer. Distinct from "no projects" — see the render. */
   const [projectsFailed, setProjectsFailed] = useState(false);
@@ -132,10 +132,10 @@ export default function AccountMenu({
    * so the one place a visitor looks for their work had nothing in it while
    * the page one click further on was full.
    */
-  const [localProjects, setLocalProjects] = useState<PrintProject[]>([]);
+  const [localProjects, setLocalProjects] = useState<PrintProjectSummary[]>([]);
   useEffect(() => {
     if (!open || user) return;
-    setLocalProjects(loadLocalProjects());
+    setLocalProjects(loadLocalProjects().map(summarizePrintProject));
   }, [open, user]);
 
   /* Same rule the /projects page follows: the device shelf is a safety net,
@@ -202,7 +202,7 @@ export default function AccountMenu({
     setProjectsFailed(false);
     // `getDocs` never settles against a Firestore it cannot reach, so the
     // deadline is the only thing that can end this — see lib/withTimeout.
-    withTimeout(loadPrintProjects(uid), PROJECTS_TIMEOUT_MS)
+    withTimeout(loadPrintProjectSummaries(uid), PROJECTS_TIMEOUT_MS)
       .then((next) => {
         projectsCache.set(uid, { projects: next, at: Date.now() });
         if (!cancelled) setProjects(next);

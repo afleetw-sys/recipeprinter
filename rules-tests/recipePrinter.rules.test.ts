@@ -362,6 +362,45 @@ describe("Recipe Printer Storage namespace", () => {
   });
 });
 
+describe("the project content subdocument", () => {
+  // The recipes moved out of the parent so the projects list stops downloading
+  // whole cookbooks to draw a card. That makes this path load-bearing for every
+  // save: if these rules are wrong, saving a book fails.
+  const owner = () => environment.authenticatedContext("content-owner").firestore();
+  const path = "products/recipePrinter/users/content-owner/printProjects/book-1/content/main";
+
+  test("an owner can write and read their own recipes", async () => {
+    await assertSucceeds(
+      setDoc(doc(owner(), path), {
+        sections: [{ id: "s1", title: "Mains", items: [{ id: "r1" }] }],
+      }),
+    );
+    await assertSucceeds(getDoc(doc(owner(), path)));
+  });
+
+  test("nobody else can read or write them", async () => {
+    await environment.withSecurityRulesDisabled(async (context) => {
+      await setDoc(doc(context.firestore(), path), { sections: [] });
+    });
+    const stranger = environment.authenticatedContext("stranger").firestore();
+    await assertFails(getDoc(doc(stranger, path)));
+    await assertFails(setDoc(doc(stranger, path), { sections: [] }));
+
+    const anonymous = environment.unauthenticatedContext().firestore();
+    await assertFails(getDoc(doc(anonymous, path)));
+    await assertFails(setDoc(doc(anonymous, path), { sections: [] }));
+  });
+
+  test("an owner can delete their own content document", async () => {
+    // deletePrintProject removes this before the parent; a denial here would
+    // orphan the recipes of every deleted book.
+    await environment.withSecurityRulesDisabled(async (context) => {
+      await setDoc(doc(context.firestore(), path), { sections: [] });
+    });
+    await assertSucceeds(deleteDoc(doc(owner(), path)));
+  });
+});
+
 describe("server-owned fields on the shared CookPilot user document", () => {
   // `recipePrinterAdmin()` ORs a namespaced check with a legacy one that reads
   // `users/{uid}.recipePrinterAdmin`. The namespaced account document pins its

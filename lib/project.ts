@@ -359,7 +359,7 @@ export function namedSectionCount(sections: Section[]): number {
   return sections.filter((section) => section.title?.trim()).length;
 }
 
-function metaSectionsFromFull(sections: Section[]): ProjectMeta["sections"] {
+export function metaSectionsFromFull(sections: Section[]): ProjectMeta["sections"] {
   return sections.map((section) => ({
     id: section.id,
     title: section.title,

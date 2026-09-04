@@ -174,6 +174,21 @@ service cloud.firestore {
           && request.resource.data.id == projectId
           && request.resource.data.revision == resource.data.revision + 1;
         allow delete: if owns(uid);
+
+        // The recipes themselves. Split out of the parent document so the
+        // projects list and the account menu stop downloading an entire
+        // cookbook to draw a title and four thumbnails — a measured 151 kB to
+        // render 1.7 kB of card, per saved book, per page load.
+        //
+        // No revision check here: the parent still carries `revision` and is
+        // still written in the same transaction, so ordering is enforced in one
+        // place rather than two that could disagree. This document holds only
+        // the owner's own recipe text, and the owner may already read and write
+        // all of it through the parent.
+        match /content/{contentId} {
+          allow read: if owns(uid);
+          allow write: if owns(uid);
+        }
       }
 
       // A cookbook unlock is the $19.99 purchase record, so it is written by the

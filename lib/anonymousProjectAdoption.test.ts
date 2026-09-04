@@ -25,6 +25,13 @@ vi.mock("@/lib/cookbookUnlocks", () => ({
 vi.mock("@/lib/printProjects", () => ({
   createPrintProjectId: () => "minted-id",
   loadPrintProject: async (uid: string, id: string) => store.get(`${uid}/${id}`) ?? null,
+  // Mirrors the real one: the scalars off the parent document, no recipes.
+  loadPrintProjectHead: async (uid: string, id: string) => {
+    const project = store.get(`${uid}/${id}`);
+    return project
+      ? { id: project.id, revision: Number(project.revision ?? 0), createdAt: project.createdAt }
+      : null;
+  },
   savePrintProject: async (project: PrintProject) => {
     const saved = { ...project, revision: Number(project.revision ?? 0) + 1 };
     store.set(`${project.ownerUid}/${project.id}`, saved);

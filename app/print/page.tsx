@@ -58,6 +58,7 @@ import {
   savePrintProject,
   assemblePrintProject,
   loadPrintProject,
+  loadPrintProjectHead,
   PrintProjectConflictError,
 } from "@/lib/printProjects";
 import { adoptAnonymousProject, readAdoptionManifest } from "@/lib/anonymousProjectAdoption";
@@ -2221,7 +2222,10 @@ export default function PrintPage() {
     if (!projectId || !cookPilotUser) return;
     setSaveStatus("saving");
     try {
-      const remote = await loadPrintProject(cookPilotUser.uid, projectId);
+      // The remote revision is the only thing this needs; overwriting replaces
+      // the content wholesale, so fetching it first would be a megabyte read
+      // whose result is discarded a line later.
+      const remote = await loadPrintProjectHead(cookPilotUser.uid, projectId);
       projectRevisionRef.current = Number(remote?.revision ?? 0);
       lastAttemptedFingerprintRef.current = null;
       await handleSaveProject();
@@ -2743,14 +2747,17 @@ export default function PrintPage() {
       return;
     }
     let cancelled = false;
-    loadPrintProject(cookPilotUser.uid, cookbookProjectId)
-      .then((project) => {
-        // Identity and revision only — the local copy is the newer draft here,
-        // so its content must still autosave up to the document it belongs to.
-        if (cancelled || !project) return;
-        projectRevisionRef.current = Number(project.revision ?? 0);
-        savedProjectIdRef.current = project.id;
-        setSavedProjectId(project.id);
+    // Identity and revision only — the local copy is the newer draft here, so
+    // its content must still autosave up to the document it belongs to. This
+    // used to call `loadPrintProject`, which meant fetching the entire book to
+    // read two numbers and throw the rest away, on every signed-in load of the
+    // app's main screen.
+    loadPrintProjectHead(cookPilotUser.uid, cookbookProjectId)
+      .then((head) => {
+        if (cancelled || !head) return;
+        projectRevisionRef.current = head.revision;
+        savedProjectIdRef.current = head.id;
+        setSavedProjectId(head.id);
       })
       .catch((error) => {
         console.warn("RecipePrinter: could not match the working copy to a saved project", error);

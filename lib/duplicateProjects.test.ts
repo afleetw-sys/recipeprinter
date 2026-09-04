@@ -1,27 +1,31 @@
 import { describe, expect, it, vi } from "vitest";
 import { groupDuplicateProjects, planDuplicateCleanup, projectContainment } from "@/lib/duplicateProjects";
-import type { PrintProject } from "@/types/recipe";
+import type { PrintProjectSummary } from "@/types/recipe";
 
+// The sweeper compares member ids, and now takes the summary shape that carries
+// them directly — so this builder no longer has to wrap them in fake recipes to
+// bury them inside `sections[].items[]`.
 function book(
   id: string,
   itemIds: string[],
   updatedAt: number,
-  kind: PrintProject["kind"] = "cookbook",
-): PrintProject {
+  kind: PrintProjectSummary["kind"] = "cookbook",
+): PrintProjectSummary {
   return {
     id,
     kind,
     revision: 0,
     ownerUid: "user-1",
     title: "Family Favorites",
-    sections: [{ id: `${id}-s1`, title: "Mains", items: itemIds.map((itemId) => ({ id: itemId })) }],
-    settings: {},
+    sections: [{ id: `${id}-s1`, title: "Mains", itemIds }],
+    recipeCount: itemIds.length,
+    coverThumbs: [],
     createdAt: 1,
     updatedAt,
-  } as unknown as PrintProject;
+  };
 }
 
-const ids = (projects: PrintProject[]) => projects.map((project) => project.id);
+const ids = (projects: PrintProjectSummary[]) => projects.map((project) => project.id);
 
 describe("planning the duplicate cleanup", () => {
   it("removes forks that are contained in the copy being kept", async () => {

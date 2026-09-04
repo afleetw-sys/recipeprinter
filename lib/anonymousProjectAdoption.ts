@@ -5,7 +5,7 @@ import type { PrintProject } from "@/types/recipe";
 import { getFirebaseStorage } from "@/lib/firebase/storage";
 import { recipePrinterUserPhotoRoot } from "@/lib/firebase/recipePrinterPaths";
 import { localStore } from "@/lib/storage";
-import { loadPrintProject, savePrintProject } from "@/lib/printProjects";
+import { loadPrintProject, loadPrintProjectHead, savePrintProject } from "@/lib/printProjects";
 import {
   transferCookbookProjectUnlockLocal,
 } from "@/lib/cookbookUnlocks";
@@ -212,7 +212,9 @@ export async function adoptAnonymousProject(
     }
     manifest = { ...manifest, status: "saving" };
     writeManifest(manifest);
-    const existingDestination = await loadPrintProject(uid, destinationProjectId);
+    // Revision and creation time only — the destination's own content is about
+    // to be replaced by `adopted`, so reading it in full would be wasted bytes.
+    const existingDestination = await loadPrintProjectHead(uid, destinationProjectId);
     const adopted = rewriteAssets(
       {
         ...project,

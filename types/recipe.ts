@@ -375,4 +375,60 @@ export interface PrintProject {
   stashedCookbook?: StashedCookbook;
   createdAt: number;
   updatedAt: number;
+  /**
+   * Storage layout of the document this was read from.
+   *
+   * Absent (or 1) means the whole book — every recipe's ingredients and
+   * instructions — is inline in the `printProjects/{id}` document, which is the
+   * shape everything was written in before the split. 2 means the recipes live
+   * in `printProjects/{id}/content/main` and the parent carries only what the
+   * projects list draws. Readers accept both; writers only ever produce 2, so a
+   * book migrates the next time it is saved.
+   */
+  contentVersion?: 1 | 2;
+}
+
+/**
+ * The heavy half of a saved project, in its own document.
+ *
+ * Everything here scales with the number of recipes; nothing here is needed to
+ * draw a project card. Kept as a subdocument rather than a subcollection per
+ * recipe because a book is always opened whole — one read either way — and a
+ * per-recipe collection would turn opening a cookbook into N reads to solve a
+ * problem the measurements say we do not have (~1.9 kB/recipe, so the 1 MiB
+ * ceiling sits near 540 recipes).
+ */
+export interface PrintProjectContent {
+  sections: Section[];
+  itemPlacements?: Record<string, RecipePagePlacement>;
+  stashedCookbook?: StashedCookbook;
+}
+
+/**
+ * A saved project as the projects grid and the account menu need it.
+ *
+ * These two screens draw a title, a date, a recipe count and four thumbnails,
+ * and between them they were the reason every saved cookbook was downloaded in
+ * full on page load and on every avatar click. Measured on a representative
+ * 80-recipe book: 151 kB fetched to render 1.7 kB of card. `recipeCount` and
+ * `coverThumbs` are denormalized on save precisely so that read can stop
+ * touching recipes at all.
+ *
+ * `sections` is `SectionMeta` — ids, no content — which is also all
+ * `lib/duplicateProjects.ts` ever compared.
+ */
+export interface PrintProjectSummary {
+  id: string;
+  kind?: "cookbook" | "printProject";
+  revision?: number;
+  ownerUid?: string;
+  title?: string;
+  createdAt: number;
+  updatedAt: number;
+  /** Total recipes across all sections. */
+  recipeCount: number;
+  /** Up to four recipe photos in book order, for the cover mosaic. */
+  coverThumbs: string[];
+  sections: SectionMeta[];
+  contentVersion?: 1 | 2;
 }

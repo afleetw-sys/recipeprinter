@@ -256,11 +256,15 @@ export function fileProjectLocally(items: QueueItem[], meta: ProjectMeta): strin
  * Nothing here deletes: the shelf is untouched on disk, and a draft you didn't
  * save simply stops presenting itself as filed.
  */
-export function listableLocalProjects(
-  localProjects: readonly PrintProject[],
+// Generic over the project shape: the filter only reads `id` and `kind`, and
+// the projects list now holds summaries for account books and summaries of the
+// device shelf alike, so pinning this to the full `PrintProject` would have
+// forced whole books to be kept in memory for a question about two fields.
+export function listableLocalProjects<T extends { id: string; kind?: PrintProject["kind"] }>(
+  localProjects: readonly T[],
   accountProjectIds: ReadonlySet<string>,
   isPaidCookbook: (projectId: string) => boolean,
-): PrintProject[] {
+): T[] {
   return localProjects.filter(
     (project) =>
       !accountProjectIds.has(project.id) &&

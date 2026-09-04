@@ -11,7 +11,7 @@ import { useProjectMeta } from "@/lib/project";
 import { useQueue } from "@/lib/queue";
 import { useRouter } from "next/navigation";
 import { BookIcon, CheckIcon, ICON_SIZE, PlusIcon, SpinnerIcon, TrashIcon } from "@/components/icons";
-import { deletePrintProject, loadPrintProjects } from "@/lib/printProjects";
+import { deletePrintProject, loadPrintProjectSummaries, summarizePrintProject } from "@/lib/printProjects";
 import { forgetProjectId } from "@/lib/projectIdentity";
 import {
   deleteDuplicateProjects,
@@ -27,29 +27,21 @@ import {
   pruneLocalProjects,
 } from "@/lib/localProjects";
 import { photoGridLayout } from "@/lib/photoGrid";
-import type { PrintProject } from "@/types/recipe";
+import type { PrintProjectSummary } from "@/types/recipe";
 
-function projectDate(project: PrintProject): string {
+function projectDate(project: PrintProjectSummary): string {
   const timestamp = Number(project.updatedAt || project.createdAt);
   return Number.isFinite(timestamp)
     ? new Intl.DateTimeFormat(undefined, { month: "short", day: "numeric", year: "numeric" }).format(timestamp)
     : "Date unavailable";
 }
 
-function recipeCount(project: PrintProject): number {
-  return project.sections.reduce((count, section) => count + section.items.length, 0);
-}
-
-/** The recipe photos in a project, deduped and in book order. */
-function projectImages(project: PrintProject): string[] {
-  const urls = project.sections.flatMap((section) =>
-    section.items.map((item) => item.recipe?.image),
-  );
-  return Array.from(new Set(urls.filter((url): url is string => Boolean(url))));
-}
-
-function ProjectCover({ project }: { project: PrintProject }) {
-  const images = projectImages(project).slice(0, 4);
+// `recipeCount` and `coverThumbs` are denormalized onto the document at save
+// time, so drawing this grid no longer reads a single recipe. Both used to be
+// computed here by walking every section of every project — which is why the
+// list downloaded whole cookbooks to render a card.
+function ProjectCover({ project }: { project: PrintProjectSummary }) {
+  const images = project.coverThumbs.slice(0, 4);
   if (images.length === 0) {
     return (
       <div className="project-cover project-cover--empty" aria-hidden>
@@ -107,22 +99,22 @@ export default function ProjectsPage() {
     startNewProject({ cookbook });
     router.push(hasRecipes ? "/print" : "/");
   }
-  const [accountProjects, setAccountProjects] = useState<PrintProject[]>([]);
+  const [accountProjects, setAccountProjects] = useState<PrintProjectSummary[]>([]);
   /**
    * Books filed on this device (lib/localProjects) — everything the workspace
    * released without an account behind it. Still written, still read; what
    * changed is that almost none of it is SHOWN. See `projects` below.
    */
-  const [localProjects, setLocalProjects] = useState<PrintProject[]>([]);
+  const [localProjects, setLocalProjects] = useState<PrintProjectSummary[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [pendingDelete, setPendingDelete] = useState<PrintProject | null>(null);
+  const [pendingDelete, setPendingDelete] = useState<PrintProjectSummary | null>(null);
   const [deleting, setDeleting] = useState(false);
   const [showLogin, setShowLogin] = useState(false);
   const [purchasedIds, setPurchasedIds] = useState<Set<string>>(() => new Set());
 
   useEffect(() => {
-    setLocalProjects(loadLocalProjects());
+    setLocalProjects(loadLocalProjects().map(summarizePrintProject));
   }, []);
 
   const localOnlyIds = useMemo(() => {
@@ -179,7 +171,7 @@ export default function ProjectsPage() {
     setLoading(true);
     setError(null);
     try {
-      const next = await loadPrintProjects(user.uid);
+      const next = await loadPrintProjectSummaries(user.uid);
       // No local→server unlock backfill here any more: unlocks are written by
       // the RevenueCat webhook, and the client is denied write access to them.
       // Two collection reads for the whole account, not two point lookups per
@@ -206,7 +198,7 @@ export default function ProjectsPage() {
       // absence of an answer, not proof the account has anything, and the whole
       // point of the shelf is that it doesn't lose books to a bad connection.
       pruneLocalProjects(keep.map((project) => project.id));
-      setLocalProjects(loadLocalProjects());
+      setLocalProjects(loadLocalProjects().map(summarizePrintProject));
       if (remove.length > 0) {
         void deleteDuplicateProjects(user.uid, remove).then((cleaned) => {
           if (cleaned > 0) track("duplicate_projects_cleaned", { count: cleaned });
@@ -252,7 +244,7 @@ export default function ProjectsPage() {
     // something that was never in an account.
     if (localOnlyIds.has(pendingDelete.id)) {
       deleteLocalProject(pendingDelete.id);
-      setLocalProjects(loadLocalProjects());
+      setLocalProjects(loadLocalProjects().map(summarizePrintProject));
       setPendingDelete(null);
       return;
     }
@@ -384,7 +376,7 @@ export default function ProjectsPage() {
                       </IconButton>
                     </div>
                     <div className="mt-cp-3 flex flex-wrap items-center gap-cp-2 text-cp-caption text-ink-soft">
-                      <span>{recipeCount(project)} recipe{recipeCount(project) === 1 ? "" : "s"}</span>
+                      <span>{project.recipeCount} recipe{project.recipeCount === 1 ? "" : "s"}</span>
                       <span aria-hidden>·</span>
                       <span>Updated {projectDate(project)}</span>
                     </div>
