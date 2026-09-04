@@ -18,7 +18,7 @@ vi.mock("firebase/functions", () => ({
   httpsCallable: () => callable,
 }));
 vi.mock("@/lib/firebase/functions", () => ({ getFns: () => ({}) }));
-vi.mock("@/lib/photoStorage", () => ({ anonymousOwnerId: () => "anon-test" }));
+vi.mock("@/lib/anonymousOwner", () => ({ anonymousOwnerId: () => "anon-test" }));
 
 const COOKPILOT_RESULT = {
   data: {

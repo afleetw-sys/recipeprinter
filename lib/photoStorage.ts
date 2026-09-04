@@ -3,7 +3,6 @@ import { getFirebaseStorage } from "./firebase/storage";
 import { getFirebaseAuth, firebaseConfigured } from "./firebase/client";
 import { fileToCoverBlob, normalizePhotoBlob } from "./coverPhoto";
 import type { CoverConfig, RecipePagePlacement, Section } from "@/types/recipe";
-import { localStore } from "@/lib/storage";
 import {
   recipePrinterAnonymousPhotoRoot,
   recipePrinterUserPhotoRoot,
@@ -17,18 +16,12 @@ import {
 // Storage rules keep signed-in uploads under their UID and anonymous uploads
 // under a browser-owned capability prefix. Images remain publicly readable so
 // saved books and print/export URLs continue to render.
-export const ANONYMOUS_OWNER_STORAGE_KEY = "recipeprinter:anonymous-owner:v1";
-
-export function anonymousOwnerId(): string {
-  const existing = localStore.get(ANONYMOUS_OWNER_STORAGE_KEY);
-  if (existing) return existing;
-  const next =
-    typeof crypto !== "undefined" && "randomUUID" in crypto
-      ? crypto.randomUUID()
-      : `${Date.now()}-${Math.random().toString(36).slice(2, 12)}`;
-  localStore.set(ANONYMOUS_OWNER_STORAGE_KEY, next);
-  return next;
-}
+// Moved to lib/anonymousOwner.ts so lib/parser.ts can reach it without pulling
+// this module's Firebase imports into the bundle of every page that can import
+// a recipe. Re-exported because plenty of code already asks for it here, and
+// this is still where it is used.
+import { anonymousOwnerId } from "@/lib/anonymousOwner";
+export { ANONYMOUS_OWNER_STORAGE_KEY, anonymousOwnerId } from "@/lib/anonymousOwner";
 
 function currentRoot(): string {
   try {
@@ -94,11 +87,39 @@ export async function materializeDataUrl(value: string | undefined): Promise<str
   return uploadBlob(await normalizePhotoBlob(blob));
 }
 
+/**
+ * `materializeDataUrl` for the whole-project sweep, where one bad photo must
+ * not take the other forty with it.
+ *
+ * The sweep is built out of `Promise.all`, so a single rejection rejected the
+ * lot: `materializeProjectPhotos` threw, and the two callers both handled that
+ * badly. The export caught it and returned the project *unchanged* — so one
+ * photo failing meant none of them were uploaded, which is the opposite of
+ * what its comment promises ("without whichever photo couldn't be sent
+ * ahead"). The save had no isolation at all, so an unreadable photo made an
+ * entire cookbook unsaveable.
+ *
+ * Keeping the original value on failure is what "without whichever photo"
+ * actually looks like. Note the residual: a `blob:` URL kept this way is still
+ * a dangling reference in the saved document — one broken photo instead of a
+ * blocked save, which is the better of the two, not a cure.
+ */
+async function materializeOrKeep(value: string | undefined): Promise<string | undefined> {
+  try {
+    return await materializeDataUrl(value);
+  } catch (error) {
+    if (isLocalImage(value)) {
+      console.warn("RecipePrinter: could not upload a local photo; keeping the local copy", error);
+    }
+    return value;
+  }
+}
+
 async function materializeCover(cover: CoverConfig | undefined): Promise<CoverConfig | undefined> {
   if (!cover) return cover;
-  const imageUrl = await materializeDataUrl(cover.imageUrl);
+  const imageUrl = await materializeOrKeep(cover.imageUrl);
   const gridImages = cover.gridImages
-    ? ((await Promise.all(cover.gridImages.map((g) => materializeDataUrl(g)))).filter(Boolean) as string[])
+    ? ((await Promise.all(cover.gridImages.map((g) => materializeOrKeep(g)))).filter(Boolean) as string[])
     : undefined;
   return { ...cover, imageUrl, gridImages };
 }
@@ -127,11 +148,11 @@ export async function materializeProjectPhotos(project: ProjectPhotos): Promise<
   const sections = await Promise.all(
     project.sections.map(async (section) => ({
       ...section,
-      photoUrl: await materializeDataUrl(section.photoUrl),
+      photoUrl: await materializeOrKeep(section.photoUrl),
       items: await Promise.all(
         section.items.map(async (item) => {
           if (!item.recipe || !isLocalImage(item.recipe.image)) return item;
-          const image = await materializeDataUrl(item.recipe.image);
+          const image = await materializeOrKeep(item.recipe.image);
           // The photo is in Storage now, so the local copy stops being the
           // source: leaving `localPhotoId` on the saved item would have a
           // later hydration replace this real URL with a browser-only one.
@@ -147,7 +168,7 @@ export async function materializeProjectPhotos(project: ProjectPhotos): Promise<
     const entries = await Promise.all(
       Object.entries(itemPlacements).map(
         async ([id, placement]) =>
-          [id, { ...placement, heroImageUrl: await materializeDataUrl(placement.heroImageUrl) }] as const,
+          [id, { ...placement, heroImageUrl: await materializeOrKeep(placement.heroImageUrl) }] as const,
       ),
     );
     itemPlacements = Object.fromEntries(entries);

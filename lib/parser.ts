@@ -1,7 +1,7 @@
 "use client";
 
 import { adaptCookPilotRecipe, adaptCookPilotRecipes, normalizeImportURL } from "@/lib/cookpilot";
-import { anonymousOwnerId } from "@/lib/photoStorage";
+import { anonymousOwnerId } from "@/lib/anonymousOwner";
 import type { ImportFailureCode } from "@/lib/analytics";
 import type { ParseResponse, Recipe } from "@/types/recipe";
 

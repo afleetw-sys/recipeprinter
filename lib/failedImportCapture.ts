@@ -1,8 +1,34 @@
-import { ref, uploadBytes } from "firebase/storage";
-import { getFirebaseStorage } from "./firebase/storage";
-import { getFirebaseAuth } from "./firebase/client";
-import { firebaseConfigured } from "./firebase/client";
 import { RECIPE_PRINTER_DEBUG_ROOT } from "./firebase/recipePrinterPaths";
+
+// Firebase is reached through `await import` here, never statically. This
+// module is pure failure-path telemetry, but lib/queue.ts imports it eagerly,
+// so a static `firebase/storage` + `firebase/client` at the top pulled the SDK
+// (app, auth, app-check, storage) into the initial bundle of the homepage and
+// every other page that can import a recipe. The Firestore half below was
+// already dynamic for exactly this reason; the Storage and Auth halves were
+// not. Nothing here runs until an import has already failed, so paying for the
+// SDK at that point costs nobody anything.
+async function firebaseParts() {
+  const [storageSdk, storageAccessor, client] = await Promise.all([
+    import("firebase/storage"),
+    import("./firebase/storage"),
+    import("./firebase/client"),
+  ]);
+  return {
+    ref: storageSdk.ref,
+    uploadBytes: storageSdk.uploadBytes,
+    getFirebaseStorage: storageAccessor.getFirebaseStorage,
+    getFirebaseAuth: client.getFirebaseAuth,
+  };
+}
+
+async function isFirebaseConfigured(): Promise<boolean> {
+  try {
+    return (await import("./firebase/client")).firebaseConfigured();
+  } catch {
+    return false;
+  }
+}
 
 // When an import fails — the browser can't decode an image, or the parser can't
 // find a recipe in whatever it was handed — we keep the exact input that failed,
@@ -52,7 +78,7 @@ const MAX_TEXT_CAPTURE_CHARS = 20_000;
 // uploads still finish in the background — we just don't report the path.
 const CAPTURE_TIMEOUT_MS = 15000;
 
-function currentUserEmail(): string {
+function currentUserEmail(getFirebaseAuth: () => { currentUser: { email: string | null } | null }): string {
   try {
     return getFirebaseAuth().currentUser?.email ?? "";
   } catch {
@@ -68,12 +94,16 @@ function newCaptureFolder(category: string): string {
 }
 
 /** The object metadata every capture shares, plus any per-call extras. */
-function captureMetadata(meta: FailedCaptureMeta, extra: Record<string, string> = {}) {
+function captureMetadata(
+  meta: FailedCaptureMeta,
+  userEmail: string,
+  extra: Record<string, string> = {},
+) {
   return {
     source: meta.source,
     category: meta.category,
     reason: meta.reason.slice(0, 500),
-    user: currentUserEmail(),
+    user: userEmail,
     capturedAt: new Date().toISOString(),
     userAgent: typeof navigator !== "undefined" ? navigator.userAgent.slice(0, 300) : "",
     ...extra,
@@ -123,17 +153,20 @@ export async function captureFailedImportImages(
   images: Array<Blob | string>,
   meta: FailedCaptureMeta,
 ): Promise<string | null> {
-  if (typeof window === "undefined" || !firebaseConfigured() || images.length === 0) return null;
+  if (typeof window === "undefined" || images.length === 0) return null;
+  if (!(await isFirebaseConfigured())) return null;
   try {
+    const { ref, uploadBytes, getFirebaseStorage, getFirebaseAuth } = await firebaseParts();
     const folder = newCaptureFolder(meta.category);
     const storage = getFirebaseStorage();
+    const userEmail = currentUserEmail(getFirebaseAuth);
 
     const uploads = images.map(async (input, i) => {
       const blob = toBlob(input);
       if (!blob || blob.size === 0 || blob.size > MAX_CAPTURE_BYTES) return;
       await uploadBytes(ref(storage, `${folder}/${i}.jpg`), blob, {
         contentType: blob.type || "image/jpeg",
-        customMetadata: captureMetadata(meta, {
+        customMetadata: captureMetadata(meta, userEmail, {
           index: String(i),
           count: String(images.length),
         }),
@@ -166,12 +199,15 @@ export async function recordFailedImport(
   meta: FailedCaptureMeta,
   detail: { payload?: string; imagePath?: string | null; imageCount?: number } = {},
 ): Promise<boolean> {
-  if (typeof window === "undefined" || !firebaseConfigured()) return false;
+  if (typeof window === "undefined") return false;
+  if (!(await isFirebaseConfigured())) return false;
   try {
-    const [{ addDoc, collection, serverTimestamp }, { getDb }] = await Promise.all([
-      import("firebase/firestore"),
-      import("./firebase/db"),
-    ]);
+    const [{ addDoc, collection, serverTimestamp }, { getDb }, { getFirebaseAuth }] =
+      await Promise.all([
+        import("firebase/firestore"),
+        import("./firebase/db"),
+        import("./firebase/client"),
+      ]);
     const raw = detail.payload?.trim() ?? "";
     const truncated = raw.length > MAX_TEXT_CAPTURE_CHARS;
     await addDoc(collection(getDb(), DEBUG_INBOX_COLLECTION), {
@@ -187,7 +223,7 @@ export async function recordFailedImport(
       // Where the bytes are, for an image failure. Null for everything else.
       imagePath: detail.imagePath ?? null,
       imageCount: detail.imageCount ?? 0,
-      user: currentUserEmail(),
+      user: currentUserEmail(getFirebaseAuth),
       userAgent: typeof navigator !== "undefined" ? navigator.userAgent.slice(0, 300) : "",
       createdAt: serverTimestamp(),
     });
