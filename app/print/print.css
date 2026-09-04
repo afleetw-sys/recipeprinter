@@ -1185,11 +1185,22 @@
 
 .recipe-page-toolbar__hint {
   gap: 6px;
-  /* Narrow enough that the bar stays roughly the width of the page it floats
-     over. The floating box has a 420px floor so the BUTTONS never wrap, and a
-     hint that used all of it pushed the bar past the left edge of the deck,
-     which scrolls and therefore clips. Two short lines instead. */
-  max-width: 13rem;
+  /* Runs as far as the bar allows, and wraps only when it genuinely runs out.
+     The fixed 13rem cap that used to be here broke a one-line sentence onto two
+     lines with empty bar either side of it.
+
+     Dropping it is safe because the width is already bounded twice upstream:
+     `.recipe-page-toolbar` is `max-width: 100%` of the shell, and the shell is
+     `min(100%, max(--preview-w, 420px))` — never wider than the canvas. The
+     clipping the old comment describes was the SHELL running past the scrolling
+     deck, which this cannot cause.
+
+     `flex: 1 1 auto` overrides the group rule's `flex: none`, and `min-width: 0`
+     is what actually lets the sentence wrap instead of forcing the bar wider
+     than its own cap — a `flex: none` group at a long content width would have
+     overflowed rather than reflowed. */
+  flex: 1 1 auto;
+  min-width: 0;
   padding-inline: 8px;
   color: var(--cp-ink-soft);
   font-size: var(--cp-fs-caption);
