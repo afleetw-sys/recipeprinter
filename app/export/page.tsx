@@ -131,13 +131,17 @@ function useExportReady(contentReady: boolean): void {
     // Decoded OFF the document, one probe per distinct photo — never by calling
     // `decode()` on the elements themselves.
     //
-    // The deck keeps every face but the active one in a `display: none`
-    // subtree (see ScaledPage), and Chromium never finishes an image inside
-    // one: the bytes arrive, `naturalWidth` fills in, and then `complete`
-    // stays false and `decode()` simply never settles. Waiting on the elements
-    // therefore could not succeed — every book with photos sat out the entire
+    // Chromium never finishes an image inside a `display: none` subtree: the
+    // bytes arrive, `naturalWidth` fills in, and then `complete` stays false
+    // and `decode()` simply never settles. Waiting on the elements therefore
+    // could not succeed — every book with photos sat out the entire
     // IMAGE_WAIT_MS deadline below, having downloaded all of them in about a
     // second, and that dead wait was the single largest cost in an export.
+    //
+    // This route no longer hides its recipe faces at all (see the
+    // `activeSlotIndex` note below), so that trap is largely gone — but blank
+    // duplex spacers still carry `data-preview-hidden`, and a probe is cheap
+    // and cannot regress. It stays.
     //
     // A detached `Image` on the same URL decodes normally, and it is the same
     // cache entry: what this actually guarantees is that every photo's pixels
@@ -383,7 +387,10 @@ function InteriorDocument({ payload }: { payload: ExportPayload }) {
             isLastSheet={index === sheets.length - 1}
             preset={payload.preset}
             // -1, not 0: on screen `activeSlotIndex` hides every card but one.
-            // An export wants every slot on the sheet, so match nothing.
+            // An export wants every slot on the sheet, and a negative index is
+            // how `ScaledPage` is asked for exactly that — see `showAllFaces`
+            // there, which is what makes this mean "hide nothing" rather than
+            // its opposite.
             activeSlotIndex={-1}
             activeSide="front"
             scale={1}

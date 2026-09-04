@@ -46,6 +46,9 @@ import type { CookbookPresetId } from "@/types/recipe";
  * and, within whichever group is showing, hides every card except the one
  * matching `activeSlotIndex`. One tree, so preview and print can't drift
  * apart even though they show different amounts of it at once.
+ *
+ * A NEGATIVE `activeSlotIndex` turns all of that off and shows every face at
+ * once — see `showAllFaces` below, and the note on the prop.
  */
 export const ScaledPage = memo(function ScaledPage({
   sheet,
@@ -74,6 +77,9 @@ export const ScaledPage = memo(function ScaledPage({
 }: {
   sheet: PageSheet;
   isLastSheet: boolean;
+  /** Which slot on this sheet is the one being looked at; every other card is
+      hidden on screen. Negative means "none of them is THE one — show them
+      all", which is what the export route wants (see `showAllFaces`). */
   activeSlotIndex: number;
   activeSide: "front" | "back";
   scale: number;
@@ -175,6 +181,25 @@ export const ScaledPage = memo(function ScaledPage({
    * labelled and reversible. The trackpad now only ever means the artboard.
    */
   const onZoomChange = imageEdit?.onZoomChange;
+
+  // "No card is THE card — draw them all." The export route asks for this
+  // (`activeSlotIndex={-1}`), because a PDF wants every face on the sheet, not
+  // the one a cook happens to be looking at.
+  //
+  // This has to be an explicit case rather than falling out of the comparisons
+  // below, and that is the whole bug it fixes: `slotIndex !== activeSlotIndex`
+  // is true for EVERY slot when `activeSlotIndex` is -1, so "match nothing"
+  // hid everything instead of nothing. The exported cards still PRINTED —
+  // `[data-preview-hidden]` is screen-only, and `page.pdf()` renders in print
+  // media — but the renderer loads the page in SCREEN media and waits there
+  // while the layout measures itself, and a `display: none` card measures 0.
+  // `useWideColumns` bails on a zero width and leaves its split unset, so every
+  // wide section fell back to one column in the file while `RecipeFaceMeasurer`
+  // (`visibility: hidden`, so it has a real box) had already paginated the book
+  // for the two-column layout the preview shows. The book was laid out for one
+  // shape and printed in another, which is exactly how content ran off the
+  // bottom of a page that fit on screen.
+  const showAllFaces = activeSlotIndex < 0;
 
   const anySlot = sheet.slots.find((slot): slot is SheetSlot => slot !== null) ?? null;
   if (!anySlot) return null;
@@ -500,7 +525,7 @@ export const ScaledPage = memo(function ScaledPage({
               className={`recipe-card-page recipe-card-page--front ${
                 lastGroupIsFront ? "recipe-card-page--no-break" : ""
               }`}
-              data-preview-hidden={activeSide !== "front" ? "true" : undefined}
+              data-preview-hidden={!showAllFaces && activeSide !== "front" ? "true" : undefined}
             >
               {/* Book furniture, so it prints only in a book. Every sheet is
                   numbered in both modes — the strip below the deck says which
@@ -561,7 +586,9 @@ export const ScaledPage = memo(function ScaledPage({
                     showDecoration={showDecoration}
                     cookbookMode={cookbookMode}
                     showEmptyFields={showEmptyFields}
-                    previewHidden={slotIndex !== activeSlotIndex || activeSide !== "front"}
+                    previewHidden={
+                      !showAllFaces && (slotIndex !== activeSlotIndex || activeSide !== "front")
+                    }
                     inlineEdit={
                       activeSide === "front" &&
                       slotIndex === activeSlotIndex
@@ -577,7 +604,7 @@ export const ScaledPage = memo(function ScaledPage({
                 className={`recipe-card-page recipe-card-page--back ${
                   lastGroupIsBack ? "recipe-card-page--no-break" : ""
                 }`}
-                data-preview-hidden={activeSide !== "back" ? "true" : undefined}
+                data-preview-hidden={!showAllFaces && activeSide !== "back" ? "true" : undefined}
               >
                 {sheet.slots.map((slot, slotIndex) => {
                   if (!slot || slot.kind !== "recipe") return null;
@@ -598,7 +625,9 @@ export const ScaledPage = memo(function ScaledPage({
                       cookbookMode={cookbookMode}
                       showEmptyFields={showEmptyFields}
                       continued
-                      previewHidden={slotIndex !== activeSlotIndex || activeSide !== "back"}
+                      previewHidden={
+                        !showAllFaces && (slotIndex !== activeSlotIndex || activeSide !== "back")
+                      }
                       inlineEdit={
                         activeSide === "back" &&
                         slotIndex === activeSlotIndex
