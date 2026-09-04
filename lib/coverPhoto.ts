@@ -1,5 +1,7 @@
 "use client";
 
+import { loadImageWithHeicFallback } from "@/lib/heicTranscode";
+
 // Downscales and re-encodes a photo before it's stored on the project.
 //
 // Every photo that reaches a printed book passes through here. That matters
@@ -52,27 +54,17 @@ export function fitWithin(
   };
 }
 
-function loadImage(source: Blob): Promise<HTMLImageElement> {
-  return new Promise((resolve, reject) => {
-    const url = URL.createObjectURL(source);
-    const image = new Image();
-    image.onload = () => {
-      URL.revokeObjectURL(url);
-      resolve(image);
-    };
-    image.onerror = () => {
-      URL.revokeObjectURL(url);
-      reject(new Error("Unable to load image"));
-    };
-    image.src = url;
-  });
-}
-
 // Draws `source` onto a canvas capped at PHOTO_MAX_DIMENSION on its long edge —
 // the shared step behind both encoders below. Takes a Blob, not a File, so the
 // save/export sweep can hand it bytes it fetched from a `data:`/`blob:` URL.
 async function blobToScaledCanvas(source: Blob): Promise<HTMLCanvasElement> {
-  const image = await loadImage(source);
+  // Transcodes HEIC when the browser cannot draw it, which is every browser but
+  // Safari. This path used to go straight to `new Image()`, so an iPhone photo
+  // picked for a cover, a chapter or a recipe failed outright — and
+  // `friendlyPhotoUploadError` turned that into "try a JPG or PNG", which read
+  // as us refusing the format rather than never having supported it. The
+  // recipe importer has handled HEIC for a long time; this is the same chain.
+  const { image } = await loadImageWithHeicFallback(source);
   const { width, height } = fitWithin(image.naturalWidth, image.naturalHeight);
   const canvas = document.createElement("canvas");
   canvas.width = width;
