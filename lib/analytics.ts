@@ -137,8 +137,9 @@ type EventProps = {
    *
    * Nothing else in this file can be matched against money. A person is
    * identified only on CookPilot sign-in, and only by the opaque Firebase uid
-   * — deliberately no email — while `person_profiles: "identified_only"` means
-   * a signed-out buyer has no person record at all. Signed-out buying is
+   * — deliberately no email. A signed-out buyer now has a person record (see
+   * `person_profiles`), but it is keyed by an anonymous device id and carries
+   * nothing that names them. Signed-out buying is
    * supported. So given a charge in Stripe with an email attached, there was
    * previously NOTHING in PostHog to look it up by: not the person, not the
    * event, not the recording. The purchase looked like it had never happened.
@@ -364,8 +365,29 @@ function bootPostHog(
     // slice of real traffic — disproportionately the technical users.
     api_host: "/ingest",
     ui_host: "https://us.posthog.com",
-    // No logins, no person profiles, no PII. Usage only.
-    person_profiles: "identified_only",
+    /**
+     * A person profile for every visitor, not only signed-in ones.
+     *
+     * This was `identified_only`, which meant a signed-out visitor — nearly
+     * everyone, since the app works without an account — produced events with
+     * `$process_person_profile: false` and no person behind them. PostHog was
+     * recognising the browser correctly the whole time: one device kept the
+     * same `Device ID` across sessions nine days apart. There was simply
+     * nothing for those visits to belong to, so a returning visitor counted
+     * again as a new one and an overnight figure of 24 users was really about
+     * 8.
+     *
+     * Still no PII. The profile is keyed by the anonymous device id PostHog
+     * already generates and already puts on every event; signing in still adds
+     * only the opaque Firebase uid (see `identifyUser`). What changes is that
+     * the id now has somewhere to accumulate.
+     *
+     * The cost is real and worth stating: PostHog bills events with person
+     * processing at a higher rate, and that applies to all traffic rather than
+     * just the returning slice. It is the reason the setting used to read
+     * `identified_only`.
+     */
+    person_profiles: "always",
     // App Router handles its own navigation; see AnalyticsProvider.
     capture_pageview: false,
     // Keep the opt-out flag out of cookies, in keeping with the rest.
@@ -495,10 +517,12 @@ function beginLandingSession(): boolean {
  *     but ONLY on a real external source (see below).
  *   - a "Landing Page" event once per session.
  *
- * Super properties (not `$set` person properties) are deliberate: the project
- * runs `person_profiles: "identified_only"` and most visitors are anonymous, so
- * `$set` would be dropped for them. Super properties attach to EVERY event —
- * anonymous or identified — which is exactly "attach to all future events".
+ * Super properties (not `$set` person properties) are deliberate. They were
+ * originally forced: under `person_profiles: "identified_only"` a `$set` from
+ * an anonymous visitor was dropped outright. That is no longer true, but the
+ * choice stands on its own — super properties attach to EVERY event, which is
+ * exactly "attach to all future events", and it keeps attribution queryable on
+ * the events themselves rather than only through a join to the person.
  */
 function applyTrafficAttribution(client: PostHog, input: AttributionInput): void {
   const a = resolveAttribution(input);
@@ -576,8 +600,9 @@ export function track<K extends AnalyticsEventName>(
  * copies the attribution onto the PostHog PERSON — first-touch via `$set_once`
  * (never overwritten), latest-touch via `$set`. Super properties already put
  * attribution on every event; this additionally makes it queryable per-person,
- * which is what "person properties when a user is identified" needs given the
- * project runs `person_profiles: "identified_only"` (no anonymous profiles).
+ * which is what "person properties when a user is identified" needs. Anonymous
+ * visitors now get a profile too (see `person_profiles`); this is still the
+ * only place a person gains a name we chose rather than one PostHog generated.
  *
  * Idempotent per id and safe to call from an auth callback that fires on every
  * mount — repeated calls with the same uid are ignored.
