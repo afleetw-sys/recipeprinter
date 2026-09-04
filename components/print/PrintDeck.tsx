@@ -615,7 +615,7 @@ export function PrintDeck(props: PrintDeckProps) {
           {navItem.kind === "toc" && !navItem.continued && (
             <div className="recipe-page-toolbar__group recipe-page-toolbar__hint">
               <InfoIcon size={ICON_SIZE.sm} aria-hidden />
-              <span>Edit a chapter or recipe to change these entries.</span>
+              <span>Edit a chapter or recipe to change what&apos;s listed here.</span>
             </div>
           )}
           {navItem.flip && (
