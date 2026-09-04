@@ -1,5 +1,5 @@
 import type { MetadataRoute } from "next";
-import { absoluteUrl, NAV_LINKS } from "@/lib/seo";
+import { absoluteUrl, LEGAL_LINKS, NAV_LINKS } from "@/lib/seo";
 import { SEO_LANDING_PAGES } from "@/lib/seoLandingPages";
 
 // Honest per-page last-modified dates (YYYY-MM-DD). Search engines treat
@@ -13,6 +13,8 @@ const LAST_MODIFIED: Record<string, string> = {
   "/features": "2026-07-08",
   "/faq": "2026-07-02",
   "/about": "2026-07-02",
+  "/privacy": "2026-09-04",
+  "/terms": "2026-09-04",
   "/printable-recipe-card-generator": "2026-08-01",
 };
 
@@ -34,6 +36,13 @@ const staticRoutes: {
     path: link.href,
     priority: 0.7,
     changeFrequency: "monthly" as const,
+  })),
+  // Indexable, but low priority and rarely changing: a policy page should be
+  // findable when someone searches for it and should never outrank the product.
+  ...LEGAL_LINKS.map((link) => ({
+    path: link.href,
+    priority: 0.3,
+    changeFrequency: "yearly" as const,
   })),
   ...SEO_LANDING_PAGES.map((page) => ({
     path: `/${page.slug}`,

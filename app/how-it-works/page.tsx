@@ -140,8 +140,9 @@ export default function HowItWorksPage() {
           </p>
 
           <p className="mt-cp-3 text-ink-soft text-cp-body leading-relaxed">
-            No account required. Nothing saved to our servers. Just printable
-            recipes designed for real kitchens instead of open browser tabs.
+            No account required. Print without signing in and your queue stays
+            in your browser. Just printable recipes designed for real kitchens
+            instead of open browser tabs.
           </p>
         </section>
 

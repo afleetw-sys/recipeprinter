@@ -128,9 +128,10 @@ export default function FeaturesPage() {
           than an open browser tab.
         </p>
         <p className="mt-cp-3 text-ink-soft text-cp-body leading-relaxed">
-          No account required. Nothing saved to our servers. Your print queue
-          lives in your browser for the current session only, so the recipes you
-          print, save, and collect stay yours.
+          No account required. Print without signing in and your queue lives in
+          your browser, not in an account. Sign in only if you want a project
+          saved so you can reopen it on another device. Either way, the recipes
+          you print, save, and collect stay yours.
         </p>
       </section>
 
