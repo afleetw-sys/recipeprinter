@@ -1,9 +1,27 @@
 # Recipe Printer Firebase and commerce inventory
 
 This inventory is the implementation checkpoint for the namespaced migration.
-The deployed Firebase rules and CookPilot backend functions are owned outside
-this repository; their changes must be coordinated before releasing namespace
-writes.
+
+**Rules ARE deployed from this repository.** `firestore.rules` and
+`storage.rules` here are the source of truth for the shared `cookpilot-bbecb`
+project, and both are supersets that include CookPilot's own matches verbatim
+(`users/{uid}/recipes/**` and `recipe-images/{uid}/**`). Deploy with:
+
+```
+firebase deploy --only firestore:rules,storage --project cookpilot-bbecb
+```
+
+This paragraph used to say the opposite -- that the rules were "owned outside
+this repository" and had to be coordinated elsewhere. That was wrong, and the
+cost of the error was real: it went unchallenged long enough that a live
+privilege-escalation hole and two live unauthenticated-write holes sat
+undeployed while the fixes for all three were already committed here. Verified
+2026-09-04 by fetching the live rulesets: the deployed Firestore ruleset was
+byte-identical to this repo's file, and the deployed Storage ruleset was a
+month-stale copy of it.
+
+CookPilot's backend *functions* are still owned outside this repository, and
+that half of the original warning stands.
 
 | Area | Current source of truth | New destination | Readers | Writers | Migration and fallback |
 | --- | --- | --- | --- | --- | --- |
@@ -39,8 +57,10 @@ writes.
 
 ## External release blockers
 
-1. Add the namespaced matches from `firestore.rules` to the actual shared rules
-   source and deploy `storage.rules` equivalents before releasing new writes.
+1. ~~Add the namespaced matches to the actual shared rules source.~~ **Done
+   2026-09-04** -- there is no separate source; this repo is it. Both rulesets
+   are deployed and verified live. What this blocker should have said is
+   "remember to deploy after editing," which is now the header above.
 2. Update `claimRecipePrinterFreeTemplate` to merge Recipe Printer claim fields
    into the namespaced account document.
 3. Confirm RevenueCat webhook destinations and reconcile all existing template
