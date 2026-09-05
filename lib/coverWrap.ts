@@ -141,29 +141,34 @@ export const DEFAULT_COVER_WRAP_SPEC: CoverWrapSpec = {
  * still has to copy across, and everything else follows from it.
  */
 /**
- * Lulu's COIL bound cover, which is the same sheet as their casewrap.
+ * Lulu's COIL bound cover.
  *
- * That is not what anyone would predict. A coil book has no spine — the covers
- * are punched and held by the coil — so the expectation is a paperback cover at
- * trim plus 0.125in of bleed, and that is what we produced. Lulu rejected it.
- * With Paperback Coil Bound selected, US Letter, 80# coated, their upload page
- * asks for 19.25 x 12.75in with a spine of 0.5in: the casewrap sheet exactly.
+ * A paperback shape — the two covers side by side at trim, with 0.125in of
+ * bleed on every edge — and their spine quoted flat at half an inch:
  *
- * The 0.5in is quoted flat rather than derived, which is why it is a
- * `fixedSpineIn`. A round half inch is not the thickness of ninety sheets of
- * anything; it is the allowance their template leaves for the coil to punch
- * through, and it did not move with the book.
+ *     8.5 + 8.5 + 0.5 + (2 x 0.125)  =  17.75in wide
+ *     11        + (2 x 0.125)        =  11.25in tall
  *
- * Observed on one real order rather than published, so it is a default and not
- * a law: the fields in the export dialog stay editable, and a number a cook
- * copies off their own upload page still wins.
+ * The 0.5in is a `fixedSpineIn` because Lulu quotes it rather than deriving it.
+ * A round half inch is not the thickness of ninety sheets of anything; it is
+ * the strip their template leaves for the coil to punch through, and it does
+ * not move with the book.
+ *
+ * This spec previously carried the CASEWRAP numbers, giving a 19.25 x 12.75
+ * sheet, and Lulu rejected that. The mistake is worth recording because it was
+ * not arithmetic: those numbers came off the requirements panel on the upload
+ * page, which was still describing a hardcover after the project had been
+ * switched to coil. A panel that contradicts its own validator is not a source.
+ * The first cover we ever sent, at 17.444in, had this shape right and only the
+ * spine wrong — it used our estimated 0.194in instead of Lulu's 0.5in.
  */
 export const LULU_COIL_SPEC: CoverWrapSpec = {
   paperCaliperIn: DEFAULT_PAPER_CALIPER_IN,
-  wrapAllowanceIn: 0.75,
+  wrapAllowanceIn: 0.125,
   boardAllowanceIn: 0,
-  overhangHIn: 0.125,
-  overhangVIn: 0.25,
+  // Trimmed flush with the pages: no boards, so nothing stands proud.
+  overhangHIn: 0,
+  overhangVIn: 0,
   fixedSpineIn: 0.5,
 };
 

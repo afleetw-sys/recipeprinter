@@ -119,24 +119,38 @@ describe("wrapSpecFor", () => {
     expect(spec.fixedSpineIn).toBeUndefined();
   });
 
-  it("gives the coil book Lulu's numbers, not the ones its binding suggests", () => {
-    // Everything about a coil book argues for a paperback cover at trim plus
-    // bleed, and that is what we sent. Lulu refused it and asked for the
-    // casewrap sheet with a flat half-inch spine. Their upload page is the
-    // authority on their own presses.
-    expect(wrapSpecFor(coil)).toEqual(LULU_COIL_SPEC);
-    expect(wrapSpecFor(coil).fixedSpineIn).toBe(0.5);
+  it("gives the coil book a paperback cover with Lulu's quoted spine", () => {
+    // Trim plus bleed, which is the shape a coil cover has always had, and the
+    // half inch Lulu quotes for the coil strip instead of a spine we compute.
+    const spec = wrapSpecFor(coil);
+    expect(spec).toEqual(LULU_COIL_SPEC);
+    expect(spec.wrapAllowanceIn).toBe(coil.bleedIn);
+    expect(spec.overhangHIn).toBe(0);
+    expect(spec.overhangVIn).toBe(0);
+    expect(spec.fixedSpineIn).toBe(0.5);
+  });
+
+  it("does not carry the casewrap sheet over to the coil book", () => {
+    // It did once, from a requirements panel still describing a hardcover, and
+    // the 19.25 x 12.75 sheet that produced was rejected on upload. Guarded
+    // because the two formats now sit side by side and share a printer.
+    const coilSheet = coverWrapGeometry(coil, 92);
+    const caseSheet = coverWrapGeometry(getCookbookPreset("hardcover-us-letter"), 92);
+    expect(coilSheet.sheetWidthIn).not.toBeCloseTo(caseSheet.sheetWidthIn, 3);
+    expect(coilSheet.sheetHeightIn).not.toBeCloseTo(caseSheet.sheetHeightIn, 3);
   });
 });
 
 describe("coverWrapGeometry — the Lulu coil book", () => {
-  it("defaults to the sheet Lulu actually asks for", () => {
-    // 19.25 x 12.75 with a 0.5in spine, straight off their upload page, with
-    // nothing typed by hand.
+  it("defaults to a paperback sheet with Lulu's quoted spine", () => {
+    // 8.5 + 8.5 + 0.5 + 0.25 wide, 11 + 0.25 tall, with nothing typed by hand.
     const g = coverWrapGeometry(coil, 92);
     expect(g.spineWidthIn).toBe(0.5);
-    expect(g.sheetWidthIn).toBeCloseTo(19.25, 6);
-    expect(g.sheetHeightIn).toBeCloseTo(12.75, 6);
+    expect(g.sheetWidthIn).toBeCloseTo(17.75, 6);
+    expect(g.sheetHeightIn).toBeCloseTo(11.25, 6);
+    // The panels are the pages: a coil cover is trimmed flush, not wrapped.
+    expect(g.panelWidthIn).toBe(coil.trimWidthIn);
+    expect(g.panelHeightIn).toBe(coil.trimHeightIn);
   });
 
   it("holds that sheet steady whatever the book's length", () => {
@@ -144,7 +158,7 @@ describe("coverWrapGeometry — the Lulu coil book", () => {
     // of the paper, so it does not grow with the page count the way a cased
     // spine does.
     for (const pages of [8, 92, 400]) {
-      expect(coverWrapGeometry(coil, pages).sheetWidthIn).toBeCloseTo(19.25, 6);
+      expect(coverWrapGeometry(coil, pages).sheetWidthIn).toBeCloseTo(17.75, 6);
     }
   });
 
