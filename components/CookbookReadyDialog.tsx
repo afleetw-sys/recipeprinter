@@ -81,7 +81,7 @@ export function CookbookReadyDialog({
 
       <div className="cookbook-ready__head">
         <h2 id="cookbook-ready-title">{justPurchased ? "Your cookbook is ready 🎉" : "Save your cookbook"}</h2>
-        <p>Every format is included, and you can export again anytime.</p>
+        <p>Both are included. Export as often as you like.</p>
       </div>
 
       {/* The "choose Save as PDF, and don't send it to a printer" note used to
@@ -220,10 +220,10 @@ export function CookbookReadyDialog({
                     checked={forPrintService}
                     disabled={exportingPreset !== null}
                     onChange={(event) => setForPrintService(event.target.checked)}
-                    label="Save the cover as its own file"
+                    label="Cover as a separate file"
                     hint={
                       <>
-                        {printerLink(variant.printerIds[0])} needs this.{" "}
+                        {printerLink(variant.printerIds[0])} needs this;{" "}
                         {printerLink(base.printerIds[0])} and home printing don’t.
                       </>
                     }
@@ -235,10 +235,15 @@ export function CookbookReadyDialog({
                 )}
 
                 {preset.wrapRequired && (
-                  <div className="cookbook-cover-size">
-                    <span className="cookbook-cover-size__label">
-                      Spine width from your printer, if they gave you one
-                    </span>
+                  <details className="cookbook-cover-size">
+                    {/* Shut by default. These are already the numbers the file
+                        will be built to, and for a printer whose anatomy we
+                        know they are that printer's own — so the common case is
+                        that nobody opens this at all. It exists for the cook
+                        whose upload page states something different, and a
+                        wrong cover size is a rejected order, so it must be
+                        reachable without being in the way. */}
+                    <summary className="cookbook-cover-size__label">Cover size</summary>
                     <span className="cookbook-cover-size__fields">
                       <input
                         type="text"
@@ -249,7 +254,7 @@ export function CookbookReadyDialog({
                         onChange={(event) => setCoverField(preset.id, "spine", event.target.value)}
                       />
                       <span className="cookbook-cover-size__unit" aria-hidden>
-                        in, cover
+                        in spine, cover
                       </span>
                       <input
                         type="text"
@@ -270,7 +275,10 @@ export function CookbookReadyDialog({
                       />
                       <span className="cookbook-cover-size__unit">in</span>
                     </span>
-                  </div>
+                    <span className="cookbook-cover-size__hint">
+                      Only change these if your printer states different ones.
+                    </span>
+                  </details>
                 )}
               </div>
             </div>
