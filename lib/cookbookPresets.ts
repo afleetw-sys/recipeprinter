@@ -106,7 +106,7 @@ export interface CookbookPreset {
    *
    * Absent means our own generic numbers, which are an estimate and say so.
    */
-  wrapSpecId?: "lulu-casewrap";
+  wrapSpecId?: "lulu-casewrap" | "lulu-coil";
   /** Class placed on `.recipe-print-preview` so the `page:` binding + geometry
       rules for this preset apply (see app/print/print.css). */
   pageClass: string;
@@ -213,6 +213,7 @@ export const COOKBOOK_PRESETS: CookbookPreset[] = [
     coilBound: true,
     wrapRequired: true,
     wrapStyle: "flat",
+    wrapSpecId: "lulu-coil",
     pageName: "rp-preset-coil-us-letter",
     pageClass: "rp-page-coil-us-letter",
     printerIds: ["lulu"],

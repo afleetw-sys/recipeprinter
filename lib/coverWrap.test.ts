@@ -5,6 +5,7 @@ import {
   LULU_CASEWRAP_SPEC,
   coverWrapGeometry,
   coverWrapGeometryFromSheet,
+  LULU_COIL_SPEC,
   spineFitsTitle,
   spineWidthIn,
   wrapGeometryForSpine,
@@ -107,45 +108,44 @@ describe("wrapSpecFor", () => {
     expect(wrapSpecFor(hardcover)).toEqual(DEFAULT_COVER_WRAP_SPEC);
   });
 
-  it("gives a flat wrap the preset's own bleed, and no boards at all", () => {
-    // A coil cover is printed flat and trimmed: the extra material is bleed,
-    // which belongs to the preset, not a binding constant. And there are no
-    // boards for the spine to carry.
-    const spec = wrapSpecFor(coil);
-    expect(spec.wrapAllowanceIn).toBe(coil.bleedIn);
+  it("falls back to the preset's own bleed when no printer anatomy is known", () => {
+    // The generic flat path: extra material is bleed, which belongs to the
+    // preset rather than to a binding constant, and there are no boards.
+    const generic = getCookbookPreset("us-letter");
+    expect(generic.wrapSpecId).toBeUndefined();
+    const spec = wrapSpecFor(generic);
+    expect(spec.wrapAllowanceIn).toBe(generic.bleedIn);
     expect(spec.boardAllowanceIn).toBe(0);
+    expect(spec.fixedSpineIn).toBeUndefined();
   });
 
-  it("is what stops a coil cover being built to hardcover numbers", () => {
-    // The failure this prevents is not cosmetic: a print service measures the
-    // sheet before it will accept the file, and rejects one that does not match.
-    const flat = coverWrapGeometry(coil, 64);
-    const asCase = coverWrapGeometry(coil, 64, DEFAULT_COVER_WRAP_SPEC);
-    // Height is over by the fold-over allowance that a flat cover does not
-    // have: 2 x (0.75 - 0.125).
-    expect(asCase.sheetHeightIn - flat.sheetHeightIn).toBeCloseTo(1.25, 6);
-    // Width is over by that AND by the boards, which a coil book has none of.
-    expect(asCase.sheetWidthIn - flat.sheetWidthIn).toBeCloseTo(1.25 + 0.125, 6);
+  it("gives the coil book Lulu's numbers, not the ones its binding suggests", () => {
+    // Everything about a coil book argues for a paperback cover at trim plus
+    // bleed, and that is what we sent. Lulu refused it and asked for the
+    // casewrap sheet with a flat half-inch spine. Their upload page is the
+    // authority on their own presses.
+    expect(wrapSpecFor(coil)).toEqual(LULU_COIL_SPEC);
+    expect(wrapSpecFor(coil).fixedSpineIn).toBe(0.5);
   });
 });
 
-describe("coverWrapGeometry — flat (coil / paperback)", () => {
-  it("is trim doubled, plus the spine, plus a bleed on each edge", () => {
-    const g = coverWrapGeometry(coil, 64);
-    // 64 pages = 32 sheets * 0.0042 = 0.1344in of paper, and no boards.
-    expect(g.spineWidthIn).toBeCloseTo(0.1344, 6);
-    expect(g.sheetWidthIn).toBeCloseTo(8.5 * 2 + 0.1344 + 0.125 * 2, 6);
-    expect(g.sheetHeightIn).toBeCloseTo(11 + 0.125 * 2, 6);
-    // Lulu's stated shape for a cover: "typically around double the width of
-    // your book size".
-    expect(g.sheetWidthIn).toBeGreaterThan(coil.trimWidthIn * 2);
+describe("coverWrapGeometry — the Lulu coil book", () => {
+  it("defaults to the sheet Lulu actually asks for", () => {
+    // 19.25 x 12.75 with a 0.5in spine, straight off their upload page, with
+    // nothing typed by hand.
+    const g = coverWrapGeometry(coil, 92);
+    expect(g.spineWidthIn).toBe(0.5);
+    expect(g.sheetWidthIn).toBeCloseTo(19.25, 6);
+    expect(g.sheetHeightIn).toBeCloseTo(12.75, 6);
   });
 
-  it("panels stay at trim, so the trim box lands where the printer expects", () => {
-    const g = coverWrapGeometry(coil, 64);
-    expect(g.panelWidthIn).toBe(8.5);
-    expect(g.panelHeightIn).toBe(11);
-    expect(g.frontPanelOffsetIn).toBeCloseTo(0.125 + 8.5 + g.spineWidthIn, 6);
+  it("holds that sheet steady whatever the book's length", () => {
+    // The half inch is the strip the coil punches through, not the thickness
+    // of the paper, so it does not grow with the page count the way a cased
+    // spine does.
+    for (const pages of [8, 92, 400]) {
+      expect(coverWrapGeometry(coil, pages).sheetWidthIn).toBeCloseTo(19.25, 6);
+    }
   });
 
   it("tiles the sheet exactly at any page count", () => {
@@ -256,12 +256,11 @@ describe("LULU_CASEWRAP_SPEC", () => {
 });
 
 describe("wrapGeometryForSpine", () => {
-  it("leaves a flat cover flush with its pages", () => {
-    const coil = getCookbookPreset("coil-us-letter");
-    const g = wrapGeometryForSpine(coil, 0.2);
-    expect(g.panelWidthIn).toBe(coil.trimWidthIn);
-    expect(g.panelHeightIn).toBe(coil.trimHeightIn);
-    expect(g.sheetWidthIn).toBeCloseTo(8.5 * 2 + 0.2 + 0.25, 6);
+  it("leaves a cover with no overhang flush with its pages", () => {
+    const generic = getCookbookPreset("us-letter");
+    const g = wrapGeometryForSpine(generic, 0.2);
+    expect(g.panelWidthIn).toBe(generic.trimWidthIn);
+    expect(g.panelHeightIn).toBe(generic.trimHeightIn);
   });
 
   it("never returns a negative spine", () => {

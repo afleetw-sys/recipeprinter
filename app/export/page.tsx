@@ -256,11 +256,14 @@ function CoverWrapDocument({ payload }: { payload: ExportPayload }) {
       >
         {/* Back cover first: a wrap is read as a flat sheet, left to right. */}
         <CoverFace cover={backCover} side="back" template={template} />
+        {/* A coil book's "spine" is the strip the coil punches through, so a
+            title set there is destroyed by the binding rather than read on a
+            shelf. Wide enough is not the same as safe. */}
         <SpineFace
           cover={cover}
           template={template}
           spineWidthIn={geometry.spineWidthIn}
-          showTitle={spineFitsTitle(geometry.spineWidthIn)}
+          showTitle={!preset.coilBound && spineFitsTitle(geometry.spineWidthIn)}
         />
         <CoverFace cover={cover} side="front" template={template} />
         {/* Fold guides at the two board edges — screen only. */}

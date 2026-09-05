@@ -104,6 +104,15 @@ export interface CoverWrapSpec {
    */
   overhangHIn: number;
   overhangVIn: number;
+  /**
+   * A spine the service quotes flat, rather than one computed from the page
+   * count.
+   *
+   * Set only where a printer has actually been observed doing that. It is not a
+   * shortcut around the caliper problem — it is the answer to a different
+   * question, asked by a binding whose "spine" is not the thickness of anything.
+   */
+  fixedSpineIn?: number;
 }
 
 export const DEFAULT_COVER_WRAP_SPEC: CoverWrapSpec = {
@@ -131,6 +140,33 @@ export const DEFAULT_COVER_WRAP_SPEC: CoverWrapSpec = {
  * includes the necessary spine width". So the spine is the single number a cook
  * still has to copy across, and everything else follows from it.
  */
+/**
+ * Lulu's COIL bound cover, which is the same sheet as their casewrap.
+ *
+ * That is not what anyone would predict. A coil book has no spine — the covers
+ * are punched and held by the coil — so the expectation is a paperback cover at
+ * trim plus 0.125in of bleed, and that is what we produced. Lulu rejected it.
+ * With Paperback Coil Bound selected, US Letter, 80# coated, their upload page
+ * asks for 19.25 x 12.75in with a spine of 0.5in: the casewrap sheet exactly.
+ *
+ * The 0.5in is quoted flat rather than derived, which is why it is a
+ * `fixedSpineIn`. A round half inch is not the thickness of ninety sheets of
+ * anything; it is the allowance their template leaves for the coil to punch
+ * through, and it did not move with the book.
+ *
+ * Observed on one real order rather than published, so it is a default and not
+ * a law: the fields in the export dialog stay editable, and a number a cook
+ * copies off their own upload page still wins.
+ */
+export const LULU_COIL_SPEC: CoverWrapSpec = {
+  paperCaliperIn: DEFAULT_PAPER_CALIPER_IN,
+  wrapAllowanceIn: 0.75,
+  boardAllowanceIn: 0,
+  overhangHIn: 0.125,
+  overhangVIn: 0.25,
+  fixedSpineIn: 0.5,
+};
+
 export const LULU_CASEWRAP_SPEC: CoverWrapSpec = {
   paperCaliperIn: DEFAULT_PAPER_CALIPER_IN,
   wrapAllowanceIn: 0.75,
@@ -153,8 +189,9 @@ export const LULU_CASEWRAP_SPEC: CoverWrapSpec = {
  * printer checks before it will accept the file.
  */
 export function wrapSpecFor(preset: CookbookPreset): CoverWrapSpec {
-  // A service's own published anatomy beats our generic one wherever we have it.
+  // A service's own anatomy beats our generic one wherever we have it.
   if (preset.wrapSpecId === "lulu-casewrap") return LULU_CASEWRAP_SPEC;
+  if (preset.wrapSpecId === "lulu-coil") return LULU_COIL_SPEC;
   if (preset.wrapStyle === "case") return DEFAULT_COVER_WRAP_SPEC;
   return {
     paperCaliperIn: DEFAULT_PAPER_CALIPER_IN,
@@ -181,6 +218,8 @@ export function spineWidthIn(
   pageCount: number,
   spec: CoverWrapSpec = DEFAULT_COVER_WRAP_SPEC,
 ): number {
+  // A quoted spine is not an estimate to be improved on — see `fixedSpineIn`.
+  if (spec.fixedSpineIn !== undefined) return spec.fixedSpineIn;
   const sheets = Math.ceil(Math.max(0, pageCount) / 2);
   return sheets * spec.paperCaliperIn + spec.boardAllowanceIn;
 }

@@ -222,8 +222,10 @@ describe("print-service presets", () => {
     // Lulu publishes its casewrap numbers and they reproduce the sheet Lulu
     // quotes; nothing else does, so nothing else claims to.
     expect(getCookbookPreset("hardcover-us-letter").wrapSpecId).toBe("lulu-casewrap");
+    // The coil book goes to Lulu too, and they quote it the same sheet.
+    expect(getCookbookPreset("coil-us-letter").wrapSpecId).toBe("lulu-coil");
+    // Blurb publishes nothing we have verified, so nothing is claimed for it.
     expect(getCookbookPreset("hardcover-8x10").wrapSpecId).toBeUndefined();
-    expect(getCookbookPreset("coil-us-letter").wrapSpecId).toBeUndefined();
   });
 });
 
