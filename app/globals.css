@@ -803,6 +803,15 @@
   outline: var(--cp-focus-ring);
   outline-offset: 1px;
 }
+/* A checkbox that cannot be changed still has to be legible: this one is
+   stating how the format works, not refusing input. Dimmed enough to say "not
+   yours to set", not so much that it reads as disabled-and-broken. */
+.cookbook-format .control-checkbox input:disabled {
+  opacity: .75;
+}
+.cookbook-format .control-checkbox:has(input:disabled) strong {
+  color: var(--cp-ink-soft);
+}
 .cookbook-format__note {
   color: var(--cp-ink-soft);
   font-size: var(--cp-fs-small);

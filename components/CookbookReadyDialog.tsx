@@ -215,24 +215,33 @@ export function CookbookReadyDialog({
                   </div>
                 )}
 
-                {variant ? (
-                  <Checkbox
-                    checked={forPrintService}
-                    disabled={exportingPreset !== null}
-                    onChange={(event) => setForPrintService(event.target.checked)}
-                    label="Cover as a separate file"
-                    hint={
+                {/* One control for one idea, whichever book this is. A spiral
+                    cookbook can go either way, so its box is a choice; a
+                    hardcover has no version that keeps the cover bound in, so
+                    its box is fixed on. Saying the same thing as a sentence
+                    under one card and a checkbox under the other made two
+                    presentations of a single concept sit side by side. */}
+                <Checkbox
+                  checked={variant ? forPrintService : true}
+                  readOnly={!variant}
+                  disabled={exportingPreset !== null || !variant}
+                  onChange={
+                    variant
+                      ? (event) => setForPrintService(event.target.checked)
+                      : undefined
+                  }
+                  label="Cover as a separate file"
+                  hint={
+                    variant ? (
                       <>
                         {printerLink(variant.printerIds[0])} needs this;{" "}
                         {printerLink(base.printerIds[0])} and home printing don’t.
                       </>
-                    }
-                  />
-                ) : (
-                  <p className="cookbook-format__note">
-                    Two files, pages and cover, for {printerLink(preset.printerIds[0])}.
-                  </p>
-                )}
+                    ) : (
+                      <>Always, for a case-bound book. Upload both to {printerLink(preset.printerIds[0])}.</>
+                    )
+                  }
+                />
 
                 {preset.wrapRequired && (
                   <details className="cookbook-cover-size">
