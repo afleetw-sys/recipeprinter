@@ -235,8 +235,12 @@ export function CookbookReadyDialog({
                   />
                 ) : (
                   <p className="cookbook-format__note">
-                    Downloads as two files, pages and cover, for{" "}
-                    {printerLink(preset.printerIds[0])}.
+                    {/* States what the download DOES, then names a shop as an
+                        example rather than a destination. "for Lulu" read as
+                        though the format were theirs, which it is not — every
+                        print-on-demand service wants the cover separately. */}
+                    Downloads as two files, pages and cover. That’s what print
+                    services like {printerLink(preset.printerIds[0])} ask for.
                   </p>
                 )}
 

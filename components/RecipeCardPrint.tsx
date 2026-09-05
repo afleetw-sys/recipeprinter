@@ -135,6 +135,49 @@ export function BistroCheckerSpine({
   );
 }
 
+/** Pantry's ruled lines: spacing, and enough rows to cover the tallest sheet. */
+const PANTRY_RULE_SPACING_IN = 0.1875;
+const PANTRY_RULE_ROWS = 72;
+/** A hairline is 1px; SVG has no `calc`, so the offset is that in inches. */
+const HAIRLINE_IN = 1 / 96;
+
+/**
+ * Pantry's notepaper rules, as explicit rects.
+ *
+ * This was a tiled `linear-gradient` on the card, and it cost the whole page:
+ * Chrome's PDF backend serializes every shader — a CSS tiled background and an
+ * SVG `<pattern>` fill alike — as a rasterized image at 72 DPI. On an 8.75in
+ * sheet that is a 630px-wide bitmap swallowing the page, text included, which
+ * is both visibly soft in print and what a print service reports as "images
+ * with resolution less than 200 PPI".
+ *
+ * One rect per rule instead, which stays vector. Exactly the fix bistro's
+ * checker spine and cover band already carry, for exactly the same reason.
+ *
+ * Drawn for the tallest sheet we print and clipped by the card, so it does not
+ * need to know which preset it is on.
+ */
+export function PantryRuleLines({
+  className = "recipe-card__pantry-rules",
+}: { className?: string } = {}) {
+  return (
+    <div className={className} aria-hidden>
+      <svg width="100%" height="100%" focusable="false" preserveAspectRatio="none">
+        {Array.from({ length: PANTRY_RULE_ROWS }, (_, row) => (
+          <rect
+            key={row}
+            x="0"
+            y={`${(row + 1) * PANTRY_RULE_SPACING_IN - HAIRLINE_IN}in`}
+            width="100%"
+            height="1"
+            fill="rgba(89, 104, 115, 0.08)"
+          />
+        ))}
+      </svg>
+    </div>
+  );
+}
+
 // Bistro's cover band — coral and paper stripes along the top edge.
 //
 // Explicit rects, one per stripe. NOT an SVG `<pattern>`, and not the tiled
@@ -298,6 +341,7 @@ function TemplateDecoration({
   if (!show) return null;
   if (template === "bistro") return <BistroCheckerSpine />;
   if (template === "counter") return <CounterCheckerBand />;
+  if (template === "pantry") return <PantryRuleLines />;
   return null;
 }
 

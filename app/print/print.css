@@ -5050,10 +5050,22 @@ textarea.recipe-card__toc-title {
 }
 
 .recipe-template--heirloom .recipe-card {
+  /* Two things were rasterizing this page, and both are gone.
+  
+     A TILED radial speckle sat between these layers. A tile is a shader, and
+     Chrome's PDF backend serializes every shader as a bitmap at 72 DPI (see
+     `PantryRuleLines`), taking the page's text down with it. Removed rather
+     than redrawn: at 3.5% alpha nobody could see it on paper.
+  
+     The sheen survived, but only by losing its alpha. A TRANSLUCENT gradient
+     over the card is a transparency group, and Chrome flattens the whole group
+     the same way — measured at two full-page 630x810 bitmaps per page. Painted
+     opaque instead: #fffefb is exactly white-at-72% over this paper, and the
+     far end is the paper itself rather than `transparent`. Identical to look
+     at, vector on the page, and it avoids the grey cast a fade to `transparent`
+     picks up in sRGB on the way. */
   background:
-    linear-gradient(180deg, rgba(255, 255, 255, 0.72), transparent 1.2in),
-    radial-gradient(circle at 22% 18%, rgba(156, 38, 47, 0.035) 0 1px, transparent 1.5px) 0 0 / 0.12in 0.12in,
-    var(--recipe-bg);
+    linear-gradient(180deg, #fffefb, var(--recipe-bg) 1.2in);
   border-color: rgba(92, 64, 55, 0.14);
 }
 
@@ -5166,10 +5178,22 @@ textarea.recipe-card__toc-title {
 
 .recipe-template--pantry .recipe-card {
   padding-left: calc(var(--recipe-card-padding-x) + var(--pantry-content-gutter));
-  background:
-    linear-gradient(to bottom, transparent calc(var(--pantry-line-spacing) - 1px), rgba(89, 104, 115, 0.08) 0)
-      0 0 / 100% var(--pantry-line-spacing) repeat,
-    var(--recipe-bg);
+  /* The ruled lines used to be a tiled gradient here. They are `PantryRuleLines`
+     now — see that component for why a tile costs the entire page. */
+  background: var(--recipe-bg);
+}
+
+/* Behind everything the card holds, and drawn edge to edge: the rules are the
+   paper, not an ornament on it. `z-index: 0` is load-bearing on the framed
+   templates, which give `.recipe-card > *` a stacking order of their own. */
+.recipe-card__pantry-rules {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  overflow: hidden;
+  pointer-events: none;
+  -webkit-print-color-adjust: exact;
+  print-color-adjust: exact;
 }
 
 .recipe-template--pantry .recipe-card::before {
@@ -5213,16 +5237,17 @@ textarea.recipe-card__toc-title {
   letter-spacing: 0.01em;
 }
 
-.recipe-template--pantry .recipe-card__title,
-.recipe-template--pantry .recipe-card__meta,
-.recipe-template--pantry .recipe-card__label,
-.recipe-template--pantry .recipe-card__ingredients li,
-.recipe-template--pantry .recipe-card__method li {
-  text-shadow:
-    0 0 2px var(--recipe-bg),
-    0 0 2px var(--recipe-bg),
-    0 1px 0 var(--recipe-bg);
-}
+/* The halo that used to sit behind this text is gone, and it is the single
+   worst thing this stylesheet was doing to a printed page.
+  
+   It was three `text-shadow`s, there to keep type legible where it crossed the
+   ruled lines. A BLURRED shadow cannot be expressed in vector PDF, so Chrome
+   rasterized the text carrying it — measured on a real export as 72 DPI bitmaps
+   of individual lines (281x42, 141x42, and so on). Every recipe line in the
+   book, printed as pixels, to hold type off a rule drawn at 8% alpha.
+  
+   The rules do not need holding off. They are the faintest thing on the page
+   and sit behind everything at `z-index: 0`. */
 
 .recipe-print-preview--card-6x4 .recipe-template--pantry {
   --pantry-hole-x: 0.14in;
@@ -5287,13 +5312,12 @@ textarea.recipe-card__toc-title {
   padding: calc(var(--recipe-card-padding-top) + 0.04in)
     calc(var(--recipe-card-padding-x) + 0.06in)
     calc(var(--recipe-card-padding-bottom) + 0.04in);
+  /* Two tiled speckles removed at 2.8% and 2.2% alpha, and the sheen repainted
+     opaque — see heirloom above for both, and for why a translucent gradient
+     costs the page its text. #fdf8ea is this template's own tint at 66% over
+     its paper. */
   background:
-    radial-gradient(circle at 14% 18%, rgba(98, 77, 50, 0.028) 0 1px, transparent 1.4px) 0 0 /
-      0.2in 0.2in,
-    radial-gradient(circle at 78% 74%, rgba(98, 77, 50, 0.022) 0 1px, transparent 1.4px) 0.04in 0.03in /
-      0.24in 0.24in,
-    linear-gradient(180deg, rgba(255, 252, 242, 0.66), rgba(248, 239, 217, 0) 1.35in),
-    var(--recipe-bg);
+    linear-gradient(180deg, #fdf8ea, var(--recipe-bg) 1.35in);
   border-color: rgba(102, 78, 48, 0.32);
   box-shadow:
     inset 0 0 0 0.055in rgba(123, 76, 54, 0.24),
