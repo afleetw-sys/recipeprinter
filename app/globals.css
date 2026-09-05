@@ -641,59 +641,41 @@
   display: grid;
   gap: .7rem;
 }
-/* One format: the button that saves it, plus the line saying where it goes.
-   Grouped so the destinations belong to their format rather than floating
-   under the whole list, which is how one sentence ended up recommending
-   printers that cannot make the book. */
+/* One format: everything about it inside a single bordered box. The card used
+   to BE the save button, which left the print-service option stranded outside
+   it looking like an unrelated setting that happened to sit nearby. A card that
+   contains a checkbox cannot also be one big button anyway — a click near the
+   option would have fired an export. So the box is a container now and the save
+   is an explicit button in it. Flat, per policy: a hairline separates the two
+   halves, no shadow. */
 .cookbook-format {
   display: grid;
-  gap: .3rem;
+  border: 1px solid var(--cp-line-strong);
+  border-radius: var(--cp-radius-control);
+  background: var(--cp-page);
+  overflow: hidden;
 }
-/* The destination option, indented under the format card it belongs to so it
-   reads as part of that choice rather than a separate question. */
-.cookbook-format__option {
-  margin: .15rem 0 .1rem;
-  padding: 0 .2rem;
-}
-.cookbook-format__where {
-  padding: 0 .2rem;
-  color: var(--cp-ink-soft);
-  font-size: var(--cp-fs-small);
-  line-height: 1.5;
-}
-.cookbook-format-card {
+.cookbook-format__head {
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 1rem;
-  padding: 1rem 1.15rem;
-  border: 1px solid var(--cp-line-strong);
-  border-radius: var(--cp-radius-control);
-  background: var(--cp-page);
-  text-align: left;
-  cursor: pointer;
-  transition: border-color 120ms ease, background 120ms ease;
+  padding: .9rem 1.05rem;
 }
-.cookbook-format-card:hover {
-  /* Cornflower: this whole card is a button you press to choose a format, and
-     a hover state is the control answering you. */
-  border-color: var(--cp-accent);
-  background: var(--cp-accent-soft);
-}
-.cookbook-format-card__text {
+.cookbook-format__text {
   display: grid;
-  gap: .15rem;
+  gap: .1rem;
 }
-.cookbook-format-card__text strong {
+.cookbook-format__text strong {
   color: var(--cp-ink);
   font-size: var(--cp-fs-body-lg);
   font-weight: 800;
 }
-.cookbook-format-card__text small {
+.cookbook-format__text small {
   color: var(--cp-ink-soft);
   font-size: var(--cp-fs-caption);
 }
-.cookbook-format-card__cta {
+.cookbook-format__save {
   display: inline-flex;
   align-items: center;
   gap: .4rem;
@@ -704,6 +686,25 @@
   color: var(--cp-on-accent);
   font-size: var(--cp-fs-caption);
   font-weight: 750;
+  cursor: pointer;
+  transition: opacity 120ms ease;
+}
+.cookbook-format__save:hover {
+  opacity: .9;
+}
+.cookbook-format__save:disabled {
+  opacity: .6;
+  cursor: default;
+}
+.cookbook-format__foot {
+  padding: .7rem 1.05rem;
+  border-top: 1px solid var(--cp-line);
+  background: var(--cp-surface-muted);
+}
+.cookbook-format__note {
+  color: var(--cp-ink-soft);
+  font-size: var(--cp-fs-small);
+  line-height: 1.5;
 }
 /* Same hairline-bordered accent callout as the print-settings banner — a quiet
    note, not a warning: nothing has gone wrong, the cook just needs to pick the
