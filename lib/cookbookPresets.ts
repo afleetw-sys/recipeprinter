@@ -101,6 +101,21 @@ export interface CookbookPreset {
   pageClass: string;
   /** Ordered print-shop recommendations for this format (keys into PRINTERS). */
   printerIds: string[];
+  /**
+   * The same book prepared for a print service instead of a home printer, when
+   * that is a choice worth offering.
+   *
+   * It is NOT a second format, and it was a mistake to show it as one: the trim,
+   * the margins and every page of content are identical, so a format list
+   * containing both asks someone to choose between two things that are the same
+   * book. What actually differs is where it is going, which is a property of
+   * how they intend to print rather than of the object. So the format stays one
+   * card and this hangs off it as an option (see CookbookReadyDialog).
+   *
+   * Absent where there is nothing to choose. A hardcover cannot be made at home
+   * at all, so it is always print-service shaped and offers no toggle.
+   */
+  printServicePresetId?: CookbookPresetId;
 }
 
 /* Deep links, not homepages. A homepage makes someone holding a finished PDF
@@ -155,6 +170,7 @@ export const COOKBOOK_PRESETS: CookbookPreset[] = [
     wrapStyle: "flat",
     pageName: "rp-preset-us-letter",
     pageClass: "rp-page-us-letter",
+    printServicePresetId: "coil-us-letter",
     // Blurb is not offered here: they bind softcover, hardcover and layflat, and
     // no coil or spiral at all, so sending a spiral book to them is sending it
     // to a shop that cannot make it.
@@ -214,6 +230,20 @@ export const COOKBOOK_PRESETS: CookbookPreset[] = [
     printerIds: ["blurb"],
   },
 ];
+
+/**
+ * The formats actually offered as a choice.
+ *
+ * `COOKBOOK_PRESETS` is every sheet we can render, which is not the same list:
+ * a print-service variant is reached by ticking an option on its parent format,
+ * never by picking it from a menu. Anything referenced as some other preset's
+ * `printServicePresetId` is therefore filtered out here rather than listed
+ * twice under two names.
+ */
+export const COOKBOOK_FORMATS: CookbookPreset[] = COOKBOOK_PRESETS.filter(
+  (preset) =>
+    !COOKBOOK_PRESETS.some((other) => other.printServicePresetId === preset.id),
+);
 
 /** The preset applied when a cookbook hasn't chosen one — closest to today's
     Letter behavior, zero bleed. */

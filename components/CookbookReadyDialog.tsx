@@ -1,8 +1,11 @@
 "use client";
 
+import { useState } from "react";
+
+import { Checkbox } from "@/components/Controls";
 import { Dialog } from "@/components/Dialog";
 import { ICON_SIZE, PrintIcon, SpinnerIcon, XIcon } from "@/components/icons";
-import { COOKBOOK_PRESETS, PRINTERS } from "@/lib/cookbookPresets";
+import { COOKBOOK_FORMATS, PRINTERS, getCookbookPreset } from "@/lib/cookbookPresets";
 import type { CookbookPresetId } from "@/types/recipe";
 
 export function CookbookReadyDialog({
@@ -33,6 +36,9 @@ export function CookbookReadyDialog({
   exportNeedsAccount?: boolean;
   onSignIn?: () => void;
 }) {
+  // One flag, not one per format: only the spiral format has a print-service
+  // variant, and a book is going to one destination on any given save.
+  const [forPrintService, setForPrintService] = useState(false);
   return (
     <Dialog
       open={open}
@@ -70,16 +76,24 @@ export function CookbookReadyDialog({
       )}
 
       <div className="cookbook-ready__formats">
-        {COOKBOOK_PRESETS.map((preset) => {
-          // Where this particular book can actually be made. Read off the
-          // preset rather than listing every shop we know: Blurb does not bind
-          // coil at all and Lulu has no 8 × 10 trim, so an undifferentiated
-          // list sent people to a printer that could not take their file.
+        {COOKBOOK_FORMATS.map((format) => {
+          // A format with a print-service variant exports as one preset or the
+          // other depending on the option below it — same book, different sheet
+          // and a cover that is either bound in or handed over separately.
+          const usingService = Boolean(format.printServicePresetId) && forPrintService;
+          const preset = usingService
+            ? getCookbookPreset(format.printServicePresetId)
+            : format;
+          // Where this book can actually be made. Read off the preset rather
+          // than listing every shop we know: Blurb binds no coil at all and
+          // Lulu has no 8 × 10 trim, so an undifferentiated list sent people to
+          // a printer that could not take their file.
           const printers = preset.printerIds
             .map((id) => PRINTERS[id])
             .filter((printer): printer is NonNullable<typeof printer> => Boolean(printer));
+          const busy = exportingPreset === preset.id;
           return (
-            <div className="cookbook-format" key={preset.id}>
+            <div className="cookbook-format" key={format.id}>
               <button
                 type="button"
                 className="cookbook-format-card"
@@ -87,11 +101,11 @@ export function CookbookReadyDialog({
                 onClick={() => onExport(preset.id)}
               >
                 <span className="cookbook-format-card__text">
-                  <strong>{preset.productName}</strong>
-                  <small>{preset.bestFor}</small>
+                  <strong>{format.productName}</strong>
+                  <small>{format.trimLabel}</small>
                 </span>
                 <span className="cookbook-format-card__cta">
-                  {exportingPreset === preset.id ? (
+                  {busy ? (
                     <>
                       <SpinnerIcon size={ICON_SIZE.sm} />
                       Preparing…
@@ -104,13 +118,28 @@ export function CookbookReadyDialog({
                   )}
                 </span>
               </button>
+
+              {format.printServicePresetId && (
+                <Checkbox
+                  className="cookbook-format__option"
+                  checked={forPrintService}
+                  disabled={exportingPreset !== null}
+                  onChange={(event) => setForPrintService(event.target.checked)}
+                  label="I’m sending this to a print shop"
+                  hint={
+                    // Says what changes, in the order it will matter: a second
+                    // file is the surprising part, and the bleed is the part
+                    // that silently ruins the book if it is missing. Neither is
+                    // phrased as a requirement the cook has to understand —
+                    // ticking the box is the whole job.
+                    "Saves the cover as its own file and lets photos run to the edge of the page, which is how services like Lulu want it. Leave it off to print at home."
+                  }
+                />
+              )}
+
               <p className="cookbook-format__where">
-                {/* Said per format, because it is a property of the format and
-                    not a caveat. A print service wants the pages and the cover
-                    as two files, so these two save two files, and someone who
-                    is not told that will go looking for the missing one. */}
                 {preset.wrapRequired
-                  ? "Saves two files, pages and cover, the way a print service asks for them. Upload at "
+                  ? "Saves two files, the pages and the cover. Upload them at "
                   : "Print it at home, or upload it at "}
                 {printers.map((printer, index) => (
                   <span key={printer.id}>

@@ -649,6 +649,12 @@
   display: grid;
   gap: .3rem;
 }
+/* The destination option, indented under the format card it belongs to so it
+   reads as part of that choice rather than a separate question. */
+.cookbook-format__option {
+  margin: .15rem 0 .1rem;
+  padding: 0 .2rem;
+}
 .cookbook-format__where {
   padding: 0 .2rem;
   color: var(--cp-ink-soft);

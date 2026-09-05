@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
+  COOKBOOK_FORMATS,
   COOKBOOK_PRESETS,
   DEFAULT_COOKBOOK_PRESET_ID,
   LETTER_CARD_HEIGHT_IN,
@@ -188,5 +189,48 @@ describe("print-service presets", () => {
         expect(preset.printerIds).not.toContain("lulu");
       }
     }
+  });
+});
+
+describe("COOKBOOK_FORMATS", () => {
+  it("offers the spiral and the hardcover, and not the variant", () => {
+    // The print-service sheet is the same book as the spiral one: same trim,
+    // same margins, same pages. Listing it as a third format asked people to
+    // choose between two things that are not different.
+    expect(COOKBOOK_FORMATS.map((preset) => preset.id)).toEqual([
+      "us-letter",
+      "hardcover-8x10",
+    ]);
+  });
+
+  it("keeps every variant reachable from the format that owns it", () => {
+    // Nothing renderable may be orphaned: a preset is either offered as a
+    // format or reached through one, never neither.
+    for (const preset of COOKBOOK_PRESETS) {
+      const offered = COOKBOOK_FORMATS.includes(preset);
+      const reachable = COOKBOOK_PRESETS.some(
+        (other) => other.printServicePresetId === preset.id,
+      );
+      expect(offered || reachable).toBe(true);
+    }
+  });
+
+  it("only offers the choice where there is one to make", () => {
+    // A hardcover cannot be made at home, so it has no home-printing variant to
+    // toggle between and shows no option.
+    expect(getCookbookPreset("us-letter").printServicePresetId).toBe("coil-us-letter");
+    expect(getCookbookPreset("hardcover-8x10").printServicePresetId).toBeUndefined();
+  });
+
+  it("a format and its print-service variant are the same book", () => {
+    const home = getCookbookPreset("us-letter");
+    const service = getCookbookPreset(home.printServicePresetId);
+    expect(service.productName).toBe(home.productName);
+    expect(service.trimLabel).toBe(home.trimLabel);
+    // What differs is only where it is going: the sheet it is drawn on, and
+    // whether the cover travels as its own file.
+    expect(service.bleedIn).toBeGreaterThan(home.bleedIn);
+    expect(service.wrapRequired).toBe(true);
+    expect(home.wrapRequired).toBe(false);
   });
 });
