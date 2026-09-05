@@ -107,9 +107,19 @@ function saveBlob(blob: Blob, fileName: string): void {
     link.click();
     link.remove();
   } finally {
-    // Freed on the next tick, not immediately: revoking synchronously can race
-    // the browser's own read of the blob and produce an empty download.
-    window.setTimeout(() => URL.revokeObjectURL(url), 0);
+    // A minute, not a tick.
+    //
+    // Revoking synchronously races the browser's own read of the blob, which
+    // was known, and a next-tick timeout was the fix. It is not enough. A
+    // click only STARTS a download; Chrome then streams the blob out to disk,
+    // and a cookbook is several megabytes, so the read is still running long
+    // after the tick that scheduled this. Revoke underneath it and the transfer
+    // stops where it is — which is the `Unconfirmed NNNNNN.crdownload` left in
+    // the downloads folder next to the file that did survive.
+    //
+    // Nothing is leaked by waiting: the URL is dropped either way, just after
+    // the browser has finished with it rather than during.
+    window.setTimeout(() => URL.revokeObjectURL(url), 60_000);
   }
 }
 

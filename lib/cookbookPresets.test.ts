@@ -228,26 +228,28 @@ describe("print-service presets", () => {
 });
 
 describe("COOKBOOK_FORMATS", () => {
-  it("offers the spiral and the hardcover, and not the variant", () => {
+  it("offers two kinds of book, with sizes inside them", () => {
     // The print-service sheet is the same book as the spiral one: same trim,
     // same margins, same pages. Listing it as a third format asked people to
     // choose between two things that are not different.
-    expect(COOKBOOK_FORMATS.map((preset) => preset.id)).toEqual([
-      "us-letter",
-      "hardcover-us-letter",
-      "hardcover-8x10",
+    // Two cards, because "what kind of book is this" is the only question that
+    // belongs at the top. Size lives inside the kind it belongs to.
+    expect(COOKBOOK_FORMATS.map((format) => format.id)).toEqual(["spiral", "hardcover"]);
+    expect(COOKBOOK_FORMATS.map((format) => format.presetIds)).toEqual([
+      ["us-letter"],
+      ["hardcover-us-letter", "hardcover-8x10"],
     ]);
   });
 
   it("keeps every variant reachable from the format that owns it", () => {
     // Nothing renderable may be orphaned: a preset is either offered as a
     // format or reached through one, never neither.
+    const offered = new Set(COOKBOOK_FORMATS.flatMap((format) => format.presetIds));
     for (const preset of COOKBOOK_PRESETS) {
-      const offered = COOKBOOK_FORMATS.includes(preset);
       const reachable = COOKBOOK_PRESETS.some(
         (other) => other.printServicePresetId === preset.id,
       );
-      expect(offered || reachable).toBe(true);
+      expect(offered.has(preset.id) || reachable).toBe(true);
     }
   });
 
@@ -270,3 +272,14 @@ describe("COOKBOOK_FORMATS", () => {
     expect(home.wrapRequired).toBe(false);
   });
 });
+
+  it("never names a preset that does not exist", () => {
+    // A typo here would render a card whose Save button exports the default
+    // preset instead of the one it says, which is a wrong book rather than an
+    // error.
+    const known = new Set(COOKBOOK_PRESETS.map((preset) => preset.id));
+    for (const format of COOKBOOK_FORMATS) {
+      expect(format.presetIds.length).toBeGreaterThan(0);
+      for (const id of format.presetIds) expect(known.has(id)).toBe(true);
+    }
+  });

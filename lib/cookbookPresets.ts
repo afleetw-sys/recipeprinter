@@ -268,18 +268,48 @@ export const COOKBOOK_PRESETS: CookbookPreset[] = [
 ];
 
 /**
- * The formats actually offered as a choice.
+ * What kind of book this is, which is the only question worth putting at the
+ * top level.
  *
- * `COOKBOOK_PRESETS` is every sheet we can render, which is not the same list:
- * a print-service variant is reached by ticking an option on its parent format,
- * never by picking it from a menu. Anything referenced as some other preset's
- * `printServicePresetId` is therefore filtered out here rather than listed
- * twice under two names.
+ * `COOKBOOK_PRESETS` is every sheet we can render, and for a while the dialog
+ * listed them directly. That put "Hardcover Book, US Letter" and "Hardcover
+ * Book, 8 × 10" side by side as if they were different products and made the
+ * first choice a four-way one between two things. They are one product in two
+ * sizes, and size is a detail of the book you have already decided to make.
+ *
+ * So: two cards, and everything that varies within a kind — the trim, whether
+ * the cover travels separately, the wrap dimensions — lives inside the card for
+ * that kind.
  */
-export const COOKBOOK_FORMATS: CookbookPreset[] = COOKBOOK_PRESETS.filter(
-  (preset) =>
-    !COOKBOOK_PRESETS.some((other) => other.printServicePresetId === preset.id),
-);
+export interface CookbookFormat {
+  id: "spiral" | "hardcover";
+  /** The card's title. */
+  name: string;
+  /** One line under it, describing the physical object rather than the file. */
+  tagline: string;
+  /** Sizes offered within this kind, in order. The first is the default.
+      Print-service VARIANTS are not listed here — those hang off their own
+      preset's `printServicePresetId` and are reached by ticking an option. */
+  presetIds: CookbookPresetId[];
+}
+
+export const COOKBOOK_FORMATS: CookbookFormat[] = [
+  {
+    id: "spiral",
+    name: "Spiral Cookbook",
+    tagline: "Lies flat, coil bound",
+    presetIds: ["us-letter"],
+  },
+  {
+    id: "hardcover",
+    name: "Hardcover Book",
+    tagline: "Case bound, printed to order",
+    // US Letter first: it is Lulu's most popular cookbook hardcover and the one
+    // their own cookbook page leads with. 8 × 10 exists for Blurb, who print
+    // that trim and whom Lulu's size list cannot match.
+    presetIds: ["hardcover-us-letter", "hardcover-8x10"],
+  },
+];
 
 /** The preset applied when a cookbook hasn't chosen one — closest to today's
     Letter behavior, zero bleed. */

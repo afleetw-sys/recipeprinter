@@ -701,6 +701,39 @@
   border-top: 1px solid var(--cp-line);
   background: var(--cp-surface-muted);
 }
+/* Which size, within a kind of book. Single-select, so it wears the shared
+   `--cp-selected-*` tokens every other single-select control in the app uses
+   rather than inventing a look. */
+.cookbook-size {
+  display: flex;
+  flex-wrap: wrap;
+  gap: .35rem;
+  margin-bottom: .55rem;
+}
+.cookbook-size__option {
+  display: inline-flex;
+  align-items: center;
+  gap: .35rem;
+  padding: .3rem .6rem;
+  border: 1px solid var(--cp-line-strong);
+  border-radius: 999px;
+  background: var(--cp-page);
+  color: var(--cp-ink-soft);
+  font-size: var(--cp-fs-caption);
+  cursor: pointer;
+}
+.cookbook-size__option.is-active {
+  border-color: var(--cp-selected-border);
+  background: var(--cp-selected-fill);
+  box-shadow: var(--cp-selected-ring);
+  color: var(--cp-selected-text);
+  font-weight: 700;
+}
+.cookbook-size__option:has(input:focus-visible) {
+  outline: var(--cp-focus-ring);
+  outline-offset: var(--cp-focus-ring-offset);
+}
+
 /* Three numbers copied off a printer's upload page. Deliberately quiet: it is
    an override for the minority who have been given exact figures, not a
    decision everyone has to make, so it sits below the option in caption type

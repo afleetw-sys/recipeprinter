@@ -54,13 +54,16 @@ export function CookbookReadyDialog({
   // Empty means "use our estimate". Held as strings so a half-typed number
   // ("19." on the way to 19.25) is not parsed, rounded and written back under
   // the cursor.
+  // Which size is chosen within each kind of book. Absent means the kind's
+  // first, which is the only answer a one-size kind ever has.
+  const [sizes, setSizes] = useState<Record<string, CookbookPresetId>>({});
   const [coverSizes, setCoverSizes] = useState<
     Record<string, { w: string; h: string; spine: string }>
   >({});
-  const setCoverField = (formatId: string, field: "w" | "h" | "spine", value: string) =>
+  const setCoverField = (presetId: string, field: "w" | "h" | "spine", value: string) =>
     setCoverSizes((current) => ({
       ...current,
-      [formatId]: { ...(current[formatId] ?? { w: "", h: "", spine: "" }), [field]: value },
+      [presetId]: { ...(current[presetId] ?? { w: "", h: "", spine: "" }), [field]: value },
     }));
   return (
     <Dialog
@@ -100,38 +103,18 @@ export function CookbookReadyDialog({
 
       <div className="cookbook-ready__formats">
         {COOKBOOK_FORMATS.map((format) => {
-          // A format with a print-service variant exports as one preset or the
-          // other depending on the option inside its card — same book,
-          // different sheet, and a cover that is either bound in or handed over
-          // separately.
-          const variant = format.printServicePresetId
-            ? getCookbookPreset(format.printServicePresetId)
+          // The size chosen within this kind of book, defaulting to the first
+          // offered. A kind with one size never asks.
+          const sizeId = sizes[format.id] ?? format.presetIds[0];
+          const base = getCookbookPreset(sizeId);
+          // A print-service variant is the same size drawn on a bigger sheet
+          // with its cover handed over separately — reached by ticking the
+          // option, never by picking it from a list.
+          const variant = base.printServicePresetId
+            ? getCookbookPreset(base.printServicePresetId)
             : null;
-          const preset = variant && forPrintService ? variant : format;
-          const num = (raw: string, fallback: number) => {
-            const parsed = Number.parseFloat(raw);
-            return Number.isFinite(parsed) && parsed > 0 ? parsed : fallback;
-          };
-          const size = coverSizes[format.id] ?? { w: "", h: "", spine: "" };
-          // The spine drives the sheet, because it is the ONLY part of a cover a
-          // print service will not publish a formula for — Lulu generates it
-          // from the interior after upload, and states its wrap allowance and
-          // board overhang outright. So typing the one number nobody can derive
-          // fills in the two that follow from it, and the cook copies across a
-          // single figure rather than three.
-          const estimate = wrapGeometryForSpine(
-            preset,
-            num(size.spine, coverWrapGeometry(preset, pageCount).spineWidthIn),
-          );
-          const statedSheet: CoverSheetSpec | undefined =
-            size.w || size.h || size.spine
-              ? {
-                  widthIn: num(size.w, estimate.sheetWidthIn),
-                  heightIn: num(size.h, estimate.sheetHeightIn),
-                  spineWidthIn: num(size.spine, estimate.spineWidthIn),
-                }
-              : undefined;
-          const round = (value: number) => String(Number(value.toFixed(3)));
+          const preset = variant && forPrintService ? variant : base;
+
           const printerLink = (id: string | undefined) => {
             const printer = id ? PRINTERS[id] : undefined;
             if (!printer) return null;
@@ -145,12 +128,47 @@ export function CookbookReadyDialog({
               </button>
             );
           };
+
+          const num = (raw: string, fallback: number) => {
+            const parsed = Number.parseFloat(raw);
+            return Number.isFinite(parsed) && parsed > 0 ? parsed : fallback;
+          };
+          // Keyed by PRESET, not by kind: the two hardcover sizes have
+          // different wraps, so a spine typed for one says nothing about the
+          // other.
+          const size = coverSizes[preset.id] ?? { w: "", h: "", spine: "" };
+          // The spine drives the sheet, because it is the only part of a cover
+          // a print service will not publish a formula for. Lulu states its
+          // wrap allowance and board overhang outright and generates the spine
+          // from your interior after upload, so this is the one figure to copy.
+          const round = (value: number) => String(Number(value.toFixed(3)));
+          const spineIn = num(size.spine, coverWrapGeometry(preset, pageCount).spineWidthIn);
+          const derived = wrapGeometryForSpine(preset, spineIn);
+          // Shown as real values, not ghosted placeholders. A placeholder reads
+          // as "nothing here yet" — which is exactly wrong, because these ARE
+          // the numbers the file will be built to, and for a format whose
+          // printer publishes its anatomy they are the printer's own. Typing
+          // over any of them wins; clearing one puts the derivation back.
+          const shown = {
+            spine: size.spine || round(spineIn),
+            w: size.w || round(derived.sheetWidthIn),
+            h: size.h || round(derived.sheetHeightIn),
+          };
+          const statedSheet: CoverSheetSpec = {
+            widthIn: num(size.w, derived.sheetWidthIn),
+            heightIn: num(size.h, derived.sheetHeightIn),
+            spineWidthIn: spineIn,
+          };
+          const oneSize = format.presetIds.length === 1;
+
           return (
             <div className="cookbook-format" key={format.id}>
               <div className="cookbook-format__head">
                 <span className="cookbook-format__text">
-                  <strong>{format.productName}</strong>
-                  <small>{format.trimLabel}</small>
+                  <strong>{format.name}</strong>
+                  {/* With one size there is no picker below to carry the trim,
+                      so the subtitle carries it instead. */}
+                  <small>{oneSize ? base.trimLabel : format.tagline}</small>
                 </span>
                 <button
                   type="button"
@@ -172,10 +190,31 @@ export function CookbookReadyDialog({
                 </button>
               </div>
 
-              {/* Inside the card, under a hairline, because it is a question
-                  about THIS format and nothing else. Sitting outside it read as
-                  a separate setting that happened to be nearby. */}
               <div className="cookbook-format__foot">
+                {!oneSize && (
+                  <div className="cookbook-size" role="radiogroup" aria-label={`${format.name} size`}>
+                    {format.presetIds.map((id) => {
+                      const option = getCookbookPreset(id);
+                      const active = id === sizeId;
+                      return (
+                        <label
+                          key={id}
+                          className={`cookbook-size__option${active ? " is-active" : ""}`}
+                        >
+                          <input
+                            type="radio"
+                            name={`size-${format.id}`}
+                            checked={active}
+                            disabled={exportingPreset !== null}
+                            onChange={() => setSizes((c) => ({ ...c, [format.id]: id }))}
+                          />
+                          <span>{option.trimLabel}</span>
+                        </label>
+                      );
+                    })}
+                  </div>
+                )}
+
                 {variant ? (
                   <Checkbox
                     checked={forPrintService}
@@ -183,29 +222,18 @@ export function CookbookReadyDialog({
                     onChange={(event) => setForPrintService(event.target.checked)}
                     label="Save the cover as its own file"
                     hint={
-                      // The shops are the hint, rather than a sentence about
-                      // shops followed by a separate list of them. Naming one of
-                      // each kind answers the only question there is, which is
-                      // which kind yours is.
                       <>
                         {printerLink(variant.printerIds[0])} needs this.{" "}
-                        {printerLink(format.printerIds[0])} and home printing don’t.
+                        {printerLink(base.printerIds[0])} and home printing don’t.
                       </>
                     }
                   />
                 ) : (
                   <p className="cookbook-format__note">
-                    Two files, pages and cover, for {printerLink(format.printerIds[0])}.
+                    Two files, pages and cover, for {printerLink(preset.printerIds[0])}.
                   </p>
                 )}
 
-                {/* The printer's numbers beat ours, always. A spine depends on
-                    the exact stock's caliper and, on a cased book, the boards
-                    and the fold-over too — none of which we can know, and being
-                    a quarter inch out gets the file rejected rather than
-                    printed slightly wrong. Lulu and Blurb both print the answer
-                    on the upload page, so this is a copy across, not a
-                    calculation the cook has to do. */}
                 {preset.wrapRequired && (
                   <div className="cookbook-cover-size">
                     <span className="cookbook-cover-size__label">
@@ -216,10 +244,9 @@ export function CookbookReadyDialog({
                         type="text"
                         inputMode="decimal"
                         aria-label="Spine width in inches"
-                        placeholder={round(estimate.spineWidthIn)}
-                        value={size.spine}
+                        value={shown.spine}
                         disabled={exportingPreset !== null}
-                        onChange={(event) => setCoverField(format.id, "spine", event.target.value)}
+                        onChange={(event) => setCoverField(preset.id, "spine", event.target.value)}
                       />
                       <span className="cookbook-cover-size__unit" aria-hidden>
                         in, cover
@@ -228,20 +255,18 @@ export function CookbookReadyDialog({
                         type="text"
                         inputMode="decimal"
                         aria-label="Cover width in inches"
-                        placeholder={round(estimate.sheetWidthIn)}
-                        value={size.w}
+                        value={shown.w}
                         disabled={exportingPreset !== null}
-                        onChange={(event) => setCoverField(format.id, "w", event.target.value)}
+                        onChange={(event) => setCoverField(preset.id, "w", event.target.value)}
                       />
                       <span aria-hidden>×</span>
                       <input
                         type="text"
                         inputMode="decimal"
                         aria-label="Cover height in inches"
-                        placeholder={round(estimate.sheetHeightIn)}
-                        value={size.h}
+                        value={shown.h}
                         disabled={exportingPreset !== null}
-                        onChange={(event) => setCoverField(format.id, "h", event.target.value)}
+                        onChange={(event) => setCoverField(preset.id, "h", event.target.value)}
                       />
                       <span className="cookbook-cover-size__unit">in</span>
                     </span>
