@@ -171,10 +171,12 @@ export const COOKBOOK_PRESETS: CookbookPreset[] = [
     pageName: "rp-preset-us-letter",
     pageClass: "rp-page-us-letter",
     printServicePresetId: "coil-us-letter",
-    // Blurb is not offered here: they bind softcover, hardcover and layflat, and
-    // no coil or spiral at all, so sending a spiral book to them is sending it
-    // to a shop that cannot make it.
-    printerIds: ["staples", "lulu"],
+    // Staples only, and that is the whole distinction this format draws against
+    // its print-service variant. A copy shop prints the document you give it and
+    // coil binds the result, so a cover on page 1 is a cover; Lulu will not take
+    // this file at all, because it wants the cover separately and wants bleed.
+    // Blurb is not here either: they bind no coil at all.
+    printerIds: ["staples"],
   },
   {
     // The same book as `us-letter`, sized for a print service instead of a

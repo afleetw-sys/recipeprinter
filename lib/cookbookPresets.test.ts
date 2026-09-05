@@ -178,6 +178,20 @@ describe("print-service presets", () => {
     expect(getCookbookPreset("hardcover-8x10").wrapStyle).toBe("case");
   });
 
+  it("never sends a bundled-cover file to a service that wants them separate", () => {
+    // Lulu refuses a cover bound into the interior, so it must not be offered
+    // for a format that bundles one. This is the mistake the "sending this to a
+    // print shop" checkbox encoded: it treated every print shop as wanting the
+    // same thing, when the only real split is whether the cover travels on its
+    // own. Staples takes the single file; Lulu does not.
+    const wantsSeparateCovers = ["lulu", "blurb"];
+    for (const preset of COOKBOOK_PRESETS.filter((p) => !p.wrapRequired)) {
+      for (const printer of wantsSeparateCovers) {
+        expect(preset.printerIds).not.toContain(printer);
+      }
+    }
+  });
+
   it("never recommends a printer that cannot make the format", () => {
     // Blurb binds softcover, hardcover and layflat, and no coil at all; Lulu's
     // trim list has no 8x10 in it; Staples binds booklets, not case wraps.

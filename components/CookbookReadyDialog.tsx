@@ -125,14 +125,17 @@ export function CookbookReadyDialog({
                   checked={forPrintService}
                   disabled={exportingPreset !== null}
                   onChange={(event) => setForPrintService(event.target.checked)}
-                  label="I’m sending this to a print shop"
+                  label="Save the cover as its own file"
                   hint={
-                    // Says what changes, in the order it will matter: a second
-                    // file is the surprising part, and the bleed is the part
-                    // that silently ruins the book if it is missing. Neither is
-                    // phrased as a requirement the cook has to understand —
-                    // ticking the box is the whole job.
-                    "Saves the cover as its own file and lets photos run to the edge of the page, which is how services like Lulu want it. Leave it off to print at home."
+                    // Named for what it produces, not for where it is going.
+                    // "Sending this to a print shop" was the obvious label and
+                    // it is not true: Staples is a print shop and takes the
+                    // single file above quite happily. The thing that actually
+                    // varies between services is whether they want the cover
+                    // handed over separately, so that is what the box says, and
+                    // the hint names one of each so nobody has to guess which
+                    // kind theirs is.
+                    "Print-on-demand services like Lulu want the pages and the cover as two uploads, with photos running past the trim edge. Copy shops like Staples take the single file above. Your printer’s upload page will say which it wants."
                   }
                 />
               )}
