@@ -193,16 +193,37 @@ describe("print-service presets", () => {
   });
 
   it("never recommends a printer that cannot make the format", () => {
-    // Blurb binds softcover, hardcover and layflat, and no coil at all; Lulu's
-    // trim list has no 8x10 in it; Staples binds booklets, not case wraps.
+    // Each of these is a real limit of a real shop, and each one had us
+    // recommending a printer that would have refused the file:
+    //   Blurb binds softcover, hardcover and layflat, and no coil at all.
+    //   Lulu's trim list has no 8 x 10 in it (7 x 10 and 8.5 x 11 are the
+    //     neighbours), so its hardcover has to be the US Letter one.
+    //   Staples binds documents and booklets, not case wraps.
     for (const preset of COOKBOOK_PRESETS) {
       expect(preset.printerIds.length).toBeGreaterThan(0);
       if (preset.coilBound) expect(preset.printerIds).not.toContain("blurb");
-      if (preset.wrapStyle === "case") {
-        expect(preset.printerIds).not.toContain("staples");
+      if (preset.wrapStyle === "case") expect(preset.printerIds).not.toContain("staples");
+      if (preset.trimWidthIn === 8 && preset.trimHeightIn === 10) {
         expect(preset.printerIds).not.toContain("lulu");
       }
     }
+  });
+
+  it("gives a cased book a gutter and a lie-flat one none", () => {
+    // A cased spine swallows the inner margin; a coil book opens flat, so a
+    // gutter there would just shove every page off-centre.
+    for (const preset of COOKBOOK_PRESETS) {
+      if (preset.coilBound) expect(preset.gutterIn).toBe(0);
+      else expect(preset.gutterIn).toBeGreaterThan(0);
+    }
+  });
+
+  it("builds a wrap from the printer's own anatomy where we have it", () => {
+    // Lulu publishes its casewrap numbers and they reproduce the sheet Lulu
+    // quotes; nothing else does, so nothing else claims to.
+    expect(getCookbookPreset("hardcover-us-letter").wrapSpecId).toBe("lulu-casewrap");
+    expect(getCookbookPreset("hardcover-8x10").wrapSpecId).toBeUndefined();
+    expect(getCookbookPreset("coil-us-letter").wrapSpecId).toBeUndefined();
   });
 });
 
@@ -213,6 +234,7 @@ describe("COOKBOOK_FORMATS", () => {
     // choose between two things that are not different.
     expect(COOKBOOK_FORMATS.map((preset) => preset.id)).toEqual([
       "us-letter",
+      "hardcover-us-letter",
       "hardcover-8x10",
     ]);
   });

@@ -78,7 +78,7 @@ export function CookbookReadyDialog({
 
       <div className="cookbook-ready__head">
         <h2 id="cookbook-ready-title">{justPurchased ? "Your cookbook is ready 🎉" : "Save your cookbook"}</h2>
-        <p>Both are included, and you can export again anytime.</p>
+        <p>Every format is included, and you can export again anytime.</p>
       </div>
 
       {/* The "choose Save as PDF, and don't send it to a printer" note used to

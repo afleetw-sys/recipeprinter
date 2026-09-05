@@ -96,6 +96,17 @@ export interface CookbookPreset {
    * Ignored when `wrapRequired` is false.
    */
   wrapStyle: "case" | "flat";
+  /**
+   * Which print service's published cover anatomy to build the wrap from, when
+   * we actually have one.
+   *
+   * A named string rather than the spec object itself, because the specs live
+   * in lib/coverWrap.ts and that module already imports this one — handing the
+   * object over here would make the two require each other at runtime.
+   *
+   * Absent means our own generic numbers, which are an estimate and say so.
+   */
+  wrapSpecId?: "lulu-casewrap";
   /** Class placed on `.recipe-print-preview` so the `page:` binding + geometry
       rules for this preset apply (see app/print/print.css). */
   pageClass: string;
@@ -204,6 +215,29 @@ export const COOKBOOK_PRESETS: CookbookPreset[] = [
     wrapStyle: "flat",
     pageName: "rp-preset-coil-us-letter",
     pageClass: "rp-page-coil-us-letter",
+    printerIds: ["lulu"],
+  },
+  {
+    // Lulu's most popular cookbook hardcover, and the format their own cookbook
+    // page leads with. Same trim and same interior sheet as the spiral book;
+    // what changes is a real gutter, because a cased spine swallows the inner
+    // margin where a coil book lies flat.
+    id: "hardcover-us-letter",
+    productName: "Hardcover Book",
+    fileLabel: "Hardcover",
+    trimLabel: "US Letter (8.5 × 11 in)",
+    bestFor: "Case bound, printed by Lulu",
+    trimWidthIn: 8.5,
+    trimHeightIn: 11,
+    bleedIn: 0.125,
+    marginIn: 0.5,
+    gutterIn: 0.5,
+    coilBound: false,
+    wrapRequired: true,
+    wrapStyle: "case",
+    wrapSpecId: "lulu-casewrap",
+    pageName: "rp-preset-hardcover-us-letter",
+    pageClass: "rp-page-hardcover-us-letter",
     printerIds: ["lulu"],
   },
   {

@@ -153,6 +153,8 @@ export const LULU_CASEWRAP_SPEC: CoverWrapSpec = {
  * printer checks before it will accept the file.
  */
 export function wrapSpecFor(preset: CookbookPreset): CoverWrapSpec {
+  // A service's own published anatomy beats our generic one wherever we have it.
+  if (preset.wrapSpecId === "lulu-casewrap") return LULU_CASEWRAP_SPEC;
   if (preset.wrapStyle === "case") return DEFAULT_COVER_WRAP_SPEC;
   return {
     paperCaliperIn: DEFAULT_PAPER_CALIPER_IN,

@@ -6990,6 +6990,12 @@ textarea.recipe-card__toc-title {
   size: 8.75in 11.25in;
   margin: 0;
 }
+@page rp-preset-hardcover-us-letter {
+  /* Same 8.5×11 trim and same full-bleed sheet as the coil book. A cased
+     hardcover differs in its gutter and its cover, not in the paper. */
+  size: 8.75in 11.25in;
+  margin: 0;
+}
 @page rp-preset-hardcover-8x10 {
   /* 8×10 trim + 0.125in bleed per edge. */
   size: 8.25in 10.25in;
@@ -7122,6 +7128,10 @@ textarea.recipe-card__toc-title {
   .recipe-page-deck.rp-page-coil-us-letter .recipe-card-page,
   .recipe-page-deck.rp-page-coil-us-letter .recipe-spread__blank {
     page: rp-preset-coil-us-letter;
+  }
+  .recipe-page-deck.rp-page-hardcover-us-letter .recipe-card-page,
+  .recipe-page-deck.rp-page-hardcover-us-letter .recipe-spread__blank {
+    page: rp-preset-hardcover-us-letter;
   }
   .recipe-page-deck.rp-page-hardcover-8x10 .recipe-card-page,
   .recipe-page-deck.rp-page-hardcover-8x10 .recipe-spread__blank {

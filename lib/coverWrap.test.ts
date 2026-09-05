@@ -2,12 +2,12 @@ import { describe, expect, it } from "vitest";
 import { getCookbookPreset } from "@/lib/cookbookPresets";
 import {
   DEFAULT_COVER_WRAP_SPEC,
+  LULU_CASEWRAP_SPEC,
   coverWrapGeometry,
   coverWrapGeometryFromSheet,
-  LULU_CASEWRAP_SPEC,
   spineFitsTitle,
-  wrapGeometryForSpine,
   spineWidthIn,
+  wrapGeometryForSpine,
   wrapSpecFor,
   type CoverWrapSpec,
 } from "@/lib/coverWrap";
@@ -266,5 +266,25 @@ describe("wrapGeometryForSpine", () => {
 
   it("never returns a negative spine", () => {
     expect(wrapGeometryForSpine(getCookbookPreset("coil-us-letter"), -3).spineWidthIn).toBe(0);
+  });
+});
+
+describe("the Lulu US Letter hardcover format", () => {
+  const preset = getCookbookPreset("hardcover-us-letter");
+
+  it("derives Lulu's quoted cover from nothing but the spine they state", () => {
+    // The end of a long road: Lulu asked for 19.25 x 12.75 with a 0.5in spine,
+    // and this is the format producing it without anyone typing a sheet size.
+    const g = wrapGeometryForSpine(preset, 0.5);
+    expect(g.sheetWidthIn).toBeCloseTo(19.25, 6);
+    expect(g.sheetHeightIn).toBeCloseTo(12.75, 6);
+  });
+
+  it("picks up Lulu's anatomy rather than our generic estimate", () => {
+    expect(wrapSpecFor(preset)).toEqual(LULU_CASEWRAP_SPEC);
+    // Our generic case spec would be an inch and a half narrower, which is a
+    // rejected upload rather than a slightly wrong book.
+    const generic = wrapGeometryForSpine(preset, 0.5, DEFAULT_COVER_WRAP_SPEC);
+    expect(generic.sheetWidthIn).not.toBeCloseTo(19.25, 3);
   });
 });

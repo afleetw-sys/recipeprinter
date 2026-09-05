@@ -215,7 +215,11 @@ export type SectionMeta = Omit<Section, "items"> & { itemIds: string[] };
 /** Which print-format preset a cookbook exports at. Each id maps to a full
     page geometry (trim size, bleed, margin, binding gutter) in
     `lib/cookbookPresets.ts`. Only meaningful in cookbook mode. */
-export type CookbookPresetId = "us-letter" | "coil-us-letter" | "hardcover-8x10";
+export type CookbookPresetId =
+  | "us-letter"
+  | "coil-us-letter"
+  | "hardcover-us-letter"
+  | "hardcover-8x10";
 
 /** How a single recipe's (unchanged) card is placed on the cookbook page.
     `full` — one card per sheet (a cookbook always gives each recipe its own full
