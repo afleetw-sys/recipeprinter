@@ -112,21 +112,6 @@ export interface CookbookPreset {
   pageClass: string;
   /** Ordered print-shop recommendations for this format (keys into PRINTERS). */
   printerIds: string[];
-  /**
-   * The same book prepared for a print service instead of a home printer, when
-   * that is a choice worth offering.
-   *
-   * It is NOT a second format, and it was a mistake to show it as one: the trim,
-   * the margins and every page of content are identical, so a format list
-   * containing both asks someone to choose between two things that are the same
-   * book. What actually differs is where it is going, which is a property of
-   * how they intend to print rather than of the object. So the format stays one
-   * card and this hangs off it as an option (see CookbookReadyDialog).
-   *
-   * Absent where there is nothing to choose. A hardcover cannot be made at home
-   * at all, so it is always print-service shaped and offers no toggle.
-   */
-  printServicePresetId?: CookbookPresetId;
 }
 
 /* Deep links, not homepages. A homepage makes someone holding a finished PDF
@@ -181,7 +166,6 @@ export const COOKBOOK_PRESETS: CookbookPreset[] = [
     wrapStyle: "flat",
     pageName: "rp-preset-us-letter",
     pageClass: "rp-page-us-letter",
-    printServicePresetId: "coil-us-letter",
     // Staples only, and that is the whole distinction this format draws against
     // its print-service variant. A copy shop prints the document you give it and
     // coil binds the result, so a cover on page 1 is a cover; Lulu will not take
@@ -265,50 +249,6 @@ export const COOKBOOK_PRESETS: CookbookPreset[] = [
     // hardcovers. Listing either was sending people to a shop that cannot take
     // the file.
     printerIds: ["blurb"],
-  },
-];
-
-/**
- * What kind of book this is, which is the only question worth putting at the
- * top level.
- *
- * `COOKBOOK_PRESETS` is every sheet we can render, and for a while the dialog
- * listed them directly. That put "Hardcover Book, US Letter" and "Hardcover
- * Book, 8 × 10" side by side as if they were different products and made the
- * first choice a four-way one between two things. They are one product in two
- * sizes, and size is a detail of the book you have already decided to make.
- *
- * So: two cards, and everything that varies within a kind — the trim, whether
- * the cover travels separately, the wrap dimensions — lives inside the card for
- * that kind.
- */
-export interface CookbookFormat {
-  id: "spiral" | "hardcover";
-  /** The card's title. */
-  name: string;
-  /** One line under it, describing the physical object rather than the file. */
-  tagline: string;
-  /** Sizes offered within this kind, in order. The first is the default.
-      Print-service VARIANTS are not listed here — those hang off their own
-      preset's `printServicePresetId` and are reached by ticking an option. */
-  presetIds: CookbookPresetId[];
-}
-
-export const COOKBOOK_FORMATS: CookbookFormat[] = [
-  {
-    id: "spiral",
-    name: "Spiral Cookbook",
-    tagline: "Lies flat, coil bound",
-    presetIds: ["us-letter"],
-  },
-  {
-    id: "hardcover",
-    name: "Hardcover Book",
-    tagline: "Case bound, printed to order",
-    // US Letter first: it is Lulu's most popular cookbook hardcover and the one
-    // their own cookbook page leads with. 8 × 10 exists for Blurb, who print
-    // that trim and whom Lulu's size list cannot match.
-    presetIds: ["hardcover-us-letter", "hardcover-8x10"],
   },
 ];
 

@@ -641,6 +641,62 @@
   display: grid;
   gap: .7rem;
 }
+/* Step one: where the book is going. Rows rather than cards — this is a list
+   of places, and the second screen is where a book gets chosen. */
+.cookbook-ready__destinations {
+  display: grid;
+  gap: .5rem;
+}
+.cookbook-ready__lead {
+  color: var(--cp-ink-soft);
+  font-size: var(--cp-fs-small);
+}
+.cookbook-destination {
+  display: grid;
+  gap: .15rem;
+  padding: .8rem 1rem;
+  border: 1px solid var(--cp-line-strong);
+  border-radius: var(--cp-radius-control);
+  background: var(--cp-page);
+  text-align: left;
+  cursor: pointer;
+  transition: border-color 120ms ease, background 120ms ease;
+}
+.cookbook-destination:hover {
+  border-color: var(--cp-accent);
+  background: var(--cp-accent-soft);
+}
+.cookbook-destination:focus-visible {
+  outline: var(--cp-focus-ring);
+  outline-offset: 2px;
+}
+.cookbook-destination strong {
+  color: var(--cp-ink);
+  font-size: var(--cp-fs-body-lg);
+  font-weight: 800;
+}
+.cookbook-destination small {
+  color: var(--cp-ink-soft);
+  font-size: var(--cp-fs-caption);
+  line-height: 1.45;
+}
+/* The way back to step one. Quiet: it is a return, not an action. */
+.cookbook-ready__back {
+  justify-self: start;
+  margin-bottom: -.15rem;
+  color: var(--cp-ink-soft);
+  font-size: var(--cp-fs-small);
+  font-weight: 700;
+  cursor: pointer;
+}
+.cookbook-ready__back:hover:not(:disabled) {
+  color: var(--cp-ink);
+}
+.cookbook-ready__back:focus-visible {
+  outline: var(--cp-focus-ring);
+  outline-offset: 2px;
+}
+
 /* One format: everything about it inside a single bordered box. The card used
    to BE the save button, which left the print-service option stranded outside
    it looking like an unrelated setting that happened to sit nearby. A card that

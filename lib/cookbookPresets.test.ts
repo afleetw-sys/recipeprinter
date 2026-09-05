@@ -1,6 +1,5 @@
 import { describe, expect, it } from "vitest";
 import {
-  COOKBOOK_FORMATS,
   COOKBOOK_PRESETS,
   DEFAULT_COOKBOOK_PRESET_ID,
   LETTER_CARD_HEIGHT_IN,
@@ -228,60 +227,3 @@ describe("print-service presets", () => {
     expect(getCookbookPreset("hardcover-8x10").wrapSpecId).toBeUndefined();
   });
 });
-
-describe("COOKBOOK_FORMATS", () => {
-  it("offers two kinds of book, with sizes inside them", () => {
-    // The print-service sheet is the same book as the spiral one: same trim,
-    // same margins, same pages. Listing it as a third format asked people to
-    // choose between two things that are not different.
-    // Two cards, because "what kind of book is this" is the only question that
-    // belongs at the top. Size lives inside the kind it belongs to.
-    expect(COOKBOOK_FORMATS.map((format) => format.id)).toEqual(["spiral", "hardcover"]);
-    expect(COOKBOOK_FORMATS.map((format) => format.presetIds)).toEqual([
-      ["us-letter"],
-      ["hardcover-us-letter", "hardcover-8x10"],
-    ]);
-  });
-
-  it("keeps every variant reachable from the format that owns it", () => {
-    // Nothing renderable may be orphaned: a preset is either offered as a
-    // format or reached through one, never neither.
-    const offered = new Set(COOKBOOK_FORMATS.flatMap((format) => format.presetIds));
-    for (const preset of COOKBOOK_PRESETS) {
-      const reachable = COOKBOOK_PRESETS.some(
-        (other) => other.printServicePresetId === preset.id,
-      );
-      expect(offered.has(preset.id) || reachable).toBe(true);
-    }
-  });
-
-  it("only offers the choice where there is one to make", () => {
-    // A hardcover cannot be made at home, so it has no home-printing variant to
-    // toggle between and shows no option.
-    expect(getCookbookPreset("us-letter").printServicePresetId).toBe("coil-us-letter");
-    expect(getCookbookPreset("hardcover-8x10").printServicePresetId).toBeUndefined();
-  });
-
-  it("a format and its print-service variant are the same book", () => {
-    const home = getCookbookPreset("us-letter");
-    const service = getCookbookPreset(home.printServicePresetId);
-    expect(service.productName).toBe(home.productName);
-    expect(service.trimLabel).toBe(home.trimLabel);
-    // What differs is only where it is going: the sheet it is drawn on, and
-    // whether the cover travels as its own file.
-    expect(service.bleedIn).toBeGreaterThan(home.bleedIn);
-    expect(service.wrapRequired).toBe(true);
-    expect(home.wrapRequired).toBe(false);
-  });
-});
-
-  it("never names a preset that does not exist", () => {
-    // A typo here would render a card whose Save button exports the default
-    // preset instead of the one it says, which is a wrong book rather than an
-    // error.
-    const known = new Set(COOKBOOK_PRESETS.map((preset) => preset.id));
-    for (const format of COOKBOOK_FORMATS) {
-      expect(format.presetIds.length).toBeGreaterThan(0);
-      for (const id of format.presetIds) expect(known.has(id)).toBe(true);
-    }
-  });
