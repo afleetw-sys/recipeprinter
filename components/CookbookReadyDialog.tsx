@@ -81,7 +81,6 @@ export function CookbookReadyDialog({
 
       <div className="cookbook-ready__head">
         <h2 id="cookbook-ready-title">{justPurchased ? "Your cookbook is ready 🎉" : "Save your cookbook"}</h2>
-        <p>Both are included. Export as often as you like.</p>
       </div>
 
       {/* The "choose Save as PDF, and don't send it to a printer" note used to
@@ -215,44 +214,39 @@ export function CookbookReadyDialog({
                   </div>
                 )}
 
-                {/* One control for one idea, whichever book this is. A spiral
-                    cookbook can go either way, so its box is a choice; a
-                    hardcover has no version that keeps the cover bound in, so
-                    its box is fixed on. Saying the same thing as a sentence
-                    under one card and a checkbox under the other made two
-                    presentations of a single concept sit side by side. */}
-                <Checkbox
-                  checked={variant ? forPrintService : true}
-                  readOnly={!variant}
-                  disabled={exportingPreset !== null || !variant}
-                  onChange={
-                    variant
-                      ? (event) => setForPrintService(event.target.checked)
-                      : undefined
-                  }
-                  label="Cover as a separate file"
-                  hint={
-                    variant ? (
+                {/* A checkbox only where there is something to decide. A spiral
+                    cookbook can keep its cover bound in or hand it over
+                    separately, so that is a real choice; a hardcover has no
+                    version that keeps it, so a box you cannot untick would be
+                    asking a question with one answer. It states the fact
+                    instead. */}
+                {variant ? (
+                  <Checkbox
+                    checked={forPrintService}
+                    disabled={exportingPreset !== null}
+                    onChange={(event) => setForPrintService(event.target.checked)}
+                    label="Cover as a separate file"
+                    hint={
                       <>
                         {printerLink(variant.printerIds[0])} needs this;{" "}
                         {printerLink(base.printerIds[0])} and home printing don’t.
                       </>
-                    ) : (
-                      <>Always, for a case-bound book. Upload both to {printerLink(preset.printerIds[0])}.</>
-                    )
-                  }
-                />
+                    }
+                  />
+                ) : (
+                  <p className="cookbook-format__note">
+                    Downloads as two files, pages and cover, for{" "}
+                    {printerLink(preset.printerIds[0])}.
+                  </p>
+                )}
 
                 {preset.wrapRequired && (
-                  <details className="cookbook-cover-size">
-                    {/* Shut by default. These are already the numbers the file
-                        will be built to, and for a printer whose anatomy we
-                        know they are that printer's own — so the common case is
-                        that nobody opens this at all. It exists for the cook
-                        whose upload page states something different, and a
-                        wrong cover size is a rejected order, so it must be
-                        reachable without being in the way. */}
-                    <summary className="cookbook-cover-size__label">Cover size</summary>
+                  <div className="cookbook-cover-size">
+                    {/* Open, not folded away. These are the numbers the file is
+                        actually built to, and a wrong cover size is a rejected
+                        order rather than a slightly wrong book — so they are
+                        worth seeing before pressing Save, not after. */}
+                    <span className="cookbook-cover-size__label">Cover size</span>
                     <span className="cookbook-cover-size__fields">
                       <input
                         type="text"
@@ -287,7 +281,7 @@ export function CookbookReadyDialog({
                     <span className="cookbook-cover-size__hint">
                       Only change these if your printer states different ones.
                     </span>
-                  </details>
+                  </div>
                 )}
               </div>
             </div>

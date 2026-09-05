@@ -743,36 +743,10 @@
   padding-top: .5rem;
   border-top: 1px solid var(--cp-line);
 }
-/* A quiet disclosure, not a control: shut, it should read as one more line of
-   the card rather than a button competing with Save PDF. */
 .cookbook-cover-size__label {
-  display: inline-flex;
-  align-items: center;
-  gap: .3rem;
+  display: block;
   color: var(--cp-ink-soft);
   font-size: var(--cp-fs-caption);
-  cursor: pointer;
-  list-style: none;
-}
-.cookbook-cover-size__label::-webkit-details-marker {
-  display: none;
-}
-.cookbook-cover-size__label::before {
-  content: "›";
-  display: inline-block;
-  font-size: 1.1em;
-  line-height: 1;
-  transition: transform 120ms ease;
-}
-.cookbook-cover-size[open] .cookbook-cover-size__label::before {
-  transform: rotate(90deg);
-}
-.cookbook-cover-size__label:hover {
-  color: var(--cp-ink);
-}
-.cookbook-cover-size__label:focus-visible {
-  outline: var(--cp-focus-ring);
-  outline-offset: 2px;
 }
 .cookbook-cover-size__hint {
   display: block;
@@ -802,15 +776,6 @@
 .cookbook-cover-size__fields input:focus-visible {
   outline: var(--cp-focus-ring);
   outline-offset: 1px;
-}
-/* A checkbox that cannot be changed still has to be legible: this one is
-   stating how the format works, not refusing input. Dimmed enough to say "not
-   yours to set", not so much that it reads as disabled-and-broken. */
-.cookbook-format .control-checkbox input:disabled {
-  opacity: .75;
-}
-.cookbook-format .control-checkbox:has(input:disabled) strong {
-  color: var(--cp-ink-soft);
 }
 .cookbook-format__note {
   color: var(--cp-ink-soft);
