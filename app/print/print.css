@@ -1178,6 +1178,56 @@
   row-gap: 2px;
 }
 
+/* ── The text toolbar ────────────────────────────────────────────────────────
+   The second bar, and the same object as the first: it wears
+   `.recipe-page-toolbar` outright and changes only two things about it — where
+   it is, and how big. Two bars over one card have to read as two of the same
+   kind of thing, or the split just trades one confusion for another.
+
+   Where: placed from the focused field's own rect, in JS, because the card is
+   drawn at print scale and chrome mounted inside it would be scaled down with
+   the artwork. The page toolbar is parked above the card and holds still.
+
+   Size: a notch smaller than the page's, on the same reasoning as
+   `.cp-zoom--compact` — this one sits ON the text it acts on, at the size of a
+   printed line, where the page bar's 36px slab reads as a lid over the card.
+   The proportions are that control's: 22px buttons in 3px of padding.
+
+   Hidden until placed: it renders at the document origin and is moved in a
+   layout effect, so this is what stops a bar appearing in the top-left corner
+   on the frame a field opens. */
+.recipe-text-toolbar {
+  position: fixed;
+  top: 0;
+  left: 0;
+  /* Over the page toolbar (3 here, 6 on the phone layout), under the menus,
+     sheets and dialogs that are meant to cover both. It only overlaps the page
+     toolbar when there is nowhere else to go — see the collision test in
+     TextFieldToolbar. */
+  z-index: 7;
+  visibility: hidden;
+  padding: 3px;
+  border-radius: 11px;
+  /* It follows a caret, so it must never be the thing that scrolls, and never
+     wraps the way a bar sized to a page does. */
+  max-width: calc(100vw - 16px);
+  flex-wrap: nowrap;
+}
+
+.recipe-text-toolbar .recipe-page-toolbar__group {
+  gap: 1px;
+  padding: 0 3px;
+}
+
+.recipe-text-toolbar .recipe-page-toolbar__btn {
+  min-height: 22px;
+  border-radius: 6px;
+}
+
+.recipe-text-toolbar .recipe-page-toolbar__btn--icon {
+  width: 22px;
+}
+
 .recipe-page-toolbar__group {
   /* Never squish: when the bar runs out of room it scrolls (see the phone
      block), rather than compressing Front/Back into two half-arrows. */
@@ -6220,6 +6270,18 @@ textarea.recipe-card__toc-title {
 .recipe-card__line-kind-glyph--heading {
   font-size: 13px;
   font-weight: 800;
+}
+
+/* The letterforms ARE the icons, so in the text toolbar they come down with
+   its 22px buttons — left at 11/13 they filled that box edge to edge. Here
+   rather than with the rest of that bar so both sizes of a glyph are read
+   together. */
+.recipe-text-toolbar .recipe-card__line-kind-glyph {
+  font-size: 10px;
+}
+
+.recipe-text-toolbar .recipe-card__line-kind-glyph--heading {
+  font-size: 12px;
 }
 
 .recipe-card__section-title-edit {

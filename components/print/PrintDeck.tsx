@@ -30,8 +30,6 @@ import { gutterSideForRole } from "@/lib/cookbookPresets";
 import { chapterIntroFromRecipes, chapterRecipeTitles } from "@/lib/chapterIntro";
 import { composeNote } from "@/lib/recipeNote";
 import {
-  BodyTextGlyph,
-  HeadingGlyph,
   RECIPE_PRINT_TEMPLATE_OPTIONS,
   type PrintCardSize,
   type RecipePrintTemplate,
@@ -40,8 +38,7 @@ import type { NavItem, PageSheet, SheetSlot, usePrintSheets } from "@/lib/usePri
 import type { useProjectMeta } from "@/lib/project";
 import type { useDeckScroller } from "@/lib/useDeckScroller";
 import { isPhotoOpenClick, type PhotoPress } from "@/lib/photoOpenGesture";
-import { readFocusedRichField } from "@/lib/richTextField";
-import { TextStyleControl } from "@/components/print/TextStyleControl";
+import { TextFieldToolbar } from "@/components/print/TextFieldToolbar";
 import type { useRecipeInlineEditor } from "@/lib/useRecipeInlineEditor";
 import type { CoverConfig, QueueItem, Section } from "@/types/recipe";
 
@@ -337,97 +334,19 @@ export function PrintDeck(props: PrintDeckProps) {
     navItem.kind !== "image" && navItem.kind !== "section-photo" && showEmptyFields;
 
   /**
-   * Body ↔ heading for the line being edited, as a group in the toolbar.
-   *
-   * It used to float directly above the field (`.recipe-card__line-kind`),
-   * which meant it jumped to a new spot on every click, had to stay 20×15 to
-   * fit in the gap between two rows of a measured column, and still sat on top
-   * of the line above. In the bar it holds still, at the size of every other
-   * control, and the card underneath is just the card.
-   *
-   * `onMouseDown` with `preventDefault`, not `onClick`: the button would
-   * otherwise pull focus off the textarea, and blur commits the edit — so the
-   * line would be written back before the kind change ever reached it.
-   */
-  const renderLineKindControl = (navItem: NavItem) => {
-    // Mirrors the gate on ScaledPage's `inlineEdit` below: the switch belongs
-    // to the recipe actually being edited, not to whatever page has focus.
-    if (navItem.kind !== "recipe") return null;
-    if (!activeInlineEdit || activeRecipeItem?.id !== navItem.recipeId) return null;
-    const target = activeInlineEdit.editingTarget;
-    if (!target) return null;
-    // Only a line has a kind to change. The title, description, times and the
-    // link are themselves and can't become headings.
-    if (
-      target.kind !== "ingredient" &&
-      target.kind !== "step" &&
-      target.kind !== "ingredientSection" &&
-      target.kind !== "instructionSection"
-    ) {
-      return null;
-    }
-    const isHeading =
-      target.kind === "ingredientSection" || target.kind === "instructionSection";
-    return (
-      <div className="recipe-page-toolbar__group" role="group" aria-label="Line type">
-        {/* Heading first: it is the one being reached for. Body is where the
-            line already is. */}
-        <button
-          type="button"
-          className={`recipe-page-toolbar__btn recipe-page-toolbar__btn--icon ${
-            isHeading ? "is-active" : ""
-          }`}
-          aria-label="Heading"
-          aria-pressed={isHeading}
-          title="Heading"
-          onMouseDown={(event) => {
-            event.preventDefault();
-            if (!isHeading) activeInlineEdit.onSetLineKind(target, "heading", readFocusedRichField() ?? undefined);
-          }}
-        >
-          <HeadingGlyph />
-        </button>
-        <button
-          type="button"
-          className={`recipe-page-toolbar__btn recipe-page-toolbar__btn--icon ${
-            isHeading ? "" : "is-active"
-          }`}
-          aria-label="Body text"
-          aria-pressed={!isHeading}
-          title="Body text"
-          onMouseDown={(event) => {
-            event.preventDefault();
-            if (isHeading) activeInlineEdit.onSetLineKind(target, "body", readFocusedRichField() ?? undefined);
-          }}
-        >
-          <BodyTextGlyph />
-        </button>
-      </div>
-    );
-  };
-
-  /**
-   * The bold/italic pair, shown on the same terms as the line-kind switch:
-   * only for the recipe actually being edited, and only while a field is open.
-   * Its own component so that watching the selection cannot re-render the deck
-   * — see TextStyleControl.
-   */
-  const renderTextStyleControl = (navItem: NavItem) => {
-    if (navItem.kind !== "recipe") return null;
-    if (!activeInlineEdit || activeRecipeItem?.id !== navItem.recipeId) return null;
-    if (!activeInlineEdit.editingTarget) return null;
-    return <TextStyleControl />;
-  };
-
-  /**
    * One bar holding everything that acts on the page you're looking at.
    *
    * Front/Back used to sit centred over the page while Edit sat off at its
    * right edge — two floating islands doing the same job for the same page,
    * reading as unrelated chrome. As one bar with hairline dividers they read
-   * as a set of tools, and there is somewhere for a group to APPEAR: the
-   * line-kind switch joins the bar while a line is being edited instead of
-   * opening a third island over the artwork.
+   * as a set of tools.
+   *
+   * Everything in it acts on the PAGE, and it does not change with the
+   * selection. Body/heading and bold/italic used to appear in here while a
+   * field was open, which meant clicking into a line reshaped the bar and slid
+   * Move and Delete out from under the cursor — the page's own controls looked
+   * like they had been swapped for a line's. Those two groups are their own
+   * bar now, anchored to the field they act on (`TextFieldToolbar`).
    *
    * Returns null when there would be nothing to hold. An empty bar used to be
    * harmless (the wrapper had no background of its own); now it would be a
@@ -541,9 +460,6 @@ export function PrintDeck(props: PrintDeckProps) {
               : navItem.kind === "section-photo"
                 ? renderSectionPhotoControl(navItem.recipeId)
                 : null;
-    const lineKind = editable ? renderLineKindControl(navItem) : null;
-    const textStyle = editable ? renderTextStyleControl(navItem) : null;
-
     /**
      * The way back to the derived chapter intro.
      *
@@ -663,8 +579,6 @@ export function PrintDeck(props: PrintDeckProps) {
               </button>
             </div>
           )}
-          {lineKind}
-          {textStyle}
           {showFieldsButton && (
             <div className="recipe-page-toolbar__group">
               <button
@@ -979,6 +893,10 @@ export function PrintDeck(props: PrintDeckProps) {
           aria-label="Selected page"
           data-single-recipe={singleRecipePrintView ? "true" : "false"}
         >
+          {/* Body/heading and bold/italic, floating over the line being typed
+              rather than joining the page's bar. It anchors itself to whatever
+              field has focus, so it is mounted once for the whole deck. */}
+          <TextFieldToolbar inlineEdit={activeInlineEdit} />
           {/* Zoom, on the deck it zooms and nowhere else. Minus, the size, plus
               — and the percentage doubles as the way back to fit, since after
               a few steps "100%" is the number you are looking for anyway. */}
