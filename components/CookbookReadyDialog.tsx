@@ -6,7 +6,7 @@ import { Checkbox } from "@/components/Controls";
 import { Dialog } from "@/components/Dialog";
 import { ICON_SIZE, PrintIcon, SpinnerIcon, XIcon } from "@/components/icons";
 import { COOKBOOK_FORMATS, PRINTERS, getCookbookPreset } from "@/lib/cookbookPresets";
-import { coverWrapGeometry } from "@/lib/coverWrap";
+import { coverWrapGeometry, wrapGeometryForSpine } from "@/lib/coverWrap";
 import type { CoverSheetSpec } from "@/types/export";
 import type { CookbookPresetId } from "@/types/recipe";
 
@@ -108,15 +108,21 @@ export function CookbookReadyDialog({
             ? getCookbookPreset(format.printServicePresetId)
             : null;
           const preset = variant && forPrintService ? variant : format;
-          // Our own estimate, shown as the field placeholders so the boxes are
-          // never blank and a cook who has no numbers to hand still gets a
-          // plausible wrap. Typed values replace it outright.
-          const estimate = coverWrapGeometry(preset, pageCount);
           const num = (raw: string, fallback: number) => {
             const parsed = Number.parseFloat(raw);
             return Number.isFinite(parsed) && parsed > 0 ? parsed : fallback;
           };
           const size = coverSizes[format.id] ?? { w: "", h: "", spine: "" };
+          // The spine drives the sheet, because it is the ONLY part of a cover a
+          // print service will not publish a formula for — Lulu generates it
+          // from the interior after upload, and states its wrap allowance and
+          // board overhang outright. So typing the one number nobody can derive
+          // fills in the two that follow from it, and the cook copies across a
+          // single figure rather than three.
+          const estimate = wrapGeometryForSpine(
+            preset,
+            num(size.spine, coverWrapGeometry(preset, pageCount).spineWidthIn),
+          );
           const statedSheet: CoverSheetSpec | undefined =
             size.w || size.h || size.spine
               ? {
@@ -203,9 +209,21 @@ export function CookbookReadyDialog({
                 {preset.wrapRequired && (
                   <div className="cookbook-cover-size">
                     <span className="cookbook-cover-size__label">
-                      Cover size, if your printer states one
+                      Spine width from your printer, if they gave you one
                     </span>
                     <span className="cookbook-cover-size__fields">
+                      <input
+                        type="text"
+                        inputMode="decimal"
+                        aria-label="Spine width in inches"
+                        placeholder={round(estimate.spineWidthIn)}
+                        value={size.spine}
+                        disabled={exportingPreset !== null}
+                        onChange={(event) => setCoverField(format.id, "spine", event.target.value)}
+                      />
+                      <span className="cookbook-cover-size__unit" aria-hidden>
+                        in, cover
+                      </span>
                       <input
                         type="text"
                         inputMode="decimal"
@@ -224,16 +242,6 @@ export function CookbookReadyDialog({
                         value={size.h}
                         disabled={exportingPreset !== null}
                         onChange={(event) => setCoverField(format.id, "h", event.target.value)}
-                      />
-                      <span className="cookbook-cover-size__unit">in, spine</span>
-                      <input
-                        type="text"
-                        inputMode="decimal"
-                        aria-label="Spine width in inches"
-                        placeholder={round(estimate.spineWidthIn)}
-                        value={size.spine}
-                        disabled={exportingPreset !== null}
-                        onChange={(event) => setCoverField(format.id, "spine", event.target.value)}
                       />
                       <span className="cookbook-cover-size__unit">in</span>
                     </span>

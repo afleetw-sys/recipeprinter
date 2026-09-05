@@ -4,7 +4,9 @@ import {
   DEFAULT_COVER_WRAP_SPEC,
   coverWrapGeometry,
   coverWrapGeometryFromSheet,
+  LULU_CASEWRAP_SPEC,
   spineFitsTitle,
+  wrapGeometryForSpine,
   spineWidthIn,
   wrapSpecFor,
   type CoverWrapSpec,
@@ -18,6 +20,8 @@ const ROUND: CoverWrapSpec = {
   paperCaliperIn: 0.005,
   wrapAllowanceIn: 0.75,
   boardAllowanceIn: 0.125,
+  overhangHIn: 0,
+  overhangVIn: 0,
 };
 
 describe("spineWidthIn", () => {
@@ -213,5 +217,54 @@ describe("coverWrapGeometryFromSheet", () => {
     });
     expect(g.wrapAllowanceIn).toBe(0);
     expect(g.wrapAllowanceYIn).toBe(0);
+  });
+});
+
+describe("LULU_CASEWRAP_SPEC", () => {
+  const letter = getCookbookPreset("coil-us-letter");
+
+  it("reproduces the sheet Lulu quoted for a US Letter cookbook", () => {
+    // This is the whole justification for the constant. Lulu asked for
+    // 19.25 x 12.75 at a 0.5in spine; their published anatomy is a 0.75in wrap
+    // plus a 0.125in horizontal and 0.25in vertical board overhang. If those
+    // three numbers ever stop producing that sheet, one of them has changed.
+    const g = wrapGeometryForSpine(letter, 0.5, LULU_CASEWRAP_SPEC);
+    expect(g.sheetWidthIn).toBeCloseTo(19.25, 6);
+    expect(g.sheetHeightIn).toBeCloseTo(12.75, 6);
+  });
+
+  it("makes the panel the board, which stands proud of the pages", () => {
+    const g = wrapGeometryForSpine(letter, 0.5, LULU_CASEWRAP_SPEC);
+    // "There is no overhang on the spine side", so the width gains it once.
+    expect(g.panelWidthIn).toBeCloseTo(8.625, 6);
+    expect(g.panelHeightIn).toBeCloseTo(11.25, 6);
+  });
+
+  it("agrees with reading the same sheet back off a printer's quote", () => {
+    // Deriving forwards from the spine and backwards from a stated sheet must
+    // put the spine in the same place, or the two paths would disagree about
+    // where the front cover starts.
+    const forward = wrapGeometryForSpine(letter, 0.5, LULU_CASEWRAP_SPEC);
+    const backward = coverWrapGeometryFromSheet(letter, {
+      widthIn: 19.25,
+      heightIn: 12.75,
+      spineWidthIn: 0.5,
+    });
+    expect(backward.frontPanelOffsetIn).toBeCloseTo(forward.frontPanelOffsetIn, 6);
+    expect(backward.spineWidthIn).toBe(forward.spineWidthIn);
+  });
+});
+
+describe("wrapGeometryForSpine", () => {
+  it("leaves a flat cover flush with its pages", () => {
+    const coil = getCookbookPreset("coil-us-letter");
+    const g = wrapGeometryForSpine(coil, 0.2);
+    expect(g.panelWidthIn).toBe(coil.trimWidthIn);
+    expect(g.panelHeightIn).toBe(coil.trimHeightIn);
+    expect(g.sheetWidthIn).toBeCloseTo(8.5 * 2 + 0.2 + 0.25, 6);
+  });
+
+  it("never returns a negative spine", () => {
+    expect(wrapGeometryForSpine(getCookbookPreset("coil-us-letter"), -3).spineWidthIn).toBe(0);
   });
 });

@@ -92,12 +92,51 @@ export interface CoverWrapSpec {
   wrapAllowanceIn: number;
   /** Boards + hinge, added to the paper block's own thickness. */
   boardAllowanceIn: number;
+  /**
+   * How much wider one cover BOARD is than the pages it protects, and how much
+   * taller. A cased book's boards stand slightly proud of the block — the lip
+   * you run a thumb over on any hardback — so a cover panel is not trim size.
+   *
+   * Horizontal counts the outer edge only: there is no overhang on the spine
+   * side, where the board meets the hinge. Vertical counts top and bottom
+   * together. Both zero for a flat cover, which is trimmed flush with its
+   * pages.
+   */
+  overhangHIn: number;
+  overhangVIn: number;
 }
 
 export const DEFAULT_COVER_WRAP_SPEC: CoverWrapSpec = {
   paperCaliperIn: DEFAULT_PAPER_CALIPER_IN,
   wrapAllowanceIn: DEFAULT_WRAP_ALLOWANCE_IN,
   boardAllowanceIn: DEFAULT_BOARD_ALLOWANCE_IN,
+  overhangHIn: 0,
+  overhangVIn: 0,
+};
+
+/**
+ * Lulu's hardcover casewrap, from their own published anatomy rather than our
+ * estimates of it.
+ *
+ * "A hardcover is printed 0.75" larger than your front cover trim size, with
+ * extra artwork wrapped around the cover board", and "our expected overhang for
+ * all hardcovers is .125"... this adds .25" to your vertical measurement and
+ * .125" to your horizontal measurement. There is no overhang on the spine side."
+ *
+ * Those three numbers reproduce the sheet Lulu quoted for a US Letter cookbook
+ * exactly — 19.25 x 12.75 at a 0.5in spine — which is how this is known to be
+ * right rather than merely plausible. The one thing they do NOT publish is the
+ * spine, because it depends on the stock and their own boards: "once you have
+ * uploaded your interior file, the system creates your custom template, which
+ * includes the necessary spine width". So the spine is the single number a cook
+ * still has to copy across, and everything else follows from it.
+ */
+export const LULU_CASEWRAP_SPEC: CoverWrapSpec = {
+  paperCaliperIn: DEFAULT_PAPER_CALIPER_IN,
+  wrapAllowanceIn: 0.75,
+  boardAllowanceIn: DEFAULT_BOARD_ALLOWANCE_IN,
+  overhangHIn: 0.125,
+  overhangVIn: 0.25,
 };
 
 /**
@@ -119,6 +158,9 @@ export function wrapSpecFor(preset: CookbookPreset): CoverWrapSpec {
     paperCaliperIn: DEFAULT_PAPER_CALIPER_IN,
     wrapAllowanceIn: preset.bleedIn,
     boardAllowanceIn: 0,
+    // A flat cover is trimmed flush with the pages. Nothing stands proud.
+    overhangHIn: 0,
+    overhangVIn: 0,
   };
 }
 
@@ -174,17 +216,38 @@ export function coverWrapGeometry(
   pageCount: number,
   spec: CoverWrapSpec = wrapSpecFor(preset),
 ): CoverWrapGeometry {
-  const spine = spineWidthIn(pageCount, spec);
+  return wrapGeometryForSpine(preset, spineWidthIn(pageCount, spec), spec);
+}
+
+/**
+ * The wrap for a KNOWN spine, which is the only part a print service will not
+ * publish a formula for.
+ *
+ * Everything else about a cover is arithmetic on numbers the printer does
+ * publish — Lulu states its wrap allowance and its board overhang outright (see
+ * `LULU_CASEWRAP_SPEC`) — so once the spine is in hand the sheet follows, and a
+ * cook copying figures off an upload page only ever has to copy the one.
+ */
+export function wrapGeometryForSpine(
+  preset: CookbookPreset,
+  spineIn: number,
+  spec: CoverWrapSpec = wrapSpecFor(preset),
+): CoverWrapGeometry {
+  const spine = Math.max(0, spineIn);
   const wrap = spec.wrapAllowanceIn;
+  // A cover panel is the BOARD, which on a cased book stands proud of the
+  // pages; on a flat one the overhang is zero and the panel is trim size.
+  const panelW = preset.trimWidthIn + spec.overhangHIn;
+  const panelH = preset.trimHeightIn + spec.overhangVIn;
   return {
-    sheetWidthIn: preset.trimWidthIn * 2 + spine + wrap * 2,
-    sheetHeightIn: preset.trimHeightIn + wrap * 2,
+    sheetWidthIn: panelW * 2 + spine + wrap * 2,
+    sheetHeightIn: panelH + wrap * 2,
     spineWidthIn: spine,
-    panelWidthIn: preset.trimWidthIn,
-    panelHeightIn: preset.trimHeightIn,
+    panelWidthIn: panelW,
+    panelHeightIn: panelH,
     wrapAllowanceIn: wrap,
     wrapAllowanceYIn: wrap,
-    frontPanelOffsetIn: wrap + preset.trimWidthIn + spine,
+    frontPanelOffsetIn: wrap + panelW + spine,
   };
 }
 
