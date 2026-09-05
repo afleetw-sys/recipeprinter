@@ -23,6 +23,7 @@ import {
   cookbookPdfFileName,
   downloadCookbookPdf,
 } from "@/lib/cookbookPdfExport";
+import type { CoverSheetSpec } from "@/types/export";
 import { ImagePicker } from "@/components/ImagePicker";
 import { Dialog } from "@/components/Dialog";
 import { Checkbox, CheckboxGroup } from "@/components/Controls";
@@ -2428,7 +2429,7 @@ export default function PrintPage() {
    * and printers reserve an unprintable margin. There is no dialog now and
    * nothing to pick. The dialog stays open so another format is one click away.
    */
-  async function exportCookbookAs(presetId: CookbookPresetId) {
+  async function exportCookbookAs(presetId: CookbookPresetId, coverSheet?: CoverSheetSpec) {
     projectMeta.setCookbookPreset(presetId);
     track("cookbook_preset_selected", { preset: presetId });
     const project = currentExportProject();
@@ -2442,6 +2443,7 @@ export default function PrintPage() {
         project,
         presetId,
         cookbookPdfFileName(projectMeta.meta.cover?.title, presetId),
+        coverSheet,
       );
     } catch (error) {
       setCookbookExportError(
@@ -4781,7 +4783,8 @@ export default function PrintPage() {
           setShowCookbookPrintDialog(false);
           setCookbookJustPurchased(false);
         }}
-        onExport={(presetId) => void exportCookbookAs(presetId)}
+        onExport={(presetId, coverSheet) => void exportCookbookAs(presetId, coverSheet)}
+        pageCount={sheets.length}
         exportingPreset={exportingPreset}
         exportError={cookbookExportError}
         exportNeedsAuth={cookbookExportNeedsAuth}

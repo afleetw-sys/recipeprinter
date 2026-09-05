@@ -1,8 +1,12 @@
 "use client";
 
 import { getCookbookPreset, type CookbookPreset } from "@/lib/cookbookPresets";
-import { COVER_WRAP_ENABLED, coverWrapGeometry } from "@/lib/coverWrap";
-import type { ExportMode } from "@/types/export";
+import {
+  COVER_WRAP_ENABLED,
+  coverWrapGeometry,
+  coverWrapGeometryFromSheet,
+} from "@/lib/coverWrap";
+import type { CoverSheetSpec, ExportMode } from "@/types/export";
 import type { CookbookPresetId, PrintProject } from "@/types/recipe";
 
 /**
@@ -64,6 +68,9 @@ interface RenderRequest {
   mode?: ExportMode;
   pageCount?: number;
   sheet?: { widthIn: number; heightIn: number };
+  /** The wrap the printer asked for, passed through so the page can lay its
+      panels out against the same numbers the sheet is cut to. */
+  coverSheet?: CoverSheetSpec;
 }
 
 async function renderPdf(request: RenderRequest): Promise<Blob> {
@@ -137,6 +144,15 @@ export async function downloadCookbookPdf(
   book: PrintProject,
   preset: CookbookPresetId,
   fileName: string,
+  /**
+   * The cover dimensions the print service stated, when the cook has them.
+   *
+   * Everything we would compute instead is an estimate of facts only the
+   * printer holds — their stock's caliper, their boards, their fold-over — and
+   * a wrap that is a quarter inch out is rejected on upload rather than
+   * printed slightly wrong. When these are supplied they are used verbatim.
+   */
+  coverSheet?: CoverSheetSpec,
 ): Promise<void> {
   const resolved = getCookbookPreset(preset);
   // The renderer is on the server, so every image in the book has to be a URL
@@ -159,12 +175,15 @@ export async function downloadCookbookPdf(
   // actually knows it — so it is read back off the file we just made rather
   // than re-derived from the project and risking disagreement with the book.
   const pageCount = await pdfPageCount(interior);
-  const geometry = coverWrapGeometry(resolved, pageCount);
+  const geometry = coverSheet
+    ? coverWrapGeometryFromSheet(resolved, coverSheet)
+    : coverWrapGeometry(resolved, pageCount);
   const wrap = await renderPdf({
     project,
     preset,
     mode: "cover-wrap",
     pageCount,
+    coverSheet,
     sheet: { widthIn: geometry.sheetWidthIn, heightIn: geometry.sheetHeightIn },
   });
   saveBlob(wrap, coverWrapFileName(project.cover?.title, preset));

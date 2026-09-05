@@ -13,10 +13,26 @@ import type { CookbookPresetId, PrintProject } from "@/types/recipe";
  * exporting works signed out. Someone who has paid for a book should not meet
  * a sign-in wall on the way to downloading it.
  */
+/**
+ * A cover wrap's exact dimensions, as the print service states them.
+ *
+ * Present when the cook has copied the numbers off their printer's upload page.
+ * These override everything we would otherwise derive, because the spine and
+ * the fold-over depend on the exact paper and binder and only the printer
+ * knows them (see `coverWrapGeometryFromSheet`).
+ */
+export interface CoverSheetSpec {
+  widthIn: number;
+  heightIn: number;
+  spineWidthIn: number;
+}
+
 export interface ExportPayload {
   project: PrintProject;
   /** Physical format to render at — trim size and bleed. */
   preset: CookbookPresetId;
+  /** The wrap size the printer asked for, when they told us. `cover-wrap` only. */
+  coverSheet?: CoverSheetSpec;
   /**
    * Which half of the book to draw.
    *

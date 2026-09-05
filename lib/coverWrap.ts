@@ -150,8 +150,13 @@ export interface CoverWrapGeometry {
   /** One cover panel (front or back) at trim size. */
   panelWidthIn: number;
   panelHeightIn: number;
-  /** Fold-over margin on each edge; nothing readable may sit inside it. */
+  /** Fold-over (or bleed) margin on the LEFT and RIGHT edges; nothing readable
+      may sit inside it. */
   wrapAllowanceIn: number;
+  /** The same on the top and bottom. Equal to `wrapAllowanceIn` for geometry we
+      derive ourselves, and separate only because a sheet size quoted by a print
+      service does not have to be symmetric once the spine is accounted for. */
+  wrapAllowanceYIn: number;
   /** Distance from the sheet's left edge to where the front panel begins —
       i.e. past the wrap, the back panel, and the spine. */
   frontPanelOffsetIn: number;
@@ -178,7 +183,47 @@ export function coverWrapGeometry(
     panelWidthIn: preset.trimWidthIn,
     panelHeightIn: preset.trimHeightIn,
     wrapAllowanceIn: wrap,
+    wrapAllowanceYIn: wrap,
     frontPanelOffsetIn: wrap + preset.trimWidthIn + spine,
+  };
+}
+
+/**
+ * The wrap a print service has ASKED for, rather than the one we would derive.
+ *
+ * Every number above is an estimate standing in for facts only the printer has:
+ * the caliper of the exact stock, the thickness of their boards, how much
+ * material their case binder folds over. Ours were wrong twice in a row on a
+ * real order — a coil wrap at 17.44in against a required 19.25in — because the
+ * book was going somewhere with different numbers, and no amount of tuning our
+ * constants fixes that in general. Lulu prints the answer on the upload page.
+ * Blurb prints it too. So when the cook has that in front of them, it wins.
+ *
+ * The panels stay at the book's trim, because that is what the interior was
+ * drawn at and the cover has to agree with it. What the stated sheet decides is
+ * the spine between them and the material around them, both derived here by
+ * subtraction so the three panels tile the quoted sheet exactly.
+ *
+ * Allowances are floored at zero: a sheet too small to hold two trim panels and
+ * the spine is a typo, and negative padding would silently overlap the panels
+ * rather than show that something is wrong.
+ */
+export function coverWrapGeometryFromSheet(
+  preset: CookbookPreset,
+  sheet: { widthIn: number; heightIn: number; spineWidthIn: number },
+): CoverWrapGeometry {
+  const spine = Math.max(0, sheet.spineWidthIn);
+  const wrapX = Math.max(0, (sheet.widthIn - preset.trimWidthIn * 2 - spine) / 2);
+  const wrapY = Math.max(0, (sheet.heightIn - preset.trimHeightIn) / 2);
+  return {
+    sheetWidthIn: sheet.widthIn,
+    sheetHeightIn: sheet.heightIn,
+    spineWidthIn: spine,
+    panelWidthIn: preset.trimWidthIn,
+    panelHeightIn: preset.trimHeightIn,
+    wrapAllowanceIn: wrapX,
+    wrapAllowanceYIn: wrapY,
+    frontPanelOffsetIn: wrapX + preset.trimWidthIn + spine,
   };
 }
 

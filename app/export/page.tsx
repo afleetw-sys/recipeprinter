@@ -8,7 +8,11 @@ import {
   presetSheetInches,
 } from "@/lib/cookbookPresets";
 import { isPrintCardSize, isRecipePrintTemplate } from "@/lib/printSettings";
-import { coverWrapGeometry, spineFitsTitle } from "@/lib/coverWrap";
+import {
+  coverWrapGeometry,
+  coverWrapGeometryFromSheet,
+  spineFitsTitle,
+} from "@/lib/coverWrap";
 import { CoverFace, SpineFace } from "@/components/RecipeCardPrint";
 import type { ExportPayload } from "@/types/export";
 import type { QueueItem } from "@/types/recipe";
@@ -193,7 +197,10 @@ function CoverWrapDocument({ payload }: { payload: ExportPayload }) {
   const template = isRecipePrintTemplate(project.settings.template)
     ? project.settings.template
     : "classic";
-  const geometry = coverWrapGeometry(preset, payload.pageCount ?? 0);
+  // The printer's own numbers when we have them, ours only as a fallback.
+  const geometry = payload.coverSheet
+    ? coverWrapGeometryFromSheet(preset, payload.coverSheet)
+    : coverWrapGeometry(preset, payload.pageCount ?? 0);
   const cover = project.cover;
 
   useExportReady(Boolean(cover));
@@ -210,6 +217,7 @@ function CoverWrapDocument({ payload }: { payload: ExportPayload }) {
     // title in the corner of the sheet instead of on the spine.
     "--rp-spine-w": `${geometry.spineWidthIn}in`,
     "--rp-wrap-allowance": `${geometry.wrapAllowanceIn}in`,
+    "--rp-wrap-allowance-y": `${geometry.wrapAllowanceYIn}in`,
     "--rp-sheet-w": geometry.sheetWidthIn,
     "--rp-sheet-h": geometry.sheetHeightIn,
   } as CSSProperties;

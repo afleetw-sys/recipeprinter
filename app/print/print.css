@@ -3508,7 +3508,11 @@
   /* The fold-over allowance. Its background is the theme's own paper so the
      material that disappears around the board edge still matches the cover —
      a white gap here shows as a pale seam on the finished hinge. */
-  padding: var(--rp-wrap-allowance);
+  /* Vertical first: a sheet quoted by a print service need not have the same
+     material top-and-bottom as it does left-and-right, once the spine is taken
+     out of the width. Falls back to the horizontal value, which is what our own
+     derived geometry always sets it to. */
+  padding: var(--rp-wrap-allowance-y, var(--rp-wrap-allowance)) var(--rp-wrap-allowance);
   background: var(--recipe-bg);
   -webkit-print-color-adjust: exact;
   print-color-adjust: exact;
@@ -3542,9 +3546,9 @@
    geometry computed it. The container keeps its padding: that is what positions
    the panels' TRIM edges. */
 .cookbook-wrap--flat > .recipe-card {
-  height: calc(var(--rp-wrap-panel-h) + var(--rp-wrap-allowance) * 2);
-  margin-top: calc(var(--rp-wrap-allowance) * -1);
-  margin-bottom: calc(var(--rp-wrap-allowance) * -1);
+  height: calc(var(--rp-wrap-panel-h) + var(--rp-wrap-allowance-y, var(--rp-wrap-allowance)) * 2);
+  margin-top: calc(var(--rp-wrap-allowance-y, var(--rp-wrap-allowance)) * -1);
+  margin-bottom: calc(var(--rp-wrap-allowance-y, var(--rp-wrap-allowance)) * -1);
 }
 
 .cookbook-wrap--flat > .recipe-card--cover-back {
@@ -3626,9 +3630,9 @@
      `!important` for that reason — which also wipes the negative margins and
      grown boxes a flat wrap needs. Restated here at the same weight, after it. */
   .rp-page-cover-wrap .cookbook-wrap--flat > .recipe-card {
-    height: calc(var(--rp-wrap-panel-h) + var(--rp-wrap-allowance) * 2) !important;
-    margin-top: calc(var(--rp-wrap-allowance) * -1) !important;
-    margin-bottom: calc(var(--rp-wrap-allowance) * -1) !important;
+    height: calc(var(--rp-wrap-panel-h) + var(--rp-wrap-allowance-y, var(--rp-wrap-allowance)) * 2) !important;
+    margin-top: calc(var(--rp-wrap-allowance-y, var(--rp-wrap-allowance)) * -1) !important;
+    margin-bottom: calc(var(--rp-wrap-allowance-y, var(--rp-wrap-allowance)) * -1) !important;
   }
 
   .rp-page-cover-wrap .cookbook-wrap--flat > .recipe-card--cover-back {

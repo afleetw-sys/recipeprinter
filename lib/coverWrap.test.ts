@@ -3,6 +3,7 @@ import { getCookbookPreset } from "@/lib/cookbookPresets";
 import {
   DEFAULT_COVER_WRAP_SPEC,
   coverWrapGeometry,
+  coverWrapGeometryFromSheet,
   spineFitsTitle,
   spineWidthIn,
   wrapSpecFor,
@@ -155,5 +156,62 @@ describe("coverWrapGeometry — flat (coil / paperback)", () => {
         6,
       );
     }
+  });
+});
+
+describe("coverWrapGeometryFromSheet", () => {
+  // The exact figures Lulu quoted for a US Letter hardcover, which our own
+  // geometry missed by nearly two inches because it was deriving a coil wrap
+  // from a generic paper caliper.
+  const LULU_US_LETTER_HARDCOVER = { widthIn: 19.25, heightIn: 12.75, spineWidthIn: 0.5 };
+  const letter = getCookbookPreset("coil-us-letter");
+
+  it("reproduces the printer's sheet exactly", () => {
+    const g = coverWrapGeometryFromSheet(letter, LULU_US_LETTER_HARDCOVER);
+    expect(g.sheetWidthIn).toBe(19.25);
+    expect(g.sheetHeightIn).toBe(12.75);
+    expect(g.spineWidthIn).toBe(0.5);
+  });
+
+  it("derives the allowance by subtraction, not from our own constants", () => {
+    const g = coverWrapGeometryFromSheet(letter, LULU_US_LETTER_HARDCOVER);
+    // (19.25 - 8.5 - 8.5 - 0.5) / 2 and (12.75 - 11) / 2 both land on 0.875,
+    // which is Lulu's casewrap fold-over. Nothing here knows that number.
+    expect(g.wrapAllowanceIn).toBeCloseTo(0.875, 6);
+    expect(g.wrapAllowanceYIn).toBeCloseTo(0.875, 6);
+  });
+
+  it("keeps the panels at the book's trim, so the cover agrees with the pages", () => {
+    const g = coverWrapGeometryFromSheet(letter, LULU_US_LETTER_HARDCOVER);
+    expect(g.panelWidthIn).toBe(letter.trimWidthIn);
+    expect(g.panelHeightIn).toBe(letter.trimHeightIn);
+    expect(g.frontPanelOffsetIn).toBeCloseTo(0.875 + 8.5 + 0.5, 6);
+  });
+
+  it("tiles the quoted sheet exactly", () => {
+    for (const sheet of [
+      LULU_US_LETTER_HARDCOVER,
+      { widthIn: 17.25, heightIn: 11.25, spineWidthIn: 0 },
+      { widthIn: 18.4, heightIn: 11.6, spineWidthIn: 0.32 },
+    ]) {
+      const g = coverWrapGeometryFromSheet(letter, sheet);
+      expect(g.wrapAllowanceIn * 2 + g.panelWidthIn * 2 + g.spineWidthIn).toBeCloseTo(
+        g.sheetWidthIn,
+        6,
+      );
+      expect(g.wrapAllowanceYIn * 2 + g.panelHeightIn).toBeCloseTo(g.sheetHeightIn, 6);
+    }
+  });
+
+  it("floors the allowance at zero rather than overlapping the panels", () => {
+    // A sheet too small to hold two trim panels is a typo. Negative padding
+    // would quietly slide the panels over each other instead of showing it.
+    const g = coverWrapGeometryFromSheet(letter, {
+      widthIn: 10,
+      heightIn: 6,
+      spineWidthIn: 0,
+    });
+    expect(g.wrapAllowanceIn).toBe(0);
+    expect(g.wrapAllowanceYIn).toBe(0);
   });
 });
