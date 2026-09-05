@@ -212,12 +212,71 @@ export interface ImageSheetSlot {
   queueIndex: number;
 }
 
+/**
+ * Pages of front matter: the run of cover, dedication and contents pages before
+ * the first page of the body.
+ *
+ * A dedication counts. It is a printed leaf like any other, so it shifts
+ * everything after it — which is why writing one can remove the need for a
+ * blank, and why adding one to a book that was already correct would break it
+ * if nothing compensated.
+ */
+export function frontMatterPageCount(sheets: PageSheet[]): number {
+  const isFrontMatter = (sheet: PageSheet) =>
+    sheet.slots.every(
+      (slot) => !slot || slot.kind === "cover" || slot.kind === "toc" || slot.kind === "blank",
+    );
+  let count = 0;
+  while (count < sheets.length && isFrontMatter(sheets[count])) count += 1;
+  return count;
+}
+
+/**
+ * Whether this book needs one blank leaf at the front to open correctly.
+ *
+ * Two conditions, and both matter.
+ *
+ * There has to be something to align. The pairing only means anything in a book
+ * built from two-page units — a photo facing its recipe, an opener facing its
+ * chapter photo. A book with no facing photos at all has no spread to break, so
+ * padding it would cost a printed page to fix nothing.
+ *
+ * And the front matter has to be EVEN. Page 1 stands alone opposite the
+ * unprintable inside cover, so spreads pair (2,3), (4,5), (6,7): a unit reads
+ * correctly only if it starts on an even page, which happens when an odd number
+ * of pages precede the body. Zero counts as even — a book that opens straight
+ * onto a chapter needs the leaf as much as one with a two-page contents does.
+ */
+export function needsOpeningBlank(sheets: PageSheet[]): boolean {
+  const hasFacingPages = sheets.some(
+    (sheet) => sheet.layoutKind === "image" || sheet.layoutKind === "section-photo",
+  );
+  if (!hasFacingPages) return false;
+  return frontMatterPageCount(sheets) % 2 === 0;
+}
+
+/**
+ * A deliberately empty leaf, used only to open a book on the right page.
+ *
+ * Not decoration and not a mistake: an interior whose cover ships separately
+ * starts at page 1 on the RIGHT, because a print service cannot print the
+ * inside of a cover. Every spread after that pairs (2,3), (4,5) and so on, so
+ * whether a recipe lands beside its own photo or beside the previous recipe's
+ * is decided entirely by how many pages come before the first one. See
+ * `padOpening`.
+ */
+export interface BlankSheetSlot {
+  kind: "blank";
+  id: string;
+}
+
 export type SheetSlot =
   | RecipeSheetSlot
   | DividerSheetSlot
   | SectionPhotoSheetSlot
   | CoverSheetSlot
   | TocSheetSlot
+  | BlankSheetSlot
   | ImageSheetSlot;
 
 // One two-page spread in the cookbook "book view": `left`/`right` are indices
@@ -284,6 +343,28 @@ interface UsePrintSheetsOptions {
   /** Optional dedication / front-matter page, placed after the front cover and
       before the table of contents. A cover-like page whose `blurb` is the text. */
   dedication?: CoverConfig;
+  /**
+   * Open the book on the right page, padding the front matter by one leaf when
+   * the arithmetic needs it.
+   *
+   * Only meaningful for an interior whose cover ships as a separate file. A
+   * print service cannot print the inside of a cover ("the first printed page
+   * of your book will be on the right-hand side"), so page 1 stands alone and
+   * every spread after it pairs (2,3), (4,5), (6,7). Our body is built from
+   * two-page units — a photo facing its recipe, an opener facing its chapter
+   * photo — and each unit only reads as a spread if it STARTS on an even page.
+   *
+   * That makes the whole book's pairing a function of one number: how many
+   * pages come before the body. An even count puts every unit half a turn out,
+   * so a recipe faces the previous recipe's photo instead of its own, and a
+   * two-page contents is split across a page turn instead of lying open.
+   *
+   * One blank leaf at the very front fixes both at once. At the front, not
+   * after the contents: padding afterwards corrects the body but leaves the
+   * contents facing the blank. Anything the cook puts on page 1 themselves — a
+   * dedication — does this job instead, and then no blank is added.
+   */
+  padOpening?: boolean;
   /** Cookbook mode: emit a table-of-contents page after the cover, and page
       numbers + running headers on the body pages. */
   tableOfContents?: boolean;
@@ -334,6 +415,7 @@ export function usePrintSheets({
   cover,
   backCover,
   dedication,
+  padOpening = false,
   tableOfContents,
   bookTitle,
   cookbookMode,
@@ -894,6 +976,20 @@ export function usePrintSheets({
       }
     }
 
+    // ── Open on the right page ───────────────────────────────────────────
+    // Counted AFTER the contents has been spliced in, because the contents is
+    // front matter and its length is exactly what tips this either way: one
+    // page keeps the body aligned, two knocks it out. Front matter is the run
+    // of cover/contents pages before the first body page, so a dedication the
+    // cook wrote counts towards it and does the padding for free.
+    if (padOpening && needsOpeningBlank(out)) {
+      out.unshift({
+        id: "sheet-opening-blank",
+        slots: [{ kind: "blank", id: "opening-blank" }],
+        backGroupNeeded: false,
+      });
+    }
+
     // A duplex job needs every recipe sheet but the last to emit a back side —
     // even a fully blank one — so the physical page count stays in sync and a
     // later sheet's front doesn't land on the back of an earlier one. Cover
@@ -914,7 +1010,7 @@ export function usePrintSheets({
     }
 
     return out;
-  }, [sections, allItems, cover, backCover, dedication, tableOfContents, bookTitle, cardSize, continueOnBack, photoOnFor, photoStyle, sourceUrlOn, template, measuredFacesFor, cookbookLayouts, cookbookResolution, itemPlacements, bookPreset]);
+  }, [sections, allItems, cover, backCover, dedication, padOpening, tableOfContents, bookTitle, cardSize, continueOnBack, photoOnFor, photoStyle, sourceUrlOn, template, measuredFacesFor, cookbookLayouts, cookbookResolution, itemPlacements, bookPreset]);
 
   // What the rail and deck actually browse: one face per item, in physical
   // sheet order, except that a recipe's own faces (front + any continuations)
@@ -1014,6 +1110,10 @@ export function usePrintSheets({
           const group = groups.get(key);
           if (group) group.push(navItem);
           else groups.set(key, [navItem]);
+        } else if (slot.kind === "blank") {
+          // An opening blank is a page of the printed book but not a thing to
+          // browse: it has no content to edit and nothing to say in the rail.
+          return;
         } else {
           const coverLabel =
             slot.side === "front" ? "Cover" : slot.side === "dedication" ? "Dedication" : "Back cover";

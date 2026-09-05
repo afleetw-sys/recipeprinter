@@ -322,6 +322,11 @@ function InteriorDocument({ payload }: { payload: ExportPayload }) {
     cover: coversAreSeparate ? undefined : project.cover,
     backCover: coversAreSeparate ? undefined : project.backCover,
     dedication: project.dedication,
+    // Only the separate-cover interior needs this: it is the one whose page 1
+    // is a right-hand page, because the printer cannot print the inside of a
+    // cover. A book with its cover bound in has the cover as page 1 and pairs
+    // from there.
+    padOpening: coversAreSeparate,
     tableOfContents: cookbookMode ? settings.tableOfContents : false,
     bookTitle: project.cover?.title,
     cookbookMode,

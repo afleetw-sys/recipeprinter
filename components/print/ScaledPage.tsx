@@ -423,6 +423,35 @@ export const ScaledPage = memo(function ScaledPage({
     );
   }
 
+  // An opening blank: a real printed leaf with nothing on it, there so the book
+  // opens on the right page (see `padOpening` in lib/usePrintSheets.tsx). It
+  // has to render as a PAGE — an empty sheet that drew nothing would simply not
+  // be in the file, which is the opposite of what it is for.
+  if (anySlot.kind === "blank") {
+    return (
+      <div
+        className="recipe-page-scaler"
+        style={{ "--page-scale": scale, "--page-w": `${dims.w}px`, "--page-h": `${dims.h}px` } as CSSProperties}
+      >
+        <div className="recipe-page-scaler__inner">
+          <div
+            className={`recipe-print-preview recipe-print-preview--${size} ${presetBaseClass} ${presetSafeClass}`}
+            style={cardVars}
+            data-double-sided="false"
+          >
+            <div className={`recipe-card-set recipe-card-set--${size} recipe-template--${template}`}>
+              <div
+                className={`recipe-card-page recipe-card-page--front ${
+                  isLastSheet ? "recipe-card-page--no-break" : ""
+                }`}
+              />
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   // Divider and cover sheets are always a single slot, single-sided, on their
   // own dedicated page — render the whole sheet as one face rather than the
   // front/back card-page structure below, which only recipes need.
