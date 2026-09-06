@@ -177,6 +177,11 @@ type EventProps = {
   cookbook_print_options_shown: { preset: CookbookPresetId };
   /** A recommended print-shop link was opened from the export screen. */
   cookbook_printer_clicked: { printer: string; preset?: CookbookPresetId };
+  /** A cookbook PDF actually landed. `files` is 1 or 2 — a print service takes
+      the cover as its own upload, a copy shop takes the cover bound in — which
+      is the split the destination step exists to get right, so it is worth
+      being able to see it fail. */
+  cookbook_exported: { preset: CookbookPresetId; files: number };
   /** A signed-out cookbook owner clicked a "back up your purchase with a free
       account" nudge. `source` distinguishes where the nudge lived (persistent
       editor banner today) so we can see which surface converts guests. */

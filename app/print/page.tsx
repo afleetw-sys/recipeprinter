@@ -519,6 +519,13 @@ export default function PrintPage() {
   // the rest of the time, so the on-screen book and a plain Ctrl+P stay Letter.
   /** The format currently rendering server-side, if any. */
   const [exportingPreset, setExportingPreset] = useState<CookbookPresetId | null>(null);
+  /** The last export that actually landed: which book, and the files it wrote.
+      Held here rather than in the dialog because the dialog cannot know a
+      download succeeded — `onExport` returns before the render does. */
+  const [lastCookbookExport, setLastCookbookExport] = useState<{
+    presetId: CookbookPresetId;
+    files: string[];
+  } | null>(null);
   const [cookbookExportError, setCookbookExportError] = useState<string | null>(null);
   /** The export was refused for want of an account, not because it broke — so
       the ready dialog offers a sign-in button beside the message. */
@@ -2438,13 +2445,16 @@ export default function PrintPage() {
     setCookbookExportNeedsAuth(false);
     setCookbookExportNeedsAccount(false);
     setExportingPreset(presetId);
+    setLastCookbookExport(null);
     try {
-      await downloadCookbookPdf(
+      const files = await downloadCookbookPdf(
         project,
         presetId,
         cookbookPdfFileName(projectMeta.meta.cover?.title, presetId),
         coverSheet,
       );
+      setLastCookbookExport({ presetId, files });
+      track("cookbook_exported", { preset: presetId, files: files.length });
     } catch (error) {
       setCookbookExportError(
         error instanceof CookbookPdfError
@@ -4782,8 +4792,11 @@ export default function PrintPage() {
         onClose={() => {
           setShowCookbookPrintDialog(false);
           setCookbookJustPurchased(false);
+          setLastCookbookExport(null);
         }}
         onExport={(presetId, coverSheet) => void exportCookbookAs(presetId, coverSheet)}
+        lastExport={lastCookbookExport}
+        onExportAnother={() => setLastCookbookExport(null)}
         pageCount={sheets.length}
         exportingPreset={exportingPreset}
         exportError={cookbookExportError}

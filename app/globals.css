@@ -697,6 +697,96 @@
   outline-offset: 2px;
 }
 
+/* Step three: the files landed, here is what they are for. A list and a
+   definition list rather than prose, because this gets read while someone is
+   looking at an upload form, not before. Flat, per policy. */
+.cookbook-next {
+  display: grid;
+  gap: 1rem;
+}
+.cookbook-next__files {
+  display: grid;
+  gap: .35rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.cookbook-next__files li {
+  display: flex;
+  align-items: center;
+  gap: .5rem;
+  min-width: 0;
+  padding: .55rem .75rem;
+  border: 1px solid var(--cp-line);
+  border-radius: var(--cp-radius-control);
+  background: var(--cp-surface-muted);
+  color: var(--cp-ink-soft);
+  font-size: var(--cp-fs-caption);
+}
+.cookbook-next__files svg {
+  flex: 0 0 auto;
+  color: var(--cp-accent);
+}
+/* Wrapped rather than truncated. This name is about to be matched against a
+   file picker, and the halves that get cut by an ellipsis — the "-Cover"
+   suffix, the trim size — are exactly the halves that tell two downloads
+   apart. Two lines is cheaper than the wrong upload. */
+.cookbook-next__file-name {
+  flex: 1 1 auto;
+  min-width: 0;
+  color: var(--cp-ink);
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  overflow-wrap: anywhere;
+}
+.cookbook-next__file-role {
+  flex: 0 0 auto;
+  font-weight: 750;
+}
+.cookbook-next__settings {
+  display: grid;
+  gap: .4rem;
+}
+.cookbook-next__settings dl {
+  display: grid;
+  gap: .3rem;
+  margin: 0;
+}
+.cookbook-next__settings dl > div {
+  display: grid;
+  grid-template-columns: 5.25rem 1fr;
+  gap: .75rem;
+  align-items: baseline;
+}
+.cookbook-next__settings dt {
+  color: var(--cp-ink-soft);
+  font-size: var(--cp-fs-caption);
+  font-weight: 750;
+}
+.cookbook-next__settings dd {
+  margin: 0;
+  color: var(--cp-ink);
+  font-size: var(--cp-fs-small);
+}
+.cookbook-next__actions {
+  display: flex;
+  align-items: center;
+  gap: .75rem;
+  flex-wrap: wrap;
+}
+.cookbook-next__another {
+  color: var(--cp-ink-soft);
+  font-size: var(--cp-fs-small);
+  font-weight: 700;
+  cursor: pointer;
+}
+.cookbook-next__another:hover {
+  color: var(--cp-ink);
+}
+.cookbook-next__another:focus-visible {
+  outline: var(--cp-focus-ring);
+  outline-offset: 2px;
+}
+
 /* One format: everything about it inside a single bordered box. The card used
    to BE the save button, which left the print-service option stranded outside
    it looking like an unrelated setting that happened to sit nearby. A card that

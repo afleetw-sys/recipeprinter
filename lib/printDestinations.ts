@@ -1,4 +1,9 @@
-import { getCookbookPreset, PRINTERS, type PrinterOption } from "@/lib/cookbookPresets";
+import {
+  getCookbookPreset,
+  PRINTERS,
+  type CookbookPreset,
+  type PrinterOption,
+} from "@/lib/cookbookPresets";
 import type { CookbookPresetId } from "@/types/recipe";
 
 /**
@@ -40,6 +45,24 @@ export interface PrintDestination {
    * numbers are either verified against a real order or not needed at all.
    */
   unknownSpec?: boolean;
+  /**
+   * Rows this destination's own order form asks for that the book cannot state.
+   *
+   * Deliberately short and deliberately incomplete. Size, binding and how many
+   * files to upload are derived from the preset in `destinationSettings`,
+   * because those are facts about the file we just made and must not be allowed
+   * to disagree with it. These are the remaining choices — colour, sides — that
+   * belong to the shop rather than the book. Anything we have not confirmed on
+   * a real order (paper weight, cover finish, turnaround) is left out: a
+   * confidently wrong setting is worse than no setting, because it is followed.
+   */
+  extraSettings?: PrintSetting[];
+}
+
+/** One row of "choose this" on the screen after the download. */
+export interface PrintSetting {
+  label: string;
+  value: string;
 }
 
 export const PRINT_DESTINATIONS: PrintDestination[] = [
@@ -55,6 +78,7 @@ export const PRINT_DESTINATIONS: PrintDestination[] = [
     tagline: "Staples, Office Depot, FedEx Office. One file, printed and bound as a document.",
     presetIds: ["us-letter"],
     printerId: "staples",
+    extraSettings: [{ label: "Colour", value: "Full colour, printed on both sides" }],
   },
   {
     id: "lulu",
@@ -62,6 +86,7 @@ export const PRINT_DESTINATIONS: PrintDestination[] = [
     tagline: "Print on demand. Pages and cover upload as two separate files.",
     presetIds: ["coil-us-letter", "hardcover-us-letter"],
     printerId: "lulu",
+    extraSettings: [{ label: "Interior", value: "Full colour" }],
   },
   {
     id: "blurb",
@@ -69,6 +94,7 @@ export const PRINT_DESTINATIONS: PrintDestination[] = [
     tagline: "Print on demand, at their 8 × 10 trim. Pages and cover as two files.",
     presetIds: ["hardcover-8x10"],
     printerId: "blurb",
+    extraSettings: [{ label: "Interior", value: "Full colour" }],
   },
   {
     id: "other",
@@ -102,4 +128,72 @@ export function destinationPrinter(destination: PrintDestination): PrinterOption
  */
 export function destinationPresets(destination: PrintDestination) {
   return destination.presetIds.map((id) => getCookbookPreset(id));
+}
+
+/**
+ * Whether this destination takes a file at all.
+ *
+ * Printing at home is the one that doesn't: there is no order form, no size
+ * dropdown and no upload field, so the things worth telling someone are about
+ * their own printer driver instead. Everywhere else there is a form, and the
+ * file we made has already decided most of its answers.
+ */
+export function destinationUploadsAFile(destination: PrintDestination): boolean {
+  return Boolean(destination.printerId) || Boolean(destination.unknownSpec);
+}
+
+/**
+ * What to choose, on the screen shown once the files have been saved.
+ *
+ * This is the half of the export nobody could do for themselves. The file's
+ * geometry is only correct against ONE set of order options — a US Letter book
+ * with bleed uploaded as an 8 × 10 is rejected, and a two-file coil book handed
+ * over as one is the exact failure we watched happen — and none of that is
+ * visible by opening the PDF.
+ *
+ * Size, binding and the file count are read off the preset rather than written
+ * down per destination, so they cannot drift away from what was actually
+ * rendered. The rest is the shop's own form.
+ */
+export function destinationSettings(
+  destination: PrintDestination,
+  preset: CookbookPreset,
+): PrintSetting[] {
+  if (!destinationUploadsAFile(destination)) {
+    // A home printer's defaults are wrong for this file in two specific ways,
+    // and both are silent. "Fit to page" shrinks every sheet a few percent to
+    // clear the printer's unprintable margin, which is how a book laid out to
+    // the edge comes back with a white frame and a slightly smaller everything.
+    // Single-sided doubles the paper and prints every recipe on a right-hand
+    // page. Neither announces itself.
+    return [
+      { label: "Paper", value: preset.trimLabel },
+      { label: "Scale", value: "Actual size, not “Fit to page”" },
+      { label: "Sides", value: "Double-sided, flipped on the long edge" },
+      { label: "Binding", value: "Coil, comb or a 3-ring binder, once it’s printed" },
+    ];
+  }
+
+  return [
+    { label: "Size", value: preset.trimLabel },
+    { label: "Binding", value: preset.coilBound ? "Coil bound" : "Hardcover, case wrap" },
+    ...(destination.extraSettings ?? []),
+    {
+      label: "Files",
+      value: preset.wrapRequired
+        ? "Interior and cover upload separately"
+        : "One file, with the cover as page 1",
+    },
+  ];
+}
+
+/**
+ * What each saved file is for, in the order they were downloaded.
+ *
+ * The upload form asks twice and the two fields are not interchangeable; the
+ * filenames end in "-Cover" but that is a convention someone has to notice.
+ */
+export function exportFileRoles(fileCount: number): string[] {
+  if (fileCount < 2) return ["Your book"];
+  return ["Interior pages", "Cover"];
 }

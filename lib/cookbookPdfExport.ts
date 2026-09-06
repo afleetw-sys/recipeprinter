@@ -163,7 +163,11 @@ export async function downloadCookbookPdf(
    * printed slightly wrong. When these are supplied they are used verbatim.
    */
   coverSheet?: CoverSheetSpec,
-): Promise<void> {
+  /** Returns the files that were saved, in download order — the interior first,
+      then the cover wrap where there is one. The caller shows them by name on
+      the screen after, because "upload the interior, then the cover" is only
+      actionable if it says which file is which. */
+): Promise<string[]> {
   const resolved = getCookbookPreset(preset);
   // The renderer is on the server, so every image in the book has to be a URL
   // it can fetch. A photo the browser is still holding locally (a Paprika
@@ -179,7 +183,7 @@ export async function downloadCookbookPdf(
   // services reject a cover bound into the interior, and the wrap is a
   // different size from the pages, so it cannot be one render. A spiral book
   // has no spine to wrap, so it stays a single file.
-  if (!COVER_WRAP_ENABLED || !resolved.wrapRequired) return;
+  if (!COVER_WRAP_ENABLED || !resolved.wrapRequired) return [fileName];
 
   // Page count drives the spine's thickness, and the interior render is what
   // actually knows it — so it is read back off the file we just made rather
@@ -196,7 +200,9 @@ export async function downloadCookbookPdf(
     coverSheet,
     sheet: { widthIn: geometry.sheetWidthIn, heightIn: geometry.sheetHeightIn },
   });
-  saveBlob(wrap, coverWrapFileName(project.cover?.title, preset));
+  const wrapName = coverWrapFileName(project.cover?.title, preset);
+  saveBlob(wrap, wrapName);
+  return [fileName, wrapName];
 }
 
 /**

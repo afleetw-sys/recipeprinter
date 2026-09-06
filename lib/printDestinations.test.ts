@@ -4,6 +4,9 @@ import {
   PRINT_DESTINATIONS,
   destinationPresets,
   destinationPrinter,
+  destinationSettings,
+  destinationUploadsAFile,
+  exportFileRoles,
   getPrintDestination,
 } from "@/lib/printDestinations";
 
@@ -110,5 +113,93 @@ describe("print destinations", () => {
 
   it("keeps every preset's own printer list honest about the trim", () => {
     expect(getCookbookPreset("hardcover-8x10").printerIds).toEqual(["blurb"]);
+  });
+});
+
+describe("what to do with the file once it is saved", () => {
+  const rows = (id: Parameters<typeof getPrintDestination>[0]) => {
+    const destination = getPrintDestination(id);
+    return destinationPresets(destination).map((preset) => ({
+      preset,
+      settings: destinationSettings(destination, preset),
+      as: (label: string) =>
+        destinationSettings(destination, preset).find((s) => s.label === label)?.value,
+    }));
+  };
+
+  it("states the size the file was actually rendered at", () => {
+    // The rejection that started all of this said "your PDF is 8.500 x 11.000"
+    // against an order placed at another size. The size shown here has to come
+    // off the preset, so it cannot be a number someone typed once and left.
+    for (const destination of PRINT_DESTINATIONS) {
+      for (const preset of destinationPresets(destination)) {
+        const settings = destinationSettings(destination, preset);
+        const size = settings.find((s) => s.label === "Size" || s.label === "Paper");
+        expect(size?.value).toBe(preset.trimLabel);
+      }
+    }
+  });
+
+  it("names the binding the preset actually is", () => {
+    for (const entry of rows("lulu")) {
+      expect(entry.as("Binding")).toBe(entry.preset.coilBound ? "Coil bound" : "Hardcover, case wrap");
+    }
+  });
+
+  it("tells a print service the cover uploads on its own", () => {
+    for (const id of ["lulu", "blurb"] as const) {
+      for (const entry of rows(id)) {
+        expect(entry.as("Files")).toBe("Interior and cover upload separately");
+      }
+    }
+  });
+
+  it("tells a copy shop the cover is already bound in", () => {
+    for (const entry of rows("copy-shop")) {
+      expect(entry.as("Files")).toBe("One file, with the cover as page 1");
+    }
+  });
+
+  it("warns a home printer off “fit to page”", () => {
+    // The one setting that silently ruins a bleed book on a desktop printer,
+    // and the default in most drivers.
+    const scale = rows("home")[0].as("Scale");
+    expect(scale).toContain("Actual size");
+    expect(rows("home")[0].settings.some((s) => s.label === "Files")).toBe(false);
+  });
+
+  it("does not hand a home printer an upload form", () => {
+    expect(destinationUploadsAFile(getPrintDestination("home"))).toBe(false);
+    for (const id of ["copy-shop", "lulu", "blurb", "other"] as const) {
+      expect(destinationUploadsAFile(getPrintDestination(id))).toBe(true);
+    }
+  });
+
+  it("never shows an empty row", () => {
+    for (const destination of PRINT_DESTINATIONS) {
+      for (const preset of destinationPresets(destination)) {
+        const settings = destinationSettings(destination, preset);
+        expect(settings.length).toBeGreaterThan(0);
+        for (const row of settings) {
+          expect(row.label.trim()).not.toBe("");
+          expect(row.value.trim()).not.toBe("");
+        }
+        // A repeated label would render two rows claiming the same field.
+        const labels = settings.map((s) => s.label);
+        expect(new Set(labels).size).toBe(labels.length);
+      }
+    }
+  });
+
+  it("claims nothing about an unknown shop's own form", () => {
+    // "Somewhere else" may state size, binding and file count, because those
+    // are facts about the file. Colour and paper are theirs to ask.
+    expect(getPrintDestination("other").extraSettings).toBeUndefined();
+  });
+
+  it("labels two files as interior and cover, in download order", () => {
+    expect(exportFileRoles(2)).toEqual(["Interior pages", "Cover"]);
+    expect(exportFileRoles(1)).toEqual(["Your book"]);
+    expect(exportFileRoles(0)).toEqual(["Your book"]);
   });
 });
