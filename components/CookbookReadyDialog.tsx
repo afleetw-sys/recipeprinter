@@ -179,14 +179,6 @@ export function CookbookReadyDialog({
                 <small className="cookbook-destination__price">
                   {destinationPriceLine(option, pageCount)}
                 </small>
-                {/* One thing it is best at, one thing it costs you. Absent
-                    where we have not earned the right to claim either. */}
-                {option.economics.pro && (
-                  <small className="cookbook-destination__pro">{option.economics.pro}</small>
-                )}
-                {option.economics.con && (
-                  <small className="cookbook-destination__con">{option.economics.con}</small>
-                )}
               </span>
             </button>
           ))}
@@ -347,6 +339,12 @@ function ChooseBook({
           repeated beside every option. */}
       <p className="cookbook-binding__trim">
         {presets.length > 1 ? preset.trimLabel : `${preset.productName} · ${preset.trimLabel}`}
+      </p>
+
+      <p className="cookbook-binding__files">
+        {preset.wrapRequired
+          ? "Downloads as two files, the pages and the cover."
+          : "Downloads as one file, with the cover as its first page."}
       </p>
 
       {/* Only where a cover travels on its own. A copy shop binds the document

@@ -88,11 +88,6 @@ export interface DestinationEconomics {
   /** Shown in place of a dollar figure where there is no bill to scale — you
       are not buying anything, you are using up ink. */
   fixedNote?: string;
-  /** One line each. The pro is what this place is best at; the con is what it
-      costs you to choose it. Both have to be true of THIS place relative to
-      the others, or they are filler. */
-  pro?: string;
-  con?: string;
 }
 
 /** One row of "choose this" on the screen after the download. */
@@ -105,13 +100,9 @@ export const PRINT_DESTINATIONS: PrintDestination[] = [
   {
     id: "home",
     name: "My own printer",
-    tagline: "One file, cover included. No bleed, so art stops short of the edge.",
+    tagline: "No bleed, so art stops short of the edge.",
     presetIds: ["us-letter"],
-    economics: {
-      fixedNote: "Ink and paper only",
-      pro: "Free, if you already have the paper",
-      con: "No bleed, so art stops short of the edge",
-    },
+    economics: { fixedNote: "Ink and paper only" },
   },
   {
     // Coil, comb, adhesive spine, 3-ring, stapled. NOT hardcover: a copy shop
@@ -120,20 +111,18 @@ export const PRINT_DESTINATIONS: PrintDestination[] = [
     // gutter that a cased spine needs has no home here.
     id: "copy-shop",
     name: "A copy shop",
-    tagline: "One file, printed and bound as a document.",
+    tagline: "Staples, FedEx Office and the like.",
     presetIds: ["us-letter"],
     printerId: "staples",
     extraSettings: [{ label: "Colour", value: "Full colour, printed on both sides" }],
     economics: {
       observed: { pages: 95, totalUsd: 72, note: "95-page spiral book, bound at a Staples counter" },
-      pro: "Same day at Staples or FedEx Office",
-      con: "The most expensive way to make one copy",
     },
   },
   {
     id: "lulu",
     name: "Lulu",
-    tagline: "Print on demand. Pages and cover upload as two separate files.",
+    tagline: "Print on demand.",
     presetIds: ["coil-us-letter", "hardcover-us-letter"],
     printerId: "lulu",
     extraSettings: [{ label: "Interior", value: "Full colour" }],
@@ -141,27 +130,25 @@ export const PRINT_DESTINATIONS: PrintDestination[] = [
       // The same book as the Staples order above, which is what makes the
       // comparison worth showing: one book, two counters, $28 against $72.
       observed: { pages: 95, totalUsd: 28, note: "95-page spiral book, premium colour" },
-      pro: "By far the cheapest for full colour",
-      con: "Ships to you; there is nothing to pick up",
     },
   },
   {
     id: "blurb",
     name: "Blurb",
-    tagline: "Print on demand, at their 8 × 10 trim. Pages and cover as two files.",
+    tagline: "Hardcover, at their 8 × 10 trim.",
     presetIds: ["hardcover-8x10"],
     printerId: "blurb",
     extraSettings: [{ label: "Interior", value: "Full colour" }],
-    economics: {
-      // No `observed`, because no one here has ordered from Blurb. The row
-      // shows no price rather than a guessed one — see `estimateTotalUsd`.
-      con: "Their 8 × 10 trim only, and no coil binding",
-    },
+    // No `observed`, because no one here has ordered from Blurb. The row shows
+    // its description instead of a guessed price — see `estimateTotalUsd`.
+    economics: {},
   },
   {
     id: "other",
     name: "Somewhere else",
-    tagline: "Any other print service. You’ll need the cover size from their upload page.",
+    // The cover-size warning that used to live here is on step two, beside the
+    // fields it is about.
+    tagline: "Any other print service.",
     // Every print-ready shape, because we cannot narrow it: an unknown service
     // might want any of them. The zero-bleed home format is NOT here — a shop
     // that takes a plain document with the cover bound in is a copy shop, and
@@ -313,26 +300,28 @@ export function estimateTotalUsd(
 }
 
 /**
- * The one-line summary under a destination's name: what it costs, and how many
- * files it hands back.
+ * The one line under a destination's name: what this book would cost there.
  *
- * "From about", never "about": both anchors are spiral books, step one does
- * not know the binding yet, and a hardcover costs more than a coil book at
- * every service that binds both. The floor is honest; a midpoint would not be.
+ * The price alone, tied to the book in front of them. It used to carry a
+ * shorthand file count too ("· two files"), and a pro and a con underneath,
+ * which turned a list of five places into twenty lines of argument to read
+ * before anything could be clicked. What the file looks like belongs on step
+ * two, where it is about to be downloaded; step one is a question about money.
+ *
+ * "From about", never "about": both anchors are spiral books, step one has not
+ * asked about binding yet, and a hardcover costs more everywhere that binds
+ * one. The floor is honest; a midpoint would not be.
+ *
+ * The page count is named rather than implied. An unqualified "$28" invites
+ * being read as the price of a cookbook; it is the price of THIS cookbook, and
+ * a longer one costs more.
  */
 export function destinationPriceLine(
   destination: PrintDestination,
   pages: number,
 ): string {
-  const presets = destinationPresets(destination);
-  // Only stated when every book this destination makes agrees — otherwise the
-  // count depends on a choice that has not been made yet.
-  const allWrapped = presets.every((preset) => preset.wrapRequired);
-  const noneWrapped = presets.every((preset) => !preset.wrapRequired);
-  const files = allWrapped ? "two files" : noneWrapped ? "one file" : "";
-
   const estimate = estimateTotalUsd(destination, pages);
-  const money = estimate !== null ? `From about $${estimate}` : destination.economics.fixedNote;
-  if (!money) return files ? files.charAt(0).toUpperCase() + files.slice(1) : destination.tagline;
-  return files ? `${money} · ${files}` : money;
+  if (estimate !== null) return `From about $${estimate} for your ${pages} pages`;
+  return destination.economics.fixedNote ?? destination.tagline;
 }
+

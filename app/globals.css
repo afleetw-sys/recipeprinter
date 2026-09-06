@@ -708,6 +708,49 @@
   font-size: var(--cp-fs-caption);
   line-height: 1.45;
 }
+/* What this book would cost here. The row's whole argument, so it leads in the
+   ink colour rather than the soft grey the rest of the caption uses. */
+.cookbook-destination__price {
+  color: var(--cp-ink);
+  font-weight: 700;
+}
+
+/* The tile column. A fixed box whatever it holds, so a glyph row and a
+   monogram row start their text at the same place. */
+.cookbook-destination__mark {
+  display: grid;
+  place-items: center;
+  width: 34px;
+  height: 34px;
+  border: 1px solid var(--cp-line);
+  border-radius: var(--cp-radius-control);
+  background: var(--cp-surface-muted);
+  color: var(--cp-ink-soft);
+}
+.cookbook-destination:hover .cookbook-destination__mark {
+  border-color: var(--cp-accent);
+  color: var(--cp-accent);
+}
+.cookbook-destination__monogram {
+  font-size: var(--cp-fs-body-lg);
+  font-weight: 800;
+  line-height: 1;
+}
+.cookbook-destination__text {
+  display: grid;
+  gap: .15rem;
+  min-width: 0;
+}
+.cookbook-destination strong {
+  color: var(--cp-ink);
+  font-size: var(--cp-fs-body-lg);
+  font-weight: 800;
+}
+.cookbook-destination small {
+  color: var(--cp-ink-soft);
+  font-size: var(--cp-fs-caption);
+  line-height: 1.45;
+}
 /* What it costs, and what it trades away. This is the row's whole argument, so
    the money leads in the ink colour and the two trade-offs sit under it as a
    pair, marked rather than bulleted so they read at a glance. */
@@ -893,9 +936,13 @@
 }
 /* Which book, stated once. A destination that binds one thing reads as a
    statement here rather than as a question with a single answer. */
-.cookbook-binding__trim {
+.cookbook-binding__trim,
+.cookbook-binding__files {
   color: var(--cp-ink-soft);
   font-size: var(--cp-fs-small);
+}
+.cookbook-binding__files {
+  margin-top: -.4rem;
 }
 
 .cookbook-ready__save {

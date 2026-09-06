@@ -294,27 +294,33 @@ describe("what it costs", () => {
     // Both anchors are spiral books; a hardcover costs more everywhere that
     // binds one. A floor is honest where a midpoint would not be.
     expect(destinationPriceLine(getPrintDestination("lulu"), 95)).toBe(
-      "From about $28 · two files",
+      "From about $28 for your 95 pages",
     );
     expect(destinationPriceLine(getPrintDestination("copy-shop"), 95)).toBe(
-      "From about $72 · one file",
+      "From about $72 for your 95 pages",
     );
   });
 
   it("says what a home printer costs without inventing a bill", () => {
     expect(destinationPriceLine(getPrintDestination("home"), 95)).toBe(
-      "Ink and paper only · one file",
+      "Ink and paper only",
     );
   });
 
-  it("never claims a trade-off it cannot support", () => {
-    for (const destination of PRINT_DESTINATIONS) {
-      for (const line of [destination.economics.pro, destination.economics.con]) {
-        if (line === undefined) continue;
-        expect(line.trim()).not.toBe("");
-        // A sentence, not a paragraph: this is a scannable list.
-        expect(line.length).toBeLessThan(60);
-      }
-    }
+  it("names the page count the price is for", () => {
+    // An unqualified "$28" reads as the price of a cookbook. It is the price
+    // of THIS cookbook, and a longer one costs more.
+    expect(destinationPriceLine(getPrintDestination("lulu"), 95)).toBe(
+      "From about $28 for your 95 pages",
+    );
+    expect(destinationPriceLine(getPrintDestination("lulu"), 190)).toContain("190 pages");
+  });
+
+  it("falls back to describing the place when there is no price", () => {
+    // Blurb, and any shop we have not bought from. The row still says
+    // something useful; it just does not say a number we made up.
+    const blurb = destinationPriceLine(getPrintDestination("blurb"), 95);
+    expect(blurb).toBe(getPrintDestination("blurb").tagline);
+    expect(blurb).not.toContain("$");
   });
 });
