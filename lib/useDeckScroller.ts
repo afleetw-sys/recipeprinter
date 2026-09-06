@@ -519,8 +519,46 @@ export function useDeckScroller({
       if (deck) applyDeckGeometry(deck, deckScaleRef.current);
     };
 
+    /**
+     * Is this pinch aimed at the deck?
+     *
+     * Usually the answer is "the pointer is over something inside it", which
+     * costs nothing to ask. The case this exists for is the chrome that floats
+     * OVER the deck from outside it: the two text bars are portaled to
+     * `document.body` so they are drawn at viewport size rather than at print
+     * scale, and the listener used to be bound to the deck element — so a
+     * pinch with the pointer over the bar never reached it, was never
+     * prevented, and Chrome zoomed the entire workspace instead. The bar sits
+     * directly over the line being typed in, which is exactly where the
+     * pointer is while editing, so "zooming while editing text zooms the whole
+     * page" was the everyday version of that.
+     *
+     * Falls back to the deck's own rect: anywhere in the centre column means
+     * the deck, whatever happens to be drawn on top of it. A dialog or a menu
+     * is the exception, because a pinch over one of those is aimed at that,
+     * not at the artboard behind it.
+     *
+     * The rect is only measured on the rare path. `getBoundingClientRect`
+     * forces layout and this runs on every event of a live gesture, which is
+     * the one place in the deck that cannot afford it.
+     */
+    const aimedAtDeck = (event: WheelEvent) => {
+      const target = event.target instanceof Node ? event.target : null;
+      if (target && el.contains(target)) return true;
+      if (target instanceof Element && target.closest('[role="dialog"], .cp-menu, .cp-sheet')) {
+        return false;
+      }
+      const rect = el.getBoundingClientRect();
+      return (
+        event.clientX >= rect.left &&
+        event.clientX <= rect.right &&
+        event.clientY >= rect.top &&
+        event.clientY <= rect.bottom
+      );
+    };
+
     const onWheel = (event: WheelEvent) => {
-      if (!event.ctrlKey) return;
+      if (!event.ctrlKey || !aimedAtDeck(event)) return;
       event.preventDefault();
       pendingDeltaRef.current += event.deltaY;
       // Measured on the FIRST event of the pinch and not again. This is a
@@ -533,8 +571,16 @@ export function useDeckScroller({
       if (!zoomGestureRef.current) {
         zoomGestureRef.current = true;
         const target = event.target as Element | null;
+        // Under the pointer first, then under the target, then the first page
+        // in the deck. `elementFromPoint` is for a pinch that landed on a bar
+        // floating over the deck: the target is in the portal, so it can say
+        // nothing about which page is being looked at. Once per gesture, on
+        // the same event that already measures a rect.
         const page =
           target?.closest?.<HTMLElement>(".recipe-page-slide") ??
+          document
+            .elementFromPoint(event.clientX, event.clientY)
+            ?.closest<HTMLElement>(".recipe-page-slide") ??
           el.querySelector<HTMLElement>(".recipe-page-slide");
         const rect = page?.getBoundingClientRect();
         gestureAnchorRef.current =
@@ -558,9 +604,12 @@ export function useDeckScroller({
       zoomSettleRef.current = window.setTimeout(onGestureEnd, ZOOM_SETTLE_MS);
     };
 
-    el.addEventListener("wheel", onWheel, { passive: false });
+    // On the document, not the deck: see `aimedAtDeck`. What decides whether a
+    // pinch belongs to the deck is where it is pointing, not which element
+    // happens to be under it.
+    document.addEventListener("wheel", onWheel, { passive: false });
     return () => {
-      el.removeEventListener("wheel", onWheel);
+      document.removeEventListener("wheel", onWheel);
       if (zoomFrameRef.current) cancelAnimationFrame(zoomFrameRef.current);
       if (zoomSettleRef.current) window.clearTimeout(zoomSettleRef.current);
       zoomFrameRef.current = 0;
