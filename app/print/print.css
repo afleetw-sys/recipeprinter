@@ -1205,6 +1205,17 @@
   position: fixed;
   top: 0;
   left: 0;
+  /* Grows with the deck. Someone who zooms in has zoomed in to SEE, and this
+     bar is drawn outside the deck's transform, so left alone it was the one
+     thing that stayed small while the words it acts on doubled. `textBarScale`
+     decides how far it follows.
+
+     Scaled from the top-left corner, because the placement code positions this
+     from `getBoundingClientRect` — which is the SCALED box — and only a
+     top-left origin keeps the box the maths sees and the box on screen the
+     same one. */
+  transform-origin: top left;
+  transform: scale(var(--rp-text-bar-scale, 1));
   /* Over the page toolbar (3 here, 6 on the phone layout), under the menus,
      sheets and dialogs that are meant to cover both. It only overlaps the page
      toolbar when there is nowhere else to go — see the collision test in

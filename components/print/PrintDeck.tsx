@@ -897,11 +897,11 @@ export function PrintDeck(props: PrintDeckProps) {
           {/* Body/heading and bold/italic, floating over the line being typed
               rather than joining the page's bar. It anchors itself to whatever
               field has focus, so it is mounted once for the whole deck. */}
-          <TextFieldToolbar inlineEdit={activeInlineEdit} />
+          <TextFieldToolbar inlineEdit={activeInlineEdit} zoom={deckZoom} />
           {/* Its twin, for a drag that ran across several lines rather than a
               caret sitting in one. Mounted once for the whole deck, the same
               way and for the same reason. */}
-          <LineSelectionToolbar inlineEdit={activeInlineEdit} />
+          <LineSelectionToolbar inlineEdit={activeInlineEdit} zoom={deckZoom} />
           {/* Zoom, on the deck it zooms and nowhere else. Minus, the size, plus
               — and the percentage doubles as the way back to fit, since after
               a few steps "100%" is the number you are looking for anyway. */}

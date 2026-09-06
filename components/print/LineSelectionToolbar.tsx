@@ -1,8 +1,9 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState, type CSSProperties } from "react";
 import { createPortal } from "react-dom";
 import { ICON_SIZE, TrashIcon } from "@/components/icons";
+import { textBarScale } from "@/lib/deckZoom";
 import { readLineSelection, selectionRect } from "@/lib/lineSelection";
 import { useFloatingBarPlacement } from "@/lib/useFloatingBarPlacement";
 import type { RecipeCardInlineEdit, RecipeCardLineTarget } from "@/lib/recipeCardLayout";
@@ -37,7 +38,14 @@ function isTypingTarget(node: Element | null): boolean {
  * what protects it is the Undo on the toast rather than a dialog in the way of
  * the common case.
  */
-export function LineSelectionToolbar({ inlineEdit }: { inlineEdit?: RecipeCardInlineEdit }) {
+export function LineSelectionToolbar({
+  inlineEdit,
+  zoom = 1,
+}: {
+  inlineEdit?: RecipeCardInlineEdit;
+  /** The deck's zoom. The bar grows with it — see `textBarScale`. */
+  zoom?: number;
+}) {
   const [targets, setTargets] = useState<RecipeCardLineTarget[]>([]);
   const barRef = useRef<HTMLDivElement | null>(null);
   // A selection is still being made while the button is down. Reading it then
@@ -128,6 +136,7 @@ export function LineSelectionToolbar({ inlineEdit }: { inlineEdit?: RecipeCardIn
     <div
       ref={barRef}
       className="recipe-page-toolbar recipe-text-toolbar no-print"
+      style={{ "--rp-text-bar-scale": textBarScale(zoom) } as CSSProperties}
       role="toolbar"
       aria-label="Selected lines"
       // Pressing the bar must not collapse the selection it is about to act on.

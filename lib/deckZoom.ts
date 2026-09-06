@@ -38,3 +38,26 @@ export function zoomFromWheel(
   if (!Number.isFinite(next)) return current;
   return Math.min(range.max, Math.max(range.min, next));
 }
+
+/**
+ * How big the bars that float over the text are at a given deck zoom.
+ *
+ * The two of them (formatting, and delete-these-lines) sit ON the words rather
+ * than beside the page, and they are drawn outside the deck's transform so app
+ * chrome is never rendered at print scale. That left them one fixed size while
+ * the card grew under them — and someone who zooms because they cannot read
+ * the card at 100% is being handed smaller controls precisely when they need
+ * bigger ones. Whatever it looks like, that is the wrong way round.
+ *
+ * So they track the zoom, one for one. The deck's own range caps how far that
+ * goes (2 at the moment); the clamp here only stops a stray value.
+ *
+ * Downward it does nothing. Zooming out to see the whole page is not a request
+ * for a smaller button, and 22px is already as small as these should get.
+ */
+export const TEXT_BAR_MAX_SCALE = 2;
+
+export function textBarScale(zoom: number): number {
+  if (!Number.isFinite(zoom)) return 1;
+  return Math.min(TEXT_BAR_MAX_SCALE, Math.max(1, zoom));
+}

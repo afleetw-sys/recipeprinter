@@ -1,9 +1,10 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState, type CSSProperties } from "react";
 import { createPortal } from "react-dom";
 import { BodyTextGlyph, HeadingGlyph } from "@/components/RecipeCardPrint";
 import { TextStyleControl } from "@/components/print/TextStyleControl";
+import { textBarScale } from "@/lib/deckZoom";
 import { readLineSelection } from "@/lib/lineSelection";
 import { readFocusedRichField } from "@/lib/richTextField";
 import { useFloatingBarPlacement } from "@/lib/useFloatingBarPlacement";
@@ -46,7 +47,14 @@ function inlineFieldFrom(node: EventTarget | null): HTMLElement | null {
  * a third of a legible size. Fixed to the viewport through a portal, it is
  * drawn at full size wherever the field happens to be.
  */
-export function TextFieldToolbar({ inlineEdit }: { inlineEdit?: RecipeCardInlineEdit }) {
+export function TextFieldToolbar({
+  inlineEdit,
+  zoom = 1,
+}: {
+  inlineEdit?: RecipeCardInlineEdit;
+  /** The deck's zoom. The bar grows with it — see `textBarScale`. */
+  zoom?: number;
+}) {
   const [field, setField] = useState<HTMLElement | null>(null);
   const barRef = useRef<HTMLDivElement | null>(null);
   // Focus moving BETWEEN two fields blurs the first before it focuses the
@@ -151,6 +159,7 @@ export function TextFieldToolbar({ inlineEdit }: { inlineEdit?: RecipeCardInline
     <div
       ref={barRef}
       className="recipe-page-toolbar recipe-text-toolbar no-print"
+      style={{ "--rp-text-bar-scale": textBarScale(zoom) } as CSSProperties}
       role="toolbar"
       aria-label="Text formatting"
       // The buttons each do this for themselves; the bar's own padding needs it

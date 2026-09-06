@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { zoomFromWheel } from "./deckZoom";
+import { TEXT_BAR_MAX_SCALE, textBarScale, zoomFromWheel } from "./deckZoom";
 
 const RANGE = { min: 0.25, max: 4 };
 
@@ -44,5 +44,31 @@ describe("zoomFromWheel", () => {
     let step = 1;
     for (let i = 0; i < 30; i++) step = zoomFromWheel(step, -1, RANGE);
     expect(step).toBeCloseTo(once, 10);
+  });
+});
+
+describe("textBarScale", () => {
+  it("leaves the bar exactly as it is at fit", () => {
+    expect(textBarScale(1)).toBe(1);
+  });
+
+  it("grows with the zoom, so a cook who zoomed in to see gets bigger controls", () => {
+    expect(textBarScale(1.25)).toBe(1.25);
+    expect(textBarScale(1.5)).toBe(1.5);
+    expect(textBarScale(2)).toBe(2);
+  });
+
+  it("never shrinks below the size it is at fit", () => {
+    expect(textBarScale(0.5)).toBe(1);
+    expect(textBarScale(0.75)).toBe(1);
+  });
+
+  it("holds at the top of the deck's range", () => {
+    expect(textBarScale(10)).toBe(TEXT_BAR_MAX_SCALE);
+  });
+
+  it("holds still for a zoom that is not a number", () => {
+    expect(textBarScale(Number.NaN)).toBe(1);
+    expect(textBarScale(Infinity)).toBe(1);
   });
 });
