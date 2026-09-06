@@ -708,6 +708,33 @@
   font-size: var(--cp-fs-caption);
   line-height: 1.45;
 }
+/* What it costs, and what it trades away. This is the row's whole argument, so
+   the money leads in the ink colour and the two trade-offs sit under it as a
+   pair, marked rather than bulleted so they read at a glance. */
+.cookbook-destination__price {
+  color: var(--cp-ink);
+  font-weight: 700;
+}
+.cookbook-destination__pro,
+.cookbook-destination__con {
+  display: flex;
+  gap: .4rem;
+}
+.cookbook-destination__pro::before,
+.cookbook-destination__con::before {
+  flex: 0 0 auto;
+  width: .7rem;
+  font-weight: 800;
+}
+.cookbook-destination__pro::before {
+  content: "+";
+  color: var(--cp-accent);
+}
+.cookbook-destination__con::before {
+  /* A minus sign, not a hyphen: this sits opposite a "+" and has to balance
+     it. U+2212. */
+  content: "−";
+}
 /* The way back to step one. Quiet: it is a return, not an action. */
 .cookbook-ready__back {
   justify-self: start;

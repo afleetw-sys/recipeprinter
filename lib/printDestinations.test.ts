@@ -3,6 +3,8 @@ import { COOKBOOK_PRESETS, PRINTERS, getCookbookPreset } from "@/lib/cookbookPre
 import {
   PRINT_DESTINATIONS,
   bindingLabels,
+  destinationPriceLine,
+  estimateTotalUsd,
   destinationPresets,
   destinationPrinter,
   destinationSettings,
@@ -240,6 +242,79 @@ describe("binding labels", () => {
       // "Hardcover Book" reads as two nouns rather than one choice.
       expect(preset.bindingName).not.toContain("Cookbook");
       expect(preset.bindingName).not.toContain("Book");
+    }
+  });
+});
+
+describe("what it costs", () => {
+  it("returns the measured order's own price at its own page count", () => {
+    // The anchor has to reproduce itself, or the scaling is wrong at the one
+    // point we actually know the answer for.
+    for (const destination of PRINT_DESTINATIONS) {
+      const observed = destination.economics.observed;
+      if (!observed) continue;
+      expect(estimateTotalUsd(destination, observed.pages)).toBe(observed.totalUsd);
+    }
+  });
+
+  it("scales with the book", () => {
+    // A cookbook's price is almost entirely its page count, so a flat figure
+    // would be wrong for everyone whose book is not the size we measured.
+    // $28 for 95 pages, so twice the book is twice the bill.
+    const lulu = getPrintDestination("lulu");
+    expect(estimateTotalUsd(lulu, 190)).toBe(56);
+    expect(estimateTotalUsd(lulu, 48)).toBe(14);
+  });
+
+  it("quotes no price for a shop nobody has ordered from", () => {
+    // Blurb is real and we have never bought a book there. An invented rate
+    // presented beside two measured ones would read exactly as trustworthy.
+    expect(getPrintDestination("blurb").economics.observed).toBeUndefined();
+    expect(estimateTotalUsd(getPrintDestination("blurb"), 64)).toBeNull();
+    expect(destinationPriceLine(getPrintDestination("blurb"), 64)).not.toContain("$");
+  });
+
+  it("never shows a price for a book of no pages", () => {
+    for (const destination of PRINT_DESTINATIONS) {
+      expect(estimateTotalUsd(destination, 0)).toBeNull();
+      expect(destinationPriceLine(destination, 0)).not.toContain("$0");
+    }
+  });
+
+  it("keeps the two real orders comparable, because they are the same book", () => {
+    // This pair is the whole argument for asking where before anything else:
+    // one book, two counters, and the file each of them needs is different.
+    const lulu = getPrintDestination("lulu").economics.observed!;
+    const shop = getPrintDestination("copy-shop").economics.observed!;
+    expect(lulu.pages).toBe(shop.pages);
+    expect(lulu.totalUsd).toBeLessThan(shop.totalUsd);
+  });
+
+  it("says “from”, because the binding is chosen on the next step", () => {
+    // Both anchors are spiral books; a hardcover costs more everywhere that
+    // binds one. A floor is honest where a midpoint would not be.
+    expect(destinationPriceLine(getPrintDestination("lulu"), 95)).toBe(
+      "From about $28 · two files",
+    );
+    expect(destinationPriceLine(getPrintDestination("copy-shop"), 95)).toBe(
+      "From about $72 · one file",
+    );
+  });
+
+  it("says what a home printer costs without inventing a bill", () => {
+    expect(destinationPriceLine(getPrintDestination("home"), 95)).toBe(
+      "Ink and paper only · one file",
+    );
+  });
+
+  it("never claims a trade-off it cannot support", () => {
+    for (const destination of PRINT_DESTINATIONS) {
+      for (const line of [destination.economics.pro, destination.economics.con]) {
+        if (line === undefined) continue;
+        expect(line.trim()).not.toBe("");
+        // A sentence, not a paragraph: this is a scannable list.
+        expect(line.length).toBeLessThan(60);
+      }
     }
   });
 });

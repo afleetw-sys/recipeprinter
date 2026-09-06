@@ -19,6 +19,7 @@ import {
   PRINT_DESTINATIONS,
   bindingLabels,
   destinationPresets,
+  destinationPriceLine,
   destinationPrinter,
   destinationSettings,
   destinationUploadsAFile,
@@ -175,7 +176,17 @@ export function CookbookReadyDialog({
               <DestinationMark id={option.id} name={option.name} />
               <span className="cookbook-destination__text">
                 <strong>{option.name}</strong>
-                <small>{option.tagline}</small>
+                <small className="cookbook-destination__price">
+                  {destinationPriceLine(option, pageCount)}
+                </small>
+                {/* One thing it is best at, one thing it costs you. Absent
+                    where we have not earned the right to claim either. */}
+                {option.economics.pro && (
+                  <small className="cookbook-destination__pro">{option.economics.pro}</small>
+                )}
+                {option.economics.con && (
+                  <small className="cookbook-destination__con">{option.economics.con}</small>
+                )}
               </span>
             </button>
           ))}
