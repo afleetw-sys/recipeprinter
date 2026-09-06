@@ -2106,7 +2106,9 @@
      card treatment too so the two sections read the same, and add a hairline
      divider in its place so the boundary between them doesn't disappear. */
   @media (max-width: 1023px) {
-    .rp-printer-workspace {
+    /* Room for the fixed tray — only when the tray is actually there. An empty
+       queue renders no tray, so reserving the space would just be a gap. */
+    .rp-printer-workspace--has-tray {
       padding-bottom: 96px;
     }
 

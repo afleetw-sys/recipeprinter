@@ -229,7 +229,9 @@ export function PrinterWorkspace({
     <div
       className={`rp-printer-workspace ${
         hasProject ? "rp-printer-workspace--active" : "rp-printer-workspace--landing"
-      } ${skipProjectIntro ? "rp-printer-workspace--no-intro" : ""}`}
+      } ${hasProject ? "rp-printer-workspace--has-tray" : ""} ${
+        skipProjectIntro ? "rp-printer-workspace--no-intro" : ""
+      }`}
     >
       {/* Import panel */}
       <div
@@ -324,47 +326,48 @@ export function PrinterWorkspace({
         )}
       </section>
 
-      <section
-        className={`rp-mobile-print-tray ${mobileQueueOpen ? "is-open" : ""}`}
-        aria-labelledby="rp-mobile-queue-heading"
-      >
-        <div className="rp-mobile-print-tray__panel">
-          <div className="rp-mobile-print-tray__bar">
-            <button
-              type="button"
-              className="rp-mobile-print-tray__toggle"
-              aria-expanded={mobileQueueOpen}
-              aria-controls="rp-mobile-queue-content"
-              onClick={() => setMobileQueueOpen((open) => !open)}
-            >
-              <span>
-                <span id="rp-mobile-queue-heading" className="rp-mobile-print-tray__title">
-                  {readyToPrintLabel}
-                </span>
-                {readyItems.length === 0 && (
-                  <span className="rp-mobile-print-tray__meta">
-                    {items.length > 0 ? `${items.length} added` : "No recipes yet"}
+      {/* The tray is fixed to the bottom of the viewport on mobile, so an empty
+          one is pure clutter sitting over the import panel someone is trying to
+          use. It only exists once there's something in the queue to print. */}
+      {hasProject && (
+        <section
+          className={`rp-mobile-print-tray ${mobileQueueOpen ? "is-open" : ""}`}
+          aria-labelledby="rp-mobile-queue-heading"
+        >
+          <div className="rp-mobile-print-tray__panel">
+            <div className="rp-mobile-print-tray__bar">
+              <button
+                type="button"
+                className="rp-mobile-print-tray__toggle"
+                aria-expanded={mobileQueueOpen}
+                aria-controls="rp-mobile-queue-content"
+                onClick={() => setMobileQueueOpen((open) => !open)}
+              >
+                <span>
+                  <span id="rp-mobile-queue-heading" className="rp-mobile-print-tray__title">
+                    {readyToPrintLabel}
                   </span>
-                )}
-              </span>
-              <ChevronDownIcon size={ICON_SIZE.lg} className="rp-mobile-print-tray__chevron" />
-            </button>
+                  {readyItems.length === 0 && (
+                    <span className="rp-mobile-print-tray__meta">{`${items.length} added`}</span>
+                  )}
+                </span>
+                <ChevronDownIcon size={ICON_SIZE.lg} className="rp-mobile-print-tray__chevron" />
+              </button>
 
-            <button
-              type="button"
-              className={`btn btn-primary btn-compact rp-mobile-print-tray__print ${
-                readyRecipeIds.length > 0 ? "rp-mobile-print-tray__print--ready" : ""
-              }`}
-              disabled={readyRecipeIds.length === 0}
-              onClick={() => handlePrint(readyRecipeIds)}
-            >
-              <PrintIcon size={ICON_SIZE.md} />
-              {readyRecipeIds.length > 0 ? `Preview (${readyRecipeIds.length})` : "Preview"}
-            </button>
-          </div>
+              <button
+                type="button"
+                className={`btn btn-primary btn-compact rp-mobile-print-tray__print ${
+                  readyRecipeIds.length > 0 ? "rp-mobile-print-tray__print--ready" : ""
+                }`}
+                disabled={readyRecipeIds.length === 0}
+                onClick={() => handlePrint(readyRecipeIds)}
+              >
+                <PrintIcon size={ICON_SIZE.md} />
+                {readyRecipeIds.length > 0 ? `Preview (${readyRecipeIds.length})` : "Preview"}
+              </button>
+            </div>
 
-          <div id="rp-mobile-queue-content" className="rp-mobile-print-tray__content">
-            {hasProject && (
+            <div id="rp-mobile-queue-content" className="rp-mobile-print-tray__content">
               <div className="rp-mobile-print-tray__actions">
                 <button
                   type="button"
@@ -375,8 +378,6 @@ export function PrinterWorkspace({
                   Clear all
                 </button>
               </div>
-            )}
-            {hydrated ? (
               <PrintQueue
                 items={items}
                 canRetry={canRetry}
@@ -386,12 +387,10 @@ export function PrinterWorkspace({
                 focusedItemId={focusedItemId}
                 focusNonce={focusNonce}
               />
-            ) : (
-              <div className="h-24 rounded-2xl border border-dashed border-line-strong" />
-            )}
+            </div>
           </div>
-        </div>
-      </section>
+        </section>
+      )}
     </div>
   );
 }
