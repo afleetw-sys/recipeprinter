@@ -247,6 +247,25 @@ export const BookIcon = (p: IconProps) => (
   </Base>
 );
 
+/** A shopfront under an awning — the copy shop you walk into, as opposed to a
+    service you upload to. */
+export const StorefrontIcon = (p: IconProps) => (
+  <Base {...p}>
+    <path d="M3.5 9.5L5.5 4.5h13l2 5z" />
+    <path d="M5.5 9.5v10a1 1 0 001 1h11a1 1 0 001-1v-10" />
+    <path d="M9.5 20.5v-6h5v6" />
+  </Base>
+);
+
+/** Anywhere else on the internet. */
+export const GlobeIcon = (p: IconProps) => (
+  <Base {...p}>
+    <circle cx="12" cy="12" r="8.5" />
+    <path d="M3.5 12h17" />
+    <path d="M12 3.5c2.2 2.3 3.3 5.1 3.3 8.5S14.2 18.2 12 20.5c-2.2-2.3-3.3-5.1-3.3-8.5S9.8 5.8 12 3.5z" />
+  </Base>
+);
+
 export const RefreshIcon = (p: IconProps) => (
   <Base {...p}>
     <path d="M4 12a8 8 0 0114-5.3L21 9" />

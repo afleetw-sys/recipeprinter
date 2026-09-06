@@ -3,7 +3,15 @@
 import { useEffect, useState } from "react";
 
 import { Dialog } from "@/components/Dialog";
-import { CheckIcon, ICON_SIZE, PrintIcon, SpinnerIcon, XIcon } from "@/components/icons";
+import {
+  CheckIcon,
+  GlobeIcon,
+  ICON_SIZE,
+  PrintIcon,
+  SpinnerIcon,
+  StorefrontIcon,
+  XIcon,
+} from "@/components/icons";
 import { coverWrapGeometry, wrapGeometryForSpine } from "@/lib/coverWrap";
 import { getCookbookPreset } from "@/lib/cookbookPresets";
 import type { PrinterOption } from "@/lib/cookbookPresets";
@@ -120,7 +128,7 @@ export function CookbookReadyDialog({
             ? "Saved to your downloads"
             : justPurchased
               ? "Your cookbook is ready 🎉"
-              : "Save your cookbook"}
+              : "Print your cookbook"}
         </h2>
       </div>
 
@@ -171,8 +179,11 @@ export function CookbookReadyDialog({
               className="cookbook-destination"
               onClick={() => goToDestination(option.id)}
             >
-              <strong>{option.name}</strong>
-              <small>{option.tagline}</small>
+              <DestinationMark id={option.id} name={option.name} />
+              <span className="cookbook-destination__text">
+                <strong>{option.name}</strong>
+                <small>{option.tagline}</small>
+              </span>
             </button>
           ))}
         </div>
@@ -384,5 +395,35 @@ function ExportedNext({
         )}
       </div>
     </div>
+  );
+}
+
+/**
+ * The tile at the head of a destination row.
+ *
+ * Two kinds, on purpose. The generic rows — your own printer, a copy shop,
+ * somewhere else — are ideas, so they get a drawn glyph in our own icon
+ * language. Lulu and Blurb are companies, and at this size a company is
+ * recognised by its mark rather than by a picture of a book, so they get a
+ * monogram standing in for one.
+ *
+ * A stand-in and not a drawing of their logo: an approximated trademark is
+ * worse than an honest initial, both as design and as a claim. Dropping the
+ * real marks in is a two-line change once we have the files — greyscale PNGs
+ * in public/images, the same nominative treatment `PaprikaLogoIcon` gets.
+ */
+function DestinationMark({ id, name }: { id: PrintDestinationId; name: string }) {
+  const glyph =
+    id === "home" ? (
+      <PrintIcon size={ICON_SIZE.lg} />
+    ) : id === "copy-shop" ? (
+      <StorefrontIcon size={ICON_SIZE.lg} />
+    ) : id === "other" ? (
+      <GlobeIcon size={ICON_SIZE.lg} />
+    ) : null;
+  return (
+    <span className="cookbook-destination__mark" aria-hidden>
+      {glyph ?? <span className="cookbook-destination__monogram">{name.charAt(0)}</span>}
+    </span>
   );
 }

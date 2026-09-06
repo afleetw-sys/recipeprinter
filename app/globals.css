@@ -653,7 +653,9 @@
 }
 .cookbook-destination {
   display: grid;
-  gap: .15rem;
+  grid-template-columns: auto 1fr;
+  align-items: center;
+  gap: .85rem;
   padding: .8rem 1rem;
   border: 1px solid var(--cp-line-strong);
   border-radius: var(--cp-radius-control);
@@ -669,6 +671,32 @@
 .cookbook-destination:focus-visible {
   outline: var(--cp-focus-ring);
   outline-offset: 2px;
+}
+/* The tile column. A fixed box whatever it holds, so a glyph row and a
+   monogram row start their text at the same place. */
+.cookbook-destination__mark {
+  display: grid;
+  place-items: center;
+  width: 34px;
+  height: 34px;
+  border: 1px solid var(--cp-line);
+  border-radius: var(--cp-radius-control);
+  background: var(--cp-surface-muted);
+  color: var(--cp-ink-soft);
+}
+.cookbook-destination:hover .cookbook-destination__mark {
+  border-color: var(--cp-accent);
+  color: var(--cp-accent);
+}
+.cookbook-destination__monogram {
+  font-size: var(--cp-fs-body-lg);
+  font-weight: 800;
+  line-height: 1;
+}
+.cookbook-destination__text {
+  display: grid;
+  gap: .15rem;
+  min-width: 0;
 }
 .cookbook-destination strong {
   color: var(--cp-ink);
