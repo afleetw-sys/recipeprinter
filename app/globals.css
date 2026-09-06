@@ -815,97 +815,64 @@
   outline-offset: 2px;
 }
 
-/* One format: everything about it inside a single bordered box. The card used
-   to BE the save button, which left the print-service option stranded outside
-   it looking like an unrelated setting that happened to sit nearby. A card that
-   contains a checkbox cannot also be one big button anyway — a click near the
-   option would have fired an export. So the box is a container now and the save
-   is an explicit button in it. Flat, per policy: a hairline separates the two
-   halves, no shadow. */
-.cookbook-format {
+/* Step two, as one column. Cards were the wrong container: they implied two
+   independent things to compare, when spiral and hardcover are one decision
+   with one outcome. Flat, per policy — no borders needed for a single group. */
+.cookbook-ready__formats {
   display: grid;
-  border: 1px solid var(--cp-line-strong);
-  border-radius: var(--cp-radius-control);
-  background: var(--cp-page);
-  overflow: hidden;
+  gap: .85rem;
 }
-.cookbook-format__head {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 1rem;
-  padding: .9rem 1.05rem;
-}
-.cookbook-format__text {
-  display: grid;
-  gap: .1rem;
-}
-.cookbook-format__text strong {
-  color: var(--cp-ink);
-  font-size: var(--cp-fs-body-lg);
-  font-weight: 800;
-}
-.cookbook-format__text small {
-  color: var(--cp-ink-soft);
-  font-size: var(--cp-fs-caption);
-}
-.cookbook-format__save {
-  display: inline-flex;
-  align-items: center;
-  gap: .4rem;
-  flex: 0 0 auto;
-  padding: .5rem .9rem;
-  border-radius: 999px;
-  background: var(--cp-accent);
-  color: var(--cp-on-accent);
-  font-size: var(--cp-fs-caption);
-  font-weight: 750;
-  cursor: pointer;
-  transition: opacity 120ms ease;
-}
-.cookbook-format__save:hover {
-  opacity: .9;
-}
-.cookbook-format__save:disabled {
-  opacity: .6;
-  cursor: default;
-}
-.cookbook-format__foot {
-  padding: .7rem 1.05rem;
-  border-top: 1px solid var(--cp-line);
-  background: var(--cp-surface-muted);
-}
-/* Which size, within a kind of book. Single-select, so it wears the shared
-   `--cp-selected-*` tokens every other single-select control in the app uses
-   rather than inventing a look. */
-.cookbook-size {
+/* Which binding. Single-select, so it wears the shared `--cp-selected-*`
+   tokens every other single-select control in the app uses rather than
+   inventing a look. A native radio drives it, hidden but focusable, so the
+   arrow keys and screen readers get the group they expect. */
+.cookbook-binding {
   display: flex;
   flex-wrap: wrap;
-  gap: .35rem;
-  margin-bottom: .55rem;
+  gap: .4rem;
 }
-.cookbook-size__option {
+.cookbook-binding__option {
   display: inline-flex;
   align-items: center;
-  gap: .35rem;
-  padding: .3rem .6rem;
+  padding: .45rem .85rem;
   border: 1px solid var(--cp-line-strong);
   border-radius: 999px;
   background: var(--cp-page);
   color: var(--cp-ink-soft);
-  font-size: var(--cp-fs-caption);
+  font-size: var(--cp-fs-small);
+  font-weight: 700;
   cursor: pointer;
 }
-.cookbook-size__option.is-active {
+.cookbook-binding__option input {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  opacity: 0;
+  pointer-events: none;
+}
+.cookbook-binding__option.is-active {
   border-color: var(--cp-selected-border);
   background: var(--cp-selected-fill);
   box-shadow: var(--cp-selected-ring);
   color: var(--cp-selected-text);
-  font-weight: 700;
 }
-.cookbook-size__option:has(input:focus-visible) {
+.cookbook-binding__option:has(input:focus-visible) {
   outline: var(--cp-focus-ring);
   outline-offset: var(--cp-focus-ring-offset);
+}
+.cookbook-binding__option:has(input:disabled) {
+  opacity: .6;
+  cursor: default;
+}
+/* Which book, stated once. A destination that binds one thing reads as a
+   statement here rather than as a question with a single answer. */
+.cookbook-binding__trim {
+  color: var(--cp-ink-soft);
+  font-size: var(--cp-fs-small);
+}
+
+.cookbook-ready__save {
+  justify-self: start;
 }
 
 /* Three numbers copied off a printer's upload page. Deliberately quiet: it is
@@ -950,11 +917,6 @@
 .cookbook-cover-size__fields input:focus-visible {
   outline: var(--cp-focus-ring);
   outline-offset: 1px;
-}
-.cookbook-format__note {
-  color: var(--cp-ink-soft);
-  font-size: var(--cp-fs-small);
-  line-height: 1.5;
 }
 /* Same hairline-bordered accent callout as the print-settings banner — a quiet
    note, not a warning: nothing has gone wrong, the cook just needs to pick the
@@ -1012,8 +974,7 @@
   .cp-disclosure-caret {
     transition: none;
   }
-  .recipe-print-shell,
-  .cookbook-format-card {
+  .recipe-print-shell {
     transition: opacity 120ms linear;
   }
   .recipe-print-shell--entering-cookbook {

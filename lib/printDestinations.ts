@@ -101,9 +101,11 @@ export const PRINT_DESTINATIONS: PrintDestination[] = [
     name: "Somewhere else",
     tagline: "Any other print service. You’ll need the cover size from their upload page.",
     // Every print-ready shape, because we cannot narrow it: an unknown service
-    // might want any of them. The home format is here too — plenty of shops
-    // take a plain document with the cover bound in.
-    presetIds: ["coil-us-letter", "hardcover-us-letter", "hardcover-8x10", "us-letter"],
+    // might want any of them. The zero-bleed home format is NOT here — a shop
+    // that takes a plain document with the cover bound in is a copy shop, and
+    // that is the row above. Listing it here put a fourth option in the picker
+    // whose only difference from the first was invisible.
+    presetIds: ["coil-us-letter", "hardcover-us-letter", "hardcover-8x10"],
     unknownSpec: true,
   },
 ];
@@ -196,4 +198,27 @@ export function destinationSettings(
 export function exportFileRoles(fileCount: number): string[] {
   if (fileCount < 2) return ["Your book"];
   return ["Interior pages", "Cover"];
+}
+
+/**
+ * Labels for a destination's bindings, guaranteed distinct within the group.
+ *
+ * "Spiral" and "Hardcover" are the right words where a destination binds one
+ * of each. They are not enough for "somewhere else", which offers two
+ * hardcovers at different trims — the picker would have shown "Hardcover"
+ * twice, and picking either would have looked like the same click.
+ *
+ * So the trim is appended only where it is doing work. A label carries the
+ * size when, and only when, another book in the same list shares its binding.
+ */
+export function bindingLabels(presets: CookbookPreset[]): string[] {
+  const counts = new Map<string, number>();
+  for (const preset of presets) {
+    counts.set(preset.bindingName, (counts.get(preset.bindingName) ?? 0) + 1);
+  }
+  return presets.map((preset) => {
+    if ((counts.get(preset.bindingName) ?? 0) < 2) return preset.bindingName;
+    const dim = (inches: number) => String(Number(inches.toFixed(2)));
+    return `${preset.bindingName} ${dim(preset.trimWidthIn)} × ${dim(preset.trimHeightIn)}`;
+  });
 }

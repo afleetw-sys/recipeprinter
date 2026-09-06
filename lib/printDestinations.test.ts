@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import { COOKBOOK_PRESETS, PRINTERS, getCookbookPreset } from "@/lib/cookbookPresets";
 import {
   PRINT_DESTINATIONS,
+  bindingLabels,
   destinationPresets,
   destinationPrinter,
   destinationSettings,
@@ -43,8 +44,10 @@ describe("print destinations", () => {
 
   it("sends a print service bleed and a separate cover", () => {
     // Also confirmed on a real order, in the other direction: Lulu refused the
-    // bundled file and asked for the cover on its own.
-    for (const id of ["lulu", "blurb"] as const) {
+    // bundled file and asked for the cover on its own. "Somewhere else" means
+    // an unknown print SERVICE — a shop that binds the document you hand it is
+    // the copy-shop row — so it holds to the same rule.
+    for (const id of ["lulu", "blurb", "other"] as const) {
       for (const preset of destinationPresets(getPrintDestination(id))) {
         expect(preset.wrapRequired).toBe(true);
         expect(preset.bleedIn).toBeGreaterThan(0);
@@ -201,5 +204,42 @@ describe("what to do with the file once it is saved", () => {
     expect(exportFileRoles(2)).toEqual(["Interior pages", "Cover"]);
     expect(exportFileRoles(1)).toEqual(["Your book"]);
     expect(exportFileRoles(0)).toEqual(["Your book"]);
+  });
+});
+
+describe("binding labels", () => {
+  it("never offers the same label twice in one picker", () => {
+    // Two radios reading "Hardcover" are one radio as far as anyone can tell,
+    // and picking either looks like the same click.
+    for (const destination of PRINT_DESTINATIONS) {
+      const labels = bindingLabels(destinationPresets(destination));
+      expect(new Set(labels).size).toBe(labels.length);
+      for (const label of labels) expect(label.trim()).not.toBe("");
+    }
+  });
+
+  it("leaves the size off when the binding alone is unambiguous", () => {
+    // Lulu binds one of each, so "Spiral" and "Hardcover" say everything. The
+    // trim is stated once below the picker rather than twice inside it.
+    expect(bindingLabels(destinationPresets(getPrintDestination("lulu")))).toEqual([
+      "Spiral",
+      "Hardcover",
+    ]);
+  });
+
+  it("adds the size only where two bindings collide", () => {
+    // "Somewhere else" carries two hardcovers at different trims.
+    const labels = bindingLabels(destinationPresets(getPrintDestination("other")));
+    expect(labels).toEqual(["Spiral", "Hardcover 8.5 × 11", "Hardcover 8 × 10"]);
+  });
+
+  it("gives every preset a binding word to be labelled by", () => {
+    for (const preset of COOKBOOK_PRESETS) {
+      expect(preset.bindingName.trim()).not.toBe("");
+      // The binding alone, not the product: "Spiral Cookbook" beside
+      // "Hardcover Book" reads as two nouns rather than one choice.
+      expect(preset.bindingName).not.toContain("Cookbook");
+      expect(preset.bindingName).not.toContain("Book");
+    }
   });
 });

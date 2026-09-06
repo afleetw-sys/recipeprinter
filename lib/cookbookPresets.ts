@@ -39,6 +39,11 @@ export interface CookbookPreset {
   id: CookbookPresetId;
   /** The product the user is making — what we lead with in the UI. */
   productName: string;
+  /** The binding alone, for a control that is already inside a cookbook and so
+      does not need the word twice. "Spiral Cookbook" beside "Hardcover Book" in
+      a radio pair reads as two nouns; "Spiral" beside "Hardcover" reads as the
+      one choice it is. */
+  bindingName: string;
   /** Supporting trim detail, e.g. "US Letter (8.5 × 11 in)". */
   trimLabel: string;
   /** One-line "best for" for the picker. */
@@ -150,6 +155,7 @@ export const COOKBOOK_PRESETS: CookbookPreset[] = [
   {
     id: "us-letter",
     productName: "Spiral Cookbook",
+    bindingName: "Spiral",
     fileLabel: "Spiral",
     trimLabel: "US Letter (8.5 × 11 in)",
     bestFor: "Print at home — no bleed, spiral or 3-ring",
@@ -182,6 +188,7 @@ export const COOKBOOK_PRESETS: CookbookPreset[] = [
     // every piece of art and a warning saying so.
     id: "coil-us-letter",
     productName: "Spiral Cookbook",
+    bindingName: "Spiral",
     fileLabel: "Spiral-PrintReady",
     trimLabel: "US Letter (8.5 × 11 in)",
     bestFor: "Print services like Lulu — full bleed, coil bound",
@@ -209,6 +216,7 @@ export const COOKBOOK_PRESETS: CookbookPreset[] = [
     // margin where a coil book lies flat.
     id: "hardcover-us-letter",
     productName: "Hardcover Book",
+    bindingName: "Hardcover",
     fileLabel: "Hardcover",
     trimLabel: "US Letter (8.5 × 11 in)",
     bestFor: "Case bound, printed by Lulu",
@@ -228,6 +236,7 @@ export const COOKBOOK_PRESETS: CookbookPreset[] = [
   {
     id: "hardcover-8x10",
     productName: "Hardcover Book",
+    bindingName: "Hardcover",
     fileLabel: "Hardcover",
     trimLabel: "8 × 10 in",
     bestFor: "Pro print-on-demand — full-bleed, trimmed",
