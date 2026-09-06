@@ -52,19 +52,23 @@ describe("textBarScale", () => {
     expect(textBarScale(1)).toBe(1);
   });
 
-  it("grows with the zoom, so a cook who zoomed in to see gets bigger controls", () => {
-    expect(textBarScale(1.25)).toBe(1.25);
-    expect(textBarScale(1.5)).toBe(1.5);
-    expect(textBarScale(2)).toBe(2);
+  it("gains a little at every step, so it is never receding", () => {
+    const steps = [1.25, 1.5, 1.75, 2].map(textBarScale);
+    for (let i = 1; i < steps.length; i++) expect(steps[i]).toBeGreaterThan(steps[i - 1]);
+  });
+
+  it("grows far more slowly than the card, so it never becomes a slab over the recipe", () => {
+    expect(textBarScale(2)).toBeLessThan(1.5);
+  });
+
+  it("stays under the page toolbar above the card, which is 36px to this bar's 28", () => {
+    expect(28 * textBarScale(2)).toBeLessThan(36);
+    expect(28 * textBarScale(10)).toBeLessThan(36);
   });
 
   it("never shrinks below the size it is at fit", () => {
     expect(textBarScale(0.5)).toBe(1);
     expect(textBarScale(0.75)).toBe(1);
-  });
-
-  it("holds at the top of the deck's range", () => {
-    expect(textBarScale(10)).toBe(TEXT_BAR_MAX_SCALE);
   });
 
   it("holds still for a zoom that is not a number", () => {

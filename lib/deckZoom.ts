@@ -49,15 +49,24 @@ export function zoomFromWheel(
  * the card at 100% is being handed smaller controls precisely when they need
  * bigger ones. Whatever it looks like, that is the wrong way round.
  *
- * So they track the zoom, one for one. The deck's own range caps how far that
- * goes (2 at the moment); the clamp here only stops a stray value.
+ * So they grow, but nothing like as fast as the card. Tracking the zoom one
+ * for one put a 56px slab over the recipe at the top of the range, which is a
+ * bar that has stopped being chrome and become furniture. A fifth of the
+ * zoom's growth is enough for the bar to read as coming with you: over the
+ * deck's whole range it goes from 28px to 34, gaining a little at every step
+ * rather than jumping and then stopping.
+ *
+ * 34 is also under the 36px page toolbar parked above the card. The bar that
+ * acts on one line stays the smaller of the two, whatever the zoom.
  *
  * Downward it does nothing. Zooming out to see the whole page is not a request
  * for a smaller button, and 22px is already as small as these should get.
  */
-export const TEXT_BAR_MAX_SCALE = 2;
+export const TEXT_BAR_MAX_SCALE = 1.2;
+/** How much of the zoom's growth the bar takes on. */
+const TEXT_BAR_TRACKING = 0.2;
 
 export function textBarScale(zoom: number): number {
-  if (!Number.isFinite(zoom)) return 1;
-  return Math.min(TEXT_BAR_MAX_SCALE, Math.max(1, zoom));
+  if (!Number.isFinite(zoom) || zoom <= 1) return 1;
+  return Math.min(TEXT_BAR_MAX_SCALE, 1 + (zoom - 1) * TEXT_BAR_TRACKING);
 }
