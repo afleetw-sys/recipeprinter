@@ -315,6 +315,14 @@ export default function PrintPage() {
   const [organizeAnimating, setOrganizeAnimating] = useState(false);
   const organizeTimers = useRef<number[]>([]);
   const [organizationUndo, setOrganizationUndo] = useState<ProjectMeta["sections"] | null>(null);
+  /**
+   * Puts back the lines a drag deleted in one go.
+   *
+   * A bulk delete is the one edit on this page that can take a whole section
+   * out at once, and it does not stop to ask — so the way back is on the toast
+   * that reports it, held until that toast goes.
+   */
+  const [lineDeleteUndo, setLineDeleteUndo] = useState<(() => void) | null>(null);
   // The organizer's "Sort by". `custom` is whatever order the cook has built by
   // hand; `title` is A–Z within every section. `customOrderUndo` holds the
   // arrangement A–Z replaced, so switching back restores it rather than leaving
@@ -1651,6 +1659,24 @@ export default function PrintPage() {
     setToastTone("info");
     setFailedImportId(null);
   }
+
+  /**
+   * Say what a drag-delete took, and keep the way back.
+   *
+   * `useCallback` with no live dependencies on purpose: this is handed to the
+   * inline editor, which folds it into the one `activeInlineEdit` object the
+   * active card is memoized on. A fresh function every render would re-render
+   * that card on every keystroke anywhere on the page.
+   */
+  const reportLinesDeleted = useCallback(
+    ({ count, undo }: { count: number; undo: () => void }) => {
+      setLineDeleteUndo(() => undo);
+      setToastTone("info");
+      setFailedImportId(null);
+      setToastMessage(`Deleted ${count} ${count === 1 ? "line" : "lines"}`);
+    },
+    [],
+  );
 
   // Organize is now an in-page MODE (the rail expands to a full drag-drop
   // surface, center + right panels collapse), not a modal. Entering it never
@@ -3253,6 +3279,13 @@ export default function PrintPage() {
     return () => window.clearTimeout(timeout);
   }, [toastMessage, failedImportId]);
 
+  // The way back to deleted lines lives on their toast, so it goes when the
+  // toast does — an Undo that outlives the message it belongs to would put a
+  // section back under a cook who has moved on to something else.
+  useEffect(() => {
+    if (!toastMessage?.startsWith("Deleted ")) setLineDeleteUndo(null);
+  }, [toastMessage]);
+
   useEffect(() => {
     function handleBeforePrint() {
       // Synchronous on purpose: window.print() does not yield, so a normal
@@ -3857,6 +3890,7 @@ export default function PrintPage() {
     resetKey: String(activeNavIndex),
     keepEditingRef,
     includeDescription: showDescription,
+    onLinesDeleted: reportLinesDeleted,
   });
   // Delete/Backspace on the selected recipe opens a confirm dialog rather
   // than deleting immediately — but only when focus isn't inside an editable
@@ -4848,6 +4882,19 @@ export default function PrintPage() {
           aria-live={toastTone === "error" ? "assertive" : "polite"}
         >
           <span>{toastMessage}</span>
+          {lineDeleteUndo && toastMessage?.startsWith("Deleted ") && (
+            <button
+              type="button"
+              className="recipe-toast__action"
+              onClick={() => {
+                lineDeleteUndo();
+                setLineDeleteUndo(null);
+                setToastMessage(null);
+              }}
+            >
+              Undo
+            </button>
+          )}
           {organizationUndo && toastMessage === "Cookbook organized" && (
             <button type="button" className="recipe-toast__action" onClick={undoCookbookOrganization}>
               Undo

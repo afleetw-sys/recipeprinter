@@ -4,7 +4,11 @@ import { useCallback, useEffect, useMemo, useState, type MutableRefObject } from
 import { printableRecipe } from "@/lib/queue";
 import { ingredientText } from "@/lib/recipeCardLayout";
 import { splitNote } from "@/lib/recipeNote";
-import type { RecipeCardEditTarget, RecipeCardInlineEdit } from "@/lib/recipeCardLayout";
+import type {
+  RecipeCardEditTarget,
+  RecipeCardInlineEdit,
+  RecipeCardLineTarget,
+} from "@/lib/recipeCardLayout";
 import type { QueueItem, Recipe } from "@/types/recipe";
 
 interface RecipeEditSelection {
@@ -97,6 +101,47 @@ export function demoteSectionToLine<T extends { section?: string }>(
   }
   next.splice(index, 0, makeItem(title, items[index - 1]?.section));
   return { items: next, title };
+}
+
+/**
+ * Every line a selection covered, removed in one pass.
+ *
+ * A heading is not a row: it is a `section` string stamped on a run of them
+ * (see `promoteLineToSection`), so deleting one clears the label and leaves the
+ * rows alone. When the drag ran over the rows too they are in `targets`
+ * already, and both halves go together — which is what "delete this whole
+ * section" looks like from the outside.
+ *
+ * Labels are cleared before rows are removed, so the indices the card handed
+ * over all still point at what the cook actually dragged across.
+ */
+export function deleteRecipeLines(recipe: Recipe, targets: RecipeCardLineTarget[]): Recipe {
+  const ingredientRows = new Set<number>();
+  const instructionRows = new Set<number>();
+  const ingredientHeadings: number[] = [];
+  const instructionHeadings: number[] = [];
+  for (const target of targets) {
+    if (target.kind === "ingredient") ingredientRows.add(target.index);
+    else if (target.kind === "step") instructionRows.add(target.index);
+    else if (target.kind === "ingredientSection") ingredientHeadings.push(target.index);
+    else instructionHeadings.push(target.index);
+  }
+
+  let ingredients = recipe.ingredients;
+  for (const index of ingredientHeadings) {
+    ingredients = applySectionTitleEdit(ingredients, index, "");
+  }
+  ingredients = ingredients.filter((_, index) => !ingredientRows.has(index));
+
+  let instructions = recipe.instructions;
+  for (const index of instructionHeadings) {
+    instructions = applySectionTitleEdit(instructions, index, "");
+  }
+  instructions = instructions
+    .filter((_, index) => !instructionRows.has(index))
+    .map((step, index) => ({ ...step, step: index + 1 }));
+
+  return printableRecipe({ ...recipe, ingredients, instructions });
 }
 
 function applyRecipeTargetEdit(
@@ -224,6 +269,12 @@ interface UseRecipeInlineEditorOptions {
       splitter needs it: an edit made with the blurb switched OFF was never
       looking at it and must leave it alone. See lib/recipeNote.ts. */
   includeDescription?: boolean;
+  /**
+   * Told about a bulk line delete, so the page can say what went and offer it
+   * back. Deleting one line at a time is small enough to just retype; a
+   * section that took one drag to remove is not.
+   */
+  onLinesDeleted?: (deletion: { count: number; undo: () => void }) => void;
   /** When a recipe is intentionally moved (e.g. its photo placement changed, so
       it lands on a different page), the page stashes that recipe id here so the
       leave-edit-mode reset skips ONCE as focus follows it to the new page —
@@ -248,6 +299,7 @@ export function useRecipeInlineEditor({
   activeRecipeItem,
   resetKey,
   keepEditingRef,
+  onLinesDeleted,
   includeDescription = true,
 }: UseRecipeInlineEditorOptions) {
   const [pageEditMode, setPageEditMode] = useState(false);
@@ -472,6 +524,38 @@ export function useRecipeInlineEditor({
     [activeRecipeItem, applyRecipeUpdate],
   );
 
+  /**
+   * Delete every line a drag ran across.
+   *
+   * The rows have always been selectable — each one is its own field, so a
+   * drag down a section makes an ordinary browser selection across them — but
+   * nothing could act on it, and the page's Backspace handler deliberately
+   * stands down while text is selected (it once took a "delete these three
+   * steps" as "delete this recipe"). So the selection had no meaning at all:
+   * clearing a section meant clicking into each line and emptying it, one at a
+   * time, watching the rows renumber under you.
+   *
+   * Committed against the recipe as it stands rather than through the field
+   * editor: a drag that leaves the field being typed in blurs it first, which
+   * commits that edit and closes it, so by the time this runs there is nothing
+   * in flight to fold in.
+   */
+  const deleteLines = useCallback(
+    (targets: RecipeCardLineTarget[]) => {
+      if (!activeRecipeItem?.recipe || targets.length === 0) return;
+      const id = activeRecipeItem.id;
+      const before = activeRecipeItem.recipe;
+      applyRecipeUpdate(id, deleteRecipeLines(before, targets));
+      setEditingEdit(null);
+      setEditValue("");
+      onLinesDeleted?.({
+        count: targets.length,
+        undo: () => applyRecipeUpdate(id, before),
+      });
+    },
+    [activeRecipeItem, applyRecipeUpdate, onLinesDeleted],
+  );
+
   // Only the currently-active recipe's card ever receives a real inlineEdit
   // object (every other card gets undefined), so this is computed once here
   // rather than freshly per nav item in the render below — keeps the object
@@ -498,6 +582,7 @@ export function useRecipeInlineEditor({
       onInsertIngredient: insertIngredientAt,
       onInsertStep: insertStepAt,
       onSplitLine: splitEditLine,
+      onDeleteLines: deleteLines,
     };
   }, [
     activeRecipeItem,
@@ -510,6 +595,7 @@ export function useRecipeInlineEditor({
     insertIngredientAt,
     insertStepAt,
     splitEditLine,
+    deleteLines,
   ]);
 
   useEffect(() => {

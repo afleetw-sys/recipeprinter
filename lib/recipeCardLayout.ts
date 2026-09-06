@@ -669,6 +669,17 @@ export interface RecipeFaces {
   hasBack: boolean;
 }
 
+/**
+ * The parts of a recipe a drag can run across: the rows, and the headings that
+ * label a run of them. A title or a cook time is a field of its own and has no
+ * place in a range.
+ */
+export type RecipeCardLineTarget =
+  | { kind: "ingredient"; index: number }
+  | { kind: "step"; index: number }
+  | { kind: "ingredientSection"; index: number }
+  | { kind: "instructionSection"; index: number };
+
 export type RecipeCardEditTarget =
   | { kind: "title" }
   | { kind: "description" }
@@ -704,6 +715,16 @@ export interface RecipeCardInlineEdit {
   onInsertIngredient: (index: number) => void;
   onInsertStep: (index: number) => void;
   onSplitLine: (target: RecipeCardEditTarget, before: string, after: string) => void;
+  /**
+   * Every line a selection ran across, gone in one go.
+   *
+   * Deleting a section used to be one line at a time: select the text, delete
+   * it, watch the row disappear, click the next one. A heading in the range
+   * loses its label rather than its rows, because a heading IS a label on a
+   * run (see `promoteLineToSection`) and the rows under it are their own
+   * entries in the same selection.
+   */
+  onDeleteLines: (targets: RecipeCardLineTarget[]) => void;
 }
 
 function continuationFaces(

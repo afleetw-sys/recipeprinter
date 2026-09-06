@@ -758,6 +758,8 @@ export const RecipeCardFace = memo(function RecipeCardFace({
       return (
         <h3
           className="recipe-card__section-title recipe-card__section-title--editable"
+          data-line-kind={kind}
+          data-line-index={index}
           onClick={() => startEdit(target, title)}
         >
           {title}
@@ -796,6 +798,11 @@ export const RecipeCardFace = memo(function RecipeCardFace({
       <li
         key={index}
         className={`recipe-card__editable-line ${canEdit ? "recipe-card__editable-line--editable" : ""}`}
+        /* What a drag across several lines reads itself back from — see
+           lib/lineSelection. Only the card being edited carries these, so a
+           selection anywhere else on the page finds nothing to delete. */
+        data-line-kind={canEdit ? "ingredient" : undefined}
+        data-line-index={canEdit ? index : undefined}
         onClick={canEdit && !isEditingThis ? (event) => startEdit(target, text, event) : undefined}
       >
         {canEdit && inlineEdit && isEditingThis ? (
@@ -838,6 +845,8 @@ export const RecipeCardFace = memo(function RecipeCardFace({
       <li
         key={`${step.step}-${step.text.slice(0, 24)}`}
         className={`recipe-card__editable-line ${canEdit ? "recipe-card__editable-line--editable" : ""}`}
+        data-line-kind={canEdit ? "step" : undefined}
+        data-line-index={canEdit ? index : undefined}
         onClick={canEdit && !isEditingThis ? (event) => startEdit(target, step.text, event) : undefined}
       >
         <span className="recipe-card__step-number">{step.step}</span>

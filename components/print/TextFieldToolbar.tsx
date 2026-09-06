@@ -1,15 +1,13 @@
 "use client";
 
-import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { BodyTextGlyph, HeadingGlyph } from "@/components/RecipeCardPrint";
 import { TextStyleControl } from "@/components/print/TextStyleControl";
+import { readLineSelection } from "@/lib/lineSelection";
 import { readFocusedRichField } from "@/lib/richTextField";
+import { useFloatingBarPlacement } from "@/lib/useFloatingBarPlacement";
 import type { RecipeCardInlineEdit } from "@/lib/recipeCardLayout";
-
-/** How far the bar sits off the field it belongs to, and off the viewport edge. */
-const GAP = 8;
-const MARGIN = 8;
 
 /**
  * The card's inline fields, and nothing else on the page.
@@ -89,82 +87,30 @@ export function TextFieldToolbar({ inlineEdit }: { inlineEdit?: RecipeCardInline
   }, []);
 
   /**
-   * Put the bar above the field, or below it when above is taken.
+   * A drag across several lines belongs to the other bar.
    *
-   * Writes straight to the node rather than through state: this runs on every
-   * scroll frame, and the deck is the one surface in the app where a render per
-   * frame is measurably expensive.
+   * The field it started in blurs on the way out, but not always before the
+   * drag ends, so both bars could be up at once over the same three lines —
+   * one offering to bold a selection the browser will not let it touch. Two
+   * floating bars over one card is the muddle this pair was split up to end.
    */
-  const place = useCallback(() => {
-    const bar = barRef.current;
-    if (!bar || !field || !field.isConnected) return;
-    const anchor = field.getBoundingClientRect();
-    const self = bar.getBoundingClientRect();
-    const viewport = window.visualViewport;
-    const viewTop = viewport?.offsetTop ?? 0;
-    const viewLeft = viewport?.offsetLeft ?? 0;
-    const viewHeight = viewport?.height ?? window.innerHeight;
-    const viewWidth = viewport?.width ?? window.innerWidth;
-
-    // Centred on the field, then pulled back inside the viewport. Settled
-    // before the vertical, because whether the bar clears the page toolbar
-    // depends on where it ends up horizontally.
-    const left = Math.max(
-      viewLeft + MARGIN,
-      Math.min(
-        anchor.left + anchor.width / 2 - self.width / 2,
-        viewLeft + viewWidth - self.width - MARGIN,
-      ),
-    );
-
-    // The page toolbar is the other floating thing over this card. Landing on
-    // top of it is exactly the muddle this split is meant to end, so the bar
-    // goes under the field instead when the space above belongs to that one.
-    const pageBar = document
-      .querySelector(".recipe-page-canvas__controls .recipe-page-toolbar")
-      ?.getBoundingClientRect();
-    const above = anchor.top - self.height - GAP;
-    const collides = Boolean(
-      pageBar &&
-        above < pageBar.bottom + GAP &&
-        above + self.height + GAP > pageBar.top &&
-        left < pageBar.right + GAP &&
-        left + self.width + GAP > pageBar.left,
-    );
-    const top = above >= viewTop + MARGIN && !collides ? above : anchor.bottom + GAP;
-
-    bar.style.left = `${left}px`;
-    bar.style.top = `${Math.max(
-      viewTop + MARGIN,
-      Math.min(top, viewTop + viewHeight - self.height - MARGIN),
-    )}px`;
-    bar.style.visibility = "visible";
-  }, [field]);
-
-  // Before paint, so the bar is never seen at the top-left corner it renders at.
-  useLayoutEffect(place);
-
+  const [spansLines, setSpansLines] = useState(false);
   useEffect(() => {
-    if (!field) return;
-    // `capture` because the deck scrolls, not the window — a bubbling listener
-    // on `window` never hears it.
-    window.addEventListener("scroll", place, true);
-    window.addEventListener("resize", place);
-    window.visualViewport?.addEventListener("resize", place);
-    window.visualViewport?.addEventListener("scroll", place);
-    // Typing wraps the line onto a second row, which moves everything under it.
-    const observer = new ResizeObserver(place);
-    observer.observe(field);
-    return () => {
-      window.removeEventListener("scroll", place, true);
-      window.removeEventListener("resize", place);
-      window.visualViewport?.removeEventListener("resize", place);
-      window.visualViewport?.removeEventListener("scroll", place);
-      observer.disconnect();
-    };
-  }, [field, place]);
+    const read = () => setSpansLines(readLineSelection().length > 1);
+    read();
+    document.addEventListener("selectionchange", read);
+    return () => document.removeEventListener("selectionchange", read);
+  }, []);
 
-  if (!field) return null;
+  const getAnchorRect = useCallback(
+    () => (field?.isConnected ? field.getBoundingClientRect() : null),
+    [field],
+  );
+  // Typing wraps the line onto a second row, which moves everything under it,
+  // so the field is watched as well as the viewport.
+  useFloatingBarPlacement({ barRef, getAnchorRect, observe: field, active: Boolean(field) });
+
+  if (!field || spansLines) return null;
 
   // Only a line has a kind to change. The title, the times, the note and the
   // link are themselves and cannot become headings.
@@ -180,10 +126,26 @@ export function TextFieldToolbar({ inlineEdit }: { inlineEdit?: RecipeCardInline
   const isHeading =
     lineKind?.kind === "ingredientSection" || lineKind?.kind === "instructionSection";
   // Bold and italic are `execCommand` on a rich field. A section heading is a
-  // plain textarea, and the buttons would sit there doing nothing.
+  // plain textarea, where they have nothing to act on.
   const richText = field.isContentEditable;
 
   if (!lineKind && !richText) return null;
+
+  /**
+   * A line's bar is the same bar whichever line it is on.
+   *
+   * Bold and italic used to be REMOVED for a section heading, which is a plain
+   * textarea rather than a rich field. That made the bar two sizes: pressing
+   * H turned the row into a heading and the bar lost a third of its width
+   * under the cursor that had just pressed it, which reads as the toolbar
+   * breaking rather than as the line changing. Disabled says the same thing
+   * about what a heading can hold without moving anything.
+   *
+   * The note and the description keep the narrow bar: they are not lines and
+   * can never become headings, so a disabled line-kind switch on them would be
+   * offering something that does not exist.
+   */
+  const styleGroup = lineKind || richText ? <TextStyleControl disabled={!richText} /> : null;
 
   return createPortal(
     <div
@@ -235,7 +197,7 @@ export function TextFieldToolbar({ inlineEdit }: { inlineEdit?: RecipeCardInline
           </button>
         </div>
       )}
-      {richText && <TextStyleControl />}
+      {styleGroup}
     </div>,
     document.body,
   );

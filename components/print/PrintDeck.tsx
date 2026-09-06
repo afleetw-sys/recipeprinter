@@ -38,6 +38,7 @@ import type { NavItem, PageSheet, SheetSlot, usePrintSheets } from "@/lib/usePri
 import type { useProjectMeta } from "@/lib/project";
 import type { useDeckScroller } from "@/lib/useDeckScroller";
 import { isPhotoOpenClick, type PhotoPress } from "@/lib/photoOpenGesture";
+import { LineSelectionToolbar } from "@/components/print/LineSelectionToolbar";
 import { TextFieldToolbar } from "@/components/print/TextFieldToolbar";
 import type { useRecipeInlineEditor } from "@/lib/useRecipeInlineEditor";
 import type { CoverConfig, QueueItem, Section } from "@/types/recipe";
@@ -897,6 +898,10 @@ export function PrintDeck(props: PrintDeckProps) {
               rather than joining the page's bar. It anchors itself to whatever
               field has focus, so it is mounted once for the whole deck. */}
           <TextFieldToolbar inlineEdit={activeInlineEdit} />
+          {/* Its twin, for a drag that ran across several lines rather than a
+              caret sitting in one. Mounted once for the whole deck, the same
+              way and for the same reason. */}
+          <LineSelectionToolbar inlineEdit={activeInlineEdit} />
           {/* Zoom, on the deck it zooms and nowhere else. Minus, the size, plus
               — and the percentage doubles as the way back to fit, since after
               a few steps "100%" is the number you are looking for anyway. */}

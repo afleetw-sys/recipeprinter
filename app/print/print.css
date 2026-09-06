@@ -1184,6 +1184,11 @@
    it is, and how big. Two bars over one card have to read as two of the same
    kind of thing, or the split just trades one confusion for another.
 
+   Worn by both of the bars that follow the text rather than the page: the
+   formatting one for the field being typed in (TextFieldToolbar) and the
+   delete one for a drag that ran across several lines (LineSelectionToolbar).
+   Only ever one of them at a time — each stands down for the other.
+
    Where: placed from the focused field's own rect, in JS, because the card is
    drawn at print scale and chrome mounted inside it would be scaled down with
    the artwork. The page toolbar is parked above the card and holds still.
