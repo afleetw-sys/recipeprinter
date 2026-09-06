@@ -114,15 +114,19 @@ export const PRINT_DESTINATIONS: PrintDestination[] = [
     },
   },
   {
+    // Coil, comb, adhesive spine, 3-ring, stapled. NOT hardcover: a copy shop
+    // binds documents, and none of the chains list case binding as a finishing
+    // option. So this destination offers one book and always will, and the
+    // gutter that a cased spine needs has no home here.
     id: "copy-shop",
     name: "A copy shop",
-    tagline: "Staples, Office Depot, FedEx Office. One file, printed and bound as a document.",
+    tagline: "One file, printed and bound as a document.",
     presetIds: ["us-letter"],
     printerId: "staples",
     extraSettings: [{ label: "Colour", value: "Full colour, printed on both sides" }],
     economics: {
       observed: { pages: 95, totalUsd: 72, note: "95-page spiral book, bound at a Staples counter" },
-      pro: "Same day, and you carry it home",
+      pro: "Same day at Staples or FedEx Office",
       con: "The most expensive way to make one copy",
     },
   },
