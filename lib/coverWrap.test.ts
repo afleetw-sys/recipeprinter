@@ -127,7 +127,7 @@ describe("wrapSpecFor", () => {
     expect(spec.wrapAllowanceIn).toBe(coil.bleedIn);
     expect(spec.overhangHIn).toBe(0);
     expect(spec.overhangVIn).toBe(0);
-    expect(spec.fixedSpineIn).toBe(0.5);
+    expect(spec.fixedSpineIn).toBe(0);
   });
 
   it("does not carry the casewrap sheet over to the coil book", () => {
@@ -143,22 +143,40 @@ describe("wrapSpecFor", () => {
 
 describe("coverWrapGeometry — the Lulu coil book", () => {
   it("defaults to a paperback sheet with Lulu's quoted spine", () => {
-    // 8.5 + 8.5 + 0.5 + 0.25 wide, 11 + 0.25 tall, with nothing typed by hand.
+    // 8.5 + 8.5 + 0 + 0.25 wide, 11 + 0.25 tall, with nothing typed by hand.
+    // Lulu states the coil spine as 0in: the covers meet edge to edge and the
+    // coil punches through both, so there is no strip between the panels.
     const g = coverWrapGeometry(coil, 92);
-    expect(g.spineWidthIn).toBe(0.5);
-    expect(g.sheetWidthIn).toBeCloseTo(17.75, 6);
+    expect(g.spineWidthIn).toBe(0);
+    expect(g.sheetWidthIn).toBeCloseTo(17.25, 6);
     expect(g.sheetHeightIn).toBeCloseTo(11.25, 6);
     // The panels are the pages: a coil cover is trimmed flush, not wrapped.
     expect(g.panelWidthIn).toBe(coil.trimWidthIn);
     expect(g.panelHeightIn).toBe(coil.trimHeightIn);
   });
 
+  it("matches the numbers Lulu states for a coil project", () => {
+    // Read off the upload page's requirements panel with the project set to
+    // Coil Bound: "Dimensions: 17.25 x 11.25in / Spine Width: 0in".
+    //
+    // Locked as literals on purpose. Two earlier values lived here — 19.25 x
+    // 12.75 (the casewrap sheet) and 17.75 x 11.25 (a half-inch spine) — and
+    // both were rejected on upload. A number that has been wrong twice gets
+    // pinned to its source rather than left to be re-derived.
+    const g = coverWrapGeometry(coil, 95);
+    expect(g.sheetWidthIn).toBe(17.25);
+    expect(g.sheetHeightIn).toBe(11.25);
+    expect(g.spineWidthIn).toBe(0);
+    // Two covers and the bleed, with nothing in between: the arithmetic has to
+    // agree with the panel, or one of them is describing another book.
+    expect(g.panelWidthIn * 2 + g.wrapAllowanceIn * 2).toBe(17.25);
+  });
+
   it("holds that sheet steady whatever the book's length", () => {
-    // The half inch is the strip the coil punches through, not the thickness
-    // of the paper, so it does not grow with the page count the way a cased
-    // spine does.
+    // There is no spine to thicken, so the sheet is two covers and the bleed at
+    // any length — unlike a cased spine, which grows with the paper.
     for (const pages of [8, 92, 400]) {
-      expect(coverWrapGeometry(coil, pages).sheetWidthIn).toBeCloseTo(17.75, 6);
+      expect(coverWrapGeometry(coil, pages).sheetWidthIn).toBeCloseTo(17.25, 6);
     }
   });
 

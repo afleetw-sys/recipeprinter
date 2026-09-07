@@ -146,21 +146,27 @@ export const DEFAULT_COVER_WRAP_SPEC: CoverWrapSpec = {
  * A paperback shape — the two covers side by side at trim, with 0.125in of
  * bleed on every edge — and their spine quoted flat at half an inch:
  *
- *     8.5 + 8.5 + 0.5 + (2 x 0.125)  =  17.75in wide
- *     11        + (2 x 0.125)        =  11.25in tall
+ *     8.5 + 8.5 + 0 + (2 x 0.125)  =  17.25in wide
+ *     11       + (2 x 0.125)      =  11.25in tall
  *
- * The 0.5in is a `fixedSpineIn` because Lulu quotes it rather than deriving it.
- * A round half inch is not the thickness of ninety sheets of anything; it is
- * the strip their template leaves for the coil to punch through, and it does
- * not move with the book.
+ * The spine is ZERO, and Lulu states it as such: "Spine Width: 0in". A coil
+ * book has no spine to print on — the two covers meet edge to edge and the coil
+ * punches through both — so there is no strip between the panels at all.
  *
- * This spec previously carried the CASEWRAP numbers, giving a 19.25 x 12.75
- * sheet, and Lulu rejected that. The mistake is worth recording because it was
- * not arithmetic: those numbers came off the requirements panel on the upload
- * page, which was still describing a hardcover after the project had been
- * switched to coil. A panel that contradicts its own validator is not a source.
- * The first cover we ever sent, at 17.444in, had this shape right and only the
- * spine wrong — it used our estimated 0.194in instead of Lulu's 0.5in.
+ * `fixedSpineIn` is still how it is expressed, because zero here is a quoted
+ * fact rather than a computed one. Deriving it from the paper would produce a
+ * real, non-zero thickness, which is the right answer for a cased spine and the
+ * wrong one for a binding that has no spine to be the thickness OF.
+ *
+ * Two earlier values are worth recording, because both came from the same bad
+ * source. This spec first carried the CASEWRAP numbers (19.25 x 12.75), which
+ * Lulu rejected. It was then corrected to a half-inch spine (17.75 x 11.25),
+ * which Lulu also rejected. Both figures were read off the requirements panel
+ * on the upload page — the same panel that was describing a hardcover after the
+ * project had been switched to coil. It has now been wrong twice about a book
+ * it was validating at the time. The number to trust is the one the panel gives
+ * for the project as currently configured, checked against the arithmetic: two
+ * covers, the bleed, and nothing in between.
  */
 export const LULU_COIL_SPEC: CoverWrapSpec = {
   paperCaliperIn: DEFAULT_PAPER_CALIPER_IN,
@@ -169,7 +175,8 @@ export const LULU_COIL_SPEC: CoverWrapSpec = {
   // Trimmed flush with the pages: no boards, so nothing stands proud.
   overhangHIn: 0,
   overhangVIn: 0,
-  fixedSpineIn: 0.5,
+  // Quoted by Lulu as "Spine Width: 0in". Not an estimate we could improve on.
+  fixedSpineIn: 0,
 };
 
 export const LULU_CASEWRAP_SPEC: CoverWrapSpec = {
