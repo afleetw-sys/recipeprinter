@@ -591,24 +591,75 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
     intent: "Utility SEO",
     eyebrow: "Social recipe printer",
     initialImportMode: "url",
-    importHint:
-      "Reels and posts don't always give up their text. If the link won't import, paste the caption or upload a screenshot.",
     title: "Free Instagram Recipe Printer",
     description:
-      "Turn Instagram recipe captions, screenshots, links, or pasted text into printable recipes you can cook from.",
+      "Paste an Instagram post or Reel link and turn the recipe in the caption into a printable recipe card, page, or PDF.",
     h1: "Print Instagram recipes",
     lede:
-      "Instagram recipes and Reels are easy to save and hard to cook from. RecipePrinter helps turn recipe captions, screenshots, links, and pasted text into printable cards or pages.",
+      "Instagram recipes are quick to save and hard to cook from. Paste the post's link and RecipePrinter turns it into a card you can put on the counter.",
+    howTo: [
+      {
+        name: "Copy the post's link",
+        text: "Open the post or the Reel, tap Share, and choose Copy link. It works the same for a single photo, a carousel, or a Reel.",
+      },
+      {
+        name: "Paste it in",
+        text: "Paste it into the box above. RecipePrinter opens the post and reads the caption, which is where the recipe almost always is.",
+      },
+      {
+        name: "Choose a card or a page",
+        text: "A 4 by 6 card for the recipe box, or a letter page when the caption runs long. Fix any line, add the note you would have left in the comments, and decide whether the photo prints.",
+      },
+      {
+        name: "Print it or save it as a PDF",
+        text: "Send it to a printer, or choose Save as PDF in the print dialog so it is on your phone the next time you make it.",
+      },
+    ],
+    featureSections: [
+      {
+        heading: "The recipe is in the caption, under the video",
+        image: "steps",
+        body:
+          "A Reel shows you the dish in thirty seconds and puts the recipe in the caption underneath, folded behind a more link. Cooking from it means tapping back to the post, opening the caption again, and finding your place every time your hands are free. RecipePrinter reads that caption and sets it out as ingredients with their amounts and numbered steps, on one sheet that does not scroll.",
+      },
+      {
+        heading: "Saved posts are a pile, not a collection",
+        image: "card-in-box",
+        body:
+          "The save button is quick, which is also its limit: recipes land in the same place as everything else you meant to come back to, with nothing to search on and no way to tell one pasta from another. A printed card is filed the moment it comes off the printer, in a recipe box, a binder, or a folder by the stove.",
+      },
+      {
+        heading: "Carousels, and the answer buried in the comments",
+        image: "paste-in-app",
+        body:
+          "Some creators spread a recipe across a carousel, and the substitution everyone asks about is usually answered further down in the comments. Anything you can copy can go in as text, so the swap that only exists in a reply ends up on the sheet you actually cook from.",
+      },
+    ],
     faqs: [
       {
         question: "Can I print a recipe from an Instagram Reel?",
         answer:
-          "Yes. Copy the Reel caption, notes, or source link when available, or upload screenshots of the recipe text. RecipePrinter will format the recipe into a printable card or page.",
+          "Yes. Copy the Reel's link and paste it in. A Reel's recipe is nearly always written into the caption below it, and that is the part RecipePrinter reads.",
       },
       {
-        question: "Can I use a screenshot of an Instagram recipe?",
+        question: "Do I have to connect my Instagram account?",
         answer:
-          "Yes. Upload a screenshot when that is the easiest way to capture the recipe.",
+          "No. RecipePrinter never asks for access to your account, your saved posts, or who you follow. It works from a link you paste, so nothing is connected and nothing is synced.",
+      },
+      {
+        question: "Will the card credit the creator?",
+        answer:
+          "It can, and that is your call. The post's link can print on the card, so the person whose recipe it is stays attached to it and the Reel is easy to find again.",
+      },
+      {
+        question: "Can I print several Instagram recipes at once?",
+        answer:
+          "You add recipes one at a time, and then print them together as a single job. The card size and the theme apply to every recipe waiting to print, so a week of dinners comes out matching.",
+      },
+      {
+        question: "What happens if the post is taken down?",
+        answer:
+          "Nothing, once you have printed it. Accounts go private, posts get deleted, and creators clear out old work. A card in the box does not depend on any of that.",
       },
     ],
     links: [
@@ -629,24 +680,75 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
     intent: "Utility SEO",
     eyebrow: "Social recipe printer",
     initialImportMode: "url",
-    importHint:
-      "Group posts often block importers. If the link won't import, paste the post's text or upload a screenshot.",
     title: "Free Facebook Recipe Printer",
     description:
-      "Turn Facebook recipe posts, Reels, screenshots, links, or copied text into printable recipe cards, pages, and PDFs.",
+      "Paste a Facebook post, group post, or Reel link and turn the recipe into a printable recipe card, page, or PDF.",
     h1: "Print recipes from Facebook",
     lede:
-      "Facebook recipes often show up in posts, group comments, Reels, captions, screenshots, and shared links. RecipePrinter helps turn the parts you can copy or capture into a printable recipe you can cook from.",
+      "Facebook recipes are usually typed straight into a post, with no blog behind them. Paste the post's link and RecipePrinter turns it into something you can cook from.",
+    howTo: [
+      {
+        name: "Copy the post's link",
+        text: "On the post, tap the three dots and choose Copy link. Reels have the same option under Share.",
+      },
+      {
+        name: "Paste it in",
+        text: "Paste it into the box above. RecipePrinter reads the recipe out of the post, whether it was typed in directly or sits on a site the post links to.",
+      },
+      {
+        name: "Choose a card or a page",
+        text: "A 4 by 6 card for a recipe box, or a letter page when the post runs to a wall of text. Every line can be edited before it prints.",
+      },
+      {
+        name: "Print it or save it as a PDF",
+        text: "Send it to the printer, or choose Save as PDF in the print dialog to keep a copy that does not live in the feed.",
+      },
+    ],
+    featureSections: [
+      {
+        heading: "Group recipes are hard to find twice",
+        image: "counter-card",
+        body:
+          "A good one goes past in a group at nine at night. A month later it is four hundred posts back, and you cannot search for it because you never knew what it was called. Printing it takes it out of the feed: the card does not depend on the group, on the post staying up, or on remembering who shared it.",
+      },
+      {
+        heading: "Most of them were typed, not linked",
+        image: "steps",
+        body:
+          "Someone writes the whole thing into the post. A few lines about their mother, then the ingredients, then the method run together in one paragraph. There is no blog behind it and nothing to click through to. RecipePrinter takes the post as written and sorts it into an ingredient list with amounts and numbered steps you can follow at the stove.",
+      },
+      {
+        heading: "The recipes worth keeping are often the oldest ones",
+        image: "bound-cookbook",
+        body:
+          "Family groups hold recipes that were handwritten long before they were typed, posted by people who are not always still around to ask. Printing gives one of those somewhere to live that is not a platform: a box on the counter, a binder, or later a bound cookbook that everyone in the group can have a copy of.",
+      },
+    ],
     faqs: [
       {
         question: "Can I print recipes from Facebook Reels?",
         answer:
-          "Yes. Use the recipe text, caption, screenshots, or source link when available. RecipePrinter can format copied text or screenshots into a printable recipe card or page.",
+          "Yes. Copy the Reel's link the same way you would a post. The recipe usually sits in the caption underneath, and that is what RecipePrinter reads.",
       },
       {
-        question: "What if Facebook will not let me copy the recipe?",
+        question: "What about a recipe posted in a private group?",
         answer:
-          "Take screenshots of the recipe text or copy the source link if the creator included one. RecipePrinter can start from screenshots, photos, pasted text, or URLs.",
+          "A post that only members can see will not always open for RecipePrinter the way a public one does. Copy the text of the post and paste that in instead, and you get the same card.",
+      },
+      {
+        question: "Do I need to connect my Facebook account?",
+        answer:
+          "No. RecipePrinter does not ask for access to your account, your groups, or your saved posts. It works from a link or from text you paste across.",
+      },
+      {
+        question: "Can I keep the recipe if the post is deleted?",
+        answer:
+          "Yes, and that is most of the reason to print it. Once the card is printed or saved as a PDF it does not depend on the post, the group, or the account that shared it.",
+      },
+      {
+        question: "How do I print a Facebook recipe from my phone?",
+        answer:
+          "Copy the post's link in the app, then open RecipePrinter in your phone browser and paste it there. Set the card up and use the phone's own print dialog to reach a wireless printer, or choose Save as PDF and print it later.",
       },
     ],
     links: [
@@ -668,24 +770,75 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
     intent: "Utility SEO",
     eyebrow: "Social recipe printer",
     initialImportMode: "url",
-    importHint:
-      "A video has no page to read. If the link won't import, paste the caption or upload screenshots of the steps.",
     title: "Free TikTok Recipe Printer",
     description:
-      "Turn TikTok recipe captions, screenshots, links, or pasted text into printable recipe cards, pages, and PDFs.",
+      "Paste a TikTok link and turn the recipe in the caption into a printable recipe card, page, or PDF you can cook from.",
     h1: "Print TikTok recipes",
     lede:
-      "TikTok is good for finding quick recipe ideas. RecipePrinter helps turn the recipes you want to repeat into something stable enough to cook from.",
-    faqs: [
+      "A TikTok shows you the dish and moves on. Paste the video's link and RecipePrinter turns the recipe into a card that stays where you put it.",
+    howTo: [
       {
-        question: "Can RecipePrinter print directly from TikTok?",
-        answer:
-          "Use the recipe text, caption, screenshots, or available source link. RecipePrinter will format the recipe into a printable card or page.",
+        name: "Copy the video's link",
+        text: "Tap Share on the video and choose Copy link. That is the link to the video itself, which is the only one you need.",
       },
       {
-        question: "Can I save TikTok recipes as PDFs?",
+        name: "Paste it in",
+        text: "Paste it into the box above. RecipePrinter reads the caption and the pinned comment, which is where creators write the ingredients and the method out.",
+      },
+      {
+        name: "Choose a card or a page",
+        text: "A 4 by 6 card for the box, or a letter page if the method runs long. Edit any line, including the amount you had to watch three times to catch.",
+      },
+      {
+        name: "Print it or save it as a PDF",
+        text: "Print it, or choose Save as PDF in the print dialog so the recipe is on your phone without the video around it.",
+      },
+    ],
+    featureSections: [
+      {
+        heading: "A video is a demonstration. A card is a reference.",
+        image: "counter-card",
+        body:
+          "Watching someone make it once is genuinely useful. Cooking along with it is a different job: scrubbing back fifteen seconds with a wet hand to check whether that was one teaspoon or two, while the video has already moved on to the plating. A printed card gives the amounts once and stays open at the right place for the whole hour you are in the kitchen.",
+      },
+      {
+        heading: "The recipe is usually already written down",
+        image: "steps",
+        body:
+          "Most creators put the ingredients and the steps in the caption or a pinned comment, because they know the video on its own is hard to cook from. That writing is what RecipePrinter reads when you paste the link, so what comes out is the creator's own recipe, set as a list of ingredients with amounts and numbered steps.",
+      },
+      {
+        heading: "The ones you actually make again",
+        image: "card-in-box",
+        body:
+          "Most saved videos are never made twice. The few that are earn a place off the app: printed, filed in a recipe box or a binder, and out of a feed built around the next video rather than the last one.",
+      },
+    ],
+    faqs: [
+      {
+        question: "Can RecipePrinter print a recipe straight from a TikTok?",
         answer:
-          "Yes. Once the recipe is formatted, choose Save as PDF in your browser print dialog.",
+          "Yes. Paste the video's link and it reads the recipe from the caption and the pinned comment, which is where it is nearly always written.",
+      },
+      {
+        question: "What if the amounts are only spoken in the video?",
+        answer:
+          "Some videos never write the recipe down anywhere. You can paste in what you catch and shape it from there. Every line on the card is editable, so a half-caught measurement is fixed once and stays fixed.",
+      },
+      {
+        question: "What happens when the video disappears?",
+        answer:
+          "A printed card does not depend on it. Videos come down, accounts go private, and sounds get pulled, and none of that reaches a recipe already in the box.",
+      },
+      {
+        question: "Can I save a TikTok recipe as a PDF?",
+        answer:
+          "Yes. Once the recipe is set up, choose Save as PDF in your browser's print dialog and keep it with the rest of your recipes.",
+      },
+      {
+        question: "Do I need a TikTok account to use this?",
+        answer:
+          "No. RecipePrinter works from the link, so there is nothing to connect and nothing to sign into on our side.",
       },
     ],
     links: [
@@ -706,24 +859,75 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
     intent: "Utility SEO",
     eyebrow: "Video recipe printer",
     initialImportMode: "url",
-    importHint:
-      "The recipe usually lives in the description. If the link won't import, paste that text in instead.",
     title: "Free YouTube Recipe Printer",
     description:
-      "Turn YouTube recipe descriptions, transcripts, screenshots, links, or copied notes into printable recipes.",
+      "Paste a YouTube link and turn the recipe written in the description into a printable recipe card, page, or searchable PDF.",
     h1: "Print a recipe from YouTube",
     lede:
-      "YouTube recipes are helpful to watch and frustrating to cook from when the ingredients live in a description, transcript, pinned comment, or on-screen text. RecipePrinter helps turn the recipe details into a printable card or page.",
+      "The recipe in a cooking video is usually written out in the description. Paste the video's link and RecipePrinter lifts it onto a card or a page.",
+    howTo: [
+      {
+        name: "Copy the video's link",
+        text: "Use Share, then Copy link, or take the address straight out of your browser. Both point at the same video.",
+      },
+      {
+        name: "Paste it in",
+        text: "Paste it into the box above. RecipePrinter reads the description, where the ingredients and the method are usually written out in full.",
+      },
+      {
+        name: "Choose a card or a page",
+        text: "A letter page suits a long bake with a dozen steps, and a 4 by 6 card suits a weeknight. Edit any line, and decide whether the photo prints.",
+      },
+      {
+        name: "Print it or save it as a PDF",
+        text: "Print it, or choose Save as PDF in the print dialog to keep it with your other recipes.",
+      },
+    ],
+    featureSections: [
+      {
+        heading: "The description holds the recipe, and everything else",
+        image: "steps",
+        body:
+          "Under the video there is the recipe, and around it the discount code, the equipment links, the chapter timestamps, the other channels, and a paragraph about the newsletter. RecipePrinter keeps the ingredients with their amounts, the numbered steps, the times, and the servings, and leaves the rest where it is.",
+      },
+      {
+        heading: "Twenty minutes of video, one sheet of paper",
+        image: "counter-card",
+        body:
+          "A cooking video is paced for watching. Ingredients arrive as they are used, the oven temperature is said once around minute four, and finding it again means dragging a timeline with flour on your hands. On paper the whole thing is in front of you at once, in the order you need it.",
+      },
+      {
+        heading: "A PDF you can search",
+        image: "pdf-search",
+        body:
+          "Save the recipe as a PDF and it behaves like a document rather than a video. Search it for sesame oil and it tells you which page. Keep a folder of them and the phone in your kitchen becomes something you look things up in, instead of a watch history you scroll.",
+      },
+    ],
     faqs: [
       {
-        question: "Can RecipePrinter extract a full recipe from any YouTube video?",
+        question: "Can RecipePrinter get the recipe from any cooking video?",
         answer:
-          "Start with the written recipe details when they are available: the description, transcript, pinned comment, screenshots, or source link. If the video has no usable recipe text, you may need to paste your own notes.",
+          "It works from the recipe the channel wrote down, which usually means the description and sometimes a pinned comment. When a video has no written recipe anywhere, there is nothing to read from, and you can paste your own notes in instead.",
+      },
+      {
+        question: "Can I print a recipe from a YouTube Short?",
+        answer:
+          "Yes, the same way. Shorts have descriptions and pinned comments too. They tend to be briefer, so there is more often a line to fill in by hand before you print.",
       },
       {
         question: "Can I save a YouTube recipe as a PDF?",
         answer:
-          "Yes. Once the recipe details are formatted in RecipePrinter, choose Save as PDF in your browser print dialog.",
+          "Yes. Choose Save as PDF in your browser's print dialog once the recipe is set up, and it saves as a normal file you can keep or send on.",
+      },
+      {
+        question: "The description links to the channel's own site. Which should I paste?",
+        answer:
+          "Either works, and they give you slightly different things. The video's link gets you the recipe as the description states it. The site's link usually gets you a fuller version, with the notes and substitutions the channel had room for there.",
+      },
+      {
+        question: "Will the card link back to the video?",
+        answer:
+          "It can, and that is your call. The video's link can print on the card, so the channel is credited and the demonstration is one tap away when you want to see a technique again.",
       },
     ],
     links: [
