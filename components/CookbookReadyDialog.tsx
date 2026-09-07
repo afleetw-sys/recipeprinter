@@ -5,6 +5,7 @@ import { useEffect, useState } from "react";
 import { Dialog } from "@/components/Dialog";
 import {
   CheckIcon,
+  ChevronLeftIcon,
   GlobeIcon,
   ICON_SIZE,
   PrintIcon,
@@ -20,6 +21,7 @@ import {
   bindingLabels,
   destinationPresets,
   destinationPriceLine,
+  downloadSummary,
   destinationPrinter,
   destinationSettings,
   destinationUploadsAFile,
@@ -145,9 +147,29 @@ export function CookbookReadyDialog({
         <XIcon size={ICON_SIZE.md} />
       </button>
 
+      {/* On step two the heading IS the destination, with the way back beside
+          it. It used to be a fixed "Print your cookbook" with "‹ Lulu" on a
+          line of its own underneath — which put the only navigation on the
+          screen below the title it navigates away from, reading as a stray
+          caption rather than as a control. */}
       <div className="cookbook-ready__head">
+        {destination && (
+          <button
+            type="button"
+            className="cookbook-ready__back"
+            aria-label="Back to where you're printing"
+            disabled={exportingPreset !== null}
+            onClick={() => goToDestination(null)}
+          >
+            <ChevronLeftIcon size={ICON_SIZE.lg} />
+          </button>
+        )}
         <h2 id="cookbook-ready-title">
-          {justPurchased ? "Your cookbook is ready 🎉" : "Print your cookbook"}
+          {destination
+            ? destination.name
+            : justPurchased
+              ? "Your cookbook is ready 🎉"
+              : "Print your cookbook"}
         </h2>
       </div>
 
@@ -190,15 +212,6 @@ export function CookbookReadyDialog({
         </div>
       ) : (
         <div className="cookbook-ready__formats">
-          <button
-            type="button"
-            className="cookbook-ready__back"
-            disabled={exportingPreset !== null}
-            onClick={() => goToDestination(null)}
-          >
-            ‹ {destination.name}
-          </button>
-
           {lastExport ? (
             /* Step two, done. A finished PDF is only half of it: the file is
                correct against exactly one set of order options, and none of
@@ -345,13 +358,7 @@ function ChooseBook({
           which read as a paragraph to get through rather than as a caption
           under a choice. */}
       <p className="cookbook-binding__trim">
-        {[
-          presets.length > 1 ? null : preset.productName,
-          preset.trimLabel,
-          preset.wrapRequired ? "two files" : "one file",
-        ]
-          .filter(Boolean)
-          .join(" · ")}
+        {presets.length > 1 ? preset.trimLabel : `${preset.productName} · ${preset.trimLabel}`}
       </p>
 
       {/* Only where a cover travels on its own. A copy shop binds the document
@@ -405,6 +412,8 @@ function ChooseBook({
           </span>
         </div>
       )}
+
+      <p className="cookbook-ready__downloads">{downloadSummary(destination, preset)}</p>
 
       <button
         type="button"

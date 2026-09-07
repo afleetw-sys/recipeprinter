@@ -3,6 +3,7 @@ import { COOKBOOK_PRESETS, PRINTERS, getCookbookPreset } from "@/lib/cookbookPre
 import {
   PRINT_DESTINATIONS,
   bindingLabels,
+  downloadSummary,
   destinationPriceLine,
   estimateTotalUsd,
   destinationPresets,
@@ -337,5 +338,57 @@ describe("what it costs", () => {
     expect(blurb).not.toContain("$");
     // And nothing at all where the name is the whole answer.
     expect(destinationPriceLine(getPrintDestination("other"), 95)).toBe("");
+  });
+});
+
+describe("what pressing Save produces", () => {
+  it("names the service that wants two files", () => {
+    // "two files" on its own is shorthand for something nobody has been told:
+    // it is not a property of the book, it is the upload form having two
+    // fields. Unattributed, it reads as a quirk of ours.
+    for (const id of ["lulu", "blurb"] as const) {
+      const destination = getPrintDestination(id);
+      for (const preset of destinationPresets(destination)) {
+        const line = downloadSummary(destination, preset);
+        expect(line).toContain(destinationPrinter(destination)!.name);
+        expect(line).toContain("two files");
+      }
+    }
+  });
+
+  it("says who asks without inventing a shop", () => {
+    // "Somewhere else" has no name to put in the sentence.
+    const other = getPrintDestination("other");
+    for (const preset of destinationPresets(other)) {
+      expect(downloadSummary(other, preset)).toBe(
+        "Print services ask for two files: the pages and the cover.",
+      );
+    }
+  });
+
+  it("tells a copy shop's customer the shop does the binding", () => {
+    // Confirmed on a real order: Staples took the one file and bound the cover
+    // itself, which is the fact that makes it different from Lulu.
+    const shop = getPrintDestination("copy-shop");
+    const line = downloadSummary(shop, destinationPresets(shop)[0]);
+    expect(line).toContain("One file");
+    expect(line).toContain("binds the cover in");
+  });
+
+  it("tells a home printer where the cover ends up", () => {
+    const home = getPrintDestination("home");
+    expect(downloadSummary(home, destinationPresets(home)[0])).toBe(
+      "One file, with the cover as its first page.",
+    );
+  });
+
+  it("always says how many files, whatever the destination", () => {
+    for (const destination of PRINT_DESTINATIONS) {
+      for (const preset of destinationPresets(destination)) {
+        const line = downloadSummary(destination, preset);
+        expect(line).toMatch(/One file|two files/);
+        expect(line.endsWith(".")).toBe(true);
+      }
+    }
   });
 });

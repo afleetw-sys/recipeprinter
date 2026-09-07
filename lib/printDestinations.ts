@@ -349,3 +349,31 @@ export function destinationPriceLine(
   return destination.economics.fixedNote ?? destination.tagline ?? "";
 }
 
+
+/**
+ * One sentence above the Save button saying what pressing it produces, and who
+ * wants it that way.
+ *
+ * It used to read "· two files", tacked onto the trim. That is shorthand for
+ * something nobody has been told yet: two files is not a property of the book,
+ * it is Lulu's upload form having two fields, and a cook who does not know
+ * that reads "two files" as a quirk of ours. Naming who asks turns a fact
+ * about our export into a fact about their order, which is the only reason it
+ * is worth knowing.
+ */
+export function downloadSummary(
+  destination: PrintDestination,
+  preset: CookbookPreset,
+): string {
+  if (preset.wrapRequired) {
+    const printer = destinationPrinter(destination);
+    // "Somewhere else" has no name to put in the sentence, so the category
+    // takes the subject instead of us inventing a shop.
+    return printer
+      ? `${printer.name} asks for two files: the pages and the cover.`
+      : "Print services ask for two files: the pages and the cover.";
+  }
+  return destinationUploadsAFile(destination)
+    ? "One file. The shop binds the cover in for you."
+    : "One file, with the cover as its first page.";
+}

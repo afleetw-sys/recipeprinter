@@ -633,9 +633,42 @@
   padding: 28px;
 }
 .cookbook-ready__head {
-  display: grid;
-  gap: .5rem;
+  display: flex;
+  align-items: center;
+  gap: .4rem;
   padding-right: 2.25rem;
+}
+/* The way back, level with the heading it leaves. Pulled left of the panel's
+   own padding so the heading itself does not shift when the button appears on
+   step two — a title that moves sideways as you navigate reads as two
+   different titles. */
+.cookbook-ready__back {
+  display: grid;
+  place-items: center;
+  flex: 0 0 auto;
+  margin-left: -.5rem;
+  padding: .25rem;
+  border-radius: var(--cp-radius-control);
+  color: var(--cp-ink-soft);
+  cursor: pointer;
+}
+.cookbook-ready__back:hover:not(:disabled) {
+  color: var(--cp-ink);
+  background: var(--cp-surface-muted);
+}
+.cookbook-ready__back:focus-visible {
+  outline: var(--cp-focus-ring);
+  outline-offset: 2px;
+}
+.cookbook-ready__back:disabled {
+  opacity: .5;
+  cursor: default;
+}
+/* What Save is about to produce, immediately above Save. */
+.cookbook-ready__downloads {
+  margin-bottom: -.35rem;
+  color: var(--cp-ink-soft);
+  font-size: var(--cp-fs-small);
 }
 .cookbook-ready__formats {
   display: grid;
@@ -777,22 +810,6 @@
   /* A minus sign, not a hyphen: this sits opposite a "+" and has to balance
      it. U+2212. */
   content: "−";
-}
-/* The way back to step one. Quiet: it is a return, not an action. */
-.cookbook-ready__back {
-  justify-self: start;
-  margin-bottom: -.15rem;
-  color: var(--cp-ink-soft);
-  font-size: var(--cp-fs-small);
-  font-weight: 700;
-  cursor: pointer;
-}
-.cookbook-ready__back:hover:not(:disabled) {
-  color: var(--cp-ink);
-}
-.cookbook-ready__back:focus-visible {
-  outline: var(--cp-focus-ring);
-  outline-offset: 2px;
 }
 
 /* Step three: the files landed, here is what they are for. A list and a
