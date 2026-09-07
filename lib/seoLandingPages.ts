@@ -219,7 +219,7 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
       {
         question: "Can I print several recipes in one go?",
         answer:
-          "Yes. Paste in as many links as you want and print them as one job. That is the difference between seven trips to the printer and one, which is most of the point when you are printing a week of dinners at once.",
+          "Yes. Add as many recipes as you want and print them as one job. That is the difference between seven trips to the printer and one, which is most of the point when you are printing a week of dinners at once.",
       },
       {
         question: "What happens if the original page disappears?",
@@ -480,6 +480,7 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
   },
   {
     slug: "print-pinterest-recipes",
+    lastReviewed: "2026-09-07",
     primaryKeyword: "print Pinterest recipes",
     secondaryKeywords: [
       "print recipe from Pinterest",
@@ -492,8 +493,9 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
     intent: "Utility SEO",
     eyebrow: "Social recipe printer",
     initialImportMode: "url",
+    captureReassurance: false,
     importHint:
-      "Nothing behind the pin? Paste the recipe text or upload a screenshot instead.",
+      "If a pin won't import, paste the recipe text or upload a screenshot instead.",
     title: "Free Pinterest Recipe Printer",
     description:
       "Turn Pinterest recipe links, screenshots, or saved recipe text into printable recipe cards, pages, and PDFs.",
@@ -503,15 +505,15 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
     howTo: [
       {
         name: "Copy the pin's link",
-        text: "Open the pin, tap Share, and choose Copy link. That is the pin's own link, and it is the only one you need. There is no reason to go to the recipe site yourself.",
+        text: "Open the pin, tap Share, and choose Copy link. That is the pin's own link, and it is the only one you need.",
       },
       {
         name: "Paste it in",
-        text: "Paste it into the box above. When the pin has a recipe behind it, the kind with an Open recipe button, RecipePrinter follows it through to the source and reads the recipe from there.",
+        text: "Paste it into the box above. When the pin links out to a recipe, RecipePrinter follows it and reads the recipe from there.",
       },
       {
         name: "Pick a card or a page",
-        text: "A 4 by 6 card for the recipe box, or a full letter page for long bakes. Keep the finished-dish photo or leave it off, and edit any line before you print.",
+        text: "A 4 by 6 card for the recipe box, or a letter page for long bakes. Edit any line, and keep or drop the photo.",
       },
       {
         name: "Print it or save it as a PDF",
@@ -520,22 +522,22 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
     ],
     featureSections: [
       {
-        heading: "A pin points at a food blog, and food blogs print badly",
+        heading: "A pin points at a recipe blog, and blogs are built for screens",
         proof: "before-after",
         body:
-          "Behind the pin is the story, the pop-ups, the autoplay video, and the recipe somewhere near the bottom. Printed straight from the browser, one of those pages ran to 26 sheets. RecipePrinter goes there so you do not have to, and keeps the part you cook from: the ingredients with their amounts, the numbered steps, the times, and the servings. Everything else stays on the website.",
+          "A recipe post is made to be scrolled: the photo, the story behind the dish, the notes, the comments, and the recipe itself somewhere down the page. None of that is a problem until you hit print. One of those pages, sent straight to the printer, ran to 26 sheets. RecipePrinter reads the page and keeps the part you cook from: the ingredients with their amounts, the numbered steps, the times, and the servings.",
       },
       {
-        heading: "When there is nothing behind the pin",
+        heading: "The pin itself is enough",
         image: "steps",
         body:
-          "Plenty of recipes on Pinterest never leave the pin. There is no Open recipe button, or the link behind it is dead, or the whole recipe is written into the image and the description. Screenshot the pin and upload it, or paste the text straight in, and it becomes the same clean printout as a link would. Nothing about the finished card says which route it took.",
+          "Plenty of pins never link out to a recipe at all. Some have it typed into the description, and some have it only in the image. Paste the pin's link either way. RecipePrinter follows the link when there is one, reads the description when there isn't, and reads the pin's own image when that is all there is.",
       },
       {
-        heading: "Print the board, not one pin at a time",
+        heading: "A board is for saving, a card is for cooking",
         image: "counter-card",
         body:
-          "Boards are where recipes go to wait. Paste in as many as you want and print them as a single job, so a season of dinners takes one trip to the printer instead of fifteen. Printed cards can then be filed the way boards never quite are: a recipe box, a binder, a folder by the stove, or later a bound cookbook.",
+          "A board is a good place to collect recipes and an awkward place to cook from. The screen sleeps, your hands are wet, and you lose your place scrolling back up to the ingredients. A printed card sits on the counter and stays where you left it. Afterwards it goes in a recipe box, a binder, a folder by the stove, or later a bound cookbook.",
       },
     ],
     faqs: [
@@ -561,12 +563,12 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
       {
         question: "Can I print a whole board at once?",
         answer:
-          "Yes. Add as many recipes as you like and print them in one go. It is the difference between fifteen trips to the printer and one, which matters most when you are finally clearing out a board you have been saving to for years.",
+          "You add the pins one at a time, and then print them together as a single job. So it is not one paste, but it is one trip to the printer instead of fifteen, and the card size and theme apply to every recipe waiting to print.",
       },
       {
         question: "Will the printed card still show where the recipe came from?",
         answer:
-          "It can. You can print the original link on the card, so the blogger the pin pointed at is credited and the page is easy to find again if you want the notes underneath it.",
+          "It can, and that is your call: print the original link on the card or leave it off. The link kept with the recipe is the recipe page's when the pin leads to one, and the pin's own when it doesn't.",
       },
     ],
     links: [
