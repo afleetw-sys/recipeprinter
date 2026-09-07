@@ -260,10 +260,10 @@ describe("what it costs", () => {
   it("scales with the book", () => {
     // A cookbook's price is almost entirely its page count, so a flat figure
     // would be wrong for everyone whose book is not the size we measured.
-    // $28 for 95 pages, so twice the book is twice the bill.
+    // $12 for 95 pages, so twice the book is twice the bill.
     const lulu = getPrintDestination("lulu");
-    expect(estimateTotalUsd(lulu, 190)).toBe(56);
-    expect(estimateTotalUsd(lulu, 48)).toBe(14);
+    expect(estimateTotalUsd(lulu, 190)).toBe(24);
+    expect(estimateTotalUsd(lulu, 285)).toBe(36);
   });
 
   it("quotes no price for a shop nobody has ordered from", () => {
@@ -294,7 +294,7 @@ describe("what it costs", () => {
     // Both anchors are spiral books; a hardcover costs more everywhere that
     // binds one. A floor is honest where a midpoint would not be.
     expect(destinationPriceLine(getPrintDestination("lulu"), 95)).toBe(
-      "From about $28 for your 95 pages",
+      "From about $12 for your 95 pages",
     );
     expect(destinationPriceLine(getPrintDestination("copy-shop"), 95)).toBe(
       "From about $72 for your 95 pages",
@@ -311,7 +311,7 @@ describe("what it costs", () => {
     // An unqualified "$28" reads as the price of a cookbook. It is the price
     // of THIS cookbook, and a longer one costs more.
     expect(destinationPriceLine(getPrintDestination("lulu"), 95)).toBe(
-      "From about $28 for your 95 pages",
+      "From about $12 for your 95 pages",
     );
     expect(destinationPriceLine(getPrintDestination("lulu"), 190)).toContain("190 pages");
   });
@@ -322,5 +322,7 @@ describe("what it costs", () => {
     const blurb = destinationPriceLine(getPrintDestination("blurb"), 95);
     expect(blurb).toBe(getPrintDestination("blurb").tagline);
     expect(blurb).not.toContain("$");
+    // And nothing at all where the name is the whole answer.
+    expect(destinationPriceLine(getPrintDestination("other"), 95)).toBe("");
   });
 });

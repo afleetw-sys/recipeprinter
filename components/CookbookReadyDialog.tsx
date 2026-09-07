@@ -176,9 +176,14 @@ export function CookbookReadyDialog({
               <DestinationMark id={option.id} name={option.name} />
               <span className="cookbook-destination__text">
                 <strong>{option.name}</strong>
-                <small className="cookbook-destination__price">
-                  {destinationPriceLine(option, pageCount)}
-                </small>
+                {/* Nothing at all where there is neither a price nor anything
+                    worth saying: an empty line under the name is worse than a
+                    row that is simply its name. */}
+                {destinationPriceLine(option, pageCount) && (
+                  <small className="cookbook-destination__price">
+                    {destinationPriceLine(option, pageCount)}
+                  </small>
+                )}
               </span>
             </button>
           ))}

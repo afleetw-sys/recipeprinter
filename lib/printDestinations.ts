@@ -27,8 +27,16 @@ export interface PrintDestination {
   id: PrintDestinationId;
   /** What it is called on the first screen. */
   name: string;
-  /** One line, describing the destination rather than the file. */
-  tagline: string;
+  /**
+   * One line, describing the destination rather than the file. Shown only when
+   * there is no price to show instead.
+   *
+   * Optional, and "Somewhere else" is why: the name already says everything
+   * there is to say about a shop we know nothing about, and a line under it
+   * restating that in other words is a row of text asking to be read for
+   * nothing.
+   */
+  tagline?: string;
   /**
    * The books this destination can make, in order; the first is the default.
    *
@@ -125,11 +133,19 @@ export const PRINT_DESTINATIONS: PrintDestination[] = [
     tagline: "Print on demand.",
     presetIds: ["coil-us-letter", "hardcover-us-letter"],
     printerId: "lulu",
-    extraSettings: [{ label: "Interior", value: "Full colour" }],
+    // Standard or premium: both are full colour and both take the same file,
+    // so this is a price decision rather than a requirement, and it is stated
+    // as an option rather than an instruction.
+    extraSettings: [{ label: "Interior", value: "Standard or premium colour" }],
     economics: {
       // The same book as the Staples order above, which is what makes the
-      // comparison worth showing: one book, two counters, $28 against $72.
-      observed: { pages: 95, totalUsd: 28, note: "95-page spiral book, premium colour" },
+      // comparison worth showing: one book, two counters, $12 against $72.
+      //
+      // Standard colour, because this figure is a floor and the row says
+      // "from". The same book in premium colour was $28 — still well under
+      // half the copy shop, and the choice is theirs to make on Lulu's own
+      // form rather than ours to make for them by quoting the dearer one.
+      observed: { pages: 95, totalUsd: 12, note: "95-page spiral book, standard colour" },
     },
   },
   {
@@ -146,9 +162,9 @@ export const PRINT_DESTINATIONS: PrintDestination[] = [
   {
     id: "other",
     name: "Somewhere else",
-    // The cover-size warning that used to live here is on step two, beside the
-    // fields it is about.
-    tagline: "Any other print service.",
+    // No tagline. "Somewhere else" is self-describing, and the cover-size
+    // warning that used to live here is on step two, beside the fields it is
+    // about.
     // Every print-ready shape, because we cannot narrow it: an unknown service
     // might want any of them. The zero-bleed home format is NOT here — a shop
     // that takes a plain document with the cover bound in is a copy shop, and
@@ -308,9 +324,11 @@ export function estimateTotalUsd(
  * before anything could be clicked. What the file looks like belongs on step
  * two, where it is about to be downloaded; step one is a question about money.
  *
- * "From about", never "about": both anchors are spiral books, step one has not
- * asked about binding yet, and a hardcover costs more everywhere that binds
- * one. The floor is honest; a midpoint would not be.
+ * "From about", never "about". Two things it has not asked yet both cost more:
+ * the binding, since these anchors are spiral books and a hardcover is dearer
+ * everywhere that binds one, and at Lulu the colour tier, since $12 is the
+ * standard-colour price and premium is $28. The floor is honest; a midpoint
+ * would not be.
  *
  * The page count is named rather than implied. An unqualified "$28" invites
  * being read as the price of a cookbook; it is the price of THIS cookbook, and
@@ -322,6 +340,6 @@ export function destinationPriceLine(
 ): string {
   const estimate = estimateTotalUsd(destination, pages);
   if (estimate !== null) return `From about $${estimate} for your ${pages} pages`;
-  return destination.economics.fixedNote ?? destination.tagline;
+  return destination.economics.fixedNote ?? destination.tagline ?? "";
 }
 
