@@ -229,10 +229,23 @@ describe("binding labels", () => {
     ]);
   });
 
-  it("adds the size only where two bindings collide", () => {
-    // "Somewhere else" carries two hardcovers at different trims.
-    const labels = bindingLabels(destinationPresets(getPrintDestination("other")));
-    expect(labels).toEqual(["Spiral", "Hardcover 8.5 × 11", "Hardcover 8 × 10"]);
+  it("offers the same two bindings whatever the destination", () => {
+    // Which book you want does not change with the shop. "Somewhere else"
+    // briefly carried a third pill, "Hardcover 8 × 10" beside "Hardcover
+    // 8.5 × 11", which is a trim choice wearing a binding's clothes.
+    for (const destination of PRINT_DESTINATIONS) {
+      const labels = bindingLabels(destinationPresets(destination));
+      expect(labels.length).toBeLessThanOrEqual(2);
+      for (const label of labels) expect(["Spiral", "Hardcover"]).toContain(label);
+    }
+  });
+
+  it("still disambiguates by trim if a picker ever holds two of one binding", () => {
+    // The guard has no live caller now that every picker offers one of each.
+    // It is kept, and tested, because the failure it prevents is silent: two
+    // pills reading "Hardcover", either of which looks like the same click.
+    const bothHardcovers = COOKBOOK_PRESETS.filter((preset) => !preset.coilBound);
+    expect(bindingLabels(bothHardcovers)).toEqual(["Hardcover 8.5 × 11", "Hardcover 8 × 10"]);
   });
 
   it("gives every preset a binding word to be labelled by", () => {

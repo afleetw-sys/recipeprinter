@@ -936,13 +936,12 @@
 }
 /* Which book, stated once. A destination that binds one thing reads as a
    statement here rather than as a question with a single answer. */
-.cookbook-binding__trim,
-.cookbook-binding__files {
+/* A caption under the choice, not a second paragraph beside it: one step down
+   in size from the pills so the eye reads choice, then detail. */
+.cookbook-binding__trim {
+  margin-top: -.35rem;
   color: var(--cp-ink-soft);
-  font-size: var(--cp-fs-small);
-}
-.cookbook-binding__files {
-  margin-top: -.4rem;
+  font-size: var(--cp-fs-caption);
 }
 
 .cookbook-ready__save {

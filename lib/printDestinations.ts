@@ -165,12 +165,18 @@ export const PRINT_DESTINATIONS: PrintDestination[] = [
     // No tagline. "Somewhere else" is self-describing, and the cover-size
     // warning that used to live here is on step two, beside the fields it is
     // about.
-    // Every print-ready shape, because we cannot narrow it: an unknown service
-    // might want any of them. The zero-bleed home format is NOT here — a shop
-    // that takes a plain document with the cover bound in is a copy shop, and
-    // that is the row above. Listing it here put a fourth option in the picker
-    // whose only difference from the first was invisible.
-    presetIds: ["coil-us-letter", "hardcover-us-letter", "hardcover-8x10"],
+    // Spiral or hardcover, both at US Letter. Deliberately the same two
+    // choices every other row offers, because the question this step asks is
+    // which book you want and that question does not change with the shop.
+    //
+    // The 8 × 10 hardcover is NOT here even though an unknown service might
+    // want one: adding it made a third pill, "Hardcover 8 × 10" beside
+    // "Hardcover 8.5 × 11", which turns a binding choice into a trim choice
+    // wearing a binding's clothes. 8 × 10 is Blurb's trim and reachable from
+    // Blurb's row. The zero-bleed home format is not here either — a shop that
+    // takes a plain document with the cover bound in is a copy shop, which is
+    // two rows up.
+    presetIds: ["coil-us-letter", "hardcover-us-letter"],
     unknownSpec: true,
     economics: {},
   },

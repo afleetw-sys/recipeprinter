@@ -340,16 +340,18 @@ function ChooseBook({
         </div>
       )}
 
-      {/* Which book this is, stated once for whichever is selected rather than
-          repeated beside every option. */}
+      {/* One line of facts about the selected book, not three stacked at the
+          same weight. The trim and the file count were separate sentences,
+          which read as a paragraph to get through rather than as a caption
+          under a choice. */}
       <p className="cookbook-binding__trim">
-        {presets.length > 1 ? preset.trimLabel : `${preset.productName} · ${preset.trimLabel}`}
-      </p>
-
-      <p className="cookbook-binding__files">
-        {preset.wrapRequired
-          ? "Downloads as two files, the pages and the cover."
-          : "Downloads as one file, with the cover as its first page."}
+        {[
+          presets.length > 1 ? null : preset.productName,
+          preset.trimLabel,
+          preset.wrapRequired ? "two files" : "one file",
+        ]
+          .filter(Boolean)
+          .join(" · ")}
       </p>
 
       {/* Only where a cover travels on its own. A copy shop binds the document
@@ -357,18 +359,10 @@ function ChooseBook({
       {preset.wrapRequired && (
         <div className="cookbook-cover-size">
           <span className="cookbook-cover-size__label">Cover size</span>
+          {/* Sheet first, spine last: that is the order a print service states
+              them in, and reading them back off their page in a different
+              order is how a number lands in the wrong box. */}
           <span className="cookbook-cover-size__fields">
-            <input
-              type="text"
-              inputMode="decimal"
-              aria-label="Spine width in inches"
-              value={shown.spine}
-              disabled={busy}
-              onChange={(event) => setCoverField(preset.id, "spine", event.target.value)}
-            />
-            <span className="cookbook-cover-size__unit" aria-hidden>
-              in spine, cover
-            </span>
             <input
               type="text"
               inputMode="decimal"
@@ -385,6 +379,17 @@ function ChooseBook({
               value={shown.h}
               disabled={busy}
               onChange={(event) => setCoverField(preset.id, "h", event.target.value)}
+            />
+            <span className="cookbook-cover-size__unit" aria-hidden>
+              in, spine
+            </span>
+            <input
+              type="text"
+              inputMode="decimal"
+              aria-label="Spine width in inches"
+              value={shown.spine}
+              disabled={busy}
+              onChange={(event) => setCoverField(preset.id, "spine", event.target.value)}
             />
             <span className="cookbook-cover-size__unit">in</span>
           </span>
