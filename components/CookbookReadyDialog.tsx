@@ -132,6 +132,17 @@ export function CookbookReadyDialog({
     onExportAnother?.();
   };
   const destination = destinationId ? getPrintDestination(destinationId) : null;
+  const presets = destination ? destinationPresets(destination) : [];
+  /**
+   * The book being described right now: the one that was exported if there is
+   * one, otherwise the one selected.
+   *
+   * Resolved here rather than inside the body so the heading and the controls
+   * cannot end up describing different books.
+   */
+  const activePreset = lastExport
+    ? getCookbookPreset(lastExport.presetId)
+    : (presets.find((option) => option.id === selectedPresetId) ?? presets[0]);
 
   return (
     <Dialog
@@ -164,13 +175,31 @@ export function CookbookReadyDialog({
             <ChevronLeftIcon size={ICON_SIZE.lg} />
           </button>
         )}
-        <h2 id="cookbook-ready-title">
-          {destination
-            ? destination.name
-            : justPurchased
-              ? "Your cookbook is ready 🎉"
-              : "Print your cookbook"}
-        </h2>
+        <span className="cookbook-ready__title">
+          <h2 id="cookbook-ready-title">
+            {destination
+              ? destination.name
+              : justPurchased
+                ? "Your cookbook is ready 🎉"
+                : "Print your cookbook"}
+          </h2>
+          {/* The trim, and the product name where there is no picker to state
+              it. Up here because it does not answer to the binding pills: every
+              destination's books share a trim, so under them it looked like a
+              readout that never read out. It is a fact about the book you get
+              at this shop, which is what the heading is about.
+
+              Still taken from the ACTIVE preset rather than hardcoded, so a
+              destination that one day offers two trims describes itself
+              correctly instead of confidently naming one of them. */}
+          {destination && activePreset && (
+            <p className="cookbook-ready__subtitle">
+              {presets.length > 1
+                ? activePreset.trimLabel
+                : `${activePreset.productName} · ${activePreset.trimLabel}`}
+            </p>
+          )}
+        </span>
       </div>
 
       {exportError && (
@@ -352,14 +381,6 @@ function ChooseBook({
           ))}
         </div>
       )}
-
-      {/* One line of facts about the selected book, not three stacked at the
-          same weight. The trim and the file count were separate sentences,
-          which read as a paragraph to get through rather than as a caption
-          under a choice. */}
-      <p className="cookbook-binding__trim">
-        {presets.length > 1 ? preset.trimLabel : `${preset.productName} · ${preset.trimLabel}`}
-      </p>
 
       {/* Only where a cover travels on its own. A copy shop binds the document
           you hand it, so there is no cover sheet to size and nothing to read. */}
