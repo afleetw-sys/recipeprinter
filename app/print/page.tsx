@@ -117,6 +117,7 @@ import {
   isRecipePrintTemplate,
   usePrintSettingsPersistence,
 } from "@/lib/printSettings";
+import { openingPageFor } from "@/lib/frontMatterPage";
 import type {
   CookbookPresetId,
   CoverConfig,
@@ -572,17 +573,13 @@ export default function PrintPage() {
   // update loop ("Maximum update depth exceeded"). A stable reference breaks it.
   const dedicationPage = useMemo<CoverConfig | undefined>(() => {
     if (!projectMeta.meta.cookbookMode) return undefined;
-    const frontMatter = projectMeta.meta.frontMatter;
-    if (frontMatter && (frontMatter.heading?.trim() || frontMatter.body?.trim())) {
-      return {
-        title:
-          frontMatter.heading?.trim() ||
-          (frontMatter.kind === "dedication" ? "Dedication" : "Introduction"),
-        blurb: frontMatter.body,
-        template,
-      };
-    }
-    return projectMeta.meta.dedication;
+    // Shared with the export, which used to read `dedication` alone and so
+    // rendered nothing for a page written in the opening-page editor.
+    return openingPageFor({
+      frontMatter: projectMeta.meta.frontMatter,
+      dedication: projectMeta.meta.dedication,
+      template,
+    });
   }, [
     projectMeta.meta.cookbookMode,
     projectMeta.meta.frontMatter,

@@ -7,6 +7,7 @@ import {
   getCookbookPreset,
   presetSheetInches,
 } from "@/lib/cookbookPresets";
+import { openingPageFor } from "@/lib/frontMatterPage";
 import { isPrintCardSize, isRecipePrintTemplate } from "@/lib/printSettings";
 import {
   coverWrapGeometry,
@@ -312,16 +313,25 @@ function InteriorDocument({ payload }: { payload: ExportPayload }) {
   // once as the cover, once as page 1 — and every folio in the book was off by
   // the number of cover pages.
   //
-  // The dedication is deliberately NOT dropped. It is an interior page that
+  // The opening page is deliberately NOT dropped. It is an interior page that
   // happens to reuse the cover component, and it belongs in the block.
   const coversAreSeparate = preset.wrapRequired;
+
+  // Derived, not read straight off `project.dedication` — the page may live in
+  // either field, and reading one of them was silently dropping pages written
+  // in the opening-page editor. See lib/frontMatterPage.
+  const openingPage = openingPageFor({
+    frontMatter: project.frontMatter,
+    dedication: project.dedication,
+    template,
+  });
 
   const { sheets, printLayoutReady, measurers } = usePrintSheets({
     sections: project.sections,
     items,
     cover: coversAreSeparate ? undefined : project.cover,
     backCover: coversAreSeparate ? undefined : project.backCover,
-    dedication: project.dedication,
+    dedication: openingPage,
     // Only the separate-cover interior needs this: it is the one whose page 1
     // is a right-hand page, because the printer cannot print the inside of a
     // cover. A book with its cover bound in has the cover as page 1 and pairs
