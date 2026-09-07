@@ -359,6 +359,16 @@ function ChooseBook({
       {preset.wrapRequired && (
         <div className="cookbook-cover-size">
           <span className="cookbook-cover-size__label">Cover size</span>
+          {/* Above the fields, not below them. The rest of the app explains a
+              control before you reach it — `cp-menu__item--stacked` and the
+              hinted `Checkbox` both read label, note, control — and an
+              instruction printed underneath three inputs is an instruction you
+              find out you needed after typing in them. */}
+          <span className="cookbook-cover-size__hint">
+            {destination.unknownSpec
+              ? "Copy these from your printer’s upload page."
+              : `Only if ${destination.name} states different numbers.`}
+          </span>
           {/* Sheet first, spine last: that is the order a print service states
               them in, and reading them back off their page in a different
               order is how a number lands in the wrong box. */}
@@ -392,11 +402,6 @@ function ChooseBook({
               onChange={(event) => setCoverField(preset.id, "spine", event.target.value)}
             />
             <span className="cookbook-cover-size__unit">in</span>
-          </span>
-          <span className="cookbook-cover-size__hint">
-            {destination.unknownSpec
-              ? "Copy these from your printer’s upload page."
-              : `Only if ${destination.name} states different numbers.`}
           </span>
         </div>
       )}
