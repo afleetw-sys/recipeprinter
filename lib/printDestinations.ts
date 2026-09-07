@@ -377,3 +377,31 @@ export function downloadSummary(
     ? "One file. The shop binds the cover in for you."
     : "One file, with the cover as its first page.";
 }
+
+/**
+ * The line introducing the settings list, once the files have been saved.
+ *
+ * It read "Lulu will ask for:", which lands as a list of things still to be
+ * sorted out — and the reader has just been handed two files whose names mean
+ * nothing to them, so the natural reading is that something else is required.
+ * Nothing is. The files are already built for exactly these options; the list
+ * is there so the order form gets set to match them, not so anything gets
+ * fixed.
+ *
+ * So it says that first. "That's everything Lulu needs" is the whole point of
+ * the screen, and it was the one thing the screen did not say.
+ */
+export function settingsIntro(
+  destination: PrintDestination,
+  preset: CookbookPreset,
+): string {
+  if (!destinationUploadsAFile(destination)) {
+    return "That’s your whole book. When you print it:";
+  }
+  if (!preset.wrapRequired) {
+    return "That’s everything the shop needs. Ask for:";
+  }
+  const printer = destinationPrinter(destination);
+  const who = printer ? printer.name : "a print service";
+  return `That’s everything ${who} needs. When you upload, choose:`;
+}

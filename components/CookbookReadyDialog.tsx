@@ -6,6 +6,7 @@ import { Dialog } from "@/components/Dialog";
 import {
   CheckIcon,
   ChevronLeftIcon,
+  ExternalIcon,
   GlobeIcon,
   ICON_SIZE,
   PrintIcon,
@@ -22,10 +23,10 @@ import {
   destinationPresets,
   destinationPriceLine,
   downloadSummary,
-  destinationPrinter,
+  destinationPrinter as printerFor,
   destinationSettings,
-  destinationUploadsAFile,
   exportFileRoles,
+  settingsIntro,
   getPrintDestination,
   type PrintDestination,
   type PrintDestinationId,
@@ -176,6 +177,7 @@ export function CookbookReadyDialog({
           </button>
         )}
         <span className="cookbook-ready__title">
+          <span className="cookbook-ready__title-row">
           <h2 id="cookbook-ready-title">
             {destination
               ? destination.name
@@ -183,6 +185,26 @@ export function CookbookReadyDialog({
                 ? "Your cookbook is ready 🎉"
                 : "Print your cookbook"}
           </h2>
+          {/* A way to go and look, for someone deciding rather than uploading.
+              Deliberately not on the step-one rows: those are a single target
+              meaning "this is where I'm printing", and a second control inside
+              them would make a click near the icon do something else. Absent
+              once an export has landed, where the same link is the primary
+              button and does not need saying twice. */}
+          {destination && !lastExport && printerFor(destination) && (
+            <button
+              type="button"
+              className="cookbook-ready__visit"
+              aria-label={`Open ${printerFor(destination)!.name}`}
+              onClick={() => {
+                const printer = printerFor(destination)!;
+                onPrinterClick(printer.id, printer.url);
+              }}
+            >
+              <ExternalIcon size={ICON_SIZE.sm} />
+            </button>
+          )}
+          </span>
           {/* The trim, and the product name where there is no picker to state
               it. Up here because it does not answer to the binding pills: every
               destination's books share a trim, so under them it looked like a
@@ -249,7 +271,7 @@ export function CookbookReadyDialog({
             <ExportedNext
               destination={destination}
               lastExport={lastExport}
-              printer={destinationPrinter(destination)}
+              printer={printerFor(destination)}
               onPrinterClick={onPrinterClick}
               onExportAnother={onExportAnother}
             />
@@ -482,7 +504,6 @@ function ExportedNext({
 }) {
   const preset = getCookbookPreset(lastExport.presetId);
   const roles = exportFileRoles(lastExport.files.length);
-  const uploads = destinationUploadsAFile(destination);
   // Only where there is a second binding to go back for. Offering it to a
   // destination that makes one thing sends people to a picker with nothing to
   // pick, which reads as a mistake on our part.
@@ -505,11 +526,7 @@ function ExportedNext({
       </ul>
 
       <div className="cookbook-next__settings">
-        <p className="cookbook-ready__lead">
-          {uploads
-            ? `${printer ? printer.name : "Your print service"} will ask for:`
-            : "When you print it:"}
-        </p>
+        <p className="cookbook-ready__lead">{settingsIntro(destination, preset)}</p>
         <dl>
           {destinationSettings(destination, preset).map((setting) => (
             <div key={setting.label}>

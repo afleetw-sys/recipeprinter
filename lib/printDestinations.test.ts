@@ -4,6 +4,7 @@ import {
   PRINT_DESTINATIONS,
   bindingLabels,
   downloadSummary,
+  settingsIntro,
   destinationPriceLine,
   estimateTotalUsd,
   destinationPresets,
@@ -390,5 +391,47 @@ describe("what pressing Save produces", () => {
         expect(line.endsWith(".")).toBe(true);
       }
     }
+  });
+});
+
+describe("the settings list's opening line", () => {
+  it("says the files are already enough", () => {
+    // It read "Lulu will ask for:", which lands as a list of things still to
+    // be sorted out — and the reader has just been handed two files whose
+    // names mean nothing to them. Nothing further is required, and that is the
+    // one thing the screen did not say.
+    for (const destination of PRINT_DESTINATIONS) {
+      for (const preset of destinationPresets(destination)) {
+        expect(settingsIntro(destination, preset)).toMatch(/^That’s/);
+      }
+    }
+  });
+
+  it("names the service that is about to be uploaded to", () => {
+    const lulu = getPrintDestination("lulu");
+    expect(settingsIntro(lulu, destinationPresets(lulu)[0])).toBe(
+      "That’s everything Lulu needs. When you upload, choose:",
+    );
+  });
+
+  it("does not invent a service it cannot name", () => {
+    const other = getPrintDestination("other");
+    expect(settingsIntro(other, destinationPresets(other)[0])).toBe(
+      "That’s everything a print service needs. When you upload, choose:",
+    );
+  });
+
+  it("asks rather than uploads at a copy shop", () => {
+    const shop = getPrintDestination("copy-shop");
+    expect(settingsIntro(shop, destinationPresets(shop)[0])).toBe(
+      "That’s everything the shop needs. Ask for:",
+    );
+  });
+
+  it("has nobody to satisfy at home", () => {
+    const home = getPrintDestination("home");
+    expect(settingsIntro(home, destinationPresets(home)[0])).toBe(
+      "That’s your whole book. When you print it:",
+    );
   });
 });

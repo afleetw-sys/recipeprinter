@@ -669,6 +669,31 @@
   gap: .1rem;
   min-width: 0;
 }
+.cookbook-ready__title-row {
+  display: flex;
+  align-items: center;
+  gap: .4rem;
+  min-width: 0;
+}
+/* A way out to the shop's own site, for someone still deciding. Quiet: it is
+   an aside next to the heading, not the action of the screen. */
+.cookbook-ready__visit {
+  display: grid;
+  place-items: center;
+  flex: 0 0 auto;
+  padding: .25rem;
+  border-radius: var(--cp-radius-control);
+  color: var(--cp-ink-soft);
+  cursor: pointer;
+}
+.cookbook-ready__visit:hover {
+  color: var(--cp-accent);
+  background: var(--cp-surface-muted);
+}
+.cookbook-ready__visit:focus-visible {
+  outline: var(--cp-focus-ring);
+  outline-offset: 2px;
+}
 .cookbook-ready__subtitle {
   color: var(--cp-ink-soft);
   font-size: var(--cp-fs-small);
