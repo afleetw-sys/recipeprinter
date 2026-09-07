@@ -948,10 +948,17 @@
   justify-self: start;
 }
 
-/* Three numbers copied off a printer's upload page. Deliberately quiet: it is
-   an override for the minority who have been given exact figures, not a
-   decision everyone has to make, so it sits below the option in caption type
-   and reads as filled in already (our estimate is the placeholder). */
+/* Three numbers copied off a printer's upload page, and the only input group
+   in the dialog. The fields stay quiet - they read as filled in already, since
+   our estimate is the placeholder and most people will never touch them - but
+   the heading over them does not: it has to be findable by someone scanning
+   for where the printer's numbers go.
+
+   Label, then its note, then the control, which is the order the rest of the
+   app uses (`cp-menu__item--stacked`, the hinted `Checkbox`). The label also
+   has to outrank the note, or the pair reads as two sentences rather than as a
+   heading and its gloss - both were caption-sized soft grey, which is exactly
+   what flattened this block. */
 .cookbook-cover-size {
   margin-top: .5rem;
   padding-top: .5rem;
@@ -959,12 +966,14 @@
 }
 .cookbook-cover-size__label {
   display: block;
-  color: var(--cp-ink-soft);
-  font-size: var(--cp-fs-caption);
+  color: var(--cp-ink);
+  /* The same step as a destination's name on step one. */
+  font-size: var(--cp-fs-body-lg);
+  font-weight: 700;
 }
 .cookbook-cover-size__hint {
   display: block;
-  margin-top: .35rem;
+  margin-top: .1rem;
   color: var(--cp-ink-soft);
   font-size: var(--cp-fs-caption);
 }
