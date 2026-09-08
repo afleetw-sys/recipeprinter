@@ -1,16 +1,28 @@
 import type { Metadata } from "next";
-import type { ComponentType } from "react";
 import Link from "next/link";
-import { PageShell, PageHeader, StartPrintingCta } from "@/components/PageShell";
 import {
+  AppsIcon,
+  BookIcon,
   CheckIcon,
-  LinkIcon,
-  ImageIcon,
-  TextIcon,
-  PrintIcon,
   ClockIcon,
+  CrownIcon,
+  ImageIcon,
+  LinkIcon,
+  PrintIcon,
+  SizeIcon,
+  SlidersIcon,
+  TextIcon,
 } from "@/components/icons";
-import { pageMetadata } from "@/lib/seo";
+import {
+  LandingCta,
+  LandingFrame,
+  LandingHero,
+  LandingSection,
+} from "@/components/seo/LandingFrame";
+import { HeroProductPhoto } from "@/components/seo/LandingVisuals";
+import { OverviewGrid, type OverviewItem } from "@/components/seo/OverviewGrid";
+import { Breadcrumb } from "@/components/seo/Breadcrumb";
+import { absoluteUrl, breadcrumbNode, pageMetadata } from "@/lib/seo";
 import { anchorFor, SEO_LANDING_PAGES } from "@/lib/seoLandingPages";
 
 export const metadata: Metadata = pageMetadata({
@@ -20,13 +32,32 @@ export const metadata: Metadata = pageMetadata({
   path: "/features",
 });
 
-type Feature = {
-  icon: ComponentType<{ size?: number }>;
-  title: string;
-  body: string;
+const TRAIL = [
+  { name: "Home", href: "/" },
+  { name: "Features", href: "/features" },
+];
+
+// The visible breadcrumb needs its BreadcrumbList to mean anything to a
+// crawler, and this page had neither before it moved onto the landing frame.
+const JSON_LD = {
+  "@context": "https://schema.org",
+  "@graph": [
+    {
+      "@type": "WebPage",
+      "@id": `${absoluteUrl("/features")}#webpage`,
+      url: absoluteUrl("/features"),
+      name: "Recipe Printing Tool for Recipes Worth Keeping",
+      description:
+        "A recipe printing tool for turning links, photos, screenshots, and text into printable recipe cards, pages, PDFs, and collections.",
+      inLanguage: "en",
+    },
+    breadcrumbNode(
+      TRAIL.map((crumb) => ({ name: crumb.name, url: absoluteUrl(crumb.href) })),
+    ),
+  ],
 };
 
-const FEATURES: Feature[] = [
+const FEATURES: OverviewItem[] = [
   {
     icon: LinkIcon,
     title: "Print recipes from websites and social links",
@@ -43,9 +74,27 @@ const FEATURES: Feature[] = [
     body: "Have a recipe from a text, email, document, or site that does not import cleanly? Paste the text and RecipePrinter will format it into a printable recipe.",
   },
   {
+    // Moved here from /how-it-works, where it was the one thing that page had
+    // to itself and the page almost nothing linked to. Someone with a Paprika
+    // library has hundreds of saved recipes and a reason to print them.
+    icon: AppsIcon,
+    title: "Bring a library from another app",
+    body: "Already keep recipes in CookPilot or Paprika? Sign in to CookPilot, or open a Paprika export file, then add what you want straight to your print queue. A Paprika file is read in your browser, so nothing is uploaded.",
+  },
+  {
     icon: CheckIcon,
     title: "Keep the recipe, leave the web page behind",
     body: "RecipePrinter keeps the title, ingredients, instructions, notes, prep time, cook time, servings, and other useful details when available. Ads, pop-ups, comments, and extra page clutter stay off the printed recipe.",
+  },
+  {
+    icon: SlidersIcon,
+    title: "Fix the recipe before it prints",
+    body: "The title, ingredients, steps, and notes are editable right on the card. Correct an amount, drop a step you do not need, or add a note of your own, and the change is there when it prints.",
+  },
+  {
+    icon: SizeIcon,
+    title: "Sized for the box it's going in",
+    body: "Print a 6 by 4 card for a recipe box, or a letter-size page for a binder. Cut lines give you a trim guide on card stock, and a long recipe carries on onto the back of the same card.",
   },
   {
     icon: PrintIcon,
@@ -56,6 +105,23 @@ const FEATURES: Feature[] = [
     icon: ClockIcon,
     title: "Print multiple recipes at once",
     body: "Build a print queue from different sources, select the recipes you want, and print the whole batch in one job for a recipe binder, family cookbook, or week of dinners.",
+  },
+];
+
+// The two things you can pay for, which this page never mentioned. Kept in
+// their own section rather than mixed into the grid above: everything up there
+// is free and needs no account, and burying a purchase among it would misread
+// as the whole page being paid.
+const PAID: OverviewItem[] = [
+  {
+    icon: BookIcon,
+    title: "Turn a set of recipes into a cookbook",
+    body: "Group recipes into chapters, add a cover, and RecipePrinter builds the table of contents for you. Export a print-ready PDF to print at home in US Letter, or a full-bleed 8 by 10 to order a bound hardcover from a service like Lulu or Blurb. The builder is a one-time purchase for the book you make.",
+  },
+  {
+    icon: CrownIcon,
+    title: "Premium print themes",
+    body: "A theme changes a card's type, its border, and how the photo sits, without touching the recipe underneath. Several themes are free, and the premium ones are a one-time purchase.",
   },
 ];
 
@@ -71,81 +137,76 @@ const KEEPING_GUIDES = SEO_LANDING_PAGES.filter(
   (page) => page.intent !== "Utility SEO",
 );
 
+function GuideLinks({ pages }: { pages: typeof SEO_LANDING_PAGES }) {
+  return (
+    <div className="grid gap-cp-3 sm:grid-cols-2 lg:grid-cols-3">
+      {pages.map((page) => (
+        <Link
+          key={page.slug}
+          href={`/${page.slug}`}
+          className="card p-cp-4 text-cp-body font-bold text-ink hover:border-line-strong transition-colors"
+        >
+          {anchorFor(page)}
+        </Link>
+      ))}
+    </div>
+  );
+}
+
 export default function FeaturesPage() {
   return (
-    <PageShell>
-      <PageHeader
-        title="A recipe printing tool for recipes worth keeping"
-        lede="RecipePrinter turns websites, social links, photos, screenshots, and text into printable recipe cards, pages, PDFs, and batches you can cook from, save, and collect."
+    <LandingFrame headerActions={<LandingCta label="Go to printer" href="/" compact />}>
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(JSON_LD) }}
       />
 
-      <ul className="grid gap-cp-4 sm:grid-cols-2">
-        {FEATURES.map(({ icon: Icon, title, body }) => (
-          <li key={title} className="card p-cp-5 flex flex-col gap-cp-3">
-            <span className="glyph-warm">
-              <Icon size={22} />
-            </span>
-            <h2 className="font-extrabold tracking-[-0.02em] text-cp-h2">
-              {title}
-            </h2>
-            <p className="text-ink-soft text-cp-body leading-relaxed">
-              {body}
-            </p>
-          </li>
-        ))}
-      </ul>
+      <LandingHero
+        h1="A recipe printing tool for recipes worth keeping"
+        lede="RecipePrinter turns websites, social links, photos, screenshots, and text into printable recipe cards, pages, PDFs, and batches you can cook from, save, and collect."
+        above={<Breadcrumb trail={TRAIL} />}
+        actions={<LandingCta href="/" />}
+        aside={
+          <HeroProductPhoto
+            cardKey="korean"
+            annotation="Printed from a recipe link"
+            priority
+            wide
+          />
+        }
+      />
 
-      <section aria-labelledby="printing-guides-heading" className="mt-cp-7">
-        <h2
-          id="printing-guides-heading"
-          className="font-extrabold tracking-[-0.02em] text-cp-h2"
-        >
-          Choose how you found the recipe
-        </h2>
-        <p className="mt-cp-2 text-ink-soft text-cp-body leading-relaxed">
-          Start with the way you found the recipe, then turn it into something
-          easier to cook from and keep.
-        </p>
-        <div className="mt-cp-4 grid gap-cp-3 sm:grid-cols-2">
-          {UTILITY_GUIDES.map((page) => (
-            <Link
-              key={page.slug}
-              href={`/${page.slug}`}
-              className="card p-cp-4 text-cp-body font-bold text-ink hover:border-line-strong transition-colors"
-            >
-              {anchorFor(page)}
-            </Link>
-          ))}
-        </div>
-      </section>
+      <LandingSection id="features-heading" heading="What RecipePrinter does">
+        <OverviewGrid items={FEATURES} />
+      </LandingSection>
 
-      <section aria-labelledby="keeping-guides-heading" className="mt-cp-7">
-        <h2
-          id="keeping-guides-heading"
-          className="font-extrabold tracking-[-0.02em] text-cp-h2"
-        >
-          Keep them, sort them, pass them on
-        </h2>
-        <p className="mt-cp-2 text-cp-body text-ink-soft leading-relaxed">
-          What happens after the printing: where the recipes live, how they stay
-          findable, and how they reach the next person who cooks from them.
-        </p>
-        <div className="mt-cp-4 grid gap-cp-3 sm:grid-cols-2">
-          {KEEPING_GUIDES.map((page) => (
-            <Link
-              key={page.slug}
-              href={`/${page.slug}`}
-              className="card p-cp-4 text-cp-body font-bold text-ink hover:border-line-strong transition-colors"
-            >
-              {anchorFor(page)}
-            </Link>
-          ))}
-        </div>
-      </section>
+      <LandingSection
+        id="paid-heading"
+        heading="Two things you can buy, once"
+        lede="Printing is free and needs no account. These are the only optional purchases, and the price is shown before you buy."
+      >
+        <OverviewGrid items={PAID} columns={2} />
+      </LandingSection>
+
+      <LandingSection
+        id="printing-guides-heading"
+        heading="Choose how you found the recipe"
+        lede="Start with the way you found the recipe, then turn it into something easier to cook from and keep."
+      >
+        <GuideLinks pages={UTILITY_GUIDES} />
+      </LandingSection>
+
+      <LandingSection
+        id="keeping-guides-heading"
+        heading="Keep them, sort them, pass them on"
+        lede="What happens after the printing: where the recipes live, how they stay findable, and how they reach the next person who cooks from them."
+      >
+        <GuideLinks pages={KEEPING_GUIDES} />
+      </LandingSection>
 
       <section
         aria-labelledby="privacy-heading"
-        className="mt-cp-7 card p-cp-6 border-l-2 border-l-[var(--cp-accent-warm)]"
+        className="card p-cp-6 border-l-2 border-l-[var(--cp-accent-warm)]"
       >
         <h2
           id="privacy-heading"
@@ -167,9 +228,9 @@ export default function FeaturesPage() {
         </p>
       </section>
 
-      <div className="mt-cp-7">
-        <StartPrintingCta />
+      <div>
+        <LandingCta href="/" />
       </div>
-    </PageShell>
+    </LandingFrame>
   );
 }

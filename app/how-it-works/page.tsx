@@ -1,14 +1,21 @@
 import type { Metadata } from "next";
-import type { ComponentType } from "react";
 import Link from "next/link";
-import { PageShell, PageHeader, StartPrintingCta } from "@/components/PageShell";
 import {
-  LinkIcon,
-  ImageIcon,
-  TextIcon,
   AppsIcon,
+  ImageIcon,
+  LinkIcon,
+  TextIcon,
 } from "@/components/icons";
-import { pageMetadata } from "@/lib/seo";
+import {
+  LandingCta,
+  LandingFrame,
+  LandingHero,
+  LandingSection,
+} from "@/components/seo/LandingFrame";
+import { HeroProductPhoto, HowItWorks } from "@/components/seo/LandingVisuals";
+import { OverviewGrid, type OverviewItem } from "@/components/seo/OverviewGrid";
+import { Breadcrumb } from "@/components/seo/Breadcrumb";
+import { absoluteUrl, breadcrumbNode, howToNode, pageMetadata } from "@/lib/seo";
 import { anchorFor, SEO_LANDING_PAGES } from "@/lib/seoLandingPages";
 
 export const metadata: Metadata = pageMetadata({
@@ -18,31 +25,72 @@ export const metadata: Metadata = pageMetadata({
   path: "/how-it-works",
 });
 
-type Source = { 
-  icon: ComponentType<{ size?: number }>;
-  label: string;
-  body: string;
+// The three steps run through the shared HowItWorks strip, the same component
+// every landing page's "How it works" section uses, so the one page on the site
+// that is entirely about the steps is drawn the same way as the pages that
+// mention them in passing.
+const STEPS = [
+  {
+    name: "Add a recipe",
+    text: "Start with a recipe you already want to keep: a link, a photo, a screenshot, pasted text, or a library from another app.",
+  },
+  {
+    name: "It becomes a printable recipe",
+    text: "The title, ingredients, instructions, notes, prep time, cook time, and servings are laid out for paper. Ads, pop-ups, and page clutter stay off.",
+  },
+  {
+    name: "Print it, or save the PDF",
+    text: "Preview it as a 6 by 4 card or a letter-size page, then print. Save as PDF in the print dialog keeps a copy on your device.",
+  },
+];
+
+const TRAIL = [
+  { name: "Home", href: "/" },
+  { name: "How it works", href: "/how-it-works" },
+];
+
+// This is the page on the site most literally about a procedure, and it was the
+// only explainer emitting no structured data at all. HowTo rich results are
+// largely retired, but the markup still feeds entity understanding and the
+// answer engines, which is why the landing template emits it too.
+const JSON_LD = {
+  "@context": "https://schema.org",
+  "@graph": [
+    {
+      "@type": "WebPage",
+      "@id": `${absoluteUrl("/how-it-works")}#webpage`,
+      url: absoluteUrl("/how-it-works"),
+      name: "How Recipe Printer Works",
+      description:
+        "See how RecipePrinter turns recipes from links, screenshots, photos, and text into printable recipe cards, pages, and PDFs.",
+      inLanguage: "en",
+    },
+    breadcrumbNode(
+      TRAIL.map((crumb) => ({ name: crumb.name, url: absoluteUrl(crumb.href) })),
+    ),
+    howToNode("How RecipePrinter works", STEPS),
+  ],
 };
 
-const SOURCES: Source[] = [
+const SOURCES: OverviewItem[] = [
   {
     icon: LinkIcon,
-    label: "Paste a recipe link",
+    title: "Paste a recipe link",
     body: "Paste a link from a recipe website, food blog, or supported social post and RecipePrinter pulls out the recipe so you can print it without the ads, pop-ups, or extra pages.",
   },
   {
     icon: ImageIcon,
-    label: "Upload a photo or screenshot",
+    title: "Upload a photo or screenshot",
     body: "Use a cookbook page, old recipe card, screenshot, or saved image. RecipePrinter reads the recipe and turns it into something clean you can print.",
   },
   {
     icon: TextIcon,
-    label: "Paste recipe text",
-    body: "Have a recipe from a message, email, document, or site we do not recognize? Paste the text and RecipePrinter will format it into a printable recipe card or page.",
+    title: "Paste recipe text",
+    body: "Have a recipe from a message, email, document, or a site that does not import cleanly? Paste the text and RecipePrinter will format it into a printable recipe card or page.",
   },
   {
     icon: AppsIcon,
-    label: "Bring a library from another app",
+    title: "Bring a library from another app",
     body: "Already keep recipes in CookPilot or Paprika? Sign in to CookPilot, or open a Paprika export file, then add what you want straight to your print queue. A Paprika file is read in your browser, so nothing is uploaded.",
   },
 ];
@@ -58,119 +106,77 @@ const RELATED_GUIDES = [
 
 export default function HowItWorksPage() {
   return (
-    <PageShell>
-      <PageHeader
-        title="From recipe link to printed recipe card"
-        lede="RecipePrinter turns recipes from websites, social links, screenshots, photos, and text into printable recipe cards, pages, and PDFs you can cook from and keep."
+    <LandingFrame headerActions={<LandingCta label="Go to printer" href="/" compact />}>
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(JSON_LD) }}
       />
 
-      <div className="flex flex-col gap-cp-7">
-        <section aria-labelledby="step-1">
-          <h2
-            id="step-1"
-            className="text-cp-h2-lg font-extrabold tracking-[-0.03em]"
-          >
-            1. Add a recipe link, photo, screenshot, or text
-          </h2>
+      <LandingHero
+        h1="From recipe link to printed recipe card"
+        lede="RecipePrinter turns recipes from websites, social links, screenshots, photos, and text into printable recipe cards, pages, and PDFs you can cook from and keep."
+        above={<Breadcrumb trail={TRAIL} />}
+        actions={<LandingCta href="/" />}
+        aside={
+          <HeroProductPhoto
+            cardKey="pesto"
+            annotation="Printed from a recipe link"
+            priority
+            wide
+          />
+        }
+      />
 
-          <p className="mt-cp-3 text-ink-soft text-cp-body leading-relaxed">
-            Start with a recipe you already want to keep. RecipePrinter begins
-            after discovery: when a recipe has earned a place on paper, in your
-            kitchen, or in your collection.
-          </p>
+      <LandingSection id="steps-heading" heading="Three steps">
+        <HowItWorks steps={STEPS} />
+      </LandingSection>
 
-          <ul className="mt-cp-4 grid gap-cp-3 sm:grid-cols-2">
-            {SOURCES.map(({ icon: Icon, label, body }) => (
-              <li key={label} className="card p-cp-5 flex gap-cp-4">
-                <span className="glyph-warm shrink-0 mt-[2px]">
-                  <Icon size={20} />
-                </span>
+      <LandingSection
+        id="sources-heading"
+        heading="Where the recipe can come from"
+        lede="RecipePrinter begins after discovery, when a recipe has earned a place on paper, in your kitchen, or in your collection."
+      >
+        <OverviewGrid items={SOURCES} />
+      </LandingSection>
 
-                <div>
-                  <h3 className="font-bold text-cp-h2">{label}</h3>
-                  <p className="mt-cp-1 text-ink-soft text-cp-body leading-relaxed">
-                    {body}
-                  </p>
-                </div>
-              </li>
-            ))}
-          </ul>
-        </section>
-
-        <section aria-labelledby="step-2">
-          <h2
-            id="step-2"
-            className="text-cp-h2-lg font-extrabold tracking-[-0.03em]"
-          >
-            2. Turn the recipe into a printable card or page
-          </h2>
-
-          <p className="mt-cp-3 text-ink-soft text-cp-body leading-relaxed">
-            Recipe websites and social posts are made for screens, not kitchen
-            counters. RecipePrinter keeps the useful recipe details and formats
-            them into something readable on paper.
-          </p>
-
-          <p className="mt-cp-3 text-ink-soft text-cp-body leading-relaxed">
-            You get a printable recipe with the title, ingredients,
-            instructions, notes, prep time, cook time, servings, and other
-            useful details when they&apos;re available.
-          </p>
-        </section>
-
-        <section aria-labelledby="step-3">
-          <h2
-            id="step-3"
-            className="text-cp-h2-lg font-extrabold tracking-[-0.03em]"
-          >
-            3. Print it, save it as a PDF, or add it to your binder
-          </h2>
-
-          <p className="mt-cp-3 text-ink-soft text-cp-body leading-relaxed">
-            Preview your recipe as a clean printable recipe card or letter-size
-            recipe page, then send it to your printer. You can also choose{" "}
-            <span className="font-semibold text-ink">Save as PDF</span> in the
-            print dialog to keep a clean recipe PDF on your device.
-          </p>
-
-          <p className="mt-cp-3 text-ink-soft text-cp-body leading-relaxed">
-            Printing several recipes? Add them to your print queue and print the
-            whole batch at once. It works well for a recipe binder, a week of
-            dinners, a family cookbook, or the recipes you keep coming back to.
-          </p>
-
-          <p className="mt-cp-3 text-ink-soft text-cp-body leading-relaxed">
-            No account required. Print without signing in and your queue stays
-            in your browser. Just printable recipes designed for real kitchens
-            instead of open browser tabs.
-          </p>
-        </section>
-
-        <section aria-labelledby="related-guides-heading">
-          <h2
-            id="related-guides-heading"
-            className="text-cp-h2-lg font-extrabold tracking-[-0.03em]"
-          >
-            More ways to use RecipePrinter
-          </h2>
-
-          <div className="mt-cp-4 grid gap-cp-3 sm:grid-cols-2">
-            {RELATED_GUIDES.map((page) => (
-              <Link
-                key={page.slug}
-                href={`/${page.slug}`}
-                className="card p-cp-4 text-cp-body font-bold text-ink hover:border-line-strong transition-colors"
-              >
-                {anchorFor(page)}
-              </Link>
-            ))}
-          </div>
-        </section>
-
-        <div className="pt-cp-2">
-          <StartPrintingCta />
+      <LandingSection
+        id="related-guides-heading"
+        heading="More ways to use RecipePrinter"
+      >
+        <div className="grid gap-cp-3 sm:grid-cols-2 lg:grid-cols-3">
+          {RELATED_GUIDES.map((page) => (
+            <Link
+              key={page.slug}
+              href={`/${page.slug}`}
+              className="card p-cp-4 text-cp-body font-bold text-ink hover:border-line-strong transition-colors"
+            >
+              {anchorFor(page)}
+            </Link>
+          ))}
         </div>
+      </LandingSection>
+
+      <section
+        aria-labelledby="no-account-heading"
+        className="card p-cp-6 border-l-2 border-l-[var(--cp-accent-warm)]"
+      >
+        <h2
+          id="no-account-heading"
+          className="font-extrabold tracking-[-0.02em] text-cp-h2"
+        >
+          No account required
+        </h2>
+        <p className="mt-cp-2 text-ink-soft text-cp-body leading-relaxed">
+          Print without signing in and your queue stays in your browser.
+          Printing several recipes? Add them to your print queue and print the
+          whole batch at once. It works well for a recipe binder, a week of
+          dinners, a family cookbook, or the recipes you keep coming back to.
+        </p>
+      </section>
+
+      <div>
+        <LandingCta href="/" />
       </div>
-    </PageShell>
+    </LandingFrame>
   );
 }
