@@ -73,8 +73,7 @@ const IMPORT_CARDS: FeatureCard[] = [
     // Lived under "everything else" until it was pointed out that an import
     // belongs with the imports.
     heading: "Paprika and CookPilot import",
-    needs:
-      "A .paprikarecipes file being dropped into RecipePrinter, with the imported library listed alongside it.",
+    image: "cookpilot-export",
     body:
       "Sign in to CookPilot, or open a Paprika export file, and add what you want to the print queue. A Paprika file is read in your browser, so nothing is uploaded.",
   },

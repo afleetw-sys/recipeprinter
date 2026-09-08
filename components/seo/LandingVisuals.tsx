@@ -187,6 +187,13 @@ export const FEATURE_IMAGES: Record<string, ProofImage> = {
     alt:
       "A finished hardcover family cookbook lying open on a kitchen counter, a full-page photo of bourbon chicken on the left and the typed recipe on the right, with a checked spine stripe down the page edge and OUR FAVORITE RECIPES along the foot.",
   },
+  "cookpilot-export": {
+    src: "/images/cookpilot-export.png",
+    width: 6350,
+    height: 3800,
+    alt:
+      "RecipePrinter open at the Add recipes panel with the Recipe apps tab selected, showing a signed-in CookPilot library of 64 recipes and an Add all link. A search box sits above the list: The Best Homemade Sloppy Joes, 25 minutes and serves 3, is marked Added, with sheet pan and Chicken Chow Mein below it waiting on their Add buttons. The Ready to print panel alongside holds three cards, Buffalo Chicken Dip, Bruschetta Recipe and The Best Homemade Sloppy Joes, above a Preview button.",
+  },
   "card-in-box": {
     src: "/images/recipe-card-in-box.jpg",
     width: 1448,
