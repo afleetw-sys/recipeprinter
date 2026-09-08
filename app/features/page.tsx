@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { AppsIcon, ClockIcon, PrintIcon, SlidersIcon } from "@/components/icons";
+import { AppsIcon, ClockIcon, CrownIcon, PrintIcon, SlidersIcon } from "@/components/icons";
 import {
   LandingCta,
   LandingFrame,
@@ -69,6 +69,12 @@ const HEADLINE = [
     body:
       "A link from a food blog, recipe site, Pinterest, Instagram, or TikTok. A photo of a cookbook page or an old recipe card. A screenshot. Text pasted from a message or an email. They all come out the same way, as a printable recipe you can hold.",
   },
+  {
+    heading: "And when the stack has earned it, a book",
+    image: "bound-cookbook",
+    body:
+      "Group the recipes you kept into chapters, add a cover, and RecipePrinter builds the table of contents for you. Export a print-ready PDF to run off at home in US Letter, or a full-bleed 8 by 10 to order a bound hardcover from a service like Lulu or Blurb. The cookbook builder is a one-time purchase for the book you make.",
+  },
 ];
 
 const ALSO: OverviewItem[] = [
@@ -90,28 +96,14 @@ const ALSO: OverviewItem[] = [
     body: "Build a queue from different sources, choose the recipes you want, and print them together for a recipe binder, a week of dinners, or a family cookbook.",
   },
   {
+    icon: CrownIcon,
+    title: "Premium print themes",
+    body: "A theme changes a card's type, its border, and how the photo sits, without touching the recipe underneath. Several are free, and the premium ones are a one-time purchase.",
+  },
+  {
     icon: PrintIcon,
     title: "Save a PDF instead",
     body: "Choose Save as PDF in the print dialog to keep the printable recipe on your device rather than sending it to paper.",
-  },
-];
-
-// Kept apart from everything above, which is free and needs no account.
-// Burying a purchase among it would misread as the whole page being paid.
-//
-// A set-apart panel rather than more feature rows. Rendering these the same way
-// as the three claims above made the page read photos, list, photos, and the
-// reader has no way to tell why the layout came back. A purchase is a different
-// kind of thing from a feature, so it gets the one lifted element on the page
-// and says so, instead of arguing itself a fourth and fifth time.
-const PAID: OverviewItem[] = [
-  {
-    title: "Turn a set of recipes into a cookbook",
-    body: "Group recipes into chapters, add a cover, and RecipePrinter builds the table of contents for you. Export a print-ready PDF to print at home in US Letter, or a full-bleed 8 by 10 to order a bound hardcover from a service like Lulu or Blurb. The builder is a one-time purchase for the book you make.",
-  },
-  {
-    title: "Premium print themes",
-    body: "A theme changes a card's type, its border, and how the photo sits, without touching the recipe underneath. Several themes are free, and the premium ones are a one-time purchase.",
   },
 ];
 
@@ -144,7 +136,7 @@ export default function FeaturesPage() {
       <LandingSection
         id="features-heading"
         heading="What it does"
-        lede="Three things that separate it from the print button already in your browser."
+        lede="What it does that the print button already in your browser does not."
       >
         <FeatureRows features={HEADLINE} />
       </LandingSection>
@@ -152,17 +144,9 @@ export default function FeaturesPage() {
       <LandingSection
         id="also-heading"
         heading="More of what it does"
-        lede="Smaller than the three above, and free in the same way."
+        lede="The smaller things, the ones you notice on the second or third recipe."
       >
         <OverviewList items={ALSO} />
-      </LandingSection>
-
-      <LandingSection
-        id="paid-heading"
-        heading="Two things you can buy, once"
-        lede="Printing is free. These are the only optional purchases, and the price is shown before you buy."
-      >
-        <OverviewList items={PAID} />
       </LandingSection>
 
       <LandingSection
