@@ -88,16 +88,17 @@ const YOURS_CARDS: FeatureCard[] = [
       "The title, ingredients, steps, and notes are editable right on the card. Correct an amount, drop a step you do not need, or add the note you would otherwise have written in the margin.",
   },
   {
+    heading: "Photos on the card",
+    needs:
+      "One recipe printed twice side by side, once with its photo and once without, to show the space the picture takes.",
+    body:
+      "A recipe prints with its photo or without it, decided per recipe, so a card that is mostly method does not give half its space to a picture. When the photo does print, drag it to move the crop and put the part that matters in frame.",
+  },
+  {
     heading: "Premium print themes",
     image: "multi-themes",
     body:
       "A theme changes a card's type, its border, and how the photo sits, without touching the recipe underneath. Switch themes and every card in the batch follows, so a stack printed in one go still looks like a set. Several are free, and the premium ones are a one-time purchase.",
-  },
-  {
-    heading: "Cookbook builder",
-    image: "bound-cookbook",
-    body:
-      "Group the recipes you kept into chapters, add a cover, and RecipePrinter builds the table of contents for you. Export a print-ready PDF to run off at home in US Letter, or a full-bleed 8 by 10 to order a bound hardcover from a service like Lulu or Blurb. It is a one-time purchase for the book you make.",
   },
 ];
 
@@ -109,17 +110,18 @@ const PRINT_CARDS: FeatureCard[] = [
       "They drop straight into a recipe box, or print a letter-size page for a binder instead. Cut lines give you a trim guide on card stock, and a recipe too long for one side carries on onto the back rather than being cut short.",
   },
   {
-    heading: "Batch printing",
-    needs:
-      "Several different printed recipe cards coming off a home printer in one run, stacked in the output tray.",
-    body:
-      "Build a queue from different sources, choose the recipes you want, and print them together for a recipe binder, a week of dinners, or a family cookbook.",
-  },
-  {
-    heading: "PDF export",
+    // Batch and PDF were two cards saying the same thing from either end: how
+    // the finished job leaves. One card, both destinations.
+    heading: "Batch printing and PDF export",
     image: "pdf-search",
     body:
-      "Choose Save as PDF in the print dialog to keep the printable recipe on your device rather than sending it to paper, searchable and to hand the next time you make it.",
+      "Build a queue from different sources, choose the recipes you want, and print them together for a recipe binder, a week of dinners, or a family cookbook. Or choose Save as PDF in the print dialog and keep the batch on your device instead of sending it to paper.",
+  },
+  {
+    heading: "Cookbook builder",
+    image: "bound-cookbook",
+    body:
+      "Group the recipes you kept into chapters, add a cover, and RecipePrinter builds the table of contents for you. Export a print-ready PDF to run off at home in US Letter, or a full-bleed 8 by 10 to order a bound hardcover from a service like Lulu or Blurb. It is a one-time purchase for the book you make.",
   },
 ];
 
@@ -159,7 +161,7 @@ export default function FeaturesPage() {
       />
 
       <LandingHero
-
+        align="centered"
         h1="A recipe printing tool for recipes worth keeping"
         lede="Recipes live on screens and get cooked in kitchens. RecipePrinter moves the ones worth keeping onto paper you can hold, mark up, and file."
         above={<Breadcrumb trail={TRAIL} />}
