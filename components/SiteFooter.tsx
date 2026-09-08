@@ -74,7 +74,13 @@ export function SiteFooter({ isHome = false }: { isHome?: boolean }) {
               <Link
                 key={href}
                 href={href}
-                className="font-semibold hover:text-ink transition-colors"
+                // `text-ink-soft` is explicit rather than inherited from the
+                // row: the base `a` rule in globals.css sets the accent colour,
+                // and an element's own rule beats a colour inherited from its
+                // parent, so these two rendered cornflower beside a row of soft
+                // grey links. Same classes as the nav links above, minus the
+                // size, which is the caption scale down here.
+                className="font-semibold text-ink-soft hover:text-ink transition-colors"
               >
                 {label}
               </Link>
