@@ -52,6 +52,11 @@ const QUANTITY_START = /^(?:\d|[¼-¾⅐-⅞])/;
 const COOK_VERB =
   /^(?:pre-?heat|heat|warm|melt|mix|stir|combine|whisk|beat|blend|fold|knead|roll|shape|form|pour|add|place|put|set|transfer|spread|arrange|layer|top|sprinkle|garnish|season|cut|chop|slice|dice|mince|grate|peel|core|trim|drain|rinse|wash|soak|marinate|cover|wrap|chill|refrigerate|freeze|let|leave|rest|cool|bake|roast|grill|broil|fry|saut[eé]|sear|simmer|boil|steam|poach|cook|serve|repeat|divide|scoop|drop|press|line|grease|dust|brush|reduce|remove|turn|flip|toss|mash|puree|process|pulse|store|enjoy|bring|continue|check|test|insert|slide|return|discard|reserve|make|prepare|assemble|whip|sift|dissolve|spoon|fill|seal|shake|strain|skim|thin|thicken|adjust|taste|garnish)\b/i;
 
+/** A group label inside a list: "For the sauce:", "Topping:", "For the crust".
+    The print engine groups on these, so losing them flattens a two-part recipe
+    into one run of ingredients. */
+const SECTION_LABEL = /^(?:for\s+the\s+.+|.+:)$/i;
+
 const SERVINGS_LINE = /^(?:serves|servings|yield|yields|makes)\b[\s:]*(.+)$/i;
 const PREP_LINE = /^prep(?:aration)?\s*time\b[\s:]*(.+)$/i;
 const COOK_LINE = /^cook(?:ing)?\s*time\b[\s:]*(.+)$/i;
@@ -101,6 +106,16 @@ function looseIngredient(line: string): boolean {
   return !COOK_VERB.test(line);
 }
 
+/** Distinguished from an ingredient by shape alone: short, on its own line,
+    and either colon-terminated or opening "For the". */
+function sectionLabel(line: string): string | null {
+  if (line.length > 40 || wordCount(line) > 6) return null;
+  if (!SECTION_LABEL.test(line)) return null;
+  const label = line.replace(/[:\s]+$/, "").trim();
+  if (!label || QUANTITY_START.test(label)) return null;
+  return label;
+}
+
 function sentence(line: string): boolean {
   if (COOK_VERB.test(line)) return true;
   return /[.!?]["'’”)]?$/.test(line) && wordCount(line) >= 3;
@@ -131,7 +146,7 @@ export function parseRecipeText(raw: string): Recipe | null {
 
   const draft: Draft = {};
   const ingredients: RecipeIngredient[] = [];
-  const instructionTexts: string[] = [];
+  const instructionTexts: { text: string; section?: string }[] = [];
   const notes: string[] = [];
 
   let mode: "front" | "ingredients" | "instructions" | "notes" = "front";
@@ -143,6 +158,8 @@ export function parseRecipeText(raw: string): Recipe | null {
   // Something in the text actually said "recipe": a heading, a numbered step, a
   // measured ingredient. Without one, we hand back nothing.
   let strong = false;
+  // The current group label ("For the sauce"), which a heading resets.
+  let section: string | undefined;
 
   for (const line of lines) {
     const heading = headingKind(line);
@@ -150,6 +167,7 @@ export function parseRecipeText(raw: string): Recipe | null {
       mode = heading;
       declared = true;
       strong = true;
+      section = undefined;
       continue;
     }
 
@@ -161,12 +179,22 @@ export function parseRecipeText(raw: string): Recipe | null {
 
     // A numbered line whose body is itself measured ("1. 2 cups flour") is a
     // numbered ingredient list, not a step.
+    // A group label only reads as one inside a list; in the title block it is
+    // more likely the recipe's own subtitle.
+    if (mode !== "front" && mode !== "notes" && !stepped) {
+      const label = sectionLabel(body);
+      if (label) {
+        section = label;
+        continue;
+      }
+    }
+
     const numberedStep = stepped && !measuredIngredient(body);
     if (numberedStep) {
       mode = "instructions";
       declared = false;
       strong = true;
-      instructionTexts.push(body);
+      instructionTexts.push({ text: body, section });
       continue;
     }
 
@@ -185,23 +213,23 @@ export function parseRecipeText(raw: string): Recipe | null {
     }
 
     if (mode === "instructions") {
-      instructionTexts.push(body);
+      instructionTexts.push({ text: body, section });
       continue;
     }
 
     // mode === "ingredients"
     if (measuredIngredient(body)) {
       strong = true;
-      ingredients.push({ raw: body });
+      ingredients.push({ raw: body, section });
       continue;
     }
     if (!declared && sentence(body)) {
       mode = "instructions";
-      instructionTexts.push(body);
+      instructionTexts.push({ text: body, section });
       continue;
     }
     if (looseIngredient(body) || declared) {
-      ingredients.push({ raw: body });
+      ingredients.push({ raw: body, section });
       continue;
     }
     // Unclassifiable and undeclared: a blurb under the title rather than a
@@ -209,9 +237,10 @@ export function parseRecipeText(raw: string): Recipe | null {
     if (!draft.description) draft.description = body;
   }
 
-  const instructions: RecipeInstruction[] = instructionTexts.map((text, index) => ({
+  const instructions: RecipeInstruction[] = instructionTexts.map((entry, index) => ({
     step: index + 1,
-    text,
+    text: entry.text,
+    section: entry.section,
   }));
 
   if (!strong) return null;

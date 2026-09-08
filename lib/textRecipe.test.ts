@@ -100,6 +100,33 @@ describe("parseRecipeText", () => {
     expect(recipe!.note).toBe("Keeps for three days.");
   });
 
+  it("keeps the group labels a two-part recipe is pasted with", () => {
+    const recipe = parseRecipeText(
+      [
+        "Chicken and Rice",
+        "Ingredients",
+        "For the chicken:",
+        "2 lbs thighs",
+        "For the rice",
+        "1 cup basmati",
+        "Instructions",
+        "Sear the thighs.",
+      ].join("\n"),
+    );
+    expect(recipe!.ingredients).toEqual([
+      { raw: "2 lbs thighs", section: "For the chicken" },
+      { raw: "1 cup basmati", section: "For the rice" },
+    ]);
+    // The heading resets the group, so a step is not filed under "For the rice".
+    expect(recipe!.instructions[0].section).toBeUndefined();
+  });
+
+  it("does not mistake a measured line for a group label", () => {
+    const recipe = parseRecipeText("Brine\nIngredients\n1 cup salt: kosher\n2 qt water");
+    expect(raws(recipe!)).toEqual(["1 cup salt: kosher", "2 qt water"]);
+    expect(recipe!.ingredients[0].section).toBeUndefined();
+  });
+
   it("returns null for text with no recipe in it", () => {
     expect(parseRecipeText("")).toBeNull();
     expect(parseRecipeText("Hey, are you free on Thursday?")).toBeNull();
