@@ -213,6 +213,18 @@ export interface FaqItem {
   question: string;
   /** Plain-text answer (also used verbatim in JSON-LD). */
   answer: string;
+  /**
+   * Slugs of the landing pages that cover this answer at length, rendered
+   * under the answer as a link row.
+   *
+   * Slugs rather than page objects on purpose: lib/seoLandingPages.ts already
+   * imports from this file, so importing it back would close a cycle. The FAQ
+   * page resolves them through SEO_LANDING_PAGE_MAP instead.
+   *
+   * These stay out of the JSON-LD. `acceptedAnswer.text` should read as the
+   * plain prose Google may quote, not as prose with a link list stapled on.
+   */
+  guides?: string[];
 }
 
 export const FAQ: FaqItem[] = [
@@ -220,36 +232,64 @@ export const FAQ: FaqItem[] = [
     question: "How do I print a recipe from a website?",
     answer:
       "Copy the recipe page URL, paste it into RecipePrinter, review the printable recipe card or page, and print it. You can also choose Save as PDF in your browser print dialog.",
+    guides: [
+      "print-recipe-from-website",
+    ],
   },
   {
     question: "Can I print a recipe from a URL?",
     answer:
       "Usually, yes. Paste a recipe link from a recipe website, food blog, or supported social post and RecipePrinter will turn it into a clean printable recipe card or page. If a site does not import cleanly, you can paste the recipe text directly or upload a screenshot instead.",
+    guides: [
+      "print-recipe-from-website",
+      "just-the-recipe-alternative",
+    ],
   },
   {
     question: "Can I turn a recipe into a PDF?",
     answer:
       "Yes. Every recipe is formatted as a print-ready page, so you can print it on paper or choose Save as PDF in your browser's print dialog to keep a clean recipe PDF on your device.",
+    guides: [
+      "convert-recipe-to-pdf",
+    ],
   },
   {
     question: "Can I make printable recipe cards from online recipes?",
     answer:
       "Yes. Paste a recipe link, upload a screenshot or photo, or paste recipe text, then choose a printable recipe card layout before printing.",
+    guides: [
+      "printable-recipe-card-generator",
+    ],
   },
   {
     question: "Can I print recipes from Pinterest, Instagram, or TikTok?",
     answer:
       "Yes. Start with the original recipe link when one is available. For captions, screenshots, or saved social posts, you can paste the recipe text or upload a screenshot instead.",
+    guides: [
+      "print-pinterest-recipes",
+      "print-instagram-recipes",
+      "print-tiktok-recipes",
+      "print-facebook-recipes",
+      "print-youtube-recipes",
+    ],
   },
   {
     question: "Can I save printed recipes in a recipe binder?",
     answer:
       "Yes. RecipePrinter can create letter-size recipe pages, recipe cards, and PDFs that work well for binders, folders, recipe boxes, and family collections.",
+    guides: [
+      "recipe-binder",
+      "organize-recipes",
+    ],
   },
   {
     question: "Can I make a cookbook from my recipes?",
     answer:
       "Yes. Group your recipes into chapters, add a cover, and RecipePrinter builds a cookbook with an automatic table of contents. You can export it as a print-ready PDF to print at home in US Letter, or as a full-bleed 8 x 10 file to order a bound hardcover from a print-on-demand service like Lulu or Blurb.",
+    guides: [
+      "family-recipe-book",
+      "preserve-family-recipes",
+    ],
   },
   {
     question: "Why print recipes instead of cooking from a phone?",
@@ -260,11 +300,17 @@ export const FAQ: FaqItem[] = [
     question: "Can I print recipes without ads?",
     answer:
       "Yes. RecipePrinter keeps the recipe itself and leaves off ads, pop-ups, autoplay videos, comments, oversized photos, and other web page clutter when creating the printable version.",
+    guides: [
+      "print-recipe-without-ads",
+    ],
   },
   {
     question: "Can I print recipes from screenshots or photos?",
     answer:
       "Yes. Upload a screenshot, cookbook page, old recipe card, or saved image and RecipePrinter will read the recipe and format it into a printable version.",
+    guides: [
+      "reciscan-alternative",
+    ],
   },
   {
     question: "Can I paste recipe text instead of using a URL?",
