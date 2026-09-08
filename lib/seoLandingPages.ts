@@ -346,7 +346,7 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
       {
         question: "How much paper does one recipe take?",
         answer:
-          "Usually one sheet. A recipe prints as a single 6 by 4 card or a single letter page, however long the article it came from happened to be.",
+          "Usually one sheet. A recipe prints as a single 4 by 6 card or a single letter page, however long the article it came from happened to be.",
       },
     ],
     links: [
@@ -385,7 +385,7 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
       },
       {
         name: "Pick card or page",
-        text: "Choose a 6 by 4 card or a full letter page. Whichever you pick is the shape the PDF comes out in.",
+        text: "Choose a 4 by 6 card or a full letter page. Whichever you pick is the shape the PDF comes out in.",
       },
       {
         name: "Choose Save as PDF",
@@ -468,7 +468,7 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
     // on, and it is the one word the h1 and title both leave out.
     anchor: "Recipe card printer",
     lede:
-      "Whatever form the recipe is in, it comes back as a 6 by 4 card with the ingredients and steps already set, ready for the box.",
+      "Whatever form the recipe is in, it comes back as a 4 by 6 card with the ingredients and steps already set, ready for the box.",
     howTo: [
       {
         name: "Add the recipe",
@@ -476,7 +476,7 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
       },
       {
         name: "Switch to the card size",
-        text: "In print setup, choose the 6 by 4 card instead of a full page. Every recipe waiting to print changes with it.",
+        text: "In print setup, choose the 4 by 6 card instead of a full page. Every recipe waiting to print changes with it.",
       },
       {
         name: "Pick a theme",
@@ -492,7 +492,7 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
         heading: "Sized for the box it's going in",
         image: "card-in-box",
         body:
-          "A 6 by 4 card is the size a standard recipe box takes, so what comes off your printer drops straight into the box or an index-card binder. Cut lines give you a trim guide when you print on card stock, and the type stays large enough to read from across the counter.",
+          "A 4 by 6 card is the size a standard recipe box takes, so what comes off your printer drops straight into the box or an index-card binder. Cut lines give you a trim guide when you print on card stock, and the type stays large enough to read from across the counter.",
       },
       {
         heading: "Change the look, keep the recipe",
@@ -1125,7 +1125,7 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
       },
       {
         name: "Print the working copy",
-        text: "A 6 by 4 card for the box or a letter page for the binder. The copy goes in the kitchen, and the original stays where it is.",
+        text: "A 4 by 6 card for the box or a letter page for the binder. The copy goes in the kitchen, and the original stays where it is.",
       },
       {
         name: "Gather them when you are ready",
@@ -1324,7 +1324,7 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
         heading: "Card or page, cut lines, several at once",
         image: "card-in-box",
         body:
-          "Choose a 6 by 4 card sized for a recipe box or a full letter page, pick a theme, turn on cut lines for card stock, and print several recipes in one job. Printing is free and works without an account, so you can try it on the recipe you were about to print anyway.",
+          "Choose a 4 by 6 card sized for a recipe box or a full letter page, pick a theme, turn on cut lines for card stock, and print several recipes in one job. Printing is free and works without an account, so you can try it on the recipe you were about to print anyway.",
       },
     ],
     comparison: {
@@ -1425,7 +1425,7 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
         heading: "A card, a page, or the whole book",
         proof: "card",
         body:
-          "ReciScan ends in a bound book from its own press, starting at $18 for fifty pages. RecipePrinter hands you the file: a 6 by 4 card for the box by the stove, a letter page for a binder, or a bound cookbook with a cover and chapters. Printing one card tonight does not rule out the book.",
+          "ReciScan ends in a bound book from its own press, starting at $18 for fifty pages. RecipePrinter hands you the file: a 4 by 6 card for the box by the stove, a letter page for a binder, or a bound cookbook with a cover and chapters. Printing one card tonight does not rule out the book.",
       },
       {
         heading: "Nothing to install",
@@ -1447,7 +1447,7 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
         {
           title: "What you can print",
           rows: [
-            { feature: "A 6 by 4 card for a recipe box, with cut lines", us: true, them: false },
+            { feature: "A 4 by 6 card for a recipe box, with cut lines", us: true, them: false },
             { feature: "A full letter page for a binder", us: true, them: false },
             { feature: "Printing it yourself", us: "Free, no account", them: true },
           ],

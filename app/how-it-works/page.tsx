@@ -40,7 +40,7 @@ const STEPS = [
   },
   {
     name: "Print it, or save the PDF",
-    text: "Preview it as a 6 by 4 card or a letter-size page, then print. Save as PDF keeps a copy on your device, and a queue of recipes prints in one job.",
+    text: "Preview it as a 4 by 6 card or a letter-size page, then print. Save as PDF keeps a copy on your device, and a queue of recipes prints in one job.",
   },
 ];
 

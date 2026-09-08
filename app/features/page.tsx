@@ -61,7 +61,7 @@ const HEADLINE = [
     heading: "Sized for the box it's going in",
     image: "card-in-box",
     body:
-      "A 6 by 4 recipe card drops straight into a recipe box, or print a letter-size page for a binder. Cut lines give you a trim guide on card stock, and a recipe too long for one side carries on onto the back rather than being cut short.",
+      "A 4 by 6 recipe card drops straight into a recipe box, or print a letter-size page for a binder. Cut lines give you a trim guide on card stock, and a recipe too long for one side carries on onto the back rather than being cut short.",
   },
   {
     heading: "Start from whatever you have",
@@ -99,21 +99,36 @@ const ALSO: OverviewItem[] = [
 // Kept apart from everything above, which is free and needs no account.
 // Burying a purchase among it would misread as the whole page being paid.
 //
-// Feature rows rather than a third card grid: the cookbook is the biggest thing
-// here and it was a card the same size as "Save a PDF instead", and the page
-// had accumulated a different grid for every section it owned.
+// A set-apart panel rather than more feature rows. Rendering these the same way
+// as the three claims above made the page read photos, list, photos, and the
+// reader has no way to tell why the layout came back. A purchase is a different
+// kind of thing from a feature, so it gets the one lifted element on the page
+// and says so, instead of arguing itself a fourth and fifth time.
 const PAID = [
   {
     heading: "Turn a set of recipes into a cookbook",
-    image: "bound-cookbook",
     body: "Group recipes into chapters, add a cover, and RecipePrinter builds the table of contents for you. Export a print-ready PDF to print at home in US Letter, or a full-bleed 8 by 10 to order a bound hardcover from a service like Lulu or Blurb. The builder is a one-time purchase for the book you make.",
   },
   {
     heading: "Premium print themes",
-    image: "multi-themes",
     body: "A theme changes a card's type, its border, and how the photo sits, without touching the recipe underneath. Several themes are free, and the premium ones are a one-time purchase.",
   },
 ];
+
+function PaidPanel({ items }: { items: { heading: string; body: string }[] }) {
+  return (
+    <div className="card border-l-2 border-l-[var(--cp-accent-warm)] p-cp-6">
+      <ul className="grid gap-cp-6 sm:grid-cols-2">
+        {items.map((item) => (
+          <li key={item.heading}>
+            <h3 className="text-cp-body font-extrabold tracking-[-0.02em]">{item.heading}</h3>
+            <p className="mt-cp-2 text-ink-soft text-cp-small leading-relaxed">{item.body}</p>
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
+}
 
 // Grouped by what the reader is actually choosing between, which `intent`
 // could not express: it drives page layout, and it filed the Just the Recipe
@@ -141,11 +156,19 @@ export default function FeaturesPage() {
         note="Printing is free and needs no account. Your queue lives in your browser. Sign in only if you want a project saved to reopen on another device."
       />
 
-      <LandingSection id="features-heading" heading="What it does">
+      <LandingSection
+        id="features-heading"
+        heading="What it does"
+        lede="Three things that separate it from the print button already in your browser."
+      >
         <FeatureRows features={HEADLINE} />
       </LandingSection>
 
-      <LandingSection id="also-heading" heading="Also included">
+      <LandingSection
+        id="also-heading"
+        heading="More of what it does"
+        lede="Smaller than the three above, and free in the same way."
+      >
         <OverviewList items={ALSO} />
       </LandingSection>
 
@@ -154,7 +177,7 @@ export default function FeaturesPage() {
         heading="Two things you can buy, once"
         lede="Printing is free. These are the only optional purchases, and the price is shown before you buy."
       >
-        <FeatureRows features={PAID} />
+        <PaidPanel items={PAID} />
       </LandingSection>
 
       <LandingSection
