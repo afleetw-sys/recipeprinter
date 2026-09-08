@@ -9,6 +9,7 @@ import {
 import { FeatureCards, type FeatureCard } from "@/components/seo/FeatureCards";
 import { GuidePicker } from "@/components/seo/GuidePicker";
 import { Breadcrumb } from "@/components/seo/Breadcrumb";
+import { COOKBOOK_PRICE_FALLBACK } from "@/lib/cookbookProduct";
 import { absoluteUrl, breadcrumbNode, pageMetadata } from "@/lib/seo";
 import { SEO_LANDING_PAGES } from "@/lib/seoLandingPages";
 
@@ -115,13 +116,13 @@ const PRINT_CARDS: FeatureCard[] = [
     heading: "Batch printing and PDF export",
     image: "pdf-search",
     body:
-      "Queue several recipes and print them in one job, for a recipe binder, a week of dinners, or a family cookbook. Or save the printable recipes as a PDF instead.",
+      "Add as many recipes as you like to the print queue and send them all in one go, for a recipe binder, a week of dinners, or a family cookbook. Or save the printable recipes as a PDF instead.",
   },
   {
     heading: "Cookbook builder",
     image: "bound-cookbook",
     body:
-      "RecipePrinter sorts the recipes into chapters, generates the cover, and builds the table of contents. Rearrange any of it, then export a print-ready PDF for US Letter at home, or a full-bleed 8 by 10 for a hardcover from Lulu or Blurb. A one-time purchase for the cookbook you make.",
+      `RecipePrinter sorts the recipes into chapters, generates the cover, and builds the table of contents. Rearrange anything, then print it at home, keep the PDF, or send an 8 by 10 to Lulu or Blurb for a hardcover. ${COOKBOOK_PRICE_FALLBACK} once.`,
   },
 ];
 
@@ -174,13 +175,13 @@ export default function FeaturesPage() {
         lede="A recipe card for the counter, a letter page for the binder, a PDF for your phone, or a bound cookbook to give away."
       >
         <FeatureCards items={PRINT_CARDS} />
-        <PickerRow label="Guides by what you make" pages={byGroup("output")} />
+        <PickerRow label="Guides by what you end up with" pages={byGroup("output")} />
       </LandingSection>
 
       <LandingSection
         id="import-heading"
         heading="Import from anywhere"
-        lede="A recipe reaches you as a web page, a photo, or a paragraph someone texted you. None of that is built to cook from."
+        lede="A recipe reaches you as a web page, a photo, or a paragraph someone texted you. All of it can come off the screen and onto paper."
       >
         <FeatureCards items={IMPORT_CARDS} />
         <PickerRow label="Guides by what you import" pages={byGroup("source")} />
