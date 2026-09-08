@@ -1,7 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
-  SEARCH_RESULTS_MESSAGE,
-  SITE_SEARCH_MESSAGE,
+  SEARCH_PAGE_MESSAGE,
   isRedirectLink,
   searchPageMessage,
   unwrapRedirectUrl,
@@ -22,16 +21,16 @@ describe("searchPageMessage", () => {
       "https://www.ecosia.org/search?q=oatmeal",
     ];
     for (const url of searches) {
-      expect(searchPageMessage(url), url).toBe(SEARCH_RESULTS_MESSAGE);
+      expect(searchPageMessage(url), url).toBe(SEARCH_PAGE_MESSAGE);
     }
   });
 
   it("recognises a site's own listing page", () => {
-    expect(searchPageMessage("https://www.allrecipes.com/search?q=oatmeal")).toBe(SITE_SEARCH_MESSAGE);
+    expect(searchPageMessage("https://www.allrecipes.com/search?q=oatmeal")).toBe(SEARCH_PAGE_MESSAGE);
     // WordPress's default search, which carries nothing in the path.
-    expect(searchPageMessage("https://sallysbakingaddiction.com/?s=oatmeal")).toBe(SITE_SEARCH_MESSAGE);
+    expect(searchPageMessage("https://sallysbakingaddiction.com/?s=oatmeal")).toBe(SEARCH_PAGE_MESSAGE);
     // Blogger label listings carry no query parameter at all.
-    expect(searchPageMessage("https://example-blog.com/search/label/cookies")).toBe(SITE_SEARCH_MESSAGE);
+    expect(searchPageMessage("https://example-blog.com/search/label/cookies")).toBe(SEARCH_PAGE_MESSAGE);
   });
 
   it("leaves a real recipe page alone", () => {

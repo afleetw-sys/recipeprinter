@@ -28,11 +28,24 @@
 
 import { normalizeImportURL } from "@/lib/cookpilot";
 
-/** The panel copy for a search engine's results page. */
-export const SEARCH_RESULTS_MESSAGE = "Open the recipe you want from those results, then paste that link.";
-
-/** The panel copy for a site's own search or index listing. */
-export const SITE_SEARCH_MESSAGE = "Open the recipe you want from that list, then paste that link.";
+/**
+ * The panel copy, for a search engine's results and for a site's own search
+ * alike. They were two messages for a while and ended up differing by the one
+ * word "results", which is not a distinction worth a second string: a site's
+ * `/search?q=` page is a results page too.
+ *
+ * "Looks like" is doing real work. Naming the page is fine; an earlier draft
+ * went on to explain that a results page has no recipe on it, which tells the
+ * reader something they already know, and a sentence that explains the obvious
+ * back to someone reads as a correction. They didn't misunderstand anything.
+ *
+ * "Copy the link from the recipe you want" rather than "open the recipe": both
+ * routes to that link are fine (click through and copy the address bar, or
+ * copy the link straight off the results), and there is no reason for us to
+ * pick one.
+ */
+export const SEARCH_PAGE_MESSAGE =
+  "That looks like a search results page. Copy the link from the recipe you want and paste it here.";
 
 /** The toast has room for about five words; see `shortImportError`. */
 export const SEARCH_PAGE_SHORT_MESSAGE = "That's a search results page";
@@ -196,7 +209,7 @@ export function searchPageMessage(rawUrl: string): string | null {
     // paste either way, but it has no answer of ours to give, so it goes to the
     // parser like anything else rather than getting copy that doesn't fit.
     if (segments.includes("search") || hasNonEmptyParam(url, ENGINE_QUERY_PARAMS)) {
-      return SEARCH_RESULTS_MESSAGE;
+      return SEARCH_PAGE_MESSAGE;
     }
     return null;
   }
@@ -204,8 +217,8 @@ export function searchPageMessage(rawUrl: string): string | null {
   // A site's own listing: `/search?q=…`, and the WordPress `/?s=…` at the root.
   // A path segment literally named `search` is enough on its own — Blogger's
   // `/search/label/cookies` carries no query parameter and is still a list.
-  if (segments.includes("search")) return SITE_SEARCH_MESSAGE;
-  if (segments.length === 0 && hasNonEmptyParam(url, SITE_SEARCH_PARAMS)) return SITE_SEARCH_MESSAGE;
+  if (segments.includes("search")) return SEARCH_PAGE_MESSAGE;
+  if (segments.length === 0 && hasNonEmptyParam(url, SITE_SEARCH_PARAMS)) return SEARCH_PAGE_MESSAGE;
 
   return null;
 }

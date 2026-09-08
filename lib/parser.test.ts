@@ -178,7 +178,8 @@ describe("parseUrlAll — links answered without a parse", () => {
       parseUrlAll("https://www.google.com/search?q=oatmeal+scotchie+bars+jelly+roll+pan"),
     ).rejects.toMatchObject({
       code: "search_page",
-      message: "Open the recipe you want from those results, then paste that link.",
+      message:
+        "That looks like a search results page. Copy the link from the recipe you want and paste it here.",
     });
     expect(fetchSpy).not.toHaveBeenCalled();
     expect(callable).not.toHaveBeenCalled();
