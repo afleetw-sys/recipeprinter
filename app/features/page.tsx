@@ -166,6 +166,7 @@ export default function FeaturesPage() {
         lede="RecipePrinter turns websites, social links, photos, screenshots, and text into printable recipe cards, pages, PDFs, and batches you can cook from, save, and collect."
         above={<Breadcrumb trail={TRAIL} />}
         actions={<LandingCta href="/" />}
+        note="Printing is free and needs no account. Your queue lives in your browser. Sign in only if you want a project saved to reopen on another device."
         aside={
           <HeroProductPhoto
             cardKey="korean"
@@ -203,30 +204,6 @@ export default function FeaturesPage() {
       >
         <GuideLinks pages={KEEPING_GUIDES} />
       </LandingSection>
-
-      <section
-        aria-labelledby="privacy-heading"
-        className="card p-cp-6 border-l-2 border-l-[var(--cp-accent-warm)]"
-      >
-        <h2
-          id="privacy-heading"
-          className="font-extrabold tracking-[-0.02em] text-cp-h2"
-        >
-          Built for real kitchens, not web browsers
-        </h2>
-        <p className="mt-cp-2 text-ink-soft text-cp-body leading-relaxed">
-          RecipePrinter is not a recipe discovery app, meal planner, grocery
-          app, or social network. It exists for what happens after you&apos;ve
-          found a recipe worth making again and want it somewhere easier to use
-          than an open browser tab.
-        </p>
-        <p className="mt-cp-3 text-ink-soft text-cp-body leading-relaxed">
-          No account required. Print without signing in and your queue lives in
-          your browser, not in an account. Sign in only if you want a project
-          saved so you can reopen it on another device. Either way, the recipes
-          you print, save, and collect stay yours.
-        </p>
-      </section>
 
       <div>
         <LandingCta href="/" />

@@ -98,6 +98,16 @@ export type SeoLandingPage = {
   lede: string;
   /** One-sentence emotional hook opening the content scaffold. */
   intro?: string;
+  /**
+   * Render the shared cookbook section (components/seo/CookbookPitch).
+   *
+   * On for the pages that print a stack of recipes and stopped there: from a
+   * website, onto cards, into a binder, organized into collections. Those are
+   * the pages where a bound book is the natural next step, and they were the
+   * ones never mentioning it. Leave it off where the page already argues the
+   * cookbook itself, or the same claim lands twice.
+   */
+  cookbookPitch?: boolean;
   /** "How to …" steps, renders the section and the HowTo JSON-LD. */
   howTo?: { name: string; text: string }[];
   /** 2–3 deep-dive sections, each targeting a secondary keyword, with a proof
@@ -164,6 +174,7 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
       "print recipe link",
       "printable recipe from link",
     ],
+    cookbookPitch: true,
     intent: "Utility SEO",
     eyebrow: "Recipe printing tool",
     initialImportMode: "url",
@@ -334,6 +345,7 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
       "printable recipe PDF",
       "save online recipe as PDF",
     ],
+    cookbookPitch: true,
     intent: "Utility SEO",
     eyebrow: "Recipe PDF tool",
     initialImportMode: "url",
@@ -418,6 +430,7 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
       "printable recipe cards 4x6",
       "print recipes on index cards",
     ],
+    cookbookPitch: true,
     intent: "Utility SEO",
     eyebrow: "Recipe card maker",
     initialImportMode: "url",
@@ -504,6 +517,7 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
       "how to print Pinterest recipes from iPhone",
       "print Pinterest recipes without ads",
     ],
+    cookbookPitch: true,
     intent: "Utility SEO",
     eyebrow: "Social recipe printer",
     initialImportMode: "url",
@@ -960,6 +974,7 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
       "recipe collection ideas",
       "how to save recipes",
     ],
+    cookbookPitch: true,
     intent: "Organization SEO",
     eyebrow: "Recipe organization guide",
     title: "Organize Recipes from the Internet",
@@ -996,6 +1011,7 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
       "recipe notebook ideas",
       "recipe organization ideas",
     ],
+    cookbookPitch: true,
     intent: "Organization SEO",
     eyebrow: "Recipe binder guide",
     statusNote:

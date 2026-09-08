@@ -9,6 +9,7 @@ import {
 } from "@/components/seo/LandingFrame";
 import { SeoCapture } from "@/components/seo/SeoCapture";
 import { Breadcrumb, type Crumb } from "@/components/seo/Breadcrumb";
+import { CookbookPitch } from "@/components/seo/CookbookPitch";
 import {
   ComparisonTable,
   FeatureRows,
@@ -210,6 +211,8 @@ export default function SeoLandingPage({ params }: PageProps) {
           </div>
         </section>
       )}
+
+      {page.cookbookPitch && <CookbookPitch />}
 
       {page.examples && page.examples.length > 0 && (
         <section aria-labelledby="examples-heading">

@@ -40,7 +40,7 @@ const STEPS = [
   },
   {
     name: "Print it, or save the PDF",
-    text: "Preview it as a 6 by 4 card or a letter-size page, then print. Save as PDF in the print dialog keeps a copy on your device.",
+    text: "Preview it as a 6 by 4 card or a letter-size page, then print. Save as PDF keeps a copy on your device, and a queue of recipes prints in one job.",
   },
 ];
 
@@ -117,6 +117,7 @@ export default function HowItWorksPage() {
         lede="RecipePrinter turns recipes from websites, social links, screenshots, photos, and text into printable recipe cards, pages, and PDFs you can cook from and keep."
         above={<Breadcrumb trail={TRAIL} />}
         actions={<LandingCta href="/" />}
+        note="Printing is free and needs no account. Your queue lives in your browser. Sign in only if you want a project saved to reopen on another device."
         aside={
           <HeroProductPhoto
             cardKey="pesto"
@@ -155,24 +156,6 @@ export default function HowItWorksPage() {
           ))}
         </div>
       </LandingSection>
-
-      <section
-        aria-labelledby="no-account-heading"
-        className="card p-cp-6 border-l-2 border-l-[var(--cp-accent-warm)]"
-      >
-        <h2
-          id="no-account-heading"
-          className="font-extrabold tracking-[-0.02em] text-cp-h2"
-        >
-          No account required
-        </h2>
-        <p className="mt-cp-2 text-ink-soft text-cp-body leading-relaxed">
-          Print without signing in and your queue stays in your browser.
-          Printing several recipes? Add them to your print queue and print the
-          whole batch at once. It works well for a recipe binder, a week of
-          dinners, a family cookbook, or the recipes you keep coming back to.
-        </p>
-      </section>
 
       <div>
         <LandingCta href="/" />
