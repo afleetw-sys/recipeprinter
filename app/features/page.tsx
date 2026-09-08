@@ -54,50 +54,50 @@ const JSON_LD = {
 // photograph had to scroll past everything else to find the recipe card guide.
 const SOURCE_ROWS = [
   {
-    heading: "Keep the recipe, leave the web page behind",
+    heading: "Ad-free imports",
     image: "before-after",
     body:
       "The title, ingredients, instructions, notes, prep time, cook time, and servings come across when the page has them. Ads, pop-ups, comments, autoplay video, and the story before the recipe do not.",
   },
   {
-    heading: "Start from whatever you have",
+    heading: "Links, photos, screenshots, and text",
     image: "paste-in-app",
     body:
-      "A link from a food blog, recipe site, Pinterest, Instagram, or TikTok. A photo of a cookbook page or an old recipe card. A screenshot. Text pasted from a message or an email. They all come out the same way, as a printable recipe you can hold.",
+      "Whichever one you have, it comes out the same way: a printable recipe you can hold. A food blog, a Pinterest pin, an Instagram or TikTok link. A photo of a cookbook page or an old recipe card. A screenshot. A paragraph pasted out of a message.",
   },
 ];
 
 const OUTPUT_ROWS = [
   {
-    heading: "Sized for the box it's going in",
+    heading: "4 by 6 recipe cards",
     image: "card-in-box",
     body:
-      "A 4 by 6 recipe card drops straight into a recipe box, or print a letter-size page for a binder. Cut lines give you a trim guide on card stock, and a recipe too long for one side carries on onto the back rather than being cut short.",
+      "They drop straight into a recipe box, or print a letter-size page for a binder instead. Cut lines give you a trim guide on card stock, and a recipe too long for one side carries on onto the back rather than being cut short.",
   },
   {
-    heading: "And when the stack has earned it, a cookbook",
+    heading: "Cookbook builder",
     image: "bound-cookbook",
     body:
-      "Group the recipes you kept into chapters, add a cover, and RecipePrinter builds the table of contents for you. Export a print-ready PDF to run off at home in US Letter, or a full-bleed 8 by 10 to order a bound hardcover from a service like Lulu or Blurb. The cookbook builder is a one-time purchase for the book you make.",
+      "Group the recipes you kept into chapters, add a cover, and RecipePrinter builds the table of contents for you. Export a print-ready PDF to run off at home in US Letter, or a full-bleed 8 by 10 to order a bound hardcover from a service like Lulu or Blurb. It is a one-time purchase for the book you make.",
   },
 ];
 
 const ALSO: OverviewItem[] = [
   {
     icon: SlidersIcon,
-    title: "Fix the recipe before it prints",
+    title: "Inline editing",
     body: "The title, ingredients, steps, and notes are editable right on the card. Correct an amount, drop a step, or add a note of your own.",
   },
   {
     // Moved here from /how-it-works, where it was the one thing that page had
     // to itself and the page almost nothing linked to.
     icon: AppsIcon,
-    title: "Bring a library from another app",
+    title: "Paprika and CookPilot import",
     body: "Sign in to CookPilot, or open a Paprika export file, and add what you want to the print queue. A Paprika file is read in your browser, so nothing is uploaded.",
   },
   {
     icon: ClockIcon,
-    title: "Print a batch in one job",
+    title: "Batch printing",
     body: "Build a queue from different sources, choose the recipes you want, and print them together for a recipe binder, a week of dinners, or a family cookbook.",
   },
   {
@@ -107,7 +107,7 @@ const ALSO: OverviewItem[] = [
   },
   {
     icon: PrintIcon,
-    title: "Save a PDF instead",
+    title: "PDF export",
     body: "Choose Save as PDF in the print dialog to keep the printable recipe on your device rather than sending it to paper.",
   },
 ];
@@ -153,8 +153,8 @@ export default function FeaturesPage() {
 
       <LandingSection
         id="source-heading"
-        heading="Where the recipe comes from"
-        lede="It arrives as a web page, a photo, or a paragraph someone texted you, and none of that is built to cook from."
+        heading="Importing"
+        lede="A recipe reaches you as a web page, a photo, or a paragraph someone texted you. None of that is built to cook from."
       >
         <FeatureRows features={SOURCE_ROWS} />
         <PickerRow label="Guides by source" pages={byGroup("source")} />
@@ -162,8 +162,8 @@ export default function FeaturesPage() {
 
       <LandingSection
         id="output-heading"
-        heading="What you end up with"
-        lede="Something you can put on the counter, file in a box, or bind and give away."
+        heading="Printing"
+        lede="What comes out of the printer: a recipe card for the counter, a page for the binder, or a bound book to give away."
       >
         <FeatureRows features={OUTPUT_ROWS} />
         <PickerRow label="Guides by what you make" pages={byGroup("output")} />
@@ -171,8 +171,8 @@ export default function FeaturesPage() {
 
       <LandingSection
         id="also-heading"
-        heading="More of what it does"
-        lede="The smaller things, the ones you notice on the second or third recipe."
+        heading="Everything else"
+        lede="The smaller tools, the ones you reach for on the second or third recipe."
       >
         <OverviewGrid items={ALSO} />
       </LandingSection>
