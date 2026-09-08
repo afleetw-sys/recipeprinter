@@ -8,7 +8,7 @@ import {
   LandingSection,
 } from "@/components/seo/LandingFrame";
 import { FeatureRows } from "@/components/seo/LandingVisuals";
-import { OverviewList, type OverviewItem } from "@/components/seo/OverviewGrid";
+import { OverviewGrid, type OverviewItem } from "@/components/seo/OverviewGrid";
 import { GuidePicker } from "@/components/seo/GuidePicker";
 import { Breadcrumb } from "@/components/seo/Breadcrumb";
 import { absoluteUrl, breadcrumbNode, pageMetadata } from "@/lib/seo";
@@ -70,7 +70,7 @@ const HEADLINE = [
       "A link from a food blog, recipe site, Pinterest, Instagram, or TikTok. A photo of a cookbook page or an old recipe card. A screenshot. Text pasted from a message or an email. They all come out the same way, as a printable recipe you can hold.",
   },
   {
-    heading: "And when the stack has earned it, a book",
+    heading: "And when the stack has earned it, a cookbook",
     image: "bound-cookbook",
     body:
       "Group the recipes you kept into chapters, add a cover, and RecipePrinter builds the table of contents for you. Export a print-ready PDF to run off at home in US Letter, or a full-bleed 8 by 10 to order a bound hardcover from a service like Lulu or Blurb. The cookbook builder is a one-time purchase for the book you make.",
@@ -127,7 +127,7 @@ export default function FeaturesPage() {
       <LandingHero
 
         h1="A recipe printing tool for recipes worth keeping"
-        lede="RecipePrinter turns websites, social links, photos, screenshots, and text into printable recipe cards, pages, PDFs, and batches you can cook from, save, and collect."
+        lede="RecipePrinter turns websites, social links, photos, screenshots, and text into printable recipe cards, pages, PDFs, and cookbooks you can cook from, save, and collect."
         above={<Breadcrumb trail={TRAIL} />}
         actions={<LandingCta href="/" />}
         note="Printing is free and needs no account."
@@ -135,8 +135,8 @@ export default function FeaturesPage() {
 
       <LandingSection
         id="features-heading"
-        heading="What it does"
-        lede="The parts a browser's print button leaves out, and where they end up."
+        heading="How a recipe you found becomes one you keep"
+        lede="It arrives as a web page and leaves as something you can put on the counter, file in a box, or bind."
       >
         <FeatureRows features={HEADLINE} />
       </LandingSection>
@@ -146,7 +146,7 @@ export default function FeaturesPage() {
         heading="More of what it does"
         lede="The smaller things, the ones you notice on the second or third recipe."
       >
-        <OverviewList items={ALSO} />
+        <OverviewGrid items={ALSO} />
       </LandingSection>
 
       <LandingSection
