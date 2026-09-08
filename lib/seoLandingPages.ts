@@ -909,6 +909,100 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
     ],
   },
   {
+    // No `lastReviewed` on purpose: this page has not had a read-through yet,
+    // which is what that field records. It stays out of the reviewed set until
+    // someone has actually gone over the copy.
+    slug: "print-paprika-recipes",
+    primaryKeyword: "print Paprika recipes",
+    secondaryKeywords: [
+      "print recipe from Paprika",
+      "Paprika recipe printer",
+      "export Paprika recipes",
+      "Paprika recipe cards",
+      "print Paprika recipe manager",
+      "Paprika recipes to PDF",
+      "back up Paprika recipes",
+    ],
+    shortLabel: "Paprika",
+    pickerGroup: "source",
+    intent: "Utility SEO",
+    eyebrow: "Recipe manager printer",
+    initialImportMode: "apps",
+    importSubmitLabel: "Open a Paprika file",
+    title: "Print Paprika Recipes",
+    description:
+      "Open a Paprika export file and turn the recipes you have collected into printable recipe cards, pages, and PDFs. The file is read in your browser.",
+    h1: "Print recipes from Paprika",
+    anchor: "Print Paprika recipes",
+    lede:
+      "Years of recipes live in Paprika, and every one of them is on a screen. Export the library, open the file here, and pick the ones that deserve to be on paper.",
+    howTo: [
+      {
+        name: "Export from Paprika",
+        text: "Open the Paprika app, click the menu at the top left, go to Settings, then Export Recipes and Export. You get a single .paprikarecipes file holding the whole library.",
+      },
+      {
+        name: "Open the file here",
+        text: "Drop the file into the box above. It is read in your browser and never uploaded, so the library does not leave your computer.",
+      },
+      {
+        name: "Pick the ones worth printing",
+        text: "The whole library arrives as a list you can go through. Add the recipes you actually cook to the print queue and leave the rest where they are.",
+      },
+      {
+        name: "Choose a card or a page",
+        text: "A 4 by 6 card for the recipe box, or a letter page for a binder. Print the batch in one job, or save it as a PDF.",
+      },
+    ],
+    featureSections: [
+      {
+        heading: "The library comes across, not just the titles",
+        image: "paste-in-app",
+        body:
+          "Ingredients, directions, the notes you added, prep and cook time, servings, the source it came from, and the categories you filed it under all carry over. A rating and a difficulty do not, because neither belongs on a printed card. What you have been keeping in Paprika arrives as a recipe, not as a row in a list.",
+      },
+      {
+        heading: "It is read in your browser, not uploaded",
+        image: "card-in-box",
+        body:
+          "The export file is opened and unpacked on your own machine. Nothing is sent to a server, no account is needed to do it, and the library is not stored anywhere afterwards. Open the same file twice and the queue recognises what is already in it rather than stacking up a second copy of everything.",
+      },
+      {
+        heading: "A collection that survives the app",
+        image: "bound-cookbook",
+        body:
+          "A recipe manager is only as permanent as the company behind it and the phone in your hand. Printed cards in a box, pages in a binder, or a bound cookbook on a shelf keep working when the subscription lapses, the export format changes, or the app is gone.",
+      },
+    ],
+    faqs: [
+      {
+        question: "What file does Paprika export?",
+        answer:
+          "A single .paprikarecipes file containing the whole library, one entry per recipe with its photo embedded. Open the Paprika app, click the menu at the top left, go to Settings, then Export Recipes and Export.",
+      },
+      {
+        question: "Does my Paprika library get uploaded?",
+        answer:
+          "No. The file is opened and read in your browser, on your own machine. Nothing is sent to a server and no account is required to do it.",
+      },
+      {
+        question: "Can I print my whole Paprika library at once?",
+        answer:
+          "You can, though most people do not want to. The export arrives as a list to choose from, so you can add just the recipes you actually cook to the print queue and print those in one job.",
+      },
+      {
+        question: "Do the notes and categories I added come across?",
+        answer:
+          "Yes. Notes, prep and cook time, servings, the original source, and the categories you filed a recipe under all carry over. Ratings and difficulty do not, since neither reads as part of a printed recipe.",
+      },
+    ],
+    links: [
+      { href: "/organize-recipes", label: "Organize recipes" },
+      { href: "/recipe-binder", label: "Make a recipe binder" },
+      { href: "/family-recipe-book", label: "Build a family cookbook" },
+    ],
+  },
+  {
     slug: "print-youtube-recipes",
     primaryKeyword: "print recipe from YouTube",
     secondaryKeywords: [

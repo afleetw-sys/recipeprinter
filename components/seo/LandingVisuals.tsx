@@ -136,7 +136,7 @@ const PROOF_ASPECT = "3 / 2";
     row can name directly. Keying only by kind meant two rows asking for the
     same kind — on one page or across two — got the identical picture, which
     reads as one visual repeated rather than two claims. */
-const FEATURE_IMAGES: Record<string, ProofImage> = {
+export const FEATURE_IMAGES: Record<string, ProofImage> = {
   "multi-themes": {
     src: "/images/multi-themes.png",
     width: 2400,

@@ -6,7 +6,7 @@ import {
   LandingHero,
   LandingSection,
 } from "@/components/seo/LandingFrame";
-import { FeatureRows } from "@/components/seo/LandingVisuals";
+import { FeatureCards, type FeatureCard } from "@/components/seo/FeatureCards";
 import { GuidePicker } from "@/components/seo/GuidePicker";
 import { Breadcrumb } from "@/components/seo/Breadcrumb";
 import { absoluteUrl, breadcrumbNode, pageMetadata } from "@/lib/seo";
@@ -55,7 +55,7 @@ const JSON_LD = {
 // argument for it underneath, and a photograph where one exists. A row without
 // an image renders as a plain text block, which is the right weight for the
 // smaller tools rather than a reason to invent a picture for them.
-const IMPORT_ROWS = [
+const IMPORT_CARDS: FeatureCard[] = [
   {
     heading: "Ad-free imports",
     image: "before-after",
@@ -72,14 +72,18 @@ const IMPORT_ROWS = [
     // Lived under "everything else" until it was pointed out that an import
     // belongs with the imports.
     heading: "Paprika and CookPilot import",
+    needs:
+      "A .paprikarecipes file being dropped into RecipePrinter, with the imported library listed alongside it.",
     body:
       "Sign in to CookPilot, or open a Paprika export file, and add what you want to the print queue. A Paprika file is read in your browser, so nothing is uploaded.",
   },
 ];
 
-const EDIT_ROWS = [
+const EDIT_CARDS: FeatureCard[] = [
   {
     heading: "Inline editing",
+    needs:
+      "A recipe card mid-edit on screen, an ingredient amount being corrected with the cursor in the line.",
     body:
       "The title, ingredients, steps, and notes are editable right on the card. Correct an amount, drop a step you do not need, or add the note you would otherwise have written in the margin.",
   },
@@ -91,7 +95,7 @@ const EDIT_ROWS = [
   },
 ];
 
-const PRINT_ROWS = [
+const PRINT_CARDS: FeatureCard[] = [
   {
     heading: "4 by 6 recipe cards",
     image: "card-in-box",
@@ -106,6 +110,8 @@ const PRINT_ROWS = [
   },
   {
     heading: "Batch printing",
+    needs:
+      "Several different printed recipe cards coming off a home printer in one run, stacked in the output tray.",
     body:
       "Build a queue from different sources, choose the recipes you want, and print them together for a recipe binder, a week of dinners, or a family cookbook.",
   },
@@ -157,11 +163,20 @@ export default function FeaturesPage() {
       />
 
       <LandingSection
+        id="print-heading"
+        heading="Print how you want"
+        lede="A recipe card for the counter, a letter page for the binder, a PDF for your phone, or a bound book to give away."
+      >
+        <FeatureCards items={PRINT_CARDS} columns={2} />
+        <PickerRow label="Guides by what you make" pages={byGroup("output")} />
+      </LandingSection>
+
+      <LandingSection
         id="import-heading"
         heading="Import from anywhere"
         lede="A recipe reaches you as a web page, a photo, or a paragraph someone texted you. None of that is built to cook from."
       >
-        <FeatureRows features={IMPORT_ROWS} />
+        <FeatureCards items={IMPORT_CARDS} />
         <PickerRow label="Guides by source" pages={byGroup("source")} />
       </LandingSection>
 
@@ -170,16 +185,7 @@ export default function FeaturesPage() {
         heading="Edit it before it prints"
         lede="Whatever came across is yours to correct, cut, annotate, and restyle while it is still on screen."
       >
-        <FeatureRows features={EDIT_ROWS} />
-      </LandingSection>
-
-      <LandingSection
-        id="print-heading"
-        heading="Print how you want"
-        lede="A recipe card for the counter, a letter page for the binder, a PDF for your phone, or a bound book to give away."
-      >
-        <FeatureRows features={PRINT_ROWS} />
-        <PickerRow label="Guides by what you make" pages={byGroup("output")} />
+        <FeatureCards items={EDIT_CARDS} columns={2} />
       </LandingSection>
 
       <div>
