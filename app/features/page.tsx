@@ -46,11 +46,13 @@ const JSON_LD = {
   ],
 };
 
-// The three claims worth a photograph. Everything the product does used to
-// arrive as nine identical cards at once, which asks the reader to weigh all
-// nine before knowing which matter. These three carry the argument; the rest
-// sit under them at a lower volume.
-const HEADLINE = [
+// Split by the same two questions the guide pickers ask, so a category argues
+// itself and then points at its own pages. Canva's features page does this:
+// every category carries a spotlight it explains properly, and the links to the
+// individual tools sit directly under it. Ours had all the proof at the top and
+// all the navigation at the bottom, so a reader convinced by the recipe card
+// photograph had to scroll past everything else to find the recipe card guide.
+const SOURCE_ROWS = [
   {
     heading: "Keep the recipe, leave the web page behind",
     image: "before-after",
@@ -58,16 +60,19 @@ const HEADLINE = [
       "The title, ingredients, instructions, notes, prep time, cook time, and servings come across when the page has them. Ads, pop-ups, comments, autoplay video, and the story before the recipe do not.",
   },
   {
-    heading: "Sized for the box it's going in",
-    image: "card-in-box",
-    body:
-      "A 4 by 6 recipe card drops straight into a recipe box, or print a letter-size page for a binder. Cut lines give you a trim guide on card stock, and a recipe too long for one side carries on onto the back rather than being cut short.",
-  },
-  {
     heading: "Start from whatever you have",
     image: "paste-in-app",
     body:
       "A link from a food blog, recipe site, Pinterest, Instagram, or TikTok. A photo of a cookbook page or an old recipe card. A screenshot. Text pasted from a message or an email. They all come out the same way, as a printable recipe you can hold.",
+  },
+];
+
+const OUTPUT_ROWS = [
+  {
+    heading: "Sized for the box it's going in",
+    image: "card-in-box",
+    body:
+      "A 4 by 6 recipe card drops straight into a recipe box, or print a letter-size page for a binder. Cut lines give you a trim guide on card stock, and a recipe too long for one side carries on onto the back rather than being cut short.",
   },
   {
     heading: "And when the stack has earned it, a cookbook",
@@ -107,6 +112,19 @@ const ALSO: OverviewItem[] = [
   },
 ];
 
+function PickerRow({ label, pages }: { label: string; pages: typeof SEO_LANDING_PAGES }) {
+  return (
+    <div className="mt-cp-7 border-t border-line pt-cp-5">
+      <p className="text-cp-label font-bold uppercase tracking-[0.08em] text-ink-soft">
+        {label}
+      </p>
+      <div className="mt-cp-3">
+        <GuidePicker pages={pages} />
+      </div>
+    </div>
+  );
+}
+
 // Grouped by what the reader is actually choosing between, which `intent`
 // could not express: it drives page layout, and it filed the Just the Recipe
 // comparison under "Utility SEO", putting a competitor page in the list of
@@ -134,11 +152,21 @@ export default function FeaturesPage() {
       />
 
       <LandingSection
-        id="features-heading"
-        heading="How a recipe you found becomes one you keep"
-        lede="It arrives as a web page and leaves as something you can put on the counter, file in a box, or bind."
+        id="source-heading"
+        heading="Where the recipe comes from"
+        lede="It arrives as a web page, a photo, or a paragraph someone texted you, and none of that is built to cook from."
       >
-        <FeatureRows features={HEADLINE} />
+        <FeatureRows features={SOURCE_ROWS} />
+        <PickerRow label="Guides by source" pages={byGroup("source")} />
+      </LandingSection>
+
+      <LandingSection
+        id="output-heading"
+        heading="What you end up with"
+        lede="Something you can put on the counter, file in a box, or bind and give away."
+      >
+        <FeatureRows features={OUTPUT_ROWS} />
+        <PickerRow label="Guides by what you make" pages={byGroup("output")} />
       </LandingSection>
 
       <LandingSection
@@ -147,22 +175,6 @@ export default function FeaturesPage() {
         lede="The smaller things, the ones you notice on the second or third recipe."
       >
         <OverviewGrid items={ALSO} />
-      </LandingSection>
-
-      <LandingSection
-        id="source-heading"
-        heading="Guides by where the recipe came from"
-        lede="Each one covers what that source hands over, what it holds back, and how to get the recipe out of it."
-      >
-        <GuidePicker pages={byGroup("source")} />
-      </LandingSection>
-
-      <LandingSection
-        id="output-heading"
-        heading="Guides by what you want to make"
-        lede="Recipe cards for the box, a binder, a PDF, or a bound book to give away."
-      >
-        <GuidePicker pages={byGroup("output")} />
       </LandingSection>
 
       <div>
