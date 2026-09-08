@@ -18,6 +18,27 @@ export type OverviewItem = {
   body: string;
 };
 
+/**
+ * The same items at a lower volume: hairline rules instead of cards, no icon.
+ *
+ * Nine equal cards up front asks the reader to weigh nine things at once and
+ * gives them no way in. The few claims worth arguing get a feature row with a
+ * photograph; everything else belongs here, where it can be skimmed or skipped
+ * without competing with them.
+ */
+export function OverviewList({ items }: { items: OverviewItem[] }) {
+  return (
+    <ul className="grid gap-x-cp-6 sm:grid-cols-2">
+      {items.map(({ title, body }) => (
+        <li key={title} className="border-t border-line py-cp-4">
+          <h3 className="text-cp-body font-extrabold tracking-[-0.02em]">{title}</h3>
+          <p className="mt-cp-1 text-ink-soft text-cp-small leading-relaxed">{body}</p>
+        </li>
+      ))}
+    </ul>
+  );
+}
+
 export function OverviewGrid({
   items,
   columns = 3,

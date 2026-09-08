@@ -1,29 +1,18 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import {
-  AppsIcon,
-  BookIcon,
-  CheckIcon,
-  ClockIcon,
-  CrownIcon,
-  ImageIcon,
-  LinkIcon,
-  PrintIcon,
-  SizeIcon,
-  SlidersIcon,
-  TextIcon,
-} from "@/components/icons";
+import { AppsIcon, BookIcon, ClockIcon, CrownIcon, PrintIcon, SlidersIcon } from "@/components/icons";
 import {
   LandingCta,
   LandingFrame,
   LandingHero,
   LandingSection,
 } from "@/components/seo/LandingFrame";
-import { HeroProductPhoto } from "@/components/seo/LandingVisuals";
-import { OverviewGrid, type OverviewItem } from "@/components/seo/OverviewGrid";
+import { FeatureRows, HeroProductPhoto } from "@/components/seo/LandingVisuals";
+import { OverviewGrid, OverviewList, type OverviewItem } from "@/components/seo/OverviewGrid";
+import { GuidePicker } from "@/components/seo/GuidePicker";
 import { Breadcrumb } from "@/components/seo/Breadcrumb";
 import { absoluteUrl, breadcrumbNode, pageMetadata } from "@/lib/seo";
-import { anchorFor, SEO_LANDING_PAGES } from "@/lib/seoLandingPages";
+import { SEO_LANDING_PAGES } from "@/lib/seoLandingPages";
 
 export const metadata: Metadata = pageMetadata({
   title: "Recipe Printing Tool for Recipes Worth Keeping",
@@ -57,61 +46,58 @@ const JSON_LD = {
   ],
 };
 
-const FEATURES: OverviewItem[] = [
+// The three claims worth a photograph. Everything the product does used to
+// arrive as nine identical cards at once, which asks the reader to weigh all
+// nine before knowing which matter. These three carry the argument; the rest
+// sit under them at a lower volume.
+const HEADLINE = [
   {
-    icon: LinkIcon,
-    title: "Print recipes from websites and social links",
-    body: "Paste a recipe link from a food blog, recipe website, Pinterest, Instagram, TikTok, or another supported social post and RecipePrinter turns it into a printable recipe card or page.",
+    heading: "Keep the recipe, leave the web page behind",
+    image: "before-after",
+    body:
+      "The title, ingredients, instructions, notes, prep time, cook time, and servings come across when the page has them. Ads, pop-ups, comments, autoplay video, and the story before the recipe do not.",
   },
   {
-    icon: ImageIcon,
-    title: "Print from a photo or screenshot",
-    body: "Upload a cookbook page, old recipe card, saved image, or recipe screenshot and turn it into a readable recipe you can print, save, or add to a binder.",
+    heading: "Sized for the box it's going in",
+    image: "card-in-box",
+    body:
+      "A 6 by 4 card drops straight into a recipe box, or print a letter-size page for a binder. Cut lines give you a trim guide on card stock, and a recipe too long for one side carries on onto the back rather than being cut short.",
   },
   {
-    icon: TextIcon,
-    title: "Paste recipe text",
-    body: "Have a recipe from a text, email, document, or site that does not import cleanly? Paste the text and RecipePrinter will format it into a printable recipe.",
-  },
-  {
-    // Moved here from /how-it-works, where it was the one thing that page had
-    // to itself and the page almost nothing linked to. Someone with a Paprika
-    // library has hundreds of saved recipes and a reason to print them.
-    icon: AppsIcon,
-    title: "Bring a library from another app",
-    body: "Already keep recipes in CookPilot or Paprika? Sign in to CookPilot, or open a Paprika export file, then add what you want straight to your print queue. A Paprika file is read in your browser, so nothing is uploaded.",
-  },
-  {
-    icon: CheckIcon,
-    title: "Keep the recipe, leave the web page behind",
-    body: "RecipePrinter keeps the title, ingredients, instructions, notes, prep time, cook time, servings, and other useful details when available. Ads, pop-ups, comments, and extra page clutter stay off the printed recipe.",
-  },
-  {
-    icon: SlidersIcon,
-    title: "Fix the recipe before it prints",
-    body: "The title, ingredients, steps, and notes are editable right on the card. Correct an amount, drop a step you do not need, or add a note of your own, and the change is there when it prints.",
-  },
-  {
-    icon: SizeIcon,
-    title: "Sized for the box it's going in",
-    body: "Print a 6 by 4 card for a recipe box, or a letter-size page for a binder. Cut lines give you a trim guide on card stock, and a long recipe carries on onto the back of the same card.",
-  },
-  {
-    icon: PrintIcon,
-    title: "Create recipe cards, pages, and PDFs",
-    body: "Print a recipe card for your kitchen, a letter-size recipe page for your binder, or choose Save as PDF to keep a recipe copy on your device.",
-  },
-  {
-    icon: ClockIcon,
-    title: "Print multiple recipes at once",
-    body: "Build a print queue from different sources, select the recipes you want, and print the whole batch in one job for a recipe binder, family cookbook, or week of dinners.",
+    heading: "Start from whatever you have",
+    image: "paste-in-app",
+    body:
+      "A link from a food blog, recipe site, Pinterest, Instagram, or TikTok. A photo of a cookbook page or an old recipe card. A screenshot. Text pasted from a message or an email. They all end up in the same place.",
   },
 ];
 
-// The two things you can pay for, which this page never mentioned. Kept in
-// their own section rather than mixed into the grid above: everything up there
-// is free and needs no account, and burying a purchase among it would misread
-// as the whole page being paid.
+const ALSO: OverviewItem[] = [
+  {
+    icon: SlidersIcon,
+    title: "Fix the recipe before it prints",
+    body: "The title, ingredients, steps, and notes are editable right on the card. Correct an amount, drop a step, or add a note of your own.",
+  },
+  {
+    // Moved here from /how-it-works, where it was the one thing that page had
+    // to itself and the page almost nothing linked to.
+    icon: AppsIcon,
+    title: "Bring a library from another app",
+    body: "Sign in to CookPilot, or open a Paprika export file, and add what you want to the print queue. A Paprika file is read in your browser, so nothing is uploaded.",
+  },
+  {
+    icon: ClockIcon,
+    title: "Print a batch in one job",
+    body: "Build a queue from different sources, choose the recipes you want, and print them together for a binder, a week of dinners, or a gift.",
+  },
+  {
+    icon: PrintIcon,
+    title: "Save a PDF instead",
+    body: "Choose Save as PDF in the print dialog to keep a clean copy on your device rather than sending it to paper.",
+  },
+];
+
+// Kept apart from everything above, which is free and needs no account.
+// Burying a purchase among it would misread as the whole page being paid.
 const PAID: OverviewItem[] = [
   {
     icon: BookIcon,
@@ -125,35 +111,16 @@ const PAID: OverviewItem[] = [
   },
 ];
 
-// Between them these two groups cover every landing page, so a page can never
-// be added without picking up a link from here. The section used to render the
-// "Utility SEO" pages alone, which left the five organizing, preserving, and
-// alternative pages reachable from the sitemap and almost nowhere else.
-const UTILITY_GUIDES = SEO_LANDING_PAGES.filter(
-  (page) => page.intent === "Utility SEO",
-);
-
-const KEEPING_GUIDES = SEO_LANDING_PAGES.filter(
-  (page) => page.intent !== "Utility SEO",
-);
-
-function GuideLinks({ pages }: { pages: typeof SEO_LANDING_PAGES }) {
-  return (
-    <div className="grid gap-cp-3 sm:grid-cols-2 lg:grid-cols-3">
-      {pages.map((page) => (
-        <Link
-          key={page.slug}
-          href={`/${page.slug}`}
-          className="card p-cp-4 text-cp-body font-bold text-ink hover:border-line-strong transition-colors"
-        >
-          {anchorFor(page)}
-        </Link>
-      ))}
-    </div>
-  );
-}
+// Grouped by what the reader is actually choosing between, which `intent`
+// could not express: it drives page layout, and it filed the Just the Recipe
+// comparison under "Utility SEO", putting a competitor page in the list of
+// ways you might have found a recipe.
+const byGroup = (group: string) =>
+  SEO_LANDING_PAGES.filter((page) => page.pickerGroup === group);
 
 export default function FeaturesPage() {
+  const comparisons = byGroup("comparison");
+
   return (
     <LandingFrame headerActions={<LandingCta label="Go to printer" href="/" compact />}>
       <script
@@ -162,6 +129,7 @@ export default function FeaturesPage() {
       />
 
       <LandingHero
+        align="centered"
         h1="A recipe printing tool for recipes worth keeping"
         lede="RecipePrinter turns websites, social links, photos, screenshots, and text into printable recipe cards, pages, PDFs, and batches you can cook from, save, and collect."
         above={<Breadcrumb trail={TRAIL} />}
@@ -177,33 +145,52 @@ export default function FeaturesPage() {
         }
       />
 
-      <LandingSection id="features-heading" heading="What RecipePrinter does">
-        <OverviewGrid items={FEATURES} />
+      <LandingSection id="features-heading" heading="What it does">
+        <FeatureRows features={HEADLINE} />
+      </LandingSection>
+
+      <LandingSection id="also-heading" heading="Also included">
+        <OverviewList items={ALSO} />
       </LandingSection>
 
       <LandingSection
         id="paid-heading"
         heading="Two things you can buy, once"
-        lede="Printing is free and needs no account. These are the only optional purchases, and the price is shown before you buy."
+        lede="Printing is free. These are the only optional purchases, and the price is shown before you buy."
       >
         <OverviewGrid items={PAID} columns={2} />
       </LandingSection>
 
       <LandingSection
-        id="printing-guides-heading"
-        heading="Choose how you found the recipe"
-        lede="Start with the way you found the recipe, then turn it into something easier to cook from and keep."
+        id="source-heading"
+        heading="Where did you find the recipe?"
+        lede="Start with where it came from, and the guide covers what that source does and does not hand over."
       >
-        <GuideLinks pages={UTILITY_GUIDES} />
+        <GuidePicker pages={byGroup("source")} />
       </LandingSection>
 
       <LandingSection
-        id="keeping-guides-heading"
-        heading="Keep them, sort them, pass them on"
-        lede="What happens after the printing: where the recipes live, how they stay findable, and how they reach the next person who cooks from them."
+        id="output-heading"
+        heading="Or start from what you want to end up with"
+        lede="Cards for the box, a binder, a PDF, or a bound book to give away."
       >
-        <GuideLinks pages={KEEPING_GUIDES} />
+        <GuidePicker pages={byGroup("output")} />
       </LandingSection>
+
+      {comparisons.length > 0 && (
+        <p className="text-ink-soft text-cp-body leading-relaxed">
+          Comparing tools? See RecipePrinter next to{" "}
+          {comparisons.map((page, index) => (
+            <span key={page.slug}>
+              {index > 0 && (index === comparisons.length - 1 ? " or " : ", ")}
+              <Link href={`/${page.slug}`} className="font-bold text-ink hover:underline">
+                {page.shortLabel}
+              </Link>
+            </span>
+          ))}
+          .
+        </p>
+      )}
 
       <div>
         <LandingCta href="/" />

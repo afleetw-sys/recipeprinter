@@ -1,5 +1,4 @@
 import type { Metadata } from "next";
-import Link from "next/link";
 import {
   AppsIcon,
   ImageIcon,
@@ -14,9 +13,10 @@ import {
 } from "@/components/seo/LandingFrame";
 import { HeroProductPhoto, HowItWorks } from "@/components/seo/LandingVisuals";
 import { OverviewGrid, type OverviewItem } from "@/components/seo/OverviewGrid";
+import { GuidePicker } from "@/components/seo/GuidePicker";
 import { Breadcrumb } from "@/components/seo/Breadcrumb";
 import { absoluteUrl, breadcrumbNode, howToNode, pageMetadata } from "@/lib/seo";
-import { anchorFor, SEO_LANDING_PAGES } from "@/lib/seoLandingPages";
+import { SEO_LANDING_PAGES } from "@/lib/seoLandingPages";
 
 export const metadata: Metadata = pageMetadata({
   title: "How Recipe Printer Works",
@@ -116,6 +116,7 @@ export default function HowItWorksPage() {
         h1="From recipe link to printed recipe card"
         lede="RecipePrinter turns recipes from websites, social links, screenshots, photos, and text into printable recipe cards, pages, and PDFs you can cook from and keep."
         above={<Breadcrumb trail={TRAIL} />}
+        align="centered"
         actions={<LandingCta href="/" />}
         note="Printing is free and needs no account. Your queue lives in your browser. Sign in only if you want a project saved to reopen on another device."
         aside={
@@ -144,17 +145,7 @@ export default function HowItWorksPage() {
         id="related-guides-heading"
         heading="More ways to use RecipePrinter"
       >
-        <div className="grid gap-cp-3 sm:grid-cols-2 lg:grid-cols-3">
-          {RELATED_GUIDES.map((page) => (
-            <Link
-              key={page.slug}
-              href={`/${page.slug}`}
-              className="card p-cp-4 text-cp-body font-bold text-ink hover:border-line-strong transition-colors"
-            >
-              {anchorFor(page)}
-            </Link>
-          ))}
-        </div>
+        <GuidePicker pages={RELATED_GUIDES} />
       </LandingSection>
 
       <div>

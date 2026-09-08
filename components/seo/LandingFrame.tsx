@@ -93,6 +93,7 @@ export function LandingHero({
   note,
   aside,
   above,
+  align = "split",
 }: {
   h1: string;
   lede: string;
@@ -101,32 +102,63 @@ export function LandingHero({
   aside: ReactNode;
   /** Breadcrumb, or anything else that sits above the heading. */
   above?: ReactNode;
+  /**
+   * `split` sets the words against the photo, two columns. It reads as a pitch
+   * with its proof beside it, which is what a page answering one search is.
+   *
+   * `centered` runs the words down the middle and the photo full width beneath.
+   * An overview page is not arguing a single claim, so pinning its heading to
+   * the left of a photo gives the photo a rebuttal it was never making. The
+   * image still opens the page; it just stops being the other half of an
+   * argument.
+   */
+  align?: "split" | "centered";
 }) {
+  const centered = align === "centered";
   return (
     <div className="flex flex-col gap-cp-6">
       {above}
       <section
-        className="grid items-center gap-cp-7 py-cp-3 lg:grid-cols-2 lg:gap-[64px]"
+        className={
+          centered
+            ? "flex flex-col gap-cp-7 py-cp-3"
+            : "grid items-center gap-cp-7 py-cp-3 lg:grid-cols-2 lg:gap-[64px]"
+        }
         aria-labelledby="landing-heading"
       >
-        <div>
+        <div className={centered ? "flex flex-col items-center text-center" : undefined}>
           <h1
             id="landing-heading"
             className="text-cp-hero-lg font-extrabold leading-[1.04] tracking-[-0.04em]"
           >
             {h1}
           </h1>
-          <p className="mt-cp-4 max-w-[40rem] text-cp-body-lg leading-relaxed text-ink-soft">
+          <p
+            className={`mt-cp-4 max-w-[40rem] text-cp-body-lg leading-relaxed text-ink-soft${
+              centered ? " mx-auto" : ""
+            }`}
+          >
             {lede}
           </p>
           {actions && <div className="mt-cp-5">{actions}</div>}
           {note && (
-            <p className="mt-cp-5 max-w-[40rem] border-l-2 border-line pl-cp-4 text-cp-small leading-relaxed text-ink-soft">
+            <p
+              className={
+                centered
+                  ? "mt-cp-5 max-w-[46rem] text-cp-small leading-relaxed text-ink-soft"
+                  : "mt-cp-5 max-w-[40rem] border-l-2 border-line pl-cp-4 text-cp-small leading-relaxed text-ink-soft"
+              }
+            >
               {note}
             </p>
           )}
         </div>
-        {aside}
+        {/* Split gives the photo half the row, which caps it on its own. Centred
+            it has the full content width to grow into, and at 860 the opening
+            ran past the fold on a laptop and pushed the first section off the
+            screen entirely. The image still opens the page; it just stops being
+            the only thing on it. */}
+        {centered ? <div className="mx-auto w-full max-w-[640px]">{aside}</div> : aside}
       </section>
     </div>
   );

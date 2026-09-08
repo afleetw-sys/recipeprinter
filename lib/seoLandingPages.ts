@@ -95,6 +95,23 @@ export type SeoLandingPage = {
    * when it misses the term the page is trying to win.
    */
   anchor?: string;
+  /**
+   * What this page is, in the fewest words a reader needs to pick it out of a
+   * list: "Pinterest", "A PDF", "A binder".
+   *
+   * A picker of ten links all reading "Print a recipe from…" is a wall of page
+   * titles, and the reader has to parse every one to find the difference. The
+   * card leads with this and keeps `anchor` underneath, so the link still says
+   * the searchable phrase without making the reader wade through it.
+   */
+  shortLabel?: string;
+  /**
+   * Which picker this page belongs in. `intent` cannot answer this: it drives
+   * the page's own layout, and it filed the Just the Recipe comparison under
+   * "Utility SEO", which put a competitor page in the list of ways you might
+   * have found a recipe.
+   */
+  pickerGroup?: "source" | "output" | "comparison";
   lede: string;
   /** One-sentence emotional hook opening the content scaffold. */
   intro?: string;
@@ -175,6 +192,8 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
       "printable recipe from link",
     ],
     cookbookPitch: true,
+    shortLabel: "A website or blog",
+    pickerGroup: "source",
     intent: "Utility SEO",
     eyebrow: "Recipe printing tool",
     initialImportMode: "url",
@@ -265,6 +284,8 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
       "clean printable recipe",
       "print recipe without clutter",
     ],
+    shortLabel: "A page buried in ads",
+    pickerGroup: "source",
     intent: "Utility SEO",
     eyebrow: "Ad-free recipe printing",
     initialImportMode: "url",
@@ -346,6 +367,8 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
       "save online recipe as PDF",
     ],
     cookbookPitch: true,
+    shortLabel: "A PDF",
+    pickerGroup: "output",
     intent: "Utility SEO",
     eyebrow: "Recipe PDF tool",
     initialImportMode: "url",
@@ -431,6 +454,8 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
       "print recipes on index cards",
     ],
     cookbookPitch: true,
+    shortLabel: "Recipe cards",
+    pickerGroup: "output",
     intent: "Utility SEO",
     eyebrow: "Recipe card maker",
     initialImportMode: "url",
@@ -518,6 +543,8 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
       "print Pinterest recipes without ads",
     ],
     cookbookPitch: true,
+    shortLabel: "Pinterest",
+    pickerGroup: "source",
     intent: "Utility SEO",
     eyebrow: "Social recipe printer",
     initialImportMode: "url",
@@ -616,6 +643,8 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
       "print recipe from Instagram Reels",
       "how to print recipes from Instagram Reels",
     ],
+    shortLabel: "Instagram",
+    pickerGroup: "source",
     intent: "Utility SEO",
     eyebrow: "Social recipe printer",
     initialImportMode: "url",
@@ -705,6 +734,8 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
       "print Facebook recipe on iPhone",
       "can you print recipes from Facebook",
     ],
+    shortLabel: "Facebook",
+    pickerGroup: "source",
     intent: "Utility SEO",
     eyebrow: "Social recipe printer",
     initialImportMode: "url",
@@ -795,6 +826,8 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
       "print recipe from social media",
       "print recipe from video",
     ],
+    shortLabel: "TikTok",
+    pickerGroup: "source",
     intent: "Utility SEO",
     eyebrow: "Social recipe printer",
     initialImportMode: "url",
@@ -884,6 +917,8 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
       "print recipe from YouTube video",
       "save YouTube recipe as PDF",
     ],
+    shortLabel: "YouTube",
+    pickerGroup: "source",
     intent: "Utility SEO",
     eyebrow: "Video recipe printer",
     initialImportMode: "url",
@@ -975,6 +1010,8 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
       "how to save recipes",
     ],
     cookbookPitch: true,
+    shortLabel: "An organized collection",
+    pickerGroup: "output",
     intent: "Organization SEO",
     eyebrow: "Recipe organization guide",
     title: "Organize Recipes from the Internet",
@@ -1012,6 +1049,8 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
       "recipe organization ideas",
     ],
     cookbookPitch: true,
+    shortLabel: "A binder",
+    pickerGroup: "output",
     intent: "Organization SEO",
     eyebrow: "Recipe binder guide",
     statusNote:
@@ -1059,6 +1098,8 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
       "family recipe book ideas",
       "recipe memory book",
     ],
+    shortLabel: "Recipes that outlast the cook",
+    pickerGroup: "output",
     intent: "Preservation and Gift SEO",
     // Preservation by intent, but the thing someone wants here is to photograph
     // the card in their hand, so capture stays in the hero.
@@ -1153,6 +1194,8 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
       "recipe memory book",
       "custom cookbook",
     ],
+    shortLabel: "A family cookbook",
+    pickerGroup: "output",
     intent: "Preservation and Gift SEO",
     eyebrow: "Family recipe guide",
     title: "Family Recipe Book Ideas",
@@ -1252,6 +1295,8 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
       "Just the Recipe app alternative",
       "free recipe printing tool",
     ],
+    shortLabel: "Just the Recipe",
+    pickerGroup: "comparison",
     intent: "Utility SEO",
     eyebrow: "Recipe tool comparison",
     initialImportMode: "url",
@@ -1360,6 +1405,8 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
       "preserve family recipes",
       "family recipe book ideas",
     ],
+    shortLabel: "ReciScan",
+    pickerGroup: "comparison",
     intent: "Preservation and Gift SEO",
     // Preservation by intent, but someone searching a competitor's name wants
     // to try the thing now, so capture stays in the hero like the other
