@@ -118,6 +118,11 @@ export function LandingHero({
   align?: "split" | "centered";
 }) {
   const centered = align === "centered";
+  // Without a photo there is no second column to balance, so the grid would
+  // hold the words to half the page and leave the other half empty. A single
+  // column instead, with the measure capped: an h1 running the full 1240 is a
+  // banner, not a heading.
+  const soloColumn = !centered && !aside;
   return (
     <div className="flex flex-col gap-cp-6">
       {above}
@@ -125,11 +130,21 @@ export function LandingHero({
         className={
           centered
             ? "flex flex-col gap-cp-7 py-cp-3"
-            : "grid items-center gap-cp-7 py-cp-3 lg:grid-cols-2 lg:gap-[64px]"
+            : soloColumn
+              ? "py-cp-3"
+              : "grid items-center gap-cp-7 py-cp-3 lg:grid-cols-2 lg:gap-[64px]"
         }
         aria-labelledby="landing-heading"
       >
-        <div className={centered ? "flex flex-col items-center text-center" : undefined}>
+        <div
+          className={
+            centered
+              ? "flex flex-col items-center text-center"
+              : soloColumn
+                ? "max-w-[46rem]"
+                : undefined
+          }
+        >
           <h1
             id="landing-heading"
             className="text-cp-hero-lg font-extrabold leading-[1.04] tracking-[-0.04em]"

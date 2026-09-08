@@ -148,7 +148,7 @@ export default function FeaturesPage() {
       />
 
       <LandingHero
-        align="centered"
+
         h1="A recipe printing tool for recipes worth keeping"
         lede="RecipePrinter turns websites, social links, photos, screenshots, and text into printable recipe cards, pages, PDFs, and batches you can cook from, save, and collect."
         above={<Breadcrumb trail={TRAIL} />}
