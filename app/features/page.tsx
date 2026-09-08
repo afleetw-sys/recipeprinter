@@ -1,6 +1,5 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { AppsIcon, ClockIcon, CrownIcon, PrintIcon, SlidersIcon } from "@/components/icons";
 import {
   LandingCta,
   LandingFrame,
@@ -8,7 +7,6 @@ import {
   LandingSection,
 } from "@/components/seo/LandingFrame";
 import { FeatureRows } from "@/components/seo/LandingVisuals";
-import { OverviewGrid, type OverviewItem } from "@/components/seo/OverviewGrid";
 import { GuidePicker } from "@/components/seo/GuidePicker";
 import { Breadcrumb } from "@/components/seo/Breadcrumb";
 import { absoluteUrl, breadcrumbNode, pageMetadata } from "@/lib/seo";
@@ -52,7 +50,12 @@ const JSON_LD = {
 // individual tools sit directly under it. Ours had all the proof at the top and
 // all the navigation at the bottom, so a reader convinced by the recipe card
 // photograph had to scroll past everything else to find the recipe card guide.
-const SOURCE_ROWS = [
+// Import, edit, print: the order the work actually happens in, and the same
+// three steps /how-it-works walks through. Each row is a named feature with the
+// argument for it underneath, and a photograph where one exists. A row without
+// an image renders as a plain text block, which is the right weight for the
+// smaller tools rather than a reason to invent a picture for them.
+const IMPORT_ROWS = [
   {
     heading: "Ad-free imports",
     image: "before-after",
@@ -65,9 +68,30 @@ const SOURCE_ROWS = [
     body:
       "Whichever one you have, it comes out the same way: a printable recipe you can hold. A food blog, a Pinterest pin, an Instagram or TikTok link. A photo of a cookbook page or an old recipe card. A screenshot. A paragraph pasted out of a message.",
   },
+  {
+    // Lived under "everything else" until it was pointed out that an import
+    // belongs with the imports.
+    heading: "Paprika and CookPilot import",
+    body:
+      "Sign in to CookPilot, or open a Paprika export file, and add what you want to the print queue. A Paprika file is read in your browser, so nothing is uploaded.",
+  },
 ];
 
-const OUTPUT_ROWS = [
+const EDIT_ROWS = [
+  {
+    heading: "Inline editing",
+    body:
+      "The title, ingredients, steps, and notes are editable right on the card. Correct an amount, drop a step you do not need, or add the note you would otherwise have written in the margin.",
+  },
+  {
+    heading: "Premium print themes",
+    image: "multi-themes",
+    body:
+      "A theme changes a card's type, its border, and how the photo sits, without touching the recipe underneath. Switch themes and every card in the batch follows, so a stack printed in one go still looks like a set. Several are free, and the premium ones are a one-time purchase.",
+  },
+];
+
+const PRINT_ROWS = [
   {
     heading: "4 by 6 recipe cards",
     image: "card-in-box",
@@ -80,35 +104,16 @@ const OUTPUT_ROWS = [
     body:
       "Group the recipes you kept into chapters, add a cover, and RecipePrinter builds the table of contents for you. Export a print-ready PDF to run off at home in US Letter, or a full-bleed 8 by 10 to order a bound hardcover from a service like Lulu or Blurb. It is a one-time purchase for the book you make.",
   },
-];
-
-const ALSO: OverviewItem[] = [
   {
-    icon: SlidersIcon,
-    title: "Inline editing",
-    body: "The title, ingredients, steps, and notes are editable right on the card. Correct an amount, drop a step, or add a note of your own.",
+    heading: "Batch printing",
+    body:
+      "Build a queue from different sources, choose the recipes you want, and print them together for a recipe binder, a week of dinners, or a family cookbook.",
   },
   {
-    // Moved here from /how-it-works, where it was the one thing that page had
-    // to itself and the page almost nothing linked to.
-    icon: AppsIcon,
-    title: "Paprika and CookPilot import",
-    body: "Sign in to CookPilot, or open a Paprika export file, and add what you want to the print queue. A Paprika file is read in your browser, so nothing is uploaded.",
-  },
-  {
-    icon: ClockIcon,
-    title: "Batch printing",
-    body: "Build a queue from different sources, choose the recipes you want, and print them together for a recipe binder, a week of dinners, or a family cookbook.",
-  },
-  {
-    icon: CrownIcon,
-    title: "Premium print themes",
-    body: "A theme changes a card's type, its border, and how the photo sits, without touching the recipe underneath. Several are free, and the premium ones are a one-time purchase.",
-  },
-  {
-    icon: PrintIcon,
-    title: "PDF export",
-    body: "Choose Save as PDF in the print dialog to keep the printable recipe on your device rather than sending it to paper.",
+    heading: "PDF export",
+    image: "pdf-search",
+    body:
+      "Choose Save as PDF in the print dialog to keep the printable recipe on your device rather than sending it to paper, searchable and to hand the next time you make it.",
   },
 ];
 
@@ -152,29 +157,29 @@ export default function FeaturesPage() {
       />
 
       <LandingSection
-        id="source-heading"
-        heading="Importing"
+        id="import-heading"
+        heading="Import from anywhere"
         lede="A recipe reaches you as a web page, a photo, or a paragraph someone texted you. None of that is built to cook from."
       >
-        <FeatureRows features={SOURCE_ROWS} />
+        <FeatureRows features={IMPORT_ROWS} />
         <PickerRow label="Guides by source" pages={byGroup("source")} />
       </LandingSection>
 
       <LandingSection
-        id="output-heading"
-        heading="Printing"
-        lede="What comes out of the printer: a recipe card for the counter, a page for the binder, or a bound book to give away."
+        id="edit-heading"
+        heading="Edit it before it prints"
+        lede="Whatever came across is yours to correct, cut, annotate, and restyle while it is still on screen."
       >
-        <FeatureRows features={OUTPUT_ROWS} />
-        <PickerRow label="Guides by what you make" pages={byGroup("output")} />
+        <FeatureRows features={EDIT_ROWS} />
       </LandingSection>
 
       <LandingSection
-        id="also-heading"
-        heading="Everything else"
-        lede="The smaller tools, the ones you reach for on the second or third recipe."
+        id="print-heading"
+        heading="Print how you want"
+        lede="A recipe card for the counter, a letter page for the binder, a PDF for your phone, or a bound book to give away."
       >
-        <OverviewGrid items={ALSO} />
+        <FeatureRows features={PRINT_ROWS} />
+        <PickerRow label="Guides by what you make" pages={byGroup("output")} />
       </LandingSection>
 
       <div>
