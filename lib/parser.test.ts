@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { ImportError } from "@/lib/parser";
-import { normalizeFractions, parseUrlAll } from "@/lib/parser";
+import { normalizeFractions, parseText, parseUrlAll } from "@/lib/parser";
 
 // What these tests are about is one decision: after `/api/parse` fails, do we
 // go on to run CookPilot's parser AGAIN through its client callable? The route
@@ -221,6 +221,64 @@ describe("parseUrlAll — links answered without a parse", () => {
     expect(recipes).toHaveLength(1);
     const body = JSON.parse(String((vi.mocked(fetch).mock.calls[0]?.[1] as RequestInit)?.body));
     expect(body.url).toBe("https://sallysbakingaddiction.com/oatmeal-scotchies/");
+  });
+});
+
+describe("parseText — reading the paste ourselves", () => {
+  // The text is already in the browser. Every one of these cases used to end
+  // in an error telling the cook to go add headings to a recipe they had
+  // already typed out correctly.
+  const PASTE = "Banana Bread\n2 cups flour\n1, Bake it.";
+
+  it("prefers CookPilot when it finds a recipe", async () => {
+    const recipe = await parseText(PASTE);
+    expect(recipe.title).toBe("Fallback Borscht");
+  });
+
+  it("reads the text locally when CookPilot finds nothing in it", async () => {
+    callable.mockResolvedValue({ data: {} });
+
+    const recipe = await parseText(PASTE);
+
+    expect(recipe.title).toBe("Banana Bread");
+    expect(recipe.ingredients[0].raw).toBe("2 cups flour");
+    expect(recipe.instructions[0].text).toBe("Bake it.");
+  });
+
+  it("reads the text locally when the backend is unreachable", async () => {
+    callable.mockRejectedValue(
+      Object.assign(new Error("App Check token is invalid"), { code: "functions/unauthenticated" }),
+    );
+
+    const recipe = await parseText(PASTE);
+
+    expect(recipe.title).toBe("Banana Bread");
+  });
+
+  it("does not route around the import limit", async () => {
+    callable.mockRejectedValue(
+      Object.assign(new Error("Text parsing limit of 20 per hour"), {
+        code: "functions/resource-exhausted",
+      }),
+    );
+
+    await expect(parseText(PASTE)).rejects.toThrow(/import limit/i);
+  });
+
+  it("still says no when there is no recipe in the text", async () => {
+    callable.mockResolvedValue({ data: {} });
+
+    await expect(parseText("Hey there\nAre you free on Thursday?")).rejects.toThrow(
+      /couldn't pick a recipe/i,
+    );
+  });
+
+  it("normalizes fractions before reading locally", async () => {
+    callable.mockResolvedValue({ data: {} });
+
+    const recipe = await parseText("Shortbread\n1½ cups flour");
+
+    expect(recipe.ingredients[0].raw).toBe("1 1/2 cups flour");
   });
 });
 

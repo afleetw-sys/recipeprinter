@@ -4,6 +4,7 @@ import { adaptCookPilotRecipe, adaptCookPilotRecipes, normalizeImportURL } from 
 import { searchPageMessage, unwrapRedirectUrl } from "@/lib/importUrl";
 import { anonymousOwnerId } from "@/lib/anonymousOwner";
 import type { ImportFailureCode } from "@/lib/analytics";
+import { parseRecipeText } from "@/lib/textRecipe";
 import type { ParseResponse, Recipe } from "@/types/recipe";
 
 interface LocalParseOutcome {
@@ -370,10 +371,11 @@ export function normalizeFractions(text: string): string {
  * so the message told the cook to fix something they had already done, and
  * left them nothing to actually try.
  *
- * What it says now is true and actionable: the parser identifies an ingredient
- * block by a heading or by a run of two or more measured lines, so a short
- * recipe with a single ingredient line has nothing for it to lock onto, and
- * labelling the parts is what gets it read.
+ * That paste no longer lands here at all: `parseRecipeText` reads it locally
+ * when the remote parser comes back empty. What reaches this message now is
+ * text where neither reader found a heading, a numbered step, or a measured
+ * ingredient — so asking for a heading is both true and the thing that would
+ * actually change the answer.
  */
 /** A failure we cannot attribute to the text: nothing for the cook to rewrite. */
 const COULD_NOT_READ_TEXT = "We couldn't import that recipe text right now. Please try again.";
@@ -381,6 +383,25 @@ const COULD_NOT_READ_TEXT = "We couldn't import that recipe text right now. Plea
 const NO_RECIPE_IN_TEXT =
   "We couldn't pick a recipe out of that text. Adding an Ingredients heading and an " +
   "Instructions heading above each part usually gets it read.";
+
+/**
+ * Failures where reading the text ourselves is worth a try.
+ *
+ * `no_recipe` is the one this exists for: the remote parser wants an
+ * ingredient block it can lock onto, so a short recipe ("Banana Bread /
+ * 2 cups flour / 1, Bake it.") comes back empty even though every part of it
+ * is there. The other two aren't about the text at all — the backend was
+ * unreachable or too slow — and the text is already in the browser, so there
+ * is nothing to gain by making the cook wait and retry.
+ *
+ * `rate_limited` is deliberately absent: that quota protects the paid parser,
+ * and routing around it locally is how it stops meaning anything.
+ */
+const LOCALLY_READABLE: ReadonlySet<ImportFailureCode> = new Set<ImportFailureCode>([
+  "no_recipe",
+  "backend_unavailable",
+  "timeout",
+]);
 
 export async function parseText(rawText: string): Promise<Recipe> {
   const text = normalizeFractions(rawText);
@@ -396,6 +417,11 @@ export async function parseText(rawText: string): Promise<Recipe> {
     }
     return recipe;
   } catch (err) {
-    throw friendlyError(err, COULD_NOT_READ_TEXT, NO_RECIPE_IN_TEXT);
+    const failure = friendlyError(err, COULD_NOT_READ_TEXT, NO_RECIPE_IN_TEXT);
+    if (LOCALLY_READABLE.has(failure.code)) {
+      const local = parseRecipeText(text);
+      if (local) return local;
+    }
+    throw failure;
   }
 }
