@@ -79,7 +79,7 @@ const IMPORT_CARDS: FeatureCard[] = [
   },
 ];
 
-const EDIT_CARDS: FeatureCard[] = [
+const YOURS_CARDS: FeatureCard[] = [
   {
     heading: "Inline editing",
     needs:
@@ -93,6 +93,12 @@ const EDIT_CARDS: FeatureCard[] = [
     body:
       "A theme changes a card's type, its border, and how the photo sits, without touching the recipe underneath. Switch themes and every card in the batch follows, so a stack printed in one go still looks like a set. Several are free, and the premium ones are a one-time purchase.",
   },
+  {
+    heading: "Cookbook builder",
+    image: "bound-cookbook",
+    body:
+      "Group the recipes you kept into chapters, add a cover, and RecipePrinter builds the table of contents for you. Export a print-ready PDF to run off at home in US Letter, or a full-bleed 8 by 10 to order a bound hardcover from a service like Lulu or Blurb. It is a one-time purchase for the book you make.",
+  },
 ];
 
 const PRINT_CARDS: FeatureCard[] = [
@@ -101,12 +107,6 @@ const PRINT_CARDS: FeatureCard[] = [
     image: "card-in-box",
     body:
       "They drop straight into a recipe box, or print a letter-size page for a binder instead. Cut lines give you a trim guide on card stock, and a recipe too long for one side carries on onto the back rather than being cut short.",
-  },
-  {
-    heading: "Cookbook builder",
-    image: "bound-cookbook",
-    body:
-      "Group the recipes you kept into chapters, add a cover, and RecipePrinter builds the table of contents for you. Export a print-ready PDF to run off at home in US Letter, or a full-bleed 8 by 10 to order a bound hardcover from a service like Lulu or Blurb. It is a one-time purchase for the book you make.",
   },
   {
     heading: "Batch printing",
@@ -125,11 +125,16 @@ const PRINT_CARDS: FeatureCard[] = [
 
 function PickerRow({ label, pages }: { label: string; pages: typeof SEO_LANDING_PAGES }) {
   return (
-    <div className="mt-cp-7 border-t border-line pt-cp-5">
+    // A recessed tone rather than a rule. A hairline under the last card read
+    // as one more divider inside the section, so the guides looked like the
+    // end of the argument instead of a shelf of pages to go and read. Three
+    // percent ink over the page ground is enough to say "different thing"
+    // without asking for attention.
+    <div className="mt-cp-7 rounded-2xl bg-[var(--cp-surface-muted)] p-cp-5 sm:p-cp-6">
       <p className="text-cp-label font-bold uppercase tracking-[0.08em] text-ink-soft">
         {label}
       </p>
-      <div className="mt-cp-3">
+      <div className="mt-cp-4">
         <GuidePicker pages={pages} />
       </div>
     </div>
@@ -156,7 +161,7 @@ export default function FeaturesPage() {
       <LandingHero
 
         h1="A recipe printing tool for recipes worth keeping"
-        lede="RecipePrinter turns websites, social links, photos, screenshots, and text into printable recipe cards, pages, PDFs, and cookbooks you can cook from, save, and collect."
+        lede="Recipes live on screens and get cooked in kitchens. RecipePrinter moves the ones worth keeping onto paper you can hold, mark up, and file."
         above={<Breadcrumb trail={TRAIL} />}
         actions={<LandingCta href="/" />}
         note="Printing is free and needs no account."
@@ -167,7 +172,7 @@ export default function FeaturesPage() {
         heading="Print how you want"
         lede="A recipe card for the counter, a letter page for the binder, a PDF for your phone, or a bound book to give away."
       >
-        <FeatureCards items={PRINT_CARDS} columns={2} />
+        <FeatureCards items={PRINT_CARDS} />
         <PickerRow label="Guides by what you make" pages={byGroup("output")} />
       </LandingSection>
 
@@ -181,11 +186,11 @@ export default function FeaturesPage() {
       </LandingSection>
 
       <LandingSection
-        id="edit-heading"
-        heading="Edit it before it prints"
-        lede="Whatever came across is yours to correct, cut, annotate, and restyle while it is still on screen."
+        id="yours-heading"
+        heading="Make it yours"
+        lede="Correct what came across, choose how it looks, and bind the ones you keep into a book with your name on it."
       >
-        <FeatureCards items={EDIT_CARDS} columns={2} />
+        <FeatureCards items={YOURS_CARDS} />
       </LandingSection>
 
       <div>
