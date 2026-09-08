@@ -9,7 +9,7 @@ import {
   AppsIcon,
 } from "@/components/icons";
 import { pageMetadata } from "@/lib/seo";
-import { SEO_LANDING_PAGES } from "@/lib/seoLandingPages";
+import { anchorFor, SEO_LANDING_PAGES } from "@/lib/seoLandingPages";
 
 export const metadata: Metadata = pageMetadata({
   title: "How Recipe Printer Works",
@@ -161,7 +161,7 @@ export default function HowItWorksPage() {
                 href={`/${page.slug}`}
                 className="card p-cp-4 text-cp-body font-bold text-ink hover:border-line-strong transition-colors"
               >
-                {page.title}
+                {anchorFor(page)}
               </Link>
             ))}
           </div>

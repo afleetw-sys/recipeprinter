@@ -84,6 +84,17 @@ export type SeoLandingPage = {
   title: string;
   description: string;
   h1: string;
+  /**
+   * Link text other pages use when they point here. Anchor text is one of the
+   * signals Google reads to decide what a page is about, so a link that says
+   * "Free Printable Recipe Card Maker" spends its whole budget on "Free" and
+   * "Maker" and never says "printer" — the word people actually search.
+   *
+   * Defaults to `h1`, which is already written as the natural phrase for the
+   * page's job. Set this only when the h1 is too long to read as a link, or
+   * when it misses the term the page is trying to win.
+   */
+  anchor?: string;
   lede: string;
   /** One-sentence emotional hook opening the content scaffold. */
   intro?: string;
@@ -415,6 +426,9 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
     description:
       "Make printable recipe cards from links, photos, screenshots, or text, including 4x6 and recipe-box-friendly layouts.",
     h1: "Printable recipe card generator",
+    // "recipe card printer" is the phrase this page's traffic actually arrives
+    // on, and it is the one word the h1 and title both leave out.
+    anchor: "Recipe card printer",
     lede:
       "Whatever form the recipe is in, it comes back as a 6 by 4 card with the ingredients and steps already set, ready for the box.",
     howTo: [
@@ -990,6 +1004,7 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
     description:
       "Build a recipe binder from online recipes, printable recipe cards, PDFs, screenshots, and family favorites.",
     h1: "Recipe binder ideas for recipes you find online",
+    anchor: "Recipe binder ideas",
     lede:
       "A recipe binder is still one of the simplest ways to keep favorite recipes close. RecipePrinter helps turn online recipes into printable pages, cards, and PDFs you can file now, with more binder-specific tools coming soon.",
     faqs: [
@@ -1228,6 +1243,7 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
     description:
       "Comparing RecipePrinter and Just the Recipe: both clean up a recipe page, and they differ on printing, what you can bring in, and what the free tier does.",
     h1: "A Just the Recipe alternative built for printing",
+    anchor: "Just the Recipe alternative",
     lede:
       "Paste a recipe link into either one and you get the ingredients and steps without the backstory. The difference comes next: Just the Recipe keeps it on your screen, RecipePrinter puts it on paper.",
     featureSections: [
@@ -1338,6 +1354,7 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
     description:
       "Comparing RecipePrinter and ReciScan: both read old recipe cards, and they differ on what comes out, what it costs, and how long it takes.",
     h1: "A ReciScan alternative that prints today",
+    anchor: "ReciScan alternative",
     lede:
       "Both read links, photos and pasted text. ReciScan turns them into a bound book and ships it to you. RecipePrinter gives you the pages: print them now, keep the PDF, or take the file to a print shop.",
     featureSections: [
@@ -1422,6 +1439,16 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
 export const SEO_LANDING_PAGE_MAP = new Map(
   SEO_LANDING_PAGES.map((page) => [page.slug, page]),
 );
+
+/**
+ * The words another page should use when linking here. Never render `title` as
+ * link text: a title is written to win a click in a search result ("Free …"),
+ * an anchor is written to tell Google and the reader what sits on the other
+ * end of the link. See `SeoLandingPage.anchor`.
+ */
+export function anchorFor(page: SeoLandingPage): string {
+  return page.anchor ?? page.h1;
+}
 
 /** The layout template a page renders with (explicit override, else by intent). */
 export function layoutForPage(page: SeoLandingPage): "capture-first" | "guide-first" {

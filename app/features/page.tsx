@@ -11,7 +11,7 @@ import {
   ClockIcon,
 } from "@/components/icons";
 import { pageMetadata } from "@/lib/seo";
-import { SEO_LANDING_PAGES } from "@/lib/seoLandingPages";
+import { anchorFor, SEO_LANDING_PAGES } from "@/lib/seoLandingPages";
 
 export const metadata: Metadata = pageMetadata({
   title: "Recipe Printing Tool for Recipes Worth Keeping",
@@ -59,8 +59,16 @@ const FEATURES: Feature[] = [
   },
 ];
 
+// Between them these two groups cover every landing page, so a page can never
+// be added without picking up a link from here. The section used to render the
+// "Utility SEO" pages alone, which left the five organizing, preserving, and
+// alternative pages reachable from the sitemap and almost nowhere else.
 const UTILITY_GUIDES = SEO_LANDING_PAGES.filter(
   (page) => page.intent === "Utility SEO",
+);
+
+const KEEPING_GUIDES = SEO_LANDING_PAGES.filter(
+  (page) => page.intent !== "Utility SEO",
 );
 
 export default function FeaturesPage() {
@@ -105,7 +113,31 @@ export default function FeaturesPage() {
               href={`/${page.slug}`}
               className="card p-cp-4 text-cp-body font-bold text-ink hover:border-line-strong transition-colors"
             >
-              {page.title}
+              {anchorFor(page)}
+            </Link>
+          ))}
+        </div>
+      </section>
+
+      <section aria-labelledby="keeping-guides-heading" className="mt-cp-7">
+        <h2
+          id="keeping-guides-heading"
+          className="font-extrabold tracking-[-0.02em] text-cp-h2"
+        >
+          Keep them, sort them, pass them on
+        </h2>
+        <p className="mt-cp-2 text-cp-body text-ink-soft leading-relaxed">
+          What happens after the printing: where the recipes live, how they stay
+          findable, and how they reach the next person who cooks from them.
+        </p>
+        <div className="mt-cp-4 grid gap-cp-3 sm:grid-cols-2">
+          {KEEPING_GUIDES.map((page) => (
+            <Link
+              key={page.slug}
+              href={`/${page.slug}`}
+              className="card p-cp-4 text-cp-body font-bold text-ink hover:border-line-strong transition-colors"
+            >
+              {anchorFor(page)}
             </Link>
           ))}
         </div>
