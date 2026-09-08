@@ -99,7 +99,10 @@ export function LandingHero({
   lede: string;
   actions?: ReactNode;
   note?: string;
-  aside: ReactNode;
+  /** The product photo. Optional: an overview page that opens on words alone
+      is a legitimate hero, and forcing a picture into it only pushes the page
+      down. */
+  aside?: ReactNode;
   /** Breadcrumb, or anything else that sits above the heading. */
   above?: ReactNode;
   /**
@@ -158,7 +161,8 @@ export function LandingHero({
             ran past the fold on a laptop and pushed the first section off the
             screen entirely. The image still opens the page; it just stops being
             the only thing on it. */}
-        {centered ? <div className="mx-auto w-full max-w-[640px]">{aside}</div> : aside}
+        {aside &&
+          (centered ? <div className="mx-auto w-full max-w-[640px]">{aside}</div> : aside)}
       </section>
     </div>
   );

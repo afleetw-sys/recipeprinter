@@ -7,7 +7,7 @@ import {
   LandingHero,
   LandingSection,
 } from "@/components/seo/LandingFrame";
-import { FeatureRows, HeroProductPhoto } from "@/components/seo/LandingVisuals";
+import { FeatureRows } from "@/components/seo/LandingVisuals";
 import { OverviewList, type OverviewItem } from "@/components/seo/OverviewGrid";
 import { GuidePicker } from "@/components/seo/GuidePicker";
 import { Breadcrumb } from "@/components/seo/Breadcrumb";
@@ -61,13 +61,13 @@ const HEADLINE = [
     heading: "Sized for the box it's going in",
     image: "card-in-box",
     body:
-      "A 6 by 4 card drops straight into a recipe box, or print a letter-size page for a binder. Cut lines give you a trim guide on card stock, and a recipe too long for one side carries on onto the back rather than being cut short.",
+      "A 6 by 4 recipe card drops straight into a recipe box, or print a letter-size page for a binder. Cut lines give you a trim guide on card stock, and a recipe too long for one side carries on onto the back rather than being cut short.",
   },
   {
     heading: "Start from whatever you have",
     image: "paste-in-app",
     body:
-      "A link from a food blog, recipe site, Pinterest, Instagram, or TikTok. A photo of a cookbook page or an old recipe card. A screenshot. Text pasted from a message or an email. They all end up in the same place.",
+      "A link from a food blog, recipe site, Pinterest, Instagram, or TikTok. A photo of a cookbook page or an old recipe card. A screenshot. Text pasted from a message or an email. They all come out the same way, as a printable recipe you can hold.",
   },
 ];
 
@@ -87,12 +87,12 @@ const ALSO: OverviewItem[] = [
   {
     icon: ClockIcon,
     title: "Print a batch in one job",
-    body: "Build a queue from different sources, choose the recipes you want, and print them together for a binder, a week of dinners, or a gift.",
+    body: "Build a queue from different sources, choose the recipes you want, and print them together for a recipe binder, a week of dinners, or a family cookbook.",
   },
   {
     icon: PrintIcon,
     title: "Save a PDF instead",
-    body: "Choose Save as PDF in the print dialog to keep a clean copy on your device rather than sending it to paper.",
+    body: "Choose Save as PDF in the print dialog to keep the printable recipe on your device rather than sending it to paper.",
   },
 ];
 
@@ -139,14 +139,6 @@ export default function FeaturesPage() {
         above={<Breadcrumb trail={TRAIL} />}
         actions={<LandingCta href="/" />}
         note="Printing is free and needs no account. Your queue lives in your browser. Sign in only if you want a project saved to reopen on another device."
-        aside={
-          <HeroProductPhoto
-            cardKey="korean"
-            annotation="Printed from a recipe link"
-            priority
-            wide
-          />
-        }
       />
 
       <LandingSection id="features-heading" heading="What it does">
@@ -167,16 +159,16 @@ export default function FeaturesPage() {
 
       <LandingSection
         id="source-heading"
-        heading="Where did you find the recipe?"
-        lede="Start with where it came from, and the guide covers what that source does and does not hand over."
+        heading="Guides by where the recipe came from"
+        lede="Each one covers what that source hands over, what it holds back, and how to get the recipe out of it."
       >
         <GuidePicker pages={byGroup("source")} />
       </LandingSection>
 
       <LandingSection
         id="output-heading"
-        heading="Or start from what you want to end up with"
-        lede="Cards for the box, a binder, a PDF, or a bound book to give away."
+        heading="Guides by what you want to make"
+        lede="Recipe cards for the box, a binder, a PDF, or a bound book to give away."
       >
         <GuidePicker pages={byGroup("output")} />
       </LandingSection>
