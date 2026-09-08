@@ -105,7 +105,7 @@ const YOURS_CARDS: FeatureCard[] = [
 
 const PRINT_CARDS: FeatureCard[] = [
   {
-    heading: "4 by 6 cards or letter pages",
+    heading: "4 by 6 recipe cards or letter pages",
     image: "card-in-box",
     body:
       "A 4 by 6 recipe card drops straight into a recipe box; a letter page goes into a binder. Cut lines give you a trim guide on card stock, and a recipe too long for one side continues on the back.",
@@ -172,7 +172,6 @@ export default function FeaturesPage() {
       <LandingSection
         id="print-heading"
         heading="Print how you want"
-        lede="A recipe card for the counter, a letter page for the binder, a PDF for your phone, or a bound cookbook to give away."
       >
         <FeatureCards items={PRINT_CARDS} />
         <PickerRow label="Guides by what you end up with" pages={byGroup("output")} />
@@ -181,7 +180,6 @@ export default function FeaturesPage() {
       <LandingSection
         id="import-heading"
         heading="Import from anywhere"
-        lede="A recipe reaches you as a web page, a photo, or a paragraph someone texted you. All of it can come off the screen and onto paper you cook from."
       >
         <FeatureCards items={IMPORT_CARDS} />
         <PickerRow label="Guides by what you import" pages={byGroup("source")} />
@@ -190,7 +188,6 @@ export default function FeaturesPage() {
       <LandingSection
         id="yours-heading"
         heading="Make it yours"
-        lede="Correct what came across, choose how it looks, and bind the ones you keep into a cookbook with your name on it."
       >
         <FeatureCards items={YOURS_CARDS} />
       </LandingSection>
