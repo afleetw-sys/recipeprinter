@@ -67,7 +67,7 @@ const IMPORT_CARDS: FeatureCard[] = [
     heading: "Links, photos, screenshots, and text",
     image: "paste-in-app",
     body:
-      "Whichever one you have, it comes out the same way: a printable recipe you can hold. A food blog, a Pinterest pin, an Instagram or TikTok link. A photo of a cookbook page or an old recipe card. A screenshot. A paragraph pasted out of a message.",
+      "Whichever one you have, it comes out the same way: a printable recipe you can hold. A Pinterest pin, an Instagram or TikTok link, a photo of an old recipe card, a paragraph pasted out of a message.",
   },
   {
     // Lived under "everything else" until it was pointed out that an import
@@ -122,7 +122,7 @@ const PRINT_CARDS: FeatureCard[] = [
     heading: "Cookbook builder",
     image: "bound-cookbook",
     body:
-      `RecipePrinter sorts the recipes into chapters, generates the cover, and builds the table of contents. Rearrange anything, then print it at home, keep the PDF, or send an 8 by 10 to Lulu or Blurb for a hardcover. ${COOKBOOK_PRICE_FALLBACK} once.`,
+      `RecipePrinter sorts the recipes into chapters, generates the cover, and builds the table of contents. Rearrange anything, then print it at home, keep the PDF, or send the file to Lulu or Blurb for a hardcover or spiral bound cookbook. ${COOKBOOK_PRICE_FALLBACK} once.`,
   },
 ];
 
@@ -181,7 +181,7 @@ export default function FeaturesPage() {
       <LandingSection
         id="import-heading"
         heading="Import from anywhere"
-        lede="A recipe reaches you as a web page, a photo, or a paragraph someone texted you. All of it can come off the screen and onto paper."
+        lede="A recipe reaches you as a web page, a photo, or a paragraph someone texted you. All of it can come off the screen and onto paper you cook from."
       >
         <FeatureCards items={IMPORT_CARDS} />
         <PickerRow label="Guides by what you import" pages={byGroup("source")} />
