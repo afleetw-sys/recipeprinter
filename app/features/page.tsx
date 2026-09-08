@@ -107,7 +107,7 @@ const PRINT_CARDS: FeatureCard[] = [
     heading: "4 by 6 cards or letter pages",
     image: "card-in-box",
     body:
-      "A 4 by 6 recipe card drops straight into a recipe box; a letter page goes into a binder. Cut lines give you a trim guide on card stock, and a recipe too long for one side carries on onto the back rather than being cut short.",
+      "A 4 by 6 recipe card drops straight into a recipe box; a letter page goes into a binder. Cut lines give you a trim guide on card stock, and a recipe too long for one side continues on the back.",
   },
   {
     // Batch and PDF were two cards saying the same thing from either end: how
@@ -115,13 +115,13 @@ const PRINT_CARDS: FeatureCard[] = [
     heading: "Batch printing and PDF export",
     image: "pdf-search",
     body:
-      "Build a queue from different sources, choose the recipes you want, and print them together for a recipe binder, a week of dinners, or a family cookbook. Or choose Save as PDF in the print dialog and keep the printable recipes on your device instead of sending them to paper.",
+      "Queue several recipes and print them in one job, for a recipe binder, a week of dinners, or a family cookbook. Or save the printable recipes as a PDF instead.",
   },
   {
     heading: "Cookbook builder",
     image: "bound-cookbook",
     body:
-      "Group the recipes you kept into chapters, add a cover, and RecipePrinter builds the table of contents for you. Export a print-ready PDF to run off at home in US Letter, or a full-bleed 8 by 10 to order a bound hardcover from a service like Lulu or Blurb. It is a one-time purchase for the cookbook you make.",
+      "RecipePrinter sorts the recipes into chapters, generates the cover, and builds the table of contents. Rearrange any of it, then export a print-ready PDF for US Letter at home, or a full-bleed 8 by 10 for a hardcover from Lulu or Blurb. A one-time purchase for the cookbook you make.",
   },
 ];
 
@@ -162,11 +162,10 @@ export default function FeaturesPage() {
 
       <LandingHero
         align="centered"
-        h1="A recipe printing tool for recipes worth keeping"
-        lede="Recipes live on screens and get cooked in kitchens. RecipePrinter moves the ones worth keeping onto paper you can hold, mark up, and hand down."
+        h1="A recipe printing tool for the ones worth keeping"
+        lede="Recipes live on screens and get cooked in kitchens. RecipePrinter moves them onto paper you can hold, mark up, and hand down."
         above={<Breadcrumb trail={TRAIL} />}
-        actions={<LandingCta href="/" />}
-        note="Printing is free and needs no account."
+        actions={<LandingCta href="/" label="Start printing for free" />}
       />
 
       <LandingSection
@@ -196,7 +195,7 @@ export default function FeaturesPage() {
       </LandingSection>
 
       <div>
-        <LandingCta href="/" />
+        <LandingCta href="/" label="Start printing for free" />
       </div>
       {comparisons.length > 0 && (
         <p className="text-ink-soft text-cp-body leading-relaxed">
