@@ -2,42 +2,37 @@ import Link from "next/link";
 import { anchorFor, type SeoLandingPage } from "@/lib/seoLandingPages";
 
 // ─────────────────────────────────────────────────────────────────────────
-// A picker, not a link list.
+// A picker, not a link list, and not another card grid.
 //
-// These rendered as the pages' own titles, so a reader asking "how did I find
-// this recipe?" got ten cards that mostly began "Print a recipe from…" and had
-// to read every one to the end to find the word that differed. The answer to
-// the question the heading asks is the platform or the format, so that leads.
+// These first rendered as the pages' own titles, so a reader asking "how did I
+// find this recipe?" got ten cards mostly beginning "Print a recipe from…" and
+// had to read each one to the end to find the word that differed. Leading with
+// the platform fixed the scanning, but keeping the phrase underneath just said
+// the same thing twice: "Pinterest" over "Print Pinterest recipes".
 //
-// The searchable phrase stays as the second line rather than being dropped:
-// it is still inside the <a>, so the link keeps telling a crawler what sits on
-// the other end, while the reader sees "Pinterest" and stops looking.
+// So the label is the whole card, and the card is a chip. This is the same
+// wrapped row of compact buttons the landing template already uses for its
+// related links, which means the page carries one navigation pattern instead
+// of a bespoke grid of its own.
+//
+// The trade: the link text is now "Pinterest" rather than "Print Pinterest
+// recipes", so it carries less of the target phrase. The section heading above
+// it and the destination's own h1 both still say it, and a card that repeats
+// itself is a worse trade to make in the other direction.
 // ─────────────────────────────────────────────────────────────────────────
 
 export function GuidePicker({ pages }: { pages: SeoLandingPage[] }) {
   return (
-    <ul className="grid gap-cp-3 sm:grid-cols-2 lg:grid-cols-3">
-      {pages.map((page) => {
-        const label = page.shortLabel ?? anchorFor(page);
-        const phrase = anchorFor(page);
-        return (
-          <li key={page.slug}>
-            <Link
-              href={`/${page.slug}`}
-              className="card flex h-full flex-col gap-cp-1 p-cp-4 hover:border-line-strong transition-colors"
-            >
-              <span className="text-cp-body font-extrabold tracking-[-0.02em] text-ink">
-                {label}
-              </span>
-              {/* Hidden from the reader only when it would repeat the label
-                  back at them verbatim. */}
-              {phrase.toLowerCase() !== label.toLowerCase() && (
-                <span className="text-cp-small leading-snug text-ink-soft">{phrase}</span>
-              )}
-            </Link>
-          </li>
-        );
-      })}
-    </ul>
+    <div className="flex flex-wrap gap-cp-3">
+      {pages.map((page) => (
+        <Link
+          key={page.slug}
+          href={`/${page.slug}`}
+          className="btn btn-secondary btn-compact"
+        >
+          {page.shortLabel ?? anchorFor(page)}
+        </Link>
+      ))}
+    </div>
   );
 }

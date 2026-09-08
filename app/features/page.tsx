@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { AppsIcon, BookIcon, ClockIcon, CrownIcon, PrintIcon, SlidersIcon } from "@/components/icons";
+import { AppsIcon, ClockIcon, PrintIcon, SlidersIcon } from "@/components/icons";
 import {
   LandingCta,
   LandingFrame,
@@ -8,7 +8,7 @@ import {
   LandingSection,
 } from "@/components/seo/LandingFrame";
 import { FeatureRows, HeroProductPhoto } from "@/components/seo/LandingVisuals";
-import { OverviewGrid, OverviewList, type OverviewItem } from "@/components/seo/OverviewGrid";
+import { OverviewList, type OverviewItem } from "@/components/seo/OverviewGrid";
 import { GuidePicker } from "@/components/seo/GuidePicker";
 import { Breadcrumb } from "@/components/seo/Breadcrumb";
 import { absoluteUrl, breadcrumbNode, pageMetadata } from "@/lib/seo";
@@ -98,15 +98,19 @@ const ALSO: OverviewItem[] = [
 
 // Kept apart from everything above, which is free and needs no account.
 // Burying a purchase among it would misread as the whole page being paid.
-const PAID: OverviewItem[] = [
+//
+// Feature rows rather than a third card grid: the cookbook is the biggest thing
+// here and it was a card the same size as "Save a PDF instead", and the page
+// had accumulated a different grid for every section it owned.
+const PAID = [
   {
-    icon: BookIcon,
-    title: "Turn a set of recipes into a cookbook",
+    heading: "Turn a set of recipes into a cookbook",
+    image: "bound-cookbook",
     body: "Group recipes into chapters, add a cover, and RecipePrinter builds the table of contents for you. Export a print-ready PDF to print at home in US Letter, or a full-bleed 8 by 10 to order a bound hardcover from a service like Lulu or Blurb. The builder is a one-time purchase for the book you make.",
   },
   {
-    icon: CrownIcon,
-    title: "Premium print themes",
+    heading: "Premium print themes",
+    image: "multi-themes",
     body: "A theme changes a card's type, its border, and how the photo sits, without touching the recipe underneath. Several themes are free, and the premium ones are a one-time purchase.",
   },
 ];
@@ -158,7 +162,7 @@ export default function FeaturesPage() {
         heading="Two things you can buy, once"
         lede="Printing is free. These are the only optional purchases, and the price is shown before you buy."
       >
-        <OverviewGrid items={PAID} columns={2} />
+        <FeatureRows features={PAID} />
       </LandingSection>
 
       <LandingSection

@@ -564,7 +564,7 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
       },
       {
         name: "Paste it in",
-        text: "Paste it into the box above. When the pin links out to a recipe, RecipePrinter follows it and reads the recipe from there.",
+        text: "Paste the link into the box above. When the pin links out to a recipe, RecipePrinter follows it and reads the recipe from there.",
       },
       {
         name: "Pick a card or a page",
@@ -661,11 +661,11 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
       },
       {
         name: "Paste it in",
-        text: "Paste it into the box above. RecipePrinter opens the post and reads the caption, which is where the recipe almost always is.",
+        text: "Paste the link into the box above. RecipePrinter opens the post and reads the caption, which is where the recipe almost always is.",
       },
       {
         name: "Choose a card or a page",
-        text: "A 4 by 6 card for the recipe box, or a letter page when the caption runs long. Fix any line, add the note you would have left in the comments, and decide whether the photo prints.",
+        text: "A 4 by 6 card for the recipe box, or a letter page if the caption runs long. Edit any line before it prints.",
       },
       {
         name: "Print it or save it as a PDF",
@@ -752,7 +752,7 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
       },
       {
         name: "Paste it in",
-        text: "Paste it into the box above. RecipePrinter reads the recipe out of the post, whether it was typed in directly or sits on a site the post links to.",
+        text: "Paste the link into the box above. RecipePrinter reads the recipe out of the post, whether it was typed in directly or sits on a site the post links to.",
       },
       {
         name: "Choose a card or a page",
@@ -844,7 +844,7 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
       },
       {
         name: "Paste it in",
-        text: "Paste it into the box above. RecipePrinter reads the caption and the pinned comment, which is where creators write the ingredients and the method out.",
+        text: "Paste the link into the box above. RecipePrinter reads the caption and the pinned comment, which is where creators write the ingredients and the method out.",
       },
       {
         name: "Choose a card or a page",
@@ -935,7 +935,7 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
       },
       {
         name: "Paste it in",
-        text: "Paste it into the box above. RecipePrinter reads the description, where the ingredients and the method are usually written out in full.",
+        text: "Paste the link into the box above. RecipePrinter reads the description, where the ingredients and the method are usually written out in full.",
       },
       {
         name: "Choose a card or a page",
@@ -1098,7 +1098,7 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
       "family recipe book ideas",
       "recipe memory book",
     ],
-    shortLabel: "Recipes that outlast the cook",
+    shortLabel: "Preserved family recipes",
     pickerGroup: "output",
     intent: "Preservation and Gift SEO",
     // Preservation by intent, but the thing someone wants here is to photograph
