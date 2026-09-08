@@ -102,6 +102,27 @@ describe("parseUrlAll — CookPilot fallback suppression", () => {
     expect(callable).not.toHaveBeenCalled();
   });
 
+  it("surfaces the parser's own reason for a page it cannot read, and stops", async () => {
+    // A post the platform withholds without a login, or a bot-challenge wall.
+    // The fallback reaches the same parser, which fetches the same page from the
+    // same place, so retrying can only reproduce the wall — and the message the
+    // route passed through names the obstacle and what to do instead, which a
+    // generic "couldn't import" would throw away.
+    routeReplies(422, {
+      success: false,
+      error:
+        "Facebook won't show this post without an account — usually that means " +
+        "it's age-restricted. Open it in the Facebook app and paste the " +
+        "ingredients and steps instead.",
+      parserExhausted: true,
+    });
+
+    await expect(parseUrlAll("facebook.com/share/r/abc123")).rejects.toThrow(
+      /age-restricted/,
+    );
+    expect(callable).not.toHaveBeenCalled();
+  });
+
   it("still falls back when the route never consulted the parser", async () => {
     // No `parserExhausted`: the deployment has no server-side parser configured,
     // so the route only managed a JSON-LD read. The callable is the first time

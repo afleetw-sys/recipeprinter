@@ -52,6 +52,9 @@ class ParseHttpError extends Error {
   constructor(
     message: string,
     public status = 400,
+    /** The parser gave a final answer about this URL, so the client's own
+        retry — which reaches the same parser — has nothing new to try. */
+    public exhausted = false,
   ) {
     super(message);
   }
@@ -204,6 +207,13 @@ type CookPilotServerOutcome =
 
 const SKIPPED: CookPilotServerOutcome = { kind: "skipped" };
 
+/** The parser's own explanation, when its error body carries one. */
+function parserErrorMessage(data: unknown): string | null {
+  if (typeof data !== "object" || data === null) return null;
+  const message = (data as { error?: unknown }).error;
+  return typeof message === "string" && message.trim() ? message.trim() : null;
+}
+
 async function parseWithCookPilotServer(url: string): Promise<CookPilotServerOutcome> {
   const endpoint = process.env.COOKPILOT_RECIPE_PARSER_URL?.trim();
   const secret = process.env.RECIPEPRINTER_PARSER_SECRET?.trim();
@@ -236,6 +246,20 @@ async function parseWithCookPilotServer(url: string): Promise<CookPilotServerOut
     return { kind: "empty" };
   }
 
+  // 412 is the parser reporting that it reached the page and no server-side
+  // reader can use it: a bot challenge, or a post the platform withholds unless
+  // you are logged in. It names the actual obstacle and what to do instead,
+  // which is more use than anything this route could substitute — and every
+  // reader below fetches the same page from the same place, so there is nothing
+  // left to try.
+  if (response.status === 412) {
+    throw new ParseHttpError(
+      parserErrorMessage(data) ??
+        "That page can't be read automatically. Paste the recipe text or upload screenshots instead.",
+      422,
+      true,
+    );
+  }
   if (response.status === 401 || response.status === 403) {
     throw new ParseHttpError(
       "We couldn't import this link right now. Paste the recipe text or upload screenshots instead.",
@@ -354,7 +378,7 @@ export async function POST(request: Request) {
     return NextResponse.json({ success: true, recipes: [recipe] } satisfies ParseResponse);
   } catch (err) {
     if (err instanceof ParseHttpError) {
-      return errorResponse(err.message, err.status, parserExhausted);
+      return errorResponse(err.message, err.status, err.exhausted || parserExhausted);
     }
     if (err instanceof Error && err.name === "TimeoutError") {
       return errorResponse(
