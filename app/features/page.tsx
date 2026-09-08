@@ -104,31 +104,16 @@ const ALSO: OverviewItem[] = [
 // reader has no way to tell why the layout came back. A purchase is a different
 // kind of thing from a feature, so it gets the one lifted element on the page
 // and says so, instead of arguing itself a fourth and fifth time.
-const PAID = [
+const PAID: OverviewItem[] = [
   {
-    heading: "Turn a set of recipes into a cookbook",
+    title: "Turn a set of recipes into a cookbook",
     body: "Group recipes into chapters, add a cover, and RecipePrinter builds the table of contents for you. Export a print-ready PDF to print at home in US Letter, or a full-bleed 8 by 10 to order a bound hardcover from a service like Lulu or Blurb. The builder is a one-time purchase for the book you make.",
   },
   {
-    heading: "Premium print themes",
+    title: "Premium print themes",
     body: "A theme changes a card's type, its border, and how the photo sits, without touching the recipe underneath. Several themes are free, and the premium ones are a one-time purchase.",
   },
 ];
-
-function PaidPanel({ items }: { items: { heading: string; body: string }[] }) {
-  return (
-    <div className="card border-l-2 border-l-[var(--cp-accent-warm)] p-cp-6">
-      <ul className="grid gap-cp-6 sm:grid-cols-2">
-        {items.map((item) => (
-          <li key={item.heading}>
-            <h3 className="text-cp-body font-extrabold tracking-[-0.02em]">{item.heading}</h3>
-            <p className="mt-cp-2 text-ink-soft text-cp-small leading-relaxed">{item.body}</p>
-          </li>
-        ))}
-      </ul>
-    </div>
-  );
-}
 
 // Grouped by what the reader is actually choosing between, which `intent`
 // could not express: it drives page layout, and it filed the Just the Recipe
@@ -153,7 +138,7 @@ export default function FeaturesPage() {
         lede="RecipePrinter turns websites, social links, photos, screenshots, and text into printable recipe cards, pages, PDFs, and batches you can cook from, save, and collect."
         above={<Breadcrumb trail={TRAIL} />}
         actions={<LandingCta href="/" />}
-        note="Printing is free and needs no account. Your queue lives in your browser. Sign in only if you want a project saved to reopen on another device."
+        note="Printing is free and needs no account."
       />
 
       <LandingSection
@@ -177,7 +162,7 @@ export default function FeaturesPage() {
         heading="Two things you can buy, once"
         lede="Printing is free. These are the only optional purchases, and the price is shown before you buy."
       >
-        <PaidPanel items={PAID} />
+        <OverviewList items={PAID} />
       </LandingSection>
 
       <LandingSection

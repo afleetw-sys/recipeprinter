@@ -13,7 +13,9 @@ import type { ComponentType } from "react";
  * whole row rather than leaving a card floating against dead space.
  */
 export type OverviewItem = {
-  icon: ComponentType<{ size?: number }>;
+  /** Optional: OverviewList renders no icons, so items written only for the
+      list have nothing to supply here. */
+  icon?: ComponentType<{ size?: number }>;
   title: string;
   body: string;
 };
@@ -54,9 +56,11 @@ export function OverviewGrid({
     >
       {items.map(({ icon: Icon, title, body }) => (
         <li key={title} className="card p-cp-5 flex flex-col gap-cp-3">
-          <span className="glyph-warm">
-            <Icon size={20} />
-          </span>
+          {Icon && (
+            <span className="glyph-warm">
+              <Icon size={20} />
+            </span>
+          )}
           <h3 className="font-extrabold tracking-[-0.02em] text-cp-h2">{title}</h3>
           <p className="text-ink-soft text-cp-body leading-relaxed">{body}</p>
         </li>
