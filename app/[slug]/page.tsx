@@ -280,7 +280,7 @@ export default function SeoLandingPage({ params }: PageProps) {
       {/* ── Related ───────────────────────────────────────────────────── */}
       <section aria-labelledby="related-heading">
         <div id="related-heading">
-          <h2 className="text-cp-h2 font-extrabold tracking-[-0.02em]">More ways to use RecipePrinter</h2>
+          <SectionHeading>More ways to use RecipePrinter</SectionHeading>
         </div>
         <div className="mt-cp-4 flex flex-wrap gap-cp-3">
           {page.links.map((link) => (

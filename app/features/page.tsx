@@ -136,7 +136,7 @@ export default function FeaturesPage() {
       <LandingSection
         id="features-heading"
         heading="What it does"
-        lede="What it does that the print button already in your browser does not."
+        lede="The parts a browser's print button leaves out, and where they end up."
       >
         <FeatureRows features={HEADLINE} />
       </LandingSection>
@@ -165,6 +165,9 @@ export default function FeaturesPage() {
         <GuidePicker pages={byGroup("output")} />
       </LandingSection>
 
+      <div>
+        <LandingCta href="/" />
+      </div>
       {comparisons.length > 0 && (
         <p className="text-ink-soft text-cp-body leading-relaxed">
           Comparing tools? See RecipePrinter next to{" "}
@@ -180,9 +183,6 @@ export default function FeaturesPage() {
         </p>
       )}
 
-      <div>
-        <LandingCta href="/" />
-      </div>
     </LandingFrame>
   );
 }

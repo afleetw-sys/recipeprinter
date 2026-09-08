@@ -48,8 +48,19 @@ export function LandingCta({
   );
 }
 
+/**
+ * Section headings sat at `cp-h2-lg`, the same size and weight FeatureRows
+ * gives each row's own heading, so "What it does" and "Keep the recipe, leave
+ * the web page behind" were indistinguishable and the reader had no way to
+ * tell a section from a row inside one. There was also nothing between the
+ * page h1 at `hero-lg` and both of them.
+ *
+ * `hero-sm` fills that gap and puts a real step between the section and its
+ * contents. It was labelled the article-page h1 size, which no page uses any
+ * more now that the overview pages open on LandingHero.
+ */
 export function SectionHeading({ children }: { children: ReactNode }) {
-  return <h2 className="text-cp-h2-lg font-extrabold tracking-[-0.03em]">{children}</h2>;
+  return <h2 className="text-cp-hero-sm font-extrabold tracking-[-0.03em]">{children}</h2>;
 }
 
 /**
@@ -161,11 +172,9 @@ export function LandingHero({
           {actions && <div className="mt-cp-5">{actions}</div>}
           {note && (
             <p
-              className={
-                centered
-                  ? "mt-cp-5 max-w-[46rem] text-cp-small leading-relaxed text-ink-soft"
-                  : "mt-cp-5 max-w-[40rem] border-l-2 border-line pl-cp-4 text-cp-small leading-relaxed text-ink-soft"
-              }
+              className={`mt-cp-5 text-cp-small leading-relaxed text-ink-soft ${
+                centered ? "max-w-[46rem]" : "max-w-[40rem]"
+              }`}
             >
               {note}
             </p>
