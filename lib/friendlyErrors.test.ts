@@ -7,6 +7,7 @@ import {
   friendlyShareLinkError,
   isPlaceholderHost,
   placeholderHostMessage,
+  shortImportError,
 } from "./friendlyErrors";
 
 describe("user-facing errors", () => {
@@ -92,5 +93,19 @@ describe("isPlaceholderHost", () => {
   it("ignores the www prefix, the casing and stray whitespace", () => {
     expect(isPlaceholderHost("  WWW.Example.COM ")).toBe(true);
     expect(isPlaceholderHost("")).toBe(false);
+  });
+});
+
+describe("shortImportError", () => {
+  // The toast is one line beside two buttons. Every bucket needs its own line:
+  // a code that falls through to the default says "That recipe wouldn't
+  // import", which is the bare "something went wrong" this function exists to
+  // avoid.
+  it("names the cause instead of falling back to the generic line", () => {
+    const generic = shortImportError(undefined);
+    for (const code of ["search_page", "placeholder", "no_recipe", "blocked", "timeout"] as const) {
+      expect(shortImportError(code), code).not.toBe(generic);
+    }
+    expect(shortImportError("search_page")).toBe("That's a search results page");
   });
 });

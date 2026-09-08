@@ -1,6 +1,7 @@
 "use client";
 
 import { adaptCookPilotRecipe, adaptCookPilotRecipes, normalizeImportURL } from "@/lib/cookpilot";
+import { searchPageMessage, unwrapRedirectUrl } from "@/lib/importUrl";
 import { anonymousOwnerId } from "@/lib/anonymousOwner";
 import type { ImportFailureCode } from "@/lib/analytics";
 import type { ParseResponse, Recipe } from "@/types/recipe";
@@ -260,7 +261,19 @@ function categoryForRouteStatus(status: number | undefined): ImportFailureCode {
  * instead so the queue can report the failure.
  */
 export async function parseUrlAll(rawUrl: string): Promise<Recipe[]> {
-  const url = normalizeImportURL(rawUrl);
+  // A wrapper (`google.com/url?q=…`) is a recipe page with a doorway in front
+  // of it, so we step through the doorway rather than sending the parser at
+  // the doorway itself. Idempotent, and the queue already did it — this is
+  // here so the parser is safe to call from anywhere.
+  const url = unwrapRedirectUrl(normalizeImportURL(rawUrl));
+
+  // Answered from the URL's own shape, before a single request goes out. The
+  // parser would spend its whole budget (55s, then our own fetch) to reach the
+  // same conclusion, off a rate limit that exists to protect a paid service,
+  // and would land on copy that doesn't say the one useful thing.
+  const searchPage = searchPageMessage(url);
+  if (searchPage) throw new ImportError(searchPage, "search_page");
+
   const local = await parseUrlLocally(url);
   if (local.recipes && local.recipes.length > 0) return local.recipes;
   if (shouldTryUrlFallback(local)) {

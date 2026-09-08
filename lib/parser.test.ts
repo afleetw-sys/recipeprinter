@@ -165,6 +165,43 @@ describe("parseUrlAll — analytics buckets for suppressed retries", () => {
   }
 });
 
+describe("parseUrlAll — links answered without a parse", () => {
+  // The whole point of the search-page check is that it costs nothing: no
+  // request to our route, no callable, no 55-second wait, no slot off a rate
+  // limit that exists to protect a paid parser. So the assertion is that
+  // neither transport was touched, not just that it threw.
+  it("turns a search results page away before any request goes out", async () => {
+    const fetchSpy = vi.fn();
+    vi.stubGlobal("fetch", fetchSpy);
+
+    await expect(
+      parseUrlAll("https://www.google.com/search?q=oatmeal+scotchie+bars+jelly+roll+pan"),
+    ).rejects.toMatchObject({
+      code: "search_page",
+      message: "Open the recipe you want from those results, then paste that link.",
+    });
+    expect(fetchSpy).not.toHaveBeenCalled();
+    expect(callable).not.toHaveBeenCalled();
+  });
+
+  it("follows a search engine's redirect wrapper to the recipe behind it", async () => {
+    // Same host as the case above. Only the path tells them apart, so this is
+    // the test that would catch a rule that turned saves into rejections.
+    routeReplies(200, {
+      success: true,
+      recipes: [{ title: "Oatmeal Scotchies", ingredients: ["oats"], instructions: ["Bake."] }],
+    });
+
+    const recipes = await parseUrlAll(
+      "https://www.google.com/url?q=https%3A%2F%2Fsallysbakingaddiction.com%2Foatmeal-scotchies%2F&sa=U",
+    );
+
+    expect(recipes).toHaveLength(1);
+    const body = JSON.parse(String((vi.mocked(fetch).mock.calls[0]?.[1] as RequestInit)?.body));
+    expect(body.url).toBe("https://sallysbakingaddiction.com/oatmeal-scotchies/");
+  });
+});
+
 describe("normalizeFractions", () => {
   // The exact paste that lost three of its nine ingredients in production.
   it("rewrites the glyphs that were being discarded", () => {

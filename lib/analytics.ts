@@ -22,6 +22,8 @@ type PurchasedProduct = "premium_template" | "cookbook";
  * photo parser find nothing" is a chart instead of a session-replay hunt.
  *   - blocked / not_found: the source site refused us or 404'd (URL only).
  *   - no_recipe: we reached the parser and it found no recipe in the input.
+ *   - search_page: the link was a page of results, not a recipe page. Answered
+ *     from the URL alone, so the parser was never asked.
  *   - rate_limited: the caller's hourly parse quota was reached (waiting fixes
  *     it) — kept distinct from no_recipe so a quota wall isn't miscounted as
  *     "the parser found nothing".
@@ -50,6 +52,12 @@ export type ImportFailureCode =
   // A reserved name (example.com, localhost, anything under .test). Not a
   // parser failure: nothing was ever there to parse.
   | "placeholder"
+  // A search results or listing page (a Google search, a site's own /search).
+  // Its own bucket for the same reason as `placeholder`: no_recipe is supposed
+  // to mean the parser read a real recipe page and found nothing, and that is
+  // the number that measures the parser. A link that never had a recipe on it
+  // inflating that number makes the one metric we tune against lie.
+  | "search_page"
   | "unknown";
 
 /**

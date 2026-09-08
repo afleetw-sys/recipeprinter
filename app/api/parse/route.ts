@@ -3,6 +3,7 @@ import { isIP } from "node:net";
 import { NextResponse } from "next/server";
 import { jsonDataBlocksFromHtml, jsonLdBlocksFromHtml, recipeFromJsonLd } from "@/lib/schemaRecipe";
 import { adaptCookPilotRecipes, normalizeImportURL } from "@/lib/cookpilot";
+import { searchPageMessage, unwrapRedirectUrl } from "@/lib/importUrl";
 import { callerKey, rateLimit } from "@/lib/server/rateLimit";
 import type { ParseResponse, Recipe } from "@/types/recipe";
 
@@ -276,10 +277,19 @@ export async function POST(request: Request) {
     if (typeof body.url !== "string" || !body.url.trim()) {
       return errorResponse("Paste a recipe link first.");
     }
-    url = new URL(normalizeImportURL(body.url));
+    url = new URL(unwrapRedirectUrl(normalizeImportURL(body.url)));
   } catch {
     return errorResponse("That doesn't look like a valid URL.");
   }
+
+  // The client answers this one before it ever calls us (see `parseUrlAll`), so
+  // reaching here means something skipped the UI. The check still belongs on
+  // this side: behind it sits CookPilot's paid parser reached with our shared
+  // secret, and a results page is up to 55 seconds of it spent on a page that
+  // was never going to hold a recipe. 400 is deliberate — `shouldTryUrlFallback`
+  // already treats it as final, so this can't turn into a second parse.
+  const searchPage = searchPageMessage(url.toString());
+  if (searchPage) return errorResponse(searchPage, 400);
 
   // Once the full parser has answered "no recipe", it stays answered for the
   // rest of this request — whatever our own direct fetch goes on to hit, asking

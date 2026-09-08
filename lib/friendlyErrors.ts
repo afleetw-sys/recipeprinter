@@ -1,4 +1,5 @@
 import type { ImportFailureCode } from "@/lib/analytics";
+import { SEARCH_PAGE_SHORT_MESSAGE } from "@/lib/importUrl";
 
 export function friendlyAuthError(error: unknown, fallback = "We couldn't sign you in. Please try again."): string {
   const code = (error as { code?: string })?.code ?? "";
@@ -203,6 +204,8 @@ export function shortImportError(code: ImportFailureCode | undefined): string {
       return "No recipe found there";
     case "placeholder":
       return "That address isn't a real site";
+    case "search_page":
+      return SEARCH_PAGE_SHORT_MESSAGE;
     case "rate_limited":
       return "Too many imports just now";
     case "no_files":

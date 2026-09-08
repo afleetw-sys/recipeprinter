@@ -6,6 +6,7 @@ import { track, truncateReason } from "@/lib/analytics";
 import { ImportError, parseImages, parseText, parseUrlAll } from "@/lib/parser";
 import { captureFailedImportImages, recordFailedImport } from "@/lib/failedImportCapture";
 import { placeholderHostMessage } from "@/lib/friendlyErrors";
+import { unwrapRedirectUrl } from "@/lib/importUrl";
 import { prepareImageDataUrls } from "@/lib/imageImport";
 import { normalizeImportURL } from "@/lib/cookpilot";
 import { hostnameOf as rawHostnameOf } from "@/lib/url";
@@ -469,8 +470,14 @@ export function useQueue() {
         // stays out of `debugInbox` entirely: the inbox is the list you read to
         // find real bugs, and every placeholder in it is a row you have to
         // recognise and dismiss before you reach one that matters.
+        //
+        // A search results page is kept out for the same reason. There is
+        // nothing to reproduce: the parser was never asked, and the URL alone
+        // already says everything the row could. PostHog still counts them
+        // (`search_page`), which is where "how often does this happen" belongs.
+        const answeredFromTheUrl = Boolean(placeholder) || category === "search_page";
         let debugPath: string | null = null;
-        if (!placeholder) {
+        if (!answeredFromTheUrl) {
           // Best-effort: stash the failed input and link the event to it. `await`
           // only to attach the path — capture never throws (see module).
           const captureMeta = { source: origin.source, category, reason };
@@ -503,7 +510,7 @@ export function useQueue() {
     (rawUrl: string) => {
       const url = rawUrl.trim();
       if (!url) return;
-      const key = canonicalUrl(url);
+      const key = canonicalUrl(unwrapRedirectUrl(url));
       const duplicate = key
         ? itemsRef.current.find(
             (item) => item.method === "url" && item.originalUrl && canonicalUrl(item.originalUrl) === key,
@@ -514,7 +521,12 @@ export function useQueue() {
         return;
       }
 
-      const normalizedUrl = normalizeImportURL(url);
+      // A redirect wrapper is resolved here, not at parse time, so everything
+      // downstream sees the site the cook actually meant: the queue item is
+      // titled with the recipe's host rather than `google.com`, the dedupe key
+      // matches the same recipe pasted directly, and analytics records which
+      // recipe site we struggled with instead of which doorway led to it.
+      const normalizedUrl = unwrapRedirectUrl(normalizeImportURL(url));
       // Compute the hostname once — hostnameOf re-normalizes and re-parses its
       // input, so the source/title/analytics all reuse this instead of 3 calls.
       const host = hostnameOf(normalizedUrl);
