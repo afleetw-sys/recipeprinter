@@ -1259,7 +1259,7 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
       {
         question: "Do these have to become a cookbook?",
         answer:
-          "No. Printing one card and stopping there is enough. The bound book with a cover and chapters is there if you ever want it, for $19.99 once.",
+          "No. Printing one card and stopping there is enough. The bound cookbook with a cover and chapters is there if you ever want it, for $19.99 once.",
       },
     ],
     links: [
@@ -1298,7 +1298,7 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
     h1: "Family recipe book ideas",
     lede:
       "RecipePrinter turns online recipes, old cards, photos, and typed-in notes into clean, matching pages, then binds them into a cookbook with a cover, chapters, and a table of contents.",
-    importSubmitLabel: "Start the book",
+    importSubmitLabel: "Start the cookbook",
     captureReassurance: false,
     howTo: [
       {
@@ -1307,7 +1307,7 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
       },
       {
         name: "Clean up each page",
-        text: "RecipePrinter sets every recipe on a clear, consistent page, so a faded card and a link from a group chat end up looking like they belong in the same book.",
+        text: "RecipePrinter sets every recipe on a clear, consistent page, so a faded card and a link from a group chat end up looking like they belong in the same cookbook.",
       },
       {
         name: "Add chapters and a cover",
@@ -1320,7 +1320,7 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
     ],
     featureSections: [
       {
-        heading: "Different sources, one consistent book",
+        heading: "Different sources, one consistent cookbook",
         proof: "photo",
         body:
           "Family recipes arrive in every format: a stained index card, a screenshot from a group chat, a link a cousin sent, a method that only lives in someone's head. RecipePrinter reads each one and sets it on a clean, consistent page, so a card from 1975 and a text from last week look like they belong in the same book.",
@@ -1340,7 +1340,7 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
     ],
     faqs: [
       {
-        question: "How many recipes make a book?",
+        question: "How many recipes make a cookbook?",
         answer:
           "As few or as many as you like. Eight recipes with a cover on them makes a real gift, and so does forty. The contents page renumbers itself as you add, so you can keep going for as long as you want to.",
       },
@@ -1362,7 +1362,7 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
       {
         question: "What does a cookbook cost?",
         answer:
-          "$19.99 once for the book, and that book stays yours to edit and add to afterwards. After that it is whatever the printing costs: paper and ink at home, or whatever the print shop charges.",
+          "$19.99 once for the cookbook, and that cookbook stays yours to edit and add to afterwards. After that it is whatever the printing costs: paper and ink at home, or whatever the print shop charges.",
       },
     ],
     links: [
@@ -1513,10 +1513,10 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
     h1: "A ReciScan alternative that prints today",
     anchor: "ReciScan alternative",
     lede:
-      "Both read links, photos and pasted text. ReciScan turns them into a bound book and ships it to you. RecipePrinter gives you the pages: print them now, keep the PDF, or take the file to a print shop.",
+      "Both read links, photos and pasted text. ReciScan turns them into a bound cookbook and ships it to you. RecipePrinter gives you the pages: print them now, keep the PDF, or take the file to a print shop.",
     featureSections: [
       {
-        heading: "A card, a page, or the whole book",
+        heading: "A card, a page, or the whole cookbook",
         proof: "card",
         body:
           "ReciScan ends in a bound book from its own press, starting at $18 for fifty pages. RecipePrinter hands you the file: a 4 by 6 card for the box by the stove, a letter page for a binder, or a bound cookbook with a cover and chapters. Printing one card tonight does not rule out the book.",
@@ -1547,11 +1547,11 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
           ],
         },
         {
-          title: "Making a book",
+          title: "Making a cookbook",
           rows: [
             { feature: "A cookbook you print or export yourself", us: "$19.99 once", them: "PDF download" },
             { feature: "Spiral or hardcover layout", us: "Letter spiral, 8 by 10 hardcover", them: "Coil, saddle stitch, perfect bound, hardcover" },
-            { feature: "Updating the book you paid for", us: "Free, any time", them: false },
+            { feature: "Updating the cookbook you paid for", us: "Free, any time", them: false },
           ],
         },
         {
@@ -1567,7 +1567,7 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
       {
         question: "How do I choose between them?",
         answer:
-          "By what you want at the end. If it is one bound book of the whole collection, ReciScan prints and ships that. If it is recipes on paper you can cook from this week, in a box or a binder, that is RecipePrinter.",
+          "By what you want at the end. If it is one bound cookbook of the whole collection, ReciScan prints and ships that. If it is recipes on paper you can cook from this week, in a box or a binder, that is RecipePrinter.",
       },
       {
         question: "What does each one cost?",
@@ -1575,12 +1575,12 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
           "ReciScan is free to use, with a $4.99 monthly subscription for covers and extras, and printed books starting at $18. RecipePrinter is free to print. Premium themes are $1.99 once, a cookbook is $19.99 once, and both stay yours rather than renewing every month.",
       },
       {
-        question: "Can RecipePrinter send me a printed book?",
+        question: "Can RecipePrinter send me a printed cookbook?",
         answer:
-          "Not directly. It builds the finished book as a print-ready file: run it on a home printer, keep the PDF, or take it to a print shop to have bound. A copy shop works from the same file if you would rather not print it yourself.",
+          "Not directly. It builds the finished cookbook as a print-ready file: run it on a home printer, keep the PDF, or take it to a print shop to have bound. A copy shop works from the same file if you would rather not print it yourself.",
       },
       {
-        question: "What if I only want a few recipes, not a whole book?",
+        question: "What if I only want a few recipes, not a whole cookbook?",
         answer:
           "You can. There is no minimum and nothing to finish: print one card, print three, come back in a month. The cookbook is there when you want it, and not before.",
       },

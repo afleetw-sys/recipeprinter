@@ -104,10 +104,10 @@ const YOURS_CARDS: FeatureCard[] = [
 
 const PRINT_CARDS: FeatureCard[] = [
   {
-    heading: "4 by 6 recipe cards",
+    heading: "4 by 6 cards or letter pages",
     image: "card-in-box",
     body:
-      "They drop straight into a recipe box, or print a letter-size page for a binder instead. Cut lines give you a trim guide on card stock, and a recipe too long for one side carries on onto the back rather than being cut short.",
+      "A 4 by 6 recipe card drops straight into a recipe box; a letter page goes into a binder. Cut lines give you a trim guide on card stock, and a recipe too long for one side carries on onto the back rather than being cut short.",
   },
   {
     // Batch and PDF were two cards saying the same thing from either end: how
@@ -115,13 +115,13 @@ const PRINT_CARDS: FeatureCard[] = [
     heading: "Batch printing and PDF export",
     image: "pdf-search",
     body:
-      "Build a queue from different sources, choose the recipes you want, and print them together for a recipe binder, a week of dinners, or a family cookbook. Or choose Save as PDF in the print dialog and keep the batch on your device instead of sending it to paper.",
+      "Build a queue from different sources, choose the recipes you want, and print them together for a recipe binder, a week of dinners, or a family cookbook. Or choose Save as PDF in the print dialog and keep the printable recipes on your device instead of sending them to paper.",
   },
   {
     heading: "Cookbook builder",
     image: "bound-cookbook",
     body:
-      "Group the recipes you kept into chapters, add a cover, and RecipePrinter builds the table of contents for you. Export a print-ready PDF to run off at home in US Letter, or a full-bleed 8 by 10 to order a bound hardcover from a service like Lulu or Blurb. It is a one-time purchase for the book you make.",
+      "Group the recipes you kept into chapters, add a cover, and RecipePrinter builds the table of contents for you. Export a print-ready PDF to run off at home in US Letter, or a full-bleed 8 by 10 to order a bound hardcover from a service like Lulu or Blurb. It is a one-time purchase for the cookbook you make.",
   },
 ];
 
@@ -163,7 +163,7 @@ export default function FeaturesPage() {
       <LandingHero
         align="centered"
         h1="A recipe printing tool for recipes worth keeping"
-        lede="Recipes live on screens and get cooked in kitchens. RecipePrinter moves the ones worth keeping onto paper you can hold, mark up, and file."
+        lede="Recipes live on screens and get cooked in kitchens. RecipePrinter moves the ones worth keeping onto paper you can hold, mark up, and hand down."
         above={<Breadcrumb trail={TRAIL} />}
         actions={<LandingCta href="/" />}
         note="Printing is free and needs no account."
@@ -172,7 +172,7 @@ export default function FeaturesPage() {
       <LandingSection
         id="print-heading"
         heading="Print how you want"
-        lede="A recipe card for the counter, a letter page for the binder, a PDF for your phone, or a bound book to give away."
+        lede="A recipe card for the counter, a letter page for the binder, a PDF for your phone, or a bound cookbook to give away."
       >
         <FeatureCards items={PRINT_CARDS} />
         <PickerRow label="Guides by what you make" pages={byGroup("output")} />
@@ -184,13 +184,13 @@ export default function FeaturesPage() {
         lede="A recipe reaches you as a web page, a photo, or a paragraph someone texted you. None of that is built to cook from."
       >
         <FeatureCards items={IMPORT_CARDS} />
-        <PickerRow label="Guides by source" pages={byGroup("source")} />
+        <PickerRow label="Guides by what you import" pages={byGroup("source")} />
       </LandingSection>
 
       <LandingSection
         id="yours-heading"
         heading="Make it yours"
-        lede="Correct what came across, choose how it looks, and bind the ones you keep into a book with your name on it."
+        lede="Correct what came across, choose how it looks, and bind the ones you keep into a cookbook with your name on it."
       >
         <FeatureCards items={YOURS_CARDS} />
       </LandingSection>

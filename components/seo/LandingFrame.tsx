@@ -158,7 +158,12 @@ export function LandingHero({
         >
           <h1
             id="landing-heading"
-            className="text-cp-hero-lg font-extrabold leading-[1.04] tracking-[-0.04em]"
+            // Centred, the heading had the full 1240 to run into and set as a
+            // banner across the page. Capped, it breaks into a block the eye
+            // takes in at once, which is the only reason to centre it.
+            className={`text-cp-hero-lg font-extrabold leading-[1.04] tracking-[-0.04em]${
+              centered ? " max-w-[18ch]" : ""
+            }`}
           >
             {h1}
           </h1>
