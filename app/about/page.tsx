@@ -1,7 +1,14 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { PageShell, PageHeader, StartPrintingCta } from "@/components/PageShell";
-import { pageMetadata } from "@/lib/seo";
+import {
+  LandingCta,
+  LandingFrame,
+  LandingHero,
+  LandingSection,
+} from "@/components/seo/LandingFrame";
+import { LandingClose } from "@/components/seo/LandingClose";
+import { Breadcrumb } from "@/components/seo/Breadcrumb";
+import { absoluteUrl, breadcrumbNode, organizationNode, pageMetadata } from "@/lib/seo";
 
 export const metadata: Metadata = pageMetadata({
   title: "About RecipePrinter",
@@ -10,89 +17,140 @@ export const metadata: Metadata = pageMetadata({
   path: "/about",
 });
 
+const TRAIL = [
+  { name: "Home", href: "/" },
+  { name: "About", href: "/about" },
+];
+
+/**
+ * An AboutPage node with the Organization behind it, which this page carried
+ * none of.
+ *
+ * Organization, WebSite and WebApplication were emitted on the homepage alone,
+ * so the one page that says who makes this and why said nothing a crawler could
+ * read. `sameAs` comes off SOCIAL_PROFILES through organizationNode, which is
+ * how a search engine ties this site to a brand it already knows about.
+ *
+ * No Person node. The page is written in the first person and naming whoever
+ * that is on the public site is not a decision this file gets to make.
+ */
+const JSON_LD = {
+  "@context": "https://schema.org",
+  "@graph": [
+    {
+      "@type": "AboutPage",
+      "@id": `${absoluteUrl("/about")}#webpage`,
+      url: absoluteUrl("/about"),
+      name: "About RecipePrinter",
+      description:
+        "Why RecipePrinter exists: a free tool for printing recipes from websites as clean recipe cards and PDFs.",
+      inLanguage: "en",
+    },
+    organizationNode(),
+    breadcrumbNode(
+      TRAIL.map((crumb) => ({ name: crumb.name, url: absoluteUrl(crumb.href) })),
+    ),
+  ],
+};
+
+function Prose({ children }: { children: React.ReactNode }) {
+  return (
+    <div className="flex max-w-[46rem] flex-col gap-cp-4 text-ink-soft text-cp-body-lg leading-relaxed">
+      {children}
+    </div>
+  );
+}
+
 export default function AboutPage() {
   return (
-    <PageShell>
-      <PageHeader
-  title="About RecipePrinter"
-  lede="RecipePrinter started with a simple frustration: printing recipes from the internet was still a terrible experience."
-/>
+    <LandingFrame headerActions={<LandingCta label="Go to printer" href="/" compact />}>
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(JSON_LD) }}
+      />
 
-      <div className="flex justify-center">
-<div className="my-cp-6 h-px w-full bg-slate-200" />
-      </div>
-      
-      <div className="flex flex-col gap-cp-5 text-ink-soft leading-relaxed">
-        <p>
-          I built RecipePrinter after building CookPilot, a recipe app for
-          saving and organizing recipes.
+      <LandingHero
+        align="centered"
+        h1="About RecipePrinter"
+        lede="Printing a recipe off the internet should take one click and one sheet of paper. For years it took neither."
+        above={<Breadcrumb trail={TRAIL} />}
+        actions={<LandingCta href="/" label="Start printing for free" />}
+      />
+
+      {/* The page was one unbroken column of short paragraphs with no headings
+          at all, so there was nothing to skim and nothing telling a reader or a
+          crawler what any part of it was about. Same story, three chapters. */}
+      <LandingSection id="why-heading" heading="Why this exists">
+        <Prose>
+          <p>
+            I built RecipePrinter after building CookPilot, a recipe app for saving
+            and organizing recipes. CookPilot solved one half of the problem: it
+            gave me somewhere to keep the recipes I wanted to remember.
+          </p>
+          <p>
+            The other half turned up every time I actually cooked. Not every recipe
+            deserves a place in a binder or a kitchen drawer, but the good ones end
+            up there anyway. They&apos;re the meals you make over and over, the ones
+            your family asks for by name, the ones that slowly collect notes,
+            substitutions and stains in the margins.
+          </p>
+          <p>
+            And printing them was still awful. Recipe websites are built for
+            browsers, not for printers: you ask for a recipe and get ads, pop-ups,
+            a photograph the size of a poster, and five sheets of paper for
+            something that needed one.
+          </p>
+        </Prose>
+      </LandingSection>
+
+      <LandingSection id="what-heading" heading="What it does about it">
+        <Prose>
+          <p>
+            Paste a recipe link, upload a screenshot or a photo, paste the text, or
+            bring over a library you already keep in CookPilot or Paprika.
+            RecipePrinter turns any of it into a clean printable recipe card or PDF,
+            set for a real kitchen rather than a browser window.
+          </p>
+          <p>
+            From there it is yours: print from a website, save recipes as PDFs,
+            fill a{" "}
+            <Link href="/recipe-binder" className="font-bold text-ink hover:underline">
+              recipe binder
+            </Link>
+            , build a{" "}
+            <Link href="/family-recipe-book" className="font-bold text-ink hover:underline">
+              family cookbook
+            </Link>
+            , or just keep the ones you cook somewhere easier to reach than an open
+            tab. No ads, no clutter, no wasted paper.
+          </p>
+        </Prose>
+      </LandingSection>
+
+      <LandingSection id="cookpilot-heading" heading="RecipePrinter and CookPilot">
+        <Prose>
+          <p>
+            They are two halves of the same habit. CookPilot is for collecting
+            recipes and making them work in real life: substitutions, notes,
+            adjustments. RecipePrinter is for the ones that have earned a place off
+            the screen.
+          </p>
+          <p>
+            You can use RecipePrinter on its own and never touch CookPilot. If you
+            do keep recipes there, they come across in a few clicks.
+          </p>
+        </Prose>
+      </LandingSection>
+
+      <LandingClose>
+        <p className="text-ink-soft text-cp-body leading-relaxed">
+          Curious about the mechanics?{" "}
+          <Link href="/how-it-works" className="font-bold text-ink hover:underline">
+            See how it works
+          </Link>
+          .
         </p>
-
-        <p>CookPilot solved one half of my problem.</p>
-
-        <p>
-          It gave me a place to keep recipes I wanted to remember.
-        </p>
-
-        <p>
-          But when I actually wanted to cook, I still found myself printing
-          recipes.
-        </p>
-
-        <p>
-          Not every recipe deserves a place in a binder or kitchen drawer, but
-          the good ones eventually get there anyway. They&apos;re the meals you
-          make over and over, the recipes your family asks for by name, and the
-          dishes that slowly collect notes, substitutions, and stains in the
-          margins.
-        </p>
-
-        <p>
-          The problem was that printing recipes from the internet was still
-          awful.
-        </p>
-
-        <p>
-          Recipe websites are designed for browsers, not printers. You end up
-          with ads, pop-ups, giant photos, and five-page printouts when all you
-          really wanted was the ingredients and instructions.
-        </p>
-
-        <p>So I built RecipePrinter.</p>
-
-        <p>
-          Paste a recipe link, upload a screenshot or photo, paste recipe text, or
-          bring over a library you already keep in CookPilot or Paprika, and
-          RecipePrinter turns it into a clean printable recipe card or PDF
-          designed for real kitchens.
-        </p>
-
-        <p>
-          You can print recipes from websites, save recipes as PDFs, organize a
-          recipe binder, build a family cookbook, or simply keep your favorites
-          somewhere easier to use than an open browser tab.
-        </p>
-
-        <p>No ads. No clutter. No wasted paper. Just the recipe.</p>
-
-        <p>CookPilot helps people collect recipes.</p>
-
-        <p>
-          RecipePrinter exists for the recipes that have earned a place outside
-          the screen.
-        </p>
-      </div>
-
-      <div className="mt-cp-7 flex flex-wrap items-center gap-cp-4">
-        <StartPrintingCta />
-
-        <Link
-          href="/how-it-works"
-          className="text-cp-small font-semibold text-brand-ink hover:underline"
-        >
-          See how it works →
-        </Link>
-      </div>
-    </PageShell>
+      </LandingClose>
+    </LandingFrame>
   );
 }
