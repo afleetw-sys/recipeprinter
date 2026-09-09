@@ -82,8 +82,7 @@ const IMPORT_CARDS: FeatureCard[] = [
 const YOURS_CARDS: FeatureCard[] = [
   {
     heading: "Inline editing",
-    needs:
-      "A recipe card mid-edit on screen, an ingredient amount being corrected with the cursor in the line.",
+    image: "inline-editing",
     body:
       "The title, ingredients, steps, and notes are editable right on the card. Correct an amount, drop a step you do not need, or add the note you would otherwise have written in the margin.",
   },
