@@ -85,13 +85,13 @@ const YOURS_CARDS: FeatureCard[] = [
     heading: "Inline editing",
     image: "inline-editing",
     body:
-      "The title, ingredients, steps, and notes are editable right on the card. Correct an amount, drop a step you do not need, or add the note you would otherwise have written in the margin.",
+      "The title, ingredients, steps, and notes are editable right on the card. Correct an amount, drop a step you don't need, or add the note you would otherwise have written in the margin.",
   },
   {
     heading: "Photos on the card",
     image: "show-photo",
     body:
-      "One switch decides whether the recipe cards print with their photos, so a recipe that is mostly method does not give half its card to a picture. The recipe link goes on or off the same way.",
+      "One switch decides whether the recipe cards print with their photos, so a recipe that's mostly method doesn't give half its card to a picture. The recipe link goes on or off the same way.",
   },
   {
     heading: "Premium print themes",

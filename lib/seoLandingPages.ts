@@ -271,7 +271,7 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
       {
         question: "Can I print several recipes in one go?",
         answer:
-          "Yes. Add as many recipes as you want and print them as one job. That is the difference between seven trips to the printer and one, which is most of the point when you are printing a week of dinners at once.",
+          "Yes. Add as many recipes as you want and print them as one job. That is the difference between seven trips to the printer and one, which is most of the point when you're printing a week of dinners at once.",
       },
       {
         question: "What happens if the original page disappears?",
@@ -316,7 +316,7 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
         text: "Look at the finished card before anything prints. What you see on screen is what comes out, down to the page count.",
       },
       {
-        name: "Take out what you do not need",
+        name: "Take out what you don't need",
         text: "Turn off Recipe photo to save the color ink, or Recipe link to drop the source line. What is left is the recipe.",
       },
       {
@@ -335,7 +335,7 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
         heading: "Recipe cards don't go dark while you cook",
         image: "counter-card",
         body:
-          "A card asks nothing of you: no unlocking, no charging, no signal. It props against the backsplash and stays on the step you are on. Nobody scrolls back up to check whether it was two teaspoons or two tablespoons.",
+          "A card asks nothing of you: no unlocking, no charging, no signal. It props against the backsplash and stays on the step you're on. Nobody scrolls back up to check whether it was two teaspoons or two tablespoons.",
       },
     ],
     faqs: [
@@ -400,7 +400,7 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
       },
       {
         name: "Choose Save as PDF",
-        text: "Open your browser's print dialog and choose Save as PDF instead of a printer. There is no plugin to install and no account to make.",
+        text: "Open your browser's print dialog and choose Save as PDF instead of a printer. There's no plugin to install and no account to make.",
       },
       {
         name: "Keep it or print it later",
@@ -412,20 +412,20 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
         heading: "The recipe is on page one",
         proof: "before-after",
         body:
-          "RecipePrinter lays the recipe out on its own page before anything is saved, so there is nothing to scroll past. Save the same recipe straight from the site and the PDF is the whole article. One caprese pasta salad comes to twenty-six pages, with the recipe somewhere in the middle.",
+          "RecipePrinter lays the recipe out on its own page before anything is saved, so there's nothing to scroll past. Save the same recipe straight from the site and the PDF is the whole article. One caprese pasta salad comes to twenty-six pages, with the recipe somewhere in the middle.",
       },
       {
         heading: "A recipe you can search",
         image: "pdf-search",
         body:
-          "A screenshot is a picture of a recipe. You cannot search it, copy an amount out of it, or make it bigger without it turning blurry. A PDF from RecipePrinter is text. It prints crisp however large you make it, and you can search it for an ingredient the way you would search any other document.",
+          "A screenshot is a picture of a recipe. You can't search it, copy an amount out of it, or make it bigger without it turning blurry. A PDF from RecipePrinter is text. It prints crisp however large you make it, and you can search it for an ingredient the way you would search any other document.",
       },
     ],
     faqs: [
       {
         question: "Where is the download button?",
         answer:
-          "It is in your browser's print dialog. Open that, choose Save as PDF instead of your printer, and the file lands wherever your downloads normally go. Every browser has it built in, so there is nothing to install.",
+          "It's in your browser's print dialog. Open that, choose Save as PDF instead of your printer, and the file lands wherever your downloads normally go. Every browser has it built in, so there's nothing to install.",
       },
       {
         question: "Can I put several recipes in one PDF?",
@@ -440,7 +440,7 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
       {
         question: "Will the PDF still open without internet?",
         answer:
-          "Yes. Once it is saved it is a file on your device like any other, so it opens in a basement kitchen, on a plane, or years after the original page has gone.",
+          "Yes. Once it's saved it's a file on your device like any other, so it opens in a basement kitchen, on a plane, or years after the original page has gone.",
       },
     ],
     links: [
@@ -527,7 +527,7 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
       {
         question: "Can I fix a recipe before it prints?",
         answer:
-          "Yes. The title, the ingredients, the steps, and the notes are editable right on the card, so you can correct an amount, drop a step you do not need, or add a note of your own before anything reaches the printer.",
+          "Yes. The title, the ingredients, the steps, and the notes are editable right on the card, so you can correct an amount, drop a step you don't need, or add a note of your own before anything reaches the printer.",
       },
       {
         question: "Can I print a whole stack at once?",
@@ -571,7 +571,7 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
     howTo: [
       {
         name: "Copy the pin's link",
-        text: "Open the pin, tap Share, and choose Copy link. That is the pin's own link, and it is the only one you need.",
+        text: "Open the pin, tap Share, and choose Copy link. That's the pin's own link, and it's the only one you need.",
       },
       {
         name: "Paste it in",
@@ -597,7 +597,7 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
         heading: "The pin itself is enough",
         image: "steps",
         body:
-          "Plenty of pins never link out to a recipe at all. Some have it typed into the description, and some have it only in the image. Paste the pin's link either way. RecipePrinter follows the link when there is one, reads the description when there isn't, and reads the pin's own image when that is all there is.",
+          "Plenty of pins never link out to a recipe at all. Some have it typed into the description, and some have it only in the image. Paste the pin's link either way. RecipePrinter follows the link when there's one, reads the description when there'sn't, and reads the pin's own image when that's all there is.",
       },
       {
         heading: "A board is for saving, a card is for cooking",
@@ -624,17 +624,17 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
         // already run into.
         question: "Why are so many of my older pins dead links?",
         answer:
-          "Blogs move, close, or get reorganised, and the pin keeps its photograph long after the recipe behind it is gone. A printed card does not depend on any of that. Once it is in the box, it stays whatever happens to the site it came from.",
+          "Blogs move, close, or get reorganised, and the pin keeps its photograph long after the recipe behind it is gone. A printed card doesn't depend on any of that. Once it's in the box, it stays whatever happens to the site it came from.",
       },
       {
         question: "Can I print a whole board at once?",
         answer:
-          "You add the pins one at a time, and then print them together as a single job. So it is not one paste, but it is one trip to the printer instead of fifteen, and the card size and theme apply to every recipe waiting to print.",
+          "You add the pins one at a time, and then print them together as a single job. So it's not one paste, but it is one trip to the printer instead of fifteen, and the card size and theme apply to every recipe waiting to print.",
       },
       {
         question: "Will the printed card still show where the recipe came from?",
         answer:
-          "It can, and that is your call: print the original link on the card or leave it off. The link kept with the recipe is the recipe page's when the pin leads to one, and the pin's own when it doesn't.",
+          "It can, and that's your call: print the original link on the card or leave it off. The link kept with the recipe is the recipe page's when the pin leads to one, and the pin's own when it doesn't.",
       },
     ],
     links: [
@@ -680,7 +680,7 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
       },
       {
         name: "Print it or save it as a PDF",
-        text: "Send it to a printer, or choose Save as PDF in the print dialog so it is on your phone the next time you make it.",
+        text: "Send it to a printer, or choose Save as PDF in the print dialog so it's on your phone the next time you make it.",
       },
     ],
     featureSections: [
@@ -688,7 +688,7 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
         heading: "The recipe is in the caption, under the video",
         image: "steps",
         body:
-          "A Reel shows you the dish in thirty seconds and puts the recipe in the caption underneath, folded behind a more link. Cooking from it means tapping back to the post, opening the caption again, and finding your place every time your hands are free. RecipePrinter reads that caption and sets it out as ingredients with their amounts and numbered steps, on one sheet that does not scroll.",
+          "A Reel shows you the dish in thirty seconds and puts the recipe in the caption underneath, folded behind a more link. Cooking from it means tapping back to the post, opening the caption again, and finding your place every time your hands are free. RecipePrinter reads that caption and sets it out as ingredients with their amounts and numbered steps, on one sheet that doesn't scroll.",
       },
       {
         heading: "Saved posts are a pile, not a collection",
@@ -717,7 +717,7 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
       {
         question: "Will the card credit the creator?",
         answer:
-          "It can, and that is your call. The post's link can print on the card, so the person whose recipe it is stays attached to it and the Reel is easy to find again.",
+          "It can, and that's your call. The post's link can print on the card, so the person whose recipe it is stays attached to it and the Reel is easy to find again.",
       },
       {
         question: "Can I print several Instagram recipes at once?",
@@ -727,7 +727,7 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
       {
         question: "What happens if the post is taken down?",
         answer:
-          "Nothing, once you have printed it. Accounts go private, posts get deleted, and creators clear out old work. A card in the box does not depend on any of that.",
+          "Nothing, once you have printed it. Accounts go private, posts get deleted, and creators clear out old work. A card in the box doesn't depend on any of that.",
       },
     ],
     links: [
@@ -771,7 +771,7 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
       },
       {
         name: "Print it or save it as a PDF",
-        text: "Send it to the printer, or choose Save as PDF in the print dialog to keep a copy that does not live in the feed.",
+        text: "Send it to the printer, or choose Save as PDF in the print dialog to keep a copy that doesn't live in the feed.",
       },
     ],
     featureSections: [
@@ -779,19 +779,19 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
         heading: "Group recipes are hard to find twice",
         image: "counter-card",
         body:
-          "A good one goes past in a group at nine at night. A month later it is four hundred posts back, and you cannot search for it because you never knew what it was called. Printing it takes it out of the feed: the card does not depend on the group, on the post staying up, or on remembering who shared it.",
+          "A good one goes past in a group at nine at night. A month later it's four hundred posts back, and you can't search for it because you never knew what it was called. Printing it takes it out of the feed: the card doesn't depend on the group, on the post staying up, or on remembering who shared it.",
       },
       {
         heading: "Most of them were typed, not linked",
         image: "steps",
         body:
-          "Someone writes the whole thing into the post. A few lines about their mother, then the ingredients, then the method run together in one paragraph. There is no blog behind it and nothing to click through to. RecipePrinter takes the post as written and sorts it into an ingredient list with amounts and numbered steps you can follow at the stove.",
+          "Someone writes the whole thing into the post. A few lines about their mother, then the ingredients, then the method run together in one paragraph. There's no blog behind it and nothing to click through to. RecipePrinter takes the post as written and sorts it into an ingredient list with amounts and numbered steps you can follow at the stove.",
       },
       {
         heading: "The recipes worth keeping are often the oldest ones",
         image: "bound-cookbook",
         body:
-          "Family groups hold recipes that were handwritten long before they were typed, posted by people who are not always still around to ask. Printing gives one of those somewhere to live that is not a platform: a box on the counter, a binder, or later a bound cookbook that everyone in the group can have a copy of.",
+          "Family groups hold recipes that were handwritten long before they were typed, posted by people who are not always still around to ask. Printing gives one of those somewhere to live that isn't a platform: a box on the counter, a binder, or later a bound cookbook that everyone in the group can have a copy of.",
       },
     ],
     faqs: [
@@ -803,17 +803,17 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
       {
         question: "What about a recipe posted in a private group?",
         answer:
-          "A post that only members can see will not always open for RecipePrinter the way a public one does. Copy the text of the post and paste that in instead, and you get the same card.",
+          "A post that only members can see won't always open for RecipePrinter the way a public one does. Copy the text of the post and paste that in instead, and you get the same card.",
       },
       {
         question: "Do I need to connect my Facebook account?",
         answer:
-          "No. RecipePrinter does not ask for access to your account, your groups, or your saved posts. It works from a link or from text you paste across.",
+          "No. RecipePrinter doesn't ask for access to your account, your groups, or your saved posts. It works from a link or from text you paste across.",
       },
       {
         question: "Can I keep the recipe if the post is deleted?",
         answer:
-          "Yes, and that is most of the reason to print it. Once the card is printed or saved as a PDF it does not depend on the post, the group, or the account that shared it.",
+          "Yes, and that is most of the reason to print it. Once the card is printed or saved as a PDF it doesn't depend on the post, the group, or the account that shared it.",
       },
       {
         question: "How do I print a Facebook recipe from my phone?",
@@ -851,7 +851,7 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
     howTo: [
       {
         name: "Copy the video's link",
-        text: "Tap Share on the video and choose Copy link. That is the link to the video itself, which is the only one you need.",
+        text: "Tap Share on the video and choose Copy link. That's the link to the video itself, and it's the only one you need.",
       },
       {
         name: "Paste it in",
@@ -871,7 +871,7 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
         heading: "A video is a demonstration. A card is a reference.",
         image: "counter-card",
         body:
-          "Watching someone make it once is genuinely useful. Cooking along with it is a different job: scrubbing back fifteen seconds with a wet hand to check whether that was one teaspoon or two, while the video has already moved on to the plating. A printed card gives the amounts once and stays open at the right place for the whole hour you are in the kitchen.",
+          "Watching someone make it once is genuinely useful. Cooking along with it is a different job: scrubbing back fifteen seconds with a wet hand to check whether that was one teaspoon or two, while the video has already moved on to the plating. A printed card gives the amounts once and stays open at the right place for the whole hour you're in the kitchen.",
       },
       {
         heading: "The recipe is usually already written down",
@@ -890,7 +890,7 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
       {
         question: "Can RecipePrinter print a recipe straight from a TikTok?",
         answer:
-          "Yes. Paste the video's link and it reads the recipe from the caption and the pinned comment, which is where it is nearly always written.",
+          "Yes. Paste the video's link and it reads the recipe from the caption and the pinned comment, which is where it's nearly always written.",
       },
       {
         question: "What if the amounts are only spoken in the video?",
@@ -900,7 +900,7 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
       {
         question: "What happens when the video disappears?",
         answer:
-          "A printed card does not depend on it. Videos come down, accounts go private, and sounds get pulled, and none of that reaches a recipe already in the box.",
+          "A printed card doesn't depend on it. Videos come down, accounts go private, and sounds get pulled, and none of that reaches a recipe already in the box.",
       },
       {
         question: "Can I save a TikTok recipe as a PDF?",
@@ -910,7 +910,7 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
       {
         question: "Do I need a TikTok account to use this?",
         answer:
-          "No. RecipePrinter works from the link, so there is nothing to connect and nothing to sign into on our side.",
+          "No. RecipePrinter works from the link, so there's nothing to connect and nothing to sign into on our side.",
       },
     ],
     links: [
@@ -955,7 +955,7 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
       },
       {
         name: "Open the file here",
-        text: "Drop the file into the box above. It is read in your browser and never uploaded, so the library does not leave your computer.",
+        text: "Drop the file into the box above. It's read in your browser and never uploaded, so the library doesn't leave your computer.",
       },
       {
         name: "Pick the ones worth printing",
@@ -974,10 +974,10 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
           "Ingredients, directions, the notes you added, prep and cook time, servings, the source it came from, and the categories you filed it under all carry over. A rating and a difficulty do not, because neither belongs on a printed card. What you have been keeping in Paprika arrives as a recipe, not as a row in a list.",
       },
       {
-        heading: "It is read in your browser, not uploaded",
+        heading: "It's read in your browser, not uploaded",
         image: "card-in-box",
         body:
-          "The export file is opened and unpacked on your own machine. Nothing is sent to a server, no account is needed to do it, and the library is not stored anywhere afterwards. Open the same file twice and the queue recognises what is already in it rather than stacking up a second copy of everything.",
+          "The export file is opened and unpacked on your own machine. Nothing is sent to a server, no account is needed to do it, and the library isn't stored anywhere afterwards. Open the same file twice and the queue recognises what is already in it rather than stacking up a second copy of everything.",
       },
       {
         heading: "A collection that survives the app",
@@ -1000,7 +1000,7 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
       {
         question: "Can I print my whole Paprika library at once?",
         answer:
-          "You can, though most people do not want to. The export arrives as a list to choose from, so you can add just the recipes you actually cook to the print queue and print those in one job.",
+          "You can, though most people don't want to. The export arrives as a list to choose from, so you can add just the recipes you actually cook to the print queue and print those in one job.",
       },
       {
         question: "Do the notes and categories I added come across?",
@@ -1057,7 +1057,7 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
         heading: "The description holds the recipe, and everything else",
         image: "steps",
         body:
-          "Under the video there is the recipe, and around it the discount code, the equipment links, the chapter timestamps, the other channels, and a paragraph about the newsletter. RecipePrinter keeps the ingredients with their amounts, the numbered steps, the times, and the servings, and leaves the rest where it is.",
+          "Under the video there's the recipe, and around it the discount code, the equipment links, the chapter timestamps, the other channels, and a paragraph about the newsletter. RecipePrinter keeps the ingredients with their amounts, the numbered steps, the times, and the servings, and leaves the rest where it is.",
       },
       {
         heading: "Twenty minutes of video, one sheet of paper",
@@ -1076,12 +1076,12 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
       {
         question: "Can RecipePrinter get the recipe from any cooking video?",
         answer:
-          "It works from the recipe the channel wrote down, which usually means the description and sometimes a pinned comment. When a video has no written recipe anywhere, there is nothing to read from, and you can paste your own notes in instead.",
+          "It works from the recipe the channel wrote down, which usually means the description and sometimes a pinned comment. When a video has no written recipe anywhere, there's nothing to read from, and you can paste your own notes in instead.",
       },
       {
         question: "Can I print a recipe from a YouTube Short?",
         answer:
-          "Yes, the same way. Shorts have descriptions and pinned comments too. They tend to be briefer, so there is more often a line to fill in by hand before you print.",
+          "Yes, the same way. Shorts have descriptions and pinned comments too. They tend to be briefer, so there's more often a line to fill in by hand before you print.",
       },
       {
         question: "Can I save a YouTube recipe as a PDF?",
@@ -1096,7 +1096,7 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
       {
         question: "Will the card link back to the video?",
         answer:
-          "It can, and that is your call. The video's link can print on the card, so the channel is credited and the demonstration is one tap away when you want to see a technique again.",
+          "It can, and that's your call. The video's link can print on the card, so the channel is credited and the demonstration is one tap away when you want to see a technique again.",
       },
     ],
     links: [
@@ -1234,7 +1234,7 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
         text: "A 4 by 6 card for the box or a letter page for the binder. The copy goes in the kitchen, and the original stays where it is.",
       },
       {
-        name: "Gather them when you are ready",
+        name: "Gather them when you're ready",
         text: "Once there are enough, they can become a bound cookbook with a cover, chapters and a table of contents.",
       },
     ],
@@ -1243,7 +1243,7 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
         heading: "Keep the original, cook from the copy",
         image: "counter-card",
         body:
-          "A printed copy does the kitchen work: the counter, the splashes, the folding into a binder, the stuck-to-the-fridge afternoons. The handwritten card stays wherever you keep it, exactly as it is. You are still cooking their recipe every time you use the copy.",
+          "A printed copy does the kitchen work: the counter, the splashes, the folding into a binder, the stuck-to-the-fridge afternoons. The handwritten card stays wherever you keep it, exactly as it is. You're still cooking their recipe every time you use the copy.",
       },
       {
         heading: "The handwriting comes along",
@@ -1256,7 +1256,7 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
       {
         question: "Will it read my grandmother's handwriting?",
         answer:
-          "Usually. Faded pencil and cursive are the hard ones, and it will not always catch every word. Whatever it does read arrives as an editable recipe, so you are tidying a line here and there rather than typing the card out from scratch.",
+          "Usually. Faded pencil and cursive are the hard ones, and it won't always catch every word. Whatever it does read arrives as an editable recipe, so you're tidying a line here and there rather than typing the card out from scratch.",
       },
       {
         question: "What if the card is too faded to read?",
@@ -1359,7 +1359,7 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
       {
         question: "Can other people in the family add theirs?",
         answer:
-          "Not directly, there is no invite link. They can send you the recipe however they have it though, a photo of a card, a screenshot, a text message, and you add it to the book from there.",
+          "Not directly, there's no invite link. They can send you the recipe however they have it though, a photo of a card, a screenshot, a text message, and you add it to the book from there.",
       },
       {
         question: "How do I actually get it printed and bound?",
@@ -1374,7 +1374,7 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
       {
         question: "What does a cookbook cost?",
         answer:
-          "$19.99 once for the cookbook, and that cookbook stays yours to edit and add to afterwards. After that it is whatever the printing costs: paper and ink at home, or whatever the print shop charges.",
+          "$19.99 once for the cookbook, and that cookbook stays yours to edit and add to afterwards. After that it's whatever the printing costs: paper and ink at home, or whatever the print shop charges.",
       },
     ],
     links: [
@@ -1477,7 +1477,7 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
       {
         question: "How do I choose between them?",
         answer:
-          "By where the recipe ends up. If you cook from a screen, that is what Just the Recipe does. If it ends up on paper, in a card box or a binder, that is what RecipePrinter does.",
+          "By where the recipe ends up. If you cook from a screen, that's what Just the Recipe does. If it ends up on paper, in a card box or a binder, that is what RecipePrinter does.",
       },
       {
         question: "What does each one cost?",
@@ -1487,12 +1487,12 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
       {
         question: "Can I bring my saved Just the Recipe recipes over?",
         answer:
-          "Not directly. There is no export from Just the Recipe that RecipePrinter can read, so the quickest route is pasting the original links in again. Paprika export files and CookPilot libraries do come straight across.",
+          "Not directly. There's no export from Just the Recipe that RecipePrinter can read, so the quickest route is pasting the original links in again. Paprika export files and CookPilot libraries do come straight across.",
       },
       {
         question: "Does RecipePrinter have an app?",
         answer:
-          "No. It runs in any browser, on a phone as readily as a computer, so there is nothing to install and nothing to sign into before you print.",
+          "No. It runs in any browser, on a phone as readily as a computer, so there's nothing to install and nothing to sign into before you print.",
       },
     ],
     links: [
@@ -1531,13 +1531,13 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
         heading: "A card, a page, or the whole cookbook",
         proof: "card",
         body:
-          "ReciScan ends in a bound book from its own press, starting at $18 for fifty pages. RecipePrinter hands you the file: a 4 by 6 card for the box by the stove, a letter page for a binder, or a bound cookbook with a cover and chapters. Printing one card tonight does not rule out the book.",
+          "ReciScan ends in a bound book from its own press, starting at $18 for fifty pages. RecipePrinter hands you the file: a 4 by 6 card for the box by the stove, a letter page for a binder, or a bound cookbook with a cover and chapters. Printing one card tonight doesn't rule out the cookbook.",
       },
       {
         heading: "Nothing to install",
         image: "mobile-vs-desktop",
         body:
-          "ReciScan is an app you download to a phone. RecipePrinter is a web page, so a link, a photo or a block of pasted text becomes a printable recipe in the same browser you are reading this in, without an install or an account.",
+          "ReciScan is an app you download to a phone. RecipePrinter is a web page, so a link, a photo or a block of pasted text becomes a printable recipe in the same browser you're reading this in, without an install or an account.",
       },
     ],
     comparison: {
@@ -1579,7 +1579,7 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
       {
         question: "How do I choose between them?",
         answer:
-          "By what you want at the end. If it is one bound cookbook of the whole collection, ReciScan prints and ships that. If it is recipes on paper you can cook from this week, in a box or a binder, that is RecipePrinter.",
+          "By what you want at the end. If it's one bound cookbook of the whole collection, ReciScan prints and ships that. If it's recipes on paper you can cook from this week, in a box or a binder, that's RecipePrinter.",
       },
       {
         question: "What does each one cost?",
@@ -1594,7 +1594,7 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
       {
         question: "What if I only want a few recipes, not a whole cookbook?",
         answer:
-          "You can. There is no minimum and nothing to finish: print one card, print three, come back in a month. The cookbook is there when you want it, and not before.",
+          "You can. There's no minimum and nothing to finish: print one card, print three, come back in a month. The cookbook is there when you want it, and not before.",
       },
     ],
     links: [

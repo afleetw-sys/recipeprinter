@@ -239,7 +239,7 @@ export const FAQ: FaqItem[] = [
   {
     question: "Can I print a recipe from a URL?",
     answer:
-      "Usually, yes. Paste a recipe link from a recipe website, food blog, or supported social post and RecipePrinter will turn it into a clean printable recipe card or page. If a site does not import cleanly, you can paste the recipe text directly or upload a screenshot instead.",
+      "Usually, yes. Paste a recipe link from a recipe website, food blog, or supported social post and RecipePrinter will turn it into a clean printable recipe card or page. If a site doesn't import cleanly, you can paste the recipe text directly or upload a screenshot instead.",
     guides: [
       "print-recipe-from-website",
       "just-the-recipe-alternative",
@@ -294,7 +294,7 @@ export const FAQ: FaqItem[] = [
   {
     question: "Why print recipes instead of cooking from a phone?",
     answer:
-      "Printed recipes do not lock, dim, run out of battery, disappear under notifications, or make you scroll with messy hands. They are also easier to mark up and keep.",
+      "Printed recipes don't lock, dim, run out of battery, disappear under notifications, or make you scroll with messy hands. They're also easier to mark up and keep.",
   },
   {
     question: "Can I print recipes without ads?",
@@ -315,7 +315,7 @@ export const FAQ: FaqItem[] = [
   {
     question: "Can I paste recipe text instead of using a URL?",
     answer:
-      "Yes. If you have a recipe from a text message, email, document, or website that does not import cleanly, paste the recipe text directly and RecipePrinter will structure it into a printable recipe card or page.",
+      "Yes. If you have a recipe from a text message, email, document, or website that doesn't import cleanly, paste the recipe text directly and RecipePrinter will structure it into a printable recipe card or page.",
   },
   {
     question: "Do I need an account?",
@@ -330,12 +330,12 @@ export const FAQ: FaqItem[] = [
   {
     question: "Is RecipePrinter free?",
     answer:
-      "Printing recipes is free and does not require an account. There are two optional one-time purchases: premium print themes, and the cookbook builder that turns a set of recipes into a bound book. Current prices are shown in the app before you buy.",
+      "Printing recipes is free and doesn't require an account. There are two optional one-time purchases: premium print themes, and the cookbook builder that turns a set of recipes into a bound book. Current prices are shown in the app before you buy.",
   },
   {
     question: "Is RecipePrinter a recipe app?",
     answer:
-      "Not really. RecipePrinter is not a recipe discovery app, meal planner, grocery app, nutrition tracker, or social network. It is built for what happens after you have already found a recipe worth making again.",
+      "Not really. RecipePrinter isn't a recipe discovery app, meal planner, grocery app, nutrition tracker, or social network. It's built for what happens after you've already found a recipe worth making again.",
   },
   {
     question: "What is the difference between CookPilot and RecipePrinter?",

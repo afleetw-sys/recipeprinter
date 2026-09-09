@@ -48,7 +48,7 @@ const POINTS: FeatureCard[] = [
     heading: "Nothing prints until you say so",
     image: "inline-editing",
     body:
-      "You see the card before it goes anywhere. Every line is yours to fix, and anything the recipe did not say is left out rather than guessed at.",
+      "You see the card before it goes anywhere. Every line is yours to fix, and anything the recipe didn't say is left out rather than guessed at.",
   },
 ];
 
@@ -60,7 +60,7 @@ const FAQS = [
   {
     question: "How does it tell the recipe from the story?",
     answer:
-      "It does not have to. The recipe a site publishes for search engines is separate from the page you read, so the ingredients and the method arrive on their own and the eight paragraphs about a holiday in Tuscany are never part of what came across.",
+      "It doesn't have to. The recipe a site publishes for search engines is separate from the page you read, so the ingredients and the method arrive on their own and the eight paragraphs about a holiday in Tuscany are never part of what came across.",
   },
   {
     question: "Why do some recipe links not import?",
@@ -70,7 +70,7 @@ const FAQS = [
   {
     question: "Does it change the recipe?",
     answer:
-      "No. Amounts, steps, notes, prep and cook time and servings come across as the source wrote them, and anything it cannot find is left out rather than guessed at. Every line is yours to correct on the card before it prints.",
+      "No. Amounts, steps, notes, prep and cook time and servings come across as the source wrote them, and anything it can't find is left out rather than guessed at. Every line is yours to correct on the card before it prints.",
   },
   {
     question: "What if the recipe only exists as a photo?",
@@ -133,7 +133,7 @@ const SOURCES: OverviewItem[] = [
   {
     icon: TextIcon,
     title: "Pasted text",
-    body: "From a message, an email, a document, or a site that will not import.",
+    body: "From a message, an email, a document, or a site that won't import.",
   },
   {
     icon: AppsIcon,
@@ -142,14 +142,12 @@ const SOURCES: OverviewItem[] = [
   },
 ];
 
-const RELATED_GUIDES = [
-  "print-recipe-from-website",
-  "convert-recipe-to-pdf",
-  "printable-recipe-card-generator",
-  "recipe-binder",
-]
-  .map((slug) => SEO_LANDING_PAGES.find((page) => page.slug === slug))
-  .filter((page): page is NonNullable<typeof page> => Boolean(page));
+// The shelf under "Start from what you have" was pointing at a PDF, recipe
+// cards and a binder, which are what you end up with, under a label that says
+// what you import. The source pages are the ones that finish that sentence.
+const SOURCE_GUIDES = SEO_LANDING_PAGES.filter(
+  (page) => page.pickerGroup === "source",
+);
 
 export default function HowItWorksPage() {
   return (
@@ -173,7 +171,7 @@ export default function HowItWorksPage() {
 
       <LandingSection id="sources-heading" heading="Start from what you have">
         <OverviewGrid items={SOURCES} columns={4} />
-        <PickerRow label="Guides by what you import" pages={RELATED_GUIDES} />
+        <PickerRow label="Guides by what you import" pages={SOURCE_GUIDES} />
       </LandingSection>
 
       <LandingSection id="faq-heading" heading="Questions about the import">
