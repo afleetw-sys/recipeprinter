@@ -48,7 +48,7 @@ const POINTS: FeatureCard[] = [
     heading: "Nothing prints until you say so",
     image: "inline-editing",
     body:
-      "You see the card before it goes anywhere, and every line is yours to fix. A word that came through wrong is a click away from right.",
+      "You see the card before it goes anywhere, and nothing on it is fixed. Change an amount, cut a step, add a note in your own words.",
   },
 ];
 
@@ -70,12 +70,12 @@ const FAQS = [
   {
     question: "Does it change the recipe?",
     answer:
-      "Where the recipe is already written out, no: amounts, steps, notes and times come across as the source wrote them. Reading one out of a video or a photograph is a harder job, and a line can come through wrong. Either way the card is yours to read over and fix before anything prints.",
+      "No. It copies rather than rewrites, so amounts, steps, notes and times arrive as the source wrote them. A photo or a video takes more reading than a written page does, and either way you see the finished card before anything prints.",
   },
   {
     question: "What if the recipe only exists as a photo?",
     answer:
-      "Upload it. A cookbook page, an old handwritten card, a screenshot of a Reel: RecipePrinter reads the recipe out of the picture. Photos straight off an iPhone are converted on the way in, so a HEIC file needs nothing done to it first.",
+      "A picture is enough. A cookbook page, an old handwritten card, a screenshot of a Reel: RecipePrinter reads the recipe out of it. Photos straight off an iPhone work as they are, HEIC and all.",
   },
 ];
 
