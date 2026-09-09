@@ -790,10 +790,10 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
           "Saving is a bookmark, and it's quick because that's all it needs to be. Recipes end up alongside everything else you meant to come back to, and a folder of thumbnails will not tell you which pasta was the good one. A printed card is filed the moment it comes off the printer, in a recipe box, a binder, or a folder by the stove.",
       },
       {
-        heading: "Paste in what the caption leaves out",
-        image: "paste-in-app",
+        heading: "The card outlasts the post",
+        image: "counter-card",
         body:
-          "Some creators run a recipe across a carousel, and the best tip in the whole thread is often a reply the creator left in the comments. Anything you can copy goes in as text, so the swap that only ever existed in a reply prints on the same sheet as the recipe.",
+          "Accounts go private, posts come down, and creators clear out old work, and none of that comes with any warning. A card that's already off the printer doesn't depend on the post it came from, or on you being able to find it again.",
       },
     ],
     faqs: [
@@ -818,9 +818,9 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
           "Yes. Add them one at a time, then print them together as a single job. The card size and the theme apply to every recipe waiting to print, so a week of dinners comes out matching.",
       },
       {
-        question: "What happens if the post is taken down?",
+        question: "Can I still get the recipe if the post is gone?",
         answer:
-          "Nothing, once you have printed it. Accounts go private, posts get deleted, and creators clear out old work. A card in the box doesn't depend on any of that.",
+          "Not from the link. Once a post is down there's nothing left for RecipePrinter to read, which is the case for printing it while it's there. If you'd rather not print straight away, save the PDF and the recipe is yours either way.",
       },
     ],
     links: [
