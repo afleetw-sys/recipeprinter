@@ -111,8 +111,8 @@ export default function AboutPage() {
           I&apos;ve already built the parser, so let&apos;s do it.
         </p>
         <p>
-          I started printing our favorites, the ones we&apos;d already cooked more than
-          once, and the first time I made one off a printed card I was hooked. It was so
+          I started printing our favorites, the ones we&apos;d already made more than
+          once, and the first time I cooked from a printed card I was hooked. It was so
           much easier. No scrolling up and down. My phone is always dead by dinner, so
           the screen is at its dimmest right when I need to read from it. It instantly
           improved my life. I was sold.
@@ -126,17 +126,16 @@ export default function AboutPage() {
 
       <LandingClose centered>
         <p className="text-ink-soft text-cp-body-lg leading-relaxed">
-          This whole thing only exists because people kept asking for something I had
-          already said no to, and they were right. So if there&apos;s something you wish it
-          did, or something that isn&apos;t working the way you expected, I&apos;d love to
-          hear it. Write to{" "}
+          This whole thing exists because people kept asking for something I&apos;d already
+          said no to, and they were right. So tell me what you want it to do. Write to{" "}
           <a
             href={`mailto:${CONTACT_EMAIL}`}
             className="font-bold text-ink hover:underline"
           >
             {CONTACT_EMAIL}
           </a>
-          . I read everything and I write back.
+          , or use the Give feedback button in the footer. I read everything, and
+          I&apos;m done turning down good ideas.
         </p>
       </LandingClose>
     </LandingFrame>
