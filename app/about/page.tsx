@@ -85,7 +85,7 @@ export default function AboutPage() {
       <LandingHero
         align="centered"
         h1="About RecipePrinter"
-        lede="Hi. I made RecipePrinter, and I didn&apos;t expect to. Six months ago every recipe I owned lived on a screen, and that suited me fine."
+        lede="Hi. I made RecipePrinter, and I didn&apos;t expect to. Six months ago every recipe I cooked lived on a screen, and I liked it that way."
         above={<Breadcrumb trail={TRAIL} />}
         actions={<LandingCta href="/" label="Start printing for free" />}
       />
