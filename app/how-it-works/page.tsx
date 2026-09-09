@@ -65,7 +65,7 @@ const FAQS = [
   {
     question: "Why do some recipe links not import?",
     answer:
-      "Usually the site is guarding itself against anything automated, or the post only opens for someone signed in, or the page never published its recipe in a form anything can read. RecipePrinter tells you which one it ran into. Whichever it is, paste the text or upload a screenshot and you'll get the same card.",
+      "Some sites block anything that isn't a person clicking. Some posts only open when you're signed in. And some pages never publish the recipe anywhere a machine can read it. RecipePrinter says which one it hit, so you can paste the text or upload a screenshot instead and still get the same card.",
   },
   {
     question: "Does it change the recipe?",
