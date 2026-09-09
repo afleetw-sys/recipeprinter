@@ -107,7 +107,7 @@ function Answers({ items }: { items: FaqItem[] }) {
                 aria-hidden
               />
             </summary>
-            <div className="mt-cp-3 border-t border-line pt-cp-3 text-ink-soft text-cp-body leading-relaxed">
+            <div className="mt-cp-3 text-ink-soft text-cp-body leading-relaxed">
               {answer}
               {guidePages.length > 0 && (
                 // The same chips the guide shelves use, rather than bold words

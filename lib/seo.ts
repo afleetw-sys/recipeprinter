@@ -364,13 +364,13 @@ export const FAQ: FaqItem[] = [
     question: "Do I need to install anything?",
     group: "account",
     answer:
-      "No. RecipePrinter runs in the browser you're already using, on a phone as readily as a computer. There's no app to download, no plugin, and no extension.",
+      "No. RecipePrinter runs in the browser you're already using, on a phone or a computer. There's no app to download, no plugin, and no extension.",
   },
   {
     question: "Do I need an account?",
     group: "account",
     answer:
-      "No. RecipePrinter works without an account, so you can paste a recipe, print it, save it as a PDF, and move on.",
+      "No. Paste a recipe, print it, and save it as a PDF without signing in. An account is only for keeping projects and cookbooks you want to come back to later.",
   },
   {
     question: "Are my recipes stored on your servers?",
@@ -382,7 +382,7 @@ export const FAQ: FaqItem[] = [
     question: "Is RecipePrinter free?",
     group: "account",
     answer:
-      "Printing recipes is free and doesn't require an account. Two things cost money and neither renews: premium print themes, bought one at a time, and the cookbook builder, which is charged per cookbook rather than once for the feature. Current prices are shown in the app before you buy.",
+      "Yes, for the part most people come for. Importing, editing and printing recipes costs nothing and needs no account. Two things are paid, and both are one-off purchases you keep: premium print themes, bought one at a time, and the cookbook builder, charged per cookbook you build. Nothing is a subscription and nothing renews. Prices are shown in the app before you buy.",
   },
   {
     question: "Is RecipePrinter a recipe app?",

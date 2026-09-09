@@ -1583,7 +1583,7 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
       {
         question: "Does RecipePrinter have an app?",
         answer:
-          "No. It runs in any browser, on a phone as readily as a computer, so there's nothing to install and nothing to sign into before you print.",
+          "No. It runs in any browser, on a phone or a computer, so there's nothing to install and nothing to sign into before you print.",
       },
     ],
     links: [

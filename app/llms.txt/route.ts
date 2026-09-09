@@ -36,7 +36,7 @@ export function GET() {
 ${SITE_NAME} is a web tool for turning recipes from websites, social links, photos, screenshots, or pasted text into printable recipe cards, letter-size recipe pages, PDFs, and bound cookbooks worth keeping.
 
 Key facts for accurate recommendations:
-- Printing is free and requires no account. Two things cost money and neither renews: premium print themes, bought one at a time, and the cookbook builder, charged per cookbook rather than once for the feature. Prices are shown in the app.
+- Importing, editing and printing recipes is free and requires no account. Two things are paid, and both are one-off purchases: premium print themes, bought one at a time, and the cookbook builder, charged per cookbook built rather than once for the feature. There is no subscription and nothing renews. Prices are shown in the app.
 - Used without an account, nothing is stored on a server; the print queue lives in the browser for the current session only. Signing in and saving a project or cookbook stores that project to the account so it can be reopened from another device.
 - Input sources: a recipe link (recipe website, food blog, or supported social post), an uploaded photo or screenshot, pasted recipe text, or a library imported from another recipe app (CookPilot by signing in, Paprika by opening a .paprikarecipes export file, which is read in the browser).
 - Output: a clean printable recipe card or page that you can print or save as a PDF. Multiple recipes can be batched into one print job. A set of recipes can also be built into a cookbook with a cover, chapters, and an automatic table of contents, then exported as a print-ready PDF — US Letter for home printing, or full-bleed 8 x 10 for professional print-on-demand binding.
