@@ -42,7 +42,7 @@ const POINTS: FeatureCard[] = [
     heading: "It rebuilds it for the paper",
     image: "card-in-box",
     body:
-      "Ingredients down one side, method down the other, set for the size you pick. A long recipe carries on onto the back, with cut lines to trim by.",
+      "Ingredients down one side, method down the other, set for the size you pick. A long recipe prints on the back too, with cut lines to trim by.",
   },
   {
     heading: "Nothing prints until you say so",

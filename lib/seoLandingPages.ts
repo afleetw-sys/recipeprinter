@@ -522,7 +522,7 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
       {
         question: "What happens when a recipe is too long for one card?",
         answer:
-          "It carries on onto the back of the same card instead of being cut short. Two-sided is on by default, so set your printer to print both sides flipped on the long edge and the front and back will line up.",
+          "The rest prints on the back of the same card instead of being cut short. Two-sided is on by default, so set your printer to print both sides flipped on the long edge and the front and back will line up.",
       },
       {
         question: "Can I fix a recipe before it prints?",

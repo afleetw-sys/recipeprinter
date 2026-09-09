@@ -106,7 +106,7 @@ const PRINT_CARDS: FeatureCard[] = [
     heading: "4 by 6 recipe cards or letter pages",
     image: "card-in-box",
     body:
-      "A 4 by 6 recipe card drops straight into a recipe box; a letter page goes into a binder. Cut lines give you a trim guide on card stock, and a recipe too long for one side continues on the back.",
+      "A 4 by 6 recipe card drops straight into a recipe box; a letter page goes into a binder. Cut lines give you a trim guide on card stock, and a recipe too long for one side prints on the back too.",
   },
   {
     // Batch and PDF were two cards saying the same thing from either end: how

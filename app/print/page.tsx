@@ -3128,7 +3128,7 @@ export default function PrintPage() {
         {hasRecipeBackSide && !projectMeta.meta.cookbookMode && (
           <Checkbox
               label="Two-sided"
-              hint="Longer recipes continue onto the back."
+              hint="Longer recipes print on the back too."
               checked={doubleSided}
               onChange={(event) => setDoubleSided(event.target.checked)}
           />
