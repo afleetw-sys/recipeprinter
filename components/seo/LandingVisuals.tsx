@@ -136,6 +136,21 @@ const PROOF_ASPECT = "3 / 2";
     row can name directly. Keying only by kind meant two rows asking for the
     same kind — on one page or across two — got the identical picture, which
     reads as one visual repeated rather than two claims. */
+// ─────────────────────────────────────────────────────────────────────────
+// Alt text names what the image shows. It does not inventory it.
+//
+// These ran to 40-84 words each, reading out recipe titles, cook times, serving
+// counts and button labels. Three problems with that. Every one of these images
+// sits in a row that already carries a heading and a paragraph making the same
+// point, so a screen reader read the argument and then heard it again. Alt is a
+// single unbroken string with no headings and nothing to skim, so there was no
+// way past it. And length buys nothing in image search, which wants the subject,
+// not the contents of a panel.
+//
+// So: the subject, in a line. Where the picture is an argument rather than a
+// depiction, the argument survives the trim: before-after keeps both sides and
+// keeps "26 pages" against "one card", because the contrast is the content.
+// ─────────────────────────────────────────────────────────────────────────
 export const FEATURE_IMAGES: Record<string, ProofImage> = {
   "multi-themes": {
     src: "/images/multi-themes.png",
@@ -145,14 +160,14 @@ export const FEATURE_IMAGES: Record<string, ProofImage> = {
     // composition already runs cards off both edges, so the crop takes more of
     // an edge that was cut on purpose rather than breaking a whole card.
     alt:
-      "One recipe, Burst Cherry Tomato Basil Chicken Rigatoni, printed as six cards in six different themes and fanned across a blue background. The same title, the same 45 minutes and serves 6, and the same ingredient list appear on every one, each set in a different typeface, border, and colour, with a cream serif version enlarged in front.",
+      "One recipe printed as six cards in six different print themes, each with its own typeface, border and colour.",
   },
   "counter-card": {
     src: "/images/crowded-counter.jpeg",
     width: 1800,
     height: 1245,
     alt:
-      "A printed Buffalo Chicken Bake card lying on a granite counter beside the cooking it belongs to: a board of shredded chicken with two forks in it, a measuring cup of buffalo sauce, a tub of greek yogurt, dijon mustard, three spice jars, and an empty baking dish.",
+      "A printed Buffalo Chicken Bake card on a kitchen counter beside the ingredients it calls for.",
   },
   "pdf-search": {
     src: "/images/pdf-search.png",
@@ -161,14 +176,14 @@ export const FEATURE_IMAGES: Record<string, ProofImage> = {
     // Wider than the 3:2 slot, so about 5% comes off each side. The window's
     // own edges sit just inside that, and the circled search field survives it.
     alt:
-      "A saved recipe PDF open in a document viewer, with sesame oil typed into the search field and the viewer reporting it found on 2 pages. Both matches are highlighted in the ingredient list of a Honey Garlic Salmon Stir Fry Noodles card, and a sidebar lists the pages they were found on.",
+      "A saved recipe PDF open in a document viewer, with a search for sesame oil finding it on two pages.",
   },
   "handwritten-card": {
     src: "/images/jackie-card.jpeg",
     width: 1800,
     height: 1350,
     alt:
-      "A handwritten recipe card for Peanut Butter Cookies, from Jackie (Nana), lying on a wooden board beside an open floral recipe box. The card is filled in by hand in cursive: cooking time, oven temperature, and an ingredient list running from flour and baking soda down to vanilla.",
+      "A handwritten Peanut Butter Cookies recipe card in cursive, lying beside an open floral recipe box.",
   },
   "mobile-vs-desktop": {
     src: "/images/mobile-vs-desktop.png",
@@ -178,35 +193,35 @@ export const FEATURE_IMAGES: Record<string, ProofImage> = {
     // bars sit well inside that, which is the only part that has to survive:
     // they are the proof this is a web page and not an app.
     alt:
-      "RecipePrinter open in two browsers at once. Behind, a desktop window with www.recipeprinter.com in the address bar, showing the Add recipes panel and two recipes ready to print. In front, a phone with recipeprinter.com in the address bar, running the same thing: a link field, an Add button, and two more recipes waiting below.",
+      "RecipePrinter open side by side in a desktop browser and a phone browser, running the same thing in both.",
   },
   "bound-cookbook": {
     src: "/images/cookbook-onboarding-hero.jpg",
     width: 1536,
     height: 1024,
     alt:
-      "A finished hardcover family cookbook lying open on a kitchen counter, a full-page photo of bourbon chicken on the left and the typed recipe on the right, with a checked spine stripe down the page edge and OUR FAVORITE RECIPES along the foot.",
+      "A finished hardcover family cookbook lying open on a counter, a full-page photo facing the typed recipe.",
   },
   "cookpilot-export": {
     src: "/images/cookpilot-export.png",
     width: 1600,
     height: 957,
     alt:
-      "RecipePrinter open at the Add recipes panel with the Recipe apps tab selected, showing a signed-in CookPilot library of 64 recipes and an Add all link. A search box sits above the list: The Best Homemade Sloppy Joes, 25 minutes and serves 3, is marked Added, with sheet pan and Chicken Chow Mein below it waiting on their Add buttons. The Ready to print panel alongside holds three cards, Buffalo Chicken Dip, Bruschetta Recipe and The Best Homemade Sloppy Joes, above a Preview button.",
+      "A CookPilot library of 64 recipes open in RecipePrinter, with recipes being added to the print queue alongside.",
   },
   "inline-editing": {
     src: "/images/inline-editing.png",
     width: 1600,
     height: 957,
     alt:
-      "RecipePrinter open at recipeprinter.com with a Bruschetta Recipe card in the middle of the deck. One ingredient line is open for editing and reads 1/2 tsp sea salt, circled by hand, with the formatting bar floating just above it: heading, body text, bold and italic. Print setup runs down the right with the card size, a recipe photo toggle, and a grid of print themes.",
+      "An ingredient line being edited directly on a recipe card, with the formatting bar open above it and print setup down the side.",
   },
   "show-photo": {
     src: "/images/show-photo.png",
     width: 1600,
     height: 957,
     alt:
-      "The same Best Homemade Sloppy Joes card printed twice. On the left it is text only, the ingredients down one column and the numbered steps down the other. On the right the same card carries a photograph of the sandwich in its top corner and the title wraps to two lines to make room for it. Between them sits the Every recipe panel with Recipe photo ticked and Recipe link unticked, an arrow running from it to each version.",
+      "The same recipe card printed twice, with and without a photo, set by a single toggle between them.",
   },
   "card-in-box": {
     src: "/images/recipe-card-in-box.jpg",
@@ -217,35 +232,35 @@ export const FEATURE_IMAGES: Record<string, ProofImage> = {
     // earlier portrait shot needed `objectPosition: 50% 30%` to save the title;
     // this crop does not, and leaving it in would push the plate off instead.
     alt:
-      "A printed Basil Pesto recipe card standing in an open floral recipe box on a wooden table, its ingredients and three numbered steps facing out, with tabbed dividers labelled Appetizers and Breakfast filed behind it and a brass RECIPES plate on the front of the box.",
+      "A printed Basil Pesto card standing in an open recipe box behind tabbed dividers.",
   },
   card: {
     src: "/images/cards-on-counter.jpeg",
     width: 1600,
     height: 1200,
     alt:
-      "Five printed recipe cards fanned across a wooden counter in different card designs, among them Caprese Pasta Salad, Korean Beef Bowl, Basil Pesto, and Bruschetta, beside an open recipe box of tabbed dividers holding a handwritten card from Jackie.",
+      "Five printed recipe cards in different designs fanned across a counter beside an open recipe box.",
   },
   steps: {
     src: "/images/seo-pasted-text.png",
     width: 2400,
     height: 1600,
     alt:
-      "A recipe pasted into RecipePrinter as one unbroken run of text, labelled pasted text, beside the finished card it becomes: Brown Butter Banana Bread, 55 minutes, serves 8, with seven ingredients and five numbered steps.",
+      "A recipe pasted in as one unbroken run of text, beside the finished card it becomes.",
   },
   "paste-in-app": {
     src: "/images/recipes-fight-back.png",
     width: 2400,
     height: 1436,
     alt:
-      "The RecipePrinter app open at recipeprinter.com with the Paste Text tab selected in the Add recipes panel. A Buffalo Chicken Bake recipe has been pasted straight into the recipe text box as plain lines: a title, then greek yogurt, buffalo sauce, dijon mustard, onion and garlic powder, paprika, and shredded cheddar. A hand-drawn circle marks the panel and the Add button below it. The Ready to print panel alongside is still empty.",
+      "A recipe pasted as plain lines into RecipePrinter's Paste Text box, ready to add.",
   },
   "before-after": {
     src: "/images/print-to-one.png",
     width: 2400,
     height: 1520,
     alt:
-      "The same Caprese Pasta Salad recipe two ways. On the left, a stack of blog pages captioned 26 pages, printed from the browser: navigation bars, a star rating, four paragraphs of preamble, a large advertisement slot, and a bulleted discussion of the ingredients. On the right, one RecipePrinter card captioned 1 card, printed from RecipePrinter: the title, 10 minutes, serves 10, a photo of the salad, the ingredients grouped into pasta salad and dressing, and three numbered steps."
+      "The same recipe two ways: a 26-page stack printed from the browser, beside one card printed from RecipePrinter.",
   },
 };
 

@@ -1675,7 +1675,7 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
       {
         question: "What does each one cost?",
         answer:
-          "ReciScan is free to use, with a $4.99 monthly subscription for covers and extras, and printed books starting at $18. RecipePrinter is free to print. Premium themes are $1.99 each and a cookbook is $19.99, bought one at a time and never renewing.",
+          "ReciScan is free to use, with a $4.99 monthly subscription for covers and extras, and printed books starting at $18. RecipePrinter is free to print. Premium themes are $1.99 and yours for life, and a cookbook is $19.99 for each one you build. Neither renews.",
       },
       {
         question: "Can RecipePrinter send me a printed cookbook?",

@@ -383,7 +383,7 @@ export const FAQ: FaqItem[] = [
     question: "Is RecipePrinter free?",
     group: "account",
     answer:
-      "Yes, for the part most people come for. Importing, editing and printing recipes costs nothing and needs no account. Two things are paid, and both are one-off purchases you keep: premium print themes, bought one at a time, and the cookbook builder, charged per cookbook you build. Nothing is a subscription and nothing renews. Prices are shown in the app before you buy.",
+      "Yes, for the part most people come for. Importing, editing and printing recipes costs nothing and needs no account. Two things are paid, and both are yours once you buy them: premium print themes, each one yours for life, and the cookbook builder, paid for per cookbook you build. Nothing is a subscription and nothing renews. Prices are shown before you buy.",
   },
   {
     question: "Is RecipePrinter a recipe app?",
