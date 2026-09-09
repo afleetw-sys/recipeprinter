@@ -22,32 +22,33 @@ export const metadata: Metadata = pageMetadata({
   path: "/how-it-works",
 });
 
-// Three facts about the machine, not three steps: they were numbered, which
-// promised an order the set does not have. Written for someone who cooks, not
-// someone who builds websites. The first used to say "structured data", which
-// is the true answer to a question nobody asks in those words.
+// The three things that happen to a recipe, in order: where it is taken from,
+// what is done to it, and who signs it off. They were a mechanism, a feature
+// and a benefit sitting together, which is a strange set to meet under "what
+// happens to a recipe" on a page called How it works. "Made to be cooked from"
+// is the argument for printing at all, not part of how the printing happens,
+// so it belongs on /features rather than here.
 //
-// "When a site says no" was a fourth of these and had no photograph to stand
-// on, so it lives in the FAQ below, where someone hitting a failed import will
-// actually go looking for it.
+// Written for someone who cooks. The first one used to say "structured data",
+// which is the true answer to a question nobody asks in those words.
 const POINTS: FeatureCard[] = [
   {
-    heading: "The recipe, not the page",
+    heading: "It takes the recipe, not the page",
     image: "before-after",
     body:
       "Most recipe sites keep a tidy copy of the recipe for Google to read. RecipePrinter takes that one, so the story, the ads and the comments never come with it.",
   },
   {
-    heading: "Sized for paper",
+    heading: "It rebuilds it for the paper",
     image: "card-in-box",
     body:
-      "Typeset for the size you pick, a 4 by 6 card or a letter page. A long recipe carries on onto the back, with cut lines to trim by.",
+      "Ingredients down one side, method down the other, set for the size you pick. A long recipe carries on onto the back, with cut lines to trim by.",
   },
   {
-    heading: "Made to be cooked from",
-    image: "counter-card",
+    heading: "Nothing prints until you say so",
+    image: "inline-editing",
     body:
-      "Paper does not lock, dim, or need a clean hand to scroll it. It sits by the hob, takes a splash, and gets written on.",
+      "You see the card before it goes anywhere. Every line is yours to fix, and anything the recipe did not say is left out rather than guessed at.",
   },
 ];
 
