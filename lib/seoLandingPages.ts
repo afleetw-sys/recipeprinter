@@ -787,7 +787,7 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
         heading: "Saved posts were never meant to be a recipe box",
         image: "card-in-box",
         body:
-          "Saving is a bookmark, and it's quick because that's all it needs to be. Recipes end up alongside everything else you meant to come back to, and a folder of thumbnails will not tell you which pasta was the good one. A printed card is filed the moment it comes off the printer, in a recipe box, a binder, or a folder by the stove.",
+          "Forty saved posts look much the same at a glance: a grid of good-looking dinners with nothing to say which one you actually loved. Printing makes you choose, and that is the useful part. What comes off the printer is the short list, and it goes where you cook, in a recipe box, a binder, or a folder by the stove.",
       },
       {
         heading: "The card outlasts the post",
