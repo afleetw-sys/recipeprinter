@@ -4,7 +4,6 @@ import {
   LandingCta,
   LandingFrame,
   LandingHero,
-  LandingSection,
 } from "@/components/seo/LandingFrame";
 import { LandingClose } from "@/components/seo/LandingClose";
 import { Breadcrumb } from "@/components/seo/Breadcrumb";
@@ -13,7 +12,7 @@ import { absoluteUrl, breadcrumbNode, organizationNode, pageMetadata } from "@/l
 export const metadata: Metadata = pageMetadata({
   title: "About RecipePrinter",
   description:
-    "Learn why I built RecipePrinter, a free tool for printing recipes from websites as clean recipe cards and PDFs without ads, clutter, or wasted pages.",
+    "The story behind RecipePrinter: how someone who only ever kept recipes on a screen ended up building a free tool for printing them as clean recipe cards and PDFs.",
   path: "/about",
 });
 
@@ -21,6 +20,8 @@ const TRAIL = [
   { name: "Home", href: "/" },
   { name: "About", href: "/about" },
 ];
+
+const CONTACT_EMAIL = "recipeprinter@goodproblem.studio";
 
 /**
  * An AboutPage node with the Organization behind it, which this page carried
@@ -43,7 +44,7 @@ const JSON_LD = {
       url: absoluteUrl("/about"),
       name: "About RecipePrinter",
       description:
-        "Why RecipePrinter exists: a free tool for printing recipes from websites as clean recipe cards and PDFs.",
+        "Why RecipePrinter exists, told by the person who built it: a digital-only recipe keeper who kept being asked to print, said no for months, and then got hooked.",
       inLanguage: "en",
     },
     organizationNode(),
@@ -53,11 +54,11 @@ const JSON_LD = {
   ],
 };
 
-function Prose({ children }: { children: React.ReactNode }) {
+function InlineLink({ href, children }: { href: string; children: React.ReactNode }) {
   return (
-    <div className="flex max-w-[46rem] flex-col gap-cp-4 text-ink-soft text-cp-body-lg leading-relaxed">
+    <Link href={href} className="font-bold text-ink hover:underline">
       {children}
-    </div>
+    </Link>
   );
 }
 
@@ -72,83 +73,57 @@ export default function AboutPage() {
       <LandingHero
         align="centered"
         h1="About RecipePrinter"
-        lede="Printing a recipe off the internet should take one click and one sheet of paper. For years it took neither."
+        lede="Hi. I make RecipePrinter, and six months ago I would have told you I was never going to print a recipe in my life."
         above={<Breadcrumb trail={TRAIL} />}
         actions={<LandingCta href="/" label="Start printing for free" />}
       />
 
-      {/* The page was one unbroken column of short paragraphs with no headings
-          at all, so there was nothing to skim and nothing telling a reader or a
-          crawler what any part of it was about. Same story, three chapters. */}
-      <LandingSection id="why-heading" heading="Why this exists">
-        <Prose>
-          <p>
-            I built RecipePrinter after building CookPilot, a recipe app for saving
-            and organizing recipes. CookPilot solved one half of the problem: it
-            gave me somewhere to keep the recipes I wanted to remember.
-          </p>
-          <p>
-            The other half turned up every time I actually cooked. Not every recipe
-            deserves a place in a binder or a kitchen drawer, but the good ones end
-            up there anyway. They&apos;re the meals you make over and over, the ones
-            your family asks for by name, the ones that slowly collect notes,
-            substitutions and stains in the margins.
-          </p>
-          <p>
-            And printing them was still awful. Recipe websites are built for
-            browsers, not for printers: you ask for a recipe and get ads, pop-ups,
-            a photograph the size of a poster, and five sheets of paper for
-            something that needed one.
-          </p>
-        </Prose>
-      </LandingSection>
-
-      <LandingSection id="what-heading" heading="What it does about it">
-        <Prose>
-          <p>
-            Paste a recipe link, upload a screenshot or a photo, paste the text, or
-            bring over a library you already keep in CookPilot or Paprika.
-            RecipePrinter turns any of it into a clean printable recipe card or PDF,
-            set for a real kitchen rather than a browser window.
-          </p>
-          <p>
-            From there it is yours: print from a website, save recipes as PDFs,
-            fill a{" "}
-            <Link href="/recipe-binder" className="font-bold text-ink hover:underline">
-              recipe binder
-            </Link>
-            , build a{" "}
-            <Link href="/family-recipe-book" className="font-bold text-ink hover:underline">
-              family cookbook
-            </Link>
-            , or just keep the ones you cook somewhere easier to reach than an open
-            tab. No ads, no clutter, no wasted paper.
-          </p>
-        </Prose>
-      </LandingSection>
-
-      <LandingSection id="cookpilot-heading" heading="RecipePrinter and CookPilot">
-        <Prose>
-          <p>
-            They are two halves of the same habit. CookPilot is for collecting
-            recipes and making them work in real life: substitutions, notes,
-            adjustments. RecipePrinter is for the ones that have earned a place off
-            the screen.
-          </p>
-          <p>
-            You can use RecipePrinter on its own and never touch CookPilot. If you
-            do keep recipes there, they come across in a few clicks.
-          </p>
-        </Prose>
-      </LandingSection>
+      {/* One block, not a ladder of headings. The last version broke the same
+          story into three titled sections, which gave a crawler something to
+          read but turned a personal account into a document with chapters.
+          Headings are for pages you skim; this one is meant to be read
+          straight through, so it is a single column of paragraphs at reading
+          width and the page's only <h2> is the one at the close. */}
+      <div className="flex max-w-[46rem] flex-col gap-cp-5 text-ink-soft text-cp-body-lg leading-relaxed">
+        <p>
+          I was a die hard digital recipe organizer. I built CookPilot, a recipe app,
+          to help me adapt recipes to real life, mostly because I was forever telling
+          ChatGPT that I was out of this or short on that.
+        </p>
+        <p>
+          I shared it with friends and family, and the same question kept coming
+          back. This is great, but can I print them? Or{" "}
+          <InlineLink href="/family-recipe-book">turn them into a cookbook</InlineLink>?
+          I lived digital. It&apos;s all I ever knew, so I rejected the idea for a long
+          time. The feedback kept coming anyway. Eventually I thought, alright, I&apos;ve
+          already built the parser, so let&apos;s do it.
+        </p>
+        <p>
+          I started printing my own favorite recipes, and after cooking with one maybe
+          twice, I was hooked. It was so much easier. No scrolling up and down. My
+          phone is always dead by dinner, so the brightness is right down at the point
+          I actually need to read something. It instantly improved my life. I was sold.
+        </p>
+        <p>
+          Now I use both. CookPilot is where I keep recipes I might make and change
+          things on the fly. Everything we cook on repeat gets{" "}
+          <InlineLink href="/how-it-works">printed with RecipePrinter</InlineLink>.
+        </p>
+      </div>
 
       <LandingClose>
-        <p className="text-ink-soft text-cp-body leading-relaxed">
-          Curious about the mechanics?{" "}
-          <Link href="/how-it-works" className="font-bold text-ink hover:underline">
-            See how it works
-          </Link>
-          .
+        <p className="max-w-[46rem] text-ink-soft text-cp-body leading-relaxed">
+          This whole thing only exists because people kept asking for something I had
+          already said no to, and they were right. So if there&apos;s something you wish it
+          did, or something that isn&apos;t working the way you expected, I&apos;d love to
+          hear it. Write to{" "}
+          <a
+            href={`mailto:${CONTACT_EMAIL}`}
+            className="font-bold text-ink hover:underline"
+          >
+            {CONTACT_EMAIL}
+          </a>
+          . I read everything and I write back.
         </p>
       </LandingClose>
     </LandingFrame>

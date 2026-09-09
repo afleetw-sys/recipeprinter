@@ -160,7 +160,7 @@ export const FEATURE_IMAGES: Record<string, ProofImage> = {
     // composition already runs cards off both edges, so the crop takes more of
     // an edge that was cut on purpose rather than breaking a whole card.
     alt:
-      "One recipe printed as six cards in six different print themes, each with its own typeface, border and colour.",
+      "One recipe printed as six cards in six different print themes, each with its own typeface, border and color.",
   },
   "counter-card": {
     src: "/images/crowded-counter.jpeg",

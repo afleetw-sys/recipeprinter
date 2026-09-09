@@ -12,7 +12,7 @@ const LAST_MODIFIED: Record<string, string> = {
   "/how-it-works": "2026-09-09",
   "/features": "2026-09-09",
   "/faq": "2026-09-09",
-  "/about": "2026-07-02",
+  "/about": "2026-09-09",
   "/privacy": "2026-09-04",
   "/terms": "2026-09-04",
   "/printable-recipe-card-generator": "2026-08-01",
