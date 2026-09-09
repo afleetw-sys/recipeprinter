@@ -5,13 +5,14 @@ import {
   LandingHero,
   LandingSection,
 } from "@/components/seo/LandingFrame";
-import { HowItWorks } from "@/components/seo/LandingVisuals";
+import { AppsIcon, ImageIcon, LinkIcon, TextIcon } from "@/components/icons";
 import { FaqSection } from "@/components/seo/FaqSection";
+import { OverviewGrid, type OverviewItem } from "@/components/seo/OverviewGrid";
 import { FeatureCards, type FeatureCard } from "@/components/seo/FeatureCards";
 import { PickerRow } from "@/components/seo/PickerRow";
 import { LandingClose } from "@/components/seo/LandingClose";
 import { Breadcrumb } from "@/components/seo/Breadcrumb";
-import { absoluteUrl, breadcrumbNode, howToNode, pageMetadata } from "@/lib/seo";
+import { absoluteUrl, breadcrumbNode, pageMetadata } from "@/lib/seo";
 import { SEO_LANDING_PAGES } from "@/lib/seoLandingPages";
 
 export const metadata: Metadata = pageMetadata({
@@ -21,23 +22,32 @@ export const metadata: Metadata = pageMetadata({
   path: "/how-it-works",
 });
 
-// These used to read add a recipe, it becomes printable, print it, which is how
-// a printer works rather than how this one does, and says nothing a reader did
-// not know before clicking. What is actually worth explaining is the mechanism:
-// where the recipe comes from, why the story does not come with it, and what
-// happens when a site will not give it up.
-const STEPS = [
+// Three facts about the machine, not three steps: they were numbered, which
+// promised an order the set does not have. Written for someone who cooks, not
+// someone who builds websites. The first used to say "structured data", which
+// is the true answer to a question nobody asks in those words.
+//
+// "When a site says no" was a fourth of these and had no photograph to stand
+// on, so it lives in the FAQ below, where someone hitting a failed import will
+// actually go looking for it.
+const POINTS: FeatureCard[] = [
   {
-    name: "It reads the recipe, not the page",
-    text: "Most recipe sites publish the recipe as structured data so search engines can show it. That is the first thing RecipePrinter looks for, which is why the story above it, the ads beside it, and the comments below it never come across: they were never part of what it read.",
+    heading: "The recipe, not the page",
+    image: "before-after",
+    body:
+      "Most recipe sites keep a tidy copy of the recipe for Google to read. RecipePrinter takes that one, so the story, the ads and the comments never come with it.",
   },
   {
-    name: "When a site will not give it up",
-    text: "Some pages answer an automated request with a bot challenge, and some posts are only visible to someone signed in. RecipePrinter says so rather than printing something half-read, and the recipe still goes in as a photo, a screenshot, or pasted text.",
+    heading: "Sized for paper",
+    image: "card-in-box",
+    body:
+      "Typeset for the size you pick, a 4 by 6 card or a letter page. A long recipe carries on onto the back, with cut lines to trim by.",
   },
   {
-    name: "It is set for paper, not for a screen",
-    text: "The recipe is typeset for the size you pick, a 4 by 6 card or a letter page. A recipe too long for one side carries on onto the back, and cut lines give you a trim guide on card stock.",
+    heading: "Made to be cooked from",
+    image: "counter-card",
+    body:
+      "Paper does not lock, dim, or need a clean hand to scroll it. It sits by the hob, takes a splash, and gets written on.",
   },
 ];
 
@@ -73,10 +83,10 @@ const TRAIL = [
   { name: "How it works", href: "/how-it-works" },
 ];
 
-// This is the page on the site most literally about a procedure, and it was the
-// only explainer emitting no structured data at all. HowTo rich results are
-// largely retired, but the markup still feeds entity understanding and the
-// answer engines, which is why the landing template emits it too.
+// HowTo came off with the numbering. The three points are not a procedure, and
+// schema that says they are is a claim about the page that is not true; the
+// landing pages still emit it because their howTo arrays really are steps.
+// FAQPage is the one doing the work here, and it is the one Google still shows.
 const JSON_LD = {
   "@context": "https://schema.org",
   "@graph": [
@@ -92,7 +102,6 @@ const JSON_LD = {
     breadcrumbNode(
       TRAIL.map((crumb) => ({ name: crumb.name, url: absoluteUrl(crumb.href) })),
     ),
-    howToNode("How RecipePrinter works", STEPS),
     {
       "@type": "FAQPage",
       "@id": `${absoluteUrl("/how-it-works")}#faq`,
@@ -105,35 +114,30 @@ const JSON_LD = {
   ],
 };
 
-// Named like the features cards are named, and each one carries a photograph
-// that shows the source it describes rather than a picture of the idea. Three
-// of the four appear on /features too, which is fine: these are two pages doing
-// different jobs, and the honest picture of pasting text is the honest picture
-// of pasting text on either of them.
-const SOURCES: FeatureCard[] = [
+// Four ways in, side by side. These carried photographs until the three points
+// above took that treatment: two picture grids on one page made everything look
+// equally important, and a list of four entry points is a thing to scan, not a
+// thing to be shown.
+const SOURCES: OverviewItem[] = [
   {
-    heading: "A recipe link",
-    image: "before-after",
-    body:
-      "Paste a link from a recipe website, food blog, or supported social post and RecipePrinter pulls out the recipe, without the ads, the pop-ups, or the story above it.",
+    icon: LinkIcon,
+    title: "A recipe link",
+    body: "From a recipe site, a food blog, or a supported social post.",
   },
   {
-    heading: "A photo or a screenshot",
-    image: "handwritten-card",
-    body:
-      "A cookbook page, an old handwritten card, a screenshot of a Reel, a saved image. RecipePrinter reads the recipe out of the picture and sets it for paper.",
+    icon: ImageIcon,
+    title: "A photo or screenshot",
+    body: "A cookbook page, an old handwritten card, a screenshot of a Reel.",
   },
   {
-    heading: "Pasted text",
-    image: "paste-in-app",
-    body:
-      "A recipe from a message, an email, a document, or a site that does not import cleanly. Paste the text and it comes back as a recipe card or a page.",
+    icon: TextIcon,
+    title: "Pasted text",
+    body: "From a message, an email, a document, or a site that will not import.",
   },
   {
-    heading: "A library from another app",
-    image: "cookpilot-export",
-    body:
-      "Sign in to CookPilot, or open a Paprika export file, and add what you want to the print queue. A Paprika file is read in your browser, so nothing is uploaded.",
+    icon: AppsIcon,
+    title: "Another app",
+    body: "Sign in to CookPilot, or open a Paprika export file.",
   },
 ];
 
@@ -162,12 +166,12 @@ export default function HowItWorksPage() {
         actions={<LandingCta href="/" label="Start printing for free" />}
       />
 
-      <LandingSection id="steps-heading" heading="What happens to a recipe">
-        <HowItWorks steps={STEPS} />
+      <LandingSection id="points-heading" heading="What happens to a recipe">
+        <FeatureCards items={POINTS} />
       </LandingSection>
 
       <LandingSection id="sources-heading" heading="Start from what you have">
-        <FeatureCards items={SOURCES} columns={2} />
+        <OverviewGrid items={SOURCES} columns={4} />
         <PickerRow label="Guides by what you import" pages={RELATED_GUIDES} />
       </LandingSection>
 

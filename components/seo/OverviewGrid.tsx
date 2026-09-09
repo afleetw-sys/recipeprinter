@@ -23,13 +23,15 @@ export function OverviewGrid({
   columns = 3,
 }: {
   items: OverviewItem[];
-  /** Widest column count. Drop to 2 for a short set, so a tall card never sits
-      alone against an empty slot at the end of a row. */
-  columns?: 2 | 3;
+  /** Widest column count. Pick the one the items fill: three leaves one
+      stranded on a row of four, and four leaves two. */
+  columns?: 2 | 3 | 4;
 }) {
   return (
     <ul
-      className={`grid gap-cp-3 sm:grid-cols-2${columns === 3 ? " lg:grid-cols-3" : ""}`}
+      className={`grid gap-cp-3 sm:grid-cols-2${
+        columns === 3 ? " lg:grid-cols-3" : columns === 4 ? " lg:grid-cols-4" : ""
+      }`}
     >
       {items.map(({ icon: Icon, title, body }) => (
         <li key={title} className="card p-cp-5 flex flex-col gap-cp-3">
