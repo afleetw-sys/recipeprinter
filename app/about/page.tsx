@@ -97,7 +97,7 @@ export default function AboutPage() {
           width under the one h1. No h2 anywhere: the only way to add one is to
           put a title over part of the story, which is the thing being avoided,
           and a single heading over 300 words of prose is valid on its own. */}
-      <div className="mx-auto flex w-full max-w-[46rem] flex-col gap-cp-5 text-ink-soft text-cp-prose leading-relaxed">
+      <div className="mx-auto w-full max-w-[46rem] border-t border-line pt-cp-7 flex flex-col gap-cp-5 text-ink-soft text-cp-prose leading-relaxed">
         <p>
           I was a strictly digital recipe organizer. I built CookPilot, a recipe app,
           to help me adapt recipes to real life, mostly because I was forever telling
@@ -128,7 +128,7 @@ export default function AboutPage() {
       <LandingClose centered footnoteAbove>
         <p className="text-ink-soft text-cp-body-lg leading-relaxed">
           RecipePrinter exists because people kept asking, and they were right. So tell
-          me what you want next:{" "}
+          me what would improve RecipePrinter:{" "}
           <a
             href={`mailto:${CONTACT_EMAIL}`}
             className="font-bold text-ink hover:underline"
