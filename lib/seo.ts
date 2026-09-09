@@ -304,7 +304,7 @@ export const FAQ: FaqItem[] = [
     question: "Why print recipes instead of cooking from a phone?",
     group: "what-this-is",
     answer:
-      "Printed recipes don't lock, dim, run out of battery, disappear under notifications, or make you scroll with messy hands. They're also easier to mark up and keep.",
+      "Printed recipes don't lock, dim, run out of battery, disappear under notifications, or make you scroll with messy hands. They're also easier to mark up, and easier to hand on: a copy goes to a friend who asked for it, or into a box your kids take with them, without an account or an app on either end.",
   },
   {
     question: "Can I print recipes without ads?",
@@ -321,6 +321,7 @@ export const FAQ: FaqItem[] = [
     answer:
       "Yes. Upload a screenshot, cookbook page, old recipe card, or saved image and RecipePrinter will read the recipe and format it into a printable version.",
     guides: [
+      "print-recipe-from-photo",
       "reciscan-alternative",
     ],
   },
