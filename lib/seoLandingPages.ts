@@ -51,6 +51,18 @@ export type SeoLandingPage = {
    * changed" can never drift apart. Leave unset until a page is actually done.
    */
   lastReviewed?: string;
+  /**
+   * The day this page's rendered content last changed (YYYY-MM-DD), and what
+   * <lastmod> is built from.
+   *
+   * Separate from `lastReviewed` because the two are different facts and were
+   * drifting apart the moment anything was edited: `lastReviewed` means a human
+   * read the page end to end and signed it off, so bumping it to refresh a
+   * sitemap date would claim a sign-off that never happened, and leaving it
+   * alone told Google a page rewritten today was last touched in July. Edit
+   * copy, set this. Read the page through and approve it, set the other.
+   */
+  contentUpdated?: string;
   primaryKeyword: string;
   secondaryKeywords: string[];
   intent: "Utility SEO" | "Organization SEO" | "Preservation and Gift SEO";
@@ -61,7 +73,6 @@ export type SeoLandingPage = {
    * not the site's visual language.
    */
   layout?: "capture-first" | "guide-first";
-  eyebrow: string;
   statusNote?: string;
   initialImportMode?: ImportTab;
   importSubmitLabel?: string;
@@ -176,6 +187,7 @@ export type SeoLandingPage = {
 export const SEO_LANDING_PAGES: SeoLandingPage[] = [
   {
     slug: "print-recipe-from-website",
+    contentUpdated: "2026-09-09",
     lastReviewed: "2026-09-02",
     primaryKeyword: "print recipe from website",
     secondaryKeywords: [
@@ -195,7 +207,6 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
     shortLabel: "A website or blog",
     pickerGroup: "source",
     intent: "Utility SEO",
-    eyebrow: "Recipe printing tool",
     initialImportMode: "url",
     title: "Print a Recipe from Any Website",
     description:
@@ -276,6 +287,7 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
   },
   {
     slug: "print-recipe-without-ads",
+    contentUpdated: "2026-09-09",
     lastReviewed: "2026-09-02",
     primaryKeyword: "print recipe without ads",
     secondaryKeywords: [
@@ -287,7 +299,6 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
     shortLabel: "A page buried in ads",
     pickerGroup: "source",
     intent: "Utility SEO",
-    eyebrow: "Ad-free recipe printing",
     initialImportMode: "url",
     title: "Print Recipes Without Ads",
     description:
@@ -357,6 +368,7 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
   },
   {
     slug: "convert-recipe-to-pdf",
+    contentUpdated: "2026-09-09",
     lastReviewed: "2026-09-02",
     primaryKeyword: "convert recipe to PDF",
     secondaryKeywords: [
@@ -370,7 +382,6 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
     shortLabel: "A PDF",
     pickerGroup: "output",
     intent: "Utility SEO",
-    eyebrow: "Recipe PDF tool",
     initialImportMode: "url",
     title: "Free Recipe to PDF Converter",
     description:
@@ -440,6 +451,7 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
   },
   {
     slug: "printable-recipe-card-generator",
+    contentUpdated: "2026-09-09",
     lastReviewed: "2026-09-09",
     primaryKeyword: "printable recipe card generator",
     secondaryKeywords: [
@@ -457,7 +469,6 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
     shortLabel: "Recipe cards",
     pickerGroup: "output",
     intent: "Utility SEO",
-    eyebrow: "Recipe card maker",
     initialImportMode: "url",
     importSubmitLabel: "Make recipe card",
     title: "Free Recipe Card Printer and Maker",
@@ -532,6 +543,7 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
   },
   {
     slug: "print-pinterest-recipes",
+    contentUpdated: "2026-09-09",
     lastReviewed: "2026-09-07",
     primaryKeyword: "print Pinterest recipes",
     secondaryKeywords: [
@@ -546,7 +558,6 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
     shortLabel: "Pinterest",
     pickerGroup: "source",
     intent: "Utility SEO",
-    eyebrow: "Social recipe printer",
     initialImportMode: "url",
     captureReassurance: false,
     importHint:
@@ -634,6 +645,7 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
   },
   {
     slug: "print-instagram-recipes",
+    contentUpdated: "2026-09-09",
     primaryKeyword: "print Instagram recipes",
     secondaryKeywords: [
       "print recipe from Instagram",
@@ -646,7 +658,6 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
     shortLabel: "Instagram",
     pickerGroup: "source",
     intent: "Utility SEO",
-    eyebrow: "Social recipe printer",
     initialImportMode: "url",
     title: "Free Instagram Recipe Printer",
     description:
@@ -727,6 +738,7 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
   },
   {
     slug: "print-facebook-recipes",
+    contentUpdated: "2026-09-09",
     primaryKeyword: "print recipe from Facebook",
     secondaryKeywords: [
       "print recipes from Facebook",
@@ -737,7 +749,6 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
     shortLabel: "Facebook",
     pickerGroup: "source",
     intent: "Utility SEO",
-    eyebrow: "Social recipe printer",
     initialImportMode: "url",
     title: "Free Facebook Recipe Printer",
     description:
@@ -818,6 +829,7 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
   },
   {
     slug: "print-tiktok-recipes",
+    contentUpdated: "2026-09-09",
     primaryKeyword: "print TikTok recipes",
     secondaryKeywords: [
       "print recipe from TikTok",
@@ -829,7 +841,6 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
     shortLabel: "TikTok",
     pickerGroup: "source",
     intent: "Utility SEO",
-    eyebrow: "Social recipe printer",
     initialImportMode: "url",
     title: "Free TikTok Recipe Printer",
     description:
@@ -913,6 +924,8 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
     // which is what that field records. It stays out of the reviewed set until
     // someone has actually gone over the copy.
     slug: "print-paprika-recipes",
+    contentUpdated: "2026-09-09",
+
     primaryKeyword: "print Paprika recipes",
     secondaryKeywords: [
       "print recipe from Paprika",
@@ -926,7 +939,6 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
     shortLabel: "Paprika",
     pickerGroup: "source",
     intent: "Utility SEO",
-    eyebrow: "Recipe manager printer",
     initialImportMode: "apps",
     importSubmitLabel: "Open a Paprika file",
     title: "Print Paprika Recipes",
@@ -1004,6 +1016,7 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
   },
   {
     slug: "print-youtube-recipes",
+    contentUpdated: "2026-09-09",
     primaryKeyword: "print recipe from YouTube",
     secondaryKeywords: [
       "how to print recipe from YouTube",
@@ -1014,7 +1027,6 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
     shortLabel: "YouTube",
     pickerGroup: "source",
     intent: "Utility SEO",
-    eyebrow: "Video recipe printer",
     initialImportMode: "url",
     title: "Free YouTube Recipe Printer",
     description:
@@ -1095,6 +1107,7 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
   },
   {
     slug: "organize-recipes",
+    contentUpdated: "2026-09-09",
     captureHeading: "Start with one recipe",
     primaryKeyword: "organize recipes",
     secondaryKeywords: [
@@ -1107,7 +1120,6 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
     shortLabel: "An organized collection",
     pickerGroup: "output",
     intent: "Organization SEO",
-    eyebrow: "Recipe organization guide",
     title: "Organize Recipes from the Internet",
     description:
       "Turn scattered online recipes into printable cards, PDFs, binders, and collections you can cook from and keep.",
@@ -1134,6 +1146,7 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
   },
   {
     slug: "recipe-binder",
+    contentUpdated: "2026-09-09",
     captureHeading: "Start your binder",
     primaryKeyword: "recipe binder",
     secondaryKeywords: [
@@ -1146,7 +1159,6 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
     shortLabel: "A binder",
     pickerGroup: "output",
     intent: "Organization SEO",
-    eyebrow: "Recipe binder guide",
     statusNote:
       "Coming soon: dedicated binder-building features. For now, RecipePrinter helps you create the printable pages, cards, and PDFs that can go into a binder.",
     title: "Recipe Binder Ideas for Online Recipes",
@@ -1176,6 +1188,7 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
   },
   {
     slug: "preserve-family-recipes",
+    contentUpdated: "2026-09-09",
     // Signed off on the writing. One image is still owed: "Keep the original,
     // cook from the copy" wants a photograph of the printed copy lying beside
     // the handwritten card it came from, which is the whole claim in one frame
@@ -1199,7 +1212,6 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
     // the card in their hand, so capture stays in the hero.
     layout: "capture-first",
     heroImage: "handwritten-card",
-    eyebrow: "Family recipe guide",
     initialImportMode: "image",
     importSubmitLabel: "Make a printable copy",
     title: "Preserve Family Recipes",
@@ -1270,6 +1282,7 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
   },
   {
     slug: "family-recipe-book",
+    contentUpdated: "2026-09-09",
     // Signed off on the writing. The three feature rows still ask for `photo`
     // and `book` proof kinds that have no image behind them, so they render as
     // text-only blocks: there is no finished family cookbook to photograph yet.
@@ -1291,7 +1304,6 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
     shortLabel: "A family cookbook",
     pickerGroup: "output",
     intent: "Preservation and Gift SEO",
-    eyebrow: "Family recipe guide",
     title: "Family Recipe Book Ideas",
     description:
       "Create a family recipe book from printed recipes, old cards, online favorites, photos, and kitchen notes.",
@@ -1373,6 +1385,7 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
   },
   {
     slug: "just-the-recipe-alternative",
+    contentUpdated: "2026-09-09",
     lastReviewed: "2026-09-02",
     primaryKeyword: "Just the Recipe alternative",
     // Deliberately narrow. This page used to also claim "print recipe without
@@ -1392,7 +1405,6 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
     shortLabel: "Just the Recipe",
     pickerGroup: "comparison",
     intent: "Utility SEO",
-    eyebrow: "Recipe tool comparison",
     initialImportMode: "url",
     title: "Just the Recipe Alternative for Printing",
     description:
@@ -1491,6 +1503,7 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
   },
   {
     slug: "reciscan-alternative",
+    contentUpdated: "2026-09-09",
     lastReviewed: "2026-09-02",
     primaryKeyword: "ReciScan alternative",
     secondaryKeywords: [
@@ -1506,7 +1519,6 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
     // to try the thing now, so capture stays in the hero like the other
     // alternative page rather than waiting below an explanation.
     layout: "capture-first",
-    eyebrow: "Recipe preservation alternative",
     title: "ReciScan Alternative",
     description:
       "Comparing RecipePrinter and ReciScan: both read old recipe cards, and they differ on what comes out, what it costs, and how long it takes.",

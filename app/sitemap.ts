@@ -9,9 +9,9 @@ import { SEO_LANDING_PAGES } from "@/lib/seoLandingPages";
 // learns to discount.) New routes default to the most recent site-wide update.
 const LAST_MODIFIED: Record<string, string> = {
   "/": "2026-07-02",
-  "/how-it-works": "2026-07-08",
-  "/features": "2026-07-08",
-  "/faq": "2026-07-02",
+  "/how-it-works": "2026-09-09",
+  "/features": "2026-09-09",
+  "/faq": "2026-09-09",
   "/about": "2026-07-02",
   "/privacy": "2026-09-04",
   "/terms": "2026-09-04",
@@ -50,7 +50,7 @@ const staticRoutes: {
     changeFrequency: "monthly" as const,
     // A reviewed page's <lastmod> is the date we actually signed it off; the
     // rest keep the site-wide default rather than claiming a fresh edit.
-    lastModified: page.lastReviewed,
+    lastModified: page.contentUpdated ?? page.lastReviewed,
   })),
 ];
 

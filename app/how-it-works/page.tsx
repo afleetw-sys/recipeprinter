@@ -1,19 +1,14 @@
 import type { Metadata } from "next";
 import {
-  AppsIcon,
-  ImageIcon,
-  LinkIcon,
-  TextIcon,
-} from "@/components/icons";
-import {
   LandingCta,
   LandingFrame,
   LandingHero,
   LandingSection,
 } from "@/components/seo/LandingFrame";
-import { HeroProductPhoto, HowItWorks } from "@/components/seo/LandingVisuals";
-import { OverviewGrid, type OverviewItem } from "@/components/seo/OverviewGrid";
-import { GuidePicker } from "@/components/seo/GuidePicker";
+import { HowItWorks } from "@/components/seo/LandingVisuals";
+import { FeatureCards, type FeatureCard } from "@/components/seo/FeatureCards";
+import { PickerRow } from "@/components/seo/PickerRow";
+import { LandingClose } from "@/components/seo/LandingClose";
 import { Breadcrumb } from "@/components/seo/Breadcrumb";
 import { absoluteUrl, breadcrumbNode, howToNode, pageMetadata } from "@/lib/seo";
 import { SEO_LANDING_PAGES } from "@/lib/seoLandingPages";
@@ -72,26 +67,35 @@ const JSON_LD = {
   ],
 };
 
-const SOURCES: OverviewItem[] = [
+// Named like the features cards are named, and each one carries a photograph
+// that shows the source it describes rather than a picture of the idea. Three
+// of the four appear on /features too, which is fine: these are two pages doing
+// different jobs, and the honest picture of pasting text is the honest picture
+// of pasting text on either of them.
+const SOURCES: FeatureCard[] = [
   {
-    icon: LinkIcon,
-    title: "Paste a recipe link",
-    body: "Paste a link from a recipe website, food blog, or supported social post and RecipePrinter pulls out the recipe so you can print it without the ads, pop-ups, or extra pages.",
+    heading: "A recipe link",
+    image: "before-after",
+    body:
+      "Paste a link from a recipe website, food blog, or supported social post and RecipePrinter pulls out the recipe, without the ads, the pop-ups, or the story above it.",
   },
   {
-    icon: ImageIcon,
-    title: "Upload a photo or screenshot",
-    body: "Use a cookbook page, old recipe card, screenshot, or saved image. RecipePrinter reads the recipe and turns it into something clean you can print.",
+    heading: "A photo or a screenshot",
+    image: "handwritten-card",
+    body:
+      "A cookbook page, an old handwritten card, a screenshot of a Reel, a saved image. RecipePrinter reads the recipe out of the picture and sets it for paper.",
   },
   {
-    icon: TextIcon,
-    title: "Paste recipe text",
-    body: "Have a recipe from a message, email, document, or a site that does not import cleanly? Paste the text and RecipePrinter will format it into a printable recipe card or page.",
+    heading: "Pasted text",
+    image: "paste-in-app",
+    body:
+      "A recipe from a message, an email, a document, or a site that does not import cleanly. Paste the text and it comes back as a recipe card or a page.",
   },
   {
-    icon: AppsIcon,
-    title: "Bring a library from another app",
-    body: "Already keep recipes in CookPilot or Paprika? Sign in to CookPilot, or open a Paprika export file, then add what you want straight to your print queue. A Paprika file is read in your browser, so nothing is uploaded.",
+    heading: "A library from another app",
+    image: "cookpilot-export",
+    body:
+      "Sign in to CookPilot, or open a Paprika export file, and add what you want to the print queue. A Paprika file is read in your browser, so nothing is uploaded.",
   },
 ];
 
@@ -113,44 +117,23 @@ export default function HowItWorksPage() {
       />
 
       <LandingHero
+        align="centered"
         h1="From recipe link to printed recipe card"
         lede="RecipePrinter turns recipes from websites, social links, screenshots, photos, and text into printable recipe cards, pages, and PDFs you can cook from and keep."
         above={<Breadcrumb trail={TRAIL} />}
-        align="centered"
-        actions={<LandingCta href="/" />}
-        note="Printing is free and needs no account. Your queue lives in your browser. Sign in only if you want a project saved to reopen on another device."
-        aside={
-          <HeroProductPhoto
-            cardKey="pesto"
-            annotation="Printed from a recipe link"
-            priority
-            wide
-          />
-        }
+        actions={<LandingCta href="/" label="Start printing for free" />}
       />
 
       <LandingSection id="steps-heading" heading="Three steps">
         <HowItWorks steps={STEPS} />
       </LandingSection>
 
-      <LandingSection
-        id="sources-heading"
-        heading="Where the recipe can come from"
-        lede="RecipePrinter begins after discovery, when a recipe has earned a place on paper, in your kitchen, or in your collection."
-      >
-        <OverviewGrid items={SOURCES} />
+      <LandingSection id="sources-heading" heading="Start from what you have">
+        <FeatureCards items={SOURCES} columns={2} />
+        <PickerRow label="Guides by what you import" pages={RELATED_GUIDES} />
       </LandingSection>
 
-      <LandingSection
-        id="related-guides-heading"
-        heading="More ways to use RecipePrinter"
-      >
-        <GuidePicker pages={RELATED_GUIDES} />
-      </LandingSection>
-
-      <div>
-        <LandingCta href="/" />
-      </div>
+      <LandingClose />
     </LandingFrame>
   );
 }

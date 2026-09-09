@@ -7,7 +7,8 @@ import {
   LandingSection,
 } from "@/components/seo/LandingFrame";
 import { FeatureCards, type FeatureCard } from "@/components/seo/FeatureCards";
-import { GuidePicker } from "@/components/seo/GuidePicker";
+import { PickerRow } from "@/components/seo/PickerRow";
+import { LandingClose } from "@/components/seo/LandingClose";
 import { Breadcrumb } from "@/components/seo/Breadcrumb";
 import { COOKBOOK_PRICE_FALLBACK } from "@/lib/cookbookProduct";
 import { absoluteUrl, breadcrumbNode, pageMetadata } from "@/lib/seo";
@@ -123,24 +124,6 @@ const PRINT_CARDS: FeatureCard[] = [
   },
 ];
 
-function PickerRow({ label, pages }: { label: string; pages: typeof SEO_LANDING_PAGES }) {
-  return (
-    // A recessed tone rather than a rule. A hairline under the last card read
-    // as one more divider inside the section, so the guides looked like the
-    // end of the argument instead of a shelf of pages to go and read. Three
-    // percent ink over the page ground is enough to say "different thing"
-    // without asking for attention.
-    <div className="mt-cp-7 rounded-2xl bg-[var(--cp-surface-muted)] p-cp-5 sm:p-cp-6">
-      <p className="text-cp-label font-bold uppercase tracking-[0.08em] text-ink-soft">
-        {label}
-      </p>
-      <div className="mt-cp-4">
-        <GuidePicker pages={pages} />
-      </div>
-    </div>
-  );
-}
-
 // Grouped by what the reader is actually choosing between, which `intent`
 // could not express: it drives page layout, and it filed the Just the Recipe
 // comparison under "Utility SEO", putting a competitor page in the list of
@@ -189,28 +172,22 @@ export default function FeaturesPage() {
         <FeatureCards items={YOURS_CARDS} />
       </LandingSection>
 
-      {/* The button and the comparison line were two bare children of the
-          section ladder, so each took the full 96px a titled section gets
-          without being one. They read as two things left at the bottom rather
-          than as an ending. One block, a rule above it to close the page, and
-          the line sits with the button instead of adrift below it. */}
-      <div className="flex flex-col items-start gap-cp-5 border-t border-line pt-cp-7">
-        <LandingCta href="/" label="Start printing for free" />
+      <LandingClose>
   {comparisons.length > 0 && (
-          <p className="text-ink-soft text-cp-body leading-relaxed">
-            Comparing tools? See RecipePrinter next to{" "}
-            {comparisons.map((page, index) => (
-              <span key={page.slug}>
-                {index > 0 && (index === comparisons.length - 1 ? " or " : ", ")}
-                <Link href={`/${page.slug}`} className="font-bold text-ink hover:underline">
-                  {page.shortLabel}
-                </Link>
-              </span>
-            ))}
-            .
-          </p>
-        )}
-      </div>
+            <p className="text-ink-soft text-cp-body leading-relaxed">
+              Comparing tools? See RecipePrinter next to{" "}
+              {comparisons.map((page, index) => (
+                <span key={page.slug}>
+                  {index > 0 && (index === comparisons.length - 1 ? " or " : ", ")}
+                  <Link href={`/${page.slug}`} className="font-bold text-ink hover:underline">
+                    {page.shortLabel}
+                  </Link>
+                </span>
+              ))}
+              .
+            </p>
+          )}
+      </LandingClose>
 
     </LandingFrame>
   );
