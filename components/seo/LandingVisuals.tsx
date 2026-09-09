@@ -255,6 +255,13 @@ export const FEATURE_IMAGES: Record<string, ProofImage> = {
     alt:
       "A recipe pasted as plain lines into RecipePrinter's Paste Text box, ready to add.",
   },
+  instagram: {
+    src: "/images/instagram.png",
+    width: 2400,
+    height: 1436,
+    alt:
+      "An Instagram post with the recipe written out in its caption, beside the printed recipe card it becomes.",
+  },
   "before-after": {
     src: "/images/print-to-one.png",
     width: 2400,

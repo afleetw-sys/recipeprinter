@@ -779,7 +779,7 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
     featureSections: [
       {
         heading: "Reels are for finding dinner, cards are for making it",
-        image: "steps",
+        image: "instagram",
         body:
           "Thirty seconds of a Reel tells you whether you want to eat it, which is what it's there for. Cooking is a different job: the caption folds behind a more link, and you lose your place every time you put the phone down. RecipePrinter reads that caption and sets it out as ingredients with their amounts and numbered steps, on one sheet that stays where you left it.",
       },
