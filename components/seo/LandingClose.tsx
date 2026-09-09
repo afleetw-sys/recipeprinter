@@ -15,6 +15,7 @@ export function LandingClose({
   label = "Start printing for free",
   href = "/",
   centered = false,
+  footnoteAbove = false,
   children,
 }: {
   label?: string;
@@ -28,6 +29,15 @@ export function LandingClose({
    * far left of a centred column of text is not the end of anything.
    */
   centered?: boolean;
+  /**
+   * Put the footnote above the button rather than under it.
+   *
+   * Everywhere else the button is the close and the footnote is an aside, so
+   * the button leads. On a page whose ending is something the reader is meant
+   * to act on, the words are the close and the button is what you do after
+   * reading them, so that order reverses.
+   */
+  footnoteAbove?: boolean;
   /** A footnote that belongs with the button, not a section of its own. */
   children?: ReactNode;
 }) {
@@ -37,8 +47,9 @@ export function LandingClose({
         centered ? " mx-auto w-full max-w-[46rem]" : ""
       }`}
     >
+      {footnoteAbove && children}
       <LandingCta href={href} label={label} />
-      {children}
+      {!footnoteAbove && children}
     </div>
   );
 }

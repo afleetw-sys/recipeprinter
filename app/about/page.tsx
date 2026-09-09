@@ -126,7 +126,7 @@ export default function AboutPage() {
         </p>
       </div>
 
-      <LandingClose centered>
+      <LandingClose centered footnoteAbove>
         <p className="text-ink-soft text-cp-body-lg leading-relaxed">
           RecipePrinter exists because people kept asking, and they were right. So tell
           me what you want next:{" "}
@@ -136,8 +136,8 @@ export default function AboutPage() {
           >
             {CONTACT_EMAIL}
           </a>
-          , or the Give feedback button in the footer. I read all of it, and I&apos;m done
-          saying no to good ideas.
+          , or the Give feedback button in the footer. I read all of it, and I don&apos;t
+          brush things off anymore.
         </p>
       </LandingClose>
     </LandingFrame>
