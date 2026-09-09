@@ -75,7 +75,7 @@ const FAQS = [
   {
     question: "What if the recipe only exists as a photo?",
     answer:
-      "A picture is enough. A cookbook page, an old handwritten card, a screenshot of a Reel: RecipePrinter reads the recipe out of it. Photos straight off an iPhone work as they are, HEIC and all.",
+      "That's one of the ways in. A cookbook page, an old handwritten card, a screenshot of a Reel: RecipePrinter reads the recipe out of the picture.",
   },
 ];
 
