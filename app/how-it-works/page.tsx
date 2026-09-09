@@ -6,6 +6,7 @@ import {
   LandingSection,
 } from "@/components/seo/LandingFrame";
 import { HowItWorks } from "@/components/seo/LandingVisuals";
+import { FaqSection } from "@/components/seo/FaqSection";
 import { FeatureCards, type FeatureCard } from "@/components/seo/FeatureCards";
 import { PickerRow } from "@/components/seo/PickerRow";
 import { LandingClose } from "@/components/seo/LandingClose";
@@ -20,22 +21,50 @@ export const metadata: Metadata = pageMetadata({
   path: "/how-it-works",
 });
 
-// The three steps run through the shared HowItWorks strip, the same component
-// every landing page's "How it works" section uses, so the one page on the site
-// that is entirely about the steps is drawn the same way as the pages that
-// mention them in passing.
+// These used to read add a recipe, it becomes printable, print it, which is how
+// a printer works rather than how this one does, and says nothing a reader did
+// not know before clicking. What is actually worth explaining is the mechanism:
+// where the recipe comes from, why the story does not come with it, and what
+// happens when a site will not give it up.
 const STEPS = [
   {
-    name: "Add a recipe",
-    text: "Start with a recipe you already want to keep: a link, a photo, a screenshot, pasted text, or a library from another app.",
+    name: "It reads the recipe, not the page",
+    text: "Most recipe sites publish the recipe as structured data so search engines can show it. That is the first thing RecipePrinter looks for, which is why the story above it, the ads beside it, and the comments below it never come across: they were never part of what it read.",
   },
   {
-    name: "It becomes a printable recipe",
-    text: "The title, ingredients, instructions, notes, prep time, cook time, and servings are laid out for paper. Ads, pop-ups, and page clutter stay off.",
+    name: "When a site will not give it up",
+    text: "Some pages answer an automated request with a bot challenge, and some posts are only visible to someone signed in. RecipePrinter says so rather than printing something half-read, and the recipe still goes in as a photo, a screenshot, or pasted text.",
   },
   {
-    name: "Print it, or save the PDF",
-    text: "Preview it as a 4 by 6 card or a letter-size page, then print. Save as PDF keeps a copy on your device, and a queue of recipes prints in one job.",
+    name: "It is set for paper, not for a screen",
+    text: "The recipe is typeset for the size you pick, a 4 by 6 card or a letter page. A recipe too long for one side carries on onto the back, and cut lines give you a trim guide on card stock.",
+  },
+];
+
+// Questions about the machine, which is what this page is for. Deliberately not
+// the ones /faq already answers: no "do I need an account", no "can I make a
+// cookbook". These four are asked by someone who has read the steps above and
+// wants to know how far to trust them.
+const FAQS = [
+  {
+    question: "How does it tell the recipe from the story?",
+    answer:
+      "It does not have to. The recipe a site publishes for search engines is separate from the page you read, so the ingredients and the method arrive on their own and the eight paragraphs about a holiday in Tuscany are never part of what came across.",
+  },
+  {
+    question: "Why do some recipe links not import?",
+    answer:
+      "Three reasons, and RecipePrinter names the one it hit. The site answered with a bot challenge, the post is only visible to someone signed in, or the page never published a recipe in a form anything can read. In all three the recipe still goes in as pasted text or a screenshot.",
+  },
+  {
+    question: "Does it change the recipe?",
+    answer:
+      "No. Amounts, steps, notes, prep and cook time and servings come across as the source wrote them, and anything it cannot find is left out rather than guessed at. Every line is yours to correct on the card before it prints.",
+  },
+  {
+    question: "What if the recipe only exists as a photo?",
+    answer:
+      "Upload it. A cookbook page, an old handwritten card, a screenshot of a Reel: RecipePrinter reads the recipe out of the picture. Photos straight off an iPhone are converted on the way in, so a HEIC file needs nothing done to it first.",
   },
 ];
 
@@ -64,6 +93,15 @@ const JSON_LD = {
       TRAIL.map((crumb) => ({ name: crumb.name, url: absoluteUrl(crumb.href) })),
     ),
     howToNode("How RecipePrinter works", STEPS),
+    {
+      "@type": "FAQPage",
+      "@id": `${absoluteUrl("/how-it-works")}#faq`,
+      mainEntity: FAQS.map((item) => ({
+        "@type": "Question",
+        name: item.question,
+        acceptedAnswer: { "@type": "Answer", text: item.answer },
+      })),
+    },
   ],
 };
 
@@ -124,13 +162,17 @@ export default function HowItWorksPage() {
         actions={<LandingCta href="/" label="Start printing for free" />}
       />
 
-      <LandingSection id="steps-heading" heading="Three steps">
+      <LandingSection id="steps-heading" heading="What happens to a recipe">
         <HowItWorks steps={STEPS} />
       </LandingSection>
 
       <LandingSection id="sources-heading" heading="Start from what you have">
         <FeatureCards items={SOURCES} columns={2} />
         <PickerRow label="Guides by what you import" pages={RELATED_GUIDES} />
+      </LandingSection>
+
+      <LandingSection id="faq-heading" heading="Questions about the import">
+        <FaqSection items={FAQS} />
       </LandingSection>
 
       <LandingClose />
