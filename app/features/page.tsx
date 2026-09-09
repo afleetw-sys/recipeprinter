@@ -189,23 +189,28 @@ export default function FeaturesPage() {
         <FeatureCards items={YOURS_CARDS} />
       </LandingSection>
 
-      <div>
+      {/* The button and the comparison line were two bare children of the
+          section ladder, so each took the full 96px a titled section gets
+          without being one. They read as two things left at the bottom rather
+          than as an ending. One block, a rule above it to close the page, and
+          the line sits with the button instead of adrift below it. */}
+      <div className="flex flex-col items-start gap-cp-5 border-t border-line pt-cp-7">
         <LandingCta href="/" label="Start printing for free" />
+  {comparisons.length > 0 && (
+          <p className="text-ink-soft text-cp-body leading-relaxed">
+            Comparing tools? See RecipePrinter next to{" "}
+            {comparisons.map((page, index) => (
+              <span key={page.slug}>
+                {index > 0 && (index === comparisons.length - 1 ? " or " : ", ")}
+                <Link href={`/${page.slug}`} className="font-bold text-ink hover:underline">
+                  {page.shortLabel}
+                </Link>
+              </span>
+            ))}
+            .
+          </p>
+        )}
       </div>
-      {comparisons.length > 0 && (
-        <p className="text-ink-soft text-cp-body leading-relaxed">
-          Comparing tools? See RecipePrinter next to{" "}
-          {comparisons.map((page, index) => (
-            <span key={page.slug}>
-              {index > 0 && (index === comparisons.length - 1 ? " or " : ", ")}
-              <Link href={`/${page.slug}`} className="font-bold text-ink hover:underline">
-                {page.shortLabel}
-              </Link>
-            </span>
-          ))}
-          .
-        </p>
-      )}
 
     </LandingFrame>
   );
