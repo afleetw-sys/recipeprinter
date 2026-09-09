@@ -60,12 +60,12 @@ const FAQS = [
   {
     question: "How does it tell the recipe from the story?",
     answer:
-      "It doesn't have to. The recipe a site publishes for search engines is separate from the page you read, so the ingredients and the method arrive on their own and the eight paragraphs about a holiday in Tuscany are never part of what came across.",
+      "The two arrive separately, so there's nothing to sort. Most sites publish the recipe on its own for search engines to read, and that copy is all ingredients and method. The eight paragraphs about a holiday in Tuscany stay on the page where you found them.",
   },
   {
     question: "Why do some recipe links not import?",
     answer:
-      "Three reasons, and RecipePrinter names the one it hit. The site answered with a bot challenge, the post is only visible to someone signed in, or the page never published a recipe in a form anything can read. In all three the recipe still goes in as pasted text or a screenshot.",
+      "Usually the site is guarding itself against anything automated, or the post only opens for someone signed in, or the page never published its recipe in a form anything can read. RecipePrinter tells you which one it ran into. Whichever it is, paste the text or upload a screenshot and you'll get the same card.",
   },
   {
     question: "Does it change the recipe?",
