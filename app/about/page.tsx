@@ -95,12 +95,14 @@ export default function AboutPage() {
           read but turned a personal account into a document with chapters.
           Headings are for pages you skim; this one is meant to be read
           straight through, so it is a single column of paragraphs at reading
-          width and the page's only <h2> is the one at the close. */}
+          width under the one h1. No h2 anywhere: the only way to add one is to
+          put a title over part of the story, which is the thing being avoided,
+          and a single heading over 300 words of prose is valid on its own. */}
       <div className="mx-auto flex w-full max-w-[46rem] flex-col gap-cp-5 text-ink-soft text-cp-prose leading-relaxed">
         <p>
-          I was a die hard digital recipe organizer. I built CookPilot, a recipe app,
-          to help me adapt recipes to real life, mostly because I was forever telling
-          ChatGPT that I was out of this or short on that.
+          I built CookPilot, a recipe app, to help me adapt recipes to real life,
+          mostly because I was forever telling ChatGPT that I was out of this or short
+          on that.
         </p>
         <p>
           I shared it with friends and family, and the same question kept coming
