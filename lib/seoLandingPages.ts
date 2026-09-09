@@ -296,8 +296,8 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
       "clean printable recipe",
       "print recipe without clutter",
     ],
-    shortLabel: "A page buried in ads",
-    pickerGroup: "source",
+    shortLabel: "Pages without ads",
+    pickerGroup: "output",
     intent: "Utility SEO",
     initialImportMode: "url",
     title: "Print Recipes Without Ads",
@@ -539,6 +539,97 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
       { href: "/print-recipe-from-website", label: "Print from a website" },
       { href: "/print-recipe-without-ads", label: "Print without ads" },
       { href: "/recipe-binder", label: "Make a recipe binder" },
+    ],
+  },
+  {
+    // No lastReviewed: written today, not read through yet.
+    slug: "print-recipe-from-photo",
+    contentUpdated: "2026-09-09",
+    primaryKeyword: "print a recipe from a photo",
+    secondaryKeywords: [
+      "print recipe from photo",
+      "digitize handwritten recipes",
+      "scan recipe cards",
+      "print recipe from screenshot",
+      "recipe card scanner",
+      "photo of a recipe to printable",
+      "type up handwritten recipes",
+    ],
+    shortLabel: "A photo or screenshot",
+    pickerGroup: "source",
+    intent: "Utility SEO",
+    initialImportMode: "image",
+    importSubmitLabel: "Read the photo",
+    // The template's default hero is a card captioned "Printed from a recipe
+    // link", which is the one thing this page is not about.
+    heroImage: "counter-card",
+    heroAnnotation: "Printed from a photograph",
+    cookbookPitch: true,
+    title: "Print a Recipe from a Photo",
+    description:
+      "Photograph a handwritten card, a cookbook page, or a screenshot and RecipePrinter reads the recipe out of it and sets it for paper.",
+    h1: "Print a recipe from a photo",
+    anchor: "Print a recipe from a photo",
+    lede:
+      "A recipe box full of handwriting, a cookbook page you cannot take to the counter, a screenshot of a Reel. Photograph it and it comes back as a card you can print.",
+    howTo: [
+      {
+        name: "Photograph the recipe",
+        text: "Flat, in good light, close enough that the writing is legible. A phone camera is plenty; you are not scanning it, just letting the words be read.",
+      },
+      {
+        name: "Upload it",
+        text: "Drop the picture into the box above. Up to four images at a time, so a card with writing on the back goes in as one recipe. Photos straight off an iPhone are converted on the way in.",
+      },
+      {
+        name: "Read it over",
+        text: "The ingredients and the method come back as text you can edit. Handwriting is the hard case, so this is the moment to fix a word rather than after it prints.",
+      },
+      {
+        name: "Print it or keep the PDF",
+        text: "A 4 by 6 card for the recipe box, or a letter page for a binder. Save as PDF instead if you want the typed copy on your phone.",
+      },
+    ],
+    featureSections: [
+      {
+        heading: "The handwriting stays, the fading does not",
+        image: "handwritten-card",
+        body:
+          "An index card in someone's hand is the recipe and the person at once, and it is also thirty years of kitchen wear. Photographing it gives you a copy that does not fade, does not tear, and does not live in one box in one house. The original goes back where it was.",
+      },
+      {
+        heading: "A typed copy is a copy you can use",
+        image: "card-in-box",
+        body:
+          "A photograph of a recipe is a picture. You cannot search it, copy an amount out of it, or scale it. Read into text it becomes a recipe again: editable, printable at the size you want, and ready to go into a binder or a cookbook with the rest.",
+      },
+    ],
+    faqs: [
+      {
+        question: "Does it read handwriting?",
+        answer:
+          "It does, and neat writing goes better than a scrawl. Faded pencil and looping cursive are the hard cases, so read the card over before you print and fix any line that came through wrong.",
+      },
+      {
+        question: "What if the recipe runs onto the back of the card?",
+        answer:
+          "Photograph both sides and upload them together. Up to four images go in as one recipe, which also covers a cookbook page that spreads across two.",
+      },
+      {
+        question: "Do I need to scan it properly?",
+        answer:
+          "No. A phone photo taken flat in decent light is enough. A scanner is not going to help much beyond that, and it is a lot more work per card.",
+      },
+      {
+        question: "What happens to the photo afterwards?",
+        answer:
+          "Nothing you did not ask for. The recipe is what gets kept; the picture was only the way in.",
+      },
+    ],
+    links: [
+      { href: "/preserve-family-recipes", label: "Preserve family recipes" },
+      { href: "/printable-recipe-card-generator", label: "Recipe card printer" },
+      { href: "/family-recipe-book", label: "Build a family cookbook" },
     ],
   },
   {
