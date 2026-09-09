@@ -249,7 +249,7 @@ export const FAQ: FaqItem[] = [
     question: "Can I print a recipe from a URL?",
     group: "getting-in",
     answer:
-      "Usually, yes. Paste a recipe link from a recipe website, food blog, or supported social post and RecipePrinter will turn it into a clean printable recipe card or page. If a site doesn't import cleanly, you can paste the recipe text directly or upload a screenshot instead.",
+      "Yes. Paste a recipe link from a recipe website, food blog, or supported social post and RecipePrinter turns it into a clean printable recipe card or page. If a site doesn't import cleanly, paste the recipe text or upload a screenshot instead.",
     guides: [
       "print-recipe-from-website",
       "just-the-recipe-alternative",
@@ -277,7 +277,7 @@ export const FAQ: FaqItem[] = [
     question: "Can I print recipes from Pinterest, Instagram, or TikTok?",
     group: "getting-in",
     answer:
-      "Yes. Start with the original recipe link when one is available. For captions, screenshots, or saved social posts, you can paste the recipe text or upload a screenshot instead.",
+      "Yes. Paste the link to the post and RecipePrinter reads the recipe out of it. When the recipe lives in a caption or a comment rather than on a page the post links to, paste that text or upload a screenshot.",
     guides: [
       "print-pinterest-recipes",
       "print-instagram-recipes",
@@ -300,7 +300,7 @@ export const FAQ: FaqItem[] = [
     question: "Can I make a cookbook from my recipes?",
     group: "what-you-get",
     answer:
-      "Yes. Group your recipes into chapters, add a cover, and RecipePrinter builds a cookbook with an automatic table of contents. You can export it as a print-ready PDF to print at home in US Letter, or as a full-bleed 8 x 10 file to order a bound hardcover from a print-on-demand service like Lulu or Blurb.",
+      "Yes. RecipePrinter sorts the recipes into chapters, generates the cover, and builds the table of contents. Rearrange anything you want moved, then print it at home on US Letter or send the file to Lulu or Blurb for a hardcover or spiral bound cookbook.",
     guides: [
       "family-recipe-book",
       "preserve-family-recipes",
@@ -388,13 +388,13 @@ export const FAQ: FaqItem[] = [
     question: "Is RecipePrinter free?",
     group: "account",
     answer:
-      "Printing recipes is free and doesn't require an account. There are two optional one-time purchases: premium print themes, and the cookbook builder that turns a set of recipes into a bound book. Current prices are shown in the app before you buy.",
+      "Printing recipes is free and doesn't require an account. There are two optional one-time purchases: premium print themes, and the cookbook builder that turns a set of recipes into a bound cookbook. Current prices are shown in the app before you buy.",
   },
   {
     question: "Is RecipePrinter a recipe app?",
     group: "what-this-is",
     answer:
-      "Not really. RecipePrinter isn't a recipe discovery app, meal planner, grocery app, nutrition tracker, or social network. It's built for what happens after you've already found a recipe worth making again.",
+      "No, and that's deliberate. RecipePrinter isn't a recipe discovery app, meal planner, grocery app, nutrition tracker, or social network. It's built for what happens after you've already found a recipe worth making again.",
   },
   {
     question: "What is the difference between CookPilot and RecipePrinter?",
