@@ -128,16 +128,16 @@ export default function AboutPage() {
 
       <LandingClose centered>
         <p className="text-ink-soft text-cp-body-lg leading-relaxed">
-          This whole thing exists because people kept asking for something I&apos;d already
-          said no to, and they were right. So tell me what you want it to do. Write to{" "}
+          RecipePrinter exists because people kept asking, and they were right. So tell
+          me what you want next:{" "}
           <a
             href={`mailto:${CONTACT_EMAIL}`}
             className="font-bold text-ink hover:underline"
           >
             {CONTACT_EMAIL}
           </a>
-          , or use the Give feedback button in the footer. I read everything, and
-          I&apos;m done turning down good ideas.
+          , or the Give feedback button in the footer. I read all of it, and I&apos;m done
+          saying no to good ideas.
         </p>
       </LandingClose>
     </LandingFrame>
