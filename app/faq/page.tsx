@@ -70,12 +70,28 @@ function Answers({ items }: { items: FaqItem[] }) {
     // Not a <dl>. A definition list cannot have a <details> sitting between its
     // <dt> and <dd>, and the question/answer pairing a crawler needs is carried
     // by the FAQPage node above rather than by these tags.
-    <div className="flex flex-col">
+    // Cards, the way every other set of questions on the site is drawn: white
+    // on the page ground with a hairline round them, so one question is
+    // visibly a separate object from the next. The run of hairline rules this
+    // replaced separated them the way rows in a table are separated, which is
+    // not how anything else here groups things.
+    //
+    // `items-start` so a card sizes to its own content: without it, opening one
+    // stretches its neighbour to match and leaves a hole under the shorter answer.
+    <div className="grid items-start gap-cp-4 sm:grid-cols-2">
       {items.map(({ question, answer, guides }) => {
         const guidePages = guidePagesFor(guides);
         return (
-          <details key={question} className="border-t border-line">
-            <summary className="cp-faq-summary flex items-start justify-between gap-cp-4 py-cp-4">
+          <details
+            key={question}
+            className="rounded-2xl border border-line bg-card p-cp-5"
+          >
+            <summary
+              // The row was a 41px tap target, under the 44 a finger needs.
+              // Padding out and margin back grows the hit area into the card's
+              // own padding without moving anything on screen.
+              className="cp-faq-summary -my-cp-3 flex items-start justify-between gap-cp-4 py-cp-3"
+            >
               <h3 className="text-cp-body-lg font-extrabold leading-snug tracking-[-0.02em]">
                 {question}
               </h3>
@@ -85,7 +101,7 @@ function Answers({ items }: { items: FaqItem[] }) {
                 aria-hidden
               />
             </summary>
-            <div className="pb-cp-5 pr-cp-7 text-ink-soft text-cp-body leading-relaxed">
+            <div className="mt-cp-3 border-t border-line pt-cp-3 text-ink-soft text-cp-body leading-relaxed">
               {answer}
               {guidePages.length > 0 && (
                 <span className="mt-cp-3 flex flex-wrap gap-x-cp-4 gap-y-cp-2">

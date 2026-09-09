@@ -337,6 +337,42 @@ export const FAQ: FaqItem[] = [
       "Yes. If you have a recipe from a text message, email, document, or website that doesn't import cleanly, paste the recipe text directly and RecipePrinter will structure it into a printable recipe card or page.",
   },
   {
+    question: "What size are the printed recipe cards?",
+    group: "what-you-get",
+    answer:
+      "A 4 by 6 card, the size a standard recipe box takes, or a letter-size page for a binder. Cut lines give you a trim guide when you print on card stock, and a recipe too long for one side prints on the back too.",
+    guides: [
+      "printable-recipe-card-generator",
+    ],
+  },
+  {
+    question: "Can I edit a recipe before printing it?",
+    group: "what-you-get",
+    answer:
+      "Yes. The title, the ingredients, the steps and the notes are all editable on the card itself. Correct an amount, cut a step you don't need, or add the note you would otherwise have written in the margin.",
+  },
+  {
+    question: "Can I change how the recipe cards look?",
+    group: "what-you-get",
+    answer:
+      "Yes. A theme changes a card's type, its border and how the photo sits, without touching the recipe underneath. Switch themes and every card in the batch follows. Several are free, and the premium ones are a one-time purchase.",
+  },
+  {
+    question: "Can I print several recipes at once?",
+    group: "what-you-get",
+    answer:
+      "Yes. Add as many as you like to the print queue and send them all in one job, which is what most people do for a recipe binder, a week of dinners, or a family cookbook.",
+    guides: [
+      "recipe-binder",
+    ],
+  },
+  {
+    question: "Do I need to install anything?",
+    group: "account",
+    answer:
+      "No. RecipePrinter runs in the browser you're already using, on a phone as readily as a computer. There's no app to download, no plugin, and no extension.",
+  },
+  {
     question: "Do I need an account?",
     group: "account",
     answer:
