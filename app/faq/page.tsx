@@ -1,5 +1,4 @@
 import type { Metadata } from "next";
-import Link from "next/link";
 import {
   LandingCta,
   LandingFrame,
@@ -8,6 +7,7 @@ import {
 } from "@/components/seo/LandingFrame";
 import { LandingClose } from "@/components/seo/LandingClose";
 import { Breadcrumb } from "@/components/seo/Breadcrumb";
+import { GuidePicker } from "@/components/seo/GuidePicker";
 import { ChevronDownIcon, ICON_SIZE } from "@/components/icons";
 import {
   FAQ,
@@ -17,7 +17,7 @@ import {
   pageMetadata,
   type FaqItem,
 } from "@/lib/seo";
-import { anchorFor, SEO_LANDING_PAGE_MAP } from "@/lib/seoLandingPages";
+import { SEO_LANDING_PAGE_MAP } from "@/lib/seoLandingPages";
 
 export const metadata: Metadata = pageMetadata({
   title: "Recipe Printer FAQ",
@@ -110,17 +110,19 @@ function Answers({ items }: { items: FaqItem[] }) {
             <div className="mt-cp-3 border-t border-line pt-cp-3 text-ink-soft text-cp-body leading-relaxed">
               {answer}
               {guidePages.length > 0 && (
-                <span className="mt-cp-3 flex flex-wrap gap-x-cp-4 gap-y-cp-2">
-                  {guidePages.map((page) => (
-                    <Link
-                      key={page.slug}
-                      href={`/${page.slug}`}
-                      className="font-bold text-ink hover:underline"
-                    >
-                      {anchorFor(page)}
-                    </Link>
-                  ))}
-                </span>
+                // The same chips the guide shelves use, rather than bold words
+                // in a wrapped row. As text they read as part of the answer and
+                // nothing marked them as somewhere to go; five of them under
+                // the social question read as a sentence that had lost its
+                // punctuation. As controls they are plainly clickable, and they
+                // carry the short label, so "Pinterest" rather than "Print
+                // Pinterest recipes" inside an answer that just said Pinterest.
+                <div className="mt-cp-4 border-t border-line pt-cp-4">
+                  <p className="mb-cp-3 text-cp-label font-bold uppercase tracking-[0.08em] text-ink-soft">
+                    Read more
+                  </p>
+                  <GuidePicker pages={guidePages} />
+                </div>
               )}
             </div>
           </details>
