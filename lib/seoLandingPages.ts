@@ -754,7 +754,7 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
     initialImportMode: "url",
     title: "Free Instagram Recipe Printer",
     description:
-      "Paste an Instagram post or Reel link and turn the recipe in the caption into a printable recipe card, page, or PDF.",
+      "Paste an Instagram post or Reel link and turn the recipe in the caption into a printable recipe card, page, or PDF. Free, and no account needed.",
     h1: "Print Instagram recipes",
     lede:
       "Instagram recipes are quick to save and hard to cook from. Paste the post's link and RecipePrinter turns it into a card you can put on the counter.",
@@ -765,7 +765,7 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
       },
       {
         name: "Paste it in",
-        text: "Paste the link into the box above. RecipePrinter opens the post and reads the caption, which is where the recipe almost always is.",
+        text: "Paste the link into the box above. RecipePrinter opens the post and reads the recipe out of the caption.",
       },
       {
         name: "Choose a card or a page",
@@ -778,29 +778,29 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
     ],
     featureSections: [
       {
-        heading: "The recipe is in the caption, under the video",
+        heading: "Reels are for finding dinner, cards are for making it",
         image: "steps",
         body:
-          "A Reel shows you the dish in thirty seconds and puts the recipe in the caption underneath, folded behind a more link. Cooking from it means tapping back to the post, opening the caption again, and finding your place every time your hands are free. RecipePrinter reads that caption and sets it out as ingredients with their amounts and numbered steps, on one sheet that doesn't scroll.",
+          "Thirty seconds of a Reel tells you whether you want to eat it, which is what it is there for. Cooking is a different job: the caption folds behind a more link, and you lose your place every time you put the phone down. RecipePrinter reads that caption and sets it out as ingredients with their amounts and numbered steps, on one sheet that stays where you left it.",
       },
       {
-        heading: "Saved posts are a pile, not a collection",
+        heading: "The save button was never meant to be a recipe box",
         image: "card-in-box",
         body:
-          "The save button is quick, which is also its limit: recipes land in the same place as everything else you meant to come back to, with nothing to search on and no way to tell one pasta from another. A printed card is filed the moment it comes off the printer, in a recipe box, a binder, or a folder by the stove.",
+          "Saving is a bookmark, and it is quick because that is all it needs to be. Recipes end up alongside everything else you meant to come back to, and a folder of thumbnails will not tell you which pasta was the good one. A printed card is filed the moment it comes off the printer, in a recipe box, a binder, or a folder by the stove.",
       },
       {
-        heading: "Carousels, and the answer buried in the comments",
+        heading: "Carousels and comments come with it",
         image: "paste-in-app",
         body:
-          "Some creators spread a recipe across a carousel, and the substitution everyone asks about is usually answered further down in the comments. Anything you can copy can go in as text, so the swap that only exists in a reply ends up on the sheet you actually cook from.",
+          "Some creators run a recipe across a carousel, and the best tip in the whole thread is often a reply the creator left in the comments. Anything you can copy goes in as text, so the swap that only ever existed in a reply prints on the same sheet as the recipe.",
       },
     ],
     faqs: [
       {
         question: "Can I print a recipe from an Instagram Reel?",
         answer:
-          "Yes. Copy the Reel's link and paste it in. A Reel's recipe is nearly always written into the caption below it, and that is the part RecipePrinter reads.",
+          "Yes. Copy the Reel's link and paste it in, and RecipePrinter reads the recipe out of the caption.",
       },
       {
         question: "Do I have to connect my Instagram account?",
@@ -815,7 +815,7 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
       {
         question: "Can I print several Instagram recipes at once?",
         answer:
-          "You add recipes one at a time, and then print them together as a single job. The card size and the theme apply to every recipe waiting to print, so a week of dinners comes out matching.",
+          "Yes. Add them one at a time, then print them together as a single job. The card size and the theme apply to every recipe waiting to print, so a week of dinners comes out matching.",
       },
       {
         question: "What happens if the post is taken down?",
