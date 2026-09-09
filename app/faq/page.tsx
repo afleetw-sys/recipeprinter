@@ -84,6 +84,12 @@ function Answers({ items }: { items: FaqItem[] }) {
         return (
           <details
             key={question}
+            // One `name` across the whole page makes these an exclusive
+            // accordion: the browser closes whichever was open when another is
+            // opened, with no state to hold and no JavaScript to ship. A
+            // browser that does not know the attribute simply lets two stay
+            // open, which is what this did yesterday.
+            name="faq"
             className="rounded-2xl border border-line bg-card p-cp-5"
           >
             <summary

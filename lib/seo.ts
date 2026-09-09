@@ -237,19 +237,13 @@ export interface FaqItem {
 
 export const FAQ: FaqItem[] = [
   {
+    // Was two questions with one answer between them: "How do I print a recipe
+    // from a website?" and "Can I print a recipe from a URL?" both said paste a
+    // link and print. This one carries what each of them had, the URL included.
     question: "How do I print a recipe from a website?",
     group: "getting-in",
     answer:
-      "Copy the recipe page URL, paste it into RecipePrinter, review the printable recipe card or page, and print it. You can also choose Save as PDF in your browser print dialog.",
-    guides: [
-      "print-recipe-from-website",
-    ],
-  },
-  {
-    question: "Can I print a recipe from a URL?",
-    group: "getting-in",
-    answer:
-      "Yes. Paste a recipe link from a recipe website, food blog, or supported social post and RecipePrinter turns it into a clean printable recipe card or page. If a site doesn't import cleanly, paste the recipe text or upload a screenshot instead.",
+      "Copy the page's URL, paste it into RecipePrinter, check the card or page it makes, and print. Any recipe site, food blog, or supported social post works, and you can choose Save as PDF in the print dialog instead of sending it to paper. If a site doesn't import cleanly, paste the recipe text or upload a screenshot.",
     guides: [
       "print-recipe-from-website",
       "just-the-recipe-alternative",
