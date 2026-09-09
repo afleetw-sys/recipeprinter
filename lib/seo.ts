@@ -225,11 +225,20 @@ export interface FaqItem {
    * plain prose Google may quote, not as prose with a link list stapled on.
    */
   guides?: string[];
+  /**
+   * Which run of questions this belongs to on /faq.
+   *
+   * Sixteen questions rendered as sixteen <h2>s: no hierarchy for a reader to
+   * skim and none for a crawler to read either. Grouped, the page has four
+   * section headings and the questions sit under them where they belong.
+   */
+  group?: "getting-in" | "what-you-get" | "account" | "what-this-is";
 }
 
 export const FAQ: FaqItem[] = [
   {
     question: "How do I print a recipe from a website?",
+    group: "getting-in",
     answer:
       "Copy the recipe page URL, paste it into RecipePrinter, review the printable recipe card or page, and print it. You can also choose Save as PDF in your browser print dialog.",
     guides: [
@@ -238,6 +247,7 @@ export const FAQ: FaqItem[] = [
   },
   {
     question: "Can I print a recipe from a URL?",
+    group: "getting-in",
     answer:
       "Usually, yes. Paste a recipe link from a recipe website, food blog, or supported social post and RecipePrinter will turn it into a clean printable recipe card or page. If a site doesn't import cleanly, you can paste the recipe text directly or upload a screenshot instead.",
     guides: [
@@ -247,6 +257,7 @@ export const FAQ: FaqItem[] = [
   },
   {
     question: "Can I turn a recipe into a PDF?",
+    group: "what-you-get",
     answer:
       "Yes. Every recipe is formatted as a print-ready page, so you can print it on paper or choose Save as PDF in your browser's print dialog to keep a clean recipe PDF on your device.",
     guides: [
@@ -255,6 +266,7 @@ export const FAQ: FaqItem[] = [
   },
   {
     question: "Can I make printable recipe cards from online recipes?",
+    group: "what-you-get",
     answer:
       "Yes. Paste a recipe link, upload a screenshot or photo, or paste recipe text, then choose a printable recipe card layout before printing.",
     guides: [
@@ -263,6 +275,7 @@ export const FAQ: FaqItem[] = [
   },
   {
     question: "Can I print recipes from Pinterest, Instagram, or TikTok?",
+    group: "getting-in",
     answer:
       "Yes. Start with the original recipe link when one is available. For captions, screenshots, or saved social posts, you can paste the recipe text or upload a screenshot instead.",
     guides: [
@@ -275,6 +288,7 @@ export const FAQ: FaqItem[] = [
   },
   {
     question: "Can I save printed recipes in a recipe binder?",
+    group: "what-you-get",
     answer:
       "Yes. RecipePrinter can create letter-size recipe pages, recipe cards, and PDFs that work well for binders, folders, recipe boxes, and family collections.",
     guides: [
@@ -284,6 +298,7 @@ export const FAQ: FaqItem[] = [
   },
   {
     question: "Can I make a cookbook from my recipes?",
+    group: "what-you-get",
     answer:
       "Yes. Group your recipes into chapters, add a cover, and RecipePrinter builds a cookbook with an automatic table of contents. You can export it as a print-ready PDF to print at home in US Letter, or as a full-bleed 8 x 10 file to order a bound hardcover from a print-on-demand service like Lulu or Blurb.",
     guides: [
@@ -293,11 +308,13 @@ export const FAQ: FaqItem[] = [
   },
   {
     question: "Why print recipes instead of cooking from a phone?",
+    group: "what-this-is",
     answer:
       "Printed recipes don't lock, dim, run out of battery, disappear under notifications, or make you scroll with messy hands. They're also easier to mark up and keep.",
   },
   {
     question: "Can I print recipes without ads?",
+    group: "what-you-get",
     answer:
       "Yes. RecipePrinter keeps the recipe itself and leaves off ads, pop-ups, autoplay videos, comments, oversized photos, and other web page clutter when creating the printable version.",
     guides: [
@@ -306,6 +323,7 @@ export const FAQ: FaqItem[] = [
   },
   {
     question: "Can I print recipes from screenshots or photos?",
+    group: "getting-in",
     answer:
       "Yes. Upload a screenshot, cookbook page, old recipe card, or saved image and RecipePrinter will read the recipe and format it into a printable version.",
     guides: [
@@ -314,31 +332,37 @@ export const FAQ: FaqItem[] = [
   },
   {
     question: "Can I paste recipe text instead of using a URL?",
+    group: "getting-in",
     answer:
       "Yes. If you have a recipe from a text message, email, document, or website that doesn't import cleanly, paste the recipe text directly and RecipePrinter will structure it into a printable recipe card or page.",
   },
   {
     question: "Do I need an account?",
+    group: "account",
     answer:
       "No. RecipePrinter works without an account, so you can paste a recipe, print it, save it as a PDF, and move on.",
   },
   {
     question: "Are my recipes stored on your servers?",
+    group: "account",
     answer:
       "Only if you choose to save them. Used without an account, your print queue lives in your browser for the current session only and is never stored on our servers. If you sign in and save a project or build a cookbook, that project is stored in your account so you can reopen it from any device.",
   },
   {
     question: "Is RecipePrinter free?",
+    group: "account",
     answer:
       "Printing recipes is free and doesn't require an account. There are two optional one-time purchases: premium print themes, and the cookbook builder that turns a set of recipes into a bound book. Current prices are shown in the app before you buy.",
   },
   {
     question: "Is RecipePrinter a recipe app?",
+    group: "what-this-is",
     answer:
       "Not really. RecipePrinter isn't a recipe discovery app, meal planner, grocery app, nutrition tracker, or social network. It's built for what happens after you've already found a recipe worth making again.",
   },
   {
     question: "What is the difference between CookPilot and RecipePrinter?",
+    group: "what-this-is",
     answer:
       "CookPilot helps make recipes work for real life with substitutions, notes, adjustments, and cooking tools. RecipePrinter solves a simpler problem: getting recipes off the screen and into your kitchen. You can use RecipePrinter on its own or import recipes from CookPilot.",
   },

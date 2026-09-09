@@ -2153,6 +2153,20 @@
   [aria-expanded="true"] > .cp-disclosure-caret {
     transform: rotate(180deg);
   }
+  /* Same caret on a native <details>. `open` is the element's own state, so
+     this keys off it for the same reason the button keys off aria-expanded:
+     the arrow cannot end up pointing the wrong way. A <summary> also carries
+     an implicit marker of its own, which would sit alongside ours. */
+  details[open] > summary .cp-disclosure-caret {
+    transform: rotate(180deg);
+  }
+  .cp-faq-summary::-webkit-details-marker {
+    display: none;
+  }
+  .cp-faq-summary {
+    list-style: none;
+    cursor: pointer;
+  }
 
   /* Numbered steps for finding a Paprika export. A list, so the numbers are
      the browser's own and the order survives translation and screen readers. */
