@@ -109,8 +109,8 @@ export default function AboutPage() {
           back. This is great, but can I print them? Or{" "}
           <InlineLink href="/family-recipe-book">turn them into a cookbook</InlineLink>?
           Like I said, digital was all I ever knew, so I brushed the idea off for a
-          long time. But the feedback kept coming. Eventually I thought, ok,
-          I&apos;ve already built the parser, so let&apos;s do it.
+          long time. But the feedback kept coming. Eventually I thought, ok, I&apos;ve
+          already built the part that reads a recipe, so let&apos;s do it.
         </p>
         <p>
           I started printing our favorites, the ones we&apos;d already made more than
