@@ -85,7 +85,7 @@ export default function AboutPage() {
       <LandingHero
         align="centered"
         h1="About RecipePrinter"
-        lede="Hi. I make RecipePrinter, and six months ago I would have told you I was never going to print a recipe in my life."
+        lede="Hi. I made RecipePrinter, and I didn&apos;t expect to. Six months ago every recipe I owned lived on a screen, and that suited me fine."
         above={<Breadcrumb trail={TRAIL} />}
         actions={<LandingCta href="/" label="Start printing for free" />}
       />
@@ -96,7 +96,7 @@ export default function AboutPage() {
           Headings are for pages you skim; this one is meant to be read
           straight through, so it is a single column of paragraphs at reading
           width and the page's only <h2> is the one at the close. */}
-      <div className="flex max-w-[46rem] flex-col gap-cp-5 text-ink-soft text-cp-body-lg leading-relaxed">
+      <div className="mx-auto flex w-full max-w-[46rem] flex-col gap-cp-5 text-ink-soft text-cp-prose leading-relaxed">
         <p>
           I was a die hard digital recipe organizer. I built CookPilot, a recipe app,
           to help me adapt recipes to real life, mostly because I was forever telling
@@ -111,10 +111,11 @@ export default function AboutPage() {
           I&apos;ve already built the parser, so let&apos;s do it.
         </p>
         <p>
-          I started printing my own favorite recipes, and after cooking with one maybe
-          twice, I was hooked. It was so much easier. No scrolling up and down. My
-          phone is always dead by dinner, so the brightness is right down at the point
-          I actually need to read something. It instantly improved my life. I was sold.
+          I started printing our favorites, the ones we&apos;d already cooked more than
+          once, and the first time I made one off a printed card I was hooked. It was so
+          much easier. No scrolling up and down. My phone is always dead by dinner, so
+          the screen is at its dimmest right when I need to read from it. It instantly
+          improved my life. I was sold.
         </p>
         <p>
           Now I use both. CookPilot is where I keep recipes I might make and change
@@ -123,8 +124,8 @@ export default function AboutPage() {
         </p>
       </div>
 
-      <LandingClose>
-        <p className="max-w-[46rem] text-ink-soft text-cp-body leading-relaxed">
+      <LandingClose centered>
+        <p className="text-ink-soft text-cp-body-lg leading-relaxed">
           This whole thing only exists because people kept asking for something I had
           already said no to, and they were right. So if there&apos;s something you wish it
           did, or something that isn&apos;t working the way you expected, I&apos;d love to

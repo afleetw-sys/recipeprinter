@@ -137,6 +137,7 @@
   --cp-fs-small: 0.86rem; /* secondary copy, footer links, small buttons */
   --cp-fs-body: 0.92rem; /* standard paragraph copy, primary buttons */
   --cp-fs-body-lg: 1.02rem; /* lede/intro paragraphs under a heading */
+  --cp-fs-prose: 1.1rem; /* long-form reading copy, /about only so far */
   --cp-fs-h2: 1.1rem; /* section headings, dialog/card titles */
   --cp-fs-dialog-title: 1.24rem; /* functional modal and drawer titles */
   --cp-fs-price: 1.6rem; /* standalone purchase price */

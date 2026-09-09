@@ -14,15 +14,29 @@ import { LandingCta } from "@/components/seo/LandingFrame";
 export function LandingClose({
   label = "Start printing for free",
   href = "/",
+  centered = false,
   children,
 }: {
   label?: string;
   href?: string;
+  /**
+   * Sit the close in the same centred reading column its page's body uses.
+   *
+   * Every other page fills the full 1240 with cards or rows, so its close
+   * starts at the left edge and lines up with everything above it. A page that
+   * is nothing but prose does not fill that width, and a close pinned to the
+   * far left of a centred column of text is not the end of anything.
+   */
+  centered?: boolean;
   /** A footnote that belongs with the button, not a section of its own. */
   children?: ReactNode;
 }) {
   return (
-    <div className="flex flex-col items-start gap-cp-5 border-t border-line pt-cp-7">
+    <div
+      className={`flex flex-col items-start gap-cp-5 border-t border-line pt-cp-7${
+        centered ? " mx-auto w-full max-w-[46rem]" : ""
+      }`}
+    >
       <LandingCta href={href} label={label} />
       {children}
     </div>
