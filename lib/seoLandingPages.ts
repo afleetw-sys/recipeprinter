@@ -440,7 +440,7 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
   },
   {
     slug: "printable-recipe-card-generator",
-    lastReviewed: "2026-09-02",
+    lastReviewed: "2026-09-09",
     primaryKeyword: "printable recipe card generator",
     secondaryKeywords: [
       "recipe card maker",
@@ -460,9 +460,9 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
     eyebrow: "Recipe card maker",
     initialImportMode: "url",
     importSubmitLabel: "Make recipe card",
-    title: "Free Printable Recipe Card Maker",
+    title: "Free Recipe Card Printer and Maker",
     description:
-      "Make printable recipe cards from links, photos, screenshots, or text, including 4x6 and recipe-box-friendly layouts.",
+      "A recipe card maker and printer: turn links, photos, screenshots, or text into printable recipe cards, including 4x6 and recipe-box-friendly layouts.",
     h1: "Printable recipe card generator",
     // "recipe card printer" is the phrase this page's traffic actually arrives
     // on, and it is the one word the h1 and title both leave out.
