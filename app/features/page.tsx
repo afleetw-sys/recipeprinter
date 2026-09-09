@@ -88,10 +88,9 @@ const YOURS_CARDS: FeatureCard[] = [
   },
   {
     heading: "Photos on the card",
-    needs:
-      "One recipe printed twice side by side, once with its photo and once without, to show the space the picture takes.",
+    image: "show-photo",
     body:
-      "A recipe prints with its photo or without it, decided per recipe, so a card that is mostly method does not give half its space to a picture. When the photo does print, drag it to move the crop and put the part that matters in frame.",
+      "One switch decides whether the cards print with their photos, so a recipe that is mostly method does not give half its card to a picture. The recipe link goes on or off the same way.",
   },
   {
     heading: "Premium print themes",

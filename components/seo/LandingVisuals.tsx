@@ -201,6 +201,13 @@ export const FEATURE_IMAGES: Record<string, ProofImage> = {
     alt:
       "RecipePrinter open at recipeprinter.com with a Bruschetta Recipe card in the middle of the deck. One ingredient line is open for editing and reads 1/2 tsp sea salt, circled by hand, with the formatting bar floating just above it: heading, body text, bold and italic. Print setup runs down the right with the card size, a recipe photo toggle, and a grid of print themes.",
   },
+  "show-photo": {
+    src: "/images/show-photo.png",
+    width: 6350,
+    height: 3800,
+    alt:
+      "The same Best Homemade Sloppy Joes card printed twice. On the left it is text only, the ingredients down one column and the numbered steps down the other. On the right the same card carries a photograph of the sandwich in its top corner and the title wraps to two lines to make room for it. Between them sits the Every recipe panel with Recipe photo ticked and Recipe link unticked, an arrow running from it to each version.",
+  },
   "card-in-box": {
     src: "/images/recipe-card-in-box.jpg",
     width: 1448,
