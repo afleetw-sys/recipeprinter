@@ -21,7 +21,24 @@ import { anchorFor, type SeoLandingPage } from "@/lib/seoLandingPages";
 // itself is a worse trade to make in the other direction.
 // ─────────────────────────────────────────────────────────────────────────
 
-export function GuidePicker({ pages }: { pages: SeoLandingPage[] }) {
+export function GuidePicker({
+  pages,
+  labelBy = "short",
+}: {
+  pages: SeoLandingPage[];
+  /**
+   * Which name a chip wears, because the two contexts want opposite things.
+   *
+   * A picker asks a question the chip answers, so "Where did you find the
+   * recipe?" is followed by Pinterest, and repeating "Print Pinterest recipes"
+   * there would just say the question back.
+   *
+   * "Read more" is not a question. It promises a page, so the chip has to name
+   * the page: "Read more → A website or blog" does not parse, and "Read more →
+   * Print a recipe from a website" does.
+   */
+  labelBy?: "short" | "anchor";
+}) {
   return (
     <div className="flex flex-wrap gap-cp-3">
       {pages.map((page) => (
@@ -30,7 +47,7 @@ export function GuidePicker({ pages }: { pages: SeoLandingPage[] }) {
           href={`/${page.slug}`}
           className="btn btn-secondary btn-compact"
         >
-          {page.shortLabel ?? anchorFor(page)}
+          {labelBy === "anchor" ? anchorFor(page) : page.shortLabel ?? anchorFor(page)}
         </Link>
       ))}
     </div>

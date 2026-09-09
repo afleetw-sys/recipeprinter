@@ -35,8 +35,8 @@ const TRAIL = [
 // comes out, what does it cost me, and what is this thing. The questions
 // themselves are unchanged; only the shelf they sit on is new.
 const GROUPS: { id: FaqItem["group"]; heading: string }[] = [
-  { id: "getting-in", heading: "Getting a recipe in" },
-  { id: "what-you-get", heading: "What you get out" },
+  { id: "getting-in", heading: "Importing recipes" },
+  { id: "what-you-get", heading: "Printing and formats" },
   { id: "account", heading: "Accounts, privacy and cost" },
   { id: "what-this-is", heading: "What RecipePrinter is" },
 ];
@@ -121,7 +121,7 @@ function Answers({ items }: { items: FaqItem[] }) {
                   <p className="mb-cp-3 text-cp-label font-bold uppercase tracking-[0.08em] text-ink-soft">
                     Read more
                   </p>
-                  <GuidePicker pages={guidePages} />
+                  <GuidePicker pages={guidePages} labelBy="anchor" />
                 </div>
               )}
             </div>
