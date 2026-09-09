@@ -404,7 +404,7 @@ export const FAQ: FaqItem[] = [
 // reference each other inside a single @graph instead of duplicating the brand.
 
 const ORG_ID = `${SITE_URL}/#organization`;
-const SITE_ID = `${SITE_URL}/#website`;
+export const SITE_ID = `${SITE_URL}/#website`;
 const APP_ID = `${SITE_URL}/#webapp`;
 
 /**

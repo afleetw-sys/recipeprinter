@@ -302,7 +302,7 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
     initialImportMode: "url",
     title: "Print Recipes Without Ads",
     description:
-      "Turn cluttered recipe pages into clean printable recipes without ads, pop-ups, comments, or wasted pages.",
+      "Turn cluttered recipe pages into clean printable recipes without ads, pop-ups, comments, or wasted pages. Free, and no account needed to print.",
     h1: "Print a recipe without ads",
     lede:
       "Send a recipe page to the printer and the ads and the comments come with it. RecipePrinter prints the recipe on its own, on one page you can cook from.",
@@ -1367,6 +1367,7 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
     ],
     links: [
       { href: "/family-recipe-book", label: "Create a family recipe book" },
+      { href: "/print-recipe-from-photo", label: "Print a recipe from a photo" },
       { href: "/recipe-binder", label: "Build a recipe binder" },
       { href: "/printable-recipe-card-generator", label: "Make recipe cards" },
     ],
@@ -1470,6 +1471,7 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
     ],
     links: [
       { href: "/preserve-family-recipes", label: "Preserve family recipes" },
+      { href: "/print-recipe-from-photo", label: "Print a recipe from a photo" },
       { href: "/recipe-binder", label: "Recipe binder ideas" },
       { href: "/organize-recipes", label: "Organize recipes" },
     ],
@@ -1689,6 +1691,7 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
       },
     ],
     links: [
+      { href: "/print-recipe-from-photo", label: "Print a recipe from a photo" },
       { href: "/preserve-family-recipes", label: "Preserve family recipes" },
       { href: "/recipe-binder", label: "Build a recipe binder" },
       { href: "/family-recipe-book", label: "Family recipe book ideas" },

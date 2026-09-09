@@ -7,12 +7,18 @@ import {
 } from "@/components/seo/LandingFrame";
 import { LandingClose } from "@/components/seo/LandingClose";
 import { Breadcrumb } from "@/components/seo/Breadcrumb";
-import { absoluteUrl, breadcrumbNode, organizationNode, pageMetadata } from "@/lib/seo";
+import {
+  SITE_ID,
+  absoluteUrl,
+  breadcrumbNode,
+  organizationNode,
+  pageMetadata,
+} from "@/lib/seo";
 
 export const metadata: Metadata = pageMetadata({
-  title: "About RecipePrinter",
+  title: "Why I Built a Recipe Printer",
   description:
-    "The story behind RecipePrinter: how someone who only ever kept recipes on a screen ended up building a free tool for printing them as clean recipe cards and PDFs.",
+    "I kept recipes on a screen for years and said no to printing for months. Here's what changed my mind, and why RecipePrinter is free to print with.",
   path: "/about",
 });
 
@@ -42,10 +48,16 @@ const JSON_LD = {
       "@type": "AboutPage",
       "@id": `${absoluteUrl("/about")}#webpage`,
       url: absoluteUrl("/about"),
-      name: "About RecipePrinter",
+      name: "Why I Built a Recipe Printer",
       description:
         "Why RecipePrinter exists, told by the person who built it: a digital-only recipe keeper who kept being asked to print, said no for months, and then got hooked.",
       inLanguage: "en",
+      // First-person account of building the thing, which is the one page here
+      // with genuine first-hand experience on it. Dates let that be read as a
+      // dated statement rather than undated marketing copy.
+      datePublished: "2026-07-02",
+      dateModified: "2026-09-09",
+      isPartOf: { "@id": SITE_ID },
     },
     organizationNode(),
     breadcrumbNode(
@@ -94,9 +106,9 @@ export default function AboutPage() {
           I shared it with friends and family, and the same question kept coming
           back. This is great, but can I print them? Or{" "}
           <InlineLink href="/family-recipe-book">turn them into a cookbook</InlineLink>?
-          I lived digital. It&apos;s all I ever knew, so I rejected the idea for a long
-          time. The feedback kept coming anyway. Eventually I thought, alright, I&apos;ve
-          already built the parser, so let&apos;s do it.
+          Like I said, I lived digital. It&apos;s all I ever knew, so I rejected the idea
+          for a long time. But the feedback kept coming. Eventually I thought, ok,
+          I&apos;ve already built the parser, so let&apos;s do it.
         </p>
         <p>
           I started printing my own favorite recipes, and after cooking with one maybe
