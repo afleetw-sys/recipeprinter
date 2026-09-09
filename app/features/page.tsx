@@ -90,13 +90,13 @@ const YOURS_CARDS: FeatureCard[] = [
     heading: "Photos on the card",
     image: "show-photo",
     body:
-      "One switch decides whether the cards print with their photos, so a recipe that is mostly method does not give half its card to a picture. The recipe link goes on or off the same way.",
+      "One switch decides whether the recipe cards print with their photos, so a recipe that is mostly method does not give half its card to a picture. The recipe link goes on or off the same way.",
   },
   {
     heading: "Premium print themes",
     image: "multi-themes",
     body:
-      "A theme changes a card's type, its border, and how the photo sits, without touching the recipe underneath. Switch themes and every card in the batch follows, so a stack printed in one go still looks like a set. Several are free, and the premium ones are a one-time purchase.",
+      "A theme changes a card's type, its border, and how the photo sits, without touching the recipe. Switch themes and the whole batch follows, so a stack printed in one go looks like a set. Several are free, and the premium ones are a one-time purchase.",
   },
 ];
 
@@ -119,7 +119,7 @@ const PRINT_CARDS: FeatureCard[] = [
     heading: "Cookbook builder",
     image: "bound-cookbook",
     body:
-      `RecipePrinter sorts the recipes into chapters, generates the cover, and builds the table of contents. Rearrange anything, then print it at home, keep the PDF, or send the file to Lulu or Blurb for a hardcover or spiral bound cookbook. ${COOKBOOK_PRICE_FALLBACK} once.`,
+      `RecipePrinter sorts the recipes into chapters, generates the cover, and builds the table of contents. Rearrange anything, then print it at home or send the file to Lulu or Blurb for a hardcover or spiral bound cookbook. ${COOKBOOK_PRICE_FALLBACK} once.`,
   },
 ];
 
