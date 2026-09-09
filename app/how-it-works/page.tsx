@@ -48,7 +48,7 @@ const POINTS: FeatureCard[] = [
     heading: "Nothing prints until you say so",
     image: "inline-editing",
     body:
-      "You see the card before it goes anywhere. Every line is yours to fix, and anything the recipe didn't say is left out rather than guessed at.",
+      "You see the card before it goes anywhere, and every line is yours to fix. A word that came through wrong is a click away from right.",
   },
 ];
 
@@ -65,12 +65,12 @@ const FAQS = [
   {
     question: "Why do some recipe links not import?",
     answer:
-      "Some sites block anything that isn't a person clicking. Some posts only open when you're signed in. And some pages never publish the recipe anywhere a machine can read it. RecipePrinter says which one it hit, so you can paste the text or upload a screenshot instead and still get the same card.",
+      "Some sites block anything that isn't a person clicking. Some posts only open when you're signed in. And some pages never publish the recipe anywhere a machine can read it. RecipePrinter says which one it hit, so you can paste the text or upload a screenshot instead.",
   },
   {
     question: "Does it change the recipe?",
     answer:
-      "No. Amounts, steps, notes, prep and cook time and servings come across as the source wrote them, and anything it can't find is left out rather than guessed at. Every line is yours to correct on the card before it prints.",
+      "Where the recipe is already written out, no: amounts, steps, notes and times come across as the source wrote them. Reading one out of a video or a photograph is a harder job, and a line can come through wrong. Either way the card is yours to read over and fix before anything prints.",
   },
   {
     question: "What if the recipe only exists as a photo?",

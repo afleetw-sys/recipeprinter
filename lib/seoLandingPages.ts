@@ -256,7 +256,7 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
       {
         question: "How does it know which part of the page is the recipe?",
         answer:
-          "Recipe sites publish their recipes as structured data so search engines can read them. RecipePrinter reads that same data, so the amounts and the steps arrive the way the site wrote them instead of being guessed at from the words on the page.",
+          "Most recipe sites keep a tidy copy of the recipe for search engines to read. RecipePrinter takes that copy, so the amounts and the steps arrive the way the site wrote them rather than being picked out of the words on the page.",
       },
       {
         question: "Can I save the recipe as a PDF instead of printing?",
