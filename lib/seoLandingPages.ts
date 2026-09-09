@@ -282,6 +282,7 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
     links: [
       { href: "/printable-recipe-card-generator", label: "Make printable recipe cards" },
       { href: "/print-recipe-without-ads", label: "Print recipes without ads" },
+      { href: "/just-the-recipe-alternative", label: "Just the Recipe alternative" },
       { href: "/convert-recipe-to-pdf", label: "Convert a recipe to PDF" },
     ],
   },
@@ -628,6 +629,7 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
     ],
     links: [
       { href: "/preserve-family-recipes", label: "Preserve family recipes" },
+      { href: "/reciscan-alternative", label: "ReciScan alternative" },
       { href: "/printable-recipe-card-generator", label: "Recipe card printer" },
       { href: "/family-recipe-book", label: "Build a family cookbook" },
     ],
@@ -1231,6 +1233,7 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
     ],
     links: [
       { href: "/recipe-binder", label: "Recipe binder ideas" },
+      { href: "/print-paprika-recipes", label: "Print Paprika recipes" },
       { href: "/print-pinterest-recipes", label: "Print Pinterest recipes" },
       { href: "/printable-recipe-card-generator", label: "Printable recipe cards" },
     ],
@@ -1273,6 +1276,7 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
     ],
     links: [
       { href: "/organize-recipes", label: "Organize recipes" },
+      { href: "/print-paprika-recipes", label: "Print Paprika recipes" },
       { href: "/printable-recipe-card-generator", label: "Printable recipe cards" },
       { href: "/family-recipe-book", label: "Family recipe book ideas" },
     ],
@@ -1368,6 +1372,7 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
     links: [
       { href: "/family-recipe-book", label: "Create a family recipe book" },
       { href: "/print-recipe-from-photo", label: "Print a recipe from a photo" },
+      { href: "/reciscan-alternative", label: "ReciScan alternative" },
       { href: "/recipe-binder", label: "Build a recipe binder" },
       { href: "/printable-recipe-card-generator", label: "Make recipe cards" },
     ],
