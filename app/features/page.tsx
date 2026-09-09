@@ -97,7 +97,7 @@ const YOURS_CARDS: FeatureCard[] = [
     heading: "Premium print themes",
     image: "multi-themes",
     body:
-      "A theme changes a card's type, its border, and how the photo sits, without touching the recipe. Switch themes and the whole batch follows, so a stack printed in one go looks like a set. Several are free, and the premium ones are a one-time purchase.",
+      "A theme changes a card's type, its border, and how the photo sits, without touching the recipe. Switch themes and the whole batch follows, so a stack printed in one go looks like a set. Several are free, and the premium ones are a one-off purchase each.",
   },
 ];
 
@@ -120,7 +120,7 @@ const PRINT_CARDS: FeatureCard[] = [
     heading: "Cookbook builder",
     image: "bound-cookbook",
     body:
-      `RecipePrinter sorts the recipes into chapters, generates the cover, and builds the table of contents. Rearrange anything, then print it at home or send the file to Lulu or Blurb for a hardcover or spiral bound cookbook. ${COOKBOOK_PRICE_FALLBACK} once.`,
+      `RecipePrinter sorts the recipes into chapters, generates the cover, and builds the table of contents. Rearrange anything, then print it at home or send the file to Lulu or Blurb for a hardcover or spiral bound cookbook. ${COOKBOOK_PRICE_FALLBACK} a cookbook.`,
   },
 ];
 

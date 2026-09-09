@@ -491,7 +491,7 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
       },
       {
         name: "Pick a theme",
-        text: "Themes change the card's type, borders, and how the photo sits. Several are free, and the premium ones are a one-time purchase.",
+        text: "Themes change the card's type, borders, and how the photo sits. Several are free, and the premium ones are a one-off purchase each.",
       },
       {
         name: "Print and file it",
@@ -1271,7 +1271,7 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
       {
         question: "Do these have to become a cookbook?",
         answer:
-          "No. Printing one card and stopping there is enough. The bound cookbook with a cover and chapters is there if you ever want it, for $19.99 once.",
+          "No. Printing one card and stopping there is enough. The bound cookbook with a cover and chapters is there if you ever want it, at $19.99 a cookbook.",
       },
     ],
     links: [
@@ -1374,7 +1374,7 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
       {
         question: "What does a cookbook cost?",
         answer:
-          "$19.99 once for the cookbook, and that cookbook stays yours to edit and add to afterwards. After that it's whatever the printing costs: paper and ink at home, or whatever the print shop charges.",
+          "$19.99 for that cookbook, and it stays yours to edit and add to afterwards. After that it's whatever the printing costs: paper and ink at home, or whatever the print shop charges.",
       },
     ],
     links: [
@@ -1462,7 +1462,7 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
           title: "Keeping them",
           rows: [
             { feature: "Saving recipes to come back to", us: "Unlimited with a free account", them: "20 free, then paid" },
-            { feature: "Bound cookbook with a cover and chapters", us: "$19.99 once, edits included", them: false },
+            { feature: "Bound cookbook with a cover and chapters", us: "$19.99 a cookbook, edits included", them: false },
           ],
         },
         {
@@ -1482,7 +1482,7 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
       {
         question: "What does each one cost?",
         answer:
-          "Just the Recipe is free to read recipes and to save up to 20; printing, unlimited saves and serving adjustments are on Premium. RecipePrinter is free to print, with no account and no limit, and sells premium themes and the cookbook builder as one-time purchases.",
+          "Just the Recipe is free to read recipes and to save up to 20; printing, unlimited saves and serving adjustments are on Premium. RecipePrinter is free to print, with no account and no limit, and sells premium themes and cookbooks one at a time, never on subscription.",
       },
       {
         question: "Can I bring my saved Just the Recipe recipes over?",
@@ -1561,7 +1561,7 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
         {
           title: "Making a cookbook",
           rows: [
-            { feature: "A cookbook you print or export yourself", us: "$19.99 once", them: "PDF download" },
+            { feature: "A cookbook you print or export yourself", us: "$19.99 a cookbook", them: "PDF download" },
             { feature: "Spiral or hardcover layout", us: "Letter spiral, 8 by 10 hardcover", them: "Coil, saddle stitch, perfect bound, hardcover" },
             { feature: "Updating the cookbook you paid for", us: "Free, any time", them: false },
           ],
@@ -1584,7 +1584,7 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
       {
         question: "What does each one cost?",
         answer:
-          "ReciScan is free to use, with a $4.99 monthly subscription for covers and extras, and printed books starting at $18. RecipePrinter is free to print. Premium themes are $1.99 once, a cookbook is $19.99 once, and both stay yours rather than renewing every month.",
+          "ReciScan is free to use, with a $4.99 monthly subscription for covers and extras, and printed books starting at $18. RecipePrinter is free to print. Premium themes are $1.99 each and a cookbook is $19.99, bought one at a time and never renewing.",
       },
       {
         question: "Can RecipePrinter send me a printed cookbook?",

@@ -30,7 +30,7 @@ export function CookbookPitch({ heading }: { heading?: string }) {
               heading: "Bind the recipes you keep coming back to",
               image: "bound-cookbook",
               body:
-                "Once enough recipes have earned a place, group them into chapters, add a cover, and RecipePrinter builds the table of contents for you. Export a print-ready PDF to run off at home in US Letter, or a full-bleed 8 by 10 to order a bound hardcover from a service like Lulu or Blurb. The builder is a one-time purchase for the book you make.",
+                "Once enough recipes have earned a place, RecipePrinter sorts them into chapters, generates the cover, and builds the table of contents. Rearrange anything you want moved, then print it at home on US Letter or send the file to Lulu or Blurb for a hardcover or spiral bound cookbook. Each cookbook is its own one-off purchase.",
             },
           ]}
         />

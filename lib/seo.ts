@@ -349,7 +349,7 @@ export const FAQ: FaqItem[] = [
     question: "Can I change how the recipe cards look?",
     group: "what-you-get",
     answer:
-      "Yes. A theme changes a card's type, its border and how the photo sits, without touching the recipe underneath. Switch themes and every card in the batch follows. Several are free, and the premium ones are a one-time purchase.",
+      "Yes. A theme changes a card's type, its border and how the photo sits, without touching the recipe underneath. Switch themes and every card in the batch follows. Several are free, and the premium ones are a one-off purchase each.",
   },
   {
     question: "Can I print several recipes at once?",
@@ -382,7 +382,7 @@ export const FAQ: FaqItem[] = [
     question: "Is RecipePrinter free?",
     group: "account",
     answer:
-      "Printing recipes is free and doesn't require an account. There are two optional one-time purchases: premium print themes, and the cookbook builder that turns a set of recipes into a bound cookbook. Current prices are shown in the app before you buy.",
+      "Printing recipes is free and doesn't require an account. Two things cost money and neither renews: premium print themes, bought one at a time, and the cookbook builder, which is charged per cookbook rather than once for the feature. Current prices are shown in the app before you buy.",
   },
   {
     question: "Is RecipePrinter a recipe app?",
