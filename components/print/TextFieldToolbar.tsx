@@ -140,20 +140,22 @@ export function TextFieldToolbar({
   if (!lineKind && !richText) return null;
 
   /**
-   * A line's bar is the same bar whichever line it is on.
+   * Only where there is something to style.
    *
-   * Bold and italic used to be REMOVED for a section heading, which is a plain
-   * textarea rather than a rich field. That made the bar two sizes: pressing
-   * H turned the row into a heading and the bar lost a third of its width
-   * under the cursor that had just pressed it, which reads as the toolbar
-   * breaking rather than as the line changing. Disabled says the same thing
-   * about what a heading can hold without moving anything.
+   * These sat in the bar permanently disabled on a section heading, to keep the
+   * bar one width on every line: removing them meant pressing H shrank the bar
+   * under the cursor that had just pressed it. But a heading is a plain
+   * textarea and always will be, so that bought a steady width with two
+   * controls that could never do anything on any heading, ever. A control that
+   * is never available is not a disabled control, it is a control that does not
+   * belong to this field.
    *
-   * The note and the description keep the narrow bar: they are not lines and
-   * can never become headings, so a disabled line-kind switch on them would be
-   * offering something that does not exist.
+   * The bar is centred on the field, so it now narrows evenly around the line
+   * rather than sliding off to one side. The note and the description have no
+   * line-kind switch either, for the same reason in the other direction: they
+   * are not lines and can never become headings.
    */
-  const styleGroup = lineKind || richText ? <TextStyleControl disabled={!richText} /> : null;
+  const styleGroup = richText ? <TextStyleControl /> : null;
 
   return createPortal(
     <div

@@ -14,16 +14,17 @@ import { applyStyleToFocusedField } from "@/lib/richTextField";
  * re-render the deck on every character and undo the whole point of making the
  * field uncontrolled. Here the only thing that re-renders is two buttons.
  *
- * `disabled` is for the fields that are a plain textarea rather than a rich
- * field (a section heading). The pair stays in the bar rather than vanishing,
- * so the bar is one width on every line — see TextFieldToolbar.
+ * Rendered only for a rich field. A section heading is a plain textarea, where
+ * neither command has anything to act on, so the bar leaves the pair out
+ * entirely rather than showing two buttons that can never be pressed — see
+ * TextFieldToolbar.
  *
  * `queryCommandState` is deprecated alongside `execCommand` and, like it, is
  * implemented everywhere and has no replacement. It is also the only thing
  * that agrees with `execCommand` by construction: asking the same engine the
  * same question that the button is about to act on.
  */
-export function TextStyleControl({ disabled = false }: { disabled?: boolean }) {
+export function TextStyleControl() {
   const [state, setState] = useState({ bold: false, italic: false });
 
   useEffect(() => {
@@ -47,12 +48,6 @@ export function TextStyleControl({ disabled = false }: { disabled?: boolean }) {
   }, []);
 
   const apply = (style: "bold" | "italic") => (event: ReactMouseEvent) => {
-    if (disabled) {
-      // Still swallow the press: it lands on a bar floating over a live field,
-      // and letting it through would commit the edit underneath.
-      event.preventDefault();
-      return;
-    }
     // preventDefault keeps focus in the field, which is the whole mechanism:
     // the browser styles the live selection, and nothing is mirrored into
     // React to do it.
@@ -69,12 +64,11 @@ export function TextStyleControl({ disabled = false }: { disabled?: boolean }) {
       <button
         type="button"
         className={`recipe-page-toolbar__btn recipe-page-toolbar__btn--icon ${
-          state.bold && !disabled ? "is-active" : ""
+          state.bold ? "is-active" : ""
         }`}
         aria-label="Bold"
-        aria-pressed={state.bold && !disabled}
-        disabled={disabled}
-        title={disabled ? "A heading is bold already" : "Bold (⌘B)"}
+        aria-pressed={state.bold}
+        title="Bold (⌘B)"
         onMouseDown={apply("bold")}
       >
         <BoldGlyph />
@@ -82,12 +76,11 @@ export function TextStyleControl({ disabled = false }: { disabled?: boolean }) {
       <button
         type="button"
         className={`recipe-page-toolbar__btn recipe-page-toolbar__btn--icon ${
-          state.italic && !disabled ? "is-active" : ""
+          state.italic ? "is-active" : ""
         }`}
         aria-label="Italic"
-        aria-pressed={state.italic && !disabled}
-        disabled={disabled}
-        title={disabled ? "A heading has one style" : "Italic (⌘I)"}
+        aria-pressed={state.italic}
+        title="Italic (⌘I)"
         onMouseDown={apply("italic")}
       >
         <ItalicGlyph />
