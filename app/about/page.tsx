@@ -100,16 +100,16 @@ export default function AboutPage() {
           and a single heading over 300 words of prose is valid on its own. */}
       <div className="mx-auto flex w-full max-w-[46rem] flex-col gap-cp-5 text-ink-soft text-cp-prose leading-relaxed">
         <p>
-          I built CookPilot, a recipe app, to help me adapt recipes to real life,
-          mostly because I was forever telling ChatGPT that I was out of this or short
-          on that.
+          I was a strictly digital recipe organizer. I built CookPilot, a recipe app,
+          to help me adapt recipes to real life, mostly because I was forever telling
+          ChatGPT that I was out of this or short on that.
         </p>
         <p>
           I shared it with friends and family, and the same question kept coming
           back. This is great, but can I print them? Or{" "}
           <InlineLink href="/family-recipe-book">turn them into a cookbook</InlineLink>?
-          Like I said, I lived digital. It&apos;s all I ever knew, so I rejected the idea
-          for a long time. But the feedback kept coming. Eventually I thought, ok,
+          Like I said, digital was all I ever knew, so I brushed the idea off for a
+          long time. But the feedback kept coming. Eventually I thought, ok,
           I&apos;ve already built the parser, so let&apos;s do it.
         </p>
         <p>
