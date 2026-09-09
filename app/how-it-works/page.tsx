@@ -60,7 +60,7 @@ const FAQS = [
   {
     question: "How does it tell the recipe from the story?",
     answer:
-      "The two arrive separately, so there's nothing to sort. Most sites publish the recipe (ingredients and steps only) on its own for search engines to read. The eight paragraphs about a holiday in Tuscany stay on the page where you found them.",
+      "The two arrive separately, so there's nothing to sort. Most sites publish the recipe (ingredients and steps only) on its own for search engines to read. Everything else stays on the page where you found it.",
   },
   {
     question: "Why do some recipe links not import?",
