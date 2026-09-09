@@ -784,7 +784,7 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
           "Thirty seconds of a Reel tells you whether you want to eat it, which is what it is there for. Cooking is a different job: the caption folds behind a more link, and you lose your place every time you put the phone down. RecipePrinter reads that caption and sets it out as ingredients with their amounts and numbered steps, on one sheet that stays where you left it.",
       },
       {
-        heading: "The save button was never meant to be a recipe box",
+        heading: "Saved posts were never meant to be a recipe box",
         image: "card-in-box",
         body:
           "Saving is a bookmark, and it is quick because that is all it needs to be. Recipes end up alongside everything else you meant to come back to, and a folder of thumbnails will not tell you which pasta was the good one. A printed card is filed the moment it comes off the printer, in a recipe box, a binder, or a folder by the stove.",
