@@ -50,7 +50,10 @@ export function CommunityGallery({
 
   return (
     <section
-      className="border-t border-line pt-cp-7 flex flex-col gap-cp-5"
+      // No rule above the heading: the space is the separator. The padding
+      // stays, on top of the page column's own gap, because whitespace has to
+      // be generous to do the job a hairline was doing.
+      className="pt-cp-7 flex flex-col gap-cp-5"
       aria-labelledby="rp-gallery-heading"
     >
       <Header />
