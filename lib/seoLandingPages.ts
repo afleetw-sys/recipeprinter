@@ -1228,19 +1228,19 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
     howTo: [
       {
         name: "Gather them from wherever they are",
-        text: "Paste a link, drop in a screenshot or a photo, or paste the text straight in. A food blog, Pinterest, Instagram, TikTok, a Paprika or CookPilot library, or a card someone wrote out by hand all go in the same way.",
+        text: "Paste a link, drop in a screenshot, or paste the text. A blog, Pinterest, a Paprika library and a handwritten card all go in the same way.",
       },
       {
         name: "Print the ones you keep coming back to",
-        text: "A recipe earns a sheet of paper by being one you make, so the stack builds up as a short list on its own. No sitting down to cull anything, and nothing to decide that cooking has not already decided.",
+        text: "A recipe earns a sheet of paper by being one you make, so the stack builds up as a short list on its own.",
       },
       {
         name: "Pick one size and stay with it",
-        text: "4 by 6 cards for a recipe box, or letter pages for a binder. One size across the whole collection is what lets it file together, and the theme you choose carries across every recipe waiting to print.",
+        text: "4 by 6 cards for a recipe box, or letter pages for a binder. One size across the collection is what lets it file together.",
       },
       {
         name: "File it the day it prints",
-        text: "Dividers by course, by season, or by who a recipe came from. A card filed the day it prints is a card you can still find in a year.",
+        text: "Dividers by course, by season, or by who it came from. A card filed the day it prints is one you can find in a year.",
       },
     ],
     featureSections: [
