@@ -248,7 +248,6 @@ export function PrinterWorkspace({
           onAddImageFiles={addImageFiles}
           onAddText={addText}
           onAddReadyRecipes={addReadyRecipes}
-          onRemoveRecipe={remove}
         />
       </div>
 

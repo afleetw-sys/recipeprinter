@@ -2,6 +2,7 @@
 
 import type { ComponentType, ReactNode } from "react";
 import type { ImportSummary } from "@/lib/importSummary";
+import { addSelectedLabel } from "@/lib/importSelection";
 import { formatRecipeTime } from "@/lib/time";
 import { EmptyState } from "@/components/EmptyState";
 import {
@@ -15,29 +16,34 @@ import {
 } from "@/components/icons";
 
 /**
- * The browse-and-add list every library source shares.
+ * The browse-and-choose list every library source shares.
  *
  * It was CookPilot's, back when CookPilot was the only library we could read.
- * Paprika needs exactly the same thing — a searchable list of recipes with an
- * Add on each row and an Add all above them — and the fastest way to get two
- * pickers that behave differently is to write the second one. So this holds
- * the list, and each source keeps only what is genuinely its own: CookPilot's
- * auth and pagination, Paprika's file.
+ * Paprika needs exactly the same thing — a searchable list of recipes you tick
+ * and then add — and the fastest way to get two pickers that behave
+ * differently is to write the second one. So this holds the list, and each
+ * source keeps only what is genuinely its own: CookPilot's auth and
+ * pagination, Paprika's file.
  *
  * Everything about *loading* stays with the source. This is handed a filtered
  * list and told what to say; it does not fetch, page, or filter.
+ *
+ * Ticking a row is local and instant (see lib/importSelection) — the print
+ * list is written once, by the button at the bottom. A row already in the
+ * print list says so and cannot be ticked: it is in, and the place it comes
+ * back out is the print page.
  */
 
 function RecipeRow({
   summary,
   added,
-  adding,
+  selected,
   fallbackIcon: FallbackIcon,
   onToggle,
 }: {
   summary: ImportSummary;
   added: boolean;
-  adding: boolean;
+  selected: boolean;
   fallbackIcon: ComponentType<{ size?: number }>;
   onToggle: () => void;
 }) {
@@ -47,13 +53,24 @@ function RecipeRow({
   return (
     <button
       type="button"
+      role="checkbox"
+      aria-checked={added || selected}
+      aria-disabled={added || undefined}
+      disabled={added}
       onClick={onToggle}
-      disabled={adding}
       aria-label={
-        added ? `Remove ${summary.title} from print list` : `Add ${summary.title} to print list`
+        added
+          ? `${summary.title} is already in your print list`
+          : selected
+            ? `Don't add ${summary.title}`
+            : `Add ${summary.title}`
       }
       className={`group flex w-full items-center gap-cp-3 rounded-xl border p-cp-2 text-left transition-colors ${
-        added ? "border-brand bg-brand-50/60" : "border-line bg-card hover:border-line-strong"
+        selected
+          ? "border-[var(--cp-selected-border)] bg-[var(--cp-selected-fill)] text-[var(--cp-selected-text)]"
+          : added
+            ? "border-line bg-page"
+            : "border-line bg-card hover:border-line-strong"
       }`}
     >
       <div className="relative h-14 w-14 flex-shrink-0 overflow-hidden rounded-lg bg-page grid place-items-center text-brand/50">
@@ -97,9 +114,17 @@ function RecipeRow({
           Added
         </span>
       ) : (
-        <span className="btn btn-secondary btn-compact flex-shrink-0 pointer-events-none transition-colors group-hover:border-line-strong group-hover:bg-page">
-          {adding ? <SpinnerIcon size={ICON_SIZE.md} /> : <PlusIcon size={ICON_SIZE.md} />}
-          Add
+        /* A tickbox, because that is what it now is. The row still reads as a
+           whole control — the box is the mark, not the hit area. */
+        <span
+          aria-hidden
+          className={`grid h-6 w-6 flex-shrink-0 place-items-center rounded-md border transition-colors ${
+            selected
+              ? "border-[var(--cp-selected-border)] bg-[var(--cp-selected-border)] text-card"
+              : "border-line-strong bg-card group-hover:bg-page"
+          }`}
+        >
+          {selected && <CheckIcon size={ICON_SIZE.sm} />}
         </span>
       )}
     </button>
@@ -111,11 +136,13 @@ export function RecipeSourceList({
   countLabel,
   summaries,
   addedIds,
-  addingIds,
-  bulkBusy = false,
-  allVisibleAdded,
+  selectedIds,
+  allSelectableSelected,
   onToggle,
-  onAddAll,
+  onToggleAll,
+  selectAllBusy = false,
+  onCommit,
+  committing = false,
   queryText,
   onQueryChange,
   searchId,
@@ -133,14 +160,18 @@ export function RecipeSourceList({
   countLabel?: string;
   /** Already filtered by `queryText`; this list renders what it is given. */
   summaries: ImportSummary[];
-  /** Queue ids already in the print list. */
+  /** Queue ids already in the print list. Shown as such, not selectable. */
   addedIds: Set<string>;
-  /** Source ids mid-add, so their row can spin. */
-  addingIds: Set<string>;
-  bulkBusy?: boolean;
-  allVisibleAdded: boolean;
+  /** Queue ids ticked but not yet added. */
+  selectedIds: Set<string>;
+  /** Whether every still-addable visible row is ticked. */
+  allSelectableSelected: boolean;
   onToggle: (summary: ImportSummary) => void;
-  onAddAll: () => void;
+  onToggleAll: () => void;
+  /** CookPilot's "Select all" may have to fetch the rest of the library first. */
+  selectAllBusy?: boolean;
+  onCommit: () => void;
+  committing?: boolean;
   queryText: string;
   onQueryChange: (value: string) => void;
   searchId: string;
@@ -160,6 +191,10 @@ export function RecipeSourceList({
   footer?: ReactNode;
 }) {
   const isSearching = queryText.trim().length > 0;
+  const selectedCount = selectedIds.size;
+  // Nothing addable left to select, so the control has nothing to offer.
+  const canSelectAll =
+    allSelectableSelected || summaries.some((summary) => !addedIds.has(summary.queueId));
 
   return (
     <div className="flex flex-col gap-cp-4">
@@ -168,15 +203,15 @@ export function RecipeSourceList({
           {heading}
           {countLabel ? ` ${countLabel}` : ""}
         </h3>
-        {!loading && !error && summaries.length > 0 && (
+        {!loading && !error && summaries.length > 0 && canSelectAll && (
           <button
             type="button"
             className="btn-ghost btn-compact flex-shrink-0"
-            onClick={onAddAll}
-            disabled={bulkBusy}
+            onClick={onToggleAll}
+            disabled={selectAllBusy || committing}
           >
-            {bulkBusy ? <SpinnerIcon size={ICON_SIZE.sm} /> : null}
-            {allVisibleAdded ? "Remove all" : "Add all"}
+            {selectAllBusy ? <SpinnerIcon size={ICON_SIZE.sm} /> : null}
+            {allSelectableSelected ? "Clear selection" : "Select all"}
           </button>
         )}
       </div>
@@ -224,7 +259,7 @@ export function RecipeSourceList({
               <RecipeRow
                 summary={summary}
                 added={addedIds.has(summary.queueId)}
-                adding={addingIds.has(summary.id)}
+                selected={selectedIds.has(summary.queueId)}
                 fallbackIcon={fallbackIcon}
                 onToggle={() => onToggle(summary)}
               />
@@ -234,6 +269,23 @@ export function RecipeSourceList({
       )}
 
       {footer}
+
+      {/* The one write. It stays on screen with nothing ticked so the picker
+          always shows how choosing here ends, rather than growing a button the
+          first time you tick something. A selection made under a search
+          survives clearing that search, so the count can exceed what is on
+          screen — which is why it names a number and not "these". */}
+      {!loading && (selectedCount > 0 || summaries.length > 0) && (
+        <button
+          type="button"
+          className="btn btn-primary w-full"
+          onClick={onCommit}
+          disabled={selectedCount === 0 || committing}
+        >
+          {committing ? <SpinnerIcon size={ICON_SIZE.md} /> : <PlusIcon size={ICON_SIZE.md} />}
+          {addSelectedLabel(selectedCount)}
+        </button>
+      )}
     </div>
   );
 }

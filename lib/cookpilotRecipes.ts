@@ -351,15 +351,48 @@ async function loadCookPilotQueueItem(
   } satisfies QueueItem;
 }
 
+/** What a batch load actually managed, and which rows it did not. */
+export interface CookPilotQueueLoad {
+  items: QueueItem[];
+  /** Summary ids that produced nothing, so the picker can keep them ticked. */
+  failedIds: string[];
+}
+
+/**
+ * Load the chosen recipes' detail documents, one read each.
+ *
+ * Resolves per recipe rather than as one all-or-nothing batch. Adding fifty
+ * recipes is fifty Firestore reads, and a single one that throws used to
+ * reject the whole `Promise.all` and take the other forty-nine down with it —
+ * which is a bad trade at any size and a terrible one at fifty. Now every read
+ * that worked comes back, and the ones that did not are named so the caller
+ * can offer them again.
+ *
+ * A recipe whose documents can't be turned into a recipe at all lands in
+ * `failedIds` too. It used to be filtered away silently, which meant asking for
+ * fifty and getting forty-nine with nothing said about the fiftieth.
+ */
 export async function loadCookPilotQueueItems(
   userId: string,
   summaries: CookPilotRecipeSummary[],
-): Promise<QueueItem[]> {
+): Promise<CookPilotQueueLoad> {
   const loaded = await mapWithConcurrency(
     summaries,
     DETAIL_LOAD_CONCURRENCY,
-    (summary) => loadCookPilotQueueItem(userId, summary),
+    async (summary) => {
+      try {
+        return await loadCookPilotQueueItem(userId, summary);
+      } catch {
+        return null;
+      }
+    },
   );
 
-  return loaded.filter((item): item is QueueItem => item !== null);
+  const items: QueueItem[] = [];
+  const failedIds: string[] = [];
+  loaded.forEach((item, index) => {
+    if (item) items.push(item);
+    else failedIds.push(summaries[index]!.id);
+  });
+  return { items, failedIds };
 }

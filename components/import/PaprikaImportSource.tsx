@@ -3,6 +3,12 @@
 import { useMemo, useState, type DragEvent } from "react";
 import { track, truncateReason, type ImportFailureCode } from "@/lib/analytics";
 import { filterImportSummaries, type ImportSummary } from "@/lib/importSummary";
+import {
+  allSelectableSelected as allSelectableSelectedIn,
+  partialAddMessage,
+  selectableQueueIds,
+  toggleSelection,
+} from "@/lib/importSelection";
 import { localPhotoUrl, putLocalPhoto } from "@/lib/localPhotos";
 import {
   PaprikaImportError,
@@ -147,12 +153,10 @@ async function toQueueItem(entry: PaprikaEntry): Promise<QueueItem> {
 export function PaprikaImportSource({
   items,
   onAddRecipes,
-  onRemoveRecipe,
   onLibraryChange,
 }: {
   items: QueueItem[];
   onAddRecipes: (recipes: QueueItem[]) => number;
-  onRemoveRecipe: (id: string) => void;
   /** Lets the integrations list re-read the open file's name and count. */
   onLibraryChange?: () => void;
 }) {
@@ -160,22 +164,23 @@ export function PaprikaImportSource({
   const [reading, setReading] = useState(false);
   const [fileError, setFileError] = useState<string | null>(null);
   const [queryText, setQueryText] = useState("");
-  const [addingIds, setAddingIds] = useState<Set<string>>(new Set());
-  const [bulkBusy, setBulkBusy] = useState(false);
+  /** Queue ids ticked but not yet added — see lib/importSelection. */
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [committing, setCommitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const addedIds = useMemo(() => new Set(items.map((item) => item.id)), [items]);
   // Memoized so the derivations below don't see a brand-new empty array on
   // every render while no file is open.
   const entries = useMemo(() => library?.entries ?? [], [library]);
-  const byId = useMemo(
-    () => new Map(entries.map((entry) => [entry.id, entry] as const)),
-    [entries],
-  );
   const rows = useMemo(() => entries.map(paprikaImportSummary), [entries]);
+  /* Selection is keyed by queue id; committing needs the entry behind it. */
+  const byQueueId = useMemo(
+    () => new Map(rows.map((row, index) => [row.queueId, entries[index]!] as const)),
+    [rows, entries],
+  );
   const visibleRows = useMemo(() => filterImportSummaries(rows, queryText), [rows, queryText]);
-  const allVisibleAdded =
-    visibleRows.length > 0 && visibleRows.every((row) => addedIds.has(row.queueId));
+  const allVisibleSelected = allSelectableSelectedIn(visibleRows, addedIds, selectedIds);
 
   async function handleFile(file: File | null | undefined) {
     if (!file) return;
@@ -187,6 +192,7 @@ export function PaprikaImportSource({
       setPaprikaLibrary(next);
       setLibrary(next);
       setQueryText("");
+      setSelectedIds(new Set());
       onLibraryChange?.();
     } catch (err) {
       const code: ImportFailureCode =
@@ -208,49 +214,58 @@ export function PaprikaImportSource({
     }
   }
 
-  async function handleToggle(row: ImportSummary) {
-    const entry = byId.get(row.id);
-    if (!entry || addingIds.has(entry.id)) return;
-    if (addedIds.has(row.queueId)) {
-      onRemoveRecipe(row.queueId);
-      return;
-    }
-    setError(null);
-    setAddingIds((current) => new Set(current).add(entry.id));
-    try {
-      onAddRecipes([await toQueueItem(entry)]);
-    } catch {
-      setError("We couldn't add that recipe. Please try again.");
-    } finally {
-      setAddingIds((current) => {
-        const next = new Set(current);
-        next.delete(entry.id);
-        return next;
-      });
-    }
+  /** Local and instant: no photo is stored until the commit. */
+  function handleToggle(row: ImportSummary) {
+    if (addedIds.has(row.queueId)) return;
+    if (error) setError(null);
+    setSelectedIds((current) => toggleSelection(current, row.queueId));
   }
 
-  async function handleAddAll() {
-    if (bulkBusy) return;
-    if (allVisibleAdded) {
-      visibleRows.forEach((row) => onRemoveRecipe(row.queueId));
+  function handleToggleAll() {
+    if (committing) return;
+    if (error) setError(null);
+    if (allVisibleSelected) {
+      // Only what is on screen: a selection made under an earlier search is
+      // still the cook's, and clearing a filtered view should not reach past it.
+      const visible = new Set(visibleRows.map((row) => row.queueId));
+      setSelectedIds((current) => new Set(Array.from(current).filter((id) => !visible.has(id))));
       return;
     }
+    const targets = selectableQueueIds(visibleRows, addedIds);
+    setSelectedIds((current) => new Set(Array.from(current).concat(targets)));
+  }
+
+  /**
+   * The one write to the print list.
+   *
+   * Each recipe's photo is stored on its own, so one that can't be written
+   * costs that recipe and no other. Whatever came over is added; whatever did
+   * not stays ticked, which makes "try again" the same button with a smaller
+   * count on it. See `partialAddMessage`.
+   */
+  async function handleCommit() {
+    if (committing || selectedIds.size === 0) return;
+    const targets = Array.from(selectedIds)
+      .map((queueId) => byQueueId.get(queueId))
+      .filter((entry): entry is PaprikaEntry => Boolean(entry));
+    if (targets.length === 0) return;
     setError(null);
-    setBulkBusy(true);
+    setCommitting(true);
     try {
-      const targets = visibleRows
-        .filter((row) => !addedIds.has(row.queueId))
-        .map((row) => byId.get(row.id))
-        .filter((entry): entry is PaprikaEntry => Boolean(entry));
-      if (targets.length === 0) return;
       const queueItems: QueueItem[] = [];
-      for (const entry of targets) queueItems.push(await toQueueItem(entry));
+      const failed = new Set<string>();
+      for (const entry of targets) {
+        try {
+          queueItems.push(await toQueueItem(entry));
+        } catch {
+          failed.add(paprikaImportSummary(entry).queueId);
+        }
+      }
       onAddRecipes(queueItems);
-    } catch {
-      setError("We couldn't add those recipes. Please try again.");
+      setSelectedIds((current) => new Set(Array.from(current).filter((id) => failed.has(id))));
+      if (failed.size > 0) setError(partialAddMessage(queueItems.length, failed.size));
     } finally {
-      setBulkBusy(false);
+      setCommitting(false);
     }
   }
 
@@ -259,6 +274,9 @@ export function PaprikaImportSource({
     setLibrary(null);
     setQueryText("");
     setError(null);
+    // A selection belongs to the file it was made in; the next one has its own
+    // ids and nothing of this one's should carry over into it.
+    setSelectedIds(new Set());
     onLibraryChange?.();
   }
 
@@ -273,11 +291,12 @@ export function PaprikaImportSource({
         countLabel={entries.length > 0 ? `(${entries.length})` : undefined}
         summaries={visibleRows}
         addedIds={addedIds}
-        addingIds={addingIds}
-        bulkBusy={bulkBusy}
-        allVisibleAdded={allVisibleAdded}
+        selectedIds={selectedIds}
+        allSelectableSelected={allVisibleSelected}
         onToggle={handleToggle}
-        onAddAll={handleAddAll}
+        onToggleAll={handleToggleAll}
+        onCommit={handleCommit}
+        committing={committing}
         queryText={queryText}
         onQueryChange={setQueryText}
         searchId="paprika-search"

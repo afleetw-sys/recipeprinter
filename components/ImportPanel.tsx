@@ -75,7 +75,6 @@ export function ImportPanel({
   onAddImageFiles,
   onAddText,
   onAddReadyRecipes,
-  onRemoveRecipe,
   commitRef,
 }: {
   items: QueueItem[];
@@ -99,7 +98,6 @@ export function ImportPanel({
   onAddImageFiles: (files: File[], label: string) => void;
   onAddText: (text: string) => void;
   onAddReadyRecipes: (recipes: QueueItem[]) => number;
-  onRemoveRecipe: (id: string) => void;
   /** Filled in by this panel with a function that submits whatever is in the
       form, so a parent's own "done" button can finish the job. */
   commitRef?: MutableRefObject<(() => boolean) | null>;
@@ -348,11 +346,7 @@ export function ImportPanel({
 
       {mode === "apps" ? (
         <div className="mt-cp-4">
-          <RecipeAppsPanel
-            items={items}
-            onAddRecipes={onAddReadyRecipes}
-            onRemoveRecipe={onRemoveRecipe}
-          />
+          <RecipeAppsPanel items={items} onAddRecipes={onAddReadyRecipes} />
         </div>
       ) : (
       <form className="flex flex-col gap-cp-4 mt-cp-4" onSubmit={handleSubmit}>

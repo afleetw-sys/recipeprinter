@@ -123,7 +123,6 @@ export function AddRecipeDialog({
           onAddImageFiles={handleAddImageFiles}
           onAddText={handleAddText}
           onAddReadyRecipes={onAddReadyRecipes}
-          onRemoveRecipe={() => undefined}
         />
 
         {duplicateTitle && (

@@ -94,11 +94,9 @@ function IntegrationRow({
 export function RecipeAppsPanel({
   items,
   onAddRecipes,
-  onRemoveRecipe,
 }: {
   items: QueueItem[];
   onAddRecipes: (recipes: QueueItem[]) => number;
-  onRemoveRecipe: (id: string) => void;
 }) {
   const [source, setSource] = useState<SourceId | null>(lastOpenSource);
   // Bumped when the open Paprika file changes, so the row below re-reads it.
@@ -150,16 +148,11 @@ export function RecipeAppsPanel({
         </button>
 
         {source === "cookpilot" ? (
-          <CookPilotImportSource
-            items={items}
-            onAddRecipes={onAddRecipes}
-            onRemoveRecipe={onRemoveRecipe}
-          />
+          <CookPilotImportSource items={items} onAddRecipes={onAddRecipes} />
         ) : (
           <PaprikaImportSource
             items={items}
             onAddRecipes={onAddRecipes}
-            onRemoveRecipe={onRemoveRecipe}
             onLibraryChange={() => setLibraryNonce((value) => value + 1)}
           />
         )}
