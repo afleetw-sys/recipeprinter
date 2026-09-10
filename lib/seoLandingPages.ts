@@ -1231,8 +1231,8 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
         text: "Paste a link, drop in a screenshot or a photo, or paste the text straight in. A food blog, Pinterest, Instagram, TikTok, a Paprika or CookPilot library, or a card someone wrote out by hand all go in the same way.",
       },
       {
-        name: "Print the ones you cook, not the ones you saved",
-        text: "Nobody prints forty recipes they were curious about once. That's the useful part: what comes off the printer is already the short list, and you never had to sit down and cull anything.",
+        name: "Print the ones you keep coming back to",
+        text: "A recipe earns a sheet of paper by being one you make, so the stack builds up as a short list on its own. No sitting down to cull anything, and nothing to decide that cooking has not already decided.",
       },
       {
         name: "Pick one size and stay with it",
@@ -1240,7 +1240,7 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
       },
       {
         name: "File it the day it prints",
-        text: "Dividers by course, by season, or by who a recipe came from. A card filed the day it prints is a card you can still find in a year, which is the whole job.",
+        text: "Dividers by course, by season, or by who a recipe came from. A card filed the day it prints is a card you can still find in a year.",
       },
     ],
     featureSections: [
@@ -1248,13 +1248,13 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
         heading: "Recipes that live in ten places, in one",
         image: "cookpilot-export",
         body:
-          "A recipe collection is hardly ever in one app. There's a bookmark folder, a camera roll of screenshots, a Pinterest board, a few links in a group chat, and a recipe app you stopped opening. RecipePrinter takes all of it the same way, so there's no migrating between apps and no picking a winner. Whatever you already have goes in, and what comes out is paper that matches.",
+          "A recipe collection is hardly ever in one app. There's usually a bookmark folder, a camera roll of screenshots, a Pinterest board, a few links in a group chat, and a recipe app or two. RecipePrinter takes all of it the same way, so there's no migrating between apps and no picking a winner. Whatever you already have goes in, and what comes out is paper that matches.",
       },
       {
         heading: "Cards for a box, pages for a binder",
         image: "card-in-box",
         body:
-          "A 4 by 6 card drops straight into a recipe box behind tabbed dividers. A letter page goes into a three ring binder, and into a sheet protector if it's something you make often. Both print at home on paper you already have, and both come out the same size every time, which is the part that makes a collection rather than a pile.",
+          "A 4 by 6 card drops straight into a recipe box behind tabbed dividers. A letter page goes into a three ring binder, and into a sheet protector if it's something you make often. Both print at home on paper you already have, and both come out the same size every time, so a set built up over months still stacks together.",
       },
       {
         heading: "Keep a searchable copy as well",
@@ -1267,7 +1267,7 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
       {
         question: "What is the easiest way to organize online recipes?",
         answer:
-          "Print the ones you actually cook, at one size, and file them the day they come out. Course, season, and who a recipe came from are the groupings most people settle on. The hard part of organizing recipes was never the sorting, it's deciding which ones are worth keeping, and printing settles that for you.",
+          "Print the ones you cook, at one size, and file them the day they come out. Course, season, and who a recipe came from are the groupings most people settle on. Printing helps with the deciding as well, since a recipe tends to get printed when it's one you're going to make.",
       },
       {
         question: "What categories should I use for a recipe binder?",
@@ -1294,7 +1294,7 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
       {
         question: "How do I keep printed recipes clean while I cook?",
         answer:
-          "A sheet protector is the usual answer for a binder, and a card in a recipe box survives more than you'd expect. If one does get ruined, printing it again costs a sheet of paper, which isn't something a torn magazine clipping offers.",
+          "A sheet protector is the usual answer for a binder, and a card in a recipe box survives more than you'd expect. If one does get ruined, printing it again costs a sheet of paper.",
       },
       {
         question: "Do I need an account to keep a collection together?",
