@@ -29,11 +29,11 @@ const SLOT =
 /** Roughly one-and-a-bit photos on a phone, a bit over two everywhere else.
     The trailing fraction is the affordance: a half-visible next photo says
     "this scrolls" better than any arrow does.
-    Four across was sized for the old 1240px page column. In the 860px one the
-    whole set fitted at once, which killed the scrolling, and each card was
-    small enough that you could see there was writing on it but not read a
-    word. The photographs are the argument here, so they get the room. */
-const ITEM = "snap-start shrink-0 basis-[78%] sm:basis-[46%]";
+    Four across was sized for the old 1240px page column and left the cards
+    too small to read anything on; two across gave them the room and then some,
+    at which point the strip stopped reading as a row of snapshots and started
+    competing with the printer above it. Three is the middle. */
+const ITEM = "snap-start shrink-0 basis-[62%] sm:basis-[31%]";
 
 export function CommunityGallery({
   items = COMMUNITY_PHOTOS,
@@ -129,7 +129,7 @@ function Frame({
         // Absolute above `sm`, not a viewport fraction: the page column stops
         // growing at 860px, so a percentage of the WINDOW kept asking for
         // bigger and bigger files that were never displayed any larger.
-        sizes="(max-width: 639px) 78vw, (max-width: 1023px) 46vw, 400px"
+        sizes="(max-width: 639px) 62vw, (max-width: 1023px) 31vw, 280px"
         className="w-full rounded-xl object-cover"
         style={{ aspectRatio: "4 / 3", objectPosition: photo.objectPosition }}
       />
