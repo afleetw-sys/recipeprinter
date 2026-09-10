@@ -317,6 +317,27 @@ async function packageForTemplate(
   return rcPackage;
 }
 
+/**
+ * Take RevenueCat's checkout mount back out of the document once the sheet is
+ * done with it.
+ *
+ * `purchase()` mounts the checkout into a div it appends to `<body>` and never
+ * takes away — and it creates that div with a CLASS of `rcb-ui-root` while
+ * looking an existing one up by ID, so the lookup never matches and every trip
+ * through checkout leaves another one behind. Whatever the sheet's teardown
+ * leaves inside them stays in the page: a stray control floating over the print
+ * preview, which then printed with the recipe. It arrives with the checkout —
+ * paid or dismissed, it makes no difference — and only a reload cleared it.
+ *
+ * Nothing reads these nodes afterwards: the SDK builds a fresh mount for the
+ * next purchase whether or not it finds an old one, so removing them is safe
+ * and self-healing. Called when the flow settles, never while it is open.
+ */
+function releaseCheckoutMount() {
+  if (typeof document === "undefined") return;
+  document.querySelectorAll(".rcb-ui-root, #rcb-ui-root").forEach((node) => node.remove());
+}
+
 export async function purchaseRecipePrinterTemplate({
   userId,
   email,
@@ -346,6 +367,8 @@ export async function purchaseRecipePrinterTemplate({
       return { customerInfo: await purchases.getCustomerInfo(), cancelled: true };
     }
     throw error;
+  } finally {
+    releaseCheckoutMount();
   }
 }
 
@@ -394,6 +417,8 @@ export async function purchaseRecipePrinterCookbook({
       return { customerInfo: await purchases.getCustomerInfo(), cancelled: true };
     }
     throw error;
+  } finally {
+    releaseCheckoutMount();
   }
 }
 

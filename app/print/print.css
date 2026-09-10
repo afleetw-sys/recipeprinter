@@ -7062,6 +7062,24 @@ textarea.recipe-card__toc-title {
 
 @media print {
 
+  /* Nothing a payment SDK mounted on `<body>` prints.
+
+     RevenueCat's checkout and the Stripe frames underneath it are appended
+     outside our tree, so `.no-print` — which we can only put on our own
+     elements — never covers them. They also outlive the sheet (see
+     `releaseCheckoutMount` in lib/recipePrinterPurchases.ts, which now clears
+     the mount on the way out), and a cook who had opened checkout printed the
+     leftover control on top of their recipe. This is the belt to that braces:
+     whatever a vendor leaves in the document, and whenever a future SDK starts
+     leaving something new, it does not reach paper. */
+  .rcb-ui-root,
+  #rcb-ui-root,
+  .__PrivateStripeElement,
+  iframe[name^="__privateStripe"],
+  iframe[src*="js.stripe.com"] {
+    display: none !important;
+  }
+
   /* Hide the whole on-screen toolbar wrapper, not just its (already `no-print`)
      children. Even collapsed to 0 height, this wrapper is real in-flow content
      on the DEFAULT page, and it sits BEFORE the first `.recipe-card-page` — which
