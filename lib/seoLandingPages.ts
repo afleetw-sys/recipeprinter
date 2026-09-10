@@ -739,6 +739,7 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
   {
     slug: "print-instagram-recipes",
     contentUpdated: "2026-09-09",
+    lastReviewed: "2026-09-09",
     primaryKeyword: "print Instagram recipes",
     secondaryKeywords: [
       "print recipe from Instagram",
