@@ -50,26 +50,18 @@ export default function Home() {
                 below ends on. */}
             <h1 className="text-cp-hero font-extrabold tracking-[-0.04em] leading-[1.05]">
               Print the recipes{" "}
-              {/* A clay BLOCK, not clay type. Clay is the right accent here:
-                  docs/color-roles.md gives everything non-interactive that
-                  should catch the eye to clay, and this is a phrase to look at
-                  rather than a thing to click. Clay as a word is only 3.4:1 on
-                  this background, which is why the design-system audit refuses
-                  it outright. Behind the words it can be the full accent, and
-                  the type takes `--cp-on-accent-warm` (white), which the audit
-                  requires on any filled accent.
-                  White on clay is 3.72:1. That is short of the 4.5:1 body text
-                  answers to and clear of the 3:1 that large text does, so it
-                  holds here and only here: this headline is 800 weight at 44px
-                  on a desktop and 28px on a phone, both well past the 18.66px
-                  bold that makes text large. Do not lift this span onto
-                  anything smaller.
-                  `box-decoration-break: clone` so it wraps as two marked lines
-                  on a phone rather than one long bar with the ends bitten
-                  off. */}
-              <span className="rounded-sm bg-[var(--cp-accent-warm)] px-[0.14em] text-[var(--cp-on-accent-warm)] [-webkit-box-decoration-break:clone] [box-decoration-break:clone]">
-                worth making again.
-              </span>
+              {/* Clay type. docs/color-roles.md gives everything
+                  non-interactive that should catch the eye to clay, and this
+                  is a phrase to look at rather than a thing to click.
+                  Clay on this background is 3.44:1, which is under the 4.5:1
+                  body text answers to and over the 3:1 that LARGE text does.
+                  This headline is 800 weight at 44px on a desktop and 28px on
+                  a phone, both well past the 18.66px bold that counts as
+                  large, so it holds here and nowhere smaller. The
+                  design-system audit bans clay as a word outright because that
+                  is the right default; this one line is allowlisted there, by
+                  its exact text, with the same reasoning. */}
+              <span className="text-[var(--cp-accent-warm)]">worth making again.</span>
             </h1>
             {/* Its own measure, narrower than the headline's: centred text is
                 read by finding the start of each line, and the full 860px
