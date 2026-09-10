@@ -5569,13 +5569,33 @@ textarea.recipe-card__toc-title {
   overflow: hidden;
 }
 
+/* ── Photo mats: no BLURRED shadow, on any theme ──────────────────────────
+   Every mat below lifts its snapshot off the paper with a shadow that has a
+   blur radius of ZERO, and that is not a style choice.
+
+   A blurred shadow cannot be expressed in vector PDF (the same fact that took
+   the halo off pantry's type — see the note by `.recipe-template--pantry
+   .recipe-card__title`). Behind a photo it goes wrong in a louder way: Chrome
+   composites the mat into a layer and hands the PDF the blur as a grayscale
+   SOFT MASK, JPEG-encoded — measured on a real export as a 617x616 DCTDecode
+   image behind a 1.7in photo. JPEG cannot hold a smooth 20%-alpha gradient at
+   that size, so the mask flattens and prints as a hard opaque taupe RECTANGLE
+   around the picture, unrotated, on paper and in every PDF export. It looked
+   correct on screen the whole time, which is why it survived this long.
+
+   Classic (0 4px 12px), heirloom (0 3px 10px) and keepsake (0 0.5px 1px) all
+   did it — the free default theme included, so it reached any cook who printed
+   a recipe with a photo. Bistro's `3px 3px 0` never did, and that is the shape
+   to copy: an offset with no blur is drawn as a filled rect, stays vector, and
+   follows the mat's own rotation. */
+
 /* ── Classic: a crisp, modern cookbook print — white mat, teal hairline ───── */
 .recipe-template--classic .recipe-card__photo {
   padding: 3px;
   background: #fff;
   border: 1px solid color-mix(in srgb, var(--recipe-accent-2) 55%, var(--recipe-line));
   border-radius: 10px;
-  box-shadow: 0 4px 12px rgba(17, 17, 17, 0.1);
+  box-shadow: 0 2px 0 rgba(17, 17, 17, 0.08);
 }
 .recipe-template--classic .recipe-card__photo-img {
   border-radius: 7px;
@@ -5588,7 +5608,7 @@ textarea.recipe-card__toc-title {
   border: 1px solid rgba(92, 64, 55, 0.22);
   border-radius: 1px;
   transform: rotate(2.4deg);
-  box-shadow: 0 3px 10px rgba(92, 64, 55, 0.2);
+  box-shadow: 2px 3px 0 rgba(92, 64, 55, 0.13);
 }
 .recipe-template--heirloom .recipe-card__photo-img {
   border-radius: 0;
@@ -5601,9 +5621,7 @@ textarea.recipe-card__toc-title {
   background: rgba(255, 250, 236, 0.64);
   border: 1px solid rgba(102, 78, 48, 0.12);
   border-radius: 8px;
-  box-shadow:
-    inset 0 0 0 1px rgba(248, 239, 217, 0.68),
-    0 0.5px 1px rgba(102, 78, 48, 0.08);
+  box-shadow: inset 0 0 0 1px rgba(248, 239, 217, 0.68);
 }
 .recipe-template--keepsake .recipe-card__photo::before,
 .recipe-template--keepsake .recipe-card__photo::after {
