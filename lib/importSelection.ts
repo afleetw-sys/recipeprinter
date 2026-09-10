@@ -61,20 +61,15 @@ export function allSelectableSelected(
   return selectable.length > 0 && selectable.every((queueId) => selected.has(queueId));
 }
 
-/** The commit button. Disabled at zero, but still says what it is for. */
-export function addSelectedLabel(count: number): string {
-  if (count === 0) return "Add to your print list";
-  return `Add ${count} ${count === 1 ? "recipe" : "recipes"}`;
-}
-
 /**
  * What to say when a commit brought some of the batch over and not the rest.
  *
  * Adding fifty recipes reads fifty documents, and one of those can fail on its
  * own. Losing the other forty-nine to it would be the worst possible answer, so
  * the ones that loaded are added and the ones that did not stay selected —
- * which makes trying again a single click on a button that already says how
- * many are left. This is the sentence that explains that state.
+ * which makes trying again a single press of the same button, against a
+ * selection that has shrunk to only what is left. This is the sentence that
+ * explains that state.
  *
  * Empty string when nothing failed, so the caller can hand it straight to its
  * error slot.

@@ -125,10 +125,12 @@ function SignedInCookPilotImport({
   user,
   items,
   onAddRecipes,
+  commitLabel,
 }: {
   user: User;
   items: QueueItem[];
   onAddRecipes: (recipes: QueueItem[]) => number;
+  commitLabel: string;
 }) {
   const [summaries, setSummaries] = useState<CookPilotRecipeSummary[]>(
     () => getCachedCookPilotSummaries(user.uid) ?? [],
@@ -394,6 +396,7 @@ function SignedInCookPilotImport({
       onToggleAll={handleToggleAll}
       selectAllBusy={bulkBusy}
       onCommit={handleCommit}
+      commitLabel={commitLabel}
       committing={committing}
       queryText={queryText}
       onQueryChange={setQueryText}
@@ -458,9 +461,12 @@ function SignedInCookPilotImport({
 export function CookPilotImportSource({
   items,
   onAddRecipes,
+  commitLabel,
 }: {
   items: QueueItem[];
   onAddRecipes: (recipes: QueueItem[]) => number;
+  /** What the surrounding panel's submit says — see ImportPanel. */
+  commitLabel: string;
 }) {
   const { user, ready, redirectError } = useCookPilotAuth();
   const [showEmailLogin, setShowEmailLogin] = useState(false);
@@ -484,7 +490,12 @@ export function CookPilotImportSource({
       )}
 
       {ready && user && (
-        <SignedInCookPilotImport user={user} items={items} onAddRecipes={onAddRecipes} />
+        <SignedInCookPilotImport
+          user={user}
+          items={items}
+          onAddRecipes={onAddRecipes}
+          commitLabel={commitLabel}
+        />
       )}
 
       {showEmailLogin && !user && (

@@ -153,10 +153,13 @@ async function toQueueItem(entry: PaprikaEntry): Promise<QueueItem> {
 export function PaprikaImportSource({
   items,
   onAddRecipes,
+  commitLabel,
   onLibraryChange,
 }: {
   items: QueueItem[];
   onAddRecipes: (recipes: QueueItem[]) => number;
+  /** What the surrounding panel's submit says — see ImportPanel. */
+  commitLabel: string;
   /** Lets the integrations list re-read the open file's name and count. */
   onLibraryChange?: () => void;
 }) {
@@ -286,6 +289,20 @@ export function PaprikaImportSource({
 
   return (
     <div className="flex flex-col gap-cp-4">
+      {/* Which file this library came from, ABOVE the list rather than under
+          it. It is a caption on the source, so it reads better next to the
+          heading than as a trailing line — and structurally it has to be here,
+          because the list's Add button pins itself to the bottom of the
+          scroller and anything left below the list would stop it reaching
+          there, leaving it floating over a strip of recipes it could not
+          cover. */}
+      <div className="flex flex-wrap items-center justify-between gap-cp-2 text-cp-caption text-ink-soft">
+        <span className="truncate">From {library.fileName}</span>
+        <button type="button" className="btn-ghost btn-compact" onClick={chooseAnotherFile}>
+          <UploadIcon size={ICON_SIZE.sm} />
+          Use a different file
+        </button>
+      </div>
       <RecipeSourceList
         heading="Paprika recipes"
         countLabel={entries.length > 0 ? `(${entries.length})` : undefined}
@@ -296,6 +313,7 @@ export function PaprikaImportSource({
         onToggle={handleToggle}
         onToggleAll={handleToggleAll}
         onCommit={handleCommit}
+        commitLabel={commitLabel}
         committing={committing}
         queryText={queryText}
         onQueryChange={setQueryText}
@@ -304,13 +322,6 @@ export function PaprikaImportSource({
         error={error}
         fallbackIcon={BookIcon}
       />
-      <div className="flex flex-wrap items-center justify-between gap-cp-2 text-cp-caption text-ink-soft">
-        <span className="truncate">From {library.fileName}</span>
-        <button type="button" className="btn-ghost btn-compact" onClick={chooseAnotherFile}>
-          <UploadIcon size={ICON_SIZE.sm} />
-          Use a different file
-        </button>
-      </div>
     </div>
   );
 }

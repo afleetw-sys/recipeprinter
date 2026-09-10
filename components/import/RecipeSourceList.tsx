@@ -2,7 +2,6 @@
 
 import type { ComponentType, ReactNode } from "react";
 import type { ImportSummary } from "@/lib/importSummary";
-import { addSelectedLabel } from "@/lib/importSelection";
 import { formatRecipeTime } from "@/lib/time";
 import { EmptyState } from "@/components/EmptyState";
 import {
@@ -89,7 +88,10 @@ function RecipeRow({
       </div>
 
       <div className="min-w-0 flex-1">
-        <p className="text-cp-body font-bold leading-snug line-clamp-1">{summary.title}</p>
+        {/* Two lines, not one. In a three-across grid a row is ~150px of text,
+            and real recipe titles are longer than that — clamped at one line,
+            most of a library came out as the same truncated first two words. */}
+        <p className="text-cp-body font-bold leading-snug line-clamp-2">{summary.title}</p>
         {(time || servings) && (
           <p className="mt-0.5 flex flex-wrap items-center gap-x-cp-3 gap-y-0.5 text-cp-caption text-ink-soft">
             {time && (
@@ -142,6 +144,7 @@ export function RecipeSourceList({
   onToggleAll,
   selectAllBusy = false,
   onCommit,
+  commitLabel,
   committing = false,
   queryText,
   onQueryChange,
@@ -171,6 +174,9 @@ export function RecipeSourceList({
   /** CookPilot's "Select all" may have to fetch the rest of the library first. */
   selectAllBusy?: boolean;
   onCommit: () => void;
+  /** The words the surrounding panel's submit uses. Every import type ends in
+      the same button, so the picker borrows it rather than inventing a verb. */
+  commitLabel: string;
   committing?: boolean;
   queryText: string;
   onQueryChange: (value: string) => void;
@@ -203,17 +209,29 @@ export function RecipeSourceList({
           {heading}
           {countLabel ? ` ${countLabel}` : ""}
         </h3>
-        {!loading && !error && summaries.length > 0 && canSelectAll && (
-          <button
-            type="button"
-            className="btn-ghost btn-compact flex-shrink-0"
-            onClick={onToggleAll}
-            disabled={selectAllBusy || committing}
-          >
-            {selectAllBusy ? <SpinnerIcon size={ICON_SIZE.sm} /> : null}
-            {allSelectableSelected ? "Clear selection" : "Select all"}
-          </button>
-        )}
+        <div className="flex flex-shrink-0 items-center gap-cp-2">
+          {/* The count used to be inside the commit button ("Add 5 recipes").
+              It reads here instead so that button can say exactly what every
+              other import type's button says. A selection made under a search
+              survives clearing it, so this can exceed what is on screen, which
+              is why it is a number and not "these". */}
+          {selectedCount > 0 && (
+            <span className="text-cp-caption font-bold text-ink" role="status">
+              {selectedCount} selected
+            </span>
+          )}
+          {!loading && !error && summaries.length > 0 && canSelectAll && (
+            <button
+              type="button"
+              className="btn-ghost btn-compact"
+              onClick={onToggleAll}
+              disabled={selectAllBusy || committing}
+            >
+              {selectAllBusy ? <SpinnerIcon size={ICON_SIZE.sm} /> : null}
+              {allSelectableSelected ? "Clear selection" : "Select all"}
+            </button>
+          )}
+        </div>
       </div>
 
       <div className="relative">
@@ -253,7 +271,12 @@ export function RecipeSourceList({
       )}
 
       {!loading && !error && summaries.length > 0 && (
-        <ul className="import-recipe-list flex flex-col gap-cp-2">
+        /* A grid, not a column. A library is browsed by scanning it, and one
+           recipe per row turned sixty-five of them into sixty-five screens of
+           scrolling. Column count comes from the available width (see
+           `.import-recipe-list`), so the same markup is three across on the
+           front door and one across on a phone. */
+        <ul className="import-recipe-list">
           {summaries.map((summary) => (
             <li key={summary.queueId}>
               <RecipeRow
@@ -279,9 +302,8 @@ export function RecipeSourceList({
           page in through the infinite scroll. Adding one recipe should not cost
           you the whole library.
 
-          A selection made under a search survives clearing that search, so the
-          count can exceed what is on screen — which is why it names a number
-          and not "these". */}
+          It says what the panel's other submit buttons say — see `commitLabel`.
+          The count it used to carry is up beside "Select all". */}
       {!loading && (selectedCount > 0 || summaries.length > 0) && (
         <div className="import-source-commit">
           <button
@@ -291,7 +313,7 @@ export function RecipeSourceList({
             disabled={selectedCount === 0 || committing}
           >
             {committing ? <SpinnerIcon size={ICON_SIZE.md} /> : <PlusIcon size={ICON_SIZE.md} />}
-            {addSelectedLabel(selectedCount)}
+            {commitLabel}
           </button>
         </div>
       )}

@@ -1,6 +1,5 @@
 import { describe, expect, it } from "vitest";
 import {
-  addSelectedLabel,
   allSelectableSelected,
   partialAddMessage,
   selectableQueueIds,
@@ -54,17 +53,6 @@ describe("allSelectableSelected", () => {
   it("is false when there is nothing left to select", () => {
     const added = new Set(["cookpilot:a", "cookpilot:b"]);
     expect(allSelectableSelected(rows, added, new Set())).toBe(false);
-  });
-});
-
-describe("addSelectedLabel", () => {
-  it("says what the button is for even with nothing chosen", () => {
-    expect(addSelectedLabel(0)).toBe("Add to your print list");
-  });
-
-  it("counts, and gets the singular right", () => {
-    expect(addSelectedLabel(1)).toBe("Add 1 recipe");
-    expect(addSelectedLabel(5)).toBe("Add 5 recipes");
   });
 });
 

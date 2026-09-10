@@ -7107,6 +7107,16 @@ textarea.recipe-card__toc-title {
   overflow-y: auto;
 }
 
+/* The library pickers end in a button pinned to the bottom of this scroller
+   (`.import-source-commit`), and a sticky `bottom: 0` rests against the content
+   box — so this padding held it 20px up and left a sliver of recipe row showing
+   underneath it, which reads as a rendering fault rather than as a list passing
+   behind a bar. The bar carries its own padding, so nothing is lost by giving
+   it the space. Only on the tab that has one; the form tabs keep theirs. */
+.recipe-add-dialog__body:has(.import-source-commit) {
+  padding-bottom: 0;
+}
+
 /* The dialog panel above already provides the card surface (background,
    border, radius) and padding, so the nested `ImportPanel` — normally a
    standalone `.panel` card with its own `lg:p-cp-6` padding for the

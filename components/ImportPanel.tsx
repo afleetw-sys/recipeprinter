@@ -346,7 +346,15 @@ export function ImportPanel({
 
       {mode === "apps" ? (
         <div className="mt-cp-4">
-          <RecipeAppsPanel items={items} onAddRecipes={onAddReadyRecipes} />
+          <RecipeAppsPanel
+            items={items}
+            onAddRecipes={onAddReadyRecipes}
+            /* The library pickers commit through a button of their own, so it
+               says what every other source's submit says. Four import types
+               that all end in the same words read as one panel with four ways
+               in; four different verbs read as four different tools. */
+            commitLabel={submitLabel}
+          />
         </div>
       ) : (
       <form className="flex flex-col gap-cp-4 mt-cp-4" onSubmit={handleSubmit}>
