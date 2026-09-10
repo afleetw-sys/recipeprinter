@@ -6265,10 +6265,19 @@ textarea.recipe-card__toc-title {
   background: var(--cp-error-soft);
 }
 
+/* Spans both columns because a failed row has no page number to sit beside —
+   without this it lands in the 16px number track and wraps one letter per
+   line. Ellipsised like every other rail title: the rail is a list of labels,
+   and the sentence is on the card. */
 .recipe-page-rail__failed-title {
+  grid-column: 1 / -1;
+  overflow: hidden;
   color: var(--cp-error);
+  font-size: var(--cp-fs-caption);
   font-weight: var(--cp-fw-bold);
-  overflow-wrap: anywhere;
+  line-height: 1.2;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 /* A photo is clickable the way a line of text is, and says so the same way: a
@@ -7197,7 +7206,13 @@ textarea.recipe-card__toc-title {
   #rcb-ui-root,
   .__PrivateStripeElement,
   iframe[name^="__privateStripe"],
-  iframe[src*="js.stripe.com"] {
+  iframe[src*="stripe.com"],
+  /* Stripe's own floating Developer Tools launcher. Every class on it is
+     build-hashed, so the label is the only durable handle; the whole widget
+     lives inside this one button. `releaseCheckoutMount` removes it outright
+     when checkout settles — this is here for the sheet a cook prints while it
+     is still on screen. */
+  [aria-label="Open Stripe Developer Tools"] {
     display: none !important;
   }
 

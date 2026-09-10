@@ -41,6 +41,7 @@ import { isPhotoOpenClick, type PhotoPress } from "@/lib/photoOpenGesture";
 import { LineSelectionToolbar } from "@/components/print/LineSelectionToolbar";
 import { TextFieldToolbar } from "@/components/print/TextFieldToolbar";
 import type { useRecipeInlineEditor } from "@/lib/useRecipeInlineEditor";
+import { FailedImportCard } from "@/components/print/FailedImportCard";
 import { importLoadingLabel } from "@/lib/importProgress";
 import type { CoverConfig, QueueItem, Section } from "@/types/recipe";
 
@@ -233,6 +234,14 @@ interface PrintDeckProps {
   /** Imports still parsing, in queue order. Items rather than a count so each
       placeholder page is keyed by the import it stands in for. */
   parsingImports: QueueItem[];
+  /** Imports that failed, which hold their slot rather than vanishing into a
+      toast. Rendered by the same anchor rule as the parsing ones. */
+  failedImports: QueueItem[];
+  canRetryImport: (item: QueueItem) => boolean;
+  onRetryImport: (id: string) => void;
+  onRepairImportWithText: (id: string, text: string) => void;
+  onRepairImportWithImages: (id: string, files: File[]) => void;
+  onRemoveImport: (id: string) => void;
   /** The recipe an import was added BELOW, if any — the deck places its
       placeholder page right after that recipe, the way the rail does. */
   pendingAddAfterRecipeId: string | null;
@@ -318,6 +327,12 @@ export function PrintDeck(props: PrintDeckProps) {
     renderImagePagePhotoControl,
     openAddRecipeBelow,
     parsingImports,
+    failedImports,
+    canRetryImport,
+    onRetryImport,
+    onRepairImportWithText,
+    onRepairImportWithImages,
+    onRemoveImport,
     pendingAddAfterRecipeId,
     sizeMenuOpen,
     setSizeMenuOpen,
@@ -891,6 +906,41 @@ export function PrintDeck(props: PrintDeckProps) {
       </>
     ) : null;
 
+  /* A failed import keeps the box its recipe would have had — same sheet, same
+     aspect — so the placeholder BECOMES the failure rather than the deck
+     silently closing the gap. Outside the sheets pipeline for the same reason
+     the pending page is: nothing here should reach pagination, measurement or
+     paper. */
+  const failedPages =
+    failedImports.length > 0 ? (
+      <>
+        {failedImports.map((failedItem) => (
+          <div
+            className="recipe-page-slide recipe-page-failed"
+            key={`failed-page-${failedItem.id}`}
+            data-failed-import-id={failedItem.id}
+          >
+            <div
+              className="recipe-page-failed__sheet"
+              style={{
+                width: previewDims.w * deckScale,
+                aspectRatio: `${previewDims.w} / ${previewDims.h}`,
+              }}
+            >
+              <FailedImportCard
+                item={failedItem}
+                canRetry={canRetryImport(failedItem)}
+                onRetry={() => onRetryImport(failedItem.id)}
+                onRepairWithText={(text) => onRepairImportWithText(failedItem.id, text)}
+                onRepairWithImages={(files) => onRepairImportWithImages(failedItem.id, files)}
+                onRemove={() => onRemoveImport(failedItem.id)}
+              />
+            </div>
+          </div>
+        ))}
+      </>
+    ) : null;
+
 
   return (
         <section
@@ -1253,7 +1303,12 @@ export function PrintDeck(props: PrintDeckProps) {
                     if (
                       event.target instanceof HTMLInputElement ||
                       event.target instanceof HTMLTextAreaElement ||
-                      event.target instanceof HTMLButtonElement
+                      event.target instanceof HTMLButtonElement ||
+                      // The inline rich fields are contentEditable divs, not
+                      // inputs. Without this the slide's own Space shortcut
+                      // preventDefault()s every space typed into a recipe:
+                      // "noodles, cooked" could not be typed at all.
+                      (event.target instanceof HTMLElement && event.target.isContentEditable)
                     ) {
                       return;
                     }
@@ -1348,11 +1403,21 @@ export function PrintDeck(props: PrintDeckProps) {
                   />
                   )}
           </div>
-                  {index === pendingAnchorIndex && pendingPages}
+                  {index === pendingAnchorIndex && (
+                    <>
+                      {failedPages}
+                      {pendingPages}
+                    </>
+                  )}
                 </Fragment>
               );
             })}
-          {pendingAnchorIndex === null && pendingPages}
+          {pendingAnchorIndex === null && (
+            <>
+              {failedPages}
+              {pendingPages}
+            </>
+          )}
           </div>
         </section>
   );

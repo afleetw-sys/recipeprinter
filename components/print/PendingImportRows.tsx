@@ -20,22 +20,37 @@ interface PendingImportRowsProps {
  * The transient rail rows for recipes still importing. They swap out for a real
  * page once the parse lands; rendered wherever the add anchor sits in the rail.
  *
- * A FAILURE NO LONGER APPEARS HERE. It used to leave a red tile carrying the
- * error, Retry and Remove, which stayed in the rail until someone dealt with
- * it, and on a phone (which has no rail) the same failure was already a toast.
- * So a desktop cook got the news twice, in two shapes, and the rail kept a slot
- * for a recipe that was never going to arrive.
+ * A FAILURE APPEARS HERE TOO, as a row that names it and nothing more. The
+ * news is in two places on a desktop, but not in two shapes: the row is a
+ * label and the answer is on the page it points at, the same way every other
+ * rail row is a label for a page. What this replaces is a toast that was the
+ * ONLY record of the failure, expired on a timer, and on a phone (which has no
+ * rail) was the only thing that ever mentioned the import at all.
  *
- * The toast is the single answer on both. It carries the same two actions, it
- * does not time out while a failure is unresolved, and dismissing it removes
- * the dead item rather than hiding it — see the toast in app/print/page.tsx.
+ * The actions — Try again, paste the text, add a screenshot, remove — live on
+ * the card, which has the room for them. See FailedImportCard.
  */
 export function PendingImportRows({ items, nested = false }: PendingImportRowsProps) {
   return (
     <>
       {items
-        .filter((item) => item.status === "parsing")
-        .map((item) => (
+        .filter((item) => item.status === "parsing" || item.status === "error")
+        .map((item) =>
+          item.status === "error" ? (
+            <div
+              className={`recipe-page-rail__row ${nested ? "recipe-page-rail__row--section-child" : ""}`}
+              data-failed-import
+              key={`failed-${item.id}`}
+            >
+              <div className="recipe-page-rail__item recipe-page-rail__item--failed">
+                <div className="recipe-page-rail__item-main">
+                  <span className="recipe-page-rail__failed-title">
+                    Couldn&apos;t import {item.source}
+                  </span>
+                </div>
+              </div>
+            </div>
+          ) : (
           <div
             className={`recipe-page-rail__row ${nested ? "recipe-page-rail__row--section-child" : ""}`}
             data-pending-import
@@ -50,7 +65,8 @@ export function PendingImportRows({ items, nested = false }: PendingImportRowsPr
               </div>
             </div>
           </div>
-        ))}
+          ),
+        )}
     </>
   );
 }

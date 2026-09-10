@@ -76,7 +76,6 @@ import { useRecipeInlineEditor } from "@/lib/useRecipeInlineEditor";
 import { useRailDrag, type RailDragKind, type RailDropResolved } from "@/lib/useRailDrag";
 import { useRailSelection } from "@/lib/useRailSelection";
 import { PAGE_DIMS } from "@/lib/printGeometry";
-import { shortImportError } from "@/lib/friendlyErrors";
 import { isDeckMobile, useDeckScroller } from "@/lib/useDeckScroller";
 import { usePremiumTemplatePurchase } from "@/lib/usePremiumTemplatePurchase";
 import { useCookbookPurchase } from "@/lib/useCookbookPurchase";
@@ -463,26 +462,10 @@ export default function PrintPage() {
   const saveAfterLoginRef = useRef(false);
   const projectIdRef = useRef<string>(createPrintProjectId());
   const [toastMessage, setToastMessage] = useState<string | null>(null);
-  /**
-   * Whether the toast is reporting a FAILURE or just confirming something.
-   *
-   * Tracked explicitly rather than derived from `failedImportId`, which looks
-   * like the same question and isn't: only one of the two effects that write a
-   * failure toast also sets that id, so a failure caught by the other would
-   * have come out looking exactly like "Cookbook organized".
-   */
+  /** Whether the toast is reporting a FAILURE or just confirming something.
+      Import failures no longer come through here at all — they hold their own
+      page (see `failedImports`) — but saves, prints and exports still can. */
   const [toastTone, setToastTone] = useState<"info" | "error">("info");
-  /**
-   * The failed import a toast is currently speaking for.
-   *
-   * An import that dies has no page to be an error ON — its placeholder is
-   * gone, which is the point: a page that never arrived should not leave a
-   * broken one behind. So the failure moves to the toast, and the toast keeps
-   * the two things the rail row offered, Try again and dismissal. Dismissing
-   * REMOVES the item, because a failed import nobody can see is the bug this
-   * replaces.
-   */
-  const [failedImportId, setFailedImportId] = useState<string | null>(null);
   const [freeTemplateStatus, setFreeTemplateStatus] = useState<RecipePrinterFreeTemplateStatus | null>(null);
   const {
     user: cookPilotUser,
@@ -568,11 +551,6 @@ export default function PrintPage() {
    * notification instances can adopt), not in a membership predicate here.
    */
   const isOursToAwait = useCallback((id: string) => !initialQueueIdsRef.current.has(id), []);
-  // Since the Add recipe dialog closes the moment you submit (parsing
-  // finishes later, in the background), a failed parse has no dialog left to
-  // show its error in — this tracks which failures have already surfaced as a
-  // toast so the same one doesn't repeat on every re-render.
-  const toastedErrorIdsRef = useRef<Set<string>>(new Set());
 
   const anyRecipeHasImage =
     items?.some((item) => Boolean(item.recipe?.image)) ?? false;
@@ -1043,48 +1021,39 @@ export default function PrintPage() {
   // Imports started from this page stay in the rail until they either become a
   // real page or the cook removes them. In particular, an error must not vanish
   // merely because it is no longer in the parsing state.
-  const pendingImportItems = queue.items.filter(
-    (item) => item.status !== "ready" && isOursToAwait(item.id),
+  const pendingImportItems = queue.items.filter((item) =>
+    // A failure is TERMINAL, so it is always ours to show — including one that
+    // arrived before this page did, or survived a reload. The `isOursToAwait`
+    // caution exists because a parse can still be running inside another hook
+    // instance we will never hear from; nothing is still running here, so the
+    // card renders complete, with working actions, immediately. Left narrow,
+    // a failed import reloads into being invisible-but-present in the queue,
+    // which is the dead-import-nobody-can-see bug the old toast was chasing.
+    item.status === "error"
+      ? true
+      : item.status === "parsing" && isOursToAwait(item.id),
   );
-  // Only the ones still parsing get a placeholder page; an error gets a toast.
   // Carried as items rather than a count so each placeholder is keyed by the
   // import it belongs to — which is what lets a page become that recipe in
   // place instead of one anonymous spinner leaving as another card arrives.
   const parsingImports = pendingImportItems.filter((item) => item.status === "parsing");
   const parsingImportCount = parsingImports.length;
-
-
-
-  /* An import that failed used to leave a row in the rail and, on a phone,
-     nothing at all. Its placeholder page is removed either way — a page that
-     never arrived should not leave a broken one behind — so the failure has to
-     say itself somewhere, and the toast is where. */
-  const erroredImport = pendingImportItems.find((item) => item.status === "error");
-  useEffect(() => {
-    if (!erroredImport) return;
-    setFailedImportId((current) => (current === erroredImport.id ? current : erroredImport.id));
-    // The short form, not `erroredImport.error`. The toast is one line beside
-    // Try again and a dismiss; the sentence belongs to the dialog, which has
-    // the room and is still open behind it. See lib/friendlyErrors.
-    setToastMessage(shortImportError(erroredImport.errorCode));
-    setToastTone("error");
-  }, [erroredImport?.id, erroredImport?.errorCode]);
-
   /**
-   * Whether the failure the toast is currently reporting can be retried at all.
+   * Failures hold their slot instead of becoming a toast.
    *
-   * Images cannot: the files are not kept, so `queue.retry` has nothing to
-   * re-run and returns without doing anything. The rail used to ask `canRetry`
-   * before drawing its Retry button; now that the toast is the only place a
-   * failure appears, it has to ask the same question, or a failed photo import
-   * offers a Try again that quietly does nothing.
+   * The toast was the whole answer, and it was the wrong shape twice over. It
+   * expired, so "what happened to the one I just added?" outlived the reply;
+   * and it carried `shortImportError(errorCode)` — a bucket label — while the
+   * sentence written for this exact moment sat unused on `item.error`, which
+   * the home page had been showing all along. The workspace said less about a
+   * failure than the page the cook came from.
+   *
+   * It also had nowhere to put the actions. Our commonest failure is a site
+   * that blocks readers, and that error ends "Paste the recipe text or upload
+   * a screenshot to go around it" — an instruction with nothing to click. On a
+   * card those are buttons, and they repair the slot in place.
    */
-  const canRetryFailedImport = failedImportId
-    ? (() => {
-        const item = queue.items.find((entry) => entry.id === failedImportId);
-        return item ? queue.canRetry(item) : false;
-      })()
-    : false;
+  const failedImports = pendingImportItems.filter((item) => item.status === "error");
 
   const sectionTitleForId = useCallback((sectionId: string): string => {
     return sections.find((section) => section.id === sectionId)?.title?.trim() || "chapter";
@@ -1776,7 +1745,6 @@ export default function PrintPage() {
   function showToast(message: string) {
     setToastMessage(message);
     setToastTone("info");
-    setFailedImportId(null);
   }
 
   /**
@@ -1791,7 +1759,6 @@ export default function PrintPage() {
     ({ count, undo }: { count: number; undo: () => void }) => {
       setLineDeleteUndo(() => undo);
       setToastTone("info");
-      setFailedImportId(null);
       setToastMessage(`Deleted ${count} ${count === 1 ? "line" : "lines"}`);
     },
     [],
@@ -3160,36 +3127,6 @@ export default function PrintPage() {
     return () => window.cancelAnimationFrame(frame);
   }, [pendingImportItems.length]);
 
-  // Surfaces a parse failure for a dialog-added recipe as a toast, since the
-  // dialog that submitted it is already closed by the time parsing fails.
-  useEffect(() => {
-    // With the Add recipe dialog open, a failed parse is already reported in
-    // its own list (with retry) — a toast on top of that is the same news
-    // twice. Mark them surfaced so closing the dialog doesn't then replay them.
-    if (showAddRecipeDialog) {
-      queue.items.forEach((item) => {
-        if (item.status === "error" && isOursToAwait(item.id)) {
-          toastedErrorIdsRef.current.add(item.id);
-        }
-      });
-      return;
-    }
-    const newlyErrored = queue.items.find(
-      (item) =>
-        item.status === "error" &&
-        isOursToAwait(item.id) &&
-        !toastedErrorIdsRef.current.has(item.id),
-    );
-    if (!newlyErrored) return;
-    toastedErrorIdsRef.current.add(newlyErrored.id);
-    // The same short form the other failure toast uses. These two effects cover
-    // overlapping sets and both write this toast, so they have to agree: while
-    // this one still sent `item.error`, it ran second and put the full sentence
-    // back over the short one.
-    setToastMessage(shortImportError(newlyErrored.errorCode));
-    setToastTone("error");
-  }, [queue.items, showAddRecipeDialog, isOursToAwait]);
-
   // Re-importing a recipe that's already in this print job doesn't add a
   // duplicate — the queue focuses the existing item (bumping `focusNonce`).
   // Mirror the home queue's cue here: scroll the deck to that recipe and shake
@@ -3387,20 +3324,9 @@ export default function PrintPage() {
 
   useEffect(() => {
     if (!toastMessage) return;
-    /**
-     * A failed import's toast does NOT time out.
-     *
-     * It is the only thing left saying that import happened — its placeholder
-     * page is gone — and it carries the two actions that resolve it. Timing it
-     * out would take the failure off screen without answering it, and because
-     * this timer clears the message directly rather than through the toast's
-     * own dismiss, the dead item would have been left in the queue, invisible,
-     * which is the exact bug the toast exists to fix.
-     */
-    if (failedImportId) return;
     const timeout = window.setTimeout(() => setToastMessage(null), 5200);
     return () => window.clearTimeout(timeout);
-  }, [toastMessage, failedImportId]);
+  }, [toastMessage]);
 
   // The way back to deleted lines lives on their toast, so it goes when the
   // toast does — an Undo that outlives the message it belongs to would put a
@@ -4619,6 +4545,12 @@ export default function PrintPage() {
           renderCoverPhotoControl={renderCoverPhotoControl}
           renderImagePagePhotoControl={renderImagePagePhotoControl}
           parsingImports={parsingImports}
+          failedImports={failedImports}
+          canRetryImport={queue.canRetry}
+          onRetryImport={queue.retry}
+          onRepairImportWithText={(id, text) => queue.repairItem(id, { kind: "text", text })}
+          onRepairImportWithImages={(id, files) => queue.repairItem(id, { kind: "images", files })}
+          onRemoveImport={queue.remove}
           pendingAddAfterRecipeId={pendingAddAfterRecipeId}
           openAddRecipeBelow={openAddRecipeBelow}
           sizeMenuOpen={sizeMenuOpen}
@@ -5067,28 +4999,10 @@ export default function PrintPage() {
               Undo
             </button>
           )}
-          {failedImportId && canRetryFailedImport && (
-            <button
-              type="button"
-              className="recipe-toast__action"
-              onClick={() => {
-                queue.retry(failedImportId);
-                setFailedImportId(null);
-                setToastMessage(null);
-              }}
-            >
-              Try again
-            </button>
-          )}
           <button
             type="button"
             aria-label="Dismiss"
             onClick={() => {
-              // Dismissing a failed import REMOVES it. Left in the queue it is
-              // invisible on a phone and blocks nothing, which is how a dead
-              // import used to sit there unnoticed.
-              if (failedImportId) queue.remove(failedImportId);
-              setFailedImportId(null);
               setToastMessage(null);
             }}
           >
