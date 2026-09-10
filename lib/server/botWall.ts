@@ -33,9 +33,6 @@ export type PageVerdict =
           misfiring is identifiable from one Vercel log and removable in one edit. */
       signal: string;
       confidence: WallConfidence;
-      /** True when the wall is a JS challenge, so a paid fetch has to render.
-          False for an IP/WAF block, where rendering only costs more. */
-      needsJs: boolean;
     }
   | { kind: "paywall"; signal: string }
   | { kind: "not_found" }
@@ -119,7 +116,6 @@ interface NormalizedSample {
 interface WallRule {
   vendor: BotWallVendor;
   signal: string;
-  needsJs: boolean;
   test: (s: NormalizedSample) => boolean;
 }
 
@@ -127,11 +123,10 @@ interface WallRule {
  * The strong signals: each one names a specific product, and any single match
  * is enough at any status, 200 included.
  *
- * `needsJs` is a property of the fingerprint rather than something we discover
- * by trying. If we have identified a Turnstile challenge, a non-rendering paid
- * fetch returns that same challenge and burns a credit for nothing; if we have
- * identified an IP block, rendering costs five to twenty-five times more and
- * changes nothing.
+ * Measured across forty recipe sites, eight of the nine walls found were
+ * Cloudflare and the ninth was Vercel. The rest of this table is thin cover
+ * rather than dead weight — each rule is three lines, and the cost of not
+ * having one is a wall counted as a missing recipe.
  */
 const WALL_RULES: readonly WallRule[] = [
   // ---- Cloudflare ------------------------------------------------------
@@ -141,47 +136,38 @@ const WALL_RULES: readonly WallRule[] = [
   {
     vendor: "cloudflare",
     signal: "cf-mitigated",
-    needsJs: true,
     test: (s) => s.has("cf-mitigated"),
   },
   {
     vendor: "cloudflare",
     signal: "cdn-cgi/challenge-platform",
-    needsJs: true,
     test: (s) => s.body.includes("/cdn-cgi/challenge-platform"),
   },
   {
     vendor: "cloudflare",
     signal: "_cf_chl_opt",
-    needsJs: true,
     test: (s) => s.body.includes("window._cf_chl_opt") || s.body.includes("__cf$cv$params"),
   },
   {
     vendor: "cloudflare",
     signal: "turnstile",
-    needsJs: true,
     test: (s) => s.body.includes("challenges.cloudflare.com/turnstile"),
   },
   {
     vendor: "cloudflare",
     signal: "just-a-moment",
-    needsJs: true,
     test: (s) => s.body.includes("<title>just a moment"),
   },
-  // A firewall rule, not a challenge: the 1010/1012/1015/1020 family and the
-  // "Attention Required" page are Cloudflare refusing outright. No amount of
-  // JS execution helps, but a different egress IP often does — so these are a
-  // wall worth a rescue and NOT worth paying to render.
+  // A firewall rule rather than a challenge: the 1010/1012/1015/1020 family
+  // and the "Attention Required" page are Cloudflare refusing outright.
   {
     vendor: "cloudflare",
     signal: "attention-required",
-    needsJs: false,
     test: (s) => s.body.includes("attention required! | cloudflare"),
   },
   {
     vendor: "cloudflare",
     signal: "cf-error-code",
-    needsJs: false,
     test: (s) => /error code: 10(10|12|15|20)/.test(s.body),
   },
 
@@ -194,13 +180,11 @@ const WALL_RULES: readonly WallRule[] = [
   {
     vendor: "vercel",
     signal: "x-vercel-mitigated",
-    needsJs: true,
     test: (s) => s.has("x-vercel-mitigated") || s.has("x-vercel-challenge-token"),
   },
   {
     vendor: "vercel",
     signal: "vercel-security-checkpoint",
-    needsJs: true,
     test: (s) => s.body.includes("vercel security checkpoint"),
   },
 
@@ -208,19 +192,16 @@ const WALL_RULES: readonly WallRule[] = [
   {
     vendor: "datadome",
     signal: "x-datadome",
-    needsJs: true,
     test: (s) => s.has("x-datadome") || s.has("x-datadome-cid"),
   },
   {
     vendor: "datadome",
     signal: "datadome-cookie",
-    needsJs: true,
     test: (s) => s.cookies.includes("datadome="),
   },
   {
     vendor: "datadome",
     signal: "captcha-delivery",
-    needsJs: true,
     test: (s) => s.body.includes("captcha-delivery.com") || s.body.includes("dd_cookie_test"),
   },
 
@@ -228,20 +209,17 @@ const WALL_RULES: readonly WallRule[] = [
   {
     vendor: "perimeterx",
     signal: "x-px-header",
-    needsJs: true,
     test: (s) => s.hasPrefix("x-px"),
   },
   {
     vendor: "perimeterx",
     signal: "px-cookie",
-    needsJs: true,
     test: (s) =>
       s.cookies.includes("_px3=") || s.cookies.includes("_pxhd=") || s.cookies.includes("_pxvid="),
   },
   {
     vendor: "perimeterx",
     signal: "px-script",
-    needsJs: true,
     test: (s) =>
       s.body.includes("window._pxappid") ||
       s.body.includes("client.perimeterx.net") ||
@@ -255,7 +233,6 @@ const WALL_RULES: readonly WallRule[] = [
   {
     vendor: "akamai",
     signal: "akamai-access-denied",
-    needsJs: false,
     test: (s) =>
       s.header("server").includes("akamaighost") &&
       s.body.includes("access denied") &&
@@ -264,13 +241,11 @@ const WALL_RULES: readonly WallRule[] = [
   {
     vendor: "akamai",
     signal: "edgesuite-error",
-    needsJs: false,
     test: (s) => s.body.includes("errors.edgesuite.net"),
   },
   {
     vendor: "akamai",
     signal: "akamai-request-id-403",
-    needsJs: false,
     test: (s) => s.status === 403 && s.has("x-akamai-request-id"),
   },
 
@@ -278,19 +253,16 @@ const WALL_RULES: readonly WallRule[] = [
   {
     vendor: "imperva",
     signal: "x-iinfo",
-    needsJs: false,
     test: (s) => s.has("x-iinfo") || s.header("x-cdn").includes("incapsula"),
   },
   {
     vendor: "imperva",
     signal: "incap-cookie",
-    needsJs: false,
     test: (s) => s.cookies.includes("visid_incap_") || s.cookies.includes("incap_ses_"),
   },
   {
     vendor: "imperva",
     signal: "incapsula-incident",
-    needsJs: false,
     test: (s) =>
       s.body.includes("incapsula incident id") || s.body.includes("_incapsula_resource"),
   },
@@ -299,13 +271,11 @@ const WALL_RULES: readonly WallRule[] = [
   {
     vendor: "sucuri",
     signal: "x-sucuri-id-403",
-    needsJs: false,
     test: (s) => s.status === 403 && s.has("x-sucuri-id"),
   },
   {
     vendor: "sucuri",
     signal: "sucuri-firewall",
-    needsJs: false,
     test: (s) => s.body.includes("sucuri website firewall"),
   },
 ];
@@ -345,7 +315,6 @@ function firstWall(s: NormalizedSample): PageVerdict | null {
         vendor: rule.vendor,
         signal: rule.signal,
         confidence: "strong",
-        needsJs: rule.needsJs,
       };
     }
   }
@@ -391,7 +360,6 @@ export function classifyPage(sample: PageSample): PageVerdict {
         vendor: "generic",
         signal: small ? "bare-403-429" : "generic-wall-text",
         confidence: "weak",
-        needsJs: false,
       };
     }
   }

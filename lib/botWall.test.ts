@@ -32,34 +32,34 @@ describe("classifyPage", () => {
     [
       "cloudflare interstitial at 200",
       sample(200, CF_ORDINARY, CHALLENGE_PAGE),
-      { kind: "bot_wall", vendor: "cloudflare", confidence: "strong", needsJs: true },
+      { kind: "bot_wall", vendor: "cloudflare", confidence: "strong" },
     ],
     [
       "cf-mitigated header at 403",
       sample(403, { ...CF_ORDINARY, "cf-mitigated": "challenge" }, ""),
-      { kind: "bot_wall", vendor: "cloudflare", signal: "cf-mitigated", needsJs: true },
+      { kind: "bot_wall", vendor: "cloudflare", signal: "cf-mitigated" },
     ],
     [
       "turnstile widget",
       sample(403, {}, `<script src="https://challenges.cloudflare.com/turnstile/v0/api.js"></script>`),
-      { kind: "bot_wall", vendor: "cloudflare", needsJs: true },
+      { kind: "bot_wall", vendor: "cloudflare" },
     ],
     [
       "cloudflare firewall error code 1020 needs an IP, not a browser",
       sample(403, CF_ORDINARY, "<p>Error code: 1020</p>"),
-      { kind: "bot_wall", vendor: "cloudflare", signal: "cf-error-code", needsJs: false },
+      { kind: "bot_wall", vendor: "cloudflare", signal: "cf-error-code" },
     ],
     [
       "attention required is a block, not a challenge",
       sample(403, CF_ORDINARY, "<title>Attention Required! | Cloudflare</title>"),
-      { kind: "bot_wall", vendor: "cloudflare", needsJs: false },
+      { kind: "bot_wall", vendor: "cloudflare" },
     ],
     [
       // A real 429 from food52.com, captured while checking this module
       // against live sites.
       "vercel botid checkpoint",
       sample(429, { server: "Vercel", "x-vercel-mitigated": "challenge" }, "<title>Vercel Security Checkpoint</title>"),
-      { kind: "bot_wall", vendor: "vercel", signal: "x-vercel-mitigated", needsJs: true },
+      { kind: "bot_wall", vendor: "vercel", signal: "x-vercel-mitigated" },
     ],
     [
       "vercel checkpoint by title alone",
@@ -69,47 +69,47 @@ describe("classifyPage", () => {
     [
       "datadome cookie",
       sample(403, { "set-cookie": "datadome=abc123; Path=/" }, ""),
-      { kind: "bot_wall", vendor: "datadome", needsJs: true },
+      { kind: "bot_wall", vendor: "datadome" },
     ],
     [
       "datadome captcha page at 200",
       sample(200, {}, `<iframe src="https://geo.captcha-delivery.com/captcha/"></iframe>`),
-      { kind: "bot_wall", vendor: "datadome", needsJs: true },
+      { kind: "bot_wall", vendor: "datadome" },
     ],
     [
       "perimeterx script at 200",
       sample(200, {}, "<script>window._pxAppId = 'PXabc';</script>"),
-      { kind: "bot_wall", vendor: "perimeterx", needsJs: true },
+      { kind: "bot_wall", vendor: "perimeterx" },
     ],
     [
       "perimeterx cookie",
       sample(403, { "set-cookie": "_px3=deadbeef; Path=/" }, "Please verify you are a human"),
-      { kind: "bot_wall", vendor: "perimeterx", needsJs: true },
+      { kind: "bot_wall", vendor: "perimeterx" },
     ],
     [
       "akamai access denied",
       sample(403, { server: "AkamaiGHost" }, "Access Denied. Reference #18.a1b2c3.1700000000"),
-      { kind: "bot_wall", vendor: "akamai", needsJs: false },
+      { kind: "bot_wall", vendor: "akamai" },
     ],
     [
       "imperva x-iinfo",
       sample(403, { "x-iinfo": "9-12345678-0 NNNN CT(0 0 0)" }, ""),
-      { kind: "bot_wall", vendor: "imperva", needsJs: false },
+      { kind: "bot_wall", vendor: "imperva" },
     ],
     [
       "incapsula incident in the body",
       sample(403, {}, "Request unsuccessful. Incapsula incident ID: 123-456"),
-      { kind: "bot_wall", vendor: "imperva", needsJs: false },
+      { kind: "bot_wall", vendor: "imperva" },
     ],
     [
       "sucuri firewall",
       sample(403, { "x-sucuri-id": "12345" }, "Sucuri WebSite Firewall - Access Denied"),
-      { kind: "bot_wall", vendor: "sucuri", needsJs: false },
+      { kind: "bot_wall", vendor: "sucuri" },
     ],
     [
       "bare 403 with nothing in it is weak, not strong",
       sample(403, {}, "<html><body>Forbidden</body></html>"),
-      { kind: "bot_wall", vendor: "generic", confidence: "weak", needsJs: false },
+      { kind: "bot_wall", vendor: "generic", confidence: "weak" },
     ],
     [
       "429 naming unusual traffic is weak",
