@@ -317,14 +317,30 @@ export function RecipeSourceList({
             onClick={onCommit}
             disabled={selectedCount === 0 || committing}
           >
-            {committing ? (
-              <SpinnerIcon size={ICON_SIZE.md} />
-            ) : commitLeavesPage ? (
-              <ArrowRightIcon size={ICON_SIZE.md} />
+            {/* Trailing arrow when the button is a door, leading plus when it
+                adds to the page you are on — the same order the panel's own
+                submit uses (see ImportPanel). The spinner takes whichever slot
+                the icon it replaces was in, so the label does not jump sideways
+                mid-commit. */}
+            {commitLeavesPage ? (
+              <>
+                {commitLabel}
+                {committing ? (
+                  <SpinnerIcon size={ICON_SIZE.md} />
+                ) : (
+                  <ArrowRightIcon size={ICON_SIZE.md} />
+                )}
+              </>
             ) : (
-              <PlusIcon size={ICON_SIZE.md} />
+              <>
+                {committing ? (
+                  <SpinnerIcon size={ICON_SIZE.md} />
+                ) : (
+                  <PlusIcon size={ICON_SIZE.md} />
+                )}
+                {commitLabel}
+              </>
             )}
-            {commitLabel}
           </button>
         </div>
       )}

@@ -137,11 +137,27 @@ export function ImportPanel({
    * Does pressing submit go somewhere, or add to what is already on screen?
    *
    * On the front door it navigates: the recipe is finished on the print page,
-   * so the button is a door and wears an arrow. Everywhere else it adds to the
-   * project you are already looking at, and wears a plus. The `workspace` flag
-   * marks the front door because it is the only surface that has ever set it.
+   * so the button is a door and wears an arrow, TRAILING — an arrow points at
+   * where it is taking you, and one sitting to the left of its own label points
+   * back at the page you are on. Everywhere else it adds to the project you are
+   * already looking at, and wears a leading plus, because a plus is a thing
+   * being put in front of a name rather than a direction. Same order the SEO
+   * capture blocks have always used for the same button.
+   *
+   * The `workspace` flag marks the front door: it is the only surface that has
+   * ever set it.
    */
-  const SubmitIcon = workspace ? ArrowRightIcon : PlusIcon;
+  const submitFace = workspace ? (
+    <>
+      {submitLabel}
+      <ArrowRightIcon size={ICON_SIZE.md} />
+    </>
+  ) : (
+    <>
+      <PlusIcon size={ICON_SIZE.md} />
+      {submitLabel}
+    </>
+  );
 
   const closeOverflow = useCallback(() => setOverflowOpen(false), []);
   useMenuDismiss(overflowRef, closeOverflow, { enabled: overflowOpen });
@@ -413,8 +429,7 @@ export function ImportPanel({
                   type="submit"
                   className="btn btn-primary rp-import-submit w-full lg:w-auto lg:shrink-0"
                 >
-                  <SubmitIcon size={ICON_SIZE.md} />
-                  {submitLabel}
+                  {submitFace}
                 </button>
               )}
             </div>
@@ -481,8 +496,7 @@ export function ImportPanel({
 
         {mode !== "url" && !hideSubmit && (
           <button type="submit" className="btn btn-primary rp-import-submit w-full">
-            <SubmitIcon size={ICON_SIZE.md} />
-            {submitLabel}
+            {submitFace}
           </button>
         )}
       </form>
