@@ -31,21 +31,27 @@ import { normalizeImportURL } from "@/lib/cookpilot";
 /**
  * One line for every reason a site refuses us: a bot wall, a 403, a login gate
  * we cannot pass. A cook cannot tell those apart and cannot act on the
- * difference, so they all get the same way out.
+ * difference, so they all get the same sentence.
  *
- * Remedy first, diagnosis nowhere. "This page is protected by a bot check, so
- * we can't read it" spent its opening on whose fault it was, which is not
- * something anyone can do anything about, and pushed the sentence that gets
- * them their recipe to the end. The short heading beside it already says the
- * site blocked the import, so this line is free to be nothing but the way
- * through. Saying why pasting works is what turns it from a consolation prize
- * into a route.
+ * It says why, and then what to do about it, in that order. The version before
+ * this one led with the remedy and dropped the cause entirely, on the grounds
+ * that a bot check is not something anyone can act on. True, and beside the
+ * point: someone whose import just failed wants to know it was not their link
+ * and not their fault before they will try anything else. Without the first
+ * half, "paste the text instead" reads as a shrug.
+ *
+ * What it does not do is name the mechanism. "Protected by a bot check" and
+ * "HTTP 403" describe our problem, not theirs. "Blocks anything automated from
+ * reading it" is the same fact in words a cook already owns.
+ *
+ * "To go around it" is the part that earns the second attempt: it says the next
+ * route does not run into the same wall, so trying again is not just hope.
  *
  * Lives here because the API route and the client parser both raise it, and two
  * copies of one sentence drift.
  */
 export const BLOCKED_REMEDY =
-  "Paste the recipe text instead, or upload a screenshot. Neither one needs the site to cooperate.";
+  "This site blocks anything automated from reading it. Paste the recipe text or upload a screenshot to go around it.";
 
 
 /**
