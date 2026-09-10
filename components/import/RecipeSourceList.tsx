@@ -65,7 +65,7 @@ function RecipeRow({
             ? `Don't add ${summary.title}`
             : `Add ${summary.title}`
       }
-      className={`group flex w-full items-center gap-cp-3 rounded-xl border p-cp-2 text-left transition-colors ${
+      className={`import-recipe-row group flex w-full items-center gap-cp-3 rounded-xl border p-cp-2 text-left transition-colors ${
         selected
           ? "border-[var(--cp-selected-border)] bg-[var(--cp-selected-fill)] text-[var(--cp-selected-text)]"
           : added
@@ -88,27 +88,33 @@ function RecipeRow({
         )}
       </div>
 
-      <div className="min-w-0 flex-1">
-        {/* Two lines, not one. In a three-across grid a row is ~150px of text,
-            and real recipe titles are longer than that — clamped at one line,
-            most of a library came out as the same truncated first two words. */}
-        <p className="text-cp-body font-bold leading-snug line-clamp-2">{summary.title}</p>
-        {(time || servings) && (
-          <p className="mt-0.5 flex flex-wrap items-center gap-x-cp-3 gap-y-0.5 text-cp-caption text-ink-soft">
-            {time && (
-              <span className="inline-flex items-center gap-1">
-                <ClockIcon size={ICON_SIZE.sm} />
-                {time}
-              </span>
-            )}
-            {servings && (
-              <span className="inline-flex items-center gap-1">
-                <UsersIcon size={ICON_SIZE.sm} />
-                Serves {servings}
-              </span>
-            )}
-          </p>
-        )}
+      {/* Every row is the same height, and it is the height of a row with a
+          two-line title and one line of meta under it — see the sizing rules in
+          globals.css. Not because uniformity is tidy, but because a grid whose
+          cards each size to their own content has rows of three different
+          heights and cards that don't reach the bottom of their own row, which
+          reads as broken rather than as varied. The alternative, stretching
+          every row to the tallest card in the whole library, makes sixty-four
+          cards pay for one long title. */}
+      <div className="import-recipe-row__text">
+        <p className="import-recipe-row__title">{summary.title}</p>
+        {/* Rendered even when empty: the line is what the card's height is made
+            of, so a recipe with no time and no serving count has to reserve it
+            or it comes out shorter than its neighbours. */}
+        <p className="import-recipe-row__meta">
+          {time && (
+            <span>
+              <ClockIcon size={ICON_SIZE.sm} />
+              {time}
+            </span>
+          )}
+          {servings && (
+            <span>
+              <UsersIcon size={ICON_SIZE.sm} />
+              Serves {servings}
+            </span>
+          )}
+        </p>
       </div>
 
       {added ? (

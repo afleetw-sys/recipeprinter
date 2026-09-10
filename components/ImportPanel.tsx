@@ -416,7 +416,7 @@ export function ImportPanel({
                 autoCapitalize="none"
                 spellCheck={false}
                 className="field w-full lg:flex-1 lg:min-w-0"
-                placeholder="Paste recipe link here"
+                placeholder="Paste a recipe link"
                 value={url}
                 autoFocus={autoFocusUrl}
                 onChange={(e) => {
@@ -433,7 +433,24 @@ export function ImportPanel({
                 </button>
               )}
             </div>
-            {error && <p className="field-error" role="alert">{error}</p>}
+            {error ? (
+              <p className="field-error" role="alert">{error}</p>
+            ) : (
+              /* Where the platform list lives, and deliberately not in the
+                 placeholder. A placeholder is gone the moment anyone types, and
+                 at 327px on a phone this one was cut off at "TikTok, Pint" —
+                 losing "any recipe site", which is the half that answers the
+                 question a list provokes. Here it wraps, and it stays.
+
+                 The social names are worth saying because nobody assumes a
+                 printer can read them, and each has a landing page making the
+                 same claim (lib/seoLandingPages). It ends on the open case
+                 rather than a fifth brand, so a closed list never becomes the
+                 answer to "is mine supported?". */
+              <p className="mt-cp-2 text-cp-caption text-ink-soft">
+                Works with Instagram, TikTok, Pinterest, YouTube, and any recipe site.
+              </p>
+            )}
           </div>
         )}
 

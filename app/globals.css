@@ -1715,9 +1715,82 @@
      two-line title and the tickbox still sit in one row without crushing. */
   .import-recipe-list {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(210px, 1fr));
+    /* 240px, not 210. The floor decides the column count on every surface at
+       once: 810px of front door makes three, and the ~430px Add-recipe dialog
+       makes one rather than two 215px cells too narrow to hold a title and its
+       cooking time without one of them breaking. */
+    grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
     gap: 8px;
     align-items: stretch;
+  }
+
+  /* The card fills its cell. `align-items: stretch` stretches the grid ITEM,
+     and the bordered card is a button inside it, so without this two cards in
+     the same row ended at different depths inside a row sized by the taller. */
+  .import-recipe-list > li {
+    display: flex;
+  }
+
+  /* ── One card height, arrived at rather than imposed ──────────────────────
+     Every card is a two-line title over one line of meta, whether or not it has
+     two lines of title or any meta at all. That is what makes the rows even.
+
+     The obvious alternative — `grid-auto-rows: 1fr` — is even too, but it sizes
+     every row in the library to its single tallest card, so one long title with
+     a long cooking time under it pays out to all sixty-four of the others. This
+     reserves the same two lines everywhere instead, which lands within a few
+     pixels of the thumbnail the card already carries. */
+  /* The reserved block, and the thing that centres inside it.
+     The height is what a two-line title over one line of meta comes to, spelled
+     out of the tokens rather than measured off a screenshot. Holding it here
+     rather than on the title is what lets a card with one line of title and no
+     cooking time sit in the MIDDLE of that space instead of hanging from the
+     top of it, which is what a reserved-but-unused line looks like. */
+  .import-recipe-row__text {
+    min-width: 0;
+    flex: 1 1 auto;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    min-height: calc(2 * 1.375 * var(--cp-fs-body) + 1.4 * var(--cp-fs-caption) + 2px);
+  }
+
+  .import-recipe-row__title {
+    font-size: var(--cp-fs-body);
+    font-weight: 700;
+    line-height: 1.375;
+    /* Clamped at two so a long title cannot grow its row. The two lines are
+       RESERVED by the block above, not here, so that an unused second line is
+       space the title sits centred in rather than space it sits on top of. */
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+
+  .import-recipe-row__meta {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 0 10px;
+    margin-top: 2px;
+    font-size: var(--cp-fs-caption);
+    line-height: 1.4;
+    color: var(--cp-ink-soft);
+    /* Exactly one line, always. In a cell narrow enough that the serving count
+       will not sit beside the time, it wraps onto a second line that is clipped
+       away rather than growing the card — the cooking time is the half worth
+       keeping, and a card that quietly says less is better than a row that is
+       taller than the two beside it. */
+    height: calc(1.4em);
+    overflow: hidden;
+  }
+
+  .import-recipe-row__meta > span {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    white-space: nowrap;
   }
 
   /* .panel doubles as the import panel's surface on the homepage, so the
