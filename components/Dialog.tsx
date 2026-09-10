@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import { createPortal } from "react-dom";
+import { useBackDismiss } from "@/components/useBackDismiss";
 import { useModalFocus } from "@/components/useModalFocus";
 
 let openDialogCount = 0;
@@ -95,6 +96,9 @@ export function Dialog({
   // Called before the early return below so hook order stays stable across
   // open/closed renders; `disabled` is what actually makes it inert.
   useModalFocus(ref, onClose, { disabled: !open, closeDisabled });
+  // Back is Escape's equivalent on a touch device, so it closes on the same
+  // terms — including staying blocked while `closeDisabled` holds.
+  useBackDismiss(open, onClose, { closeDisabled });
 
   // Portals need a real DOM to target, which doesn't exist during SSR or the
   // first hydration pass.
