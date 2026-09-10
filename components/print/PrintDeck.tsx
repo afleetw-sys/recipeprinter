@@ -41,6 +41,7 @@ import { isPhotoOpenClick, type PhotoPress } from "@/lib/photoOpenGesture";
 import { LineSelectionToolbar } from "@/components/print/LineSelectionToolbar";
 import { TextFieldToolbar } from "@/components/print/TextFieldToolbar";
 import type { useRecipeInlineEditor } from "@/lib/useRecipeInlineEditor";
+import { importLoadingLabel } from "@/lib/importProgress";
 import type { CoverConfig, QueueItem, Section } from "@/types/recipe";
 
 type CoverSide = "front" | "back" | "dedication";
@@ -229,7 +230,9 @@ interface PrintDeckProps {
   openAddRecipeBelow: (navItem?: NavItem | null) => void;
   /** Imports still parsing. Each gets a page-shaped placeholder at the end of
       the deck — see the render. Errors are NOT here; they surface as a toast. */
-  parsingImportCount: number;
+  /** Imports still parsing, in queue order. Items rather than a count so each
+      placeholder page is keyed by the import it stands in for. */
+  parsingImports: QueueItem[];
   /** The recipe an import was added BELOW, if any — the deck places its
       placeholder page right after that recipe, the way the rail does. */
   pendingAddAfterRecipeId: string | null;
@@ -314,7 +317,7 @@ export function PrintDeck(props: PrintDeckProps) {
     renderCoverPhotoControl,
     renderImagePagePhotoControl,
     openAddRecipeBelow,
-    parsingImportCount,
+    parsingImports,
     pendingAddAfterRecipeId,
     sizeMenuOpen,
     setSizeMenuOpen,
@@ -862,12 +865,13 @@ export function PrintDeck(props: PrintDeckProps) {
    */
   const pendingAnchorIndex = pendingAnchorIndexIn(navItems, pendingAddAfterRecipeId);
   const pendingPages =
-    parsingImportCount > 0 ? (
+    parsingImports.length > 0 ? (
       <>
-        {Array.from({ length: parsingImportCount }).map((_, index) => (
+        {parsingImports.map((pendingItem, index) => (
           <div
             className="recipe-page-slide recipe-page-pending"
-            key={`parsing-page-${index}`}
+            key={`parsing-page-${pendingItem.id}`}
+            data-pending-import-id={pendingItem.id}
             // The deck scrolls itself here while the import parses. Found by
             // attribute rather than a ref because the placeholder is outside
             // the sheets pipeline and has no slot in `slideRefs` to hold one.
@@ -880,7 +884,7 @@ export function PrintDeck(props: PrintDeckProps) {
                 aspectRatio: `${previewDims.w} / ${previewDims.h}`,
               }}
             >
-              <RecipeLoadingState />
+              <RecipeLoadingState label={importLoadingLabel(pendingItem)} />
             </div>
           </div>
         ))}

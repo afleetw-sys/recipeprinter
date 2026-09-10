@@ -1,4 +1,5 @@
 import { RecipeLoadingState } from "@/components/RecipeLoadingState";
+import { importLoadingLabel } from "@/lib/importProgress";
 import type { QueueItem } from "@/types/recipe";
 
 interface PendingImportRowsProps {
@@ -42,7 +43,10 @@ export function PendingImportRows({ items, nested = false }: PendingImportRowsPr
           >
             <div className="recipe-page-rail__item recipe-page-rail__item--loading" aria-busy>
               <div className="recipe-page-rail__item-main">
-                <RecipeLoadingState className="recipe-page-rail__loading-status" />
+                <RecipeLoadingState
+                  className="recipe-page-rail__loading-status"
+                  label={importLoadingLabel(item)}
+                />
               </div>
             </div>
           </div>

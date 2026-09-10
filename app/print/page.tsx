@@ -547,6 +547,27 @@ export default function PrintPage() {
   // user didn't select for this job" apart from "just added via the Add
   // recipe dialog" — only the latter should get pulled into the deck.
   const initialQueueIdsRef = useRef<Set<string>>(new Set());
+  /**
+   * Whether an import is this deck's to wait for — i.e. started here.
+   *
+   * Deliberately does NOT include imports that were still parsing when we
+   * arrived, even though those are arguably ours too. An import started on the
+   * home page and previewed before it landed is dropped from the job (the id
+   * filter keeps only `ready` items) and excluded from the merge that would
+   * pick it up afterwards, so it never appears here at all.
+   *
+   * That is a real bug, and the obvious fix — widen this — makes it worse
+   * rather than better. `useQueue` is per-instance React state with no
+   * cross-instance sync: it hydrates from storage on mount, and a parse
+   * started on the home page finishes inside THAT hook's closure. It writes
+   * the result to storage, and this page's copy never hears. So adopting the
+   * item buys a placeholder that spins forever instead of a recipe that
+   * quietly never arrives. Verified against a held-open import on 2026-09-10.
+   *
+   * The fix belongs in lib/queue (one live queue per tab, or a write
+   * notification instances can adopt), not in a membership predicate here.
+   */
+  const isOursToAwait = useCallback((id: string) => !initialQueueIdsRef.current.has(id), []);
   // Since the Add recipe dialog closes the moment you submit (parsing
   // finishes later, in the background), a failed parse has no dialog left to
   // show its error in — this tracks which failures have already surfaced as a
@@ -1023,12 +1044,14 @@ export default function PrintPage() {
   // real page or the cook removes them. In particular, an error must not vanish
   // merely because it is no longer in the parsing state.
   const pendingImportItems = queue.items.filter(
-    (item) => item.status !== "ready" && !initialQueueIdsRef.current.has(item.id),
+    (item) => item.status !== "ready" && isOursToAwait(item.id),
   );
   // Only the ones still parsing get a placeholder page; an error gets a toast.
-  const parsingImportCount = pendingImportItems.filter(
-    (item) => item.status === "parsing",
-  ).length;
+  // Carried as items rather than a count so each placeholder is keyed by the
+  // import it belongs to — which is what lets a page become that recipe in
+  // place instead of one anonymous spinner leaving as another card arrives.
+  const parsingImports = pendingImportItems.filter((item) => item.status === "parsing");
+  const parsingImportCount = parsingImports.length;
 
 
 
@@ -3110,7 +3133,7 @@ export default function PrintPage() {
       (item) =>
         item.status === "ready" &&
         item.recipe &&
-        !initialQueueIdsRef.current.has(item.id) &&
+        isOursToAwait(item.id) &&
         !(items ?? []).some((existing) => existing.id === item.id),
     );
     if (newlyReady.length === 0) return;
@@ -3122,7 +3145,7 @@ export default function PrintPage() {
       });
     }
     setPendingFocusRecipeId((current) => current ?? newlyReady[0]!.id);
-  }, [queue.items, items, itemIdsForSection, moveProjectItem, pendingAddIndex, pendingAddSectionId, sections]);
+  }, [queue.items, items, itemIdsForSection, isOursToAwait, moveProjectItem, pendingAddIndex, pendingAddSectionId, sections]);
 
   // Bring the pending status into view as soon as the dialog hands the import
   // to the queue. This also works for retries because the same row changes back
@@ -3145,7 +3168,7 @@ export default function PrintPage() {
     // twice. Mark them surfaced so closing the dialog doesn't then replay them.
     if (showAddRecipeDialog) {
       queue.items.forEach((item) => {
-        if (item.status === "error" && !initialQueueIdsRef.current.has(item.id)) {
+        if (item.status === "error" && isOursToAwait(item.id)) {
           toastedErrorIdsRef.current.add(item.id);
         }
       });
@@ -3154,7 +3177,7 @@ export default function PrintPage() {
     const newlyErrored = queue.items.find(
       (item) =>
         item.status === "error" &&
-        !initialQueueIdsRef.current.has(item.id) &&
+        isOursToAwait(item.id) &&
         !toastedErrorIdsRef.current.has(item.id),
     );
     if (!newlyErrored) return;
@@ -3165,7 +3188,7 @@ export default function PrintPage() {
     // back over the short one.
     setToastMessage(shortImportError(newlyErrored.errorCode));
     setToastTone("error");
-  }, [queue.items, showAddRecipeDialog]);
+  }, [queue.items, showAddRecipeDialog, isOursToAwait]);
 
   // Re-importing a recipe that's already in this print job doesn't add a
   // duplicate — the queue focuses the existing item (bumping `focusNonce`).
@@ -4595,7 +4618,7 @@ export default function PrintPage() {
           renderSectionPhotoControl={renderSectionPhotoControl}
           renderCoverPhotoControl={renderCoverPhotoControl}
           renderImagePagePhotoControl={renderImagePagePhotoControl}
-          parsingImportCount={parsingImportCount}
+          parsingImports={parsingImports}
           pendingAddAfterRecipeId={pendingAddAfterRecipeId}
           openAddRecipeBelow={openAddRecipeBelow}
           sizeMenuOpen={sizeMenuOpen}
