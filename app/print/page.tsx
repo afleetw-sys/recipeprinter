@@ -76,7 +76,7 @@ import { useRecipeInlineEditor } from "@/lib/useRecipeInlineEditor";
 import { useRailDrag, type RailDragKind, type RailDropResolved } from "@/lib/useRailDrag";
 import { useRailSelection } from "@/lib/useRailSelection";
 import { PAGE_DIMS } from "@/lib/printGeometry";
-import { isDeckMobile, useDeckScroller } from "@/lib/useDeckScroller";
+import { useDeckScroller } from "@/lib/useDeckScroller";
 import { usePremiumTemplatePurchase } from "@/lib/usePremiumTemplatePurchase";
 import { useCookbookPurchase } from "@/lib/useCookbookPurchase";
 import { COOKBOOK_ENABLED } from "@/lib/cookbookProduct";
@@ -4006,21 +4006,26 @@ export default function PrintPage() {
     requestDeleteNavItem,
   ]);
   /**
-   * On a phone, go and wait at the loading page.
+   * Go and wait at the loading page.
    *
-   * MOBILE ONLY. On a desktop the rail is right there: it scrolls its own
-   * pending row into view (see the effect above), the deck keeps the page the
-   * cook was looking at, and moving it under them would be taking the view
-   * away from someone who can already see the import is running. A phone has
-   * no rail. The deck is the whole window, it scrolls sideways, and the
-   * placeholder lands wherever the new recipe will land — which, added below a
-   * particular recipe, is somewhere off-screen with nothing to say so.
+   * What people actually do here is verify: add one recipe, look at how it came
+   * out, then add the next. The deck is where you look at it, so a deck that
+   * stays on the previous card breaks that loop at exactly the moment it
+   * matters — you asked for a recipe and got shown the one before it.
+   *
+   * This used to be mobile-only, on the reasoning that a desktop cook can see
+   * the import running in the rail and moving the deck under them would be
+   * taking their view away. That holds for something arriving unbidden. It does
+   * not hold here: the placeholder is the direct answer to a thing they just
+   * pressed, and following it is what they asked for. The rail still scrolls its
+   * own pending row into view (see the effect above), so both halves now agree
+   * about where the new recipe is.
    *
    * Where the placeholder goes is `pendingAddAfterRecipeId`'s business
    * (PrintDeck); this only follows it there.
    */
   useEffect(() => {
-    if (parsingImportCount === 0 || !isDeckMobile()) return;
+    if (parsingImportCount === 0) return;
     // The placeholder mounts on the render that raises this count, so it is not
     // in the DOM during this pass. One frame is enough; the retry covers a
     // deck still re-measuring after the insert, which lands a frame or two
