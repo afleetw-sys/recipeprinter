@@ -20,23 +20,36 @@ export const runtime = "nodejs";
  * respond. Try again, or paste the recipe text instead." Import failure is the
  * most common failure this product has, and its best error text was dead code.
  *
- * The budget is the CookPilot parser, then our own fetch if it found nothing.
+ * The budget is the CookPilot parser (55s) and then, if it found nothing, our
+ * own fetch (20s), so the worst case is a little over 75s and this sits above
+ * it. Note that 55s is a long time to ask someone to keep watching a spinner;
+ * lowering it is a behaviour change worth making on its own evidence, and the
+ * `cookpilot slow` line below is there to gather it.
  */
 export const maxDuration = 90;
 
 /**
- * Down from 55s.
+ * Unchanged at 55s, deliberately.
  *
- * The comment above used to note that 55s is "a long time to ask someone to
- * keep watching a spinner" and that lowering it was a change worth making on
- * its own. This is that change. Measured against the sites that actually wall
- * us, the parser either answers well inside 30s or times out entirely, so the
- * back half of that budget was a cook watching a spinner for an answer that
- * was never coming. The cost is that a site genuinely answering between 30 and
- * 55 seconds now fails, which is what the `cookpilot slow` line below is for;
- * it is a one-constant revert.
+ * This was briefly cut to 30s to make room for a rescue attempt inside the
+ * same 90. That rescue turned out not to rescue anything and was removed, so
+ * the reason for the cut went with it — and what was left behind it was thin:
+ * a dozen hand-run requests in which the parser either answered in under five
+ * seconds or timed out entirely, never in between. That is not enough to
+ * decide that nothing real lives in the back half of this budget, and a site
+ * that answers at 40 seconds is a site that stops working the day we guess.
+ *
+ * `COOKPILOT_SLOW_MS` below is what turns the guess into a number. Cut this
+ * when the logs say the window is empty, not before.
  */
-const COOKPILOT_TIMEOUT_MS = 30_000;
+const COOKPILOT_TIMEOUT_MS = 55_000;
+
+/**
+ * The cut we would make if the evidence supported it, used as the threshold
+ * for the log line rather than as a timeout. Anything logged here is a parse
+ * that a 30s budget would have killed.
+ */
+const COOKPILOT_SLOW_MS = 30_000;
 
 // A URL import is one paste at a time — there is no bulk-URL surface anywhere in
 // the app (lib/parser.ts:172 is the only caller). Thirty in ten minutes is far
@@ -364,11 +377,11 @@ async function parseWithCookPilotServer(url: string, hostname: string): Promise<
     return SKIPPED;
   }
 
-  // Cutting this budget from 55s to 30s is only safe if nothing real lives in
-  // the window we removed, and we had no way to know because this route logs
-  // nothing at all. Anything close to the new ceiling is worth seeing.
+  // Whether this budget can safely be shortened is a question this route had
+  // no way to answer, because it logged nothing at all. Every line here is one
+  // import that a 30s ceiling would have turned into a failure.
   const elapsed = Date.now() - startedAt;
-  if (elapsed > COOKPILOT_TIMEOUT_MS * 0.6) {
+  if (elapsed > COOKPILOT_SLOW_MS) {
     console.warn(`parse: cookpilot slow  host=${hostname} ms=${elapsed}`);
   }
 
