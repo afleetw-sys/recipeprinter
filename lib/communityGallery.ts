@@ -6,11 +6,14 @@
 // a photo of a spiral cookbook open on a counter answers the question a
 // visitor actually has, which is whether this looks good on paper.
 //
-// Curated, not user-generated. Submissions arrive by email and land here as a
-// committed entry, so approval is a pull request rather than a moderation
-// queue: no upload endpoint, no Storage rules, no abuse surface. If this ever
-// takes more than a few minutes a month, that is the point to build a real
-// pipeline, and not before.
+// Curated. Entries are committed here, so there is no upload endpoint, no
+// Storage rules and no moderation queue.
+//
+// There is no way for a visitor to submit one at the moment. If that comes
+// back, it belongs on email rather than an upload box, and the thread is what
+// records the sender's permission: these are photographs of other people's
+// homes, so the ask has to name where the picture may be used and how to have
+// it taken down.
 // ─────────────────────────────────────────────────────────────────────────
 
 export type CommunityPhoto = {
@@ -79,44 +82,3 @@ export const COMMUNITY_PHOTOS: CommunityPhoto[] = [
   ...SEED,
   ...SEED.map((photo) => ({ ...photo, alt: "" })),
 ];
-
-export const GALLERY_SUBMIT_EMAIL = "recipeprinter@goodproblem.studio";
-
-/**
- * Consent is the whole reason submissions come by email rather than an upload
- * box: the thread is the record of it, and a reply is the takedown. Kitchen
- * photos have other people's homes and families in them.
- *
- * The permission line names marketing rather than the website, because the
- * website is not the only place a photo like this ends up: a social post, an
- * app store screenshot and an ad are all uses that "we can show this on
- * recipeprinter.com" would not have covered. Asking once, in plain words, is
- * better than going back later for a second permission.
- */
-export const GALLERY_SUBMIT_SUBJECT = "My RecipePrinter photo";
-
-/** One entry per paragraph, never a wrapped line: a newline inside a sentence
-    lands in the mail client as a hard break, and the draft arrived with the
-    copy broken mid-sentence. Mail clients wrap on their own. */
-export const GALLERY_SUBMIT_BODY = [
-  "Attach a photo of what you printed.",
-  "",
-  "Sending it gives us permission to use the photo in our marketing, on the site and anywhere else we show what people make. Email us any time and we'll take it down.",
-  "",
-  // Thanks for using it, not thanks for the submission: this text sits in a
-  // draft the sender has not sent yet, so thanking them for something they
-  // are still deciding to do reads as presumptuous. Using the product is a
-  // thing they have already done.
-  "Thanks for using RecipePrinter.",
-].join("\n");
-
-/**
- * Hand-encoded rather than built with URLSearchParams: that encodes a space as
- * "+", which a mail client drops into the body literally, so every space in the
- * draft came through as a plus sign. mailto wants percent-encoding.
- */
-export function gallerySubmitHref(): string {
-  const subject = encodeURIComponent(GALLERY_SUBMIT_SUBJECT);
-  const body = encodeURIComponent(GALLERY_SUBMIT_BODY);
-  return `mailto:${GALLERY_SUBMIT_EMAIL}?subject=${subject}&body=${body}`;
-}

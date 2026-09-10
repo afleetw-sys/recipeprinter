@@ -3,11 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import Image from "next/image";
 import { ChevronLeftIcon, ChevronRightIcon, ICON_SIZE } from "@/components/icons";
-import {
-  COMMUNITY_PHOTOS,
-  gallerySubmitHref,
-  type CommunityPhoto,
-} from "@/lib/communityGallery";
+import { COMMUNITY_PHOTOS, type CommunityPhoto } from "@/lib/communityGallery";
 
 // ─────────────────────────────────────────────────────────────────────────
 // The clothing-shop "on real people" strip, for printed recipes.
@@ -90,27 +86,12 @@ export function CommunityGallery({
  */
 function Header() {
   return (
-    <div className="flex items-center justify-between gap-cp-3 flex-wrap">
-      <h2
-        id="rp-gallery-heading"
-        className="text-cp-label font-bold uppercase tracking-[0.08em] text-ink-soft"
-      >
-        In real kitchens
-      </h2>
-
-      {/* An email, not an upload box. The people browsing this are mostly
-          prospects with nothing to submit yet, so the volume does not justify
-          a pipeline, and a reply thread is a consent record.
-          A link rather than a bordered button, for the same reason the heading
-          is an eyebrow: a second outlined control on the page competed with
-          the one the visitor is meant to use. */}
-      <a
-        href={gallerySubmitHref()}
-        className="ml-auto shrink-0 text-cp-caption font-semibold text-ink-soft hover:text-ink transition-colors"
-      >
-        Add yours
-      </a>
-    </div>
+    <h2
+      id="rp-gallery-heading"
+      className="text-cp-label font-bold uppercase tracking-[0.08em] text-ink-soft"
+    >
+      In real kitchens
+    </h2>
   );
 }
 
