@@ -43,7 +43,9 @@ const MODES: {
   { id: "url", label: "Link", icon: LinkIcon },
   { id: "apps", label: "Recipe apps", icon: AppsIcon },
   { id: "image", label: "Image", icon: ImageIcon },
-  { id: "text", label: "Paste Text", icon: TextIcon },
+  // "Text", not "Paste Text": every other option in this row names the thing
+  // you have, and one verb among three nouns read as the odd one out.
+  { id: "text", label: "Text", icon: TextIcon },
 ];
 
 const PRIMARY_MODES = MODES.filter((mode) => mode.id === "url" || mode.id === "apps");
