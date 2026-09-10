@@ -2436,20 +2436,18 @@
      `min-height`, never `height`: the importer grows when a mode with a
      textarea is picked, and a fixed box would have scrolled or clipped it.
      `dvh` so a phone's collapsing address bar does not leave a gap. */
+  /* The front door starts at a fixed offset under the top bar and is otherwise
+     sized by what it holds. No reserved height.
+     It used to reserve `100dvh` minus a slice, which pinned the kitchen strip
+     to a spot derived from the WINDOW rather than from the card above it. The
+     card could grow a whole textarea taller and the strip would not budge,
+     because the reserved space silently swallowed it. The strip belongs under
+     the card, so it moves when the card does.
+     The offset stays on the top, which is what keeps the headline and the top
+     edge of the card in the same place whatever mode is open: everything the
+     card gains goes downward. */
   .rp-home-frontdoor {
-    --rp-home-chrome: 94px; /* 62px top bar + the column's 32px top padding */
-    --rp-home-peek: 200px; /* the slice of "In real kitchens" left showing */
-    /* Pinned to the top of its box, NOT centred.
-       Centring looked right at rest and was wrong in motion: the block grows
-       downward when a taller import mode opens, and a centred box absorbs half
-       of that growth by rising, so the headline and the top edge of the card
-       drifted up the screen every time someone picked Text. The one thing on
-       this page that should never move is where it starts.
-       So the offset is a constant on the TOP, and everything the card gains
-       goes downward into the reserved space below it, pushing the kitchen
-       strip down only once that space is used up. */
     --rp-home-top: 5rem;
-    min-height: calc(100dvh - var(--rp-home-chrome) - var(--rp-home-peek));
     padding-top: var(--rp-home-top);
   }
 

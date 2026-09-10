@@ -34,12 +34,10 @@ export default function Home() {
             different kinds of thing. The footer takes the wider one, so the
             page ends on the measure it ended the content with. */}
         <div className="max-w-home mx-auto flex flex-col pt-cp-6 sm:pt-cp-7">
-          {/* The front door proper. It starts at a fixed offset below the top
-              bar and reserves enough height that a slice of the kitchen strip
-              shows underneath. A visitor gets one thing to do and a reason to
-              keep scrolling, rather than two blocks of equal claim stacked at
-              the top of a tall page. It is not vertically centred: see
-              `.rp-home-frontdoor` for why that moved the headline about. */}
+          {/* The front door proper: one thing to read and one thing to do. It
+              starts at a fixed offset below the top bar and is otherwise as
+              tall as its contents. See `.rp-home-frontdoor` for why it is
+              neither centred nor holding a reserved height. */}
           <div className="rp-home-frontdoor flex flex-col gap-cp-7">
           {/* Hero: what it does and why it's useful, in two sentences.
               Centred over the card rather than ranged left against it. Both

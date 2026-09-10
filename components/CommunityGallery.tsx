@@ -55,11 +55,10 @@ export function CommunityGallery({
   return (
     <section
       // No rule above the heading: the space is the separator, and it is
-      // deliberately large. Pushing the strip down keeps the importer alone in
-      // the first screenful on a laptop, so the thing a visitor came to do is
-      // the thing in front of them and the proof is what they find on the way
-      // down.
-      className="pt-cp-7 flex flex-col gap-cp-3"
+      // deliberately generous. This is now the ONLY thing setting the distance
+      // between the card and the photographs, since the front door above no
+      // longer reserves any height of its own.
+      className="pt-[5rem] sm:pt-[10rem] flex flex-col gap-cp-3"
       aria-labelledby="rp-gallery-heading"
     >
       <Header />
