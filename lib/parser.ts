@@ -1,6 +1,7 @@
 "use client";
 
 import { adaptCookPilotRecipe, adaptCookPilotRecipes, normalizeImportURL } from "@/lib/cookpilot";
+import { BLOCKED_REMEDY } from "@/lib/importUrl";
 import { searchPageMessage, unwrapRedirectUrl } from "@/lib/importUrl";
 import { anonymousOwnerId } from "@/lib/anonymousOwner";
 import type { ImportFailureCode } from "@/lib/analytics";
@@ -111,18 +112,12 @@ function friendlyError(
   // The source page is behind a bot challenge (Cloudflare, etc.) — we'll never
   // fetch it, so steer the cook to the paths that don't fetch.
   if (code.includes("failed-precondition") || /bot challenge/i.test(message)) {
-    return new ImportError(
-      "This page is protected by a bot check, so we can't read it. Paste the recipe text or upload screenshots instead.",
-      "blocked",
-    );
+    return new ImportError(BLOCKED_REMEDY, "blocked");
   }
 
   // CookPilot surfaces the source site's HTTP status when a fetch is refused.
   if (/HTTP\s*(401|402|403|429)/.test(message)) {
-    return new ImportError(
-      "This website wouldn't let us read the recipe. Paste the recipe text or upload screenshots instead.",
-      "blocked",
-    );
+    return new ImportError(BLOCKED_REMEDY, "blocked");
   }
   if (/HTTP\s*404/.test(message)) {
     return new ImportError("We couldn't find that page. Check the link and try again.", "not_found");

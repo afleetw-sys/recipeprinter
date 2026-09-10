@@ -3,7 +3,7 @@ import { isIP } from "node:net";
 import { NextResponse } from "next/server";
 import { jsonDataBlocksFromHtml, jsonLdBlocksFromHtml, recipeFromJsonLd } from "@/lib/schemaRecipe";
 import { adaptCookPilotRecipes, normalizeImportURL } from "@/lib/cookpilot";
-import { searchPageMessage, unwrapRedirectUrl } from "@/lib/importUrl";
+import { BLOCKED_REMEDY, searchPageMessage, unwrapRedirectUrl } from "@/lib/importUrl";
 import { callerKey, rateLimit } from "@/lib/server/rateLimit";
 import type { ParseResponse, Recipe } from "@/types/recipe";
 
@@ -254,8 +254,7 @@ async function parseWithCookPilotServer(url: string): Promise<CookPilotServerOut
   // left to try.
   if (response.status === 412) {
     throw new ParseHttpError(
-      parserErrorMessage(data) ??
-        "That page can't be read automatically. Paste the recipe text or upload screenshots instead.",
+      parserErrorMessage(data) ?? BLOCKED_REMEDY,
       422,
       true,
     );
@@ -343,7 +342,7 @@ export async function POST(request: Request) {
       }
       if ([401, 402, 403, 429].includes(response.status)) {
         return errorResponse(
-          "This website wouldn't let us read the recipe. Paste the recipe text or upload screenshots instead.",
+          BLOCKED_REMEDY,
           response.status,
           parserExhausted,
         );

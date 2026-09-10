@@ -29,6 +29,26 @@
 import { normalizeImportURL } from "@/lib/cookpilot";
 
 /**
+ * One line for every reason a site refuses us: a bot wall, a 403, a login gate
+ * we cannot pass. A cook cannot tell those apart and cannot act on the
+ * difference, so they all get the same way out.
+ *
+ * Remedy first, diagnosis nowhere. "This page is protected by a bot check, so
+ * we can't read it" spent its opening on whose fault it was, which is not
+ * something anyone can do anything about, and pushed the sentence that gets
+ * them their recipe to the end. The short heading beside it already says the
+ * site blocked the import, so this line is free to be nothing but the way
+ * through. Saying why pasting works is what turns it from a consolation prize
+ * into a route.
+ *
+ * Lives here because the API route and the client parser both raise it, and two
+ * copies of one sentence drift.
+ */
+export const BLOCKED_REMEDY =
+  "Paste the recipe text instead, or upload a screenshot. Neither one needs the site to cooperate.";
+
+
+/**
  * The panel copy, for a search engine's results and for a site's own search
  * alike. They were two messages for a while and ended up differing by the one
  * word "results", which is not a distinction worth a second string: a site's

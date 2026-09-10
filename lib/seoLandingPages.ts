@@ -1202,7 +1202,6 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
   {
     slug: "organize-recipes",
     contentUpdated: "2026-09-09",
-    lastReviewed: "2026-09-09",
     captureHeading: "Start with one recipe",
     importSubmitLabel: "Add your first recipe",
     primaryKeyword: "organize recipes",
