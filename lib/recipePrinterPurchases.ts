@@ -318,24 +318,68 @@ async function packageForTemplate(
 }
 
 /**
- * Take RevenueCat's checkout mount back out of the document once the sheet is
- * done with it.
+ * Stripe's floating "Developer Tools" launcher, which Stripe.js appends to the
+ * page of its own accord once RevenueCat's checkout loads it.
  *
- * `purchase()` mounts the checkout into a div it appends to `<body>` and never
- * takes away — and it creates that div with a CLASS of `rcb-ui-root` while
- * looking an existing one up by ID, so the lookup never matches and every trip
- * through checkout leaves another one behind. Whatever the sheet's teardown
- * leaves inside them stays in the page: a stray control floating over the print
- * preview, which then printed with the recipe. It arrives with the checkout —
- * paid or dismissed, it makes no difference — and only a reload cleared it.
+ * Every class on it is build-hashed (`z7mZYGiW__FloatingActionButton`), so the
+ * label is the only part of it that will still match after Stripe's next
+ * deploy. It is a button, and the whole pill — logo, caret, the panel it opens
+ * — lives inside it, so removing this one node takes the widget with it.
+ */
+const STRIPE_DEV_TOOLS_LAUNCHER = '[aria-label="Open Stripe Developer Tools"]';
+
+/** Does React manage this node? Its fibers hang off the element as own keys. */
+function isReactOwned(node: Element): boolean {
+  return Object.keys(node).some((key) => key.startsWith("__react"));
+}
+
+/**
+ * The top of the subtree a vendor built, starting from a node inside it.
  *
- * Nothing reads these nodes afterwards: the SDK builds a fresh mount for the
- * next purchase whether or not it finds an old one, so removing them is safe
- * and self-healing. Called when the flow settles, never while it is open.
+ * Walks up while the parent still belongs to the vendor — stopping at `<body>`
+ * or at the first node React manages — so the positioning wrapper a widget
+ * sits in goes with it, and nothing inside our own tree is ever unmounted from
+ * under React.
+ */
+function vendorSubtreeRoot(node: Element): Element {
+  let top = node;
+  while (
+    top.parentElement &&
+    top.parentElement !== document.body &&
+    !isReactOwned(top.parentElement)
+  ) {
+    top = top.parentElement;
+  }
+  return top;
+}
+
+/**
+ * Take the checkout's leftovers back out of the document once the sheet is
+ * done with them.
+ *
+ * Two vendors leave two different things behind, and both of them floated over
+ * the print preview and then printed with the recipe. It makes no difference
+ * whether the cook paid or dismissed the sheet: they arrive with the checkout,
+ * and only a reload cleared them.
+ *
+ * RevenueCat: `purchase()` mounts the checkout into a div it appends to
+ * `<body>` and never takes away — and it creates that div with a CLASS of
+ * `rcb-ui-root` while looking an existing one up by ID, so the lookup never
+ * matches and every trip through checkout leaves another one behind.
+ *
+ * Stripe: `Stripe.js` adds its own Developer Tools launcher, outside anything
+ * RevenueCat owns, so clearing RevenueCat's mount never touched it.
+ *
+ * Nothing reads any of these nodes afterwards: both SDKs build fresh UI for the
+ * next purchase whether or not they find the old, so removing them is safe and
+ * self-healing. Called when the flow settles, never while it is open.
  */
 function releaseCheckoutMount() {
   if (typeof document === "undefined") return;
   document.querySelectorAll(".rcb-ui-root, #rcb-ui-root").forEach((node) => node.remove());
+  document
+    .querySelectorAll(STRIPE_DEV_TOOLS_LAUNCHER)
+    .forEach((node) => vendorSubtreeRoot(node).remove());
 }
 
 export async function purchaseRecipePrinterTemplate({
