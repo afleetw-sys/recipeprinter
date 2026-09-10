@@ -81,7 +81,7 @@ function Header() {
         id="rp-gallery-heading"
         className="text-cp-h2 font-extrabold tracking-[-0.02em]"
       >
-        Made in real kitchens
+        In real kitchens
       </h2>
 
       {/* An email, not an upload box. The people browsing this are mostly
@@ -120,7 +120,7 @@ function Frame({
   }
 
   return (
-    <div className={`${SLOT} p-1.5`}>
+    <div className={`${SLOT} p-1`}>
       <Image
         src={photo.src}
         width={photo.width}

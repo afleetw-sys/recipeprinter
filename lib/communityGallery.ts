@@ -1,5 +1,5 @@
 // ─────────────────────────────────────────────────────────────────────────
-// "Made in real kitchens": photographs of what people actually printed.
+// "In real kitchens": photographs of what people actually printed.
 //
 // The product's output is a physical object, and that is the one thing the
 // homepage cannot otherwise show. A print preview is a rectangle on a screen;
