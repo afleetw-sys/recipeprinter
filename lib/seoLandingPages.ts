@@ -1231,7 +1231,7 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
         text: "Paste a link, drop in a screenshot, or paste the text. A blog, Pinterest, a Paprika library and a handwritten card all go in the same way.",
       },
       {
-        name: "Print the ones you repeat",
+        name: "Print the ones that stuck",
         text: "A recipe earns a sheet of paper by being one you make, so the stack builds up as a short list on its own.",
       },
       {
@@ -1245,7 +1245,7 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
     ],
     featureSections: [
       {
-        heading: "Recipes that live in ten places, in one",
+        heading: "One place for recipes that live in ten",
         image: "cookpilot-export",
         body:
           "A recipe collection is hardly ever in one app. There's usually a bookmark folder, a camera roll of screenshots, a Pinterest board, a few links in a group chat, and a recipe app or two. RecipePrinter takes all of it the same way, so there's no migrating between apps and no picking a winner. Whatever you already have goes in, and what comes out is paper that matches.",
