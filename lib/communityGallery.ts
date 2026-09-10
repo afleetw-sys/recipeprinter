@@ -55,7 +55,7 @@ export const GALLERY_SUBMIT_SUBJECT = "My RecipePrinter photo";
 export const GALLERY_SUBMIT_BODY = [
   "Attach a photo of what you printed.",
   "",
-  "Sending it gives us permission to use the photo in our marketing, on the site and anywhere else we show what people make. Say the word any time and we'll take it down.",
+  "Sending it gives us permission to use the photo in our marketing, on the site and anywhere else we show what people make. Email us any time and we'll take it down.",
   "",
   // Thanks for using it, not thanks for the submission: this text sits in a
   // draft the sender has not sent yet, so thanking them for something they
