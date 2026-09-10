@@ -270,21 +270,30 @@ export function RecipeSourceList({
 
       {footer}
 
-      {/* The one write. It stays on screen with nothing ticked so the picker
-          always shows how choosing here ends, rather than growing a button the
-          first time you tick something. A selection made under a search
-          survives clearing that search, so the count can exceed what is on
-          screen — which is why it names a number and not "these". */}
+      {/* The one write, PINNED.
+          It stays on screen with nothing ticked so the picker always shows how
+          choosing here ends, rather than growing a button the first time you
+          tick something. It sticks to the bottom of the scroller because a
+          library is long: laid out after the list, a 65-recipe account had to
+          be scrolled to the end to reach it, which also dragged every remaining
+          page in through the infinite scroll. Adding one recipe should not cost
+          you the whole library.
+
+          A selection made under a search survives clearing that search, so the
+          count can exceed what is on screen — which is why it names a number
+          and not "these". */}
       {!loading && (selectedCount > 0 || summaries.length > 0) && (
-        <button
-          type="button"
-          className="btn btn-primary w-full"
-          onClick={onCommit}
-          disabled={selectedCount === 0 || committing}
-        >
-          {committing ? <SpinnerIcon size={ICON_SIZE.md} /> : <PlusIcon size={ICON_SIZE.md} />}
-          {addSelectedLabel(selectedCount)}
-        </button>
+        <div className="import-source-commit">
+          <button
+            type="button"
+            className="btn btn-primary w-full"
+            onClick={onCommit}
+            disabled={selectedCount === 0 || committing}
+          >
+            {committing ? <SpinnerIcon size={ICON_SIZE.md} /> : <PlusIcon size={ICON_SIZE.md} />}
+            {addSelectedLabel(selectedCount)}
+          </button>
+        </div>
       )}
     </div>
   );

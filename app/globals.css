@@ -1681,6 +1681,30 @@
     @apply rounded-2xl;
   }
 
+  /* The library picker's Add button, pinned to the bottom of whatever is
+     scrolling it.
+
+     Laid out after the list it belongs to, an account with sixty-five recipes
+     had to be scrolled all the way down to reach it — and scrolling that far is
+     exactly what pulls every remaining page in through the infinite scroll. So
+     adding one recipe cost you the whole library first. Sticky keeps it where a
+     one-recipe trip needs it: on screen from the moment the list appears.
+
+     Works in both homes without knowing which it is in: on the home page the
+     document scrolls and this pins to the viewport, and inside the Add-recipe
+     dialog the dialog body scrolls and it pins to that. The negative top margin
+     cancels the column's own gap so the bar hugs the list rather than floating
+     a step above it, and the card fill is what keeps rows from showing through
+     as they pass underneath. */
+  .import-source-commit {
+    position: sticky;
+    bottom: 0;
+    z-index: 1;
+    margin-top: -16px;
+    padding: 12px 0 8px;
+    background: var(--cp-card);
+  }
+
   /* .panel doubles as the import panel's surface on the homepage, so the
      modal lift can't live on .panel itself — this modifier is what the
      Feedback/CookPilot login dialogs add for that. */
