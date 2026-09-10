@@ -2326,202 +2326,47 @@
     @apply text-cp-small leading-relaxed;
   }
 
-  /* The import panel always lives on the left. On desktop both columns always
-     fill the row; only the split changes. While empty, import takes the larger
-     share; once the first recipe is added, the recipes panel takes it. It never
-     collapses back to a vertical stack. */
+  /* The import panel lives on the left, at the width it has always had here.
+     This was a two-column grid — importer beside the print list — and the list
+     is gone: home is a front door now, not a workspace holding a queue (see
+     PrinterWorkspace). The grid stays rather than becoming one full-width
+     column, because the second column is what keeps the importer the size it
+     already is. A URL field stretched across 1240px is not an improvement, and
+     this change was explicitly not meant to redesign the landing page. */
   .rp-printer-workspace {
     @apply w-full animate-fade-up;
   }
-  .rp-printer-workspace--landing,
-  .rp-printer-workspace--active {
+  .rp-printer-workspace--landing {
     @apply flex flex-col gap-cp-6;
   }
-  .rp-workspace-import,
-  .rp-workspace-project {
+  .rp-workspace-import {
     min-width: 0;
   }
 
-  .rp-mobile-print-tray {
-    display: none;
-  }
-
-  /* Below the two-column desktop layout, "Recipes to print" already sits
-     directly on the page with no card around it — drop the Import panel's
-     card treatment too so the two sections read the same, and add a hairline
-     divider in its place so the boundary between them doesn't disappear. */
+  /* Below the desktop layout the importer sits directly on the page rather
+     than in a card, so the front door reads as the page itself asking for a
+     link rather than as a widget dropped onto it. (The trailing padding that
+     used to be here separated it from the "Recipes to print" panel underneath;
+     there is no panel underneath any more, and the page's own column gap is
+     what spaces whatever follows.) */
   @media (max-width: 1023px) {
-    /* Room for the fixed tray — only when the tray is actually there. An empty
-       queue renders no tray, so reserving the space would just be a gap. */
-    .rp-printer-workspace--has-tray {
-      padding-bottom: 96px;
-    }
-
     .rp-import-panel {
       border: 0;
       border-radius: 0;
       background: transparent;
     }
-
-    .rp-workspace-import {
-      padding-bottom: 20px;
-    }
-
-    .rp-workspace-project {
-      display: none !important;
-    }
-
-    .rp-mobile-print-tray {
-      position: fixed;
-      left: 0;
-      right: 0;
-      bottom: var(--rp-keyboard-inset, 0px);
-      z-index: 40;
-      display: block;
-      padding: 0 12px calc(10px + env(safe-area-inset-bottom));
-      pointer-events: none;
-    }
-
-    .rp-mobile-print-tray__panel {
-      max-width: 42rem;
-      margin: 0 auto;
-      overflow: hidden;
-      border: 1px solid var(--cp-line-strong);
-      border-radius: 18px;
-      background: color-mix(in srgb, var(--cp-card) 96%, transparent);
-      box-shadow: var(--cp-shadow-lg);
-      pointer-events: auto;
-      backdrop-filter: blur(14px);
-    }
-
-    .rp-mobile-print-tray__bar {
-      display: grid;
-      grid-template-columns: minmax(0, 1fr) auto;
-      align-items: center;
-      gap: 10px;
-      padding: 10px;
-    }
-
-    .rp-mobile-print-tray__toggle {
-      display: grid;
-      grid-template-columns: minmax(0, 1fr) 22px;
-      align-items: center;
-      gap: 8px;
-      min-width: 0;
-      min-height: 44px;
-      padding: 0 4px 0 8px;
-      text-align: left;
-      color: var(--cp-ink);
-    }
-
-    .rp-mobile-print-tray__title,
-    .rp-mobile-print-tray__meta {
-      display: block;
-      overflow: hidden;
-      text-overflow: ellipsis;
-      white-space: nowrap;
-    }
-
-    .rp-mobile-print-tray__title {
-      font-size: var(--cp-fs-body);
-      font-weight: 800;
-      letter-spacing: 0;
-    }
-
-    .rp-mobile-print-tray__meta {
-      margin-top: 1px;
-      color: var(--cp-ink-soft);
-      font-size: var(--cp-fs-caption);
-      font-weight: 700;
-    }
-
-    .rp-mobile-print-tray__chevron {
-      color: var(--cp-ink-soft);
-      transform: rotate(0deg);
-      transition: transform 180ms ease;
-    }
-
-    .rp-mobile-print-tray.is-open .rp-mobile-print-tray__chevron {
-      transform: rotate(180deg);
-    }
-
-    .rp-mobile-print-tray__print {
-      min-width: 112px;
-    }
-
-    /* Once there's something to print, let it outrank "Add recipe" as the
-       primary action — accent fill instead of the ink-black shared by every
-       other primary button. */
-    .rp-mobile-print-tray__print--ready {
-      background: var(--cp-accent);
-      color: var(--cp-on-accent);
-    }
-
-    .rp-mobile-print-tray__content {
-      display: none;
-      max-height: calc(100dvh - 124px);
-      padding: 0 10px 12px;
-      overflow-y: auto;
-      overscroll-behavior: contain;
-      border-top: 1px solid var(--cp-line);
-    }
-
-    .rp-mobile-print-tray.is-open .rp-mobile-print-tray__content {
-      display: block;
-    }
-
-    .rp-mobile-print-tray__actions {
-      display: flex;
-      justify-content: flex-end;
-      padding: 8px 0;
-    }
-
-    .rp-mobile-print-tray .grid {
-      gap: 10px;
-    }
-
-    .rp-mobile-print-tray .rounded-xl {
-      border-radius: 12px;
-    }
-
-    .rp-mobile-print-tray .rp-print-queue-empty {
-      margin: 10px 0 2px;
-      padding: 32px 18px 34px;
-    }
-
-    .rp-mobile-print-tray li > .mt-2 {
-      flex-direction: column;
-      align-items: flex-start;
-    }
-
-    .rp-mobile-print-tray li > .mt-2 .btn-ghost {
-      margin-top: 0;
-    }
   }
 
   @media (min-width: 1024px) {
-    /* Both columns always span the full row; the fr split is all that changes,
-       so the width shift animates smoothly. */
-    .rp-printer-workspace--landing,
-    .rp-printer-workspace--active {
+    /* A one-column grid in a two-column track. The second column is empty and
+       stays declared: it is what holds the importer to the width it has always
+       had on this page. The grid-template transition went with the second
+       child — there is no longer a split to animate between. */
+    .rp-printer-workspace--landing {
       display: grid;
       align-items: start;
       gap: clamp(20px, 3vw, 34px);
-      transition: grid-template-columns 380ms cubic-bezier(0.4, 0, 0.2, 1);
-    }
-
-    .rp-printer-workspace--no-intro {
-      transition: none;
-    }
-
-    /* No recipes yet: import takes the larger share. */
-    .rp-printer-workspace--landing {
       grid-template-columns: minmax(280px, 2fr) minmax(220px, 1fr);
-    }
-
-    /* First recipe added: recipes panel takes the larger share. */
-    .rp-printer-workspace--active {
-      grid-template-columns: minmax(280px, 0.46fr) minmax(0, 1fr);
     }
 
     .rp-workspace-import {
@@ -2534,20 +2379,9 @@
        desktop. Tighten the gap so the Import column — and its CookPilot
        toggle — isn't squeezed as hard. */
     @media (orientation: portrait) {
-      .rp-printer-workspace--landing,
-      .rp-printer-workspace--active {
+      .rp-printer-workspace--landing {
         gap: clamp(12px, 1.5vw, 20px);
       }
-    }
-
-    .rp-workspace-project {
-      overflow: hidden;
-      padding: 24px;
-      border: 1px solid var(--cp-line);
-      border-radius: 28px;
-      background:
-        linear-gradient(180deg, color-mix(in srgb, var(--cp-card) 78%, transparent), color-mix(in srgb, var(--cp-card) 42%, transparent)),
-        color-mix(in srgb, var(--cp-page) 86%, var(--cp-card));
     }
 
     .rp-import-panel--workspace {
