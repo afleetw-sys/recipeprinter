@@ -3493,6 +3493,23 @@ export default function PrintPage() {
     setPendingAddAfterRecipeId(anchorId);
     setShowAddRecipeDialog(true);
   }
+  /**
+   * A link pasted at the end of the rail (see RailQuickAdd).
+   *
+   * Anchored to the last recipe in the last section, so the new card lands at
+   * the end of the list the field sits under. Everything after that is the
+   * ordinary import path: the placeholder appears in the rail and the deck,
+   * the deck goes and waits at it, and the merge effect adopts the recipe when
+   * it lands.
+   */
+  function quickAddUrlAtEnd(url: string) {
+    const lastSection = sections.at(-1) ?? null;
+    const idsInLast = lastSection ? itemIdsForSection(lastSection.id) : [];
+    setPendingAddSectionId(lastSection?.id ?? null);
+    setPendingAddIndex(idsInLast.length);
+    setPendingAddAfterRecipeId(idsInLast.at(-1) ?? null);
+    queue.addUrl(url);
+  }
   function navigateToRecipe(itemId: string) {
     const index = navItems.findIndex(
       (nav) => nav.kind === "recipe" && nav.recipeId === itemId,
@@ -4481,6 +4498,7 @@ export default function PrintPage() {
           moveRecipesToSection={moveRecipesToSection}
           railSortMode={railSortMode}
           applyRailSort={applyRailSort}
+          onQuickAddUrl={quickAddUrlAtEnd}
           addMenuOpen={addMenuOpen}
           setAddMenuOpen={setAddMenuOpen}
           addMenuRef={addMenuRef}

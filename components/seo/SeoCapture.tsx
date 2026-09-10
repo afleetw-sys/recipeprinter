@@ -167,7 +167,16 @@ export function SeoCapture({
           <div className="flex flex-col gap-cp-4 lg:flex-row lg:items-center lg:gap-cp-2">
             <input
               id="seo-url"
-              type="url"
+              /* `text`, not `url` — see the same note in ImportPanel. The
+                 comment in `handleSubmit` below explains at length why a bare
+                 domain and a wrapped link have to get through; the browser's
+                 own check was turning both away before any of that ran, on the
+                 pages carrying the organic traffic. */
+              type="text"
+              inputMode="url"
+              autoComplete="url"
+              autoCapitalize="none"
+              spellCheck={false}
               className="field w-full lg:flex-1"
               placeholder={placeholder ?? "Paste recipe link here"}
               value={url}

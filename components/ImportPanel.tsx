@@ -363,7 +363,17 @@ export function ImportPanel({
             <div className="flex flex-col gap-cp-4 lg:flex-row lg:items-center lg:gap-cp-2">
               <input
                 id="rp-url"
-                type="url"
+                /* `text`, not `url`. The browser's own `type="url"` check
+                   demands a scheme, so it refused `allrecipes.com/…` and a link
+                   that wrapped across lines on its way through a message — the
+                   exact two inputs `normalizeImportURL` was written to repair,
+                   and which `handleSubmit` below is careful not to reject. A
+                   native gate in front of it made that care unreachable. */
+                type="text"
+                inputMode="url"
+                autoComplete="url"
+                autoCapitalize="none"
+                spellCheck={false}
                 className="field w-full lg:flex-1 lg:min-w-0"
                 placeholder="Paste recipe link here"
                 value={url}
