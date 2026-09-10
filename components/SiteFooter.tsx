@@ -13,16 +13,11 @@ const COFFEE_LOGO_SRC = "/images/buy-me-a-coffee-logo.png";
 export function SiteFooter({ isHome = false }: { isHome?: boolean }) {
   return (
     <footer className="no-print mt-cp-7 border-t border-line px-cp-6 py-cp-6">
-      {/* The footer shares whichever measure the page it sits under uses, so a
-          page has one content column rather than two. The homepage moved to
-          the narrower `max-w-home` and left the footer behind on
-          `max-w-content`, which put three different widths on one page: the
-          full-bleed top bar, an 860px column, and a 1240px footer under it. */}
-      <div
-        className={`${
-          isHome ? "max-w-home" : "max-w-content"
-        } mx-auto w-full flex flex-col gap-cp-5`}
-      >
+      {/* One measure everywhere, and on the homepage it is the one the kitchen
+          strip directly above it uses. The narrow `max-w-home` column belongs
+          to the front door alone: a footer set to it sat visibly inside the
+          band of photographs it follows. */}
+      <div className="max-w-content mx-auto w-full flex flex-col gap-cp-5">
         <nav
           aria-label="Footer"
           className="flex flex-wrap items-center gap-x-cp-6 gap-y-cp-3"

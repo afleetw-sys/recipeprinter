@@ -29,11 +29,12 @@ const SLOT =
 /** Roughly one-and-a-bit photos on a phone, a bit over two everywhere else.
     The trailing fraction is the affordance: a half-visible next photo says
     "this scrolls" better than any arrow does.
-    Four across was sized for the old 1240px page column and left the cards
-    too small to read anything on; two across gave them the room and then some,
-    at which point the strip stopped reading as a row of snapshots and started
-    competing with the printer above it. Three is the middle. */
-const ITEM = "snap-start shrink-0 basis-[62%] sm:basis-[31%]";
+    A fixed width above `sm`, not a fraction of the track. The strip is wider
+    than the column above it, and a percentage meant the photographs grew every
+    time the band did, which is backwards: a snapshot is a snapshot, and a wider
+    page should show MORE of them, not bigger ones. 15.5rem is the size that
+    read right at three across in the old narrow column. */
+const ITEM = "snap-start shrink-0 basis-[62%] sm:basis-[15.5rem]";
 
 export function CommunityGallery({
   items = COMMUNITY_PHOTOS,
@@ -66,8 +67,10 @@ export function CommunityGallery({
         count={cards.length}
         label="Photos of printed cookbooks and recipe cards"
       >
-        {cards.map((photo) => (
-          <li key={photo.src} className={ITEM}>
+        {cards.map((photo, i) => (
+          // Index in the key, not just `src`: the seed set is repeated while
+          // there are only three photographs, so the same path appears twice.
+          <li key={`${photo.src}-${i}`} className={ITEM}>
             <Frame photo={photo} placeholder={showPlaceholder} />
           </li>
         ))}
@@ -144,7 +147,7 @@ function Frame({
         // Absolute above `sm`, not a viewport fraction: the page column stops
         // growing at 860px, so a percentage of the WINDOW kept asking for
         // bigger and bigger files that were never displayed any larger.
-        sizes="(max-width: 639px) 62vw, (max-width: 1023px) 31vw, 280px"
+        sizes="(max-width: 639px) 62vw, 248px"
         className="w-full rounded-xl object-cover"
         style={{ aspectRatio: "4 / 3", objectPosition: photo.objectPosition }}
       />

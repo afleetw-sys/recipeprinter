@@ -27,12 +27,13 @@ export default function Home() {
       <SiteHeader />
 
       <main id="rp-main" className="flex-1 px-cp-6">
-        {/* One column, centred, shared by everything on the page. It used to be
-            the full 1240px with each block finding its own width inside it,
-            which was fine while the importer had a print list beside it filling
-            the rest of the row. With the list gone (see PrinterWorkspace) that
-            left a narrow card floating left of a wide page. */}
-        <div className="max-w-home mx-auto flex flex-col pt-cp-6 sm:pt-cp-7 pb-cp-7">
+        {/* Two measures, on purpose. The front door is a narrow centred column
+            because it is one thing to read and one thing to do; the kitchen
+            strip below runs to the full page width because it is a band of
+            photographs, and the change of width is what says the two are
+            different kinds of thing. The footer takes the wider one, so the
+            page ends on the measure it ended the content with. */}
+        <div className="max-w-home mx-auto flex flex-col pt-cp-6 sm:pt-cp-7">
           {/* The front door proper, centred in what's left of the screen after
               the top bar, with only enough height reserved to leave a slice of
               the kitchen strip showing underneath. A visitor gets one thing to
@@ -68,10 +69,12 @@ export default function Home() {
               /print now, where the printed card is. */}
           <PrinterWorkspace />
           </div>
+        </div>
 
-          {/* Below the tool, never above it: what other people printed is an
-              argument for staying, not the reason a visitor came. Renders
-              nothing at all until there are photographs to show. */}
+        {/* Below the tool, never above it: what other people printed is an
+            argument for staying, not the reason a visitor came. Renders
+            nothing at all until there are photographs to show. */}
+        <div className="max-w-content mx-auto pb-cp-7">
           <CommunityGallery />
         </div>
       </main>

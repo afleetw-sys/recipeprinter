@@ -41,19 +41,8 @@ export type CommunityPhoto = {
  * Empty this array and the gallery renders nothing at all rather than an empty
  * shell; see CommunityGallery for the dev-only placeholder that keeps the
  * layout visible while working on it.
- *
- * The recipe box leads. It is the only picture that shows what the others
- * imply, which is a printed card filed in among the handwritten ones it is
- * going to live with.
  */
-export const COMMUNITY_PHOTOS: CommunityPhoto[] = [
-  {
-    src: "/images/jackie-card.jpeg",
-    width: 1800,
-    height: 1350,
-    alt:
-      "Printed recipe cards laid around an open recipe tin, beside a handwritten family card.",
-  },
+const SEED: CommunityPhoto[] = [
   {
     src: "/images/card-korean-beef-bowl.jpeg",
     width: 1200,
@@ -75,6 +64,20 @@ export const COMMUNITY_PHOTOS: CommunityPhoto[] = [
     alt:
       "A printed Caprese Pasta Salad card with a blue checkered border, standing on a garden table.",
   },
+];
+
+/**
+ * TEMPORARY: the seed set runs twice so the strip is long enough to scroll on
+ * a wide screen. Delete the second half the moment there are six real
+ * photographs; a repeat is a placeholder, not a gallery.
+ *
+ * The repeats carry empty alt text. They are the same three pictures, and a
+ * screen reader reading all three descriptions and then reading them again is
+ * worse than silence on the ones that add nothing.
+ */
+export const COMMUNITY_PHOTOS: CommunityPhoto[] = [
+  ...SEED,
+  ...SEED.map((photo) => ({ ...photo, alt: "" })),
 ];
 
 export const GALLERY_SUBMIT_EMAIL = "recipeprinter@goodproblem.studio";
