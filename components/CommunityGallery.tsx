@@ -109,6 +109,7 @@ function Frame({
     // choice that shipped.
     return (
       <div
+        data-gallery-frame
         className={`${SLOT} flex items-center justify-center bg-[var(--cp-surface-sunken,var(--cp-paper))]`}
         style={{ aspectRatio: "4 / 3" }}
       >
@@ -120,7 +121,7 @@ function Frame({
   }
 
   return (
-    <div className={`${SLOT} p-1.5`}>
+    <div data-gallery-frame className={`${SLOT} p-1.5`}>
       <Image
         src={photo.src}
         width={photo.width}
@@ -153,6 +154,10 @@ function Carousel({
   const trackRef = useRef<HTMLDivElement>(null);
   const [atStart, setAtStart] = useState(true);
   const [atEnd, setAtEnd] = useState(true);
+  // The height of one photo frame. The arrows sit over the pictures, and the
+  // track is taller than they are because the captions are inside it too, so
+  // centring on the track would have hung them off the bottom of the images.
+  const [frameHeight, setFrameHeight] = useState(0);
 
   const measure = useCallback(() => {
     const track = trackRef.current;
@@ -162,6 +167,8 @@ function Carousel({
     // on 0 or on max, which left both arrows enabled forever at either end.
     setAtStart(track.scrollLeft <= 1);
     setAtEnd(track.scrollLeft >= max - 1);
+    const frame = track.querySelector("[data-gallery-frame]");
+    if (frame) setFrameHeight(frame.getBoundingClientRect().height);
   }, []);
 
   useEffect(() => {
@@ -197,9 +204,6 @@ function Carousel({
     });
   };
 
-  // Both ends at once means everything already fits; there is nothing to page.
-  const scrollable = !(atStart && atEnd);
-
   return (
     <div className="relative">
       {/* The scroll container is a div and the list is inside it, rather than
@@ -220,34 +224,61 @@ function Carousel({
         // once the last photo is in view, so the end of the track fights the
         // user. Proximity keeps the snap feel and lets the track settle
         // wherever it has to at the end.
-        className="overflow-x-auto snap-x snap-proximity pb-cp-2 rp-gallery-track"
+        className="overflow-x-auto snap-x snap-proximity rp-gallery-track"
       >
         <ul className="flex gap-cp-4">{children}</ul>
       </div>
 
-      {scrollable && (
-        <div className="mt-cp-2 flex justify-end gap-cp-2" aria-hidden="true">
-          <button
-            type="button"
-            tabIndex={-1}
-            className="btn-ghost"
-            disabled={atStart}
-            onClick={() => page(-1)}
-          >
-            <ChevronLeftIcon size={ICON_SIZE.lg} />
-          </button>
-          <button
-            type="button"
-            tabIndex={-1}
-            className="btn-ghost"
-            disabled={atEnd}
-            onClick={() => page(1)}
-          >
-            <ChevronRightIcon size={ICON_SIZE.lg} />
-          </button>
-        </div>
+      {!atStart && (
+        <Arrow side="left" top={frameHeight} onClick={() => page(-1)} />
+      )}
+      {!atEnd && (
+        <Arrow side="right" top={frameHeight} onClick={() => page(1)} />
       )}
     </div>
+  );
+}
+
+/**
+ * One overlay arrow, sitting on the photos rather than under them, and only
+ * ever rendered for a side that has something left to show. Flat on purpose:
+ * a hairline on card is enough to separate it from a photograph, and the
+ * shadows in this product are reserved for things that genuinely float.
+ */
+function Arrow({
+  side,
+  top,
+  onClick,
+}: {
+  side: "left" | "right";
+  /** The photo band's height; the arrow centres on half of it. Falls back to
+      the track's own middle before the first measurement lands. */
+  top: number;
+  onClick: () => void;
+}) {
+  // Not on a phone. There the photo is most of the width, a swipe is the
+  // obvious thing to do, and a button parked on top of the picture covers a
+  // good part of the one thing this section exists to show.
+  const Icon = side === "left" ? ChevronLeftIcon : ChevronRightIcon;
+  return (
+    <button
+      type="button"
+      // The track is already a labelled, focusable, arrow-key scrollable
+      // region, so these stay out of the tab order and out of the
+      // accessibility tree rather than being a second way to say the same
+      // thing.
+      tabIndex={-1}
+      aria-hidden="true"
+      onClick={onClick}
+      style={{ top: top ? top / 2 : "50%" }}
+      className={`absolute ${
+        side === "left" ? "left-cp-2" : "right-cp-2"
+      } -translate-y-1/2 hidden sm:grid h-10 w-10 place-items-center rounded-full
+         border border-line-strong bg-card text-ink
+         transition-colors hover:bg-[var(--cp-overlay-hover)]`}
+    >
+      <Icon size={ICON_SIZE.lg} />
+    </button>
   );
 }
 

@@ -2358,25 +2358,20 @@
   }
 
   /* The "Made in real kitchens" carousel track.
-     A thin scrollbar rather than none: the bar is the only part of a
-     scroll-snap strip that says how much is left, and hiding it leaves a
-     pointer user guessing. `overscroll-behavior-x: contain` stops a
-     horizontal trackpad flick at the end of the strip from being taken as a
-     browser back-gesture, which navigated away from the page mid-browse. */
+     No scrollbar: the arrows on the photos say which way there is more to
+     see, and the half-visible next picture says the strip moves, so the bar
+     was a third piece of chrome telling the reader the same thing. Scrolling
+     itself is untouched — wheel, trackpad, touch and the arrow keys all still
+     work, this hides the indicator rather than the behaviour.
+     `overscroll-behavior-x: contain` stops a horizontal trackpad flick at the
+     end of the strip from being taken as a browser back-gesture, which
+     navigated away from the page mid-browse. */
   .rp-gallery-track {
     overscroll-behavior-x: contain;
-    scrollbar-width: thin;
-    scrollbar-color: var(--cp-line-strong) transparent;
+    scrollbar-width: none;
   }
   .rp-gallery-track::-webkit-scrollbar {
-    height: 8px;
-  }
-  .rp-gallery-track::-webkit-scrollbar-thumb {
-    background: var(--cp-line-strong);
-    border-radius: 9999px;
-  }
-  .rp-gallery-track::-webkit-scrollbar-track {
-    background: transparent;
+    display: none;
   }
   /* The focus ring belongs on the track as a whole; without it a keyboard user
      tabbing onto a scrollable region gets no indication they landed on it. */
