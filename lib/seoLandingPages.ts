@@ -1245,10 +1245,10 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
     ],
     featureSections: [
       {
-        heading: "One place for recipes that live in ten",
+        heading: "One place for recipes that live in ten places",
         image: "cookpilot-export",
         body:
-          "A recipe collection is hardly ever in one app. There's usually a bookmark folder, a camera roll of screenshots, a Pinterest board, a few links in a group chat, and a recipe app or two. RecipePrinter takes all of it the same way, so there's no migrating between apps and no picking a winner. Whatever you already have goes in, and what comes out is paper that matches.",
+          "A recipe collection is hardly ever in one app. There's usually a bookmark folder, a camera roll of screenshots, a Pinterest board, a few links in a group chat, and a recipe app or two. RecipePrinter reads all of them, so there's no migrating between apps and no picking a winner. A link and a screenshot print at the same size, in the same layout, ready to go in the same box.",
       },
       {
         heading: "Cards for a box, pages for a binder",
