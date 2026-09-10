@@ -69,11 +69,45 @@ export interface Recipe {
   datePublished?: string;
 }
 
+/**
+ * Which bot-protection product we fingerprinted on a page we could not read.
+ *
+ * Recorded so "sites are blocking us" becomes a list of vendors with counts
+ * rather than a feeling. `generic` is a 403/429 that looks like a wall but
+ * carries no vendor marker; it is deliberately never allowed to spend money.
+ */
+export type BotWallVendor =
+  | "cloudflare"
+  | "vercel"
+  | "datadome"
+  | "perimeterx"
+  | "akamai"
+  | "imperva"
+  | "sucuri"
+  | "generic";
+
+/** A rung of the rescue ladder, cheapest first. */
+export type RescueRung = "a_headers" | "b_reader" | "c_provider";
+
+/**
+ * How far up the ladder one import got. `none` means every permitted rung ran
+ * and failed; `skipped_budget` means we declined to start (out of time, out of
+ * budget, or no rung was configured), which is the case that must NOT suppress
+ * the client's own fallback.
+ */
+export type RescueOutcome = RescueRung | "none" | "skipped_budget";
+
 export interface ParseResult {
   success: true;
   /** One or more recipes. A normal page yields exactly one; a "roundup" URL
       (RecipePrinter multi-recipe import) yields several. */
   recipes: Recipe[];
+  /**
+   * Set when a rescue rung, not the ordinary fetch, is what produced these.
+   * The cook sees no difference; this is how we tell whether the ladder is
+   * earning its keep.
+   */
+  rescuedBy?: RescueRung;
 }
 
 export interface ParseError {
@@ -97,6 +131,20 @@ export interface ParseError {
    * budget the limit exists to protect.
    */
   rateLimited?: true;
+  /**
+   * The route's own verdict about why this failed, so the client stops
+   * inferring one from the HTTP status. Optional because a response from a
+   * deploy that predates this field, or a fetch that never reached the route
+   * at all, still has to land in a sensible bucket — see
+   * `categoryForRouteStatus` in lib/parser.ts.
+   */
+  failure?: ImportFailureCode;
+  /**
+   * Only when `failure === "blocked"` and we actually fingerprinted a wall.
+   * `rescue` says how far up the ladder we got, which is what separates "we
+   * tried everything" from "we never got to try".
+   */
+  botWall?: { vendor: BotWallVendor; rescue: RescueOutcome };
 }
 
 export type ParseResponse = ParseResult | ParseError;
