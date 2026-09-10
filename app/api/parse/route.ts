@@ -5,7 +5,10 @@ import { jsonDataBlocksFromHtml, jsonLdBlocksFromHtml, recipeFromJsonLd } from "
 import { adaptCookPilotRecipes, normalizeImportURL } from "@/lib/cookpilot";
 import { BLOCKED_REMEDY, searchPageMessage, unwrapRedirectUrl } from "@/lib/importUrl";
 import { callerKey, rateLimit } from "@/lib/server/rateLimit";
-import type { ParseResponse, Recipe } from "@/types/recipe";
+import { BODY_PREFIX_BYTES, classifyPage, type PageVerdict } from "@/lib/server/botWall";
+import { rescueBotWall, type RescueReport } from "@/lib/server/botRescue";
+import type { ImportFailureCode } from "@/lib/analytics";
+import type { BotWallVendor, ParseResponse, Recipe, RescueOutcome } from "@/types/recipe";
 
 export const runtime = "nodejs";
 /**
@@ -18,13 +21,36 @@ export const runtime = "nodejs";
  * respond. Try again, or paste the recipe text instead." Import failure is the
  * most common failure this product has, and its best error text was dead code.
  *
- * The budget is the CookPilot parser (55s) and then, if it found nothing, our
- * own fetch (20s) — so the worst case is a little over 75s and this sits above
- * it. Note that 55s is a long time to ask someone to keep watching a spinner;
- * lowering it is a behaviour change worth making separately, and this at least
- * means the wait now ends in a sentence rather than a platform error.
+ * The budget is the CookPilot parser, then our own fetch if it found nothing,
+ * then one rescue attempt if that fetch came back a wall. See
+ * COOKPILOT_TIMEOUT_MS for why the first of those is 30s rather than the 55s
+ * it used to be.
  */
 export const maxDuration = 90;
+
+/**
+ * When this invocation has to be finished, as a wall-clock deadline rather
+ * than a stack of independent timeouts.
+ *
+ * The rescue ladder needs to know how much time is actually left, not how much
+ * its own rung would like. A few seconds under `maxDuration` so a rung that
+ * runs to its limit still leaves room to write the response, rather than being
+ * cut off by the platform mid-sentence — which is the failure mode the comment
+ * above describes.
+ */
+const INVOCATION_BUDGET_MS = 85_000;
+
+/**
+ * Down from 55s, to make room for the rescue ladder inside the same 90.
+ *
+ * The comment above used to note that 55s is "a long time to ask someone to
+ * keep watching a spinner" and that lowering it was a change worth making on
+ * its own. This is that change: 30 + 20 leaves about 30s for a rescue attempt,
+ * where 55 + 20 left fifteen and the ladder would mostly have declined to
+ * start. The cost is that a site which genuinely answers between 30 and 55
+ * seconds now fails, which is what the `cookpilot slow` log line below is for.
+ */
+const COOKPILOT_TIMEOUT_MS = 30_000;
 
 // A URL import is one paste at a time — there is no bulk-URL surface anywhere in
 // the app (lib/parser.ts:172 is the only caller). Thirty in ten minutes is far
@@ -60,9 +86,26 @@ class ParseHttpError extends Error {
   }
 }
 
-function errorResponse(error: string, status = 400, parserExhausted = false) {
+interface ErrorOptions {
+  status?: number;
+  parserExhausted?: boolean;
+  /** Our own verdict, so the client stops inferring one from the status. Left
+      unset where we genuinely do not know: the client's status mapping is the
+      right answer then, and asserting a guess would be worse than it. */
+  failure?: ImportFailureCode;
+  botWall?: { vendor: BotWallVendor; rescue: RescueOutcome };
+}
+
+function errorResponse(error: string, opts: ErrorOptions = {}) {
+  const { status = 400, parserExhausted = false, failure, botWall } = opts;
   return NextResponse.json(
-    { success: false, error, ...(parserExhausted ? { parserExhausted: true as const } : {}) } satisfies ParseResponse,
+    {
+      success: false,
+      error,
+      ...(parserExhausted ? { parserExhausted: true as const } : {}),
+      ...(failure ? { failure } : {}),
+      ...(botWall ? { botWall } : {}),
+    } satisfies ParseResponse,
     { status },
   );
 }
@@ -131,16 +174,26 @@ async function validatePublicHttpUrl(url: URL) {
   }
 }
 
-async function fetchPublicHtml(url: URL): Promise<Response> {
+/**
+ * `headers` and `timeoutMs` are parameters rather than constants so the rescue
+ * ladder can re-request the same page with a browser-shaped header set through
+ * this exact function. The SSRF blocklist, the redirect cap and the byte cap
+ * are the parts that must never exist in two copies.
+ */
+async function fetchPublicHtml(
+  url: URL,
+  headers: Record<string, string> = REQUEST_HEADERS,
+  timeoutMs = 20_000,
+): Promise<Response> {
   let currentUrl = url;
 
   for (let redirectCount = 0; redirectCount <= MAX_REDIRECTS; redirectCount += 1) {
     await validatePublicHttpUrl(currentUrl);
 
     const response = await fetch(currentUrl, {
-      headers: REQUEST_HEADERS,
+      headers,
       redirect: "manual",
-      signal: AbortSignal.timeout(20000),
+      signal: AbortSignal.timeout(timeoutMs),
     });
 
     if (response.status >= 300 && response.status < 400) {
@@ -192,6 +245,91 @@ async function readHtmlWithLimit(response: Response): Promise<string> {
 }
 
 /**
+ * The opening bytes of a body we do NOT intend to parse, then hang up.
+ *
+ * Used only where the body was previously thrown away unread: a non-2xx
+ * response whose status we used to map straight to copy. Enough to fingerprint
+ * a challenge page and no more, because that is the response shape most likely
+ * to be hostile. Never throws — a body we cannot read is "" and the classifier
+ * says `none`, which is exactly the conservative answer.
+ */
+async function readBodyPrefix(response: Response): Promise<string> {
+  if (!response.body) return "";
+
+  try {
+    const reader = response.body.getReader();
+    const decoder = new TextDecoder();
+    let received = 0;
+    let text = "";
+
+    while (received < BODY_PREFIX_BYTES) {
+      const { value, done } = await reader.read();
+      if (done) break;
+      received += value.byteLength;
+      text += decoder.decode(value, { stream: true });
+    }
+    await reader.cancel();
+    return text + decoder.decode();
+  } catch {
+    return "";
+  }
+}
+
+/**
+ * What we learned about a page, on one line, hostname only.
+ *
+ * There is no server-side analytics in this app (PostHog is client-only), so
+ * these lines are the whole server-side record. Never the full URL: which site
+ * broke is useful, what someone is cooking is not ours to keep — the same rule
+ * lib/analytics.ts states for events applies to logs. And never a rescue
+ * provider's request URL, since those vendors carry the API key in the query
+ * string.
+ */
+function logVerdict(url: URL, status: number, verdict: PageVerdict) {
+  if (verdict.kind !== "bot_wall") return;
+  console.warn(
+    `parse: bot wall  host=${url.hostname} vendor=${verdict.vendor} ` +
+      `signal=${verdict.signal} status=${status} confidence=${verdict.confidence}`,
+  );
+}
+
+function logRescue(url: URL, report: RescueReport, startedAt: number) {
+  const ms = Date.now() - startedAt;
+  if (report.outcome === "none" || report.outcome === "skipped_budget") {
+    console.warn(`parse: rescue ${report.outcome}  host=${url.hostname} ms=${ms}`);
+    return;
+  }
+  console.log(`parse: rescue ok  host=${url.hostname} rung=${report.outcome} ms=${ms}`);
+}
+
+/**
+ * The bucket a verdict belongs in, or undefined where the classifier does not
+ * actually know.
+ *
+ * `none` at a non-2xx status is the undefined case on purpose: a 451, a 405 or
+ * a 403 serving a full article are all real answers we have no better name
+ * for, and the client's own status mapping already handles them. Asserting a
+ * guess here would only make it wrong in a new place.
+ */
+function failureForVerdict(verdict: PageVerdict): ImportFailureCode | undefined {
+  switch (verdict.kind) {
+    case "bot_wall":
+      return "blocked";
+    // A pay or sign-in wall is not bot protection, but from the cook's side
+    // the answer is the same one: this reader cannot get in, paste the text.
+    // Same bucket as today, when 401 and 402 both mapped to `blocked`.
+    case "paywall":
+      return "blocked";
+    case "not_found":
+      return "not_found";
+    case "server_error":
+      return "backend_unavailable";
+    case "none":
+      return undefined;
+  }
+}
+
+/**
  * What the server-side CookPilot attempt concluded. The distinction that
  * matters is `empty` vs `skipped`: only `empty` means the full parser actually
  * ran and answered "there is no recipe here", which is what lets the client
@@ -203,6 +341,13 @@ async function readHtmlWithLimit(response: Response): Promise<string> {
 type CookPilotServerOutcome =
   | { kind: "recipes"; recipes: Recipe[] }
   | { kind: "empty" }
+  /**
+   * The parser reached the page and something is standing in front of it: a
+   * bot challenge, or a post the platform withholds unless you are logged in.
+   * An outcome rather than a throw, so the rescue ladder gets a turn — see the
+   * hook in `POST`.
+   */
+  | { kind: "blocked"; message: string }
   | { kind: "skipped" };
 
 const SKIPPED: CookPilotServerOutcome = { kind: "skipped" };
@@ -214,22 +359,49 @@ function parserErrorMessage(data: unknown): string | null {
   return typeof message === "string" && message.trim() ? message.trim() : null;
 }
 
-async function parseWithCookPilotServer(url: string): Promise<CookPilotServerOutcome> {
+async function parseWithCookPilotServer(url: string, hostname: string): Promise<CookPilotServerOutcome> {
   const endpoint = process.env.COOKPILOT_RECIPE_PARSER_URL?.trim();
   const secret = process.env.RECIPEPRINTER_PARSER_SECRET?.trim();
   if (!endpoint || !secret) return SKIPPED;
 
-  const response = await fetch(endpoint, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      "X-RecipePrinter-Parser-Secret": secret,
-    },
-    // `multiRecipe` is RecipePrinter's opt-in for roundup pages: CookPilot returns
-    // every recipe it finds ({ recipes: [...] }) instead of just the main one.
-    body: JSON.stringify({ url, multiRecipe: true }),
-    signal: AbortSignal.timeout(55000),
-  });
+  const startedAt = Date.now();
+  let response: Response;
+  try {
+    response = await fetch(endpoint, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "X-RecipePrinter-Parser-Secret": secret,
+      },
+      // `multiRecipe` is RecipePrinter's opt-in for roundup pages: CookPilot returns
+      // every recipe it finds ({ recipes: [...] }) instead of just the main one.
+      body: JSON.stringify({ url, multiRecipe: true }),
+      signal: AbortSignal.timeout(COOKPILOT_TIMEOUT_MS),
+    });
+  } catch (err) {
+    // A timeout here used to end the whole request: the abort threw straight
+    // past the JSON-LD reader below and out as "that website took too long",
+    // even when the site itself was fine and would have answered in a second.
+    // Seen live on a plain 404 — the parser hung, and the fetch that would
+    // have said "we couldn't find that page" never got its turn.
+    //
+    // A timeout is the definition of an inconclusive answer, which is what
+    // `skipped` means, so it falls through like any other. Shortening this
+    // budget makes the path more common, not less, so it has to be right.
+    console.warn(
+      `parse: cookpilot unreachable  host=${hostname} ms=${Date.now() - startedAt} ` +
+        `err=${err instanceof Error ? err.name : "unknown"}`,
+    );
+    return SKIPPED;
+  }
+
+  // Cutting this budget from 55s to 30s is only safe if nothing real lives in
+  // the window we removed, and we had no way to know because this route logs
+  // nothing at all. Anything close to the new ceiling is worth seeing.
+  const elapsed = Date.now() - startedAt;
+  if (elapsed > COOKPILOT_TIMEOUT_MS * 0.6) {
+    console.warn(`parse: cookpilot slow  host=${hostname} ms=${elapsed}`);
+  }
 
   const data = (await response.json().catch(() => null)) as unknown;
   if (response.ok) {
@@ -247,17 +419,15 @@ async function parseWithCookPilotServer(url: string): Promise<CookPilotServerOut
   }
 
   // 412 is the parser reporting that it reached the page and no server-side
-  // reader can use it: a bot challenge, or a post the platform withholds unless
-  // you are logged in. It names the actual obstacle and what to do instead,
-  // which is more use than anything this route could substitute — and every
-  // reader below fetches the same page from the same place, so there is nothing
-  // left to try.
+  // reader can use it. It names the actual obstacle and what to do instead,
+  // which is more use than anything this route could substitute, so its
+  // message is carried out rather than replaced.
+  //
+  // It used to throw, which meant nothing after it ever ran. Now it returns,
+  // because there IS one thing left to try: our own request, shaped like a
+  // browser instead of like us. See the hook in `POST`.
   if (response.status === 412) {
-    throw new ParseHttpError(
-      parserErrorMessage(data) ?? BLOCKED_REMEDY,
-      422,
-      true,
-    );
+    return { kind: "blocked", message: parserErrorMessage(data) ?? BLOCKED_REMEDY };
   }
   if (response.status === 401 || response.status === 403) {
     throw new ParseHttpError(
@@ -271,11 +441,20 @@ async function parseWithCookPilotServer(url: string): Promise<CookPilotServerOut
       429,
     );
   }
-  if (response.status >= 500 || response.status === 504) {
-    throw new ParseHttpError(
-      "We couldn't read that recipe page right now. Try again, or paste the recipe text instead.",
-      response.status,
-    );
+  // A 5xx is the parser being broken, which is the definition of an
+  // inconclusive answer — so it falls through like a timeout does rather than
+  // ending the request. It used to throw, and that mattered more than it
+  // looks: measured against live sites, a plain 404 and a page the parser
+  // simply dislikes both came back as 5xx here, so the JSON-LD reader below
+  // never ran, the bot-wall classifier never saw the response, and the cook
+  // got "we couldn't read that recipe page" for a page that would have
+  // answered "we couldn't find that page" in half a second.
+  //
+  // 401/403/429 above deliberately still stop here: those are the parser
+  // refusing us rather than failing, and they are answers.
+  if (response.status >= 500) {
+    console.warn(`parse: cookpilot ${response.status}  host=${hostname}`);
+    return SKIPPED;
   }
   return SKIPPED;
 }
@@ -312,12 +491,45 @@ export async function POST(request: Request) {
   // was never going to hold a recipe. 400 is deliberate — `shouldTryUrlFallback`
   // already treats it as final, so this can't turn into a second parse.
   const searchPage = searchPageMessage(url.toString());
-  if (searchPage) return errorResponse(searchPage, 400);
+  if (searchPage) return errorResponse(searchPage, { status: 400, failure: "search_page" });
 
   // Once the full parser has answered "no recipe", it stays answered for the
   // rest of this request — whatever our own direct fetch goes on to hit, asking
   // the client to run that same parser again can only reproduce it.
   let parserExhausted = false;
+  const deadlineAt = Date.now() + INVOCATION_BUDGET_MS;
+
+  /**
+   * Read a page the ladder rescued, and answer with it if there is a recipe in
+   * there. `null` means the rescue landed but the page still holds nothing, in
+   * which case the caller falls through to its own copy for the original
+   * failure — a rescue that works is not the same as a recipe that exists.
+   */
+  const answerFromRescue = (report: RescueReport) => {
+    if (report.outcome === "none" || report.outcome === "skipped_budget") return null;
+    const recipe = [...jsonLdBlocksFromHtml(report.html), ...jsonDataBlocksFromHtml(report.html)]
+      .map((block) => recipeFromJsonLd(block, report.finalUrl))
+      .find(Boolean);
+    if (!recipe) return null;
+    return NextResponse.json({
+      success: true,
+      recipes: [recipe],
+      rescuedBy: report.outcome,
+    } satisfies ParseResponse);
+  };
+
+  const rescue = async (verdict: PageVerdict) => {
+    const startedAt = Date.now();
+    const report = await rescueBotWall(
+      { url, verdict, caller: callerKey(request), deadlineAt },
+      {
+        fetchPage: (target, headers, timeoutMs) => fetchPublicHtml(target, headers, timeoutMs),
+        readHtml: readHtmlWithLimit,
+      },
+    );
+    logRescue(url, report, startedAt);
+    return report;
+  };
 
   try {
     // Validate BEFORE the parser call, not just inside `fetchPublicHtml`.
@@ -328,35 +540,103 @@ export async function POST(request: Request) {
     // blocklist has to gate every fetch of this URL, ours and theirs.
     await validatePublicHttpUrl(url);
 
-    const cookPilot = await parseWithCookPilotServer(url.toString());
+    const cookPilot = await parseWithCookPilotServer(url.toString(), url.hostname);
     if (cookPilot.kind === "recipes") {
       return NextResponse.json({ success: true, recipes: cookPilot.recipes } satisfies ParseResponse);
     }
     parserExhausted = cookPilot.kind === "empty";
 
+    if (cookPilot.kind === "blocked") {
+      // The ladder REPLACES the ordinary fetch here rather than following it.
+      // Falling through to `fetchPublicHtml` first would add its full timeout
+      // to the most common failing case there is, purely to re-derive a
+      // verdict the parser has already given us — and those seconds come
+      // straight out of the budget the ladder then needs, so it would decline
+      // to start and we would have paid the wait for nothing.
+      //
+      // `weak` because a 412 does not say WHICH obstacle it hit, and one of
+      // the two it covers is a login wall that no amount of retrying defeats.
+      // Weak is exactly the confidence that may use the free rungs and may
+      // never reach a paid one.
+      const verdict: PageVerdict = {
+        kind: "bot_wall",
+        vendor: "generic",
+        signal: "cookpilot-412",
+        confidence: "weak",
+        needsJs: false,
+      };
+      logVerdict(url, 412, verdict);
+      const report = await rescue(verdict);
+      const rescued = answerFromRescue(report);
+      if (rescued) return rescued;
+
+      return errorResponse(cookPilot.message, {
+        status: 422,
+        // The client's fallback is CookPilot's own callable, and CookPilot is
+        // what just said 412. It would fetch the same page from the same
+        // place for the same answer.
+        parserExhausted: true,
+        failure: "blocked",
+        botWall: { vendor: "generic", rescue: report.outcome },
+      });
+    }
+
     const response = await fetchPublicHtml(url);
 
     if (!response.ok) {
-      if (response.status === 404) {
-        return errorResponse("We couldn't find that page. Check the link and try again.", 404, parserExhausted);
+      // The body used to be discarded here and the status mapped straight to
+      // copy, which made a WAF block and a paywall the same event.
+      const verdict = classifyPage({
+        status: response.status,
+        headers: response.headers,
+        bodyPrefix: await readBodyPrefix(response),
+      });
+      logVerdict(url, response.status, verdict);
+
+      let rescueOutcome: RescueOutcome | undefined;
+      if (verdict.kind === "bot_wall") {
+        const report = await rescue(verdict);
+        const rescued = answerFromRescue(report);
+        if (rescued) return rescued;
+        rescueOutcome = report.outcome;
       }
-      if ([401, 402, 403, 429].includes(response.status)) {
-        return errorResponse(
-          BLOCKED_REMEDY,
-          response.status,
+
+      // Deliberately NOT setting `parserExhausted` when the ladder ran out.
+      // Rung A leaves from the same egress IP as the fetch that just failed,
+      // so exhausting it says nothing about the client's fallback, which
+      // leaves from Google's. Suppressing that would remove a real second
+      // chance. Rungs B and C, which do change egress, can revisit this.
+      const failure = failureForVerdict(verdict);
+      const botWall =
+        verdict.kind === "bot_wall"
+          ? { vendor: verdict.vendor, rescue: rescueOutcome ?? ("none" as const) }
+          : undefined;
+
+      if (verdict.kind === "not_found") {
+        return errorResponse("We couldn't find that page. Check the link and try again.", {
+          status: 404,
           parserExhausted,
-        );
+          failure,
+        });
       }
-      return errorResponse(
-        "We couldn't open that recipe page. Try again, or paste the recipe text instead.",
-        response.status,
+      if (verdict.kind === "bot_wall" || verdict.kind === "paywall") {
+        return errorResponse(BLOCKED_REMEDY, {
+          status: response.status,
+          parserExhausted,
+          failure,
+          botWall,
+        });
+      }
+      return errorResponse("We couldn't open that recipe page. Try again, or paste the recipe text instead.", {
+        status: response.status,
         parserExhausted,
-      );
+        failure,
+      });
     }
 
     const contentType = response.headers.get("content-type") ?? "";
     if (!contentType.includes("text/html") && !contentType.includes("application/xhtml")) {
-      return errorResponse("That URL doesn't look like a recipe page.", 400, parserExhausted);
+      return errorResponse("That URL doesn't look like a recipe page.", { status: 400, parserExhausted });
     }
 
     const html = await readHtmlWithLimit(response);
@@ -365,10 +645,34 @@ export async function POST(request: Request) {
       .find(Boolean);
 
     if (!recipe) {
+      // The gap this classifier was written for. A challenge page that answers
+      // 200 clears the content-type gate above, carries no JSON-LD, and used
+      // to be reported to the cook and to PostHog as "no recipe on that page"
+      // — so `blocked` undercounted and `no_recipe`, the number the parser is
+      // tuned against, was quietly counting walls.
+      const verdict = classifyPage({
+        status: response.status,
+        headers: response.headers,
+        bodyPrefix: html.slice(0, BODY_PREFIX_BYTES),
+      });
+
+      if (verdict.kind === "bot_wall") {
+        logVerdict(url, response.status, verdict);
+        const report = await rescue(verdict);
+        const rescued = answerFromRescue(report);
+        if (rescued) return rescued;
+
+        return errorResponse(BLOCKED_REMEDY, {
+          status: 422,
+          parserExhausted,
+          failure: "blocked",
+          botWall: { vendor: verdict.vendor, rescue: report.outcome },
+        });
+      }
+
       return errorResponse(
         "We couldn't find a complete recipe on that page. Try another link or paste the recipe text instead.",
-        422,
-        parserExhausted,
+        { status: 422, parserExhausted },
       );
     }
 
@@ -377,19 +681,21 @@ export async function POST(request: Request) {
     return NextResponse.json({ success: true, recipes: [recipe] } satisfies ParseResponse);
   } catch (err) {
     if (err instanceof ParseHttpError) {
-      return errorResponse(err.message, err.status, err.exhausted || parserExhausted);
+      return errorResponse(err.message, {
+        status: err.status,
+        parserExhausted: err.exhausted || parserExhausted,
+      });
     }
     if (err instanceof Error && err.name === "TimeoutError") {
-      return errorResponse(
-        "That website took too long to respond. Try again, or paste the recipe text instead.",
-        504,
+      return errorResponse("That website took too long to respond. Try again, or paste the recipe text instead.", {
+        status: 504,
         parserExhausted,
-      );
+        failure: "timeout",
+      });
     }
-    return errorResponse(
-      "We couldn't import that recipe. Try again, paste the recipe text, or upload screenshots.",
-      500,
+    return errorResponse("We couldn't import that recipe. Try again, paste the recipe text, or upload screenshots.", {
+      status: 500,
       parserExhausted,
-    );
+    });
   }
 }

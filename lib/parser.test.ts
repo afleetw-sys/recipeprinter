@@ -282,6 +282,83 @@ describe("parseText — reading the paste ourselves", () => {
   });
 });
 
+// The route sees the actual response headers and body, so it is the only place
+// that can tell a bot wall from a paywall from a 404. These cover the client
+// half of that: preferring the route's answer over its own status guess, and
+// not dropping the vendor on the way out.
+describe("parseUrlAll — the route's own verdict", () => {
+  const BLOCKED_BODY = {
+    success: false,
+    error: "This site blocks anything automated from reading it.",
+    failure: "blocked",
+    botWall: { vendor: "cloudflare", rescue: "none" },
+  };
+
+  it("still tries the callable's different egress IP after a failed rescue", async () => {
+    // Rung A leaves from the same address the failed fetch did, so exhausting
+    // it says nothing about whether Google's network is blocked too.
+    routeReplies(403, BLOCKED_BODY);
+
+    await expect(parseUrlAll("smittenkitchen.com/borscht")).resolves.toHaveLength(1);
+    expect(callable).toHaveBeenCalledOnce();
+  });
+
+  it("keeps the fingerprinted vendor when the callable fails too", async () => {
+    routeReplies(403, BLOCKED_BODY);
+    callable.mockRejectedValue(Object.assign(new Error("HTTP 403"), { code: "unavailable" }));
+
+    const err = await parseUrlAll("smittenkitchen.com/borscht").catch((e) => e);
+
+    expect(err).toBeInstanceOf(ImportError);
+    expect(err.code).toBe("blocked");
+    expect(err.meta).toEqual({ botVendor: "cloudflare", rescue: "none" });
+  });
+
+  it("carries the verdict through when the callable is suppressed", async () => {
+    routeReplies(422, { ...BLOCKED_BODY, parserExhausted: true });
+
+    const err = await parseUrlAll("smittenkitchen.com/borscht").catch((e) => e);
+
+    expect(callable).not.toHaveBeenCalled();
+    expect(err.code).toBe("blocked");
+    expect(err.meta).toEqual({ botVendor: "cloudflare", rescue: "none" });
+  });
+
+  // A 200 interstitial answers 422 like an ordinary empty page does, so the
+  // status alone would put it in `no_recipe` — the bucket this whole change
+  // exists to stop contaminating.
+  it("prefers the route's verdict over the status it arrived with", async () => {
+    routeReplies(422, { ...BLOCKED_BODY, parserExhausted: true });
+
+    const err = await parseUrlAll("smittenkitchen.com/borscht").catch((e) => e);
+
+    expect(err.code).toBe("blocked");
+  });
+
+  it("falls back to the status when the route names no verdict", async () => {
+    // A deploy that predates the field, or a fetch that never reached us.
+    routeReplies(404, { success: false, error: "We couldn't find that page.", parserExhausted: true });
+
+    const err = await parseUrlAll("smittenkitchen.com/borscht").catch((e) => e);
+
+    expect(err.code).toBe("not_found");
+    expect(err.meta).toBeUndefined();
+  });
+
+  it("passes a rescued page through like any other success", async () => {
+    routeReplies(200, {
+      success: true,
+      recipes: [{ title: "Rescued Borscht", ingredients: [], instructions: [] }],
+      rescuedBy: "a_headers",
+    });
+
+    const recipes = await parseUrlAll("smittenkitchen.com/borscht");
+
+    expect(recipes[0].title).toBe("Rescued Borscht");
+    expect(callable).not.toHaveBeenCalled();
+  });
+});
+
 describe("normalizeFractions", () => {
   // The exact paste that lost three of its nine ingredients in production.
   it("rewrites the glyphs that were being discarded", () => {

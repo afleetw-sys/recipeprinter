@@ -5,6 +5,7 @@ import { BLOCKED_REMEDY } from "@/lib/importUrl";
 import { searchPageMessage, unwrapRedirectUrl } from "@/lib/importUrl";
 import { anonymousOwnerId } from "@/lib/anonymousOwner";
 import type { ImportFailureCode } from "@/lib/analytics";
+import type { BotWallVendor, RescueOutcome } from "@/types/recipe";
 import { parseRecipeText } from "@/lib/textRecipe";
 import type { ParseResponse, Recipe } from "@/types/recipe";
 
@@ -18,6 +19,22 @@ interface LocalParseOutcome {
   /** The route turned us away to protect the parser budget — see
       `ParseError.rateLimited`. */
   rateLimited?: boolean;
+  /** The route's own verdict, which beats guessing from the status. */
+  failure?: ImportFailureCode;
+  /** Which wall it fingerprinted and how far the rescue got, if either. */
+  meta?: ImportErrorMeta;
+}
+
+/**
+ * What we know about a failure beyond its bucket.
+ *
+ * Only ever produced by the route, which is the one place that sees the actual
+ * response headers and body. Rides on the `ImportError` so `recipe_import_failed`
+ * can carry it without the queue having to re-derive anything.
+ */
+export interface ImportErrorMeta {
+  botVendor?: BotWallVendor;
+  rescue?: RescueOutcome;
 }
 
 /**
@@ -29,6 +46,7 @@ export class ImportError extends Error {
   constructor(
     message: string,
     readonly code: ImportFailureCode = "unknown",
+    readonly meta?: ImportErrorMeta,
   ) {
     super(message);
     this.name = "ImportError";
@@ -182,6 +200,10 @@ async function parseUrlLocally(url: string): Promise<LocalParseOutcome> {
       status: response.status,
       parserExhausted: data.parserExhausted,
       rateLimited: data.rateLimited,
+      failure: data.failure,
+      meta: data.botWall
+        ? { botVendor: data.botWall.vendor, rescue: data.botWall.rescue }
+        : undefined,
     };
   } catch {
     /* Fall back to CookPilot's callable parser below. */
@@ -233,13 +255,18 @@ async function parseUrlWithCookPilot(url: string, localError?: string): Promise<
 
 /**
  * The analytics bucket for a route failure we are NOT retrying through
- * CookPilot. When every non-retried case was a 400/413 this could be a single
- * inline ternary, but suppressing the duplicate parse (see
- * `shouldTryUrlFallback`) means a blocked/404/timeout answer can now end here
- * instead of being categorized by `friendlyError` on the way out of the
- * fallback. Mirrors that function's status mapping deliberately, so which of
- * the two paths a failure took never changes the bucket it lands in — the
- * vocabulary is a closed map precisely so it stays comparable.
+ * CookPilot, when the route did not name one itself.
+ *
+ * The route now answers this directly (`ParseError.failure`) for every case it
+ * can actually tell apart, and that answer wins. This stays as the fallback
+ * for the two cases where there is no answer to prefer: a response from a
+ * deploy that predates the field, and a `fetch` that never reached the route at
+ * all (`status` undefined). Deleting it would silently report both as
+ * `no_recipe`.
+ *
+ * Mirrors `friendlyError`'s status mapping deliberately, so which of the two
+ * paths a failure took never changes the bucket it lands in — the vocabulary is
+ * a closed map precisely so it stays comparable.
  */
 function categoryForRouteStatus(status: number | undefined): ImportFailureCode {
   if (status === 413) return "too_large";
@@ -273,12 +300,24 @@ export async function parseUrlAll(rawUrl: string): Promise<Recipe[]> {
   const local = await parseUrlLocally(url);
   if (local.recipes && local.recipes.length > 0) return local.recipes;
   if (shouldTryUrlFallback(local)) {
-    return parseUrlWithCookPilot(url, local.error);
+    try {
+      return await parseUrlWithCookPilot(url, local.error);
+    } catch (err) {
+      // The route may have fingerprinted the wall before handing over. That
+      // fact is still true whatever the fallback then made of the page, and
+      // it is the one thing that turns "sites are blocking us" into a list of
+      // vendors with counts — so it must not be dropped on the way out.
+      if (err instanceof ImportError && !err.meta && local.meta) {
+        throw new ImportError(err.message, err.code, local.meta);
+      }
+      throw err;
+    }
   }
   throw new ImportError(
     local.error ??
       "We couldn't find a complete recipe on that page. Try another link or paste the recipe text instead.",
-    categoryForRouteStatus(local.status),
+    local.failure ?? categoryForRouteStatus(local.status),
+    local.meta,
   );
 }
 
