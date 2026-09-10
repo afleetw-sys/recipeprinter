@@ -2439,7 +2439,14 @@
   .rp-home-frontdoor {
     --rp-home-chrome: 94px; /* 62px top bar + the column's 32px top padding */
     --rp-home-peek: 128px; /* the slice of "In real kitchens" left showing */
+    /* Centred, then lifted. True vertical centring put a third of the screen
+       above the headline before anything was said, which reads as a page
+       waiting to start rather than one offering something. The padding is on
+       the BOTTOM: flex centres within the content box, so this raises the
+       block by half its value and leaves the peek below it untouched. */
+    --rp-home-lift: 10rem;
     min-height: calc(100dvh - var(--rp-home-chrome) - var(--rp-home-peek));
+    padding-bottom: var(--rp-home-lift);
   }
 
   /* The "In real kitchens" carousel track.
