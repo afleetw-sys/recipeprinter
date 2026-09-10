@@ -2439,19 +2439,18 @@
   .rp-home-frontdoor {
     --rp-home-chrome: 94px; /* 62px top bar + the column's 32px top padding */
     --rp-home-peek: 200px; /* the slice of "In real kitchens" left showing */
-    /* Centred, then lifted. True vertical centring put a third of the screen
-       above the headline before anything was said, which reads as a page
-       waiting to start rather than one offering something. The padding is on
-       the BOTTOM: flex centres within the content box, so this raises the
-       block by half its value and leaves the peek below it untouched.
-       Both numbers came down together. Holding the block high AND closing the
-       gap under it is only possible by reserving less height overall, so the
-       strip shows more of itself than it did. That is the trade: the empty
-       space between the card and the photographs was doing nothing, and the
-       photographs are at least worth looking at. */
-    --rp-home-lift: 5rem;
+    /* Pinned to the top of its box, NOT centred.
+       Centring looked right at rest and was wrong in motion: the block grows
+       downward when a taller import mode opens, and a centred box absorbs half
+       of that growth by rising, so the headline and the top edge of the card
+       drifted up the screen every time someone picked Text. The one thing on
+       this page that should never move is where it starts.
+       So the offset is a constant on the TOP, and everything the card gains
+       goes downward into the reserved space below it, pushing the kitchen
+       strip down only once that space is used up. */
+    --rp-home-top: 5rem;
     min-height: calc(100dvh - var(--rp-home-chrome) - var(--rp-home-peek));
-    padding-bottom: var(--rp-home-lift);
+    padding-top: var(--rp-home-top);
   }
 
   /* The "In real kitchens" carousel track.
