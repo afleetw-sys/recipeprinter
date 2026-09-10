@@ -2343,6 +2343,35 @@
     min-width: 0;
   }
 
+  /* The "Made in real kitchens" carousel track.
+     A thin scrollbar rather than none: the bar is the only part of a
+     scroll-snap strip that says how much is left, and hiding it leaves a
+     pointer user guessing. `overscroll-behavior-x: contain` stops a
+     horizontal trackpad flick at the end of the strip from being taken as a
+     browser back-gesture, which navigated away from the page mid-browse. */
+  .rp-gallery-track {
+    overscroll-behavior-x: contain;
+    scrollbar-width: thin;
+    scrollbar-color: var(--cp-line-strong) transparent;
+  }
+  .rp-gallery-track::-webkit-scrollbar {
+    height: 8px;
+  }
+  .rp-gallery-track::-webkit-scrollbar-thumb {
+    background: var(--cp-line-strong);
+    border-radius: 9999px;
+  }
+  .rp-gallery-track::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  /* The focus ring belongs on the track as a whole; without it a keyboard user
+     tabbing onto a scrollable region gets no indication they landed on it. */
+  .rp-gallery-track:focus-visible {
+    outline: var(--cp-focus-ring);
+    outline-offset: 2px;
+    border-radius: var(--cp-radius-lg);
+  }
+
   /* Below the desktop layout the importer sits directly on the page rather
      than in a card, so the front door reads as the page itself asking for a
      link rather than as a widget dropped onto it. (The trailing padding that
