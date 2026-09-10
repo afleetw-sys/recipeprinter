@@ -40,10 +40,10 @@ export default function Home() {
             </div>
           </div>
 
-          {/* The tool itself (interactive, client). As the capture → app
-              handoff target, it also finishes any import a visitor started on
-              an SEO landing page. */}
-          <PrinterWorkspace consumePendingImport />
+          {/* The tool itself (interactive, client). It no longer finishes
+              imports started on an SEO landing page: those hand off straight to
+              /print now, where the printed card is. */}
+          <PrinterWorkspace />
 
           {/* Below the tool, never above it: what other people printed is an
               argument for staying, not the reason a visitor came. Renders

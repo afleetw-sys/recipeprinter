@@ -1026,11 +1026,20 @@ export function PrintDeck(props: PrintDeckProps) {
           >
             {previewMeasuring ? (
               <RecipeLoadingState className="recipe-page-deck__loading" />
-            ) : navItems.length === 0 ? (
+            ) : navItems.length === 0 && parsingImports.length === 0 && failedImports.length === 0 ? (
               /* Deleting the last recipe leaves you standing in the workspace
                  you just emptied, not in an error. So the room stays: same
                  rail, same canvas, same settings panel — and where the pages
-                 were, one page-shaped outline saying what would go there. */
+                 were, one page-shaped outline saying what would go there.
+
+                 Not while an import is on its way, though, and not while one is
+                 sitting there having failed. Both of those render their own
+                 page-shaped sheet below, so the outline was a SECOND empty page
+                 beside them, captioned "No pages yet" next to a spinner reading
+                 "Getting the recipe from smittenkitchen.com…". That pairing is
+                 the first thing a visitor handed off from a landing page sees,
+                 which is the worst possible place for the app to contradict
+                 itself. */
               /* No wrapper around it. The sheet IS the deck's child, so the
                  deck's own centring and padding place it exactly where a real
                  page would be — anything in between only adds an offset a real

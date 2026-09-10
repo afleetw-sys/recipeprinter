@@ -139,6 +139,7 @@ import {
   markPrintPreviewStable,
   PRINT_PREVIEW_STABILITY_MS,
 } from "@/lib/printErrorRecovery";
+import { takePendingImport } from "@/lib/pendingImport";
 
 const AdminShareLinkDialog = dynamic(
   () => import("@/components/AdminShareLinkDialog").then((mod) => mod.AdminShareLinkDialog),
@@ -530,6 +531,8 @@ export default function PrintPage() {
   // user didn't select for this job" apart from "just added via the Add
   // recipe dialog" — only the latter should get pulled into the deck.
   const initialQueueIdsRef = useRef<Set<string>>(new Set());
+  /** The capture handoff is taken once per mount — see the effect that reads it. */
+  const consumedPendingImportRef = useRef(false);
   /**
    * Whether an import is this deck's to wait for — i.e. started here.
    *
@@ -2940,6 +2943,47 @@ export default function PrintPage() {
     // queue.items is read as an intentional snapshot (see above), not a trigger.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [accountProjectId, idsParam, queue.hydrated]);
+
+  /**
+   * Capture → app handoff: finish the import a visitor started on a landing page.
+   *
+   * This used to happen on the home page, which is where the SEO capture blocks
+   * pushed to. It lands here now because this is where the recipe becomes a
+   * thing you can look at: the same paste used to arrive as a row in a list with
+   * a Clear all over it, on a page that empties itself on arrival, which taught
+   * brand-new visitors that the app holds a cart before it had shown them a
+   * single printed card.
+   *
+   * Deliberately declared AFTER the job bootstrap above, and gated on the same
+   * `queue.hydrated`, so effects run in that order: the bootstrap snapshots
+   * `initialQueueIdsRef` from the hydrated queue first, which is what makes the
+   * item this adds afterwards read as `isOursToAwait`. Get that the wrong way
+   * round and the import is born already excluded, and never shows a placeholder
+   * or a page.
+   *
+   * Consumed exactly once per mount, and consume-and-delete at the storage layer
+   * (see lib/pendingImport), so a refresh can't re-import.
+   *
+   * On the home page this raced the mount-clear, and only a ref ordering kept
+   * the two apart. Nothing here clears anything, so there is no race left.
+   */
+  useEffect(() => {
+    if (!queue.hydrated || consumedPendingImportRef.current) return;
+    consumedPendingImportRef.current = true;
+    let cancelled = false;
+    void takePendingImport().then((pending) => {
+      if (cancelled || !pending) return;
+      if (pending.kind === "url") queue.addUrl(pending.url);
+      else if (pending.kind === "text") queue.addText(pending.text);
+      else if (pending.kind === "ready") queue.addReadyRecipes(pending.recipes);
+      else if (pending.kind === "images") queue.addImages(pending.images, pending.label);
+    });
+    return () => {
+      cancelled = true;
+    };
+    // The queue's add methods are stable; `hydrated` is the only real trigger.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [queue.hydrated]);
 
   /**
    * Which projects write themselves to the account, without being asked.

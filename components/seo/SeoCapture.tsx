@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, type DragEvent, type FormEvent } from "react";
+import { useRef, useState, type DragEvent, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
 import { ArrowRightIcon, ICON_SIZE, SpinnerIcon, UploadIcon } from "@/components/icons";
 import { stashPendingImport } from "@/lib/pendingImport";
@@ -12,10 +12,17 @@ import type { ImportTab } from "@/types/recipe";
 // A deliberately minimal capture for the SEO landing pages: just the one input
 // that matches the page's intent (a URL field, a paste box, or a photo dropzone)
 // plus an import button, no mode toggles, no other options. On submit it stashes
-// the payload and hands off to the app at "/", which finishes the import. The full
-// multi-source importer lives on the app itself, not on the marketing pages —
-// which is also why submitting an EMPTY field goes there rather than erroring
-// (see `openWorkspace`).
+// the payload and hands off to the print page, which finishes the import.
+//
+// It used to hand off to "/", and that was teaching the wrong thing in the first
+// ten seconds someone ever spent here: a visitor who pasted one link was
+// deposited on a page showing their recipe sitting in a list with a Clear all
+// above it and a Preview button beside it, which reads as a cart. It is not a
+// cart. That page empties itself on arrival by design, so the next time they
+// came back to it for recipe two, the recipe was gone. Landing them where the
+// printable card actually is skips the lesson and the round trip both.
+//
+// An EMPTY field is the exception and still goes to "/" — see `openWorkspace`.
 type CaptureMode = "url" | "text" | "image";
 
 function resolveMode(tab?: ImportTab): CaptureMode {
@@ -41,17 +48,37 @@ export function SeoCapture({
   const [dragging, setDragging] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const warmedRef = useRef(false);
 
   async function handoff(payload: Parameters<typeof stashPendingImport>[0]) {
     setBusy(true);
     const ok = await stashPendingImport(payload);
     // Even if persistence failed (private mode, quota), send them to the working
     // tool rather than stranding them on the landing page.
-    router.push("/");
+    router.push("/print");
     if (!ok) setBusy(false);
   }
 
+  /**
+   * Start fetching the print page the moment someone touches this.
+   *
+   * The one real cost of handing off to /print rather than / is that it is the
+   * heavier page: / is statically prerendered and free of Firebase, and /print
+   * is neither. Warming it on first interaction spends that download while the
+   * cook is still typing, instead of after they press the button.
+   *
+   * On interaction rather than on mount, because most people who see a landing
+   * page never submit anything, and pre-loading the whole app for all of them
+   * to save a second for some of them is the wrong trade.
+   */
+  function warmWorkspace() {
+    if (warmedRef.current) return;
+    warmedRef.current = true;
+    router.prefetch("/print");
+  }
+
   function selectFiles(list: FileList | null) {
+    warmWorkspace();
     const { images, rejected } = partitionImageFiles(list);
     if (images.length === 0) {
       setFiles([]);
@@ -72,12 +99,18 @@ export function SeoCapture({
    * The way out of a page that only carries one kind of import.
    *
    * Each landing page shows the single capture that matches what it is about,
-   * while the workspace at "/" carries all three plus the library imports. So
-   * someone who arrives on the Pinterest page holding a photo, a block of
+   * while the front door at "/" carries all of them plus the library imports.
+   * So someone who arrives on the Pinterest page holding a photo, a block of
    * text, or a Paprika export can see no route to it from here — and the thing
    * they just tapped said "Start printing". Taking them to the tool keeps that
    * promise. Telling someone with no link to "paste a recipe link first" tells
    * them they came to the wrong page, which they didn't.
+   *
+   * This one still goes to "/", not to /print, and the difference is the whole
+   * point of the split: a submitted payload has a card waiting for it at the
+   * end, and an empty field is someone looking for the right box to put
+   * something in. "/" is the page that offers boxes; /print with nothing on it
+   * offers an empty deck.
    */
   function openWorkspace() {
     setBusy(true);
@@ -128,7 +161,7 @@ export function SeoCapture({
     try {
       const images = await prepareImageDataUrls(files);
       const ok = await stashPendingImport({ kind: "images", images, label: imageLabel(files) });
-      router.push("/");
+      router.push("/print");
       if (!ok) setBusy(false);
     } catch (err) {
       setBusy(false);
@@ -181,6 +214,7 @@ export function SeoCapture({
               placeholder={placeholder ?? "Paste recipe link here"}
               value={url}
               onChange={(e) => {
+                warmWorkspace();
                 setUrl(e.target.value);
                 if (error) setError(null);
               }}
@@ -202,6 +236,7 @@ export function SeoCapture({
             placeholder={placeholder ?? "Paste the recipe text or caption here"}
             value={text}
             onChange={(e) => {
+              warmWorkspace();
               setText(e.target.value);
               if (error) setError(null);
             }}
