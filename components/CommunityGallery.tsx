@@ -53,10 +53,12 @@ export function CommunityGallery({
 
   return (
     <section
-      // No rule above the heading: the space is the separator. The padding
-      // stays, on top of the page column's own gap, because whitespace has to
-      // be generous to do the job a hairline was doing.
-      className="pt-cp-7 flex flex-col gap-cp-5"
+      // No rule above the heading: the space is the separator, and it is
+      // deliberately large. Pushing the strip down keeps the importer alone in
+      // the first screenful on a laptop, so the thing a visitor came to do is
+      // the thing in front of them and the proof is what they find on the way
+      // down.
+      className="pt-cp-7 mt-cp-7 flex flex-col gap-cp-3"
       aria-labelledby="rp-gallery-heading"
     >
       <Header />
@@ -74,22 +76,35 @@ export function CommunityGallery({
   );
 }
 
+/**
+ * An eyebrow, not a second headline.
+ *
+ * At `text-cp-h2 font-extrabold` this sat at exactly the weight of "Add a
+ * recipe", so the page offered a first-time visitor two equal things to look
+ * at, and the photographs win that contest every time: they are the only
+ * colour on an otherwise grey page. The section is proof, which is worth
+ * having and worth having SECOND, so it takes the quiet label treatment the
+ * rest of the product uses for supporting material.
+ */
 function Header() {
   return (
-    <div className="flex items-center justify-between gap-cp-4 flex-wrap">
+    <div className="flex items-center justify-between gap-cp-3 flex-wrap">
       <h2
         id="rp-gallery-heading"
-        className="text-cp-h2 font-extrabold tracking-[-0.02em]"
+        className="text-cp-label font-bold uppercase tracking-[0.08em] text-ink-soft"
       >
         In real kitchens
       </h2>
 
       {/* An email, not an upload box. The people browsing this are mostly
           prospects with nothing to submit yet, so the volume does not justify
-          a pipeline, and a reply thread is a consent record. */}
+          a pipeline, and a reply thread is a consent record.
+          A link rather than a bordered button, for the same reason the heading
+          is an eyebrow: a second outlined control on the page competed with
+          the one the visitor is meant to use. */}
       <a
         href={gallerySubmitHref()}
-        className="btn btn-secondary btn-compact mr-auto sm:ml-auto sm:mr-0 shrink-0"
+        className="mr-auto sm:ml-auto sm:mr-0 shrink-0 text-cp-caption font-semibold text-ink-soft hover:text-ink transition-colors"
       >
         Add yours
       </a>
