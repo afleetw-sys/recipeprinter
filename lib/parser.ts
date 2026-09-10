@@ -5,7 +5,7 @@ import { BLOCKED_REMEDY } from "@/lib/importUrl";
 import { searchPageMessage, unwrapRedirectUrl } from "@/lib/importUrl";
 import { anonymousOwnerId } from "@/lib/anonymousOwner";
 import type { ImportFailureCode } from "@/lib/analytics";
-import type { BotWallVendor, RescueOutcome } from "@/types/recipe";
+import type { BotWallVendor } from "@/types/recipe";
 import { parseRecipeText } from "@/lib/textRecipe";
 import type { ParseResponse, Recipe } from "@/types/recipe";
 
@@ -21,7 +21,7 @@ interface LocalParseOutcome {
   rateLimited?: boolean;
   /** The route's own verdict, which beats guessing from the status. */
   failure?: ImportFailureCode;
-  /** Which wall it fingerprinted and how far the rescue got, if either. */
+  /** Which wall the route fingerprinted, if it fingerprinted one. */
   meta?: ImportErrorMeta;
 }
 
@@ -34,7 +34,6 @@ interface LocalParseOutcome {
  */
 export interface ImportErrorMeta {
   botVendor?: BotWallVendor;
-  rescue?: RescueOutcome;
 }
 
 /**
@@ -201,9 +200,7 @@ async function parseUrlLocally(url: string): Promise<LocalParseOutcome> {
       parserExhausted: data.parserExhausted,
       rateLimited: data.rateLimited,
       failure: data.failure,
-      meta: data.botWall
-        ? { botVendor: data.botWall.vendor, rescue: data.botWall.rescue }
-        : undefined,
+      meta: data.botWall ? { botVendor: data.botWall.vendor } : undefined,
     };
   } catch {
     /* Fall back to CookPilot's callable parser below. */

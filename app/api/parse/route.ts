@@ -6,9 +6,8 @@ import { adaptCookPilotRecipes, normalizeImportURL } from "@/lib/cookpilot";
 import { BLOCKED_REMEDY, searchPageMessage, unwrapRedirectUrl } from "@/lib/importUrl";
 import { callerKey, rateLimit } from "@/lib/server/rateLimit";
 import { BODY_PREFIX_BYTES, classifyPage, type PageVerdict } from "@/lib/server/botWall";
-import { rescueBotWall, type RescueReport } from "@/lib/server/botRescue";
 import type { ImportFailureCode } from "@/lib/analytics";
-import type { BotWallVendor, ParseResponse, Recipe, RescueOutcome } from "@/types/recipe";
+import type { BotWallVendor, ParseResponse, Recipe } from "@/types/recipe";
 
 export const runtime = "nodejs";
 /**
@@ -21,34 +20,21 @@ export const runtime = "nodejs";
  * respond. Try again, or paste the recipe text instead." Import failure is the
  * most common failure this product has, and its best error text was dead code.
  *
- * The budget is the CookPilot parser, then our own fetch if it found nothing,
- * then one rescue attempt if that fetch came back a wall. See
- * COOKPILOT_TIMEOUT_MS for why the first of those is 30s rather than the 55s
- * it used to be.
+ * The budget is the CookPilot parser, then our own fetch if it found nothing.
  */
 export const maxDuration = 90;
 
 /**
- * When this invocation has to be finished, as a wall-clock deadline rather
- * than a stack of independent timeouts.
- *
- * The rescue ladder needs to know how much time is actually left, not how much
- * its own rung would like. A few seconds under `maxDuration` so a rung that
- * runs to its limit still leaves room to write the response, rather than being
- * cut off by the platform mid-sentence — which is the failure mode the comment
- * above describes.
- */
-const INVOCATION_BUDGET_MS = 85_000;
-
-/**
- * Down from 55s, to make room for the rescue ladder inside the same 90.
+ * Down from 55s.
  *
  * The comment above used to note that 55s is "a long time to ask someone to
  * keep watching a spinner" and that lowering it was a change worth making on
- * its own. This is that change: 30 + 20 leaves about 30s for a rescue attempt,
- * where 55 + 20 left fifteen and the ladder would mostly have declined to
- * start. The cost is that a site which genuinely answers between 30 and 55
- * seconds now fails, which is what the `cookpilot slow` log line below is for.
+ * its own. This is that change. Measured against the sites that actually wall
+ * us, the parser either answers well inside 30s or times out entirely, so the
+ * back half of that budget was a cook watching a spinner for an answer that
+ * was never coming. The cost is that a site genuinely answering between 30 and
+ * 55 seconds now fails, which is what the `cookpilot slow` line below is for;
+ * it is a one-constant revert.
  */
 const COOKPILOT_TIMEOUT_MS = 30_000;
 
@@ -93,7 +79,7 @@ interface ErrorOptions {
       unset where we genuinely do not know: the client's status mapping is the
       right answer then, and asserting a guess would be worse than it. */
   failure?: ImportFailureCode;
-  botWall?: { vendor: BotWallVendor; rescue: RescueOutcome };
+  botWall?: { vendor: BotWallVendor };
 }
 
 function errorResponse(error: string, opts: ErrorOptions = {}) {
@@ -175,16 +161,10 @@ async function validatePublicHttpUrl(url: URL) {
 }
 
 /**
- * `headers` and `timeoutMs` are parameters rather than constants so the rescue
- * ladder can re-request the same page with a browser-shaped header set through
- * this exact function. The SSRF blocklist, the redirect cap and the byte cap
- * are the parts that must never exist in two copies.
  */
-async function fetchPublicHtml(
-  url: URL,
-  headers: Record<string, string> = REQUEST_HEADERS,
-  timeoutMs = 20_000,
-): Promise<Response> {
+async function fetchPublicHtml(url: URL): Promise<Response> {
+  const headers = REQUEST_HEADERS;
+  const timeoutMs = 20_000;
   let currentUrl = url;
 
   for (let redirectCount = 0; redirectCount <= MAX_REDIRECTS; redirectCount += 1) {
@@ -281,9 +261,7 @@ async function readBodyPrefix(response: Response): Promise<string> {
  * There is no server-side analytics in this app (PostHog is client-only), so
  * these lines are the whole server-side record. Never the full URL: which site
  * broke is useful, what someone is cooking is not ours to keep — the same rule
- * lib/analytics.ts states for events applies to logs. And never a rescue
- * provider's request URL, since those vendors carry the API key in the query
- * string.
+ * lib/analytics.ts states for events applies to logs.
  */
 function logVerdict(url: URL, status: number, verdict: PageVerdict) {
   if (verdict.kind !== "bot_wall") return;
@@ -291,15 +269,6 @@ function logVerdict(url: URL, status: number, verdict: PageVerdict) {
     `parse: bot wall  host=${url.hostname} vendor=${verdict.vendor} ` +
       `signal=${verdict.signal} status=${status} confidence=${verdict.confidence}`,
   );
-}
-
-function logRescue(url: URL, report: RescueReport, startedAt: number) {
-  const ms = Date.now() - startedAt;
-  if (report.outcome === "none" || report.outcome === "skipped_budget") {
-    console.warn(`parse: rescue ${report.outcome}  host=${url.hostname} ms=${ms}`);
-    return;
-  }
-  console.log(`parse: rescue ok  host=${url.hostname} rung=${report.outcome} ms=${ms}`);
 }
 
 /**
@@ -344,8 +313,8 @@ type CookPilotServerOutcome =
   /**
    * The parser reached the page and something is standing in front of it: a
    * bot challenge, or a post the platform withholds unless you are logged in.
-   * An outcome rather than a throw, so the rescue ladder gets a turn — see the
-   * hook in `POST`.
+   * An outcome rather than a throw so it can carry a `failure` and a vendor
+   * out to the client — see the hook in `POST`.
    */
   | { kind: "blocked"; message: string }
   | { kind: "skipped" };
@@ -497,39 +466,6 @@ export async function POST(request: Request) {
   // rest of this request — whatever our own direct fetch goes on to hit, asking
   // the client to run that same parser again can only reproduce it.
   let parserExhausted = false;
-  const deadlineAt = Date.now() + INVOCATION_BUDGET_MS;
-
-  /**
-   * Read a page the ladder rescued, and answer with it if there is a recipe in
-   * there. `null` means the rescue landed but the page still holds nothing, in
-   * which case the caller falls through to its own copy for the original
-   * failure — a rescue that works is not the same as a recipe that exists.
-   */
-  const answerFromRescue = (report: RescueReport) => {
-    if (report.outcome === "none" || report.outcome === "skipped_budget") return null;
-    const recipe = [...jsonLdBlocksFromHtml(report.html), ...jsonDataBlocksFromHtml(report.html)]
-      .map((block) => recipeFromJsonLd(block, report.finalUrl))
-      .find(Boolean);
-    if (!recipe) return null;
-    return NextResponse.json({
-      success: true,
-      recipes: [recipe],
-      rescuedBy: report.outcome,
-    } satisfies ParseResponse);
-  };
-
-  const rescue = async (verdict: PageVerdict) => {
-    const startedAt = Date.now();
-    const report = await rescueBotWall(
-      { url, verdict, caller: callerKey(request), deadlineAt },
-      {
-        fetchPage: (target, headers, timeoutMs) => fetchPublicHtml(target, headers, timeoutMs),
-        readHtml: readHtmlWithLimit,
-      },
-    );
-    logRescue(url, report, startedAt);
-    return report;
-  };
 
   try {
     // Validate BEFORE the parser call, not just inside `fetchPublicHtml`.
@@ -547,29 +483,11 @@ export async function POST(request: Request) {
     parserExhausted = cookPilot.kind === "empty";
 
     if (cookPilot.kind === "blocked") {
-      // The ladder REPLACES the ordinary fetch here rather than following it.
-      // Falling through to `fetchPublicHtml` first would add its full timeout
-      // to the most common failing case there is, purely to re-derive a
-      // verdict the parser has already given us — and those seconds come
-      // straight out of the budget the ladder then needs, so it would decline
-      // to start and we would have paid the wait for nothing.
-      //
-      // `weak` because a 412 does not say WHICH obstacle it hit, and one of
-      // the two it covers is a login wall that no amount of retrying defeats.
-      // Weak is exactly the confidence that may use the free rungs and may
-      // never reach a paid one.
-      const verdict: PageVerdict = {
-        kind: "bot_wall",
-        vendor: "generic",
-        signal: "cookpilot-412",
-        confidence: "weak",
-        needsJs: false,
-      };
-      logVerdict(url, 412, verdict);
-      const report = await rescue(verdict);
-      const rescued = answerFromRescue(report);
-      if (rescued) return rescued;
-
+      // The parser reached the page and something is standing in front of it.
+      // It does not say which obstacle, and one of the two it covers is a
+      // login wall, so the vendor stays `generic` rather than claiming a
+      // fingerprint we have not actually taken.
+      console.warn(`parse: bot wall  host=${url.hostname} vendor=generic signal=cookpilot-412 status=412`);
       return errorResponse(cookPilot.message, {
         status: 422,
         // The client's fallback is CookPilot's own callable, and CookPilot is
@@ -577,7 +495,7 @@ export async function POST(request: Request) {
         // place for the same answer.
         parserExhausted: true,
         failure: "blocked",
-        botWall: { vendor: "generic", rescue: report.outcome },
+        botWall: { vendor: "generic" },
       });
     }
 
@@ -593,24 +511,12 @@ export async function POST(request: Request) {
       });
       logVerdict(url, response.status, verdict);
 
-      let rescueOutcome: RescueOutcome | undefined;
-      if (verdict.kind === "bot_wall") {
-        const report = await rescue(verdict);
-        const rescued = answerFromRescue(report);
-        if (rescued) return rescued;
-        rescueOutcome = report.outcome;
-      }
-
-      // Deliberately NOT setting `parserExhausted` when the ladder ran out.
-      // Rung A leaves from the same egress IP as the fetch that just failed,
-      // so exhausting it says nothing about the client's fallback, which
-      // leaves from Google's. Suppressing that would remove a real second
-      // chance. Rungs B and C, which do change egress, can revisit this.
+      // Deliberately NOT setting `parserExhausted` on a wall. The client's
+      // fallback reads the page from Google's network rather than ours, and
+      // that is not a theoretical second chance: of nine recipe sites that
+      // wall this fetch, CookPilot's parser reads five of them perfectly well.
       const failure = failureForVerdict(verdict);
-      const botWall =
-        verdict.kind === "bot_wall"
-          ? { vendor: verdict.vendor, rescue: rescueOutcome ?? ("none" as const) }
-          : undefined;
+      const botWall = verdict.kind === "bot_wall" ? { vendor: verdict.vendor } : undefined;
 
       if (verdict.kind === "not_found") {
         return errorResponse("We couldn't find that page. Check the link and try again.", {
@@ -658,15 +564,11 @@ export async function POST(request: Request) {
 
       if (verdict.kind === "bot_wall") {
         logVerdict(url, response.status, verdict);
-        const report = await rescue(verdict);
-        const rescued = answerFromRescue(report);
-        if (rescued) return rescued;
-
         return errorResponse(BLOCKED_REMEDY, {
           status: 422,
           parserExhausted,
           failure: "blocked",
-          botWall: { vendor: verdict.vendor, rescue: report.outcome },
+          botWall: { vendor: verdict.vendor },
         });
       }
 

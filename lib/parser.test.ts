@@ -291,10 +291,10 @@ describe("parseUrlAll — the route's own verdict", () => {
     success: false,
     error: "This site blocks anything automated from reading it.",
     failure: "blocked",
-    botWall: { vendor: "cloudflare", rescue: "none" },
+    botWall: { vendor: "cloudflare" },
   };
 
-  it("still tries the callable's different egress IP after a failed rescue", async () => {
+  it("still tries the callable's different egress IP when a site walls us", async () => {
     // Rung A leaves from the same address the failed fetch did, so exhausting
     // it says nothing about whether Google's network is blocked too.
     routeReplies(403, BLOCKED_BODY);
@@ -311,7 +311,7 @@ describe("parseUrlAll — the route's own verdict", () => {
 
     expect(err).toBeInstanceOf(ImportError);
     expect(err.code).toBe("blocked");
-    expect(err.meta).toEqual({ botVendor: "cloudflare", rescue: "none" });
+    expect(err.meta).toEqual({ botVendor: "cloudflare" });
   });
 
   it("carries the verdict through when the callable is suppressed", async () => {
@@ -321,7 +321,7 @@ describe("parseUrlAll — the route's own verdict", () => {
 
     expect(callable).not.toHaveBeenCalled();
     expect(err.code).toBe("blocked");
-    expect(err.meta).toEqual({ botVendor: "cloudflare", rescue: "none" });
+    expect(err.meta).toEqual({ botVendor: "cloudflare" });
   });
 
   // A 200 interstitial answers 422 like an ordinary empty page does, so the
@@ -343,19 +343,6 @@ describe("parseUrlAll — the route's own verdict", () => {
 
     expect(err.code).toBe("not_found");
     expect(err.meta).toBeUndefined();
-  });
-
-  it("passes a rescued page through like any other success", async () => {
-    routeReplies(200, {
-      success: true,
-      recipes: [{ title: "Rescued Borscht", ingredients: [], instructions: [] }],
-      rescuedBy: "a_headers",
-    });
-
-    const recipes = await parseUrlAll("smittenkitchen.com/borscht");
-
-    expect(recipes[0].title).toBe("Rescued Borscht");
-    expect(callable).not.toHaveBeenCalled();
   });
 });
 

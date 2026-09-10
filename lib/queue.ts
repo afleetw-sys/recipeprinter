@@ -500,9 +500,9 @@ export function useQueue() {
           // not_found and unknown failures that describe the real parser.
           category: placeholder ? "placeholder" : category,
           ...(debugPath ? { debugPath } : {}),
-          // Which bot-protection product refused us, and how far the rescue
-          // ladder got. Only ever set alongside `blocked`, and only by the
-          // route, which is the one place that sees the response itself.
+          // Which bot-protection product refused us. Only ever set alongside
+          // `blocked`, and only by the route, which is the one place that sees
+          // the response itself.
           ...(err instanceof ImportError && err.meta ? err.meta : {}),
         });
       }

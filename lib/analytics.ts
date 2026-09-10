@@ -9,13 +9,7 @@ import {
   resolveAttribution,
 } from "@/lib/attribution";
 import type { PrintCardSize, RecipePrintTemplate } from "@/components/RecipeCardPrint";
-import type {
-  BotWallVendor,
-  CookbookPresetId,
-  ImportMethod,
-  RescueOutcome,
-  RescueRung,
-} from "@/types/recipe";
+import type { BotWallVendor, CookbookPresetId, ImportMethod } from "@/types/recipe";
 import type { FeedbackType } from "@/lib/feedback";
 
 /** What product a paywall or purchase refers to. */
@@ -85,17 +79,7 @@ type EventProps = {
   /** An import was accepted and parsing began. The denominator. */
   recipe_import_started: { source: ImportMethod; hostname?: string };
   /** Parsing produced a recipe. */
-  recipe_imported: {
-    source: ImportMethod;
-    hostname?: string;
-    /**
-     * The rescue rung that saved this import, absent for an ordinary one.
-     * Read beside `recipe_import_failed.botVendor`: as rescues land, the
-     * `blocked` failure count falls without the underlying problem shrinking,
-     * and this is the other half of that story.
-     */
-    rescuedBy?: RescueRung;
-  };
+  recipe_imported: { source: ImportMethod; hostname?: string };
   /**
    * Parsing threw. `reason` is the raw parser message, truncated; `category`
    * is the groupable bucket it fell into.
@@ -118,10 +102,14 @@ type EventProps = {
      * than a new `ImportFailureCode`: a separate code would split the existing
      * `blocked` series and break comparability with every chart we already
      * read.
+     *
+     * This is the number that decides whether getting past these walls is
+     * worth paying for, and it is not the number it looks like. Nine of forty
+     * recipe sites wall our own fetch, but CookPilot's parser reads five of
+     * them anyway, so what matters is how much of a cook's real traffic lands
+     * on the remainder.
      */
     botVendor?: BotWallVendor;
-    /** How far up the rescue ladder this import got before we gave up. */
-    rescue?: RescueOutcome;
   };
   /**
    * A single URL turned out to be a "roundup" and yielded more than one recipe

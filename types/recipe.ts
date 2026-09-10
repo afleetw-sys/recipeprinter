@@ -86,28 +86,11 @@ export type BotWallVendor =
   | "sucuri"
   | "generic";
 
-/** A rung of the rescue ladder, cheapest first. */
-export type RescueRung = "a_headers" | "b_reader" | "c_provider";
-
-/**
- * How far up the ladder one import got. `none` means every permitted rung ran
- * and failed; `skipped_budget` means we declined to start (out of time, out of
- * budget, or no rung was configured), which is the case that must NOT suppress
- * the client's own fallback.
- */
-export type RescueOutcome = RescueRung | "none" | "skipped_budget";
-
 export interface ParseResult {
   success: true;
   /** One or more recipes. A normal page yields exactly one; a "roundup" URL
       (RecipePrinter multi-recipe import) yields several. */
   recipes: Recipe[];
-  /**
-   * Set when a rescue rung, not the ordinary fetch, is what produced these.
-   * The cook sees no difference; this is how we tell whether the ladder is
-   * earning its keep.
-   */
-  rescuedBy?: RescueRung;
 }
 
 export interface ParseError {
@@ -139,12 +122,8 @@ export interface ParseError {
    * `categoryForRouteStatus` in lib/parser.ts.
    */
   failure?: ImportFailureCode;
-  /**
-   * Only when `failure === "blocked"` and we actually fingerprinted a wall.
-   * `rescue` says how far up the ladder we got, which is what separates "we
-   * tried everything" from "we never got to try".
-   */
-  botWall?: { vendor: BotWallVendor; rescue: RescueOutcome };
+  /** Only when `failure === "blocked"` and we actually fingerprinted a wall. */
+  botWall?: { vendor: BotWallVendor };
 }
 
 export type ParseResponse = ParseResult | ParseError;
