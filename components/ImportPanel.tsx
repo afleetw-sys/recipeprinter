@@ -311,21 +311,13 @@ export function ImportPanel({
       className={`rp-import-panel panel p-0 lg:p-cp-6 animate-fade-up ${
         workspace ? "rp-import-panel--workspace" : ""
       } ${mode === "apps" ? "rp-import-panel--apps" : ""}`}
-      aria-labelledby={workspace ? "rp-import-heading" : undefined}
-      aria-label={workspace ? undefined : "Import recipes"}
+      // The visible "Add a recipe" heading is gone: the mode buttons, the
+      // field and its own button say what the panel is for, and on a front
+      // door whose headline is already the pitch it was a third thing to read
+      // before anything could be done. It stays as the panel's accessible
+      // name, which a heading was the only thing providing.
+      aria-label={workspace ? "Add a recipe" : "Import recipes"}
     >
-      {workspace && (
-        <div className="mb-cp-4">
-          {/* Singular, unlike the Add-recipe dialog's title on the print page.
-              The difference is real: there you add as many as you like and stay
-              put, and here the panel hands off the moment you submit, so a
-              plural heading was describing a batch you cannot make. The library
-              pickers are the exception, and they carry their own count. */}
-          <h2 id="rp-import-heading" className="text-cp-h2 font-extrabold tracking-[-0.02em]">
-            Add a recipe
-          </h2>
-        </div>
-      )}
 
       {/* Mode toggle */}
       <div className="mode-toggle-shell">

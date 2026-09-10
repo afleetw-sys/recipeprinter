@@ -39,14 +39,26 @@ export default function Home() {
               do and a reason to keep scrolling, rather than two blocks of equal
               claim stacked at the top of a tall page. */}
           <div className="rp-home-frontdoor flex flex-col justify-center gap-cp-7">
-          {/* Hero: what it does and why it's useful, in two sentences. */}
-          <div className="rp-landing-hero w-full">
-            {/* No max-width of its own: the column above is the measure now, so
-                the headline breaks on the same edge the card below it ends on. */}
+          {/* Hero: what it does and why it's useful, in two sentences.
+              Centred over the card rather than ranged left against it. Both
+              lines are shorter than the column, so left-ranging left a lot of
+              empty space to the right of each one and the block read as
+              unfinished beside the full-width card underneath. */}
+          <div className="rp-landing-hero w-full text-center">
+            {/* No max-width of its own: the column above is the measure, so a
+                headline long enough to wrap does it on the same edges the card
+                below ends on. */}
             <h1 className="text-cp-hero font-extrabold tracking-[-0.04em] leading-[1.05]">
               Print the recipes worth making again.
             </h1>
-            <p className="mt-cp-3 text-ink-soft text-cp-body-lg leading-relaxed">
+            {/* Its own measure, narrower than the headline's: centred text is
+                read by finding the start of each line, and the full 860px
+                column is a long way to track back across.
+                38rem, not 34: the sentence wants 562px to sit on one line and
+                34rem gave it 544, so it wrapped and left "kitchen." alone on a
+                line of its own. The cap is here to keep a LONGER subhead
+                readable, not to break this one. */}
+            <p className="mt-cp-3 mx-auto max-w-[38rem] text-ink-soft text-cp-body-lg leading-relaxed">
               Turn web and social recipe links into printable recipe cards for your kitchen.
             </p>
           </div>
