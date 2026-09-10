@@ -76,6 +76,20 @@ export type SeoLandingPage = {
   statusNote?: string;
   initialImportMode?: ImportTab;
   importSubmitLabel?: string;
+  /**
+   * What the capture field is called on this page, overriding the generic name
+   * of whichever input it shows ("Recipe link", "Recipe text", "Recipe photos").
+   *
+   * Worth setting wherever the page is about ONE source. A page that opens on
+   * "Print TikTok recipes" and then labels its only box "Recipe link" makes the
+   * visitor do the matching themselves, and the ones who do it wrong decide a
+   * TikTok URL is not what this box wants and leave. "TikTok link" is the same
+   * field saying yes.
+   */
+  importFieldLabel?: string;
+  /** Placeholder text inside the capture field, for the same reason as
+      `importFieldLabel`. Defaults to the generic per-mode copy. */
+  importPlaceholder?: string;
   /** A FEATURE_IMAGES key for the hero photo, when the page's subject is not
       one of the printed cards. Without it every utility page opens on the same
       card. */
@@ -636,6 +650,8 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
   },
   {
     slug: "print-pinterest-recipes",
+    importFieldLabel: "Pinterest link",
+    importPlaceholder: "Paste a Pin link here",
     contentUpdated: "2026-09-09",
     lastReviewed: "2026-09-07",
     primaryKeyword: "print Pinterest recipes",
@@ -738,6 +754,8 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
   },
   {
     slug: "print-instagram-recipes",
+    importFieldLabel: "Instagram link",
+    importPlaceholder: "Paste an Instagram post or Reel link here",
     contentUpdated: "2026-09-09",
     lastReviewed: "2026-09-09",
     primaryKeyword: "print Instagram recipes",
@@ -832,6 +850,8 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
   },
   {
     slug: "print-facebook-recipes",
+    importFieldLabel: "Facebook link",
+    importPlaceholder: "Paste a Facebook post or video link here",
     contentUpdated: "2026-09-09",
     primaryKeyword: "print recipe from Facebook",
     secondaryKeywords: [
@@ -923,6 +943,8 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
   },
   {
     slug: "print-tiktok-recipes",
+    importFieldLabel: "TikTok link",
+    importPlaceholder: "Paste a TikTok link here",
     contentUpdated: "2026-09-09",
     primaryKeyword: "print TikTok recipes",
     secondaryKeywords: [
@@ -1110,6 +1132,8 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
   },
   {
     slug: "print-youtube-recipes",
+    importFieldLabel: "YouTube link",
+    importPlaceholder: "Paste a YouTube video link here",
     contentUpdated: "2026-09-09",
     primaryKeyword: "print recipe from YouTube",
     secondaryKeywords: [
@@ -1353,6 +1377,7 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
   },
   {
     slug: "preserve-family-recipes",
+    importPlaceholder: "Photograph a handwritten card, or drop a scan",
     contentUpdated: "2026-09-09",
     // Signed off on the writing. One image is still owed: "Keep the original,
     // cook from the copy" wants a photograph of the printed copy lying beside

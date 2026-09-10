@@ -35,10 +35,23 @@ function resolveMode(tab?: ImportTab): CaptureMode {
 export function SeoCapture({
   initialMode = "url",
   submitLabel = "Start printing",
+  fieldLabel,
   placeholder,
 }: {
   initialMode?: ImportTab;
   submitLabel?: string;
+  /**
+   * What the field is called, when the page can say it more precisely than the
+   * generic mode name.
+   *
+   * The default names the KIND of thing the box takes, which is all a page
+   * showing every input could say. A page about one source knows better: on the
+   * Instagram page "Recipe link" is a box that could be for anything, and
+   * "Instagram link" is an answer to the question the visitor arrived with. It
+   * also quietly rules a source in — someone holding a Reel URL, unsure whether
+   * that counts as a recipe link, can stop wondering.
+   */
+  fieldLabel?: string;
   placeholder?: string;
 }) {
   const router = useRouter();
@@ -198,7 +211,7 @@ export function SeoCapture({
       {mode === "url" && (
         <div className="flex flex-col">
           <label htmlFor="seo-url" className="field-label">
-            Recipe link
+            {fieldLabel ?? "Recipe link"}
           </label>
           {/* Same row shape as the workspace importer (see ImportPanel): the
               button centres against the taller field, and the error sits below
@@ -234,7 +247,7 @@ export function SeoCapture({
       {mode === "text" && (
         <>
           <label htmlFor="seo-text" className="field-label">
-            Recipe text
+            {fieldLabel ?? "Recipe text"}
           </label>
           <textarea
             id="seo-text"
@@ -254,7 +267,7 @@ export function SeoCapture({
 
       {mode === "image" && (
         <>
-          <span className="field-label">Recipe photos</span>
+          <span className="field-label">{fieldLabel ?? "Recipe photos"}</span>
           <label
             className={`dropzone ${dragging ? "is-dragging" : ""}`}
             onDragOver={(e) => {

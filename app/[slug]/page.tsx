@@ -86,6 +86,8 @@ function CaptureBlock({ page }: { page: SeoLandingPage }) {
       <SeoCapture
         initialMode={page.initialImportMode ?? "url"}
         submitLabel={page.importSubmitLabel ?? "Start printing"}
+        fieldLabel={page.importFieldLabel}
+        placeholder={page.importPlaceholder}
       />
       {page.captureReassurance !== false && (
         <p className="mt-cp-3 text-cp-small text-ink-soft">
