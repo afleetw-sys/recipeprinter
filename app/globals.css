@@ -2341,18 +2341,14 @@
     @apply text-cp-small leading-relaxed;
   }
 
-  /* One centred column, because there is only one thing here now.
-     This was a two-column grid — importer beside the print list — and the list
-     is gone: home is a front door, not a workspace holding a queue (see
-     PrinterWorkspace). Left-aligned in a 1240px page it read as a form that had
-     lost its other half, so it sits in the middle of the page instead, at a
-     width chosen by what it has to hold: wide enough for the library pickers to
-     lay their recipes out three across, narrow enough that a single paste field
-     is still a paste field and not a rule across the screen. */
+  /* One column, because there is only one thing here now. This was a
+     two-column grid — importer beside the print list — and the list is gone:
+     home is a front door, not a workspace holding a queue (see
+     PrinterWorkspace). The width and the centring belong to the page's own
+     column (`max-w-home`), not to this, so the hero above and the gallery below
+     line up with it on both edges rather than each finding its own measure. */
   .rp-printer-workspace {
     @apply w-full animate-fade-up;
-    max-width: 860px;
-    margin-inline: auto;
   }
   .rp-printer-workspace--landing {
     @apply flex flex-col gap-cp-6;

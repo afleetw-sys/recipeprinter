@@ -27,17 +27,22 @@ export default function Home() {
       <SiteHeader />
 
       <main id="rp-main" className="flex-1 px-cp-6">
-        <div className="max-w-content mx-auto flex flex-col gap-cp-7 pt-cp-6 sm:pt-cp-7 pb-cp-7">
+        {/* One column, centred, shared by everything on the page. It used to be
+            the full 1240px with each block finding its own width inside it,
+            which was fine while the importer had a print list beside it filling
+            the rest of the row. With the list gone (see PrinterWorkspace) that
+            left a narrow card floating left of a wide page. */}
+        <div className="max-w-home mx-auto flex flex-col gap-cp-7 pt-cp-6 sm:pt-cp-7 pb-cp-7">
           {/* Hero: what it does and why it's useful, in two sentences. */}
           <div className="rp-landing-hero w-full">
-            <div className="max-w-[48rem]">
-              <h1 className="text-cp-hero font-extrabold tracking-[-0.04em] leading-[1.05]">
-                Print the recipes worth making again.
-              </h1>
-              <p className="mt-cp-3 text-ink-soft text-cp-body-lg leading-relaxed">
-                Turn web and social recipe links into printable recipe cards for your kitchen.
-              </p>
-            </div>
+            {/* No max-width of its own: the column above is the measure now, so
+                the headline breaks on the same edge the card below it ends on. */}
+            <h1 className="text-cp-hero font-extrabold tracking-[-0.04em] leading-[1.05]">
+              Print the recipes worth making again.
+            </h1>
+            <p className="mt-cp-3 text-ink-soft text-cp-body-lg leading-relaxed">
+              Turn web and social recipe links into printable recipe cards for your kitchen.
+            </p>
           </div>
 
           {/* The tool itself (interactive, client). It no longer finishes

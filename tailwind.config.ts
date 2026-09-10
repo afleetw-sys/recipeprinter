@@ -111,7 +111,11 @@ const config: Config = {
       },
       maxWidth: {
         panel: "560px",
-        queue: "860px",
+        // The home page's one column. Everything on the front door shares it —
+        // hero, importer, gallery — so they line up on both edges instead of
+        // each finding its own width. Sized by the widest thing in it: the
+        // library pickers laying recipes out three across.
+        home: "860px",
         recipe: "720px",
         content: "1240px",
       },
