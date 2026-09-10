@@ -1231,7 +1231,7 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
         text: "Paste a link, drop in a screenshot, or paste the text. A blog, Pinterest, a Paprika library and a handwritten card all go in the same way.",
       },
       {
-        name: "Print the ones you keep coming back to",
+        name: "Print the ones you repeat",
         text: "A recipe earns a sheet of paper by being one you make, so the stack builds up as a short list on its own.",
       },
       {
@@ -1239,8 +1239,8 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
         text: "4 by 6 cards for a recipe box, or letter pages for a binder. One size across the collection is what lets it file together.",
       },
       {
-        name: "File it the day it prints",
-        text: "Dividers by course, by season, or by who it came from. A card filed the day it prints is one you can find in a year.",
+        name: "Put it away the day it prints",
+        text: "Straight into the box or the binder, behind a divider: by course, by season, or by who it came from. Put away today, findable in a year.",
       },
     ],
     featureSections: [
