@@ -238,7 +238,14 @@ export function normalizeProjectMeta(value: unknown): ProjectMeta {
   };
 }
 
-function readMeta(): ProjectMeta {
+/**
+ * This tab's project metadata, straight from storage.
+ *
+ * Exported for the one caller that cannot use the hook: the print page's error
+ * boundary, which runs after the page that owns the hook has already crashed
+ * and still has to file the work somewhere findable.
+ */
+export function readMeta(): ProjectMeta {
   // Per-tab session copy wins; fall back to the durable mirror to restore a
   // reopened tab, reseeding this tab's session from it (see lib/queue.ts).
   let parsed = sessionStore.getJson<ProjectMeta>(PROJECT_META_STORAGE_KEY);
