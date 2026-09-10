@@ -53,9 +53,15 @@ export const GALLERY_SUBMIT_SUBJECT = "My RecipePrinter photo";
     lands in the mail client as a hard break, and the draft arrived with the
     copy broken mid-sentence. Mail clients wrap on their own. */
 export const GALLERY_SUBMIT_BODY = [
-  "Attach a photo of what you printed. That's all we need.",
+  "Attach a photo of what you printed.",
   "",
   "Sending it gives us permission to use the photo in our marketing, on the site and anywhere else we show what people make. Say the word any time and we'll take it down.",
+  "",
+  // Thanks for using it, not thanks for the submission: this text sits in a
+  // draft the sender has not sent yet, so thanking them for something they
+  // are still deciding to do reads as presumptuous. Using the product is a
+  // thing they have already done.
+  "Thanks for using RecipePrinter.",
 ].join("\n");
 
 /**
