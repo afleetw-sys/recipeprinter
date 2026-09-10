@@ -5,6 +5,7 @@ import type { ImportTab } from "@/types/recipe";
 import { ImportPanel } from "@/components/ImportPanel";
 import { ICON_SIZE, XIcon } from "@/components/icons";
 import { Dialog } from "@/components/Dialog";
+import { track } from "@/lib/analytics";
 import type { QueueItem } from "@/types/recipe";
 
 // A lighter version of the homepage's import panel, for adding to a print job
@@ -75,18 +76,25 @@ export function AddRecipeDialog({
     if (duplicateTitle) setDuplicateTitle(null);
   }
 
+  /* Which door this import came through, for `recipe_import_submitted`. Every
+     import now finishes on this page, so the event's own `$current_url` cannot
+     tell this dialog apart from the paste field at the end of the rail, or from
+     a handoff off the home page. */
   function handleAddUrl(url: string) {
     clearDuplicate();
+    track("recipe_import_submitted", { surface: "dialog", source: "url" });
     onAddUrl(url);
   }
 
   function handleAddImageFiles(files: File[], label: string) {
     clearDuplicate();
+    track("recipe_import_submitted", { surface: "dialog", source: "image" });
     onAddImageFiles(files, label);
   }
 
   function handleAddText(text: string) {
     clearDuplicate();
+    track("recipe_import_submitted", { surface: "dialog", source: "text" });
     onAddText(text);
   }
 
@@ -122,7 +130,15 @@ export function AddRecipeDialog({
           onAddUrl={handleAddUrl}
           onAddImageFiles={handleAddImageFiles}
           onAddText={handleAddText}
-          onAddReadyRecipes={onAddReadyRecipes}
+          onAddReadyRecipes={(recipes) => {
+            if (recipes.length > 0) {
+              track("recipe_import_submitted", {
+                surface: "dialog",
+                source: recipes[0]!.method,
+              });
+            }
+            return onAddReadyRecipes(recipes);
+          }}
         />
 
         {duplicateTitle && (

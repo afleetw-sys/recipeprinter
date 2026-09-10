@@ -7,6 +7,7 @@ import { stashPendingImport } from "@/lib/pendingImport";
 import { imageLabel, partitionImageFiles, prepareImageDataUrls, validateImageFiles } from "@/lib/imageImport";
 import { ImportError } from "@/lib/parser";
 import { normalizeImportURL } from "@/lib/cookpilot";
+import { track } from "@/lib/analytics";
 import type { ImportTab } from "@/types/recipe";
 
 // A deliberately minimal capture for the SEO landing pages: just the one input
@@ -52,6 +53,10 @@ export function SeoCapture({
 
   async function handoff(payload: Parameters<typeof stashPendingImport>[0]) {
     setBusy(true);
+    track("recipe_import_submitted", {
+      surface: "capture",
+      source: payload.kind === "images" ? "image" : payload.kind === "text" ? "text" : "url",
+    });
     const ok = await stashPendingImport(payload);
     // Even if persistence failed (private mode, quota), send them to the working
     // tool rather than stranding them on the landing page.
@@ -160,6 +165,7 @@ export function SeoCapture({
     setBusy(true);
     try {
       const images = await prepareImageDataUrls(files);
+      track("recipe_import_submitted", { surface: "capture", source: "image" });
       const ok = await stashPendingImport({ kind: "images", images, label: imageLabel(files) });
       router.push("/print");
       if (!ok) setBusy(false);

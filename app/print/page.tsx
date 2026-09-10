@@ -3547,6 +3547,10 @@ export default function PrintPage() {
    * it lands.
    */
   function quickAddUrlAtEnd(url: string) {
+    // The whole launcher change rests on this field being found and used
+    // instead of the Back button, and nothing else can tell the two apart —
+    // see `recipe_import_submitted`.
+    track("recipe_import_submitted", { surface: "rail", source: "url" });
     const lastSection = sections.at(-1) ?? null;
     const idsInLast = lastSection ? itemIdsForSection(lastSection.id) : [];
     setPendingAddSectionId(lastSection?.id ?? null);

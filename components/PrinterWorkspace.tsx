@@ -9,7 +9,8 @@ import { fileProjectLocally } from "@/lib/localProjects";
 import { stashPendingImport, type PendingImport } from "@/lib/pendingImport";
 import { imageLabel, prepareImageDataUrls } from "@/lib/imageImport";
 import { ImportError } from "@/lib/parser";
-import type { ImportTab, QueueItem } from "@/types/recipe";
+import { track } from "@/lib/analytics";
+import type { ImportMethod, ImportTab, QueueItem } from "@/types/recipe";
 
 /**
  * The front door: the box you put a recipe into, and nothing else.
@@ -168,11 +169,24 @@ export function PrinterWorkspace({
    */
   async function handoff(payload: PendingImport) {
     setHandoffError(null);
+    // Counted here rather than where the parse starts: by then every import in
+    // the product looks like it happened on /print. See `recipe_import_submitted`.
+    track("recipe_import_submitted", { surface: "home", source: sourceOf(payload) });
     if (await stashPendingImport(payload)) {
       router.push("/print");
       return;
     }
     setHandoffError("We couldn't open that recipe. Please try again.");
+  }
+
+  /** The payload's import method, for the handoff event above. */
+  function sourceOf(payload: PendingImport): ImportMethod {
+    if (payload.kind === "url") return "url";
+    if (payload.kind === "text") return "text";
+    if (payload.kind === "images") return "image";
+    // A library pick is whatever library it came from, and a batch is never
+    // mixed: the picker that produced it only reads one source.
+    return payload.recipes[0]?.method ?? "manual";
   }
 
   function handleAddUrl(url: string) {
