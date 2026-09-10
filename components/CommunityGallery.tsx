@@ -26,11 +26,14 @@ import {
 const SLOT =
   "relative w-full overflow-hidden rounded-2xl border border-line bg-card";
 
-/** Roughly one-and-a-bit photos on a phone, four across on a wide screen. The
-    trailing fraction is the affordance: a half-visible next photo says "this
-    scrolls" better than any arrow does. */
-const ITEM =
-  "snap-start shrink-0 basis-[78%] sm:basis-[46%] lg:basis-[30%] xl:basis-[23%]";
+/** Roughly one-and-a-bit photos on a phone, a bit over two everywhere else.
+    The trailing fraction is the affordance: a half-visible next photo says
+    "this scrolls" better than any arrow does.
+    Four across was sized for the old 1240px page column. In the 860px one the
+    whole set fitted at once, which killed the scrolling, and each card was
+    small enough that you could see there was writing on it but not read a
+    word. The photographs are the argument here, so they get the room. */
+const ITEM = "snap-start shrink-0 basis-[78%] sm:basis-[46%]";
 
 export function CommunityGallery({
   items = COMMUNITY_PHOTOS,
@@ -123,7 +126,10 @@ function Frame({
         width={photo.width}
         height={photo.height}
         alt={photo.alt}
-        sizes="(max-width: 639px) 78vw, (max-width: 1023px) 46vw, 30vw"
+        // Absolute above `sm`, not a viewport fraction: the page column stops
+        // growing at 860px, so a percentage of the WINDOW kept asking for
+        // bigger and bigger files that were never displayed any larger.
+        sizes="(max-width: 639px) 78vw, (max-width: 1023px) 46vw, 400px"
         className="w-full rounded-xl object-cover"
         style={{ aspectRatio: "4 / 3", objectPosition: photo.objectPosition }}
       />

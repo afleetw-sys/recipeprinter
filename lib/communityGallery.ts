@@ -27,12 +27,55 @@ export type CommunityPhoto = {
 };
 
 /**
- * Empty until the first photographs are shot. The gallery renders nothing at
- * all while this is empty, so the homepage never ships an empty shell; see
- * CommunityGallery for the dev-only placeholder that keeps the layout visible
- * while working on it.
+ * The seed set, shot in Amelia's kitchen: real cards off the real printer, not
+ * renderings.
+ *
+ * The three card photographs are PORTRAIT, whatever the file says. They are
+ * stored landscape with an EXIF rotation that the image optimizer applies, so
+ * `sips` reports 1600x1200 while the browser decodes 1200x1600. The sizes
+ * below are the ones the browser sees; the numbers off the file would have
+ * described every one of them as the wrong shape. The landscape slot crops
+ * their top and bottom, which costs a little plant and a little table and
+ * keeps the card.
+ *
+ * Empty this array and the gallery renders nothing at all rather than an empty
+ * shell; see CommunityGallery for the dev-only placeholder that keeps the
+ * layout visible while working on it.
+ *
+ * The recipe box leads. It is the only picture that shows what the others
+ * imply, which is a printed card filed in among the handwritten ones it is
+ * going to live with.
  */
-export const COMMUNITY_PHOTOS: CommunityPhoto[] = [];
+export const COMMUNITY_PHOTOS: CommunityPhoto[] = [
+  {
+    src: "/images/jackie-card.jpeg",
+    width: 1800,
+    height: 1350,
+    alt:
+      "Printed recipe cards laid around an open recipe tin, beside a handwritten family card.",
+  },
+  {
+    src: "/images/card-korean-beef-bowl.jpeg",
+    width: 1200,
+    height: 1600,
+    alt:
+      "A printed Korean Beef Bowl card, spiral binding along its top edge, standing on a garden table.",
+  },
+  {
+    src: "/images/card-basil-pesto.jpeg",
+    width: 1200,
+    height: 1600,
+    alt:
+      "A printed Basil Pesto card on ruled notebook paper, standing on a garden table.",
+  },
+  {
+    src: "/images/card-caprese-pasta-salad.jpeg",
+    width: 1200,
+    height: 1600,
+    alt:
+      "A printed Caprese Pasta Salad card with a blue checkered border, standing on a garden table.",
+  },
+];
 
 export const GALLERY_SUBMIT_EMAIL = "recipeprinter@goodproblem.studio";
 
