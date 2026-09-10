@@ -127,7 +127,17 @@
   max-height: calc(100dvh - 110px);
   padding: 16px 16px 16px 4px;
   overflow-y: auto;
-  scrollbar-gutter: stable;
+  /* No bar. The rail is a narrow strip of page thumbnails against the shell's
+     edge, and a scrollbar there reads as a seam down the side of the window
+     rather than as a control for the strip. Scrolling is untouched: wheel,
+     trackpad, drag and the arrow keys all still work, and `scrollbar-gutter`
+     goes with the bar because a stable gutter reserves a column for something
+     that is no longer drawn. */
+  scrollbar-width: none;
+}
+
+.recipe-page-rail::-webkit-scrollbar {
+  display: none;
 }
 
 /* Layout only. The box, corner, type and hover all come from
@@ -3056,6 +3066,7 @@
   --recipe-card-gap: 0.46in;
   --recipe-card-title-size: 25pt;
   --recipe-card-meta-size: 8.6pt;
+  --recipe-card-meta-gap: 9px;
   --recipe-card-label-size: 8pt;
   --recipe-card-body-size: 9.6pt;
   --recipe-card-step-size: 9.6pt;
@@ -5926,7 +5937,11 @@ textarea.recipe-card__toc-title {
 }
 
 .recipe-card__meta {
-  margin-top: 3px;
+  /* 3px is right under a 6x4's small title and much too tight under a full
+     page's 25pt one, where the meta line read as part of the title rather than
+     as a line under it. A variable rather than a size-scoped override so a
+     template can still set its own. */
+  margin-top: var(--recipe-card-meta-gap, 3px);
   font-size: var(--recipe-card-meta-size);
   font-weight: 700;
   letter-spacing: 0.06em;
