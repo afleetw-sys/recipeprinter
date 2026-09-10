@@ -2430,6 +2430,18 @@
     min-width: 0;
   }
 
+  /* The homepage front door: hero plus importer, centred in the screen the top
+     bar leaves behind, with just enough height held back that the kitchen strip
+     shows a slice of itself underneath.
+     `min-height`, never `height`: the importer grows when a mode with a
+     textarea is picked, and a fixed box would have scrolled or clipped it.
+     `dvh` so a phone's collapsing address bar does not leave a gap. */
+  .rp-home-frontdoor {
+    --rp-home-chrome: 94px; /* 62px top bar + the column's 32px top padding */
+    --rp-home-peek: 128px; /* the slice of "In real kitchens" left showing */
+    min-height: calc(100dvh - var(--rp-home-chrome) - var(--rp-home-peek));
+  }
+
   /* The "In real kitchens" carousel track.
      No scrollbar: the arrows on the photos say which way there is more to
      see, and the half-visible next picture says the strip moves, so the bar

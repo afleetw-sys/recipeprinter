@@ -32,7 +32,13 @@ export default function Home() {
             which was fine while the importer had a print list beside it filling
             the rest of the row. With the list gone (see PrinterWorkspace) that
             left a narrow card floating left of a wide page. */}
-        <div className="max-w-home mx-auto flex flex-col gap-cp-7 pt-cp-6 sm:pt-cp-7 pb-cp-7">
+        <div className="max-w-home mx-auto flex flex-col pt-cp-6 sm:pt-cp-7 pb-cp-7">
+          {/* The front door proper, centred in what's left of the screen after
+              the top bar, with only enough height reserved to leave a slice of
+              the kitchen strip showing underneath. A visitor gets one thing to
+              do and a reason to keep scrolling, rather than two blocks of equal
+              claim stacked at the top of a tall page. */}
+          <div className="rp-home-frontdoor flex flex-col justify-center gap-cp-7">
           {/* Hero: what it does and why it's useful, in two sentences. */}
           <div className="rp-landing-hero w-full">
             {/* No max-width of its own: the column above is the measure now, so
@@ -49,6 +55,7 @@ export default function Home() {
               imports started on an SEO landing page: those hand off straight to
               /print now, where the printed card is. */}
           <PrinterWorkspace />
+          </div>
 
           {/* Below the tool, never above it: what other people printed is an
               argument for staying, not the reason a visitor came. Renders

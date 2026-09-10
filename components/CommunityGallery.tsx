@@ -58,7 +58,7 @@ export function CommunityGallery({
       // the first screenful on a laptop, so the thing a visitor came to do is
       // the thing in front of them and the proof is what they find on the way
       // down.
-      className="pt-cp-7 mt-cp-7 flex flex-col gap-cp-3"
+      className="pt-cp-7 flex flex-col gap-cp-3"
       aria-labelledby="rp-gallery-heading"
     >
       <Header />
@@ -104,7 +104,7 @@ function Header() {
           the one the visitor is meant to use. */}
       <a
         href={gallerySubmitHref()}
-        className="mr-auto sm:ml-auto sm:mr-0 shrink-0 text-cp-caption font-semibold text-ink-soft hover:text-ink transition-colors"
+        className="ml-auto shrink-0 text-cp-caption font-semibold text-ink-soft hover:text-ink transition-colors"
       >
         Add yours
       </a>
