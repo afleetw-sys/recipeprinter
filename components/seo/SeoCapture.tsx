@@ -13,7 +13,9 @@ import type { ImportTab } from "@/types/recipe";
 // that matches the page's intent (a URL field, a paste box, or a photo dropzone)
 // plus an import button, no mode toggles, no other options. On submit it stashes
 // the payload and hands off to the app at "/", which finishes the import. The full
-// multi-source importer lives on the app itself, not on the marketing pages.
+// multi-source importer lives on the app itself, not on the marketing pages —
+// which is also why submitting an EMPTY field goes there rather than erroring
+// (see `openWorkspace`).
 type CaptureMode = "url" | "text" | "image";
 
 function resolveMode(tab?: ImportTab): CaptureMode {
@@ -66,14 +68,34 @@ export function SeoCapture({
     setError(null);
   }
 
+  /**
+   * The way out of a page that only carries one kind of import.
+   *
+   * Each landing page shows the single capture that matches what it is about,
+   * while the workspace at "/" carries all three plus the library imports. So
+   * someone who arrives on the Pinterest page holding a photo, a block of
+   * text, or a Paprika export can see no route to it from here — and the thing
+   * they just tapped said "Start printing". Taking them to the tool keeps that
+   * promise. Telling someone with no link to "paste a recipe link first" tells
+   * them they came to the wrong page, which they didn't.
+   */
+  function openWorkspace() {
+    setBusy(true);
+    router.push("/");
+  }
+
   async function handleSubmit(e: FormEvent) {
     e.preventDefault();
     if (busy) return;
     setError(null);
 
+    // An empty field means "I want the tool, not this input" — see
+    // `openWorkspace`. Something typed that we can't use is a different thing:
+    // a real mistake with a real fix, whose fix is right here. Those keep their
+    // inline error, because navigating away would throw the typing out.
     if (mode === "url") {
       const trimmed = url.trim();
-      if (!trimmed) return setError("Paste a recipe link first.");
+      if (!trimmed) return openWorkspace();
       try {
         // Through the same normalizer the queue and parser use, so this gate
         // can't reject a URL the pipeline would happily import. The hand-rolled
@@ -93,12 +115,13 @@ export function SeoCapture({
 
     if (mode === "text") {
       const trimmed = text.trim();
+      if (!trimmed) return openWorkspace();
       if (trimmed.length < 20) return setError("Paste a bit more recipe text first.");
       return handoff({ kind: "text", text: trimmed });
     }
 
     // image
-    if (files.length === 0) return setError("Choose at least one photo.");
+    if (files.length === 0) return openWorkspace();
     const validationError = validateImageFiles(files);
     if (validationError) return setError(validationError.message);
     setBusy(true);

@@ -55,6 +55,13 @@ import {
 } from "@/lib/project";
 import { materializeProjectPhotos } from "@/lib/photoStorage";
 import {
+  claimPrintRearm,
+  clearPrintRetryMarker,
+  markPrintSpent,
+  preferFreshDocumentForPrint,
+  printAgainHref,
+} from "@/lib/printRearm";
+import {
   createPrintProjectId,
   savePrintProject,
   assemblePrintProject,
@@ -257,10 +264,37 @@ const DECK_ZOOM_MAX = 2;
 /** The same bounds, as the object the pinch gesture wants. */
 const DECK_ZOOM_BOUNDS = { min: DECK_ZOOM_MIN, max: DECK_ZOOM_MAX };
 
+/**
+ * How long to wait for the browser to admit it is printing.
+ *
+ * `beforeprint` is synchronous and fires before `window.print()` even returns,
+ * so this is not a race — it is slack for a phone that is busy laying out the
+ * deck. Long enough that a working print is never mistaken for a refused one;
+ * short enough that a refused one doesn't sit there looking like a dead button.
+ */
+const PRINT_ACCEPTANCE_GRACE_MS = 1_200;
+
 export default function PrintPage() {
   useEffect(() => {
     const stableTimer = window.setTimeout(markPrintPreviewStable, PRINT_PREVIEW_STABILITY_MS);
     return () => window.clearTimeout(stableTimer);
+  }, []);
+
+  /**
+   * Arrive on a document that can still print.
+   *
+   * A phone browser gives a document one print and silently refuses the rest
+   * (see lib/printRearm), and coming back to `/print` for a second recipe is a
+   * client-side route change, so the same spent document is what meets the next
+   * tap. Spend the reload here instead, while the page is arriving and there is
+   * nothing on screen yet to lose — the queue, the project meta and the pending
+   * save all flush on `pagehide`, so a reload costs the load and nothing else.
+   *
+   * Only where the refusal happens: `preferFreshDocumentForPrint` is false on
+   * desktop, which prints the same document as often as you ask it to.
+   */
+  useEffect(() => {
+    if (preferFreshDocumentForPrint()) window.location.reload();
   }, []);
 
   const router = useRouter();
@@ -463,6 +497,31 @@ export default function PrintPage() {
   // a cookbook export is named after the book (e.g. "Grandma's Cookbook.pdf")
   // rather than the generic page title. Stashed here and restored on afterprint.
   const previousDocTitleRef = useRef<string | null>(null);
+  /**
+   * Did the browser actually take the last print we asked for?
+   *
+   * `window.print()` returns the same way whether it opened a print sheet or
+   * quietly declined, so this is the only tell: every engine that prints fires
+   * `beforeprint` first, and fires it synchronously. Set false immediately
+   * before the call and read a moment after — still false means the browser did
+   * nothing, which is a dead button unless we do something about it.
+   */
+  const printAcceptedRef = useRef(false);
+  /** The pending verdict, so leaving the page cancels it. A watchdog that
+      outlived its page would reload someone who had already walked away. */
+  const printWatchdogRef = useRef<number | null>(null);
+  useEffect(
+    () => () => {
+      if (printWatchdogRef.current !== null) window.clearTimeout(printWatchdogRef.current);
+    },
+    [],
+  );
+  /** Between `window.print()` and the verdict above. Shows the button's spinner
+      so the wait reads as working rather than as broken. */
+  const [printAwaitingBrowser, setPrintAwaitingBrowser] = useState(false);
+  /** The browser refused and a fresh document is not going to change that.
+      Last resort, after the reload has already been tried. */
+  const [printRefusedNotice, setPrintRefusedNotice] = useState(false);
   const autoPrintAttemptedRef = useRef(false);
   const postPrintActionRef = useRef<PostPrintAction>("donate");
   // A print the user asked for while the layout was still measuring. Rather
@@ -1578,7 +1637,25 @@ export default function PrintPage() {
 
   const [mobileDrawer, setMobileDrawer] = useState<"template" | null>(null);
 
+  /**
+   * Go and get a document that can print, when this one can't.
+   *
+   * Returns true once it has started the load, and the caller stops there: the
+   * print carries on the other side, because `print=1` is the flag this page
+   * already reads to print on arrival. Refuses when this document IS that fresh
+   * load, so a browser we can't satisfy meets the message rather than a reload
+   * loop (see lib/printRearm).
+   */
+  function rearmForPrint(): boolean {
+    if (!claimPrintRearm()) return false;
+    window.location.href = printAgainHref(window.location);
+    return true;
+  }
+
   function printNow() {
+    // This document has already spent its one print, and asking it again is the
+    // silent no-op that made the button look dead. Go the long way round.
+    if (preferFreshDocumentForPrint() && rearmForPrint()) return;
     printRequestedRef.current = true;
     track("print_started", {
       template,
@@ -1607,7 +1684,29 @@ export default function PrintPage() {
       previousDocTitleRef.current = document.title;
       document.title = printTitle;
     }
+    printAcceptedRef.current = false;
+    setPrintAwaitingBrowser(true);
     window.print();
+    // `window.print()` returns the same either way, so watch for the browser
+    // taking it. A print that happened has fired `beforeprint` by now, in every
+    // engine; nothing at all means the browser declined without saying so, and
+    // that is the twenty-four dead taps this whole path exists to prevent. Try
+    // once from a document that hasn't printed yet, and if that was already
+    // this document, say so plainly instead of leaving a button that does
+    // nothing.
+    if (printWatchdogRef.current !== null) window.clearTimeout(printWatchdogRef.current);
+    printWatchdogRef.current = window.setTimeout(() => {
+      printWatchdogRef.current = null;
+      setPrintAwaitingBrowser(false);
+      if (printAcceptedRef.current) return;
+      markPrintSpent();
+      // `shouldPrint` is `print=1`, which is how a rearmed document arrives —
+      // so it separates "the first attempt was refused" from "the reload didn't
+      // help either", which are different bugs with different fixes.
+      track("print_refused_by_browser", { template, cardSize, afterRearm: shouldPrint });
+      if (rearmForPrint()) return;
+      setPrintRefusedNotice(true);
+    }, PRINT_ACCEPTANCE_GRACE_MS);
   }
 
   /**
@@ -2567,7 +2666,11 @@ export default function PrintPage() {
   );
 
   const printBlocked = purchaseBusy || claimBusy || cookbookPurchaseBusy;
-  const printSpinner = printBlocked || printPending;
+  // `printAwaitingBrowser` is the second or so between asking to print and
+  // knowing whether the browser took it. Nothing is on screen during that gap
+  // when the answer turns out to be no, and a button that looks untouched is
+  // what a refused print has always looked like.
+  const printSpinner = printBlocked || printPending || printAwaitingBrowser;
 
   // Always the current `handlePrint`, for the auto-print effect below.
   //
@@ -3285,6 +3388,15 @@ export default function PrintPage() {
 
   useEffect(() => {
     function handleBeforePrint() {
+      // The browser has taken the print. Two things follow from that: the
+      // watchdog in `printNow` has its answer, and this document has now spent
+      // the one print a phone browser will give it (see lib/printRearm), so the
+      // next one has to come from a fresh load. `beforeprint` rather than
+      // `afterprint` because it is the hook that fires for the user's own ⌘P
+      // too, and that spends the document just the same.
+      printAcceptedRef.current = true;
+      markPrintSpent();
+      clearPrintRetryMarker();
       // Synchronous on purpose: window.print() does not yield, so a normal
       // state update would not have committed before the snapshot is taken.
       flushSync(() => setRenderAllPages(true));
@@ -3295,6 +3407,11 @@ export default function PrintPage() {
 
   useEffect(() => {
     function handleAfterPrint() {
+      // Belt and braces for an engine that skips `beforeprint`: reaching here
+      // at all means the print was real, so the watchdog must not call it
+      // refused.
+      printAcceptedRef.current = true;
+      markPrintSpent();
       setRenderAllPages(false);
       if (!printRequestedRef.current) return;
       printRequestedRef.current = false;
@@ -4766,6 +4883,36 @@ export default function PrintPage() {
           "Leave without saving". Nothing is lost by leaving, and saying so is
           what makes the real difference (this browser vs every device) worth
           reading. */}
+      {/* The print never opened, and reloading into a fresh document did not
+          change that (see lib/printRearm) — so the remaining explanation is a
+          browser that cannot print at all, which is what the ones built into
+          other apps are. Say the one useful thing about that and offer the one
+          action still worth taking. What it must never do is nothing, which is
+          what a refused print looked like before: twenty-four taps on a button
+          that answered none of them. */}
+      <ConfirmDialog
+        open={printRefusedNotice}
+        tone="primary"
+        title="The print dialog didn't open"
+        description={
+          <>
+            Some browsers that run inside other apps can&apos;t open one. If you got here from
+            a link in another app, opening recipeprinter.com in Safari or Chrome will print.
+          </>
+        }
+        confirmLabel="Try again"
+        secondaryLabel="Close"
+        onSecondary={() => setPrintRefusedNotice(false)}
+        onCancel={() => setPrintRefusedNotice(false)}
+        onConfirm={() => {
+          setPrintRefusedNotice(false);
+          // A fresh document is still the best shot, and the marker that says
+          // "we already tried that" is what stopped this one being taken
+          // automatically. They asked, so let it.
+          clearPrintRetryMarker();
+          window.location.href = printAgainHref(window.location);
+        }}
+      />
       <ConfirmDialog
         open={confirmLeave}
         tone="primary"

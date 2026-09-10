@@ -129,6 +129,20 @@ type EventProps = {
     cardSize: PrintCardSize;
     cookbookPreset?: CookbookPresetId;
   };
+  /**
+   * `window.print()` ran and the browser did nothing about it: no print sheet,
+   * no `beforeprint`, no `afterprint` (see lib/printRearm). This is the gap
+   * between `print_started` and `print_dialog_closed` given a name, because
+   * that gap used to be the whole story of a session that printed nothing.
+   */
+  print_refused_by_browser: {
+    template: RecipePrintTemplate;
+    cardSize: PrintCardSize;
+    /** True when this was already the retry, loaded fresh to print on arrival.
+        A refusal here is a browser that cannot print at all, not one that has
+        merely used up its document. */
+    afterRearm: boolean;
+  };
   /** Which card designs people actually reach for. */
   template_selected: { template: RecipePrintTemplate; premium: boolean };
 
