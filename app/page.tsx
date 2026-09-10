@@ -1,6 +1,7 @@
 import { SiteHeader } from "@/components/SiteHeader";
 import { SiteFooter } from "@/components/SiteFooter";
 import { PrinterWorkspace } from "@/components/PrinterWorkspace";
+import { CommunityGallery } from "@/components/CommunityGallery";
 import { homeJsonLd } from "@/lib/seo";
 
 // The homepage is a focused utility: understand what RecipePrinter does and
@@ -43,6 +44,11 @@ export default function Home() {
               handoff target, it also finishes any import a visitor started on
               an SEO landing page. */}
           <PrinterWorkspace consumePendingImport />
+
+          {/* Below the tool, never above it: what other people printed is an
+              argument for staying, not the reason a visitor came. Renders
+              nothing at all until there are photographs to show. */}
+          <CommunityGallery />
         </div>
       </main>
 
