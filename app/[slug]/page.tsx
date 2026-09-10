@@ -123,14 +123,11 @@ export default function SeoLandingPage({ params }: PageProps) {
         note={page.statusNote}
         actions={
           isGuide ? (
-            <div className="flex flex-wrap items-center gap-cp-3">
-              <LandingCta label={page.importSubmitLabel ?? "Start your cookbook"} />
-              {page.howTo && page.howTo.length > 0 && (
-                <Link href="#howto-heading" className="btn btn-secondary">
-                  See how it works
-                </Link>
-              )}
-            </div>
+            // No "See how it works" link beside it. On a guide-first page the
+            // how-to section is the next thing on the screen, with nothing
+            // between it and the hero, so the link scrolled you to something
+            // you could already see.
+            <LandingCta label={page.importSubmitLabel ?? "Start your cookbook"} />
           ) : (
             <CaptureBlock page={page} />
           )
