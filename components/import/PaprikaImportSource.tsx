@@ -154,12 +154,15 @@ export function PaprikaImportSource({
   items,
   onAddRecipes,
   commitLabel,
+  commitLeavesPage = false,
   onLibraryChange,
 }: {
   items: QueueItem[];
   onAddRecipes: (recipes: QueueItem[]) => number;
   /** What the surrounding panel's submit says — see ImportPanel. */
   commitLabel: string;
+  /** And whether pressing it navigates, which decides its icon. */
+  commitLeavesPage?: boolean;
   /** Lets the integrations list re-read the open file's name and count. */
   onLibraryChange?: () => void;
 }) {
@@ -314,6 +317,7 @@ export function PaprikaImportSource({
         onToggleAll={handleToggleAll}
         onCommit={handleCommit}
         commitLabel={commitLabel}
+        commitLeavesPage={commitLeavesPage}
         committing={committing}
         queryText={queryText}
         onQueryChange={setQueryText}

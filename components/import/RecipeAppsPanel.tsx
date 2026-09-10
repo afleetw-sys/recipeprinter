@@ -95,11 +95,14 @@ export function RecipeAppsPanel({
   items,
   onAddRecipes,
   commitLabel,
+  commitLeavesPage = false,
 }: {
   items: QueueItem[];
   onAddRecipes: (recipes: QueueItem[]) => number;
   /** What the surrounding panel's submit button says — see ImportPanel. */
   commitLabel: string;
+  /** And whether pressing it navigates, which decides its icon. */
+  commitLeavesPage?: boolean;
 }) {
   const [source, setSource] = useState<SourceId | null>(lastOpenSource);
   // Bumped when the open Paprika file changes, so the row below re-reads it.
@@ -155,12 +158,14 @@ export function RecipeAppsPanel({
             items={items}
             onAddRecipes={onAddRecipes}
             commitLabel={commitLabel}
+            commitLeavesPage={commitLeavesPage}
           />
         ) : (
           <PaprikaImportSource
             items={items}
             onAddRecipes={onAddRecipes}
             commitLabel={commitLabel}
+            commitLeavesPage={commitLeavesPage}
             onLibraryChange={() => setLibraryNonce((value) => value + 1)}
           />
         )}

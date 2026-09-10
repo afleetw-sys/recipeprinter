@@ -48,12 +48,20 @@ import type { ImportTab, QueueItem } from "@/types/recipe";
  */
 export function PrinterWorkspace({
   initialImportMode = "url",
-  importSubmitLabel = "Make recipe cards",
+  importSubmitLabel = "Start printing",
 }: {
   initialImportMode?: ImportTab;
   /**
-   * The submit button's words. "Add" was the question the cart model answered
-   * wrong — add to WHAT? — so the default now names the thing you get.
+   * The submit button's words. Same as the SEO capture blocks use, because it
+   * is the same act on a different doorstep.
+   *
+   * "Add" was the question the cart model answered wrong: add to WHAT? But
+   * naming the thing you get is harder than it looks, because this one button
+   * serves four sources and every noun is wrong for some of them. "Cards"
+   * promises 4x6 and hands over a Letter page, which is the default size.
+   * "Recipes", plural, is what a library pick produces and not what a pasted
+   * link does. Naming the ACT instead is true of one recipe and forty, at
+   * either size, and in a cookbook.
    */
   importSubmitLabel?: string;
 }) {

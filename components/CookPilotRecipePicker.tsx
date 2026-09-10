@@ -126,11 +126,13 @@ function SignedInCookPilotImport({
   items,
   onAddRecipes,
   commitLabel,
+  commitLeavesPage,
 }: {
   user: User;
   items: QueueItem[];
   onAddRecipes: (recipes: QueueItem[]) => number;
   commitLabel: string;
+  commitLeavesPage: boolean;
 }) {
   const [summaries, setSummaries] = useState<CookPilotRecipeSummary[]>(
     () => getCachedCookPilotSummaries(user.uid) ?? [],
@@ -397,6 +399,7 @@ function SignedInCookPilotImport({
       selectAllBusy={bulkBusy}
       onCommit={handleCommit}
       commitLabel={commitLabel}
+      commitLeavesPage={commitLeavesPage}
       committing={committing}
       queryText={queryText}
       onQueryChange={setQueryText}
@@ -462,11 +465,14 @@ export function CookPilotImportSource({
   items,
   onAddRecipes,
   commitLabel,
+  commitLeavesPage = false,
 }: {
   items: QueueItem[];
   onAddRecipes: (recipes: QueueItem[]) => number;
   /** What the surrounding panel's submit says — see ImportPanel. */
   commitLabel: string;
+  /** And whether pressing it navigates, which decides its icon. */
+  commitLeavesPage?: boolean;
 }) {
   const { user, ready, redirectError } = useCookPilotAuth();
   const [showEmailLogin, setShowEmailLogin] = useState(false);
@@ -495,6 +501,7 @@ export function CookPilotImportSource({
           items={items}
           onAddRecipes={onAddRecipes}
           commitLabel={commitLabel}
+          commitLeavesPage={commitLeavesPage}
         />
       )}
 

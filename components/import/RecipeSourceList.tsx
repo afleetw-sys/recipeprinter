@@ -5,6 +5,7 @@ import type { ImportSummary } from "@/lib/importSummary";
 import { formatRecipeTime } from "@/lib/time";
 import { EmptyState } from "@/components/EmptyState";
 import {
+  ArrowRightIcon,
   CheckIcon,
   ClockIcon,
   ICON_SIZE,
@@ -145,6 +146,7 @@ export function RecipeSourceList({
   selectAllBusy = false,
   onCommit,
   commitLabel,
+  commitLeavesPage = false,
   committing = false,
   queryText,
   onQueryChange,
@@ -177,6 +179,9 @@ export function RecipeSourceList({
   /** The words the surrounding panel's submit uses. Every import type ends in
       the same button, so the picker borrows it rather than inventing a verb. */
   commitLabel: string;
+  /** Whether pressing it navigates: an arrow if so, a plus if it adds to what
+      is already on screen. Follows the panel's own submit — see ImportPanel. */
+  commitLeavesPage?: boolean;
   committing?: boolean;
   queryText: string;
   onQueryChange: (value: string) => void;
@@ -312,7 +317,13 @@ export function RecipeSourceList({
             onClick={onCommit}
             disabled={selectedCount === 0 || committing}
           >
-            {committing ? <SpinnerIcon size={ICON_SIZE.md} /> : <PlusIcon size={ICON_SIZE.md} />}
+            {committing ? (
+              <SpinnerIcon size={ICON_SIZE.md} />
+            ) : commitLeavesPage ? (
+              <ArrowRightIcon size={ICON_SIZE.md} />
+            ) : (
+              <PlusIcon size={ICON_SIZE.md} />
+            )}
             {commitLabel}
           </button>
         </div>

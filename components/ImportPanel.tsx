@@ -18,6 +18,7 @@ import { normalizeImportURL } from "@/lib/cookpilot";
 import { imageLabel, partitionImageFiles, validateImageFiles } from "@/lib/imageImport";
 import {
   AppsIcon,
+  ArrowRightIcon,
   ICON_SIZE,
   ImageIcon,
   LinkIcon,
@@ -131,6 +132,16 @@ export function ImportPanel({
   // what's available; once a recipe is added, tuck the extras into the overflow.
   // Inside the add dialog that rule inverts — see `showAllModes`.
   const expanded = showAllModes || items.length === 0;
+
+  /**
+   * Does pressing submit go somewhere, or add to what is already on screen?
+   *
+   * On the front door it navigates: the recipe is finished on the print page,
+   * so the button is a door and wears an arrow. Everywhere else it adds to the
+   * project you are already looking at, and wears a plus. The `workspace` flag
+   * marks the front door because it is the only surface that has ever set it.
+   */
+  const SubmitIcon = workspace ? ArrowRightIcon : PlusIcon;
 
   const closeOverflow = useCallback(() => setOverflowOpen(false), []);
   useMenuDismiss(overflowRef, closeOverflow, { enabled: overflowOpen });
@@ -289,8 +300,13 @@ export function ImportPanel({
     >
       {workspace && (
         <div className="mb-cp-4">
+          {/* Singular, unlike the Add-recipe dialog's title on the print page.
+              The difference is real: there you add as many as you like and stay
+              put, and here the panel hands off the moment you submit, so a
+              plural heading was describing a batch you cannot make. The library
+              pickers are the exception, and they carry their own count. */}
           <h2 id="rp-import-heading" className="text-cp-h2 font-extrabold tracking-[-0.02em]">
-            Add recipes
+            Add a recipe
           </h2>
         </div>
       )}
@@ -354,6 +370,7 @@ export function ImportPanel({
                that all end in the same words read as one panel with four ways
                in; four different verbs read as four different tools. */
             commitLabel={submitLabel}
+            commitLeavesPage={workspace}
           />
         </div>
       ) : (
@@ -396,7 +413,7 @@ export function ImportPanel({
                   type="submit"
                   className="btn btn-primary rp-import-submit w-full lg:w-auto lg:shrink-0"
                 >
-                  <PlusIcon size={ICON_SIZE.md} />
+                  <SubmitIcon size={ICON_SIZE.md} />
                   {submitLabel}
                 </button>
               )}
@@ -464,7 +481,7 @@ export function ImportPanel({
 
         {mode !== "url" && !hideSubmit && (
           <button type="submit" className="btn btn-primary rp-import-submit w-full">
-            <PlusIcon size={ICON_SIZE.md} />
+            <SubmitIcon size={ICON_SIZE.md} />
             {submitLabel}
           </button>
         )}
