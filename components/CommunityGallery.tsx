@@ -18,7 +18,7 @@ import {
 //
 // Every measurement here is a percentage or an aspect ratio, never a pixel
 // height. A carousel pinned to a fixed height stops growing when the page is
-// zoomed and starts clipping its own captions; sized off its container, this
+// zoomed and starts cropping its own pictures; sized off its container, this
 // one just shows fewer photos at a time, which is what zoom is asking for.
 // ─────────────────────────────────────────────────────────────────────────
 
@@ -59,14 +59,8 @@ export function CommunityGallery({
         label="Photos of printed cookbooks and recipe cards"
       >
         {cards.map((photo) => (
-          <li key={photo.src} className={`${ITEM} flex flex-col gap-cp-2`}>
+          <li key={photo.src} className={ITEM}>
             <Frame photo={photo} placeholder={showPlaceholder} />
-            <p className="text-cp-caption leading-relaxed text-ink-soft">
-              {photo.caption}
-              {photo.credit && (
-                <span className="block text-ink font-semibold">{photo.credit}</span>
-              )}
-            </p>
           </li>
         ))}
       </Carousel>
@@ -109,7 +103,6 @@ function Frame({
     // choice that shipped.
     return (
       <div
-        data-gallery-frame
         className={`${SLOT} flex items-center justify-center bg-[var(--cp-surface-sunken,var(--cp-paper))]`}
         style={{ aspectRatio: "4 / 3" }}
       >
@@ -121,7 +114,7 @@ function Frame({
   }
 
   return (
-    <div data-gallery-frame className={`${SLOT} p-1.5`}>
+    <div className={`${SLOT} p-1.5`}>
       <Image
         src={photo.src}
         width={photo.width}
@@ -154,10 +147,6 @@ function Carousel({
   const trackRef = useRef<HTMLDivElement>(null);
   const [atStart, setAtStart] = useState(true);
   const [atEnd, setAtEnd] = useState(true);
-  // The height of one photo frame. The arrows sit over the pictures, and the
-  // track is taller than they are because the captions are inside it too, so
-  // centring on the track would have hung them off the bottom of the images.
-  const [frameHeight, setFrameHeight] = useState(0);
 
   const measure = useCallback(() => {
     const track = trackRef.current;
@@ -167,8 +156,6 @@ function Carousel({
     // on 0 or on max, which left both arrows enabled forever at either end.
     setAtStart(track.scrollLeft <= 1);
     setAtEnd(track.scrollLeft >= max - 1);
-    const frame = track.querySelector("[data-gallery-frame]");
-    if (frame) setFrameHeight(frame.getBoundingClientRect().height);
   }, []);
 
   useEffect(() => {
@@ -229,12 +216,8 @@ function Carousel({
         <ul className="flex gap-cp-4">{children}</ul>
       </div>
 
-      {!atStart && (
-        <Arrow side="left" top={frameHeight} onClick={() => page(-1)} />
-      )}
-      {!atEnd && (
-        <Arrow side="right" top={frameHeight} onClick={() => page(1)} />
-      )}
+      {!atStart && <Arrow side="left" onClick={() => page(-1)} />}
+      {!atEnd && <Arrow side="right" onClick={() => page(1)} />}
     </div>
   );
 }
@@ -247,13 +230,9 @@ function Carousel({
  */
 function Arrow({
   side,
-  top,
   onClick,
 }: {
   side: "left" | "right";
-  /** The photo band's height; the arrow centres on half of it. Falls back to
-      the track's own middle before the first measurement lands. */
-  top: number;
   onClick: () => void;
 }) {
   // Not on a phone. There the photo is most of the width, a swipe is the
@@ -270,8 +249,7 @@ function Arrow({
       tabIndex={-1}
       aria-hidden="true"
       onClick={onClick}
-      style={{ top: top ? top / 2 : "50%" }}
-      className={`absolute ${
+      className={`absolute top-1/2 ${
         side === "left" ? "left-cp-2" : "right-cp-2"
       } -translate-y-1/2 hidden sm:grid h-10 w-10 place-items-center rounded-full
          border border-line-strong bg-card text-ink
@@ -283,16 +261,9 @@ function Arrow({
 }
 
 /** Dev-only stand-ins. `src` doubles as the React key, so they stay distinct. */
-const PLACEHOLDERS: CommunityPhoto[] = [
-  "Spiral cookbook on a counter",
-  "4×6 cards in a recipe box",
-  "Binder open on a stand",
-  "A stack, fanned out",
-  "Cookbook open, mid-cook",
-].map((caption, i) => ({
+const PLACEHOLDERS: CommunityPhoto[] = Array.from({ length: 5 }, (_, i) => ({
   src: `placeholder-${i}`,
   width: 4,
   height: 3,
   alt: "",
-  caption,
 }));

@@ -19,13 +19,10 @@ export type CommunityPhoto = {
   /** Intrinsic size, so next/image reserves the space and nothing reflows. */
   width: number;
   height: number;
-  /** Names the subject. Not an inventory of it. */
+  /** Names the subject. Not an inventory of it. The pictures carry no visible
+      caption, so this is the only description of them that exists. */
   alt: string;
-  /** What was made, in a few words: "Spiral cookbook, 62 recipes". */
-  caption: string;
-  /** Who made it, as they asked to be credited. Omit when they'd rather not be. */
-  credit?: string;
-  /** Nudges the crop when the photo's shape differs from the square slot. */
+  /** Nudges the crop when the photo's shape differs from the slot. */
   objectPosition?: string;
 };
 
@@ -41,19 +38,24 @@ export const GALLERY_SUBMIT_EMAIL = "recipeprinter@goodproblem.studio";
 
 /**
  * Consent is the whole reason submissions come by email rather than an upload
- * box: the subject line is the record of it, and a reply is the takedown.
- * Kitchen photos have other people's families in them.
+ * box: the thread is the record of it, and a reply is the takedown. Kitchen
+ * photos have other people's homes and families in them.
+ *
+ * The permission line names marketing rather than the website, because the
+ * website is not the only place a photo like this ends up: a social post, an
+ * app store screenshot and an ad are all uses that "we can show this on
+ * recipeprinter.com" would not have covered. Asking once, in plain words, is
+ * better than going back later for a second permission.
  */
-export const GALLERY_SUBMIT_SUBJECT = "My RecipePrinter cookbook";
+export const GALLERY_SUBMIT_SUBJECT = "My RecipePrinter photo";
 
+/** One entry per paragraph, never a wrapped line: a newline inside a sentence
+    lands in the mail client as a hard break, and the draft arrived with the
+    copy broken mid-sentence. Mail clients wrap on their own. */
 export const GALLERY_SUBMIT_BODY = [
-  "Attach a photo or two of what you printed.",
+  "Attach a photo of what you printed. That's all we need.",
   "",
-  "What you made (a cookbook, recipe cards, a binder):",
-  "How you'd like to be credited, if at all:",
-  "",
-  "Sending this means we can show the photo on recipeprinter.com.",
-  "Change your mind any time and we'll take it down.",
+  "Sending it gives us permission to use the photo in our marketing, on the site and anywhere else we show what people make. Say the word any time and we'll take it down.",
 ].join("\n");
 
 /**
