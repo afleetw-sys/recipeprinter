@@ -98,23 +98,27 @@ function RecipeRow({
           cards pay for one long title. */}
       <div className="import-recipe-row__text">
         <p className="import-recipe-row__title">{summary.title}</p>
-        {/* Rendered even when empty: the line is what the card's height is made
-            of, so a recipe with no time and no serving count has to reserve it
-            or it comes out shorter than its neighbours. */}
-        <p className="import-recipe-row__meta">
-          {time && (
-            <span>
-              <ClockIcon size={ICON_SIZE.sm} />
-              {time}
-            </span>
-          )}
-          {servings && (
-            <span>
-              <UsersIcon size={ICON_SIZE.sm} />
-              Serves {servings}
-            </span>
-          )}
-        </p>
+        {/* Not rendered when there is nothing to put in it. The block above
+            reserves the height, so an empty line here reserves nothing and only
+            weighs the title down: a recipe with no time and no serving count
+            centred its title-plus-an-invisible-line, which put the title a third
+            of the way down its card while every card beside it looked centred. */}
+        {(time || servings) && (
+          <p className="import-recipe-row__meta">
+            {time && (
+              <span>
+                <ClockIcon size={ICON_SIZE.sm} />
+                {time}
+              </span>
+            )}
+            {servings && (
+              <span>
+                <UsersIcon size={ICON_SIZE.sm} />
+                Serves {servings}
+              </span>
+            )}
+          </p>
+        )}
       </div>
 
       {added ? (

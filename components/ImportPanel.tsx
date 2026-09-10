@@ -443,12 +443,17 @@ export function ImportPanel({
                  question a list provokes. Here it wraps, and it stays.
 
                  The social names are worth saying because nobody assumes a
-                 printer can read them, and each has a landing page making the
-                 same claim (lib/seoLandingPages). It ends on the open case
-                 rather than a fifth brand, so a closed list never becomes the
-                 answer to "is mine supported?". */
+                 printer can read them. These five are the complete set the
+                 product claims — one landing page each, with its own how-to
+                 (lib/seoLandingPages) — and there is no sixth to leave out.
+                 Nothing here is platform-specific in the code: a link goes
+                 through the generic extractor in app/api/parse and then
+                 CookPilot's parser, so the list is a promise we have decided to
+                 make rather than a set of branches. It ends on the open case
+                 rather than a brand, so a closed list never becomes the answer
+                 to "is mine supported?". */
               <p className="mt-cp-2 text-cp-caption text-ink-soft">
-                Works with Instagram, TikTok, Pinterest, YouTube, and any recipe site.
+                Works with Instagram, TikTok, Pinterest, Facebook, YouTube, and any recipe site.
               </p>
             )}
           </div>
