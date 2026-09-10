@@ -3315,8 +3315,19 @@
   outline-offset: 0;
 }
 
+/* Counter's checker band hangs 0.14in below the card's top edge, and on a 6x4
+   the content used to start 0.05in under it — the band read as a lid pressed
+   down onto the recipe rather than a rule drawn above it. Both faces now clear
+   it by the same 0.14in the band itself clears the paper, so it has equal air
+   on either side. (The front face's clearance is the header's margin, further
+   down with the rest of counter's own rules.)
+
+   Letter needs none of this: its 0.6in top padding already leaves the band a
+   0.4in margin of its own. */
 .recipe-print-preview--card-6x4 .recipe-template--counter .recipe-card--continued {
-  --recipe-card-padding-top: 0.32in;
+  /* 0.52in of clearance less the 9px `.recipe-card__cols` padding a
+     continuation carries (see `.recipe-card--continued .recipe-card__cols`). */
+  --recipe-card-padding-top: 0.43in;
 }
 
 .recipe-card--continued .recipe-card__cols {
@@ -5315,6 +5326,14 @@ textarea.recipe-card__toc-title {
   border-bottom: 0;
 }
 
+/* See the note by `.recipe-print-preview--card-6x4 .recipe-template--counter
+   .recipe-card--continued`: 0.25in of card padding plus this puts the header —
+   the photo and the title both, since the photo sits inside it — 0.52in down,
+   which is 0.14in clear of the band. */
+.recipe-print-preview--card-6x4 .recipe-template--counter .recipe-card__header {
+  margin-top: 0.27in;
+}
+
 .recipe-template--counter .recipe-card--continued {
   --recipe-card-padding-top: 0.32in;
 }
@@ -6148,6 +6167,108 @@ textarea.recipe-card__toc-title {
   max-height: 100%;
   border: 1px dashed var(--cp-line-strong);
   border-radius: 12px;
+}
+
+/* The page an import failed on. Same box the recipe would have had — same
+   PAGE_DIMS x deckScale, same aspect — so the loading placeholder becomes the
+   failure rather than the deck closing the gap as if nothing was ever added.
+
+   Solid rather than dashed, unlike the pending page: this is not "a page that
+   is not here yet", it is a page that needs a decision. The error tint is the
+   faintest one we have (--cp-error-soft, 6%), because the card is already
+   saying the words and a red page would shout them. */
+.recipe-page-failed {
+  display: flex;
+  justify-content: center;
+}
+
+.recipe-page-failed__sheet {
+  display: grid;
+  place-items: center;
+  max-width: 100%;
+  max-height: 100%;
+  padding: 20px;
+  overflow: auto;
+  border: 1px solid var(--cp-error-border);
+  border-radius: 12px;
+  background: var(--cp-error-soft);
+}
+
+.recipe-page-failed__body {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  align-items: flex-start;
+  width: 100%;
+  max-width: 42ch;
+}
+
+.recipe-page-failed__heading {
+  font-weight: var(--cp-fw-display);
+  color: var(--cp-error);
+  /* Wraps rather than truncates: the source is a hostname or a filename and
+     the cook needs to know WHICH import this was when several are in flight. */
+  overflow-wrap: anywhere;
+}
+
+.recipe-page-failed__message {
+  color: var(--cp-ink-soft);
+  line-height: 1.45;
+}
+
+.recipe-page-failed__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  width: 100%;
+}
+
+.recipe-page-failed__paste {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  width: 100%;
+}
+
+.recipe-page-failed__label {
+  font-size: var(--cp-fs-caption);
+  font-weight: var(--cp-fw-bold);
+  color: var(--cp-ink-soft);
+}
+
+.recipe-page-failed__textarea {
+  width: 100%;
+  min-height: 8lh;
+  padding: 8px;
+  border: 1px solid var(--cp-line-strong);
+  border-radius: var(--cp-radius-sm);
+  background: var(--cp-card);
+  font: inherit;
+  resize: vertical;
+}
+
+.recipe-page-failed__textarea:focus-visible {
+  outline: var(--cp-focus-ring);
+  outline-offset: 2px;
+}
+
+.recipe-page-failed__file-error {
+  color: var(--cp-error);
+  font-size: var(--cp-fs-caption);
+}
+
+/* The rail's label for that page. A row, not a tile with its own buttons: the
+   answer lives on the card, and two sets of actions for one failure is how the
+   old rail tile and the old toast ended up saying the same thing twice. */
+.recipe-page-rail__item--failed {
+  border-color: var(--cp-error);
+  background: var(--cp-error-soft);
+}
+
+.recipe-page-rail__failed-title {
+  color: var(--cp-error);
+  font-weight: var(--cp-fw-bold);
+  overflow-wrap: anywhere;
 }
 
 /* A photo is clickable the way a line of text is, and says so the same way: a
