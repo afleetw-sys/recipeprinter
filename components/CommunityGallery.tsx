@@ -371,7 +371,20 @@ function Carousel({
         // once the last photo is in view, so the end of the track fights the
         // user. Proximity keeps the snap feel and lets the track settle
         // wherever it has to at the end.
-        className="overflow-x-auto snap-x snap-proximity rp-gallery-track"
+        // Full bleed on a phone, with the page's own gutter as the track's
+        // LEADING padding instead of a margin around it. The distinction is
+        // the whole point: padding inside a scroll container scrolls away with
+        // the content, so the strip starts lined up with the heading above it
+        // and then runs to the edge of the screen once you move it, rather
+        // than sliding photographs in and out of a permanent 24px gutter.
+        // No trailing padding, so the last photograph ends at the edge and
+        // there is no empty run after it to scroll through.
+        // `scroll-pl` has to match the `pl`, or the leading gutter never gets
+        // to be seen: snap positions are measured from the SNAPPORT, which
+        // starts at the border edge unless scroll-padding moves it, so the
+        // browser immediately scrolled the 24px away to bring the first
+        // photograph flush and resting at the start was not a snap position.
+        className="overflow-x-auto snap-x snap-proximity rp-gallery-track -mx-cp-6 pl-cp-6 pr-0 scroll-pl-cp-6 sm:mx-0 sm:px-0 sm:scroll-pl-0"
       >
         <ul className="flex gap-cp-4">{children}</ul>
       </div>
