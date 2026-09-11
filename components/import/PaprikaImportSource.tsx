@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState, type DragEvent } from "react";
+import { useEffect, useMemo, useRef, useState, type DragEvent } from "react";
 import { track, truncateReason, type ImportFailureCode } from "@/lib/analytics";
 import { filterImportSummaries, type ImportSummary } from "@/lib/importSummary";
 import {
@@ -36,7 +36,9 @@ import { BookIcon, ChevronDownIcon, ICON_SIZE, SpinnerIcon, UploadIcon } from "@
  * experience is the same as CookPilot's: search the library, add what you want.
  */
 
-const ACCEPT = ".paprikarecipes,.paprikarecipe,.zip";
+/** Also used by the integrations card, whose button opens this same dialog. */
+export const PAPRIKA_ACCEPT = ".paprikarecipes,.paprikarecipe,.zip";
+const ACCEPT = PAPRIKA_ACCEPT;
 
 /**
  * Where the file is.
@@ -156,6 +158,7 @@ export function PaprikaImportSource({
   commitLabel,
   commitLeavesPage = false,
   onLibraryChange,
+  initialFile,
 }: {
   items: QueueItem[];
   onAddRecipes: (recipes: QueueItem[]) => number;
@@ -165,6 +168,10 @@ export function PaprikaImportSource({
   commitLeavesPage?: boolean;
   /** Lets the integrations list re-read the open file's name and count. */
   onLibraryChange?: () => void;
+  /** A file already chosen on the card, to read on arrival instead of asking
+      for it again. Paprika holds one library at a time, so there is nothing to
+      merge: the newest file replaces whatever was open. */
+  initialFile?: File | null;
 }) {
   const [library, setLibrary] = useState<PaprikaLibrary | null>(() => cachedPaprikaLibrary());
   const [reading, setReading] = useState(false);
@@ -187,6 +194,19 @@ export function PaprikaImportSource({
   );
   const visibleRows = useMemo(() => filterImportSummaries(rows, queryText), [rows, queryText]);
   const allVisibleSelected = allSelectableSelectedIn(visibleRows, addedIds, selectedIds);
+
+  // A file chosen back on the card is read on arrival. Guarded by identity
+  // rather than a boolean so picking a second file later still reads it, and
+  // re-renders in between do not read the same one twice.
+  const readFileRef = useRef<File | null>(null);
+  useEffect(() => {
+    if (!initialFile || readFileRef.current === initialFile) return;
+    readFileRef.current = initialFile;
+    void handleFile(initialFile);
+    // handleFile is redeclared every render and depending on it would re-read
+    // the file on each one; the identity guard above is what makes this safe.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [initialFile]);
 
   async function handleFile(file: File | null | undefined) {
     if (!file) return;

@@ -1,9 +1,12 @@
 "use client";
 
-import { type ReactNode, useEffect, useMemo, useState } from "react";
+import { type ReactNode, useEffect, useMemo, useRef, useState } from "react";
 import { useCookPilotAuth } from "@/components/CookPilotAuth";
 import { CookPilotImportSource, prewarmCookPilotImport } from "@/components/CookPilotRecipePicker";
-import { PaprikaImportSource } from "@/components/import/PaprikaImportSource";
+import {
+  PAPRIKA_ACCEPT,
+  PaprikaImportSource,
+} from "@/components/import/PaprikaImportSource";
 import {
   getCachedCookPilotTotal,
   loadCookPilotRecipeTotal,
@@ -52,6 +55,8 @@ function IntegrationCard({
   icon,
   action,
   onOpen,
+  secondaryAction,
+  onSecondary,
 }: {
   name: string;
   description: string;
@@ -72,6 +77,11 @@ function IntegrationCard({
       and "Connect" describes neither of those honestly. */
   action: string;
   onOpen: () => void;
+  /** A quieter second way in. Paprika's main button opens the file dialog
+      now, which leaves nothing pointing at the export instructions; this is
+      what still points at them. */
+  secondaryAction?: string;
+  onSecondary?: () => void;
 }) {
   return (
     <li className="flex flex-col gap-cp-3 rounded-xl border border-line bg-card p-cp-3">
@@ -107,16 +117,27 @@ function IntegrationCard({
 
       {/* `mt-auto` so the two buttons sit on one line when the descriptions
           wrap to different heights, which they do at most widths. */}
-      <button
-        type="button"
-        onClick={onOpen}
-        // Opens with the product's name, and keeps the visible words inside
-        // the accessible name so voice control can say what it reads.
-        aria-label={`${action} from ${name}`}
-        className="btn btn-secondary btn-compact mt-auto self-start"
-      >
-        {action}
-      </button>
+      <div className="mt-auto flex flex-wrap items-center gap-cp-3">
+        <button
+          type="button"
+          onClick={onOpen}
+          // Opens with the product's name, and keeps the visible words inside
+          // the accessible name so voice control can say what it reads.
+          aria-label={`${action} from ${name}`}
+          className="btn btn-secondary btn-compact"
+        >
+          {action}
+        </button>
+        {secondaryAction && onSecondary && (
+          <button
+            type="button"
+            onClick={onSecondary}
+            className="text-cp-caption font-semibold text-ink-soft hover:text-ink transition-colors"
+          >
+            {secondaryAction}
+          </button>
+        )}
+      </div>
     </li>
   );
 }
@@ -135,6 +156,12 @@ export function RecipeAppsPanel({
   commitLeavesPage?: boolean;
 }) {
   const [source, setSource] = useState<SourceId | null>(lastOpenSource);
+  // Paprika holds ONE library at a time, so there is nothing to choose between
+  // on this screen: the button opens the system file dialog and the next
+  // screen is the recipes in the file you picked. It used to take you to a
+  // page whose only content was a second button saying the same thing.
+  const paprikaInputRef = useRef<HTMLInputElement>(null);
+  const [paprikaFile, setPaprikaFile] = useState<File | null>(null);
   // Bumped when the open Paprika file changes, so the row below re-reads it.
   const [libraryNonce, setLibraryNonce] = useState(0);
   const { user, ready } = useCookPilotAuth();
@@ -225,6 +252,7 @@ export function RecipeAppsPanel({
           />
         ) : (
           <PaprikaImportSource
+            initialFile={paprikaFile}
             items={items}
             onAddRecipes={onAddRecipes}
             commitLabel={commitLabel}
@@ -263,9 +291,35 @@ export function RecipeAppsPanel({
           // their box sizes would not have matched their weight.
           icon={<PaprikaLogoIcon size={26} />}
           action="Open file"
-          onOpen={() => open("paprika")}
+          onOpen={() => paprikaInputRef.current?.click()}
+          // The export steps used to live on the screen the button reached.
+          // They still exist there, so this is what still reaches them, and it
+          // is also the way in for someone who has no file yet.
+          secondaryAction="Where do I find that file?"
+          onSecondary={() => open("paprika")}
         />
       </ul>
+
+      {/* Outside the list so a re-render of the cards cannot remount it
+          mid-dialog. Cancelling picks nothing and goes nowhere, which is the
+          right answer to a cancelled file dialog. */}
+      <input
+        ref={paprikaInputRef}
+        type="file"
+        accept={PAPRIKA_ACCEPT}
+        className="sr-only absolute h-px w-px overflow-hidden"
+        tabIndex={-1}
+        aria-hidden
+        onChange={(event) => {
+          const file = event.target.files?.[0];
+          // Reset first: choosing the SAME file again has to fire onChange, or
+          // a retry after a failed read looks like nothing happened.
+          event.target.value = "";
+          if (!file) return;
+          setPaprikaFile(file);
+          open("paprika");
+        }}
+      />
     </div>
   );
 }
