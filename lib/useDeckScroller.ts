@@ -107,6 +107,16 @@ interface UseDeckScrollerOptions {
   zoomRange?: { min: number; max: number };
   /** Set the zoom from a trackpad pinch. Omit to leave the gesture alone. */
   onZoomChange?: (zoom: number) => void;
+  /**
+   * Told which import card the deck has settled on, or null for a real page.
+   *
+   * Importing and failed cards are slides like any other, but they sit outside
+   * the sheets pipeline and so have no entry in `slideRefs`. Without this the
+   * scroll sync could only answer with the nearest PAGE, which meant scrolling
+   * onto an error selected the recipe above it and then re-centred on that
+   * recipe, carrying the deck back up and away from the thing being read.
+   */
+  onImportSlideChange?: (importId: string | null) => void;
 }
 
 // One pending "restore snapping" cleanup per deck, so back-to-back programmatic
@@ -153,6 +163,7 @@ function scrollDeckTo(deck: HTMLDivElement, options: ScrollToOptions) {
 export function useDeckScroller({
   activeNavIndex,
   setActiveNavIndex,
+  onImportSlideChange,
   navItemsLength,
   cardSize,
   sheetsLength,
@@ -809,6 +820,29 @@ export function useDeckScroller({
       return bestIndex;
     };
 
+    /** The import card nearest the middle, if one is nearer than every page. */
+    const closestImport = (mobile: boolean): { id: string; dist: number } | null => {
+      const cards = el.querySelectorAll<HTMLElement>(
+        "[data-pending-import-id], [data-failed-import-id]",
+      );
+      if (cards.length === 0) return null;
+      const deckRect = el.getBoundingClientRect();
+      const mid = mobile ? el.clientWidth / 2 : el.clientHeight / 2;
+      let best: { id: string; dist: number } | null = null;
+      cards.forEach((card) => {
+        const id =
+          card.dataset.pendingImportId ?? card.dataset.failedImportId ?? null;
+        if (!id) return;
+        const rect = card.getBoundingClientRect();
+        const centre = mobile
+          ? rect.left - deckRect.left + rect.width / 2
+          : rect.top - deckRect.top + rect.height / 2;
+        const dist = Math.abs(centre - mid);
+        if (!best || dist < best.dist) best = { id, dist };
+      });
+      return best;
+    };
+
     const onScroll = () => {
       // A zoom moves every page and then nudges the scroll to hold the point
       // under the cursor. Both fire `scroll`, and reading either as "the cook
@@ -821,6 +855,27 @@ export function useDeckScroller({
       cancelAnimationFrame(raf);
       raf = requestAnimationFrame(() => {
         const next = closestIndex(mobile);
+        // Whichever is actually nearest wins, page or import. Measured in the
+        // deck's own coordinates so the two are comparable: `closestIndex`
+        // works in scroll space, this in viewport space against the same
+        // midpoint.
+        const nearestImport = closestImport(mobile);
+        if (nearestImport) {
+          const pageDist =
+            next === null
+              ? Number.POSITIVE_INFINITY
+              : Math.abs(
+                  (mobile
+                    ? slideCentersRef.current[next].left - el.scrollLeft
+                    : slideCentersRef.current[next].top - el.scrollTop) -
+                    (mobile ? el.clientWidth / 2 : el.clientHeight / 2),
+                );
+          if (nearestImport.dist < pageDist) {
+            onImportSlideChange?.(nearestImport.id);
+            return;
+          }
+        }
+        onImportSlideChange?.(null);
         if (next !== null) setActiveNavIndex(next);
       });
     };

@@ -3893,6 +3893,11 @@ export default function PrintPage() {
   } = useDeckScroller({
     activeNavIndex,
     setActiveNavIndex,
+    // Scrolling onto an import card selects THAT card. The deck used to answer
+    // with the nearest page instead, which both marked the recipe above it and
+    // re-centred on that recipe, carrying you back off the thing you had just
+    // scrolled down to read.
+    onImportSlideChange: setActiveImportId,
     navItemsLength: cookbookView ? spreads.length : navItems.length,
     cardSize: previewCardSize,
     sheetsLength: sheets.length,
