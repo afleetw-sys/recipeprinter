@@ -22,15 +22,26 @@ import { COMMUNITY_PHOTOS, type CommunityPhoto } from "@/lib/communityGallery";
 const SLOT =
   "relative w-full overflow-hidden rounded-2xl border border-line bg-card";
 
-/** Roughly one-and-a-bit photos on a phone, a bit over two everywhere else.
-    The trailing fraction is the affordance: a half-visible next photo says
-    "this scrolls" better than any arrow does.
-    A fixed width above `sm`, not a fraction of the track. The strip is wider
-    than the column above it, and a percentage meant the photographs grew every
-    time the band did, which is backwards: a snapshot is a snapshot, and a wider
-    page should show MORE of them, not bigger ones. 15.5rem is the size that
-    read right at three across in the old narrow column. */
-const ITEM = "snap-start shrink-0 basis-[62%] sm:basis-[15.5rem]";
+/** A whole number of photos per band, never a sliced one.
+    Above `sm` the width is the band divided by the count, minus the gaps, so
+    the last photo in view ends exactly where the strip does. A fixed tile
+    width could not do this: 15.5rem left a 1240px band showing four and a
+    sliver, and a photograph cut down its middle by the edge of the page looks
+    like a bug rather than an invitation to scroll.
+    The count steps up with the band instead, which keeps every tile between
+    235px and 275px wherever it lands. A phone keeps its trailing fraction,
+    because there the peek is what says "swipe me" and a thumb is the control.
+    (gap-cp-4 is 16px, so N across leaves (N-1) x 16px of gutter.) */
+const ITEM = [
+  "snap-start shrink-0",
+  "basis-[62%]",
+  "sm:basis-[calc((100%-32px)/3)]",
+  "lg:basis-[calc((100%-48px)/4)]",
+  "xl:basis-[calc((100%-64px)/5)]",
+].join(" ");
+
+/** How long each resting position holds before the strip moves itself on. */
+const ROTATE_MS = 4200;
 
 export function CommunityGallery({
   items = COMMUNITY_PHOTOS,
@@ -127,7 +138,7 @@ function Frame({
         // Absolute above `sm`, not a viewport fraction: the page column stops
         // growing at 860px, so a percentage of the WINDOW kept asking for
         // bigger and bigger files that were never displayed any larger.
-        sizes="(max-width: 639px) 62vw, 248px"
+        sizes="(max-width: 639px) 62vw, 280px"
         className="w-full rounded-xl object-cover"
         style={{ aspectRatio: "4 / 3", objectPosition: photo.objectPosition }}
       />
@@ -197,6 +208,66 @@ function Carousel({
       behavior: still ? "auto" : "smooth",
     });
   };
+
+  // ── Rotate on its own ────────────────────────────────────────────────
+  // One photograph at a time, then back to the beginning. Nobody should have
+  // to work a carousel to see what is in it, and with the last tile no longer
+  // sliced by the edge of the band there is nothing left to suggest the strip
+  // moves at all. The movement is now the only thing that says so.
+  //
+  // It stops for every reason it should: a pointer over it or focus inside it
+  // (so it never slides away from someone reading it), a hidden tab, the strip
+  // scrolled off screen, and `prefers-reduced-motion`, which turns it off
+  // entirely rather than making it instant.
+  useEffect(() => {
+    const track = trackRef.current;
+    if (!track) return;
+    if (window.matchMedia?.("(prefers-reduced-motion: reduce)").matches) return;
+
+    let held = false;
+    let onScreen = true;
+
+    const step = () => {
+      if (held || !onScreen || document.hidden) return;
+      const first = track.querySelector("li");
+      if (!first) return;
+      const gap = parseFloat(getComputedStyle(track.firstElementChild as Element).columnGap) || 0;
+      const stride = first.getBoundingClientRect().width + gap;
+      const max = track.scrollWidth - track.clientWidth;
+      // A pixel of slack, the same as `measure` uses: sub-pixel layout means
+      // the end is rarely a whole number, and without it the last step lands
+      // a fraction short and the strip never returns to the start.
+      const atEndAlready = track.scrollLeft >= max - 1;
+      track.scrollTo({
+        left: atEndAlready ? 0 : Math.min(track.scrollLeft + stride, max),
+        behavior: "smooth",
+      });
+    };
+
+    const timer = window.setInterval(step, ROTATE_MS);
+    const hold = () => { held = true; };
+    const release = () => { held = false; };
+
+    track.addEventListener("pointerenter", hold);
+    track.addEventListener("pointerleave", release);
+    track.addEventListener("focusin", hold);
+    track.addEventListener("focusout", release);
+
+    const observer = new IntersectionObserver(
+      ([entry]) => { onScreen = entry.isIntersecting; },
+      { threshold: 0.25 },
+    );
+    observer.observe(track);
+
+    return () => {
+      window.clearInterval(timer);
+      track.removeEventListener("pointerenter", hold);
+      track.removeEventListener("pointerleave", release);
+      track.removeEventListener("focusin", hold);
+      track.removeEventListener("focusout", release);
+      observer.disconnect();
+    };
+  }, [count]);
 
   return (
     <div className="relative">
