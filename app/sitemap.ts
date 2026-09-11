@@ -7,15 +7,18 @@ import { SEO_LANDING_PAGES } from "@/lib/seoLandingPages";
 // only when its content meaningfully changes. (Regenerating `new Date()` on
 // every request made every page look freshly edited at all times, which Google
 // learns to discount.) New routes default to the most recent site-wide update.
+//
+// Static routes only. An SEO landing page carries its own date on its entry
+// in SEO_LANDING_PAGES and overrides this map, so a slug listed here would be
+// read by nobody and drift quietly out of date.
 const LAST_MODIFIED: Record<string, string> = {
-  "/": "2026-07-02",
+  "/": "2026-09-11",
   "/how-it-works": "2026-09-09",
   "/features": "2026-09-09",
   "/faq": "2026-09-09",
   "/about": "2026-09-09",
   "/privacy": "2026-09-04",
   "/terms": "2026-09-04",
-  "/printable-recipe-card-generator": "2026-08-01",
 };
 
 const DEFAULT_LAST_MODIFIED = "2026-07-08";

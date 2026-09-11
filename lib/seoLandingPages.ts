@@ -201,7 +201,7 @@ export type SeoLandingPage = {
 export const SEO_LANDING_PAGES: SeoLandingPage[] = [
   {
     slug: "print-recipe-from-website",
-    contentUpdated: "2026-09-09",
+    contentUpdated: "2026-09-11",
     lastReviewed: "2026-09-02",
     primaryKeyword: "print recipe from website",
     secondaryKeywords: [
@@ -302,7 +302,7 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
   },
   {
     slug: "print-recipe-without-ads",
-    contentUpdated: "2026-09-09",
+    contentUpdated: "2026-09-11",
     lastReviewed: "2026-09-02",
     primaryKeyword: "print recipe without ads",
     secondaryKeywords: [
@@ -383,7 +383,7 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
   },
   {
     slug: "convert-recipe-to-pdf",
-    contentUpdated: "2026-09-09",
+    contentUpdated: "2026-09-11",
     lastReviewed: "2026-09-02",
     primaryKeyword: "convert recipe to PDF",
     secondaryKeywords: [
@@ -466,7 +466,7 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
   },
   {
     slug: "printable-recipe-card-generator",
-    contentUpdated: "2026-09-09",
+    contentUpdated: "2026-09-11",
     lastReviewed: "2026-09-09",
     primaryKeyword: "printable recipe card generator",
     secondaryKeywords: [
@@ -559,7 +559,7 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
   {
     // No lastReviewed: written today, not read through yet.
     slug: "print-recipe-from-photo",
-    contentUpdated: "2026-09-09",
+    contentUpdated: "2026-09-11",
     primaryKeyword: "print a recipe from a photo",
     secondaryKeywords: [
       "print recipe from photo",
@@ -652,7 +652,7 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
     slug: "print-pinterest-recipes",
     importFieldLabel: "Pinterest link",
     importPlaceholder: "Paste a Pin link here",
-    contentUpdated: "2026-09-09",
+    contentUpdated: "2026-09-11",
     lastReviewed: "2026-09-07",
     primaryKeyword: "print Pinterest recipes",
     secondaryKeywords: [
@@ -756,7 +756,7 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
     slug: "print-instagram-recipes",
     importFieldLabel: "Instagram link",
     importPlaceholder: "Paste an Instagram post or Reel link here",
-    contentUpdated: "2026-09-09",
+    contentUpdated: "2026-09-11",
     lastReviewed: "2026-09-09",
     primaryKeyword: "print Instagram recipes",
     secondaryKeywords: [
@@ -852,7 +852,7 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
     slug: "print-facebook-recipes",
     importFieldLabel: "Facebook link",
     importPlaceholder: "Paste a Facebook post or video link here",
-    contentUpdated: "2026-09-09",
+    contentUpdated: "2026-09-11",
     primaryKeyword: "print recipe from Facebook",
     secondaryKeywords: [
       "print recipes from Facebook",
@@ -945,7 +945,7 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
     slug: "print-tiktok-recipes",
     importFieldLabel: "TikTok link",
     importPlaceholder: "Paste a TikTok link here",
-    contentUpdated: "2026-09-09",
+    contentUpdated: "2026-09-11",
     primaryKeyword: "print TikTok recipes",
     secondaryKeywords: [
       "print recipe from TikTok",
@@ -1040,7 +1040,7 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
     // which is what that field records. It stays out of the reviewed set until
     // someone has actually gone over the copy.
     slug: "print-paprika-recipes",
-    contentUpdated: "2026-09-09",
+    contentUpdated: "2026-09-11",
 
     primaryKeyword: "print Paprika recipes",
     secondaryKeywords: [
@@ -1134,7 +1134,7 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
     slug: "print-youtube-recipes",
     importFieldLabel: "YouTube link",
     importPlaceholder: "Paste a YouTube video link here",
-    contentUpdated: "2026-09-09",
+    contentUpdated: "2026-09-11",
     primaryKeyword: "print recipe from YouTube",
     secondaryKeywords: [
       "how to print recipe from YouTube",
@@ -1225,7 +1225,7 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
   },
   {
     slug: "organize-recipes",
-    contentUpdated: "2026-09-09",
+    contentUpdated: "2026-09-11",
     captureHeading: "Start with one recipe",
     importSubmitLabel: "Add your first recipe",
     primaryKeyword: "organize recipes",
@@ -1334,7 +1334,7 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
   },
   {
     slug: "recipe-binder",
-    contentUpdated: "2026-09-09",
+    contentUpdated: "2026-09-11",
     captureHeading: "Start your binder",
     primaryKeyword: "recipe binder",
     secondaryKeywords: [
@@ -1378,7 +1378,7 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
   {
     slug: "preserve-family-recipes",
     importPlaceholder: "Photograph a handwritten card, or drop a scan",
-    contentUpdated: "2026-09-09",
+    contentUpdated: "2026-09-11",
     // Signed off on the writing. One image is still owed: "Keep the original,
     // cook from the copy" wants a photograph of the printed copy lying beside
     // the handwritten card it came from, which is the whole claim in one frame
@@ -1474,7 +1474,7 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
   },
   {
     slug: "family-recipe-book",
-    contentUpdated: "2026-09-09",
+    contentUpdated: "2026-09-11",
     // Signed off on the writing. The three feature rows still ask for `photo`
     // and `book` proof kinds that have no image behind them, so they render as
     // text-only blocks: there is no finished family cookbook to photograph yet.
@@ -1578,7 +1578,7 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
   },
   {
     slug: "just-the-recipe-alternative",
-    contentUpdated: "2026-09-09",
+    contentUpdated: "2026-09-11",
     lastReviewed: "2026-09-02",
     primaryKeyword: "Just the Recipe alternative",
     // Deliberately narrow. This page used to also claim "print recipe without
@@ -1696,7 +1696,7 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
   },
   {
     slug: "reciscan-alternative",
-    contentUpdated: "2026-09-09",
+    contentUpdated: "2026-09-11",
     lastReviewed: "2026-09-02",
     primaryKeyword: "ReciScan alternative",
     secondaryKeywords: [
