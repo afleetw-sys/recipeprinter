@@ -30,7 +30,6 @@ import {
 import { IconButton } from "@/components/Controls";
 import { ScaledPage } from "@/components/print/ScaledPage";
 import { PendingImportRows } from "@/components/print/PendingImportRows";
-import { RailQuickAdd } from "@/components/print/RailQuickAdd";
 import { pendingAnchorIndex, sectionDrawsNestingLine } from "@/lib/railPending";
 import { PAGE_DIMS } from "@/lib/printGeometry";
 import type { PrintCardSize, RecipePrintTemplate } from "@/components/RecipeCardPrint";
@@ -171,9 +170,6 @@ interface PageRailProps {
   moveRecipesToSection: (ids: string[], sectionId: string) => void;
   railSortMode: RailSortMode;
   applyRailSort: (mode: RailSortMode) => void;
-  /** Adds a link pasted at the end of the rail, appended to the end of the
-      project — see RailQuickAdd. */
-  onQuickAddUrl: (url: string) => void;
   addMenuOpen: boolean;
   /** Sorts the book into sections and orders it — see `suggestCookbookLayout`. */
   suggestCookbookLayout: () => void;
@@ -239,7 +235,6 @@ export function PageRail(props: PageRailProps) {
     moveRecipesToSection,
     railSortMode,
     applyRailSort,
-    onQuickAddUrl,
     addMenuOpen,
     suggestCookbookLayout,
     undoCookbookOrganization,
@@ -1192,7 +1187,6 @@ export function PageRail(props: PageRailProps) {
               empty project, where the deck and the rail header are both already
               asking for the first recipe, and not in the organizer, which is
               for rearranging what is here rather than bringing more in. */}
-          {!organizeMode && railRows.length > 0 && <RailQuickAdd onAddUrl={onQuickAddUrl} />}
 
           {tileMenu && (
             <MoveToSectionMenu
