@@ -149,7 +149,7 @@ export const CookPilotLogoIcon = ({
 }) => (
   // eslint-disable-next-line @next/next/no-img-element
   <img
-    src="/images/cookpilot-logo-bw.png"
+    src="/images/cookpilot-logo.png"
     alt=""
     aria-hidden
     className={className}
