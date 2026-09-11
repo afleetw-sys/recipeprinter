@@ -51,6 +51,15 @@ export type CommunityPhoto = {
  */
 const SEED: CommunityPhoto[] = [
   {
+    // Leads, because it is the only one that shows the card and the dinner it
+    // produced in the same frame, which is the argument the others only imply.
+    src: "/images/soy-sauce-noodles.jpeg",
+    width: 3024,
+    height: 4032,
+    alt:
+      "A printed Soy Sauce Pan-Fried Noodles card on a table beside the finished bowl of noodles and chopsticks.",
+  },
+  {
     src: "/images/card-korean-beef-bowl.jpeg",
     width: 1200,
     height: 1600,

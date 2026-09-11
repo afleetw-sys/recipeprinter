@@ -72,26 +72,15 @@ function IntegrationCard({
 }) {
   return (
     <li className="flex flex-col gap-cp-3 rounded-xl border border-line bg-card p-cp-3">
-      {/* Mark and action on one line, the words underneath. The card used to
-          be a single wide button with a chevron; the button is now a real
-          control of its own, which is why nothing outside it is clickable —
-          a button inside a button is not something a screen reader or a
+      {/* Mark, then the words, then the action: the order you read the card
+          in, so the button arrives once you know what it will do. The card
+          used to be one wide button with a chevron; the button is a real
+          control of its own now, which is why nothing outside it is clickable
+          — a button inside a button is not something a screen reader or a
           keyboard can make sense of. */}
-      <div className="flex items-start justify-between gap-cp-3">
-        <span className="h-11 w-11 flex-shrink-0 overflow-hidden rounded-xl bg-page grid place-items-center text-ink">
-          {icon}
-        </span>
-        <button
-          type="button"
-          onClick={onOpen}
-          // Opens with the product's name, and keeps the visible words inside
-          // the accessible name so voice control can say what it reads.
-          aria-label={`${action} from ${name}`}
-          className="btn btn-secondary btn-compact flex-shrink-0"
-        >
-          {action}
-        </button>
-      </div>
+      <span className="h-11 w-11 flex-shrink-0 overflow-hidden rounded-xl bg-page grid place-items-center text-ink">
+        {icon}
+      </span>
 
       <div className="min-w-0">
         {/* Chips take the shared `rounded-lg`, the radius every other chip in
@@ -112,6 +101,19 @@ function IntegrationCard({
         <p className="mt-0.5 text-cp-caption text-ink-soft">{description}</p>
         {note && <p className="mt-0.5 text-cp-caption text-ink-soft">{note}</p>}
       </div>
+
+      {/* `mt-auto` so the two buttons sit on one line when the descriptions
+          wrap to different heights, which they do at most widths. */}
+      <button
+        type="button"
+        onClick={onOpen}
+        // Opens with the product's name, and keeps the visible words inside
+        // the accessible name so voice control can say what it reads.
+        aria-label={`${action} from ${name}`}
+        className="btn btn-secondary btn-compact mt-auto self-start"
+      >
+        {action}
+      </button>
     </li>
   );
 }
