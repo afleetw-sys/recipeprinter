@@ -1,5 +1,5 @@
 // ─────────────────────────────────────────────────────────────────────────
-// "Off the printer": photographs of what people actually printed.
+// "Fresh off the printer": photographs of what people actually printed.
 //
 // Named for the thing rather than the room. "In real kitchens" claimed a
 // setting the pictures do not have to be in, and the first three are on a
