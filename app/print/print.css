@@ -6836,13 +6836,20 @@ textarea.recipe-card__toc-title {
   align-items: center;
   gap: 10px;
   margin-top: 20px;
-  /* Primary/secondary stay side by side, never stacked. `nowrap` + shrinkable
-     buttons keep them on one row even in a narrow dialog. */
-  flex-wrap: nowrap;
+  /* One row while they fit, stacked when they do not.
+     This was `nowrap` plus buttons free to shrink below their own content,
+     which kept them side by side by letting the LABELS out of the boxes: a
+     `.btn` is `white-space: nowrap`, so a narrowed button does not reflow its
+     text, it spills it past its own rounded edge. "Support RecipePrinter" on a
+     phone was sitting outside the button it belongs to. Wrapping is the part
+     worth giving up. */
+  flex-wrap: wrap;
 }
 .print-success-dialog__actions .btn {
-  flex: 0 1 auto;
-  min-width: 0;
+  /* No `min-width: 0`. That is what let a button be drawn narrower than the
+     words inside it. */
+  flex: 0 0 auto;
+  max-width: 100%;
 }
 
 @keyframes print-success-fade {

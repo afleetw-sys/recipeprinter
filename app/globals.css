@@ -1196,6 +1196,16 @@
     min-height: 34px;
     padding: 0 14px;
   }
+  /* An icon in a button keeps its size. Without this a squeezed button takes
+     the difference out of the icon, which distorts a logo before the label
+     gives up a pixel. */
+  .btn > svg,
+  .btn > img,
+  .btn-ghost > svg,
+  .btn-ghost > img {
+    flex-shrink: 0;
+  }
+
   .btn:hover:not(:disabled) {
     transform: translateY(-1px);
   }
