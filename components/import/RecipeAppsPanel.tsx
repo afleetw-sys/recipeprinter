@@ -306,6 +306,42 @@ export function RecipeAppsPanel({
       } loaded`
     : undefined;
 
+  // Rendered by BOTH branches. It used to live only with the cards, so
+  // "Change" from inside an open library called `click()` on a ref pointing at
+  // nothing and the button did nothing at all.
+  // Cancelling the dialog picks nothing and goes nowhere, which is the right
+  // answer to a cancelled file dialog.
+  const paprikaFileInput = (
+    <input
+          ref={paprikaInputRef}
+          type="file"
+          accept={PAPRIKA_ACCEPT}
+          className="sr-only absolute h-px w-px overflow-hidden"
+          tabIndex={-1}
+          aria-hidden
+          onChange={async (event) => {
+            const file = event.target.files?.[0];
+            // Reset first: choosing the SAME file again has to fire onChange, or
+            // a retry after a failed read looks like nothing happened.
+            event.target.value = "";
+            if (!file) return;
+            setPaprikaError(null);
+            setPaprikaReading(true);
+            const result = await readPaprikaExport(file);
+            setPaprikaReading(false);
+            if (!result.ok) {
+              // Stays on the card. A file that will not read has nothing to show
+              // on the next screen, and sending someone there to read the reason
+              // puts the message a page away from the button that retries it.
+              setPaprikaError(result.message);
+              return;
+            }
+            setLibraryNonce((value) => value + 1);
+            open("paprika");
+          }}
+        />
+  );
+
   if (source === "cookpilot" || source === "paprika") {
     return (
       <div className="flex flex-col gap-cp-4">
@@ -331,6 +367,9 @@ export function RecipeAppsPanel({
             // selection made against the old one.
             key={libraryNonce}
             onChooseAnotherFile={() => paprikaInputRef.current?.click()}
+            // A replacement chosen from in here fails in here. The card is not
+            // on screen to carry the message.
+            replaceError={paprikaError}
             items={items}
             onAddRecipes={onAddRecipes}
             commitLabel={commitLabel}
@@ -338,6 +377,7 @@ export function RecipeAppsPanel({
             onLibraryChange={() => setLibraryNonce((value) => value + 1)}
           />
         )}
+        {paprikaFileInput}
       </div>
     );
   }
@@ -368,8 +408,16 @@ export function RecipeAppsPanel({
           // an open glyph on nothing, this is a solid app icon, so matching
           // their box sizes would not have matched their weight.
           icon={<PaprikaLogoIcon size={26} />}
-          action="Open file"
-          onOpen={() => paprikaInputRef.current?.click()}
+          // What the button says depends on whether there is a library open.
+          // The file is cached between visits, so "Open file" was asking for
+          // one that had already been given: picking again was the only route
+          // back to recipes that were sitting there the whole time.
+          action={paprikaLibrary ? "Choose recipes" : "Open file"}
+          onOpen={
+            paprikaLibrary
+              ? () => open("paprika")
+              : () => paprikaInputRef.current?.click()
+          }
           busy={paprikaReading}
           error={paprikaError}
           helpLabel="How to export"
@@ -385,38 +433,7 @@ export function RecipeAppsPanel({
           }
         />
       </ul>
-
-      {/* Outside the list so a re-render of the cards cannot remount it
-          mid-dialog. Cancelling picks nothing and goes nowhere, which is the
-          right answer to a cancelled file dialog. */}
-      <input
-        ref={paprikaInputRef}
-        type="file"
-        accept={PAPRIKA_ACCEPT}
-        className="sr-only absolute h-px w-px overflow-hidden"
-        tabIndex={-1}
-        aria-hidden
-        onChange={async (event) => {
-          const file = event.target.files?.[0];
-          // Reset first: choosing the SAME file again has to fire onChange, or
-          // a retry after a failed read looks like nothing happened.
-          event.target.value = "";
-          if (!file) return;
-          setPaprikaError(null);
-          setPaprikaReading(true);
-          const result = await readPaprikaExport(file);
-          setPaprikaReading(false);
-          if (!result.ok) {
-            // Stays on the card. A file that will not read has nothing to show
-            // on the next screen, and sending someone there to read the reason
-            // puts the message a page away from the button that retries it.
-            setPaprikaError(result.message);
-            return;
-          }
-          setLibraryNonce((value) => value + 1);
-          open("paprika");
-        }}
-      />
+      {paprikaFileInput}
     </div>
   );
 }

@@ -113,6 +113,7 @@ export function PaprikaImportSource({
   commitLeavesPage = false,
   onLibraryChange,
   onChooseAnotherFile,
+  replaceError,
 }: {
   items: QueueItem[];
   onAddRecipes: (recipes: QueueItem[]) => number;
@@ -124,6 +125,9 @@ export function PaprikaImportSource({
   onLibraryChange?: () => void;
   /** Opens the file dialog again, which lives on the card. */
   onChooseAnotherFile: () => void;
+  /** A file chosen from in here that would not read. Shown under the banner
+      naming the file it failed to replace. */
+  replaceError?: string | null;
 }) {
   // Read once on mount and never set again: a new file remounts this component
   // (see the `key` on the call site), so there is no in-place swap to make.
@@ -244,6 +248,17 @@ export function PaprikaImportSource({
           Change
         </button>
       </div>
+
+      {/* Directly under the banner, which is where the Change button that
+          caused it lives. The library on screen is still the old one, so the
+          message has to say what did not happen rather than replacing the
+          list with an error. */}
+      {replaceError && (
+        <p className="field-error" role="alert">
+          {replaceError}
+        </p>
+      )}
+
       <RecipeSourceList
         heading="Paprika recipes"
         countLabel={entries.length > 0 ? `(${entries.length})` : undefined}

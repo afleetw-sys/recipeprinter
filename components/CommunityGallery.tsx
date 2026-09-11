@@ -19,6 +19,20 @@ import { COMMUNITY_PHOTOS, type CommunityPhoto } from "@/lib/communityGallery";
 // one just shows fewer photos at a time, which is what zoom is asking for.
 // ─────────────────────────────────────────────────────────────────────────
 
+/**
+ * The viewer's own controls, which are not the product's buttons.
+ *
+ * These were white cards on a hairline, the shape every control on the page
+ * wears — correct on paper, wrong here: app chrome lifted onto a darkened
+ * photograph reads as a dialog that landed on top of the picture rather than
+ * as a way through it. Dark and translucent is what a photo viewer wears, and
+ * it also fixes the contrast: white on the 62% scrim is about 3.5:1, which is
+ * under what the counter's text needs, while white on this is past 8:1
+ * whatever the photograph behind it happens to be doing.
+ */
+const VIEWER_CONTROL =
+  "grid h-10 w-10 place-items-center rounded-full bg-ink/70 text-card transition-colors hover:bg-ink";
+
 /** The frame every photo sits in, so a set of mixed shots reads as a set. */
 const SLOT =
   "relative w-full overflow-hidden rounded-2xl border border-line bg-card";
@@ -194,21 +208,18 @@ function Spotlight({
             type="button"
             onClick={() => go(-1)}
             aria-label="Previous photo"
-            className="grid h-10 w-10 place-items-center rounded-full border border-line-strong bg-card text-ink transition-colors hover:bg-[var(--cp-overlay-hover)]"
+            className={VIEWER_CONTROL}
           >
             <ChevronLeftIcon size={ICON_SIZE.lg} />
           </button>
-          {/* A chip, not bare type. The shared scrim is 36% ink, so whatever
-              sits behind this line is whatever the page happens to have there;
-              its own card ground is the only way it reads at every position. */}
-          <p className="rounded-full border border-line-strong bg-card px-cp-3 py-cp-1 text-cp-caption font-semibold tabular-nums text-ink">
+          <p className="rounded-full bg-ink/70 px-cp-3 py-cp-2 text-cp-caption font-semibold tabular-nums text-card">
             {index + 1} / {count}
           </p>
           <button
             type="button"
             onClick={() => go(1)}
             aria-label="Next photo"
-            className="grid h-10 w-10 place-items-center rounded-full border border-line-strong bg-card text-ink transition-colors hover:bg-[var(--cp-overlay-hover)]"
+            className={VIEWER_CONTROL}
           >
             <ChevronRightIcon size={ICON_SIZE.lg} />
           </button>
@@ -219,7 +230,7 @@ function Spotlight({
         type="button"
         onClick={onClose}
         aria-label="Close"
-        className="absolute right-cp-4 top-cp-4 grid h-10 w-10 place-items-center rounded-full border border-line-strong bg-card text-ink transition-colors hover:bg-[var(--cp-overlay-hover)]"
+        className={`absolute right-cp-4 top-cp-4 ${VIEWER_CONTROL}`}
       >
         <XIcon size={ICON_SIZE.lg} />
       </button>
