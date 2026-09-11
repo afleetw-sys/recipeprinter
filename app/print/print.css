@@ -6373,6 +6373,11 @@ textarea.recipe-card__toc-title {
   align-items: center;
   justify-content: center;
   gap: 6px;
+  /* Without this the label runs out of the tile. A grid item's default
+     `min-width: auto` lets this box grow to its widest content, so the title's
+     own `max-width: 100%` was measuring against a parent that had already
+     stretched past the rail — nothing to clamp against. */
+  min-width: 0;
   min-height: 72px;
   padding: 6px 2px;
 }
@@ -6387,7 +6392,6 @@ textarea.recipe-card__toc-title {
    line. Ellipsised like every other rail title: the rail is a list of labels,
    and the sentence is on the card. */
 .recipe-page-rail__failed-title {
-  grid-column: 1 / -1;
   max-width: 100%;
   overflow: hidden;
   color: var(--cp-error);
@@ -6395,8 +6399,14 @@ textarea.recipe-card__toc-title {
   font-weight: var(--cp-fw-bold);
   line-height: 1.2;
   text-align: center;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  /* Two lines, then ellipsis. The row is tall enough for them now, and a
+     domain cut mid-word by a single-line ellipsis ("allrecipes…") loses the
+     part that says WHICH import failed. `anywhere` because a long domain has
+     no spaces to break at. */
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow-wrap: anywhere;
 }
 
 /* A photo is clickable the way a line of text is, and says so the same way: a
