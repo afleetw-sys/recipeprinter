@@ -1,6 +1,7 @@
 import { absoluteUrl } from "@/lib/seo";
 import { SEO_LANDING_PAGES } from "@/lib/seoLandingPages";
-import { homeImages, landingPageImages } from "@/lib/seoImages";
+import { featureCardImages, homeImages, landingPageImages } from "@/lib/seoImages";
+import { IMPORT_CARDS, POINTS, PRINT_CARDS, YOURS_CARDS } from "@/lib/seoFeatureCards";
 
 // /image-sitemap.xml — the photographs, page by page.
 //
@@ -38,10 +39,13 @@ export function GET() {
       path: `/${page.slug}`,
       images: landingPageImages(page),
     })),
-    // /features and /how-it-works also carry photography, but their card lists
-    // are local constants inside those route files rather than shared data.
-    // Export them and they slot in here; until then a page with no images is
-    // better left out than listed empty.
+    // The two supporting pages that carry photography. Their card runs are
+    // exported from the pages themselves rather than copied here, so a card
+    // that gains or loses its image follows without anyone remembering to.
+    { path: "/features", images: featureCardImages(PRINT_CARDS, IMPORT_CARDS, YOURS_CARDS) },
+    { path: "/how-it-works", images: featureCardImages(POINTS) },
+    // Anything else on the site is chrome (the logo, the Buy Me a Coffee mark)
+    // or has no photography at all, and an empty <url> helps nobody.
   ].filter((entry) => entry.images.length > 0);
 
   const body = `<?xml version="1.0" encoding="UTF-8"?>

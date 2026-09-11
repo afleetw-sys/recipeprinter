@@ -1,3 +1,4 @@
+import type { FeatureCard } from "@/components/seo/FeatureCards";
 import { FEATURE_IMAGES } from "@/components/seo/LandingVisuals";
 import { PRINTED_CARDS } from "@/components/seo/ProductMockup";
 import { COMMUNITY_PHOTOS } from "@/lib/communityGallery";
@@ -71,4 +72,17 @@ export function landingPageImages(page: SeoLandingPage): string[] {
 /** The "Fresh off the printer" strip, which is the homepage's only photography. */
 export function homeImages(): string[] {
   return COMMUNITY_PHOTOS.map((photo) => photo.src);
+}
+
+/**
+ * The images in a run of FeatureCards, which is how /features and
+ * /how-it-works show their proof. A card without an `image` renders the
+ * placeholder frame and has nothing to list.
+ */
+export function featureCardImages(...runs: FeatureCard[][]): string[] {
+  const urls = runs
+    .flat()
+    .map((card) => (card.image ? FEATURE_IMAGES[card.image]?.src : undefined))
+    .filter((src): src is string => Boolean(src));
+  return urls.filter((url, i) => urls.indexOf(url) === i);
 }
