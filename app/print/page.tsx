@@ -3762,6 +3762,19 @@ export default function PrintPage() {
   };
 
   const [activeNavIndex, setActiveNavIndex] = useState(0);
+  /**
+   * The still-importing or failed card the deck is showing, if any.
+   *
+   * These live outside the sheets pipeline, so `activeNavIndex` cannot name
+   * them and the rail had no way to mark them. Selecting one clears itself the
+   * moment the cook navigates to a real page (see `goToSlide` below), because
+   * two rows claiming to be the current one is worse than neither.
+   */
+  const [activeImportId, setActiveImportId] = useState<string | null>(null);
+  // Navigating to a real page gives the "current" mark back to that page.
+  useEffect(() => {
+    setActiveImportId(null);
+  }, [activeNavIndex]);
   // Publish the setter through a ref in an effect rather than during render, so
   // the ref callers (`activeNavIndexResetRef.current?.(0)`) always read a value
   // from a committed render (setActiveNavIndex is stable, so this is a one-time
@@ -3900,7 +3913,31 @@ export default function PrintPage() {
   // Focus a specific page within a spread, navigating there first if needed.
   // Direct focus when already on the spread; otherwise the ref survives the
   // navigation reset so the left page can be reached from another spread.
+  /** Scroll the deck to an import's card, and mark its rail row as the one
+      being shown. Both kinds carry their id on the slide, so the row points at
+      its own card the same way a page row points at its page. */
+  /** Navigate to a page, and give the "current" mark back from any import
+      card that was holding it. The rail reaches `goToSlide` directly, so
+      wrapping it here is what covers every row that navigates. */
+  const goToPageSlide = (index: number) => {
+    setActiveImportId(null);
+    goToSlide(index);
+  };
+
+  const selectImport = (item: QueueItem) => {
+    const selector =
+      item.status === "error"
+        ? `[data-failed-import-id="${item.id}"]`
+        : `[data-pending-import-id="${item.id}"]`;
+    if (goToDeckElement(selector)) setActiveImportId(item.id);
+  };
+
   const focusSheetInSpread = (spreadIndex: number, sheetIndex: number | null) => {
+    // Any call here means "show me a real page", so the import row gives the
+    // mark back. Clearing on `activeNavIndex` alone was not enough: choosing
+    // the page you were already on does not change the index, so the failed
+    // row and the page row both read as current.
+    setActiveImportId(null);
     if (spreadIndex === activeNavIndex) {
       if (sheetIndex != null) setFocusedSheetIndex(sheetIndex);
       return;
@@ -4531,7 +4568,9 @@ export default function PrintPage() {
           activeNavIndex={activeNavIndex}
           focusedSheet={focusedSheet}
           focusSheetInSpread={focusSheetInSpread}
-          goToSlide={goToSlide}
+          onSelectImport={selectImport}
+          activeImportId={activeImportId}
+          goToSlide={goToPageSlide}
           railShake={railShake}
           pendingAddAfterRecipeId={pendingAddAfterRecipeId}
           pendingAddSectionId={pendingAddSectionId}

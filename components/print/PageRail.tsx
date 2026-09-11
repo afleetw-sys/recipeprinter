@@ -147,6 +147,10 @@ interface PageRailProps {
   activeNavIndex: number;
   focusedSheet: number | null;
   focusSheetInSpread: (spreadIndex: number, sheetIndex: number | null) => void;
+  /** Scrolls the deck to an import that is still loading, or that failed. */
+  onSelectImport: (item: QueueItem) => void;
+  /** Which of those the deck is currently showing. */
+  activeImportId: string | null;
   goToSlide: (index: number) => void;
   railShake: { recipeId: string; nonce: number } | null;
   pendingAddAfterRecipeId: string | null;
@@ -215,6 +219,8 @@ export function PageRail(props: PageRailProps) {
     activeNavIndex,
     focusedSheet,
     focusSheetInSpread,
+    onSelectImport,
+    activeImportId,
     goToSlide,
     railShake,
     pendingAddAfterRecipeId,
@@ -881,8 +887,14 @@ export function PageRail(props: PageRailProps) {
                   Boolean(section?.title?.trim()) &&
                   isFirstInSection &&
                   organizeMode;
+                // A selected import takes the mark off the pages. `activeNavIndex`
+                // keeps pointing at whatever page was last shown — an import card
+                // has no index of its own — so without this the rail claimed two
+                // current rows at once.
                 const isActive =
-                  unit.index === activeNavIndex && (unit.soleUnit || focusedSheet === unit.focusSheet);
+                  !activeImportId &&
+                  unit.index === activeNavIndex &&
+                  (unit.soleUnit || focusedSheet === unit.focusSheet);
                 const isSpreadThumb = unit.thumbSheets.length === 2;
                 return (
                   <Fragment key={`rail-unit-${unit.num}`}>
@@ -1032,7 +1044,12 @@ export function PageRail(props: PageRailProps) {
                     </div>
                   </div>
                   {unitIdx === pendingAnchorUnitIdx && (
-                    <PendingImportRows items={pendingImportItems} nested={pendingNested} />
+                    <PendingImportRows
+                      items={pendingImportItems}
+                      nested={pendingNested}
+                      onSelect={onSelectImport}
+                      activeId={activeImportId}
+                    />
                   )}
                   </Fragment>
                 );
@@ -1083,7 +1100,7 @@ export function PageRail(props: PageRailProps) {
                 <div
                   data-rail-recipe={navItem.kind === "recipe" ? navItem.recipeId : undefined}
                   className={`recipe-page-rail__item ${
-                    index === activeNavIndex ? "is-active" : ""
+                    !activeImportId && index === activeNavIndex ? "is-active" : ""
                   } ${railDrag.draggingId === navItem.recipeId ? "is-dragging" : ""} ${
                     navItem.kind === "recipe" ? "recipe-page-rail__item--draggable" : ""
                   } ${
@@ -1095,7 +1112,7 @@ export function PageRail(props: PageRailProps) {
                   <button
                     type="button"
                     className="recipe-page-rail__item-main"
-                    aria-current={index === activeNavIndex}
+                    aria-current={!activeImportId && index === activeNavIndex}
                     onPointerDown={(event) => {
                       if (navItem.kind === "recipe") railDrag.start(event, "recipe", navItem.recipeId);
                     }}
@@ -1141,7 +1158,12 @@ export function PageRail(props: PageRailProps) {
                 </div>
               </div>
               {rowIndex === pendingAnchorRowIndex && (
-                <PendingImportRows items={pendingImportItems} nested={pendingNested} />
+                <PendingImportRows
+                      items={pendingImportItems}
+                      nested={pendingNested}
+                      onSelect={onSelectImport}
+                      activeId={activeImportId}
+                    />
               )}
               </Fragment>
             );
@@ -1151,7 +1173,12 @@ export function PageRail(props: PageRailProps) {
           {/* Keep pending imports visible without pretending a page or image
               exists yet. The real page appears only once parsing completes. */}
           {pendingAnchorRowIndex === -1 && (
-            <PendingImportRows items={pendingImportItems} nested={pendingNested} />
+            <PendingImportRows
+                      items={pendingImportItems}
+                      nested={pendingNested}
+                      onSelect={onSelectImport}
+                      activeId={activeImportId}
+                    />
           )}
 
           {/* Add one more, at the end of the list it joins. Not shown on an

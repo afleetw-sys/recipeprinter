@@ -1559,7 +1559,9 @@
 /* A pending recipe is status, not a fake page preview. Keep the shared loading
    treatment compact in the rail until a real rendered page exists. */
 .recipe-page-rail__item--loading {
-  cursor: default;
+  /* Was `default`, from when this row was not a control. It points at the
+     placeholder card the same way every other row points at its page. */
+  cursor: pointer;
 }
 .recipe-page-rail__loading-status {
   grid-column: 1 / -1;
@@ -6320,6 +6322,15 @@ textarea.recipe-card__toc-title {
 .recipe-page-rail__item--failed {
   border-color: var(--cp-error);
   background: var(--cp-error-soft);
+  cursor: pointer;
+}
+
+/* Selected, and still failed. `.is-active` repaints the border in the
+   selection colour, which on this row would trade the one piece of state that
+   matters for the one that does not. The selection ring it also draws is
+   enough to say "this is the card you are looking at". */
+.recipe-page-rail__item--failed.is-active {
+  border-color: var(--cp-error);
 }
 
 /* Spans both columns because a failed row has no page number to sit beside —
