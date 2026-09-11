@@ -151,6 +151,8 @@ interface PageRailProps {
   onSelectImport: (item: QueueItem) => void;
   /** Which of those the deck is currently showing. */
   activeImportId: string | null;
+  /** Recipes that just finished parsing, for the beat they settle in. */
+  settlingIds: ReadonlySet<string>;
   goToSlide: (index: number) => void;
   railShake: { recipeId: string; nonce: number } | null;
   pendingAddAfterRecipeId: string | null;
@@ -221,6 +223,7 @@ export function PageRail(props: PageRailProps) {
     focusSheetInSpread,
     onSelectImport,
     activeImportId,
+    settlingIds,
     goToSlide,
     railShake,
     pendingAddAfterRecipeId,
@@ -946,6 +949,8 @@ export function PageRail(props: PageRailProps) {
                       data-rail-recipe={recipeNav?.recipeId ?? undefined}
                       data-organize-flip={recipeNav?.recipeId ?? undefined}
                     className={`recipe-page-rail__item ${isActive ? "is-active" : ""} ${
+                        recipeNav && settlingIds.has(recipeNav.recipeId) ? "is-settling" : ""
+                      } ${
                         isDragSource(recipeNav?.recipeId) ? "is-dragging" : ""
                       } ${(recipeNav || dividerSection) ? "recipe-page-rail__item--draggable" : ""} ${
                         recipeNav && railShake?.recipeId === recipeNav.recipeId ? "is-shaking" : ""
@@ -1101,6 +1106,8 @@ export function PageRail(props: PageRailProps) {
                   data-rail-recipe={navItem.kind === "recipe" ? navItem.recipeId : undefined}
                   className={`recipe-page-rail__item ${
                     !activeImportId && index === activeNavIndex ? "is-active" : ""
+                  } ${
+                    navItem.recipeId && settlingIds.has(navItem.recipeId) ? "is-settling" : ""
                   } ${railDrag.draggingId === navItem.recipeId ? "is-dragging" : ""} ${
                     navItem.kind === "recipe" ? "recipe-page-rail__item--draggable" : ""
                   } ${

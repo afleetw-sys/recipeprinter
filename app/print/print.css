@@ -1135,6 +1135,39 @@
   cursor: default;
 }
 
+/* ── A parsed recipe settling into the slot its spinner held ───────────────
+   The placeholder and the page it becomes are separate elements in separate
+   trees, so one cannot literally morph into the other. What they share is the
+   SLOT: the page arrives exactly where the spinner was. Coming up from
+   slightly under size, rather than appearing already finished, is what makes
+   that read as the tile resolving instead of one thing being swapped for
+   another behind your back.
+   Short and small on purpose. This fires on every recipe that lands, and a
+   deck taking on eight at once should look like it is settling, not
+   applauding. */
+@keyframes rp-settle-in {
+  from {
+    opacity: 0;
+    transform: scale(0.965);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+.recipe-page-slide.is-settling,
+.recipe-page-rail__item.is-settling {
+  animation: rp-settle-in 260ms cubic-bezier(0.2, 0.8, 0.2, 1) both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .recipe-page-slide.is-settling,
+  .recipe-page-rail__item.is-settling {
+    animation: none;
+  }
+}
+
 /* An error card sits at the hovered weight already, and does not move under
    the pointer.
    The deck dims what you are not looking at, which is right for pages: one is

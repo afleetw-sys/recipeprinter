@@ -242,6 +242,8 @@ interface PrintDeckProps {
   activeImportId?: string | null;
   /** Selecting one from the deck itself, the way clicking a page does. */
   onSelectImport?: (item: QueueItem) => void;
+  /** Recipes that just finished parsing, for the beat they settle in. */
+  settlingIds?: ReadonlySet<string>;
   canRetryImport: (item: QueueItem) => boolean;
   onRetryImport: (id: string) => void;
   onRepairImportWithText: (id: string, text: string) => void;
@@ -335,6 +337,7 @@ export function PrintDeck(props: PrintDeckProps) {
     failedImports,
     activeImportId,
     onSelectImport,
+    settlingIds,
     canRetryImport,
     onRetryImport,
     onRepairImportWithText,
@@ -1339,6 +1342,8 @@ export function PrintDeck(props: PrintDeckProps) {
                     slideRefs.current[index] = el;
                   }}
                   className={`recipe-page-slide ${isActive ? "is-active" : ""} ${
+                    navItem.recipeId && settlingIds?.has(navItem.recipeId) ? "is-settling" : ""
+                  } ${
                     isFirstOnSheet ? "" : "no-print"
                   }`}
                   data-first={index === 0 ? "true" : undefined}

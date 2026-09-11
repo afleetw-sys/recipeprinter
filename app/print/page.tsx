@@ -371,6 +371,17 @@ export default function PrintPage() {
     | null
   >(null);
   const [pendingFocusRecipeId, setPendingFocusRecipeId] = useState<string | null>(null);
+  /**
+   * Recipes that have just this moment finished parsing.
+   *
+   * The placeholder and the page it becomes are two different elements in two
+   * different trees, so one cannot literally morph into the other without a
+   * view transition. What they DO share is the slot: the page arrives exactly
+   * where the spinner was. Marking it for a beat lets it settle into that slot
+   * instead of appearing already there, which is what reads as the tile
+   * resolving rather than being swapped out underneath you.
+   */
+  const [settlingIds, setSettlingIds] = useState<ReadonlySet<string>>(new Set());
   const [pendingFocusNavId, setPendingFocusNavId] = useState<string | null>(null);
   // The recipe whose rail row is currently shaking, set when a re-imported
   // duplicate points back at a recipe already in this deck. `nonce` lets the
@@ -3156,7 +3167,16 @@ export default function PrintPage() {
       });
     }
     setPendingFocusRecipeId((current) => current ?? newlyReady[0]!.id);
+    setSettlingIds(new Set(newlyReady.map((item) => item.id)));
   }, [queue.items, items, itemIdsForSection, isOursToAwait, moveProjectItem, pendingAddIndex, pendingAddSectionId, sections]);
+
+  // Held just long enough for the animation to finish. A lingering class would
+  // replay it on the next render the element happens to survive.
+  useEffect(() => {
+    if (settlingIds.size === 0) return;
+    const timer = window.setTimeout(() => setSettlingIds(new Set()), 500);
+    return () => window.clearTimeout(timer);
+  }, [settlingIds]);
 
   // Bring the pending status into view as soon as the dialog hands the import
   // to the queue. This also works for retries because the same row changes back
@@ -4594,6 +4614,7 @@ export default function PrintPage() {
           focusSheetInSpread={focusSheetInSpread}
           onSelectImport={selectImport}
           activeImportId={activeImportId}
+          settlingIds={settlingIds}
           goToSlide={goToPageSlide}
           railShake={railShake}
           pendingAddAfterRecipeId={pendingAddAfterRecipeId}
@@ -4681,6 +4702,7 @@ export default function PrintPage() {
           parsingImports={parsingImports}
           activeImportId={activeImportId}
           onSelectImport={selectImport}
+          settlingIds={settlingIds}
           failedImports={failedImports}
           canRetryImport={queue.canRetry}
           onRetryImport={queue.retry}
