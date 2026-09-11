@@ -89,9 +89,7 @@ export function CommunityGallery({
         label="Photos of printed recipe cards"
       >
         {cards.map((photo, i) => (
-          // Index in the key, not just `src`: the seed set is repeated while
-          // there are only three photographs, so the same path appears twice.
-          <li key={`${photo.src}-${i}`} className={ITEM}>
+          <li key={photo.src} className={ITEM}>
             {showPlaceholder ? (
               <Frame photo={photo} placeholder />
             ) : (
@@ -189,9 +187,6 @@ function Spotlight({
           src={photo.src}
           width={photo.width}
           height={photo.height}
-          // Named here rather than borrowed from the strip: a repeat carries an
-          // empty alt in a row of thumbnails, where saying the same thing three
-          // times helps nobody, but on its own it is the only picture on screen.
           alt={photo.alt || `Printed recipe cards, photo ${index + 1} of ${count}`}
           // 560, not the 820 the box may reach. These are portrait photos in a
           // slot capped by HEIGHT, so the width they actually render at is

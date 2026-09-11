@@ -55,7 +55,7 @@ export type CommunityPhoto = {
  * shell; see CommunityGallery for the dev-only placeholder that keeps the
  * layout visible while working on it.
  */
-const SEED: CommunityPhoto[] = [
+const PHOTOS: CommunityPhoto[] = [
   {
     // Leads, because it is the only one that shows the card and the dinner it
     // produced in the same frame, which is the argument the others only imply.
@@ -98,16 +98,4 @@ const SEED: CommunityPhoto[] = [
   },
 ];
 
-/**
- * TEMPORARY: the seed set runs twice so the strip is long enough to scroll on
- * a wide screen. Delete the second half the moment there are six real
- * photographs; a repeat is a placeholder, not a gallery.
- *
- * The repeats carry empty alt text. They are the same three pictures, and a
- * screen reader reading all three descriptions and then reading them again is
- * worse than silence on the ones that add nothing.
- */
-export const COMMUNITY_PHOTOS: CommunityPhoto[] = [
-  ...SEED,
-  ...SEED.map((photo) => ({ ...photo, alt: "" })),
-];
+export const COMMUNITY_PHOTOS: CommunityPhoto[] = PHOTOS;
