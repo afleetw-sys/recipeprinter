@@ -1,10 +1,13 @@
 "use client";
 
-import { useMemo, useState, type ReactNode } from "react";
+import { type ReactNode, useEffect, useMemo, useState } from "react";
 import { useCookPilotAuth } from "@/components/CookPilotAuth";
 import { CookPilotImportSource, prewarmCookPilotImport } from "@/components/CookPilotRecipePicker";
 import { PaprikaImportSource } from "@/components/import/PaprikaImportSource";
-import { getCachedCookPilotSummaries } from "@/lib/cookpilotRecipes";
+import {
+  getCachedCookPilotTotal,
+  loadCookPilotRecipeTotal,
+} from "@/lib/cookpilotRecipes";
 import { cachedPaprikaLibrary } from "@/lib/paprikaLibrary";
 import type { QueueItem } from "@/types/recipe";
 import {
@@ -151,10 +154,40 @@ export function RecipeAppsPanel({
     return { cookpilot, paprika };
   }, [items]);
 
+  // ── How many recipes CookPilot holds ──────────────────────────────────
+  // The LIBRARY total, from the server-side aggregation, not a tally of what
+  // has been paged in. This chip used to count the loaded summaries, which is
+  // one page: it read "30 recipes" for a library of 65 and only corrected
+  // itself once you went in and scrolled to the end.
+  //
+  // `getCountFromServer` counts in Firestore and returns a number without
+  // reading the documents, so asking for it here costs a single aggregation
+  // query rather than the library.
+  const [cookPilotTotal, setCookPilotTotal] = useState<number | null>(() =>
+    user ? getCachedCookPilotTotal(user.uid) : null,
+  );
+  useEffect(() => {
+    if (!ready || !user) return;
+    let live = true;
+    loadCookPilotRecipeTotal(user.uid).then((total) => {
+      if (live) setCookPilotTotal(total);
+    });
+    return () => {
+      live = false;
+    };
+  }, [ready, user]);
+
   // A chip only when there is something to report. Not being signed in is the
   // starting state for everybody, and "Not connected" spent a chip saying so
   // on every first visit; the button already says what to do about it.
-  const cookPilotStatus = ready && user ? `Signed in${cookPilotCount(user.uid)}` : undefined;
+  //
+  // The count joins the chip only once it is known. A number that appears a
+  // moment later is fine; a wrong one that corrects itself is not.
+  const cookPilotStatus = ready && user
+    ? cookPilotTotal === null
+      ? "Signed in"
+      : `Signed in · ${cookPilotTotal} ${cookPilotTotal === 1 ? "recipe" : "recipes"}`
+    : undefined;
   const cookPilotNote = ready ? undefined : "Checking your account…";
 
   const paprikaLibrary = useMemo(
@@ -239,8 +272,4 @@ export function RecipeAppsPanel({
 
 /** " · 120 recipes" once a library has been loaded this session, nothing
     before that — the row shouldn't fetch just to have a number to show. */
-function cookPilotCount(uid: string): string {
-  const cached = getCachedCookPilotSummaries(uid);
-  if (!cached || cached.length === 0) return "";
-  return ` · ${cached.length} ${cached.length === 1 ? "recipe" : "recipes"}`;
-}
+

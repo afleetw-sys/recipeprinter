@@ -213,6 +213,9 @@ export function RecipeSourceList({
 }) {
   const isSearching = queryText.trim().length > 0;
   const selectedCount = selectedIds.size;
+  // Counted over what is loaded, which after "Select all" is the whole
+  // library, since that button pages the rest in before it selects.
+  const alreadyAdded = summaries.filter((summary) => addedIds.has(summary.queueId)).length;
   // Nothing addable left to select, so the control has nothing to offer.
   const canSelectAll =
     allSelectableSelected || summaries.some((summary) => !addedIds.has(summary.queueId));
@@ -230,9 +233,19 @@ export function RecipeSourceList({
               other import type's button says. A selection made under a search
               survives clearing it, so this can exceed what is on screen, which
               is why it is a number and not "these". */}
+          {/* "65 recipes" in the heading and "64 selected" here is arithmetic
+              nobody can follow without being told the missing one is already
+              in the print list. Select all deliberately skips those, so the
+              count that explains the gap is shown beside it. */}
           {selectedCount > 0 && (
             <span className="text-cp-caption font-bold text-ink" role="status">
               {selectedCount} selected
+              {alreadyAdded > 0 && (
+                <span className="font-medium text-ink-soft">
+                  {" "}
+                  · {alreadyAdded} already added
+                </span>
+              )}
             </span>
           )}
           {!loading && !error && summaries.length > 0 && canSelectAll && (
