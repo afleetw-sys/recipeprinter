@@ -1074,7 +1074,25 @@ export function PrintDeck(props: PrintDeckProps) {
             ref={deckRef}
           >
             {previewMeasuring ? (
-              <RecipeLoadingState className="recipe-page-deck__loading" />
+              /* The import cards stay up through the measure.
+                 This used to swap the whole deck for one loading state, which
+                 took the placeholder down with it: a recipe finished parsing,
+                 its spinner card vanished, the deck showed a different spinner
+                 while it paginated, and a page appeared afterwards. Three
+                 states where there should be one, and the reason the handover
+                 read as "that card disappeared and another was created"
+                 instead of the card resolving.
+                 These two are outside the sheets pipeline, so there is nothing
+                 about them to measure and no reason for them to go. The
+                 deck-wide spinner is only for when there is nothing else to
+                 look at. */
+              <>
+                {pendingPages}
+                {failedPages}
+                {!pendingPages && !failedPages && (
+                  <RecipeLoadingState className="recipe-page-deck__loading" />
+                )}
+              </>
             ) : navItems.length === 0 && parsingImports.length === 0 && failedImports.length === 0 ? (
               /* Deleting the last recipe leaves you standing in the workspace
                  you just emptied, not in an error. So the room stays: same

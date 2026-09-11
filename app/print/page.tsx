@@ -1051,6 +1051,32 @@ export default function PrintPage() {
   // import it belongs to — which is what lets a page become that recipe in
   // place instead of one anonymous spinner leaving as another card arrives.
   const parsingImports = pendingImportItems.filter((item) => item.status === "parsing");
+
+  /**
+   * Still parsing, plus anything parsed whose page has not landed yet.
+   *
+   * The deck keeps one placeholder from the moment an import starts until the
+   * page that replaces it is actually there. Without the second half the card
+   * was pulled the instant parsing ended and the page arrived a beat later,
+   * with nothing in between.
+   */
+  const deckPendingImports = useMemo(() => {
+    const paged = new Set(navItems.map((navItem) => navItem.recipeId));
+    // Derived, not stored. Holding this in state meant setting it from an
+    // effect, which runs AFTER the render that dropped the item from
+    // `parsingImports` — so there was still one frame with neither, and the
+    // placeholder blinked out and back before the page arrived.
+    const waitingForAPage = queue.items.filter(
+      (item) =>
+        item.status === "ready" &&
+        item.recipe &&
+        isOursToAwait(item.id) &&
+        !paged.has(item.id),
+    );
+    if (waitingForAPage.length === 0) return parsingImports;
+    return [...parsingImports, ...waitingForAPage];
+  }, [parsingImports, navItems, queue.items, isOursToAwait]);
+
   const parsingImportCount = parsingImports.length;
   /**
    * Failures hold their slot instead of becoming a toast.
@@ -4699,7 +4725,7 @@ export default function PrintPage() {
           renderSectionPhotoControl={renderSectionPhotoControl}
           renderCoverPhotoControl={renderCoverPhotoControl}
           renderImagePagePhotoControl={renderImagePagePhotoControl}
-          parsingImports={parsingImports}
+          parsingImports={deckPendingImports}
           activeImportId={activeImportId}
           onSelectImport={selectImport}
           settlingIds={settlingIds}
