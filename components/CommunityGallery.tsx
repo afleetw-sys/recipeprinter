@@ -2,7 +2,8 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import Image from "next/image";
-import { ChevronLeftIcon, ChevronRightIcon, ICON_SIZE } from "@/components/icons";
+import { ChevronLeftIcon, ChevronRightIcon, ICON_SIZE, XIcon } from "@/components/icons";
+import { Dialog } from "@/components/Dialog";
 import { COMMUNITY_PHOTOS, type CommunityPhoto } from "@/lib/communityGallery";
 
 // ─────────────────────────────────────────────────────────────────────────
@@ -40,8 +41,6 @@ const ITEM = [
   "xl:basis-[calc((100%-64px)/5)]",
 ].join(" ");
 
-/** How long each resting position holds before the strip moves itself on. */
-const ROTATE_MS = 4200;
 
 export function CommunityGallery({
   items = COMMUNITY_PHOTOS,
@@ -56,6 +55,8 @@ export function CommunityGallery({
   const showPlaceholder =
     items.length === 0 && process.env.NODE_ENV !== "production";
   const cards: CommunityPhoto[] = showPlaceholder ? PLACEHOLDERS : items;
+
+  const [spotlight, setSpotlight] = useState<number | null>(null);
 
   if (cards.length === 0) return null;
 
@@ -77,11 +78,147 @@ export function CommunityGallery({
           // Index in the key, not just `src`: the seed set is repeated while
           // there are only three photographs, so the same path appears twice.
           <li key={`${photo.src}-${i}`} className={ITEM}>
-            <Frame photo={photo} placeholder={showPlaceholder} />
+            {showPlaceholder ? (
+              <Frame photo={photo} placeholder />
+            ) : (
+              // The accessible name is positional rather than the alt text.
+              // The repeated photographs carry an empty alt on purpose, which
+              // would otherwise leave their buttons unnamed.
+              <button
+                type="button"
+                onClick={() => setSpotlight(i)}
+                aria-label={`Open photo ${i + 1} of ${cards.length}`}
+                className="block w-full rounded-2xl focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand"
+              >
+                <Frame photo={photo} placeholder={false} />
+              </button>
+            )}
           </li>
         ))}
       </Carousel>
+
+      {/* Always rendered, opened by the prop. Every other Dialog in the app is
+          driven this way, and `useBackDismiss` is why: it pushes a history
+          entry while open and pops it again on cleanup, so mounting and
+          unmounting the Dialog itself fires a `popstate` that closes it the
+          instant it opens. */}
+      <Spotlight
+        open={spotlight !== null}
+        photos={cards}
+        index={spotlight ?? 0}
+        onIndex={setSpotlight}
+        onClose={() => setSpotlight(null)}
+      />
     </section>
+  );
+}
+
+/**
+ * One photograph, big, with the rest reachable from it.
+ *
+ * A printed card is the thing this section is arguing for, and at 235px you
+ * can see that a card was printed but not what printing one gets you. The
+ * strip is the index; this is where you actually look at one.
+ *
+ * Built on the shared `Dialog`, which brings the focus trap, the scroll lock,
+ * Escape, and back-button dismissal on a phone, all of which a hand-rolled
+ * overlay gets wrong.
+ */
+function Spotlight({
+  open,
+  photos,
+  index,
+  onIndex,
+  onClose,
+}: {
+  open: boolean;
+  photos: CommunityPhoto[];
+  index: number;
+  onIndex: (next: number) => void;
+  onClose: () => void;
+}) {
+  const photo = photos[index];
+  const count = photos.length;
+  const go = useCallback(
+    (direction: 1 | -1) => onIndex((index + direction + count) % count),
+    [index, count, onIndex],
+  );
+
+  // The arrow KEYS, which is how anyone who has opened a photo viewer expects
+  // to move through it. Escape is the Dialog's own.
+  useEffect(() => {
+    if (!open) return;
+    const onKey = (event: KeyboardEvent) => {
+      if (event.key === "ArrowRight") { event.preventDefault(); go(1); }
+      if (event.key === "ArrowLeft") { event.preventDefault(); go(-1); }
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [go, open]);
+
+  if (!photo) return null;
+
+  return (
+    <Dialog
+      open={open}
+      onClose={onClose}
+      portal
+      dismissOnBackdropClick
+      label="Photos from real kitchens"
+      // `dialog-scrim` rather than a one-off tint: it is the scrim every other
+      // modal in the app paints, blur included, and a photo viewer with its own
+      // darker backdrop would read as a different kind of surface.
+      className="fixed inset-0 z-50 flex items-center justify-center dialog-scrim p-cp-4 sm:p-cp-6"
+    >
+      <div className="relative flex max-h-full flex-col items-center gap-cp-4">
+        <Image
+          src={photo.src}
+          width={photo.width}
+          height={photo.height}
+          // Named here rather than borrowed from the strip: a repeat carries an
+          // empty alt in a row of thumbnails, where saying the same thing three
+          // times helps nobody, but on its own it is the only picture on screen.
+          alt={photo.alt || `Printed recipe cards, photo ${index + 1} of ${count}`}
+          sizes="(max-width: 899px) 92vw, 820px"
+          priority
+          className="max-h-[74vh] w-auto rounded-lg object-contain"
+        />
+
+        <div className="flex items-center gap-cp-4">
+          <button
+            type="button"
+            onClick={() => go(-1)}
+            aria-label="Previous photo"
+            className="grid h-10 w-10 place-items-center rounded-full border border-line-strong bg-card text-ink transition-colors hover:bg-[var(--cp-overlay-hover)]"
+          >
+            <ChevronLeftIcon size={ICON_SIZE.lg} />
+          </button>
+          {/* A chip, not bare type. The shared scrim is 36% ink, so whatever
+              sits behind this line is whatever the page happens to have there;
+              its own card ground is the only way it reads at every position. */}
+          <p className="rounded-full border border-line-strong bg-card px-cp-3 py-cp-1 text-cp-caption font-semibold tabular-nums text-ink">
+            {index + 1} / {count}
+          </p>
+          <button
+            type="button"
+            onClick={() => go(1)}
+            aria-label="Next photo"
+            className="grid h-10 w-10 place-items-center rounded-full border border-line-strong bg-card text-ink transition-colors hover:bg-[var(--cp-overlay-hover)]"
+          >
+            <ChevronRightIcon size={ICON_SIZE.lg} />
+          </button>
+        </div>
+      </div>
+
+      <button
+        type="button"
+        onClick={onClose}
+        aria-label="Close"
+        className="absolute right-cp-4 top-cp-4 grid h-10 w-10 place-items-center rounded-full border border-line-strong bg-card text-ink transition-colors hover:bg-[var(--cp-overlay-hover)]"
+      >
+        <XIcon size={ICON_SIZE.lg} />
+      </button>
+    </Dialog>
   );
 }
 
@@ -208,66 +345,6 @@ function Carousel({
       behavior: still ? "auto" : "smooth",
     });
   };
-
-  // ── Rotate on its own ────────────────────────────────────────────────
-  // One photograph at a time, then back to the beginning. Nobody should have
-  // to work a carousel to see what is in it, and with the last tile no longer
-  // sliced by the edge of the band there is nothing left to suggest the strip
-  // moves at all. The movement is now the only thing that says so.
-  //
-  // It stops for every reason it should: a pointer over it or focus inside it
-  // (so it never slides away from someone reading it), a hidden tab, the strip
-  // scrolled off screen, and `prefers-reduced-motion`, which turns it off
-  // entirely rather than making it instant.
-  useEffect(() => {
-    const track = trackRef.current;
-    if (!track) return;
-    if (window.matchMedia?.("(prefers-reduced-motion: reduce)").matches) return;
-
-    let held = false;
-    let onScreen = true;
-
-    const step = () => {
-      if (held || !onScreen || document.hidden) return;
-      const first = track.querySelector("li");
-      if (!first) return;
-      const gap = parseFloat(getComputedStyle(track.firstElementChild as Element).columnGap) || 0;
-      const stride = first.getBoundingClientRect().width + gap;
-      const max = track.scrollWidth - track.clientWidth;
-      // A pixel of slack, the same as `measure` uses: sub-pixel layout means
-      // the end is rarely a whole number, and without it the last step lands
-      // a fraction short and the strip never returns to the start.
-      const atEndAlready = track.scrollLeft >= max - 1;
-      track.scrollTo({
-        left: atEndAlready ? 0 : Math.min(track.scrollLeft + stride, max),
-        behavior: "smooth",
-      });
-    };
-
-    const timer = window.setInterval(step, ROTATE_MS);
-    const hold = () => { held = true; };
-    const release = () => { held = false; };
-
-    track.addEventListener("pointerenter", hold);
-    track.addEventListener("pointerleave", release);
-    track.addEventListener("focusin", hold);
-    track.addEventListener("focusout", release);
-
-    const observer = new IntersectionObserver(
-      ([entry]) => { onScreen = entry.isIntersecting; },
-      { threshold: 0.25 },
-    );
-    observer.observe(track);
-
-    return () => {
-      window.clearInterval(timer);
-      track.removeEventListener("pointerenter", hold);
-      track.removeEventListener("pointerleave", release);
-      track.removeEventListener("focusin", hold);
-      track.removeEventListener("focusout", release);
-      observer.disconnect();
-    };
-  }, [count]);
 
   return (
     <div className="relative">
