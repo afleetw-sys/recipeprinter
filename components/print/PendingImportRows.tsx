@@ -1,3 +1,4 @@
+import { AlertIcon, ICON_SIZE } from "@/components/icons";
 import { RecipeLoadingState } from "@/components/RecipeLoadingState";
 import { importLoadingLabel } from "@/lib/importProgress";
 import type { QueueItem } from "@/types/recipe";
@@ -67,6 +68,11 @@ export function PendingImportRows({
                   aria-current={activeId === item.id}
                   onClick={() => onSelect(item)}
                 >
+                  <AlertIcon
+                    size={ICON_SIZE.lg}
+                    className="recipe-page-rail__failed-icon"
+                    aria-hidden
+                  />
                   <span className="recipe-page-rail__failed-title">
                     Couldn&apos;t import {item.source}
                   </span>

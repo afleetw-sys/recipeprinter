@@ -294,6 +294,15 @@ export const InfoIcon = (p: IconProps) => (
   </Base>
 );
 
+/** A warning triangle, for an import that did not become a recipe. */
+export const AlertIcon = (p: IconProps) => (
+  <Base {...p}>
+    <path d="M10.3 4.3a2 2 0 013.4 0l7 11.9A2 2 0 0119 19.2H5a2 2 0 01-1.7-3L10.3 4.3z" />
+    <path d="M12 9.5v4" />
+    <path d="M12 16.3v.6" />
+  </Base>
+);
+
 export const ClockIcon = (p: IconProps) => (
   <Base {...p}>
     <circle cx="12" cy="12" r="8.5" />

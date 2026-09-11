@@ -6361,17 +6361,40 @@ textarea.recipe-card__toc-title {
   border-color: var(--cp-error);
 }
 
+/* Taller than a line of text, shorter than a page.
+   A failed row was a single ellipsised line, which made it a third the height
+   of the thumbnails around it and easy to scroll past — the one row you most
+   need to notice. It is not given a page's full height either: there is no
+   page there, and matching one would promise a thumbnail that does not exist.
+   The mark above the label is what fills the difference. */
+.recipe-page-rail__item--failed .recipe-page-rail__item-main {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  min-height: 72px;
+  padding: 6px 2px;
+}
+
+.recipe-page-rail__failed-icon {
+  flex-shrink: 0;
+  color: var(--cp-error);
+}
+
 /* Spans both columns because a failed row has no page number to sit beside —
    without this it lands in the 16px number track and wraps one letter per
    line. Ellipsised like every other rail title: the rail is a list of labels,
    and the sentence is on the card. */
 .recipe-page-rail__failed-title {
   grid-column: 1 / -1;
+  max-width: 100%;
   overflow: hidden;
   color: var(--cp-error);
   font-size: var(--cp-fs-caption);
   font-weight: var(--cp-fw-bold);
   line-height: 1.2;
+  text-align: center;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
