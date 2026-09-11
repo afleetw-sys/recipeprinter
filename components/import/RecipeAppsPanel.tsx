@@ -9,7 +9,6 @@ import { cachedPaprikaLibrary } from "@/lib/paprikaLibrary";
 import type { QueueItem } from "@/types/recipe";
 import {
   ChevronLeftIcon,
-  ChevronRightIcon,
   CookPilotLogoIcon,
   ICON_SIZE,
   PaprikaLogoIcon,
@@ -41,52 +40,78 @@ type SourceId = "cookpilot" | "paprika";
 // change.
 let lastOpenSource: SourceId | null = null;
 
-function IntegrationRow({
+function IntegrationCard({
   name,
   description,
   status,
+  note,
   addedCount,
   icon,
+  action,
   onOpen,
 }: {
   name: string;
   description: string;
-  status: string;
+  /** A short state worth knowing, as a chip. Omitted when there is nothing
+      true to say: Paprika used to read "No file yet", which is not a state so
+      much as the absence of one, and every visitor saw it forever. */
+  status?: string;
+  /** A passing state that is not worth a chip, like a check in flight. */
+  note?: string;
   addedCount: number;
   /** The product's own mark, at whatever size suits it. CookPilot's is a
       transparent glyph that wants room around it; Paprika's is a square app
-      icon that fills the tile. Passing a node rather than a component is what
-      lets each one arrive as it actually exists. */
+      icon. Passing a node rather than a component is what lets each one arrive
+      as it actually exists. */
   icon: ReactNode;
+  /** What pressing the button does, in its own words. Deliberately not one
+      shared verb: you sign into CookPilot and you open a file from Paprika,
+      and "Connect" describes neither of those honestly. */
+  action: string;
   onOpen: () => void;
 }) {
   return (
-    <li>
-      <button
-        type="button"
-        onClick={onOpen}
-        aria-label={`Import from ${name}`}
-        className="group flex w-full items-center gap-cp-3 rounded-xl border border-line bg-card p-cp-3 text-left transition-colors hover:border-line-strong"
-      >
+    <li className="flex flex-col gap-cp-3 rounded-xl border border-line bg-card p-cp-3">
+      {/* Mark and action on one line, the words underneath. The card used to
+          be a single wide button with a chevron; the button is now a real
+          control of its own, which is why nothing outside it is clickable —
+          a button inside a button is not something a screen reader or a
+          keyboard can make sense of. */}
+      <div className="flex items-start justify-between gap-cp-3">
         <span className="h-11 w-11 flex-shrink-0 overflow-hidden rounded-xl bg-page grid place-items-center text-ink">
           {icon}
         </span>
+        <button
+          type="button"
+          onClick={onOpen}
+          // Opens with the product's name, and keeps the visible words inside
+          // the accessible name so voice control can say what it reads.
+          aria-label={`${action} from ${name}`}
+          className="btn btn-secondary btn-compact flex-shrink-0"
+        >
+          {action}
+        </button>
+      </div>
 
-        <span className="min-w-0 flex-1">
-          <span className="flex flex-wrap items-center gap-x-cp-2 gap-y-0.5">
-            <span className="text-cp-body font-bold leading-snug">{name}</span>
-            {addedCount > 0 && (
-              <span className="inline-flex items-center rounded-lg bg-[var(--cp-accent-soft)] px-2 py-0.5 text-cp-caption font-bold text-ink">
-                {addedCount} added
-              </span>
-            )}
-          </span>
-          <span className="mt-0.5 block text-cp-caption text-ink-soft">{description}</span>
-          <span className="mt-0.5 block text-cp-caption font-medium text-ink">{status}</span>
-        </span>
-
-        <ChevronRightIcon size={ICON_SIZE.lg} className="flex-shrink-0 text-ink-soft" />
-      </button>
+      <div className="min-w-0">
+        {/* Chips take the shared `rounded-lg`, the radius every other chip in
+            the product uses, rather than a pill. */}
+        <div className="flex flex-wrap items-center gap-x-cp-2 gap-y-0.5">
+          <span className="text-cp-body font-bold leading-snug">{name}</span>
+          {status && (
+            <span className="inline-flex items-center rounded-lg bg-[var(--cp-accent-soft)] px-2 py-0.5 text-cp-caption font-bold text-ink">
+              {status}
+            </span>
+          )}
+          {addedCount > 0 && (
+            <span className="inline-flex items-center rounded-lg bg-[var(--cp-accent-soft)] px-2 py-0.5 text-cp-caption font-bold text-ink">
+              {addedCount} added
+            </span>
+          )}
+        </div>
+        <p className="mt-0.5 text-cp-caption text-ink-soft">{description}</p>
+        {note && <p className="mt-0.5 text-cp-caption text-ink-soft">{note}</p>}
+      </div>
     </li>
   );
 }
@@ -124,22 +149,25 @@ export function RecipeAppsPanel({
     return { cookpilot, paprika };
   }, [items]);
 
-  const cookPilotStatus = !ready
-    ? "Checking your account…"
-    : user
-      ? `Signed in${cookPilotCount(user.uid)}`
-      : "Not connected";
+  // A chip only when there is something to report. Not being signed in is the
+  // starting state for everybody, and "Not connected" spent a chip saying so
+  // on every first visit; the button already says what to do about it.
+  const cookPilotStatus = ready && user ? `Signed in${cookPilotCount(user.uid)}` : undefined;
+  const cookPilotNote = ready ? undefined : "Checking your account…";
 
   const paprikaLibrary = useMemo(
     () => cachedPaprikaLibrary(),
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [libraryNonce, source],
   );
+  // Nothing at all until a file is open. The filename stays out of the chip:
+  // an export is named by the app, not by the cook, and a chip is no place for
+  // "Export 2026-09-01 11.12.03 All Recipes.paprikarecipes".
   const paprikaStatus = paprikaLibrary
     ? `${paprikaLibrary.entries.length} ${
         paprikaLibrary.entries.length === 1 ? "recipe" : "recipes"
-      } from ${paprikaLibrary.fileName}`
-    : "No file yet";
+      } loaded`
+    : undefined;
 
   if (source === "cookpilot" || source === "paprika") {
     return (
@@ -176,18 +204,22 @@ export function RecipeAppsPanel({
   return (
     <div className="flex flex-col gap-cp-4">
       <h3 className="field-label mb-0">Bring recipes from</h3>
-      <ul className="flex flex-col gap-cp-2">
-        <IntegrationRow
+      {/* Side by side, and stacked on a phone where two of these would be too
+          narrow to read. */}
+      <ul className="grid gap-cp-2 sm:grid-cols-2">
+        <IntegrationCard
           name="CookPilot"
-          description="Your saved CookPilot recipes, ready to print."
+          description="Sign in and your saved recipes come straight across."
           status={cookPilotStatus}
+          note={cookPilotNote}
           addedCount={addedCounts.cookpilot}
           icon={<CookPilotLogoIcon size={22} />}
+          action="Choose recipes"
           onOpen={() => open("cookpilot")}
         />
-        <IntegrationRow
+        <IntegrationCard
           name="Paprika"
-          description="Export your Paprika library and open the file here."
+          description="Export your library from Paprika, then open that file here."
           status={paprikaStatus}
           addedCount={addedCounts.paprika}
           // Inset in the 44px tile like CookPilot's, rather than filling it.
@@ -195,6 +227,7 @@ export function RecipeAppsPanel({
           // an open glyph on nothing, this is a solid app icon, so matching
           // their box sizes would not have matched their weight.
           icon={<PaprikaLogoIcon size={26} />}
+          action="Open file"
           onOpen={() => open("paprika")}
         />
       </ul>
