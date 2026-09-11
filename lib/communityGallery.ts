@@ -35,7 +35,13 @@ export type CommunityPhoto = {
 
 /**
  * The seed set, shot at Amelia's: real cards off the real printer, not
- * renderings.
+ * renderings. They live in public/images/printed-cards/, away from the
+ * product screenshots and marks that fill the rest of public/images.
+ *
+ * Keep the long edge at 2000px. The viewer shows one at 74vh, so a tall
+ * display asks for about 900 CSS px, and 2000 covers that at 2x with room
+ * spare. The noodles photograph arrived at 3024x4032 and 2.8MB, which the
+ * image optimizer had to chew through on the first click.
  *
  * The three card photographs are PORTRAIT, whatever the file says. They are
  * stored landscape with an EXIF rotation that the image optimizer applies, so
@@ -53,28 +59,28 @@ const SEED: CommunityPhoto[] = [
   {
     // Leads, because it is the only one that shows the card and the dinner it
     // produced in the same frame, which is the argument the others only imply.
-    src: "/images/soy-sauce-noodles.jpeg",
-    width: 3024,
-    height: 4032,
+    src: "/images/printed-cards/soy-sauce-noodles.jpeg",
+    width: 1500,
+    height: 2000,
     alt:
       "A printed Soy Sauce Pan-Fried Noodles card on a table beside the finished bowl of noodles and chopsticks.",
   },
   {
-    src: "/images/card-korean-beef-bowl.jpeg",
+    src: "/images/printed-cards/card-korean-beef-bowl.jpeg",
     width: 1200,
     height: 1600,
     alt:
       "A printed Korean Beef Bowl card, spiral binding along its top edge, standing on a garden table.",
   },
   {
-    src: "/images/card-basil-pesto.jpeg",
+    src: "/images/printed-cards/card-basil-pesto.jpeg",
     width: 1200,
     height: 1600,
     alt:
       "A printed Basil Pesto card on ruled notebook paper, standing on a garden table.",
   },
   {
-    src: "/images/card-caprese-pasta-salad.jpeg",
+    src: "/images/printed-cards/card-caprese-pasta-salad.jpeg",
     width: 1200,
     height: 1600,
     alt:

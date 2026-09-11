@@ -179,7 +179,12 @@ function Spotlight({
           // empty alt in a row of thumbnails, where saying the same thing three
           // times helps nobody, but on its own it is the only picture on screen.
           alt={photo.alt || `Printed recipe cards, photo ${index + 1} of ${count}`}
-          sizes="(max-width: 899px) 92vw, 820px"
+          // 560, not the 820 the box may reach. These are portrait photos in a
+          // slot capped by HEIGHT, so the width they actually render at is
+          // around 500px on a normal screen; asking for 820 made the browser
+          // pick the 1920 bucket to cover a 2x display, which is a 196KB file
+          // for a half-that picture.
+          sizes="(max-width: 899px) 92vw, 560px"
           priority
           className="max-h-[74vh] w-auto rounded-lg object-contain"
         />
