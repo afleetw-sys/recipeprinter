@@ -3771,8 +3771,21 @@ export default function PrintPage() {
    * two rows claiming to be the current one is worse than neither.
    */
   const [activeImportId, setActiveImportId] = useState<string | null>(null);
-  // Navigating to a real page gives the "current" mark back to that page.
+  /**
+   * Scrolling to another page gives the "current" mark back to that page.
+   *
+   * The skip is for the one case where the two agree rather than compete: the
+   * auto-scroll below selects the placeholder AND parks `activeNavIndex` on
+   * the slot it will occupy, in the same pass. Without this the park read as
+   * "the cook moved" and cleared the selection it had just made, which is why
+   * a failed import came up dimmed.
+   */
+  const keepImportSelectionRef = useRef(false);
   useEffect(() => {
+    if (keepImportSelectionRef.current) {
+      keepImportSelectionRef.current = false;
+      return;
+    }
     setActiveImportId(null);
   }, [activeNavIndex]);
   // Publish the setter through a ref in an effect rather than during render, so
@@ -4136,6 +4149,12 @@ export default function PrintPage() {
     let attempts = 0;
     const tryScroll = () => {
       if (goToDeckElement("[data-pending-page]")) {
+        // The placeholder is the current card while it loads, so it comes out
+        // of the deck's dimmed state — and because a failure keeps the same
+        // item id, the error card it becomes is readable the moment it
+        // appears rather than sitting at 0.4 until someone finds it.
+        keepImportSelectionRef.current = true;
+        setActiveImportId(parsingImports[0]?.id ?? null);
         // Claim the slot the recipe is about to take, WITHOUT scrolling to it.
         //
         // This is what stops the deck moving again once the page arrives. The
@@ -4655,6 +4674,8 @@ export default function PrintPage() {
           renderCoverPhotoControl={renderCoverPhotoControl}
           renderImagePagePhotoControl={renderImagePagePhotoControl}
           parsingImports={parsingImports}
+          activeImportId={activeImportId}
+          onSelectImport={selectImport}
           failedImports={failedImports}
           canRetryImport={queue.canRetry}
           onRetryImport={queue.retry}

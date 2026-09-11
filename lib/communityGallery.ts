@@ -66,6 +66,16 @@ const SEED: CommunityPhoto[] = [
       "A printed Soy Sauce Pan-Fried Noodles card on a table beside the finished bowl of noodles and chopsticks.",
   },
   {
+    // The only full-PAGE print in the set, and the only one shot from above.
+    // Both are worth having: the strip otherwise argues for one format from
+    // one angle.
+    src: "/images/printed-cards/souvlaki.jpeg",
+    width: 2000,
+    height: 1500,
+    alt:
+      "A printed full-page Chicken Tzatziki Bowls recipe on a garden table beside the finished bowl.",
+  },
+  {
     src: "/images/printed-cards/card-korean-beef-bowl.jpeg",
     width: 1200,
     height: 1600,

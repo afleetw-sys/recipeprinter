@@ -1,6 +1,6 @@
 "use client";
 
-import { Fragment, useRef, useState } from "react";
+import { Fragment, useRef, useState, type KeyboardEvent as ReactKeyboardEvent } from "react";
 import type {
   CSSProperties,
   Dispatch,
@@ -237,6 +237,11 @@ interface PrintDeckProps {
   /** Imports that failed, which hold their slot rather than vanishing into a
       toast. Rendered by the same anchor rule as the parsing ones. */
   failedImports: QueueItem[];
+  /** The import card the rail has selected, if any. Brings it out of the
+      deck's dimmed state the way `is-active` does for a page. */
+  activeImportId?: string | null;
+  /** Selecting one from the deck itself, the way clicking a page does. */
+  onSelectImport?: (item: QueueItem) => void;
   canRetryImport: (item: QueueItem) => boolean;
   onRetryImport: (id: string) => void;
   onRepairImportWithText: (id: string, text: string) => void;
@@ -328,6 +333,8 @@ export function PrintDeck(props: PrintDeckProps) {
     openAddRecipeBelow,
     parsingImports,
     failedImports,
+    activeImportId,
+    onSelectImport,
     canRetryImport,
     onRetryImport,
     onRepairImportWithText,
@@ -884,7 +891,29 @@ export function PrintDeck(props: PrintDeckProps) {
       <>
         {parsingImports.map((pendingItem, index) => (
           <div
-            className="recipe-page-slide recipe-page-pending"
+            className={`recipe-page-slide recipe-page-pending ${
+              activeImportId === pendingItem.id ? "is-active" : ""
+            }`}
+            // A page slide is a button you click to move to it. These were
+            // neither, so a card that is still loading or has failed behaved
+            // unlike every other card in the deck. Only while it is NOT the
+            // current one: once you are on it, the controls inside it are the
+            // things you press.
+            {...(activeImportId === pendingItem.id
+              ? {}
+              : {
+                  role: "button" as const,
+                  tabIndex: 0,
+                  onClick: () => onSelectImport?.(pendingItem),
+                  onKeyDown: (event: ReactKeyboardEvent) => {
+                    if (event.key === "Enter" || event.key === " ") {
+                      event.preventDefault();
+                      onSelectImport?.(pendingItem);
+                    }
+                  },
+                })}
+            aria-current={activeImportId === pendingItem.id}
+            aria-label={`Importing ${pendingItem.source}`}
             key={`parsing-page-${pendingItem.id}`}
             data-pending-import-id={pendingItem.id}
             // The deck scrolls itself here while the import parses. Found by
@@ -916,7 +945,24 @@ export function PrintDeck(props: PrintDeckProps) {
       <>
         {failedImports.map((failedItem) => (
           <div
-            className="recipe-page-slide recipe-page-failed"
+            className={`recipe-page-slide recipe-page-failed ${
+              activeImportId === failedItem.id ? "is-active" : ""
+            }`}
+            {...(activeImportId === failedItem.id
+              ? {}
+              : {
+                  role: "button" as const,
+                  tabIndex: 0,
+                  onClick: () => onSelectImport?.(failedItem),
+                  onKeyDown: (event: ReactKeyboardEvent) => {
+                    if (event.key === "Enter" || event.key === " ") {
+                      event.preventDefault();
+                      onSelectImport?.(failedItem);
+                    }
+                  },
+                })}
+            aria-current={activeImportId === failedItem.id}
+            aria-label={`Couldn't import ${failedItem.source}`}
             key={`failed-page-${failedItem.id}`}
             data-failed-import-id={failedItem.id}
           >
