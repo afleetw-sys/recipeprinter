@@ -1119,6 +1119,18 @@
   cursor: default;
 }
 
+/* An error card sits at the hovered weight already, and does not move under
+   the pointer.
+   The deck dims what you are not looking at, which is right for pages: one is
+   as good as the next and the dim says which is yours. An error is not that.
+   It carries the reason the import failed and the buttons that fix it, so at
+   0.4 it was a problem you had to hover to read, and lifting only on hover
+   made the card twitch under the pointer while you were trying to read it. */
+.recipe-page-slide.recipe-page-failed:not(.is-active),
+.recipe-page-slide.recipe-page-failed:not(.is-active):hover {
+  opacity: 0.7;
+}
+
 /* ── Cookbook book view: a slide is a two-page spread ──────────────────────
    Left (verso) + right (recto) shown side by side with a center gutter, like an
    open book. Cover/back are single centered pages. Print (below) breaks each
