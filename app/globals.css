@@ -1766,6 +1766,13 @@
     min-height: calc(2 * 1.375 * var(--cp-fs-body) + 1.4 * var(--cp-fs-caption) + 2px);
   }
 
+  /* Two title lines and nothing under them, for a list that shows no meta.
+     Without this the block still reserves the meta line it is no longer given,
+     and every row carries a band of empty space under its title. */
+  .import-recipe-row__text--no-meta {
+    min-height: calc(2 * 1.375 * var(--cp-fs-body));
+  }
+
   .import-recipe-row__title {
     font-size: var(--cp-fs-body);
     font-weight: 700;

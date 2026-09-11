@@ -38,12 +38,15 @@ function RecipeRow({
   summary,
   added,
   selected,
+  showMeta,
   fallbackIcon: FallbackIcon,
   onToggle,
 }: {
   summary: ImportSummary;
   added: boolean;
   selected: boolean;
+  /** Whether the cooking time and serving count go under the title. */
+  showMeta: boolean;
   fallbackIcon: ComponentType<{ size?: number }>;
   onToggle: () => void;
 }) {
@@ -96,14 +99,18 @@ function RecipeRow({
           reads as broken rather than as varied. The alternative, stretching
           every row to the tallest card in the whole library, makes sixty-four
           cards pay for one long title. */}
-      <div className="import-recipe-row__text">
+      <div
+        className={`import-recipe-row__text${
+          showMeta ? "" : " import-recipe-row__text--no-meta"
+        }`}
+      >
         <p className="import-recipe-row__title">{summary.title}</p>
         {/* Not rendered when there is nothing to put in it. The block above
             reserves the height, so an empty line here reserves nothing and only
             weighs the title down: a recipe with no time and no serving count
             centred its title-plus-an-invisible-line, which put the title a third
             of the way down its card while every card beside it looked centred. */}
-        {(time || servings) && (
+        {showMeta && (time || servings) && (
           <p className="import-recipe-row__meta">
             {time && (
               <span>
@@ -149,6 +156,7 @@ export function RecipeSourceList({
   countLabel,
   summaries,
   addedIds,
+  showMeta = true,
   selectedIds,
   allSelectableSelected,
   onToggle,
@@ -175,6 +183,9 @@ export function RecipeSourceList({
   countLabel?: string;
   /** Already filtered by `queryText`; this list renders what it is given. */
   summaries: ImportSummary[];
+  /** Cooking time and servings under each title. Off for CookPilot, whose
+      rows are a picture and a name and nothing else. */
+  showMeta?: boolean;
   /** Queue ids already in the print list. Shown as such, not selectable. */
   addedIds: Set<string>;
   /** Queue ids ticked but not yet added. */
@@ -308,6 +319,7 @@ export function RecipeSourceList({
           {summaries.map((summary) => (
             <li key={summary.queueId}>
               <RecipeRow
+                showMeta={showMeta}
                 summary={summary}
                 added={addedIds.has(summary.queueId)}
                 selected={selectedIds.has(summary.queueId)}

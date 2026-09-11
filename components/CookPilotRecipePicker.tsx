@@ -378,6 +378,10 @@ function SignedInCookPilotImport({
 
   return (
     <RecipeSourceList
+      // A picture and a name, nothing else. The cooking time and serving
+      // count came across sparse and uneven, so most rows carried an empty
+      // line and the ones that did not drew the eye for no reason.
+      showMeta={false}
       heading="CookPilot recipes"
       /* The size of the LIBRARY, not of what has scrolled into view. `total`
          is the server's count and is right from the first render; the loaded

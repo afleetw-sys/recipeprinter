@@ -147,6 +147,7 @@ export function RecipeAppsPanel({
   onAddRecipes,
   commitLabel,
   commitLeavesPage = false,
+  reselects = 0,
 }: {
   items: QueueItem[];
   onAddRecipes: (recipes: QueueItem[]) => number;
@@ -154,6 +155,9 @@ export function RecipeAppsPanel({
   commitLabel: string;
   /** And whether pressing it navigates, which decides its icon. */
   commitLeavesPage?: boolean;
+  /** Bumped when the Recipe apps tab is pressed while already on it. Closes
+      the open library and shows the sources again. */
+  reselects?: number;
 }) {
   const [source, setSource] = useState<SourceId | null>(lastOpenSource);
   // Paprika holds ONE library at a time, so there is nothing to choose between
@@ -162,6 +166,16 @@ export function RecipeAppsPanel({
   // page whose only content was a second button saying the same thing.
   const paprikaInputRef = useRef<HTMLInputElement>(null);
   const [paprikaFile, setPaprikaFile] = useState<File | null>(null);
+
+  // Skips the first run: the count arrives as 0 on mount, and reacting to that
+  // would throw away the source `lastOpenSource` had just restored.
+  const seenReselects = useRef(reselects);
+  useEffect(() => {
+    if (seenReselects.current === reselects) return;
+    seenReselects.current = reselects;
+    setSource(null);
+    lastOpenSource = null;
+  }, [reselects]);
   // Bumped when the open Paprika file changes, so the row below re-reads it.
   const [libraryNonce, setLibraryNonce] = useState(0);
   const { user, ready } = useCookPilotAuth();
@@ -295,7 +309,7 @@ export function RecipeAppsPanel({
           // The export steps used to live on the screen the button reached.
           // They still exist there, so this is what still reaches them, and it
           // is also the way in for someone who has no file yet.
-          secondaryAction="Where do I find that file?"
+          secondaryAction="How to export"
           onSecondary={() => open("paprika")}
         />
       </ul>

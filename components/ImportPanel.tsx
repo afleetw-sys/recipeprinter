@@ -164,7 +164,14 @@ export function ImportPanel({
   const closeOverflow = useCallback(() => setOverflowOpen(false), []);
   useMenuDismiss(overflowRef, closeOverflow, { enabled: overflowOpen });
 
+  // Pressing the tab you are already on means "take me back to the top of
+  // this", which for Recipe apps is the list of sources rather than whichever
+  // library you had open. Counting the presses rather than flipping a flag, so
+  // a second press works as well as the first.
+  const [reselects, setReselects] = useState(0);
+
   function chooseMode(nextMode: ImportTab) {
+    if (nextMode === mode) setReselects((count) => count + 1);
     setMode(nextMode);
     onModeChange?.(nextMode);
     setOverflowOpen(false);
@@ -381,6 +388,7 @@ export function ImportPanel({
                in; four different verbs read as four different tools. */
             commitLabel={submitLabel}
             commitLeavesPage={workspace}
+            reselects={reselects}
           />
         </div>
       ) : (

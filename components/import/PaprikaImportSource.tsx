@@ -62,7 +62,7 @@ function ExportHelp() {
         aria-expanded={open}
         onClick={() => setOpen((value) => !value)}
       >
-        Where do I find that file?
+        How to export
         <ChevronDownIcon size={ICON_SIZE.sm} className="cp-disclosure-caret" aria-hidden />
       </button>
       {open && (
