@@ -446,6 +446,17 @@
   backdrop-filter: var(--cp-scrim-blur);
 }
 
+/* The photo viewer's ground, a step darker than a form dialog's.
+   `--cp-scrim` is 36% ink, which is right behind a panel that paints its own
+   white card: the scrim only has to separate the two. A photograph paints no
+   card, so the scrim IS the surround, and at 36% the page underneath stayed
+   busy enough to compete with the picture. Scoped rather than raising the
+   shared token, which every other modal in the app reads. */
+.rp-photo-scrim {
+  background: color-mix(in srgb, var(--cp-ink) 62%, transparent);
+  backdrop-filter: var(--cp-scrim-blur);
+}
+
 @media (max-width: 760px) {
 }
 .cookbook-welcome__panel,
@@ -2431,14 +2442,14 @@
   }
 
   /* The homepage front door: hero plus importer, centred in the screen the top
-     bar leaves behind, with just enough height held back that the kitchen strip
+     bar leaves behind, with just enough height held back that the photo strip
      shows a slice of itself underneath.
      `min-height`, never `height`: the importer grows when a mode with a
      textarea is picked, and a fixed box would have scrolled or clipped it.
      `dvh` so a phone's collapsing address bar does not leave a gap. */
   /* The front door starts at a fixed offset under the top bar and is otherwise
      sized by what it holds. No reserved height.
-     It used to reserve `100dvh` minus a slice, which pinned the kitchen strip
+     It used to reserve `100dvh` minus a slice, which pinned the photo strip
      to a spot derived from the WINDOW rather than from the card above it. The
      card could grow a whole textarea taller and the strip would not budge,
      because the reserved space silently swallowed it. The strip belongs under
@@ -2451,7 +2462,7 @@
     padding-top: var(--rp-home-top);
   }
 
-  /* The "In real kitchens" carousel track.
+  /* The "Off the printer" carousel track.
      No scrollbar: the arrows on the photos say which way there is more to
      see, and the half-visible next picture says the strip moves, so the bar
      was a third piece of chrome telling the reader the same thing. Scrolling

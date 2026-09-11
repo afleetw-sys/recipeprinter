@@ -1,5 +1,9 @@
 // ─────────────────────────────────────────────────────────────────────────
-// "In real kitchens": photographs of what people actually printed.
+// "Off the printer": photographs of what people actually printed.
+//
+// Named for the thing rather than the room. "In real kitchens" claimed a
+// setting the pictures do not have to be in, and the first three are on a
+// garden table.
 //
 // The product's output is a physical object, and that is the one thing the
 // homepage cannot otherwise show. A print preview is a rectangle on a screen;
@@ -30,7 +34,7 @@ export type CommunityPhoto = {
 };
 
 /**
- * The seed set, shot in Amelia's kitchen: real cards off the real printer, not
+ * The seed set, shot at Amelia's: real cards off the real printer, not
  * renderings.
  *
  * The three card photographs are PORTRAIT, whatever the file says. They are

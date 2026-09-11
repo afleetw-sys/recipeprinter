@@ -72,7 +72,7 @@ export function CommunityGallery({
       <Header />
       <Carousel
         count={cards.length}
-        label="Photos of printed cookbooks and recipe cards"
+        label="Photos of printed recipe cards"
       >
         {cards.map((photo, i) => (
           // Index in the key, not just `src`: the seed set is repeated while
@@ -164,11 +164,11 @@ function Spotlight({
       onClose={onClose}
       portal
       dismissOnBackdropClick
-      label="Photos from real kitchens"
-      // `dialog-scrim` rather than a one-off tint: it is the scrim every other
-      // modal in the app paints, blur included, and a photo viewer with its own
-      // darker backdrop would read as a different kind of surface.
-      className="fixed inset-0 z-50 flex items-center justify-center dialog-scrim p-cp-4 sm:p-cp-6"
+      label="Photos of printed recipe cards"
+      // `rp-photo-scrim`, a step darker than the shared `dialog-scrim`. A form
+      // dialog paints its own white card and the scrim only has to separate
+      // the two; a photograph paints no card, so the scrim is the surround.
+      className="fixed inset-0 z-50 flex items-center justify-center rp-photo-scrim p-cp-4 sm:p-cp-6"
     >
       <div className="relative flex max-h-full flex-col items-center gap-cp-4">
         <Image
@@ -238,7 +238,7 @@ function Header() {
       id="rp-gallery-heading"
       className="text-cp-label font-bold uppercase tracking-[0.08em] text-ink-soft"
     >
-      In real kitchens
+      Off the printer
     </h2>
   );
 }
