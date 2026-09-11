@@ -190,7 +190,11 @@ export function RecipeAppsPanel({
           description="Export your Paprika library and open the file here."
           status={paprikaStatus}
           addedCount={addedCounts.paprika}
-          icon={<PaprikaLogoIcon size={44} />}
+          // Inset in the 44px tile like CookPilot's, rather than filling it.
+          // Smaller than CookPilot's 22 rather than equal to it: that mark is
+          // an open glyph on nothing, this is a solid app icon, so matching
+          // their box sizes would not have matched their weight.
+          icon={<PaprikaLogoIcon size={26} />}
           onOpen={() => open("paprika")}
         />
       </ul>

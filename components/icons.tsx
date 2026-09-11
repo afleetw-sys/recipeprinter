@@ -220,11 +220,14 @@ export const PaprikaLogoIcon = ({
 }) => (
   // eslint-disable-next-line @next/next/no-img-element
   <img
-    src="/images/paprika-logo-bw.png"
+    src="/images/paprika-logo.png"
     alt=""
     aria-hidden
     className={className}
-    style={{ width: size, height: size, objectFit: "contain", borderRadius: size * 0.22 }}
+    // No `borderRadius` here any more. The greyscale asset was a full-bleed
+    // square that needed CSS to round it; this one is the real app icon, whose
+    // corners are part of the artwork, and rounding it again cut into them.
+    style={{ width: size, height: size, objectFit: "contain" }}
   />
 );
 
