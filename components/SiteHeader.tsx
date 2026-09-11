@@ -54,8 +54,14 @@ export function SiteHeader({
     <>
       <LogoMark size={compact ? 26 : 30} rounded={0} />
       {wordmark && (
+        /* The mark alone below `sm`. The name next to it is the same word the
+           logo already is, and on a phone it was spending a third of the bar
+           to repeat it — a bar that also has to hold a CTA on the landing
+           pages. Nothing is lost to a screen reader: the mark is `aria-hidden`
+           and the link around it is named "RecipePrinter home" (see
+           HomeLink). */
         <Wordmark
-          className={`${
+          className={`hidden sm:inline-flex ${
             compact
               ? "text-[length:var(--cp-fs-wordmark-compact)]"
               : "text-[length:var(--cp-fs-wordmark)]"
