@@ -1108,6 +1108,22 @@
   .recipe-page-canvas:not([data-single-recipe="true"]) .recipe-page-deck > .recipe-page-slide > .recipe-page-scaler {
     scroll-snap-align: center;
   }
+
+  /* Import cards need a snap point of their own.
+     The rule above puts it on the `.recipe-page-scaler` INSIDE a slide, which
+     is the element the browser rests on. An importing or failed card has no
+     scaler — it is not a page — so it offered nothing to snap to, and the deck
+     skipped straight over it to the next real one. Scrolling to an error in
+     the middle of a deck was impossible: it went past it in both directions.
+     The card itself carries the snap point instead, at the same alignment. */
+  .recipe-page-canvas:not([data-single-recipe="true"])
+    .recipe-page-deck
+    > .recipe-page-slide.recipe-page-failed,
+  .recipe-page-canvas:not([data-single-recipe="true"])
+    .recipe-page-deck
+    > .recipe-page-slide.recipe-page-pending {
+    scroll-snap-align: center;
+  }
 }
 
 .recipe-page-slide:not(.is-active):hover {
