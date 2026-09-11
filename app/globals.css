@@ -2524,6 +2524,22 @@
     border-color: transparent;
   }
 
+  /* Below the desktop layout the importer's own controls come in a step, so
+     the panel does not stand taller than the headline above it. The headline
+     drops about a quarter between a desktop and a phone; the field was going
+     the other way, 50px to 54px, which is what made the two look unrelated.
+     The mode tabs are NOT part of this. They sit at 44px because that is the
+     floor for something a thumb has to hit, and the field keeps its 16px text
+     because anything under that makes iOS Safari zoom the page the moment it
+     takes focus. Those two are the reason the controls cannot simply follow
+     the type down. */
+  @media (max-width: 1023px) {
+    .rp-import-panel .field {
+      min-height: 48px;
+      padding: 12px 14px;
+    }
+  }
+
   @media (min-width: 1024px) {
     .rp-import-panel--workspace {
       border-radius: 18px;

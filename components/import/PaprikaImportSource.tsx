@@ -24,7 +24,7 @@ import {
 } from "@/lib/paprikaLibrary";
 import type { QueueItem } from "@/types/recipe";
 import { RecipeSourceList } from "@/components/import/RecipeSourceList";
-import { BookIcon, ICON_SIZE, UploadIcon } from "@/components/icons";
+import { BookIcon, ICON_SIZE, PaprikaLogoIcon, UploadIcon } from "@/components/icons";
 
 /**
  * Import from a Paprika export.
@@ -82,6 +82,18 @@ export async function readPaprikaExport(
     });
     return { ok: false, message };
   }
+}
+
+/**
+ * The file's name, minus the part that only a computer needs.
+ *
+ * Paprika's own exports are named "Export <date> <time> All Recipes", so the
+ * date is what tells two of them apart and the extension never does. CSS
+ * truncates whatever is left to the width available; `title` keeps the real
+ * name for anyone who wants it.
+ */
+function displayFileName(name: string): string {
+  return name.replace(/\.(paprikarecipes?|zip)$/i, "");
 }
 
 /** A recipe plus its photo, held locally, ready for the print list. */
@@ -208,11 +220,28 @@ export function PaprikaImportSource({
           scroller and anything left below the list would stop it reaching
           there, leaving it floating over a strip of recipes it could not
           cover. */}
-      <div className="flex flex-wrap items-center justify-between gap-cp-2 text-cp-caption text-ink-soft">
-        <span className="truncate">From {library.fileName}</span>
-        <button type="button" className="btn-ghost btn-compact" onClick={onChooseAnotherFile}>
+      {/* The open file, as a thing rather than a sentence. This was the line
+          "From Export 2026-09-01 11.12.03 All Recipes.paprikarecipes", which is
+          a path read aloud: the extension is machine-facing, the timestamp is
+          the only part that distinguishes one export from another, and none of
+          it looks like the rest of the product. A tinted row with the app's own
+          mark, the name without its extension, and one button to swap it.  */}
+      <div className="flex items-center gap-cp-3 rounded-xl bg-page p-cp-2">
+        <PaprikaLogoIcon size={26} />
+        <span
+          className="min-w-0 flex-1 truncate text-cp-body font-semibold text-ink"
+          // The full name, extension included, for anyone who does want it.
+          title={library.fileName}
+        >
+          {displayFileName(library.fileName)}
+        </span>
+        <button
+          type="button"
+          className="btn btn-secondary btn-compact flex-shrink-0"
+          onClick={onChooseAnotherFile}
+        >
           <UploadIcon size={ICON_SIZE.sm} />
-          Use a different file
+          Change
         </button>
       </div>
       <RecipeSourceList

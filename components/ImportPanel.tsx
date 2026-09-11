@@ -404,11 +404,16 @@ export function ImportPanel({
               Recipe link
             </label>
             {/* The button is shorter than the field, so it centers against it
-                rather than sitting top-aligned. The error message lives OUTSIDE
-                this row on purpose: inside, it counted toward the height the
-                button centers on, and the button drifted down the moment a bad
-                URL was typed. */}
-            <div className="flex flex-col gap-cp-4 lg:flex-row lg:items-center lg:gap-cp-2">
+                rather than sitting top-aligned.
+                The line under the field is INSIDE this row and ordered last at
+                `lg`. Stacked on a phone the row is the reading order, so a
+                sibling after it landed under the BUTTON, a caption about the
+                field sitting two controls away from it. Wrapping it to its own
+                full-width line at `lg` puts it back under the field there, and
+                because `align-items` centres within a flex LINE rather than
+                the container, the button still centres against the field alone
+                and does not drift when an error appears. */}
+            <div className="flex flex-col gap-cp-2 lg:flex-row lg:flex-wrap lg:items-center lg:gap-cp-2">
               <input
                 id="rp-url"
                 /* `text`, not `url`. The browser's own `type="url"` check
@@ -431,18 +436,11 @@ export function ImportPanel({
                   resetError();
                 }}
               />
-              {!hideSubmit && (
-                <button
-                  type="submit"
-                  className="btn btn-primary rp-import-submit w-full lg:w-auto lg:shrink-0"
-                >
-                  {submitFace}
-                </button>
-              )}
-            </div>
-            {error ? (
-              <p className="field-error" role="alert">{error}</p>
-            ) : (
+              {error ? (
+                <p className="field-error lg:order-last lg:w-full" role="alert">
+                  {error}
+                </p>
+              ) : (
               /* Where the platform list lives, and deliberately not in the
                  placeholder. A placeholder is gone the moment anyone types, and
                  at 327px on a phone this one was cut off at "TikTok, Pint" —
@@ -459,10 +457,19 @@ export function ImportPanel({
                  make rather than a set of branches. It ends on the open case
                  rather than a brand, so a closed list never becomes the answer
                  to "is mine supported?". */
-              <p className="mt-cp-2 text-cp-caption text-ink-soft">
-                Works with Instagram, TikTok, Pinterest, Facebook, YouTube, and any recipe site.
-              </p>
-            )}
+                <p className="text-cp-caption text-ink-soft lg:order-last lg:w-full">
+                  Works with Instagram, TikTok, Pinterest, Facebook, YouTube, and any recipe site.
+                </p>
+              )}
+              {!hideSubmit && (
+                <button
+                  type="submit"
+                  className="btn btn-primary rp-import-submit mt-cp-2 w-full lg:mt-0 lg:w-auto lg:shrink-0"
+                >
+                  {submitFace}
+                </button>
+              )}
+            </div>
           </div>
         )}
 
