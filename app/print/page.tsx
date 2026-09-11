@@ -76,7 +76,7 @@ import { useRecipeInlineEditor } from "@/lib/useRecipeInlineEditor";
 import { useRailDrag, type RailDragKind, type RailDropResolved } from "@/lib/useRailDrag";
 import { useRailSelection } from "@/lib/useRailSelection";
 import { PAGE_DIMS } from "@/lib/printGeometry";
-import { isDeckMobile, useDeckScroller } from "@/lib/useDeckScroller";
+import { useDeckScroller } from "@/lib/useDeckScroller";
 import { usePremiumTemplatePurchase } from "@/lib/usePremiumTemplatePurchase";
 import { useCookbookPurchase } from "@/lib/useCookbookPurchase";
 import { COOKBOOK_ENABLED } from "@/lib/cookbookProduct";
@@ -139,6 +139,7 @@ import {
   markPrintPreviewStable,
   PRINT_PREVIEW_STABILITY_MS,
 } from "@/lib/printErrorRecovery";
+import { takePendingImport } from "@/lib/pendingImport";
 
 const AdminShareLinkDialog = dynamic(
   () => import("@/components/AdminShareLinkDialog").then((mod) => mod.AdminShareLinkDialog),
@@ -370,6 +371,17 @@ export default function PrintPage() {
     | null
   >(null);
   const [pendingFocusRecipeId, setPendingFocusRecipeId] = useState<string | null>(null);
+  /**
+   * Recipes that have just this moment finished parsing.
+   *
+   * The placeholder and the page it becomes are two different elements in two
+   * different trees, so one cannot literally morph into the other without a
+   * view transition. What they DO share is the slot: the page arrives exactly
+   * where the spinner was. Marking it for a beat lets it settle into that slot
+   * instead of appearing already there, which is what reads as the tile
+   * resolving rather than being swapped out underneath you.
+   */
+  const [settlingIds, setSettlingIds] = useState<ReadonlySet<string>>(new Set());
   const [pendingFocusNavId, setPendingFocusNavId] = useState<string | null>(null);
   // The recipe whose rail row is currently shaking, set when a re-imported
   // duplicate points back at a recipe already in this deck. `nonce` lets the
@@ -530,6 +542,8 @@ export default function PrintPage() {
   // user didn't select for this job" apart from "just added via the Add
   // recipe dialog" — only the latter should get pulled into the deck.
   const initialQueueIdsRef = useRef<Set<string>>(new Set());
+  /** The capture handoff is taken once per mount — see the effect that reads it. */
+  const consumedPendingImportRef = useRef(false);
   /**
    * Whether an import is this deck's to wait for — i.e. started here.
    *
@@ -1037,6 +1051,32 @@ export default function PrintPage() {
   // import it belongs to — which is what lets a page become that recipe in
   // place instead of one anonymous spinner leaving as another card arrives.
   const parsingImports = pendingImportItems.filter((item) => item.status === "parsing");
+
+  /**
+   * Still parsing, plus anything parsed whose page has not landed yet.
+   *
+   * The deck keeps one placeholder from the moment an import starts until the
+   * page that replaces it is actually there. Without the second half the card
+   * was pulled the instant parsing ended and the page arrived a beat later,
+   * with nothing in between.
+   */
+  const deckPendingImports = useMemo(() => {
+    const paged = new Set(navItems.map((navItem) => navItem.recipeId));
+    // Derived, not stored. Holding this in state meant setting it from an
+    // effect, which runs AFTER the render that dropped the item from
+    // `parsingImports` — so there was still one frame with neither, and the
+    // placeholder blinked out and back before the page arrived.
+    const waitingForAPage = queue.items.filter(
+      (item) =>
+        item.status === "ready" &&
+        item.recipe &&
+        isOursToAwait(item.id) &&
+        !paged.has(item.id),
+    );
+    if (waitingForAPage.length === 0) return parsingImports;
+    return [...parsingImports, ...waitingForAPage];
+  }, [parsingImports, navItems, queue.items, isOursToAwait]);
+
   const parsingImportCount = parsingImports.length;
   /**
    * Failures hold their slot instead of becoming a toast.
@@ -2942,6 +2982,47 @@ export default function PrintPage() {
   }, [accountProjectId, idsParam, queue.hydrated]);
 
   /**
+   * Capture → app handoff: finish the import a visitor started on a landing page.
+   *
+   * This used to happen on the home page, which is where the SEO capture blocks
+   * pushed to. It lands here now because this is where the recipe becomes a
+   * thing you can look at: the same paste used to arrive as a row in a list with
+   * a Clear all over it, on a page that empties itself on arrival, which taught
+   * brand-new visitors that the app holds a cart before it had shown them a
+   * single printed card.
+   *
+   * Deliberately declared AFTER the job bootstrap above, and gated on the same
+   * `queue.hydrated`, so effects run in that order: the bootstrap snapshots
+   * `initialQueueIdsRef` from the hydrated queue first, which is what makes the
+   * item this adds afterwards read as `isOursToAwait`. Get that the wrong way
+   * round and the import is born already excluded, and never shows a placeholder
+   * or a page.
+   *
+   * Consumed exactly once per mount, and consume-and-delete at the storage layer
+   * (see lib/pendingImport), so a refresh can't re-import.
+   *
+   * On the home page this raced the mount-clear, and only a ref ordering kept
+   * the two apart. Nothing here clears anything, so there is no race left.
+   */
+  useEffect(() => {
+    if (!queue.hydrated || consumedPendingImportRef.current) return;
+    consumedPendingImportRef.current = true;
+    let cancelled = false;
+    void takePendingImport().then((pending) => {
+      if (cancelled || !pending) return;
+      if (pending.kind === "url") queue.addUrl(pending.url);
+      else if (pending.kind === "text") queue.addText(pending.text);
+      else if (pending.kind === "ready") queue.addReadyRecipes(pending.recipes);
+      else if (pending.kind === "images") queue.addImages(pending.images, pending.label);
+    });
+    return () => {
+      cancelled = true;
+    };
+    // The queue's add methods are stable; `hydrated` is the only real trigger.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [queue.hydrated]);
+
+  /**
    * Which projects write themselves to the account, without being asked.
    *
    * Signed in, a cookbook always does — like Figma or Canva, where the
@@ -3112,7 +3193,16 @@ export default function PrintPage() {
       });
     }
     setPendingFocusRecipeId((current) => current ?? newlyReady[0]!.id);
+    setSettlingIds(new Set(newlyReady.map((item) => item.id)));
   }, [queue.items, items, itemIdsForSection, isOursToAwait, moveProjectItem, pendingAddIndex, pendingAddSectionId, sections]);
+
+  // Held just long enough for the animation to finish. A lingering class would
+  // replay it on the next render the element happens to survive.
+  useEffect(() => {
+    if (settlingIds.size === 0) return;
+    const timer = window.setTimeout(() => setSettlingIds(new Set()), 500);
+    return () => window.clearTimeout(timer);
+  }, [settlingIds]);
 
   // Bring the pending status into view as soon as the dialog hands the import
   // to the queue. This also works for retries because the same row changes back
@@ -3697,6 +3787,32 @@ export default function PrintPage() {
   };
 
   const [activeNavIndex, setActiveNavIndex] = useState(0);
+  /**
+   * The still-importing or failed card the deck is showing, if any.
+   *
+   * These live outside the sheets pipeline, so `activeNavIndex` cannot name
+   * them and the rail had no way to mark them. Selecting one clears itself the
+   * moment the cook navigates to a real page (see `goToSlide` below), because
+   * two rows claiming to be the current one is worse than neither.
+   */
+  const [activeImportId, setActiveImportId] = useState<string | null>(null);
+  /**
+   * Scrolling to another page gives the "current" mark back to that page.
+   *
+   * The skip is for the one case where the two agree rather than compete: the
+   * auto-scroll below selects the placeholder AND parks `activeNavIndex` on
+   * the slot it will occupy, in the same pass. Without this the park read as
+   * "the cook moved" and cleared the selection it had just made, which is why
+   * a failed import came up dimmed.
+   */
+  const keepImportSelectionRef = useRef(false);
+  useEffect(() => {
+    if (keepImportSelectionRef.current) {
+      keepImportSelectionRef.current = false;
+      return;
+    }
+    setActiveImportId(null);
+  }, [activeNavIndex]);
   // Publish the setter through a ref in an effect rather than during render, so
   // the ref callers (`activeNavIndexResetRef.current?.(0)`) always read a value
   // from a committed render (setActiveNavIndex is stable, so this is a one-time
@@ -3802,6 +3918,11 @@ export default function PrintPage() {
   } = useDeckScroller({
     activeNavIndex,
     setActiveNavIndex,
+    // Scrolling onto an import card selects THAT card. The deck used to answer
+    // with the nearest page instead, which both marked the recipe above it and
+    // re-centred on that recipe, carrying you back off the thing you had just
+    // scrolled down to read.
+    onImportSlideChange: setActiveImportId,
     navItemsLength: cookbookView ? spreads.length : navItems.length,
     cardSize: previewCardSize,
     sheetsLength: sheets.length,
@@ -3835,7 +3956,31 @@ export default function PrintPage() {
   // Focus a specific page within a spread, navigating there first if needed.
   // Direct focus when already on the spread; otherwise the ref survives the
   // navigation reset so the left page can be reached from another spread.
+  /** Scroll the deck to an import's card, and mark its rail row as the one
+      being shown. Both kinds carry their id on the slide, so the row points at
+      its own card the same way a page row points at its page. */
+  /** Navigate to a page, and give the "current" mark back from any import
+      card that was holding it. The rail reaches `goToSlide` directly, so
+      wrapping it here is what covers every row that navigates. */
+  const goToPageSlide = (index: number) => {
+    setActiveImportId(null);
+    goToSlide(index);
+  };
+
+  const selectImport = (item: QueueItem) => {
+    const selector =
+      item.status === "error"
+        ? `[data-failed-import-id="${item.id}"]`
+        : `[data-pending-import-id="${item.id}"]`;
+    if (goToDeckElement(selector)) setActiveImportId(item.id);
+  };
+
   const focusSheetInSpread = (spreadIndex: number, sheetIndex: number | null) => {
+    // Any call here means "show me a real page", so the import row gives the
+    // mark back. Clearing on `activeNavIndex` alone was not enough: choosing
+    // the page you were already on does not change the index, so the failed
+    // row and the page row both read as current.
+    setActiveImportId(null);
     if (spreadIndex === activeNavIndex) {
       if (sheetIndex != null) setFocusedSheetIndex(sheetIndex);
       return;
@@ -4006,21 +4151,26 @@ export default function PrintPage() {
     requestDeleteNavItem,
   ]);
   /**
-   * On a phone, go and wait at the loading page.
+   * Go and wait at the loading page.
    *
-   * MOBILE ONLY. On a desktop the rail is right there: it scrolls its own
-   * pending row into view (see the effect above), the deck keeps the page the
-   * cook was looking at, and moving it under them would be taking the view
-   * away from someone who can already see the import is running. A phone has
-   * no rail. The deck is the whole window, it scrolls sideways, and the
-   * placeholder lands wherever the new recipe will land — which, added below a
-   * particular recipe, is somewhere off-screen with nothing to say so.
+   * What people actually do here is verify: add one recipe, look at how it came
+   * out, then add the next. The deck is where you look at it, so a deck that
+   * stays on the previous card breaks that loop at exactly the moment it
+   * matters — you asked for a recipe and got shown the one before it.
+   *
+   * This used to be mobile-only, on the reasoning that a desktop cook can see
+   * the import running in the rail and moving the deck under them would be
+   * taking their view away. That holds for something arriving unbidden. It does
+   * not hold here: the placeholder is the direct answer to a thing they just
+   * pressed, and following it is what they asked for. The rail still scrolls its
+   * own pending row into view (see the effect above), so both halves now agree
+   * about where the new recipe is.
    *
    * Where the placeholder goes is `pendingAddAfterRecipeId`'s business
    * (PrintDeck); this only follows it there.
    */
   useEffect(() => {
-    if (parsingImportCount === 0 || !isDeckMobile()) return;
+    if (parsingImportCount === 0) return;
     // The placeholder mounts on the render that raises this count, so it is not
     // in the DOM during this pass. One frame is enough; the retry covers a
     // deck still re-measuring after the insert, which lands a frame or two
@@ -4029,6 +4179,12 @@ export default function PrintPage() {
     let attempts = 0;
     const tryScroll = () => {
       if (goToDeckElement("[data-pending-page]")) {
+        // The placeholder is the current card while it loads, so it comes out
+        // of the deck's dimmed state — and because a failure keeps the same
+        // item id, the error card it becomes is readable the moment it
+        // appears rather than sitting at 0.4 until someone finds it.
+        keepImportSelectionRef.current = true;
+        setActiveImportId(parsingImports[0]?.id ?? null);
         // Claim the slot the recipe is about to take, WITHOUT scrolling to it.
         //
         // This is what stops the deck moving again once the page arrives. The
@@ -4461,7 +4617,10 @@ export default function PrintPage() {
           activeNavIndex={activeNavIndex}
           focusedSheet={focusedSheet}
           focusSheetInSpread={focusSheetInSpread}
-          goToSlide={goToSlide}
+          onSelectImport={selectImport}
+          activeImportId={activeImportId}
+          settlingIds={settlingIds}
+          goToSlide={goToPageSlide}
           railShake={railShake}
           pendingAddAfterRecipeId={pendingAddAfterRecipeId}
           pendingAddSectionId={pendingAddSectionId}
@@ -4544,7 +4703,10 @@ export default function PrintPage() {
           renderSectionPhotoControl={renderSectionPhotoControl}
           renderCoverPhotoControl={renderCoverPhotoControl}
           renderImagePagePhotoControl={renderImagePagePhotoControl}
-          parsingImports={parsingImports}
+          parsingImports={deckPendingImports}
+          activeImportId={activeImportId}
+          onSelectImport={selectImport}
+          settlingIds={settlingIds}
           failedImports={failedImports}
           canRetryImport={queue.canRetry}
           onRetryImport={queue.retry}

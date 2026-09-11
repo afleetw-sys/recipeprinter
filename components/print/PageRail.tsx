@@ -146,6 +146,12 @@ interface PageRailProps {
   activeNavIndex: number;
   focusedSheet: number | null;
   focusSheetInSpread: (spreadIndex: number, sheetIndex: number | null) => void;
+  /** Scrolls the deck to an import that is still loading, or that failed. */
+  onSelectImport: (item: QueueItem) => void;
+  /** Which of those the deck is currently showing. */
+  activeImportId: string | null;
+  /** Recipes that just finished parsing, for the beat they settle in. */
+  settlingIds: ReadonlySet<string>;
   goToSlide: (index: number) => void;
   railShake: { recipeId: string; nonce: number } | null;
   pendingAddAfterRecipeId: string | null;
@@ -211,6 +217,9 @@ export function PageRail(props: PageRailProps) {
     activeNavIndex,
     focusedSheet,
     focusSheetInSpread,
+    onSelectImport,
+    activeImportId,
+    settlingIds,
     goToSlide,
     railShake,
     pendingAddAfterRecipeId,
@@ -876,8 +885,14 @@ export function PageRail(props: PageRailProps) {
                   Boolean(section?.title?.trim()) &&
                   isFirstInSection &&
                   organizeMode;
+                // A selected import takes the mark off the pages. `activeNavIndex`
+                // keeps pointing at whatever page was last shown — an import card
+                // has no index of its own — so without this the rail claimed two
+                // current rows at once.
                 const isActive =
-                  unit.index === activeNavIndex && (unit.soleUnit || focusedSheet === unit.focusSheet);
+                  !activeImportId &&
+                  unit.index === activeNavIndex &&
+                  (unit.soleUnit || focusedSheet === unit.focusSheet);
                 const isSpreadThumb = unit.thumbSheets.length === 2;
                 return (
                   <Fragment key={`rail-unit-${unit.num}`}>
@@ -929,6 +944,8 @@ export function PageRail(props: PageRailProps) {
                       data-rail-recipe={recipeNav?.recipeId ?? undefined}
                       data-organize-flip={recipeNav?.recipeId ?? undefined}
                     className={`recipe-page-rail__item ${isActive ? "is-active" : ""} ${
+                        recipeNav && settlingIds.has(recipeNav.recipeId) ? "is-settling" : ""
+                      } ${
                         isDragSource(recipeNav?.recipeId) ? "is-dragging" : ""
                       } ${(recipeNav || dividerSection) ? "recipe-page-rail__item--draggable" : ""} ${
                         recipeNav && railShake?.recipeId === recipeNav.recipeId ? "is-shaking" : ""
@@ -1027,7 +1044,12 @@ export function PageRail(props: PageRailProps) {
                     </div>
                   </div>
                   {unitIdx === pendingAnchorUnitIdx && (
-                    <PendingImportRows items={pendingImportItems} nested={pendingNested} />
+                    <PendingImportRows
+                      items={pendingImportItems}
+                      nested={pendingNested}
+                      onSelect={onSelectImport}
+                      activeId={activeImportId}
+                    />
                   )}
                   </Fragment>
                 );
@@ -1078,7 +1100,9 @@ export function PageRail(props: PageRailProps) {
                 <div
                   data-rail-recipe={navItem.kind === "recipe" ? navItem.recipeId : undefined}
                   className={`recipe-page-rail__item ${
-                    index === activeNavIndex ? "is-active" : ""
+                    !activeImportId && index === activeNavIndex ? "is-active" : ""
+                  } ${
+                    navItem.recipeId && settlingIds.has(navItem.recipeId) ? "is-settling" : ""
                   } ${railDrag.draggingId === navItem.recipeId ? "is-dragging" : ""} ${
                     navItem.kind === "recipe" ? "recipe-page-rail__item--draggable" : ""
                   } ${
@@ -1090,7 +1114,7 @@ export function PageRail(props: PageRailProps) {
                   <button
                     type="button"
                     className="recipe-page-rail__item-main"
-                    aria-current={index === activeNavIndex}
+                    aria-current={!activeImportId && index === activeNavIndex}
                     onPointerDown={(event) => {
                       if (navItem.kind === "recipe") railDrag.start(event, "recipe", navItem.recipeId);
                     }}
@@ -1136,7 +1160,12 @@ export function PageRail(props: PageRailProps) {
                 </div>
               </div>
               {rowIndex === pendingAnchorRowIndex && (
-                <PendingImportRows items={pendingImportItems} nested={pendingNested} />
+                <PendingImportRows
+                      items={pendingImportItems}
+                      nested={pendingNested}
+                      onSelect={onSelectImport}
+                      activeId={activeImportId}
+                    />
               )}
               </Fragment>
             );
@@ -1146,8 +1175,18 @@ export function PageRail(props: PageRailProps) {
           {/* Keep pending imports visible without pretending a page or image
               exists yet. The real page appears only once parsing completes. */}
           {pendingAnchorRowIndex === -1 && (
-            <PendingImportRows items={pendingImportItems} nested={pendingNested} />
+            <PendingImportRows
+                      items={pendingImportItems}
+                      nested={pendingNested}
+                      onSelect={onSelectImport}
+                      activeId={activeImportId}
+                    />
           )}
+
+          {/* Add one more, at the end of the list it joins. Not shown on an
+              empty project, where the deck and the rail header are both already
+              asking for the first recipe, and not in the organizer, which is
+              for rearranging what is here rather than bringing more in. */}
 
           {tileMenu && (
             <MoveToSectionMenu

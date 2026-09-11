@@ -1,9 +1,14 @@
+import { AlertIcon, ICON_SIZE } from "@/components/icons";
 import { RecipeLoadingState } from "@/components/RecipeLoadingState";
 import { importLoadingLabel } from "@/lib/importProgress";
 import type { QueueItem } from "@/types/recipe";
 
 interface PendingImportRowsProps {
   items: QueueItem[];
+  /** Scrolls the deck to this import's card. */
+  onSelect: (item: QueueItem) => void;
+  /** The import whose card the deck is showing. */
+  activeId?: string | null;
   /**
    * The row these hang under belongs to a titled section, so the spinner takes
    * the section's nesting line too.
@@ -30,7 +35,12 @@ interface PendingImportRowsProps {
  * The actions — Try again, paste the text, add a screenshot, remove — live on
  * the card, which has the room for them. See FailedImportCard.
  */
-export function PendingImportRows({ items, nested = false }: PendingImportRowsProps) {
+export function PendingImportRows({
+  items,
+  onSelect,
+  activeId,
+  nested = false,
+}: PendingImportRowsProps) {
   return (
     <>
       {items
@@ -42,12 +52,31 @@ export function PendingImportRows({ items, nested = false }: PendingImportRowsPr
               data-failed-import
               key={`failed-${item.id}`}
             >
-              <div className="recipe-page-rail__item recipe-page-rail__item--failed">
-                <div className="recipe-page-rail__item-main">
+              {/* A button, like every other rail row. These two used to be the
+                  only inert rows in the rail: the deck scrolls to a failure
+                  when it happens, but scroll away and there was no way back to
+                  read it, which is the one row where the page it points at is
+                  the only place the news exists. */}
+              <div
+                className={`recipe-page-rail__item recipe-page-rail__item--failed ${
+                  activeId === item.id ? "is-active" : ""
+                }`}
+              >
+                <button
+                  type="button"
+                  className="recipe-page-rail__item-main"
+                  aria-current={activeId === item.id}
+                  onClick={() => onSelect(item)}
+                >
+                  <AlertIcon
+                    size={ICON_SIZE.lg}
+                    className="recipe-page-rail__failed-icon"
+                    aria-hidden
+                  />
                   <span className="recipe-page-rail__failed-title">
                     Couldn&apos;t import {item.source}
                   </span>
-                </div>
+                </button>
               </div>
             </div>
           ) : (
@@ -56,13 +85,25 @@ export function PendingImportRows({ items, nested = false }: PendingImportRowsPr
             data-pending-import
             key={`parsing-${item.id}`}
           >
-            <div className="recipe-page-rail__item recipe-page-rail__item--loading" aria-busy>
-              <div className="recipe-page-rail__item-main">
+            <div
+              className={`recipe-page-rail__item recipe-page-rail__item--loading ${
+                activeId === item.id ? "is-active" : ""
+              }`}
+              aria-busy
+            >
+              <button
+                type="button"
+                // The same centred stack the failed row uses; the loading
+                // state paints itself inside it.
+                className="recipe-page-rail__item-main"
+                aria-current={activeId === item.id}
+                onClick={() => onSelect(item)}
+              >
                 <RecipeLoadingState
                   className="recipe-page-rail__loading-status"
                   label={importLoadingLabel(item)}
                 />
-              </div>
+              </button>
             </div>
           </div>
           ),

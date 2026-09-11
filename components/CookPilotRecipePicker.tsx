@@ -13,6 +13,7 @@ import {
 } from "@/components/CookPilotAuth";
 import {
   cookPilotImportSummary,
+  cookPilotQueueId,
   getCachedCookPilotSummaries,
   getCachedCookPilotTotal,
   hasMoreCookPilotSummaries,
@@ -24,6 +25,12 @@ import {
   type CookPilotRecipeSummary,
 } from "@/lib/cookpilotRecipes";
 import { filterImportSummaries, type ImportSummary } from "@/lib/importSummary";
+import {
+  allSelectableSelected as allSelectableSelectedIn,
+  partialAddMessage,
+  selectableQueueIds,
+  toggleSelection,
+} from "@/lib/importSelection";
 import type { QueueItem } from "@/types/recipe";
 import { EmptyState } from "@/components/EmptyState";
 import { RecipeSourceList } from "@/components/import/RecipeSourceList";
@@ -118,18 +125,22 @@ function SignedInCookPilotImport({
   user,
   items,
   onAddRecipes,
-  onRemoveRecipe,
+  commitLabel,
+  commitLeavesPage,
 }: {
   user: User;
   items: QueueItem[];
   onAddRecipes: (recipes: QueueItem[]) => number;
-  onRemoveRecipe: (id: string) => void;
+  commitLabel: string;
+  commitLeavesPage: boolean;
 }) {
   const [summaries, setSummaries] = useState<CookPilotRecipeSummary[]>(
     () => getCachedCookPilotSummaries(user.uid) ?? [],
   );
   const [queryText, setQueryText] = useState("");
-  const [addingIds, setAddingIds] = useState<Set<string>>(new Set());
+  /** Queue ids ticked but not yet added — see lib/importSelection. */
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [committing, setCommitting] = useState(false);
   const [bulkBusy, setBulkBusy] = useState(false);
   const [loading, setLoading] = useState(() => getCachedCookPilotSummaries(user.uid) === null);
   const [loadingMore, setLoadingMore] = useState(false);
@@ -164,13 +175,14 @@ function SignedInCookPilotImport({
   // own shape and need it back to fetch a recipe's detail, so the two are kept
   // side by side rather than one being converted away.
   const rows = useMemo(() => summaries.map(cookPilotImportSummary), [summaries]);
-  const byId = useMemo(
-    () => new Map(summaries.map((summary) => [summary.id, summary] as const)),
-    [summaries],
+  /* Selection is keyed by queue id, so committing has to get back from a queue
+     id to the summary whose detail document it needs. */
+  const byQueueId = useMemo(
+    () => new Map(rows.map((row, index) => [row.queueId, summaries[index]!] as const)),
+    [rows, summaries],
   );
   const visibleRows = useMemo(() => filterImportSummaries(rows, queryText), [rows, queryText]);
-  const allVisibleAdded =
-    visibleRows.length > 0 && visibleRows.every((row) => addedIds.has(row.queueId));
+  const allVisibleSelected = allSelectableSelectedIn(visibleRows, addedIds, selectedIds);
 
   // The library total, fetched beside the first page rather than derived from
   // it. Its own effect because it is independent of pagination — it does not
@@ -291,40 +303,26 @@ function SignedInCookPilotImport({
       .finally(() => setLoadingMore(false));
   }
 
-  async function handleToggle(row: ImportSummary) {
-    const summary = byId.get(row.id);
-    if (!summary) return;
-    if (addingIds.has(summary.id)) return;
-    if (addedIds.has(row.queueId)) {
-      onRemoveRecipe(row.queueId);
-      return;
-    }
-    setError(null);
-    setAddingIds((current) => new Set(current).add(summary.id));
-    try {
-      const queueItems = await loadCookPilotQueueItems(user.uid, [summary]);
-      onAddRecipes(queueItems);
-    } catch (err) {
-      setError(friendlyRecipeLibraryError(err, "We couldn't add that recipe. Please try again."));
-    } finally {
-      setAddingIds((current) => {
-        const next = new Set(current);
-        next.delete(summary.id);
-        return next;
-      });
-    }
+  /** Local and instant: nothing is read from CookPilot until the commit. */
+  function handleToggle(row: ImportSummary) {
+    if (addedIds.has(row.queueId)) return;
+    if (error) setError(null);
+    setSelectedIds((current) => toggleSelection(current, row.queueId));
   }
 
-  async function handleAddAll() {
-    if (bulkBusy) return;
-    if (allVisibleAdded) {
-      visibleRows.forEach((row) => onRemoveRecipe(row.queueId));
+  async function handleToggleAll() {
+    if (bulkBusy || committing) return;
+    if (allVisibleSelected) {
+      const visible = new Set(visibleRows.map((row) => row.queueId));
+      // Only what is on screen: a selection made under an earlier search is
+      // still the cook's, and clearing a filtered view should not reach past it.
+      setSelectedIds((current) => new Set(Array.from(current).filter((id) => !visible.has(id))));
       return;
     }
     setError(null);
     setBulkBusy(true);
     try {
-      // "Add all" means the whole library, not just whatever's been scrolled
+      // "Select all" means the whole library, not just whatever's been scrolled
       // into view so far — load any remaining pages first if needed.
       let allSummaries = summaries;
       if (hasMoreCookPilotSummaries(user.uid)) {
@@ -332,22 +330,58 @@ function SignedInCookPilotImport({
         setSummaries(allSummaries);
         setHasMore(false);
       }
-      const targets = filterImportSummaries(allSummaries.map(cookPilotImportSummary), queryText)
-        .filter((row) => !addedIds.has(row.queueId))
-        .map((row) => allSummaries.find((summary) => summary.id === row.id))
-        .filter((summary): summary is CookPilotRecipeSummary => Boolean(summary));
-      if (targets.length === 0) return;
-      const queueItems = await loadCookPilotQueueItems(user.uid, targets);
-      onAddRecipes(queueItems);
+      const targets = selectableQueueIds(
+        filterImportSummaries(allSummaries.map(cookPilotImportSummary), queryText),
+        addedIds,
+      );
+      setSelectedIds((current) => new Set(Array.from(current).concat(targets)));
     } catch (err) {
-      setError(friendlyRecipeLibraryError(err, "We couldn't add those recipes. Please try again."));
+      setError(
+        friendlyRecipeLibraryError(err, "We couldn't load the rest of your recipes. Please try again."),
+      );
     } finally {
       setBulkBusy(false);
     }
   }
 
+  /**
+   * The one write to the print list.
+   *
+   * Reads every chosen recipe's detail document, adds the ones that came back,
+   * and leaves the ones that did not still ticked — so "try again" is the same
+   * button, already counting only what is left. See `partialAddMessage`.
+   */
+  async function handleCommit() {
+    if (committing || selectedIds.size === 0) return;
+    const targets = Array.from(selectedIds)
+      .map((queueId) => byQueueId.get(queueId))
+      .filter((summary): summary is CookPilotRecipeSummary => Boolean(summary));
+    if (targets.length === 0) return;
+    setError(null);
+    setCommitting(true);
+    try {
+      const { items: queueItems, failedIds } = await loadCookPilotQueueItems(user.uid, targets);
+      onAddRecipes(queueItems);
+      const failed = new Set(failedIds.map(cookPilotQueueId));
+      setSelectedIds((current) => new Set(Array.from(current).filter((id) => failed.has(id))));
+      if (failedIds.length > 0) {
+        setError(partialAddMessage(queueItems.length, failedIds.length));
+      }
+    } catch (err) {
+      // The whole read failed (offline, signed out mid-add), so nothing was
+      // added and everything stays selected.
+      setError(friendlyRecipeLibraryError(err, "We couldn't add those recipes. Please try again."));
+    } finally {
+      setCommitting(false);
+    }
+  }
+
   return (
     <RecipeSourceList
+      // A picture and a name, nothing else. The cooking time and serving
+      // count came across sparse and uneven, so most rows carried an empty
+      // line and the ones that did not drew the eye for no reason.
+      showMeta={false}
       heading="CookPilot recipes"
       /* The size of the LIBRARY, not of what has scrolled into view. `total`
          is the server's count and is right from the first render; the loaded
@@ -362,11 +396,15 @@ function SignedInCookPilotImport({
       }
       summaries={visibleRows}
       addedIds={addedIds}
-      addingIds={addingIds}
-      bulkBusy={bulkBusy}
-      allVisibleAdded={allVisibleAdded}
+      selectedIds={selectedIds}
+      allSelectableSelected={allVisibleSelected}
       onToggle={handleToggle}
-      onAddAll={handleAddAll}
+      onToggleAll={handleToggleAll}
+      selectAllBusy={bulkBusy}
+      onCommit={handleCommit}
+      commitLabel={commitLabel}
+      commitLeavesPage={commitLeavesPage}
+      committing={committing}
       queryText={queryText}
       onQueryChange={setQueryText}
       searchId="cookpilot-search"
@@ -430,11 +468,15 @@ function SignedInCookPilotImport({
 export function CookPilotImportSource({
   items,
   onAddRecipes,
-  onRemoveRecipe,
+  commitLabel,
+  commitLeavesPage = false,
 }: {
   items: QueueItem[];
   onAddRecipes: (recipes: QueueItem[]) => number;
-  onRemoveRecipe: (id: string) => void;
+  /** What the surrounding panel's submit says — see ImportPanel. */
+  commitLabel: string;
+  /** And whether pressing it navigates, which decides its icon. */
+  commitLeavesPage?: boolean;
 }) {
   const { user, ready, redirectError } = useCookPilotAuth();
   const [showEmailLogin, setShowEmailLogin] = useState(false);
@@ -462,7 +504,8 @@ export function CookPilotImportSource({
           user={user}
           items={items}
           onAddRecipes={onAddRecipes}
-          onRemoveRecipe={onRemoveRecipe}
+          commitLabel={commitLabel}
+          commitLeavesPage={commitLeavesPage}
         />
       )}
 

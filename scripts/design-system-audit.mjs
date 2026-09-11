@@ -33,6 +33,26 @@ function report(file, line, message) {
   failures.push(`${path.relative(root, file)}:${line}: ${message}`);
 }
 
+/**
+ * Clay as a word, allowed by exact line and nowhere else.
+ *
+ * The blanket ban below is the right default: clay is 3.44:1 on page and
+ * 3.7:1 on card, under the 4.5:1 that body text answers to. But WCAG asks
+ * 3:1 of LARGE text (bold from 18.66px, regular from 24px), and clay clears
+ * that, so the rule is a size rule wearing a colour rule's clothes.
+ *
+ * A line-based scanner cannot see a font size, so the exceptions are listed
+ * here by their exact text with the size that justifies each one. Reformat the
+ * line and the allowance lapses, which is the point: the next person to touch
+ * it has to come back here and re-state why it is safe.
+ */
+const allowedClayText = new Map([
+  [
+    '<span className="text-[var(--cp-accent-warm)]">worth making again.</span>',
+    "app/page.tsx — the h1, 800 weight at 44px desktop / 28px mobile",
+  ],
+]);
+
 const exemptTsx = new Set([
   "app/opengraph-image.tsx", // generated brand artwork
   "app/print/harness/LayoutHarness.tsx", // internal diagnostic UI
@@ -379,8 +399,15 @@ for (const target of cssTargets) {
     for (const file of walk(path.join(root, directory)).filter((n) => n.endsWith(".tsx"))) {
       if (exemptTsx.has(path.relative(root, file))) continue;
       scannableLines(file, fs.readFileSync(file, "utf8")).forEach((line, index) => {
-        if (/text-\[var\(--cp-accent-warm\)\]/.test(line)) {
-          report(file, index + 1, "clay is a fill, a border and an icon — never a word");
+        if (
+          /text-\[var\(--cp-accent-warm\)\]/.test(line) &&
+          !allowedClayText.has(line.trim())
+        ) {
+          report(
+            file,
+            index + 1,
+            "clay is a fill, a border and an icon — never a word (large text can be allowlisted in allowedClayText)",
+          );
         }
         if (/bg-\[var\(--cp-accent(?:-warm)?-soft\)\]/.test(line) && /text-\[var\(--cp-accent\)\]/.test(line)) {
           report(file, index + 1, "cornflower is 4.4:1 on a tint — text there is var(--cp-ink)");

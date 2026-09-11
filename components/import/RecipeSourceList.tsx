@@ -5,6 +5,7 @@ import type { ImportSummary } from "@/lib/importSummary";
 import { formatRecipeTime } from "@/lib/time";
 import { EmptyState } from "@/components/EmptyState";
 import {
+  ArrowRightIcon,
   CheckIcon,
   ClockIcon,
   ICON_SIZE,
@@ -15,29 +16,37 @@ import {
 } from "@/components/icons";
 
 /**
- * The browse-and-add list every library source shares.
+ * The browse-and-choose list every library source shares.
  *
  * It was CookPilot's, back when CookPilot was the only library we could read.
- * Paprika needs exactly the same thing — a searchable list of recipes with an
- * Add on each row and an Add all above them — and the fastest way to get two
- * pickers that behave differently is to write the second one. So this holds
- * the list, and each source keeps only what is genuinely its own: CookPilot's
- * auth and pagination, Paprika's file.
+ * Paprika needs exactly the same thing — a searchable list of recipes you tick
+ * and then add — and the fastest way to get two pickers that behave
+ * differently is to write the second one. So this holds the list, and each
+ * source keeps only what is genuinely its own: CookPilot's auth and
+ * pagination, Paprika's file.
  *
  * Everything about *loading* stays with the source. This is handed a filtered
  * list and told what to say; it does not fetch, page, or filter.
+ *
+ * Ticking a row is local and instant (see lib/importSelection) — the print
+ * list is written once, by the button at the bottom. A row already in the
+ * print list says so and cannot be ticked: it is in, and the place it comes
+ * back out is the print page.
  */
 
 function RecipeRow({
   summary,
   added,
-  adding,
+  selected,
+  showMeta,
   fallbackIcon: FallbackIcon,
   onToggle,
 }: {
   summary: ImportSummary;
   added: boolean;
-  adding: boolean;
+  selected: boolean;
+  /** Whether the cooking time and serving count go under the title. */
+  showMeta: boolean;
   fallbackIcon: ComponentType<{ size?: number }>;
   onToggle: () => void;
 }) {
@@ -47,13 +56,24 @@ function RecipeRow({
   return (
     <button
       type="button"
+      role="checkbox"
+      aria-checked={added || selected}
+      aria-disabled={added || undefined}
+      disabled={added}
       onClick={onToggle}
-      disabled={adding}
       aria-label={
-        added ? `Remove ${summary.title} from print list` : `Add ${summary.title} to print list`
+        added
+          ? `${summary.title} is already in your print list`
+          : selected
+            ? `Don't add ${summary.title}`
+            : `Add ${summary.title}`
       }
-      className={`group flex w-full items-center gap-cp-3 rounded-xl border p-cp-2 text-left transition-colors ${
-        added ? "border-brand bg-brand-50/60" : "border-line bg-card hover:border-line-strong"
+      className={`import-recipe-row group flex w-full items-center gap-cp-3 rounded-xl border p-cp-2 text-left transition-colors ${
+        selected
+          ? "border-[var(--cp-selected-border)] bg-[var(--cp-selected-fill)] text-[var(--cp-selected-text)]"
+          : added
+            ? "border-line bg-page"
+            : "border-line bg-card hover:border-line-strong"
       }`}
     >
       <div className="relative h-14 w-14 flex-shrink-0 overflow-hidden rounded-lg bg-page grid place-items-center text-brand/50">
@@ -71,18 +91,35 @@ function RecipeRow({
         )}
       </div>
 
-      <div className="min-w-0 flex-1">
-        <p className="text-cp-body font-bold leading-snug line-clamp-1">{summary.title}</p>
-        {(time || servings) && (
-          <p className="mt-0.5 flex flex-wrap items-center gap-x-cp-3 gap-y-0.5 text-cp-caption text-ink-soft">
+      {/* Every row is the same height, and it is the height of a row with a
+          two-line title and one line of meta under it — see the sizing rules in
+          globals.css. Not because uniformity is tidy, but because a grid whose
+          cards each size to their own content has rows of three different
+          heights and cards that don't reach the bottom of their own row, which
+          reads as broken rather than as varied. The alternative, stretching
+          every row to the tallest card in the whole library, makes sixty-four
+          cards pay for one long title. */}
+      <div
+        className={`import-recipe-row__text${
+          showMeta ? "" : " import-recipe-row__text--no-meta"
+        }`}
+      >
+        <p className="import-recipe-row__title">{summary.title}</p>
+        {/* Not rendered when there is nothing to put in it. The block above
+            reserves the height, so an empty line here reserves nothing and only
+            weighs the title down: a recipe with no time and no serving count
+            centred its title-plus-an-invisible-line, which put the title a third
+            of the way down its card while every card beside it looked centred. */}
+        {showMeta && (time || servings) && (
+          <p className="import-recipe-row__meta">
             {time && (
-              <span className="inline-flex items-center gap-1">
+              <span>
                 <ClockIcon size={ICON_SIZE.sm} />
                 {time}
               </span>
             )}
             {servings && (
-              <span className="inline-flex items-center gap-1">
+              <span>
                 <UsersIcon size={ICON_SIZE.sm} />
                 Serves {servings}
               </span>
@@ -97,9 +134,17 @@ function RecipeRow({
           Added
         </span>
       ) : (
-        <span className="btn btn-secondary btn-compact flex-shrink-0 pointer-events-none transition-colors group-hover:border-line-strong group-hover:bg-page">
-          {adding ? <SpinnerIcon size={ICON_SIZE.md} /> : <PlusIcon size={ICON_SIZE.md} />}
-          Add
+        /* A tickbox, because that is what it now is. The row still reads as a
+           whole control — the box is the mark, not the hit area. */
+        <span
+          aria-hidden
+          className={`grid h-6 w-6 flex-shrink-0 place-items-center rounded-md border transition-colors ${
+            selected
+              ? "border-[var(--cp-selected-border)] bg-[var(--cp-selected-border)] text-card"
+              : "border-line-strong bg-card group-hover:bg-page"
+          }`}
+        >
+          {selected && <CheckIcon size={ICON_SIZE.sm} />}
         </span>
       )}
     </button>
@@ -111,11 +156,16 @@ export function RecipeSourceList({
   countLabel,
   summaries,
   addedIds,
-  addingIds,
-  bulkBusy = false,
-  allVisibleAdded,
+  showMeta = true,
+  selectedIds,
+  allSelectableSelected,
   onToggle,
-  onAddAll,
+  onToggleAll,
+  selectAllBusy = false,
+  onCommit,
+  commitLabel,
+  commitLeavesPage = false,
+  committing = false,
   queryText,
   onQueryChange,
   searchId,
@@ -133,14 +183,27 @@ export function RecipeSourceList({
   countLabel?: string;
   /** Already filtered by `queryText`; this list renders what it is given. */
   summaries: ImportSummary[];
-  /** Queue ids already in the print list. */
+  /** Cooking time and servings under each title. Off for CookPilot, whose
+      rows are a picture and a name and nothing else. */
+  showMeta?: boolean;
+  /** Queue ids already in the print list. Shown as such, not selectable. */
   addedIds: Set<string>;
-  /** Source ids mid-add, so their row can spin. */
-  addingIds: Set<string>;
-  bulkBusy?: boolean;
-  allVisibleAdded: boolean;
+  /** Queue ids ticked but not yet added. */
+  selectedIds: Set<string>;
+  /** Whether every still-addable visible row is ticked. */
+  allSelectableSelected: boolean;
   onToggle: (summary: ImportSummary) => void;
-  onAddAll: () => void;
+  onToggleAll: () => void;
+  /** CookPilot's "Select all" may have to fetch the rest of the library first. */
+  selectAllBusy?: boolean;
+  onCommit: () => void;
+  /** The words the surrounding panel's submit uses. Every import type ends in
+      the same button, so the picker borrows it rather than inventing a verb. */
+  commitLabel: string;
+  /** Whether pressing it navigates: an arrow if so, a plus if it adds to what
+      is already on screen. Follows the panel's own submit — see ImportPanel. */
+  commitLeavesPage?: boolean;
+  committing?: boolean;
   queryText: string;
   onQueryChange: (value: string) => void;
   searchId: string;
@@ -160,6 +223,13 @@ export function RecipeSourceList({
   footer?: ReactNode;
 }) {
   const isSearching = queryText.trim().length > 0;
+  const selectedCount = selectedIds.size;
+  // Counted over what is loaded, which after "Select all" is the whole
+  // library, since that button pages the rest in before it selects.
+  const alreadyAdded = summaries.filter((summary) => addedIds.has(summary.queueId)).length;
+  // Nothing addable left to select, so the control has nothing to offer.
+  const canSelectAll =
+    allSelectableSelected || summaries.some((summary) => !addedIds.has(summary.queueId));
 
   return (
     <div className="flex flex-col gap-cp-4">
@@ -168,17 +238,39 @@ export function RecipeSourceList({
           {heading}
           {countLabel ? ` ${countLabel}` : ""}
         </h3>
-        {!loading && !error && summaries.length > 0 && (
-          <button
-            type="button"
-            className="btn-ghost btn-compact flex-shrink-0"
-            onClick={onAddAll}
-            disabled={bulkBusy}
-          >
-            {bulkBusy ? <SpinnerIcon size={ICON_SIZE.sm} /> : null}
-            {allVisibleAdded ? "Remove all" : "Add all"}
-          </button>
-        )}
+        <div className="flex flex-shrink-0 items-center gap-cp-2">
+          {/* The count used to be inside the commit button ("Add 5 recipes").
+              It reads here instead so that button can say exactly what every
+              other import type's button says. A selection made under a search
+              survives clearing it, so this can exceed what is on screen, which
+              is why it is a number and not "these". */}
+          {/* "65 recipes" in the heading and "64 selected" here is arithmetic
+              nobody can follow without being told the missing one is already
+              in the print list. Select all deliberately skips those, so the
+              count that explains the gap is shown beside it. */}
+          {selectedCount > 0 && (
+            <span className="text-cp-caption font-bold text-ink" role="status">
+              {selectedCount} selected
+              {alreadyAdded > 0 && (
+                <span className="font-medium text-ink-soft">
+                  {" "}
+                  · {alreadyAdded} already added
+                </span>
+              )}
+            </span>
+          )}
+          {!loading && !error && summaries.length > 0 && canSelectAll && (
+            <button
+              type="button"
+              className="btn-ghost btn-compact"
+              onClick={onToggleAll}
+              disabled={selectAllBusy || committing}
+            >
+              {selectAllBusy ? <SpinnerIcon size={ICON_SIZE.sm} /> : null}
+              {allSelectableSelected ? "Clear selection" : "Select all"}
+            </button>
+          )}
+        </div>
       </div>
 
       <div className="relative">
@@ -218,13 +310,19 @@ export function RecipeSourceList({
       )}
 
       {!loading && !error && summaries.length > 0 && (
-        <ul className="import-recipe-list flex flex-col gap-cp-2">
+        /* A grid, not a column. A library is browsed by scanning it, and one
+           recipe per row turned sixty-five of them into sixty-five screens of
+           scrolling. Column count comes from the available width (see
+           `.import-recipe-list`), so the same markup is three across on the
+           front door and one across on a phone. */
+        <ul className="import-recipe-list">
           {summaries.map((summary) => (
             <li key={summary.queueId}>
               <RecipeRow
+                showMeta={showMeta}
                 summary={summary}
                 added={addedIds.has(summary.queueId)}
-                adding={addingIds.has(summary.id)}
+                selected={selectedIds.has(summary.queueId)}
                 fallbackIcon={fallbackIcon}
                 onToggle={() => onToggle(summary)}
               />
@@ -234,6 +332,53 @@ export function RecipeSourceList({
       )}
 
       {footer}
+
+      {/* The one write, PINNED.
+          It stays on screen with nothing ticked so the picker always shows how
+          choosing here ends, rather than growing a button the first time you
+          tick something. It sticks to the bottom of the scroller because a
+          library is long: laid out after the list, a 65-recipe account had to
+          be scrolled to the end to reach it, which also dragged every remaining
+          page in through the infinite scroll. Adding one recipe should not cost
+          you the whole library.
+
+          It says what the panel's other submit buttons say — see `commitLabel`.
+          The count it used to carry is up beside "Select all". */}
+      {!loading && (selectedCount > 0 || summaries.length > 0) && (
+        <div className="import-source-commit">
+          <button
+            type="button"
+            className="btn btn-primary w-full"
+            onClick={onCommit}
+            disabled={selectedCount === 0 || committing}
+          >
+            {/* Trailing arrow when the button is a door, leading plus when it
+                adds to the page you are on — the same order the panel's own
+                submit uses (see ImportPanel). The spinner takes whichever slot
+                the icon it replaces was in, so the label does not jump sideways
+                mid-commit. */}
+            {commitLeavesPage ? (
+              <>
+                {commitLabel}
+                {committing ? (
+                  <SpinnerIcon size={ICON_SIZE.md} />
+                ) : (
+                  <ArrowRightIcon size={ICON_SIZE.md} />
+                )}
+              </>
+            ) : (
+              <>
+                {committing ? (
+                  <SpinnerIcon size={ICON_SIZE.md} />
+                ) : (
+                  <PlusIcon size={ICON_SIZE.md} />
+                )}
+                {commitLabel}
+              </>
+            )}
+          </button>
+        </div>
+      )}
     </div>
   );
 }

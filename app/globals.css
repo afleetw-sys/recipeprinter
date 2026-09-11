@@ -446,6 +446,17 @@
   backdrop-filter: var(--cp-scrim-blur);
 }
 
+/* The photo viewer's ground, a step darker than a form dialog's.
+   `--cp-scrim` is 36% ink, which is right behind a panel that paints its own
+   white card: the scrim only has to separate the two. A photograph paints no
+   card, so the scrim IS the surround, and at 36% the page underneath stayed
+   busy enough to compete with the picture. Scoped rather than raising the
+   shared token, which every other modal in the app reads. */
+.rp-photo-scrim {
+  background: color-mix(in srgb, var(--cp-ink) 62%, transparent);
+  backdrop-filter: var(--cp-scrim-blur);
+}
+
 @media (max-width: 760px) {
 }
 .cookbook-welcome__panel,
@@ -1116,12 +1127,18 @@
   }
 }
 
+/* Phones get smaller headlines, not much smaller ones.
+   These steps used to take the home H1 from 44px on a desktop to 27.8px on a
+   375px phone, a 37% cut, while the copy under it moved 8%. The result read as
+   a page whose headline had been shrunk to fit rather than set for the screen,
+   and it closed the gap between the two sizes to the point where the subtitle
+   was nearly as loud as the title. A 375px phone now lands at 32px. */
 @media screen and (max-width: 768px) {
   :root {
     --cp-fs-body-lg: 0.98rem;
-    --cp-fs-hero-sm: clamp(1.7rem, 1.3rem + 2vw, 2.15rem);
-    --cp-fs-hero: clamp(1.82rem, 1.25rem + 3vw, 2.35rem);
-    --cp-fs-hero-lg: clamp(2rem, 1.25rem + 4.8vw, 3.1rem);
+    --cp-fs-hero-sm: clamp(1.85rem, 1.4rem + 2vw, 2.3rem);
+    --cp-fs-hero: clamp(2rem, 1.4rem + 3vw, 2.55rem);
+    --cp-fs-hero-lg: clamp(2.2rem, 1.4rem + 4.8vw, 3.4rem);
     --cp-fs-wordmark: 1.1rem;
     --cp-fs-wordmark-compact: 1rem;
   }
@@ -1130,9 +1147,9 @@
 @media screen and (max-width: 480px) {
   :root {
     --cp-fs-body-lg: 0.94rem;
-    --cp-fs-hero-sm: clamp(1.52rem, 1.2rem + 1.8vw, 1.75rem);
-    --cp-fs-hero: clamp(1.62rem, 1.15rem + 2.5vw, 1.95rem);
-    --cp-fs-hero-lg: clamp(1.78rem, 1.1rem + 4vw, 2.3rem);
+    --cp-fs-hero-sm: clamp(1.72rem, 1.35rem + 1.8vw, 1.95rem);
+    --cp-fs-hero: clamp(1.95rem, 1.5rem + 2.2vw, 2.3rem);
+    --cp-fs-hero-lg: clamp(2.05rem, 1.35rem + 3.6vw, 2.6rem);
     --cp-fs-wordmark: 0.98rem;
     --cp-fs-wordmark-compact: 0.94rem;
   }
@@ -1179,6 +1196,16 @@
     min-height: 34px;
     padding: 0 14px;
   }
+  /* An icon in a button keeps its size. Without this a squeezed button takes
+     the difference out of the icon, which distorts a logo before the label
+     gives up a pixel. */
+  .btn > svg,
+  .btn > img,
+  .btn-ghost > svg,
+  .btn-ghost > img {
+    flex-shrink: 0;
+  }
+
   .btn:hover:not(:disabled) {
     transform: translateY(-1px);
   }
@@ -1218,7 +1245,10 @@
 
   /* Ghost / icon */
   .btn-ghost {
-    @apply inline-flex items-center justify-center rounded;
+    /* 6px between an icon and its label: this had none, and `.btn`'s 8px read
+       as two things that happened to be adjacent rather than one control.
+       Icon-only ghosts have nothing to space and are unaffected. */
+    @apply inline-flex items-center justify-center gap-1.5 rounded;
     /* 34px, the family's own height — not 40. A ghost Cancel sits directly
        beside a filled confirm in every dialog footer, and standing 6px taller
        made the pair read as two different kinds of control. */
@@ -1679,6 +1709,125 @@
     background: var(--cp-card);
     border: 1px solid var(--cp-line);
     @apply rounded-2xl;
+  }
+
+  /* The library picker's Add button, pinned to the bottom of whatever is
+     scrolling it.
+
+     Laid out after the list it belongs to, an account with sixty-five recipes
+     had to be scrolled all the way down to reach it — and scrolling that far is
+     exactly what pulls every remaining page in through the infinite scroll. So
+     adding one recipe cost you the whole library first. Sticky keeps it where a
+     one-recipe trip needs it: on screen from the moment the list appears.
+
+     Works in both homes without knowing which it is in: on the home page the
+     document scrolls and this pins to the viewport, and inside the Add-recipe
+     dialog the dialog body scrolls and it pins to that. The negative top margin
+     cancels the column's own gap so the bar hugs the list rather than floating
+     a step above it, and the card fill is what keeps rows from showing through
+     as they pass underneath. */
+  .import-source-commit {
+    position: sticky;
+    bottom: 0;
+    z-index: 1;
+    margin-top: -16px;
+    padding: 12px 0 8px;
+    background: var(--cp-card);
+  }
+
+  /* A library, laid out as a library.
+     One recipe per row meant sixty-five recipes were sixty-five screens of
+     scrolling before you could see whether the one you wanted was in there.
+     `auto-fill` rather than a fixed count, so the same markup is three across
+     on the front door, two in the narrower Add-recipe dialog, and one on a
+     phone — the column count follows the room there is instead of being
+     declared per surface. 210px is the floor at which a 56px thumbnail, a
+     two-line title and the tickbox still sit in one row without crushing. */
+  .import-recipe-list {
+    display: grid;
+    /* 240px, not 210. The floor decides the column count on every surface at
+       once: 810px of front door makes three, and the ~430px Add-recipe dialog
+       makes one rather than two 215px cells too narrow to hold a title and its
+       cooking time without one of them breaking. */
+    grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+    gap: 8px;
+    align-items: stretch;
+  }
+
+  /* The card fills its cell. `align-items: stretch` stretches the grid ITEM,
+     and the bordered card is a button inside it, so without this two cards in
+     the same row ended at different depths inside a row sized by the taller. */
+  .import-recipe-list > li {
+    display: flex;
+  }
+
+  /* ── One card height, arrived at rather than imposed ──────────────────────
+     Every card is a two-line title over one line of meta, whether or not it has
+     two lines of title or any meta at all. That is what makes the rows even.
+
+     The obvious alternative — `grid-auto-rows: 1fr` — is even too, but it sizes
+     every row in the library to its single tallest card, so one long title with
+     a long cooking time under it pays out to all sixty-four of the others. This
+     reserves the same two lines everywhere instead, which lands within a few
+     pixels of the thumbnail the card already carries. */
+  /* The reserved block, and the thing that centres inside it.
+     The height is what a two-line title over one line of meta comes to, spelled
+     out of the tokens rather than measured off a screenshot. Holding it here
+     rather than on the title is what lets a card with one line of title and no
+     cooking time sit in the MIDDLE of that space instead of hanging from the
+     top of it, which is what a reserved-but-unused line looks like. */
+  .import-recipe-row__text {
+    min-width: 0;
+    flex: 1 1 auto;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    min-height: calc(2 * 1.375 * var(--cp-fs-body) + 1.4 * var(--cp-fs-caption) + 2px);
+  }
+
+  /* Two title lines and nothing under them, for a list that shows no meta.
+     Without this the block still reserves the meta line it is no longer given,
+     and every row carries a band of empty space under its title. */
+  .import-recipe-row__text--no-meta {
+    min-height: calc(2 * 1.375 * var(--cp-fs-body));
+  }
+
+  .import-recipe-row__title {
+    font-size: var(--cp-fs-body);
+    font-weight: 700;
+    line-height: 1.375;
+    /* Clamped at two so a long title cannot grow its row. The two lines are
+       RESERVED by the block above, not here, so that an unused second line is
+       space the title sits centred in rather than space it sits on top of. */
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+
+  .import-recipe-row__meta {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 0 10px;
+    margin-top: 2px;
+    font-size: var(--cp-fs-caption);
+    line-height: 1.4;
+    color: var(--cp-ink-soft);
+    /* Exactly one line, always. In a cell narrow enough that the serving count
+       will not sit beside the time, it wraps onto a second line that is clipped
+       away rather than growing the card — the cooking time is the half worth
+       keeping, and a card that quietly says less is better than a row that is
+       taller than the two beside it. */
+    height: calc(1.4em);
+    overflow: hidden;
+  }
+
+  .import-recipe-row__meta > span {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    white-space: nowrap;
   }
 
   /* .panel doubles as the import panel's surface on the homepage, so the
@@ -2302,230 +2451,106 @@
     @apply text-cp-small leading-relaxed;
   }
 
-  /* The import panel always lives on the left. On desktop both columns always
-     fill the row; only the split changes. While empty, import takes the larger
-     share; once the first recipe is added, the recipes panel takes it. It never
-     collapses back to a vertical stack. */
+  /* One column, because there is only one thing here now. This was a
+     two-column grid — importer beside the print list — and the list is gone:
+     home is a front door, not a workspace holding a queue (see
+     PrinterWorkspace). The width and the centring belong to the page's own
+     column (`max-w-home`), not to this, so the hero above and the gallery below
+     line up with it on both edges rather than each finding its own measure. */
   .rp-printer-workspace {
     @apply w-full animate-fade-up;
   }
-  .rp-printer-workspace--landing,
-  .rp-printer-workspace--active {
+  .rp-printer-workspace--landing {
     @apply flex flex-col gap-cp-6;
   }
-  .rp-workspace-import,
-  .rp-workspace-project {
+  .rp-workspace-import {
     min-width: 0;
   }
 
-  .rp-mobile-print-tray {
-    display: none;
+  /* The homepage front door: hero plus importer, centred in the screen the top
+     bar leaves behind, with just enough height held back that the photo strip
+     shows a slice of itself underneath.
+     `min-height`, never `height`: the importer grows when a mode with a
+     textarea is picked, and a fixed box would have scrolled or clipped it.
+     `dvh` so a phone's collapsing address bar does not leave a gap. */
+  /* The front door starts at a fixed offset under the top bar and is otherwise
+     sized by what it holds. No reserved height.
+     It used to reserve `100dvh` minus a slice, which pinned the photo strip
+     to a spot derived from the WINDOW rather than from the card above it. The
+     card could grow a whole textarea taller and the strip would not budge,
+     because the reserved space silently swallowed it. The strip belongs under
+     the card, so it moves when the card does.
+     The offset stays on the top, which is what keeps the headline and the top
+     edge of the card in the same place whatever mode is open: everything the
+     card gains goes downward. */
+  .rp-home-frontdoor {
+    /* Less of it on a phone, where 5rem under a 62px bar was most of what you
+       could see before the headline started. */
+    --rp-home-top: 2rem;
+    padding-top: var(--rp-home-top);
   }
 
-  /* Below the two-column desktop layout, "Recipes to print" already sits
-     directly on the page with no card around it — drop the Import panel's
-     card treatment too so the two sections read the same, and add a hairline
-     divider in its place so the boundary between them doesn't disappear. */
+  @media (min-width: 640px) {
+    .rp-home-frontdoor {
+      --rp-home-top: 5rem;
+    }
+  }
+
+  /* The "Off the printer" carousel track.
+     No scrollbar: the arrows on the photos say which way there is more to
+     see, and the half-visible next picture says the strip moves, so the bar
+     was a third piece of chrome telling the reader the same thing. Scrolling
+     itself is untouched — wheel, trackpad, touch and the arrow keys all still
+     work, this hides the indicator rather than the behaviour.
+     `overscroll-behavior-x: contain` stops a horizontal trackpad flick at the
+     end of the strip from being taken as a browser back-gesture, which
+     navigated away from the page mid-browse. */
+  .rp-gallery-track {
+    overscroll-behavior-x: contain;
+    scrollbar-width: none;
+  }
+  .rp-gallery-track::-webkit-scrollbar {
+    display: none;
+  }
+  /* The focus ring belongs on the track as a whole; without it a keyboard user
+     tabbing onto a scrollable region gets no indication they landed on it. */
+  .rp-gallery-track:focus-visible {
+    outline: var(--cp-focus-ring);
+    outline-offset: 2px;
+    border-radius: var(--cp-radius-lg);
+  }
+
+  /* The importer keeps its surface at every width, and carries no outline on
+     any of them. It used to drop both below 1024px, which left the front door
+     as loose text floating above the strip of framed photographs underneath.
+     The fill alone is enough to say "this is the thing you use": a hairline
+     around it on a page whose other panels have none drew a box for the sake
+     of drawing one.
+
+     Below `lg` the padding and the matching outward margin are set on the
+     element itself (see ImportPanel), because the padding utility there would
+     beat anything written here. */
+  .rp-import-panel {
+    border-color: transparent;
+  }
+
+  /* Below the desktop layout the importer's own controls come in a step, so
+     the panel does not stand taller than the headline above it. The headline
+     drops about a quarter between a desktop and a phone; the field was going
+     the other way, 50px to 54px, which is what made the two look unrelated.
+     The mode tabs are NOT part of this. They sit at 44px because that is the
+     floor for something a thumb has to hit, and the field keeps its 16px text
+     because anything under that makes iOS Safari zoom the page the moment it
+     takes focus. Those two are the reason the controls cannot simply follow
+     the type down. */
   @media (max-width: 1023px) {
-    /* Room for the fixed tray — only when the tray is actually there. An empty
-       queue renders no tray, so reserving the space would just be a gap. */
-    .rp-printer-workspace--has-tray {
-      padding-bottom: 96px;
-    }
-
-    .rp-import-panel {
-      border: 0;
-      border-radius: 0;
-      background: transparent;
-    }
-
-    .rp-workspace-import {
-      padding-bottom: 20px;
-    }
-
-    .rp-workspace-project {
-      display: none !important;
-    }
-
-    .rp-mobile-print-tray {
-      position: fixed;
-      left: 0;
-      right: 0;
-      bottom: var(--rp-keyboard-inset, 0px);
-      z-index: 40;
-      display: block;
-      padding: 0 12px calc(10px + env(safe-area-inset-bottom));
-      pointer-events: none;
-    }
-
-    .rp-mobile-print-tray__panel {
-      max-width: 42rem;
-      margin: 0 auto;
-      overflow: hidden;
-      border: 1px solid var(--cp-line-strong);
-      border-radius: 18px;
-      background: color-mix(in srgb, var(--cp-card) 96%, transparent);
-      box-shadow: var(--cp-shadow-lg);
-      pointer-events: auto;
-      backdrop-filter: blur(14px);
-    }
-
-    .rp-mobile-print-tray__bar {
-      display: grid;
-      grid-template-columns: minmax(0, 1fr) auto;
-      align-items: center;
-      gap: 10px;
-      padding: 10px;
-    }
-
-    .rp-mobile-print-tray__toggle {
-      display: grid;
-      grid-template-columns: minmax(0, 1fr) 22px;
-      align-items: center;
-      gap: 8px;
-      min-width: 0;
-      min-height: 44px;
-      padding: 0 4px 0 8px;
-      text-align: left;
-      color: var(--cp-ink);
-    }
-
-    .rp-mobile-print-tray__title,
-    .rp-mobile-print-tray__meta {
-      display: block;
-      overflow: hidden;
-      text-overflow: ellipsis;
-      white-space: nowrap;
-    }
-
-    .rp-mobile-print-tray__title {
-      font-size: var(--cp-fs-body);
-      font-weight: 800;
-      letter-spacing: 0;
-    }
-
-    .rp-mobile-print-tray__meta {
-      margin-top: 1px;
-      color: var(--cp-ink-soft);
-      font-size: var(--cp-fs-caption);
-      font-weight: 700;
-    }
-
-    .rp-mobile-print-tray__chevron {
-      color: var(--cp-ink-soft);
-      transform: rotate(0deg);
-      transition: transform 180ms ease;
-    }
-
-    .rp-mobile-print-tray.is-open .rp-mobile-print-tray__chevron {
-      transform: rotate(180deg);
-    }
-
-    .rp-mobile-print-tray__print {
-      min-width: 112px;
-    }
-
-    /* Once there's something to print, let it outrank "Add recipe" as the
-       primary action — accent fill instead of the ink-black shared by every
-       other primary button. */
-    .rp-mobile-print-tray__print--ready {
-      background: var(--cp-accent);
-      color: var(--cp-on-accent);
-    }
-
-    .rp-mobile-print-tray__content {
-      display: none;
-      max-height: calc(100dvh - 124px);
-      padding: 0 10px 12px;
-      overflow-y: auto;
-      overscroll-behavior: contain;
-      border-top: 1px solid var(--cp-line);
-    }
-
-    .rp-mobile-print-tray.is-open .rp-mobile-print-tray__content {
-      display: block;
-    }
-
-    .rp-mobile-print-tray__actions {
-      display: flex;
-      justify-content: flex-end;
-      padding: 8px 0;
-    }
-
-    .rp-mobile-print-tray .grid {
-      gap: 10px;
-    }
-
-    .rp-mobile-print-tray .rounded-xl {
-      border-radius: 12px;
-    }
-
-    .rp-mobile-print-tray .rp-print-queue-empty {
-      margin: 10px 0 2px;
-      padding: 32px 18px 34px;
-    }
-
-    .rp-mobile-print-tray li > .mt-2 {
-      flex-direction: column;
-      align-items: flex-start;
-    }
-
-    .rp-mobile-print-tray li > .mt-2 .btn-ghost {
-      margin-top: 0;
+    .rp-import-panel .field {
+      min-height: 48px;
+      padding: 12px 14px;
     }
   }
 
   @media (min-width: 1024px) {
-    /* Both columns always span the full row; the fr split is all that changes,
-       so the width shift animates smoothly. */
-    .rp-printer-workspace--landing,
-    .rp-printer-workspace--active {
-      display: grid;
-      align-items: start;
-      gap: clamp(20px, 3vw, 34px);
-      transition: grid-template-columns 380ms cubic-bezier(0.4, 0, 0.2, 1);
-    }
-
-    .rp-printer-workspace--no-intro {
-      transition: none;
-    }
-
-    /* No recipes yet: import takes the larger share. */
-    .rp-printer-workspace--landing {
-      grid-template-columns: minmax(280px, 2fr) minmax(220px, 1fr);
-    }
-
-    /* First recipe added: recipes panel takes the larger share. */
-    .rp-printer-workspace--active {
-      grid-template-columns: minmax(280px, 0.46fr) minmax(0, 1fr);
-    }
-
-    .rp-workspace-import {
-      position: sticky;
-      top: 24px;
-    }
-
-    /* Tall, narrow viewports (portrait tablets) still get the two-column
-       layout above but have much less spare width to give it than a landscape
-       desktop. Tighten the gap so the Import column — and its CookPilot
-       toggle — isn't squeezed as hard. */
-    @media (orientation: portrait) {
-      .rp-printer-workspace--landing,
-      .rp-printer-workspace--active {
-        gap: clamp(12px, 1.5vw, 20px);
-      }
-    }
-
-    .rp-workspace-project {
-      overflow: hidden;
-      padding: 24px;
-      border: 1px solid var(--cp-line);
-      border-radius: 28px;
-      background:
-        linear-gradient(180deg, color-mix(in srgb, var(--cp-card) 78%, transparent), color-mix(in srgb, var(--cp-card) 42%, transparent)),
-        color-mix(in srgb, var(--cp-page) 86%, var(--cp-card));
-    }
-
     .rp-import-panel--workspace {
       border-radius: 18px;
       background: color-mix(in srgb, var(--cp-card) 72%, var(--cp-page));
@@ -2590,11 +2615,12 @@
   }
 }
 
-/* "Already added" cue. Re-importing a recipe that's already queued focuses the
-   existing card instead of adding a duplicate; it scrolls into view and shakes
-   so it's obvious why nothing new appeared. Shared by the home queue
-   (`.rp-queue-item--shake`) and the print rail (`.recipe-page-rail__row--shake`,
-   styled in print.css). */
+/* "Already added" cue. Re-importing a recipe that's already in the project
+   focuses the existing card instead of adding a duplicate; it scrolls into view
+   and shakes so it's obvious why nothing new appeared. The keyframes live here
+   rather than in print.css because they were shared with the home page's own
+   queue; that queue is gone, and the print rail
+   (`.recipe-page-rail__row--shake`) is the one caller left. */
 @keyframes rp-shake {
   10%, 90% { transform: translateX(-1px); }
   20%, 80% { transform: translateX(2px); }
@@ -2605,19 +2631,6 @@
   0%, 100% { box-shadow: 0 0 0 0 transparent; }
   30%, 60% { box-shadow: 0 0 0 3px color-mix(in srgb, var(--cp-accent) 60%, transparent); }
 }
-.rp-queue-item--shake {
-  animation: rp-shake 0.5s cubic-bezier(0.36, 0.07, 0.19, 0.97) both;
-}
-/* Motion-sensitive cooks get a brief accent ring instead of the shake. */
-@media (prefers-reduced-motion: reduce) {
-  .rp-queue-item--shake {
-    animation: none;
-  }
-  .rp-queue-item--shake > div {
-    animation: rp-attention-ring 0.6s ease both;
-  }
-}
-
 /* Site-wide print rules. The recipe card/template/print-page CSS that used to
    follow here now lives in app/print/print.css, loaded only by the print
    routes. What stays is what any page can need: `.no-print` is on the shared

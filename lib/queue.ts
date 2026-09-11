@@ -652,6 +652,13 @@ export function useQueue() {
       const nextRecipes = recipes.filter((recipe) => !existingIds.has(recipe.id));
       if (nextRecipes.length === 0) return 0;
       commit([...itemsRef.current, ...nextRecipes]);
+      // These can arrive from ANOTHER document: a Paprika pick made on the home
+      // page is handed to /print through lib/pendingImport, and an object URL
+      // dies with the document that minted it. A soft navigation keeps the same
+      // document and hides that, so it only shows up on the hard-navigation
+      // path — a photo silently missing from a recipe that plainly had one.
+      // No-ops when the images are live or remote, which is every other caller.
+      void rehydrateLocalPhotos(nextRecipes);
       // These arrive already parsed, so they never touch runParse — count them
       // here or the library sources silently miss from every import total.
       // No started/failed pair: there's no parse step that could fail.
@@ -660,7 +667,7 @@ export function useQueue() {
       });
       return nextRecipes.length;
     },
-    [commit],
+    [commit, rehydrateLocalPhotos],
   );
 
   /** Whether a failed item can be retried in place (URL + text only). */

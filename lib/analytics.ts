@@ -36,6 +36,17 @@ type PurchasedProduct = "premium_template" | "cookbook";
  *   - timeout: the parser ran past its deadline.
  *   - unknown: anything we didn't classify.
  */
+/**
+ * Which door an import came through.
+ *
+ * `home` is the front door's importer, `capture` an SEO landing page's block —
+ * both of which hand the payload to the print page rather than parsing it.
+ * `rail` is the paste field at the end of the print page's page list, and
+ * `dialog` its Add-recipe dialog. The pair that matters is rail against home:
+ * one is adding in place, the other is the round trip this work exists to end.
+ */
+export type ImportSurface = "home" | "capture" | "rail" | "dialog";
+
 export type ImportFailureCode =
   | "blocked"
   | "not_found"
@@ -76,6 +87,21 @@ type EventProps = {
   // a broken parser look identical to a visitor who wandered off: a pageview,
   // no print, no explanation. `hostname` (never the full URL — that's what
   // someone is cooking) is what tells us which recipe sites we choke on.
+  /**
+   * A cook handed an import over, and which door they came through.
+   *
+   * Every import finishes on the print page now — the home page and the SEO
+   * capture blocks stash the payload and navigate rather than parsing anything
+   * themselves — so `$current_url` reads "/print" on all three events below
+   * whatever surface the cook actually used. This is the only thing that can
+   * tell "pasted at the end of the page rail" apart from "walked back to the
+   * home page for the second recipe", which is the question the launcher change
+   * turns on: adding in place only beats the Back button if people find it.
+   *
+   * Fires at the point of handoff, so it counts intent rather than success, and
+   * `recipe_import_started` remains the parse-side denominator.
+   */
+  recipe_import_submitted: { surface: ImportSurface; source: ImportMethod };
   /** An import was accepted and parsing began. The denominator. */
   recipe_import_started: { source: ImportMethod; hostname?: string };
   /** Parsing produced a recipe. */

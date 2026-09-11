@@ -1,90 +1,77 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { ImportPanel } from "@/components/ImportPanel";
-import { PrintQueue } from "@/components/PrintQueue";
-import {
-  ChevronDownIcon,
-  ICON_SIZE,
-  MoreVerticalIcon,
-  PrintIcon,
-  TrashIcon,
-} from "@/components/icons";
-import { createCurrentPrintJob, useQueue } from "@/lib/queue";
+import { useQueue } from "@/lib/queue";
 import { useProjectMeta } from "@/lib/project";
 import { fileProjectLocally } from "@/lib/localProjects";
-import { takePendingImport } from "@/lib/pendingImport";
-import type { ImportTab } from "@/types/recipe";
-import { useMenuDismiss } from "@/lib/useMenuDismiss";
+import { stashPendingImport, type PendingImport } from "@/lib/pendingImport";
+import { imageLabel, prepareImageDataUrls } from "@/lib/imageImport";
+import { ImportError } from "@/lib/parser";
+import { track } from "@/lib/analytics";
+import type { ImportMethod, ImportTab, QueueItem } from "@/types/recipe";
 
-// The interactive heart of RecipePrinter: importing recipes and managing the
-// print queue. Split out from the homepage so the page itself can stay a server
-// component, all the marketing, FAQ, and structured-data content around this
-// renders as static HTML for search engines and a fast first paint.
+/**
+ * The front door: the box you put a recipe into, and nothing else.
+ *
+ * It used to be the box AND the print list, with a count over it, a Clear all
+ * in a menu beside it, a remove on every row and a fixed tray on mobile. Every
+ * one of those said the same thing — this page holds your stuff, it waits for
+ * you — and the code meant the opposite. Arriving here FILES the project and
+ * releases it (see the effect below), deliberately, so a page advertising a
+ * queue it is about to put away could not be made to read straight. Two groups
+ * of cooks were reading it two ways, and the ones who read "cart" pressed Back
+ * for recipe two and found an empty page.
+ *
+ * The clear stays. What goes is the cart around it, and once the cart is gone
+ * the clear stops being perceptible at all: a front door being empty is just
+ * what front doors are.
+ *
+ * The other half is where an import lands. Adding used to happen here and
+ * looking at the result happened on /print, so verifying each recipe — which is
+ * what people actually do, one at a time, after each import — cost a round trip
+ * per recipe. So this hands off: whatever gets pasted, dropped or picked here is
+ * stashed and finished on /print, where the printable card is, and /print grew
+ * a paste field at the end of its rail so recipe two never has to come back.
+ *
+ * Handing the payload over rather than importing it here is also what keeps
+ * this safe. `useQueue` is per-instance React state with no cross-instance sync
+ * (see `isOursToAwait` on the print page), so a parse STARTED here would finish
+ * inside this unmounted hook's closure and /print's copy would never hear about
+ * it. Nothing here starts one. The stash is the same carrier the SEO landing
+ * pages have always used, so this is one mechanism, not a second.
+ *
+ * Split out from the homepage so the page itself can stay a server component:
+ * all the marketing, FAQ and structured-data content around this renders as
+ * static HTML for search engines and a fast first paint. This file is
+ * deliberately free of Firebase for the same reason.
+ */
 export function PrinterWorkspace({
   initialImportMode = "url",
-  importSubmitLabel,
-  consumePendingImport = false,
+  importSubmitLabel = "Start printing",
 }: {
   initialImportMode?: ImportTab;
-  importSubmitLabel?: string;
   /**
-   * When true, on mount (after the queue hydrates) pick up any recipe a visitor
-   * started importing on an SEO landing page and finish it here — the capture →
-   * app handoff. Enabled on the home page, which is the handoff target.
+   * The submit button's words. Same as the SEO capture blocks use, because it
+   * is the same act on a different doorstep.
+   *
+   * "Add" was the question the cart model answered wrong: add to WHAT? But
+   * naming the thing you get is harder than it looks, because this one button
+   * serves four sources and every noun is wrong for some of them. "Cards"
+   * promises 4x6 and hands over a Letter page, which is the default size.
+   * "Recipes", plural, is what a library pick produces and not what a pasted
+   * link does. Naming the ACT instead is true of one recipe and forty, at
+   * either size, and in a cookbook.
    */
-  consumePendingImport?: boolean;
+  importSubmitLabel?: string;
 }) {
   const router = useRouter();
-  const {
-    items,
-    focusedItemId,
-    focusNonce,
-    hydrated,
-    hydratedWithItems,
-    addUrl,
-    addImages,
-    addImageFiles,
-    addText,
-    addReadyRecipes,
-    retry,
-    canRetry,
-    remove,
-    clear,
-  } = useQueue();
+  const { items, hydrated, clear } = useQueue();
   const { meta, hydrated: metaHydrated, startNewProject } = useProjectMeta();
-  /**
-   * "Clear all" means "I'm starting something else", so it releases the
-   * project identity as well as the recipes. Clearing only the list left the
-   * id pointing at whatever was last saved, and the next autosave wrote the
-   * new recipes over that cookbook. The saved book is untouched — it keeps
-   * its own id, document and purchase, and stays in the library.
-   */
-  function startOver() {
-    clear();
-    startNewProject();
-  }
-  const readyItems = items.filter((it) => it.status === "ready");
-  const readyRecipeIds = readyItems.map((it) => it.id);
-  const hasProject = hydrated && items.length > 0;
-  const readyToPrintLabel =
-    hydrated && readyItems.length > 0 ? `Ready to print (${readyItems.length})` : "Ready to print";
-
-  const [menuOpen, setMenuOpen] = useState(false);
-  /** The cookbook just filed on the way in, so the page can say where it went. */
-  const [mobileQueueOpen, setMobileQueueOpen] = useState(false);
-  const [hasShownEmptyState, setHasShownEmptyState] = useState(false);
-  const menuRef = useRef<HTMLDivElement | null>(null);
-  const skipProjectIntro = hydratedWithItems && hasProject && !hasShownEmptyState;
-  const hasAutoOpenedTrayRef = useRef(false);
-  const prevItemsLengthRef = useRef<number | null>(null);
-  const consumedPendingRef = useRef(false);
+  const [handoffError, setHandoffError] = useState<string | null>(null);
   const leftCookbookRef = useRef(false);
-
-  useEffect(() => {
-    if (hydrated && items.length === 0) setHasShownEmptyState(true);
-  }, [hydrated, items.length]);
+  const warmedRef = useRef(false);
 
   /**
    * Coming home means you finished with what you were working on, so this page
@@ -97,11 +84,11 @@ export function PrinterWorkspace({
    * Preview button that walked straight back into the book, which was a second
    * door into one document and a bound book dressed up as loose cards.
    *
-   * The cost is that the round trip home → preview → home no longer preserves
-   * the queue, so you cannot come back here to add one more recipe to the job
-   * you were just previewing. That is only acceptable because the workspace has
-   * its own importer: adding another recipe to the SAME project happens there,
-   * and coming home is unambiguously "I'm done with that one".
+   * The cost used to be that the round trip home → preview → home did not
+   * preserve the queue, so you could not come back here to add one more recipe
+   * to the job you were just previewing. That cost is gone rather than
+   * accepted: there is no round trip to make any more, because adding happens
+   * on /print now, at the end of the rail.
    *
    * This is the fallback path — the browser Back button, a bookmark, a fresh
    * tab. It files to the device only, because this page is deliberately free of
@@ -154,243 +141,120 @@ export function PrinterWorkspace({
     startNewProject();
   }, [hydrated, metaHydrated, meta, items, clear, startNewProject]);
 
-  // Capture → app handoff: a visitor who pasted a link, dropped a photo, or
-  // pasted text on an SEO landing page arrives here mid-import. Wait for the
-  // queue to hydrate first so seeding the pending item can't race the
-  // sessionStorage rehydrate, then consume it exactly once.
-  useEffect(() => {
-    if (!consumePendingImport || !hydrated || consumedPendingRef.current) return;
-    consumedPendingRef.current = true;
-    let cancelled = false;
-    void takePendingImport().then((pending) => {
-      if (cancelled || !pending) return;
-      if (pending.kind === "url") addUrl(pending.url);
-      else if (pending.kind === "text") addText(pending.text);
-      else if (pending.kind === "ready") addReadyRecipes(pending.recipes);
-      else if (pending.kind === "images") addImages(pending.images, pending.label);
-    });
-    return () => {
-      cancelled = true;
-    };
-  }, [consumePendingImport, hydrated, addUrl, addText, addImages, addReadyRecipes]);
-
-  useEffect(() => {
-    if (!hasProject) setMobileQueueOpen(false);
-  }, [hasProject]);
-
-  // First-recipe nudge: pop the sticky tray open so mobile users discover
-  // it's there and expandable, then leave it open. Only fires on a genuine
-  // 0 -> 1 transition observed while mounted (not just "the queue happened
-  // to be non-empty when this page loaded").
-  useEffect(() => {
-    if (!hydrated) return;
-    const prevLength = prevItemsLengthRef.current;
-    prevItemsLengthRef.current = items.length;
-    if (prevLength !== 0 || items.length === 0 || hasAutoOpenedTrayRef.current) return;
-    hasAutoOpenedTrayRef.current = true;
-    setMobileQueueOpen(true);
-  }, [hydrated, items.length]);
+  /**
+   * Start fetching the print page the moment someone touches the importer.
+   *
+   * The one real cost of handing off is that /print is the heavier page: this
+   * one is statically prerendered and free of Firebase, and that one is
+   * neither. Warming it on first interaction spends the download while the cook
+   * is still typing rather than after they press the button. On interaction
+   * rather than on mount, because plenty of people who load the home page never
+   * import anything, and pre-loading the whole app for all of them to save a
+   * second for some of them is the wrong trade.
+   */
+  function warmWorkspace() {
+    if (warmedRef.current) return;
+    warmedRef.current = true;
+    router.prefetch("/print");
+  }
 
   /**
-   * Get the mobile tray out of the way the moment someone reaches for the
-   * import panel.
+   * Hand the payload to /print and go there.
    *
-   * The tray is `position: fixed` at the bottom of the viewport under 1024px,
-   * and it auto-opens the first time a recipe lands. From then on it sat over
-   * the very controls someone taps next: the Link/Image/Paste tabs, the URL
-   * field, the textarea. With a keyboard up as well there was almost nothing
-   * left, and the page read as broken rather than as busy.
-   *
-   * Capture phase, so it still fires for controls that stop propagation, and
-   * on pointerdown rather than click so the tray is already collapsing while
-   * the tap completes. Focus covers keyboard and assistive-tech users, who
-   * never send a pointer event at all.
-   *
-   * Collapsing is not the same as dismissing: the bar itself stays put, with
-   * the count and the Print button on it, so nothing is lost.
+   * Unlike the SEO capture blocks, a failed stash does NOT navigate anyway.
+   * There the alternative was stranding someone on a marketing page; here it
+   * would mean walking them to an empty print page having quietly dropped the
+   * link they just pasted. Staying put, with a sentence saying so, is the
+   * better failure.
    */
-  const collapseMobileTray = useCallback(() => setMobileQueueOpen(false), []);
-
-  const closeMenu = useCallback(() => setMenuOpen(false), []);
-  useMenuDismiss(menuRef, closeMenu, { enabled: menuOpen });
-
-  // Print takes them to the print preview, where they can review the layout and
-  // trigger the actual print from the browser dialog.
-  function handlePrint(ids: string[]) {
-    if (ids.length === 0) return;
-    if (createCurrentPrintJob(ids)) {
+  async function handoff(payload: PendingImport) {
+    setHandoffError(null);
+    // Counted here rather than where the parse starts: by then every import in
+    // the product looks like it happened on /print. See `recipe_import_submitted`.
+    track("recipe_import_submitted", { surface: "home", source: sourceOf(payload) });
+    if (await stashPendingImport(payload)) {
       router.push("/print");
-    } else {
-      router.push(`/print?ids=${ids.join(",")}`);
+      return;
+    }
+    setHandoffError("We couldn't open that recipe. Please try again.");
+  }
+
+  /** The payload's import method, for the handoff event above. */
+  function sourceOf(payload: PendingImport): ImportMethod {
+    if (payload.kind === "url") return "url";
+    if (payload.kind === "text") return "text";
+    if (payload.kind === "images") return "image";
+    // A library pick is whatever library it came from, and a batch is never
+    // mixed: the picker that produced it only reads one source.
+    return payload.recipes[0]?.method ?? "manual";
+  }
+
+  function handleAddUrl(url: string) {
+    void handoff({ kind: "url", url });
+  }
+
+  function handleAddText(text: string) {
+    void handoff({ kind: "text", text });
+  }
+
+  /** Already-parsed recipes from a library picker: CookPilot, a Paprika file. */
+  function handleAddReadyRecipes(recipes: QueueItem[]): number {
+    if (recipes.length === 0) return 0;
+    void handoff({ kind: "ready", recipes });
+    return recipes.length;
+  }
+
+  /**
+   * Photos are decoded here and handed over as data URLs, the way the SEO
+   * capture blocks do it. The queue's own `addImageFiles` would start the read
+   * AND the parse inside this hook, and the parse is the half that must not
+   * begin on a page that is about to unmount.
+   */
+  async function handleAddImageFiles(files: File[], label: string) {
+    setHandoffError(null);
+    try {
+      const images = await prepareImageDataUrls(files);
+      await handoff({ kind: "images", images, label: label || imageLabel(files) });
+    } catch (err) {
+      // Only ImportError carries a sentence written for a cook; anything else
+      // reaching here is an unexpected throw whose `message` is a developer
+      // string.
+      setHandoffError(
+        err instanceof ImportError
+          ? err.message
+          : "Couldn't read those photos. Try different files.",
+      );
     }
   }
 
   return (
-    <div
-      className={`rp-printer-workspace ${
-        hasProject ? "rp-printer-workspace--active" : "rp-printer-workspace--landing"
-      } ${hasProject ? "rp-printer-workspace--has-tray" : ""} ${
-        skipProjectIntro ? "rp-printer-workspace--no-intro" : ""
-      }`}
-    >
-      {/* Import panel */}
+    <div className="rp-printer-workspace rp-printer-workspace--landing">
+      {/* Warmed on the first touch anywhere in the panel, which covers typing,
+          dropping a photo and opening a library alike — see `warmWorkspace`. */}
       <div
         className="rp-workspace-import"
-        onPointerDownCapture={collapseMobileTray}
-        onFocusCapture={collapseMobileTray}
+        onPointerDownCapture={warmWorkspace}
+        onFocusCapture={warmWorkspace}
       >
         <ImportPanel
-          items={items}
+          /* Always empty, and that is the point: this page holds no print list,
+             so nothing can be marked as already added and every import source
+             stays on show. */
+          items={[]}
           workspace
           initialMode={initialImportMode}
           submitLabel={importSubmitLabel}
-          onAddUrl={addUrl}
-          onAddImageFiles={addImageFiles}
-          onAddText={addText}
-          onAddReadyRecipes={addReadyRecipes}
-          onRemoveRecipe={remove}
+          onAddUrl={handleAddUrl}
+          onAddImageFiles={(files, label) => void handleAddImageFiles(files, label)}
+          onAddText={handleAddText}
+          onAddReadyRecipes={handleAddReadyRecipes}
         />
-      </div>
-
-      {/* Recipes to print */}
-      <section
-        className="rp-workspace-project flex flex-col gap-cp-4"
-        aria-labelledby="rp-queue-heading"
-      >
-        <div className="flex items-start justify-between gap-cp-4 flex-wrap">
-          <div>
-            <h2
-              id="rp-queue-heading"
-              className="text-cp-h2 font-extrabold tracking-[-0.02em]"
-            >
-              {readyToPrintLabel}
-            </h2>
-          </div>
-          <div className="flex items-center gap-cp-2 ml-auto">
-            {hasProject && (
-              <div ref={menuRef} className="relative">
-                <button
-                  type="button"
-                  aria-label="More list actions"
-                  aria-haspopup="menu"
-                  aria-expanded={menuOpen}
-                  className="btn-ghost btn-compact"
-                  onClick={() => setMenuOpen((open) => !open)}
-                >
-                  <MoreVerticalIcon size={ICON_SIZE.lg} />
-                </button>
-
-                {menuOpen && (
-                  <div className="cp-menu mode-toggle-menu" role="menu" aria-label="Recipe list actions">
-                    <button
-                      type="button"
-                      role="menuitem"
-                      className="cp-menu__item cp-menu__item--danger"
-                      onClick={() => {
-                        startOver();
-                        setMenuOpen(false);
-                      }}
-                    >
-                      <TrashIcon size={ICON_SIZE.lg} />
-                      Clear all
-                    </button>
-                  </div>
-                )}
-              </div>
-            )}
-
-            <button
-              type="button"
-              className="btn btn-primary btn-compact"
-              disabled={readyRecipeIds.length === 0}
-              onClick={() => handlePrint(readyRecipeIds)}
-            >
-              <PrintIcon size={ICON_SIZE.md} />
-              {readyRecipeIds.length > 0 ? `Preview (${readyRecipeIds.length})` : "Preview"}
-            </button>
-          </div>
-        </div>
-
-        {hydrated ? (
-          <PrintQueue
-            items={items}
-            canRetry={canRetry}
-            onRetry={retry}
-            onRemove={remove}
-            animateItems={!skipProjectIntro}
-            focusedItemId={focusedItemId}
-            focusNonce={focusNonce}
-          />
-        ) : (
-          <div className="h-24 rounded-2xl border border-dashed border-line-strong" />
+        {handoffError && (
+          <p className="field-error mt-cp-3" role="alert">
+            {handoffError}
+          </p>
         )}
-      </section>
-
-      {/* The tray is fixed to the bottom of the viewport on mobile, so an empty
-          one is pure clutter sitting over the import panel someone is trying to
-          use. It only exists once there's something in the queue to print. */}
-      {hasProject && (
-        <section
-          className={`rp-mobile-print-tray ${mobileQueueOpen ? "is-open" : ""}`}
-          aria-labelledby="rp-mobile-queue-heading"
-        >
-          <div className="rp-mobile-print-tray__panel">
-            <div className="rp-mobile-print-tray__bar">
-              <button
-                type="button"
-                className="rp-mobile-print-tray__toggle"
-                aria-expanded={mobileQueueOpen}
-                aria-controls="rp-mobile-queue-content"
-                onClick={() => setMobileQueueOpen((open) => !open)}
-              >
-                <span>
-                  <span id="rp-mobile-queue-heading" className="rp-mobile-print-tray__title">
-                    {readyToPrintLabel}
-                  </span>
-                  {readyItems.length === 0 && (
-                    <span className="rp-mobile-print-tray__meta">{`${items.length} added`}</span>
-                  )}
-                </span>
-                <ChevronDownIcon size={ICON_SIZE.lg} className="rp-mobile-print-tray__chevron" />
-              </button>
-
-              <button
-                type="button"
-                className={`btn btn-primary btn-compact rp-mobile-print-tray__print ${
-                  readyRecipeIds.length > 0 ? "rp-mobile-print-tray__print--ready" : ""
-                }`}
-                disabled={readyRecipeIds.length === 0}
-                onClick={() => handlePrint(readyRecipeIds)}
-              >
-                <PrintIcon size={ICON_SIZE.md} />
-                {readyRecipeIds.length > 0 ? `Preview (${readyRecipeIds.length})` : "Preview"}
-              </button>
-            </div>
-
-            <div id="rp-mobile-queue-content" className="rp-mobile-print-tray__content">
-              <div className="rp-mobile-print-tray__actions">
-                <button
-                  type="button"
-                  className="btn-ghost btn-ghost--danger btn-compact"
-                  onClick={startOver}
-                >
-                  <TrashIcon size={ICON_SIZE.md} />
-                  Clear all
-                </button>
-              </div>
-              <PrintQueue
-                items={items}
-                canRetry={canRetry}
-                onRetry={retry}
-                onRemove={remove}
-                animateItems={!skipProjectIntro}
-                focusedItemId={focusedItemId}
-                focusNonce={focusNonce}
-              />
-            </div>
-          </div>
-        </section>
-      )}
+      </div>
     </div>
   );
 }

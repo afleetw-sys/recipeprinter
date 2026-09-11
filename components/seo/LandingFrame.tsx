@@ -217,7 +217,16 @@ export function LandingFrame({
 }) {
   return (
     <div className="min-h-screen flex flex-col">
-      <SiteHeader actions={headerActions} />
+      {/* Sticky, so the CTA in it survives the scroll.
+          These pages are long, and the CTA was in the header already — it just
+          left with the header in the first screenful, so the rest of the page
+          had no way to act on what it had just argued. It points at the
+          capture block on this page (`CAPTURE_HREF`) rather than at /, which
+          matters because each landing page configures its own field label,
+          placeholder and submit wording; sending someone to the home page
+          would throw all of that away and land them somewhere they did not
+          ask for. */}
+      <SiteHeader actions={headerActions} sticky />
       <main className="flex-1 px-cp-6 sm:px-cp-7 lg:px-[40px]">
         <div className="max-w-content mx-auto flex flex-col gap-[72px] lg:gap-[96px] pt-cp-5 pb-[80px]">
           {children}

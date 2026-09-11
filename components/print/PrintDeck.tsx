@@ -1,6 +1,6 @@
 "use client";
 
-import { Fragment, useRef, useState } from "react";
+import { Fragment, useRef, useState, type KeyboardEvent as ReactKeyboardEvent } from "react";
 import type {
   CSSProperties,
   Dispatch,
@@ -237,6 +237,13 @@ interface PrintDeckProps {
   /** Imports that failed, which hold their slot rather than vanishing into a
       toast. Rendered by the same anchor rule as the parsing ones. */
   failedImports: QueueItem[];
+  /** The import card the rail has selected, if any. Brings it out of the
+      deck's dimmed state the way `is-active` does for a page. */
+  activeImportId?: string | null;
+  /** Selecting one from the deck itself, the way clicking a page does. */
+  onSelectImport?: (item: QueueItem) => void;
+  /** Recipes that just finished parsing, for the beat they settle in. */
+  settlingIds?: ReadonlySet<string>;
   canRetryImport: (item: QueueItem) => boolean;
   onRetryImport: (id: string) => void;
   onRepairImportWithText: (id: string, text: string) => void;
@@ -328,6 +335,9 @@ export function PrintDeck(props: PrintDeckProps) {
     openAddRecipeBelow,
     parsingImports,
     failedImports,
+    activeImportId,
+    onSelectImport,
+    settlingIds,
     canRetryImport,
     onRetryImport,
     onRepairImportWithText,
@@ -884,7 +894,29 @@ export function PrintDeck(props: PrintDeckProps) {
       <>
         {parsingImports.map((pendingItem, index) => (
           <div
-            className="recipe-page-slide recipe-page-pending"
+            className={`recipe-page-slide recipe-page-pending ${
+              activeImportId === pendingItem.id ? "is-active" : ""
+            }`}
+            // A page slide is a button you click to move to it. These were
+            // neither, so a card that is still loading or has failed behaved
+            // unlike every other card in the deck. Only while it is NOT the
+            // current one: once you are on it, the controls inside it are the
+            // things you press.
+            {...(activeImportId === pendingItem.id
+              ? {}
+              : {
+                  role: "button" as const,
+                  tabIndex: 0,
+                  onClick: () => onSelectImport?.(pendingItem),
+                  onKeyDown: (event: ReactKeyboardEvent) => {
+                    if (event.key === "Enter" || event.key === " ") {
+                      event.preventDefault();
+                      onSelectImport?.(pendingItem);
+                    }
+                  },
+                })}
+            aria-current={activeImportId === pendingItem.id}
+            aria-label={`Importing ${pendingItem.source}`}
             key={`parsing-page-${pendingItem.id}`}
             data-pending-import-id={pendingItem.id}
             // The deck scrolls itself here while the import parses. Found by
@@ -916,7 +948,24 @@ export function PrintDeck(props: PrintDeckProps) {
       <>
         {failedImports.map((failedItem) => (
           <div
-            className="recipe-page-slide recipe-page-failed"
+            className={`recipe-page-slide recipe-page-failed ${
+              activeImportId === failedItem.id ? "is-active" : ""
+            }`}
+            {...(activeImportId === failedItem.id
+              ? {}
+              : {
+                  role: "button" as const,
+                  tabIndex: 0,
+                  onClick: () => onSelectImport?.(failedItem),
+                  onKeyDown: (event: ReactKeyboardEvent) => {
+                    if (event.key === "Enter" || event.key === " ") {
+                      event.preventDefault();
+                      onSelectImport?.(failedItem);
+                    }
+                  },
+                })}
+            aria-current={activeImportId === failedItem.id}
+            aria-label={`Couldn't import ${failedItem.source}`}
             key={`failed-page-${failedItem.id}`}
             data-failed-import-id={failedItem.id}
           >
@@ -1025,12 +1074,39 @@ export function PrintDeck(props: PrintDeckProps) {
             ref={deckRef}
           >
             {previewMeasuring ? (
-              <RecipeLoadingState className="recipe-page-deck__loading" />
-            ) : navItems.length === 0 ? (
+              /* The import cards stay up through the measure.
+                 This used to swap the whole deck for one loading state, which
+                 took the placeholder down with it: a recipe finished parsing,
+                 its spinner card vanished, the deck showed a different spinner
+                 while it paginated, and a page appeared afterwards. Three
+                 states where there should be one, and the reason the handover
+                 read as "that card disappeared and another was created"
+                 instead of the card resolving.
+                 These two are outside the sheets pipeline, so there is nothing
+                 about them to measure and no reason for them to go. The
+                 deck-wide spinner is only for when there is nothing else to
+                 look at. */
+              <>
+                {pendingPages}
+                {failedPages}
+                {!pendingPages && !failedPages && (
+                  <RecipeLoadingState className="recipe-page-deck__loading" />
+                )}
+              </>
+            ) : navItems.length === 0 && parsingImports.length === 0 && failedImports.length === 0 ? (
               /* Deleting the last recipe leaves you standing in the workspace
                  you just emptied, not in an error. So the room stays: same
                  rail, same canvas, same settings panel — and where the pages
-                 were, one page-shaped outline saying what would go there. */
+                 were, one page-shaped outline saying what would go there.
+
+                 Not while an import is on its way, though, and not while one is
+                 sitting there having failed. Both of those render their own
+                 page-shaped sheet below, so the outline was a SECOND empty page
+                 beside them, captioned "No pages yet" next to a spinner reading
+                 "Getting the recipe from smittenkitchen.com…". That pairing is
+                 the first thing a visitor handed off from a landing page sees,
+                 which is the worst possible place for the app to contradict
+                 itself. */
               /* No wrapper around it. The sheet IS the deck's child, so the
                  deck's own centring and padding place it exactly where a real
                  page would be — anything in between only adds an offset a real
@@ -1284,6 +1360,8 @@ export function PrintDeck(props: PrintDeckProps) {
                     slideRefs.current[index] = el;
                   }}
                   className={`recipe-page-slide ${isActive ? "is-active" : ""} ${
+                    navItem.recipeId && settlingIds?.has(navItem.recipeId) ? "is-settling" : ""
+                  } ${
                     isFirstOnSheet ? "" : "no-print"
                   }`}
                   data-first={index === 0 ? "true" : undefined}

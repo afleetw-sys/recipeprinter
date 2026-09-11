@@ -18,6 +18,7 @@ import { normalizeImportURL } from "@/lib/cookpilot";
 import { imageLabel, partitionImageFiles, validateImageFiles } from "@/lib/imageImport";
 import {
   AppsIcon,
+  ArrowRightIcon,
   ICON_SIZE,
   ImageIcon,
   LinkIcon,
@@ -42,7 +43,9 @@ const MODES: {
   { id: "url", label: "Link", icon: LinkIcon },
   { id: "apps", label: "Recipe apps", icon: AppsIcon },
   { id: "image", label: "Image", icon: ImageIcon },
-  { id: "text", label: "Paste Text", icon: TextIcon },
+  // "Text", not "Paste Text": every other option in this row names the thing
+  // you have, and one verb among three nouns read as the odd one out.
+  { id: "text", label: "Text", icon: TextIcon },
 ];
 
 const PRIMARY_MODES = MODES.filter((mode) => mode.id === "url" || mode.id === "apps");
@@ -75,7 +78,6 @@ export function ImportPanel({
   onAddImageFiles,
   onAddText,
   onAddReadyRecipes,
-  onRemoveRecipe,
   commitRef,
 }: {
   items: QueueItem[];
@@ -99,7 +101,6 @@ export function ImportPanel({
   onAddImageFiles: (files: File[], label: string) => void;
   onAddText: (text: string) => void;
   onAddReadyRecipes: (recipes: QueueItem[]) => number;
-  onRemoveRecipe: (id: string) => void;
   /** Filled in by this panel with a function that submits whatever is in the
       form, so a parent's own "done" button can finish the job. */
   commitRef?: MutableRefObject<(() => boolean) | null>;
@@ -128,16 +129,71 @@ export function ImportPanel({
   const [error, setError] = useState<string | null>(null);
   const [overflowOpen, setOverflowOpen] = useState(false);
   const overflowRef = useRef<HTMLDivElement | null>(null);
+  const urlRef = useRef<HTMLInputElement | null>(null);
+
+  // Focused from an effect on the next frame rather than by the `autoFocus`
+  // attribute, which the Add-recipe dialog was quietly winning: `useModalFocus`
+  // takes the first focusable element in the dialog on mount, child effects run
+  // before their parent's, and this panel is the child — so the browser focused
+  // the field and the trap immediately moved to the close button. A frame later
+  // is after every mount effect, including the trap's.
+  //
+  // `preventScroll` because the same panel appears in an SEO capture block that
+  // can sit below the fold; that one passes `autoFocusUrl={false}`, but focus
+  // should not be able to scroll a page on load even if that changes.
+  useEffect(() => {
+    if (!autoFocusUrl || mode !== "url") return;
+    const frame = requestAnimationFrame(() => {
+      urlRef.current?.focus({ preventScroll: true });
+    });
+    return () => cancelAnimationFrame(frame);
+    // Mount only: re-focusing whenever the mode changed would steal the cursor
+    // back from someone who had just moved to another field.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
   const overflowActive = OVERFLOW_MODES.some((option) => option.id === mode);
   // While the print list is empty, surface every import option so people learn
   // what's available; once a recipe is added, tuck the extras into the overflow.
   // Inside the add dialog that rule inverts — see `showAllModes`.
   const expanded = showAllModes || items.length === 0;
 
+  /**
+   * Does pressing submit go somewhere, or add to what is already on screen?
+   *
+   * On the front door it navigates: the recipe is finished on the print page,
+   * so the button is a door and wears an arrow, TRAILING — an arrow points at
+   * where it is taking you, and one sitting to the left of its own label points
+   * back at the page you are on. Everywhere else it adds to the project you are
+   * already looking at, and wears a leading plus, because a plus is a thing
+   * being put in front of a name rather than a direction. Same order the SEO
+   * capture blocks have always used for the same button.
+   *
+   * The `workspace` flag marks the front door: it is the only surface that has
+   * ever set it.
+   */
+  const submitFace = workspace ? (
+    <>
+      {submitLabel}
+      <ArrowRightIcon size={ICON_SIZE.md} />
+    </>
+  ) : (
+    <>
+      <PlusIcon size={ICON_SIZE.md} />
+      {submitLabel}
+    </>
+  );
+
   const closeOverflow = useCallback(() => setOverflowOpen(false), []);
   useMenuDismiss(overflowRef, closeOverflow, { enabled: overflowOpen });
 
+  // Pressing the tab you are already on means "take me back to the top of
+  // this", which for Recipe apps is the list of sources rather than whichever
+  // library you had open. Counting the presses rather than flipping a flag, so
+  // a second press works as well as the first.
+  const [reselects, setReselects] = useState(0);
+
   function chooseMode(nextMode: ImportTab) {
+    if (nextMode === mode) setReselects((count) => count + 1);
     setMode(nextMode);
     onModeChange?.(nextMode);
     setOverflowOpen(false);
@@ -283,19 +339,21 @@ export function ImportPanel({
 
   return (
     <section
-      className={`rp-import-panel panel p-0 lg:p-cp-6 animate-fade-up ${
+      // `-mx-3 p-3` below `lg`: the card grows outward by exactly the padding
+      // it gains, so it gets breathing room inside its border while its
+      // fields, labels and buttons stay on the same left edge as the headline
+      // above them and the photographs below. Written here rather than in
+      // globals.css because the padding utility on this element would win.
+      className={`rp-import-panel panel -mx-3 p-3 lg:mx-0 lg:p-cp-6 animate-fade-up ${
         workspace ? "rp-import-panel--workspace" : ""
       } ${mode === "apps" ? "rp-import-panel--apps" : ""}`}
-      aria-labelledby={workspace ? "rp-import-heading" : undefined}
-      aria-label={workspace ? undefined : "Import recipes"}
+      // The visible "Add a recipe" heading is gone: the mode buttons, the
+      // field and its own button say what the panel is for, and on a front
+      // door whose headline is already the pitch it was a third thing to read
+      // before anything could be done. It stays as the panel's accessible
+      // name, which a heading was the only thing providing.
+      aria-label={workspace ? "Add a recipe" : "Import recipes"}
     >
-      {workspace && (
-        <div className="mb-cp-4">
-          <h2 id="rp-import-heading" className="text-cp-h2 font-extrabold tracking-[-0.02em]">
-            Add recipes
-          </h2>
-        </div>
-      )}
 
       {/* Mode toggle */}
       <div className="mode-toggle-shell">
@@ -351,7 +409,13 @@ export function ImportPanel({
           <RecipeAppsPanel
             items={items}
             onAddRecipes={onAddReadyRecipes}
-            onRemoveRecipe={onRemoveRecipe}
+            /* The library pickers commit through a button of their own, so it
+               says what every other source's submit says. Four import types
+               that all end in the same words read as one panel with four ways
+               in; four different verbs read as four different tools. */
+            commitLabel={submitLabel}
+            commitLeavesPage={workspace}
+            reselects={reselects}
           />
         </div>
       ) : (
@@ -362,34 +426,72 @@ export function ImportPanel({
               Recipe link
             </label>
             {/* The button is shorter than the field, so it centers against it
-                rather than sitting top-aligned. The error message lives OUTSIDE
-                this row on purpose: inside, it counted toward the height the
-                button centers on, and the button drifted down the moment a bad
-                URL was typed. */}
-            <div className="flex flex-col gap-cp-4 lg:flex-row lg:items-center lg:gap-cp-2">
+                rather than sitting top-aligned.
+                The line under the field is INSIDE this row and ordered last at
+                `lg`. Stacked on a phone the row is the reading order, so a
+                sibling after it landed under the BUTTON, a caption about the
+                field sitting two controls away from it. Wrapping it to its own
+                full-width line at `lg` puts it back under the field there, and
+                because `align-items` centres within a flex LINE rather than
+                the container, the button still centres against the field alone
+                and does not drift when an error appears. */}
+            <div className="flex flex-col gap-cp-2 lg:flex-row lg:flex-wrap lg:items-center lg:gap-cp-2">
               <input
                 id="rp-url"
-                type="url"
+                /* `text`, not `url`. The browser's own `type="url"` check
+                   demands a scheme, so it refused `allrecipes.com/…` and a link
+                   that wrapped across lines on its way through a message — the
+                   exact two inputs `normalizeImportURL` was written to repair,
+                   and which `handleSubmit` below is careful not to reject. A
+                   native gate in front of it made that care unreachable. */
+                type="text"
+                inputMode="url"
+                autoComplete="url"
+                autoCapitalize="none"
+                spellCheck={false}
                 className="field w-full lg:flex-1 lg:min-w-0"
-                placeholder="Paste recipe link here"
+                placeholder="Paste a recipe link"
+                ref={urlRef}
                 value={url}
-                autoFocus={autoFocusUrl}
                 onChange={(e) => {
                   setUrl(e.target.value);
                   resetError();
                 }}
               />
+              {error ? (
+                <p className="field-error lg:order-last lg:w-full" role="alert">
+                  {error}
+                </p>
+              ) : (
+              /* Where the platform list lives, and deliberately not in the
+                 placeholder. A placeholder is gone the moment anyone types, and
+                 at 327px on a phone this one was cut off at "TikTok, Pint" —
+                 losing "any recipe site", which is the half that answers the
+                 question a list provokes. Here it wraps, and it stays.
+
+                 The social names are worth saying because nobody assumes a
+                 printer can read them. These five are the complete set the
+                 product claims — one landing page each, with its own how-to
+                 (lib/seoLandingPages) — and there is no sixth to leave out.
+                 Nothing here is platform-specific in the code: a link goes
+                 through the generic extractor in app/api/parse and then
+                 CookPilot's parser, so the list is a promise we have decided to
+                 make rather than a set of branches. It ends on the open case
+                 rather than a brand, so a closed list never becomes the answer
+                 to "is mine supported?". */
+                <p className="text-cp-caption text-ink-soft lg:order-last lg:w-full">
+                  Works with Instagram, TikTok, Pinterest, Facebook, YouTube, and any recipe site.
+                </p>
+              )}
               {!hideSubmit && (
                 <button
                   type="submit"
-                  className="btn btn-primary rp-import-submit w-full lg:w-auto lg:shrink-0"
+                  className="btn btn-primary rp-import-submit mt-cp-2 w-full lg:mt-0 lg:w-auto lg:shrink-0"
                 >
-                  <PlusIcon size={ICON_SIZE.md} />
-                  {submitLabel}
+                  {submitFace}
                 </button>
               )}
             </div>
-            {error && <p className="field-error" role="alert">{error}</p>}
           </div>
         )}
 
@@ -452,8 +554,7 @@ export function ImportPanel({
 
         {mode !== "url" && !hideSubmit && (
           <button type="submit" className="btn btn-primary rp-import-submit w-full">
-            <PlusIcon size={ICON_SIZE.md} />
-            {submitLabel}
+            {submitFace}
           </button>
         )}
       </form>

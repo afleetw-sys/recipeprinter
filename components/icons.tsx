@@ -149,7 +149,7 @@ export const CookPilotLogoIcon = ({
 }) => (
   // eslint-disable-next-line @next/next/no-img-element
   <img
-    src="/images/cookpilot-logo-bw.png"
+    src="/images/cookpilot-logo.png"
     alt=""
     aria-hidden
     className={className}
@@ -220,11 +220,14 @@ export const PaprikaLogoIcon = ({
 }) => (
   // eslint-disable-next-line @next/next/no-img-element
   <img
-    src="/images/paprika-logo-bw.png"
+    src="/images/paprika-logo.png"
     alt=""
     aria-hidden
     className={className}
-    style={{ width: size, height: size, objectFit: "contain", borderRadius: size * 0.22 }}
+    // No `borderRadius` here any more. The greyscale asset was a full-bleed
+    // square that needed CSS to round it; this one is the real app icon, whose
+    // corners are part of the artwork, and rounding it again cut into them.
+    style={{ width: size, height: size, objectFit: "contain" }}
   />
 );
 
@@ -288,6 +291,15 @@ export const InfoIcon = (p: IconProps) => (
     <circle cx="12" cy="12" r="9" />
     <path d="M12 11v5" />
     <path d="M12 7.6v.6" />
+  </Base>
+);
+
+/** A warning triangle, for an import that did not become a recipe. */
+export const AlertIcon = (p: IconProps) => (
+  <Base {...p}>
+    <path d="M10.3 4.3a2 2 0 013.4 0l7 11.9A2 2 0 0119 19.2H5a2 2 0 01-1.7-3L10.3 4.3z" />
+    <path d="M12 9.5v4" />
+    <path d="M12 16.3v.6" />
   </Base>
 );
 

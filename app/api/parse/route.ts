@@ -5,6 +5,7 @@ import { jsonDataBlocksFromHtml, jsonLdBlocksFromHtml, recipeFromJsonLd } from "
 import { adaptCookPilotRecipes, normalizeImportURL } from "@/lib/cookpilot";
 import { BLOCKED_REMEDY, searchPageMessage, unwrapRedirectUrl } from "@/lib/importUrl";
 import { callerKey, rateLimit } from "@/lib/server/rateLimit";
+import { placeholderHostMessage } from "@/lib/friendlyErrors";
 import { BODY_PREFIX_BYTES, classifyPage, type PageVerdict } from "@/lib/server/botWall";
 import type { ImportFailureCode } from "@/lib/analytics";
 import type { BotWallVendor, ParseResponse, Recipe } from "@/types/recipe";
@@ -312,13 +313,20 @@ function failureForVerdict(verdict: PageVerdict): ImportFailureCode | undefined 
 }
 
 /**
- * What the server-side CookPilot attempt concluded. The distinction that
- * matters is `empty` vs `skipped`: only `empty` means the full parser actually
- * ran and answered "there is no recipe here", which is what lets the client
- * skip re-running it (see `ParseError.parserExhausted`). Anything we couldn't
- * get a real answer out of — not configured for this deployment, an unreadable
- * response body, a status this function doesn't translate — is `skipped`, and
- * the client fallback stays worth trying.
+ * What the server-side CookPilot attempt concluded.
+ *
+ * The distinction that matters is `unconfigured` against everything else, and
+ * it is a billing distinction rather than a semantic one. CookPilot reaches
+ * recipe sites through a paid scraping account, and the client's fallback is
+ * that same parser reached through its own callable — a SECOND full parse,
+ * with its own trip to that paid service. So the invariant this union exists
+ * to hold is: at most one CookPilot parse per import.
+ *
+ * `unconfigured` is the only outcome where CookPilot was never called, and so
+ * the only one where the client's fallback is a first attempt rather than a
+ * duplicate. Everything else — a recipe, an empty answer, a bot wall, a
+ * timeout, a 5xx, an unreadable body — means the parse already happened and
+ * was already paid for.
  */
 type CookPilotServerOutcome =
   | { kind: "recipes"; recipes: Recipe[] }
@@ -330,9 +338,13 @@ type CookPilotServerOutcome =
    * out to the client — see the hook in `POST`.
    */
   | { kind: "blocked"; message: string }
-  | { kind: "skipped" };
+  /** Reached CookPilot, got nothing usable back. Already billed. */
+  | { kind: "inconclusive" }
+  /** Never called: no endpoint or secret on this deployment. Not billed. */
+  | { kind: "unconfigured" };
 
-const SKIPPED: CookPilotServerOutcome = { kind: "skipped" };
+const INCONCLUSIVE: CookPilotServerOutcome = { kind: "inconclusive" };
+const UNCONFIGURED: CookPilotServerOutcome = { kind: "unconfigured" };
 
 /** The parser's own explanation, when its error body carries one. */
 function parserErrorMessage(data: unknown): string | null {
@@ -344,7 +356,7 @@ function parserErrorMessage(data: unknown): string | null {
 async function parseWithCookPilotServer(url: string, hostname: string): Promise<CookPilotServerOutcome> {
   const endpoint = process.env.COOKPILOT_RECIPE_PARSER_URL?.trim();
   const secret = process.env.RECIPEPRINTER_PARSER_SECRET?.trim();
-  if (!endpoint || !secret) return SKIPPED;
+  if (!endpoint || !secret) return UNCONFIGURED;
 
   const startedAt = Date.now();
   let response: Response;
@@ -374,7 +386,7 @@ async function parseWithCookPilotServer(url: string, hostname: string): Promise<
       `parse: cookpilot unreachable  host=${hostname} ms=${Date.now() - startedAt} ` +
         `err=${err instanceof Error ? err.name : "unknown"}`,
     );
-    return SKIPPED;
+    return INCONCLUSIVE;
   }
 
   // Whether this budget can safely be shortened is a question this route had
@@ -391,7 +403,7 @@ async function parseWithCookPilotServer(url: string, hostname: string): Promise<
     if (recipes.length > 0) return { kind: "recipes", recipes };
     // An unreadable body isn't the parser answering "no recipe" — we simply
     // never got its answer, so it doesn't count as exhausted.
-    if (data === null) return SKIPPED;
+    if (data === null) return INCONCLUSIVE;
     // The parser ran and found nothing. Deliberately NOT a throw: the JSON-LD
     // pass below is a genuinely different reader, and a page whose structured
     // data is fine but whose prose defeats the parser used to be rescued only
@@ -436,9 +448,9 @@ async function parseWithCookPilotServer(url: string, hostname: string): Promise<
   // refusing us rather than failing, and they are answers.
   if (response.status >= 500) {
     console.warn(`parse: cookpilot ${response.status}  host=${hostname}`);
-    return SKIPPED;
+    return INCONCLUSIVE;
   }
-  return SKIPPED;
+  return INCONCLUSIVE;
 }
 
 export async function POST(request: Request) {
@@ -475,6 +487,17 @@ export async function POST(request: Request) {
   const searchPage = searchPageMessage(url.toString());
   if (searchPage) return errorResponse(searchPage, { status: 400, failure: "search_page" });
 
+  // A reserved address — example.com, anything under .test — answered from the
+  // URL's own shape, before a single request goes out. The queue already knows
+  // to say this to the cook, but it says it AFTER the parse, and the parse is
+  // not free: CookPilot reaches sites through a paid scraping account, and
+  // example.com alone accounted for 260 credits and 19% of one quarter's spend
+  // on a domain that has never had a recipe on it and never will. 400 so
+  // `shouldTryUrlFallback` treats it as final and it cannot become a second
+  // parse either.
+  const placeholder = placeholderHostMessage(url.hostname);
+  if (placeholder) return errorResponse(placeholder, { status: 400, failure: "placeholder" });
+
   // Once the full parser has answered "no recipe", it stays answered for the
   // rest of this request — whatever our own direct fetch goes on to hit, asking
   // the client to run that same parser again can only reproduce it.
@@ -493,7 +516,14 @@ export async function POST(request: Request) {
     if (cookPilot.kind === "recipes") {
       return NextResponse.json({ success: true, recipes: cookPilot.recipes } satisfies ParseResponse);
     }
-    parserExhausted = cookPilot.kind === "empty";
+    // Not just "the parser answered no recipe" any more: "the parser has
+    // already had its paid attempt at this URL". The client's fallback is a
+    // second full parse through CookPilot's callable, which makes its own trip
+    // to the same paid scraping service, so letting it run after we have
+    // already called CookPilot bills the same import twice. A confirmed bot
+    // wall was the worst case — every walled import was paying the expensive
+    // rung twice over.
+    parserExhausted = cookPilot.kind !== "unconfigured";
 
     if (cookPilot.kind === "blocked") {
       // The parser reached the page and something is standing in front of it.
@@ -524,10 +554,11 @@ export async function POST(request: Request) {
       });
       logVerdict(url, response.status, verdict);
 
-      // Deliberately NOT setting `parserExhausted` on a wall. The client's
-      // fallback reads the page from Google's network rather than ours, and
-      // that is not a theoretical second chance: of nine recipe sites that
-      // wall this fetch, CookPilot's parser reads five of them perfectly well.
+      // `parserExhausted` is already set above whenever CookPilot ran, walls
+      // included. It used to be withheld here on the theory that the client's
+      // fallback was a free second chance from a different network. It reads
+      // the page from a different network all right, but by spending a second
+      // paid scrape to do it.
       const failure = failureForVerdict(verdict);
       const botWall = verdict.kind === "bot_wall" ? { vendor: verdict.vendor } : undefined;
 

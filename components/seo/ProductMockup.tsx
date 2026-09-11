@@ -24,7 +24,7 @@ type PrintedCard = {
 // next/image only uses the ratio, so approximate is fine.
 export const PRINTED_CARDS: Record<string, PrintedCard> = {
   caprese: {
-    src: "/images/card-caprese-pasta-salad.jpeg",
+    src: "/images/printed-cards/card-caprese-pasta-salad.jpeg",
     width: 1200,
     height: 1600,
     recipe: "Caprese Pasta Salad",
@@ -32,7 +32,7 @@ export const PRINTED_CARDS: Record<string, PrintedCard> = {
     alt: "A Caprese pasta salad recipe card printed with RecipePrinter, standing on a sunny outdoor table.",
   },
   korean: {
-    src: "/images/card-korean-beef-bowl.jpeg",
+    src: "/images/printed-cards/card-korean-beef-bowl.jpeg",
     width: 1200,
     height: 1600,
     recipe: "Korean Beef Bowl",
@@ -40,7 +40,7 @@ export const PRINTED_CARDS: Record<string, PrintedCard> = {
     alt: "A Korean beef bowl recipe card printed with RecipePrinter, standing on a sunny outdoor table.",
   },
   pesto: {
-    src: "/images/card-basil-pesto.jpeg",
+    src: "/images/printed-cards/card-basil-pesto.jpeg",
     width: 1200,
     height: 1600,
     recipe: "Basil Pesto",
