@@ -70,12 +70,7 @@ export default function Home() {
                 34rem gave it 544, so it wrapped and left "kitchen." alone on a
                 line of its own. The cap is here to keep a LONGER subhead
                 readable, not to break this one. */}
-            {/* `text-cp-body` up to `sm`, the larger lede size above it. The
-                headline drops 37% between a desktop and a phone (44px to 28px)
-                while `--cp-fs-body-lg` drops 8%, so on a phone the two sizes
-                closed to within 1.85x of each other and the subtitle read
-                nearly as loud as the thing it is subordinate to. */}
-            <p className="mt-cp-3 mx-auto max-w-[38rem] text-ink-soft text-cp-body sm:text-cp-body-lg leading-relaxed">
+            <p className="mt-cp-3 mx-auto max-w-[38rem] text-ink-soft text-cp-body-lg leading-relaxed">
               Turn web and social recipe links into printable recipe cards for your kitchen.
             </p>
           </div>

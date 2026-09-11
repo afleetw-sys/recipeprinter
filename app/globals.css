@@ -1127,12 +1127,18 @@
   }
 }
 
+/* Phones get smaller headlines, not much smaller ones.
+   These steps used to take the home H1 from 44px on a desktop to 27.8px on a
+   375px phone, a 37% cut, while the copy under it moved 8%. The result read as
+   a page whose headline had been shrunk to fit rather than set for the screen,
+   and it closed the gap between the two sizes to the point where the subtitle
+   was nearly as loud as the title. A 375px phone now lands at 32px. */
 @media screen and (max-width: 768px) {
   :root {
     --cp-fs-body-lg: 0.98rem;
-    --cp-fs-hero-sm: clamp(1.7rem, 1.3rem + 2vw, 2.15rem);
-    --cp-fs-hero: clamp(1.82rem, 1.25rem + 3vw, 2.35rem);
-    --cp-fs-hero-lg: clamp(2rem, 1.25rem + 4.8vw, 3.1rem);
+    --cp-fs-hero-sm: clamp(1.85rem, 1.4rem + 2vw, 2.3rem);
+    --cp-fs-hero: clamp(2rem, 1.4rem + 3vw, 2.55rem);
+    --cp-fs-hero-lg: clamp(2.2rem, 1.4rem + 4.8vw, 3.4rem);
     --cp-fs-wordmark: 1.1rem;
     --cp-fs-wordmark-compact: 1rem;
   }
@@ -1141,9 +1147,9 @@
 @media screen and (max-width: 480px) {
   :root {
     --cp-fs-body-lg: 0.94rem;
-    --cp-fs-hero-sm: clamp(1.52rem, 1.2rem + 1.8vw, 1.75rem);
-    --cp-fs-hero: clamp(1.62rem, 1.15rem + 2.5vw, 1.95rem);
-    --cp-fs-hero-lg: clamp(1.78rem, 1.1rem + 4vw, 2.3rem);
+    --cp-fs-hero-sm: clamp(1.72rem, 1.35rem + 1.8vw, 1.95rem);
+    --cp-fs-hero: clamp(1.95rem, 1.5rem + 2.2vw, 2.3rem);
+    --cp-fs-hero-lg: clamp(2.05rem, 1.35rem + 3.6vw, 2.6rem);
     --cp-fs-wordmark: 0.98rem;
     --cp-fs-wordmark-compact: 0.94rem;
   }
@@ -1229,7 +1235,10 @@
 
   /* Ghost / icon */
   .btn-ghost {
-    @apply inline-flex items-center justify-center rounded;
+    /* 6px between an icon and its label: this had none, and `.btn`'s 8px read
+       as two things that happened to be adjacent rather than one control.
+       Icon-only ghosts have nothing to space and are unaffected. */
+    @apply inline-flex items-center justify-center gap-1.5 rounded;
     /* 34px, the family's own height — not 40. A ghost Cancel sits directly
        beside a filled confirm in every dialog footer, and standing 6px taller
        made the pair read as two different kinds of control. */
@@ -2501,16 +2510,19 @@
     border-radius: var(--cp-radius-lg);
   }
 
-  /* The importer keeps its card at every width. It used to drop its border and
-     background below 1024px so the front door read as the page itself asking
-     for a link, which worked while the panel was the only thing on the page.
-     It is not any more: the strip of photographs below it is a row of framed
-     objects, and an importer with no frame of its own read as loose text
-     floating above them rather than as the thing you are meant to use.
+  /* The importer keeps its surface at every width, and carries no outline on
+     any of them. It used to drop both below 1024px, which left the front door
+     as loose text floating above the strip of framed photographs underneath.
+     The fill alone is enough to say "this is the thing you use": a hairline
+     around it on a page whose other panels have none drew a box for the sake
+     of drawing one.
 
      Below `lg` the padding and the matching outward margin are set on the
-     element itself (see ImportPanel), because the `p-0` utility there would
+     element itself (see ImportPanel), because the padding utility there would
      beat anything written here. */
+  .rp-import-panel {
+    border-color: transparent;
+  }
 
   @media (min-width: 1024px) {
     .rp-import-panel--workspace {
