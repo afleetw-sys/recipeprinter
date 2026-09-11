@@ -129,6 +129,28 @@ export function ImportPanel({
   const [error, setError] = useState<string | null>(null);
   const [overflowOpen, setOverflowOpen] = useState(false);
   const overflowRef = useRef<HTMLDivElement | null>(null);
+  const urlRef = useRef<HTMLInputElement | null>(null);
+
+  // Focused from an effect on the next frame rather than by the `autoFocus`
+  // attribute, which the Add-recipe dialog was quietly winning: `useModalFocus`
+  // takes the first focusable element in the dialog on mount, child effects run
+  // before their parent's, and this panel is the child — so the browser focused
+  // the field and the trap immediately moved to the close button. A frame later
+  // is after every mount effect, including the trap's.
+  //
+  // `preventScroll` because the same panel appears in an SEO capture block that
+  // can sit below the fold; that one passes `autoFocusUrl={false}`, but focus
+  // should not be able to scroll a page on load even if that changes.
+  useEffect(() => {
+    if (!autoFocusUrl || mode !== "url") return;
+    const frame = requestAnimationFrame(() => {
+      urlRef.current?.focus({ preventScroll: true });
+    });
+    return () => cancelAnimationFrame(frame);
+    // Mount only: re-focusing whenever the mode changed would steal the cursor
+    // back from someone who had just moved to another field.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
   const overflowActive = OVERFLOW_MODES.some((option) => option.id === mode);
   // While the print list is empty, surface every import option so people learn
   // what's available; once a recipe is added, tuck the extras into the overflow.
@@ -429,8 +451,8 @@ export function ImportPanel({
                 spellCheck={false}
                 className="field w-full lg:flex-1 lg:min-w-0"
                 placeholder="Paste a recipe link"
+                ref={urlRef}
                 value={url}
-                autoFocus={autoFocusUrl}
                 onChange={(e) => {
                   setUrl(e.target.value);
                   resetError();
