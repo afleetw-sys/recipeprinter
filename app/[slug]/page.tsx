@@ -10,6 +10,7 @@ import {
 import { SeoCapture } from "@/components/seo/SeoCapture";
 import { Breadcrumb, type Crumb } from "@/components/seo/Breadcrumb";
 import { CookbookPitch } from "@/components/seo/CookbookPitch";
+import { heroCardKey } from "@/lib/seoImages";
 import {
   ComparisonTable,
   FeatureRows,
@@ -137,7 +138,7 @@ export default function SeoLandingPage({ params }: PageProps) {
         aside={
           <HeroProductPhoto
             imageKey={page.heroImage}
-            cardKey={isGuide ? "pesto" : "korean"}
+            cardKey={heroCardKey(page)}
             // The two defaults describe the CARD photos, which is what
             // the hero was before a page could name its own. A page that
             // names one is showing something else, so it captions it or

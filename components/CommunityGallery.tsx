@@ -249,7 +249,7 @@ function Header() {
       id="rp-gallery-heading"
       className="text-cp-label font-bold uppercase tracking-[0.08em] text-ink-soft"
     >
-      Off the printer
+      Fresh off the printer
     </h2>
   );
 }

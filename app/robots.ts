@@ -11,7 +11,11 @@ export default function robots(): MetadataRoute.Robots {
       allow: "/",
       disallow: ["/print$", "/print?", "/api/"],
     },
-    sitemap: absoluteUrl("/sitemap.xml"),
+    // Two sitemaps, which the protocol allows: the pages, and the
+    // photographs on them. The images need their own because they are
+    // lazy-loaded and served through the image optimizer, so a crawler
+    // reading the markup sees no path ending in .jpeg to follow.
+    sitemap: [absoluteUrl("/sitemap.xml"), absoluteUrl("/image-sitemap.xml")],
     host: absoluteUrl("/"),
   };
 }

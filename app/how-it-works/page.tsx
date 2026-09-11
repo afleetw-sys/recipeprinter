@@ -8,12 +8,13 @@ import {
 import { AppsIcon, ImageIcon, LinkIcon, TextIcon } from "@/components/icons";
 import { FaqSection } from "@/components/seo/FaqSection";
 import { OverviewGrid, type OverviewItem } from "@/components/seo/OverviewGrid";
-import { FeatureCards, type FeatureCard } from "@/components/seo/FeatureCards";
+import { FeatureCards } from "@/components/seo/FeatureCards";
 import { PickerRow } from "@/components/seo/PickerRow";
 import { LandingClose } from "@/components/seo/LandingClose";
 import { Breadcrumb } from "@/components/seo/Breadcrumb";
 import { absoluteUrl, breadcrumbNode, pageMetadata } from "@/lib/seo";
 import { SEO_LANDING_PAGES } from "@/lib/seoLandingPages";
+import { POINTS } from "@/lib/seoFeatureCards";
 
 export const metadata: Metadata = pageMetadata({
   title: "How Recipe Printer Works",
@@ -21,36 +22,6 @@ export const metadata: Metadata = pageMetadata({
     "See how RecipePrinter turns recipes from links, screenshots, photos, and text into printable recipe cards, pages, and PDFs.",
   path: "/how-it-works",
 });
-
-// The three things that happen to a recipe, in order: where it is taken from,
-// what is done to it, and who signs it off. They were a mechanism, a feature
-// and a benefit sitting together, which is a strange set to meet under "what
-// happens to a recipe" on a page called How it works. "Made to be cooked from"
-// is the argument for printing at all, not part of how the printing happens,
-// so it belongs on /features rather than here.
-//
-// Written for someone who cooks. The first one used to say "structured data",
-// which is the true answer to a question nobody asks in those words.
-const POINTS: FeatureCard[] = [
-  {
-    heading: "It takes the recipe, not the page",
-    image: "before-after",
-    body:
-      "Most recipe sites keep a tidy copy of the recipe for Google to read. RecipePrinter takes that one, so the story, the ads and the comments never come with it.",
-  },
-  {
-    heading: "It rebuilds it for the paper",
-    image: "card-in-box",
-    body:
-      "Ingredients down one side, method down the other, set for the size you pick. A long recipe prints on the back too, with cut lines to trim by.",
-  },
-  {
-    heading: "Nothing prints until you say so",
-    image: "inline-editing",
-    body:
-      "You see the card before it goes anywhere, and nothing on it is fixed. Change an amount, cut a step, add a note in your own words.",
-  },
-];
 
 // Questions about the machine, which is what this page is for. Deliberately not
 // the ones /faq already answers: no "do I need an account", no "can I make a
