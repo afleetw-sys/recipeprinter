@@ -93,6 +93,8 @@ export function PendingImportRows({
             >
               <button
                 type="button"
+                // The same centred stack the failed row uses; the loading
+                // state paints itself inside it.
                 className="recipe-page-rail__item-main"
                 aria-current={activeId === item.id}
                 onClick={() => onSelect(item)}

@@ -1591,12 +1591,39 @@
      placeholder card the same way every other row points at its page. */
   cursor: pointer;
 }
+/* Spinner above the label, centred, at the size of the failed tile beside it.
+   A recipe that is still importing and one that failed are the same row at two
+   moments, so they should not be two different shapes: this was a short
+   left-aligned strip with the spinner beside the words, sitting a third the
+   height of the tile it is about to become. Matching them also means the rail
+   does not jump when a parse lands or gives up. */
 .recipe-page-rail__loading-status {
   grid-column: 1 / -1;
-  min-height: 52px;
-  flex-direction: row;
-  justify-content: flex-start;
-  padding: 4px 8px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  min-width: 0;
+  min-height: 72px;
+  padding: 6px 2px;
+  text-align: center;
+}
+
+/* Same clamp as the failed title, and for the same reason: the label carries
+   a source name that can be longer than the rail is wide. */
+.recipe-page-rail__loading-status > span {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  max-width: 100%;
+  overflow: hidden;
+  overflow-wrap: anywhere;
+  line-height: 1.2;
+}
+
+.recipe-page-rail__loading-status > svg {
+  flex-shrink: 0;
 }
 
 /* A failed import is a tile that did not become a page. It is not an alarm,
