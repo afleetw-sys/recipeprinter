@@ -294,9 +294,9 @@ describe("parseUrlAll — the route's own verdict", () => {
     botWall: { vendor: "cloudflare" },
   };
 
-  it("still tries the callable's different egress IP when a site walls us", async () => {
-    // Rung A leaves from the same address the failed fetch did, so exhausting
-    // it says nothing about whether Google's network is blocked too.
+  it("tries the callable only when the route never reached CookPilot", async () => {
+    // No `parserExhausted` means this deployment has no parser configured, so
+    // the callable is a FIRST attempt rather than a second paid one.
     routeReplies(403, BLOCKED_BODY);
 
     await expect(parseUrlAll("smittenkitchen.com/borscht")).resolves.toHaveLength(1);
@@ -314,7 +314,10 @@ describe("parseUrlAll — the route's own verdict", () => {
     expect(err.meta).toEqual({ botVendor: "cloudflare" });
   });
 
-  it("carries the verdict through when the callable is suppressed", async () => {
+  // The double-billing case. CookPilot reaches sites through a paid scraping
+  // account, and the callable is a second full parse with its own trip to it.
+  // A walled import used to pay the expensive rung twice.
+  it("never re-parses a wall CookPilot already paid to look at", async () => {
     routeReplies(422, { ...BLOCKED_BODY, parserExhausted: true });
 
     const err = await parseUrlAll("smittenkitchen.com/borscht").catch((e) => e);
@@ -333,6 +336,20 @@ describe("parseUrlAll — the route's own verdict", () => {
     const err = await parseUrlAll("smittenkitchen.com/borscht").catch((e) => e);
 
     expect(err.code).toBe("blocked");
+  });
+
+  it("does not re-parse a placeholder host", async () => {
+    // Answered from the URL's shape by the route, before anything is spent.
+    routeReplies(400, {
+      success: false,
+      error: "example.com is the address the web uses in its own examples.",
+      failure: "placeholder",
+    });
+
+    const err = await parseUrlAll("example.com/borscht").catch((e) => e);
+
+    expect(callable).not.toHaveBeenCalled();
+    expect(err.code).toBe("placeholder");
   });
 
   it("falls back to the status when the route names no verdict", async () => {
