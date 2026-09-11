@@ -2465,8 +2465,16 @@
      edge of the card in the same place whatever mode is open: everything the
      card gains goes downward. */
   .rp-home-frontdoor {
-    --rp-home-top: 5rem;
+    /* Less of it on a phone, where 5rem under a 62px bar was most of what you
+       could see before the headline started. */
+    --rp-home-top: 2rem;
     padding-top: var(--rp-home-top);
+  }
+
+  @media (min-width: 640px) {
+    .rp-home-frontdoor {
+      --rp-home-top: 5rem;
+    }
   }
 
   /* The "Off the printer" carousel track.
@@ -2493,19 +2501,16 @@
     border-radius: var(--cp-radius-lg);
   }
 
-  /* Below the desktop layout the importer sits directly on the page rather
-     than in a card, so the front door reads as the page itself asking for a
-     link rather than as a widget dropped onto it. (The trailing padding that
-     used to be here separated it from the "Recipes to print" panel underneath;
-     there is no panel underneath any more, and the page's own column gap is
-     what spaces whatever follows.) */
-  @media (max-width: 1023px) {
-    .rp-import-panel {
-      border: 0;
-      border-radius: 0;
-      background: transparent;
-    }
-  }
+  /* The importer keeps its card at every width. It used to drop its border and
+     background below 1024px so the front door read as the page itself asking
+     for a link, which worked while the panel was the only thing on the page.
+     It is not any more: the strip of photographs below it is a row of framed
+     objects, and an importer with no frame of its own read as loose text
+     floating above them rather than as the thing you are meant to use.
+
+     Below `lg` the padding and the matching outward margin are set on the
+     element itself (see ImportPanel), because the `p-0` utility there would
+     beat anything written here. */
 
   @media (min-width: 1024px) {
     .rp-import-panel--workspace {

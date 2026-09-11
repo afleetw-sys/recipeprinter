@@ -6,18 +6,22 @@ import { CookPilotImportSource, prewarmCookPilotImport } from "@/components/Cook
 import {
   PAPRIKA_ACCEPT,
   PaprikaImportSource,
+  readPaprikaExport,
 } from "@/components/import/PaprikaImportSource";
 import {
   getCachedCookPilotTotal,
   loadCookPilotRecipeTotal,
 } from "@/lib/cookpilotRecipes";
 import { cachedPaprikaLibrary } from "@/lib/paprikaLibrary";
+import { Dialog } from "@/components/Dialog";
 import type { QueueItem } from "@/types/recipe";
 import {
   ChevronLeftIcon,
   CookPilotLogoIcon,
   ICON_SIZE,
+  InfoIcon,
   PaprikaLogoIcon,
+  SpinnerIcon,
 } from "@/components/icons";
 
 export { prewarmCookPilotImport };
@@ -55,8 +59,12 @@ function IntegrationCard({
   icon,
   action,
   onOpen,
-  secondaryAction,
-  onSecondary,
+  help,
+  helpLabel,
+  helpOpen = false,
+  onToggleHelp,
+  error,
+  busy = false,
 }: {
   name: string;
   description: string;
@@ -77,11 +85,17 @@ function IntegrationCard({
       and "Connect" describes neither of those honestly. */
   action: string;
   onOpen: () => void;
-  /** A quieter second way in. Paprika's main button opens the file dialog
-      now, which leaves nothing pointing at the export instructions; this is
-      what still points at them. */
-  secondaryAction?: string;
-  onSecondary?: () => void;
+  /** An explainer folded into the card, opened by the ⓘ beside the action.
+      Paprika's export steps used to live on the screen the button reached;
+      there is no such screen any more, so they live here. */
+  help?: ReactNode;
+  helpLabel?: string;
+  helpOpen?: boolean;
+  onToggleHelp?: () => void;
+  /** Shown under the action, where the thing that failed was started. */
+  error?: string | null;
+  /** Whether the action is mid-flight. */
+  busy?: boolean;
 }) {
   return (
     <li className="flex flex-col gap-cp-3 rounded-xl border border-line bg-card p-cp-3">
@@ -117,27 +131,72 @@ function IntegrationCard({
 
       {/* `mt-auto` so the two buttons sit on one line when the descriptions
           wrap to different heights, which they do at most widths. */}
-      <div className="mt-auto flex flex-wrap items-center gap-cp-3">
-        <button
-          type="button"
-          onClick={onOpen}
-          // Opens with the product's name, and keeps the visible words inside
-          // the accessible name so voice control can say what it reads.
-          aria-label={`${action} from ${name}`}
-          className="btn btn-secondary btn-compact"
-        >
-          {action}
-        </button>
-        {secondaryAction && onSecondary && (
+      <div className="mt-auto flex flex-col gap-cp-2">
+        <div className="flex flex-wrap items-center gap-cp-2">
           <button
             type="button"
-            onClick={onSecondary}
-            className="text-cp-caption font-semibold text-ink-soft hover:text-ink transition-colors"
+            onClick={onOpen}
+            disabled={busy}
+            // Opens with the product's name, and keeps the visible words inside
+            // the accessible name so voice control can say what it reads.
+            aria-label={`${action} from ${name}`}
+            className="btn btn-secondary btn-compact"
           >
-            {secondaryAction}
+            {busy && <SpinnerIcon size={ICON_SIZE.sm} />}
+            {action}
           </button>
+          {help && onToggleHelp && (
+            /* The icon sits BESIDE the words, not instead of them. On its own
+               an ⓘ is a guess; with the label it is a signpost, and the label
+               on its own read as a second action equal to the button. */
+            <button
+              type="button"
+              onClick={onToggleHelp}
+              aria-haspopup="dialog"
+              className="btn-ghost btn-compact"
+            >
+              <InfoIcon size={ICON_SIZE.md} />
+              {helpLabel}
+            </button>
+          )}
+        </div>
+
+        {error && (
+          <p className="field-error" role="alert">
+            {error}
+          </p>
         )}
       </div>
+
+      {/* Over the page, not a step on the way to it. These are instructions
+          for something you do in ANOTHER app, so they should hand the page
+          back exactly as they found it rather than navigating anywhere. */}
+      {help && onToggleHelp && (
+        <Dialog
+          open={helpOpen}
+          onClose={onToggleHelp}
+          portal
+          dismissOnBackdropClick
+          labelledBy={`${name}-help-title`}
+          className="fixed inset-0 z-50 grid place-items-center dialog-scrim p-cp-4"
+          panelClassName="relative w-full max-w-md rounded-2xl border border-line bg-card p-cp-6 shadow-cp-lg"
+        >
+          <h2
+            id={`${name}-help-title`}
+            className="text-cp-dialog-title font-extrabold tracking-[-0.02em]"
+          >
+            {helpLabel}
+          </h2>
+          <div className="mt-cp-4">{help}</div>
+          <button
+            type="button"
+            onClick={onToggleHelp}
+            className="btn btn-secondary btn-compact mt-cp-5"
+          >
+            Got it
+          </button>
+        </Dialog>
+      )}
     </li>
   );
 }
@@ -165,7 +224,9 @@ export function RecipeAppsPanel({
   // screen is the recipes in the file you picked. It used to take you to a
   // page whose only content was a second button saying the same thing.
   const paprikaInputRef = useRef<HTMLInputElement>(null);
-  const [paprikaFile, setPaprikaFile] = useState<File | null>(null);
+  const [paprikaReading, setPaprikaReading] = useState(false);
+  const [paprikaError, setPaprikaError] = useState<string | null>(null);
+  const [helpOpen, setHelpOpen] = useState(false);
 
   // Skips the first run: the count arrives as 0 on mount, and reacting to that
   // would throw away the source `lastOpenSource` had just restored.
@@ -266,7 +327,10 @@ export function RecipeAppsPanel({
           />
         ) : (
           <PaprikaImportSource
-            initialFile={paprikaFile}
+            // Remounts when a new file is read, which is what clears the
+            // selection made against the old one.
+            key={libraryNonce}
+            onChooseAnotherFile={() => paprikaInputRef.current?.click()}
             items={items}
             onAddRecipes={onAddRecipes}
             commitLabel={commitLabel}
@@ -306,11 +370,19 @@ export function RecipeAppsPanel({
           icon={<PaprikaLogoIcon size={26} />}
           action="Open file"
           onOpen={() => paprikaInputRef.current?.click()}
-          // The export steps used to live on the screen the button reached.
-          // They still exist there, so this is what still reaches them, and it
-          // is also the way in for someone who has no file yet.
-          secondaryAction="How to export"
-          onSecondary={() => open("paprika")}
+          busy={paprikaReading}
+          error={paprikaError}
+          helpLabel="How to export"
+          helpOpen={helpOpen}
+          onToggleHelp={() => setHelpOpen((value) => !value)}
+          help={
+            <ol className="paprika-export-steps text-cp-caption text-ink-soft">
+              <li>Open the Paprika app.</li>
+              <li>Click the menu in the top left.</li>
+              <li>Go to Settings.</li>
+              <li>Click Export Recipes, then Export.</li>
+            </ol>
+          }
         />
       </ul>
 
@@ -324,13 +396,24 @@ export function RecipeAppsPanel({
         className="sr-only absolute h-px w-px overflow-hidden"
         tabIndex={-1}
         aria-hidden
-        onChange={(event) => {
+        onChange={async (event) => {
           const file = event.target.files?.[0];
           // Reset first: choosing the SAME file again has to fire onChange, or
           // a retry after a failed read looks like nothing happened.
           event.target.value = "";
           if (!file) return;
-          setPaprikaFile(file);
+          setPaprikaError(null);
+          setPaprikaReading(true);
+          const result = await readPaprikaExport(file);
+          setPaprikaReading(false);
+          if (!result.ok) {
+            // Stays on the card. A file that will not read has nothing to show
+            // on the next screen, and sending someone there to read the reason
+            // puts the message a page away from the button that retries it.
+            setPaprikaError(result.message);
+            return;
+          }
+          setLibraryNonce((value) => value + 1);
           open("paprika");
         }}
       />

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState, type DragEvent } from "react";
+import { useMemo, useState } from "react";
 import { track, truncateReason, type ImportFailureCode } from "@/lib/analytics";
 import { filterImportSummaries, type ImportSummary } from "@/lib/importSummary";
 import {
@@ -24,7 +24,7 @@ import {
 } from "@/lib/paprikaLibrary";
 import type { QueueItem } from "@/types/recipe";
 import { RecipeSourceList } from "@/components/import/RecipeSourceList";
-import { BookIcon, ChevronDownIcon, ICON_SIZE, SpinnerIcon, UploadIcon } from "@/components/icons";
+import { BookIcon, ICON_SIZE, UploadIcon } from "@/components/icons";
 
 /**
  * Import from a Paprika export.
@@ -36,9 +36,8 @@ import { BookIcon, ChevronDownIcon, ICON_SIZE, SpinnerIcon, UploadIcon } from "@
  * experience is the same as CookPilot's: search the library, add what you want.
  */
 
-/** Also used by the integrations card, whose button opens this same dialog. */
+/** The card owns the file dialog now; this is what it accepts. */
 export const PAPRIKA_ACCEPT = ".paprikarecipes,.paprikarecipe,.zip";
-const ACCEPT = PAPRIKA_ACCEPT;
 
 /**
  * Where the file is.
@@ -52,94 +51,37 @@ const ACCEPT = PAPRIKA_ACCEPT;
  * this panel is ALREADY inside the Add-recipe dialog and a modal over a modal
  * is not a way out of a long list. Staying short is what makes that work.
  */
-function ExportHelp() {
-  const [open, setOpen] = useState(false);
-  return (
-    <div className="mt-cp-4">
-      <button
-        type="button"
-        className="btn-ghost btn-compact"
-        aria-expanded={open}
-        onClick={() => setOpen((value) => !value)}
-      >
-        How to export
-        <ChevronDownIcon size={ICON_SIZE.sm} className="cp-disclosure-caret" aria-hidden />
-      </button>
-      {open && (
-        <ol className="paprika-export-steps mt-cp-2 text-cp-caption text-ink-soft">
-          <li>Open the Paprika app.</li>
-          <li>Click the menu in the top left.</li>
-          <li>Go to Settings.</li>
-          <li>Click Export Recipes, then Export.</li>
-        </ol>
-      )}
-    </div>
-  );
-}
-
-function PaprikaFilePicker({
-  busy,
-  error,
-  onChoose,
-}: {
-  busy: boolean;
-  error: string | null;
-  onChoose: (file: File | null | undefined) => void;
-}) {
-  const [dragging, setDragging] = useState(false);
-
-  function onDrop(event: DragEvent<HTMLLabelElement>) {
-    event.preventDefault();
-    setDragging(false);
-    if (busy) return;
-    onChoose(event.dataTransfer.files[0]);
+/**
+ * Read a chosen export into the cache, or come back with something to say.
+ *
+ * Lives here beside the parsing it wraps, but is called from the integrations
+ * card: the file dialog opens there now, so that is also where a file that
+ * will not read has to report itself. Resolves either way rather than
+ * throwing, because both outcomes are things the card renders.
+ */
+export async function readPaprikaExport(
+  file: File,
+): Promise<{ ok: true } | { ok: false; message: string }> {
+  track("recipe_import_started", { source: "paprika" });
+  try {
+    setPaprikaLibrary(await readPaprikaFile(file));
+    return { ok: true };
+  } catch (err) {
+    const code: ImportFailureCode =
+      err instanceof PaprikaImportError ? err.code : "unreadable_file";
+    const message =
+      err instanceof PaprikaImportError
+        ? err.message
+        : "We couldn't read that file. Please try exporting from Paprika again.";
+    // The file never became recipes, so no queue item exists to report this —
+    // pair it with the started event here or the funnel loses the attempt.
+    track("recipe_import_failed", {
+      source: "paprika",
+      category: code,
+      reason: truncateReason(err instanceof Error ? err.message : String(err)),
+    });
+    return { ok: false, message };
   }
-
-  return (
-    <div>
-      <label className="field-label">Paprika export</label>
-      <label
-        className={`dropzone ${dragging ? "is-dragging" : ""}`}
-        onDragOver={(event) => {
-          event.preventDefault();
-          if (!busy) setDragging(true);
-        }}
-        onDragLeave={(event) => {
-          if (event.relatedTarget instanceof Node && event.currentTarget.contains(event.relatedTarget)) {
-            return;
-          }
-          setDragging(false);
-        }}
-        onDrop={onDrop}
-      >
-        <input
-          type="file"
-          accept={ACCEPT}
-          disabled={busy}
-          className="sr-only absolute h-px w-px overflow-hidden"
-          onChange={(event) => {
-            onChoose(event.target.files?.[0]);
-            // Clear it so choosing the SAME file again still fires onChange —
-            // otherwise a retry after an error looks like nothing happened.
-            event.target.value = "";
-          }}
-        />
-        {busy ? <SpinnerIcon size={26} /> : <UploadIcon size={26} />}
-        <span className="text-cp-body">
-          {busy ? "Reading your recipes…" : "Choose your .paprikarecipes file"}
-        </span>
-        <span className="text-cp-caption font-medium text-ink-soft">
-          Everything stays in your browser. Nothing is uploaded.
-        </span>
-      </label>
-      {error && (
-        <p className="field-error" role="alert">
-          {error}
-        </p>
-      )}
-      <ExportHelp />
-    </div>
-  );
 }
 
 /** A recipe plus its photo, held locally, ready for the print list. */
@@ -158,7 +100,7 @@ export function PaprikaImportSource({
   commitLabel,
   commitLeavesPage = false,
   onLibraryChange,
-  initialFile,
+  onChooseAnotherFile,
 }: {
   items: QueueItem[];
   onAddRecipes: (recipes: QueueItem[]) => number;
@@ -168,14 +110,12 @@ export function PaprikaImportSource({
   commitLeavesPage?: boolean;
   /** Lets the integrations list re-read the open file's name and count. */
   onLibraryChange?: () => void;
-  /** A file already chosen on the card, to read on arrival instead of asking
-      for it again. Paprika holds one library at a time, so there is nothing to
-      merge: the newest file replaces whatever was open. */
-  initialFile?: File | null;
+  /** Opens the file dialog again, which lives on the card. */
+  onChooseAnotherFile: () => void;
 }) {
-  const [library, setLibrary] = useState<PaprikaLibrary | null>(() => cachedPaprikaLibrary());
-  const [reading, setReading] = useState(false);
-  const [fileError, setFileError] = useState<string | null>(null);
+  // Read once on mount and never set again: a new file remounts this component
+  // (see the `key` on the call site), so there is no in-place swap to make.
+  const [library] = useState<PaprikaLibrary | null>(() => cachedPaprikaLibrary());
   const [queryText, setQueryText] = useState("");
   /** Queue ids ticked but not yet added — see lib/importSelection. */
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
@@ -195,50 +135,7 @@ export function PaprikaImportSource({
   const visibleRows = useMemo(() => filterImportSummaries(rows, queryText), [rows, queryText]);
   const allVisibleSelected = allSelectableSelectedIn(visibleRows, addedIds, selectedIds);
 
-  // A file chosen back on the card is read on arrival. Guarded by identity
-  // rather than a boolean so picking a second file later still reads it, and
-  // re-renders in between do not read the same one twice.
-  const readFileRef = useRef<File | null>(null);
-  useEffect(() => {
-    if (!initialFile || readFileRef.current === initialFile) return;
-    readFileRef.current = initialFile;
-    void handleFile(initialFile);
-    // handleFile is redeclared every render and depending on it would re-read
-    // the file on each one; the identity guard above is what makes this safe.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [initialFile]);
 
-  async function handleFile(file: File | null | undefined) {
-    if (!file) return;
-    setReading(true);
-    setFileError(null);
-    track("recipe_import_started", { source: "paprika" });
-    try {
-      const next = await readPaprikaFile(file);
-      setPaprikaLibrary(next);
-      setLibrary(next);
-      setQueryText("");
-      setSelectedIds(new Set());
-      onLibraryChange?.();
-    } catch (err) {
-      const code: ImportFailureCode =
-        err instanceof PaprikaImportError ? err.code : "unreadable_file";
-      setFileError(
-        err instanceof PaprikaImportError
-          ? err.message
-          : "We couldn't read that file. Please try exporting from Paprika again.",
-      );
-      // The file never became recipes, so no queue item exists to report this —
-      // pair it with the started event here or the funnel loses the attempt.
-      track("recipe_import_failed", {
-        source: "paprika",
-        category: code,
-        reason: truncateReason(err),
-      });
-    } finally {
-      setReading(false);
-    }
-  }
 
   /** Local and instant: no photo is stored until the commit. */
   function handleToggle(row: ImportSummary) {
@@ -295,20 +192,12 @@ export function PaprikaImportSource({
     }
   }
 
-  function chooseAnotherFile() {
-    setPaprikaLibrary(null);
-    setLibrary(null);
-    setQueryText("");
-    setError(null);
-    // A selection belongs to the file it was made in; the next one has its own
-    // ids and nothing of this one's should carry over into it.
-    setSelectedIds(new Set());
-    onLibraryChange?.();
-  }
-
-  if (!library) {
-    return <PaprikaFilePicker busy={reading} error={fileError} onChoose={handleFile} />;
-  }
+  // Nothing is cleared here any more. The dialog opens on the card, and only a
+  // file that actually READ replaces this one: clearing first meant a cook who
+  // opened the dialog and thought better of it lost the library they had.
+  // Reading a new one remounts this component, which is what resets the
+  // selection — and a selection belongs to the file it was made in.
+  if (!library) return null;
 
   return (
     <div className="flex flex-col gap-cp-4">
@@ -321,7 +210,7 @@ export function PaprikaImportSource({
           cover. */}
       <div className="flex flex-wrap items-center justify-between gap-cp-2 text-cp-caption text-ink-soft">
         <span className="truncate">From {library.fileName}</span>
-        <button type="button" className="btn-ghost btn-compact" onClick={chooseAnotherFile}>
+        <button type="button" className="btn-ghost btn-compact" onClick={onChooseAnotherFile}>
           <UploadIcon size={ICON_SIZE.sm} />
           Use a different file
         </button>

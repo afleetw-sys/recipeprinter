@@ -317,7 +317,12 @@ export function ImportPanel({
 
   return (
     <section
-      className={`rp-import-panel panel p-0 lg:p-cp-6 animate-fade-up ${
+      // `-mx-3 p-3` below `lg`: the card grows outward by exactly the padding
+      // it gains, so it gets breathing room inside its border while its
+      // fields, labels and buttons stay on the same left edge as the headline
+      // above them and the photographs below. Written here rather than in
+      // globals.css because the padding utility on this element would win.
+      className={`rp-import-panel panel -mx-3 p-3 lg:mx-0 lg:p-cp-6 animate-fade-up ${
         workspace ? "rp-import-panel--workspace" : ""
       } ${mode === "apps" ? "rp-import-panel--apps" : ""}`}
       // The visible "Add a recipe" heading is gone: the mode buttons, the
