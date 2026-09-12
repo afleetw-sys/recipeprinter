@@ -453,7 +453,10 @@ export function useQueue() {
   const runParse = useCallback(
     async (
       id: string,
-      origin: { source: ImportMethod; hostname?: string },
+      // `url` is the submitted link, set by the two URL callers and by nobody
+      // else. It is separated out below rather than read straight off `origin`
+      // because the outcome events spread `origin` wholesale — see `outcome`.
+      origin: { source: ImportMethod; hostname?: string; url?: string },
       // A URL parse can yield several recipes (a "roundup" page); image/text parses
       // yield one. A multi result lands the first recipe on this item and blooms the
       // rest into their own ready items — see below.
@@ -465,8 +468,20 @@ export function useQueue() {
       // the originals and a parse failure keeps what the parser actually saw.
       opts?: { failedImages?: Array<Blob | string>; failedText?: string },
     ) => {
+      // The full URL belongs to the STARTED event only. `recipe_imported` and
+      // `recipe_import_failed` below both spread their origin wholesale, and an
+      // extra property on a variable (unlike an object literal) is invisible to
+      // TypeScript's excess-property check — so widening `origin` without this
+      // split would have quietly put the URL on all three, past the closed map
+      // in lib/analytics.ts that exists to stop exactly that. Destructuring
+      // makes the narrowing the compiler's job instead of a promise in a
+      // comment: `outcome` has no `url` to leak.
+      const { url, ...outcome } = origin;
       patch(id, { status: "parsing", error: undefined });
-      track("recipe_import_started", origin);
+      // Before `work()` — the parse has not been asked for anything yet, and
+      // this is a `capture` on the analytics queue, so it neither awaits
+      // anything nor touches the parser path.
+      track("recipe_import_started", { ...outcome, importId: id, ...(url ? { url } : {}) });
       try {
         const result = await work();
         const recipes = Array.isArray(result) ? result : [result];
@@ -480,7 +495,7 @@ export function useQueue() {
         }
         const [first, ...rest] = recipes;
         patch(id, { status: "ready", recipe: first, title: first.title || "Untitled recipe" });
-        track("recipe_imported", origin);
+        track("recipe_imported", outcome);
         if (rest.length > 0) {
           // A roundup URL: keep the first recipe on this item and add the rest as
           // their own ready items, mirroring this item's URL context so retry/dedupe
@@ -497,7 +512,7 @@ export function useQueue() {
             addedAt: Date.now(),
           }));
           commit([...itemsRef.current, ...extras]);
-          rest.forEach(() => track("recipe_imported", origin));
+          rest.forEach(() => track("recipe_imported", outcome));
           track("multi_recipe_found", {
             source: origin.source,
             hostname: origin.hostname,
@@ -552,7 +567,7 @@ export function useQueue() {
           });
         }
         track("recipe_import_failed", {
-          ...origin,
+          ...outcome,
           reason,
           // Its own bucket, so a placeholder is never counted among the
           // not_found and unknown failures that describe the real parser.
@@ -605,7 +620,12 @@ export function useQueue() {
       commit([...itemsRef.current, item]);
       void runParse(
         id,
-        { source: "url", hostname: host },
+        // `normalizedUrl`, the same string handed to the parser on the next
+        // line — not `rawUrl`. A link recorded in a form the parser was never
+        // given is a link that reproduces something else, which is the one job
+        // this property has. Normalizing only adds a missing scheme and unwraps
+        // a redirect doorway; the query string is untouched.
+        { source: "url", hostname: host, url: normalizedUrl },
         () => parseUrlAll(normalizedUrl),
         { failedText: normalizedUrl },
       );
@@ -741,9 +761,12 @@ export function useQueue() {
       if (!item) return;
       if (item.method === "url" && item.originalUrl) {
         const url = item.originalUrl;
-        void runParse(id, { source: "url", hostname: hostnameOf(url) }, () => parseUrlAll(url), {
-          failedText: url,
-        });
+        void runParse(
+          id,
+          { source: "url", hostname: hostnameOf(url), url },
+          () => parseUrlAll(url),
+          { failedText: url },
+        );
       } else if (item.method === "text") {
         const text = textPayloads.current.get(id);
         if (text) void runParse(id, { source: "text" }, () => parseText(text), { failedText: text });
