@@ -34,6 +34,28 @@ export type PendingImport =
   | { kind: "url"; url: string }
   | { kind: "text"; text: string }
   | { kind: "ready"; recipes: QueueItem[] }
+  /**
+   * Photos as the cook chose them, still undecoded.
+   *
+   * The handoff used to carry data URLs, which meant the decode — a downscale
+   * per file, and for HEIC a libheif transcode — ran on the page the cook was
+   * leaving, with nothing on screen but a spinner, before the navigation was
+   * allowed to start. That is the slowest handoff in the product spent on the
+   * page least able to describe it.
+   *
+   * Handing over the files instead moves that work to /print, where
+   * `addImageFiles` already owns exactly this shape: placeholder first, decode
+   * and parse inside `runParse`. What stays behind on the way out is only the
+   * cheap determination — format, count, per-file and total size
+   * (`validateImageFiles`) — which is what "is this even importable" needs and
+   * answers in microseconds.
+   */
+  | { kind: "imageFiles"; files: File[]; label: string }
+  /**
+   * The pre-decoded form. No longer written by anything; still read, because a
+   * descriptor stashed before a deploy can be sitting in a tab after it — the
+   * same reason `cookpilot` below is still understood.
+   */
   | { kind: "images"; images: string[]; label: string };
 
 // The sessionStorage descriptor never carries image bytes — for `images` it holds
@@ -47,6 +69,11 @@ type StoredDescriptor =
   | { kind: "cookpilot"; recipes: QueueItem[] }
   | { kind: "images"; label: string };
 
+/** Whether IndexedDB handed back the files form or the legacy data-URL form. */
+function isFileList(value: unknown): value is File[] {
+  return Array.isArray(value) && value.length > 0 && value[0] instanceof File;
+}
+
 /**
  * Store a pending import and return true if it was persisted. Callers should only
  * navigate to "/" once this resolves true, so the payload is guaranteed to be
@@ -56,8 +83,13 @@ export async function stashPendingImport(payload: PendingImport): Promise<boolea
   // A fresh capture supersedes any earlier abandoned one.
   clearPendingImport();
 
-  if (payload.kind === "images") {
-    if (!(await pendingImages.put(IDB_IMAGES_KEY, payload.images))) return false;
+  if (payload.kind === "imageFiles" || payload.kind === "images") {
+    // Files and data URLs go to the same IndexedDB key, under the same
+    // descriptor: both are "the photos", and which form they are in is
+    // something the read below can see for itself. A `File` survives the trip
+    // because IndexedDB stores a structured clone, not JSON.
+    const bytes = payload.kind === "imageFiles" ? payload.files : payload.images;
+    if (!(await pendingImages.put(IDB_IMAGES_KEY, bytes))) return false;
     const descriptor: StoredDescriptor = { kind: "images", label: payload.label };
     return sessionStore.setJson(DESCRIPTOR_KEY, descriptor);
   }
@@ -72,9 +104,10 @@ export async function takePendingImport(): Promise<PendingImport | null> {
   if (!descriptor) return null;
 
   if (descriptor.kind === "images") {
-    const images = await pendingImages.take<string[]>(IDB_IMAGES_KEY);
-    if (!images || images.length === 0) return null;
-    return { kind: "images", images, label: descriptor.label };
+    const stored = await pendingImages.take<string[] | File[]>(IDB_IMAGES_KEY);
+    if (!stored || stored.length === 0) return null;
+    if (isFileList(stored)) return { kind: "imageFiles", files: stored, label: descriptor.label };
+    return { kind: "images", images: stored as string[], label: descriptor.label };
   }
 
   if (descriptor.kind === "cookpilot") return { kind: "ready", recipes: descriptor.recipes };

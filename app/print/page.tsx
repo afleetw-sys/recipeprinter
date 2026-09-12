@@ -3219,6 +3219,10 @@ export default function PrintPage() {
       if (pending.kind === "url") queue.addUrl(pending.url);
       else if (pending.kind === "text") queue.addText(pending.text);
       else if (pending.kind === "ready") queue.addReadyRecipes(pending.recipes);
+      // Files, not data URLs: the decode now happens HERE, inside `runParse`,
+      // so the placeholder row goes up first and the photo is worked on in
+      // front of the cook instead of behind a spinner on the page they left.
+      else if (pending.kind === "imageFiles") queue.addImageFiles(pending.files, pending.label);
       else if (pending.kind === "images") queue.addImages(pending.images, pending.label);
     });
     return () => {
