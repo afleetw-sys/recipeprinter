@@ -2,7 +2,7 @@ import type { RecipeFace } from "@/lib/recipeCardLayout";
 
 // Shared DOM-measurement primitives for the print card faces. Extracted from
 // RecipeFaceMeasurer so the correction loop AND the measurement harness
-// (app/print/_harness) read overflow the exact same way — the harness's
+// (app/print/harness) read overflow the exact same way — the harness's
 // "does this face clip?" verdict is only trustworthy if it measures overflow
 // with the identical geometry the live corrector uses.
 
@@ -127,7 +127,20 @@ export interface FaceMeasureDetail {
   hasInstructions: boolean;
 }
 
-function labelHeightPx(cardEl: HTMLElement, sectionSelector: string): number {
+/**
+ * Height of a section's label ("INGREDIENTS" / "STEPS"), margins included.
+ *
+ * Exported because it is a COST as well as a measurement: a face that gains
+ * its first ingredient or step also gains this label, and the pull in
+ * RecipeFaceMeasurer has to charge it against the slack it is spending. That
+ * calculation used to carry its own copy of these four lines — which is the
+ * one thing this module exists to prevent, since a corrector measuring a
+ * label differently from the harness makes the harness's verdict meaningless.
+ *
+ * `sectionSelector` is the section wrapper (`.recipe-card__ingredients` or
+ * `.recipe-card__method`); the label is found inside it.
+ */
+export function labelHeightPx(cardEl: HTMLElement, sectionSelector: string): number {
   const label = cardEl.querySelector<HTMLElement>(`${sectionSelector} .recipe-card__label`);
   if (!label) return 0;
   const style = getComputedStyle(label);

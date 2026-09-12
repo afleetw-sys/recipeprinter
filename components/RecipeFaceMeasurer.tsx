@@ -17,6 +17,7 @@ import {
   colsOverflowPx,
   faceMeasureDetail,
   isEmptyFace,
+  labelHeightPx,
   realItemHeights,
 } from "@/lib/faceMeasure";
 import type { Recipe } from "@/types/recipe";
@@ -148,6 +149,11 @@ interface PullResult {
 // oscillated until the loop gave up on the un-pulled arrangement — leaving
 // ~25-33px stranded (the label's height) on exactly the cards that looked
 // under-filled. Measured off the next face, which already renders the label.
+//
+// The label itself is measured by `labelHeightPx`, shared with faceMeasure's
+// own `faceMeasureDetail`: the corrector and the harness must read a label
+// the same way, or the harness's "does this face clip?" verdict is measuring
+// a different card from the one that clipped.
 function sectionLabelCostPx(
   face: RecipeFace,
   kind: "instructions" | "ingredients",
@@ -156,17 +162,9 @@ function sectionLabelCostPx(
   const alreadyHasSection =
     kind === "instructions" ? face.instructions.length > 0 : face.ingredients.length > 0;
   if (alreadyHasSection) return 0;
-  const label = nextCardEl.querySelector<HTMLElement>(
-    kind === "instructions"
-      ? ".recipe-card__method .recipe-card__label"
-      : ".recipe-card__ingredients .recipe-card__label",
-  );
-  if (!label) return 0;
-  const style = getComputedStyle(label);
-  return (
-    label.getBoundingClientRect().height +
-    (parseFloat(style.marginTop) || 0) +
-    (parseFloat(style.marginBottom) || 0)
+  return labelHeightPx(
+    nextCardEl,
+    kind === "instructions" ? ".recipe-card__method" : ".recipe-card__ingredients",
   );
 }
 
