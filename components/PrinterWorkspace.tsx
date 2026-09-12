@@ -10,6 +10,7 @@ import { stashPendingImport, type PendingImport } from "@/lib/pendingImport";
 import { imageLabel, prepareImageDataUrls } from "@/lib/imageImport";
 import { ImportError } from "@/lib/parser";
 import { track } from "@/lib/analytics";
+import { nextPaint } from "@/lib/nextPaint";
 import type { ImportMethod, ImportTab, QueueItem } from "@/types/recipe";
 
 /**
@@ -70,6 +71,9 @@ export function PrinterWorkspace({
   const { items, hydrated, clear } = useQueue();
   const { meta, hydrated: metaHydrated, startNewProject } = useProjectMeta();
   const [handoffError, setHandoffError] = useState<string | null>(null);
+  /** A handoff is on its way to /print, so the submit wears a spinner instead
+      of its arrow. Stays true for the rest of this page's life — see `handoff`. */
+  const [opening, setOpening] = useState(false);
   const leftCookbookRef = useRef(false);
   const warmedRef = useRef(false);
 
@@ -169,14 +173,29 @@ export function PrinterWorkspace({
    */
   async function handoff(payload: PendingImport) {
     setHandoffError(null);
+    setOpening(true);
     // Counted here rather than where the parse starts: by then every import in
     // the product looks like it happened on /print. See `recipe_import_submitted`.
     track("recipe_import_submitted", { surface: "home", source: sourceOf(payload) });
-    if (await stashPendingImport(payload)) {
-      router.push("/print");
+    if (!(await stashPendingImport(payload))) {
+      setOpening(false);
+      setHandoffError("We couldn't open that recipe. Please try again.");
       return;
     }
-    setHandoffError("We couldn't open that recipe. Please try again.");
+    // Let the button's spinner reach the screen before the navigation takes the
+    // thread. Measured on a production build: from this click to a recipe card
+    // on /print, the browser painted ZERO frames — React committed, Next
+    // resolved the route and the whole tree mounted in one unbroken run of the
+    // main thread. So the button could not look pressed however it was styled,
+    // and every millisecond of that gap read as a dead button rather than as
+    // work happening. One frame is the whole fix, and one frame is what it
+    // costs.
+    await nextPaint();
+    router.push("/print");
+    // Deliberately not cleared. `router.push` is a client navigation, so this
+    // component stays mounted and visible until /print has rendered — turning
+    // the spinner off here would put the arrow back under the cursor for the
+    // rest of the wait, which is the state this exists to replace.
   }
 
   /** The payload's import method, for the handoff event above. */
@@ -212,10 +231,16 @@ export function PrinterWorkspace({
    */
   async function handleAddImageFiles(files: File[], label: string) {
     setHandoffError(null);
+    // Before the decode, not after. Photos are the slowest handoff there is — a
+    // HEIC transcode runs libheif over every file — and `handoff` does not get
+    // to raise the spinner until all of that has finished. This is the one path
+    // where the wait is long enough that a dead button is unmistakable.
+    setOpening(true);
     try {
       const images = await prepareImageDataUrls(files);
       await handoff({ kind: "images", images, label: label || imageLabel(files) });
     } catch (err) {
+      setOpening(false);
       // Only ImportError carries a sentence written for a cook; anything else
       // reaching here is an unexpected throw whose `message` is a developer
       // string.
@@ -244,6 +269,7 @@ export function PrinterWorkspace({
           workspace
           initialMode={initialImportMode}
           submitLabel={importSubmitLabel}
+          submitBusy={opening}
           onAddUrl={handleAddUrl}
           onAddImageFiles={(files, label) => void handleAddImageFiles(files, label)}
           onAddText={handleAddText}
