@@ -37,20 +37,19 @@ const THUMB_RECIPE: Recipe = {
 const TEMPLATE_THUMB_SIZE: PrintCardSize = "card-6x4";
 // A whole 6x4 card shrunk to a ~110px picker cell renders its type too small to
 // read. Instead the thumbnail zooms *past* fit-to-width (`ZOOM`) and crops to a
-// fixed height (`HEIGHT`, px) anchored at the card's top-left — so the preview
+// box anchored at the card's top-left (see below) — so the preview
 // shows the header and first rows at a legible size, with the right/bottom
 // edges running off under a soft mask fade. Bumping ZOOM trades how much of the
 // card is visible for how large the type reads.
 const TEMPLATE_THUMB_ZOOM = 1.95;
-// Taller shows more of the card — the header plus a few rows of ingredients
-// and steps, rather than stopping just past the title. The zoom above is what
-// keeps the type legible; this is how much of the card that type belongs to.
-//
-// 84, not 108: a row of these sits in a panel of 30px controls, and at 108 the
-// thumbnails were the tallest thing in the workspace by some way. Still deep
-// enough to show the header and the first rows under it, which is what tells
-// two templates apart.
-const TEMPLATE_THUMB_HEIGHT = 84;
+// How deep the crop goes is a FRACTION of the scaled card, not a pixel height
+// (see `--template-thumb-reveal` in print.css). A pixel height reads as a
+// different thumbnail at every cell width: the card scales with the cell, so a
+// phone drawer's ~157px cell drew the same 84px box around a card zoomed a
+// fifth larger, and showed a fifth less of it. Same box, squatter picture,
+// cut mid-ingredient — which is exactly how it looked next to the desktop
+// panel. A fraction shows the same slice of the same card everywhere, and the
+// box grows with the cell instead of staying put.
 
 export function TemplateThumbnail({ template }: { template: RecipePrintTemplate }) {
   const dims = PAGE_DIMS[TEMPLATE_THUMB_SIZE];
@@ -85,7 +84,6 @@ export function TemplateThumbnail({ template }: { template: RecipePrintTemplate 
             "--page-scale": scale,
             "--page-w": `${dims.w}px`,
             "--page-h": `${dims.h}px`,
-            height: `${TEMPLATE_THUMB_HEIGHT}px`,
           } as CSSProperties
         }
       >

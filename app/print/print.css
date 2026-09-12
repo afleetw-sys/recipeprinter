@@ -2216,14 +2216,28 @@
   width: 100%;
 }
 
-/* The card is zoomed past fit-to-width and cropped to the top: the box stays
-   the cell's width and a fixed height (set inline), the zoomed card overflows
-   its right and bottom edges, and a mask fades the bottom out so the crop reads
-   as "there's more below" instead of a hard cut. The mask (not a solid gradient
-   overlay) works whatever the template's card colour is. */
+/* The card is zoomed past fit-to-width and cropped to the top: the box is the
+   cell's width and shows the top `--template-thumb-reveal` of the scaled card,
+   the zoomed card overflows its right and bottom edges, and a mask fades the
+   bottom out so the crop reads as "there's more below" instead of a hard cut.
+   The mask (not a solid gradient overlay) works whatever the template's card
+   colour is.
+
+   A fraction of the card rather than a fixed pixel height: the card is scaled
+   to the cell, so a phone drawer's ~157px cell zooms it a fifth larger than
+   the desktop panel's ~136px one, and the same 84px box then showed a fifth
+   LESS of it. The thumbnails came out visibly squatter on a phone than on a
+   desktop, cut mid-ingredient. This way the box grows with the cell and every
+   theme shows the same slice of the same card at either size — ~84px in the
+   desktop panel, which is where the number came from: a row of these sits
+   among 30px controls, and any taller made them the tallest thing in the
+   workspace by some way. */
 .recipe-template-option__scaler {
+  --template-thumb-reveal: 0.48;
   display: block;
   width: 100%;
+  /* Beats `.recipe-page-scaler`'s full-card height. */
+  height: calc(var(--page-h) * var(--page-scale) * var(--template-thumb-reveal));
   border: 0;
   border-radius: 0;
   background: transparent;
@@ -3067,9 +3081,14 @@
     display: none;
   }
 
+  /* Columns by width, not a fixed two. The drawer is as wide as the screen,
+     and a thumbnail is a real card scaled to its cell (see
+     `.recipe-template-option__scaler`) — so at two columns a tablet drew each
+     theme half a screen wide, with the card's type blown up past the size it
+     prints at. A phone still lands on two, at the same cell width it had. */
   .recipe-template-list {
     display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
   }
 
   .recipe-mobile-settings-backdrop {
@@ -7235,6 +7254,13 @@ textarea.recipe-card__toc-title {
    homepage's two-column layout — would otherwise double up into a
    box-within-a-box look. Strip its own chrome here. */
 .recipe-add-dialog__body .rp-import-panel {
+  /* `margin` as well as `padding`: the panel carries `-mx-3 p-3` below `lg`,
+     a pair that grows the card outward by exactly the padding it gains so its
+     fields stay on the homepage's left edge. Stripping only the padding left
+     the negative margin behind, and it ate 12 of the body's 20px on every
+     phone — the form sat 8px off the sheet's edge while the heading above it
+     sat at 20, which is the whole reason this sheet read as unpadded. */
+  margin: 0 !important;
   padding: 0 !important;
   border: 0 !important;
   border-radius: 0 !important;
@@ -7294,6 +7320,26 @@ textarea.recipe-card__toc-title {
     border: 0;
     border-bottom: 0;
     border-radius: 20px 20px 0 0;
+  }
+
+  /* 24px, the inset the rest of the phone layout uses — the tool bar at the
+     bottom of the deck and the drawers those buttons open all sit their
+     content there. On a desktop this form is inside a card floating in the
+     middle of the screen, with the page around it reading as margin; a sheet
+     has no such surround, and 20px against the edge of the screen was the
+     difference. */
+  .recipe-add-dialog__header {
+    padding: 18px 60px 14px 24px;
+  }
+
+  .recipe-add-dialog__body {
+    padding: 20px 24px;
+  }
+
+  .recipe-add-dialog__footer {
+    /* The one edge with nothing below it, so it takes the extra: on a phone
+       with a home indicator this is also the hand's own resting place. */
+    padding: 16px 24px calc(20px + env(safe-area-inset-bottom));
   }
 }
 
