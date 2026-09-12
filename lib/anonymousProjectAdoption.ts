@@ -12,6 +12,7 @@ import {
 import {
   transferCookbookProjectUnlockLocal,
 } from "@/lib/cookbookUnlocks";
+import { collectProjectPhotoUrls, mapProjectPhotoUrls } from "@/lib/photoStorage";
 
 const MANIFEST_KEY = "recipeprinter:anonymous-adoption:v1";
 
@@ -128,44 +129,19 @@ function anonymousRecipePrinterAsset(url: string | undefined): url is string {
   }
 }
 
-// Every field of a project that can hold a photo URL, flattened. The single
-// source of truth for "where do asset URLs live", so both the copy pass (which
-// filters to anonymous sources) and the post-save verification (which checks the
-// rewritten destinations landed) read the same field set.
-function projectAssetFields(project: PrintProject): Array<string | undefined> {
-  const stash = project.stashedCookbook;
-  return [
-    project.cover?.imageUrl,
-    project.backCover?.imageUrl,
-    ...(project.cover?.gridImages ?? []),
-    ...(project.backCover?.gridImages ?? []),
-    ...project.sections.flatMap((section) => [
-      section.photoUrl,
-      // A chapter collage is usually curated from recipe photos (already
-      // covered below), but the picker also accepts an uploaded one.
-      ...(section.gridImages ?? []),
-      ...section.items.map((item) => item.recipe?.image),
-    ]),
-    ...Object.values(project.itemPlacements ?? {}).map((placement) => placement.heroImageUrl),
-    // A book set aside by "switch to recipe cards" holds its own cover art,
-    // chapter photos and hero images. It's persisted with the project now, so
-    // adoption has to bring its assets across too — otherwise restoring the
-    // stash months later hands back a book still pointing at anonymous storage
-    // this account never owned.
-    stash?.cover?.imageUrl,
-    stash?.backCover?.imageUrl,
-    ...(stash?.cover?.gridImages ?? []),
-    ...(stash?.backCover?.gridImages ?? []),
-    ...(stash?.sections ?? []).flatMap((section) => [
-      section.photoUrl,
-      ...(section.gridImages ?? []),
-    ]),
-    ...Object.values(stash?.itemPlacements ?? {}).map((placement) => placement.heroImageUrl),
-  ];
-}
-
-function assetUrls(project: PrintProject): string[] {
-  return Array.from(new Set(projectAssetFields(project).filter(anonymousRecipePrinterAsset)));
+/**
+ * The anonymous photos this project still points at, each once.
+ *
+ * WHERE a photo can live is not this module's question to answer — it is the
+ * same question the save-time sweep asks, and answering it twice is how the two
+ * drifted: this walk never knew about `dedication` art or a recipe's
+ * `photoHistory`, so a signed-out cook with a photo on either of them was
+ * adopted into an account still pointing at anonymous storage. Both now read
+ * `mapProjectPhotoUrls`, so a new photo field is covered here by construction.
+ */
+async function assetUrls(project: PrintProject): Promise<string[]> {
+  const urls = await collectProjectPhotoUrls(project);
+  return Array.from(new Set(urls.filter(anonymousRecipePrinterAsset)));
 }
 
 function stableName(source: string): string {
@@ -212,62 +188,14 @@ async function copyAsset(
   return getDownloadURL(destinationRef);
 }
 
-function replaceUrl(value: string | undefined, assets: Record<string, string>) {
-  return value ? assets[value] ?? value : value;
-}
-
-function rewriteAssets(project: PrintProject, assets: Record<string, string>): PrintProject {
-  const rewriteCover = (cover: PrintProject["cover"]) =>
-    cover
-      ? {
-          ...cover,
-          imageUrl: replaceUrl(cover.imageUrl, assets),
-          gridImages: cover.gridImages?.map((url) => replaceUrl(url, assets) ?? url),
-        }
-      : cover;
-  const rewritePlacements = (placements: PrintProject["itemPlacements"]) =>
-    placements
-      ? Object.fromEntries(
-          Object.entries(placements).map(([id, placement]) => [
-            id,
-            { ...placement, heroImageUrl: replaceUrl(placement.heroImageUrl, assets) },
-          ]),
-        )
-      : undefined;
-  const stash = project.stashedCookbook;
-  return {
-    ...project,
-    cover: rewriteCover(project.cover),
-    backCover: rewriteCover(project.backCover),
-    sections: project.sections.map((section) => ({
-      ...section,
-      photoUrl: replaceUrl(section.photoUrl, assets),
-      gridImages: section.gridImages?.map((url) => replaceUrl(url, assets) ?? url),
-      items: section.items.map((item) =>
-        item.recipe?.image
-          ? { ...item, recipe: { ...item.recipe, image: replaceUrl(item.recipe.image, assets) } }
-          : item,
-      ),
-    })),
-    itemPlacements: rewritePlacements(project.itemPlacements),
-    // The set-aside book gets the same treatment — its section list holds ids
-    // rather than recipes, so only the art fields need rewriting. Must stay in
-    // step with `projectAssetFields`, which is what the post-save verification
-    // checks these against.
-    stashedCookbook: stash
-      ? {
-          ...stash,
-          cover: rewriteCover(stash.cover),
-          backCover: rewriteCover(stash.backCover),
-          sections: stash.sections.map((section) => ({
-            ...section,
-            photoUrl: replaceUrl(section.photoUrl, assets),
-            gridImages: section.gridImages?.map((url) => replaceUrl(url, assets) ?? url),
-          })),
-          itemPlacements: rewritePlacements(stash.itemPlacements),
-        }
-      : undefined,
-  };
+/** Points every copied photo at its new home under the account. Reads the same
+    walk `assetUrls` does, so a field that gets collected cannot then fail to be
+    rewritten — which is the pairing the post-save verification checks. */
+function rewriteAssets(
+  project: PrintProject,
+  assets: Record<string, string>,
+): Promise<PrintProject> {
+  return mapProjectPhotoUrls(project, (url) => assets[url] ?? url);
 }
 
 export async function adoptAnonymousProject(
@@ -321,7 +249,7 @@ export async function adoptAnonymousProject(
   writeManifest(manifest);
   try {
     manifest = await copyProjectAssets(
-      assetUrls(project),
+      await assetUrls(project),
       manifest,
       (sourceUrl, existingDestination) =>
         copyAsset(uid, destinationProjectId, sourceUrl, existingDestination),
@@ -354,7 +282,7 @@ export async function adoptAnonymousProject(
     if (existingDestination && !resumesOurOwnWrite && !options.overwriteExisting) {
       throw new PrintProjectConflictError();
     }
-    const adopted = rewriteAssets(
+    const adopted = await rewriteAssets(
       {
         ...project,
         id: destinationProjectId,
@@ -371,9 +299,7 @@ export async function adoptAnonymousProject(
     // blob (Firebase download URLs share a long common prefix, so one asset's
     // URL being a substring of another's could pass a `.includes` check even
     // when its own field was never rewritten).
-    const verifiedAssets = new Set(
-      verified ? projectAssetFields(verified).filter((url): url is string => Boolean(url)) : [],
-    );
+    const verifiedAssets = new Set(verified ? await collectProjectPhotoUrls(verified) : []);
     if (
       !verified ||
       verified.ownerUid !== uid ||
