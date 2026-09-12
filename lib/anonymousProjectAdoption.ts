@@ -10,6 +10,24 @@ import {
 
 const MANIFEST_KEY = "recipeprinter:anonymous-adoption:v1";
 
+/**
+ * How many photos are copied at once.
+ *
+ * Adoption used to copy them strictly one at a time, and a copy is not a cheap
+ * thing to put in series: every photo comes DOWN to this browser out of the
+ * anonymous folder and goes back UP under the account. A book with eighty
+ * photos was eighty of those round trips end to end, with nothing on screen —
+ * at the exact moment a signed-out purchase is becoming an account purchase,
+ * which is the worst moment in this app to look like it has hung.
+ *
+ * Small on purpose. Each unit in flight holds a whole photo in memory and they
+ * all share one connection, so this is picked to keep a slow link working
+ * rather than to saturate a fast one. Most of the win is in leaving one-at-a-
+ * time at all; going much wider buys little and risks the phones that need
+ * this most.
+ */
+const ASSET_COPY_CONCURRENCY = 5;
+
 export interface AdoptionManifest {
   sourceProjectId: string;
   destinationProjectId?: string;
@@ -25,6 +43,70 @@ export function readAdoptionManifest(): AdoptionManifest | null {
 
 function writeManifest(manifest: AdoptionManifest) {
   localStore.setJson(MANIFEST_KEY, manifest);
+}
+
+/** `items` in fixed-size groups, in order. Never emits an empty group. */
+function batches<T>(items: readonly T[], size: number): T[][] {
+  const out: T[][] = [];
+  for (let i = 0; i < items.length; i += size) out.push(items.slice(i, i + size));
+  return out;
+}
+
+/** Copies one photo and resolves to its new URL. `existingDestination` is the
+    URL a previous run already recorded for it, which lets the copier confirm
+    that object is still there rather than send the bytes again. */
+type CopyOneAsset = (sourceUrl: string, existingDestination?: string) => Promise<string>;
+
+/**
+ * Copies a project's anonymous photos into the account, and returns the
+ * manifest recording which source became which destination.
+ *
+ * `copy` is injected rather than called directly. `copyAsset` reaches the
+ * Storage SDK through `await import` — deliberately, so the print page does not
+ * carry it (see there) — and a dynamically-imported module is not something a
+ * test can stand in front of, so the scheduling here would have been untestable
+ * welded to it. Same move, for the same reason, as `planDuplicateCleanup`'s
+ * injected `grantUnlock`.
+ *
+ * Batched rather than serial, and the manifest is written once per batch rather
+ * than once per photo. The manifest is the resume record — a copy that already
+ * landed is not repeated on a retry — so flushing per batch means an
+ * interruption can cost at most one batch of re-copying, in exchange for not
+ * re-serializing the whole asset map after every single photo.
+ */
+export async function copyProjectAssets(
+  sourceUrls: readonly string[],
+  manifest: AdoptionManifest,
+  copy: CopyOneAsset,
+): Promise<AdoptionManifest> {
+  let current = manifest;
+
+  for (const batch of batches(sourceUrls, ASSET_COPY_CONCURRENCY)) {
+    const settled = await Promise.allSettled(
+      batch.map(async (sourceUrl) => ({
+        sourceUrl,
+        destination: await copy(sourceUrl, current.assets[sourceUrl]),
+      })),
+    );
+
+    const copied: Record<string, string> = {};
+    for (const result of settled) {
+      if (result.status === "fulfilled") copied[result.value.sourceUrl] = result.value.destination;
+    }
+    // Recorded even when a sibling in the same batch failed. Those copies really
+    // happened and their bytes really are in the account's folder, so keeping
+    // them is what makes the retry cheaper than the first attempt rather than an
+    // identical repeat of it.
+    current = { ...current, assets: { ...current.assets, ...copied } };
+    writeManifest(current);
+
+    const failed = settled.find(
+      (result): result is PromiseRejectedResult => result.status === "rejected",
+    );
+    if (failed) throw failed.reason;
+  }
+
+  return current;
 }
 
 function anonymousRecipePrinterAsset(url: string | undefined): url is string {
@@ -113,10 +195,15 @@ async function copyAsset(
   }
   const sourceRef = ref(storage, sourceUrl);
   const [blob, metadata] = await Promise.all([getBlob(sourceRef), getMetadata(sourceRef)]);
+  // `uploadBytes` resolves once the object is committed, so it IS the
+  // confirmation that the copy landed. There used to be a `getMetadata` on the
+  // destination here, immediately after, asking the object it had just written
+  // whether it existed — a whole extra round trip per photo, in a loop whose
+  // cost is round trips. The `getMetadata` on the SOURCE above stays: that one
+  // is read for its `contentType`, which the copy has no other way to learn.
   await uploadBytes(destinationRef, blob, {
     contentType: metadata.contentType ?? blob.type ?? "image/jpeg",
   });
-  await getMetadata(destinationRef);
   return getDownloadURL(destinationRef);
 }
 
@@ -204,16 +291,12 @@ export async function adoptAnonymousProject(
   };
   writeManifest(manifest);
   try {
-    for (const sourceUrl of assetUrls(project)) {
-      const destination = await copyAsset(
-        uid,
-        destinationProjectId,
-        sourceUrl,
-        manifest.assets[sourceUrl],
-      );
-      manifest = { ...manifest, assets: { ...manifest.assets, [sourceUrl]: destination } };
-      writeManifest(manifest);
-    }
+    manifest = await copyProjectAssets(
+      assetUrls(project),
+      manifest,
+      (sourceUrl, existingDestination) =>
+        copyAsset(uid, destinationProjectId, sourceUrl, existingDestination),
+    );
     manifest = { ...manifest, status: "saving" };
     writeManifest(manifest);
     // Revision and creation time only — the destination's own content is about
