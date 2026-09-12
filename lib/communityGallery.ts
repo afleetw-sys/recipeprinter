@@ -2,8 +2,8 @@
 // "Fresh off the printer": photographs of what people actually printed.
 //
 // Named for the thing rather than the room. "In real kitchens" claimed a
-// setting the pictures do not have to be in, and the first three are on a
-// garden table.
+// setting the pictures do not have to be in: one is a garden table, several are
+// a countertop, and the argument is the same from any of them.
 //
 // The product's output is a physical object, and that is the one thing the
 // homepage cannot otherwise show. A print preview is a rectangle on a screen;
@@ -34,22 +34,21 @@ export type CommunityPhoto = {
 };
 
 /**
- * The seed set, shot at Amelia's: real cards off the real printer, not
- * renderings. They live in public/images/printed-cards/, away from the
- * product screenshots and marks that fill the rest of public/images.
+ * Real cards and pages off a real printer, photographed rather than rendered.
+ * They live in public/images/printed-cards/, away from the product screenshots
+ * and marks that fill the rest of public/images.
  *
- * Keep the long edge at 2000px. The viewer shows one at 74vh, so a tall
- * display asks for about 900 CSS px, and 2000 covers that at 2x with room
- * spare. The noodles photograph arrived at 3024x4032 and 2.8MB, which the
- * image optimizer had to chew through on the first click.
+ * Keep the long edge at 2000px. The viewer shows one at 74vh, so a tall display
+ * asks for about 900 CSS px, and 2000 covers that at 2x with room spare. This
+ * batch arrived between 3000 and 3650px wide at 1.7–3.2MB each, which is bytes
+ * nothing ever displays and an optimizer pass to chew through on first click.
  *
- * The three card photographs are PORTRAIT, whatever the file says. They are
- * stored landscape with an EXIF rotation that the image optimizer applies, so
- * `sips` reports 1600x1200 while the browser decodes 1200x1600. The sizes
- * below are the ones the browser sees; the numbers off the file would have
- * described every one of them as the wrong shape. The landscape slot crops
- * their top and bottom, which costs a little plant and a little table and
- * keeps the card.
+ * THE THUMBNAIL SLOT IS LANDSCAPE (4/3, `object-cover`) AND MOST OF THESE
+ * PHOTOGRAPHS ARE PORTRAIT. A 1333x2000 photo therefore shows a 1000px-tall
+ * window out of 2000 — the middle half, unless `objectPosition` moves it. Where
+ * the card sits low in the frame, that default cuts it in half, so those
+ * entries nudge the window down. The viewer is `object-contain` and shows the
+ * whole photograph either way, which is where the props and the table are for.
  *
  * Empty this array and the gallery renders nothing at all rather than an empty
  * shell; see CommunityGallery for the dev-only placeholder that keeps the
@@ -57,8 +56,18 @@ export type CommunityPhoto = {
  */
 const PHOTOS: CommunityPhoto[] = [
   {
-    // Leads, because it is the only one that shows the card and the dinner it
-    // produced in the same frame, which is the argument the others only imply.
+    // Leads on legibility: the highest-contrast card in the set, square to the
+    // camera, filling its frame. A visitor deciding whether this is worth a try
+    // is reading the first thumbnail, not admiring it.
+    src: "/images/printed-cards/buffalo-chicken.jpeg",
+    width: 1333,
+    height: 2000,
+    alt:
+      "A printed Buffalo Chicken Bake card with a blue checkered edge, on a yellow surface between a jar of buffalo sauce and a tipped-over jar of onion powder.",
+  },
+  {
+    // Second, and the only one that shows a card and the dinner it produced in
+    // the same frame — the argument the rest of the strip only implies.
     src: "/images/printed-cards/soy-sauce-noodles.jpeg",
     width: 1500,
     height: 2000,
@@ -66,9 +75,30 @@ const PHOTOS: CommunityPhoto[] = [
       "A printed Soy Sauce Pan-Fried Noodles card on a table beside the finished bowl of noodles and chopsticks.",
   },
   {
-    // The only full-PAGE print in the set, and the only one shot from above.
-    // Both are worth having: the strip otherwise argues for one format from
-    // one angle.
+    // The full-PAGE format, which prints a whole recipe at letter size instead
+    // of splitting it across a card's two faces.
+    src: "/images/printed-cards/crockpot-sesame.jpeg",
+    width: 1333,
+    height: 2000,
+    // The page is taller than the window whatever we do, so this buys the top:
+    // centred, the crop landed below the title and the thumbnail opened on the
+    // word "Chicken" with no recipe name above it.
+    objectPosition: "center 38%",
+    alt:
+      "A printed full-page Creamy Crockpot Sesame Chicken recipe on a wooden board, with a glass pot lid resting across one corner.",
+  },
+  {
+    src: "/images/printed-cards/caprese-pasta.jpeg",
+    width: 1333,
+    height: 2000,
+    // The card sits low in the frame; centred, the slot would cut it in half.
+    objectPosition: "center 57%",
+    alt:
+      "A printed Caprese Pasta Salad card on a wooden board, with fresh basil and cherry tomatoes laid out above it.",
+  },
+  {
+    // The only landscape frame and the only garden table. Sitting mid-run, it
+    // breaks a stretch that would otherwise be five portrait shots indoors.
     src: "/images/printed-cards/souvlaki.jpeg",
     width: 2000,
     height: 1500,
@@ -76,25 +106,25 @@ const PHOTOS: CommunityPhoto[] = [
       "A printed full-page Chicken Tzatziki Bowls recipe on a garden table beside the finished bowl.",
   },
   {
-    src: "/images/printed-cards/card-korean-beef-bowl.jpeg",
-    width: 1200,
-    height: 1600,
+    src: "/images/printed-cards/chicken-power-bowl.jpeg",
+    width: 1333,
+    height: 2000,
+    objectPosition: "center 57%",
     alt:
-      "A printed Korean Beef Bowl card, spiral binding along its top edge, standing on a garden table.",
+      "A printed Hot Honey Chicken Power Bowl card with a blue checkered edge, on a red surface beside an avocado.",
   },
   {
-    src: "/images/printed-cards/card-basil-pesto.jpeg",
-    width: 1200,
-    height: 1600,
+    // Same recipe as the full page at position three, printed as a card
+    // instead. Kept four apart so the pair reads as two formats rather than a
+    // duplicate.
+    src: "/images/printed-cards/sesame-chicken.jpeg",
+    width: 1333,
+    height: 2000,
+    // Lowest card in the set: the default middle-half window would show mostly
+    // tabletop and the top third of the card.
+    objectPosition: "center 67%",
     alt:
-      "A printed Basil Pesto card on ruled notebook paper, standing on a garden table.",
-  },
-  {
-    src: "/images/printed-cards/card-caprese-pasta-salad.jpeg",
-    width: 1200,
-    height: 1600,
-    alt:
-      "A printed Caprese Pasta Salad card with a blue checkered border, standing on a garden table.",
+      "A printed Creamy Crockpot Sesame Chicken card on a mustard notebook, with a trailing houseplant above it.",
   },
 ];
 
