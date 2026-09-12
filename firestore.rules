@@ -105,17 +105,41 @@ service cloud.firestore {
     // so a row cannot be altered or removed once collected. The shape check
     // below keeps it from becoming free document storage: a fixed set of
     // fields, a capped payload, and `product` pinned to this app so a
-    // RecipePrinter row can never be mistaken for a CookPilot one. VOLUME is
-    // App Check enforcement on the project, which is a console setting rather
-    // than a line in this file.
+    // RecipePrinter row can never be mistaken for a CookPilot one. RATE is App
+    // Check enforcement on the project, which is a console setting rather than
+    // a line in this file.
+    //
+    // RETENTION is deliberately nothing at all: these rows are a to-do list,
+    // read and deleted by hand once the bug behind them is fixed, so the ones
+    // still here are the ones NOT yet dealt with and a clock would delete
+    // exactly the wrong half. See docs/failed-import-retention.md.
     match /debugInbox/{docId} {
       allow read, update, delete: if false;
       allow create: if request.resource.data.product == "recipeprinter"
         && request.resource.data.keys().hasOnly([
           "product", "source", "category", "reason", "payload", "payloadTruncated",
-          "payloadLength", "imagePath", "imageCount", "user", "userAgent", "createdAt"
+          "payloadLength", "imagePath", "imageCount", "user", "userAgent", "createdAt",
+          "expiresAt"
         ])
         && request.resource.data.keys().hasAll(["product", "source", "category", "createdAt"])
+        // `expiresAt` is tolerated and, today, never sent. Rows here are a
+        // to-do list worked through by hand, so nothing puts a clock on them —
+        // see lib/failedImportCapture.ts.
+        //
+        // Allowed anyway because rules and the app deploy separately, and rules
+        // have to go first. Leaving the door open means a future backstop is a
+        // one-line app change instead of a two-stage rollout. If one is ever
+        // added it must key on this field and not on `createdAt`: CookPilot
+        // shares this collection and writes `createdAt` too, while a TTL policy
+        // ignores any document lacking its field — so `expiresAt` reaps only
+        // ours, and `createdAt` would quietly reap theirs.
+        //
+        // Typed regardless. A string here would make a row look like it had an
+        // expiry while having none, which is worse than carrying no field.
+        && (
+          !request.resource.data.keys().hasAny(["expiresAt"])
+          || request.resource.data.expiresAt is timestamp
+        )
         && request.resource.data.source is string
         && request.resource.data.source.size() <= 20
         && request.resource.data.category is string
@@ -211,9 +235,13 @@ service cloud.firestore {
       allow read: if resource == null || resource.data.published == true;
       allow create: if recipePrinterAdmin()
         && request.resource.data.createdBy == request.auth.uid;
-      allow update: if recipePrinterAdmin()
-        || (request.resource.data.diff(resource.data).affectedKeys().hasOnly(["viewCount"])
-          && request.resource.data.viewCount == resource.data.get("viewCount", 0) + 1);
+      // Admin only. There used to be a second clause letting ANYONE increment
+      // `viewCount` by one — the only unauthenticated write this collection
+      // had, and it existed for a counter nothing ever read back. The client
+      // that made those writes is gone (see SharedRecipeCardRedirect), so the
+      // permission goes with it rather than staying open for a caller that no
+      // longer exists.
+      allow update: if recipePrinterAdmin();
       allow delete: if false;
     }
 
@@ -237,9 +265,13 @@ service cloud.firestore {
       allow read: if resource == null || resource.data.published == true;
       allow create: if recipePrinterAdmin()
         && request.resource.data.createdBy == request.auth.uid;
-      allow update: if recipePrinterAdmin()
-        || (request.resource.data.diff(resource.data).affectedKeys().hasOnly(["viewCount"])
-          && request.resource.data.viewCount == resource.data.get("viewCount", 0) + 1);
+      // Admin only. There used to be a second clause letting ANYONE increment
+      // `viewCount` by one — the only unauthenticated write this collection
+      // had, and it existed for a counter nothing ever read back. The client
+      // that made those writes is gone (see SharedRecipeCardRedirect), so the
+      // permission goes with it rather than staying open for a caller that no
+      // longer exists.
+      allow update: if recipePrinterAdmin();
       allow delete: if false;
     }
 

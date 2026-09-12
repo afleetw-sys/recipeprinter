@@ -40,7 +40,7 @@ that half of the original warning stands.
 | Feedback | `feedback-printer/{id}` | `products/recipePrinter/feedback/{id}` | administrators only | feedback form | New writes only; backfill for administrative continuity; no client fallback |
 | User photos | `recipeprinter/photos/{uid}/**` | `recipeprinter/photos/users/{uid}/**` | printed project URLs | authenticated browser | New writes only; retained public URLs remain valid |
 | Anonymous photos | `recipeprinter/photos/anon/**` | `recipeprinter/photos/anonymous/{anonymousOwnerId}/**`, then copied to user prefix on adoption | local project URLs | anonymous browser | Local manifest, deterministic client copy, verify before any cleanup |
-| Failed import captures | `debug/failed-imports/**` | `recipeprinter/debug/failed-imports/**` | administrators via bucket tooling | best-effort browser capture | New writes only; historical objects remain until retention |
+| Failed import captures | `debug/failed-imports/**` | `recipeprinter/debug/failed-imports/**` | administrators via bucket tooling | best-effort browser capture | New writes only; rows deleted by hand (no TTL), image bytes deliberately unswept -- see docs/failed-import-retention.md |
 | Anonymous recipes/projects | session/local storage only; no anonymous Firestore project path found | authenticated project document after sign-in | queue/project hooks | browser | Preserve local source until copied assets and saved project verify |
 
 ## Local persistence involved in purchase or recovery
@@ -67,3 +67,9 @@ that half of the original warning stands.
    and cookbook customers; no webhook implementation exists in this repo.
 4. Backfill profile fields, projects, unlocks, shared cards, and feedback before
    removing compatibility reads.
+5. Failed-import capture image bytes grow without bound: `debugInbox` rows are
+   reviewed and deleted by hand (and must NOT be given a TTL -- the rows still
+   present are the unreviewed ones), but deleting a row leaves its photographs
+   in Storage forever. Knowingly deferred 2026-09-11; the app now writes fewer
+   of them. See docs/failed-import-retention.md for the options and the two
+   traps in applying a lifecycle rule to a shared bucket.
