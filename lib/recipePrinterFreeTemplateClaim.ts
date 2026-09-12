@@ -31,11 +31,31 @@ async function fetchRecipePrinterUserDoc(uid: string): Promise<Record<string, un
     import("@/lib/firebase/db"),
   ]);
   const db = getDb();
+  /**
+   * Both reads guarded, and a total failure reported rather than answered.
+   *
+   * Only the namespaced half was `.catch`-guarded, so a permission error or a
+   * dropped connection on the pre-namespace `users/{uid}` document rejected the
+   * whole profile load — taking the admin gate and the free-template status
+   * down with a read that has nothing to do with either. The two other places
+   * that read a legacy path beside a namespaced one (lib/printProjects,
+   * lib/cookbookUnlocks) isolate each side for exactly this reason.
+   *
+   * And when NEITHER answers, that is not a profile — it is the absence of one.
+   * Returning `{}` would say "not a CookPilot subscriber, nothing claimed, not
+   * an admin" with total confidence, which is the same lie an unread projects
+   * list used to tell. The caller on /print already treats a rejection
+   * correctly: it leaves `freeTemplateStatus` null, which reads as unknown
+   * rather than as a subscriber being told they have no free template.
+   */
   const [namespaced, legacy] = await Promise.all([
     getDoc(doc(db, ...recipePrinterUserPath(uid))).catch(() => null),
-    getDoc(doc(db, "users", uid)),
+    getDoc(doc(db, "users", uid)).catch(() => null),
   ]);
-  return { ...(legacy.data() ?? {}), ...(namespaced?.data() ?? {}) };
+  if (!namespaced && !legacy) {
+    throw new Error("Couldn't read your account profile.");
+  }
+  return { ...(legacy?.data() ?? {}), ...(namespaced?.data() ?? {}) };
 }
 
 function deriveFreeTemplateStatus(data: Record<string, unknown>): RecipePrinterFreeTemplateStatus {
