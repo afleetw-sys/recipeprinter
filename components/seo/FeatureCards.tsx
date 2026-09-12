@@ -1,5 +1,8 @@
 import Image from "next/image";
-import { FEATURE_IMAGES } from "@/components/seo/LandingVisuals";
+import { FEATURE_IMAGES, type FeatureCard } from "@/lib/seoAssets";
+
+// Declared in lib/seoAssets; re-exported because callers look for it here.
+export type { FeatureCard };
 
 // ─────────────────────────────────────────────────────────────────────────
 // Features stacked, not alternated: picture on top, name under it, the
@@ -12,15 +15,6 @@ import { FEATURE_IMAGES } from "@/components/seo/LandingVisuals";
 // instead of tracking left, right, left.
 // ─────────────────────────────────────────────────────────────────────────
 
-export type FeatureCard = {
-  heading: string;
-  body: string;
-  /** A FEATURE_IMAGES key. Omit to render the placeholder frame. */
-  image?: string;
-  /** What the missing photograph should show. Rendered in the placeholder so
-      the gap names itself instead of being a blank grey box nobody can act on. */
-  needs?: string;
-};
 
 /**
  * The slot every card's visual sits in, so a placeholder occupies exactly the
