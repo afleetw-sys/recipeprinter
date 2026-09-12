@@ -10,6 +10,9 @@ function book(
   itemIds: string[],
   updatedAt: number,
   kind: PrintProjectSummary["kind"] = "cookbook",
+  // Inside the fork era by default, which is the population this module exists
+  // to clean up — see `FORK_ERA_ENDED_AT`.
+  createdAt = 1,
 ): PrintProjectSummary {
   return {
     id,
@@ -20,14 +23,45 @@ function book(
     sections: [{ id: `${id}-s1`, title: "Mains", itemIds }],
     recipeCount: itemIds.length,
     coverThumbs: [],
-    createdAt: 1,
+    createdAt,
     updatedAt,
   };
 }
 
+/** Created after the fork bug was fixed, so it is somebody's decision rather
+    than our fallout. */
+const AFTER_THE_FORK_ERA = Date.UTC(2026, 8, 1);
+
 const ids = (projects: PrintProjectSummary[]) => projects.map((project) => project.id);
 
 describe("planning the duplicate cleanup", () => {
+  it("never deletes a project created after the fork bug was fixed", async () => {
+    // "New cookbook" mints a fresh id and deliberately keeps the recipe list,
+    // so a second book built from the first one's recipes contains it entirely.
+    // That is the shape of a fork and the substance of a decision, and only the
+    // date can tell them apart.
+    const { keep, remove } = await planDuplicateCleanup("user-1", [
+      book("second-book", ["r1", "r2", "r3"], 300, "cookbook", AFTER_THE_FORK_ERA),
+      book("first-book", ["r1", "r2"], 200, "cookbook", AFTER_THE_FORK_ERA),
+    ]);
+
+    expect(ids(keep)).toEqual(["second-book", "first-book"]);
+    expect(remove).toEqual([]);
+  });
+
+  it("still sweeps the era's forks that sit under a deliberate new book", async () => {
+    // The new book anchors the group rather than being excluded from it, so the
+    // genuine forks underneath it are still recognised and removed.
+    const { keep, remove } = await planDuplicateCleanup("user-1", [
+      book("new-book", ["r1", "r2"], 400, "cookbook", AFTER_THE_FORK_ERA),
+      book("fork-2", ["r1", "r2"], 200),
+      book("fork-1", ["r1", "r2"], 100),
+    ]);
+
+    expect(ids(keep)).toEqual(["new-book"]);
+    expect(ids(remove)).toEqual(["fork-2", "fork-1"]);
+  });
+
   it("removes forks that are contained in the copy being kept", async () => {
     const { keep, remove } = await planDuplicateCleanup("user-1", [
       book("copy-3", ["r1", "r2"], 300),

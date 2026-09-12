@@ -154,6 +154,9 @@ export function assemblePrintProject(params: {
   id: string;
   ownerUid: string;
   title?: string;
+  /** A name the cook typed. Carried through so a rename survives being saved
+      and reopened — see `PrintProject.projectTitle`. */
+  projectTitle?: string;
   sections: Section[];
   cover?: CoverConfig;
   backCover?: CoverConfig;
@@ -176,6 +179,7 @@ export function assemblePrintProject(params: {
     revision: params.revision ?? 0,
     ownerUid: params.ownerUid,
     title: params.title,
+    projectTitle: params.projectTitle,
     sections: params.sections,
     cover: params.cover,
     backCover: params.backCover,
@@ -398,6 +402,23 @@ export async function loadPrintProjectSummaries(ownerUid: string): Promise<Print
  * and it is worth taking: inline documents re-save themselves into the split
  * shape the first time they are touched, so that cost is shrinking, and the
  * round trip it buys back is paid on every open of every modern book.
+ *
+ * `null` means the account genuinely has no such project, and NOTHING ELSE. A
+ * read that could not be made throws.
+ *
+ * That distinction is load-bearing, and it used to be thrown away: both reads
+ * carried `.catch(() => null)`, so being offline, or a rules deploy, or a
+ * dropped connection all answered "there is no such book" — indistinguishable
+ * from the truth. The caller believes that answer and acts on it. On /print it
+ * falls back to this device's shelf copy and, because a shelved book is by
+ * definition one the account does not hold yet, immediately writes it up
+ * through `adoptAnonymousProject` — which reads the remote revision rather than
+ * checking it, so it cannot conflict. One failed read on a phone therefore
+ * replaced a book edited on a laptop with whatever this device last filed.
+ *
+ * A missing document does not throw in Firestore: `getDoc` resolves with
+ * `exists() === false`. So letting an error through costs nothing in the normal
+ * case and is the only way to say "I don't know" out loud.
  */
 export async function loadPrintProject(ownerUid: string, projectId: string): Promise<PrintProject | null> {
   const [{ doc, getDoc }, { getDb }] = await Promise.all([
@@ -407,16 +428,21 @@ export async function loadPrintProject(ownerUid: string, projectId: string): Pro
   const db = getDb();
   const projectPath = recipePrinterProjectPath(ownerUid, projectId);
   const [snap, contentSnap] = await Promise.all([
-    getDoc(doc(db, ...projectPath)).catch(() => null),
+    getDoc(doc(db, ...projectPath)),
+    // The ONE read still allowed to fail quietly, because `hydrate` decides
+    // what its absence means: an inline document does not need it, and a split
+    // one throws rather than hand back a book with no recipes in it. Either way
+    // the parent has already been read successfully, so "I don't know" is still
+    // said — by the throw, not by a null.
     getDoc(doc(db, ...projectPath, ...CONTENT_DOC)).catch(() => null),
   ]);
-  if (snap?.exists()) return hydrate(snap.data(), contentSnap);
+  if (snap.exists()) return hydrate(snap.data(), contentSnap);
   // Temporary compatibility read. New writes are namespace-only, and once the
   // legacy collection has been seen empty for this account there is nothing
   // there to find — see `legacyProjectsKnownEmpty`.
   if (legacyProjectsKnownEmpty(ownerUid)) return null;
-  const legacy = await getDoc(doc(db, "users", ownerUid, PRINT_PROJECTS_COLLECTION, projectId)).catch(() => null);
-  return legacy?.exists() ? (legacy.data() as PrintProject) : null;
+  const legacy = await getDoc(doc(db, "users", ownerUid, PRINT_PROJECTS_COLLECTION, projectId));
+  return legacy.exists() ? (legacy.data() as PrintProject) : null;
 }
 
 /**
@@ -543,9 +569,13 @@ export async function deletePrintProject(
   // order means the worst interruption leaves a listed project whose recipes
   // failed to load, which is visible and retryable, rather than silent storage
   // nobody is billed for by accident.
-  await deleteDoc(doc(db, ...recipePrinterProjectPath(ownerUid, projectId), ...CONTENT_DOC)).catch(
-    () => undefined,
-  );
+  //
+  // Its failure is NOT swallowed, which it used to be — the parent was then
+  // removed anyway, producing exactly the unreachable orphan the ordering is
+  // here to avoid. Deleting a document that was never there succeeds in
+  // Firestore, so an inline project with no content subdocument still passes
+  // straight through this.
+  await deleteDoc(doc(db, ...recipePrinterProjectPath(ownerUid, projectId), ...CONTENT_DOC));
   await Promise.all([
     deleteDoc(doc(db, ...recipePrinterProjectPath(ownerUid, projectId))),
     // Deleting a document that was never there is still a billed write, and the

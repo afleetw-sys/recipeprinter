@@ -86,8 +86,24 @@ type EventProps = {
   // ---- Import ----------------------------------------------------------
   // Fired as a trio so failures are visible. Recording only successes makes
   // a broken parser look identical to a visitor who wandered off: a pageview,
-  // no print, no explanation. `hostname` (never the full URL — that's what
-  // someone is cooking) is what tells us which recipe sites we choke on.
+  // no print, no explanation. `hostname` is what tells us which recipe sites we
+  // choke on, and it stays the dimension all three are grouped by.
+  //
+  // The full URL rides on `recipe_import_started` and nowhere else. That is a
+  // deliberate narrowing of the rule this comment used to state — hostname only,
+  // "never the full URL, that's what someone is cooking" — and it is worth being
+  // honest about the trade. The failure it was costing us is the one a hostname
+  // cannot describe: a parse that returns SUCCESS and hands back a mangled
+  // recipe. Nothing in the event stream distinguishes that from a good import,
+  // the replay cannot be read for it either (`maskAllInputs` masks the box the
+  // link was typed into, by design), and "some page on allrecipes.com" is not a
+  // page anyone can open and reproduce. One exact URL is.
+  //
+  // What that means in practice: a recipe URL a cook pasted is now readable in
+  // PostHog by anyone who can read PostHog. That was already true of the failed
+  // ones — `lib/failedImportCapture.ts` has stored them in `debugInbox` for the
+  // same reason for as long as it has existed — so what changes is the
+  // successful ones join them, in a system with the same readers.
   /**
    * A cook handed an import over, and which door they came through.
    *
@@ -103,8 +119,45 @@ type EventProps = {
    * `recipe_import_started` remains the parse-side denominator.
    */
   recipe_import_submitted: { surface: ImportSurface; source: ImportMethod };
-  /** An import was accepted and parsing began. The denominator. */
-  recipe_import_started: { source: ImportMethod; hostname?: string };
+  /**
+   * An import was accepted and parsing began. The denominator.
+   *
+   * Fired immediately before the parser is called, so it is on record whatever
+   * the parse then does — including returning a "successful" recipe that is
+   * wrong, which is the case this event's `url` exists to make reproducible.
+   */
+  recipe_import_started: {
+    source: ImportMethod;
+    hostname?: string;
+    /**
+     * The queue item's id (`lib/ids.ts` `uid()`), not a new identifier minted
+     * for analytics. It is the same id the deck row, the retry and the failure
+     * capture already use for this import, so an event here and a row on screen
+     * are the same thing rather than two things that have to be matched up by
+     * timestamp.
+     *
+     * Absent on the two imports that never reach `runParse` and so never become
+     * a queue item: a Paprika export the reader could not open, and an image
+     * selection rejected before anything was decoded (see
+     * `components/import/PaprikaImportSource.tsx` and
+     * `components/ImportPanel.tsx`). Both report a started/failed pair so the
+     * funnel keeps its denominator, and neither has an id to give — minting one
+     * there would produce an identifier that joins nothing.
+     */
+    importId?: string;
+    /**
+     * The exact URL submitted — query string included — for a URL import. Absent
+     * for every other source, which has no URL to record.
+     *
+     * Deliberately NOT `canonicalUrl()` (lib/queue.ts), which drops utm/fbclid/
+     * gclid before comparing two links for sameness. That is the right rule for
+     * dedupe and the wrong one here: a page that serves different markup to a
+     * campaign visitor is exactly the sort of thing that produces a recipe we
+     * parse wrongly, and stripping the parameter deletes the evidence. This is
+     * the URL as submitted, which is the only version that reproduces.
+     */
+    url?: string;
+  };
   /** Parsing produced a recipe. */
   recipe_imported: { source: ImportMethod; hostname?: string };
   /**

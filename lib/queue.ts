@@ -12,6 +12,8 @@ import { normalizeImportURL } from "@/lib/cookpilot";
 import { hostnameOf as rawHostnameOf } from "@/lib/url";
 import { uid } from "@/lib/ids";
 import { deleteLocalPhoto, isBlobUrl, localPhotoUrls } from "@/lib/localPhotos";
+import { localProjectPhotoIds } from "@/lib/localProjects";
+import { QUEUE_RECOVERY_OWNER_KEY, stampRecoveryOwner } from "@/lib/recoveryMirror";
 import { localStore, sessionStore } from "@/lib/storage";
 
 // The print queue is session-based for the MVP, no accounts, no saved library.
@@ -124,6 +126,11 @@ function writeSerializedQueue(serialized: string) {
   // Best-effort like the session write — if localStorage is unavailable
   // (private mode/quota) there's simply no cross-close recovery.
   const mirrored = localStore.set(QUEUE_RECOVERY_STORAGE_KEY, serialized);
+  // Say which tab this mirror belongs to. Two tabs write this key on unrelated
+  // timers, and the project metadata is mirrored separately — so without the
+  // stamp a reopened tab can pair THESE recipes with ANOTHER book's identity.
+  // See lib/recoveryMirror.
+  if (mirrored) stampRecoveryOwner(QUEUE_RECOVERY_OWNER_KEY);
   // `localStore.set` returns false rather than throwing, and this discarded it.
   // The failure that matters is quota: the device shelf holds up to 40 whole
   // projects in the same origin, so a heavy account can fill it — and from that
@@ -190,15 +197,35 @@ function scheduleQueueWrite(items: QueueItem[]): void {
   queuePersistTimer = setTimeout(flushQueueWrites, QUEUE_PERSIST_THROTTLE_MS);
 }
 
+/** A shared card's slug IS its identity in the queue, the same way a Paprika
+    recipe's archive uid is (`paprikaQueueId`). Deterministic so opening the
+    same link twice is the same recipe rather than a second copy of it. */
+function sharedQueueId(slug: string): string {
+  return `shared:${slug}`;
+}
+
 /**
  * Seeds a fully-parsed recipe straight into this browser's session queue,
  * status "ready" — no parsing step, used by the /print/[slug] loader to hand
  * a shared recipe off to the real /print page. This is a local copy in the
  * visitor's own session storage: editing it (via the normal print-page
  * inline editor) only ever touches this copy, never the shared source doc.
+ *
+ * Idempotent per slug. The id used to be a fresh `uid()` every time, so every
+ * visit to the same link added another identical recipe to the deck — a link
+ * in a newsletter that somebody opens twice, or a bookmark, and the print job
+ * quietly has the same card in it twice. Every other way in already dedupes:
+ * `addUrl` on the canonical URL, `addReadyRecipes` on the item id.
+ *
+ * A recipe already in the queue is LEFT ALONE, not refreshed from the shared
+ * document. It is the visitor's copy by then and they may have edited it, and
+ * silently replacing their edits with the source is the one thing this function
+ * promises not to do.
  */
 export function seedSharedQueueItem(recipe: Recipe, source: string): string {
-  const id = uid();
+  const id = sharedQueueId(source);
+  const current = readQueue();
+  if (current.some((item) => item.id === id)) return id;
   const item: QueueItem = {
     id,
     method: "shared",
@@ -208,7 +235,7 @@ export function seedSharedQueueItem(recipe: Recipe, source: string): string {
     recipe,
     addedAt: Date.now(),
   };
-  const next = [...readQueue(), item];
+  const next = [...current, item];
   const serialized = serializeQueue(next);
   if (serialized) {
     lastWrittenQueueJson = serialized;
@@ -216,6 +243,57 @@ export function seedSharedQueueItem(recipe: Recipe, source: string): string {
   }
   return id;
 }
+
+/**
+ * Drops the IndexedDB photos of departing recipes — but only the ones nothing
+ * else is holding.
+ *
+ * A `localPhotoId` names bytes in a shared store (lib/localPhotos), and the
+ * queue is not their only owner: a project filed on the device shelf stores the
+ * SAME id and reads the bytes back through `rehydrateLocalPhotos` when it is
+ * reopened. Deleting on the queue's say-so alone destroyed those books.
+ *
+ * Leaving the workspace is where it bit, because the two steps run back to back
+ * in one synchronous breath (see `handleNavigateHome` on the print page and the
+ * mount effect in components/PrinterWorkspace):
+ *
+ *     fileProjectLocally(items, meta)   // the shelf copy now references the photos
+ *     handleSaveProject(filed)          // suspends at its first await
+ *     queue.clear()                     // …and used to delete them here
+ *
+ * That cost the filed book every photo it had. It also cost the ACCOUNT copy
+ * them: `deleteLocalPhoto` revokes the object URL synchronously, and the save it
+ * had just overtaken reaches `fetch(blob:…)` one microtask later, where a
+ * revoked URL fails — `materializeOrKeep` then keeps the dead `blob:` string and
+ * writes it to Firestore, on top of the real Storage URLs an earlier save had
+ * put there.
+ *
+ * So ask the shelf first. Both callers pass the queue as it is AFTER the
+ * removal, so a photo two recipes share survives losing one of them.
+ *
+ * Errs towards keeping: a photo nothing points at any more costs a little disk
+ * (the store's own standing trade — see `deleteLocalPhoto`), and one deleted
+ * early costs someone a picture they cannot get back.
+ */
+function releaseLocalPhotos(going: readonly QueueItem[], keeping: readonly QueueItem[]): void {
+  const departing = going
+    .map((item) => item.localPhotoId)
+    .filter((photoId): photoId is string => Boolean(photoId));
+  if (departing.length === 0) return;
+  const stillQueued = new Set(
+    keeping.map((item) => item.localPhotoId).filter((photoId): photoId is string => Boolean(photoId)),
+  );
+  const shelved = localProjectPhotoIds();
+  for (const photoId of departing) {
+    if (stillQueued.has(photoId) || shelved.has(photoId)) continue;
+    void deleteLocalPhoto(photoId);
+  }
+}
+
+/** Exported for tests. The rule this enforces has no UI in front of it and a
+    book's photographs to lose if it is wrong — the same reasoning as
+    `__scheduleQueueWriteForTest` above. */
+export const __releaseLocalPhotosForTest = releaseLocalPhotos;
 
 function hostnameOf(url: string): string {
   return rawHostnameOf(normalizeImportURL(url)) ?? url;
@@ -373,6 +451,34 @@ export function useQueue() {
     [commit],
   );
 
+  /**
+   * Points recipes at the Storage copies of photos this browser was holding.
+   *
+   * Called after a save has actually landed. `materializeProjectPhotos` uploads
+   * from the working copy but hands its result to the SAVE, so without this the
+   * queue went on holding the `blob:` URL and every later save re-uploaded the
+   * same bytes — see `MaterializedPhotos`.
+   *
+   * `localPhotoId` is deliberately kept. The IndexedDB copy is still what the
+   * device shelf's older entries reference (see `releaseLocalPhotos`), and
+   * `rehydrateLocalPhotos` only ever replaces an image that is missing or a
+   * dead object URL, so a real Storage URL is safe beside it.
+   */
+  const adoptUploadedPhotos = useCallback(
+    (uploaded: ReadonlyMap<string, string>) => {
+      if (uploaded.size === 0) return;
+      let changed = false;
+      const next = itemsRef.current.map((item) => {
+        const url = uploaded.get(item.id);
+        if (!url || !item.recipe || item.recipe.image === url) return item;
+        changed = true;
+        return { ...item, recipe: { ...item.recipe, image: url } };
+      });
+      if (changed) commit(next);
+    },
+    [commit],
+  );
+
   const patch = useCallback(
     (id: string, changes: Partial<QueueItem>) => {
       let changed = false;
@@ -401,7 +507,10 @@ export function useQueue() {
   const runParse = useCallback(
     async (
       id: string,
-      origin: { source: ImportMethod; hostname?: string },
+      // `url` is the submitted link, set by the two URL callers and by nobody
+      // else. It is separated out below rather than read straight off `origin`
+      // because the outcome events spread `origin` wholesale — see `outcome`.
+      origin: { source: ImportMethod; hostname?: string; url?: string },
       // A URL parse can yield several recipes (a "roundup" page); image/text parses
       // yield one. A multi result lands the first recipe on this item and blooms the
       // rest into their own ready items — see below.
@@ -413,8 +522,20 @@ export function useQueue() {
       // the originals and a parse failure keeps what the parser actually saw.
       opts?: { failedImages?: Array<Blob | string>; failedText?: string },
     ) => {
+      // The full URL belongs to the STARTED event only. `recipe_imported` and
+      // `recipe_import_failed` below both spread their origin wholesale, and an
+      // extra property on a variable (unlike an object literal) is invisible to
+      // TypeScript's excess-property check — so widening `origin` without this
+      // split would have quietly put the URL on all three, past the closed map
+      // in lib/analytics.ts that exists to stop exactly that. Destructuring
+      // makes the narrowing the compiler's job instead of a promise in a
+      // comment: `outcome` has no `url` to leak.
+      const { url, ...outcome } = origin;
       patch(id, { status: "parsing", error: undefined });
-      track("recipe_import_started", origin);
+      // Before `work()` — the parse has not been asked for anything yet, and
+      // this is a `capture` on the analytics queue, so it neither awaits
+      // anything nor touches the parser path.
+      track("recipe_import_started", { ...outcome, importId: id, ...(url ? { url } : {}) });
       try {
         const result = await work();
         const recipes = Array.isArray(result) ? result : [result];
@@ -428,7 +549,7 @@ export function useQueue() {
         }
         const [first, ...rest] = recipes;
         patch(id, { status: "ready", recipe: first, title: first.title || "Untitled recipe" });
-        track("recipe_imported", origin);
+        track("recipe_imported", outcome);
         if (rest.length > 0) {
           // A roundup URL: keep the first recipe on this item and add the rest as
           // their own ready items, mirroring this item's URL context so retry/dedupe
@@ -445,7 +566,7 @@ export function useQueue() {
             addedAt: Date.now(),
           }));
           commit([...itemsRef.current, ...extras]);
-          rest.forEach(() => track("recipe_imported", origin));
+          rest.forEach(() => track("recipe_imported", outcome));
           track("multi_recipe_found", {
             source: origin.source,
             hostname: origin.hostname,
@@ -500,7 +621,7 @@ export function useQueue() {
           });
         }
         track("recipe_import_failed", {
-          ...origin,
+          ...outcome,
           reason,
           // Its own bucket, so a placeholder is never counted among the
           // not_found and unknown failures that describe the real parser.
@@ -553,7 +674,12 @@ export function useQueue() {
       commit([...itemsRef.current, item]);
       void runParse(
         id,
-        { source: "url", hostname: host },
+        // `normalizedUrl`, the same string handed to the parser on the next
+        // line — not `rawUrl`. A link recorded in a form the parser was never
+        // given is a link that reproduces something else, which is the one job
+        // this property has. Normalizing only adds a missing scheme and unwraps
+        // a redirect doorway; the query string is untouched.
+        { source: "url", hostname: host, url: normalizedUrl },
         () => parseUrlAll(normalizedUrl),
         { failedText: normalizedUrl },
       );
@@ -689,9 +815,12 @@ export function useQueue() {
       if (!item) return;
       if (item.method === "url" && item.originalUrl) {
         const url = item.originalUrl;
-        void runParse(id, { source: "url", hostname: hostnameOf(url) }, () => parseUrlAll(url), {
-          failedText: url,
-        });
+        void runParse(
+          id,
+          { source: "url", hostname: hostnameOf(url), url },
+          () => parseUrlAll(url),
+          { failedText: url },
+        );
       } else if (item.method === "text") {
         const text = textPayloads.current.get(id);
         if (text) void runParse(id, { source: "text" }, () => parseText(text), { failedText: text });
@@ -758,19 +887,18 @@ export function useQueue() {
     (id: string) => {
       textPayloads.current.delete(id);
       const going = itemsRef.current.find((it) => it.id === id);
-      if (going?.localPhotoId) void deleteLocalPhoto(going.localPhotoId);
       commit(itemsRef.current.filter((it) => it.id !== id));
+      if (going) releaseLocalPhotos([going], itemsRef.current);
     },
     [commit],
   );
 
   const clear = useCallback(() => {
     textPayloads.current.clear();
-    for (const item of itemsRef.current) {
-      if (item.localPhotoId) void deleteLocalPhoto(item.localPhotoId);
-    }
+    const going = itemsRef.current;
     setFocusedItemId(null);
     commit([]);
+    releaseLocalPhotos(going, itemsRef.current);
   }, [commit]);
 
   /** Replaces the browser queue when opening a saved project. */
@@ -797,6 +925,7 @@ export function useQueue() {
     addImageFiles,
     addText,
     addReadyRecipes,
+    adoptUploadedPhotos,
     retry,
     canRetry,
     repairItem,

@@ -5237,14 +5237,35 @@ textarea.recipe-card__toc-title {
   z-index: 1;
 }
 
+/* The utensil band across the foot of an heirloom card, as three numbers rather
+   than three literals buried in the rules that use them.
+   `.recipe-card__footer` has to clear this art, and "has to clear" is a
+   relationship: with the geometry written out twice, raising the band would
+   have silently dropped the source link back on top of it. Stated once, the
+   footer's offset is derived and the two cannot drift. */
+.recipe-template--heirloom {
+  --heirloom-band-bottom: 0.18in;
+  --heirloom-band-height: 0.2in;
+  --heirloom-band-art: 0.12in 0.18in;
+  /* Air between the art and anything set above it. */
+  --heirloom-band-clearance: 0.08in;
+}
+
+.recipe-print-preview--letter .recipe-template--heirloom {
+  --heirloom-band-bottom: 0.16in;
+  --heirloom-band-height: 0.36in;
+  --heirloom-band-art: 0.22in 0.32in;
+  --heirloom-band-clearance: 0.1in;
+}
+
 .recipe-template--heirloom .recipe-card::before {
   content: "";
   position: absolute;
   z-index: 0;
   right: 0;
-  bottom: 0.18in;
+  bottom: var(--heirloom-band-bottom);
   left: 0;
-  height: 0.2in;
+  height: var(--heirloom-band-height);
   opacity: 0.2;
   pointer-events: none;
   background-image:
@@ -5266,13 +5287,7 @@ textarea.recipe-card__toc-title {
     80% center,
     92% center;
   background-repeat: no-repeat;
-  background-size: 0.12in 0.18in;
-}
-
-.recipe-print-preview--letter .recipe-template--heirloom .recipe-card::before {
-  bottom: 0.16in;
-  height: 0.36in;
-  background-size: 0.22in 0.32in;
+  background-size: var(--heirloom-band-art);
 }
 
 .recipe-template--heirloom .recipe-card__header {
@@ -6817,16 +6832,75 @@ textarea.recipe-card__toc-title {
 
 /* These templates layer content above a decorative card background with
    `.recipe-template--X .recipe-card > * { position: relative }`, which also
-   catches the <footer> and overrides its base `position: absolute`. That turns
-   the footer's `left: var(--recipe-card-padding-x)` — an anchor meant for an
-   absolutely-positioned footer — into a *relative* shift, pushing the source
-   link ~0.58in to the right of the body text (the reported misalignment). The
-   footer is a direct child of the card, so in normal flow it already starts at
-   the content's left edge; zero the offset so the link lines up with it. */
+   catches the <footer> and overrode its base `position: absolute`. Every offset
+   on the footer is an anchor meant for an absolutely-positioned box, so making
+   it relative reinterpreted all four of them as SHIFTS from wherever the footer
+   happened to land in flow:
+
+   - `left` pushed the source link ~0.58in right of the body text (the
+     misalignment that was reported first, and was patched by zeroing left/right
+     — which treated the symptom and left the box in flow).
+   - `bottom: var(--recipe-card-padding-bottom)` lifted it 48px UP, on top of
+     whatever sat above it. On screen that landed harmlessly inside the
+     `--recipe-card-footer-reserve` band, because the card is a flex column and
+     `.recipe-card__cols { flex: 1 }` had already stretched the footer down to
+     the bottom edge. In PRINT the card is `display: block` (see the @media
+     print rule on `.recipe-card`, which is deliberate — flex containers do not
+     fragment reliably), so `flex: 1` goes inert, the footer sits directly under
+     the content halfway up the sheet, and the 48px lift drops it straight
+     through the last ingredient. That is the reported "the link prints in the
+     middle of the recipe".
+
+   So put the footer back where the base rule had it. Pinned to the card's
+   bottom padding it behaves identically in preview and print, exactly as it
+   already does on every template without a decorative background, and
+   `--recipe-card-footer-reserve` on `.recipe-card__cols` keeps content clear of
+   it. `z-index: 1` still comes from the `> *` rule and still stacks an
+   absolutely-positioned box above the `::before` decoration, which is all that
+   rule wanted from the footer in the first place. */
 .recipe-template--heirloom .recipe-card__footer,
 .recipe-template--keepsake .recipe-card__footer {
-  left: 0;
-  right: 0;
+  position: absolute;
+}
+
+/* Heirloom prints a band of utensils across the foot of the card, and the
+   footer's default anchor — `--recipe-card-padding-bottom`, the same edge every
+   other template uses — puts the source link INSIDE it. Measured on letter: the
+   band's top edge sits 0.52in above the card's bottom and the link's bottom edge
+   sat at 0.50in, so the URL printed across the artwork on both the preview and
+   the sheet. Lift it to the top of the band plus its clearance.
+ *
+ * FULL PAGE ONLY, and that is a deliberate line rather than an oversight. The
+ * lift costs real height: 0.62in on letter, which that card has in abundance
+ * (the same recipe still leaves over two inches of slack under its last line).
+ * On a 6x4 the same move costs 0.46in of a four-inch card, and a 6x4 heirloom
+ * with the link on is already the tightest combination we print — it overflows
+ * by ~25px before this rule exists, which is a pagination problem of its own
+ * and not one to make worse by a third. So there the band and the link go on
+ * sharing the foot of the card: art over a URL is a cosmetic loss, and a
+ * clipped last ingredient is not.
+ */
+.recipe-print-preview--letter .recipe-template--heirloom .recipe-card__footer {
+  bottom: calc(
+    var(--heirloom-band-bottom) + var(--heirloom-band-height) +
+      var(--heirloom-band-clearance)
+  );
+}
+
+/* …and give the columns back the room that lift took, or the last ingredient
+   runs into the raised footer instead of the band. The base reserve answers
+   "how tall is the footer"; here the answer is also "and how far up the card
+   does it now start", which is the lift minus the padding the columns already
+   sit inside. */
+.recipe-print-preview--letter
+  .recipe-template--heirloom
+  .recipe-card:has(.recipe-card__footer-source)
+  .recipe-card__cols {
+  padding-bottom: calc(
+    var(--recipe-card-footer-reserve) + var(--heirloom-band-bottom) +
+      var(--heirloom-band-height) + var(--heirloom-band-clearance) -
+      var(--recipe-card-padding-bottom)
+  );
 }
 
 .recipe-card--back .recipe-card__footer,

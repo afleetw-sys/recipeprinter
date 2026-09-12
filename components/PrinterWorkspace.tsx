@@ -7,8 +7,7 @@ import { useQueue } from "@/lib/queue";
 import { useProjectMeta } from "@/lib/project";
 import { fileProjectLocally } from "@/lib/localProjects";
 import { stashPendingImport, type PendingImport } from "@/lib/pendingImport";
-import { imageLabel, prepareImageDataUrls } from "@/lib/imageImport";
-import { ImportError } from "@/lib/parser";
+import { imageLabel, validateImageFiles } from "@/lib/imageImport";
 import { track } from "@/lib/analytics";
 import { nextPaint } from "@/lib/nextPaint";
 import type { ImportMethod, ImportTab, QueueItem } from "@/types/recipe";
@@ -202,7 +201,7 @@ export function PrinterWorkspace({
   function sourceOf(payload: PendingImport): ImportMethod {
     if (payload.kind === "url") return "url";
     if (payload.kind === "text") return "text";
-    if (payload.kind === "images") return "image";
+    if (payload.kind === "images" || payload.kind === "imageFiles") return "image";
     // A library pick is whatever library it came from, and a batch is never
     // mixed: the picker that produced it only reads one source.
     return payload.recipes[0]?.method ?? "manual";
@@ -229,27 +228,37 @@ export function PrinterWorkspace({
    * AND the parse inside this hook, and the parse is the half that must not
    * begin on a page that is about to unmount.
    */
-  async function handleAddImageFiles(files: File[], label: string) {
+  function handleAddImageFiles(files: File[], label: string) {
     setHandoffError(null);
-    // Before the decode, not after. Photos are the slowest handoff there is — a
-    // HEIC transcode runs libheif over every file — and `handoff` does not get
-    // to raise the spinner until all of that has finished. This is the one path
-    // where the wait is long enough that a dead button is unmistakable.
     setOpening(true);
-    try {
-      const images = await prepareImageDataUrls(files);
-      await handoff({ kind: "images", images, label: label || imageLabel(files) });
-    } catch (err) {
+    /**
+     * Check, then go. The decode does not happen here any more.
+     *
+     * It used to: `prepareImageDataUrls` downscaled every file and ran libheif
+     * over any HEIC, and only then was the navigation allowed to start. So the
+     * slowest handoff in the product was spent entirely on the page the cook
+     * was leaving, showing a spinner on a button and nothing else — no photo
+     * names, no per-file progress, no workspace. /print has all of that and was
+     * kept waiting for it.
+     *
+     * What has to happen before leaving is the DETERMINATION, not the work:
+     * `validateImageFiles` answers format, count, zero-byte, per-file and total
+     * size synchronously, which is everything that could send the cook back to
+     * this box to choose different files. Anything it passes is importable, so
+     * the files go over as they are and `addImageFiles` on /print does the
+     * decoding where it can be watched.
+     *
+     * The post-decode size check (a photo still too large after resizing) moves
+     * with the decode, and lands as a normal import failure on the recipe's own
+     * row rather than as a sentence under a button on a page nobody is on.
+     */
+    const validationError = validateImageFiles(files);
+    if (validationError) {
       setOpening(false);
-      // Only ImportError carries a sentence written for a cook; anything else
-      // reaching here is an unexpected throw whose `message` is a developer
-      // string.
-      setHandoffError(
-        err instanceof ImportError
-          ? err.message
-          : "Couldn't read those photos. Try different files.",
-      );
+      setHandoffError(validationError.message);
+      return;
     }
+    void handoff({ kind: "imageFiles", files, label: label || imageLabel(files) });
   }
 
   return (

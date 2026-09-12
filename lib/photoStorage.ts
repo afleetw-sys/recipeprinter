@@ -1,6 +1,11 @@
 import { getFirebaseAuth, firebaseConfigured } from "./firebase/client";
 import { fileToCoverBlob, normalizePhotoBlob } from "./coverPhoto";
-import type { CoverConfig, RecipePagePlacement, Section } from "@/types/recipe";
+import type {
+  CoverConfig,
+  RecipePagePlacement,
+  Section,
+  StashedCookbook,
+} from "@/types/recipe";
 import {
   recipePrinterAnonymousPhotoRoot,
   recipePrinterUserPhotoRoot,
@@ -124,11 +129,14 @@ async function materializeOrKeep(value: string | undefined): Promise<string | un
   }
 }
 
-async function materializeCover(cover: CoverConfig | undefined): Promise<CoverConfig | undefined> {
+async function materializeCover(
+  cover: CoverConfig | undefined,
+  materialize: MaterializeUrl,
+): Promise<CoverConfig | undefined> {
   if (!cover) return cover;
-  const imageUrl = await materializeOrKeep(cover.imageUrl);
+  const imageUrl = await materialize(cover.imageUrl);
   const gridImages = cover.gridImages
-    ? ((await Promise.all(cover.gridImages.map((g) => materializeOrKeep(g)))).filter(Boolean) as string[])
+    ? ((await Promise.all(cover.gridImages.map((g) => materialize(g)))).filter(Boolean) as string[])
     : undefined;
   return { ...cover, imageUrl, gridImages };
 }
@@ -137,7 +145,128 @@ interface ProjectPhotos {
   sections: Section[];
   cover?: CoverConfig;
   backCover?: CoverConfig;
+  /** Legacy front matter, still a CoverConfig and so still able to carry art. */
+  dedication?: CoverConfig;
   itemPlacements?: Record<string, RecipePagePlacement>;
+  /** A book set aside by "print as recipe cards instead". Its art is as real as
+      the live book's and comes from the same places, so it is swept too —
+      otherwise restoring the stash months later hands back a book whose chapter
+      openers point at object URLs that died with the document that minted them. */
+  stashedCookbook?: StashedCookbook;
+}
+
+/**
+ * How one image URL becomes a durable one.
+ *
+ * Injected through the sweep rather than called directly, for the reason
+ * `copyProjectAssets` in lib/anonymousProjectAdoption gives for the same move:
+ * the upload underneath reaches Firebase Storage through `await import`, and a
+ * dynamically-imported module is not something a test can reliably stand in
+ * front of. Welding the sweep to it would make the question these tests
+ * actually ask — WHICH fields does a book get swept for — answerable only by
+ * standing up the Storage SDK.
+ *
+ * Defaults to the real one; nothing in the app passes it.
+ */
+type MaterializeUrl = (value: string | undefined) => Promise<string | undefined>;
+
+/**
+ * A chapter opener's art.
+ *
+ * `gridImages` is the one that bites. A collage defaults to the chapter's OWN
+ * recipe photos (`sectionRecipeImages` on the print page), so for a Paprika
+ * import those defaults are `blob:` URLs — real-looking strings that resolve to
+ * nothing outside the document that minted them. They were the one art field
+ * this sweep never touched, which put them in the saved document and, worse, in
+ * the payload handed to the server-side PDF renderer, where a chapter opener
+ * simply came out blank.
+ *
+ * Keep this in step with `projectAssetFields` in lib/anonymousProjectAdoption:
+ * that list already knew a chapter collage can hold an uploaded photo, and the
+ * two having drifted is how this was missed.
+ */
+async function materializeSectionArt<T extends { photoUrl?: string; gridImages?: string[] }>(
+  section: T,
+  materialize: MaterializeUrl,
+): Promise<T> {
+  const [photoUrl, gridImages] = await Promise.all([
+    materialize(section.photoUrl),
+    section.gridImages
+      ? Promise.all(section.gridImages.map((url) => materialize(url))).then(
+          (urls) => urls.filter(Boolean) as string[],
+        )
+      : Promise.resolve(undefined),
+  ]);
+  return { ...section, photoUrl, gridImages };
+}
+
+/**
+ * A recipe page's layout art: the facing full-page photo, and the photos this
+ * recipe has worn before.
+ *
+ * `photoHistory` holds images REPLACED by a later pick, which for an imported
+ * recipe is exactly the kind that was only ever browser-local. It is what the
+ * photo picker offers as "put the old one back", so leaving it unswept meant
+ * the offer was there and the photo behind it was gone.
+ */
+async function materializePlacements(
+  placements: Record<string, RecipePagePlacement> | undefined,
+  materialize: MaterializeUrl,
+): Promise<Record<string, RecipePagePlacement> | undefined> {
+  if (!placements) return placements;
+  const entries = await Promise.all(
+    Object.entries(placements).map(async ([id, placement]) => {
+      const [heroImageUrl, photoHistory] = await Promise.all([
+        materialize(placement.heroImageUrl),
+        placement.photoHistory
+          ? Promise.all(placement.photoHistory.map((url) => materialize(url))).then(
+              (urls) => urls.filter(Boolean) as string[],
+            )
+          : Promise.resolve(undefined),
+      ]);
+      return [id, { ...placement, heroImageUrl, photoHistory }] as const;
+    }),
+  );
+  return Object.fromEntries(entries);
+}
+
+/** The same sweep over a book that has been set aside. Its sections hold item
+    ids rather than recipes, so only the art needs touching. */
+async function materializeStash(
+  stash: StashedCookbook | undefined,
+  materialize: MaterializeUrl,
+): Promise<StashedCookbook | undefined> {
+  if (!stash) return stash;
+  const [cover, backCover, dedication, sections, itemPlacements] = await Promise.all([
+    materializeCover(stash.cover, materialize),
+    materializeCover(stash.backCover, materialize),
+    materializeCover(stash.dedication, materialize),
+    Promise.all(stash.sections.map((section) => materializeSectionArt(section, materialize))),
+    materializePlacements(stash.itemPlacements, materialize),
+  ]);
+  return { ...stash, cover, backCover, dedication, sections, itemPlacements };
+}
+
+/**
+ * What the sweep produced: the project with every browser-local image replaced,
+ * and a record of which recipe photos actually moved.
+ *
+ * The second half exists because the sweep used to be write-only. It uploaded
+ * from the working copy and handed the result to the save, and the working copy
+ * went on holding the `blob:` URL — so the SAME photos were fetched, re-encoded
+ * and re-uploaded on every single save, and every one of them left the previous
+ * object orphaned in Storage. On a Paprika library that is hundreds of photos
+ * per edit, on the device least able to afford it.
+ *
+ * Handing back the map lets the caller point the working copy at Storage once,
+ * after which the sweep is the no-op it always claimed to be.
+ */
+export interface MaterializedPhotos {
+  photos: ProjectPhotos;
+  /** Queue item id → the Storage URL its photo now lives at. Only entries that
+      genuinely stopped being browser-local; `materializeOrKeep` hands back the
+      original when an upload fails, and that is not an upload. */
+  uploadedRecipeImages: Map<string, string>;
 }
 
 /**
@@ -148,20 +277,33 @@ interface ProjectPhotos {
  * entry points already uploading on add, this is normally a fast no-op — it
  * only does work for legacy/edge data URIs. Remote URLs pass through untouched.
  */
-export async function materializeProjectPhotos(project: ProjectPhotos): Promise<ProjectPhotos> {
-  const [cover, backCover] = await Promise.all([
-    materializeCover(project.cover),
-    materializeCover(project.backCover),
+export async function materializeProjectPhotos(
+  project: ProjectPhotos,
+  /** Exposed for tests only — see `MaterializeUrl`. */
+  materialize: MaterializeUrl = materializeOrKeep,
+): Promise<MaterializedPhotos> {
+  const [cover, backCover, dedication, stashedCookbook, itemPlacements] = await Promise.all([
+    materializeCover(project.cover, materialize),
+    materializeCover(project.backCover, materialize),
+    materializeCover(project.dedication, materialize),
+    materializeStash(project.stashedCookbook, materialize),
+    materializePlacements(project.itemPlacements, materialize),
   ]);
+
+  // Which recipe photos this sweep actually put in Storage, so the caller can
+  // stop holding the local copy as the source. See `MaterializedPhotos`.
+  const uploadedRecipeImages = new Map<string, string>();
 
   const sections = await Promise.all(
     project.sections.map(async (section) => ({
-      ...section,
-      photoUrl: await materializeOrKeep(section.photoUrl),
+      ...(await materializeSectionArt(section, materialize)),
       items: await Promise.all(
         section.items.map(async (item) => {
           if (!item.recipe || !isLocalImage(item.recipe.image)) return item;
-          const image = await materializeOrKeep(item.recipe.image);
+          const image = await materialize(item.recipe.image);
+          // `materializeOrKeep` hands back the original on failure, so only a
+          // value that actually stopped being browser-local is an upload.
+          if (image && !isLocalImage(image)) uploadedRecipeImages.set(item.id, image);
           // The photo is in Storage now, so the local copy stops being the
           // source: leaving `localPhotoId` on the saved item would have a
           // later hydration replace this real URL with a browser-only one.
@@ -172,16 +314,8 @@ export async function materializeProjectPhotos(project: ProjectPhotos): Promise<
     })),
   );
 
-  let itemPlacements = project.itemPlacements;
-  if (itemPlacements) {
-    const entries = await Promise.all(
-      Object.entries(itemPlacements).map(
-        async ([id, placement]) =>
-          [id, { ...placement, heroImageUrl: await materializeOrKeep(placement.heroImageUrl) }] as const,
-      ),
-    );
-    itemPlacements = Object.fromEntries(entries);
-  }
-
-  return { sections, cover, backCover, itemPlacements };
+  return {
+    photos: { sections, cover, backCover, dedication, itemPlacements, stashedCookbook },
+    uploadedRecipeImages,
+  };
 }

@@ -155,13 +155,24 @@ function saveBlob(blob: Blob, fileName: string): void {
 async function materializeBookPhotos(project: PrintProject): Promise<PrintProject> {
   try {
     const { materializeProjectPhotos } = await import("@/lib/photoStorage");
-    const materialized = await materializeProjectPhotos({
+    // The renderer is on a server and fetches every image by URL, so a chapter
+    // collage or a hero's photo history left holding `blob:` strings renders as
+    // a hole in the printed book. Same field list as the save — see
+    // `materializeProjectPhotos`.
+    const { photos } = await materializeProjectPhotos({
       sections: project.sections,
       cover: project.cover,
       backCover: project.backCover,
+      dedication: project.dedication,
       itemPlacements: project.itemPlacements,
+      // The cover-wrap render strips this out again (`coverWrapProject`), but
+      // the interior carries it, and an export is a document like any other.
+      stashedCookbook: project.stashedCookbook,
     });
-    return { ...project, ...materialized };
+    // `uploadedRecipeImages` is dropped here on purpose: an export has no queue
+    // to point back at, and the save path is what owns that. A book exported
+    // without an intervening save pays one upload; the next save settles it.
+    return { ...project, ...photos };
   } catch (error) {
     // An upload that fails shouldn't cost the cook the whole export — the book
     // still renders, just without whichever photo couldn't be sent ahead.

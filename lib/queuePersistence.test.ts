@@ -1,10 +1,15 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import {
   QUEUE_STORAGE_KEY,
+  seedSharedQueueItem,
   __scheduleQueueWriteForTest as scheduleQueueWrite,
   flushQueueWrites,
   readQueue,
 } from "@/lib/queue";
+import { QUEUE_RECOVERY_OWNER_KEY } from "@/lib/recoveryMirror";
+// Not exported from lib/queue — spelled out here the way the other mirror
+// tests spell theirs, so the key itself is part of what is asserted.
+const QUEUE_RECOVERY_STORAGE_KEY = "recipeprinter:queue:recovery:v1";
 import type { QueueItem } from "@/types/recipe";
 
 // Same in-memory stand-in the other storage tests use — lib/storage resolves
@@ -93,8 +98,15 @@ describe("the queue write throttle", () => {
   it("mirrors to durable storage as well as the session copy", () => {
     scheduleQueueWrite([item("r1", "Borscht")]);
     flushQueueWrites();
-    expect(session.values.size).toBe(1);
-    expect(local.values.size).toBe(1);
+    // Named keys rather than counts: the mirror is also stamped with the tab
+    // that wrote it (lib/recoveryMirror), so counting what landed would be a
+    // test of bookkeeping rather than of the two copies it is about.
+    expect(session.getItem(QUEUE_STORAGE_KEY)).not.toBeNull();
+    expect(local.getItem(QUEUE_RECOVERY_STORAGE_KEY)).not.toBeNull();
+    // And the mirror says which tab left it. Without that a reopened tab cannot
+    // tell whether the project metadata it recovers alongside these recipes
+    // describes them or another tab's book — see lib/recoveryMirror.
+    expect(local.getItem(QUEUE_RECOVERY_OWNER_KEY)).not.toBeNull();
   });
 
   it("skips a redundant write when nothing actually changed", () => {
@@ -120,5 +132,40 @@ describe("flushing before a read", () => {
   it("a flush with nothing pending is a no-op", () => {
     expect(() => flushQueueWrites()).not.toThrow();
     expect(persistedTitles()).toEqual([]);
+  });
+});
+
+/* A shared card's slug is its identity in the queue. The id used to be a fresh
+   uid() per visit, so opening the same link twice — a bookmark, a newsletter
+   read on two devices — put the same recipe in the print job twice. Every other
+   way in already dedupes: addUrl on the canonical URL, addReadyRecipes on the
+   item id. */
+describe("seeding a shared recipe card", () => {
+  const recipe = { title: "Borscht", ingredients: [], instructions: [] };
+
+  it("gives the same link the same queue item every time", () => {
+    const first = seedSharedQueueItem(recipe as never, "nanas-borscht");
+    const second = seedSharedQueueItem(recipe as never, "nanas-borscht");
+    expect(second).toBe(first);
+    expect(readQueue()).toHaveLength(1);
+  });
+
+  it("leaves the visitor's own edits alone on a repeat visit", () => {
+    const id = seedSharedQueueItem(recipe as never, "nanas-borscht");
+    // What the inline editor does to the local copy.
+    const edited = readQueue().map((item) =>
+      item.id === id ? { ...item, recipe: { ...item.recipe!, title: "Borscht (less dill)" } } : item,
+    );
+    scheduleQueueWrite(edited);
+    flushQueueWrites();
+
+    seedSharedQueueItem(recipe as never, "nanas-borscht");
+    expect(readQueue()[0]?.recipe?.title).toBe("Borscht (less dill)");
+  });
+
+  it("still keeps two different links apart", () => {
+    seedSharedQueueItem(recipe as never, "nanas-borscht");
+    seedSharedQueueItem(recipe as never, "nanas-pierogi");
+    expect(readQueue()).toHaveLength(2);
   });
 });

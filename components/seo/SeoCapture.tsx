@@ -4,8 +4,7 @@ import { useRef, useState, type DragEvent, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
 import { ArrowRightIcon, ICON_SIZE, SpinnerIcon, UploadIcon } from "@/components/icons";
 import { stashPendingImport } from "@/lib/pendingImport";
-import { imageLabel, partitionImageFiles, prepareImageDataUrls, validateImageFiles } from "@/lib/imageImport";
-import { ImportError } from "@/lib/parser";
+import { imageLabel, partitionImageFiles, validateImageFiles } from "@/lib/imageImport";
 import { normalizeImportURL } from "@/lib/cookpilot";
 import { track } from "@/lib/analytics";
 import type { ImportTab } from "@/types/recipe";
@@ -173,26 +172,18 @@ export function SeoCapture({
 
     // image
     if (files.length === 0) return openWorkspace();
+    // Validated here and decoded on /print — see the `imageFiles` payload in
+    // lib/pendingImport.ts. A landing page has even less standing than the home
+    // page to hold someone through a libheif transcode: it is a page they came
+    // to read, and the workspace they are being sent to is the thing that can
+    // show a photo being worked on.
     const validationError = validateImageFiles(files);
     if (validationError) return setError(validationError.message);
     setBusy(true);
-    try {
-      const images = await prepareImageDataUrls(files);
-      track("recipe_import_submitted", { surface: "capture", source: "image" });
-      const ok = await stashPendingImport({ kind: "images", images, label: imageLabel(files) });
-      router.push("/print");
-      if (!ok) setBusy(false);
-    } catch (err) {
-      setBusy(false);
-      // Only ImportError carries a sentence written for a cook. Anything else
-      // reaching here is an unexpected throw, and its `message` is a developer
-      // string; this was the one place in the app that would have shown one.
-      setError(
-        err instanceof ImportError
-          ? err.message
-          : "Couldn't read those images. Try different files.",
-      );
-    }
+    track("recipe_import_submitted", { surface: "capture", source: "image" });
+    const ok = await stashPendingImport({ kind: "imageFiles", files, label: imageLabel(files) });
+    router.push("/print");
+    if (!ok) setBusy(false);
   }
 
   const submitButton = (

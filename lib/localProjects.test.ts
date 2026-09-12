@@ -9,6 +9,7 @@ import {
   pruneLocalProjects,
   saveLocalProject,
 } from "@/lib/localProjects";
+import { markCookbookProjectUnlockedLocal } from "@/lib/cookbookUnlocks";
 import type { ProjectMeta } from "@/lib/project";
 import type { PrintProject, QueueItem } from "@/types/recipe";
 
@@ -263,5 +264,38 @@ describe("listableLocalProjects", () => {
   it("never lets a paid RECIPE CARD project through — only cookbooks are bought", () => {
     const odd = [project({ id: "cards-paid", kind: "printProject" })];
     expect(listableLocalProjects(odd, new Set(), () => true)).toEqual([]);
+  });
+});
+
+/* A purchase hangs off one project id and the client cannot move it — unlocks
+   are server-written and the rules deny client writes — so the content index
+   must never file a working copy across that line. Both directions cost money:
+   one strands the unlock on a document the cook is no longer looking at, the
+   other hands a paid book to content that never paid for it. */
+describe("filing a book a purchase is riding on", () => {
+  const items = () => [recipeItem("r1", "Sourdough"), recipeItem("r2", "Focaccia")];
+
+  it("keeps a paid book on its own id instead of filing into an earlier one", () => {
+    // The same recipes were filed as an earlier book once.
+    expect(fileProjectLocally(items(), cookbookMeta({ projectId: "book-old" }))).toBe("book-old");
+
+    // A second book, built from the same recipes and bought.
+    markCookbookProjectUnlockedLocal("book-paid");
+    expect(fileProjectLocally(items(), cookbookMeta({ projectId: "book-paid" }))).toBe("book-paid");
+  });
+
+  it("does not file unpaid content into a book somebody bought", () => {
+    markCookbookProjectUnlockedLocal("book-paid");
+    fileProjectLocally(items(), cookbookMeta({ projectId: "book-paid" }));
+
+    // Same recipes, a different working copy, no purchase behind it.
+    expect(fileProjectLocally(items(), cookbookMeta({ projectId: "book-free" }))).toBe("book-free");
+    // And the paid book is still on the shelf, unwritten-over.
+    expect(loadLocalProject("book-paid")).not.toBeNull();
+  });
+
+  it("still files repeat prints of unpaid content back into one document", () => {
+    expect(fileProjectLocally(items(), cookbookMeta({ projectId: "book-a" }))).toBe("book-a");
+    expect(fileProjectLocally(items(), cookbookMeta({ projectId: "book-b" }))).toBe("book-a");
   });
 });

@@ -120,6 +120,19 @@ describe("descriptors written by an older deploy", () => {
   });
 });
 
+describe("photos handed over undecoded", () => {
+  it("still refuses a stash it cannot persist, files or data URLs", async () => {
+    // The `imageFiles` payload takes the same IndexedDB route as the data-URL
+    // form it replaced, so it inherits the same honest failure: no photo store,
+    // no promise of a handoff. The caller keeps the cook where they are.
+    const file = new File([new Uint8Array([1, 2, 3])], "card.jpg", { type: "image/jpeg" });
+    expect(
+      await stashPendingImport({ kind: "imageFiles", files: [file], label: "1 photo" }),
+    ).toBe(false);
+    expect(session.getItem(DESCRIPTOR_KEY)).toBeNull();
+  });
+});
+
 describe("when the photo store cannot be reached", () => {
   it("refuses the stash rather than promising a handoff it cannot make", async () => {
     // No `indexedDB` on this window (private mode, a locked-down browser). The

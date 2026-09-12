@@ -139,7 +139,7 @@ import {
   markPrintPreviewStable,
   PRINT_PREVIEW_STABILITY_MS,
 } from "@/lib/printErrorRecovery";
-import { takePendingImport } from "@/lib/pendingImport";
+import { hasPendingImport, takePendingImport } from "@/lib/pendingImport";
 import { nextPaint } from "@/lib/nextPaint";
 
 const AdminShareLinkDialog = dynamic(
@@ -471,9 +471,17 @@ export default function PrintPage() {
   const lastAttemptedFingerprintRef = useRef<string | null>(null);
   const saveInFlightRef = useRef(false);
   const saveQueuedRef = useRef(false);
-  const latestSaveRef = useRef<() => void>(() => undefined);
+  const latestSaveRef = useRef<(projectIdOverride?: string) => void>(() => undefined);
+  /** The document a save that had to wait was aimed at. See `handleSaveProject`. */
+  const queuedSaveOverrideRef = useRef<string | undefined>(undefined);
   const flushOnHideRef = useRef<() => void>(() => undefined);
   const saveAfterLoginRef = useRef(false);
+  /** The cook answered the "Newer version found" prompt by choosing to
+      overwrite, and this save is that answer. Read once by the adoption path,
+      which otherwise refuses to replace a document it has never written, and
+      cleared as soon as the save it authorized has been attempted — an approval
+      is for one write, not a standing permission. */
+  const adoptionOverwriteApprovedRef = useRef(false);
   const projectIdRef = useRef<string>(createPrintProjectId());
   const [toastMessage, setToastMessage] = useState<string | null>(null);
   /** Whether the toast is reporting a FAILURE or just confirming something.
@@ -486,6 +494,49 @@ export default function PrintPage() {
     ready: cookPilotAuthReady,
     redirectError: cookPilotRedirectError,
   } = useCookPilotAuth();
+
+  /**
+   * Whose document this is stops being true the moment the account changes.
+   *
+   * Save identity is held in refs so a queued async save can read it before
+   * React has committed the matching state, and nothing reset them when the
+   * account underneath changed. Sign out and back in as somebody else — both
+   * are one click apart inside the deck, with no reload between them — and the
+   * page was still attached to the FIRST account's project id and revision.
+   *
+   * The next autosave then wrote that id into the second account. It does not
+   * even conflict: `savePrintProject` only compares revisions for a document
+   * that already exists, and in a different account's namespace that id is
+   * empty, so the write lands as a create. One person's recipes end up in
+   * another person's library, on a shared laptop, with both signed in to their
+   * own accounts and neither asking for it.
+   *
+   * Declared here, above every effect that saves or attaches, because effects
+   * run in source order and refs are written synchronously — so this has
+   * cleared the previous account's identity before anything in the same commit
+   * can read it. Keyed on the uid rather than the User object for the usual
+   * reason: Firebase hands out a fresh object on every token refresh, and an
+   * account that has not changed must not be torn down hourly.
+   *
+   * `projectAttachChecked` goes back to false with the rest, which is what
+   * sends the new account through the reattach check rather than letting it
+   * inherit an answer about the old one.
+   */
+  useEffect(() => {
+    savedProjectIdRef.current = null;
+    setSavedProjectId(null);
+    projectRevisionRef.current = 0;
+    lastSavedFingerprintRef.current = null;
+    lastAttemptedFingerprintRef.current = null;
+    // An approval to overwrite was given for one document in one account. It is
+    // not permission to write over anything in the next one.
+    adoptionOverwriteApprovedRef.current = false;
+    setProjectAttachChecked(false);
+    // A "Saved" left over from the previous account is a claim about a document
+    // this one may not even have.
+    setSaveStatus(null);
+  }, [cookPilotUser?.uid]);
+
   const [isRecipePrinterAdmin, setIsRecipePrinterAdmin] = useState(false);
   const [showCookPilotLogin, setShowCookPilotLogin] = useState(false);
   const [cookPilotLoginReason, setCookPilotLoginReason] = useState<"default" | "purchase">("default");
@@ -2018,6 +2069,10 @@ export default function PrintPage() {
     const next = organizationSectionsForApply(
       suggestCookbookOrganization(items ?? []),
       (items ?? []).filter((item) => item.recipe).map((item) => item.id),
+      // What the book already has, so a chapter the suggestion agrees with
+      // keeps the opener photo, collage and intro the cook gave it instead of
+      // being rebuilt bare.
+      projectMeta.meta.sections,
     );
     projectMeta.setSectionStructure(next);
     track("relayout_applied", { sectionCount: next.length, automatic });
@@ -2140,7 +2195,12 @@ export default function PrintPage() {
      */
     const stash = projectMeta.meta.stashedCookbook;
     const cover = projectMeta.meta.cover ?? stash?.cover;
+    // A name the cook typed outranks any we would derive — the same order
+    // `projectDisplayTitle` applies in the workspace bar. Without this the
+    // rename lived only in session metadata: the library went on showing the
+    // cover's title, and reopening the project dropped the new name entirely.
     const defaultTitle =
+      projectMeta.meta.projectTitle?.trim() ||
       cover?.title ||
       items.find((item) => item.recipe)?.recipe?.title ||
       `Recipe cards — ${new Date().toLocaleDateString()}`;
@@ -2153,6 +2213,11 @@ export default function PrintPage() {
       id: idOverride ?? savedProjectIdRef.current ?? cookbookProjectId ?? accountProjectId,
       ownerUid: cookPilotUser.uid,
       title: defaultTitle,
+      // Saved beside the resolved title so a reopened project can tell a rename
+      // from a cover name. Folding the two together would force a choice
+      // between losing the rename and having cover edits stop renaming the
+      // project.
+      projectTitle: projectMeta.meta.projectTitle,
       sections,
       cover,
       backCover: projectMeta.meta.backCover ?? stash?.backCover,
@@ -2211,6 +2276,12 @@ export default function PrintPage() {
     }
     if (saveInFlightRef.current) {
       saveQueuedRef.current = true;
+      // Which document this save was for has to wait with it. The replay below
+      // used to call `handleSaveProject()` with no argument, so a save aimed at
+      // a specific document — the one leaving the workspace makes, pointing the
+      // account copy at the project this content already is — silently became a
+      // save aimed at wherever the working copy happened to be attached.
+      if (projectIdOverride) queuedSaveOverrideRef.current = projectIdOverride;
       return;
     }
     const baseProject = currentProject(projectIdOverride);
@@ -2218,25 +2289,45 @@ export default function PrintPage() {
     saveInFlightRef.current = true;
     setSaveStatus("saving");
     try {
-      const materialized = await materializeProjectPhotos({
+      // Every field that can hold a photo, not just the ones that were easy to
+      // remember. A chapter collage defaults to its own recipes' images and a
+      // recipe's photo history holds the ones it has worn before, so on a
+      // Paprika book both were full of `blob:` URLs going straight into the
+      // document. See `materializeProjectPhotos`.
+      const { photos, uploadedRecipeImages } = await materializeProjectPhotos({
         sections: baseProject.sections,
         cover: baseProject.cover,
         backCover: baseProject.backCover,
+        dedication: baseProject.dedication,
         itemPlacements: baseProject.itemPlacements,
+        stashedCookbook: baseProject.stashedCookbook,
       });
-      const project: PrintProject = {
-        ...baseProject,
-        sections: materialized.sections,
-        cover: materialized.cover,
-        backCover: materialized.backCover,
-        itemPlacements: materialized.itemPlacements,
-      };
+      const project: PrintProject = { ...baseProject, ...photos };
       const saved = savedProjectIdRef.current
         ? await savePrintProject(project)
-        : await adoptAnonymousProject(cookPilotUser.uid, project);
+        : await adoptAnonymousProject(cookPilotUser.uid, project, {
+            overwriteExisting: adoptionOverwriteApprovedRef.current,
+          });
       projectRevisionRef.current = Number(saved.revision ?? 0);
       savedProjectIdRef.current = saved.id;
       setSavedProjectId(saved.id);
+      /**
+       * The photos are in Storage now, so stop treating the browser's copy as
+       * the source.
+       *
+       * Only after the save has actually landed — the queue must not start
+       * claiming a URL for a document that was never written. Before this the
+       * working copy kept its `blob:` URLs forever, so every subsequent save
+       * fetched, re-encoded and re-uploaded the same photos and orphaned the
+       * previous objects. On a four-hundred-photo Paprika library that was the
+       * whole library, per edit.
+       *
+       * Costs one extra autosave: the queue changing is a content change, and
+       * the next pass finds nothing left to upload and settles. The content
+       * document itself is not rewritten for it — the signature is unchanged,
+       * so `savePrintProject` skips that half.
+       */
+      queue.adoptUploadedPhotos(uploadedRecipeImages);
       if (saved.id !== projectMeta.meta.projectId) {
         projectMeta.setProjectId(saved.id);
       }
@@ -2263,7 +2354,9 @@ export default function PrintPage() {
       saveInFlightRef.current = false;
       if (saveQueuedRef.current) {
         saveQueuedRef.current = false;
-        window.setTimeout(() => latestSaveRef.current(), 0);
+        const queuedOverride = queuedSaveOverrideRef.current;
+        queuedSaveOverrideRef.current = undefined;
+        window.setTimeout(() => latestSaveRef.current(queuedOverride), 0);
       }
     }
   }
@@ -2377,7 +2470,7 @@ export default function PrintPage() {
   // during render) so a discarded or double-invoked render can't leave a stale
   // closure behind — the same latest-ref pattern as handlePrintRef below.
   useEffect(() => {
-    latestSaveRef.current = () => void handleSaveProject();
+    latestSaveRef.current = (projectIdOverride?: string) => void handleSaveProject(projectIdOverride);
   });
 
   // Best-effort push to Firestore when the tab is being hidden/closed, so a
@@ -2412,6 +2505,21 @@ export default function PrintPage() {
   });
 
   /**
+   * Which document a save conflict is actually about.
+   *
+   * `savedProjectId` is the obvious answer and is null for half of them: a
+   * conflict raised while ADOPTING is raised precisely because this working
+   * copy has no save identity yet. Reading only that state left both of the
+   * cook's choices doing nothing — "load that version" fell through to the
+   * overwrite it was meant to decline, and the overwrite returned early — so
+   * the one prompt the app shows about losing work answered neither way.
+   *
+   * The working copy's own id is the destination adoption was writing to, which
+   * makes it the document under discussion.
+   */
+  const conflictProjectId = savedProjectId ?? cookbookProjectId;
+
+  /**
    * Conflict recovery. Two tabs on one project, or a toggle in one while the
    * other saves, and the second write finds a revision it didn't expect.
    *
@@ -2424,20 +2532,27 @@ export default function PrintPage() {
    * conflicts again forever.
    */
   async function resolveConflictByOverwriting() {
-    const projectId = savedProjectIdRef.current;
-    if (!projectId || !cookPilotUser) return;
+    if (!cookPilotUser || !conflictProjectId) return;
     setSaveStatus("saving");
     try {
       // The remote revision is the only thing this needs; overwriting replaces
       // the content wholesale, so fetching it first would be a megabyte read
       // whose result is discarded a line later.
-      const remote = await loadPrintProjectHead(cookPilotUser.uid, projectId);
+      const remote = await loadPrintProjectHead(cookPilotUser.uid, conflictProjectId);
       projectRevisionRef.current = Number(remote?.revision ?? 0);
       lastAttemptedFingerprintRef.current = null;
+      // A conflict raised by ADOPTION leaves no save identity to advance — not
+      // having one is what sent the save down that path — so the retry goes
+      // back through adoption and needs the cook's answer carried with it.
+      // Without this it would meet the same refusal and the choice they just
+      // made would do nothing at all.
+      adoptionOverwriteApprovedRef.current = true;
       await handleSaveProject();
     } catch (error) {
       console.warn("RecipePrinter: could not resolve the save conflict", error);
       setSaveStatus("error");
+    } finally {
+      adoptionOverwriteApprovedRef.current = false;
     }
   }
 
@@ -2462,8 +2577,8 @@ export default function PrintPage() {
           cookbookMode ? "This cookbook" : "This project"
         } was updated in another tab. Choose OK to load that version, or Cancel to keep the edits in front of you and overwrite it.`,
       );
-      if (loadNewer && savedProjectId) {
-        window.location.assign(`/print?project=${encodeURIComponent(savedProjectId)}`);
+      if (loadNewer && conflictProjectId) {
+        window.location.assign(`/print?project=${encodeURIComponent(conflictProjectId)}`);
         return;
       }
       void resolveConflictByOverwriting();
@@ -2472,8 +2587,8 @@ export default function PrintPage() {
     const loadNewer = window.confirm(
       "This project was updated elsewhere. Choose OK to load that newer version, or Cancel to save your current edits as a copy.",
     );
-    if (loadNewer && savedProjectId) {
-      window.location.assign(`/print?project=${encodeURIComponent(savedProjectId)}`);
+    if (loadNewer && conflictProjectId) {
+      window.location.assign(`/print?project=${encodeURIComponent(conflictProjectId)}`);
       return;
     }
     const copyId = createPrintProjectId();
@@ -2484,14 +2599,38 @@ export default function PrintPage() {
     setSaveStatus(null);
   }
 
+  /**
+   * The save that was waiting on an account, once there is one — and once we
+   * know what that account already holds.
+   *
+   * This used to fire the save straight off the uid changing, and it is
+   * declared above the reattach effect, so it ran while `savedProjectIdRef` was
+   * still null on a book the account had saved all along. That sends the save
+   * down the adoption path, which replaces the destination document rather than
+   * writing against its revision: the one moment in the product where somebody
+   * is signing in specifically to keep their work was also the one that wrote
+   * over the copy they were signing in to reach.
+   *
+   * `projectAttachChecked` is the existing answer to "has this working copy
+   * been matched to its saved document yet", and waiting on it turns the
+   * first-save-after-login into an ordinary save against a known revision.
+   * Signed out the reattach effect leaves it unset rather than claiming a check
+   * it never made, so the `true` this waits for is always an answer about the
+   * account that has just arrived.
+   *
+   * A `?project=` URL is the one case this does not cover: identity there
+   * belongs to the loader above, which sets the flag before it has finished.
+   * The refusal in `adoptAnonymousProject` is what catches that one, and it
+   * surfaces as the conflict prompt rather than as a silent replacement.
+   */
   useEffect(() => {
-    if (!cookPilotUser || !saveAfterLoginRef.current) return;
+    if (!cookPilotUser || !projectAttachChecked || !saveAfterLoginRef.current) return;
     saveAfterLoginRef.current = false;
     void handleSaveProject();
     // The uid, not the User object — Firebase replaces that object on every
     // token refresh, and this should fire on signing in, not hourly.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [cookPilotUser?.uid]);
+  }, [cookPilotUser?.uid, projectAttachChecked]);
 
   const {
     revenueCatUserId,
@@ -2772,6 +2911,16 @@ export default function PrintPage() {
    * that is already open stays quiet instead of flashing a loader at someone
    * who is already looking at what they asked for.
    */
+  /**
+   * Whether an import was waiting for this page when it mounted.
+   *
+   * A lazy `useState` initializer, so it is answered on the first render and
+   * never changes afterwards: the effect below consumes the payload, and a
+   * value that flipped back to false at that moment would pull the workspace
+   * out from under the recipes it had just let in.
+   */
+  const [importInbound] = useState(() => hasPendingImport());
+
   const loadedProjectIdRef = useRef<string | null>(accountProjectId);
   useEffect(() => {
     if (!accountProjectId) return;
@@ -2841,6 +2990,9 @@ export default function PrintPage() {
         setJobIds(loadedItems.map((item) => item.id));
         projectMeta.replaceMeta({
           projectId: project.id,
+          // Absent on documents saved before renames were persisted, which is
+          // exactly right: those never had one.
+          projectTitle: project.projectTitle,
           cookbookMode: project.settings.cookbookMode ?? project.kind === "cookbook",
           cookbookWelcomeCompleted: project.settings.cookbookWelcomeCompleted,
           cookbookPreset: project.settings.bookPreset,
@@ -2924,13 +3076,30 @@ export default function PrintPage() {
       .catch((error) => {
         if (cancelled) return;
         console.warn("RecipePrinter: could not open project", error);
-        // A failed read is the absence of an answer, not proof the account
-        // lacks the book — but if this device happens to hold a copy, showing
-        // it beats showing an error page about a book we are holding.
-        if (shelved) {
-          applyProject(shelved, "shelf");
-          return;
-        }
+        /**
+         * A failed read is the absence of an answer, not proof the account
+         * lacks the book — so this must NOT fall back to the shelf.
+         *
+         * It used to, on the reasoning that showing a copy we are holding beats
+         * showing an error page about it. The reasoning was right about what a
+         * cook wants to see and wrong about what the fallback does, because
+         * this page has no way to show a shelved book without also arming a
+         * write of it. `applyProject(…, "shelf")` deliberately leaves the save
+         * identity unset, which routes the next autosave — and there is always
+         * a next autosave, within 1.5s, with no edit required — through
+         * `adoptAnonymousProject`, which takes the destination's revision
+         * rather than checking it and therefore cannot conflict.
+         *
+         * So the old fallback spent a transient failure replacing a book edited
+         * on another device with whatever this one last filed on its way out.
+         * A book edited on a laptop and then opened on a phone with one bar is
+         * the whole scenario.
+         *
+         * The `failed` screen below already says the true thing ("Your project
+         * is safe, so it's worth another try") and its action is a reload,
+         * which is a real fix for a read that failed once. The shelf copy is
+         * untouched on disk and still listed in /projects either way.
+         */
         setProjectAccess("failed");
       })
       .finally(() => {
@@ -2955,7 +3124,15 @@ export default function PrintPage() {
       return;
     }
     if (!cookPilotAuthReady || !projectMeta.hydrated) return;
-    if (!cookPilotUser || savedProjectIdRef.current) {
+    // Signed out there is nothing to attach to, and — this is the part that
+    // matters — nothing has been checked. Claiming otherwise used to leave the
+    // flag standing at `true` from the signed-out session, so the save that
+    // fires on signing in read a check belonging to no account and went ahead
+    // without one. Every consumer of this flag is already paired with a
+    // signed-in test, so leaving it unset here costs nothing and makes signing
+    // in wait for its own answer.
+    if (!cookPilotUser) return;
+    if (savedProjectIdRef.current) {
       setProjectAttachChecked(true);
       return;
     }
@@ -3042,6 +3219,10 @@ export default function PrintPage() {
       if (pending.kind === "url") queue.addUrl(pending.url);
       else if (pending.kind === "text") queue.addText(pending.text);
       else if (pending.kind === "ready") queue.addReadyRecipes(pending.recipes);
+      // Files, not data URLs: the decode now happens HERE, inside `runParse`,
+      // so the placeholder row goes up first and the photo is worked on in
+      // front of the cook instead of behind a spinner on the page they left.
+      else if (pending.kind === "imageFiles") queue.addImageFiles(pending.files, pending.label);
       else if (pending.kind === "images") queue.addImages(pending.images, pending.label);
     });
     return () => {
@@ -4381,9 +4562,24 @@ export default function PrintPage() {
     );
   }
 
+  /**
+   * Recipes are already on their way in from the importer, so this render will
+   * be an empty deck for a beat and then a filling one.
+   *
+   * Read once, synchronously, at mount — before the effect that collects the
+   * payload has run, and deliberately without consuming it.
+   */
   if (
     leavingHome ||
-    items === null ||
+    // `items === null` is the print job not yet read out of sessionStorage. It
+    // earns a whole-page screen when the deck is about to be REPLACED, because
+    // the alternative is a frame of the wrong contents. It does not earn one
+    // when an import is inbound: the deck is empty either way, and the rail
+    // already shows a placeholder per recipe the moment the payload lands. Both
+    // together is the doubled wait — "Preparing…" over the whole page, then the
+    // per-recipe loading underneath it — where the first screen says nothing
+    // the second does not say better, and says it by hiding the workspace.
+    (items === null && !importInbound) ||
     projectLoading ||
     projectContentPending ||
     cookbookAccessStatus === "loading"

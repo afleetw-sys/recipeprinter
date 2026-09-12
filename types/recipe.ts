@@ -394,8 +394,21 @@ export interface PrintProject {
   revision?: number;
   /** Present only once the project has been saved to Firestore. */
   ownerUid?: string;
-  /** Absent until a cover is added or a second named section is created. */
+  /** What this project is CALLED — the name the library and the workspace bar
+      show. Derived from the cover / first recipe unless `projectTitle` below
+      says otherwise, so this stays the one field a list has to read. */
   title?: string;
+  /**
+   * A name the cook typed, as distinct from one we derived.
+   *
+   * Kept beside `title` rather than folded into it because the two answer
+   * different questions on the way back IN: `title` is what to show, and this
+   * is whether anyone chose it. Without it a reopened project cannot tell a
+   * rename from a cover title, so either the rename is lost or renaming the
+   * cover stops renaming the project. Absent means "inherit" — see
+   * `projectDisplayTitle`.
+   */
+  projectTitle?: string;
   /** Always at least one section; a brand-new project is one untitled section. */
   sections: Section[];
   cover?: CoverConfig;
