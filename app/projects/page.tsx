@@ -8,7 +8,6 @@ import { ConfirmDialog } from "@/components/ConfirmDialog";
 import { Badge, IconButton } from "@/components/Controls";
 import { CookPilotLoginDialog, useCookPilotAuth } from "@/components/CookPilotAuth";
 import { useProjectMeta } from "@/lib/project";
-import { useQueue } from "@/lib/queue";
 import { useRouter } from "next/navigation";
 import { BookIcon, CheckIcon, ICON_SIZE, PlusIcon, SpinnerIcon, TrashIcon } from "@/components/icons";
 import { deletePrintProject, loadPrintProjectSummaries, summarizePrintProject } from "@/lib/printProjects";
@@ -69,11 +68,42 @@ function ProjectCover({ project }: { project: PrintProjectSummary }) {
   );
 }
 
+/**
+ * The pair of "start something" buttons the empty states share.
+ *
+ * Cookbook leads because it is the one that isn't reachable any other way: the
+ * importer on the homepage has always been able to start recipe cards, and has
+ * never been able to start a book.
+ */
+function StartNewProject({
+  className = "",
+  lead = false,
+  onStart,
+}: {
+  className?: string;
+  /** Whether these are the page's main action. False where Sign in already is
+      — two primaries side by side name two first choices, which is none. */
+  lead?: boolean;
+  onStart: (cookbook: boolean) => void;
+}) {
+  return (
+    <div className={`flex flex-wrap items-center justify-center gap-cp-3 ${className}`}>
+      <button type="button" className={`btn ${lead ? "btn-primary" : "btn-secondary"}`} onClick={() => onStart(true)}>
+        <PlusIcon size={ICON_SIZE.md} />
+        New cookbook
+      </button>
+      <button type="button" className="btn btn-secondary" onClick={() => onStart(false)}>
+        <PlusIcon size={ICON_SIZE.md} />
+        New recipe cards
+      </button>
+    </div>
+  );
+}
+
 export default function ProjectsPage() {
   const { user, ready } = useCookPilotAuth();
   const router = useRouter();
   const { startNewProject } = useProjectMeta();
-  const { items: queueItems } = useQueue();
 
   /**
    * The missing entry point. Until now the only way into a cookbook was the
@@ -89,15 +119,26 @@ export default function ProjectsPage() {
    * so the book being built is its own document and its own purchase rather
    * than an edit of whichever one happened to be open.
    *
-   * With recipes on hand there is nothing left to collect, so this goes straight
-   * to the workspace. With none, it routes to the importer instead and
-   * `cookbookIntent` carries the choice across that detour, so the cook still
-   * lands in a book rather than in recipe cards.
+   * Always opens the workspace, empty-handed or not.
+   *
+   * It used to send a cook with no recipes to the importer at `/` instead, with
+   * `cookbookIntent` carrying the choice across that detour. The detour never
+   * completed: `/` is the front door, and mounting it FILES and releases the
+   * open project (see the effect in components/PrinterWorkspace.tsx) by calling
+   * `startNewProject()` with no options — which mints another id and wipes the
+   * intent it was supposed to be carrying. So "New cookbook" with an empty
+   * queue dropped you on an unchanged homepage, said nothing about a cookbook,
+   * and landed you in RECIPE CARDS once you'd imported something.
+   *
+   * Rather than teach the front door to hold this one piece of state — the one
+   * thing it is designed not to do — there is nothing to carry: the book is
+   * made where books are made. `/print` holds an empty project on purpose, so a
+   * brand-new cookbook opens on its own cover with "Add recipes" in the rail,
+   * which is a truer answer to "new cookbook" than an importer is.
    */
   function startNew(cookbook: boolean) {
-    const hasRecipes = queueItems.some((item) => item.status === "ready" && item.recipe);
     startNewProject({ cookbook });
-    router.push(hasRecipes ? "/print" : "/");
+    router.push("/print");
   }
   const [accountProjects, setAccountProjects] = useState<PrintProjectSummary[]>([]);
   /**
@@ -305,6 +346,14 @@ export default function ProjectsPage() {
             <button type="button" className="btn btn-primary mt-cp-5" onClick={() => setShowLogin(true)}>
               Sign in
             </button>
+            {/* An empty library replaces the two sections, and the "New …"
+                buttons live in their headings — so on the one screen where
+                someone has nothing to open, there was nothing to start either.
+                Signed out that was the whole story: no account, no shelf, no
+                way in but the importer on the homepage, which only ever makes
+                recipe cards. A cookbook can be bought signed out, so it can be
+                started signed out. */}
+            <StartNewProject className="mt-cp-5" onStart={startNew} />
           </div>
         ) : projects.length === 0 ? (
           <div className="flex flex-col items-center rounded-xl border border-line bg-card px-cp-6 py-cp-7 text-center">
@@ -313,7 +362,10 @@ export default function ProjectsPage() {
             </div>
             <h2 className="mt-cp-4 text-cp-h2 font-extrabold tracking-[-0.02em]">No saved projects yet</h2>
             <p className="mt-cp-2 max-w-sm text-cp-body text-ink-soft leading-relaxed">Build a cookbook or a set of recipe cards and it’ll show up here, ready to reopen anytime.</p>
-            <Link href="/" className="btn btn-primary mt-cp-5">Add a recipe</Link>
+            {/* Says "build a cookbook", and the only button under it went to
+                the importer, which makes recipe cards. Now both things the
+                sentence offers are things you can press. */}
+            <StartNewProject className="mt-cp-5" lead onStart={startNew} />
           </div>
         ) : (
           <>

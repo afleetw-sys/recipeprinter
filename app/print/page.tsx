@@ -3321,14 +3321,25 @@ export default function PrintPage() {
     );
   }
 
-  // "New cookbook" was chosen back in the library, before there were any
-  // recipes to make a book from. Now that there are, honour it — otherwise the
-  // cook lands in recipe cards after explicitly asking for a cookbook and has to
-  // go find the switch. Consumed first so a failed scaffold can't loop, and so
+  // "New cookbook" was chosen back in the library. Honour it here, on arrival —
+  // otherwise the cook lands in recipe cards after explicitly asking for a
+  // cookbook and has to go find the switch.
+  //
+  // Deliberately does NOT wait for recipes. It used to, because the library
+  // sent an empty-handed cook to the importer first and this was the far side
+  // of that detour; the detour is gone (see `startNew` in app/projects/page.tsx)
+  // and the book is now scaffolded the moment it is asked for, empty or not. A
+  // book with no recipes in it is not a broken state — it is a cover, a
+  // dedication and a back cover, which is exactly what someone starting a
+  // cookbook wants to see.
+  //
+  // `items === null` is the job still hydrating, not an empty one; scaffolding
+  // then would fire before a saved book's own `cookbookMode` had arrived and
+  // rebuild over it. Consumed first so a failed scaffold can't loop, and so
   // returning to this project later doesn't re-scaffold over their work.
   useEffect(() => {
     if (!projectMeta.meta.cookbookIntent) return;
-    if (!items?.length || projectMeta.meta.cookbookMode) return;
+    if (items === null || projectLoading || projectMeta.meta.cookbookMode) return;
     projectMeta.clearCookbookIntent();
     // `beginCookbookBuild`, not `startCookbook`: the latter opens the offer
     // dialog for anyone who hasn't seen it, and pitching the cookbook to
@@ -3336,7 +3347,7 @@ export default function PrintPage() {
     // already answered.
     beginCookbookBuild();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [projectMeta.meta.cookbookIntent, projectMeta.meta.cookbookMode, items?.length]);
+  }, [projectMeta.meta.cookbookIntent, projectMeta.meta.cookbookMode, items === null, projectLoading]);
 
   usePrintSettingsPersistence(params, {
     cardSize,

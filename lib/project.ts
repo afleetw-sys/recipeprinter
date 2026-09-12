@@ -147,10 +147,13 @@ export interface ProjectMeta {
       cookbook" — false/undefined means the plain print-cards UI. Gated off at
       the entry points for now; see COOKBOOK_ENABLED in lib/cookbookProduct.ts. */
   cookbookMode?: boolean;
-  /** "New cookbook" was chosen from the library, but there are no recipes yet
-      to make one from. Carries that choice through the add-recipes detour so
-      the workspace opens as a book instead of dropping the cook into recipe
-      cards and asking them to find the switch. Consumed on arrival. */
+  /** "New cookbook" was chosen from the library. Carries that choice into the
+      workspace so it opens as a book instead of dropping the cook into recipe
+      cards and asking them to find the switch. Consumed on arrival, whether or
+      not there are any recipes yet — an empty book is a cover and a back cover,
+      not a failure. It used to survive a trip through the importer at `/` for
+      an empty-handed cook, which is exactly the trip that wiped it; the library
+      goes straight to the workspace now. */
   cookbookIntent?: boolean;
   /** The print-format preset this cookbook exports at (trim/bleed/margin/gutter
       — see lib/cookbookPresets.ts). Absent = the default preset. Cookbook-only;
