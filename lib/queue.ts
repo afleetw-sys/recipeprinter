@@ -13,6 +13,7 @@ import { hostnameOf as rawHostnameOf } from "@/lib/url";
 import { uid } from "@/lib/ids";
 import { deleteLocalPhoto, isBlobUrl, localPhotoUrls } from "@/lib/localPhotos";
 import { localProjectPhotoIds } from "@/lib/localProjects";
+import { QUEUE_RECOVERY_OWNER_KEY, stampRecoveryOwner } from "@/lib/recoveryMirror";
 import { localStore, sessionStore } from "@/lib/storage";
 
 // The print queue is session-based for the MVP, no accounts, no saved library.
@@ -125,6 +126,11 @@ function writeSerializedQueue(serialized: string) {
   // Best-effort like the session write — if localStorage is unavailable
   // (private mode/quota) there's simply no cross-close recovery.
   const mirrored = localStore.set(QUEUE_RECOVERY_STORAGE_KEY, serialized);
+  // Say which tab this mirror belongs to. Two tabs write this key on unrelated
+  // timers, and the project metadata is mirrored separately — so without the
+  // stamp a reopened tab can pair THESE recipes with ANOTHER book's identity.
+  // See lib/recoveryMirror.
+  if (mirrored) stampRecoveryOwner(QUEUE_RECOVERY_OWNER_KEY);
   // `localStore.set` returns false rather than throwing, and this discarded it.
   // The failure that matters is quota: the device shelf holds up to 40 whole
   // projects in the same origin, so a heavy account can fill it — and from that

@@ -14,6 +14,11 @@ import type {
   StashedCookbook,
 } from "@/types/recipe";
 import { uid } from "@/lib/ids";
+import {
+  META_RECOVERY_OWNER_KEY,
+  recoveryMirrorsAgree,
+  stampRecoveryOwner,
+} from "@/lib/recoveryMirror";
 import { localStore, sessionStore } from "@/lib/storage";
 
 // The section/cover layer is purely organizational — which section each
@@ -253,7 +258,25 @@ export function readMeta(): ProjectMeta {
   // reopened tab, reseeding this tab's session from it (see lib/queue.ts).
   let parsed = sessionStore.getJson<ProjectMeta>(PROJECT_META_STORAGE_KEY);
   if (parsed === null) {
-    const recovered = localStore.getJson<ProjectMeta>(PROJECT_META_RECOVERY_STORAGE_KEY);
+    /**
+     * …but only when it belongs to the recipes being recovered alongside it.
+     *
+     * The recipes are mirrored under their own key on their own throttle, so
+     * with two tabs open the two mirrors are simply the last write to each and
+     * can be from different books. This is the half that has to give way: a
+     * meta carries `projectId`, and recovering one book's identity on top of
+     * another book's recipes points the reattach check — and the autosave
+     * behind it — at a saved document these recipes do not belong to.
+     *
+     * Dropping it costs a cover and some chapter names that describe recipes
+     * this tab does not have anyway, and the tab those came from still holds
+     * them live and files them to the shelf on its way out. What survives is
+     * the recipes, under a fresh identity, which is the outcome where nothing
+     * is overwritten. See lib/recoveryMirror.
+     */
+    const recovered = recoveryMirrorsAgree()
+      ? localStore.getJson<ProjectMeta>(PROJECT_META_RECOVERY_STORAGE_KEY)
+      : null;
     if (recovered !== null) {
       parsed = recovered;
       sessionStore.setJson(PROJECT_META_STORAGE_KEY, recovered);
@@ -294,7 +317,10 @@ function flushMetaWrites() {
   // Survivable if either fails: meta stays correct in memory for this page.
   sessionStore.set(PROJECT_META_STORAGE_KEY, serialized);
   // Mirror to the durable backup so book structure survives a tab close.
-  localStore.set(PROJECT_META_RECOVERY_STORAGE_KEY, serialized);
+  const mirrored = localStore.set(PROJECT_META_RECOVERY_STORAGE_KEY, serialized);
+  // Stamped with this tab, so a reopened one can tell whether these chapters
+  // describe the recipes it is recovering beside them — see `readMeta`.
+  if (mirrored) stampRecoveryOwner(META_RECOVERY_OWNER_KEY);
 }
 
 function writeMeta(meta: ProjectMeta) {

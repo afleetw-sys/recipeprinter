@@ -5,6 +5,10 @@ import {
   flushQueueWrites,
   readQueue,
 } from "@/lib/queue";
+import { QUEUE_RECOVERY_OWNER_KEY } from "@/lib/recoveryMirror";
+// Not exported from lib/queue — spelled out here the way the other mirror
+// tests spell theirs, so the key itself is part of what is asserted.
+const QUEUE_RECOVERY_STORAGE_KEY = "recipeprinter:queue:recovery:v1";
 import type { QueueItem } from "@/types/recipe";
 
 // Same in-memory stand-in the other storage tests use — lib/storage resolves
@@ -93,8 +97,15 @@ describe("the queue write throttle", () => {
   it("mirrors to durable storage as well as the session copy", () => {
     scheduleQueueWrite([item("r1", "Borscht")]);
     flushQueueWrites();
-    expect(session.values.size).toBe(1);
-    expect(local.values.size).toBe(1);
+    // Named keys rather than counts: the mirror is also stamped with the tab
+    // that wrote it (lib/recoveryMirror), so counting what landed would be a
+    // test of bookkeeping rather than of the two copies it is about.
+    expect(session.getItem(QUEUE_STORAGE_KEY)).not.toBeNull();
+    expect(local.getItem(QUEUE_RECOVERY_STORAGE_KEY)).not.toBeNull();
+    // And the mirror says which tab left it. Without that a reopened tab cannot
+    // tell whether the project metadata it recovers alongside these recipes
+    // describes them or another tab's book — see lib/recoveryMirror.
+    expect(local.getItem(QUEUE_RECOVERY_OWNER_KEY)).not.toBeNull();
   });
 
   it("skips a redundant write when nothing actually changed", () => {
