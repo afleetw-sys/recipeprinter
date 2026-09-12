@@ -2277,19 +2277,20 @@ export default function PrintPage() {
     saveInFlightRef.current = true;
     setSaveStatus("saving");
     try {
-      const materialized = await materializeProjectPhotos({
+      // Every field that can hold a photo, not just the ones that were easy to
+      // remember. A chapter collage defaults to its own recipes' images and a
+      // recipe's photo history holds the ones it has worn before, so on a
+      // Paprika book both were full of `blob:` URLs going straight into the
+      // document. See `materializeProjectPhotos`.
+      const { photos, uploadedRecipeImages } = await materializeProjectPhotos({
         sections: baseProject.sections,
         cover: baseProject.cover,
         backCover: baseProject.backCover,
+        dedication: baseProject.dedication,
         itemPlacements: baseProject.itemPlacements,
+        stashedCookbook: baseProject.stashedCookbook,
       });
-      const project: PrintProject = {
-        ...baseProject,
-        sections: materialized.sections,
-        cover: materialized.cover,
-        backCover: materialized.backCover,
-        itemPlacements: materialized.itemPlacements,
-      };
+      const project: PrintProject = { ...baseProject, ...photos };
       const saved = savedProjectIdRef.current
         ? await savePrintProject(project)
         : await adoptAnonymousProject(cookPilotUser.uid, project, {
@@ -2298,6 +2299,23 @@ export default function PrintPage() {
       projectRevisionRef.current = Number(saved.revision ?? 0);
       savedProjectIdRef.current = saved.id;
       setSavedProjectId(saved.id);
+      /**
+       * The photos are in Storage now, so stop treating the browser's copy as
+       * the source.
+       *
+       * Only after the save has actually landed — the queue must not start
+       * claiming a URL for a document that was never written. Before this the
+       * working copy kept its `blob:` URLs forever, so every subsequent save
+       * fetched, re-encoded and re-uploaded the same photos and orphaned the
+       * previous objects. On a four-hundred-photo Paprika library that was the
+       * whole library, per edit.
+       *
+       * Costs one extra autosave: the queue changing is a content change, and
+       * the next pass finds nothing left to upload and settles. The content
+       * document itself is not rewritten for it — the signature is unchanged,
+       * so `savePrintProject` skips that half.
+       */
+      queue.adoptUploadedPhotos(uploadedRecipeImages);
       if (saved.id !== projectMeta.meta.projectId) {
         projectMeta.setProjectId(saved.id);
       }

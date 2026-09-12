@@ -431,6 +431,34 @@ export function useQueue() {
     [commit],
   );
 
+  /**
+   * Points recipes at the Storage copies of photos this browser was holding.
+   *
+   * Called after a save has actually landed. `materializeProjectPhotos` uploads
+   * from the working copy but hands its result to the SAVE, so without this the
+   * queue went on holding the `blob:` URL and every later save re-uploaded the
+   * same bytes — see `MaterializedPhotos`.
+   *
+   * `localPhotoId` is deliberately kept. The IndexedDB copy is still what the
+   * device shelf's older entries reference (see `releaseLocalPhotos`), and
+   * `rehydrateLocalPhotos` only ever replaces an image that is missing or a
+   * dead object URL, so a real Storage URL is safe beside it.
+   */
+  const adoptUploadedPhotos = useCallback(
+    (uploaded: ReadonlyMap<string, string>) => {
+      if (uploaded.size === 0) return;
+      let changed = false;
+      const next = itemsRef.current.map((item) => {
+        const url = uploaded.get(item.id);
+        if (!url || !item.recipe || item.recipe.image === url) return item;
+        changed = true;
+        return { ...item, recipe: { ...item.recipe, image: url } };
+      });
+      if (changed) commit(next);
+    },
+    [commit],
+  );
+
   const patch = useCallback(
     (id: string, changes: Partial<QueueItem>) => {
       let changed = false;
@@ -877,6 +905,7 @@ export function useQueue() {
     addImageFiles,
     addText,
     addReadyRecipes,
+    adoptUploadedPhotos,
     retry,
     canRetry,
     repairItem,
