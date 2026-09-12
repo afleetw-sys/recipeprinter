@@ -33,6 +33,21 @@ export interface IdbStore {
   put(key: string, value: unknown): Promise<boolean>;
   /** The stored value, or null if absent or unreadable. */
   get<T>(key: string): Promise<T | null>;
+  /**
+   * Several values, in ONE open and one transaction.
+   *
+   * Not a convenience wrapper over `get`. Every operation here opens and closes
+   * the database itself (see the note at the top of this file), so N calls to
+   * `get` in a loop is N database opens, run one after another — which is what
+   * reading a Paprika library's photos back used to be, four hundred times over
+   * on a cold tab, with nothing on screen until the last one landed.
+   *
+   * Keys that are absent or unreadable are simply missing from the result, so a
+   * caller iterating the map gets exactly the ones it can use. A partial read
+   * (the transaction failing part-way) resolves with what it managed, for the
+   * same reason: a photo that came back is a photo we can show.
+   */
+  getMany<T>(keys: readonly string[]): Promise<Map<string, T>>;
   /** Read and delete in ONE transaction, so a value can't be handed out twice. */
   take<T>(key: string): Promise<T | null>;
   /** Best-effort delete. Resolves either way — a leftover costs disk, not
@@ -110,6 +125,50 @@ export function idbStore(name: string, version: number, storeName: string): IdbS
             request.onerror = () => resolve(null);
           } catch {
             resolve(null);
+          }
+        }),
+      );
+    },
+
+    getMany<T>(keys: readonly string[]) {
+      if (keys.length === 0) return Promise.resolve(new Map<string, T>());
+      return withDb<Map<string, T>>(new Map(), (db) =>
+        new Promise<Map<string, T>>((resolve) => {
+          const found = new Map<string, T>();
+          try {
+            const tx = db.transaction(storeName, "readonly");
+            const store = tx.objectStore(storeName);
+            // Deduped into an array rather than iterated as a Set: this
+            // project compiles without `downlevelIteration`, so a `for…of`
+            // over a Set does not build.
+            const seen = new Set<string>();
+            const unique: string[] = [];
+            for (const key of keys) {
+              if (seen.has(key)) continue;
+              seen.add(key);
+              unique.push(key);
+            }
+            // Every request issued up front, against the one transaction.
+            // IndexedDB runs them without a round trip back to us in between,
+            // which is the whole difference from a loop of awaits.
+            for (const key of unique) {
+              const request = store.get(key);
+              request.onsuccess = () => {
+                const value = request.result as T | undefined;
+                if (value !== undefined) found.set(key, value);
+              };
+              // A single unreadable key is not a failed batch — it is a key
+              // with nothing behind it, which is already how it reads.
+              request.onerror = () => {};
+            }
+            // `oncomplete`, so the map is whole before anyone sees it. Error
+            // and abort resolve with what landed rather than throwing the good
+            // reads away with the bad one.
+            tx.oncomplete = () => resolve(found);
+            tx.onerror = () => resolve(found);
+            tx.onabort = () => resolve(found);
+          } catch {
+            resolve(found);
           }
         }),
       );

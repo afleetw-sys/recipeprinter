@@ -65,6 +65,44 @@ export async function localPhotoUrl(id: string): Promise<string | null> {
   return rememberLocalPhotoUrl(id, blob);
 }
 
+/**
+ * URLs for a whole set of stored photos, in one pass over IndexedDB.
+ *
+ * The batch form exists because the single form is the wrong shape for the case
+ * that actually matters. Photos are read back per SET, not one at a time — a
+ * reopened tab rehydrating its queue, a saved project being opened, a Paprika
+ * library landing — and every `localPhotoUrl` in a loop is its own database
+ * open, awaited before the next one starts. A library of four hundred photos
+ * paid four hundred sequential opens before a single picture appeared.
+ *
+ * Ids already holding an object URL never reach the store at all, so a second
+ * call after a partial read costs nothing for what it already has. Ids with
+ * nothing behind them are absent from the result rather than mapped to null:
+ * the caller's question is "which of these can I show", and a missing entry
+ * answers it.
+ */
+export async function localPhotoUrls(ids: readonly string[]): Promise<Map<string, string>> {
+  const urls = new Map<string, string>();
+  const missing: string[] = [];
+  for (const id of ids) {
+    const cached = objectUrls.get(id);
+    if (cached) urls.set(id, cached);
+    else missing.push(id);
+  }
+  if (missing.length === 0) return urls;
+
+  const blobs = await photos.getMany<unknown>(missing);
+  // `forEach`, not `for…of`: this project compiles without
+  // `downlevelIteration`, so iterating a Map directly does not build.
+  blobs.forEach((blob, id) => {
+    // Anything but a Blob is not a photo — same reasoning as `localPhotoUrl`:
+    // the store is untyped, and a value left by an older shape should read as
+    // "gone" rather than crash `createObjectURL`.
+    if (blob instanceof Blob) urls.set(id, rememberLocalPhotoUrl(id, blob));
+  });
+  return urls;
+}
+
 /** Drops a photo and its object URL. Best-effort: a photo that outlives its
     recipe costs a little disk, not correctness. */
 export async function deleteLocalPhoto(id: string): Promise<void> {

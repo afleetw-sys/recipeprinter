@@ -23,6 +23,7 @@ type Handler = (() => void) | null;
 function fakeIndexedDB(options: { openFails?: "throw" | "error" | "blocked" } = {}) {
   const data = new Map<string, unknown>();
   let closed = false;
+  let opens = 0;
 
   const store = {
     put(value: unknown, key: string) {
@@ -67,8 +68,11 @@ function fakeIndexedDB(options: { openFails?: "throw" | "error" | "blocked" } = 
   return {
     data,
     wasClosed: () => closed,
+    /** How many times the database was opened — the whole point of `getMany`. */
+    opens: () => opens,
     indexedDB: {
       open() {
+        opens += 1;
         if (options.openFails === "throw") throw new Error("blocked by policy");
         const request: {
           result: unknown;
@@ -121,6 +125,55 @@ describe("idbStore", () => {
     expect(await store.take<string[]>("k")).toBeNull();
   });
 
+  it("getMany reads a whole set in one open", async () => {
+    const fake = fakeIndexedDB();
+    install(fake);
+    const store = idbStore("db", 1, "things");
+    await store.put("a", 1);
+    await store.put("b", 2);
+    await store.put("c", 3);
+    const before = fake.opens();
+
+    const found = await store.getMany<number>(["a", "b", "c"]);
+
+    expect(found).toEqual(new Map([["a", 1], ["b", 2], ["c", 3]]));
+    // One open for the batch. Three `get` calls would have been three, which is
+    // the cost this exists to remove.
+    expect(fake.opens() - before).toBe(1);
+  });
+
+  it("getMany leaves out the keys with nothing behind them", async () => {
+    const fake = fakeIndexedDB();
+    install(fake);
+    const store = idbStore("db", 1, "things");
+    await store.put("here", "yes");
+
+    const found = await store.getMany<string>(["here", "gone"]);
+
+    expect(found.get("here")).toBe("yes");
+    // Absent, not mapped to null — the caller's question is "which of these can
+    // I use", and `has` should answer it.
+    expect(found.has("gone")).toBe(false);
+    expect(found.size).toBe(1);
+  });
+
+  it("getMany does not open the database for an empty set", async () => {
+    const fake = fakeIndexedDB();
+    install(fake);
+    const found = await idbStore("db", 1, "things").getMany<number>([]);
+    expect(found.size).toBe(0);
+    expect(fake.opens()).toBe(0);
+  });
+
+  it("getMany reads a repeated key once", async () => {
+    const fake = fakeIndexedDB();
+    install(fake);
+    const store = idbStore("db", 1, "things");
+    await store.put("k", 1);
+    const found = await store.getMany<number>(["k", "k", "k"]);
+    expect(found).toEqual(new Map([["k", 1]]));
+  });
+
   it("remove deletes, and is fine about a key that isn't there", async () => {
     const fake = fakeIndexedDB();
     install(fake);
@@ -146,6 +199,7 @@ describe("idbStore", () => {
     const store = idbStore("db", 1, "things");
     expect(await store.put("k", 1)).toBe(false);
     expect(await store.get("k")).toBeNull();
+    expect((await store.getMany(["k"])).size).toBe(0);
     expect(await store.take("k")).toBeNull();
     await expect(store.remove("k")).resolves.toBeUndefined();
   });
