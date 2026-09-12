@@ -6817,16 +6817,35 @@ textarea.recipe-card__toc-title {
 
 /* These templates layer content above a decorative card background with
    `.recipe-template--X .recipe-card > * { position: relative }`, which also
-   catches the <footer> and overrides its base `position: absolute`. That turns
-   the footer's `left: var(--recipe-card-padding-x)` — an anchor meant for an
-   absolutely-positioned footer — into a *relative* shift, pushing the source
-   link ~0.58in to the right of the body text (the reported misalignment). The
-   footer is a direct child of the card, so in normal flow it already starts at
-   the content's left edge; zero the offset so the link lines up with it. */
+   catches the <footer> and overrode its base `position: absolute`. Every offset
+   on the footer is an anchor meant for an absolutely-positioned box, so making
+   it relative reinterpreted all four of them as SHIFTS from wherever the footer
+   happened to land in flow:
+
+   - `left` pushed the source link ~0.58in right of the body text (the
+     misalignment that was reported first, and was patched by zeroing left/right
+     — which treated the symptom and left the box in flow).
+   - `bottom: var(--recipe-card-padding-bottom)` lifted it 48px UP, on top of
+     whatever sat above it. On screen that landed harmlessly inside the
+     `--recipe-card-footer-reserve` band, because the card is a flex column and
+     `.recipe-card__cols { flex: 1 }` had already stretched the footer down to
+     the bottom edge. In PRINT the card is `display: block` (see the @media
+     print rule on `.recipe-card`, which is deliberate — flex containers do not
+     fragment reliably), so `flex: 1` goes inert, the footer sits directly under
+     the content halfway up the sheet, and the 48px lift drops it straight
+     through the last ingredient. That is the reported "the link prints in the
+     middle of the recipe".
+
+   So put the footer back where the base rule had it. Pinned to the card's
+   bottom padding it behaves identically in preview and print, exactly as it
+   already does on every template without a decorative background, and
+   `--recipe-card-footer-reserve` on `.recipe-card__cols` keeps content clear of
+   it. `z-index: 1` still comes from the `> *` rule and still stacks an
+   absolutely-positioned box above the `::before` decoration, which is all that
+   rule wanted from the footer in the first place. */
 .recipe-template--heirloom .recipe-card__footer,
 .recipe-template--keepsake .recipe-card__footer {
-  left: 0;
-  right: 0;
+  position: absolute;
 }
 
 .recipe-card--back .recipe-card__footer,
