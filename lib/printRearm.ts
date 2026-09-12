@@ -1,5 +1,7 @@
 "use client";
 
+import { sessionStore } from "@/lib/storage";
+
 // ─────────────────────────────────────────────────────────────────────────────
 // One print per document.
 //
@@ -78,33 +80,27 @@ export function preferFreshDocumentForPrint(): boolean {
  */
 export function claimPrintRearm(): boolean {
   if (isPrintRetryDocument()) return false;
-  try {
-    sessionStorage.setItem(RETRY_KEY, String(Date.now()));
-  } catch {
-    // Private mode, or storage turned off. The reload is still worth doing —
-    // without the marker the failure case is one extra reload, and with no
-    // reload at all it is a dead button.
-  }
+  // The write may not land (private mode, storage turned off) and the reload is
+  // still worth doing: without the marker the failure case is one extra reload,
+  // and with no reload at all it is a dead button. So the result is ignored on
+  // purpose rather than not being reported.
+  sessionStore.set(RETRY_KEY, String(Date.now()));
   return true;
 }
 
 /** Called once a print has actually reached the browser, so the next one that
     fails is read as a fresh failure rather than the tail of this attempt. */
 export function clearPrintRetryMarker(): void {
-  try {
-    sessionStorage.removeItem(RETRY_KEY);
-  } catch {
-    // Nothing to do and nothing lost: a stale marker expires on its own.
-  }
+  // Nothing to do and nothing lost if this cannot be written: a stale marker
+  // expires on its own (`RETRY_TTL_MS`).
+  sessionStore.remove(RETRY_KEY);
 }
 
 function isPrintRetryDocument(): boolean {
-  let raw: string | null = null;
-  try {
-    raw = sessionStorage.getItem(RETRY_KEY);
-  } catch {
-    return false;
-  }
+  // Unreadable storage and no marker both mean "this is not the retry", which
+  // is the safe answer either way: the worst case is one reload that does not
+  // help, versus a print button that refuses to try.
+  const raw = sessionStore.get(RETRY_KEY);
   if (!raw) return false;
   const at = Number(raw);
   if (!Number.isFinite(at)) return false;

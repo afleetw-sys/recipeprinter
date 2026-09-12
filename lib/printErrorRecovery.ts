@@ -1,3 +1,5 @@
+import { sessionStore } from "@/lib/storage";
+
 const STORAGE_KEY = "recipeprinter:print-error-recovery:v1";
 const CHUNK_RELOAD_STORAGE_KEY = "recipeprinter:chunk-error-reload:v1";
 const RETRY_DELAYS_MS = [250, 750, 1500] as const;
@@ -15,23 +17,17 @@ export type PrintErrorRecovery = {
 };
 
 export function recordPrintError(now = Date.now()): PrintErrorRecovery {
-  let previous: RecoveryRecord | null = null;
-
-  try {
-    previous = JSON.parse(sessionStorage.getItem(STORAGE_KEY) ?? "null") as RecoveryRecord | null;
-  } catch {
-    // Storage can be unavailable in privacy-restricted browsers. Recovery
-    // should still get one immediate attempt rather than failing itself.
-  }
+  // Null covers "nothing recorded yet", "unparseable", and "storage is
+  // unavailable in a privacy-restricted browser" — and all three should mean
+  // the same thing here: this is attempt one, so recovery still gets its
+  // immediate try rather than failing itself.
+  const previous = sessionStore.getJson<RecoveryRecord>(STORAGE_KEY);
 
   const attempts =
     previous && now - previous.lastFailureAt < FAILURE_WINDOW_MS ? previous.attempts + 1 : 1;
 
-  try {
-    sessionStorage.setItem(STORAGE_KEY, JSON.stringify({ attempts, lastFailureAt: now }));
-  } catch {
-    // Best effort only; reset() remains safe without persisted bookkeeping.
-  }
+  // Best effort; reset() remains safe without persisted bookkeeping.
+  sessionStore.setJson(STORAGE_KEY, { attempts, lastFailureAt: now });
 
   const delayMs = RETRY_DELAYS_MS[attempts - 1];
   return {
@@ -42,12 +38,9 @@ export function recordPrintError(now = Date.now()): PrintErrorRecovery {
 }
 
 export function markPrintPreviewStable(): void {
-  try {
-    sessionStorage.removeItem(STORAGE_KEY);
-    sessionStorage.removeItem(CHUNK_RELOAD_STORAGE_KEY);
-  } catch {
-    // Nothing else depends on recovery bookkeeping being writable.
-  }
+  // Nothing else depends on recovery bookkeeping being writable.
+  sessionStore.remove(STORAGE_KEY);
+  sessionStore.remove(CHUNK_RELOAD_STORAGE_KEY);
 }
 
 export function isChunkLoadError(error: Error): boolean {
@@ -60,17 +53,16 @@ export function isChunkLoadError(error: Error): boolean {
 }
 
 export function claimChunkErrorReload(now = Date.now()): boolean {
-  try {
-    const lastReload = Number(sessionStorage.getItem(CHUNK_RELOAD_STORAGE_KEY));
-    if (Number.isFinite(lastReload) && lastReload > 0 && now - lastReload < FAILURE_WINDOW_MS) {
-      return false;
-    }
-    sessionStorage.setItem(CHUNK_RELOAD_STORAGE_KEY, String(now));
-    return true;
-  } catch {
-    // Reloading once is still the best recovery when storage is unavailable.
-    return true;
+  // An unreadable marker reads as absent (`Number(null)` is 0, which fails the
+  // `> 0` test), so storage being unavailable lands on the same answer the old
+  // catch gave: reload once, because reloading is still the best recovery when
+  // there is nowhere to record that we did.
+  const lastReload = Number(sessionStore.get(CHUNK_RELOAD_STORAGE_KEY));
+  if (Number.isFinite(lastReload) && lastReload > 0 && now - lastReload < FAILURE_WINDOW_MS) {
+    return false;
   }
+  sessionStore.set(CHUNK_RELOAD_STORAGE_KEY, String(now));
+  return true;
 }
 
 export const PRINT_PREVIEW_STABILITY_MS = 5_000;

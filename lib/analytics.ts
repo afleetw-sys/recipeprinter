@@ -1,5 +1,6 @@
 import type { PostHog } from "posthog-js";
 import { isProductionRuntime } from "@/lib/appEnvironment";
+import { sessionStore } from "@/lib/storage";
 import {
   type Attribution,
   type AttributionInput,
@@ -564,16 +565,13 @@ let lastIdentifiedId: string | null = null;
 
 /** True exactly once per browser session; marks the session as seen. */
 function beginLandingSession(): boolean {
-  try {
-    if (window.sessionStorage.getItem(LANDING_SESSION_FLAG)) return false;
-    window.sessionStorage.setItem(LANDING_SESSION_FLAG, "1");
-    return true;
-  } catch {
-    // Storage blocked (private mode / cookie-less). Treat every load as a new
-    // session: at worst we register latest-touch and a Landing Page event once
-    // per page rather than once per session, which is a tolerable over-count.
-    return true;
-  }
+  // Storage blocked (private mode / cookie-less) reads as "no flag set", which
+  // lands on exactly the behaviour this wants anyway: treat every load as a new
+  // session. At worst we register latest-touch and a Landing Page event once per
+  // page rather than once per session, which is a tolerable over-count.
+  if (sessionStore.get(LANDING_SESSION_FLAG)) return false;
+  sessionStore.set(LANDING_SESSION_FLAG, "1");
+  return true;
 }
 
 /**
