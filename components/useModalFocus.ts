@@ -77,7 +77,14 @@ export function useModalFocus(
     document.addEventListener("keydown", onKeyDown);
     return () => {
       document.removeEventListener("keydown", onKeyDown);
-      previousActive?.focus();
+      // `preventScroll`, because a plain `focus()` scrolls its element into
+      // view and the element here is whatever opened the dialog. Returning
+      // focus to it is right; dragging the page to it is not — the cook was
+      // looking at the overlay, and where the page sat underneath is not ours
+      // to change on the way out. It bites hardest on the photo viewer, whose
+      // trigger is a thumbnail inside a horizontally scrolling strip near the
+      // bottom of the home page, so "reveal it" can move the page in both axes.
+      previousActive?.focus({ preventScroll: true });
     };
   }, [ref, disabled]);
 }
