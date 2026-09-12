@@ -182,7 +182,14 @@ function Spotlight({
       // the two; a photograph paints no card, so the scrim is the surround.
       className="fixed inset-0 z-50 flex items-center justify-center rp-photo-scrim p-cp-4 sm:p-cp-6"
     >
-      <div className="relative flex max-h-full flex-col items-center gap-cp-4">
+      <div className="relative flex max-h-full flex-col items-center gap-cp-3">
+        {/* Above the photograph, not under it. Where you are in a set is
+            something you want while looking, and a counter sitting in the
+            middle of the controls read as a third button between two real
+            ones. Up here it is a caption, which is what it is. */}
+        <p className="rounded-full bg-ink/70 px-cp-3 py-cp-2 text-cp-caption font-semibold tabular-nums text-card">
+          {index + 1} / {count}
+        </p>
         <Image
           src={photo.src}
           width={photo.width}
@@ -197,29 +204,35 @@ function Spotlight({
           priority
           className="max-h-[74vh] w-auto rounded-lg object-contain"
         />
-
-        <div className="flex items-center gap-cp-4">
-          <button
-            type="button"
-            onClick={() => go(-1)}
-            aria-label="Previous photo"
-            className={VIEWER_CONTROL}
-          >
-            <ChevronLeftIcon size={ICON_SIZE.lg} />
-          </button>
-          <p className="rounded-full bg-ink/70 px-cp-3 py-cp-2 text-cp-caption font-semibold tabular-nums text-card">
-            {index + 1} / {count}
-          </p>
-          <button
-            type="button"
-            onClick={() => go(1)}
-            aria-label="Next photo"
-            className={VIEWER_CONTROL}
-          >
-            <ChevronRightIcon size={ICON_SIZE.lg} />
-          </button>
-        </div>
       </div>
+
+      {/* Out at the edges of the screen, either side of the photograph, rather
+          than in a row beneath it. Two reasons. The photo is the thing being
+          looked at, and a control strip under it is one more object competing
+          with it; and "back" and "forward" belong on the left and the right of
+          what they move, which is where a hand already reaches on a phone.
+
+          Siblings of the column, not children of it, so they sit against the
+          viewport instead of against whatever width this particular photograph
+          happens to be — a portrait shot and a landscape one would otherwise
+          put their arrows in two different places. On a narrow screen they
+          overlap the picture; that is what the dark translucent disc is for. */}
+      <button
+        type="button"
+        onClick={() => go(-1)}
+        aria-label="Previous photo"
+        className={`absolute left-cp-4 top-1/2 -translate-y-1/2 sm:left-cp-6 ${VIEWER_CONTROL}`}
+      >
+        <ChevronLeftIcon size={ICON_SIZE.lg} />
+      </button>
+      <button
+        type="button"
+        onClick={() => go(1)}
+        aria-label="Next photo"
+        className={`absolute right-cp-4 top-1/2 -translate-y-1/2 sm:right-cp-6 ${VIEWER_CONTROL}`}
+      >
+        <ChevronRightIcon size={ICON_SIZE.lg} />
+      </button>
 
       <button
         type="button"
