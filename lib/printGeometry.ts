@@ -1,4 +1,4 @@
-import type { PrintCardSize } from "@/components/RecipeCardPrint";
+import type { PrintCardSize } from "@/types/recipe";
 
 // Real card dimensions in CSS px (96px per inch), used only to size the
 // on-screen scaler/thumbnails so a card looks true-to-size, just smaller.

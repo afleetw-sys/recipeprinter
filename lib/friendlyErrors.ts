@@ -7,9 +7,10 @@ import { normalizeHost } from "@/lib/url";
  * and Firestore both carry one; a plain Error does not) and its message.
  *
  * One shape, five copies, until this — which mattered less than the next
- * function does.
+ * function does. Exported for `lib/parser.ts`, which was a sixth copy; see
+ * `isNetworkFailure` for the part parser deliberately does NOT share.
  */
-function errorParts(error: unknown): { code: string; message: string } {
+export function errorParts(error: unknown): { code: string; message: string } {
   return {
     code: (error as { code?: string })?.code ?? "",
     message: error instanceof Error ? error.message : String(error || ""),
@@ -29,6 +30,17 @@ function errorParts(error: unknown): { code: string; message: string } {
  *
  * The union of what the five checked, so this recognises strictly more than any
  * of them did and nothing that was previously matched is now missed.
+ *
+ * NOT for `lib/parser.ts`, and that is a deliberate exception rather than the
+ * one module nobody got round to. Every mapper here answers with a SENTENCE, so
+ * flattening a dropped connection into one bucket is exactly right. Parser
+ * answers with an `ImportFailureCode`, which is the vocabulary the import
+ * dashboards are counted in, and it has to tell these apart: `deadline-exceeded`
+ * is `timeout`, `unavailable` carrying a no-recipe message is `no_recipe`, and
+ * `resource-exhausted` splits again into `rate_limited` and `too_large`. Calling
+ * this there would collapse four buckets into one and make the number we tune
+ * the parser against stop meaning anything. Parser shares `errorParts` and
+ * nothing else, on purpose.
  */
 function isNetworkFailure(code: string, message: string): boolean {
   return (

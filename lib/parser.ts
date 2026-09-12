@@ -2,6 +2,7 @@
 
 import { adaptCookPilotRecipe, adaptCookPilotRecipes, normalizeImportURL } from "@/lib/cookpilot";
 import { BLOCKED_REMEDY } from "@/lib/importUrl";
+import { errorParts } from "@/lib/friendlyErrors";
 import { searchPageMessage, unwrapRedirectUrl } from "@/lib/importUrl";
 import { anonymousOwnerId } from "@/lib/anonymousOwner";
 import type { ImportFailureCode } from "@/lib/analytics";
@@ -99,9 +100,13 @@ function friendlyError(
   // keeps it — don't relabel it as unknown on the way out.
   if (err instanceof ImportError) return err;
 
-  const message = err instanceof Error ? err.message : String(err);
   // Firebase callables throw FunctionsError with a `.code` like "functions/...".
-  const code = (err as { code?: string })?.code ?? "";
+  // Shared with lib/friendlyErrors, which was reading a thrown value the same
+  // way in its own private copy. Only the READING is shared: that module's
+  // `isNetworkFailure` is deliberately not used here — see the note on it. The
+  // branches below answer with an analytics bucket, not a sentence, and have to
+  // keep `deadline-exceeded`, `unavailable` and `resource-exhausted` apart.
+  const { code, message } = errorParts(err);
 
   // The CookPilot parser callables always throw a Firebase HttpsError with a
   // structured `code` — a far more reliable signal than the free-text message,
@@ -173,8 +178,7 @@ function friendlyError(
 }
 
 function isAuthOrAppCheckError(err: unknown): boolean {
-  const message = err instanceof Error ? err.message : String(err);
-  const code = (err as { code?: string })?.code ?? "";
+  const { code, message } = errorParts(err);
   return (
     code.includes("unauthenticated") ||
     code.includes("permission-denied") ||

@@ -2,12 +2,8 @@
 
 import { useEffect, useLayoutEffect, useRef } from "react";
 import type { ReadonlyURLSearchParams } from "next/navigation";
-import {
-  PRINT_CARD_SIZE_OPTIONS,
-  RECIPE_PRINT_TEMPLATE_OPTIONS,
-  type PrintCardSize,
-  type RecipePrintTemplate,
-} from "@/components/RecipeCardPrint";
+import { PRINT_CARD_SIZE_OPTIONS, RECIPE_PRINT_TEMPLATE_OPTIONS } from "@/lib/printTemplates";
+import type { PrintCardSize, RecipePrintTemplate } from "@/types/recipe";
 
 // SSR renders with the default (no localStorage), so the first client render
 // must match it — but we still want the stored size applied BEFORE paint, not a
@@ -17,18 +13,46 @@ import {
 // on the server where layout effects don't run.
 const useIsomorphicLayoutEffect = typeof window !== "undefined" ? useLayoutEffect : useEffect;
 
-// The storage half lives in lib/printSettingsStore, which has no dependency on
-// components/RecipeCardPrint — see that module for why. Imported for this
-// module's own use and re-exported, so this stays the single import site for
-// everything print-settings.
-import { readPrintSettings, writePrintSettings } from "@/lib/printSettingsStore";
+import { localStore } from "@/lib/storage";
 
-export {
-  PRINT_SETTINGS_STORAGE_KEY,
-  readPrintSettings,
-  writePrintSettings,
-  type StoredPrintSettings,
-} from "@/lib/printSettingsStore";
+/*
+ * The storage half lived in lib/printSettingsStore from 2026-08 until
+ * 2026-09-12, split off so a module that only needs to READ stored settings did
+ * not have to pull in the validators below — they compare against the option
+ * tables, which lived in components/RecipeCardPrint, which is the entire
+ * ~2,100-line printable-card component tree. lib/localProjects reads these while
+ * filing a book from the HOMEPAGE, where that tree is otherwise absent from the
+ * bundle entirely.
+ *
+ * The tables are plain data in lib/printTemplates now, so the validators cost
+ * two small arrays and the split has nothing left to protect. One module again.
+ */
+
+// Layout preferences carry over across visits (device-local, no account/sync)
+// so going back to add another recipe doesn't reset the print setup. Shared
+// with the /print/[slug] loader, which seeds these from a sharedRecipeCards
+// doc before handing off to the real /print page.
+export const PRINT_SETTINGS_STORAGE_KEY = "recipeprinter:print-settings:v1";
+
+export interface StoredPrintSettings {
+  cardSize?: string;
+  template?: string;
+  doubleSided?: boolean;
+  showCutLines?: boolean;
+  showPhoto?: boolean;
+  showSourceUrl?: boolean;
+}
+
+export function readPrintSettings(): StoredPrintSettings | null {
+  const parsed = localStore.getJson<StoredPrintSettings>(PRINT_SETTINGS_STORAGE_KEY);
+  return parsed && typeof parsed === "object" ? parsed : null;
+}
+
+export function writePrintSettings(settings: Required<StoredPrintSettings>) {
+  // Survivable if it fails: settings stay correct for this session, they just
+  // won't carry over to the next visit.
+  localStore.setJson(PRINT_SETTINGS_STORAGE_KEY, settings);
+}
 
 export function isPrintCardSize(value: string | null): value is PrintCardSize {
   return PRINT_CARD_SIZE_OPTIONS.some((option) => option.id === value);

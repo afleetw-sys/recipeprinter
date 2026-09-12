@@ -2,6 +2,7 @@
 
 import {
   Fragment,
+  useCallback,
   useEffect,
   useLayoutEffect,
   useRef,
@@ -32,6 +33,7 @@ import { ScaledPage } from "@/components/print/ScaledPage";
 import { PendingImportRows } from "@/components/print/PendingImportRows";
 import { pendingAnchorIndex, sectionDrawsNestingLine } from "@/lib/railPending";
 import { PAGE_DIMS } from "@/lib/printGeometry";
+import { useMenuDismiss } from "@/lib/useMenuDismiss";
 import type { PrintCardSize, RecipePrintTemplate } from "@/components/RecipeCardPrint";
 import type { NavItem, usePrintSheets } from "@/lib/usePrintSheets";
 import type { useProjectMeta } from "@/lib/project";
@@ -300,26 +302,13 @@ export function PageRail(props: PageRailProps) {
 
   const [sortMenuOpen, setSortMenuOpen] = useState(false);
   const sortMenuRef = useRef<HTMLDivElement | null>(null);
-  useEffect(() => {
-    if (!sortMenuOpen) return;
-    const close = () => setSortMenuOpen(false);
-    const onPointerDown = (event: PointerEvent) => {
-      if (!sortMenuRef.current?.contains(event.target as Node)) close();
-    };
-    // Capture Escape ahead of the page's handler, so closing this menu doesn't
-    // also clear a selection the cook is still working with.
-    const onKeyDown = (event: KeyboardEvent) => {
-      if (event.key !== "Escape") return;
-      event.stopPropagation();
-      close();
-    };
-    window.addEventListener("pointerdown", onPointerDown, true);
-    window.addEventListener("keydown", onKeyDown, true);
-    return () => {
-      window.removeEventListener("pointerdown", onPointerDown, true);
-      window.removeEventListener("keydown", onKeyDown, true);
-    };
-  }, [sortMenuOpen]);
+  const closeSortMenu = useCallback(() => setSortMenuOpen(false), []);
+  // The shared dismissal. This was a near-verbatim reimplementation of it,
+  // down to repeating the reason for capturing Escape — that closing the menu
+  // must not also reach the page's own handler and clear the selection the cook
+  // opened it to act on. `closeOnScroll` off because the menu is absolutely
+  // positioned inside this trigger, so it rides the organize bar.
+  useMenuDismiss(sortMenuRef, closeSortMenu, { enabled: sortMenuOpen, closeOnScroll: false });
 
   // Right-clicking a tile in the organizer offers the drag's destinations as a
   // list — the same moves, for a book too long to drag across. The ids are

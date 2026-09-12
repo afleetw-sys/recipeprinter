@@ -2,8 +2,8 @@
 
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import { createPortal } from "react-dom";
-import { useBackDismiss } from "@/components/useBackDismiss";
-import { useModalFocus } from "@/components/useModalFocus";
+import { useBackDismiss } from "@/lib/useBackDismiss";
+import { useModalFocus } from "@/lib/useModalFocus";
 
 let openDialogCount = 0;
 let previousBodyOverflow = "";

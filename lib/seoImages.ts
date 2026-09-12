@@ -1,6 +1,4 @@
-import type { FeatureCard } from "@/components/seo/FeatureCards";
-import { FEATURE_IMAGES } from "@/components/seo/LandingVisuals";
-import { PRINTED_CARDS } from "@/components/seo/ProductMockup";
+import { FEATURE_IMAGES, PRINTED_CARDS, type FeatureCard } from "@/lib/seoAssets";
 import { COMMUNITY_PHOTOS } from "@/lib/communityGallery";
 import { layoutForPage, type SeoLandingPage } from "@/lib/seoLandingPages";
 

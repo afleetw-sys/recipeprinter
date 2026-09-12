@@ -1,4 +1,33 @@
-import type { PrintCardSize, RecipePrintTemplate } from "@/components/RecipeCardPrint";
+/**
+ * What a printed card IS — its size, its look, and how its sections stack.
+ *
+ * Here rather than in components/RecipeCardPrint, which declared them until
+ * 2026-09-12 and is where they are still drawn. This file needs them for
+ * `PrintProjectSettings`, so the import ran types → components → types: the
+ * bottom layer of the app depending on a 2,100-line React component, and that
+ * component depending back on this file. Ten `lib/` modules reached through it
+ * too, including lib/analytics, whose event schema is typed on these.
+ *
+ * It was not free. lib/printSettingsStore exists only because of it — split off
+ * so a module that merely READS stored settings would not drag the whole
+ * printable-card tree onto the homepage through the validators that compare
+ * against the option tables.
+ *
+ * The tables themselves are values rather than types and live in
+ * lib/printTemplates. components/RecipeCardPrint re-exports both, so every
+ * existing import site is unaffected.
+ */
+export type PrintCardSize = "letter" | "card-6x4";
+
+export type RecipePrintTemplate =
+  | "classic"
+  | "heirloom"
+  | "bistro"
+  | "pantry"
+  | "counter"
+  | "keepsake";
+
+export type CardSectionLayout = "standard" | "stacked";
 
 export interface RecipeIngredient {
   /**
@@ -158,7 +187,39 @@ export type ImportTab = "url" | "image" | "text" | "apps";
 /** Recipe order within a section: arranged by hand, or kept alphabetical. */
 export type RailSortMode = "custom" | "title";
 
-import type { ImportFailureCode } from "@/lib/analytics";
+/**
+ * Which bucket an import failure belongs in.
+ *
+ * Domain vocabulary before it is an analytics one: it types `ParseError.failure`
+ * and `QueueItem.errorCode` above and below, so the route, the parser and the
+ * queue all name a failure the same way and a dashboard can compare them.
+ * Declared here rather than in lib/analytics (which re-exports it, so the
+ * existing import sites are unaffected) because this file used to import it
+ * from there — the bottom layer reaching up into lib for a type it owns.
+ */
+export type ImportFailureCode =
+  | "blocked"
+  | "not_found"
+  | "no_recipe"
+  | "rate_limited"
+  | "no_files"
+  | "decode_failed"
+  | "too_large"
+  | "backend_unavailable"
+  | "timeout"
+  // A recipe-app export file we couldn't read: not the archive we expected, or
+  // nothing recipe-shaped inside it. Nothing was ever parsed.
+  | "unreadable_file"
+  // A reserved name (example.com, localhost, anything under .test). Not a
+  // parser failure: nothing was ever there to parse.
+  | "placeholder"
+  // A search results or listing page (a Google search, a site's own /search).
+  // Its own bucket for the same reason as `placeholder`: no_recipe is supposed
+  // to mean the parser read a real recipe page and found nothing, and that is
+  // the number that measures the parser. A link that never had a recipe on it
+  // inflating that number makes the one metric we tune against lie.
+  | "search_page"
+  | "unknown";
 
 export type QueueItemStatus = "parsing" | "ready" | "error";
 

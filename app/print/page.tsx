@@ -28,7 +28,8 @@ import { ImagePicker } from "@/components/ImagePicker";
 import { Dialog } from "@/components/Dialog";
 import { Checkbox, CheckboxGroup } from "@/components/Controls";
 import { RecipeLoadingState } from "@/components/RecipeLoadingState";
-import { useModalFocus } from "@/components/useModalFocus";
+import { useModalFocus } from "@/lib/useModalFocus";
+import { useBackDismiss } from "@/lib/useBackDismiss";
 import {
   PRINT_CARD_SIZE_OPTIONS,
   type PrintCardSize,
@@ -65,6 +66,8 @@ import {
   createPrintProjectId,
   savePrintProject,
   assemblePrintProject,
+  projectContentFromMeta,
+  type PrintLayoutSettings,
   loadPrintProject,
   loadPrintProjectHead,
   PrintProjectConflictError,
@@ -2174,37 +2177,39 @@ export default function PrintPage() {
     showToast(ids.length > 1 ? `Moved ${ids.length} recipes${where}` : `Moved${where}`);
   }
 
+  /** What this page has set up on screen, as the layout half of a project's
+      settings. The device shelf reads its stored equivalent instead — see
+      `PrintLayoutSettings`. */
+  function currentLayoutSettings(): PrintLayoutSettings {
+    return {
+      cardSize,
+      template,
+      doubleSided,
+      showPhoto,
+      showSourceUrl,
+      showDescription,
+      showCutLines,
+    };
+  }
+
   function currentProject(idOverride?: string): PrintProject | null {
     if (!cookPilotUser || !items?.length) return null;
-    /**
-     * A book set aside is still a book.
-     *
-     * "Print as recipe cards instead" moves the cover, chapters and front
-     * matter into `stashedCookbook` and leaves `meta` almost empty — and the
-     * autosave that followed wrote that emptiness straight over the saved
-     * document. A purchased cookbook came back as `kind: "printProject"`,
-     * renamed after whichever recipe happened to be first, with its cover and
-     * dedication deleted from the record. It was recoverable (the stash is
-     * persisted and restores it) but until then the library showed no cookbook
-     * by that name at all, and the entry it did show looked unpaid.
-     *
-     * So the stash counts as proof of what this document IS, and supplies the
-     * fields the live meta no longer has. `settings.cookbookMode` still tracks
-     * the live view, so reopening lands the cook back in recipe cards where
-     * they left off — the DOCUMENT is a cookbook, the VIEW is cards.
-     */
-    const stash = projectMeta.meta.stashedCookbook;
-    const cover = projectMeta.meta.cover ?? stash?.cover;
+    // Cover, front matter, kind and the book's own settings all come from the
+    // working copy's metadata, and a book set aside still counts as a book on
+    // the way through — see `projectContentFromMeta`, which the device shelf
+    // and the PDF export read too.
+    const fromMeta = projectContentFromMeta(projectMeta.meta, currentLayoutSettings());
     // A name the cook typed outranks any we would derive — the same order
     // `projectDisplayTitle` applies in the workspace bar. Without this the
     // rename lived only in session metadata: the library went on showing the
     // cover's title, and reopening the project dropped the new name entirely.
     const defaultTitle =
       projectMeta.meta.projectTitle?.trim() ||
-      cover?.title ||
+      fromMeta.cover?.title ||
       items.find((item) => item.recipe)?.recipe?.title ||
       `Recipe cards — ${new Date().toLocaleDateString()}`;
     return assemblePrintProject({
+      ...fromMeta,
       // projectMeta owns the working copy's identity. It can intentionally
       // differ from the URL after a saved cookbook is converted to cards.
       // The override wins: when leaving files this content back over an
@@ -2213,42 +2218,8 @@ export default function PrintPage() {
       id: idOverride ?? savedProjectIdRef.current ?? cookbookProjectId ?? accountProjectId,
       ownerUid: cookPilotUser.uid,
       title: defaultTitle,
-      // Saved beside the resolved title so a reopened project can tell a rename
-      // from a cover name. Folding the two together would force a choice
-      // between losing the rename and having cover edits stop renaming the
-      // project.
-      projectTitle: projectMeta.meta.projectTitle,
       sections,
-      cover,
-      backCover: projectMeta.meta.backCover ?? stash?.backCover,
-      dedication: projectMeta.meta.dedication ?? stash?.dedication,
-      frontMatter: projectMeta.meta.frontMatter ?? stash?.frontMatter,
       revision: projectRevisionRef.current,
-      kind: isCookbookDocument ? "cookbook" : "printProject",
-      settings: {
-        cardSize,
-        template,
-        doubleSided,
-        showPhoto,
-        showSourceUrl,
-        showDescription,
-        showCutLines,
-        cookbookMode: projectMeta.meta.cookbookMode,
-        tableOfContents: projectMeta.meta.tableOfContents,
-        sectionDividers: projectMeta.meta.sectionDividers,
-        bookPreset: projectMeta.meta.cookbookPreset,
-        cookbookWelcomeCompleted: projectMeta.meta.cookbookWelcomeCompleted,
-        tocKicker: projectMeta.meta.tocKicker,
-        tocTitle: projectMeta.meta.tocTitle,
-        photoStyle: projectMeta.meta.photoStyle,
-        railSortMode: projectMeta.meta.railSortMode,
-      },
-      itemPlacements: projectMeta.meta.itemPlacements,
-      // Carries a book set aside by "switch to recipe cards". Without it the
-      // stash lived only in session metadata, so reopening the saved card
-      // project found none and `startCookbook` scaffolded a brand-new book over
-      // the one the cook was promised had merely been tucked away.
-      stashedCookbook: projectMeta.meta.stashedCookbook,
     });
   }
 
@@ -2798,35 +2769,33 @@ export default function PrintPage() {
    */
   function currentExportProject(): PrintProject | null {
     if (!items?.length) return null;
-    const stash = projectMeta.meta.stashedCookbook;
-    const cover = projectMeta.meta.cover ?? stash?.cover;
+    /**
+     * Two fields the SAVE carries and a render must not, dropped here by name
+     * rather than by having been forgotten — which is what they were before
+     * this read `projectContentFromMeta` alongside the save.
+     *
+     * `stashedCookbook` is an entire second book. The renderer never draws it,
+     * and sending it means uploading every set-aside recipe over two hops to
+     * print a book that does not contain them (the same reasoning
+     * `coverWrapProject` gives for stripping it again).
+     *
+     * `projectTitle` is the library's name for this project, not the book's.
+     * What goes on the cover is the cover's own title, which is what `title`
+     * below passes.
+     */
+    const { stashedCookbook: _setAside, projectTitle: _libraryName, ...fromMeta } =
+      projectContentFromMeta(projectMeta.meta, currentLayoutSettings());
     return assemblePrintProject({
+      ...fromMeta,
       id: cookbookProjectId,
       ownerUid: cookPilotUser?.uid ?? "",
-      title: cover?.title,
+      title: fromMeta.cover?.title,
       sections,
-      cover,
-      backCover: projectMeta.meta.backCover ?? stash?.backCover,
-      dedication: projectMeta.meta.dedication ?? stash?.dedication,
-      frontMatter: projectMeta.meta.frontMatter ?? stash?.frontMatter,
+      // This export IS the book, whatever the live view is set to. A cook who
+      // switched to recipe cards and then exported the stashed book still gets
+      // a book.
       kind: "cookbook",
-      settings: {
-        cardSize,
-        template,
-        doubleSided,
-        showPhoto,
-        showSourceUrl,
-        showDescription,
-        showCutLines,
-        cookbookMode: true,
-        tableOfContents: projectMeta.meta.tableOfContents,
-        sectionDividers: projectMeta.meta.sectionDividers,
-        tocKicker: projectMeta.meta.tocKicker,
-        tocTitle: projectMeta.meta.tocTitle,
-        photoStyle: projectMeta.meta.photoStyle,
-        railSortMode: projectMeta.meta.railSortMode,
-      },
-      itemPlacements: projectMeta.meta.itemPlacements,
+      settings: { ...fromMeta.settings, cookbookMode: true },
     });
   }
 
@@ -4067,6 +4036,19 @@ export default function PrintPage() {
   // promise of modality was never actually kept for assistive tech.
   const configPanelRef = useRef<HTMLElement>(null);
   useModalFocus(configPanelRef, () => setMobileDrawer(null), { disabled: !mobileDrawer });
+  /**
+   * And Back closes it, like every other overlay in the app.
+   *
+   * This drawer and the structure sheet are the two overlays that do not go
+   * through `Dialog`, which is where `useBackDismiss` is applied for everything
+   * else — so they were the two where the device Back gesture fell through to
+   * the router instead. On /print that is not a surprise, it is a loss: leaving
+   * lands on the home page, which files the project and starts clean, so a Back
+   * meant to shut a drawer read as the recipes having been deleted. These are
+   * also the only two overlays that are MOBILE-ONLY, which is precisely where
+   * Back is the close gesture and there is no Escape key to reach for instead.
+   */
+  useBackDismiss(Boolean(mobileDrawer), () => setMobileDrawer(null));
   const [sizeMenuOpen, setSizeMenuOpen] = useState(false);
   const [settingsMenuOpen, setSettingsMenuOpen] = useState(false);
 
@@ -4464,8 +4446,22 @@ export default function PrintPage() {
     if (pendingFocusRecipeId === pendingId) setPendingFocusRecipeId(null);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [pendingFocusNavId, pendingFocusRecipeId, navItems, cookbookView, spreads]);
-  // Close the rail's Add overflow on an outside click. Escape also clears any
-  // organizer selection; normal recipe clicks manage selection themselves.
+  /**
+   * Close the rail's Add overflow on an outside click. Escape also clears any
+   * organizer selection; normal recipe clicks manage selection themselves.
+   *
+   * The one dismissal in the app that deliberately is NOT `useMenuDismiss`, so
+   * it does not read as the last copy nobody got round to. Two reasons, either
+   * of which would be enough:
+   *
+   * - The Add menu is PORTALLED to the body (see `recipe-page-rail__add-menu`
+   *   in PageRail), so "inside" is not `contains` on one ref — the hook's whole
+   *   containment test. Teaching it a second ref or a selector to cover this
+   *   one caller is how a shared thing becomes a confusing one.
+   * - Escape here does two jobs. It shuts the menu AND clears the rail
+   *   selection, which is page state the rail's own menus have no business
+   *   touching.
+   */
   useEffect(() => {
     const hasSelection = effectiveRailSelection.size >= 2;
     if (!addMenuOpen && !hasSelection) return;

@@ -1,6 +1,8 @@
 "use client";
 
-import type { Dispatch, SetStateAction } from "react";
+import { useCallback, useRef, type Dispatch, type SetStateAction } from "react";
+import { useBackDismiss } from "@/lib/useBackDismiss";
+import { useModalFocus } from "@/lib/useModalFocus";
 import { Checkbox, SelectTile } from "@/components/Controls";
 import {
   XIcon,
@@ -60,6 +62,27 @@ export function MobileStructureSheet({
   structureSheetOpen,
   setStructureSheetOpen,
 }: MobileStructureSheetProps) {
+    const sheetRef = useRef<HTMLElement>(null);
+    /**
+     * The two things this sheet claimed and did not do.
+     *
+     * It carries `role="dialog"` and `aria-modal="true"`, and had neither a
+     * focus trap nor Escape — the promise of modality was never kept — and no
+     * history entry, so the device Back gesture fell straight through to the
+     * router. This is a phone-only surface, where Back IS the close gesture and
+     * there is no Escape key to reach for; and it lives on /print, where
+     * leaving files the project and starts clean, so a Back meant to shut this
+     * sheet read as the recipes having been deleted.
+     *
+     * Everything that goes through `Dialog` has had both of these all along
+     * (see components/Dialog). This sheet is a bottom sheet rather than a
+     * dialog — a different affordance, deliberately not `Dialog` — but that is
+     * no reason for it to dismiss differently.
+     */
+    const closeSheet = useCallback(() => setStructureSheetOpen(false), [setStructureSheetOpen]);
+    useModalFocus(sheetRef, closeSheet, { disabled: !structureSheetOpen });
+    useBackDismiss(structureSheetOpen, closeSheet);
+
     if (!projectMeta.meta.cookbookMode) return null;
     const orderedIds = sections.flatMap((section) => section.items.map((item) => item.id));
     const recipeCount = orderedIds.length;
@@ -75,11 +98,15 @@ export function MobileStructureSheet({
           />
         )}
         <aside
+          ref={sheetRef}
           className={`recipe-structure-sheet no-print ${structureSheetOpen ? "is-open" : ""}`}
           role="dialog"
           aria-modal={structureSheetOpen ? "true" : undefined}
           aria-label="Pages and structure"
           aria-hidden={structureSheetOpen ? undefined : "true"}
+          /* Focusable only while it is a dialog, so the focus trap has somewhere
+             to land in a sheet whose controls are all scrolled out of reach. */
+          tabIndex={structureSheetOpen ? -1 : undefined}
         >
           <div className="recipe-structure-sheet__grabber" aria-hidden />
           <header className="recipe-structure-sheet__header">

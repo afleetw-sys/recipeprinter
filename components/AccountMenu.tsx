@@ -1,19 +1,16 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { signOut } from "firebase/auth";
 import { AccountIcon, ChevronRightIcon, ICON_SIZE, SpinnerIcon, XIcon } from "@/components/icons";
 import { CookPilotLoginDialog, useCookPilotAuth } from "@/components/CookPilotAuth";
 import { getFirebaseAuth } from "@/lib/firebase/client";
 import { loadPrintProjectSummaries, summarizePrintProject } from "@/lib/printProjects";
-import { listableLocalProjects, loadLocalProjects } from "@/lib/localProjects";
+import { loadLocalProjects } from "@/lib/localProjects";
+import { libraryProjects } from "@/lib/projectLibrary";
+import { useMenuDismiss } from "@/lib/useMenuDismiss";
 
-/** This branch only runs signed OUT, where there is no account list to dedupe
-    the device shelf against. */
-const EMPTY_ACCOUNT: ReadonlySet<string> = new Set();
-import { isCookbookProjectUnlocked } from "@/lib/cookbookUnlocks";
-import { groupDuplicateProjects } from "@/lib/duplicateProjects";
 import { COOKBOOK_ENABLED } from "@/lib/cookbookProduct";
 import type { PrintProjectSummary } from "@/types/recipe";
 import type { User } from "firebase/auth";
@@ -118,34 +115,29 @@ export default function AccountMenu({
   const [reloadProjects, setReloadProjects] = useState(0);
   const [openingProjectId, setOpeningProjectId] = useState<string | null>(null);
   const rootRef = useRef<HTMLDivElement>(null);
-  // Stale forks left by an old autosave bug are hidden here as well as on
-  // /projects — a cook should never catch sight of the mess, whichever surface
-  // they open. The deletion itself belongs to the Projects page, which knows
-  // which copies are purchased; this menu only filters what it shows.
-  const visible = useMemo(
-    () => groupDuplicateProjects(projects).map((group) => group.keeper),
-    [projects],
-  );
   /**
-   * Signed out, the same two sections list what is saved in THIS browser.
-   * `/projects` has always shown these; the menu simply never asked for them,
-   * so the one place a visitor looks for their work had nothing in it while
-   * the page one click further on was full.
+   * The same two sections list what is saved in THIS browser, signed in or out.
+   *
+   * This used to bail out for a signed-in cook (`if (!open || user) return`),
+   * which is how the menu and `/projects` came to disagree: a cookbook bought
+   * while signed out records its unlock locally against the local project id,
+   * so until the webhook lands or the book is adopted it lives ONLY on this
+   * device — listed on `/projects`, and missing from the one control a cook
+   * actually reaches for. Signing in made a book you had paid for disappear.
    */
   const [localProjects, setLocalProjects] = useState<PrintProjectSummary[]>([]);
   useEffect(() => {
-    if (!open || user) return;
+    if (!open) return;
     setLocalProjects(loadLocalProjects().map(summarizePrintProject));
   }, [open, user]);
 
-  /* Same rule the /projects page follows: the device shelf is a safety net,
-     not a list of your saved work, so the only local-only thing that surfaces
-     is a cookbook that has been PAID FOR — hiding that would hide what the
-     money bought. Everything else a signed-out visitor has is a draft, and the
-     menu no longer offers it as though it were filed. */
-  const listed = user
-    ? visible
-    : listableLocalProjects(localProjects, EMPTY_ACCOUNT, isCookbookProjectUnlocked);
+  // One answer to "what is in my library", shared with /projects — see
+  // `libraryProjects` for the three rules and for what the two surfaces used to
+  // disagree about.
+  const listed = useMemo(
+    () => libraryProjects({ accountProjects: user ? projects : [], localProjects }),
+    [user, projects, localProjects],
+  );
   const cookbooks = listed.filter((project) => project.kind !== "printProject");
   const printProjects = listed.filter((project) => project.kind === "printProject");
   /** Signed out with an empty shelf there is nothing to head, so the whole
@@ -176,14 +168,17 @@ export default function AccountMenu({
     setOpen(true);
   }, [openWhenReady, ready]);
 
-  useEffect(() => {
-    if (!open) return;
-    const close = (event: PointerEvent) => {
-      if (!rootRef.current?.contains(event.target as Node)) setOpen(false);
-    };
-    window.addEventListener("pointerdown", close);
-    return () => window.removeEventListener("pointerdown", close);
-  }, [open]);
+  // The shared dismissal rather than a private copy of it. This one was the
+  // weakest of the copies — no Escape, no resize, and bubble-phase — while
+  // sitting in the header on every route.
+  //
+  // `closeOnScroll` off, the same call ZoomControl makes: the panel is
+  // absolutely positioned inside this root, so it rides the avatar rather than
+  // being left behind by a scroll. Escape here cannot collide with the sign-in
+  // dialog either — opening that closes the menu first (see the Sign in button
+  // below), which disables this.
+  const closeMenu = useCallback(() => setOpen(false), []);
+  useMenuDismiss(rootRef, closeMenu, { enabled: open, closeOnScroll: false });
 
   // Keyed on the uid, not the `user` object, which Firebase replaces on every
   // token refresh — the same fix the other account-keyed effects already got.

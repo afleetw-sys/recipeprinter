@@ -1,4 +1,4 @@
-import type { FeatureCard } from "@/components/seo/FeatureCards";
+import type { FeatureCard } from "@/lib/seoAssets";
 import { COOKBOOK_PRICE_FALLBACK } from "@/lib/cookbookProduct";
 
 // ─────────────────────────────────────────────────────────────────────────────

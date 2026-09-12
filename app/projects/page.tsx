@@ -21,10 +21,10 @@ import { track } from "@/lib/analytics";
 import { isCookbookProjectUnlocked, loadCookbookProjectUnlockIds } from "@/lib/cookbookUnlocks";
 import {
   deleteLocalProject,
-  listableLocalProjects,
   loadLocalProjects,
   pruneLocalProjects,
 } from "@/lib/localProjects";
+import { libraryProjects } from "@/lib/projectLibrary";
 import { photoGridLayout } from "@/lib/photoGrid";
 import type { PrintProjectSummary } from "@/types/recipe";
 
@@ -166,43 +166,18 @@ export default function ProjectsPage() {
   }, [accountProjects, localProjects]);
 
   /**
-   * One list, newest first. A book the account already holds wins over this
-   * device's copy of it — same id, same document, and the account copy is the
-   * one that stays current across devices.
+   * One list, newest first — and the same list the account dropdown shows, out
+   * of the same function. This page and that menu each used to compose their
+   * own answer from the same helpers and quietly disagreed; see
+   * `libraryProjects`, which now holds the rules and the reason.
    *
-   * WHAT GETS LISTED. Everything in the account, plus exactly one kind of
-   * local-only thing: a cookbook that has been PAID FOR.
-   *
-   * The workspace files a copy of any project on this device when you leave it
-   * — a safety net, not a decision you made — and this page used to list those
-   * copies beside real saved work, labelled "On this device" and "Saved on this
-   * device only". So a cookbook you never bought and never saved sat in your
-   * projects looking saved, while telling you it wasn't. Two badges to explain
-   * one thing that shouldn't have been there.
-   *
-   * Recipe cards are now in your projects because you pressed Save, and for no
-   * other reason. The exception is a paid cookbook, and it is not a
-   * half-measure: a signed-out purchase records its unlock in the LOCAL map
-   * (lib/cookbookUnlocks) against the local project id, so hiding that project
-   * would hide the thing the money bought. It stays listed until the account
-   * has it.
-   *
-   * Nothing is deleted here. The local shelf is untouched on disk; a draft you
-   * didn't save simply stops pretending it is filed.
+   * Nothing is deleted by listing. The local shelf is untouched on disk; a
+   * draft you didn't save simply stops pretending it is filed.
    */
-  const projects = useMemo(() => {
-    const merged = [
-      ...accountProjects,
-      ...listableLocalProjects(
-        localProjects,
-        new Set(accountProjects.map((project) => project.id)),
-        isCookbookProjectUnlocked,
-      ),
-    ];
-    return merged.sort(
-      (a, b) => Number(b.updatedAt ?? b.createdAt ?? 0) - Number(a.updatedAt ?? a.createdAt ?? 0),
-    );
-  }, [accountProjects, localProjects]);
+  const projects = useMemo(
+    () => libraryProjects({ accountProjects, localProjects }),
+    [accountProjects, localProjects],
+  );
 
   const cookbooks = projects.filter((project) => project.kind !== "printProject");
   const recipeCardProjects = projects.filter((project) => project.kind === "printProject");

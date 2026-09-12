@@ -1,3 +1,9 @@
+import { PRINTED_CARDS, type PrintedCard } from "@/lib/seoAssets";
+// Drawn here, declared in lib/seoAssets — re-exported so existing importers of
+// this module are unaffected.
+export { PRINTED_CARDS };
+export type { PrintedCard };
+
 // ─────────────────────────────────────────────────────────────────────────────
 // The catalogue of SEO landing-page photography: real printed recipe cards.
 //
@@ -10,43 +16,8 @@
 // Files live in /public/images. Swap or add photos by editing PRINTED_CARDS.
 // ─────────────────────────────────────────────────────────────────────────────
 
-type PrintedCard = {
-  src: string;
-  /** Natural pixel dimensions of the source photo (portrait phone shots). */
-  width: number;
-  height: number;
-  recipe: string;
-  template: string;
-  alt: string;
-};
 
 // The real card photos. Dimensions are the portrait phone-camera aspect (3:4);
 // next/image only uses the ratio, so approximate is fine.
-export const PRINTED_CARDS: Record<string, PrintedCard> = {
-  caprese: {
-    src: "/images/printed-cards/card-caprese-pasta-salad.jpeg",
-    width: 1200,
-    height: 1600,
-    recipe: "Caprese Pasta Salad",
-    template: "Bistro",
-    alt: "A Caprese pasta salad recipe card printed with RecipePrinter, standing on a sunny outdoor table.",
-  },
-  korean: {
-    src: "/images/printed-cards/card-korean-beef-bowl.jpeg",
-    width: 1200,
-    height: 1600,
-    recipe: "Korean Beef Bowl",
-    template: "Counter",
-    alt: "A Korean beef bowl recipe card printed with RecipePrinter, standing on a sunny outdoor table.",
-  },
-  pesto: {
-    src: "/images/printed-cards/card-basil-pesto.jpeg",
-    width: 1200,
-    height: 1600,
-    recipe: "Basil Pesto",
-    template: "Keepsake",
-    alt: "A basil pesto recipe card printed with RecipePrinter, standing on a sunny outdoor table.",
-  },
-};
 
 

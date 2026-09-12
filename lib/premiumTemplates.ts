@@ -1,4 +1,4 @@
-import type { RecipePrintTemplate } from "@/components/RecipeCardPrint";
+import type { RecipePrintTemplate } from "@/types/recipe";
 
 export const RECIPEPRINTER_OFFERING_ID = "premium_templates";
 

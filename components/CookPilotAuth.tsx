@@ -18,7 +18,6 @@ import {
   signOut,
   type User,
 } from "firebase/auth";
-import { httpsCallable } from "firebase/functions";
 import { getFirebaseAuth } from "@/lib/firebase/client";
 import { ensureRecipePrinterAccount } from "@/lib/firebase/recipePrinterAccount";
 import { friendlyAuthError } from "@/lib/friendlyErrors";
@@ -246,7 +245,15 @@ export async function checkEmailProviders(email: string): Promise<string[]> {
       const credential = await signInAnonymously(auth);
       temporaryUser = credential.user;
     }
-    const { getFns } = await import("@/lib/firebase/functions");
+    // Both halves dynamic, together — the shape every other callable site uses
+    // (lib/parser, lib/recipePrinterFreeTemplateClaim). `httpsCallable` was a
+    // STATIC import, which pulled `firebase/functions` into this chunk anyway,
+    // so the `await import` beside it bought nothing and the prewarm below was
+    // overlapping a download that had already happened.
+    const [{ httpsCallable }, { getFns }] = await Promise.all([
+      import("firebase/functions"),
+      import("@/lib/firebase/functions"),
+    ]);
     const checkUserProviders = httpsCallable<{ email: string }, { providers: string[] | null }>(
       getFns(),
       "checkUserProviders",

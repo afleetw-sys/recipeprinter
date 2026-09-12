@@ -1,5 +1,4 @@
-import type { RecipePrintTemplate } from "@/components/RecipeCardPrint";
-import type { CookbookFrontMatter, CoverConfig } from "@/types/recipe";
+import type { CookbookFrontMatter, CoverConfig, RecipePrintTemplate } from "@/types/recipe";
 
 /**
  * The book's opening page, from whichever field holds it.

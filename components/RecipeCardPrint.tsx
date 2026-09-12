@@ -29,7 +29,13 @@ import {
   type RecipeFace,
   type RecipeFaces,
 } from "@/lib/recipeCardLayout";
-import type { CoverConfig, Recipe } from "@/types/recipe";
+import type {
+  CardSectionLayout,
+  CoverConfig,
+  PrintCardSize,
+  Recipe,
+  RecipePrintTemplate,
+} from "@/types/recipe";
 import { markImageAvailable, markImageUnavailable } from "@/lib/imageFailure";
 import { chapterIntroFromRecipes } from "@/lib/chapterIntro";
 
@@ -49,45 +55,23 @@ export {
 // Printable recipe layouts. Compact cards keep readable text and move overflow
 // to a second side instead of squeezing the whole recipe smaller and smaller.
 
-export type PrintCardSize = "letter" | "card-6x4";
-
-export const PRINT_CARD_SIZE_OPTIONS: Array<{
-  id: PrintCardSize;
-  label: string;
-  detail: string;
-}> = [
-  { id: "letter", label: "Full page", detail: "Letter paper" },
-  { id: "card-6x4", label: "6 x 4 card", detail: "Landscape recipe card" },
-];
+// What a card IS now lives below this file: the type names in types/recipe.ts
+// (which needs them for `PrintProjectSettings`) and the option tables in
+// lib/printTemplates.ts. This file draws cards; it no longer defines the
+// vocabulary the rest of the app describes them with, because doing so made the
+// bottom layer of the app depend on a 2,100-line React component.
+//
+// Re-exported here so the twenty-odd modules that import these from
+// "@/components/RecipeCardPrint" keep working unchanged.
+export type { CardSectionLayout, PrintCardSize, RecipePrintTemplate } from "@/types/recipe";
+export { PRINT_CARD_SIZE_OPTIONS, RECIPE_PRINT_TEMPLATE_OPTIONS } from "@/lib/printTemplates";
 
 /** The `.recipe-print-preview--*` class for a card size — applied by anything
     rendering a card (preview AND the off-screen measurer) so measurement matches
-    what prints. */
+    what prints. Stays here: it is a class name, not vocabulary. */
 export function previewSizeClass(size: PrintCardSize): string {
   return `recipe-print-preview--${size}`;
 }
-
-export type RecipePrintTemplate =
-  | "classic"
-  | "heirloom"
-  | "bistro"
-  | "pantry"
-  | "counter"
-  | "keepsake";
-export type CardSectionLayout = "standard" | "stacked";
-
-export const RECIPE_PRINT_TEMPLATE_OPTIONS: Array<{
-  id: RecipePrintTemplate;
-  label: string;
-  detail: string;
-}> = [
-  { id: "classic", label: "Classic", detail: "Cornflower and slate, clean cookbook card" },
-  { id: "pantry", label: "Pantry", detail: "Fine ruled lines with small ingredient sketches" },
-  { id: "counter", label: "Counter", detail: "Black-and-white notes with tiny counter details" },
-  { id: "heirloom", label: "Heirloom", detail: "Cream stock, red utensil keepsake" },
-  { id: "keepsake", label: "Keepsake", detail: "Cream recipe-box card with classic family style" },
-  { id: "bistro", label: "Bistro", detail: "Blue checks, tomato red, playful kitchen card" },
-];
 
 
 // Bistro's checker spine, as explicit vector rects.
