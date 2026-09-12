@@ -5290,6 +5290,41 @@ textarea.recipe-card__toc-title {
   background-size: var(--heirloom-band-art);
 }
 
+/* …and on a 6x4 the band gives way to the source link rather than the other
+   way round, because the lift below is priced in content. The band runs from
+   `--heirloom-band-bottom` to that plus `--heirloom-band-height` above the
+   card's bottom edge, and the footer is anchored at
+   `--recipe-card-padding-bottom` — which at this size lands inside it. That is
+   the same collision `.recipe-print-preview--letter …__footer` fixes by raising
+   the footer, and by that rule's own reasoning the raise is what a 6x4 cannot
+   afford: 0.24in off a four-inch card, on the tightest combination we print, to
+   move a URL off some line art. An ingredient pushed onto a second face is a
+   worse outcome than a missing ornament. Not drawing the band costs no height
+   at all.
+
+   A measured clearance wouldn't hold here anyway. Heirloom's footer is
+   `position: relative` rather than absolute — `.recipe-card > *` above catches
+   it — so its offset shifts the painted link without reserving the space, and
+   its resting height moves with the content above it. Measured on one card the
+   link's box cleared the band's top edge by under 7px; a fuller card closes
+   that. Art that isn't drawn cannot collide on any of them.
+
+   Only the face carrying the link loses it, so a card with the link switched
+   off is untouched and every continuation keeps its band. The
+   `:not(--back):not(--continued)` is what earns that second half, and it is not
+   belt-and-braces: a continuation still has the source `<span>` in its DOM (its
+   footer is hidden with `display: none` rather than left unrendered — see
+   `.recipe-card--back .recipe-card__footer`), so `:has()` matches there too,
+   and without the exclusions the band went missing from faces that never had a
+   link to collide with. Same exclusions the footer's own reserve rule uses. */
+.recipe-print-preview--card-6x4
+  .recipe-template--heirloom
+  .recipe-card:not(.recipe-card--back):not(.recipe-card--continued):has(
+    .recipe-card__footer-source
+  )::before {
+  display: none;
+}
+
 .recipe-template--heirloom .recipe-card__header {
   border-bottom: 0;
 }
