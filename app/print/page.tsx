@@ -2473,7 +2473,6 @@ export default function PrintPage() {
     selectedTemplateLocked,
     hasUnclaimedFreeTemplate,
     canClaimSelectedTemplateFree,
-    refreshCustomerInfo,
     unlockTemplateAndPrint,
     claimTemplateAndPrint,
   } = usePremiumTemplatePurchase({
@@ -2499,11 +2498,9 @@ export default function PrintPage() {
     purchaseCookbookAndContinue,
   } = useCookbookPurchase({
     revenueCatUserId,
-    customerInfo,
     cookPilotUser,
     cookbookMode: Boolean(projectMeta.meta.cookbookMode),
     projectId: cookbookProjectId,
-    refreshCustomerInfo,
     showToast,
     clearToast: () => setToastMessage(null),
     // Cookbook protection is handled by the persistent banner in cookbook

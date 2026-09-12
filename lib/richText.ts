@@ -5,13 +5,20 @@
  * `**bold**`, `*italic*` — rather than as HTML or a new node type. Three
  * reasons, all of them about what already exists:
  *
- *  - the fields are edited in ordinary `<textarea>`/`<input>` elements, and
- *    wrapping a selection is something those can do natively. Rich text would
- *    have meant `contentEditable`, which is a rewrite of every inline field;
  *  - nothing in the saved document changes shape, so every cookbook saved
  *    before this opens unchanged and no migration is needed;
  *  - a marker that is never parsed degrades to visible punctuation, not to a
  *    broken page — which is the failure you want in a book someone prints.
+ *
+ * The fields were plain `<textarea>`/`<input>` when this was written, and
+ * wrapping a selection was something those could do natively — so this module
+ * also carried `toggleRichText`, which rewrote a string around a selection the
+ * way Cmd+B does. The fields are `contentEditable` now (see
+ * components/InlineRichField.tsx); the browser applies the styling itself
+ * through `document.execCommand`, and the DOM is converted back to markers on
+ * blur by `nodesToRichText` below. That made the selection-editing half dead
+ * code, and it has been removed. The storage format survived the change on the
+ * two reasons above, which is the point of having chosen it for those.
  *
  * The cost is that `*` becomes meaningful, so parsing is deliberately strict:
  * a marker only opens when it is followed by non-space and only closes when
@@ -93,76 +100,6 @@ export function stripRichText(input: string): string {
   return parseRichText(input)
     .map((segment) => segment.text)
     .join("");
-}
-
-/** Whether text carries any formatting at all — lets callers skip the parse. */
-export function hasRichText(input: string): boolean {
-  return input.includes(ITALIC) && parseRichText(input).some((s) => s.bold || s.italic);
-}
-
-export interface SelectionEdit {
-  value: string;
-  selectionStart: number;
-  selectionEnd: number;
-}
-
-/**
- * Bold/italic applied to a selection, the way Cmd+B behaves in any editor:
- * wraps it, or unwraps it if it is already wrapped. With nothing selected it
- * drops in an empty pair and puts the cursor between them, so the shortcut can
- * be pressed before typing rather than only after.
- *
- * Returns the new value AND where the selection should land, because a caret
- * left where it was would sit inside the markers it just added.
- */
-export function toggleRichText(
-  value: string,
-  selectionStart: number,
-  selectionEnd: number,
-  style: "bold" | "italic",
-): SelectionEdit {
-  const marker = style === "bold" ? BOLD : ITALIC;
-  const before = value.slice(0, selectionStart);
-  const selected = value.slice(selectionStart, selectionEnd);
-  const after = value.slice(selectionEnd);
-
-  // For italic, a neighbouring `**` is BOLD, not a pair of italic markers —
-  // without this, italicising an already-bold selection stripped its bold
-  // instead of adding to it.
-  const boldNeighbour = style === "italic" && (before.endsWith(BOLD) || after.startsWith(BOLD));
-
-  // Already wrapped, markers just outside the selection: unwrap.
-  if (!boldNeighbour && before.endsWith(marker) && after.startsWith(marker)) {
-    const trimmedBefore = before.slice(0, -marker.length);
-    return {
-      value: trimmedBefore + selected + after.slice(marker.length),
-      selectionStart: trimmedBefore.length,
-      selectionEnd: trimmedBefore.length + selected.length,
-    };
-  }
-
-  // Already wrapped, markers inside the selection: unwrap those instead.
-  const boldInside =
-    style === "italic" && selected.startsWith(BOLD) && selected.endsWith(BOLD);
-  if (
-    !boldInside &&
-    selected.startsWith(marker) &&
-    selected.endsWith(marker) &&
-    selected.length > marker.length * 2
-  ) {
-    const inner = selected.slice(marker.length, -marker.length);
-    return {
-      value: before + inner + after,
-      selectionStart: before.length,
-      selectionEnd: before.length + inner.length,
-    };
-  }
-
-  return {
-    value: `${before}${marker}${selected}${marker}${after}`,
-    selectionStart: before.length + marker.length,
-    selectionEnd: before.length + marker.length + selected.length,
-  };
 }
 
 /* ── contentEditable ⇄ markers ─────────────────────────────────────────────

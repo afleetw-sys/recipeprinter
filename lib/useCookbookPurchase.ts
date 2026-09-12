@@ -2,7 +2,6 @@
 
 import { useEffect, useState } from "react";
 import type { User } from "firebase/auth";
-import type { CustomerInfo } from "@revenuecat/purchases-js";
 import { COOKBOOK_PRICE_FALLBACK } from "@/lib/cookbookProduct";
 import { friendlyPurchaseSetupError } from "@/lib/friendlyErrors";
 import { track, truncateReason } from "@/lib/analytics";
@@ -21,30 +20,31 @@ interface UseCookbookPurchaseOptions {
   /** Shared with usePremiumTemplatePurchase so this doesn't re-run RevenueCat
       identify/link/configure a second time for the same browser session. */
   revenueCatUserId: string | null;
-  customerInfo: CustomerInfo | null;
   cookPilotUser: User | null;
   cookbookMode: boolean;
   projectId: string;
-  refreshCustomerInfo: (userId?: string | null) => Promise<CustomerInfo | null>;
   showToast: (message: string) => void;
   clearToast: () => void;
   onFreshPurchase: () => void;
 }
 
 /**
- * Owns the "make it a cookbook" paywall: whether the cookbook upgrade is
- * already unlocked for this customer, its live RevenueCat price, and the
- * purchase flow triggered at export time (mirrors
- * usePremiumTemplatePurchase's unlock-then-continue shape, one entitlement
- * for the whole cookbook experience instead of per-template).
+ * Owns the "make it a cookbook" paywall: whether this project is already
+ * unlocked, and the purchase flow triggered at export time. Mirrors
+ * usePremiumTemplatePurchase's unlock-then-continue shape, against a
+ * per-project unlock rather than a per-template entitlement.
+ *
+ * It takes no RevenueCat customer, deliberately. It used to accept
+ * `customerInfo` and `refreshCustomerInfo` and read neither — both were left
+ * behind when the account-wide entitlement bridge below was deleted, and while
+ * they sat in the signature this looked like a hook that consults entitlements.
+ * It does not. Access here is one thing: a server-written unlock document.
  */
 export function useCookbookPurchase({
   revenueCatUserId,
-  customerInfo,
   cookPilotUser,
   cookbookMode,
   projectId,
-  refreshCustomerInfo,
   showToast,
   clearToast,
   onFreshPurchase,

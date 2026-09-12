@@ -382,26 +382,32 @@ function releaseCheckoutMount() {
     .forEach((node) => vendorSubtreeRoot(node).remove());
 }
 
-export async function purchaseRecipePrinterTemplate({
-  userId,
-  email,
-  template,
-}: {
-  userId: string;
-  email?: string | null;
-  template: PremiumRecipePrintTemplate;
-}): Promise<{ customerInfo: CustomerInfo; cancelled: boolean }> {
-  const purchases = await getPurchases(userId);
-  const rcPackage = await packageForTemplate(purchases, template);
-
+/**
+ * Take one package to checkout.
+ *
+ * The two exported purchases below differ only in which package they resolve
+ * and what they tag the sale with. Everything after that is identical and is
+ * identical for a reason: a cancel has to come back as `cancelled` rather than
+ * throwing (the caller shows a different message), and `releaseCheckoutMount`
+ * has to run down EVERY path including the throw, because RevenueCat and
+ * Stripe each leave a node behind that otherwise floats over the print preview
+ * and prints with the recipe.
+ *
+ * That made it two copies of one delicate `try/catch/finally`, which is how a
+ * fix lands in one of them. Same argument as `findPackage` above: the part
+ * that must not be forgotten belongs in one place.
+ */
+async function checkout(
+  purchases: Purchases,
+  rcPackage: Package,
+  email: string | null | undefined,
+  metadata: Record<string, string>,
+): Promise<{ customerInfo: CustomerInfo; cancelled: boolean }> {
   try {
     const result = await purchases.purchase({
       rcPackage,
       customerEmail: email ?? undefined,
-      metadata: {
-        product: "recipeprinter",
-        template,
-      },
+      metadata,
       skipSuccessPage: true,
     });
     return { customerInfo: result.customerInfo, cancelled: false };
@@ -414,6 +420,23 @@ export async function purchaseRecipePrinterTemplate({
   } finally {
     releaseCheckoutMount();
   }
+}
+
+export async function purchaseRecipePrinterTemplate({
+  userId,
+  email,
+  template,
+}: {
+  userId: string;
+  email?: string | null;
+  template: PremiumRecipePrintTemplate;
+}): Promise<{ customerInfo: CustomerInfo; cancelled: boolean }> {
+  const purchases = await getPurchases(userId);
+  const rcPackage = await packageForTemplate(purchases, template);
+  return checkout(purchases, rcPackage, email, {
+    product: "recipeprinter",
+    template,
+  });
 }
 
 async function packageForCookbook(purchases: Purchases): Promise<Package> {
@@ -440,30 +463,14 @@ export async function purchaseRecipePrinterCookbook({
   // Give the cookbook-unlock webhook a reliable purchase→project map. Webhook
   // payloads carry subscriber attributes, but not the purchase-time `metadata`
   // below — so set both (attribute for the server, metadata kept for parity).
-  // See docs/cookbook-unlock-webhook.md. Harmless until the webhook exists.
+  // See docs/cookbook-unlock-webhook.md.
   await purchases.setAttributes({ cookbook_project_id: projectId }).catch(() => undefined);
 
-  try {
-    const result = await purchases.purchase({
-      rcPackage,
-      customerEmail: email ?? undefined,
-      metadata: {
-        product: "recipeprinter",
-        offer: "cookbook",
-        cookbook_project_id: projectId,
-      },
-      skipSuccessPage: true,
-    });
-    return { customerInfo: result.customerInfo, cancelled: false };
-  } catch (error) {
-    const { ErrorCode } = await loadPurchasesModule();
-    if (isPurchasesError(error) && error.errorCode === ErrorCode.UserCancelledError) {
-      return { customerInfo: await purchases.getCustomerInfo(), cancelled: true };
-    }
-    throw error;
-  } finally {
-    releaseCheckoutMount();
-  }
+  return checkout(purchases, rcPackage, email, {
+    product: "recipeprinter",
+    offer: "cookbook",
+    cookbook_project_id: projectId,
+  });
 }
 
 function isPurchasesError(error: unknown): error is PurchasesError {
