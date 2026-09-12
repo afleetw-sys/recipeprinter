@@ -82,6 +82,22 @@ export async function takePendingImport(): Promise<PendingImport | null> {
   return descriptor;
 }
 
+/**
+ * Is an import already on its way in, without consuming it?
+ *
+ * Synchronous on purpose, and that is the whole point: `takePendingImport` is
+ * async because image bytes live in IndexedDB, so a page asking "am I about to
+ * receive recipes" could not get an answer until after its first paint — by
+ * which time it had already committed to a whole-page loading screen. The
+ * descriptor is in sessionStorage and answers on the first render.
+ *
+ * Deliberately does NOT read the bytes or clear anything. It is a question, and
+ * `takePendingImport` remains the only way to collect the payload.
+ */
+export function hasPendingImport(): boolean {
+  return sessionStore.getJson<StoredDescriptor>(DESCRIPTOR_KEY) !== null;
+}
+
 /** Drop any waiting pending import without consuming it (best-effort). */
 export function clearPendingImport(): void {
   sessionStore.remove(DESCRIPTOR_KEY);
