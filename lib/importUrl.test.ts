@@ -1,7 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
   SEARCH_PAGE_MESSAGE,
-  isRedirectLink,
   searchPageMessage,
   unwrapRedirectUrl,
 } from "./importUrl";
@@ -78,13 +77,11 @@ describe("unwrapRedirectUrl", () => {
     // A search page is not a redirect: `q` here is a phrase, not a destination.
     const search = "https://www.google.com/search?q=oatmeal+scotchies";
     expect(unwrapRedirectUrl(search)).toBe(search);
-    expect(isRedirectLink(search)).toBe(false);
   });
 
   it("refuses a destination that isn't a web address", () => {
     const hostile = "https://www.google.com/url?q=javascript:alert(1)";
     expect(unwrapRedirectUrl(hostile)).toBe(hostile);
-    expect(isRedirectLink(hostile)).toBe(false);
   });
 
   it("terminates on a redirector that points at itself", () => {

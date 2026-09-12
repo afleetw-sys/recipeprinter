@@ -23,7 +23,3 @@ export function clampImageZoom(zoom: number): number {
   if (!Number.isFinite(zoom)) return IMAGE_ZOOM_MIN;
   return Math.min(IMAGE_ZOOM_MAX, Math.max(IMAGE_ZOOM_MIN, zoom));
 }
-
-export function formatImageZoom(zoom: number): string {
-  return `${Math.round(zoom * 100)}%`;
-}

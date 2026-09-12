@@ -18,14 +18,6 @@ export function applyStyleToFocusedField(style: "bold" | "italic"): boolean {
   return true;
 }
 
-/** Whether a rich field has focus — the toolbar group only belongs on screen
-    while one does. */
-export function hasFocusedRichField(): boolean {
-  if (typeof document === "undefined") return false;
-  const active = document.activeElement;
-  return active instanceof HTMLElement && active.isContentEditable;
-}
-
 /** The marker text currently in the focused rich field, or null when focus is
     elsewhere.
 

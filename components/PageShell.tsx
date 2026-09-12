@@ -1,7 +1,5 @@
-import Link from "next/link";
 import { SiteHeader } from "@/components/SiteHeader";
 import { SiteFooter } from "@/components/SiteFooter";
-import { ICON_SIZE, PrintIcon } from "@/components/icons";
 
 // Layout for the supporting content pages (How it works, Features, FAQ, About).
 // A readable single-column article between the shared header and footer; these
@@ -33,15 +31,5 @@ export function PageHeader({
       </h1>
       <p className="mt-cp-4 text-ink-soft text-cp-body-lg leading-relaxed">{lede}</p>
     </header>
-  );
-}
-
-/** Shared call-to-action that sends the reader back to the tool. */
-export function StartPrintingCta({ label = "Start printing recipes" }: { label?: string }) {
-  return (
-    <Link href="/" className="btn btn-primary">
-      <PrintIcon size={ICON_SIZE.md} />
-      {label}
-    </Link>
   );
 }
