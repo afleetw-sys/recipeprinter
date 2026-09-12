@@ -1,8 +1,8 @@
 "use client";
 
 import { useCallback, useRef, type Dispatch, type SetStateAction } from "react";
-import { useBackDismiss } from "@/components/useBackDismiss";
-import { useModalFocus } from "@/components/useModalFocus";
+import { useBackDismiss } from "@/lib/useBackDismiss";
+import { useModalFocus } from "@/lib/useModalFocus";
 import { Checkbox, SelectTile } from "@/components/Controls";
 import {
   XIcon,

@@ -28,8 +28,8 @@ import { ImagePicker } from "@/components/ImagePicker";
 import { Dialog } from "@/components/Dialog";
 import { Checkbox, CheckboxGroup } from "@/components/Controls";
 import { RecipeLoadingState } from "@/components/RecipeLoadingState";
-import { useModalFocus } from "@/components/useModalFocus";
-import { useBackDismiss } from "@/components/useBackDismiss";
+import { useModalFocus } from "@/lib/useModalFocus";
+import { useBackDismiss } from "@/lib/useBackDismiss";
 import {
   PRINT_CARD_SIZE_OPTIONS,
   type PrintCardSize,
