@@ -34,6 +34,41 @@ import {
     with meaningful content of its own, which is the point. */
 const CONTAINMENT_THRESHOLD = 0.9;
 
+/**
+ * Nothing created from here on can be fallout from the fork bug, so nothing
+ * created from here on is ever deleted by this module.
+ *
+ * Containment alone cannot tell a stale fork from a book somebody meant to
+ * make, because the two are structurally identical: both are a second project
+ * id holding the same recipes. And the product now has a button that produces
+ * exactly that shape on purpose. "New cookbook" mints a fresh project id and
+ * DELIBERATELY keeps the recipe list — the recipes you have are what the next
+ * book gets made from — so building a second book out of the first one's
+ * recipes leaves the older book fully contained in the newer one, which scored
+ * 1.0 here and had it silently deleted on the next visit to /projects. Someone
+ * made two books and came back to one.
+ *
+ * A date is what separates them, because the fork bug is a fixed, closed
+ * population rather than an ongoing one. It was fixed in `a725b8a` on
+ * 2026-08-14 (adoption became an upsert and /print reattaches before saving),
+ * and this module shipped in the same commit to clear up what it had already
+ * produced. A project created after that is the current code's work and is
+ * therefore somebody's decision.
+ *
+ * Deliberately a hard date and not a lookback window: the population this
+ * cleans up stops growing, so a window would keep swallowing new work forever
+ * to catch a set that is already complete. Everything here can be deleted once
+ * the accounts holding those forks have been through /projects — which is what
+ * the whole module is waiting to become true.
+ */
+const FORK_ERA_ENDED_AT = Date.UTC(2026, 7, 15);
+
+/** Whether a copy is old enough to be fork fallout. A document with no
+    `createdAt` predates the field, which puts it well inside the era. */
+function couldBeForkFallout(project: PrintProjectSummary): boolean {
+  return Number(project.createdAt || 0) < FORK_ERA_ENDED_AT;
+}
+
 // Reads the member ids off `SectionMeta`, which is what the summary carries and
 // what this file always actually compared. It used to reach through
 // `section.items[].id`, which meant the sweeper needed every recipe of every
@@ -81,9 +116,17 @@ export function groupDuplicateProjects(projects: PrintProjectSummary[]): Duplica
   for (const project of byRecency) {
     // Checked against every copy already kept, newest first: a lineage that
     // drifted across many forks is still contained in one of them.
-    const group = groups.find(
-      (candidate) => projectContainment(project, candidate.keeper) >= CONTAINMENT_THRESHOLD,
-    );
+    //
+    // A project from after the fork era never joins a group at all — it starts
+    // its own and survives as a keeper (see `FORK_ERA_ENDED_AT`). Tested here
+    // rather than filtered out of the input so it still ANCHORS a group: a
+    // deliberate new book made from an old one's recipes must not stop that old
+    // book's genuine forks from being recognised.
+    const group = couldBeForkFallout(project)
+      ? groups.find(
+          (candidate) => projectContainment(project, candidate.keeper) >= CONTAINMENT_THRESHOLD,
+        )
+      : undefined;
     if (group) group.duplicates.push(project);
     else groups.push({ keeper: project, duplicates: [] });
   }
