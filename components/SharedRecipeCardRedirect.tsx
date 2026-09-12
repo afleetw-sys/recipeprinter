@@ -5,7 +5,6 @@ import { useRouter } from "next/navigation";
 import { SiteHeader } from "@/components/SiteHeader";
 import { createCurrentPrintJob, seedSharedQueueItem } from "@/lib/queue";
 import { writePrintSettings } from "@/lib/printSettings";
-import { incrementSharedRecipeCardViewCount } from "@/lib/sharedRecipeCards";
 import type { SharedRecipeCard } from "@/types/sharedRecipeCard";
 
 /**
@@ -21,9 +20,18 @@ export function SharedRecipeCardRedirect({ card }: { card: SharedRecipeCard }) {
   const router = useRouter();
 
   useEffect(() => {
-    // Rough visit count, not detailed analytics — best-effort, never blocks the handoff.
-    incrementSharedRecipeCardViewCount(card.slug).catch(() => {});
-
+    // No view counter here any more.
+    //
+    // It was one Firestore write per visit against a single document, which is
+    // the one shape Firestore is worst at — a share link that got any traction
+    // would have pushed that doc past its sustained write ceiling and started
+    // failing. And it was write-only: nothing ever read `viewCount` back, so
+    // the number was never seen by anyone. PostHog already counts this page.
+    //
+    // Removing it takes the whole Firebase SDK off this route. Everything left
+    // below is browser storage, so a shared link now hands off to /print
+    // without loading app, auth, app-check and firestore — or running
+    // reCAPTCHA — on a page whose entire job is to redirect.
     const id = seedSharedQueueItem(card.recipe, card.slug);
     createCurrentPrintJob([id]);
     writePrintSettings({

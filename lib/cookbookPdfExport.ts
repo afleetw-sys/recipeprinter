@@ -73,6 +73,26 @@ interface RenderRequest {
   coverSheet?: CoverSheetSpec;
 }
 
+/**
+ * The book with its contents taken out, for the cover-wrap render.
+ *
+ * A wrap is three panels — back, spine, front — and `CoverWrapDocument` reads
+ * nothing but `cover`, `backCover` and `settings.template`. It short-circuits
+ * before the layout pipeline entirely, so not one recipe is ever drawn. Sending
+ * the whole book anyway meant a hardcover uploaded every recipe TWICE, over two
+ * hops each time (browser → this app's function → the renderer), to draw a
+ * cover we had already sent once.
+ *
+ * Subtractive rather than an allowlist, deliberately. Listing the fields the
+ * wrap needs would silently drop the next one somebody adds to it; removing the
+ * three fields that hold the recipes cannot, because everything else still
+ * travels. `sections` is the book, `itemPlacements` is per-recipe layout, and
+ * `stashedCookbook` is an entire second book kept beside the first.
+ */
+export function coverWrapProject(project: PrintProject): PrintProject {
+  return { ...project, sections: [], itemPlacements: undefined, stashedCookbook: undefined };
+}
+
 async function renderPdf(request: RenderRequest): Promise<Blob> {
   const idToken = await currentIdToken();
   const response = await fetch("/api/cookbook-pdf", {
@@ -193,7 +213,10 @@ export async function downloadCookbookPdf(
     ? coverWrapGeometryFromSheet(resolved, coverSheet)
     : coverWrapGeometry(resolved, pageCount);
   const wrap = await renderPdf({
-    project,
+    // The cover, not the book — see `coverWrapProject`. The page count the
+    // spine is sized from was already read off the interior above, so nothing
+    // here needs the recipes.
+    project: coverWrapProject(project),
     preset,
     mode: "cover-wrap",
     pageCount,

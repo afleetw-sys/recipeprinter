@@ -198,14 +198,15 @@ const COOKBOOK_TEMPLATE_ROTATION_KEY = "recipeprinter:cookbook-template-rotation
 // and it prints as-is.
 const DEFAULT_DEDICATION_BODY = "For the ones who taught us to cook, and who made every table feel like home.";
 function nextCookbookTemplate(): RecipePrintTemplate {
+  // Through `localStore` rather than `window.localStorage`: the read here was
+  // bare, and reading storage THROWS (it does not return null) in Safari
+  // private mode and anywhere site data is blocked — which would have taken
+  // the whole new-cookbook path down over a cosmetic default. A rotation that
+  // never persists just means everyone starts at the same theme.
   if (typeof window === "undefined") return COOKBOOK_TEMPLATE_ROTATION[0];
-  const prev = Number(window.localStorage.getItem(COOKBOOK_TEMPLATE_ROTATION_KEY));
+  const prev = Number(localStore.get(COOKBOOK_TEMPLATE_ROTATION_KEY));
   const next = ((Number.isFinite(prev) ? prev : -1) + 1) % COOKBOOK_TEMPLATE_ROTATION.length;
-  try {
-    window.localStorage.setItem(COOKBOOK_TEMPLATE_ROTATION_KEY, String(next));
-  } catch {
-    /* private mode / quota: a non-persisted rotation is still fine */
-  }
+  localStore.set(COOKBOOK_TEMPLATE_ROTATION_KEY, String(next));
   return COOKBOOK_TEMPLATE_ROTATION[next];
 }
 
@@ -2216,8 +2217,8 @@ export default function PrintPage() {
         doubleSided,
         showPhoto,
         showSourceUrl,
-        showDescription,
         showCutLines,
+        showDescription,
       );
       setSaveStatus("saved");
     } catch (error) {
@@ -2371,8 +2372,8 @@ export default function PrintPage() {
         doubleSided,
         showPhoto,
         showSourceUrl,
-        showDescription,
         showCutLines,
+        showDescription,
       );
       if (fp === lastSavedFingerprintRef.current) return;
       void handleSaveProject();
@@ -3073,8 +3074,8 @@ export default function PrintPage() {
         doubleSided,
         showPhoto,
         showSourceUrl,
-        showDescription,
         showCutLines,
+        showDescription,
       );
     if (lastSavedFingerprintRef.current === "__loaded__") {
       lastSavedFingerprintRef.current = fingerprint();
@@ -3108,6 +3109,11 @@ export default function PrintPage() {
     showPhoto,
     showSourceUrl,
     showCutLines,
+    // Was missing, and the fingerprint reads it: toggling the website blurb on
+    // or off changed what a save WOULD write while leaving nothing to notice
+    // the change, so that setting alone never triggered an autosave. It rode
+    // along silently with the next unrelated edit, or was lost with the tab.
+    showDescription,
     projectLoading,
     projectAttachChecked,
     autosaveEnabled,

@@ -77,6 +77,15 @@ service firebase.storage {
     // CONTROL FOR THAT IS APP CHECK ENFORCEMENT ON THE BUCKET, which is a
     // console setting, not a line in this file. If it is off, this path and the
     // anonymous photo path below are both open to volume abuse.
+    //
+    // Neither is retention, and there is none: objects under here live forever.
+    // That is a known leak rather than an oversight — the `debugInbox` row that
+    // points at them is deleted by hand once its bug is fixed, and deleting a
+    // row does not touch what its `imagePath` points at, so every closed report
+    // strands its photographs. Deliberately deferred; what the app does instead
+    // is upload fewer of them (see lib/failedImportCapture.ts), and
+    // docs/failed-import-retention.md holds the options and the two traps in
+    // applying a lifecycle rule to a bucket this one shares with CookPilot.
     match /recipeprinter/debug/failed-imports/{path=**} {
       allow read, update, delete: if false;
       allow create: if validDebugCapture();

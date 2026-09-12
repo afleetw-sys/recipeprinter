@@ -263,6 +263,28 @@ describe("debugInbox drop box", () => {
       }),
     );
   });
+
+  // Nothing writes `expiresAt` today — these rows are deleted by hand, not on a
+  // clock. The rules tolerate one so a future backstop needs no rules deploy
+  // ahead of it, and these two pin the shape of that door while it is shut: a
+  // real timestamp gets through, and anything pretending to be one does not.
+  // A string here would make a row look like it had an expiry while having
+  // none, which is worse than carrying no field at all.
+  test("an expiry is allowed, but only as a real time", async () => {
+    const guest = environment.unauthenticatedContext().firestore();
+    await assertSucceeds(
+      setDoc(doc(guest, "debugInbox/dated-expiry"), {
+        ...row,
+        expiresAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
+      }),
+    );
+    await assertFails(
+      setDoc(doc(guest, "debugInbox/string-expiry"), { ...row, expiresAt: "next month" }),
+    );
+    await assertFails(
+      setDoc(doc(guest, "debugInbox/number-expiry"), { ...row, expiresAt: 1893456000000 }),
+    );
+  });
 });
 
 describe("Recipe Printer Storage namespace", () => {

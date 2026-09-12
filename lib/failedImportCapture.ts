@@ -1,4 +1,5 @@
 import { RECIPE_PRINTER_DEBUG_ROOT } from "./firebase/recipePrinterPaths";
+import { localStore } from "@/lib/storage";
 
 // Firebase is reached through `await import` here, never statically. This
 // module is pure failure-path telemetry, but lib/queue.ts imports it eagerly,
@@ -66,6 +67,55 @@ type FailedCaptureMeta = {
 const CAPTURE_ROOT = RECIPE_PRINTER_DEBUG_ROOT;
 /** Shared with CookPilot; every row here carries `product` to tell them apart. */
 const DEBUG_INBOX_COLLECTION = "debugInbox";
+
+/* NOTHING HERE EXPIRES, and that is a decision rather than an oversight.
+   A `debugInbox` row is a to-do item: it is read by hand and deleted once the
+   bug behind it is fixed, so the rows still present are precisely the ones that
+   have NOT been dealt with. Putting a clock on that would delete unreviewed
+   work and spare only what was already handled. The image bytes in Storage are
+   a genuine leak — deleting a row does not remove what its `imagePath` points
+   at — and are knowingly left for now. See docs/failed-import-retention.md.
+
+   What this module does instead is write less: the two gates below cut what is
+   uploaded at all, without reducing what any failure can tell you. */
+
+/**
+ * Failures where the photographs cannot answer the question.
+ *
+ * The bytes are kept so a failure can be REPRODUCED, and that only means
+ * anything when the failure was about the photographs. These three are not:
+ * the parser was rate-limited, unreachable, or too slow, and the picture the
+ * cook chose had nothing to do with it. Uploading several megabytes to learn
+ * "the backend was down" is paying storage rent on an answer we already have.
+ *
+ * The Firestore row is still written for every one of them. The event is never
+ * lost — only the bytes that could not have explained it.
+ */
+const BYTES_EXPLAIN_NOTHING = new Set(["rate_limited", "backend_unavailable", "timeout"]);
+
+/** Whether a failure in this bucket is one the photographs could explain.
+    Exported because it is policy about what we spend storage on, not a detail
+    of how the upload is performed. */
+export function imageBytesWorthKeeping(category: string): boolean {
+  return !BYTES_EXPLAIN_NOTHING.has(category);
+}
+
+/**
+ * How many photo captures one browser may upload per day.
+ *
+ * Not a sample: the first few of anything are kept in full, and the row always
+ * is. What this stops is the same failure being uploaded over and over, which
+ * is a real shape rather than a hypothetical one — a photo the browser cannot
+ * decode fails identically every time it is picked, and the honest response to
+ * a failed import is to try it again. A cook working through one bad photo
+ * could file it a dozen times before giving up, and the twelfth copy of the
+ * same bytes has never taught anyone anything.
+ *
+ * Deliberately generous enough to cover a genuinely bad afternoon — several
+ * different photos each failing once is exactly the case worth having whole.
+ */
+const MAX_IMAGE_CAPTURES_PER_DAY = 6;
+const CAPTURE_BUDGET_KEY = "recipeprinter:debug-capture-budget:v1";
 // A hard cap so a pathological upload can't balloon: skip anything over this.
 const MAX_CAPTURE_BYTES = 12 * 1024 * 1024;
 // A Firestore document is capped at 1 MB, and a debug row that large is
@@ -84,6 +134,28 @@ function currentUserEmail(getFirebaseAuth: () => { currentUser: { email: string 
   } catch {
     return "";
   }
+}
+
+/**
+ * Whether this browser may upload photographs for another capture today, and
+ * if so, spends one from the day's budget.
+ *
+ * Best-effort like everything else here: a browser whose storage cannot be read
+ * gets the benefit of the doubt and captures, because losing a real diagnostic
+ * to an unreadable counter is the worse of the two mistakes.
+ */
+export function claimImageCaptureBudget(): boolean {
+  const today = new Date().toISOString().slice(0, 10);
+  let spent = 0;
+  try {
+    const budget = localStore.getJson<{ day?: string; count?: number }>(CAPTURE_BUDGET_KEY);
+    if (budget?.day === today && typeof budget.count === "number") spent = budget.count;
+  } catch {
+    return true;
+  }
+  if (spent >= MAX_IMAGE_CAPTURES_PER_DAY) return false;
+  localStore.setJson(CAPTURE_BUDGET_KEY, { day: today, count: spent + 1 });
+  return true;
 }
 
 /** A fresh, collision-resistant folder for one failed import, bucketed by category. */
@@ -149,6 +221,11 @@ export async function captureFailedImportImages(
   meta: FailedCaptureMeta,
 ): Promise<string | null> {
   if (typeof window === "undefined" || images.length === 0) return null;
+  // Cheapest gates first, and both BEFORE Firebase is even loaded: neither
+  // needs to know anything except the category and a counter, and a capture
+  // that is not going to happen should not pull the Storage SDK to find out.
+  if (!imageBytesWorthKeeping(meta.category)) return null;
+  if (!claimImageCaptureBudget()) return null;
   if (!(await isFirebaseConfigured())) return null;
   try {
     const { ref, uploadBytes, getFirebaseStorage, getFirebaseAuth } = await firebaseParts();
@@ -221,6 +298,12 @@ export async function recordFailedImport(
       user: currentUserEmail(getFirebaseAuth),
       userAgent: typeof navigator !== "undefined" ? navigator.userAgent.slice(0, 300) : "",
       createdAt: serverTimestamp(),
+      // No `expiresAt`. It was briefly written here to drive a Firestore TTL
+      // policy, which was the wrong idea for a collection that is worked
+      // through by hand — and a field promising an expiry that nothing
+      // enforces is worse than no field, because the person reading these rows
+      // would reasonably believe it. `firestore.rules` still tolerates one, so
+      // a future backstop needs no rules deploy ahead of it.
     });
     return true;
   } catch (err) {
