@@ -371,17 +371,22 @@ export interface MaterializedPhotos {
 }
 
 /**
- * Drops `localPhotoId` from the items whose recipe photo the sweep touched.
+ * Drops `localPhotoId` from the items whose recipe photo actually reached
+ * Storage.
  *
  * The photo's home is Storage now, so the local copy stops being the source:
  * leaving `localPhotoId` on the saved item would have a later hydration replace
  * a real URL with a browser-only one.
  *
- * Keyed on the photo having been LOCAL when the sweep began, not on the upload
- * having succeeded — which is what this has always done. Worth knowing that it
- * means a failed upload keeps its dead `blob:` URL and loses the marker that
- * could have re-found the bytes in IndexedDB; left as-is here rather than
- * changed under cover of a refactor.
+ * Keyed on the upload having SUCCEEDED, not merely on the photo having been
+ * local when the sweep began. It used to be the latter, which made a failed
+ * upload the worst of both: the item kept its `blob:` URL, which resolves to
+ * nothing outside the document that minted it, AND lost the one id that could
+ * still find those bytes in IndexedDB. The photo was recoverable right up until
+ * the sweep that failed to move it threw away the way back.
+ *
+ * Keeping the id costs nothing when the upload later succeeds — the next save
+ * sweeps the same item, uploads it, and drops the id then.
  */
 function dropLocalPhotoIds<T extends ProjectPhotos>(photos: T, itemIds: ReadonlySet<string>): T {
   if (itemIds.size === 0) return photos;
@@ -418,18 +423,20 @@ export async function materializeProjectPhotos(
   // Which recipe photos this sweep actually put in Storage, so the caller can
   // stop holding the local copy as the source. See `MaterializedPhotos`.
   const uploadedRecipeImages = new Map<string, string>();
-  const sweptRecipeItems = new Set<string>();
 
   const photos = await mapProjectPhotoUrls(project, async (url, site) => {
     const next = await materialize(url);
-    if (site.kind === "recipeImage" && isLocalImage(url)) {
-      sweptRecipeItems.add(site.itemId);
-      // `materializeOrKeep` hands back the original on failure, so only a value
-      // that actually stopped being browser-local is an upload.
-      if (next && !isLocalImage(next)) uploadedRecipeImages.set(site.itemId, next);
+    // `materializeOrKeep` hands back the original on failure, so only a value
+    // that actually stopped being browser-local is an upload. That same test
+    // decides which items may safely forget their local copy.
+    if (site.kind === "recipeImage" && isLocalImage(url) && next && !isLocalImage(next)) {
+      uploadedRecipeImages.set(site.itemId, next);
     }
     return next;
   });
 
-  return { photos: dropLocalPhotoIds(photos, sweptRecipeItems), uploadedRecipeImages };
+  return {
+    photos: dropLocalPhotoIds(photos, new Set(uploadedRecipeImages.keys())),
+    uploadedRecipeImages,
+  };
 }

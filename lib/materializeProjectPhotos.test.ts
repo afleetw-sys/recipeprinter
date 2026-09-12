@@ -116,6 +116,33 @@ describe("sweeping a book's photos before it leaves the browser", () => {
     expect(photos.sections[0]!.items[0]!.recipe!.image).toBe("blob:one");
   });
 
+  /* `localPhotoId` is the id of the bytes in IndexedDB — the only thing that
+     can rebuild a photo whose `blob:` URL died with the document that minted
+     it. Dropping it is right once the photo is in Storage and WRONG until then:
+     a failed upload used to keep the dead URL and lose the way back to the
+     bytes, so the one case where the local copy still mattered was the one case
+     that threw it away. */
+  it("keeps the way back to a photo whose upload failed", async () => {
+    const item = { id: "r1", localPhotoId: "idb-1", recipe: { title: "Sourdough", image: "blob:one" } };
+    const { photos } = await materializeProjectPhotos(
+      { sections: [section({ items: [item] as Section["items"] })] },
+      uploadFails,
+    );
+    expect(photos.sections[0]!.items[0]!.localPhotoId).toBe("idb-1");
+  });
+
+  it("forgets the local copy once the photo is really in Storage", async () => {
+    const item = { id: "r1", localPhotoId: "idb-1", recipe: { title: "Sourdough", image: "blob:one" } };
+    const { photos } = await materializeProjectPhotos(
+      { sections: [section({ items: [item] as Section["items"] })] },
+      upload,
+    );
+    // Left in place, a later hydration would replace a real Storage URL with a
+    // browser-only one.
+    expect(photos.sections[0]!.items[0]!.localPhotoId).toBeUndefined();
+    expect(isUploaded(photos.sections[0]!.items[0]!.recipe!.image)).toBe(true);
+  });
+
   it("is a no-op for a book whose photos are already in Storage", async () => {
     await materializeProjectPhotos(
       {
