@@ -492,6 +492,49 @@ export default function PrintPage() {
     ready: cookPilotAuthReady,
     redirectError: cookPilotRedirectError,
   } = useCookPilotAuth();
+
+  /**
+   * Whose document this is stops being true the moment the account changes.
+   *
+   * Save identity is held in refs so a queued async save can read it before
+   * React has committed the matching state, and nothing reset them when the
+   * account underneath changed. Sign out and back in as somebody else — both
+   * are one click apart inside the deck, with no reload between them — and the
+   * page was still attached to the FIRST account's project id and revision.
+   *
+   * The next autosave then wrote that id into the second account. It does not
+   * even conflict: `savePrintProject` only compares revisions for a document
+   * that already exists, and in a different account's namespace that id is
+   * empty, so the write lands as a create. One person's recipes end up in
+   * another person's library, on a shared laptop, with both signed in to their
+   * own accounts and neither asking for it.
+   *
+   * Declared here, above every effect that saves or attaches, because effects
+   * run in source order and refs are written synchronously — so this has
+   * cleared the previous account's identity before anything in the same commit
+   * can read it. Keyed on the uid rather than the User object for the usual
+   * reason: Firebase hands out a fresh object on every token refresh, and an
+   * account that has not changed must not be torn down hourly.
+   *
+   * `projectAttachChecked` goes back to false with the rest, which is what
+   * sends the new account through the reattach check rather than letting it
+   * inherit an answer about the old one.
+   */
+  useEffect(() => {
+    savedProjectIdRef.current = null;
+    setSavedProjectId(null);
+    projectRevisionRef.current = 0;
+    lastSavedFingerprintRef.current = null;
+    lastAttemptedFingerprintRef.current = null;
+    // An approval to overwrite was given for one document in one account. It is
+    // not permission to write over anything in the next one.
+    adoptionOverwriteApprovedRef.current = false;
+    setProjectAttachChecked(false);
+    // A "Saved" left over from the previous account is a claim about a document
+    // this one may not even have.
+    setSaveStatus(null);
+  }, [cookPilotUser?.uid]);
+
   const [isRecipePrinterAdmin, setIsRecipePrinterAdmin] = useState(false);
   const [showCookPilotLogin, setShowCookPilotLogin] = useState(false);
   const [cookPilotLoginReason, setCookPilotLoginReason] = useState<"default" | "purchase">("default");
