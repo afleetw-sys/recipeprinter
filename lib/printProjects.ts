@@ -466,13 +466,31 @@ export async function loadPrintProjectSummaries(ownerUid: string): Promise<Print
           .catch(() => null),
   ]);
   if (!skipLegacy && legacy && legacy.empty) rememberLegacyEmpty(LEGACY_PROJECTS_EMPTY_KEY, ownerUid);
-  // Fault isolation is for ONE half failing. When neither answered there is no
-  // answer at all, and resolving `[]` here made that indistinguishable from an
-  // account with nothing in it: the caller cached the empty list, the account
-  // menu hid both sections, and someone with a shelf full of cookbooks was
-  // shown a dropdown that quietly said they had none. Rejecting hands them the
-  // "couldn't load / try again" both callers already know how to render.
-  if (!namespaced && !(legacy || skipLegacy)) {
+  /**
+   * Fault isolation is for ONE half failing. When neither answered there is no
+   * answer at all, and resolving `[]` here made that indistinguishable from an
+   * account with nothing in it: the caller cached the empty list, the account
+   * menu hid both sections, and someone with a shelf full of cookbooks was
+   * shown a dropdown that quietly said they had none. Rejecting hands them the
+   * "couldn't load / try again" both callers already know how to render.
+   *
+   * This used to read `!(legacy || skipLegacy)`, which let exactly that bug
+   * back in for every returning account. `skipLegacy` means we CHOSE NOT TO ASK
+   * the legacy collection — it is not an answer, and counting it as one meant a
+   * failed namespaced read fell straight through to `[]`. The marker is set on
+   * the first successful load, so this only bit accounts that had loaded
+   * correctly at least once, which is all of them after the first visit.
+   *
+   * What it looked like: open the account menu on a cold page, the one
+   * `getDocs` rejects (`unavailable` while the Firestore connection is still
+   * coming up), and the dropdown reports an empty library. Go to /projects and
+   * the same read succeeds, so the projects appear — and the dropdown then
+   * works too, which makes it read as a caching quirk rather than a failed read.
+   *
+   * Only the namespaced read can stand in for the whole answer, so only its
+   * failure is fatal when nothing else answered.
+   */
+  if (!namespaced && !legacy) {
     throw new Error("Couldn't read saved projects.");
   }
   const byId = new Map<string, PrintProjectSummary>();
