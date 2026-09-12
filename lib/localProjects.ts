@@ -11,6 +11,7 @@ import { assemblePrintProject } from "@/lib/printProjects";
 import { readPrintSettings } from "@/lib/printSettingsStore";
 import { uid } from "@/lib/ids";
 import { lookupProjectId, projectContentKey, rememberProjectId } from "@/lib/projectIdentity";
+import { isCookbookProjectUnlocked } from "@/lib/cookbookUnlocks";
 
 /**
  * Cookbooks kept on this device.
@@ -242,6 +243,38 @@ export function pruneLocalProjects(accountProjectIds: readonly string[]): void {
  * CONTENT decides: the same set of recipes, as the same kind of document, files
  * back over the project it was last time. See lib/projectIdentity.
  */
+/**
+ * Which document this content files back into.
+ *
+ * Normally the content index decides, so printing the same recipes again edits
+ * the project they became last time instead of adding a fresh copy of it to the
+ * library every single time. That is the whole point of the index.
+ *
+ * A PURCHASE is where that has to stop. An unlock hangs off one project id and
+ * the client cannot move it — unlocks are server-written and the rules deny
+ * every client write — so re-pointing a working copy at a different document
+ * does not carry the purchase with it. It breaks two ways, and both have
+ * somebody's money in them:
+ *
+ *   - the paid book files into an older id, so the cookbook they just bought
+ *     comes back reading "Not purchased";
+ *   - an unpaid book files into a paid one, which hands over a book nobody paid
+ *     for AND overwrites the one somebody did.
+ *
+ * So when either id carries an unlock, the working copy keeps its own and the
+ * index is left alone (see `fileProjectLocally`, which skips recording it).
+ * Filing a second document is a blemish in a library; either of the above is a
+ * customer out of pocket.
+ */
+function filingProjectId(contentKey: string | null, ownId: string | undefined): string {
+  const indexed = lookupProjectId(contentKey);
+  if (!indexed || indexed === ownId) return ownId ?? indexed ?? uid();
+  if (isCookbookProjectUnlocked(ownId) || isCookbookProjectUnlocked(indexed)) {
+    return ownId ?? uid();
+  }
+  return indexed;
+}
+
 /** A name someone can find this by later, from the recipes in it. */
 function describeProject(printable: QueueItem[], cookbook: boolean): string {
   const first = printable.find((item) => item.recipe)?.recipe?.title?.trim();
@@ -274,8 +307,9 @@ export function fileProjectLocally(items: QueueItem[], meta: ProjectMeta): strin
   const contentKey = projectContentKey(printable, isBook);
   const project = assemblePrintProject({
     // The content's existing project if it has one, otherwise this working
-    // copy's own id.
-    id: lookupProjectId(contentKey) ?? meta.projectId ?? uid(),
+    // copy's own id — unless a purchase is riding on either, in which case the
+    // working copy keeps its own. See `filingProjectId`.
+    id: filingProjectId(contentKey, meta.projectId),
     // No account behind this copy — that is the entire point of the shelf.
     // Adopting it into an account later fills this in (see
     // lib/anonymousProjectAdoption).
@@ -311,7 +345,11 @@ export function fileProjectLocally(items: QueueItem[], meta: ProjectMeta): strin
   });
 
   if (!saveLocalProject(project)) return null;
-  rememberProjectId(contentKey, project.id);
+  // Never index a paid book. An entry here is an invitation for some later set
+  // of the same recipes to file straight over this document, and the one
+  // document that must not be written over by another book is the one somebody
+  // bought. Leaving it unindexed costs a duplicate at worst.
+  if (!isCookbookProjectUnlocked(project.id)) rememberProjectId(contentKey, project.id);
   return project.id;
 }
 
