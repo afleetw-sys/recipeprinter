@@ -3122,12 +3122,15 @@
     display: flex;
     flex-direction: column;
     gap: 10px;
-    /* 24px. At 16 the first tile started hard against the screen edge with
-       nothing to read as a margin; 20 was still not enough to see. The Print
-       button below takes the same inset, so the two stay in one column — and
-       so does the tile row's own bleed and scroll padding, which is what the
-       variable is for. */
-    --rp-mobile-bar-inset: 24px;
+    /* One inset for the whole bar: the Print button's padding, the tile row's
+       bleed and the scroll padding that keeps the row off it all read from
+       here, so they cannot drift apart.
+
+       It was pushed to 24 back when 16 looked like it put the first tile hard
+       against the edge of the screen. That was the snap bug above, not the
+       number — the tile sat at 0 whatever this said. With the row resting
+       where it is laid out, 16 is 16. */
+    --rp-mobile-bar-inset: 16px;
     padding: 10px var(--rp-mobile-bar-inset) max(10px, env(safe-area-inset-bottom));
     border-top: 1px solid var(--cp-line);
     background: var(--cp-page);
