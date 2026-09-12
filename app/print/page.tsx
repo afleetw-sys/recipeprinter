@@ -139,7 +139,7 @@ import {
   markPrintPreviewStable,
   PRINT_PREVIEW_STABILITY_MS,
 } from "@/lib/printErrorRecovery";
-import { takePendingImport } from "@/lib/pendingImport";
+import { hasPendingImport, takePendingImport } from "@/lib/pendingImport";
 import { nextPaint } from "@/lib/nextPaint";
 
 const AdminShareLinkDialog = dynamic(
@@ -2067,6 +2067,10 @@ export default function PrintPage() {
     const next = organizationSectionsForApply(
       suggestCookbookOrganization(items ?? []),
       (items ?? []).filter((item) => item.recipe).map((item) => item.id),
+      // What the book already has, so a chapter the suggestion agrees with
+      // keeps the opener photo, collage and intro the cook gave it instead of
+      // being rebuilt bare.
+      projectMeta.meta.sections,
     );
     projectMeta.setSectionStructure(next);
     track("relayout_applied", { sectionCount: next.length, automatic });
@@ -2897,6 +2901,16 @@ export default function PrintPage() {
    * that is already open stays quiet instead of flashing a loader at someone
    * who is already looking at what they asked for.
    */
+  /**
+   * Whether an import was waiting for this page when it mounted.
+   *
+   * A lazy `useState` initializer, so it is answered on the first render and
+   * never changes afterwards: the effect below consumes the payload, and a
+   * value that flipped back to false at that moment would pull the workspace
+   * out from under the recipes it had just let in.
+   */
+  const [importInbound] = useState(() => hasPendingImport());
+
   const loadedProjectIdRef = useRef<string | null>(accountProjectId);
   useEffect(() => {
     if (!accountProjectId) return;
@@ -4534,9 +4548,24 @@ export default function PrintPage() {
     );
   }
 
+  /**
+   * Recipes are already on their way in from the importer, so this render will
+   * be an empty deck for a beat and then a filling one.
+   *
+   * Read once, synchronously, at mount — before the effect that collects the
+   * payload has run, and deliberately without consuming it.
+   */
   if (
     leavingHome ||
-    items === null ||
+    // `items === null` is the print job not yet read out of sessionStorage. It
+    // earns a whole-page screen when the deck is about to be REPLACED, because
+    // the alternative is a frame of the wrong contents. It does not earn one
+    // when an import is inbound: the deck is empty either way, and the rail
+    // already shows a placeholder per recipe the moment the payload lands. Both
+    // together is the doubled wait — "Preparing…" over the whole page, then the
+    // per-recipe loading underneath it — where the first screen says nothing
+    // the second does not say better, and says it by hiding the workspace.
+    (items === null && !importInbound) ||
     projectLoading ||
     projectContentPending ||
     cookbookAccessStatus === "loading"

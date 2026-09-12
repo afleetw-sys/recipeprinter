@@ -946,6 +946,12 @@ export function useProjectMeta() {
         if (placement.heroFocusX !== undefined) kept.heroFocusX = placement.heroFocusX;
         if (placement.heroFocusY !== undefined) kept.heroFocusY = placement.heroFocusY;
         if (placement.heroZoom !== undefined) kept.heroZoom = placement.heroZoom;
+        // The photos this recipe has worn before, which are not a PLACEMENT at
+        // all — they are the picker's "put the old one back" list, and the only
+        // record that an imported photo replaced by an upload ever existed.
+        // Dropping them here meant choosing a book-wide Photos option quietly
+        // threw away every photo anyone had swapped out.
+        if (placement.photoHistory?.length) kept.photoHistory = placement.photoHistory;
         if (recipePagePlacementHasValues(kept)) next[id] = kept;
       }
       return { ...current, itemPlacements: next };
