@@ -70,6 +70,7 @@ export function ImportPanel({
   workspace = false,
   initialMode = "url",
   submitLabel = "Add",
+  submitBusy = false,
   hideSubmit = false,
   showAllModes = false,
   onModeChange,
@@ -84,6 +85,11 @@ export function ImportPanel({
   workspace?: boolean;
   initialMode?: ImportTab;
   submitLabel?: string;
+  /** The submit is busy taking you somewhere, so say so on the button.
+      Owned by the surface, not by this panel: the panel's own work ends the
+      moment it validates (see `handleSubmit`), and what takes the time happens
+      after that, where the recipes are going. */
+  submitBusy?: boolean;
   /** Drop the panel's own submit button: the surface around it owns the action
       (the add dialog puts one Add at the bottom instead of two buttons). */
   hideSubmit?: boolean;
@@ -171,14 +177,26 @@ export function ImportPanel({
    * The `workspace` flag marks the front door: it is the only surface that has
    * ever set it.
    */
+  /**
+   * The arrow becomes a spinner while the door is opening.
+   *
+   * Only the arrow: the label stays put, because the button has not changed
+   * what it is going to do and a word swapping under the cursor reads as a
+   * different button rather than as the same one working. The spinner sits in
+   * the arrow's own slot, so nothing moves.
+   */
   const submitFace = workspace ? (
     <>
       {submitLabel}
-      <ArrowRightIcon size={ICON_SIZE.md} />
+      {submitBusy ? (
+        <SpinnerIcon size={ICON_SIZE.md} />
+      ) : (
+        <ArrowRightIcon size={ICON_SIZE.md} />
+      )}
     </>
   ) : (
     <>
-      <PlusIcon size={ICON_SIZE.md} />
+      {submitBusy ? <SpinnerIcon size={ICON_SIZE.md} /> : <PlusIcon size={ICON_SIZE.md} />}
       {submitLabel}
     </>
   );
@@ -486,6 +504,7 @@ export function ImportPanel({
               {!hideSubmit && (
                 <button
                   type="submit"
+                  aria-busy={submitBusy || undefined}
                   className="btn btn-primary rp-import-submit mt-cp-2 w-full lg:mt-0 lg:w-auto lg:shrink-0"
                 >
                   {submitFace}
@@ -553,7 +572,7 @@ export function ImportPanel({
         )}
 
         {mode !== "url" && !hideSubmit && (
-          <button type="submit" className="btn btn-primary rp-import-submit w-full">
+          <button type="submit" aria-busy={submitBusy || undefined} className="btn btn-primary rp-import-submit w-full">
             {submitFace}
           </button>
         )}

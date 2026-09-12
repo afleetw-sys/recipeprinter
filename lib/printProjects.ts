@@ -17,6 +17,7 @@ import {
   legacyKnownEmpty,
   rememberLegacyEmpty,
 } from "@/lib/legacyCollections";
+import { stripUndefined } from "@/lib/firebase/stripUndefined";
 import {
   recipePrinterProjectPath,
   recipePrinterProjectsPath,
@@ -96,25 +97,6 @@ export function summarizePrintProject(project: PrintProject): PrintProjectSummar
 function summaryOf(data: Record<string, unknown>): PrintProjectSummary {
   if (!isInlineDocument(data)) return data as unknown as PrintProjectSummary;
   return { ...summarizePrintProject(data as unknown as PrintProject), contentVersion: 1 };
-}
-
-// Firestore's setDoc rejects a document containing an explicit `undefined`
-// anywhere (unlike JSON.stringify, which just drops it) — a saved project has
-// several optional fields (title, cover, backCover, book-only settings), so
-// this needs the same recursive strip lib/sharedRecipeCards.ts already uses
-// for the same reason.
-function stripUndefined<T>(value: T): T {
-  if (Array.isArray(value)) {
-    return value.map((item) => stripUndefined(item)) as unknown as T;
-  }
-  if (value && typeof value === "object") {
-    return Object.fromEntries(
-      Object.entries(value as Record<string, unknown>)
-        .filter(([, v]) => v !== undefined)
-        .map(([k, v]) => [k, stripUndefined(v)]),
-    ) as T;
-  }
-  return value;
 }
 
 /**
@@ -400,14 +382,35 @@ export async function loadPrintProjectSummaries(ownerUid: string): Promise<Print
   return Array.from(byId.values()).sort((a, b) => Number(b.updatedAt) - Number(a.updatedAt));
 }
 
+/**
+ * A whole saved project: the listed parent, rejoined with its recipes.
+ *
+ * The two reads go out TOGETHER, which is the difference between one round trip
+ * and two on the screen a cook actually waits at. Where `content/main` lives is
+ * decided entirely by `(ownerUid, projectId)` — the parent is never consulted
+ * to find it, only to decide whether it is needed — so there is nothing to wait
+ * for before asking for it.
+ *
+ * The parent still decides what the answer means. A document written before the
+ * content split carries its recipes inline and ignores the second read; so does
+ * a projectId with nothing behind it. Both pay one extra read of a document
+ * that isn't there, which Firestore bills like one that is. That is the trade,
+ * and it is worth taking: inline documents re-save themselves into the split
+ * shape the first time they are touched, so that cost is shrinking, and the
+ * round trip it buys back is paid on every open of every modern book.
+ */
 export async function loadPrintProject(ownerUid: string, projectId: string): Promise<PrintProject | null> {
   const [{ doc, getDoc }, { getDb }] = await Promise.all([
     import("firebase/firestore"),
     import("@/lib/firebase/db"),
   ]);
   const db = getDb();
-  const snap = await getDoc(doc(db, ...recipePrinterProjectPath(ownerUid, projectId))).catch(() => null);
-  if (snap?.exists()) return hydrate(db, ownerUid, projectId, snap.data());
+  const projectPath = recipePrinterProjectPath(ownerUid, projectId);
+  const [snap, contentSnap] = await Promise.all([
+    getDoc(doc(db, ...projectPath)).catch(() => null),
+    getDoc(doc(db, ...projectPath, ...CONTENT_DOC)).catch(() => null),
+  ]);
+  if (snap?.exists()) return hydrate(snap.data(), contentSnap);
   // Temporary compatibility read. New writes are namespace-only, and once the
   // legacy collection has been seen empty for this account there is nothing
   // there to find — see `legacyProjectsKnownEmpty`.
@@ -469,19 +472,19 @@ export async function loadPrintProjectHead(
  * needs its `content/main`; if that read fails the parent alone is not a usable
  * book — it has section ids and no recipes — so this throws rather than hand
  * back something that would autosave over the real content with nothing.
+ *
+ * `contentSnap` is handed in already read (see `loadPrintProject`) rather than
+ * fetched here, which is what lets the two reads overlap. `null` covers both
+ * ways there can be no content to join — the read failed, or the document is
+ * genuinely absent — and both end here the same way they always did, in a
+ * throw, because the parent alone is not a book either way.
  */
-async function hydrate(
-  db: import("firebase/firestore").Firestore,
-  ownerUid: string,
-  projectId: string,
+function hydrate(
   data: Record<string, unknown>,
-): Promise<PrintProject> {
+  contentSnap: import("firebase/firestore").DocumentSnapshot | null,
+): PrintProject {
   if (isInlineDocument(data)) return data as unknown as PrintProject;
-  const { doc, getDoc } = await import("firebase/firestore");
-  const contentSnap = await getDoc(
-    doc(db, ...recipePrinterProjectPath(ownerUid, projectId), ...CONTENT_DOC),
-  );
-  if (!contentSnap.exists()) {
+  if (!contentSnap?.exists()) {
     throw new Error("This project's recipes could not be loaded.");
   }
   const content = contentSnap.data() as PrintProjectContent;

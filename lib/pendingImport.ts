@@ -16,14 +16,17 @@
 // and removes it, so a refresh can't re-import and nothing lingers.
 // ─────────────────────────────────────────────────────────────────────────────
 
+import { idbStore } from "@/lib/idb";
 import { sessionStore } from "@/lib/storage";
 import type { QueueItem } from "@/types/recipe";
 
 const DESCRIPTOR_KEY = "recipeprinter:pending-import:v1";
-const IDB_NAME = "recipeprinter";
-const IDB_VERSION = 1;
-const IDB_STORE = "pending-import";
 const IDB_IMAGES_KEY = "images";
+
+// Its own database, separate from lib/localPhotos.ts's — see the note at the
+// top of that file for why two modules must not share one. Only the plumbing
+// is shared (lib/idb.ts).
+const pendingImages = idbStore("recipeprinter", 1, "pending-import");
 
 /** What the capture block asks the app to import on arrival. `ready` carries
     already-parsed recipes, whatever library they came from. */
@@ -44,69 +47,6 @@ type StoredDescriptor =
   | { kind: "cookpilot"; recipes: QueueItem[] }
   | { kind: "images"; label: string };
 
-function idbAvailable(): boolean {
-  return typeof window !== "undefined" && "indexedDB" in window;
-}
-
-function openDb(): Promise<IDBDatabase | null> {
-  if (!idbAvailable()) return Promise.resolve(null);
-  return new Promise((resolve) => {
-    let request: IDBOpenDBRequest;
-    try {
-      request = window.indexedDB.open(IDB_NAME, IDB_VERSION);
-    } catch {
-      resolve(null);
-      return;
-    }
-    request.onupgradeneeded = () => {
-      const db = request.result;
-      if (!db.objectStoreNames.contains(IDB_STORE)) db.createObjectStore(IDB_STORE);
-    };
-    request.onsuccess = () => resolve(request.result);
-    request.onerror = () => resolve(null);
-    request.onblocked = () => resolve(null);
-  });
-}
-
-function idbPut(db: IDBDatabase, key: string, value: unknown): Promise<boolean> {
-  return new Promise((resolve) => {
-    try {
-      const tx = db.transaction(IDB_STORE, "readwrite");
-      tx.objectStore(IDB_STORE).put(value, key);
-      tx.oncomplete = () => resolve(true);
-      tx.onerror = () => resolve(false);
-      tx.onabort = () => resolve(false);
-    } catch {
-      resolve(false);
-    }
-  });
-}
-
-function idbTake<T>(db: IDBDatabase, key: string): Promise<T | null> {
-  return new Promise((resolve) => {
-    try {
-      const tx = db.transaction(IDB_STORE, "readwrite");
-      const store = tx.objectStore(IDB_STORE);
-      const getReq = store.get(key);
-      getReq.onsuccess = () => {
-        const value = (getReq.result as T) ?? null;
-        store.delete(key);
-        resolve(value);
-      };
-      getReq.onerror = () => resolve(null);
-    } catch {
-      resolve(null);
-    }
-  });
-}
-
-async function idbClearImages(): Promise<void> {
-  const db = await openDb();
-  if (!db) return;
-  await idbTake(db, IDB_IMAGES_KEY);
-  db.close();
-}
-
 /**
  * Store a pending import and return true if it was persisted. Callers should only
  * navigate to "/" once this resolves true, so the payload is guaranteed to be
@@ -117,11 +57,7 @@ export async function stashPendingImport(payload: PendingImport): Promise<boolea
   clearPendingImport();
 
   if (payload.kind === "images") {
-    const db = await openDb();
-    if (!db) return false;
-    const ok = await idbPut(db, IDB_IMAGES_KEY, payload.images);
-    db.close();
-    if (!ok) return false;
+    if (!(await pendingImages.put(IDB_IMAGES_KEY, payload.images))) return false;
     const descriptor: StoredDescriptor = { kind: "images", label: payload.label };
     return sessionStore.setJson(DESCRIPTOR_KEY, descriptor);
   }
@@ -136,9 +72,7 @@ export async function takePendingImport(): Promise<PendingImport | null> {
   if (!descriptor) return null;
 
   if (descriptor.kind === "images") {
-    const db = await openDb();
-    const images = db ? await idbTake<string[]>(db, IDB_IMAGES_KEY) : null;
-    db?.close();
+    const images = await pendingImages.take<string[]>(IDB_IMAGES_KEY);
     if (!images || images.length === 0) return null;
     return { kind: "images", images, label: descriptor.label };
   }
@@ -151,5 +85,5 @@ export async function takePendingImport(): Promise<PendingImport | null> {
 /** Drop any waiting pending import without consuming it (best-effort). */
 export function clearPendingImport(): void {
   sessionStore.remove(DESCRIPTOR_KEY);
-  void idbClearImages();
+  void pendingImages.remove(IDB_IMAGES_KEY);
 }

@@ -22,10 +22,6 @@ import {
 } from "@/lib/recipePrinterFreeTemplateClaim";
 import type { QueueItem } from "@/types/recipe";
 
-function friendlyPurchaseError(error: unknown): string {
-  return friendlyPurchaseSetupError(error);
-}
-
 interface UsePremiumTemplatePurchaseOptions {
   items: QueueItem[] | null;
   cookPilotUser: User | null;
@@ -166,7 +162,7 @@ export function usePremiumTemplatePurchase({
         reason: truncateReason(error),
         customerId: revenueCatUserId,
       });
-      showToast(friendlyPurchaseError(error));
+      showToast(friendlyPurchaseSetupError(error));
     } finally {
       setPurchaseBusy(false);
     }
@@ -295,7 +291,6 @@ export function usePremiumTemplatePurchase({
     selectedTemplateLocked,
     hasUnclaimedFreeTemplate,
     canClaimSelectedTemplateFree,
-    refreshCustomerInfo,
     unlockTemplateAndPrint,
     claimTemplateAndPrint,
   };

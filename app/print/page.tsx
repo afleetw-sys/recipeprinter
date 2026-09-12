@@ -140,6 +140,7 @@ import {
   PRINT_PREVIEW_STABILITY_MS,
 } from "@/lib/printErrorRecovery";
 import { takePendingImport } from "@/lib/pendingImport";
+import { nextPaint } from "@/lib/nextPaint";
 
 const AdminShareLinkDialog = dynamic(
   () => import("@/components/AdminShareLinkDialog").then((mod) => mod.AdminShareLinkDialog),
@@ -1685,7 +1686,7 @@ export default function PrintPage() {
     return true;
   }
 
-  function printNow() {
+  async function printNow() {
     // This document has already spent its one print, and asking it again is the
     // silent no-op that made the button look dead. Go the long way round.
     if (preferFreshDocumentForPrint() && rearmForPrint()) return;
@@ -1719,6 +1720,32 @@ export default function PrintPage() {
     }
     printAcceptedRef.current = false;
     setPrintAwaitingBrowser(true);
+
+    // ── Let the button say something before the deck is drawn ───────────────
+    //
+    // `window.print()` does not yield, and `beforeprint` fires inside it and
+    // synchronously renders EVERY page (see the handler). The deck is normally
+    // windowed to five pages, so on a real cookbook that is the whole book
+    // rendered in one unbroken run of the main thread — and all of it used to
+    // happen between this line and the print sheet appearing, with the spinner
+    // above committed but never drawn. The button looked untouched for the
+    // entire wait, which is what a refused print looks like too.
+    //
+    // So: paint the spinner, then do the expensive render here where the
+    // spinner is up, then ask the browser. `beforeprint` still sets the same
+    // flag for the cook's own Ctrl+P, where there is no click of ours to hang
+    // this off; by then it is already true and React bails out of the update,
+    // so the work is done once either way.
+    await nextPaint();
+    flushSync(() => setRenderAllPages(true));
+    await nextPaint();
+
+    // Deferring `print()` past a frame takes it out of the click's own task.
+    // That is not new ground: the `print=1` auto-print path has always called
+    // it from a 350ms `setTimeout` with no gesture at all, and that path is
+    // what the mobile rearm depends on (see lib/printRearm). The watchdog
+    // below is the backstop either way — it is exactly the mechanism for "the
+    // browser did not take it".
     window.print();
     // `window.print()` returns the same either way, so watch for the browser
     // taking it. A print that happened has fired `beforeprint` by now, in every
@@ -1733,6 +1760,10 @@ export default function PrintPage() {
       setPrintAwaitingBrowser(false);
       if (printAcceptedRef.current) return;
       markPrintSpent();
+      // Nothing took the print, so nothing is going to fire `afterprint` to put
+      // the deck back to its five-page window. Left as it is, a refused print
+      // leaves the entire book rendered on a page the cook is still using.
+      setRenderAllPages(false);
       // `shouldPrint` is `print=1`, which is how a rearmed document arrives —
       // so it separates "the first attempt was refused" from "the reload didn't
       // help either", which are different bugs with different fixes.
@@ -2473,7 +2504,6 @@ export default function PrintPage() {
     selectedTemplateLocked,
     hasUnclaimedFreeTemplate,
     canClaimSelectedTemplateFree,
-    refreshCustomerInfo,
     unlockTemplateAndPrint,
     claimTemplateAndPrint,
   } = usePremiumTemplatePurchase({
@@ -2499,11 +2529,9 @@ export default function PrintPage() {
     purchaseCookbookAndContinue,
   } = useCookbookPurchase({
     revenueCatUserId,
-    customerInfo,
     cookPilotUser,
     cookbookMode: Boolean(projectMeta.meta.cookbookMode),
     projectId: cookbookProjectId,
-    refreshCustomerInfo,
     showToast,
     clearToast: () => setToastMessage(null),
     // Cookbook protection is handled by the persistent banner in cookbook
@@ -2569,7 +2597,7 @@ export default function PrintPage() {
       openCookbookPrintDialog();
       return;
     }
-    printNow();
+    await printNow();
   }
 
   function openCookbookPrintDialog() {
@@ -3324,14 +3352,25 @@ export default function PrintPage() {
     );
   }
 
-  // "New cookbook" was chosen back in the library, before there were any
-  // recipes to make a book from. Now that there are, honour it — otherwise the
-  // cook lands in recipe cards after explicitly asking for a cookbook and has to
-  // go find the switch. Consumed first so a failed scaffold can't loop, and so
+  // "New cookbook" was chosen back in the library. Honour it here, on arrival —
+  // otherwise the cook lands in recipe cards after explicitly asking for a
+  // cookbook and has to go find the switch.
+  //
+  // Deliberately does NOT wait for recipes. It used to, because the library
+  // sent an empty-handed cook to the importer first and this was the far side
+  // of that detour; the detour is gone (see `startNew` in app/projects/page.tsx)
+  // and the book is now scaffolded the moment it is asked for, empty or not. A
+  // book with no recipes in it is not a broken state — it is a cover, a
+  // dedication and a back cover, which is exactly what someone starting a
+  // cookbook wants to see.
+  //
+  // `items === null` is the job still hydrating, not an empty one; scaffolding
+  // then would fire before a saved book's own `cookbookMode` had arrived and
+  // rebuild over it. Consumed first so a failed scaffold can't loop, and so
   // returning to this project later doesn't re-scaffold over their work.
   useEffect(() => {
     if (!projectMeta.meta.cookbookIntent) return;
-    if (!items?.length || projectMeta.meta.cookbookMode) return;
+    if (items === null || projectLoading || projectMeta.meta.cookbookMode) return;
     projectMeta.clearCookbookIntent();
     // `beginCookbookBuild`, not `startCookbook`: the latter opens the offer
     // dialog for anyone who hasn't seen it, and pitching the cookbook to
@@ -3339,7 +3378,7 @@ export default function PrintPage() {
     // already answered.
     beginCookbookBuild();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [projectMeta.meta.cookbookIntent, projectMeta.meta.cookbookMode, items?.length]);
+  }, [projectMeta.meta.cookbookIntent, projectMeta.meta.cookbookMode, items === null, projectLoading]);
 
   usePrintSettingsPersistence(params, {
     cardSize,
@@ -3444,6 +3483,14 @@ export default function PrintPage() {
       clearPrintRetryMarker();
       // Synchronous on purpose: window.print() does not yield, so a normal
       // state update would not have committed before the snapshot is taken.
+      //
+      // This is now the Ctrl+P path rather than the usual one. Our own Print
+      // button renders the full deck BEFORE it calls `print()`, so the spinner
+      // can be on screen while that happens (see `printNow`) — by the time this
+      // runs the flag is already true and React bails out of the update, so the
+      // book is rendered once, not twice. What this still owns is the print
+      // nobody asked us about: a cook pressing Ctrl+P gives us no click to hang
+      // the preparation off, and a windowed deck would print placeholders.
       flushSync(() => setRenderAllPages(true));
     }
     window.addEventListener("beforeprint", handleBeforePrint);

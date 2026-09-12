@@ -8,11 +8,15 @@ import {
 
 beforeEach(() => {
   const values = new Map<string, string>();
-  vi.stubGlobal("sessionStorage", {
+  // On `window`, which is where lib/storage reads it and where a real browser
+  // puts it — the bare global alone left storage looking unavailable.
+  const sessionStorage = {
     getItem: (key: string) => values.get(key) ?? null,
     setItem: (key: string, value: string) => values.set(key, value),
     removeItem: (key: string) => values.delete(key),
-  });
+  };
+  vi.stubGlobal("sessionStorage", sessionStorage);
+  vi.stubGlobal("window", { sessionStorage });
 });
 
 describe("print preview recovery", () => {

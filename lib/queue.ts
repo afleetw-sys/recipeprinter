@@ -11,7 +11,7 @@ import { prepareImageDataUrls } from "@/lib/imageImport";
 import { normalizeImportURL } from "@/lib/cookpilot";
 import { hostnameOf as rawHostnameOf } from "@/lib/url";
 import { uid } from "@/lib/ids";
-import { deleteLocalPhoto, isBlobUrl, localPhotoUrl } from "@/lib/localPhotos";
+import { deleteLocalPhoto, isBlobUrl, localPhotoUrls } from "@/lib/localPhotos";
 import { localStore, sessionStore } from "@/lib/storage";
 
 // The print queue is session-based for the MVP, no accounts, no saved library.
@@ -285,9 +285,15 @@ export function useQueue() {
         (item) => item.localPhotoId && (!item.recipe?.image || isBlobUrl(item.recipe.image)),
       );
       if (stale.length === 0) return;
+      // One pass over IndexedDB for the whole set, not one open per photo. This
+      // used to be a `for…await`, and since every store operation opens and
+      // closes the database itself (see lib/idb), a Paprika library of four
+      // hundred photos meant four hundred sequential opens before the first
+      // picture could appear.
+      const byPhotoId = await localPhotoUrls(stale.map((item) => item.localPhotoId as string));
       const resolved = new Map<string, string>();
       for (const item of stale) {
-        const url = await localPhotoUrl(item.localPhotoId as string);
+        const url = byPhotoId.get(item.localPhotoId as string);
         if (url) resolved.set(item.id, url);
       }
       if (resolved.size === 0) return;

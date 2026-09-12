@@ -42,6 +42,11 @@ export function SharedRecipeCardRedirect({ card }: { card: SharedRecipeCard }) {
       showSourceUrl: card.showSourceUrl,
       showCutLines: card.showCutLines,
     });
+    // `shared=1` is read by nothing in this app — deliberately. It rides along
+    // as a dimension on the `$pageview` PostHog records for /print, which is
+    // the only way to tell a visit that arrived through a share link from one
+    // that started at the homepage. Keep it, or that split disappears; don't go
+    // looking for the code that consumes it, because there isn't any.
     router.replace(`/print?ids=${id}&shared=1`);
     // Runs once on mount with the card this component was given; re-seeding
     // on any later re-render would duplicate the queue item.

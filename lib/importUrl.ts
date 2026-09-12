@@ -27,6 +27,7 @@
  */
 
 import { normalizeImportURL } from "@/lib/cookpilot";
+import { normalizeHost } from "@/lib/url";
 
 /**
  * One line for every reason a site refuses us: a bot wall, a 403, a login gate
@@ -75,11 +76,6 @@ export const SEARCH_PAGE_MESSAGE =
 
 /** The toast has room for about five words; see `shortImportError`. */
 export const SEARCH_PAGE_SHORT_MESSAGE = "That's a search results page";
-
-/** Lowercased, trimmed, `www.` dropped, so every check below compares like with like. */
-function normalizeHost(hostname: string): string {
-  return hostname.trim().toLowerCase().replace(/^www\./, "");
-}
 
 /**
  * Search engines, matched as patterns rather than a flat list because the big
@@ -161,15 +157,6 @@ function redirectTarget(url: URL): string | null {
     }
   }
   return null;
-}
-
-/** True for a link whose only job is to forward to another one. */
-export function isRedirectLink(rawUrl: string): boolean {
-  try {
-    return redirectTarget(new URL(normalizeImportURL(rawUrl))) !== null;
-  } catch {
-    return false;
-  }
 }
 
 /**

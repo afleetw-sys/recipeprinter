@@ -1,6 +1,6 @@
 import type { Recipe, RecipeIngredient, RecipeInstruction } from "@/types/recipe";
 
-// Fixture corpus for the layout measurement harness (app/print/_harness).
+// Fixture corpus for the layout measurement harness (app/print/harness).
 // These are NOT a random sample of recipes — each one is chosen to sit ON a
 // layout boundary, the region where the character-budget guess and the real
 // rendered height disagree and content clips or reflows. A recipe that

@@ -22,8 +22,9 @@ const MAX_IMAGE_DATA_URL_TOTAL_CHARS = 8_500_000;
 // mush, so a genuine recipe comes back as "no recipe". 2048px on the long edge
 // keeps that text readable while staying well under the callable's payload
 // ceiling (guarded by the char caps above). HEIC is transcoded to JPEG first
-// (see loadDecodableImage), so every image that reaches the canvas is drawable.
-import { heicToJpegBlob, isHeic } from "@/lib/heicTranscode";
+// (see `loadImageWithHeicFallback`), so every image that reaches the canvas is
+// drawable.
+import { heicToJpegBlob, isHeic, loadImageWithHeicFallback } from "@/lib/heicTranscode";
 
 export { isHeic };
 
@@ -42,43 +43,17 @@ function readImageAsDataURL(blob: Blob): Promise<string> {
   });
 }
 
-function loadImageFromBlob(blob: Blob): Promise<HTMLImageElement> {
-  return new Promise((resolve, reject) => {
-    const url = URL.createObjectURL(blob);
-    const image = new Image();
-    image.onload = () => {
-      URL.revokeObjectURL(url);
-      resolve(image);
-    };
-    image.onerror = () => {
-      URL.revokeObjectURL(url);
-      reject(new Error("Unable to load image"));
-    };
-    image.src = url;
-  });
-}
-
-
-// Safari can draw HEIC to a canvas natively; Chrome/Firefox/Android can't. So try
-// the native decode first (free, works for every normal JPG/PNG and for HEIC on
-// Apple devices) and only fall back to the wasm transcode when a HEIC file fails
-// that path. Non-HEIC decode failures propagate untouched so the batch's
-// allSettled can skip just that file. (heic2any runs libheif in its own internal
-// worker, so that transcode is already off the main thread — see the OffscreenCanvas
-// note below for what this pipeline moves off-thread on top of that.)
-async function loadDecodableImage(file: File): Promise<{ image: HTMLImageElement; source: Blob }> {
-  try {
-    return { image: await loadImageFromBlob(file), source: file };
-  } catch (err) {
-    if (!isHeic(file)) throw err;
-    const jpeg = await heicToJpegBlob(file);
-    return { image: await loadImageFromBlob(jpeg), source: jpeg };
-  }
-}
-
-// The createImageBitmap analogue of loadDecodableImage: decode off the main
-// thread. Same HEIC fallback — native decode first, wasm transcode only when a
-// HEIC file the browser can't decode fails.
+// The createImageBitmap analogue of `loadImageWithHeicFallback`: decode off the
+// main thread. Same HEIC fallback — native decode first (free, and Safari reads
+// HEIC unaided), wasm transcode only when a HEIC file the browser can't decode
+// fails. It cannot share that function's body because this one produces an
+// ImageBitmap rather than an HTMLImageElement, which is the entire point of it.
+//
+// Non-HEIC decode failures propagate untouched either way, so the batch's
+// allSettled can skip just the file that failed. (heic2any runs libheif in its
+// own internal worker, so the transcode is already off the main thread — see
+// the OffscreenCanvas note below for what this pipeline moves off-thread on top
+// of that.)
 async function decodeToBitmap(file: File): Promise<ImageBitmap> {
   try {
     return await createImageBitmap(file);
@@ -117,7 +92,7 @@ async function compressViaOffscreen(file: File): Promise<string> {
 }
 
 async function compressViaCanvas(file: File): Promise<string> {
-  const { image, source } = await loadDecodableImage(file);
+  const { image, source } = await loadImageWithHeicFallback(file);
   const scale = Math.min(1, MAX_IMAGE_DIMENSION / Math.max(image.naturalWidth, image.naturalHeight));
   const width = Math.max(1, Math.round(image.naturalWidth * scale));
   const height = Math.max(1, Math.round(image.naturalHeight * scale));

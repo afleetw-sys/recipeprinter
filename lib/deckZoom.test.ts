@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { TEXT_BAR_MAX_SCALE, textBarScale, zoomFromWheel } from "./deckZoom";
+import { textBarScale, zoomFromWheel } from "./deckZoom";
 
 const RANGE = { min: 0.25, max: 4 };
 

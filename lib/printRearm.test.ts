@@ -6,12 +6,17 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 async function freshModule(options: { coarsePointer?: boolean } = {}) {
   vi.resetModules();
   const values = new Map<string, string>();
-  vi.stubGlobal("sessionStorage", {
+  // On `window`, which is where lib/storage reads it and where a real browser
+  // puts it. (The bare global is the same object in a browser; stubbing only
+  // that one made storage look permanently unavailable.)
+  const sessionStorage = {
     getItem: (key: string) => values.get(key) ?? null,
     setItem: (key: string, value: string) => values.set(key, value),
     removeItem: (key: string) => values.delete(key),
-  });
+  };
+  vi.stubGlobal("sessionStorage", sessionStorage);
   vi.stubGlobal("window", {
+    sessionStorage,
     matchMedia: (query: string) => ({
       matches: query.includes("coarse") ? Boolean(options.coarsePointer) : false,
     }),
@@ -61,13 +66,10 @@ describe("preferring a fresh document", () => {
     expect(printRearm.preferFreshDocumentForPrint()).toBe(false);
   });
 
+  // A `window` with neither `matchMedia` nor storage — the module has to answer
+  // rather than throw, which is the whole contract lib/storage exists to keep.
   it("survives a browser with no matchMedia rather than reloading blindly", async () => {
     vi.resetModules();
-    vi.stubGlobal("sessionStorage", {
-      getItem: () => null,
-      setItem: () => {},
-      removeItem: () => {},
-    });
     vi.stubGlobal("window", {});
     const printRearm = await import("./printRearm");
     printRearm.markPrintSpent();

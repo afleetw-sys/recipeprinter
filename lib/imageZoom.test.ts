@@ -3,7 +3,6 @@ import {
   IMAGE_ZOOM_MAX,
   IMAGE_ZOOM_MIN,
   clampImageZoom,
-  formatImageZoom,
 } from "@/lib/imageZoom";
 
 describe("clampImageZoom", () => {
@@ -21,13 +20,5 @@ describe("clampImageZoom", () => {
     // silently magnify someone's photo to the maximum.
     expect(clampImageZoom(Number.NaN)).toBe(IMAGE_ZOOM_MIN);
     expect(clampImageZoom(Number.POSITIVE_INFINITY)).toBe(IMAGE_ZOOM_MIN);
-  });
-});
-
-describe("formatImageZoom", () => {
-  it("reads as a whole percentage", () => {
-    expect(formatImageZoom(1)).toBe("100%");
-    expect(formatImageZoom(1.25)).toBe("125%");
-    expect(formatImageZoom(1.333)).toBe("133%");
   });
 });

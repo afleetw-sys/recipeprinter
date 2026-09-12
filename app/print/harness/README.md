@@ -44,40 +44,49 @@ never how a recipe splits into faces, so it can't change any overflow verdict.
 ## Files
 
 - `lib/__fixtures__/harnessRecipes.ts` — the boundary-recipe corpus.
-- `lib/__fixtures__/layout-baseline.json` — captured current-engine baseline
-  (the regression oracle the rewrite is measured against).
+- `lib/__fixtures__/layout-baseline.json` — the captured baseline this was
+  first measured against (see the history below).
+- `lib/__fixtures__/layout-after-phase1.json` — the same sweep after the
+  phase-1 engine work.
 - `lib/faceMeasure.ts` — the shared overflow/invariant primitives, used by both
-  the live corrector and this harness so both measure identically.
+  the live corrector and this harness so both measure identically. That sharing
+  is the point: a corrector that measured a label differently from the harness
+  would make every verdict here meaningless.
 
-## Current-engine baseline (captured 2026-07-21)
+## Current engine (measured 2026-09-11)
 
-1024 combos: **913 pass INV-1..4**, **111 clip (INV-1)** — split **107
-repackable** (a better packer can fix) + **4 oversized** (a single line taller
-than the card; needs smaller type, not pagination) — **339 flash (INV-6)**, 0
-incomplete / empty-face / out-of-order / timed-out.
+**816 combos: 816 pass INV-1..4. Zero clips, zero incomplete, zero empty-face,
+zero out-of-order, zero timed out.** 225 flash (INV-6), 2 underfill (INV-7).
 
-Clips are **6x4-dominated (88 of 111)**, worst with photo **and** source-url
-both on (the salmon fixture on 6x4 overflows up to ~128px there). The 4
-oversized are the giant-single-step fixture on 6x4 pantry (narrowest column).
+Run twice on the same commit — once with the shared-`labelHeightPx` change and
+once without — and every counter matched, including the two non-zero ones.
 
-Note: an earlier baseline read 205 clips — ~94 were phantom false positives
-from `colsOverflowPx` measuring stretched flex wrappers on under-filled faces
-(e.g. every `tiny|letter|*|s1`). Fixed to measure true content leaves; that
-also stops the live corrector falsely popping content off roomy faces.
+## History
 
-`layout-baseline.json` is the reference (913 pass / 111 clip, engine with the
-measurement fix but before the corrector fixes).
+The numbers below are why the engine was worked on; keep them for the shape of
+the problem, not as a current reading. The matrix has also changed since (1024
+combos then, 816 now), so the totals are not directly comparable.
 
-### After corrector fixes (`layout-after-corrector-fix.json`)
+**2026-07-21, first capture** — 1024 combos: 913 pass, 111 clip, split 107
+repackable + 4 oversized, 339 flash. Clips were 6x4-dominated (88 of 111), worst
+with photo *and* source-url both on; the salmon fixture on 6x4 overflowed up to
+~128px. The 4 oversized were the giant-single-step fixture on 6x4 pantry.
 
-**951 pass / 73 clip** (69 repackable + 4 oversized) / 337 flash — zero INV-2/3/4
-regressions. Two fixes in `RecipeFaceMeasurer`: (a) wait for `document.fonts.ready`
-before measuring (production first-load clip/flash), (b) settle on the best
+An earlier reading of 205 clips was wrong: ~94 were phantom false positives from
+`colsOverflowPx` measuring stretched flex wrappers on under-filled faces. Fixed
+to measure true content leaves, which also stopped the live corrector falsely
+popping content off roomy faces. `layout-baseline.json` is that corrected
+capture (913 / 111).
+
+**After the corrector fixes** — 951 pass / 73 clip / 337 flash, no INV-2/3/4
+regressions. Two changes in `RecipeFaceMeasurer`: wait for `document.fonts.ready`
+before measuring (a production first-load clip/flash), and settle on the best
 *fitting* arrangement seen rather than whatever oscillating state the
-`MAX_REFLOW_PASSES` clock stops on (killed the salmon 6x4 128px clip). Still
-open: 69 repackable clips (oscillations where no fully-fitting pass is ever
-visited), the 4 oversized (need font scaling), and the 337 flashes (need the
-authoritative-render change so the guess is never shown).
+`MAX_REFLOW_PASSES` clock happened to stop on (this killed the salmon 6x4 clip).
+
+Everything still open at that point — the repackable clips, the oversized
+fixtures, and the flashes — has since closed except the flashes, which need the
+authoritative-render change so the first-paint guess is never shown.
 
 ### Environment gotchas (cost real debugging time)
 

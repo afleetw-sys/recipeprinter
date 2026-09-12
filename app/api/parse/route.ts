@@ -1,12 +1,11 @@
 import { lookup } from "node:dns/promises";
 import { isIP } from "node:net";
 import { NextResponse } from "next/server";
-import { jsonDataBlocksFromHtml, jsonLdBlocksFromHtml, recipeFromJsonLd } from "@/lib/schemaRecipe";
 import { adaptCookPilotRecipes, normalizeImportURL } from "@/lib/cookpilot";
 import { BLOCKED_REMEDY, searchPageMessage, unwrapRedirectUrl } from "@/lib/importUrl";
 import { callerKey, rateLimit } from "@/lib/server/rateLimit";
+import { requestDeadline, type Deadline } from "@/lib/server/requestDeadline";
 import { placeholderHostMessage } from "@/lib/friendlyErrors";
-import { BODY_PREFIX_BYTES, classifyPage, type PageVerdict } from "@/lib/server/botWall";
 import type { ImportFailureCode } from "@/lib/analytics";
 import type { BotWallVendor, ParseResponse, Recipe } from "@/types/recipe";
 
@@ -21,13 +20,29 @@ export const runtime = "nodejs";
  * respond. Try again, or paste the recipe text instead." Import failure is the
  * most common failure this product has, and its best error text was dead code.
  *
- * The budget is the CookPilot parser (55s) and then, if it found nothing, our
- * own fetch (20s), so the worst case is a little over 75s and this sits above
- * it. Note that 55s is a long time to ask someone to keep watching a spinner;
- * lowering it is a behaviour change worth making on its own evidence, and the
- * `cookpilot slow` line below is there to gather it.
+ * This ceiling only works if the legs underneath it are bounded as a SUM, and
+ * for a while they were not. The per-leg budgets are 55s (CookPilot), 20s per
+ * fetch hop, and 20s (the shared parser reading HTML we already hold) — 95s in
+ * series before a single redirect, against the 90 here. So the slowest imports,
+ * the exact ones this ceiling was raised to give a readable answer, were back
+ * to dying on the platform clock with nothing to show for it.
+ *
+ * `REQUEST_BUDGET_MS` below is the fix: one clock for the whole request, and
+ * every leg takes the smaller of its own budget and what is left. Adding a
+ * fourth leg can no longer quietly reopen this.
  */
 export const maxDuration = 90;
+
+/**
+ * The whole request's budget, as one clock (see lib/server/requestDeadline).
+ *
+ * Five seconds under `maxDuration`, which covers the parts outside the legs:
+ * reading the request body, the DNS lookup, encoding the response, and handing
+ * it back. The point is that OUR timeout always fires first, so a slow import
+ * ends in "That website took too long to respond. Try again, or paste the
+ * recipe text instead." rather than in FUNCTION_INVOCATION_TIMEOUT.
+ */
+const REQUEST_BUDGET_MS = 85_000;
 
 /**
  * Unchanged at 55s, deliberately.
@@ -51,6 +66,18 @@ const COOKPILOT_TIMEOUT_MS = 55_000;
  * that a 30s budget would have killed.
  */
 const COOKPILOT_SLOW_MS = 30_000;
+
+/** The shared parser reading HTML we already have: no fetching, so no site to wait on. */
+const SUPPLIED_HTML_TIMEOUT_MS = 20_000;
+
+/**
+ * How much of a hostile response to read before classifying it.
+ *
+ * Mirrors `BODY_PREFIX_BYTES` in CookPilot's botWall — every fingerprint is either
+ * a header or sits in the `<head>` of a challenge page, so reading further only
+ * pulls more bytes from the response shape most likely to be hostile.
+ */
+const BODY_PREFIX_BYTES = 16_000;
 
 // A URL import is one paste at a time — there is no bulk-URL surface anywhere in
 // the app (lib/parser.ts:172 is the only caller). Thirty in ten minutes is far
@@ -175,10 +202,19 @@ async function validatePublicHttpUrl(url: URL) {
 }
 
 /**
+ * Our own request for the page, following redirects by hand so every hop is
+ * re-validated against the blocklist.
+ *
+ * `HOP_TIMEOUT_MS` is per hop, and there can be four of them — so this leg's
+ * own budget is 80s, more than the whole request has. The deadline is what
+ * makes that safe: each hop takes the smaller of the hop budget and what is
+ * left, so a chain of slow redirects runs out of request rather than running
+ * over it.
  */
-async function fetchPublicHtml(url: URL): Promise<Response> {
+const HOP_TIMEOUT_MS = 20_000;
+
+async function fetchPublicHtml(url: URL, deadline: Deadline): Promise<Response> {
   const headers = REQUEST_HEADERS;
-  const timeoutMs = 20_000;
   let currentUrl = url;
 
   for (let redirectCount = 0; redirectCount <= MAX_REDIRECTS; redirectCount += 1) {
@@ -187,7 +223,7 @@ async function fetchPublicHtml(url: URL): Promise<Response> {
     const response = await fetch(currentUrl, {
       headers,
       redirect: "manual",
-      signal: AbortSignal.timeout(timeoutMs),
+      signal: deadline.signal(HOP_TIMEOUT_MS),
     });
 
     if (response.status >= 300 && response.status < 400) {
@@ -277,11 +313,24 @@ async function readBodyPrefix(response: Response): Promise<string> {
  * broke is useful, what someone is cooking is not ours to keep — the same rule
  * lib/analytics.ts states for events applies to logs.
  */
+/**
+ * The classifier's answer, as CookPilot reports it.
+ *
+ * This route used to carry its own copy of the whole ~400-line fingerprint table
+ * (`lib/server/botWall.ts`) so it could classify its own fetch. The copy drifted
+ * — CookPilot's had a 402 rule ours never got — and a second reader of the same
+ * responses was never the point. The shared parser classifies now; what arrives
+ * here is its verdict.
+ */
+type PageVerdict =
+  | { kind: "bot_wall"; vendor: BotWallVendor; signal?: string }
+  | { kind: "paywall" | "not_found" | "server_error" | "none" };
+
 function logVerdict(url: URL, status: number, verdict: PageVerdict) {
   if (verdict.kind !== "bot_wall") return;
   console.warn(
     `parse: bot wall  host=${url.hostname} vendor=${verdict.vendor} ` +
-      `signal=${verdict.signal} status=${status} confidence=${verdict.confidence}`,
+      `signal=${verdict.signal ?? "unknown"} status=${status}`,
   );
 }
 
@@ -353,7 +402,87 @@ function parserErrorMessage(data: unknown): string | null {
   return typeof message === "string" && message.trim() ? message.trim() : null;
 }
 
-async function parseWithCookPilotServer(url: string, hostname: string): Promise<CookPilotServerOutcome> {
+/** What the shared parser made of a response we fetched ourselves. */
+type SuppliedHtmlOutcome =
+  | { kind: "recipes"; recipes: Recipe[] }
+  | { kind: "verdict"; verdict: PageVerdict }
+  | { kind: "unavailable" };
+
+/**
+ * Hands a response we already hold to the shared parser.
+ *
+ * Our fetch is the one thing this route has that CookPilot does not — it leaves
+ * from Vercel, and a site that refuses Google Cloud will often serve us. The
+ * reading, though, was ours too: a JSON-LD-only extraction that could not see
+ * microdata, recipe-card markup, or anything the shared parser has learned since.
+ * Now the fetch stays here and the parsing goes there, so there is one parser.
+ *
+ * Costs nothing: the endpoint does no acquisition of its own, so it cannot reach
+ * the paid scraper and cannot bill this import twice.
+ */
+async function parseSuppliedHtml(
+  url: URL,
+  status: number,
+  headers: Headers,
+  html: string,
+  deadline: Deadline,
+): Promise<SuppliedHtmlOutcome> {
+  const endpoint = process.env.COOKPILOT_SUPPLIED_HTML_PARSER_URL?.trim();
+  const secret = process.env.RECIPEPRINTER_PARSER_SECRET?.trim();
+  if (!endpoint || !secret) return { kind: "unavailable" };
+
+  // This leg is last, so it is the one the budget actually squeezes. Worth a
+  // line when it happens: it means a real import reached the final reader with
+  // less time than that reader was designed for, which is the evidence for
+  // whether the legs ahead of it are budgeted right.
+  if (deadline.isBinding(SUPPLIED_HTML_TIMEOUT_MS)) {
+    console.warn(
+      `parse: supplied-html squeezed  host=${url.hostname} left=${deadline.remainingMs()}ms`,
+    );
+  }
+
+  let response: Response;
+  try {
+    response = await fetch(endpoint, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "X-RecipePrinter-Parser-Secret": secret,
+      },
+      body: JSON.stringify({
+        url: url.toString(),
+        status,
+        headers: Object.fromEntries(headers.entries()),
+        html,
+      }),
+      signal: deadline.signal(SUPPLIED_HTML_TIMEOUT_MS),
+    });
+  } catch (err) {
+    console.warn(
+      `parse: supplied-html unreachable  host=${url.hostname} ` +
+        `err=${err instanceof Error ? err.name : "unknown"}`,
+    );
+    return { kind: "unavailable" };
+  }
+
+  const data = (await response.json().catch(() => null)) as
+    | { verdict?: PageVerdict }
+    | null;
+
+  if (response.ok) {
+    const recipes = adaptCookPilotRecipes(data, url.toString());
+    if (recipes.length > 0) return { kind: "recipes", recipes };
+    return { kind: "verdict", verdict: { kind: "none" } };
+  }
+  if (data?.verdict) return { kind: "verdict", verdict: data.verdict };
+  return { kind: "unavailable" };
+}
+
+async function parseWithCookPilotServer(
+  url: string,
+  hostname: string,
+  deadline: Deadline,
+): Promise<CookPilotServerOutcome> {
   const endpoint = process.env.COOKPILOT_RECIPE_PARSER_URL?.trim();
   const secret = process.env.RECIPEPRINTER_PARSER_SECRET?.trim();
   if (!endpoint || !secret) return UNCONFIGURED;
@@ -370,7 +499,7 @@ async function parseWithCookPilotServer(url: string, hostname: string): Promise<
       // `multiRecipe` is RecipePrinter's opt-in for roundup pages: CookPilot returns
       // every recipe it finds ({ recipes: [...] }) instead of just the main one.
       body: JSON.stringify({ url, multiRecipe: true }),
-      signal: AbortSignal.timeout(COOKPILOT_TIMEOUT_MS),
+      signal: deadline.signal(COOKPILOT_TIMEOUT_MS),
     });
   } catch (err) {
     // A timeout here used to end the whole request: the abort threw straight
@@ -454,6 +583,9 @@ async function parseWithCookPilotServer(url: string, hostname: string): Promise<
 }
 
 export async function POST(request: Request) {
+  // Started before anything else, because the clock this is shadowing — the
+  // platform's — starts at invocation too.
+  const deadline = requestDeadline(REQUEST_BUDGET_MS);
   const limit = rateLimit(`parse:${callerKey(request)}`, PARSE_LIMIT, PARSE_WINDOW_MS);
   if (!limit.ok) {
     return NextResponse.json(
@@ -512,7 +644,7 @@ export async function POST(request: Request) {
     // blocklist has to gate every fetch of this URL, ours and theirs.
     await validatePublicHttpUrl(url);
 
-    const cookPilot = await parseWithCookPilotServer(url.toString(), url.hostname);
+    const cookPilot = await parseWithCookPilotServer(url.toString(), url.hostname, deadline);
     if (cookPilot.kind === "recipes") {
       return NextResponse.json({ success: true, recipes: cookPilot.recipes } satisfies ParseResponse);
     }
@@ -542,16 +674,21 @@ export async function POST(request: Request) {
       });
     }
 
-    const response = await fetchPublicHtml(url);
+    const response = await fetchPublicHtml(url, deadline);
 
     if (!response.ok) {
       // The body used to be discarded here and the status mapped straight to
-      // copy, which made a WAF block and a paywall the same event.
-      const verdict = classifyPage({
-        status: response.status,
-        headers: response.headers,
-        bodyPrefix: await readBodyPrefix(response),
-      });
+      // copy, which made a WAF block and a paywall the same event. The shared
+      // parser classifies it now; a prefix is all the fingerprints ever read.
+      const classified = await parseSuppliedHtml(
+        url,
+        response.status,
+        response.headers,
+        await readBodyPrefix(response),
+        deadline,
+      );
+      const verdict: PageVerdict =
+        classified.kind === "verdict" ? classified.verdict : { kind: "none" };
       logVerdict(url, response.status, verdict);
 
       // `parserExhausted` is already set above whenever CookPilot ran, walls
@@ -590,41 +727,31 @@ export async function POST(request: Request) {
     }
 
     const html = await readHtmlWithLimit(response);
-    const recipe = [...jsonLdBlocksFromHtml(html), ...jsonDataBlocksFromHtml(html)]
-      .map((block) => recipeFromJsonLd(block, response.url || url.toString()))
-      .find(Boolean);
+    const shared = await parseSuppliedHtml(url, response.status, response.headers, html, deadline);
 
-    if (!recipe) {
-      // The gap this classifier was written for. A challenge page that answers
-      // 200 clears the content-type gate above, carries no JSON-LD, and used
-      // to be reported to the cook and to PostHog as "no recipe on that page"
-      // — so `blocked` undercounted and `no_recipe`, the number the parser is
-      // tuned against, was quietly counting walls.
-      const verdict = classifyPage({
-        status: response.status,
-        headers: response.headers,
-        bodyPrefix: html.slice(0, BODY_PREFIX_BYTES),
-      });
-
-      if (verdict.kind === "bot_wall") {
-        logVerdict(url, response.status, verdict);
-        return errorResponse(BLOCKED_REMEDY, {
-          status: 422,
-          parserExhausted,
-          failure: "blocked",
-          botWall: { vendor: verdict.vendor },
-        });
-      }
-
-      return errorResponse(
-        "We couldn't find a complete recipe on that page. Try another link or paste the recipe text instead.",
-        { status: 422, parserExhausted },
-      );
+    if (shared.kind === "recipes") {
+      return NextResponse.json({ success: true, recipes: shared.recipes } satisfies ParseResponse);
     }
 
-    // The JSON-LD-only fallback picks a single recipe; wrap it as a one-element
-    // array so the client sees the same `recipes` shape as the CookPilot path.
-    return NextResponse.json({ success: true, recipes: [recipe] } satisfies ParseResponse);
+    // The gap the classifier was written for. A challenge page that answers 200
+    // clears the content-type gate above, carries no JSON-LD, and used to be
+    // reported to the cook and to PostHog as "no recipe on that page" — so
+    // `blocked` undercounted and `no_recipe`, the number the parser is tuned
+    // against, was quietly counting walls.
+    if (shared.kind === "verdict" && shared.verdict.kind === "bot_wall") {
+      logVerdict(url, response.status, shared.verdict);
+      return errorResponse(BLOCKED_REMEDY, {
+        status: 422,
+        parserExhausted,
+        failure: "blocked",
+        botWall: { vendor: shared.verdict.vendor },
+      });
+    }
+
+    return errorResponse(
+      "We couldn't find a complete recipe on that page. Try another link or paste the recipe text instead.",
+      { status: 422, parserExhausted },
+    );
   } catch (err) {
     if (err instanceof ParseHttpError) {
       return errorResponse(err.message, {

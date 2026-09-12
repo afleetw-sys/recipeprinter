@@ -1,9 +1,46 @@
 import type { ImportFailureCode } from "@/lib/analytics";
 import { SEARCH_PAGE_SHORT_MESSAGE } from "@/lib/importUrl";
+import { normalizeHost } from "@/lib/url";
+
+/**
+ * The two things every mapper below reads: the thrown value's `code` (Firebase
+ * and Firestore both carry one; a plain Error does not) and its message.
+ *
+ * One shape, five copies, until this — which mattered less than the next
+ * function does.
+ */
+function errorParts(error: unknown): { code: string; message: string } {
+  return {
+    code: (error as { code?: string })?.code ?? "",
+    message: error instanceof Error ? error.message : String(error || ""),
+  };
+}
+
+/**
+ * Is this a connection problem rather than a refusal?
+ *
+ * Five of the mappers below asked this, each with its own list, and the lists
+ * had drifted into disagreeing about the same failure. `deadline-exceeded`
+ * during sign-in fell through to the generic fallback while the identical
+ * failure creating a share link got the right sentence; `failed to fetch` was
+ * recognised in three of the five. There is no reason a dropped connection
+ * should be a different KIND of problem depending on which screen you are on —
+ * the wording per screen is a deliberate choice, the detection is not.
+ *
+ * The union of what the five checked, so this recognises strictly more than any
+ * of them did and nothing that was previously matched is now missed.
+ */
+function isNetworkFailure(code: string, message: string): boolean {
+  return (
+    code.includes("network") ||
+    code.includes("unavailable") ||
+    code.includes("deadline-exceeded") ||
+    /network|timeout|failed to fetch|temporarily unavailable/i.test(message)
+  );
+}
 
 export function friendlyAuthError(error: unknown, fallback = "We couldn't sign you in. Please try again."): string {
-  const code = (error as { code?: string })?.code ?? "";
-  const message = error instanceof Error ? error.message : String(error || "");
+  const { code, message } = errorParts(error);
 
   if (code.includes("invalid-credential") || code.includes("wrong-password") || code.includes("user-not-found")) {
     return "That email or password didn't match an account.";
@@ -23,7 +60,7 @@ export function friendlyAuthError(error: unknown, fallback = "We couldn't sign y
   if (code.includes("too-many-requests")) {
     return "Too many attempts. Please wait a bit and try again.";
   }
-  if (code.includes("network") || /network/i.test(message)) {
+  if (isNetworkFailure(code, message)) {
     return "We couldn't connect. Check your internet connection and try again.";
   }
   if (code.includes("invalid-action-code") || code.includes("expired-action-code")) {
@@ -37,13 +74,12 @@ export function friendlyRecipeLibraryError(
   error: unknown,
   fallback = "We couldn't load your CookPilot recipes. Please try again.",
 ): string {
-  const code = (error as { code?: string })?.code ?? "";
-  const message = error instanceof Error ? error.message : String(error || "");
+  const { code, message } = errorParts(error);
 
   if (code.includes("permission-denied") || code.includes("unauthenticated")) {
     return "Please sign in again to use your CookPilot recipes.";
   }
-  if (code.includes("deadline-exceeded") || code.includes("unavailable") || /network|timeout/i.test(message)) {
+  if (isNetworkFailure(code, message)) {
     return "We couldn't reach your recipe library. Check your connection and try again.";
   }
 
@@ -51,8 +87,7 @@ export function friendlyRecipeLibraryError(
 }
 
 export function friendlyClaimError(error: unknown): string {
-  const code = (error as { code?: string })?.code ?? "";
-  const message = error instanceof Error ? error.message : String(error || "");
+  const { code, message } = errorParts(error);
 
   if (code.includes("already-exists")) {
     return "You've already claimed your free template.";
@@ -63,7 +98,7 @@ export function friendlyClaimError(error: unknown): string {
   if (code.includes("unauthenticated")) {
     return "Please sign in with your CookPilot account to claim a free template.";
   }
-  if (code.includes("deadline-exceeded") || code.includes("unavailable") || /network|timeout/i.test(message)) {
+  if (isNetworkFailure(code, message)) {
     return "We couldn't finish claiming your template. Check your connection and try again.";
   }
 
@@ -71,8 +106,7 @@ export function friendlyClaimError(error: unknown): string {
 }
 
 export function friendlyPhotoUploadError(error: unknown): string {
-  const code = (error as { code?: string })?.code ?? "";
-  const message = error instanceof Error ? error.message : String(error || "");
+  const { code, message } = errorParts(error);
 
   // Thrown by lib/coverPhoto.ts when the browser can't decode the file — most
   // often a HEIC or a corrupt image picked past the `accept="image/*"` filter.
@@ -90,15 +124,23 @@ export function friendlyPhotoUploadError(error: unknown): string {
   if (code.includes("cancel")) {
     return "That photo upload was cancelled.";
   }
-  if (code.includes("network") || /network|timeout|failed to fetch|temporarily unavailable/i.test(message)) {
+  if (isNetworkFailure(code, message)) {
     return "We couldn't connect to save that photo. Check your connection and try again.";
   }
 
   return "We couldn't add that photo. Please try again.";
 }
 
+/**
+ * Deliberately does NOT use `isNetworkFailure`. RevenueCat throws a numeric
+ * `errorCode`, not the string `code` that predicate reads, so it would be
+ * matching on the message alone anyway — and "temporarily unavailable" means
+ * something different here (the SDK has no usable key or offering) than it does
+ * on a Firestore call, which is why that phrase is caught by its own branch
+ * above and answered differently.
+ */
 export function friendlyPurchaseSetupError(error: unknown): string {
-  const message = error instanceof Error ? error.message : String(error || "");
+  const { message } = errorParts(error);
 
   if (/purchase option|package|offering|revenuecat/i.test(message)) {
     return "This template isn't ready to buy yet. Please try another template or check back soon.";
@@ -117,8 +159,7 @@ export function friendlyPurchaseSetupError(error: unknown): string {
 }
 
 export function friendlyShareLinkError(error: unknown): string {
-  const code = (error as { code?: string })?.code ?? "";
-  const message = error instanceof Error ? error.message : String(error || "");
+  const { code, message } = errorParts(error);
 
   if (/already taken/i.test(message) || code.includes("already-exists")) {
     return "That link name is already in use. Try a different one.";
@@ -126,7 +167,7 @@ export function friendlyShareLinkError(error: unknown): string {
   if (code.includes("permission-denied") || code.includes("unauthenticated")) {
     return "Your sign-in has expired. Sign in again, then try creating the link.";
   }
-  if (code.includes("network") || code.includes("unavailable") || /network|timeout|failed to fetch/i.test(message)) {
+  if (isNetworkFailure(code, message)) {
     return "We couldn't create the link. Check your connection and try again.";
   }
 
@@ -150,11 +191,6 @@ const LOOPBACK_HOSTS = new Set(["localhost", "127.0.0.1", "0.0.0.0", "::1", "[::
  * reserved by definition, not by a list we would have to keep current.
  */
 const RESERVED_TLDS = new Set(["test", "invalid", "localhost", "example"]);
-
-/** Lowercased, trimmed, `www.` dropped, so every check below compares like with like. */
-function normalizeHost(hostname: string): string {
-  return hostname.trim().toLowerCase().replace(/^www\./, "");
-}
 
 /**
  * True for a host that is reserved by definition and can never hold a recipe.
