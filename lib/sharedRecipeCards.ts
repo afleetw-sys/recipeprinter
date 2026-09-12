@@ -1,5 +1,6 @@
 import type { SharedRecipeCard } from "@/types/sharedRecipeCard";
 import { RECIPE_PRINTER_SHARED_CARDS_PATH } from "@/lib/firebase/recipePrinterPaths";
+import { stripUndefined } from "@/lib/firebase/stripUndefined";
 
 const SHARED_RECIPE_CARDS_COLLECTION = "sharedRecipeCards";
 
@@ -32,25 +33,6 @@ async function slugAvailable(slug: string): Promise<boolean> {
     if (isPermissionDeniedError(error)) return false;
     throw error;
   }
-}
-
-// Recipe/RecipeIngredient/RecipeInstruction have several optional fields
-// (yield, servings, image, per-ingredient amount/unit/note, ...). Firestore's
-// setDoc rejects a document containing an explicit `undefined` anywhere,
-// unlike JSON.stringify (which just drops it) — so an unset optional field on
-// the recipe being shared throws instead of silently omitting the key.
-function stripUndefined<T>(value: T): T {
-  if (Array.isArray(value)) {
-    return value.map((item) => stripUndefined(item)) as unknown as T;
-  }
-  if (value && typeof value === "object") {
-    return Object.fromEntries(
-      Object.entries(value as Record<string, unknown>)
-        .filter(([, v]) => v !== undefined)
-        .map(([k, v]) => [k, stripUndefined(v)]),
-    ) as T;
-  }
-  return value;
 }
 
 export async function createSharedRecipeCard(

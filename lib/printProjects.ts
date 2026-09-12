@@ -17,6 +17,7 @@ import {
   legacyKnownEmpty,
   rememberLegacyEmpty,
 } from "@/lib/legacyCollections";
+import { stripUndefined } from "@/lib/firebase/stripUndefined";
 import {
   recipePrinterProjectPath,
   recipePrinterProjectsPath,
@@ -96,25 +97,6 @@ export function summarizePrintProject(project: PrintProject): PrintProjectSummar
 function summaryOf(data: Record<string, unknown>): PrintProjectSummary {
   if (!isInlineDocument(data)) return data as unknown as PrintProjectSummary;
   return { ...summarizePrintProject(data as unknown as PrintProject), contentVersion: 1 };
-}
-
-// Firestore's setDoc rejects a document containing an explicit `undefined`
-// anywhere (unlike JSON.stringify, which just drops it) — a saved project has
-// several optional fields (title, cover, backCover, book-only settings), so
-// this needs the same recursive strip lib/sharedRecipeCards.ts already uses
-// for the same reason.
-function stripUndefined<T>(value: T): T {
-  if (Array.isArray(value)) {
-    return value.map((item) => stripUndefined(item)) as unknown as T;
-  }
-  if (value && typeof value === "object") {
-    return Object.fromEntries(
-      Object.entries(value as Record<string, unknown>)
-        .filter(([, v]) => v !== undefined)
-        .map(([k, v]) => [k, stripUndefined(v)]),
-    ) as T;
-  }
-  return value;
 }
 
 /**

@@ -18,82 +18,17 @@
 // happen, and these two have nothing to say to each other.
 // ─────────────────────────────────────────────────────────────────────────────
 
+import { idbStore } from "@/lib/idb";
 import { uid } from "@/lib/ids";
 
-const IDB_NAME = "recipeprinter-photos";
-const IDB_VERSION = 1;
-const IDB_STORE = "local-photos";
+// Its own database, not the one lib/pendingImport.ts opens — see the note at
+// the top of this file. The plumbing is shared (lib/idb.ts); the database is
+// not.
+const photos = idbStore("recipeprinter-photos", 1, "local-photos");
 
 // Object URLs are per-document and leak if you mint one per render, so each id
 // gets exactly one for the life of the page.
 const objectUrls = new Map<string, string>();
-
-function idbAvailable(): boolean {
-  return typeof window !== "undefined" && "indexedDB" in window;
-}
-
-function openDb(): Promise<IDBDatabase | null> {
-  if (!idbAvailable()) return Promise.resolve(null);
-  return new Promise((resolve) => {
-    let request: IDBOpenDBRequest;
-    try {
-      request = window.indexedDB.open(IDB_NAME, IDB_VERSION);
-    } catch {
-      resolve(null);
-      return;
-    }
-    request.onupgradeneeded = () => {
-      const db = request.result;
-      if (!db.objectStoreNames.contains(IDB_STORE)) db.createObjectStore(IDB_STORE);
-    };
-    request.onsuccess = () => resolve(request.result);
-    request.onerror = () => resolve(null);
-    request.onblocked = () => resolve(null);
-  });
-}
-
-function put(db: IDBDatabase, key: string, value: Blob): Promise<boolean> {
-  return new Promise((resolve) => {
-    try {
-      const tx = db.transaction(IDB_STORE, "readwrite");
-      tx.objectStore(IDB_STORE).put(value, key);
-      tx.oncomplete = () => resolve(true);
-      tx.onerror = () => resolve(false);
-      tx.onabort = () => resolve(false);
-    } catch {
-      resolve(false);
-    }
-  });
-}
-
-function get(db: IDBDatabase, key: string): Promise<Blob | null> {
-  return new Promise((resolve) => {
-    try {
-      const request = db.transaction(IDB_STORE, "readonly").objectStore(IDB_STORE).get(key);
-      request.onsuccess = () => {
-        const value = request.result as unknown;
-        resolve(value instanceof Blob ? value : null);
-      };
-      request.onerror = () => resolve(null);
-    } catch {
-      resolve(null);
-    }
-  });
-}
-
-function remove(db: IDBDatabase, key: string): Promise<void> {
-  return new Promise((resolve) => {
-    try {
-      const tx = db.transaction(IDB_STORE, "readwrite");
-      tx.objectStore(IDB_STORE).delete(key);
-      tx.oncomplete = () => resolve();
-      tx.onerror = () => resolve();
-      tx.onabort = () => resolve();
-    } catch {
-      resolve();
-    }
-  });
-}
 
 /**
  * Stores a photo and returns its id, or null if IndexedDB is unusable (Safari
@@ -102,12 +37,8 @@ function remove(db: IDBDatabase, key: string): Promise<void> {
  * import failing over an image.
  */
 export async function putLocalPhoto(blob: Blob): Promise<string | null> {
-  const db = await openDb();
-  if (!db) return null;
   const id = uid();
-  const ok = await put(db, id, blob);
-  db.close();
-  if (!ok) return null;
+  if (!(await photos.put(id, blob))) return null;
   objectUrls.set(id, URL.createObjectURL(blob));
   return id;
 }
@@ -127,11 +58,10 @@ export function rememberLocalPhotoUrl(id: string, blob: Blob): string {
 export async function localPhotoUrl(id: string): Promise<string | null> {
   const cached = objectUrls.get(id);
   if (cached) return cached;
-  const db = await openDb();
-  if (!db) return null;
-  const blob = await get(db, id);
-  db.close();
-  if (!blob) return null;
+  const blob = await photos.get<unknown>(id);
+  // Anything but a Blob is not a photo: the store is untyped, and a value left
+  // by an older shape should read as "gone", not crash `createObjectURL`.
+  if (!(blob instanceof Blob)) return null;
   return rememberLocalPhotoUrl(id, blob);
 }
 
@@ -143,10 +73,7 @@ export async function deleteLocalPhoto(id: string): Promise<void> {
     URL.revokeObjectURL(url);
     objectUrls.delete(id);
   }
-  const db = await openDb();
-  if (!db) return;
-  await remove(db, id);
-  db.close();
+  await photos.remove(id);
 }
 
 /** True for a URL this module minted — i.e. one that dies with the document. */
