@@ -52,6 +52,11 @@ const SLOTS_PER_SHEET = 1;
 // during a cold load rather than tuned purely for sweep throughput.
 const MEASURE_WINDOW_SIZE = 8;
 
+/** The `sheets` value while a measurement pass is still running. A single
+    shared array rather than a fresh `[]`, so the memos derived from it keep
+    their identities and skip too — see the gate in `sheets`. */
+const NO_SHEETS_YET: PageSheet[] = [];
+
 // Measured faces are addressed by EVERY input that changes a card's rendered
 // height, not just the recipe and size. This used to be `id::size` alone, with
 // the other inputs stored alongside the entry and compared on read — so a
@@ -582,7 +587,41 @@ export function usePrintSheets({
     [measuredRecipeItems, measuredFacesFor],
   );
 
+  /**
+   * Whether a finished layout is what this render would produce.
+   *
+   * The same condition the double-buffer effect below uses to decide whether to
+   * PUT a layout on screen, named once so the two can never drift — which is
+   * the whole basis for the gate in `sheets`: work whose result that effect
+   * will not take is work nobody will ever see.
+   */
+  const layoutSettled = printLayoutReady || measuredRecipeItems.length === 0;
+
   const sheets = useMemo<PageSheet[]>(() => {
+    // Nothing is paginated while a measurement pass is still running.
+    //
+    // `onSettled` fires from a macrotask, one recipe at a time, so React cannot
+    // batch them: every settled recipe used to produce a fresh `measuredFaces`,
+    // a fresh `measuredFacesFor`, and a complete re-pagination of the entire
+    // book — packing every sheet, laying out the contents, assembling every
+    // spread. On a two-hundred-recipe cookbook that is two hundred full
+    // paginations during one cold load.
+    //
+    // And all but the last were discarded. `displayedLayout` only ever advances
+    // on `layoutSettled`, so the intermediate layouts were computed, handed to
+    // `navItems` and `spreads`, and dropped — the double-buffer's entire
+    // purpose is that a half-measured book never reaches the screen.
+    //
+    // So this computes once per pass, when the pass finishes, instead of once
+    // per recipe in it. Nothing about measurement changes: the same recipes are
+    // measured in the same order at the same speed, and the window below still
+    // advances on every settle. What changes is that the answer is worked out
+    // when somebody is going to read it.
+    //
+    // The stable empty array matters — a fresh `[]` each time would give
+    // `navItems` and `spreads` new identities and hand the work straight back.
+    if (!layoutSettled) return NO_SHEETS_YET;
+
     const slotCount = SLOTS_PER_SHEET;
 
     interface Column {
@@ -1010,7 +1049,7 @@ export function usePrintSheets({
     }
 
     return out;
-  }, [sections, allItems, cover, backCover, dedication, padOpening, tableOfContents, bookTitle, cardSize, continueOnBack, photoOnFor, photoStyle, sourceUrlOn, template, measuredFacesFor, cookbookLayouts, cookbookResolution, itemPlacements, bookPreset]);
+  }, [layoutSettled, sections, allItems, cover, backCover, dedication, padOpening, tableOfContents, bookTitle, cardSize, continueOnBack, photoOnFor, photoStyle, sourceUrlOn, template, measuredFacesFor, cookbookLayouts, cookbookResolution, itemPlacements, bookPreset]);
 
   // What the rail and deck actually browse: one face per item, in physical
   // sheet order, except that a recipe's own faces (front + any continuations)
@@ -1237,10 +1276,8 @@ export function usePrintSheets({
   // previous frame to hold, so the caller shows a placeholder — but only then.
   const [displayedLayout, setDisplayedLayout] = useState<CommittedLayout | null>(null);
   useEffect(() => {
-    if (printLayoutReady || measuredRecipeItems.length === 0) {
-      setDisplayedLayout(committedLayout);
-    }
-  }, [printLayoutReady, measuredRecipeItems.length, committedLayout]);
+    if (layoutSettled) setDisplayedLayout(committedLayout);
+  }, [layoutSettled, committedLayout]);
 
   return {
     hasRecipeBackSide,

@@ -58,14 +58,63 @@ export const MAX_LOCAL_PROJECTS = 40;
 
 type LocalProjectMap = Record<string, PrintProject>;
 
+/* The shelf holds up to MAX_LOCAL_PROJECTS whole `PrintProject`s with their
+   recipes inline, so the stored value runs to megabytes — and every read used
+   to `JSON.parse` all of it. `/projects` alone does that three times per load
+   (initial, after the account read, after the prune), and filing a project on
+   the way out parses the lot, sorts it, and re-serializes the lot.
+
+   Cached on the RAW STRING rather than on a dirty flag. Reading the string back
+   is cheap next to parsing it, and comparing it means a shelf changed in
+   another tab invalidates this one for free — a flag would happily serve that
+   tab's stale copy. */
+let cachedRaw: string | null = null;
+let cachedMap: LocalProjectMap | null = null;
+
 function readAll(): LocalProjectMap {
-  const parsed = localStore.getJson<LocalProjectMap>(LOCAL_PROJECTS_KEY);
+  const raw = localStore.get(LOCAL_PROJECTS_KEY);
+  if (raw === null) {
+    cachedRaw = null;
+    cachedMap = null;
+    return {};
+  }
+  if (raw === cachedRaw && cachedMap) return cachedMap;
+
+  let parsed: unknown;
+  try {
+    parsed = JSON.parse(raw);
+  } catch {
+    return {};
+  }
   if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) return {};
-  return parsed;
+  cachedRaw = raw;
+  cachedMap = parsed as LocalProjectMap;
+  return cachedMap;
+}
+
+/** A copy safe to mutate. `readAll` hands back the cached object itself, and
+    editing that in place would corrupt what every other reader sees. */
+function readAllForEdit(): LocalProjectMap {
+  return { ...readAll() };
 }
 
 function writeAll(map: LocalProjectMap): boolean {
-  return localStore.setJson(LOCAL_PROJECTS_KEY, map);
+  let serialized: string;
+  try {
+    serialized = JSON.stringify(map);
+  } catch {
+    return false;
+  }
+  const stored = localStore.set(LOCAL_PROJECTS_KEY, serialized);
+  // Seed the cache from what we just wrote, so the read that almost always
+  // follows a write costs nothing. Only on success — a refused write (private
+  // mode, quota) leaves the stored value as it was, and claiming otherwise
+  // would serve a shelf that is not on disk.
+  if (stored) {
+    cachedRaw = serialized;
+    cachedMap = map;
+  }
+  return stored;
 }
 
 /** Most recently updated first — the order `/projects` renders them in. */
@@ -98,7 +147,7 @@ function byNewest(projects: PrintProject[]): PrintProject[] {
 export function saveLocalProject(project: PrintProject): boolean {
   if (!project.id) return false;
 
-  const map = readAll();
+  const map = readAllForEdit();
   map[project.id] = project;
 
   const kept = byNewest(Object.values(map)).slice(0, MAX_LOCAL_PROJECTS);
@@ -122,7 +171,7 @@ export function loadLocalProject(projectId: string): PrintProject | null {
 }
 
 export function deleteLocalProject(projectId: string): void {
-  const map = readAll();
+  const map = readAllForEdit();
   if (!map[projectId]) return;
   delete map[projectId];
   writeAll(map);
@@ -137,7 +186,7 @@ export function deleteLocalProject(projectId: string): void {
  * failure must not be allowed to delete anything.
  */
 export function pruneLocalProjects(accountProjectIds: readonly string[]): void {
-  const map = readAll();
+  const map = readAllForEdit();
   let changed = false;
   for (const id of accountProjectIds) {
     if (map[id]) {
