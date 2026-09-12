@@ -29,6 +29,7 @@ import { Dialog } from "@/components/Dialog";
 import { Checkbox, CheckboxGroup } from "@/components/Controls";
 import { RecipeLoadingState } from "@/components/RecipeLoadingState";
 import { useModalFocus } from "@/components/useModalFocus";
+import { useBackDismiss } from "@/components/useBackDismiss";
 import {
   PRINT_CARD_SIZE_OPTIONS,
   type PrintCardSize,
@@ -4035,6 +4036,19 @@ export default function PrintPage() {
   // promise of modality was never actually kept for assistive tech.
   const configPanelRef = useRef<HTMLElement>(null);
   useModalFocus(configPanelRef, () => setMobileDrawer(null), { disabled: !mobileDrawer });
+  /**
+   * And Back closes it, like every other overlay in the app.
+   *
+   * This drawer and the structure sheet are the two overlays that do not go
+   * through `Dialog`, which is where `useBackDismiss` is applied for everything
+   * else — so they were the two where the device Back gesture fell through to
+   * the router instead. On /print that is not a surprise, it is a loss: leaving
+   * lands on the home page, which files the project and starts clean, so a Back
+   * meant to shut a drawer read as the recipes having been deleted. These are
+   * also the only two overlays that are MOBILE-ONLY, which is precisely where
+   * Back is the close gesture and there is no Escape key to reach for instead.
+   */
+  useBackDismiss(Boolean(mobileDrawer), () => setMobileDrawer(null));
   const [sizeMenuOpen, setSizeMenuOpen] = useState(false);
   const [settingsMenuOpen, setSettingsMenuOpen] = useState(false);
 
@@ -4432,8 +4446,22 @@ export default function PrintPage() {
     if (pendingFocusRecipeId === pendingId) setPendingFocusRecipeId(null);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [pendingFocusNavId, pendingFocusRecipeId, navItems, cookbookView, spreads]);
-  // Close the rail's Add overflow on an outside click. Escape also clears any
-  // organizer selection; normal recipe clicks manage selection themselves.
+  /**
+   * Close the rail's Add overflow on an outside click. Escape also clears any
+   * organizer selection; normal recipe clicks manage selection themselves.
+   *
+   * The one dismissal in the app that deliberately is NOT `useMenuDismiss`, so
+   * it does not read as the last copy nobody got round to. Two reasons, either
+   * of which would be enough:
+   *
+   * - The Add menu is PORTALLED to the body (see `recipe-page-rail__add-menu`
+   *   in PageRail), so "inside" is not `contains` on one ref — the hook's whole
+   *   containment test. Teaching it a second ref or a selector to cover this
+   *   one caller is how a shared thing becomes a confusing one.
+   * - Escape here does two jobs. It shuts the menu AND clears the rail
+   *   selection, which is page state the rail's own menus have no business
+   *   touching.
+   */
   useEffect(() => {
     const hasSelection = effectiveRailSelection.size >= 2;
     if (!addMenuOpen && !hasSelection) return;

@@ -1,13 +1,14 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { signOut } from "firebase/auth";
 import { AccountIcon, ChevronRightIcon, ICON_SIZE, SpinnerIcon, XIcon } from "@/components/icons";
 import { CookPilotLoginDialog, useCookPilotAuth } from "@/components/CookPilotAuth";
 import { getFirebaseAuth } from "@/lib/firebase/client";
 import { loadPrintProjectSummaries, summarizePrintProject } from "@/lib/printProjects";
 import { listableLocalProjects, loadLocalProjects } from "@/lib/localProjects";
+import { useMenuDismiss } from "@/lib/useMenuDismiss";
 
 /** This branch only runs signed OUT, where there is no account list to dedupe
     the device shelf against. */
@@ -176,14 +177,17 @@ export default function AccountMenu({
     setOpen(true);
   }, [openWhenReady, ready]);
 
-  useEffect(() => {
-    if (!open) return;
-    const close = (event: PointerEvent) => {
-      if (!rootRef.current?.contains(event.target as Node)) setOpen(false);
-    };
-    window.addEventListener("pointerdown", close);
-    return () => window.removeEventListener("pointerdown", close);
-  }, [open]);
+  // The shared dismissal rather than a private copy of it. This one was the
+  // weakest of the copies — no Escape, no resize, and bubble-phase — while
+  // sitting in the header on every route.
+  //
+  // `closeOnScroll` off, the same call ZoomControl makes: the panel is
+  // absolutely positioned inside this root, so it rides the avatar rather than
+  // being left behind by a scroll. Escape here cannot collide with the sign-in
+  // dialog either — opening that closes the menu first (see the Sign in button
+  // below), which disables this.
+  const closeMenu = useCallback(() => setOpen(false), []);
+  useMenuDismiss(rootRef, closeMenu, { enabled: open, closeOnScroll: false });
 
   // Keyed on the uid, not the `user` object, which Firebase replaces on every
   // token refresh — the same fix the other account-keyed effects already got.
