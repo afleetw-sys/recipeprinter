@@ -1,17 +1,20 @@
 "use client";
 
 import type {
+  CookbookFrontMatter,
   CoverConfig,
+  PrintCardSize,
   PrintProject,
   PrintProjectContent,
   PrintProjectSettings,
   PrintProjectSummary,
   RecipePagePlacement,
+  RecipePrintTemplate,
   Section,
   StashedCookbook,
 } from "@/types/recipe";
 import { uid } from "@/lib/ids";
-import { metaSectionsFromFull } from "@/lib/project";
+import { metaSectionsFromFull, type ProjectMeta } from "@/lib/project";
 import {
   LEGACY_PROJECTS_EMPTY_KEY,
   legacyKnownEmpty,
@@ -146,11 +149,7 @@ export function createPrintProjectId(): string {
   return uid();
 }
 
-/** Assembles a full `PrintProject` snapshot from the /print page's working
-    state at the moment of saving — the one place the section/cover/title
-    layer (lib/project.ts) and the device-local print-layout preferences
-    (lib/printSettings.ts) actually get combined into the canonical document. */
-export function assemblePrintProject(params: {
+export interface AssembleProjectParams {
   id: string;
   ownerUid: string;
   title?: string;
@@ -161,7 +160,7 @@ export function assemblePrintProject(params: {
   cover?: CoverConfig;
   backCover?: CoverConfig;
   dedication?: CoverConfig;
-  frontMatter?: import("@/types/recipe").CookbookFrontMatter;
+  frontMatter?: CookbookFrontMatter;
   settings: PrintProjectSettings;
   itemPlacements?: Record<string, RecipePagePlacement>;
   /** A book set aside by switching to recipe cards — see `StashedCookbook`.
@@ -171,7 +170,103 @@ export function assemblePrintProject(params: {
   createdAt?: number;
   revision?: number;
   kind?: "cookbook" | "printProject";
-}): PrintProject {
+}
+
+/**
+ * The print-layout half of a project's settings: what the cook has set up on
+ * screen, or — filing from outside the workspace, where there is no live state
+ * to read — whatever their stored device preferences say.
+ *
+ * The half that does NOT come from the book's own metadata, which is the line
+ * `projectContentFromMeta` draws.
+ */
+export interface PrintLayoutSettings {
+  cardSize: PrintCardSize;
+  template: RecipePrintTemplate;
+  doubleSided: boolean;
+  showPhoto: boolean;
+  showSourceUrl: boolean;
+  /** Per-project rather than a device preference, so absent when filing from
+      outside the workspace — `writePrintSettings` has never stored it. */
+  showDescription?: boolean;
+  showCutLines: boolean;
+}
+
+/**
+ * Everything a saved project takes from the working copy's metadata.
+ *
+ * Three places built this by hand: the account save and the PDF export on the
+ * print page, and `fileProjectLocally` on the way out of the workspace. They
+ * were written to agree — `fileProjectLocally` said so, "the same rule
+ * `currentProject` applies on the print page" — and they did not: the device
+ * shelf dropped `railSortMode`, so a book filed on the way out and reopened
+ * later came back having forgotten it was sorted A-Z.
+ *
+ * A book set aside is still a book, which is the rule all three need and the
+ * one most easily got wrong. "Print as recipe cards instead" moves the cover,
+ * chapters and front matter into `stashedCookbook` and leaves `meta` almost
+ * empty — and the autosave that followed wrote that emptiness straight over the
+ * saved document. A purchased cookbook came back as `kind: "printProject"`,
+ * renamed after whichever recipe happened to be first, with its cover and
+ * dedication deleted from the record. So the stash counts as proof of what this
+ * document IS, and supplies the fields the live meta no longer has.
+ * `settings.cookbookMode` still tracks the live view, so reopening lands the
+ * cook back in recipe cards where they left off — the DOCUMENT is a cookbook,
+ * the VIEW is cards.
+ *
+ * What each caller still owns is what genuinely differs: which document this is
+ * (`id`, `ownerUid`, `revision`), what is in it (`sections`), and what it is
+ * called — the workspace derives a title from the cook's name for the project,
+ * the shelf from the recipes, and neither answer suits the other.
+ */
+export function projectContentFromMeta(
+  meta: ProjectMeta,
+  layout: PrintLayoutSettings,
+): Pick<
+  AssembleProjectParams,
+  | "projectTitle"
+  | "cover"
+  | "backCover"
+  | "dedication"
+  | "frontMatter"
+  | "kind"
+  | "settings"
+  | "itemPlacements"
+  | "stashedCookbook"
+> {
+  const stash = meta.stashedCookbook;
+  return {
+    // Saved beside the resolved title so a reopened project can tell a rename
+    // from a cover name. Folding the two together would force a choice between
+    // losing the rename and having cover edits stop renaming the project.
+    projectTitle: meta.projectTitle,
+    cover: meta.cover ?? stash?.cover,
+    backCover: meta.backCover ?? stash?.backCover,
+    dedication: meta.dedication ?? stash?.dedication,
+    frontMatter: meta.frontMatter ?? stash?.frontMatter,
+    kind: meta.cookbookMode || meta.stashedCookbook ? "cookbook" : "printProject",
+    settings: {
+      ...layout,
+      cookbookMode: meta.cookbookMode,
+      tableOfContents: meta.tableOfContents,
+      sectionDividers: meta.sectionDividers,
+      bookPreset: meta.cookbookPreset,
+      cookbookWelcomeCompleted: meta.cookbookWelcomeCompleted,
+      tocKicker: meta.tocKicker,
+      tocTitle: meta.tocTitle,
+      photoStyle: meta.photoStyle,
+      railSortMode: meta.railSortMode,
+    },
+    itemPlacements: meta.itemPlacements,
+    stashedCookbook: meta.stashedCookbook,
+  };
+}
+
+/** Assembles a full `PrintProject` snapshot from the /print page's working
+    state at the moment of saving — the one place the section/cover/title
+    layer (lib/project.ts) and the device-local print-layout preferences
+    (lib/printSettings.ts) actually get combined into the canonical document. */
+export function assemblePrintProject(params: AssembleProjectParams): PrintProject {
   const now = Date.now();
   return {
     id: params.id,

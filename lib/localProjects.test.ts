@@ -96,6 +96,20 @@ describe("the on-device project shelf", () => {
     expect(shelved?.sections[0]?.title).toBe("Breads");
   });
 
+  /* The shelf built its own copy of the meta→document mapping, and that copy
+     had stopped carrying `railSortMode`: a book sorted A-Z, filed on the way
+     out of the workspace and reopened later, came back in hand-arranged order
+     with the sort control showing "Custom". It reads `projectContentFromMeta`
+     alongside the account save now. */
+  it("files the book's settings, including the ordering it was saved in", () => {
+    const items = [recipeItem("r1", "Sourdough"), recipeItem("r2", "Focaccia")];
+    fileProjectLocally(items, cookbookMeta({ railSortMode: "title", tocTitle: "Contents" }));
+
+    const shelved = loadLocalProject("book-a");
+    expect(shelved?.settings.railSortMode).toBe("title");
+    expect(shelved?.settings.tocTitle).toBe("Contents");
+  });
+
   // The whole reason the shelf exists: leaving the workspace must not be able
   // to destroy a book, so filing has to actually report whether it worked.
   it("reports failure rather than silently dropping a book it cannot file", () => {

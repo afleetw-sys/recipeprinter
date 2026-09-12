@@ -8,7 +8,7 @@ import type {
 } from "@/types/recipe";
 import { localStore } from "@/lib/storage";
 import { buildSections, type ProjectMeta } from "@/lib/project";
-import { assemblePrintProject } from "@/lib/printProjects";
+import { assemblePrintProject, projectContentFromMeta } from "@/lib/printProjects";
 import { readPrintSettings } from "@/lib/printSettings";
 import { uid } from "@/lib/ids";
 import { lookupProjectId, projectContentKey, rememberProjectId } from "@/lib/projectIdentity";
@@ -288,25 +288,34 @@ export function fileProjectLocally(items: QueueItem[], meta: ProjectMeta): strin
   const printable = items.filter((item) => item.status === "ready" && item.recipe);
   if (printable.length === 0) return null;
 
-  /**
-   * A book set aside is still a book — the same rule `currentProject` applies
-   * on the print page. "Print as recipe cards instead" moves the cover,
-   * chapters and front matter into `stashedCookbook` and leaves `meta` nearly
-   * empty, so filing from the live fields alone would shelve a cookbook with
-   * its cover and dedication missing.
-   */
-  const stash = meta.stashedCookbook;
-  const cover = meta.cover ?? stash?.cover;
-
   // Stored device preferences, passed through rather than validated here: they
   // were written from already-validated live state, and the `?project=` loader
   // validates them again on the way back in (`isPrintCardSize` /
   // `isRecipePrintTemplate`), which is the right boundary for that check.
+  //
+  // There is no live workspace state to read from out here — the homepage files
+  // a book it is not showing — so this is the shelf's answer to the same
+  // question `currentLayoutSettings` answers on the print page.
   const stored = readPrintSettings() ?? {};
+
+  // Cover, front matter, kind and the book's own settings, on the same terms
+  // the account save gets them — including a book set aside still counting as a
+  // book. This used to be a second copy of that mapping, and it had quietly
+  // stopped carrying `railSortMode`: a book filed on the way out and reopened
+  // later came back having forgotten it was sorted A-Z.
+  const fromMeta = projectContentFromMeta(meta, {
+    cardSize: (stored.cardSize as PrintCardSize) ?? "letter",
+    template: (stored.template as RecipePrintTemplate) ?? "classic",
+    doubleSided: stored.doubleSided ?? true,
+    showPhoto: stored.showPhoto ?? true,
+    showSourceUrl: stored.showSourceUrl ?? false,
+    showCutLines: stored.showCutLines ?? false,
+  });
 
   const isBook = Boolean(meta.cookbookMode || meta.stashedCookbook);
   const contentKey = projectContentKey(printable, isBook);
   const project = assemblePrintProject({
+    ...fromMeta,
     // The content's existing project if it has one, otherwise this working
     // copy's own id — unless a purchase is riding on either, in which case the
     // working copy keeps its own. See `filingProjectId`.
@@ -317,36 +326,14 @@ export function fileProjectLocally(items: QueueItem[], meta: ProjectMeta): strin
     ownerUid: "",
     // A name the cook typed wins. Failing that, a card job has no cover to take
     // one from, so it borrows the first recipe's — "Banana Bread + 2 more" is
-    // findable later in a way that "Recipe cards — 22/08/2026" never is.
+    // findable later in a way that "Recipe cards — 22/08/2026" never is. This
+    // is the shelf's own answer and deliberately not the workspace's: a list of
+    // filed work needs a name you can pick out, not a timestamp.
     title:
       meta.projectTitle?.trim() ||
-      cover?.title ||
+      fromMeta.cover?.title ||
       describeProject(printable, Boolean(meta.cookbookMode)),
-    projectTitle: meta.projectTitle,
     sections: buildSections(printable, meta),
-    cover,
-    backCover: meta.backCover ?? stash?.backCover,
-    dedication: meta.dedication ?? stash?.dedication,
-    frontMatter: meta.frontMatter ?? stash?.frontMatter,
-    kind: meta.cookbookMode || meta.stashedCookbook ? "cookbook" : "printProject",
-    settings: {
-      cardSize: (stored.cardSize as PrintCardSize) ?? "letter",
-      template: (stored.template as RecipePrintTemplate) ?? "classic",
-      doubleSided: stored.doubleSided ?? true,
-      showPhoto: stored.showPhoto ?? true,
-      showSourceUrl: stored.showSourceUrl ?? false,
-      showCutLines: stored.showCutLines ?? false,
-      cookbookMode: meta.cookbookMode,
-      tableOfContents: meta.tableOfContents,
-      sectionDividers: meta.sectionDividers,
-      bookPreset: meta.cookbookPreset,
-      cookbookWelcomeCompleted: meta.cookbookWelcomeCompleted,
-      tocKicker: meta.tocKicker,
-      tocTitle: meta.tocTitle,
-      photoStyle: meta.photoStyle,
-    },
-    itemPlacements: meta.itemPlacements,
-    stashedCookbook: meta.stashedCookbook,
   });
 
   if (!saveLocalProject(project)) return null;
