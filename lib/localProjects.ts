@@ -314,10 +314,14 @@ export function fileProjectLocally(items: QueueItem[], meta: ProjectMeta): strin
     // Adopting it into an account later fills this in (see
     // lib/anonymousProjectAdoption).
     ownerUid: "",
-    // A card job has no cover to take a name from, so it borrows the first
-    // recipe's — "Banana Bread + 2 more" is findable later in a way that
-    // "Recipe cards — 22/08/2026" never is.
-    title: cover?.title || describeProject(printable, Boolean(meta.cookbookMode)),
+    // A name the cook typed wins. Failing that, a card job has no cover to take
+    // one from, so it borrows the first recipe's — "Banana Bread + 2 more" is
+    // findable later in a way that "Recipe cards — 22/08/2026" never is.
+    title:
+      meta.projectTitle?.trim() ||
+      cover?.title ||
+      describeProject(printable, Boolean(meta.cookbookMode)),
+    projectTitle: meta.projectTitle,
     sections: buildSections(printable, meta),
     cover,
     backCover: meta.backCover ?? stash?.backCover,

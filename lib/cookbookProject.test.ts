@@ -3,6 +3,7 @@ import {
   deleteSectionFromMeta,
   moveItemsInMeta,
   normalizeProjectMeta,
+  projectDisplayTitle,
   recipePagePlacementHasValues,
   resolveSectionPhotoMode,
 } from "@/lib/project";
@@ -218,5 +219,67 @@ describe("stashed cookbook survives a save/reopen", () => {
 
   it("leaves a project that was never a cookbook without one", () => {
     expect(normalizeProjectMeta({ sections: [] }).stashedCookbook).toBeUndefined();
+  });
+});
+
+/* A rename used to live only in session metadata. The workspace bar showed it,
+   the library went on showing the cover's title, and reopening the project
+   dropped it — so the one name the cook actually chose was the one name nothing
+   kept. `title` is what a list reads; `projectTitle` is what says anyone chose
+   it, which is what a reopened project needs in order to tell a rename from a
+   cover name. */
+describe("a name the cook typed", () => {
+  const settings = {
+    cardSize: "letter" as const,
+    template: "classic" as const,
+    doubleSided: true,
+    showPhoto: false,
+    showSourceUrl: false,
+    showCutLines: false,
+  };
+
+  it("is what the assembled document is called, and is recorded as chosen", () => {
+    const project = assemblePrintProject({
+      id: "p1",
+      ownerUid: "u1",
+      title: "Nana’s Kitchen",
+      projectTitle: "Nana’s Kitchen",
+      sections: [],
+      settings,
+      cover: { title: "Our Favorite Recipes", template: "heirloom" },
+    });
+    expect(project.title).toBe("Nana’s Kitchen");
+    expect(project.projectTitle).toBe("Nana’s Kitchen");
+  });
+
+  it("is absent on a project nobody renamed, so the cover keeps naming it", () => {
+    const project = assemblePrintProject({
+      id: "p1",
+      ownerUid: "u1",
+      title: "Our Favorite Recipes",
+      sections: [],
+      settings,
+      cover: { title: "Our Favorite Recipes", template: "heirloom" },
+    });
+    expect(project.projectTitle).toBeUndefined();
+    expect(projectDisplayTitle({ cover: project.cover })).toBe("Our Favorite Recipes");
+  });
+
+  it("survives the normalization a reopened project passes through", () => {
+    const normalized = normalizeProjectMeta({ sections: [], projectTitle: "Nana’s Kitchen" });
+    expect(normalized.projectTitle).toBe("Nana’s Kitchen");
+  });
+
+  it("outranks the cover it was chosen instead of", () => {
+    expect(
+      projectDisplayTitle({
+        projectTitle: "Nana’s Kitchen",
+        cover: { title: "Our Favorite Recipes", template: "heirloom" },
+      }),
+    ).toBe("Nana’s Kitchen");
+  });
+
+  it("is not kept when it is only whitespace", () => {
+    expect(normalizeProjectMeta({ sections: [], projectTitle: "   " }).projectTitle).toBeUndefined();
   });
 });

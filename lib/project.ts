@@ -857,6 +857,13 @@ export function useProjectMeta() {
       };
       return {
         projectId: current.projectId,
+        // A name the cook gave this PROJECT, not to the book inside it, so it
+        // survives the book being set aside. It is not in the stash for the
+        // same reason: stashing it would hand the name back only on the way
+        // into cookbook mode, and a card job is equally entitled to be called
+        // something. Dropping it here is how "print as recipe cards instead"
+        // used to quietly rename someone's project.
+        projectTitle: current.projectTitle,
         cookbookWelcomeCompleted: current.cookbookWelcomeCompleted,
         sections: [],
         stashedCookbook,

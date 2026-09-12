@@ -154,6 +154,9 @@ export function assemblePrintProject(params: {
   id: string;
   ownerUid: string;
   title?: string;
+  /** A name the cook typed. Carried through so a rename survives being saved
+      and reopened — see `PrintProject.projectTitle`. */
+  projectTitle?: string;
   sections: Section[];
   cover?: CoverConfig;
   backCover?: CoverConfig;
@@ -176,6 +179,7 @@ export function assemblePrintProject(params: {
     revision: params.revision ?? 0,
     ownerUid: params.ownerUid,
     title: params.title,
+    projectTitle: params.projectTitle,
     sections: params.sections,
     cover: params.cover,
     backCover: params.backCover,

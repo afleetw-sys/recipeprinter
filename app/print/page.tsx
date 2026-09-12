@@ -2189,7 +2189,12 @@ export default function PrintPage() {
      */
     const stash = projectMeta.meta.stashedCookbook;
     const cover = projectMeta.meta.cover ?? stash?.cover;
+    // A name the cook typed outranks any we would derive — the same order
+    // `projectDisplayTitle` applies in the workspace bar. Without this the
+    // rename lived only in session metadata: the library went on showing the
+    // cover's title, and reopening the project dropped the new name entirely.
     const defaultTitle =
+      projectMeta.meta.projectTitle?.trim() ||
       cover?.title ||
       items.find((item) => item.recipe)?.recipe?.title ||
       `Recipe cards — ${new Date().toLocaleDateString()}`;
@@ -2202,6 +2207,11 @@ export default function PrintPage() {
       id: idOverride ?? savedProjectIdRef.current ?? cookbookProjectId ?? accountProjectId,
       ownerUid: cookPilotUser.uid,
       title: defaultTitle,
+      // Saved beside the resolved title so a reopened project can tell a rename
+      // from a cover name. Folding the two together would force a choice
+      // between losing the rename and having cover edits stop renaming the
+      // project.
+      projectTitle: projectMeta.meta.projectTitle,
       sections,
       cover,
       backCover: projectMeta.meta.backCover ?? stash?.backCover,
@@ -2938,6 +2948,9 @@ export default function PrintPage() {
         setJobIds(loadedItems.map((item) => item.id));
         projectMeta.replaceMeta({
           projectId: project.id,
+          // Absent on documents saved before renames were persisted, which is
+          // exactly right: those never had one.
+          projectTitle: project.projectTitle,
           cookbookMode: project.settings.cookbookMode ?? project.kind === "cookbook",
           cookbookWelcomeCompleted: project.settings.cookbookWelcomeCompleted,
           cookbookPreset: project.settings.bookPreset,
