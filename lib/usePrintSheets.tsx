@@ -10,7 +10,6 @@ import {
   type CookbookPlanItem,
   type RecipeFace,
 } from "@/lib/recipeCardLayout";
-import type { PrintCardSize, RecipePrintTemplate } from "@/components/RecipeCardPrint";
 import {
   defaultSectionGridImages,
   resolveSectionPhotoMode,
@@ -27,10 +26,12 @@ import { RecipeFaceMeasurer } from "@/components/RecipeFaceMeasurer";
 import type {
   CookbookPresetId,
   CoverConfig,
+  PrintCardSize,
   QueueItem,
   Recipe,
   RecipePageLayout,
   RecipePagePlacement,
+  RecipePrintTemplate,
   Section,
 } from "@/types/recipe";
 

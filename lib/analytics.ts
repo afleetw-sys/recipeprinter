@@ -9,8 +9,14 @@ import {
   isExternalSource,
   resolveAttribution,
 } from "@/lib/attribution";
-import type { PrintCardSize, RecipePrintTemplate } from "@/components/RecipeCardPrint";
-import type { BotWallVendor, CookbookPresetId, ImportMethod } from "@/types/recipe";
+import type {
+  BotWallVendor,
+  CookbookPresetId,
+  ImportFailureCode,
+  ImportMethod,
+  PrintCardSize,
+  RecipePrintTemplate,
+} from "@/types/recipe";
 import type { FeedbackType } from "@/lib/feedback";
 
 /** What product a paywall or purchase refers to. */
@@ -48,29 +54,15 @@ type PurchasedProduct = "premium_template" | "cookbook";
  */
 export type ImportSurface = "home" | "capture" | "rail" | "dialog";
 
-export type ImportFailureCode =
-  | "blocked"
-  | "not_found"
-  | "no_recipe"
-  | "rate_limited"
-  | "no_files"
-  | "decode_failed"
-  | "too_large"
-  | "backend_unavailable"
-  | "timeout"
-  // A recipe-app export file we couldn't read: not the archive we expected, or
-  // nothing recipe-shaped inside it. Nothing was ever parsed.
-  | "unreadable_file"
-  // A reserved name (example.com, localhost, anything under .test). Not a
-  // parser failure: nothing was ever there to parse.
-  | "placeholder"
-  // A search results or listing page (a Google search, a site's own /search).
-  // Its own bucket for the same reason as `placeholder`: no_recipe is supposed
-  // to mean the parser read a real recipe page and found nothing, and that is
-  // the number that measures the parser. A link that never had a recipe on it
-  // inflating that number makes the one metric we tune against lie.
-  | "search_page"
-  | "unknown";
+/**
+ * Declared in types/recipe, where `QueueItem.errorCode` and `ParseError.failure`
+ * are typed on it too — it is domain vocabulary that this file happens to bucket
+ * events by, not an analytics invention. It lived here until 2026-09-12, which
+ * is what made types/recipe.ts import from lib/analytics: the bottom layer
+ * reaching up for a type it owns. Re-exported so the call sites that take it
+ * alongside `track` are unaffected.
+ */
+export type { ImportFailureCode } from "@/types/recipe";
 
 /**
  * Every event RecipePrinter sends, with its required properties.

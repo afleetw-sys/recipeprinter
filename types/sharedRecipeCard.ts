@@ -1,5 +1,4 @@
-import type { PrintCardSize, RecipePrintTemplate } from "@/components/RecipeCardPrint";
-import type { Recipe } from "@/types/recipe";
+import type { PrintCardSize, Recipe, RecipePrintTemplate } from "@/types/recipe";
 
 /**
  * A RecipePrinter-authored share link: a recipe plus the exact design/print

@@ -3,7 +3,8 @@
 import { useEffect, useRef, useState } from "react";
 import type { User } from "firebase/auth";
 import type { CustomerInfo } from "@revenuecat/purchases-js";
-import { RECIPE_PRINT_TEMPLATE_OPTIONS, type RecipePrintTemplate } from "@/components/RecipeCardPrint";
+import { RECIPE_PRINT_TEMPLATE_OPTIONS } from "@/lib/printTemplates";
+import type { RecipePrintTemplate } from "@/types/recipe";
 import { track, truncateReason } from "@/lib/analytics";
 import { friendlyClaimError, friendlyPurchaseSetupError } from "@/lib/friendlyErrors";
 import { isPremiumTemplate, type PremiumRecipePrintTemplate } from "@/lib/premiumTemplates";

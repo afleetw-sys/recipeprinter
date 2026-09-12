@@ -10,7 +10,7 @@ import {
   type CookbookPlanItem,
   type CookbookPlanRecipeSlot,
 } from "@/lib/recipeCardLayout";
-import type { PrintCardSize, RecipePrintTemplate } from "@/components/RecipeCardPrint";
+import type { PrintCardSize, RecipePrintTemplate } from "@/types/recipe";
 
 /**
  * Headless regression net for the pagination engine.

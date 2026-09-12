@@ -1,7 +1,12 @@
 import { formatRecipeTime } from "@/lib/time";
 import { stripRichText } from "@/lib/richText";
-import type { Recipe, RecipePageLayout } from "@/types/recipe";
-import type { CardSectionLayout, PrintCardSize, RecipePrintTemplate } from "@/components/RecipeCardPrint";
+import type {
+  CardSectionLayout,
+  PrintCardSize,
+  Recipe,
+  RecipePageLayout,
+  RecipePrintTemplate,
+} from "@/types/recipe";
 
 // How much ingredient/instruction text fits on the front before it must
 // continue on the back, in `textCost` units. Photo and no-photo fronts have

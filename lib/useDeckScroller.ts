@@ -10,7 +10,7 @@ import {
   type SetStateAction,
 } from "react";
 import { zoomFromWheel } from "@/lib/deckZoom";
-import type { PrintCardSize } from "@/components/RecipeCardPrint";
+import type { PrintCardSize } from "@/types/recipe";
 
 const PREVIEW_SELECTOR = ".recipe-page-scaler";
 /** Mirrors `scroll-padding-top` on `.recipe-page-deck` in app/print/print.css.

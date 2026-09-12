@@ -1,14 +1,15 @@
 "use client";
 
-import type { PrintCardSize, RecipePrintTemplate } from "@/components/RecipeCardPrint";
-import type { PrintProject, QueueItem } from "@/types/recipe";
+import type {
+  PrintCardSize,
+  PrintProject,
+  QueueItem,
+  RecipePrintTemplate,
+} from "@/types/recipe";
 import { localStore } from "@/lib/storage";
 import { buildSections, type ProjectMeta } from "@/lib/project";
 import { assemblePrintProject } from "@/lib/printProjects";
-// The storage-only half of print settings, deliberately NOT "@/lib/printSettings"
-// — that module's validators pull in the whole printable-card component tree,
-// and this one runs on the homepage. See lib/printSettingsStore.
-import { readPrintSettings } from "@/lib/printSettingsStore";
+import { readPrintSettings } from "@/lib/printSettings";
 import { uid } from "@/lib/ids";
 import { lookupProjectId, projectContentKey, rememberProjectId } from "@/lib/projectIdentity";
 import { isCookbookProjectUnlocked } from "@/lib/cookbookUnlocks";
