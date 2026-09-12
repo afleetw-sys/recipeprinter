@@ -1,4 +1,4 @@
-type AnyRecord = Record<string, unknown>;
+import { asRecord, asString } from "@/lib/jsonCoerce";
 
 type ImageCandidate = {
   url: string;
@@ -7,17 +7,20 @@ type ImageCandidate = {
   order: number;
 };
 
-function asRecord(value: unknown): AnyRecord | null {
-  return value && typeof value === "object" ? (value as AnyRecord) : null;
-}
-
-function asString(value: unknown): string | undefined {
-  if (typeof value === "string" && value.trim()) return value.trim();
-  if (typeof value === "number") return String(value);
-  return undefined;
-}
-
-function asNumber(value: unknown): number | undefined {
+/**
+ * A pixel dimension, from a source that may write it either way.
+ *
+ * Deliberately NOT `asNumber` from lib/jsonCoerce, and deliberately not named
+ * like it: every value this reads is a width or a height off an HTML attribute
+ * or a URL query parameter, where "600" and "600px" are both ordinary and a
+ * strict number check would throw away most of the sizes on the page. Stripping
+ * the non-digits is what makes "600px" and "600w" usable.
+ *
+ * It used to be a second, looser `asNumber` sitting beside three strict ones in
+ * other files. Same name, different rules, no way to tell from a call site
+ * which you had — so it says what it measures now instead.
+ */
+function dimensionPx(value: unknown): number | undefined {
   if (typeof value === "number" && Number.isFinite(value)) return value;
   if (typeof value === "string") {
     const parsed = Number.parseInt(value.replace(/[^\d]/g, ""), 10);
@@ -31,8 +34,8 @@ function dimensionsFromUrl(url: string): { width?: number; height?: number } {
     const parsed = new URL(url);
     const params = parsed.searchParams;
     return {
-      width: asNumber(params.get("w")) ?? asNumber(params.get("width")),
-      height: asNumber(params.get("h")) ?? asNumber(params.get("height")),
+      width: dimensionPx(params.get("w")) ?? dimensionPx(params.get("width")),
+      height: dimensionPx(params.get("h")) ?? dimensionPx(params.get("height")),
     };
   } catch {
     return {};
@@ -89,8 +92,8 @@ function collectImageCandidates(
     asString(node.src);
 
   if (url) {
-    const width = asNumber(node.width) ?? asNumber(node.imageWidth);
-    const height = asNumber(node.height) ?? asNumber(node.imageHeight);
+    const width = dimensionPx(node.width) ?? dimensionPx(node.imageWidth);
+    const height = dimensionPx(node.height) ?? dimensionPx(node.imageHeight);
     const urlDims = dimensionsFromUrl(url);
     const area = (width ?? urlDims.width ?? 0) * (height ?? urlDims.height ?? 0);
     out.push({

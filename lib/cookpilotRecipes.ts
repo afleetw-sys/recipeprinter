@@ -16,10 +16,10 @@ import {
 } from "firebase/firestore";
 import { getDb } from "@/lib/firebase/db";
 import { adaptCookPilotRecipe } from "@/lib/cookpilot";
+import { asNumber, asString, type AnyRecord } from "@/lib/jsonCoerce";
 import { importSearchText, type ImportSummary } from "@/lib/importSummary";
 import type { QueueItem, Recipe } from "@/types/recipe";
 
-type AnyRecord = Record<string, unknown>;
 const DETAIL_LOAD_CONCURRENCY = 5;
 
 export interface CookPilotRecipeSummary {
@@ -56,16 +56,8 @@ function asDate(value: unknown): Date {
   return new Date();
 }
 
-function asString(value: unknown): string | undefined {
-  if (typeof value === "string" && value.trim()) return value.trim();
-  if (typeof value === "number") return String(value);
-  return undefined;
-}
-
-function asNumber(value: unknown): number | undefined {
-  return typeof value === "number" && Number.isFinite(value) ? value : undefined;
-}
-
+// Drops empty entries as well as non-strings, which is this decoder's rule
+// rather than a general one — hence not in lib/jsonCoerce.
 function asStringArray(value: unknown): string[] {
   return Array.isArray(value)
     ? value.filter((item): item is string => typeof item === "string" && item.trim().length > 0)

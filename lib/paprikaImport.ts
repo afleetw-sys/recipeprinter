@@ -19,6 +19,7 @@
 // ─────────────────────────────────────────────────────────────────────────────
 
 import type { ImportFailureCode } from "@/lib/analytics";
+import { asString, type AnyRecord } from "@/lib/jsonCoerce";
 import { normalizeFractions } from "@/lib/parser";
 import { hostnameOf } from "@/lib/url";
 import type { QueueItem, Recipe, RecipeIngredient, RecipeInstruction } from "@/types/recipe";
@@ -58,7 +59,6 @@ const TOO_BIG = "That file is larger than we can open in the browser.";
 
 /* ── The shape a Paprika export uses ─────────────────────────────────────── */
 
-type AnyRecord = Record<string, unknown>;
 
 /** One recipe from an export, mapped and ready to add. */
 export interface PaprikaEntry {
@@ -215,12 +215,6 @@ export async function readPaprikaFile(file: File): Promise<PaprikaLibrary> {
 }
 
 /* ── Field mapping ────────────────────────────────────────────────────────── */
-
-function asString(value: unknown): string | undefined {
-  if (typeof value === "string" && value.trim()) return value.trim();
-  if (typeof value === "number" && Number.isFinite(value)) return String(value);
-  return undefined;
-}
 
 /**
  * A heading inside Paprika's free-text ingredient/direction blocks.

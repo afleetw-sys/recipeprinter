@@ -1,4 +1,5 @@
 import type { Recipe, RecipeIngredient, RecipeInstruction } from "@/types/recipe";
+import { asString, type AnyRecord } from "@/lib/jsonCoerce";
 import { bestRecipeImageFrom } from "@/lib/recipeImages";
 import { hostnameOf } from "@/lib/url";
 
@@ -11,14 +12,6 @@ import { hostnameOf } from "@/lib/url";
    `Recipe`, and also tolerates an already-flat response and the image parser's
    `recipeJSON` envelope.
    ────────────────────────────────────────────────────────────────────────── */
-
-type AnyRecord = Record<string, unknown>;
-
-function asString(value: unknown): string | undefined {
-  if (typeof value === "string" && value.trim()) return value.trim();
-  if (typeof value === "number") return String(value);
-  return undefined;
-}
 
 function sectionTitle(section: AnyRecord): string | undefined {
   return (
