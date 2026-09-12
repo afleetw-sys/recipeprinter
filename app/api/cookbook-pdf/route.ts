@@ -42,8 +42,49 @@ export const maxDuration = 300;
 const EXPORT_LIMIT = 10;
 const EXPORT_WINDOW_MS = 10 * 60 * 1000;
 
+/**
+ * How long the renderer gets, start to finish.
+ *
+ * Without one, `fetch` here has no deadline at all: a renderer that accepts the
+ * connection and then hangs held this function open until Vercel killed it at
+ * `maxDuration`, which is 300 seconds of a function doing nothing but waiting,
+ * billed, and ending in an opaque FUNCTION_INVOCATION_TIMEOUT rather than
+ * anything a cook could read.
+ *
+ * Deliberately generous rather than tuned. The renderer's own gates cap a real
+ * render well below this — 45s to reach `/export`, 45s for the export-ready
+ * signal, then the PDF itself — so nothing that was going to succeed is inside
+ * this window. The budget covers streaming the finished file back too, since
+ * the clock starts at the request rather than at the response headers.
+ *
+ * Cut it when the logs say where real renders actually land, not before.
+ */
+const RENDERER_TIMEOUT_MS = 240_000;
+
 function jsonError(error: string, status: number, extra?: Record<string, unknown>) {
   return NextResponse.json({ error, ...extra }, { status });
+}
+
+/**
+ * The book id inside a raw request body.
+ *
+ * Parsed inside this function rather than in the handler so the decoded object
+ * is unreachable the moment it returns. The payload is the whole cookbook, and
+ * keeping its parse alive next to the raw string for the length of a render
+ * doubles this function's peak memory to hold one id.
+ *
+ * Three answers, not two: `undefined` for a body that is not JSON at all, and
+ * `null` for JSON that names no cookbook. The caller reports them differently —
+ * one is a malformed request, the other is a well-formed request for nothing.
+ */
+function projectIdFromBody(rawBody: string): string | null | undefined {
+  let payload: unknown;
+  try {
+    payload = JSON.parse(rawBody);
+  } catch {
+    return undefined;
+  }
+  return projectIdFromPayload(payload);
 }
 
 export async function POST(request: Request) {
@@ -69,14 +110,25 @@ export async function POST(request: Request) {
     return jsonError("PDF export isn't configured on this deployment.", 503);
   }
 
-  let payload: unknown;
+  // Read once, as text, and forward that same text below.
+  //
+  // This used to be `request.json()` and then `JSON.stringify(payload)` on the
+  // way out, which is three full passes over a body that runs to several
+  // megabytes on a real cookbook — decode, parse, re-serialize — and holds the
+  // decoded object and a second copy of the string alive at the same time. The
+  // only fact this route needs from the payload is one id; the renderer wants
+  // the bytes exactly as they arrived.
+  let rawBody: string;
   try {
-    payload = await request.json();
+    rawBody = await request.text();
   } catch {
     return jsonError("Malformed request.", 400);
   }
 
-  const bookProjectId = projectIdFromPayload(payload);
+  const bookProjectId = projectIdFromBody(rawBody);
+  if (bookProjectId === undefined) {
+    return jsonError("Malformed request.", 400);
+  }
   if (!bookProjectId) {
     return jsonError("That request didn't name a cookbook.", 400);
   }
@@ -125,13 +177,23 @@ export async function POST(request: Request) {
   }
 
   let response: Response;
+  const startedAt = Date.now();
   try {
     response = await fetch(endpoint, {
       method: "POST",
       headers: { "content-type": "application/json", authorization: secret },
-      body: JSON.stringify(payload),
+      // The bytes as they arrived, not a re-serialization of them.
+      body: rawBody,
+      signal: AbortSignal.timeout(RENDERER_TIMEOUT_MS),
     });
   } catch (error) {
+    // A timeout is the renderer taking too long, which is a different thing to
+    // say than "it didn't respond" — and the only one of the two where trying
+    // again has any reason to go differently.
+    if (error instanceof Error && error.name === "TimeoutError") {
+      console.warn(`cookbook-pdf: renderer timed out  ms=${Date.now() - startedAt}`);
+      return jsonError("The cookbook took too long to render. Try again in a moment.", 504);
+    }
     console.warn("cookbook-pdf: renderer unreachable", error);
     return jsonError("The cookbook renderer didn't respond.", 502);
   }

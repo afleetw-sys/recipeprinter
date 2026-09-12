@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { cookbookPdfFileName, trimSizeLabel } from "@/lib/cookbookPdfExport";
+import { cookbookPdfFileName, coverWrapProject, trimSizeLabel } from "@/lib/cookbookPdfExport";
 import { getCookbookPreset } from "@/lib/cookbookPresets";
 
 describe("trimSizeLabel", () => {
@@ -30,5 +30,59 @@ describe("cookbookPdfFileName", () => {
     expect(cookbookPdfFileName("   ", "us-letter")).toBe("Cookbook-Spiral-8.5x11.pdf");
     // Punctuation-only titles slug to nothing and must not yield "-Spiral-8.5x11.pdf".
     expect(cookbookPdfFileName("!!!", "us-letter")).toBe("Cookbook-Spiral-8.5x11.pdf");
+  });
+});
+
+describe("coverWrapProject", () => {
+  const book = {
+    id: "book-1",
+    kind: "cookbook",
+    revision: 3,
+    ownerUid: "user-1",
+    title: "Family Favorites",
+    cover: { title: "Family Favorites", blurb: "ours" },
+    backCover: { title: "The End" },
+    dedication: { title: "For Nan" },
+    frontMatter: { tocTitle: "Contents" },
+    settings: { template: "bistro", cookbookMode: true },
+    sections: [
+      { id: "s1", title: "Mains", items: [{ id: "r1", recipe: { title: "Soup", ingredients: [{ raw: "2 cups flour" }] } }] },
+    ],
+    itemPlacements: { r1: { pageLayout: "image-spread" } },
+    stashedCookbook: { cover: { title: "Set aside" }, sections: [], itemPlacements: {} },
+    createdAt: 1,
+    updatedAt: 2,
+  } as unknown as import("@/types/recipe").PrintProject;
+
+  it("drops the recipes, which the wrap never draws", () => {
+    const wrap = coverWrapProject(book);
+    expect(wrap.sections).toEqual([]);
+    expect(wrap.itemPlacements).toBeUndefined();
+    expect(wrap.stashedCookbook).toBeUndefined();
+    // The whole point: a hardcover stops uploading every recipe a second time.
+    expect(JSON.stringify(wrap)).not.toContain("2 cups flour");
+  });
+
+  it("keeps everything the wrap actually reads", () => {
+    const wrap = coverWrapProject(book);
+    // CoverWrapDocument reads exactly these; the route reads `id`.
+    expect(wrap.cover).toEqual(book.cover);
+    expect(wrap.backCover).toEqual(book.backCover);
+    expect(wrap.settings.template).toBe("bistro");
+    expect(wrap.id).toBe("book-1");
+  });
+
+  it("is subtractive, so a field added to the wrap later still travels", () => {
+    const wrap = coverWrapProject(book);
+    // An allowlist would have dropped these the day someone used them.
+    expect(wrap.dedication).toEqual(book.dedication);
+    expect(wrap.frontMatter).toEqual(book.frontMatter);
+    expect(wrap.title).toBe("Family Favorites");
+  });
+
+  it("leaves the original book untouched", () => {
+    coverWrapProject(book);
+    expect(book.sections).toHaveLength(1);
+    expect(book.itemPlacements).toBeDefined();
   });
 });
