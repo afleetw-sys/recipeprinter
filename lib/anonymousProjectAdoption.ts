@@ -3,7 +3,12 @@
 import type { PrintProject } from "@/types/recipe";
 import { recipePrinterUserPhotoRoot } from "@/lib/firebase/recipePrinterPaths";
 import { localStore } from "@/lib/storage";
-import { loadPrintProject, loadPrintProjectHead, savePrintProject } from "@/lib/printProjects";
+import {
+  loadPrintProject,
+  loadPrintProjectHead,
+  PrintProjectConflictError,
+  savePrintProject,
+} from "@/lib/printProjects";
 import {
   transferCookbookProjectUnlockLocal,
 } from "@/lib/cookbookUnlocks";
@@ -268,6 +273,12 @@ function rewriteAssets(project: PrintProject, assets: Record<string, string>): P
 export async function adoptAnonymousProject(
   uid: string,
   project: PrintProject,
+  options: {
+    /** The cook was shown the conflict below and chose to overwrite anyway.
+        Only ever set from that answer — never inferred, or the guard would be
+        back to trusting the belief it exists to check. */
+    overwriteExisting?: boolean;
+  } = {},
 ): Promise<PrintProject> {
   const previous = readAdoptionManifest();
   // Adoption is an UPSERT on the working copy's own id, never a fork. Project
@@ -281,6 +292,24 @@ export async function adoptAnonymousProject(
     (previous?.uid === uid && previous.sourceProjectId === project.id
       ? previous.destinationProjectId
       : undefined) ?? project.id;
+  /**
+   * Whether an earlier run of THIS adoption already began writing that
+   * document, which is the only thing that entitles this one to overwrite it.
+   *
+   * `saving` means the assets were copied and `savePrintProject` was reached;
+   * `complete` means it landed. Both mean the document at the destination is
+   * this book. Every other status — and no manifest at all — means we have
+   * never written there, so anything already sitting at that id belongs to
+   * somebody else's save and is not ours to replace. See the guard below.
+   *
+   * Deliberately read off the PREVIOUS manifest, before this attempt overwrites
+   * it: a run that ends in the conflict below records `failed`, which is not a
+   * claim, so a retry cannot launder itself into one.
+   */
+  const resumesOurOwnWrite =
+    previous?.uid === uid &&
+    previous.sourceProjectId === project.id &&
+    (previous.status === "saving" || previous.status === "complete");
   let manifest: AdoptionManifest = {
     sourceProjectId: project.id,
     destinationProjectId,
@@ -302,6 +331,29 @@ export async function adoptAnonymousProject(
     // Revision and creation time only — the destination's own content is about
     // to be replaced by `adopted`, so reading it in full would be wasted bytes.
     const existingDestination = await loadPrintProjectHead(uid, destinationProjectId);
+    /**
+     * Adoption REPLACES the destination, and that is only safe where there is
+     * nothing there to lose.
+     *
+     * Taking `existingDestination.revision` below rather than checking it is
+     * what makes this path unable to conflict — deliberately, because the
+     * normal case is a document that does not exist yet and a revision of 0
+     * would be refused by nothing. But "cannot conflict" also means "cannot
+     * notice", and adoption runs precisely when the caller believes the account
+     * has no copy of this book. Every way of being wrong about that ends here:
+     * a read that failed and was reported as a miss, a `loadPrintProjectHead`
+     * that could not answer during the attach check, a content index pointing
+     * this working copy at a document some other book already owns.
+     *
+     * So confirm the belief instead of acting on it. A document we have never
+     * written is somebody's saved work, and a book whose recipes we are about
+     * to overwrite wholesale deserves the same question every other save asks.
+     * The caller already knows this error: it surfaces as "Newer version
+     * found", with the choice between loading that version and overwriting it.
+     */
+    if (existingDestination && !resumesOurOwnWrite && !options.overwriteExisting) {
+      throw new PrintProjectConflictError();
+    }
     const adopted = rewriteAssets(
       {
         ...project,

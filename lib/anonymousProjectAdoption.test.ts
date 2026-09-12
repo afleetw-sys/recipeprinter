@@ -23,6 +23,15 @@ vi.mock("@/lib/cookbookUnlocks", () => ({
 }));
 
 vi.mock("@/lib/printProjects", () => ({
+  // Defined here rather than reached through `importOriginal` so the class the
+  // adoption module throws and the one these tests assert against are the same
+  // one — an `instanceof` across two copies is always false.
+  PrintProjectConflictError: class PrintProjectConflictError extends Error {
+    constructor() {
+      super("This project was updated somewhere else.");
+      this.name = "PrintProjectConflictError";
+    }
+  },
   createPrintProjectId: () => "minted-id",
   loadPrintProject: async (uid: string, id: string) => store.get(`${uid}/${id}`) ?? null,
   // Mirrors the real one: the scalars off the parent document, no recipes.
@@ -40,6 +49,7 @@ vi.mock("@/lib/printProjects", () => ({
 }));
 
 import { adoptAnonymousProject } from "@/lib/anonymousProjectAdoption";
+import { PrintProjectConflictError } from "@/lib/printProjects";
 
 class MemoryStorage {
   private values = new Map<string, string>();
@@ -92,15 +102,49 @@ describe("adopting an anonymous project", () => {
     expect(Array.from(store.keys())).toEqual(["user-1/book-a"]);
   });
 
-  it("updates the existing document instead of forking when the id is already saved", async () => {
+  it("refuses to replace a saved document it has never written", async () => {
+    // Adoption runs when the caller believes the account has no copy of this
+    // book. A document sitting here says that belief is wrong — a read reported
+    // as a miss, an attach check that could not answer — and adoption replaces
+    // the destination wholesale, so acting on it costs someone the saved book.
     store.set("user-1/book-a", { ...book("book-a", "Family Favorites"), ownerUid: "user-1", revision: 4 });
 
-    const saved = await adoptAnonymousProject("user-1", book("book-a", "Family Favorites — edited"));
+    await expect(
+      adoptAnonymousProject("user-1", book("book-a", "Family Favorites — edited")),
+    ).rejects.toBeInstanceOf(PrintProjectConflictError);
+
+    expect(store.get("user-1/book-a")?.title).toBe("Family Favorites");
+    expect(store.get("user-1/book-a")?.revision).toBe(4);
+  });
+
+  it("replaces it once the cook has answered the conflict", async () => {
+    store.set("user-1/book-a", { ...book("book-a", "Family Favorites"), ownerUid: "user-1", revision: 4 });
+
+    const saved = await adoptAnonymousProject(
+      "user-1",
+      book("book-a", "Family Favorites — edited"),
+      { overwriteExisting: true },
+    );
 
     expect(saved.id).toBe("book-a");
     expect(saved.revision).toBe(5);
     expect(store.size).toBe(1);
     expect(store.get("user-1/book-a")?.title).toBe("Family Favorites — edited");
+  });
+
+  it("does not let a refusal become the claim that permits the next attempt", async () => {
+    store.set("user-1/book-a", { ...book("book-a", "Family Favorites"), ownerUid: "user-1", revision: 4 });
+    // The refused attempt writes a manifest of its own. If that counted as
+    // "we have written here before", one retry would launder itself past the
+    // guard and the refusal would be worth nothing.
+    await expect(
+      adoptAnonymousProject("user-1", book("book-a", "One")),
+    ).rejects.toBeInstanceOf(PrintProjectConflictError);
+    await expect(
+      adoptAnonymousProject("user-1", book("book-a", "Two")),
+    ).rejects.toBeInstanceOf(PrintProjectConflictError);
+
+    expect(store.get("user-1/book-a")?.title).toBe("Family Favorites");
   });
 
   it("resumes into the document a previous adoption redirected to", async () => {

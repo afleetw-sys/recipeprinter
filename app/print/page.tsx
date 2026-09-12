@@ -474,6 +474,12 @@ export default function PrintPage() {
   const latestSaveRef = useRef<() => void>(() => undefined);
   const flushOnHideRef = useRef<() => void>(() => undefined);
   const saveAfterLoginRef = useRef(false);
+  /** The cook answered the "Newer version found" prompt by choosing to
+      overwrite, and this save is that answer. Read once by the adoption path,
+      which otherwise refuses to replace a document it has never written, and
+      cleared as soon as the save it authorized has been attempted — an approval
+      is for one write, not a standing permission. */
+  const adoptionOverwriteApprovedRef = useRef(false);
   const projectIdRef = useRef<string>(createPrintProjectId());
   const [toastMessage, setToastMessage] = useState<string | null>(null);
   /** Whether the toast is reporting a FAILURE or just confirming something.
@@ -2233,7 +2239,9 @@ export default function PrintPage() {
       };
       const saved = savedProjectIdRef.current
         ? await savePrintProject(project)
-        : await adoptAnonymousProject(cookPilotUser.uid, project);
+        : await adoptAnonymousProject(cookPilotUser.uid, project, {
+            overwriteExisting: adoptionOverwriteApprovedRef.current,
+          });
       projectRevisionRef.current = Number(saved.revision ?? 0);
       savedProjectIdRef.current = saved.id;
       setSavedProjectId(saved.id);
@@ -2412,6 +2420,21 @@ export default function PrintPage() {
   });
 
   /**
+   * Which document a save conflict is actually about.
+   *
+   * `savedProjectId` is the obvious answer and is null for half of them: a
+   * conflict raised while ADOPTING is raised precisely because this working
+   * copy has no save identity yet. Reading only that state left both of the
+   * cook's choices doing nothing — "load that version" fell through to the
+   * overwrite it was meant to decline, and the overwrite returned early — so
+   * the one prompt the app shows about losing work answered neither way.
+   *
+   * The working copy's own id is the destination adoption was writing to, which
+   * makes it the document under discussion.
+   */
+  const conflictProjectId = savedProjectId ?? cookbookProjectId;
+
+  /**
    * Conflict recovery. Two tabs on one project, or a toggle in one while the
    * other saves, and the second write finds a revision it didn't expect.
    *
@@ -2424,20 +2447,27 @@ export default function PrintPage() {
    * conflicts again forever.
    */
   async function resolveConflictByOverwriting() {
-    const projectId = savedProjectIdRef.current;
-    if (!projectId || !cookPilotUser) return;
+    if (!cookPilotUser || !conflictProjectId) return;
     setSaveStatus("saving");
     try {
       // The remote revision is the only thing this needs; overwriting replaces
       // the content wholesale, so fetching it first would be a megabyte read
       // whose result is discarded a line later.
-      const remote = await loadPrintProjectHead(cookPilotUser.uid, projectId);
+      const remote = await loadPrintProjectHead(cookPilotUser.uid, conflictProjectId);
       projectRevisionRef.current = Number(remote?.revision ?? 0);
       lastAttemptedFingerprintRef.current = null;
+      // A conflict raised by ADOPTION leaves no save identity to advance — not
+      // having one is what sent the save down that path — so the retry goes
+      // back through adoption and needs the cook's answer carried with it.
+      // Without this it would meet the same refusal and the choice they just
+      // made would do nothing at all.
+      adoptionOverwriteApprovedRef.current = true;
       await handleSaveProject();
     } catch (error) {
       console.warn("RecipePrinter: could not resolve the save conflict", error);
       setSaveStatus("error");
+    } finally {
+      adoptionOverwriteApprovedRef.current = false;
     }
   }
 
@@ -2462,8 +2492,8 @@ export default function PrintPage() {
           cookbookMode ? "This cookbook" : "This project"
         } was updated in another tab. Choose OK to load that version, or Cancel to keep the edits in front of you and overwrite it.`,
       );
-      if (loadNewer && savedProjectId) {
-        window.location.assign(`/print?project=${encodeURIComponent(savedProjectId)}`);
+      if (loadNewer && conflictProjectId) {
+        window.location.assign(`/print?project=${encodeURIComponent(conflictProjectId)}`);
         return;
       }
       void resolveConflictByOverwriting();
@@ -2472,8 +2502,8 @@ export default function PrintPage() {
     const loadNewer = window.confirm(
       "This project was updated elsewhere. Choose OK to load that newer version, or Cancel to save your current edits as a copy.",
     );
-    if (loadNewer && savedProjectId) {
-      window.location.assign(`/print?project=${encodeURIComponent(savedProjectId)}`);
+    if (loadNewer && conflictProjectId) {
+      window.location.assign(`/print?project=${encodeURIComponent(conflictProjectId)}`);
       return;
     }
     const copyId = createPrintProjectId();
@@ -2484,14 +2514,38 @@ export default function PrintPage() {
     setSaveStatus(null);
   }
 
+  /**
+   * The save that was waiting on an account, once there is one — and once we
+   * know what that account already holds.
+   *
+   * This used to fire the save straight off the uid changing, and it is
+   * declared above the reattach effect, so it ran while `savedProjectIdRef` was
+   * still null on a book the account had saved all along. That sends the save
+   * down the adoption path, which replaces the destination document rather than
+   * writing against its revision: the one moment in the product where somebody
+   * is signing in specifically to keep their work was also the one that wrote
+   * over the copy they were signing in to reach.
+   *
+   * `projectAttachChecked` is the existing answer to "has this working copy
+   * been matched to its saved document yet", and waiting on it turns the
+   * first-save-after-login into an ordinary save against a known revision.
+   * Signed out the reattach effect leaves it unset rather than claiming a check
+   * it never made, so the `true` this waits for is always an answer about the
+   * account that has just arrived.
+   *
+   * A `?project=` URL is the one case this does not cover: identity there
+   * belongs to the loader above, which sets the flag before it has finished.
+   * The refusal in `adoptAnonymousProject` is what catches that one, and it
+   * surfaces as the conflict prompt rather than as a silent replacement.
+   */
   useEffect(() => {
-    if (!cookPilotUser || !saveAfterLoginRef.current) return;
+    if (!cookPilotUser || !projectAttachChecked || !saveAfterLoginRef.current) return;
     saveAfterLoginRef.current = false;
     void handleSaveProject();
     // The uid, not the User object — Firebase replaces that object on every
     // token refresh, and this should fire on signing in, not hourly.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [cookPilotUser?.uid]);
+  }, [cookPilotUser?.uid, projectAttachChecked]);
 
   const {
     revenueCatUserId,
@@ -2924,13 +2978,30 @@ export default function PrintPage() {
       .catch((error) => {
         if (cancelled) return;
         console.warn("RecipePrinter: could not open project", error);
-        // A failed read is the absence of an answer, not proof the account
-        // lacks the book — but if this device happens to hold a copy, showing
-        // it beats showing an error page about a book we are holding.
-        if (shelved) {
-          applyProject(shelved, "shelf");
-          return;
-        }
+        /**
+         * A failed read is the absence of an answer, not proof the account
+         * lacks the book — so this must NOT fall back to the shelf.
+         *
+         * It used to, on the reasoning that showing a copy we are holding beats
+         * showing an error page about it. The reasoning was right about what a
+         * cook wants to see and wrong about what the fallback does, because
+         * this page has no way to show a shelved book without also arming a
+         * write of it. `applyProject(…, "shelf")` deliberately leaves the save
+         * identity unset, which routes the next autosave — and there is always
+         * a next autosave, within 1.5s, with no edit required — through
+         * `adoptAnonymousProject`, which takes the destination's revision
+         * rather than checking it and therefore cannot conflict.
+         *
+         * So the old fallback spent a transient failure replacing a book edited
+         * on another device with whatever this one last filed on its way out.
+         * A book edited on a laptop and then opened on a phone with one bar is
+         * the whole scenario.
+         *
+         * The `failed` screen below already says the true thing ("Your project
+         * is safe, so it's worth another try") and its action is a reload,
+         * which is a real fix for a read that failed once. The shelf copy is
+         * untouched on disk and still listed in /projects either way.
+         */
         setProjectAccess("failed");
       })
       .finally(() => {
@@ -2955,7 +3026,15 @@ export default function PrintPage() {
       return;
     }
     if (!cookPilotAuthReady || !projectMeta.hydrated) return;
-    if (!cookPilotUser || savedProjectIdRef.current) {
+    // Signed out there is nothing to attach to, and — this is the part that
+    // matters — nothing has been checked. Claiming otherwise used to leave the
+    // flag standing at `true` from the signed-out session, so the save that
+    // fires on signing in read a check belonging to no account and went ahead
+    // without one. Every consumer of this flag is already paired with a
+    // signed-in test, so leaving it unset here costs nothing and makes signing
+    // in wait for its own answer.
+    if (!cookPilotUser) return;
+    if (savedProjectIdRef.current) {
       setProjectAttachChecked(true);
       return;
     }
