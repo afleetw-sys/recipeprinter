@@ -12,7 +12,11 @@ import type {
 } from "@/types/recipe";
 import { uid } from "@/lib/ids";
 import { metaSectionsFromFull } from "@/lib/project";
-import { localStore } from "@/lib/storage";
+import {
+  LEGACY_PROJECTS_EMPTY_KEY,
+  legacyKnownEmpty,
+  rememberLegacyEmpty,
+} from "@/lib/legacyCollections";
 import {
   recipePrinterProjectPath,
   recipePrinterProjectsPath,
@@ -24,19 +28,11 @@ const PRINT_PROJECTS_COLLECTION = "printProjects";
 /** The subdocument holding the recipes. One per project; see `PrintProjectContent`. */
 const CONTENT_DOC = ["content", "main"] as const;
 
-/** Marks a legacy collection confirmed empty for a uid, so it is read once, not
-    on every list. Sound because nothing writes that collection any more — it is
-    only read and deleted from, so it can shrink and never grow. */
-const LEGACY_EMPTY_KEY = "recipeprinter:legacy-projects-empty:v1";
-
-function legacyKnownEmpty(ownerUid: string): boolean {
-  return (localStore.get(LEGACY_EMPTY_KEY) ?? "").split(",").includes(ownerUid);
-}
-
-function rememberLegacyEmpty(ownerUid: string): void {
-  if (legacyKnownEmpty(ownerUid)) return;
-  const existing = (localStore.get(LEGACY_EMPTY_KEY) ?? "").split(",").filter(Boolean);
-  localStore.set(LEGACY_EMPTY_KEY, [...existing, ownerUid].slice(-8).join(","));
+/** Whether this account's pre-namespace project collection is known empty, so
+    the compatibility reads below can be skipped rather than paid for. Lifted
+    into lib/legacyCollections so the unlock reads share the same reasoning. */
+function legacyProjectsKnownEmpty(ownerUid: string): boolean {
+  return legacyKnownEmpty(LEGACY_PROJECTS_EMPTY_KEY, ownerUid);
 }
 
 /** Up to four recipe photos in book order — the projects grid's cover mosaic. */
@@ -218,6 +214,79 @@ export class PrintProjectConflictError extends Error {
   }
 }
 
+/* ── Skipping the content write when the recipes did not change ──────────────
+   A save writes two documents: the small parent the projects list reads, and
+   `content/main`, which holds every recipe and is the one with real size to it
+   (see `loadPrintProjectSummaries` — ~151 kB against ~1.7 kB on a modest book,
+   and the ceiling is Firestore's 1 MiB).
+
+   Autosave fires 1.5s after any settled edit, and most edits are not recipes:
+   a duplex checkbox, the book's title, a cover photo, the contents toggle, a
+   print preset. Every one of those used to re-upload the entire book to store
+   a change that lives wholly in the parent. On a large cookbook an editing
+   session was dozens of half-megabyte uploads, which is felt on a phone.
+
+   What makes it safe to skip is that BOTH halves of the key have to match:
+
+     revision  — the parent revision this tab last wrote. If anything else has
+                 written the project since, the revision has moved and we write
+                 the content again. This is what covers the dangerous case:
+                 `resolveConflictByOverwriting` re-reads the remote revision and
+                 saves on top of another tab's content, so "unchanged since MY
+                 last write" is not "unchanged in the document".
+     signature — of the exact object we would have written.
+
+   Errors fall the safe way. A signature that disagrees when the content is
+   really identical costs one redundant write, which is what happened on every
+   save before this. A signature that agrees requires the serialized content to
+   be byte-identical, which is the thing being asserted.
+
+   Session-scoped on purpose: a tab that has not written this project has no
+   idea what is in the document and always writes. */
+
+interface LastContentWrite {
+  /** The parent revision that write produced. */
+  revision: number;
+  signature: string;
+}
+
+const lastContentWrites = new Map<string, LastContentWrite>();
+
+function contentWriteKey(ownerUid: string, projectId: string): string {
+  return `${ownerUid}/${projectId}`;
+}
+
+/**
+ * A short, collision-resistant stand-in for the serialized content document.
+ *
+ * The full string is the obvious thing to keep and the wrong one: it is up to a
+ * megabyte, the print page already retains a whole-book fingerprint of its own
+ * (`lastSavedFingerprintRef`), and a second full copy per open project is real
+ * memory on the device least able to spare it.
+ *
+ * Length plus two independently-seeded FNV-1a passes. Two different books
+ * colliding would have to agree on all three, and a collision is the one error
+ * here that loses a write — hence not a single 32-bit hash.
+ */
+function contentSignature(content: unknown): string {
+  const serialized = JSON.stringify(content) ?? "";
+  let a = 2166136261;
+  let b = 754639011;
+  for (let i = 0; i < serialized.length; i += 1) {
+    const code = serialized.charCodeAt(i);
+    a = Math.imul(a ^ code, 16777619);
+    b = Math.imul(b ^ (code + i), 2246822519);
+  }
+  return `${serialized.length}.${(a >>> 0).toString(36)}.${(b >>> 0).toString(36)}`;
+}
+
+/** Forgets what this tab knows about a project's stored content, so the next
+    save writes it in full. Called wherever the document stops being ours to
+    reason about — chiefly deletion. */
+function forgetContentWrite(ownerUid: string, projectId: string): void {
+  lastContentWrites.delete(contentWriteKey(ownerUid, projectId));
+}
+
 export async function savePrintProject(project: PrintProject): Promise<PrintProject> {
   if (!project.ownerUid) {
     throw new Error("Saving a project requires being signed in.");
@@ -229,7 +298,8 @@ export async function savePrintProject(project: PrintProject): Promise<PrintProj
   const db = getDb();
   const ref = doc(db, ...recipePrinterProjectPath(project.ownerUid, project.id));
   const contentRef = doc(db, ...recipePrinterProjectPath(project.ownerUid, project.id), ...CONTENT_DOC);
-  const saved = await runTransaction(db, async (transaction) => {
+  const writeKey = contentWriteKey(project.ownerUid, project.id);
+  const committed = await runTransaction(db, async (transaction) => {
     const existing = await transaction.get(ref);
     const remoteRevision = existing.exists()
       ? Number((existing.data() as Partial<PrintProject>).revision ?? 0)
@@ -254,10 +324,31 @@ export async function savePrintProject(project: PrintProject): Promise<PrintProj
     // an older save would be worse than either document alone.
     const { parent, content } = splitProject(next);
     transaction.set(ref, stripUndefined(parent));
-    transaction.set(contentRef, stripUndefined(content));
-    return next;
+
+    // …and the recipes only when they are not already there. See
+    // `lastContentWrites`: a match means THIS tab wrote this exact content at
+    // the revision the document still carries, so the write would be a
+    // half-megabyte restatement of what is in front of it.
+    const strippedContent = stripUndefined(content);
+    const signature = contentSignature(strippedContent);
+    const lastWrite = lastContentWrites.get(writeKey);
+    const contentAlreadyStored =
+      lastWrite !== undefined &&
+      lastWrite.revision === remoteRevision &&
+      lastWrite.signature === signature;
+    if (!contentAlreadyStored) transaction.set(contentRef, strippedContent);
+
+    return { project: next, signature };
   });
-  return saved;
+
+  // Recorded out here rather than inside the callback: Firestore re-runs a
+  // transaction body on contention, and a retry must not leave this Map
+  // claiming a write that was rolled back.
+  lastContentWrites.set(writeKey, {
+    revision: Number(committed.project.revision ?? 0),
+    signature: committed.signature,
+  });
+  return committed.project;
 }
 
 /**
@@ -281,7 +372,7 @@ export async function loadPrintProjectSummaries(ownerUid: string): Promise<Print
   // since the namespace move — so it can shrink and never grow. One confirmed
   // empty read is therefore permanent, and skipping it halves this load for
   // every account that never had a project there.
-  const skipLegacy = legacyKnownEmpty(ownerUid);
+  const skipLegacy = legacyProjectsKnownEmpty(ownerUid);
   const [namespaced, legacy] = await Promise.all([
     getDocs(query(collection(db, ...recipePrinterProjectsPath(ownerUid)), orderBy("updatedAt", "desc")))
       .catch(() => null),
@@ -293,7 +384,7 @@ export async function loadPrintProjectSummaries(ownerUid: string): Promise<Print
       : getDocs(query(collection(db, "users", ownerUid, PRINT_PROJECTS_COLLECTION), orderBy("updatedAt", "desc")))
           .catch(() => null),
   ]);
-  if (!skipLegacy && legacy && legacy.empty) rememberLegacyEmpty(ownerUid);
+  if (!skipLegacy && legacy && legacy.empty) rememberLegacyEmpty(LEGACY_PROJECTS_EMPTY_KEY, ownerUid);
   // Fault isolation is for ONE half failing. When neither answered there is no
   // answer at all, and resolving `[]` here made that indistinguishable from an
   // account with nothing in it: the caller cached the empty list, the account
@@ -317,7 +408,10 @@ export async function loadPrintProject(ownerUid: string, projectId: string): Pro
   const db = getDb();
   const snap = await getDoc(doc(db, ...recipePrinterProjectPath(ownerUid, projectId))).catch(() => null);
   if (snap?.exists()) return hydrate(db, ownerUid, projectId, snap.data());
-  // Temporary compatibility read. New writes are namespace-only.
+  // Temporary compatibility read. New writes are namespace-only, and once the
+  // legacy collection has been seen empty for this account there is nothing
+  // there to find — see `legacyProjectsKnownEmpty`.
+  if (legacyProjectsKnownEmpty(ownerUid)) return null;
   const legacy = await getDoc(doc(db, "users", ownerUid, PRINT_PROJECTS_COLLECTION, projectId)).catch(() => null);
   return legacy?.exists() ? (legacy.data() as PrintProject) : null;
 }
@@ -344,9 +438,20 @@ export async function loadPrintProjectHead(
   const read = async (segments: readonly string[]) =>
     getDoc(doc(db, ...(segments as [string, ...string[]]))).catch(() => null);
 
-  const snap = await read(recipePrinterProjectPath(ownerUid, projectId));
-  const found =
-    snap?.exists() ? snap : await read(["users", ownerUid, PRINT_PROJECTS_COLLECTION, projectId]);
+  // Both at once, not one after the other.
+  //
+  // This runs on every signed-in load of /print, and for a working copy that
+  // has never been saved BOTH reads miss — which was two sequential round trips
+  // on the app's main screen before it could even decide there was nothing to
+  // attach to. Firing them together makes the miss cost one round trip instead
+  // of two, and where the legacy collection is already known empty it costs
+  // none at all.
+  const skipLegacy = legacyProjectsKnownEmpty(ownerUid);
+  const [snap, legacy] = await Promise.all([
+    read(recipePrinterProjectPath(ownerUid, projectId)),
+    skipLegacy ? Promise.resolve(null) : read(["users", ownerUid, PRINT_PROJECTS_COLLECTION, projectId]),
+  ]);
+  const found = snap?.exists() ? snap : legacy;
   if (!found?.exists()) return null;
   const data = found.data() as Partial<PrintProject>;
   return {
@@ -406,6 +511,10 @@ export async function deletePrintProject(
     import("@/lib/firebase/storage"),
   ]);
   const db = getDb();
+  // Before anything is removed. What this tab believed about the stored content
+  // stops being true the moment the documents go, and a save that raced the
+  // delete must write in full rather than trust it.
+  forgetContentWrite(ownerUid, projectId);
   const adoptedRoot = ref(
     getFirebaseStorage(),
     `${recipePrinterUserPhotoRoot(ownerUid)}/adopted/${projectId}`,
@@ -436,7 +545,12 @@ export async function deletePrintProject(
   );
   await Promise.all([
     deleteDoc(doc(db, ...recipePrinterProjectPath(ownerUid, projectId))),
-    deleteDoc(doc(db, "users", ownerUid, PRINT_PROJECTS_COLLECTION, projectId)),
+    // Deleting a document that was never there is still a billed write, and the
+    // duplicate sweeper deletes in bulk. Skipped where the legacy collection is
+    // known empty for this account.
+    legacyProjectsKnownEmpty(ownerUid)
+      ? Promise.resolve()
+      : deleteDoc(doc(db, "users", ownerUid, PRINT_PROJECTS_COLLECTION, projectId)),
   ]);
 }
 

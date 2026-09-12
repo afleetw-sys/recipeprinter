@@ -2,6 +2,11 @@
 
 import { localStore } from "@/lib/storage";
 import {
+  LEGACY_UNLOCKS_EMPTY_KEY,
+  legacyKnownEmpty,
+  rememberLegacyEmpty,
+} from "@/lib/legacyCollections";
+import {
   recipePrinterUnlockPath,
   recipePrinterUnlocksPath,
 } from "@/lib/firebase/recipePrinterPaths";
@@ -169,9 +174,17 @@ export async function loadCookbookProjectUnlock(ownerUid: string, projectId: str
     const namespaced = await getDoc(doc(db, ...recipePrinterUnlockPath(ownerUid, projectId)));
     // The pre-namespace path is only consulted on a miss, and only to answer
     // "yes" — a miss on both is what makes the answer a definitive no.
+    //
+    // Skipped entirely once `loadCookbookProjectUnlockIds` has seen that
+    // collection come back empty for this account, which it does on every visit
+    // to /projects. This read happens on every print-page mount, so for the
+    // common case — no legacy unlock, because unlocks have only ever been
+    // written per project — it was a guaranteed miss paid for over and over.
     unlocked = namespaced.exists()
       ? true
-      : (await getDoc(doc(db, "users", ownerUid, "cookbookUnlocks", projectId))).exists();
+      : legacyKnownEmpty(LEGACY_UNLOCKS_EMPTY_KEY, ownerUid)
+        ? false
+        : (await getDoc(doc(db, "users", ownerUid, "cookbookUnlocks", projectId))).exists();
   } catch {
     // Offline, rules error, transient failure — an unanswered question, not a
     // negative answer. Leave the cache exactly as it is.
@@ -225,6 +238,11 @@ export async function loadCookbookProjectUnlockIds(ownerUid: string): Promise<Se
     getDocs(collection(db, ...recipePrinterUnlocksPath(ownerUid))).catch(() => null),
     getDocs(collection(db, "users", ownerUid, "cookbookUnlocks")).catch(() => null),
   ]);
+  // A successful, empty legacy read is the one observation that lets the
+  // per-project check above stop asking. Only on success: a failed read is the
+  // absence of an answer, and a wrongly-set marker would hide a real legacy
+  // unlock from the person who paid for it.
+  if (legacy && legacy.empty) rememberLegacyEmpty(LEGACY_UNLOCKS_EMPTY_KEY, ownerUid);
   const ids = new Set<string>();
   for (const snapshot of [namespaced, legacy]) {
     snapshot?.forEach((entry) => ids.add(entry.id));
