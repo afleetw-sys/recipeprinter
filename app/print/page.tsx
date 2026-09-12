@@ -471,7 +471,9 @@ export default function PrintPage() {
   const lastAttemptedFingerprintRef = useRef<string | null>(null);
   const saveInFlightRef = useRef(false);
   const saveQueuedRef = useRef(false);
-  const latestSaveRef = useRef<() => void>(() => undefined);
+  const latestSaveRef = useRef<(projectIdOverride?: string) => void>(() => undefined);
+  /** The document a save that had to wait was aimed at. See `handleSaveProject`. */
+  const queuedSaveOverrideRef = useRef<string | undefined>(undefined);
   const flushOnHideRef = useRef<() => void>(() => undefined);
   const saveAfterLoginRef = useRef(false);
   /** The cook answered the "Newer version found" prompt by choosing to
@@ -2274,6 +2276,12 @@ export default function PrintPage() {
     }
     if (saveInFlightRef.current) {
       saveQueuedRef.current = true;
+      // Which document this save was for has to wait with it. The replay below
+      // used to call `handleSaveProject()` with no argument, so a save aimed at
+      // a specific document — the one leaving the workspace makes, pointing the
+      // account copy at the project this content already is — silently became a
+      // save aimed at wherever the working copy happened to be attached.
+      if (projectIdOverride) queuedSaveOverrideRef.current = projectIdOverride;
       return;
     }
     const baseProject = currentProject(projectIdOverride);
@@ -2346,7 +2354,9 @@ export default function PrintPage() {
       saveInFlightRef.current = false;
       if (saveQueuedRef.current) {
         saveQueuedRef.current = false;
-        window.setTimeout(() => latestSaveRef.current(), 0);
+        const queuedOverride = queuedSaveOverrideRef.current;
+        queuedSaveOverrideRef.current = undefined;
+        window.setTimeout(() => latestSaveRef.current(queuedOverride), 0);
       }
     }
   }
@@ -2460,7 +2470,7 @@ export default function PrintPage() {
   // during render) so a discarded or double-invoked render can't leave a stale
   // closure behind — the same latest-ref pattern as handlePrintRef below.
   useEffect(() => {
-    latestSaveRef.current = () => void handleSaveProject();
+    latestSaveRef.current = (projectIdOverride?: string) => void handleSaveProject(projectIdOverride);
   });
 
   // Best-effort push to Firestore when the tab is being hidden/closed, so a

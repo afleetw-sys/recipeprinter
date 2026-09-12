@@ -1,5 +1,6 @@
 import type { PrintProjectSummary } from "@/types/recipe";
 import { deletePrintProject } from "@/lib/printProjects";
+import { forgetProjectId } from "@/lib/projectIdentity";
 import {
   markCookbookProjectUnlockedLocal,
   persistCookbookProjectUnlock,
@@ -243,7 +244,15 @@ export async function deleteDuplicateProjects(
       // `keepAssets` — a copy forked from an older one still serves its photos
       // out of that older copy's storage folder, so only the documents go.
       deletePrintProject(ownerUid, project.id, { keepAssets: true })
-        .then(() => true)
+        .then(() => {
+          // The content index still points at this id, and printing the same
+          // recipes again would file straight back into the document that was
+          // just removed — resurrecting a fork the sweep had cleaned up.
+          // `confirmDelete` on /projects has always done this; the sweeper
+          // deletes the same documents and did not.
+          forgetProjectId(project.id);
+          return true;
+        })
         .catch((error) => {
           // Quiet for the cook, but not invisible to us: a rules change or an
           // offline tab would otherwise make the sweep look like it silently

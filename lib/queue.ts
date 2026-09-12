@@ -197,15 +197,35 @@ function scheduleQueueWrite(items: QueueItem[]): void {
   queuePersistTimer = setTimeout(flushQueueWrites, QUEUE_PERSIST_THROTTLE_MS);
 }
 
+/** A shared card's slug IS its identity in the queue, the same way a Paprika
+    recipe's archive uid is (`paprikaQueueId`). Deterministic so opening the
+    same link twice is the same recipe rather than a second copy of it. */
+function sharedQueueId(slug: string): string {
+  return `shared:${slug}`;
+}
+
 /**
  * Seeds a fully-parsed recipe straight into this browser's session queue,
  * status "ready" — no parsing step, used by the /print/[slug] loader to hand
  * a shared recipe off to the real /print page. This is a local copy in the
  * visitor's own session storage: editing it (via the normal print-page
  * inline editor) only ever touches this copy, never the shared source doc.
+ *
+ * Idempotent per slug. The id used to be a fresh `uid()` every time, so every
+ * visit to the same link added another identical recipe to the deck — a link
+ * in a newsletter that somebody opens twice, or a bookmark, and the print job
+ * quietly has the same card in it twice. Every other way in already dedupes:
+ * `addUrl` on the canonical URL, `addReadyRecipes` on the item id.
+ *
+ * A recipe already in the queue is LEFT ALONE, not refreshed from the shared
+ * document. It is the visitor's copy by then and they may have edited it, and
+ * silently replacing their edits with the source is the one thing this function
+ * promises not to do.
  */
 export function seedSharedQueueItem(recipe: Recipe, source: string): string {
-  const id = uid();
+  const id = sharedQueueId(source);
+  const current = readQueue();
+  if (current.some((item) => item.id === id)) return id;
   const item: QueueItem = {
     id,
     method: "shared",
@@ -215,7 +235,7 @@ export function seedSharedQueueItem(recipe: Recipe, source: string): string {
     recipe,
     addedAt: Date.now(),
   };
-  const next = [...readQueue(), item];
+  const next = [...current, item];
   const serialized = serializeQueue(next);
   if (serialized) {
     lastWrittenQueueJson = serialized;

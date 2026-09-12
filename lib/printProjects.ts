@@ -569,9 +569,13 @@ export async function deletePrintProject(
   // order means the worst interruption leaves a listed project whose recipes
   // failed to load, which is visible and retryable, rather than silent storage
   // nobody is billed for by accident.
-  await deleteDoc(doc(db, ...recipePrinterProjectPath(ownerUid, projectId), ...CONTENT_DOC)).catch(
-    () => undefined,
-  );
+  //
+  // Its failure is NOT swallowed, which it used to be — the parent was then
+  // removed anyway, producing exactly the unreachable orphan the ordering is
+  // here to avoid. Deleting a document that was never there succeeds in
+  // Firestore, so an inline project with no content subdocument still passes
+  // straight through this.
+  await deleteDoc(doc(db, ...recipePrinterProjectPath(ownerUid, projectId), ...CONTENT_DOC));
   await Promise.all([
     deleteDoc(doc(db, ...recipePrinterProjectPath(ownerUid, projectId))),
     // Deleting a document that was never there is still a billed write, and the
