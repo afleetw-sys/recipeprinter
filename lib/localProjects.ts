@@ -166,6 +166,33 @@ export function loadLocalProjects(): PrintProject[] {
   return byNewest(Object.values(readAll()));
 }
 
+/**
+ * Every locally-held photo the shelf is still pointing at.
+ *
+ * A Paprika photo lives in IndexedDB and the recipe carries only its id
+ * (`QueueItem.localPhotoId`), so a project filed here is a REFERENCE to those
+ * bytes, not a copy of them — the stored `recipe.image` is an object URL that
+ * died with the document that minted it, and `rehydrateLocalPhotos` mints a
+ * fresh one from the store on the way back in.
+ *
+ * Which makes the shelf an owner, and the queue has to ask it before dropping
+ * a photo. Leaving the workspace files the project and THEN clears the queue,
+ * one after the other in the same breath — so clearing used to delete the exact
+ * bytes the book it had just filed was relying on, and that book could never
+ * show its photos again. See `releaseLocalPhotos` in lib/queue.ts.
+ */
+export function localProjectPhotoIds(): Set<string> {
+  const ids = new Set<string>();
+  for (const project of Object.values(readAll())) {
+    for (const section of project.sections ?? []) {
+      for (const item of section.items ?? []) {
+        if (item.localPhotoId) ids.add(item.localPhotoId);
+      }
+    }
+  }
+  return ids;
+}
+
 export function loadLocalProject(projectId: string): PrintProject | null {
   return readAll()[projectId] ?? null;
 }

@@ -12,6 +12,7 @@ import { normalizeImportURL } from "@/lib/cookpilot";
 import { hostnameOf as rawHostnameOf } from "@/lib/url";
 import { uid } from "@/lib/ids";
 import { deleteLocalPhoto, isBlobUrl, localPhotoUrls } from "@/lib/localPhotos";
+import { localProjectPhotoIds } from "@/lib/localProjects";
 import { localStore, sessionStore } from "@/lib/storage";
 
 // The print queue is session-based for the MVP, no accounts, no saved library.
@@ -216,6 +217,57 @@ export function seedSharedQueueItem(recipe: Recipe, source: string): string {
   }
   return id;
 }
+
+/**
+ * Drops the IndexedDB photos of departing recipes — but only the ones nothing
+ * else is holding.
+ *
+ * A `localPhotoId` names bytes in a shared store (lib/localPhotos), and the
+ * queue is not their only owner: a project filed on the device shelf stores the
+ * SAME id and reads the bytes back through `rehydrateLocalPhotos` when it is
+ * reopened. Deleting on the queue's say-so alone destroyed those books.
+ *
+ * Leaving the workspace is where it bit, because the two steps run back to back
+ * in one synchronous breath (see `handleNavigateHome` on the print page and the
+ * mount effect in components/PrinterWorkspace):
+ *
+ *     fileProjectLocally(items, meta)   // the shelf copy now references the photos
+ *     handleSaveProject(filed)          // suspends at its first await
+ *     queue.clear()                     // …and used to delete them here
+ *
+ * That cost the filed book every photo it had. It also cost the ACCOUNT copy
+ * them: `deleteLocalPhoto` revokes the object URL synchronously, and the save it
+ * had just overtaken reaches `fetch(blob:…)` one microtask later, where a
+ * revoked URL fails — `materializeOrKeep` then keeps the dead `blob:` string and
+ * writes it to Firestore, on top of the real Storage URLs an earlier save had
+ * put there.
+ *
+ * So ask the shelf first. Both callers pass the queue as it is AFTER the
+ * removal, so a photo two recipes share survives losing one of them.
+ *
+ * Errs towards keeping: a photo nothing points at any more costs a little disk
+ * (the store's own standing trade — see `deleteLocalPhoto`), and one deleted
+ * early costs someone a picture they cannot get back.
+ */
+function releaseLocalPhotos(going: readonly QueueItem[], keeping: readonly QueueItem[]): void {
+  const departing = going
+    .map((item) => item.localPhotoId)
+    .filter((photoId): photoId is string => Boolean(photoId));
+  if (departing.length === 0) return;
+  const stillQueued = new Set(
+    keeping.map((item) => item.localPhotoId).filter((photoId): photoId is string => Boolean(photoId)),
+  );
+  const shelved = localProjectPhotoIds();
+  for (const photoId of departing) {
+    if (stillQueued.has(photoId) || shelved.has(photoId)) continue;
+    void deleteLocalPhoto(photoId);
+  }
+}
+
+/** Exported for tests. The rule this enforces has no UI in front of it and a
+    book's photographs to lose if it is wrong — the same reasoning as
+    `__scheduleQueueWriteForTest` above. */
+export const __releaseLocalPhotosForTest = releaseLocalPhotos;
 
 function hostnameOf(url: string): string {
   return rawHostnameOf(normalizeImportURL(url)) ?? url;
@@ -758,19 +810,18 @@ export function useQueue() {
     (id: string) => {
       textPayloads.current.delete(id);
       const going = itemsRef.current.find((it) => it.id === id);
-      if (going?.localPhotoId) void deleteLocalPhoto(going.localPhotoId);
       commit(itemsRef.current.filter((it) => it.id !== id));
+      if (going) releaseLocalPhotos([going], itemsRef.current);
     },
     [commit],
   );
 
   const clear = useCallback(() => {
     textPayloads.current.clear();
-    for (const item of itemsRef.current) {
-      if (item.localPhotoId) void deleteLocalPhoto(item.localPhotoId);
-    }
+    const going = itemsRef.current;
     setFocusedItemId(null);
     commit([]);
+    releaseLocalPhotos(going, itemsRef.current);
   }, [commit]);
 
   /** Replaces the browser queue when opening a saved project. */
