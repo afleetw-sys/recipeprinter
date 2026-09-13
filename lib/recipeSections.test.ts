@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
+  applySectionTitleEdit,
   demoteSectionToLine,
   promoteLineToSection,
   sectionForInsertion,
@@ -48,6 +49,45 @@ describe("promoteLineToSection", () => {
 
   it("still drops the line when no empty row can be built for it", () => {
     expect(promoteLineToSection(rows(["flour"], ["Glaze"]), 1, "Glaze")).toEqual(rows(["flour"]));
+  });
+});
+
+describe("applySectionTitleEdit", () => {
+  it("retitles the run and stops at the next section", () => {
+    const next = applySectionTitleEdit(
+      rows(["a", "Base"], ["b", "Glaze"], ["c", "Glaze"], ["d", "Other"]),
+      1,
+      "Icing",
+    );
+    expect(next).toEqual(rows(["a", "Base"], ["b", "Icing"], ["c", "Icing"], ["d", "Other"]));
+  });
+
+  /* The bug this exists for: rubbing out a heading left its rows as their own
+     unlabelled group, which still gets the gap `.recipe-card__section-groups`
+     puts between groups — the title went but the block stayed pushed away from
+     the section above instead of merging into it. */
+  it("folds the run into the section above when the title is cleared", () => {
+    const next = applySectionTitleEdit(
+      rows(["a", "Base"], ["b", "Glaze"], ["c", "Glaze"], ["d", "Other"]),
+      1,
+      "",
+    );
+    expect(next).toEqual(rows(["a", "Base"], ["b", "Base"], ["c", "Base"], ["d", "Other"]));
+  });
+
+  it("leaves the run unlabelled when the run above it is", () => {
+    const next = applySectionTitleEdit(rows(["a"], ["b", "Glaze"], ["c", "Glaze"]), 1, "   ");
+    expect(next).toEqual(rows(["a"], ["b"], ["c"]));
+  });
+
+  it("has nothing to join when the heading opens the list", () => {
+    const next = applySectionTitleEdit(rows(["a", "Glaze"], ["b", "Glaze"]), 0, "");
+    expect(next).toEqual(rows(["a"], ["b"]));
+  });
+
+  it("clears outright when told the row above is going away too", () => {
+    const next = applySectionTitleEdit(rows(["a", "Base"], ["b", "Glaze"], ["c", "Glaze"]), 1, "", false);
+    expect(next).toEqual(rows(["a", "Base"], ["b"], ["c"]));
   });
 });
 
