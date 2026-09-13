@@ -72,6 +72,24 @@ export function AddRecipeDialog({
   }, [focusNonce, open]);
 
 
+  /**
+   * Forget which tab was open once the sheet closes.
+   *
+   * `mode` is a mirror of the panel's own tab, kept only so the sheet AROUND
+   * the panel can be styled — the paste box needs a taller one. But the panel
+   * lives inside `Dialog`, which renders nothing while closed, so its tab
+   * resets to "url" on the way back in while this copy still said "text".
+   *
+   * Reopening after using Text therefore dressed the sheet as the paste box
+   * around a Link field, and `.recipe-add-dialog__panel--paste .field` stretched
+   * the one-line URL input to the paste box's full 340px. Dropping the mirror
+   * when the sheet closes is what keeps the two from disagreeing: neither one
+   * survives the close, so neither can be stale.
+   */
+  useEffect(() => {
+    if (!open) setMode("url");
+  }, [open]);
+
   function clearDuplicate() {
     if (duplicateTitle) setDuplicateTitle(null);
   }
