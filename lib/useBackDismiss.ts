@@ -1,10 +1,76 @@
 "use client";
 
 import { useEffect, useRef } from "react";
-import { backDismissAction, isOwnOverlayEntry, overlayHistoryState } from "@/lib/overlayHistory";
+import {
+  backDismissAction,
+  hasOverlayEntry,
+  isOwnOverlayEntry,
+  overlayHistoryState,
+} from "@/lib/overlayHistory";
 
 /** Distinguishes our history entries from each other when dialogs nest. */
 let overlayCounter = 0;
+
+/**
+ * How long to wait for the pop before navigating anyway.
+ *
+ * Only reached when the overlay entry is on top and no pop is coming — a
+ * dialog that stays open while something inside it navigates. Nothing is going
+ * to cancel the navigation in that case, so going ahead is right; this is the
+ * bound that keeps "wait for the pop" from meaning "wait forever".
+ */
+const OVERLAY_POP_GRACE_MS = 400;
+
+/**
+ * Starts a navigation once no overlay's history entry is on top of the stack.
+ *
+ * The collision this exists for: pressing a button in a dialog that both
+ * closes the dialog and navigates. Both happen in one React batch, so the
+ * order is fixed and hostile — React commits, the dialog's effect teardown
+ * runs `history.back()` to drop the entry it pushed, and only *then* does the
+ * router get anywhere. `router.push` is a transition: it has not touched
+ * history yet, so `isOwnOverlayEntry` still sees its own entry and pops it,
+ * and the popstate that follows makes the App Router re-sync to the URL it is
+ * already on — which throws away the pending navigation entirely.
+ *
+ * The symptom is not a slow navigation, it is no navigation: on /print,
+ * "Leave it in this browser" filed the project, cleared the desk and then sat
+ * on "Saving your recipes…" forever, because the page it was leaving for never
+ * arrived. Clicking the logo again is a no-op (`leavingHome` guards re-entry),
+ * so the way out was a manual reload.
+ *
+ * So navigate on the far side of the pop instead of racing it. The entry on
+ * top of the stack answers "is an overlay about to pop out from under me"
+ * synchronously, and the popstate its teardown produces is the signal that it
+ * is now safe — deterministic, rather than a timeout picked to be longer than
+ * the teardown usually takes.
+ */
+export function navigateAfterOverlayHistory(navigate: () => void): void {
+  if (typeof window === "undefined" || !hasOverlayEntry(window.history.state)) {
+    navigate();
+    return;
+  }
+
+  let done = false;
+  const run = () => {
+    if (done) return;
+    done = true;
+    window.removeEventListener("popstate", onPop);
+    window.clearTimeout(timer);
+    navigate();
+  };
+  // Dialogs nest, and each one pops only its own entry — so a popstate that
+  // reveals another overlay's entry underneath means there is still a pop to
+  // come. Waiting for the stack to be clear of them rather than for one pop is
+  // what makes this right for two overlays as well as one.
+  const onPop = () => {
+    if (!hasOverlayEntry(window.history.state)) run();
+  };
+  // The bound, for the case where no pop is coming at all. Navigating is the
+  // right answer then: nothing is going to cancel it.
+  const timer = window.setTimeout(run, OVERLAY_POP_GRACE_MS);
+  window.addEventListener("popstate", onPop);
+}
 
 /**
  * Makes the device Back gesture close an overlay instead of leaving the page.

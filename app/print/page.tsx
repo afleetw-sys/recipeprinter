@@ -29,7 +29,7 @@ import { Dialog } from "@/components/Dialog";
 import { Checkbox, CheckboxGroup } from "@/components/Controls";
 import { RecipeLoadingState } from "@/components/RecipeLoadingState";
 import { useModalFocus } from "@/lib/useModalFocus";
-import { useBackDismiss } from "@/lib/useBackDismiss";
+import { navigateAfterOverlayHistory, useBackDismiss } from "@/lib/useBackDismiss";
 import {
   PRINT_CARD_SIZE_OPTIONS,
   type PrintCardSize,
@@ -2371,6 +2371,18 @@ export default function PrintPage() {
   /** Leaving with work that only exists in this browser — see `handleNavigateHome`. */
   const [confirmLeave, setConfirmLeave] = useState(false);
 
+  /**
+   * Home, on the far side of any dialog's history bookkeeping.
+   *
+   * Both exits from this page can be reached from inside the "Keep this
+   * project?" confirm, and a dialog closing in the same breath as a navigation
+   * used to eat the navigation outright — see `navigateAfterOverlayHistory`,
+   * which is where the whole mechanism is written down.
+   */
+  function goHome() {
+    navigateAfterOverlayHistory(() => router.push("/"));
+  }
+
   async function handleNavigateHome(options?: { confirmed?: boolean }) {
     if (leavingHome) return;
 
@@ -2392,7 +2404,7 @@ export default function PrintPage() {
     // made, and claiming otherwise would be the same kind of lie the flight was.
     setLeavingHome(printable ? "Saving your recipes…" : "Going home…");
     if (!printable) {
-      router.push("/");
+      goHome();
       return;
     }
 
@@ -2433,7 +2445,7 @@ export default function PrintPage() {
       queue.clear();
       projectMeta.startNewProject();
     }
-    router.push("/");
+    goHome();
   }
 
   // A save queued during an in-flight request must serialize the newest render,
