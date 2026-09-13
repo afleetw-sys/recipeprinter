@@ -245,11 +245,34 @@ function applyRecipeTargetEdit(
   });
 }
 
-// The new line inherits whichever section the item at (or just before,
-// for an append at the end) that index belongs to, so inserting in the
-// middle of a "For the sauce" group doesn't fork off an unlabeled group.
-function sectionForInsertion<T extends { section?: string }>(items: T[], index: number): string | undefined {
-  return items[index]?.section ?? items[index - 1]?.section;
+/**
+ * Which section a line inserted at `index` belongs to.
+ *
+ * The row ABOVE the insertion point decides, because every caller here is
+ * "put a line below this one": Add below, and Enter splitting a line in two.
+ * Both name a row and mean "directly under that row", so that row's group is
+ * the answer — inserting in the middle of a "For the sauce" run stays in the
+ * run rather than forking off an unlabeled group.
+ *
+ * It used to ask the row at `index` first, which is the row being pushed DOWN.
+ * That is the same row for every insertion except the one that matters: at a
+ * section boundary the row below is the next section's first line, so Add
+ * below on the last ingredient of "For the sauce" made the new line the first
+ * ingredient of "For the topping" instead. Enter at the end of such a line was
+ * worse — the half you split off jumped into the next section with it.
+ *
+ * The row above's section is used even when it is `undefined`, which is the
+ * unlabeled run that a recipe with a late first heading starts with: adding
+ * below its last line must stay unlabeled, not join the heading underneath.
+ * Only a genuine prepend — nothing above the insertion point at all — takes
+ * the row below's section.
+ */
+export function sectionForInsertion<T extends { section?: string }>(
+  items: T[],
+  index: number,
+): string | undefined {
+  const above = items[index - 1];
+  return above ? above.section : items[index]?.section;
 }
 
 interface UseRecipeInlineEditorOptions {

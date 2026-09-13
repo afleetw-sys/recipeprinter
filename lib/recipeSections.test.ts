@@ -1,5 +1,9 @@
 import { describe, expect, it } from "vitest";
-import { demoteSectionToLine, promoteLineToSection } from "@/lib/useRecipeInlineEditor";
+import {
+  demoteSectionToLine,
+  promoteLineToSection,
+  sectionForInsertion,
+} from "@/lib/useRecipeInlineEditor";
 
 type Row = { name: string; section?: string };
 
@@ -69,5 +73,46 @@ describe("demoteSectionToLine", () => {
     const start = rows(["flour"], ["salt"], ["sugar", "For the glaze"]);
     const { items, title } = demoteSectionToLine(start, 2, make);
     expect(promoteLineToSection(items, 2, title)).toEqual(start);
+  });
+});
+
+describe("sectionForInsertion", () => {
+  // "Add below row N" inserts at N + 1, which is how every caller addresses it.
+  const below = (items: Row[], row: number) => sectionForInsertion(items, row + 1);
+
+  it("keeps the last line of a section in that section", () => {
+    // The bug this exists for: two sections, Add below the second (last)
+    // ingredient of the first one. The row being pushed down is the next
+    // section's first line, and the new line used to join it.
+    const items = rows(["olives", "Chermoula"], ["cumin", "Chermoula"], ["phyllo", "Pastry"]);
+    expect(below(items, 1)).toBe("Chermoula");
+  });
+
+  it("stays in the run when inserting mid-section", () => {
+    const items = rows(["olives", "Chermoula"], ["cumin", "Chermoula"], ["phyllo", "Pastry"]);
+    expect(below(items, 0)).toBe("Chermoula");
+  });
+
+  it("keeps an unlabeled opening run unlabeled at its boundary", () => {
+    // A recipe whose first heading comes late starts with rows carrying no
+    // section at all. Adding below the last of them must not join the heading
+    // underneath — so an absent section on the row above is an answer, not a
+    // reason to look further down.
+    const items = rows(["flour"], ["salt"], ["sugar", "For the glaze"]);
+    expect(below(items, 1)).toBeUndefined();
+  });
+
+  it("appends to the last section at the end of the list", () => {
+    const items = rows(["flour"], ["sugar", "For the glaze"]);
+    expect(below(items, 1)).toBe("For the glaze");
+  });
+
+  it("takes the row below only when nothing is above it", () => {
+    const items = rows(["sugar", "For the glaze"]);
+    expect(sectionForInsertion(items, 0)).toBe("For the glaze");
+  });
+
+  it("has no section to give for an empty list", () => {
+    expect(sectionForInsertion([] as Row[], 0)).toBeUndefined();
   });
 });
