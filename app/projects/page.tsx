@@ -24,6 +24,7 @@ import {
   loadLocalProjects,
   pruneLocalProjects,
 } from "@/lib/localProjects";
+import { forgetProjectKeptOnDevice } from "@/lib/keptProjects";
 import { libraryProjects } from "@/lib/projectLibrary";
 import { photoGridLayout } from "@/lib/photoGrid";
 import type { PrintProjectSummary } from "@/types/recipe";
@@ -260,6 +261,9 @@ export default function ProjectsPage() {
     // something that was never in an account.
     if (localOnlyIds.has(pendingDelete.id)) {
       deleteLocalProject(pendingDelete.id);
+      // The mark that put it in this list, dropped with the project it
+      // described, so the map cannot outlive the shelf.
+      forgetProjectKeptOnDevice(pendingDelete.id);
       setLocalProjects(loadLocalProjects().map(summarizePrintProject));
       setPendingDelete(null);
       return;
@@ -420,10 +424,11 @@ export default function ProjectsPage() {
                             exactly where a signed-out purchase is recorded
                             until the webhook's TRANSFER event lands.
 
-                            No "On this device" badge any more: the only
-                            local-only book that reaches this list is a paid
-                            one, and where the bytes happen to sit is our
-                            problem rather than something to label. */}
+                            No "On this device" badge any more: a local-only
+                            project reaches this list because it was bought or
+                            because the cook chose to keep it, and where the
+                            bytes happen to sit is our problem rather than
+                            something to label. */}
                         {(localOnlyIds.has(project.id)
                           ? isCookbookProjectUnlocked(project.id)
                           : purchasedIds.has(project.id)) ? (
@@ -433,12 +438,14 @@ export default function ProjectsPage() {
                         )}
                       </div>
                     )}
-                    {/* A paid book that the account does not hold yet is the
-                        one case worth a line, and the line is about the
-                        PURCHASE, not about storage: signing in is how it
-                        follows you to another device. "Open it and it'll save
-                        to your account" is gone — a click that silently
-                        changes where your work lives is not an explanation. */}
+                    {/* Anything the account does not hold yet gets a line, and
+                        the line is about what signing in WOULD do rather than
+                        about storage: it follows you to another device. That is
+                        the whole difference for a paid book, and for a project
+                        kept on this device it is the difference between one
+                        browser and all of them. "Open it and it'll save to your
+                        account" is gone: a click that silently changes where
+                        your work lives is not an explanation. */}
                     {localOnlyIds.has(project.id) && !user && (
                       <p className="mt-cp-2 text-cp-caption text-ink-soft leading-snug">
                         <button

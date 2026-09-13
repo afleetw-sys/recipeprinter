@@ -9,6 +9,7 @@ import { SiteHeader } from "@/components/SiteHeader";
 import { SAVE_FAILURES, SAVE_STATUS_LABEL } from "@/components/AccountControl";
 import { ProjectHeading } from "@/components/print/ProjectHeading";
 import { fileProjectLocally } from "@/lib/localProjects";
+import { rememberProjectKeptOnDevice } from "@/lib/keptProjects";
 import type { AccountSaveStatus } from "@/components/AccountControl";
 import { FeedbackDialog } from "@/components/FeedbackButton";
 import { PrintDialogs } from "@/components/PrintDialogs";
@@ -2419,6 +2420,18 @@ export default function PrintPage() {
     // rather than creating its own copy of it.
     const filed = fileProjectLocally(queue.items, projectMeta.meta);
     if (filed) projectMeta.setProjectId(filed);
+    /**
+     * "Leave it in this browser" was pressed, so keeping it is a decision and
+     * the library lists it.
+     *
+     * `confirmed` reaches here from exactly one place: that button. Every other
+     * way out of the workspace files to the shelf the way it always did, and
+     * the shelf goes on not listing what it merely caught — see
+     * `listableLocalProjects`. Marked against `filed` rather than the working
+     * id, because filing under content this device has seen before reuses that
+     * document's id and the mark has to land on the document that exists.
+     */
+    if (filed && options?.confirmed) rememberProjectKeptOnDevice(filed);
     /**
      * Leaving does not put a draft in the account.
      *
@@ -5292,6 +5305,12 @@ export default function PrintPage() {
         open={confirmLeave}
         tone="primary"
         title="Keep this project?"
+        /* "You can open it again from Projects" is a promise the shelf could
+           not keep on its own: it catches every project the workspace releases
+           and `listableLocalProjects` lists almost none of it, recipe cards
+           least of all. The press below is what turns this project from
+           something the shelf caught into something the cook chose, and that
+           is what the library lists. See `rememberProjectKeptOnDevice`. */
         description={
           <>
             This project stays in this browser, and you can open it again from Projects.
