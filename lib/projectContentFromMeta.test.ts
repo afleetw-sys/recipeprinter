@@ -45,6 +45,7 @@ describe("what a project takes from its metadata", () => {
         tocTitle: "Contents",
         photoStyle: "full",
         railSortMode: "title",
+        lastImportSource: "text",
       }),
       LAYOUT,
     );
@@ -62,6 +63,7 @@ describe("what a project takes from its metadata", () => {
       tocTitle: "Contents",
       photoStyle: "full",
       railSortMode: "title",
+      lastImportSource: "text",
     });
   });
 

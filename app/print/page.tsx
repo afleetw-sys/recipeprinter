@@ -2983,6 +2983,7 @@ export default function PrintPage() {
           tocTitle: project.settings.tocTitle,
           photoStyle: project.settings.photoStyle,
           railSortMode: project.settings.railSortMode,
+          lastImportSource: project.settings.lastImportSource,
           cover: project.cover,
           backCover: project.backCover,
           dedication: project.dedication,
@@ -5375,6 +5376,8 @@ export default function PrintPage() {
         onAddText={queue.addText}
         onAddReadyRecipes={queue.addReadyRecipes}
         onAddManual={addManualRecipe}
+        lastSource={projectMeta.meta.lastImportSource ?? "url"}
+        onSourceUsed={projectMeta.setLastImportSource}
       />
       <FeedbackDialog
         open={showFeedbackDialog}

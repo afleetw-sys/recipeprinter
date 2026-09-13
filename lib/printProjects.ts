@@ -256,6 +256,7 @@ export function projectContentFromMeta(
       tocTitle: meta.tocTitle,
       photoStyle: meta.photoStyle,
       railSortMode: meta.railSortMode,
+      lastImportSource: meta.lastImportSource,
     },
     itemPlacements: meta.itemPlacements,
     stashedCookbook: meta.stashedCookbook,

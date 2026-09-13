@@ -5,6 +5,7 @@ import type {
   CookbookFrontMatter,
   CookbookPresetId,
   CoverConfig,
+  ImportTab,
   QueueItem,
   RailSortMode,
   RecipePagePlacement,
@@ -147,6 +148,9 @@ export interface ProjectMeta {
       Saved with the book, because "A-Z" keeps sorting as recipes arrive and it
       would be a different book tomorrow if the choice lived in the tab. */
   railSortMode?: RailSortMode;
+  /** Which source the Add-recipe dialog opens on — see
+      `PrintProjectSettings.lastImportSource`. Absent = Link. */
+  lastImportSource?: ImportTab;
   sectionDividers?: boolean;
   /** Opted into the cookbook experience (cover/sections) via "Make it a
       cookbook" — false/undefined means the plain print-cards UI. Gated off at
@@ -181,6 +185,9 @@ export interface ProjectMeta {
 }
 
 const EMPTY_META: ProjectMeta = { sections: [] };
+
+/** Every import source there is, for validating one read back from storage. */
+const IMPORT_TABS: readonly ImportTab[] = ["url", "image", "text", "apps"];
 
 function cleanText(value: unknown): string | undefined {
   return typeof value === "string" && value.trim() ? value : undefined;
@@ -223,6 +230,12 @@ export function normalizeProjectMeta(value: unknown): ProjectMeta {
   const legacyDedication = raw.dedication?.blurb?.trim();
   return {
     ...raw,
+    // Straight out of storage, and handed to the import panel as the tab to
+    // open on. A value that is not one of the four leaves the panel showing a
+    // tab strip with nothing under it, so anything unrecognized reads as Link.
+    lastImportSource: IMPORT_TABS.includes(raw.lastImportSource as ImportTab)
+      ? raw.lastImportSource
+      : undefined,
     projectId: cleanText(raw.projectId) ?? uid(),
     projectTitle: cleanText(raw.projectTitle),
     sections,
@@ -799,6 +812,28 @@ export function useProjectMeta() {
     [update],
   );
 
+  /**
+   * Remember the source a recipe was just added from.
+   *
+   * Written on a successful ADD, never on merely selecting a tab: looking to
+   * see what is behind Photo is not a decision about how this project gets
+   * filled, and a default that moved every time someone glanced at a tab would
+   * be worse than one that never moved at all.
+   */
+  const setLastImportSource = useCallback(
+    (value: ImportTab) => {
+      // Link is the default, so it is stored as absence — a project filled
+      // entirely from links stays byte-identical to one saved before this
+      // existed.
+      update((current) =>
+        current.lastImportSource === (value === "url" ? undefined : value)
+          ? current
+          : { ...current, lastImportSource: value === "url" ? undefined : value },
+      );
+    },
+    [update],
+  );
+
   const setTocTitle = useCallback(
     (value: string | undefined) => {
       update((current) => ({ ...current, tocTitle: value || undefined }));
@@ -864,7 +899,14 @@ export function useProjectMeta() {
         // something. Dropping it here is how "print as recipe cards instead"
         // used to quietly rename someone's project.
         projectTitle: current.projectTitle,
+        //
         cookbookWelcomeCompleted: current.cookbookWelcomeCompleted,
+        // How this cook adds recipes is not a cookbook idea, and this object
+        // replaces the meta wholesale — anything not named here is dropped. A
+        // book filled by pasting text is still filled by pasting text once it
+        // is a stack of cards. Deliberately NOT in the stash above for the same
+        // reason: the stash hands things back only on the way INTO a book.
+        lastImportSource: current.lastImportSource,
         sections: [],
         stashedCookbook,
       };
@@ -1054,6 +1096,7 @@ export function useProjectMeta() {
     setTableOfContents,
     setTocKicker,
     setRailSortMode,
+    setLastImportSource,
     setTocTitle,
     setProjectTitle,
     setSectionDividers,
