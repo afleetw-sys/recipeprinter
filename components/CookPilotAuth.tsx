@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, type FormEvent } from "react";
+import { useEffect, useState, type FormEvent, type ReactNode } from "react";
 import {
   EmailAuthProvider,
   GoogleAuthProvider,
@@ -274,10 +274,21 @@ export function CookPilotLoginDialog({
   onClose,
   onAuthenticated,
   reason = "default",
+  footer,
 }: {
   onClose: () => void;
   onAuthenticated?: () => void;
   reason?: "default" | "purchase";
+  /**
+   * Something the surface that opened this needs to say underneath it, usually
+   * a way on for someone who is not going to sign in.
+   *
+   * A node rather than another `reason`, because what belongs here is known
+   * only to the caller: the account menu puts a link to a cookbook this device
+   * already holds, which this module has no business knowing about. Shared
+   * auth stays shared.
+   */
+  footer?: ReactNode;
 }) {
   const [step, setStep] = useState<"email" | "password" | "create">("email");
   const [email, setEmail] = useState("");
@@ -566,6 +577,8 @@ export function CookPilotLoginDialog({
             <p>{notice}</p>
           </div>
         )}
+
+        {footer && <div className="border-t border-line pt-cp-3">{footer}</div>}
 
     </Dialog>
   );

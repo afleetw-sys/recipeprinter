@@ -13,7 +13,6 @@ import { readPrintSettings } from "@/lib/printSettings";
 import { uid } from "@/lib/ids";
 import { lookupProjectId, projectContentKey, rememberProjectId } from "@/lib/projectIdentity";
 import { isCookbookProjectUnlocked } from "@/lib/cookbookUnlocks";
-import { isProjectKeptOnDevice } from "@/lib/keptProjects";
 
 /**
  * Cookbooks kept on this device.
@@ -354,21 +353,11 @@ export function fileProjectLocally(items: QueueItem[], meta: ProjectMeta): strin
  * almost none of it should appear beside things you actually saved. Recipe
  * cards reach your projects because you pressed Save, and for no other reason.
  *
- * There are two exceptions, and both are decisions the cook made rather than
- * things that merely happened to them.
- *
- * A cookbook that has been PAID FOR. A signed-out purchase records its unlock
- * in the local map (lib/cookbookUnlocks) against the local project id, so
- * hiding that project would hide the thing the money bought. It stays listed
- * until the account holds it.
- *
- * A project the cook chose to KEEP on this device. Leaving the workspace signed
- * out asks, and "Keep it on this device" files to this same shelf. Until now
- * that was the end of it for recipe cards: the shelf held them and nothing
- * listed them, so the button put the work somewhere with no door, and the line
- * under it was true about the bytes and false about everything else. A press on
- * that button is recorded (lib/keptProjects) and listed. Everything the shelf
- * merely caught on the way past stays unlisted.
+ * The exception is a cookbook that has been PAID FOR, and it is not a
+ * half-measure. A signed-out purchase records its unlock in the local map
+ * (lib/cookbookUnlocks) against the local project id, so hiding that project
+ * would hide the thing the money bought. It stays listed until the account
+ * holds it.
  *
  * Nothing here deletes: the shelf is untouched on disk, and a draft you didn't
  * save simply stops presenting itself as filed.
@@ -381,11 +370,11 @@ export function listableLocalProjects<T extends { id: string; kind?: PrintProjec
   localProjects: readonly T[],
   accountProjectIds: ReadonlySet<string>,
   isPaidCookbook: (projectId: string) => boolean,
-  isKept: (projectId: string) => boolean = isProjectKeptOnDevice,
 ): T[] {
   return localProjects.filter(
     (project) =>
       !accountProjectIds.has(project.id) &&
-      (isKept(project.id) || (project.kind !== "printProject" && isPaidCookbook(project.id))),
+      project.kind !== "printProject" &&
+      isPaidCookbook(project.id),
   );
 }

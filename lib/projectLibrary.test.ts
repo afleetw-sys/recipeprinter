@@ -41,8 +41,6 @@ function book(id: string, updatedAt: number, itemIds: string[]): PrintProjectSum
 
 const paid = (...ids: string[]) => (id: string) => ids.includes(id);
 const nonePaid = () => false;
-const kept = (...ids: string[]) => (id: string) => ids.includes(id);
-const noneKept = () => false;
 
 describe("what is in the library", () => {
   it("lists the account's projects", () => {
@@ -101,43 +99,6 @@ describe("what is in the library", () => {
       isPaidCookbook: paid("middle"),
     });
     expect(listed.map((p) => p.id)).toEqual(["new", "middle", "old"]);
-  });
-
-  /* The device shelf catches every project the workspace releases, wanted or
-     not. What a cook chose to KEEP is the half that belongs in a list of their
-     work, and "Keep it on this device" is where that choice is made: before
-     this, that button filed recipe cards to a shelf nothing listed, so the work
-     was on disk with no door to it. */
-  describe("a project kept on this device", () => {
-    it("is listed, recipe cards included", () => {
-      const listed = libraryProjects({
-        accountProjects: [],
-        localProjects: [summary({ id: "cards", kind: "printProject" })],
-        isPaidCookbook: nonePaid,
-        isKeptOnDevice: kept("cards"),
-      });
-      expect(listed.map((p) => p.id)).toEqual(["cards"]);
-    });
-
-    it("is not listed when the shelf merely caught it", () => {
-      const listed = libraryProjects({
-        accountProjects: [],
-        localProjects: [summary({ id: "cards", kind: "printProject" })],
-        isPaidCookbook: nonePaid,
-        isKeptOnDevice: noneKept,
-      });
-      expect(listed).toEqual([]);
-    });
-
-    it("is listed once when the account holds it too", () => {
-      const listed = libraryProjects({
-        accountProjects: [summary({ id: "cards", kind: "printProject" })],
-        localProjects: [summary({ id: "cards", kind: "printProject" })],
-        isPaidCookbook: nonePaid,
-        isKeptOnDevice: kept("cards"),
-      });
-      expect(listed.map((p) => p.id)).toEqual(["cards"]);
-    });
   });
 
   /* Stale forks from an old autosave bug are hidden wherever the library is

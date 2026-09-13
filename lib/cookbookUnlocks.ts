@@ -26,6 +26,19 @@ export function isCookbookProjectUnlocked(projectId: string | undefined): boolea
   return Boolean(projectId && unlocks()[projectId]);
 }
 
+/**
+ * Has anything been bought on this device without an account behind it?
+ *
+ * A cheap first question, so the expensive one does not have to be asked. The
+ * account menu needs to know whether a signed-out visitor has a book to get
+ * back to, and the honest answer means reading the whole device shelf; this map
+ * is a handful of ids, and for almost everyone it is empty and settles the
+ * matter on its own.
+ */
+export function hasLocalCookbookUnlocks(): boolean {
+  return Object.keys(unlocks()).length > 0;
+}
+
 export function markCookbookProjectUnlockedLocal(projectId: string): void {
   markCookbookProjectsUnlockedLocal([projectId]);
 }

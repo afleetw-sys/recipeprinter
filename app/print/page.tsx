@@ -9,7 +9,6 @@ import { SiteHeader } from "@/components/SiteHeader";
 import { SAVE_FAILURES, SAVE_STATUS_LABEL } from "@/components/AccountControl";
 import { ProjectHeading } from "@/components/print/ProjectHeading";
 import { fileProjectLocally } from "@/lib/localProjects";
-import { rememberProjectKeptOnDevice } from "@/lib/keptProjects";
 import type { AccountSaveStatus } from "@/components/AccountControl";
 import { FeedbackDialog } from "@/components/FeedbackButton";
 import { PrintDialogs } from "@/components/PrintDialogs";
@@ -2420,18 +2419,6 @@ export default function PrintPage() {
     // rather than creating its own copy of it.
     const filed = fileProjectLocally(queue.items, projectMeta.meta);
     if (filed) projectMeta.setProjectId(filed);
-    /**
-     * "Leave it in this browser" was pressed, so keeping it is a decision and
-     * the library lists it.
-     *
-     * `confirmed` reaches here from exactly one place: that button. Every other
-     * way out of the workspace files to the shelf the way it always did, and
-     * the shelf goes on not listing what it merely caught — see
-     * `listableLocalProjects`. Marked against `filed` rather than the working
-     * id, because filing under content this device has seen before reuses that
-     * document's id and the mark has to land on the document that exists.
-     */
-    if (filed && options?.confirmed) rememberProjectKeptOnDevice(filed);
     /**
      * Leaving does not put a draft in the account.
      *
@@ -5305,21 +5292,22 @@ export default function PrintPage() {
         open={confirmLeave}
         tone="primary"
         title="Keep this project?"
-        /* "You can open it again from Projects" is a promise the shelf could
-           not keep on its own: it catches every project the workspace releases
-           and `listableLocalProjects` lists almost none of it, recipe cards
-           least of all. The press below is what turns this project from
-           something the shelf caught into something the cook chose, and that
-           is what the library lists. See `rememberProjectKeptOnDevice`. */
+        /* Says the thing that is true, which is not the thing anyone wants to
+           hear. Saving is one action now (an explicit press, into an account),
+           so a project nobody signed in for is not saved, and the device shelf
+           is a crash net rather than somewhere to come back to: nothing lists
+           it (see `listableLocalProjects`) and the workspace is released on the
+           way out. The previous wording sent people to Projects to look for a
+           project Projects has never shown. */
         description={
           <>
-            This project stays in this browser, and you can open it again from Projects.
-            Signing in keeps it in your account instead, so it is there on your phone and
-            any other computer too.
+            Signing in keeps this project in your account, so it is there on your phone and
+            any other computer. Leaving without one means it is not saved, and the workspace
+            starts empty next time.
           </>
         }
         confirmLabel="Sign in and save it"
-        secondaryLabel="Leave it in this browser"
+        secondaryLabel="Leave without saving"
         onSecondary={() => {
           setConfirmLeave(false);
           void handleNavigateHome({ confirmed: true });

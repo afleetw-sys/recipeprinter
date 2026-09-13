@@ -8,6 +8,7 @@ import { CookPilotLoginDialog, useCookPilotAuth } from "@/components/CookPilotAu
 import { getFirebaseAuth } from "@/lib/firebase/client";
 import { loadPrintProjectSummaries, summarizePrintProject } from "@/lib/printProjects";
 import { loadLocalProjects } from "@/lib/localProjects";
+import { hasLocalCookbookUnlocks } from "@/lib/cookbookUnlocks";
 import { libraryProjects } from "@/lib/projectLibrary";
 import { useMenuDismiss } from "@/lib/useMenuDismiss";
 
@@ -127,7 +128,12 @@ export default function AccountMenu({
    */
   const [localProjects, setLocalProjects] = useState<PrintProjectSummary[]>([]);
   useEffect(() => {
-    if (!open) return;
+    // Also while CLOSED, for a signed-out visitor: the avatar no longer opens
+    // this panel for them, so whether this device holds a book they bought has
+    // to be known before the sign-in dialog is drawn rather than after they
+    // open something they will never open. `hasLocalCookbookUnlocks` keeps that
+    // off everyone else's path: no unlocks, no shelf read.
+    if (!open && (user || !hasLocalCookbookUnlocks())) return;
     setLocalProjects(loadLocalProjects().map(summarizePrintProject));
   }, [open, user]);
 
@@ -142,19 +148,42 @@ export default function AccountMenu({
   const printProjects = listed.filter((project) => project.kind === "printProject");
   /** Signed out with an empty shelf there is nothing to head, so the whole
       block goes rather than sitting there as two "will appear here" lines. */
-  const showProjectSections = COOKBOOK_ENABLED && (user ? true : listed.length > 0);
+  const showProjectSections = COOKBOOK_ENABLED;
+
+  /**
+   * What pressing the avatar does, in one place.
+   *
+   * Signed in it is your account, so it opens the account. Signed out there is
+   * no account to open, so it opens the way to having one. That is what the
+   * control is for in every product that has one, and it is the same answer
+   * every time rather than one that depends on what happens to be on this
+   * device.
+   *
+   * It briefly went the other way, because the shelf can hold a cookbook you
+   * bought while signed out and the menu was the only thing linking to it. The
+   * sign-in dialog carries that link itself now (see `deviceBooks` below), so
+   * the book stays one press away without the avatar having to mean two
+   * different things.
+   */
+  const pressAvatar = useCallback(() => {
+    if (user) {
+      setOpen((value) => !value);
+      return;
+    }
+    setOpen(false);
+    setShowLogin(true);
+  }, [user]);
 
   // The click that arrived before this chunk did. Waits for `ready` so it can
-  // route to the same place the real button would have: the dropdown when
-  // signed in, the sign-in dialog when not.
+  // route to the same place the real button would have.
   useEffect(() => {
     if (!activateOnReady || !ready) return;
-    // The menu either way. Signed out this used to jump to the sign-in dialog,
-    // which is the behaviour the button itself no longer has — a replayed click
-    // has to land where a live one would.
-    setOpen(true);
+    pressAvatar();
     onActivated?.();
-  }, [activateOnReady, ready, user, onActivated]);
+    // `pressAvatar` is not a dependency: it changes identity the moment auth
+    // resolves, and re-running this on that would replay the same press twice.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activateOnReady, ready, onActivated]);
 
   /* The avatar used to drop any press that arrived before auth resolved, which
      is a real window on a prerendered page: the SEO landing pages ship no
@@ -165,7 +194,8 @@ export default function AccountMenu({
   useEffect(() => {
     if (!openWhenReady || !ready) return;
     setOpenWhenReady(false);
-    setOpen(true);
+    pressAvatar();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [openWhenReady, ready]);
 
   // The shared dismissal rather than a private copy of it. This one was the
@@ -301,7 +331,7 @@ export default function AccountMenu({
             return;
           }
           setOpenWhenReady(false);
-          setOpen((value) => !value);
+          pressAvatar();
         }}
       >
         {user && accountInitials(user) ? (
@@ -315,37 +345,28 @@ export default function AccountMenu({
           here is your work, here is the account it belongs to — so signed out
           it wears the same box and the same two project sections rather than a
           smaller card of its own. */}
-      {open && (
+      {/* `user`, not just `open`: signed out the avatar goes to the sign-in
+          dialog and this panel is never opened, so everything in here can say
+          "your account" and mean it. It used to carry a second version of
+          itself — a "Keep your projects" heading, its own sign-in button, and a
+          library footnote about this browser — for a state it can no longer be
+          in. The one frame worth guarding against is signing out with it open,
+          which this covers on the way to `setOpen(false)`. */}
+      {open && user && (
         <div className="absolute right-0 top-11 z-50 w-[min(340px,calc(100vw-2rem))] rounded-2xl border border-line bg-card p-cp-4 shadow-cp-lg">
           <div className="flex items-start justify-between gap-cp-3">
             <div className="min-w-0">
               <strong className="block truncate">
-                {user ? user.displayName || "RecipePrinter account" : "Keep your projects"}
+                {user.displayName || "RecipePrinter account"}
               </strong>
               <span className="block truncate text-cp-small text-ink-soft">
-                {user
-                  ? user.email || "Signed in"
-                  : listed.length > 0
-                    ? "Saved in this browser for now."
-                    : "An account keeps them on every device."}
+                {user.email || "Signed in"}
               </span>
             </div>
             <IconButton onClick={() => setOpen(false)} aria-label="Close account menu">
               <XIcon size={ICON_SIZE.sm} />
             </IconButton>
           </div>
-          {!user && (
-            <button
-              type="button"
-              className="btn btn-primary mt-cp-4 w-full"
-              onClick={() => {
-                setOpen(false);
-                setShowLogin(true);
-              }}
-            >
-              Sign in or create an account
-            </button>
-          )}
           {/* Hidden until the cookbook feature launches — gated by the same
               COOKBOOK_ENABLED flag as the print-page toggle so relaunch is a
               one-line flip. (Also lists saved recipe cards, so restoring
@@ -436,39 +457,54 @@ export default function AccountMenu({
                       </div>
                     </>
                   )}
-                  {/* Signed in with an empty account: one line, not two empty
-                      sections. Signed out this branch is unreachable, because
-                      the whole block is hidden with nothing on the shelf. */}
+                  {/* An empty account: one line, not two empty sections. */}
                   {cookbooks.length === 0 && printProjects.length === 0 && (
                     <p className="text-cp-small text-ink-soft">Projects you save will appear here.</p>
                   )}
                 </>
               )}
-              {/* Signed out, every project in this list lives in one browser's
-                  storage and nothing else. Said once at the foot of the list,
-                  where it reads as a fact about the list rather than a warning
-                  attached to each item. */}
-              {!user && listed.length > 0 && (
-                <p className="mt-cp-3 border-t border-line pt-cp-3 text-cp-caption text-ink-soft leading-relaxed">
-                  Kept in this browser only.
-                </p>
-              )}
             </div>
           )}
-          {user && (
-            <button
+          <button
               type="button"
               className="btn-ghost btn-compact mt-cp-3 w-full"
               onClick={() => void signOut(getFirebaseAuth()).then(() => setOpen(false))}
             >
               Sign out
             </button>
-          )}
         </div>
       )}
 
       {showLogin && !user && (
-        <CookPilotLoginDialog onClose={() => setShowLogin(false)} onAuthenticated={() => setShowLogin(false)} />
+        <CookPilotLoginDialog
+          onClose={() => setShowLogin(false)}
+          onAuthenticated={() => setShowLogin(false)}
+          /**
+           * The way on for someone who bought a cookbook without an account and
+           * is not going to make one now.
+           *
+           * Signing in is genuinely the better answer, because the unlock is
+           * recorded against a project id on this device and only an account
+           * carries it to another one. But a book that has been paid for cannot
+           * sit behind a form: this is the door that used to be the account
+           * menu, moved to the one screen a signed-out press now lands on.
+           */
+          footer={
+            listed.length > 0 ? (
+              <p className="text-cp-small text-ink-soft leading-relaxed">
+                A cookbook you bought is saved in this browser.{" "}
+                <Link
+                  href="/projects"
+                  className="underline underline-offset-2"
+                  onClick={() => setShowLogin(false)}
+                >
+                  Open it
+                </Link>{" "}
+                without signing in.
+              </p>
+            ) : undefined
+          }
+        />
       )}
       {openingProjectId && (
         <div className="fixed inset-0 z-[100] flex min-h-dvh flex-col bg-page">
