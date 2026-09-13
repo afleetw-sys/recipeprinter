@@ -263,6 +263,35 @@ export function projectContentFromMeta(
   };
 }
 
+/**
+ * Which of the two experiences a saved document opens in.
+ *
+ * Recipe cards and cookbooks are separate places to be, and which one you were
+ * in is the cook's choice — so `settings.cookbookMode` answers this whenever
+ * the document carries it.
+ *
+ * What makes this a function rather than a `??` is the documents that do not.
+ * "Print as recipe cards instead" left `cookbookMode` unset rather than false;
+ * an unset field is dropped on the way into Firestore, and the fallback was the
+ * document's KIND — which is "cookbook" for any project holding a stashed book,
+ * deliberately and permanently, so that a purchase and a cover survive being
+ * set aside. The two together meant choosing recipe cards lasted exactly as
+ * long as the tab: every reopen put the cook back in the book they had left.
+ *
+ * So a stash answers for those: a book is only in `stashedCookbook` because
+ * somebody moved it there, and moving it there IS leaving cookbook mode. Only a
+ * document with neither a recorded view nor a stash falls back to its kind.
+ */
+export function savedProjectOpensAsCookbook(
+  project: Pick<PrintProject, "kind" | "stashedCookbook"> & {
+    settings: Pick<PrintProjectSettings, "cookbookMode">;
+  },
+): boolean {
+  if (project.settings.cookbookMode !== undefined) return project.settings.cookbookMode;
+  if (project.stashedCookbook) return false;
+  return project.kind === "cookbook";
+}
+
 /** Assembles a full `PrintProject` snapshot from the /print page's working
     state at the moment of saving — the one place the section/cover/title
     layer (lib/project.ts) and the device-local print-layout preferences

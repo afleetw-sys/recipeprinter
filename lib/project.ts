@@ -899,7 +899,17 @@ export function useProjectMeta() {
         // something. Dropping it here is how "print as recipe cards instead"
         // used to quietly rename someone's project.
         projectTitle: current.projectTitle,
+        // Recipe cards, stated rather than merely absent.
         //
+        // Leaving it unset read as cards everywhere in memory, so the switch
+        // looked like it worked — but an unset field is dropped on the way into
+        // Firestore, and a reopened document with no `settings.cookbookMode`
+        // falls back to asking what KIND it is. The kind is still "cookbook"
+        // (the stash is the book, and it has to stay one so a purchase and a
+        // cover survive), so every saved card job that had ever been a cookbook
+        // came back as a cookbook. Choosing recipe cards only lasted as long as
+        // the tab.
+        cookbookMode: false,
         cookbookWelcomeCompleted: current.cookbookWelcomeCompleted,
         // How this cook adds recipes is not a cookbook idea, and this object
         // replaces the meta wholesale — anything not named here is dropped. A

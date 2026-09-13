@@ -1,5 +1,9 @@
 import { describe, expect, it } from "vitest";
-import { projectContentFromMeta, type PrintLayoutSettings } from "@/lib/printProjects";
+import {
+  projectContentFromMeta,
+  savedProjectOpensAsCookbook,
+  type PrintLayoutSettings,
+} from "@/lib/printProjects";
 import type { ProjectMeta } from "@/lib/project";
 
 /* What a saved project takes from the working copy's metadata.
@@ -94,9 +98,19 @@ describe("what a project takes from its metadata", () => {
     it("is still a cookbook, even with the live view set to cards", () => {
       const content = projectContentFromMeta(stashed, LAYOUT);
       expect(content.kind).toBe("cookbook");
-      // The DOCUMENT is a cookbook; the VIEW is cards, so reopening lands the
-      // cook back where they left off.
-      expect(content.settings.cookbookMode).toBeUndefined();
+    });
+
+    /* The DOCUMENT is a cookbook and the VIEW is cards, and reopening has to
+       land the cook back in cards. `exitCookbook` now records that view as an
+       explicit `false`; it used to leave it unset, and an unset field is
+       dropped on the way into Firestore, where the fallback was the kind — so
+       "print as recipe cards instead" survived a reload for nobody. */
+    it("records recipe cards as the view, so reopening does not undo the choice", () => {
+      const content = projectContentFromMeta(meta({ ...stashed, cookbookMode: false }), LAYOUT);
+      expect(content.settings.cookbookMode).toBe(false);
+      expect(savedProjectOpensAsCookbook({ ...content, stashedCookbook: stashed.stashedCookbook })).toBe(
+        false,
+      );
     });
 
     it("prefers the live cover when there is one", () => {
@@ -105,6 +119,36 @@ describe("what a project takes from its metadata", () => {
         LAYOUT,
       );
       expect(content.cover?.title).toBe("Live");
+    });
+  });
+
+  /* Which of the two experiences a saved document reopens in. Separate places
+     to be, and the cook's own choice about which one they were in. */
+  describe("reopening a saved project", () => {
+    const book = { title: "Nana's Kitchen", template: "heirloom" } as const;
+    const stash = { cover: book, sections: [] };
+
+    it("opens in the view the cook was last in", () => {
+      expect(
+        savedProjectOpensAsCookbook({ kind: "cookbook", settings: { cookbookMode: true } }),
+      ).toBe(true);
+      expect(
+        savedProjectOpensAsCookbook({ kind: "cookbook", settings: { cookbookMode: false } }),
+      ).toBe(false);
+    });
+
+    /* Documents saved before the view was recorded. A stash exists only because
+       somebody moved the book into it, and moving it there IS leaving cookbook
+       mode — so these reopen as cards rather than as the book they left. */
+    it("reads a stashed book as having been set aside", () => {
+      expect(
+        savedProjectOpensAsCookbook({ kind: "cookbook", settings: {}, stashedCookbook: stash }),
+      ).toBe(false);
+    });
+
+    it("falls back to the kind only when there is nothing else to go on", () => {
+      expect(savedProjectOpensAsCookbook({ kind: "cookbook", settings: {} })).toBe(true);
+      expect(savedProjectOpensAsCookbook({ kind: "printProject", settings: {} })).toBe(false);
     });
   });
 

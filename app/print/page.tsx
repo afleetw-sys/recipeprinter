@@ -65,6 +65,7 @@ import {
 import {
   createPrintProjectId,
   savePrintProject,
+  savedProjectOpensAsCookbook,
   assemblePrintProject,
   projectContentFromMeta,
   type PrintLayoutSettings,
@@ -73,6 +74,7 @@ import {
   PrintProjectConflictError,
 } from "@/lib/printProjects";
 import { adoptAnonymousProject, readAdoptionManifest } from "@/lib/anonymousProjectAdoption";
+import { forgetSaveIntent, rememberSaveIntent, takeSaveIntent } from "@/lib/saveIntent";
 import { loadLocalProject } from "@/lib/localProjects";
 import { printDocumentTitle } from "@/lib/printDocumentTitle";
 import { useRecipeInlineEditor } from "@/lib/useRecipeInlineEditor";
@@ -238,29 +240,61 @@ function initialRecipePrintTemplate(value: string | null): RecipePrintTemplate {
 // can never drift into non-comparable strings. Called lazily — only when there is
 // actually a project to save, and only once per debounce settle — never eagerly on
 // every keystroke (this is a JSON.stringify of the entire book).
+//
+// Takes the layout settings as the one object the rest of this file already
+// passes around (`currentLayoutSettings`) rather than seven positional flags.
+// The flags were the reason `showDescription` could go missing from a signature
+// that read it everywhere else: one more argument at one of three call sites is
+// a silent omission, one more field on a typed object is a compile error.
 function printProjectFingerprint(
   items: QueueItem[] | null,
   meta: ProjectMeta,
-  cardSize: PrintCardSize,
-  template: RecipePrintTemplate,
-  doubleSided: boolean,
-  showPhoto: boolean,
-  showSourceUrl: boolean,
-  showCutLines: boolean,
-  showDescription: boolean,
+  layout: PrintLayoutSettings,
 ): string {
-  return JSON.stringify({
-    items,
-    meta,
-    cardSize,
-    template,
-    doubleSided,
-    showPhoto,
-    showSourceUrl,
-    showCutLines,
-    showDescription,
-  });
+  return JSON.stringify({ items, meta, ...layout });
 }
+
+/**
+ * Everything a save needs, taken at the moment the save was asked for.
+ *
+ * The document is what gets written; the workspace it was assembled from is
+ * what the post-save baseline is computed against, so "what we last saved"
+ * describes the book that was actually written rather than whatever is on
+ * screen by the time the write lands.
+ */
+interface PendingSave {
+  project: PrintProject;
+  items: QueueItem[] | null;
+  meta: ProjectMeta;
+  layout: PrintLayoutSettings;
+  /** The cook answered "Newer version found" by choosing to overwrite, and this
+      is the write that answer authorized. Carried here rather than read from a
+      ref when the write finally runs: the approval is cleared as soon as the
+      save it belongs to has been asked for, so a save that had to wait its turn
+      used to arrive at the adoption path with the answer already gone and meet
+      the same refusal the cook had just overruled. */
+  overwriteApproved: boolean;
+}
+
+/**
+ * How long a single save may take before the page stops claiming to be doing it.
+ *
+ * Not a nicety. `saveInFlightRef` is a latch — while it is set, every autosave
+ * steps aside for the one in flight — so a write that never settles does not
+ * just stall itself, it stalls every save for the rest of the session, under a
+ * spinner that goes on saying "Saving…". Firestore's `runTransaction` needs a
+ * server round trip and does not fail fast when the connection is wedged rather
+ * than plainly offline (a backgrounded phone tab is the common way to get
+ * there), and a photo upload can stall the same way, so this is reachable
+ * without anything being broken.
+ *
+ * Generous on purpose: a big book full of photos on a slow phone is a real,
+ * working save, and cutting one short costs a redundant write and possibly a
+ * conflict prompt. The write is not cancelled — if it does land later it still
+ * records where it got to (see `saveGenerationRef`). What ends here is the
+ * claim that it is still happening.
+ */
+const SAVE_TIMEOUT_MS = 45_000;
 
 
 /** How far the deck's zoom can travel either side of fit-to-window. */
@@ -473,11 +507,43 @@ export default function PrintPage() {
   const lastSavedFingerprintRef = useRef<string | null>(null);
   const lastAttemptedFingerprintRef = useRef<string | null>(null);
   const saveInFlightRef = useRef(false);
-  const saveQueuedRef = useRef(false);
-  const latestSaveRef = useRef<(projectIdOverride?: string) => void>(() => undefined);
-  /** The document a save that had to wait was aimed at. See `handleSaveProject`. */
-  const queuedSaveOverrideRef = useRef<string | undefined>(undefined);
+  /**
+   * Which write the page is currently waiting on.
+   *
+   * Bumped when a save starts, so a write that finally answers after it has
+   * been given up on (see `SAVE_TIMEOUT_MS`) or superseded cannot report its
+   * result over a newer one's — it would otherwise set "Saved" on top of a
+   * failure, or hand back a revision that has already moved.
+   */
+  const saveGenerationRef = useRef(0);
+  /**
+   * A save that arrived while another was in flight, held as the finished
+   * DOCUMENT rather than as an intention to build one later.
+   *
+   * This used to be a bare "one more, please" flag replayed through
+   * `latestSaveRef`, which re-read the workspace at replay time — and the one
+   * moment a save is most likely to be queued is also the moment the workspace
+   * is about to be emptied. Leaving the page files the project and then calls
+   * `queue.clear()`; if an autosave was still in flight, the save leaving asked
+   * for was replayed a moment later against the cleared desk, where
+   * `currentProject()` answers null and the save returns having written
+   * nothing. The header's last word was "Saved", and the account had no copy.
+   *
+   * Holding the assembled snapshot means a queued save writes what was on
+   * screen when it was asked for, whatever has happened since.
+   */
+  const queuedSaveRef = useRef<PendingSave | null>(null);
   const flushOnHideRef = useRef<() => void>(() => undefined);
+  /**
+   * A save waiting on the account, within THIS document's lifetime.
+   *
+   * The durable copy is `lib/saveIntent`, which is what carries the same
+   * promise across a sign-in redirect; this ref exists alongside it so the
+   * popup path (desktop) does not have to round-trip through storage, and so a
+   * browser with storage disabled still saves after signing in without leaving
+   * the page. Either one being set means the same thing, and both are spent
+   * together.
+   */
   const saveAfterLoginRef = useRef(false);
   /** The cook answered the "Newer version found" prompt by choosing to
       overwrite, and this save is that answer. Read once by the adoption path,
@@ -632,15 +698,16 @@ export default function PrintPage() {
     items?.some((item) => Boolean(item.recipe?.description?.trim())) ?? false;
   const cookbookMode = Boolean(projectMeta.meta.cookbookMode);
   /**
-   * Is this project a DOCUMENT, or is it a print run?
-   *
-   * A cookbook is a document: it was deliberately created, it has a name, a
-   * cover and chapters, and it can be paid for. Recipe cards are an act — you
-   * paste three links to print dinner tonight and you're done. Nobody declared
-   * a document, so nothing should file one on their behalf.
+   * Does this project hold a book — either on screen, or set aside?
    *
    * `stashedCookbook` counts: a book being viewed as recipe cards is still a
-   * book (see `currentProject`), and must keep saving as one.
+   * book (see `currentProject`), which is what keeps a save from writing the
+   * emptiness left behind over a cookbook someone bought, and what makes a
+   * conflict on this document never resolvable by forking it.
+   *
+   * It deliberately no longer decides whether the project SAVES itself. Holding
+   * a book is not the same as having asked us to keep one — see
+   * `autosaveEnabled`.
    */
   const isCookbookDocument = cookbookMode || Boolean(projectMeta.meta.stashedCookbook);
   // The cookbook's remembered export format (US Letter / 8×10 hardcover). This
@@ -2234,31 +2301,133 @@ export default function PrintPage() {
    */
   function cancelSaveAfterLogin() {
     saveAfterLoginRef.current = false;
+    forgetSaveIntent();
   }
 
   /** `projectIdOverride` points this save at a specific document — used when
       leaving files the content back over the project it already was. */
   async function handleSaveProject(projectIdOverride?: string) {
     if (!cookPilotUser) {
+      // Written down, not just remembered. On a phone the next thing that
+      // happens is `signInWithRedirect` taking the page away — see
+      // `lib/saveIntent`, which is what makes the press survive that.
       saveAfterLoginRef.current = true;
+      rememberSaveIntent(cookbookProjectId);
       setCookPilotLoginReason("default");
       setShowCookPilotLogin(true);
       return;
     }
-    if (saveInFlightRef.current) {
-      saveQueuedRef.current = true;
-      // Which document this save was for has to wait with it. The replay below
-      // used to call `handleSaveProject()` with no argument, so a save aimed at
-      // a specific document — the one leaving the workspace makes, pointing the
-      // account copy at the project this content already is — silently became a
-      // save aimed at wherever the working copy happened to be attached.
-      if (projectIdOverride) queuedSaveOverrideRef.current = projectIdOverride;
+    if (!projectAttachChecked) {
+      /**
+       * Signed in, but we do not yet know whether this account already holds
+       * this project — the reattach read is still out.
+       *
+       * Saving into that gap sends the write down the ADOPTION path, because
+       * not having a save identity is what chooses that path, and adoption
+       * replaces the destination rather than writing against its revision. It
+       * refuses a document it has never written, so the cook gets "Newer
+       * version found" about their own book, a second after opening it, for no
+       * reason but our timing. Waiting a round trip turns the same press into
+       * an ordinary save against a known revision.
+       *
+       * The press is not dropped: `saveAfterLoginRef` is the existing "a save
+       * is waiting for the account to be ready" flag, and the effect that
+       * consumes it already waits on exactly this. The status says so, so the
+       * button is never a press that appears to do nothing.
+       */
+      saveAfterLoginRef.current = true;
+      setSaveStatus("saving");
       return;
     }
-    const baseProject = currentProject(projectIdOverride);
-    if (!baseProject) return;
+    // Assembled BEFORE the in-flight check, so a save that has to wait waits
+    // holding the book it was asked to write. The workspace it came from is
+    // carried with it for the same reason — see `PendingSave`.
+    //
+    // `projectIdOverride` rides along inside the assembled document (it is the
+    // `id` the project was built with), so there is no longer a second thing to
+    // remember to queue beside the intention: a save aimed at a specific
+    // document cannot lose its aim on the way to being replayed.
+    const pending = currentPendingSave(projectIdOverride);
+    if (!pending) {
+      // Nothing to write — an empty workspace, or no account. Whatever the
+      // autosave loop marked as attempted was therefore never attempted at all,
+      // and must not be treated as a change that has had its turn (see
+      // `lastAttemptedFingerprintRef`), or this edit is never offered again.
+      lastAttemptedFingerprintRef.current = null;
+      return;
+    }
+    if (saveInFlightRef.current) {
+      // Newest wins: the queue holds one save because only the latest state is
+      // worth writing, and each snapshot already contains everything before it.
+      queuedSaveRef.current = pending;
+      return;
+    }
+    await writeProject(pending);
+  }
+
+  /** The workspace as a document to write, or null when there is nothing to
+      write — no account, or nothing on the desk. */
+  function currentPendingSave(projectIdOverride?: string): PendingSave | null {
+    const project = currentProject(projectIdOverride);
+    if (!project) return null;
+    return {
+      project,
+      items,
+      meta: projectMeta.meta,
+      layout: currentLayoutSettings(),
+      overwriteApproved: adoptionOverwriteApprovedRef.current,
+    };
+  }
+
+  /**
+   * Writes one assembled document, and is the only place that says a save is
+   * happening — so the two can never disagree.
+   */
+  async function writeProject(pending: PendingSave) {
+    // The account this document was assembled FOR, not whoever is signed in by
+    // the time it gets written. A save that waited its turn while somebody
+    // signed out and back in as someone else must still go to the account it
+    // was built for — `savePrintProject` already writes under the document's
+    // own `ownerUid`, and adoption takes the uid it is handed, so handing it
+    // the live one is how one person's book reaches another person's library.
+    const ownerUid = pending.project.ownerUid;
+    if (!ownerUid) return;
+    const generation = saveGenerationRef.current + 1;
+    saveGenerationRef.current = generation;
+    /** Whether this write is still the one the page is waiting on. A write that
+        was given up on, or overtaken, reports nothing: its news is old. */
+    const current = () => saveGenerationRef.current === generation;
     saveInFlightRef.current = true;
     setSaveStatus("saving");
+    // Releases the latch exactly once, whichever of the write and the deadline
+    // gets there first, and starts whatever was queued behind it.
+    let released = false;
+    const release = () => {
+      if (released) return;
+      released = true;
+      saveInFlightRef.current = false;
+      const queued = queuedSaveRef.current;
+      if (queued) {
+        queuedSaveRef.current = null;
+        window.setTimeout(() => void writeProject(queued), 0);
+      }
+    };
+    const deadline = window.setTimeout(() => {
+      if (!current()) return;
+      // Stop claiming, and stop blocking. The write is NOT cancelled and the
+      // generation is NOT bumped — "we gave up waiting" is not "it did not
+      // happen" (see lib/withTimeout, which says the same thing about reads),
+      // so if this write does land it is still the current one and still gets
+      // to report itself, revision and all. What ends here is the spinner and
+      // the latch: the cook gets a failure they can retry, and the next save is
+      // free to run instead of queueing behind a promise that never answers.
+      //
+      // `lastSavedFingerprintRef` is deliberately untouched, so nothing is
+      // recorded as saved on the strength of a write we did not see finish.
+      console.warn("RecipePrinter: a save is taking too long; no longer waiting on it");
+      setSaveStatus("error");
+      release();
+    }, SAVE_TIMEOUT_MS);
     try {
       // Every field that can hold a photo, not just the ones that were easy to
       // remember. A chapter collage defaults to its own recipes' images and a
@@ -2266,19 +2435,24 @@ export default function PrintPage() {
       // Paprika book both were full of `blob:` URLs going straight into the
       // document. See `materializeProjectPhotos`.
       const { photos, uploadedRecipeImages } = await materializeProjectPhotos({
-        sections: baseProject.sections,
-        cover: baseProject.cover,
-        backCover: baseProject.backCover,
-        dedication: baseProject.dedication,
-        itemPlacements: baseProject.itemPlacements,
-        stashedCookbook: baseProject.stashedCookbook,
+        sections: pending.project.sections,
+        cover: pending.project.cover,
+        backCover: pending.project.backCover,
+        dedication: pending.project.dedication,
+        itemPlacements: pending.project.itemPlacements,
+        stashedCookbook: pending.project.stashedCookbook,
       });
-      const project: PrintProject = { ...baseProject, ...photos };
+      const project: PrintProject = { ...pending.project, ...photos };
       const saved = savedProjectIdRef.current
         ? await savePrintProject(project)
-        : await adoptAnonymousProject(cookPilotUser.uid, project, {
-            overwriteExisting: adoptionOverwriteApprovedRef.current,
+        : await adoptAnonymousProject(ownerUid, project, {
+            overwriteExisting: pending.overwriteApproved,
           });
+      // Everything below describes THIS write, so a write that has been
+      // overtaken says none of it: its revision is behind the one that
+      // overtook it, and adopting it here would send the next save into a
+      // conflict over a document nothing is actually fighting for.
+      if (!current()) return;
       projectRevisionRef.current = Number(saved.revision ?? 0);
       savedProjectIdRef.current = saved.id;
       setSavedProjectId(saved.id);
@@ -2302,33 +2476,27 @@ export default function PrintPage() {
       if (saved.id !== projectMeta.meta.projectId) {
         projectMeta.setProjectId(saved.id);
       }
+      // The baseline describes the book that was WRITTEN, taken from the
+      // workspace this document was assembled from. Reading live state here
+      // instead meant a save that landed after an edit recorded the edit as
+      // saved too, and nothing ever went back for it.
       lastSavedFingerprintRef.current = printProjectFingerprint(
-        items,
-        { ...projectMeta.meta, projectId: saved.id },
-        cardSize,
-        template,
-        doubleSided,
-        showPhoto,
-        showSourceUrl,
-        showCutLines,
-        showDescription,
+        pending.items,
+        { ...pending.meta, projectId: saved.id },
+        pending.layout,
       );
       setSaveStatus("saved");
     } catch (error) {
       console.warn("RecipePrinter: could not save project", error);
+      if (!current()) return;
       if (error instanceof PrintProjectConflictError) {
         setSaveStatus("conflict");
       } else {
         setSaveStatus(readAdoptionManifest()?.status === "failed" ? "adoption" : "error");
       }
     } finally {
-      saveInFlightRef.current = false;
-      if (saveQueuedRef.current) {
-        saveQueuedRef.current = false;
-        const queuedOverride = queuedSaveOverrideRef.current;
-        queuedSaveOverrideRef.current = undefined;
-        window.setTimeout(() => latestSaveRef.current(queuedOverride), 0);
-      }
+      window.clearTimeout(deadline);
+      release();
     }
   }
 
@@ -2368,7 +2536,7 @@ export default function PrintPage() {
    * departure instead.
    */
   const [leavingHome, setLeavingHome] = useState<string | null>(null);
-  /** Leaving with work that only exists in this browser — see `handleNavigateHome`. */
+  /** Leaving with work that only exists on this device — see `handleNavigateHome`. */
   const [confirmLeave, setConfirmLeave] = useState(false);
 
   /**
@@ -2430,11 +2598,10 @@ export default function PrintPage() {
      * is a log rather than a library.
      *
      * `autosaveEnabled` is the existing answer to "did the cook ask us to keep
-     * this" — a cookbook, which was deliberate to create, or a project already
-     * saved once. Reusing it rather than restating the condition keeps the two
-     * from drifting apart. The local shelf below is unaffected: that is the
-     * working copy people rely on when they reopen /print, and it never leaves
-     * the device.
+     * this" — a project that has been saved at least once. Reusing it rather
+     * than restating the condition keeps the two from drifting apart. The local
+     * shelf below is unaffected: that is the working copy people rely on when
+     * they reopen /print, and it never leaves the device.
      */
     if (filed && autosaveEnabled) void handleSaveProject(filed);
 
@@ -2448,40 +2615,24 @@ export default function PrintPage() {
     goHome();
   }
 
-  // A save queued during an in-flight request must serialize the newest render,
-  // not the render whose request just completed. Published in an effect (not
-  // during render) so a discarded or double-invoked render can't leave a stale
-  // closure behind — the same latest-ref pattern as handlePrintRef below.
-  useEffect(() => {
-    latestSaveRef.current = (projectIdOverride?: string) => void handleSaveProject(projectIdOverride);
-  });
-
   // Best-effort push to Firestore when the tab is being hidden/closed, so a
   // signed-in edit still inside the 1.5s autosave debounce isn't left only in
   // the local recovery mirror until the next visit. The durable localStorage
   // mirror (lib/queue, lib/project) is the real safety net; this just narrows
   // the window where the *cloud* copy is a beat behind. Republished each commit
-  // via an effect (not during render, mirroring latestSaveRef) so it closes over
-  // the current book. It must never trigger the sign-in modal on the way out, and
-  // must not save when nothing changed — otherwise every tab close would write
-  // and could bump the revision other tabs are editing against.
+  // via an effect (not during render, mirroring handlePrintRef below) so it
+  // closes over the current book. It must never trigger the sign-in modal on the
+  // way out, and must not save when nothing changed — otherwise every tab close
+  // would write and could bump the revision other tabs are editing against.
   useEffect(() => {
     flushOnHideRef.current = () => {
       if (!autosaveEnabled || !projectAttachChecked) return;
       if (!items || items.length === 0) return;
-      if (saveInFlightRef.current || saveQueuedRef.current) return;
+      // A save is already carrying this book — either in flight or waiting its
+      // turn holding a snapshot of it.
+      if (saveInFlightRef.current || queuedSaveRef.current) return;
       if (lastSavedFingerprintRef.current === "__loaded__") return;
-      const fp = printProjectFingerprint(
-        items,
-        projectMeta.meta,
-        cardSize,
-        template,
-        doubleSided,
-        showPhoto,
-        showSourceUrl,
-        showCutLines,
-        showDescription,
-      );
+      const fp = printProjectFingerprint(items, projectMeta.meta, currentLayoutSettings());
       if (fp === lastSavedFingerprintRef.current) return;
       void handleSaveProject();
     };
@@ -2584,7 +2735,9 @@ export default function PrintPage() {
 
   /**
    * The save that was waiting on an account, once there is one — and once we
-   * know what that account already holds.
+   * know what that account already holds. Also the save that was waiting only
+   * on the second half of that, pressed while the reattach read was still out
+   * (see `handleSaveProject`).
    *
    * This used to fire the save straight off the uid changing, and it is
    * declared above the reattach effect, so it ran while `savedProjectIdRef` was
@@ -2607,13 +2760,39 @@ export default function PrintPage() {
    * surfaces as the conflict prompt rather than as a silent replacement.
    */
   useEffect(() => {
-    if (!cookPilotUser || !projectAttachChecked || !saveAfterLoginRef.current) return;
+    if (!cookPilotUser || !projectAttachChecked) return;
+    /**
+     * And there must be something to save.
+     *
+     * After a sign-in REDIRECT this runs on a freshly loaded page, where the
+     * account arrives well before the recipes do — the queue hydrates from
+     * storage, and `jobIds` is projected from it. Firing the save into that
+     * gap meant `currentProject()` answered null, the save returned having
+     * written nothing, and the promise was spent: the one path where the whole
+     * mechanism exists was the one where it reliably did nothing. So wait for
+     * the book, the same way the autosave loop does.
+     */
+    if (projectLoading || !items?.length) return;
+    // And the working copy must know which project it IS. `cookbookProjectId`
+    // falls back to a freshly minted id until the metadata has hydrated, and
+    // the check below clears an intent recorded against a different project —
+    // so reading it a beat early would not merely miss the save, it would throw
+    // the promise away. Both routes into this effect already imply hydration;
+    // saying so is cheaper than depending on that staying true.
+    if (!projectMeta.hydrated) return;
+    // Both halves of the same promise, spent together. `takeSaveIntent` is
+    // one-shot and is also how a save survives the page being destroyed by a
+    // sign-in redirect; the ref covers the popup path and a browser that
+    // cannot store anything.
+    const asked = takeSaveIntent(cookbookProjectId);
+    if (!saveAfterLoginRef.current && !asked) return;
     saveAfterLoginRef.current = false;
+    forgetSaveIntent();
     void handleSaveProject();
     // The uid, not the User object — Firebase replaces that object on every
     // token refresh, and this should fire on signing in, not hourly.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [cookPilotUser?.uid, projectAttachChecked]);
+  }, [cookPilotUser?.uid, projectAttachChecked, projectLoading, items, projectMeta.hydrated]);
 
   const {
     revenueCatUserId,
@@ -2696,6 +2875,15 @@ export default function PrintPage() {
       // the adopt-on-sign-in path).
       void purchaseCookbookAndContinue((freshPurchase) => {
         if (freshPurchase) setCookbookJustPurchased(true);
+        // Buying a book is asking us to keep it.
+        //
+        // Saving is otherwise something a cook asks for by pressing Save, and
+        // that is right for a book they are still deciding about — but nobody
+        // pays $19.99 for a copy that lives in one browser. Signed out there is
+        // no account to put it in; the unlock is recorded locally and the book
+        // is filed to the device, and the adopt-on-sign-in path carries both
+        // across when an account turns up.
+        if (freshPurchase && cookPilotUser) void handleSaveProject();
         void handlePrint();
       });
       return;
@@ -2974,7 +3162,7 @@ export default function PrintPage() {
           // Absent on documents saved before renames were persisted, which is
           // exactly right: those never had one.
           projectTitle: project.projectTitle,
-          cookbookMode: project.settings.cookbookMode ?? project.kind === "cookbook",
+          cookbookMode: savedProjectOpensAsCookbook(project),
           cookbookWelcomeCompleted: project.settings.cookbookWelcomeCompleted,
           cookbookPreset: project.settings.bookPreset,
           tableOfContents: project.settings.tableOfContents,
@@ -3215,21 +3403,6 @@ export default function PrintPage() {
   }, [queue.hydrated]);
 
   /**
-   * Which projects write themselves to the account, without being asked.
-   *
-   * Signed in, a cookbook always does — like Figma or Canva, where the
-   * deliberate act was creating the file and every edit after it is edits to a
-   * thing you already said you wanted. Clicking through the offer screen and
-   * watching the book build IS that act, so there is no Save button in a
-   * cookbook at all.
-   *
-   * Recipe cards never do. A print job is not a document: nobody named it,
-   * nobody asked to keep it, and filing every Tuesday's dinner prints would
-   * turn the library into a log. Reopening /print restores the working copy
-   * from local storage anyway, which is the part people actually rely on.
-   *
-   */
-  /**
    * Whether this project exists in the account — not merely whether someone is
    * signed in. `savedProjectId` is set by a save, by adopting an anonymous
    * draft, and by opening a project from the profile; it is null for a draft
@@ -3244,9 +3417,26 @@ export default function PrintPage() {
    */
   const savedToProfile = Boolean(cookPilotUser) && savedProjectId !== null;
 
-  // Cookbooks autosave from the first edit — a book is by nature a thing you
-  // come back to — and everything else joins them the moment it is saved once.
-  const autosaveEnabled = Boolean(cookPilotUser) && (isCookbookDocument || savedToProfile);
+  /**
+   * Which projects write themselves to the account, without being asked: the
+   * ones somebody asked us to keep, and only those. One rule, both kinds.
+   *
+   * Save once, and every edit after that is an edit to a thing in your library,
+   * so it goes there on its own. Until then nothing is written, and the bar
+   * shows a Save button rather than a claim.
+   *
+   * Cookbooks used to be exempt — `isCookbookDocument` was ORed in here, so a
+   * book autosaved from its first edit on the reasoning that building one was
+   * deliberate enough to count as asking. Two things were wrong with that. A
+   * card job that had once been a cookbook still carries the book in
+   * `stashedCookbook`, so it counted too: printing a few cards, looking at what
+   * a cookbook would be, and coming back put an ordinary print job into the
+   * autosaving state — which is where the header went quiet and said "Saved"
+   * about a document nobody had asked for. And a save that happens without
+   * being asked is a save nobody watches: when one silently stopped landing,
+   * there was no button and no moment where a cook could have noticed.
+   */
+  const autosaveEnabled = savedToProfile;
 
   useEffect(() => {
     if (projectLoading || !projectAttachChecked || !items?.length) return;
@@ -3257,17 +3447,7 @@ export default function PrintPage() {
     // it's produced only where actually needed (the load baseline below, and once
     // per debounce settle inside the timer), never eagerly on every keystroke.
     const fingerprint = () =>
-      printProjectFingerprint(
-        items,
-        projectMeta.meta,
-        cardSize,
-        template,
-        doubleSided,
-        showPhoto,
-        showSourceUrl,
-        showCutLines,
-        showDescription,
-      );
+      printProjectFingerprint(items, projectMeta.meta, currentLayoutSettings());
     if (lastSavedFingerprintRef.current === "__loaded__") {
       lastSavedFingerprintRef.current = fingerprint();
       return;
@@ -3311,12 +3491,13 @@ export default function PrintPage() {
     saveStatus,
   ]);
 
-  // Nothing is writing this project, so the header has no business reporting on
-  // it — and a stale "Saved" after signing out would be a lie. Clearing is also
-  // what puts the Save button back.
-  useEffect(() => {
-    if (!autosaveEnabled && saveStatus) setSaveStatus(null);
-  }, [autosaveEnabled, saveStatus]);
+  // The effect that used to sit here cleared the save status whenever this
+  // project was not autosaving, to stop a stale "Saved" standing after a sign
+  // out. It also cleared the status of the FIRST save — the one press that
+  // turns autosave on — so that press reported neither its progress nor its
+  // failure. Signing out is handled where it happens: the account-change effect
+  // above resets the save identity and the status together, which is the only
+  // event that can make this project's status a lie about somebody else's.
 
   useEffect(() => {
     const online = () => {
@@ -4672,48 +4853,55 @@ export default function PrintPage() {
                   out by the avatar. It reads as part of the same sentence as
                   Print, and the avatar goes back to being only the account.
 
-                  Two shapes, because there are two situations. A signed-in
-                  cookbook autosaves, so there is nothing to press and the word
-                  is the whole story. Anything that does NOT autosave — every
-                  card job, and a book belonging to someone signed out — gets a
-                  real button, because for those "saved" is something you have
-                  to ask for. Leaving the workspace files either of them anyway
-                  (see `handleNavigateHome`); this is for saving without leaving.
+                  The control and the state are one thing, and which one you see
+                  is decided by whether there is a save to report — NOT by
+                  whether this kind of project autosaves. It used to be the
+                  latter, and that hid the two moments that matter most: a
+                  project that does not autosave yet showed a Save button
+                  throughout its own first save, so pressing Save did nothing
+                  visible while a book full of photos uploaded, and a first save
+                  that FAILED was cleared back to the same button with no word
+                  said. The one press a cook has to trust was the one press that
+                  never reported anything.
+
+                  So: nothing saved yet, a button; a save happening or landed,
+                  the word; a save that failed, the word as a button that
+                  retries. Leaving the workspace files it anyway (see
+                  `handleNavigateHome`); this is for saving without leaving.
                 */}
-                {autosaveEnabled
-                  ? saveStatus &&
-                    /* A button only when there is something to retry — a
-                       focusable control that does nothing when activated is
-                       worse than plain text. */
-                    (SAVE_FAILURES.has(saveStatus) ? (
-                      <button
-                        type="button"
-                        className="rp-save-state rp-save-state--failed"
-                        onClick={handleRetrySave}
-                        aria-live="polite"
-                      >
-                        {SAVE_STATUS_LABEL[saveStatus]}
-                      </button>
-                    ) : (
-                      <span className="rp-save-state" role="status" aria-live="polite">
-                        {saveStatus === "saving" ? (
-                          <SpinnerIcon size={ICON_SIZE.sm} />
-                        ) : saveStatus === "saved" ? (
-                          <CheckIcon size={ICON_SIZE.sm} />
-                        ) : null}
-                        {SAVE_STATUS_LABEL[saveStatus]}
-                      </span>
-                    ))
-                  : (
-                      <button
-                        type="button"
-                        className="btn btn-secondary btn-compact"
-                        onClick={() => void handleSaveProject()}
-                      >
-                        <SaveIcon size={ICON_SIZE.md} />
-                        Save
-                      </button>
-                    )}
+                {saveStatus ? (
+                  /* A button only when there is something to retry — a
+                     focusable control that does nothing when activated is
+                     worse than plain text. */
+                  SAVE_FAILURES.has(saveStatus) ? (
+                    <button
+                      type="button"
+                      className="rp-save-state rp-save-state--failed"
+                      onClick={handleRetrySave}
+                      aria-live="polite"
+                    >
+                      {SAVE_STATUS_LABEL[saveStatus]}
+                    </button>
+                  ) : (
+                    <span className="rp-save-state" role="status" aria-live="polite">
+                      {saveStatus === "saving" ? (
+                        <SpinnerIcon size={ICON_SIZE.sm} />
+                      ) : saveStatus === "saved" ? (
+                        <CheckIcon size={ICON_SIZE.sm} />
+                      ) : null}
+                      {SAVE_STATUS_LABEL[saveStatus]}
+                    </span>
+                  )
+                ) : (
+                  <button
+                    type="button"
+                    className="btn btn-secondary btn-compact"
+                    onClick={() => void handleSaveProject()}
+                  >
+                    <SaveIcon size={ICON_SIZE.md} />
+                    Save
+                  </button>
+                )}
 
                 {/*
                   One button, not two. Buying and printing are not separate
@@ -4786,6 +4974,14 @@ export default function PrintPage() {
               className="btn btn-secondary btn-compact recipe-protect-bar__action"
               onClick={() => {
                 track("protect_prompt_clicked", { source: "cookbook_banner" });
+                // This bar says "create an account to KEEP them", so making one
+                // has to be what keeps them. Arming the same intent a press on
+                // Save arms means signing in from here files the book, and —
+                // since this is a phone banner as much as a desktop one, and a
+                // phone signs in by redirect — that promise survives the page
+                // being destroyed on the way to Google. See `lib/saveIntent`.
+                saveAfterLoginRef.current = true;
+                rememberSaveIntent(cookbookProjectId);
                 setCookPilotLoginReason("purchase");
                 setShowCookPilotLogin(true);
               }}
@@ -5251,13 +5447,27 @@ export default function PrintPage() {
         onConfirmDeleteRecipe={confirmPendingDelete}
         onConfirmDeleteSectionRecipes={confirmDeleteSectionRecipes}
       />
-      {/* Leaving with a project that only exists in this browser.
+      {/* Leaving with a project that only exists on this device.
           
           The old copy contradicted its own button: the description said the
           project would be kept on this device while the button underneath said
           "Leave without saving". Nothing is lost by leaving, and saying so is
-          what makes the real difference (this browser vs every device) worth
-          reading. */}
+          what makes the real difference (this device vs every device) worth
+          reading.
+
+          "Browser" was how it said that, and it is our word rather than
+          anyone else's — people do not think of their recipes as living in a
+          browser, and the same sentence one screen away already said "this
+          device" (the cookbook protect bar). One vocabulary, and the plainer
+          one.
+
+          It also promised a route it does not have: "you can open it again
+          from Projects" is not true of a signed-out card job, which
+          `listableLocalProjects` deliberately keeps out of the library and
+          which /projects will not show a signed-out cook at all. A promise the
+          app cannot keep is worse than no promise, so it is gone rather than
+          reworded. What is left says only what is true: an account is what
+          carries this project off this one device. */}
       {/* The print never opened, and reloading into a fresh document did not
           change that (see lib/printRearm) — so the remaining explanation is a
           browser that cannot print at all, which is what the ones built into
