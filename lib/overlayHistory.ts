@@ -47,6 +47,19 @@ export function isOwnOverlayEntry(state: unknown, id: number): boolean {
 }
 
 /**
+ * Whether the entry on top of the stack belongs to ANY open overlay.
+ *
+ * The question `isOwnOverlayEntry` asks is "is this still mine to pop". This
+ * one is the other half, asked from the outside by code that is about to
+ * navigate: "is an overlay's bookkeeping entry sitting on top of the stack,
+ * about to be popped out from under me". See `navigateAfterOverlayHistory`.
+ */
+export function hasOverlayEntry(state: unknown): boolean {
+  if (!state || typeof state !== "object") return false;
+  return OVERLAY_STATE_KEY in (state as Record<string, unknown>);
+}
+
+/**
  * What a Back press should do to an open overlay.
  *
  * "reassert" is the `closeDisabled` case — an operation is in flight, which is

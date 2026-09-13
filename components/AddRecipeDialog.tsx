@@ -26,6 +26,8 @@ export function AddRecipeDialog({
   onAddText,
   onAddReadyRecipes,
   onAddManual,
+  lastSource,
+  onSourceUsed,
 }: {
   open: boolean;
   onClose: () => void;
@@ -39,12 +41,18 @@ export function AddRecipeDialog({
   onAddReadyRecipes: (recipes: QueueItem[]) => number;
   /** Start an empty recipe on the deck and close — see the footer. */
   onAddManual: () => void;
+  /** The source this project was last filled from, and therefore the one this
+      opens on. See `PrintProjectSettings.lastImportSource`. */
+  lastSource: ImportTab;
+  /** A recipe was actually added from this source. Only an add reports — see
+      `setLastImportSource`. */
+  onSourceUsed: (source: ImportTab) => void;
 }) {
   /** Filled in by the import panel; lets Add finish the entry in the form. */
   const commitImportRef = useRef<(() => boolean) | null>(null);
   const [duplicateTitle, setDuplicateTitle] = useState<string | null>(null);
   /** A URL field needs one line; a paste box and a dropzone need a dialog. */
-  const [mode, setMode] = useState<ImportTab>("url");
+  const [mode, setMode] = useState<ImportTab>(lastSource);
   /**
    * The recipe-app sources have no form to submit: they add on pick, straight
    * from their own lists. So that tab's button finishes rather than adds.
@@ -72,6 +80,25 @@ export function AddRecipeDialog({
   }, [focusNonce, open]);
 
 
+  /**
+   * Put the mirror back to what the sheet will next OPEN on.
+   *
+   * `mode` is a mirror of the panel's own tab, kept only so the sheet AROUND
+   * the panel can be styled — the paste box needs a taller one. But the panel
+   * lives inside `Dialog`, which renders nothing while closed, so it remounts
+   * on the way back in and takes its tab from `initialMode` afresh, while this
+   * copy still said whatever was last chosen.
+   *
+   * Reopening after using Text therefore dressed the sheet as the paste box
+   * around a Link field, and `.recipe-add-dialog__panel--paste .field` stretched
+   * the one-line URL input to the paste box's full 340px. The fix is not that
+   * neither survives the close — it is that both land on the same answer, and
+   * the answer is `lastSource`, which is also what the panel remounts with.
+   */
+  useEffect(() => {
+    if (!open) setMode(lastSource);
+  }, [open, lastSource]);
+
   function clearDuplicate() {
     if (duplicateTitle) setDuplicateTitle(null);
   }
@@ -83,18 +110,21 @@ export function AddRecipeDialog({
   function handleAddUrl(url: string) {
     clearDuplicate();
     track("recipe_import_submitted", { surface: "dialog", source: "url" });
+    onSourceUsed("url");
     onAddUrl(url);
   }
 
   function handleAddImageFiles(files: File[], label: string) {
     clearDuplicate();
     track("recipe_import_submitted", { surface: "dialog", source: "image" });
+    onSourceUsed("image");
     onAddImageFiles(files, label);
   }
 
   function handleAddText(text: string) {
     clearDuplicate();
     track("recipe_import_submitted", { surface: "dialog", source: "text" });
+    onSourceUsed("text");
     onAddText(text);
   }
 
@@ -125,6 +155,9 @@ export function AddRecipeDialog({
           commitRef={commitImportRef}
           hideSubmit
           showAllModes
+          /* Read once per open: `Dialog` renders nothing while closed, so the
+             panel is a fresh mount every time the sheet appears. */
+          initialMode={lastSource}
           onModeChange={setMode}
           items={items}
           onAddUrl={handleAddUrl}
@@ -136,6 +169,9 @@ export function AddRecipeDialog({
                 surface: "dialog",
                 source: recipes[0]!.method,
               });
+              // The recipe-app sources add on pick rather than on submit, so
+              // this is their equivalent of the three handlers above.
+              onSourceUsed("apps");
             }
             return onAddReadyRecipes(recipes);
           }}

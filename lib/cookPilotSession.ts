@@ -25,7 +25,34 @@ export function readCookPilotWasSignedIn(): boolean {
   return localStore.get(COOKPILOT_SIGNED_IN_STORAGE_KEY) === "true";
 }
 
+/**
+ * Told when the answer above changes, without loading Firebase either.
+ *
+ * The header decides ONCE, at mount, whether to fetch the account menu, and
+ * the only signed-in surface it has until then is a generic person icon. But
+ * signing in does not happen in the header: it happens in the workspace's own
+ * login dialog, in the save prompt, on /projects. So the first sign-in in a
+ * browser left the header reading "signed out" — no initials, no confirmation
+ * that a Google popup that had just closed had actually worked — until the
+ * next full page load. This is how the header hears about it in time, and it
+ * still costs the SEO pages nothing: the signal comes from whoever already
+ * loaded Firebase, not from loading it here.
+ */
+type SignedInListener = (signedIn: boolean) => void;
+const signedInListeners = new Set<SignedInListener>();
+
+export function onCookPilotSignedInChange(listener: SignedInListener): () => void {
+  signedInListeners.add(listener);
+  return () => {
+    signedInListeners.delete(listener);
+  };
+}
+
 export function rememberCookPilotSignedIn(signedIn: boolean) {
+  // Fired by every `onAuthStateChanged`, token refreshes included, so only a
+  // real change is announced.
+  const changed = readCookPilotWasSignedIn() !== signedIn;
   if (signedIn) localStore.set(COOKPILOT_SIGNED_IN_STORAGE_KEY, "true");
   else localStore.remove(COOKPILOT_SIGNED_IN_STORAGE_KEY);
+  if (changed) signedInListeners.forEach((listener) => listener(signedIn));
 }

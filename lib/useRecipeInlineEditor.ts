@@ -28,18 +28,35 @@ function stripStepPrefix(value: string): string {
 // value (see `sectionGroups` in RecipeCardPrint). Renaming one only touches
 // that consecutive run, starting at the group's first item, so a later group
 // that happens to reuse the same title text is left alone.
-function applySectionTitleEdit<T extends { section?: string }>(
+export function applySectionTitleEdit<T extends { section?: string }>(
   items: T[],
   startIndex: number,
   newTitle: string,
+  /**
+   * Where the rows go when the title is rubbed out rather than renamed.
+   *
+   * A heading is a boundary, not a container: erasing the words should erase
+   * the boundary with them, so the run joins whatever run is above it — the
+   * same rejoin `demoteSectionToLine` does. Clearing to a bare `undefined`
+   * instead left a SECOND, unlabelled group sitting under the one above, and
+   * `.recipe-card__section-groups` puts its inter-group gap between any two
+   * groups: the title vanished but the block stayed pushed away from the
+   * section it was supposed to have merged into.
+   *
+   * Only "delete the heading along with the rows above it" passes false —
+   * there is nothing left up there to join. See `deleteRecipeLines`.
+   */
+  mergeIntoAbove = true,
 ): T[] {
   const originalTitle = items[startIndex]?.section?.trim() || undefined;
   const trimmedNewTitle = newTitle.trim() || undefined;
+  const cleared = mergeIntoAbove ? items[startIndex - 1]?.section : undefined;
+  const replacement = trimmedNewTitle ?? cleared;
   const next = items.slice();
   for (let i = startIndex; i < next.length; i++) {
     const itemTitle = next[i].section?.trim() || undefined;
     if (itemTitle !== originalTitle) break;
-    next[i] = { ...next[i], section: trimmedNewTitle };
+    next[i] = { ...next[i], section: replacement };
   }
   return next;
 }
@@ -107,10 +124,10 @@ export function demoteSectionToLine<T extends { section?: string }>(
  * Every line a selection covered, removed in one pass.
  *
  * A heading is not a row: it is a `section` string stamped on a run of them
- * (see `promoteLineToSection`), so deleting one clears the label and leaves the
- * rows alone. When the drag ran over the rows too they are in `targets`
- * already, and both halves go together — which is what "delete this whole
- * section" looks like from the outside.
+ * (see `promoteLineToSection`), so deleting one takes the label off and folds
+ * those rows into the run above. When the drag ran over the rows too they are
+ * in `targets` already, and both halves go together — which is what "delete
+ * this whole section" looks like from the outside.
  *
  * Labels are cleared before rows are removed, so the indices the card handed
  * over all still point at what the cook actually dragged across.
@@ -127,15 +144,23 @@ export function deleteRecipeLines(recipe: Recipe, targets: RecipeCardLineTarget[
     else instructionHeadings.push(target.index);
   }
 
+  // Ascending, so clearing one heading is already visible to the next one
+  // down when it looks up to see which run it is joining.
+  ingredientHeadings.sort((a, b) => a - b);
+  instructionHeadings.sort((a, b) => a - b);
+
   let ingredients = recipe.ingredients;
   for (const index of ingredientHeadings) {
-    ingredients = applySectionTitleEdit(ingredients, index, "");
+    // The row above only counts if the same drag isn't deleting it as well:
+    // rejoining a run that's on its way out would hand these rows a label the
+    // cook just erased.
+    ingredients = applySectionTitleEdit(ingredients, index, "", !ingredientRows.has(index - 1));
   }
   ingredients = ingredients.filter((_, index) => !ingredientRows.has(index));
 
   let instructions = recipe.instructions;
   for (const index of instructionHeadings) {
-    instructions = applySectionTitleEdit(instructions, index, "");
+    instructions = applySectionTitleEdit(instructions, index, "", !instructionRows.has(index - 1));
   }
   instructions = instructions
     .filter((_, index) => !instructionRows.has(index))
@@ -245,11 +270,34 @@ function applyRecipeTargetEdit(
   });
 }
 
-// The new line inherits whichever section the item at (or just before,
-// for an append at the end) that index belongs to, so inserting in the
-// middle of a "For the sauce" group doesn't fork off an unlabeled group.
-function sectionForInsertion<T extends { section?: string }>(items: T[], index: number): string | undefined {
-  return items[index]?.section ?? items[index - 1]?.section;
+/**
+ * Which section a line inserted at `index` belongs to.
+ *
+ * The row ABOVE the insertion point decides, because every caller here is
+ * "put a line below this one": Add below, and Enter splitting a line in two.
+ * Both name a row and mean "directly under that row", so that row's group is
+ * the answer — inserting in the middle of a "For the sauce" run stays in the
+ * run rather than forking off an unlabeled group.
+ *
+ * It used to ask the row at `index` first, which is the row being pushed DOWN.
+ * That is the same row for every insertion except the one that matters: at a
+ * section boundary the row below is the next section's first line, so Add
+ * below on the last ingredient of "For the sauce" made the new line the first
+ * ingredient of "For the topping" instead. Enter at the end of such a line was
+ * worse — the half you split off jumped into the next section with it.
+ *
+ * The row above's section is used even when it is `undefined`, which is the
+ * unlabeled run that a recipe with a late first heading starts with: adding
+ * below its last line must stay unlabeled, not join the heading underneath.
+ * Only a genuine prepend — nothing above the insertion point at all — takes
+ * the row below's section.
+ */
+export function sectionForInsertion<T extends { section?: string }>(
+  items: T[],
+  index: number,
+): string | undefined {
+  const above = items[index - 1];
+  return above ? above.section : items[index]?.section;
 }
 
 interface UseRecipeInlineEditorOptions {

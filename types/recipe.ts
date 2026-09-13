@@ -418,6 +418,19 @@ export interface PrintProjectSettings {
       back with the book on another day or another device. Absent = "custom",
       which is every project saved before this and every hand-arranged one. */
   railSortMode?: RailSortMode;
+  /**
+   * Which import source the Add-recipe dialog opens on: the last one a recipe
+   * was actually added from.
+   *
+   * A property of the PROJECT, like `railSortMode` above, and for the same
+   * reason. How a book gets filled is a habit of the book: a cook working from
+   * a shoebox of typed-up cards pastes text every time, and used to click past
+   * Link to reach it on every single add. A cook building from bookmarks never
+   * leaves Link and never notices this exists.
+   *
+   * Absent = Link, which is every project saved before this and every new one.
+   */
+  lastImportSource?: ImportTab;
 }
 
 /**

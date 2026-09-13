@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   OVERLAY_STATE_KEY,
   backDismissAction,
+  hasOverlayEntry,
   isOwnOverlayEntry,
   overlayHistoryState,
 } from "@/lib/overlayHistory";
@@ -54,5 +55,25 @@ describe("backDismissAction", () => {
     // Same terms as Escape. The entry is already popped by now, so staying
     // open means putting a replacement back or the next press leaves the page.
     expect(backDismissAction({ closeDisabled: true })).toBe("reassert");
+  });
+});
+
+describe("hasOverlayEntry", () => {
+  it("recognises any overlay's entry, not only one particular overlay's", () => {
+    // The caller is code about to navigate, which has no id of its own to
+    // compare against — the question is only whether SOMETHING is about to be
+    // popped out from under it.
+    expect(hasOverlayEntry(overlayHistoryState({ __NA: true }, 1))).toBe(true);
+    expect(hasOverlayEntry(overlayHistoryState({ __NA: true }, 97))).toBe(true);
+  });
+
+  it("rejects a plain router entry, so a navigation with no dialog open is not delayed", () => {
+    expect(hasOverlayEntry({ __NA: true })).toBe(false);
+  });
+
+  it("rejects absent or non-object state", () => {
+    expect(hasOverlayEntry(null)).toBe(false);
+    expect(hasOverlayEntry(undefined)).toBe(false);
+    expect(hasOverlayEntry("nope")).toBe(false);
   });
 });

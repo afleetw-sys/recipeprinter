@@ -72,6 +72,41 @@ describe("deleteRecipeLines", () => {
     expect(next.ingredients).toEqual([{ raw: "flour" }, { raw: "cream" }, { raw: "sugar" }]);
   });
 
+  it("folds the rows into the section above when the heading alone was selected", () => {
+    const next = deleteRecipeLines(
+      recipe({
+        ingredients: [
+          ing("almonds", "Almond paste"),
+          ing("egg white", "Cookie glaze"),
+          ing("icing sugar", "Cookie glaze"),
+        ],
+      }),
+      [{ kind: "ingredientSection", index: 1 }],
+    );
+    expect(next.ingredients).toEqual([
+      { raw: "almonds", section: "Almond paste" },
+      { raw: "egg white", section: "Almond paste" },
+      { raw: "icing sugar", section: "Almond paste" },
+    ]);
+  });
+
+  it("does not rejoin a section the same drag is deleting", () => {
+    const next = deleteRecipeLines(
+      recipe({
+        ingredients: [
+          ing("almonds", "Almond paste"),
+          ing("egg white", "Cookie glaze"),
+          ing("icing sugar", "Cookie glaze"),
+        ],
+      }),
+      [
+        { kind: "ingredient", index: 0 },
+        { kind: "ingredientSection", index: 1 },
+      ],
+    );
+    expect(next.ingredients).toEqual([{ raw: "egg white" }, { raw: "icing sugar" }]);
+  });
+
   it("leaves a later group that reuses the same title alone", () => {
     const next = deleteRecipeLines(
       recipe({

@@ -93,17 +93,34 @@ export function Dialog({
   children: ReactNode;
 }) {
   const ref = useRef<HTMLDivElement>(null);
+
+  // Portals need a real DOM to target, which doesn't exist during SSR or the
+  // first hydration pass. Declared above the focus trap because the trap has
+  // to wait for it — see below.
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => setMounted(true), []);
+
   // Called before the early return below so hook order stays stable across
   // open/closed renders; `disabled` is what actually makes it inert.
-  useModalFocus(ref, onClose, { disabled: !open, closeDisabled });
+  //
+  // A portalled dialog is also held until `mounted`, and that is not a
+  // refinement — it is the difference between the trap arming and never
+  // arming. `useModalFocus` reads `ref.current` once, in an effect keyed on
+  // `disabled`, and a portal renders `null` on its first pass: the ref is
+  // still empty when that effect runs, it returns early, and nothing brings
+  // it back, because `setMounted(true)` changes no dependency of it.
+  //
+  // Dialogs whose parent keeps them mounted and toggles `open` got away with
+  // it — `disabled` flips false a beat later, by which time the portal exists
+  // — but the ones the parent renders conditionally mount with `open` already
+  // true and only ever get the one pass. The sign-in dialog is rendered that
+  // way in five places, so it has had no Escape-to-close and no Tab trap at
+  // all; its email field carries `autoFocus`, which is what made the missing
+  // trap look like a working one.
+  useModalFocus(ref, onClose, { disabled: !open || (portal && !mounted), closeDisabled });
   // Back is Escape's equivalent on a touch device, so it closes on the same
   // terms — including staying blocked while `closeDisabled` holds.
   useBackDismiss(open, onClose, { closeDisabled });
-
-  // Portals need a real DOM to target, which doesn't exist during SSR or the
-  // first hydration pass.
-  const [mounted, setMounted] = useState(false);
-  useEffect(() => setMounted(true), []);
   useEffect(() => {
     if (!open) return;
     lockPageScroll();

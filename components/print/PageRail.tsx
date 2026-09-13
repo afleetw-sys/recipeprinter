@@ -691,6 +691,18 @@ export function PageRail(props: PageRailProps) {
                       second page of a pair has no separate tile to sit on, so
                       naming it would be labelling something you cannot go to. */
                   num: string;
+                  /** This tile's identity in the rail, and the only thing its
+                      React key may be built from.
+                      `index` cannot be: it is the SPREAD this tile sits on, and
+                      a spread holding two independent pages (dedication facing
+                      contents, say) emits two tiles that share it. Both went out
+                      as `unit-1`, and React answered exactly as duplicate keys
+                      say it will — "children may be duplicated and/or omitted".
+                      The omitted one was the delete: leaving cookbook mode left
+                      the dedication tile behind in the rail as DOM React no
+                      longer owned, pointing at a page that was gone, and every
+                      further trip through cookbook mode stranded another. */
+                  key: string;
                   index: number;
                   focusSheet: number | null;
                   nav: NavItem | null;
@@ -708,8 +720,18 @@ export function PageRail(props: PageRailProps) {
                   return pages.length === 0 ? "" : String(Math.min(...pages));
                 };
                 const rawUnits: RailUnit[] = [];
-                const addUnit = (unit: Omit<RailUnit, "num">) =>
-                  rawUnits.push({ ...unit, num: startPageLabel(unit.thumbSheets) });
+                const addUnit = (unit: Omit<RailUnit, "num" | "key">) =>
+                  rawUnits.push({
+                    ...unit,
+                    num: startPageLabel(unit.thumbSheets),
+                    // The sheet this tile focuses is a page index, so no two
+                    // tiles can share it. A tile with no sheet at all falls back
+                    // to its own position, which is still unique among tiles.
+                    key:
+                      unit.focusSheet != null
+                        ? `p${unit.focusSheet}`
+                        : `s${unit.index}-${rawUnits.length}`,
+                  });
                 spreads.forEach((spread, index) => {
                   const leftNav = navFor(spread.left);
                   const rightNav = navFor(spread.right);
@@ -822,7 +844,7 @@ export function PageRail(props: PageRailProps) {
                     previous.units.push(unit);
                   } else {
                     groups.push({
-                      key: unit.sectionId ? `${unit.sectionId}-${unit.index}` : `unit-${unit.index}`,
+                      key: unit.sectionId ? `${unit.sectionId}-${unit.key}` : `unit-${unit.key}`,
                       sectionId: unit.sectionId,
                       units: [unit],
                     });
@@ -884,7 +906,7 @@ export function PageRail(props: PageRailProps) {
                   (unit.soleUnit || focusedSheet === unit.focusSheet);
                 const isSpreadThumb = unit.thumbSheets.length === 2;
                 return (
-                  <Fragment key={`rail-unit-${unit.num}`}>
+                  <Fragment key={`rail-unit-${unit.key}`}>
                   <div
                     data-rail-kind={unit.nav?.kind ?? "page"}
                     className={`recipe-page-rail__row ${
