@@ -22,6 +22,70 @@ let overlayCounter = 0;
 const OVERLAY_POP_GRACE_MS = 400;
 
 /**
+ * Pops this module started itself and that have not landed yet.
+ *
+ * `history.back()` is asynchronous: the popstate it produces arrives a few
+ * milliseconds later, by which time whatever else the same click set in motion
+ * has already happened. Every overlay listens for popstate and reads it as "the
+ * cook pressed Back", so that late arrival gets attributed to the wrong thing —
+ * and the wrong thing is usually the overlay that was just opened.
+ *
+ * Clicking "Sign in and save it" in the "Keep this project?" confirm is the
+ * case that shows it: the confirm closes and pops its entry, the sign-in dialog
+ * opens 8ms later, the pop lands 4ms after that, and the sign-in dialog reads
+ * it as a Back and closes itself. The click looks like it did nothing.
+ *
+ * So the pops this module starts are counted. They are not Back presses and
+ * nothing may treat them as one.
+ */
+let selfPopsInFlight = 0;
+
+/** Runs once the count reaches zero — see `whenOverlayHistorySettles`. */
+const settleWaiters: Array<() => void> = [];
+
+function settle(): void {
+  selfPopsInFlight = Math.max(0, selfPopsInFlight - 1);
+  if (selfPopsInFlight > 0) return;
+  for (const run of settleWaiters.splice(0, settleWaiters.length)) run();
+}
+
+/**
+ * Drops the entry this overlay pushed, and remembers that the popstate to come
+ * is ours.
+ *
+ * The listener goes on BEFORE `back()`, which puts it ahead of any listener an
+ * overlay opened afterwards adds, and behind the listeners of overlays that
+ * were already open. That ordering is what the count needs: an outer dialog
+ * still on screen sees the flag while it is set and ignores the pop, and the
+ * decrement happens after it. The timeout is only there so a popstate that
+ * never arrives cannot leave the count stuck above zero and every later Back
+ * press ignored.
+ */
+function popOwnEntry(): void {
+  selfPopsInFlight += 1;
+  let landed = false;
+  const onLanded = () => {
+    if (landed) return;
+    landed = true;
+    window.clearTimeout(timer);
+    window.removeEventListener("popstate", onLanded);
+    settle();
+  };
+  window.addEventListener("popstate", onLanded);
+  const timer = window.setTimeout(onLanded, OVERLAY_POP_GRACE_MS);
+  window.history.back();
+}
+
+/** Runs `run` once no pop this module started is still in the air. */
+function whenOverlayHistorySettles(run: () => void): void {
+  if (selfPopsInFlight === 0) {
+    run();
+    return;
+  }
+  settleWaiters.push(run);
+}
+
+/**
  * Starts a navigation once no overlay's history entry is on top of the stack.
  *
  * The collision this exists for: pressing a button in a dialog that both
@@ -119,30 +183,61 @@ export function useBackDismiss(
   useEffect(() => {
     if (!open) return;
 
-    const id = ++overlayCounter;
-    const push = () => window.history.pushState(overlayHistoryState(window.history.state, id), "");
-    push();
+    let cancelled = false;
+    let disarm: (() => void) | null = null;
 
-    // Whether OUR entry is already gone, which decides who has to clean it up.
-    let popped = false;
+    /**
+     * Claim a history entry and start listening on it.
+     *
+     * Held back while a pop this module started is still in the air, because
+     * an overlay that opens in the same breath as another one closing would
+     * otherwise push on top of an entry that is about to disappear — and, worse,
+     * would have its listener in place to catch the departing overlay's pop and
+     * close itself over it. Waiting costs nothing anyone can perceive (the pop
+     * lands in single-digit milliseconds) and leaves the stack as if the two had
+     * never overlapped: the old entry gone, then ours pushed on top of the page.
+     */
+    const arm = () => {
+      if (cancelled) return;
 
-    function onPopState() {
-      if (backDismissAction({ closeDisabled: closeDisabledRef.current }) === "reassert") {
-        push();
-        return;
+      const id = ++overlayCounter;
+      const push = () => window.history.pushState(overlayHistoryState(window.history.state, id), "");
+      push();
+
+      // Whether OUR entry is already gone, which decides who has to clean it up.
+      let popped = false;
+
+      function onPopState() {
+        // Bookkeeping from an overlay that just closed, not a Back press — see
+        // `selfPopsInFlight`. Closing on it would shut an outer dialog the
+        // moment an inner one was dismissed.
+        if (selfPopsInFlight > 0) return;
+        if (backDismissAction({ closeDisabled: closeDisabledRef.current }) === "reassert") {
+          push();
+          return;
+        }
+        popped = true;
+        onCloseRef.current();
       }
-      popped = true;
-      onCloseRef.current();
-    }
 
-    window.addEventListener("popstate", onPopState);
+      window.addEventListener("popstate", onPopState);
+      disarm = () => {
+        window.removeEventListener("popstate", onPopState);
+        // Closed by any other means — Escape, the X, the backdrop, or the parent
+        // simply unmounting it — leaves our entry on the stack for us to pop.
+        // `isOwnOverlayEntry` is what keeps that from undoing a navigation the
+        // dialog itself started; see lib/overlayHistory.
+        if (!popped && isOwnOverlayEntry(window.history.state, id)) popOwnEntry();
+      };
+    };
+
+    whenOverlayHistorySettles(arm);
+
     return () => {
-      window.removeEventListener("popstate", onPopState);
-      // Closed by any other means — Escape, the X, the backdrop, or the parent
-      // simply unmounting it — leaves our entry on the stack for us to pop.
-      // `isOwnOverlayEntry` is what keeps that from undoing a navigation the
-      // dialog itself started; see lib/overlayHistory.
-      if (!popped && isOwnOverlayEntry(window.history.state, id)) window.history.back();
+      // Nothing to undo when the overlay closed again before it ever armed:
+      // it pushed no entry and registered no listener.
+      cancelled = true;
+      disarm?.();
     };
   }, [open]);
 }
