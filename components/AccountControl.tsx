@@ -4,7 +4,7 @@ import dynamic from "next/dynamic";
 import { useCallback, useEffect, useState } from "react";
 import { IconButton } from "@/components/Controls";
 import { AccountIcon, CheckIcon, ICON_SIZE, SpinnerIcon } from "@/components/icons";
-import { readCookPilotWasSignedIn } from "@/lib/cookPilotSession";
+import { onCookPilotSignedInChange, readCookPilotWasSignedIn } from "@/lib/cookPilotSession";
 
 /**
  * The header's right-hand side: save state, and the way in to your account.
@@ -179,6 +179,30 @@ export function AccountControl({
     const idle = window.requestIdleCallback(() => setShowMenu(true), { timeout: 2_000 });
     return () => window.cancelIdleCallback(idle);
   }, [showMenu]);
+
+  /**
+   * Somebody signed in while this header was already on screen.
+   *
+   * The decision above is made once, from a fact that was true at mount, and
+   * for a browser that has never been signed in the answer is "don't fetch the
+   * menu at all". That is right until the moment it stops being right: every
+   * sign-in dialog in the app lives somewhere OTHER than this header — the
+   * workspace's login dialog, the save prompt, /projects — so a first Google
+   * sign-in finished with the popup closing and the avatar still a generic
+   * person, with nothing anywhere saying it had worked. Desktop Google is the
+   * loudest case only because it is a popup: a redirect sign-in reloads the
+   * page and gets the right answer at mount by accident.
+   *
+   * Fetching the menu is the whole fix — it reads the live auth state itself
+   * and draws the initials.
+   */
+  useEffect(
+    () =>
+      onCookPilotSignedInChange((signedIn) => {
+        if (signedIn) setShowMenu(true);
+      }),
+    [],
+  );
 
   return (
     <div className="relative flex items-center gap-cp-2">
