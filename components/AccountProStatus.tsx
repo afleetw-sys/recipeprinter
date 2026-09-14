@@ -167,18 +167,24 @@ export function AccountProStatus({ user }: { user: User }) {
                 actually needs to know at a glance — surfaced as its own
                 callout, not a quiet line of caption text under the plan
                 name, so nobody has to hunt for "when am I charged, and how
-                much." */}
+                much." Sized like the rest of this card's text (small/bold,
+                same as the "Plan" heading above it) — the tinted background
+                is what makes it stand out, not an oversized font. */}
             <div className="flex flex-wrap items-baseline gap-x-2 gap-y-1 rounded-lg bg-[var(--cp-premium-soft)] px-cp-3 py-cp-2">
-              <p className="text-cp-body font-extrabold text-ink">
+              <p className="text-cp-small font-bold text-ink">
                 {proDetails.willRenew
                   ? `Renews ${formatDate(proDetails.expiresAtMs) ?? "soon"}`
-                  : `Active through ${formatDate(proDetails.expiresAtMs) ?? "your paid period"}`}
+                  : `Ends ${formatDate(proDetails.expiresAtMs) ?? "at the end of your paid period"}`}
               </p>
               {proDetails.willRenew && proDetails.cycle && (
-                <p className="text-cp-small font-bold text-ink-soft">for {PRO_PRICE_FALLBACKS[proDetails.cycle]}</p>
+                <p className="text-cp-small text-ink-soft">for {PRO_PRICE_FALLBACKS[proDetails.cycle]}</p>
               )}
-              {!proDetails.willRenew && <p className="text-cp-small font-bold text-ink-soft">Canceled — won&rsquo;t renew</p>}
             </div>
+            {!proDetails.willRenew && (
+              <p className="mt-1 text-cp-small text-ink-soft">
+                You canceled, but you can pick Pro back up any time before then.
+              </p>
+            )}
             {effectiveProInfo.source === "mirror-fallback" && (
               <p className="mt-1 text-cp-small text-ink-soft">
                 Showing your last verified plan
@@ -191,10 +197,13 @@ export function AccountProStatus({ user }: { user: User }) {
 
             {/* Same two cards a not-yet-subscriber sees, kept on purpose —
                 the benefit lists are still the reminder of what this plan is
-                worth, not just a receipt. Only the buttons flip: Basic's
-                becomes the (secondary, not primary — this isn't the action
-                to draw the eye to) way out, Pro's becomes the disabled
-                "you're already here" state the Basic card used to show. */}
+                worth, not just a receipt. Buttons flip: Basic's becomes the
+                (secondary, not primary — this isn't the action to draw the
+                eye to) way out, Pro's becomes the disabled "you're already
+                here" state the Basic card used to show — unless a
+                cancellation is already in motion, in which case Pro needs a
+                working way back rather than a dead button, and Basic just
+                confirms where they're headed. */}
             <div className="mt-cp-3 grid gap-cp-3 sm:grid-cols-2">
               <div className="flex h-full flex-col rounded-lg border border-line p-cp-3">
                 <h3 className="text-cp-h2 font-extrabold text-ink">Basic</h3>
@@ -207,22 +216,28 @@ export function AccountProStatus({ user }: { user: User }) {
                     </li>
                   ))}
                 </ul>
-                {/* Opens RevenueCat's own hosted billing portal to actually
-                    cancel; there is no custom cancel flow to build or
-                    maintain. */}
-                <button
-                  type="button"
-                  className="btn btn-secondary btn-compact mt-cp-3 w-full"
-                  disabled={!proManagementLink}
-                  title={proManagementLink ? undefined : "Downgrading isn't ready yet. Try again in a moment."}
-                  onClick={() => {
-                    if (!proManagementLink) return;
-                    track("manage_subscription_clicked", {});
-                    window.open(proManagementLink, "_blank", "noopener,noreferrer");
-                  }}
-                >
-                  Downgrade
-                </button>
+                {proDetails.willRenew ? (
+                  // Opens RevenueCat's own hosted billing portal to actually
+                  // cancel; there is no custom cancel flow to build or
+                  // maintain.
+                  <button
+                    type="button"
+                    className="btn btn-secondary btn-compact mt-cp-3 w-full"
+                    disabled={!proManagementLink}
+                    title={proManagementLink ? undefined : "Downgrading isn't ready yet. Try again in a moment."}
+                    onClick={() => {
+                      if (!proManagementLink) return;
+                      track("manage_subscription_clicked", {});
+                      window.open(proManagementLink, "_blank", "noopener,noreferrer");
+                    }}
+                  >
+                    Downgrade
+                  </button>
+                ) : (
+                  <button type="button" className="btn btn-secondary btn-compact mt-cp-3 w-full" disabled>
+                    You&rsquo;re switching to this
+                  </button>
+                )}
               </div>
               <div className="flex h-full flex-col rounded-lg border border-line p-cp-3">
                 <div className="flex items-center gap-2">
@@ -244,9 +259,26 @@ export function AccountProStatus({ user }: { user: User }) {
                     </li>
                   ))}
                 </ul>
-                <button type="button" className="btn btn-primary btn-compact mt-cp-3 w-full" disabled>
-                  Your current plan
-                </button>
+                {proDetails.willRenew ? (
+                  <button type="button" className="btn btn-primary btn-compact mt-cp-3 w-full" disabled>
+                    Your current plan
+                  </button>
+                ) : (
+                  // Reuses the same purchase flow a first-time upgrade uses —
+                  // there's no separate "undo cancellation" mechanism to
+                  // build, and this one already knows how to pick a cycle
+                  // and hand the result back here.
+                  <button
+                    type="button"
+                    className="btn btn-primary btn-compact mt-cp-3 w-full"
+                    onClick={() => {
+                      track("paywall_viewed", { trigger: "account_menu" });
+                      setShowProUpgradeDialog(true);
+                    }}
+                  >
+                    Resubscribe
+                  </button>
+                )}
               </div>
             </div>
           </div>
