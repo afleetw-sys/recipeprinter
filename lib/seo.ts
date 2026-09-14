@@ -350,13 +350,13 @@ export const FAQ: FaqItem[] = [
     question: "Can I change how the recipe cards look?",
     group: "what-you-get",
     answer:
-      "Yes. A theme changes a card's type, its border and how the photo sits, without touching the recipe underneath. Switch themes and every card in the batch follows. Several are free, and the premium ones are a one-off purchase each.",
+      "Yes. A theme changes a card's type, its border and how the photo sits, without touching the recipe underneath. Switch themes and every card in the batch follows. Two themes are free; every other theme comes with RecipePrinter Pro, along with 4 by 6 card printing itself.",
   },
   {
     question: "Can I print several recipes at once?",
     group: "what-you-get",
     answer:
-      "Yes. Add as many as you like to the print queue and send them all in one job, which is what most people do for a recipe binder, a week of dinners, or a family cookbook.",
+      "Yes, with RecipePrinter Pro. Add as many as you like to the print queue and send them all in one job, which is what most people do for a recipe binder, a week of dinners, or a family cookbook. Printing one recipe at a time is free, no account needed.",
     guides: [
       "recipe-binder",
     ],
@@ -383,7 +383,7 @@ export const FAQ: FaqItem[] = [
     question: "Is RecipePrinter free?",
     group: "account",
     answer:
-      "Yes, for the part most people come for. Importing, editing and printing recipes costs nothing and needs no account. Two things are paid, and both are yours once you buy them: premium print themes, each one yours for life, and the cookbook builder, paid for per cookbook you build. Nothing is a subscription and nothing renews. Prices are shown before you buy.",
+      "Yes, for the part most people come for. Importing, editing and printing a normal full-page recipe costs nothing and needs no account. RecipePrinter Pro ($4.99 a month or $39.99 a year) is for the physical recipe-card side of it: every theme, 4 by 6 card printing, and the rest of the card toolkit. A cookbook is separate again — $19.99 per book, paid once, not a subscription.",
   },
   {
     question: "Is RecipePrinter a recipe app?",
@@ -461,13 +461,42 @@ export function webApplicationNode() {
     operatingSystem: "Any (web browser)",
     browserRequirements: "Requires JavaScript.",
     inLanguage: "en",
+    // Importing, editing and full-page printing stay genuinely free (no
+    // account, no paywall) — `isAccessibleForFree` is still true for that
+    // core use. RecipePrinter Pro is a second, separate Offer: the physical
+    // recipe-card experience (every theme, 4x6 cards, the card toolkit),
+    // priced monthly or annually. Keep both listed rather than collapsing to
+    // one Offer, so the structured data doesn't read as either "everything
+    // is free" or "this costs money to use at all" — neither is accurate.
     isAccessibleForFree: true,
     isPartOf: { "@id": SITE_ID },
-    offers: {
-      "@type": "Offer",
-      price: "0",
-      priceCurrency: "USD",
-    },
+    offers: [
+      {
+        "@type": "Offer",
+        name: "RecipePrinter Free",
+        price: "0",
+        priceCurrency: "USD",
+      },
+      {
+        "@type": "Offer",
+        name: "RecipePrinter Pro",
+        priceCurrency: "USD",
+        priceSpecification: [
+          {
+            "@type": "UnitPriceSpecification",
+            price: "4.99",
+            priceCurrency: "USD",
+            billingDuration: "P1M",
+          },
+          {
+            "@type": "UnitPriceSpecification",
+            price: "39.99",
+            priceCurrency: "USD",
+            billingDuration: "P1Y",
+          },
+        ],
+      },
+    ],
     featureList: [
       "Print recipes from websites and social URLs",
       "Turn recipe links into printable recipe cards and PDFs",
@@ -476,8 +505,8 @@ export function webApplicationNode() {
       "Save recipes as a PDF",
       "Print a recipe from a photo or screenshot",
       "Paste recipe text and print it",
-      "Print multiple recipes at once",
       "Build printable recipe collections and binders",
+      "RecipePrinter Pro: every theme, 4 by 6 recipe cards, and printing multiple recipes at once",
       "Make a cookbook with a cover, chapters, and an automatic table of contents",
       "Export a print-ready cookbook PDF for home printing or professional binding",
     ],

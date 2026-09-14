@@ -1528,6 +1528,50 @@
     outline-offset: var(--cp-focus-ring-offset);
   }
 
+  /* The two plan tiles in components/ProUpgradeDialog.tsx — a `SelectTile`
+     radiogroup like every other single-select control in the app (Selected
+     and focus state convention: shared --cp-selected-... and --cp-focus-ring
+     tokens, applied via `.select-tile.is-active` once a tile is selected),
+     not a pair of independent "Continue with X" actions. One CTA below the
+     pair commits whichever plan is currently selected. Annual's "Recommended"
+     flag is informational and stays regardless of which tile is selected. */
+  .pro-plan-card {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    padding: 12px 14px;
+    border: 1px solid var(--cp-line);
+    border-radius: 12px;
+  }
+  .pro-plan-card__row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .pro-plan-card__name {
+    font-weight: 700;
+  }
+  .pro-plan-tile__flag {
+    padding: 1px 7px;
+    border-radius: 999px;
+    background: var(--cp-premium-soft);
+    color: var(--cp-premium);
+    font-size: var(--cp-fs-label);
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.02em;
+  }
+  .pro-plan-card__price {
+    font-size: var(--cp-fs-body);
+    font-weight: 800;
+  }
+  .pro-plan-card__note {
+    margin-left: 6px;
+    color: var(--cp-ink-soft);
+    font-size: var(--cp-fs-label);
+    font-weight: 500;
+  }
+
   .recipe-loading-state {
     display: flex;
     flex-direction: column;
@@ -1599,86 +1643,6 @@
        while sitting in a row of 8px buttons. */
     border-radius: 8px;
     @apply text-cp-small font-semibold;
-  }
-
-  /* ── Our own dropdown (SelectMenu) ─────────────────────────────────────── */
-  /* The trigger IS a field — same box, same border, same height — so it reads
-     as the control it replaced rather than as a button that happens to sit
-     where one used to be. */
-  .select-menu__trigger {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 8px;
-    padding-right: 10px;
-    text-align: left;
-  }
-  .select-menu__trigger:hover:not(:disabled) {
-    border-color: var(--cp-line-strong);
-  }
-  .select-menu__caret {
-    flex: 0 0 auto;
-    color: var(--cp-ink-soft);
-  }
-  .select-menu__value {
-    min-width: 0;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-  }
-
-  /* Portalled and placed from JS — fixed, so the settings panel's own scroll
-     container cannot clip it. */
-  .select-menu__panel {
-    position: fixed;
-    z-index: 1200;
-    display: flex;
-    flex-direction: column;
-    gap: 2px;
-    padding: 6px;
-    border: 1px solid var(--cp-line);
-    border-radius: 10px;
-    background: var(--cp-card);
-    box-shadow: var(--cp-shadow-md);
-  }
-
-  .select-menu__option {
-    position: relative;
-    display: grid;
-    gap: 1px;
-    padding: 7px 26px 7px 9px;
-    border-radius: 7px;
-    color: var(--cp-ink);
-    text-align: left;
-  }
-  .select-menu__option:hover,
-  .select-menu__option:focus-visible {
-    background: var(--cp-overlay-hover);
-    outline: none;
-  }
-  .select-menu__option.is-active {
-    background: var(--cp-selected-fill);
-    color: var(--cp-selected-text);
-  }
-  .select-menu__option-name {
-    font-size: var(--cp-fs-caption);
-    font-weight: 700;
-  }
-  /* The half of each option a native <select> had nowhere to put. */
-  .select-menu__option-note {
-    color: var(--cp-ink-soft);
-    font-size: var(--cp-fs-label);
-    line-height: 1.3;
-  }
-  .select-menu__option.is-active .select-menu__option-note {
-    color: inherit;
-    opacity: .75;
-  }
-  .select-menu__check {
-    position: absolute;
-    top: 50%;
-    right: 9px;
-    transform: translateY(-50%);
   }
 
   /* ── Shared dropdown (Select component) ───────────────────────────────── */

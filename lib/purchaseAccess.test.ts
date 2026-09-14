@@ -8,21 +8,26 @@ import {
 describe("paid purchase access", () => {
   it("opens the appropriate paywall without requiring authentication", () => {
     expect(
-      purchaseGate({ cookbookLocked: true, templateLocked: false }),
+      purchaseGate({ cookbookLocked: true, proLocked: false }),
     ).toBe("unlock-cookbook");
     expect(
-      purchaseGate({ cookbookLocked: false, templateLocked: true }),
-    ).toBe("unlock-template");
+      purchaseGate({ cookbookLocked: false, proLocked: true }),
+    ).toBe("unlock-pro");
+  });
+
+  it("prefers the cookbook gate when both are locked", () => {
+    expect(
+      purchaseGate({ cookbookLocked: true, proLocked: true }),
+    ).toBe("unlock-cookbook");
   });
 
   it("does not block free or previously unlocked printing", () => {
     expect(
-      purchaseGate({ cookbookLocked: false, templateLocked: false }),
+      purchaseGate({ cookbookLocked: false, proLocked: false }),
     ).toBe("continue");
   });
 
-  it("protects a fresh purchase instead of asking for a donation", () => {
-    expect(postPrintPrompt("protect-purchase", false)).toBe("protect-purchase");
+  it("shows nothing after a Pro or cookbook purchase, which have their own prompts", () => {
     expect(postPrintPrompt("none", false)).toBeNull();
   });
 

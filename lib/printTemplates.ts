@@ -20,10 +20,23 @@ export const PRINT_CARD_SIZE_OPTIONS: Array<{
   id: PrintCardSize;
   label: string;
   detail: string;
+  /** Requires RecipePrinter Pro, no exceptions — see `canUseCardSize` in
+   *  lib/recipePrinterPurchases.ts. The only free size is "letter"; adding
+   *  or un-gating a size later is a one-line change here, not a new
+   *  conditional at each call site. */
+  proOnly: boolean;
 }> = [
-  { id: "letter", label: "Full page", detail: "Letter paper" },
-  { id: "card-6x4", label: "6 x 4 card", detail: "Landscape recipe card" },
+  { id: "letter", label: "Full Page", detail: "Letter paper", proOnly: false },
+  { id: "card-6x4", label: "Recipe Card", detail: "4 x 6, landscape", proOnly: true },
 ];
+
+export const PRO_ONLY_CARD_SIZES: readonly PrintCardSize[] = PRINT_CARD_SIZE_OPTIONS.filter(
+  (option) => option.proOnly,
+).map((option) => option.id);
+
+export function isProOnlyCardSize(cardSize: PrintCardSize): boolean {
+  return PRO_ONLY_CARD_SIZES.includes(cardSize);
+}
 
 export const RECIPE_PRINT_TEMPLATE_OPTIONS: Array<{
   id: RecipePrintTemplate;

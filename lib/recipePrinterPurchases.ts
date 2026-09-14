@@ -7,9 +7,7 @@ import type {
 } from "@revenuecat/purchases-js";
 import {
   entitlementForTemplate,
-  packageIdForTemplate,
-  productIdForTemplate,
-  RECIPEPRINTER_OFFERING_ID,
+  isPremiumTemplate,
   type PremiumRecipePrintTemplate,
 } from "@/lib/premiumTemplates";
 import { isProductionRuntime } from "@/lib/appEnvironment";
@@ -19,6 +17,15 @@ import {
   RECIPEPRINTER_COOKBOOK_PACKAGE_ID,
   RECIPEPRINTER_COOKBOOK_PRODUCT_ID,
 } from "@/lib/cookbookProduct";
+import {
+  proPackageId,
+  proProductId,
+  RECIPEPRINTER_PRO_ENTITLEMENT_ID,
+  RECIPEPRINTER_PRO_OFFERING_ID,
+  type ProBillingCycle,
+} from "@/lib/proProduct";
+import { isProOnlyCardSize } from "@/lib/printTemplates";
+import type { PrintCardSize, RecipePrintTemplate } from "@/types/recipe";
 import { revenueCatIdentityTransition } from "@/lib/purchaseAccess";
 
 type PurchasesModule = typeof import("@revenuecat/purchases-js");
@@ -194,6 +201,75 @@ export function hasTemplateEntitlement(
 }
 
 /**
+ * Active RecipePrinter Pro subscriber — every theme, every Pro-only card
+ * size, printing multiple recipes at once, advanced layout/customization.
+ * The single check every Pro-gated surface should call, so "what counts as
+ * Pro" never drifts between call sites.
+ *
+ * Deliberately the ONLY thing that grants any of those. A legacy $1.99
+ * template purchase (`hasTemplateEntitlement`) and a cookbook purchase
+ * (a separate, per-project system — see lib/cookbookUnlocks.ts) are each
+ * their own narrow entitlement and never imply this one, in either
+ * direction: Pro doesn't touch cookbook ownership, and no combination of
+ * legacy purchases adds up to Pro. See lib/recipePrinterPurchases.test.ts's
+ * "access model" tests for every combination this must hold for.
+ */
+export function hasProEntitlement(customerInfo: CustomerInfo | null): boolean {
+  return Boolean(customerInfo?.entitlements.active[RECIPEPRINTER_PRO_ENTITLEMENT_ID]);
+}
+
+/**
+ * Can this theme be selected without hitting the Pro paywall: owns it
+ * outright (a legacy $1.99 purchase, still honored), or owns Pro (which
+ * includes every theme). The one function every theme-lock check should call
+ * — "owns this specific theme" and "owns Pro" must never be checked
+ * separately, or the two can drift out of sync.
+ */
+export function hasTemplateOrProEntitlement(
+  customerInfo: CustomerInfo | null,
+  template: RecipePrintTemplate,
+): boolean {
+  if (!isPremiumTemplate(template)) return true;
+  return hasTemplateEntitlement(customerInfo, template) || hasProEntitlement(customerInfo);
+}
+
+/**
+ * Can this card size be used right now, without hitting the Pro paywall.
+ *
+ * Free sizes (just "letter" today) are always allowed. A Pro-only size
+ * (currently "card-6x4") needs an active Pro subscription — full stop, no
+ * exception for a legacy template purchase. Owning a $1.99 theme grants that
+ * theme, for use wherever it's otherwise allowed (a free "letter" page,
+ * included); it was never a card-size purchase and does not become one.
+ * This used to also check the customer's template entitlements as a
+ * grandfather exception — removed, since owning a theme is no longer meant
+ * to imply anything about card size at all.
+ */
+export function canUseCardSize(
+  customerInfo: CustomerInfo | null,
+  cardSize: PrintCardSize,
+): boolean {
+  if (!isProOnlyCardSize(cardSize)) return true;
+  return hasProEntitlement(customerInfo);
+}
+
+/**
+ * Can the current print job hold more than one recipe without hitting the
+ * Pro paywall. Unlike a theme or a card size, there is nothing to grandfather
+ * or preview here: adding a second recipe to one print job IS the premium
+ * action, so it is either allowed (Pro) or it doesn't happen (see
+ * `openAddRecipeBelow` in app/print/page.tsx, which checks this before ever
+ * opening the add-recipe dialog rather than opening it and blocking the
+ * result). Cookbook mode is a separate system with its own purchase model
+ * and was always meant to hold many recipes — callers must check
+ * `cookbookMode` themselves before applying this; it is not baked in here so
+ * this function can be tested independently of that context.
+ */
+export function hasMultiRecipeEntitlement(customerInfo: CustomerInfo | null): boolean {
+  return hasProEntitlement(customerInfo);
+}
+
+/**
  * Entitlements for a customer we already know exists.
  *
  * Returns null — without configuring, and so without creating anything — when
@@ -304,19 +380,6 @@ function findPackage(
   return candidate?.webBillingProduct.identifier === productId ? candidate : null;
 }
 
-async function packageForTemplate(
-  purchases: Purchases,
-  template: PremiumRecipePrintTemplate,
-): Promise<Package> {
-  const rcPackage = findPackage(
-    await offeringFor(purchases, RECIPEPRINTER_OFFERING_ID),
-    packageIdForTemplate(template),
-    productIdForTemplate(template),
-  );
-  if (!rcPackage) throw new Error("This template isn't ready to buy yet.");
-  return rcPackage;
-}
-
 /**
  * Stripe's floating "Developer Tools" launcher, which Stripe.js appends to the
  * page of its own accord once RevenueCat's checkout loads it.
@@ -422,23 +485,6 @@ async function checkout(
   }
 }
 
-export async function purchaseRecipePrinterTemplate({
-  userId,
-  email,
-  template,
-}: {
-  userId: string;
-  email?: string | null;
-  template: PremiumRecipePrintTemplate;
-}): Promise<{ customerInfo: CustomerInfo; cancelled: boolean }> {
-  const purchases = await getPurchases(userId);
-  const rcPackage = await packageForTemplate(purchases, template);
-  return checkout(purchases, rcPackage, email, {
-    product: "recipeprinter",
-    template,
-  });
-}
-
 async function packageForCookbook(purchases: Purchases): Promise<Package> {
   const rcPackage = findPackage(
     await offeringFor(purchases, RECIPEPRINTER_COOKBOOK_OFFERING_ID),
@@ -471,6 +517,73 @@ export async function purchaseRecipePrinterCookbook({
     offer: "cookbook",
     cookbook_project_id: projectId,
   });
+}
+
+async function packageForPro(purchases: Purchases, cycle: ProBillingCycle): Promise<Package> {
+  const rcPackage = findPackage(
+    await offeringFor(purchases, RECIPEPRINTER_PRO_OFFERING_ID),
+    proPackageId(cycle),
+    proProductId(cycle),
+  );
+  if (!rcPackage) throw new Error("RecipePrinter Pro isn't ready to buy yet.");
+  return rcPackage;
+}
+
+export async function purchaseRecipePrinterPro({
+  userId,
+  email,
+  cycle,
+}: {
+  userId: string;
+  email?: string | null;
+  cycle: ProBillingCycle;
+}): Promise<{ customerInfo: CustomerInfo; cancelled: boolean }> {
+  const purchases = await getPurchases(userId);
+  const rcPackage = await packageForPro(purchases, cycle);
+  return checkout(purchases, rcPackage, email, {
+    product: "recipeprinter",
+    offer: "pro",
+    cycle,
+  });
+}
+
+/** RevenueCat's hosted billing-management link for the signed-in customer —
+ *  where a subscriber changes plan or cancels. Null when the SDK has no
+ *  portal URL to offer (e.g. no purchase relationship yet). */
+export function proManagementUrl(customerInfo: CustomerInfo | null): string | null {
+  return customerInfo?.managementURL ?? null;
+}
+
+export interface ProSubscriptionDetails {
+  cycle: ProBillingCycle | null;
+  /** True even while canceled (`willRenew: false`) — access lasts through
+   *  `expiresAtMs`, it isn't revoked the moment someone cancels. */
+  active: boolean;
+  willRenew: boolean;
+  expiresAtMs: number | null;
+}
+
+/** Everything the account menu's Pro section needs to render, derived from
+ *  RevenueCat's own `EntitlementInfo` rather than scattered field reads at
+ *  each render site. Returns nulls/false across the board when there is no
+ *  Pro entitlement at all (never subscribed). */
+export function proSubscriptionDetails(customerInfo: CustomerInfo | null): ProSubscriptionDetails {
+  const entitlement = customerInfo?.entitlements.all[RECIPEPRINTER_PRO_ENTITLEMENT_ID];
+  if (!entitlement) {
+    return { cycle: null, active: false, willRenew: false, expiresAtMs: null };
+  }
+  const cycle: ProBillingCycle | null =
+    entitlement.productIdentifier === proProductId("annual")
+      ? "annual"
+      : entitlement.productIdentifier === proProductId("monthly")
+        ? "monthly"
+        : null;
+  return {
+    cycle,
+    active: entitlement.isActive,
+    willRenew: entitlement.willRenew,
+    expiresAtMs: entitlement.expirationDate ? entitlement.expirationDate.getTime() : null,
+  };
 }
 
 function isPurchasesError(error: unknown): error is PurchasesError {

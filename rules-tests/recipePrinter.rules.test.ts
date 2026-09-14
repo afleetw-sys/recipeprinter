@@ -463,6 +463,45 @@ describe("server-owned fields on the shared CookPilot user document", () => {
     );
   });
 
+  // recipePrinterEntitlements is where RecipePrinter Pro status is read from
+  // (lib/recipePrinterFreeTemplateClaim.ts's `deriveProStatus`), written only
+  // by the RevenueCat webhook. Before this field was added to
+  // serverOwnedSharedUserFields, a signed-in user's merge write here was
+  // allowed by the same denylist gap the admin/plusExpiresAt tests above
+  // guard against — a client could `setDoc` itself an active Pro entitlement.
+  test("a signed-in user cannot grant themselves a Pro entitlement", async () => {
+    const user = environment.authenticatedContext("pro-faker").firestore();
+    await assertFails(
+      setDoc(
+        doc(user, "users/pro-faker"),
+        { recipePrinterEntitlements: { pro: { active: true, expiresAt: null } } },
+        { merge: true },
+      ),
+    );
+    await assertFails(
+      setDoc(doc(user, "users/pro-faker"), { recipePrinterRevenueCatSyncedAt: new Date() }, { merge: true }),
+    );
+  });
+
+  test("a real Pro subscriber can still read their entitlement and edit unrelated fields", async () => {
+    // The webhook writes recipePrinterEntitlements with the admin SDK. A
+    // merge write that leaves it alone must still succeed, and the owner must
+    // still be able to read their own mirrored status.
+    await environment.withSecurityRulesDisabled(async (context) => {
+      await setDoc(doc(context.firestore(), "users/pro-subscriber"), {
+        recipePrinterEntitlements: {
+          pro: { active: true, expiresAt: new Date(4102444800000), productIdentifier: "pro_monthly" },
+        },
+        displayName: "Before",
+      });
+    });
+    const subscriber = environment.authenticatedContext("pro-subscriber").firestore();
+    await assertSucceeds(
+      setDoc(doc(subscriber, "users/pro-subscriber"), { displayName: "After" }, { merge: true }),
+    );
+    await assertSucceeds(getDoc(doc(subscriber, "users/pro-subscriber")));
+  });
+
   test("the document still works for the CookPilot fields it owns", async () => {
     const user = environment.authenticatedContext("cookpilot-user").firestore();
     await assertSucceeds(

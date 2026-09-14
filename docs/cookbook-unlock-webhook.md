@@ -1,14 +1,33 @@
 # Server-authoritative cookbook unlocks (RevenueCat webhook)
 
-> ## ⚠️ Launch gate — do this BEFORE `COOKBOOK_ENABLED = true` ships to production
-> The cookbook is inert in production while `COOKBOOK_ENABLED = false`
-> (lib/cookbookProduct.ts), so none of this is live yet. But the moment cookbook
-> is enabled in prod, unlocks are exploitable until this whole sequence lands.
-> **Sequence it with the launch, in order:** Step 1 (attribute, already coded) →
-> Step 2 (deploy webhook) → Step 3 (verify a sandbox purchase writes the doc) →
-> Step 4 (lock firestore.rules) → Step 5 (remove dead client writes). Steps 1–3
-> are safe to do ahead of launch; Step 4 must not ship until the webhook is live
-> and verified. There's a matching reminder at the `COOKBOOK_ENABLED` flag.
+> ## ✅ Status (confirmed 2026-09-13): shipped and live
+> All five steps below are done: `COOKBOOK_ENABLED = true` in
+> `lib/cookbookProduct.ts`, the webhook is deployed
+> (`recipePrinterRevenueCatWebhook`, CookPilot `functions/src/recipePrinterRevenueCat.ts`,
+> last redeployed 2026-09-01) and confirmed configured in RevenueCat's
+> dashboard — production and sandbox, all apps, all events, correct
+> authorization header, deliveries showing as successful — and
+> `firestore.rules` denies client writes on both the namespaced and legacy
+> `cookbookUnlocks` paths. A prior note here (dated 2026-08-15, see below)
+> said the dashboard webhook was missing; that was true at the time but is no
+> longer the case. This section is kept as a historical record of exactly
+> that failure mode — a webhook that returns 200 on every call regardless of
+> whether it actually granted anything, so "delivery succeeded" in
+> RevenueCat's UI is not proof the unlock doc was ever written — since it is
+> the kind of gap that can silently reappear and is worth knowing how to spot
+> again.
+>
+> A code review (2026-09-13) of `processCookbookEvent`/`grantCookbookUnlock`/
+> `revokeCookbookUnlock`/`grantTransferredCookbookUnlocks` found no defect:
+> the logic matches RevenueCat's documented webhook payload shape (`event`
+> wrapper, `subscriber_attributes.<key>.value`, `product_id`/`entitlement_ids`
+> for matching, `transferred_from` for TRANSFER events). That review is static
+> analysis, not a live-data check — the one thing it cannot confirm is that a
+> real purchase has actually produced a `source: "revenuecat"` unlock doc in
+> Firestore. Run `scripts/cookbook-unlock-audit.mjs` (read-only, needs
+> `GOOGLE_APPLICATION_CREDENTIALS` for a service account with Firestore read
+> access) for that confirmation whenever it's convenient — it is cheap and
+> safe to run at any time, not just once.
 
 **Audit item #2 (P1 security).** Closes the free-unlock hole and adds
 refund/chargeback revocation. The unlock doc becomes **server-written only**.
@@ -86,7 +105,10 @@ which has no JDK.
 
 ---
 
-## Deploy order (no window where purchasing breaks)
+## Deploy order (no window where purchasing breaks) — historical
+
+Kept for the record and because it documents a real failure mode (see the
+status note at the top). All steps below are done as of 2026-09-13.
 
 The client keeps writing the unlock until the very end, so nothing breaks mid-rollout.
 
@@ -115,6 +137,12 @@ firebase deploy --only functions:recipePrinterRevenueCatWebhook -P recipeapp
 > entitlements into Firestore) is not on any critical path: template gating reads
 > `customerInfo` from the RevenueCat SDK in the browser. So the webhook could be
 > unwired forever with no visible symptom — until cookbook unlocks depended on it.
+>
+> **Follow-up (confirmed 2026-09-13).** The dashboard webhook has since been
+> added — production and sandbox, all apps, all events, correct
+> `Authorization` header — and RevenueCat shows deliveries succeeding. Steps
+> 2b–5 below are complete; they're kept as the record of what "complete"
+> required.
 
 ### Step 2b — wire the webhook up in RevenueCat (REQUIRED)
 

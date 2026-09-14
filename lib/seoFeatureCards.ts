@@ -65,7 +65,7 @@ export const YOURS_CARDS: FeatureCard[] = [
     heading: "Premium print themes",
     image: "multi-themes",
     body:
-      "A theme changes a card's type, its border, and how the photo sits, without touching the recipe. Switch themes and the whole batch follows, so a stack printed in one go looks like a set. Several are free, and the premium ones are a one-off purchase each.",
+      "A theme changes a card's type, its border, and how the photo sits, without touching the recipe. Switch themes and the whole batch follows, so a stack printed in one go looks like a set. Two are free; every other theme comes with RecipePrinter Pro.",
   },
 ];
 
@@ -74,15 +74,15 @@ export const PRINT_CARDS: FeatureCard[] = [
     heading: "4 by 6 recipe cards or letter pages",
     image: "card-in-box",
     body:
-      "A 4 by 6 recipe card drops straight into a recipe box; a letter page goes into a binder. Cut lines give you a trim guide on card stock, and a recipe too long for one side prints on the back too.",
+      "A letter page prints for free straight into a binder. A 4 by 6 recipe card that drops into a recipe box is a RecipePrinter Pro feature — cut lines give you a trim guide on card stock, and a recipe too long for one side prints on the back too.",
   },
   {
     // Batch and PDF were two cards saying the same thing from either end: how
     // the finished job leaves. One card, both destinations.
-    heading: "Batch printing and PDF export",
+    heading: "Print multiple recipes at once",
     image: "pdf-search",
     body:
-      "Add as many recipes as you like to the print queue and send them all in one go, for a recipe binder, a week of dinners, or a family cookbook. Or save the printable recipes as a PDF instead.",
+      "Add as many recipes as you like to the print queue and send them all in one job, for a recipe binder, a week of dinners, or a family cookbook — a RecipePrinter Pro feature. One recipe at a time prints or saves as a PDF free, no account needed.",
   },
   {
     heading: "Cookbook builder",

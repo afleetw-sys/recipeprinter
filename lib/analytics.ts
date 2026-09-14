@@ -19,8 +19,16 @@ import type {
 } from "@/types/recipe";
 import type { FeedbackType } from "@/lib/feedback";
 
-/** What product a paywall or purchase refers to. */
-type PurchasedProduct = "premium_template" | "cookbook";
+/** What product a paywall or purchase refers to. "premium_template" is kept
+ *  for historical event compatibility — new template purchases no longer
+ *  happen (see lib/premiumTemplates.ts), but old PostHog data stays readable
+ *  under that value. New purchases are "pro" or "cookbook". */
+type PurchasedProduct = "premium_template" | "cookbook" | "pro";
+
+/** The Pro-only capability a Free user ran into. Named narrowly enough to be
+ *  useful in a funnel ("which feature drives upgrades") without carrying any
+ *  recipe content. */
+type ProFeature = "theme" | "card_size" | "batch_print" | "advanced_layout";
 
 /**
  * Why an import failed, as a small closed vocabulary rather than a free-text
@@ -233,12 +241,38 @@ type EventProps = {
   template_selected: { template: RecipePrintTemplate; premium: boolean };
 
   // ---- Money -----------------------------------------------------------
-  // No paywall-impression event on purpose: there's no interstitial paywall
-  // dialog anymore — a click on Unlock/Export goes straight to RevenueCat
-  // checkout. So the price impression IS `purchase_started` and the "saw the
-  // price and backed out" signal is `purchase_cancelled`. (The old
-  // `paywall_shown`/`paywall_dismissed` declarations were unfireable dead type
-  // surface once the dialog was removed — see lib/usePremiumTemplatePurchase.ts.)
+  // Cookbook and the retired per-template purchase never had a paywall
+  // impression event: a click on Unlock/Export went straight to RevenueCat
+  // checkout, so the price impression WAS `purchase_started` and the "saw the
+  // price and backed out" signal was `purchase_cancelled`. RecipePrinter Pro
+  // is different on purpose — it unlocks many things at once (every theme,
+  // every card size, batch printing), so it gets a real upsell screen
+  // (components/ProUpgradeDialog.tsx) before checkout, and `paywall_viewed`
+  // below is that screen's impression event.
+  /** A Free user reached a control that requires Pro (a locked theme, a
+   *  locked card size, an attempt at batch printing). Fired at the point of
+   *  contact, before any dialog opens — `source` names the specific control
+   *  (e.g. "theme_picker", "card_size_picker") so the funnel shows which
+   *  surface actually drives upgrade interest. */
+  pro_feature_encountered: { feature: ProFeature; source: string };
+  /** The Pro upgrade dialog was shown. `trigger` matches
+   *  `pro_feature_encountered`'s `source` when it opened one, or names the
+   *  entry point otherwise (e.g. "account_menu"). */
+  paywall_viewed: { trigger: string };
+  /** A plan was chosen in the upgrade dialog, before checkout opens. */
+  pro_plan_selected: { cycle: "monthly" | "annual" };
+  /** The sign-in dialog opened specifically because signing in was required
+   *  to continue a Pro purchase (as opposed to the cookbook's existing
+   *  "protect your purchase" use of the same dialog). */
+  auth_started_from_upgrade: { trigger: string };
+  /** A now-unlocked Pro action actually completed after upgrading (e.g. a
+   *  previously-locked card size printed). Separate from `purchase_completed`
+   *  so the funnel shows "paid" versus "got value" as two distinct steps. */
+  pro_feature_used: { feature: ProFeature };
+  /** A Pro subscriber opened RevenueCat's billing portal from the account
+   *  menu to manage or cancel. Confirms cancellation is actually
+   *  discoverable, not just theoretically available. */
+  manage_subscription_clicked: {};
   /**
    * `customerId` is the RevenueCat app user id, and it is the whole point of
    * these three carrying it.
@@ -257,9 +291,25 @@ type EventProps = {
    * there. Opaque either way (an anonymous RC id, or the Firebase uid), so no
    * PII crosses over.
    */
-  purchase_started: { product: PurchasedProduct; template?: RecipePrintTemplate; customerId?: string };
-  purchase_completed: { product: PurchasedProduct; template?: RecipePrintTemplate; customerId?: string };
-  purchase_cancelled: { product: PurchasedProduct; template?: RecipePrintTemplate; customerId?: string };
+  purchase_started: {
+    product: PurchasedProduct;
+    template?: RecipePrintTemplate;
+    /** Monthly vs. annual — only meaningful for `product: "pro"`. */
+    cycle?: "monthly" | "annual";
+    customerId?: string;
+  };
+  purchase_completed: {
+    product: PurchasedProduct;
+    template?: RecipePrintTemplate;
+    cycle?: "monthly" | "annual";
+    customerId?: string;
+  };
+  purchase_cancelled: {
+    product: PurchasedProduct;
+    template?: RecipePrintTemplate;
+    cycle?: "monthly" | "annual";
+    customerId?: string;
+  };
   /**
    * Checkout threw something that wasn't a cancellation.
    *
@@ -272,6 +322,7 @@ type EventProps = {
   purchase_failed: {
     product: PurchasedProduct;
     template?: RecipePrintTemplate;
+    cycle?: "monthly" | "annual";
     reason: string;
     customerId?: string;
   };

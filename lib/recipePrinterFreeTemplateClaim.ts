@@ -15,14 +15,32 @@ export interface RecipePrinterFreeTemplateStatus {
 }
 
 /**
+ * Server-mirrored RecipePrinter Pro status, read off the same doc's
+ * `recipePrinterEntitlements.pro` field — written by the RevenueCat webhook
+ * on every subscription event (CookPilot functions/src/recipePrinterRevenueCat.ts),
+ * never by the client (firestore.rules denies it — see
+ * `serverOwnedSharedUserFields`). This is what "don't trust client-side state
+ * alone" means in practice: prefer this over the live RevenueCat SDK read
+ * whenever a signed-in profile is available, since it reflects what the
+ * server last confirmed rather than only what this browser's SDK instance
+ * currently holds.
+ */
+export interface RecipePrinterProStatus {
+  active: boolean;
+  expiresAtMs: number | null;
+}
+
+/**
  * Centralized RecipePrinter user-profile read: everything gated on the
  * shared CookPilot `users/{uid}` Firestore doc (admin flag, free-template
- * claim status) is derived from one `getDoc`, not one per gate — a signed-in
- * `/print` visit used to fire two independent reads of this same doc.
+ * claim status, Pro status) is derived from one `getDoc`, not one per gate —
+ * a signed-in `/print` visit used to fire two independent reads of this same
+ * doc.
  */
 export interface RecipePrinterUserProfile {
   isAdmin: boolean;
   freeTemplateStatus: RecipePrinterFreeTemplateStatus;
+  proStatus: RecipePrinterProStatus;
 }
 
 async function fetchRecipePrinterUserDoc(uid: string): Promise<Record<string, unknown>> {
@@ -58,6 +76,17 @@ async function fetchRecipePrinterUserDoc(uid: string): Promise<Record<string, un
   return { ...(legacy?.data() ?? {}), ...(namespaced?.data() ?? {}) };
 }
 
+function deriveProStatus(data: Record<string, unknown>): RecipePrinterProStatus {
+  const entitlements = data.recipePrinterEntitlements as
+    | Record<string, { active?: unknown; expiresAt?: { toMillis?: () => number } } | undefined>
+    | undefined;
+  const pro = entitlements?.pro;
+  return {
+    active: pro?.active === true,
+    expiresAtMs: pro?.expiresAt?.toMillis?.() ?? null,
+  };
+}
+
 function deriveFreeTemplateStatus(data: Record<string, unknown>): RecipePrinterFreeTemplateStatus {
   const expiresAtMs = (data.plusExpiresAt as { toMillis?: () => number } | undefined)
     ?.toMillis?.() ?? null;
@@ -87,12 +116,14 @@ export async function loadFreeTemplateStatus(
   return deriveFreeTemplateStatus(await fetchRecipePrinterUserDoc(uid));
 }
 
-/** Single read of `users/{uid}` powering both the admin gate and free-template status. */
+/** Single read of `users/{uid}` powering the admin gate, free-template
+ *  status, and RecipePrinter Pro status. */
 export async function loadRecipePrinterUserProfile(uid: string): Promise<RecipePrinterUserProfile> {
   const data = await fetchRecipePrinterUserDoc(uid);
   return {
     isAdmin: data.recipePrinterAdmin === true,
     freeTemplateStatus: deriveFreeTemplateStatus(data),
+    proStatus: deriveProStatus(data),
   };
 }
 

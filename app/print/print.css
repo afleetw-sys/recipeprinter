@@ -1931,17 +1931,6 @@
   gap: 6px;
 }
 
-/* The size choice is two short labels ("Full page", "6 x 4 card"), and a
-   full-width field for that much text reads as a text input waiting to be
-   filled rather than a menu with two answers. Half the column is more than
-   enough for the longer of them, and it lets the section's own label sit
-   beside open space instead of over a bar. */
-.recipe-config-section--size .select-menu,
-.recipe-config-section--size .select-menu__trigger {
-  width: 60%;
-  min-width: 140px;
-}
-
 /* The panel names itself, but not louder than the product or the document.
    The class on the element asks for the 19.84px dialog title, which is a
    DOCUMENT convention — it announces the thing you are reading, and this panel
@@ -1976,8 +1965,8 @@
   text-transform: uppercase;
 }
 
-/* Inline pricing note under the Themes heading — states the one-time premium
-   cost up front so the paywall no longer needs its own explanatory dialog. */
+/* Inline note under the Themes heading — states that every theme comes with
+   Pro up front so the paywall no longer needs its own explanatory dialog. */
 .recipe-template-caption {
   /* Negative top margin cancels most of the section's 9px flex gap so the note
      tucks directly under the "Themes" label rather than floating midway to the
@@ -2172,6 +2161,77 @@
   width: 65%;
 }
 
+/* Full Page / Recipe Card — same tile pattern as .recipe-photo-style above
+   (that one is the interaction/visual reference this was built from), just
+   two options instead of three. Used by both the desktop print-setup panel
+   and the mobile Size popover. */
+.print-format-toggle {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 8px;
+}
+
+.print-format-toggle__tile {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 7px;
+  padding: 10px 6px 8px;
+  border: 1px solid var(--cp-line);
+  border-radius: 10px;
+  background: var(--cp-card);
+  cursor: pointer;
+}
+
+.print-format-toggle__tile.is-active {
+  border-color: var(--cp-selected-border);
+  background: var(--cp-selected-fill);
+  box-shadow: var(--cp-selected-ring);
+}
+
+.print-format-toggle__tile:has(input:focus-visible) {
+  outline: var(--cp-focus-ring);
+  outline-offset: var(--cp-focus-ring-offset);
+}
+
+.print-format-toggle__label {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: var(--cp-fs-label);
+  font-weight: 700;
+  line-height: 1.2;
+  text-align: center;
+  color: var(--cp-ink);
+}
+
+.print-format-toggle__tile.is-active .print-format-toggle__label {
+  color: var(--cp-selected-text);
+}
+
+/* Full Page is a tall portrait sheet; Recipe Card is a small landscape card
+   — the same aspect difference as the real output, so the illustration
+   doubles as an explanation. */
+.print-format-preview {
+  display: flex;
+  height: 42px;
+  align-items: center;
+  justify-content: center;
+}
+
+.print-format-preview__page {
+  width: 26px;
+  height: 36px;
+  border: 1px solid var(--cp-line-strong);
+  border-radius: 3px;
+  background: var(--cp-card);
+}
+
+.print-format-preview--card .print-format-preview__page {
+  width: 38px;
+  height: 24px;
+}
+
 .recipe-template-list {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -2246,29 +2306,47 @@
   mask-image: linear-gradient(to bottom, #000 74%, transparent);
 }
 
-.recipe-template-option__premium {
+/* The shared Pro indicator (components/ProBadge.tsx) — one consistent look
+   for "requires Pro" everywhere it appears (themes, card sizes, Add more
+   recipes, and any future gated control), so no surface invents its own
+   crown treatment. Same quiet neutral tokens as `.recipe-template-option__owned`
+   just below — a small, muted "here's what this is" mark rather than a
+   bright gold "buy this" flag. Deliberately not --cp-premium: a crown on
+   every gated control at full colour read as the editor selling itself, not
+   describing itself, and made the whole panel feel like an ad for its own
+   upgrade. */
+.pro-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  border: 1px solid var(--cp-line-strong);
+  border-radius: 999px;
+  background: var(--cp-surface-strong);
+  color: var(--cp-ink-soft);
+  font-size: var(--cp-fs-label);
+  font-weight: 700;
+  line-height: 1;
+}
+
+.pro-badge--overlay {
   position: absolute;
   top: 3px;
   right: 3px;
   z-index: 2;
-  display: inline-flex;
-  align-items: center;
   justify-content: center;
-  gap: 3px;
   min-width: 22px;
   height: 22px;
   padding: 0 6px;
-  /* Gold, which is neither accent — see --cp-premium in globals.css. "Costs
-     money" is its own meaning, and on clay it was the same colour as "is new"
-     sitting a few pixels away. Tint, edge and ink, the treatment this badge
-     had before I recoloured it. */
-  border: 1px solid var(--cp-premium);
-  border-radius: 999px;
-  background: var(--cp-premium-soft);
-  color: var(--cp-premium);
-  font-size: var(--cp-fs-label);
-  font-weight: 900;
-  line-height: 1;
+}
+
+.pro-badge--inline {
+  height: 20px;
+  padding: 2px 8px;
+}
+
+.pro-badge__label {
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
 }
 
 .recipe-template-option__owned {
@@ -2668,26 +2746,6 @@
   .recipe-mobile-settings-menu {
     gap: 12px;
     padding: 16px 16px calc(16px + env(safe-area-inset-bottom));
-  }
-
-  .recipe-mobile-size-menu__option {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 10px;
-    padding: 10px 12px;
-    border: 0;
-    border-radius: 10px;
-    background: transparent;
-    color: var(--cp-ink);
-    font-size: var(--cp-fs-caption);
-    font-weight: 700;
-    text-align: left;
-  }
-
-  .recipe-mobile-size-menu__option.is-active {
-    background: var(--cp-selected-fill);
-    color: var(--cp-selected-text);
   }
 
   .recipe-page-rail {
@@ -7930,8 +7988,9 @@ textarea.recipe-card__toc-title {
 }
 
 /* ── Unpaid print: mark it ─────────────────────────────────────────────────
-   The paywall on a premium theme, and on the cookbook, only ever changed a
-   button's label. But the deck on screen IS what a browser print captures, so
+   The paywall on a Pro-locked theme or card size, and on the cookbook, only
+   ever changed a button's label. But the deck on screen IS what a browser
+   print captures, so
    Cmd-P walked straight past both of them and produced the finished article —
    no watermark, nothing to distinguish it from a paid one. The gate was
    advisory, and the only thing enforcing it was that people hadn't thought to

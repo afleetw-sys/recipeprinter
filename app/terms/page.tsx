@@ -80,8 +80,11 @@ export default function TermsPage() {
           give nutritional, dietary, or medical advice.
         </p>
         <p>
-          Most of it is free to use, with no account required. Some features,
-          currently premium templates and the cookbook export, are paid.
+          Most of it is free to use, with no account required. The recipe-card
+          format — every print theme beyond the free ones, 4 by 6 card
+          printing, and the rest of the card toolkit — is a paid RecipePrinter
+          Pro subscription. The cookbook export is a separate, one-time paid
+          feature.
         </p>
       </LegalSection>
 
@@ -220,21 +223,44 @@ export default function TermsPage() {
 
       <LegalSection id="purchases" index={9} title="Purchases and pricing">
         <p>
-          Paid features are sold as one-time purchases, not subscriptions. There
-          is nothing to cancel and nothing that renews.
+          There are two kinds of paid feature. A cookbook export is a one-time
+          purchase: nothing to cancel, nothing that renews. RecipePrinter Pro is a
+          subscription, billed monthly or annually until you cancel it.
         </p>
         <LegalList>
           <li>
-            <strong>What a purchase unlocks.</strong> A cookbook purchase unlocks
-            the cookbook export for the specific project you bought it for. It is
-            not an account-wide entitlement, so a second cookbook is a second
-            purchase. This is shown at the point of sale, and it is worth being
-            certain of before you buy.
+            <strong>What a cookbook purchase unlocks.</strong> A cookbook purchase
+            unlocks the cookbook export for the specific project you bought it
+            for. It is not an account-wide entitlement, so a second cookbook is a
+            second purchase. This is shown at the point of sale, and it is worth
+            being certain of before you buy.
+          </li>
+          <li>
+            <strong>What RecipePrinter Pro unlocks.</strong> Pro is
+            account-wide: every print theme, 4 by 6 card printing, and the rest of
+            the recipe-card toolkit, for as long as the subscription is active.
+            It has no effect on a cookbook purchase, which stays a separate,
+            one-time purchase either way.
+          </li>
+          <li>
+            <strong>Billing and renewal.</strong> A Pro subscription renews
+            automatically at the end of each billing period — monthly or annual,
+            whichever you chose — until you cancel it. Canceling stops future
+            renewals; access continues through the end of the period you already
+            paid for. If a renewal payment fails, we may suspend Pro access until
+            it is resolved.
+          </li>
+          <li>
+            <strong>Managing or canceling Pro.</strong> Manage or cancel your
+            subscription from your account menu, which opens our payment
+            processor&apos;s own billing page for it. We do not put this behind a
+            support request.
           </li>
           <li>
             <strong>Price and tax.</strong> Prices are in US dollars and shown
             before you pay. Tax is added where it applies. We can change prices at
-            any time, but never for something you have already bought.
+            any time, but never for something you have already bought or for a
+            billing period you have already paid for.
           </li>
           <li>
             <strong>Payment.</strong> Payments are processed by Stripe through
@@ -242,17 +268,25 @@ export default function TermsPage() {
             payment itself.
           </li>
           <li>
-            <strong>Access.</strong> An unlock is tied to the account or browser
-            that bought it. Sign in before buying if you want it to follow you to
-            another device. If a purchase does not appear where you expect, email{" "}
-            <LegalContactLink /> with the address you paid from and we will sort
-            it out.
+            <strong>Access.</strong> A cookbook unlock is tied to the account or
+            browser that bought it; sign in before buying if you want it to
+            follow you to another device. RecipePrinter Pro requires a signed-in
+            account (so you have a durable way back to manage or cancel it) and
+            follows that account to any device you sign in on. If a purchase does
+            not appear where you expect, email <LegalContactLink /> with the
+            address you paid from and we will sort it out.
           </li>
           <li>
-            <strong>What you are buying.</strong> A digital file you generate
-            yourself: a PDF, ready to print. RecipePrinter does not print, bind, or
-            ship anything, and has no relationship with whatever printer or
-            print shop you take the file to.
+            <strong>What a cookbook export is.</strong> A digital file you
+            generate yourself: a PDF, ready to print. RecipePrinter does not
+            print, bind, or ship anything, and has no relationship with whatever
+            printer or print shop you take the file to.
+          </li>
+          <li>
+            <strong>Purchases made before RecipePrinter Pro existed.</strong> If
+            you previously bought an individual print theme, it remains yours —
+            we do not revoke a purchase because the product has since moved to a
+            subscription for new theme access.
           </li>
         </LegalList>
       </LegalSection>
@@ -260,17 +294,22 @@ export default function TermsPage() {
       <LegalSection id="refunds" index={10} title="Refunds">
         <p>
           If a paid feature does not do what we said it would, tell us at{" "}
-          <LegalContactLink /> within 14 days of the purchase and we will refund
-          it. We would rather refund you than argue about it.
+          <LegalContactLink /> within 14 days of the purchase or the most recent
+          renewal and we will refund it. We would rather refund you than argue
+          about it.
         </p>
         <p>
-          Because the product is a digital file delivered immediately, we may
-          decline a refund where the file was generated and worked as described
-          and you have simply changed your mind. Nothing here limits any refund or
-          cancellation right you have under the consumer law where you live,
-          including the statutory right of withdrawal for consumers in the EU and
-          UK. Where that right applies, asking us to generate the file
-          immediately may end it, and we will say so at the point of sale.
+          Because a cookbook export is a digital file delivered immediately, we
+          may decline a refund for one where the file was generated and worked
+          as described and you have simply changed your mind. Nothing here
+          limits any refund or cancellation right you have under the consumer
+          law where you live, including the statutory right of withdrawal for
+          consumers in the EU and UK. Where that right applies, asking us to
+          generate the file immediately may end it, and we will say so at the
+          point of sale. For RecipePrinter Pro, canceling stops future charges;
+          it does not itself refund a period already paid for, though we will
+          still make it right under the paragraph above if Pro did not work as
+          described.
         </p>
       </LegalSection>
 

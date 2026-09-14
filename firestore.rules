@@ -29,15 +29,22 @@ service cloud.firestore {
     // Recipe Printer fields carried on the shared CookPilot user document that
     // are server-owned by contract (docs/firebase-inventory.md): the admin role
     // is written by "server/admin only", `plusExpiresAt` by the "CookPilot
-    // backend", and the free-template claim fields by the
-    // `claimRecipePrinterFreeTemplate` callable. Nothing here is ever a client
-    // write, so the rules should say so.
+    // backend", the free-template claim fields by the
+    // `claimRecipePrinterFreeTemplate` callable, and `recipePrinterEntitlements`
+    // / `recipePrinterRevenueCatSyncedAt` by the RevenueCat webhook
+    // (CookPilot functions/src/recipePrinterRevenueCat.ts) — this is the map
+    // RecipePrinter Pro status is read from, so it must be exactly as
+    // unwritable by a signed-in client as the cookbook unlock doc below, or a
+    // client could `setDoc` itself an active Pro entitlement for free. Nothing
+    // here is ever a client write, so the rules should say so.
     function serverOwnedSharedUserFields() {
       return [
         "recipePrinterAdmin",
         "plusExpiresAt",
         "recipePrinterFreeTemplateGranted",
-        "recipePrinterFreeTemplateGrantedAt"
+        "recipePrinterFreeTemplateGrantedAt",
+        "recipePrinterEntitlements",
+        "recipePrinterRevenueCatSyncedAt"
       ];
     }
 

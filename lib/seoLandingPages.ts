@@ -285,7 +285,7 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
       {
         question: "Can I print several recipes in one go?",
         answer:
-          "Yes. Add as many recipes as you want and print them as one job. That is the difference between seven trips to the printer and one, which is most of the point when you're printing a week of dinners at once.",
+          "Yes, with RecipePrinter Pro. Add as many recipes as you want and print them as one job instead of one trip to the printer per recipe, which is most of the point when you're printing a week of dinners at once. A single recipe prints free, no account needed.",
       },
       {
         question: "What happens if the original page disappears?",
@@ -445,7 +445,7 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
       {
         question: "Can I put several recipes in one PDF?",
         answer:
-          "Yes. Add as many recipes as you want and save them in one go, and they arrive as one file with a recipe on each page rather than as a folder of separate downloads.",
+          "Yes, with RecipePrinter Pro. Add as many recipes as you want and save them in one go, and they arrive as one file with a recipe on each page rather than as a folder of separate downloads. A single recipe saves as a PDF free, no account needed.",
       },
       {
         question: "Can I make a PDF from a screenshot or a photo?",
@@ -486,15 +486,15 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
     intent: "Utility SEO",
     initialImportMode: "url",
     importSubmitLabel: "Make recipe card",
-    title: "Free Recipe Card Printer and Maker",
+    title: "Recipe Card Printer and Maker",
     description:
-      "A recipe card maker and printer: turn links, photos, screenshots, or text into printable recipe cards, including 4x6 and recipe-box-friendly layouts.",
+      "A recipe card maker and printer: turn links, photos, screenshots, or text into printable recipe cards, including 4x6 and recipe-box-friendly layouts. Importing and editing are free; 4x6 card printing is a RecipePrinter Pro feature.",
     h1: "Printable recipe card generator",
     // "recipe card printer" is the phrase this page's traffic actually arrives
     // on, and it is the one word the h1 and title both leave out.
     anchor: "Recipe card printer",
     lede:
-      "Whatever form the recipe is in, it comes back as a 4 by 6 card with the ingredients and steps already set, ready for the box.",
+      "Whatever form the recipe is in, it comes back as a 4 by 6 card with the ingredients and steps already set, ready for the box — a RecipePrinter Pro feature, free to preview on your own recipe before you print it.",
     howTo: [
       {
         name: "Add the recipe",
@@ -502,11 +502,11 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
       },
       {
         name: "Switch to the card size",
-        text: "In print setup, choose the 4 by 6 card instead of a full page. Every recipe waiting to print changes with it.",
+        text: "In print setup, choose the 4 by 6 card instead of a full page. Every recipe waiting to print changes with it. Card printing is a RecipePrinter Pro feature; you can preview it free before printing.",
       },
       {
         name: "Pick a theme",
-        text: "Themes change the card's type, borders, and how the photo sits. Several are free, and the premium ones are a one-off purchase each.",
+        text: "Themes change the card's type, borders, and how the photo sits. Two are free; every other theme comes with RecipePrinter Pro.",
       },
       {
         name: "Print and file it",
@@ -518,13 +518,13 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
         heading: "Sized for the box it's going in",
         image: "card-in-box",
         body:
-          "A 4 by 6 card is the size a standard recipe box takes, so what comes off your printer drops straight into the box or an index-card binder. Cut lines give you a trim guide when you print on card stock, and the type stays large enough to read from across the counter.",
+          "A 4 by 6 card is the size a standard recipe box takes, so what comes off your printer drops straight into the box or an index-card binder. Cut lines give you a trim guide when you print on card stock, and the type stays large enough to read from across the counter. Card printing comes with RecipePrinter Pro ($4.99 a month or $39.99 a year); importing and full-page printing stay free.",
       },
       {
         heading: "Change the look, keep the recipe",
         image: "multi-themes",
         body:
-          "A theme changes a card's type, its border, and how the photo sits, without touching the recipe underneath. Switch themes and every card in the batch follows, so a stack printed in one go still looks like a set rather than a pile of odds and ends.",
+          "A theme changes a card's type, its border, and how the photo sits, without touching the recipe underneath. Switch themes and every card in the batch follows, so a stack printed in one go still looks like a set rather than a pile of odds and ends. Two themes are free; the rest come with Pro.",
       },
     ],
     examples: ["caprese", "korean", "pesto"],
@@ -547,7 +547,7 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
       {
         question: "Can I print a whole stack at once?",
         answer:
-          "Yes. Add as many recipes as you like and print them in one job. The card size and the theme apply to every recipe waiting to print, so what comes out of the printer matches.",
+          "Yes, with RecipePrinter Pro. Add as many recipes as you like and print them in one job. The card size and the theme apply to every recipe waiting to print, so what comes out of the printer matches.",
       },
     ],
     links: [
@@ -738,7 +738,7 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
       {
         question: "Can I print a whole board at once?",
         answer:
-          "You add the pins one at a time, and then print them together as a single job. So it's not one paste, but it is one trip to the printer instead of fifteen, and the card size and theme apply to every recipe waiting to print.",
+          "You add the pins one at a time, and then print them together as a single job with RecipePrinter Pro. So it's not one paste, but it is one trip to the printer instead of fifteen, and the card size and theme apply to every recipe waiting to print.",
       },
       {
         question: "Will the printed card still show where the recipe came from?",
@@ -834,7 +834,7 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
       {
         question: "Can I print several Instagram recipes at once?",
         answer:
-          "Yes. Add them one at a time, then print them together as a single job. The card size and the theme apply to every recipe waiting to print, so a week of dinners comes out matching.",
+          "Yes, with RecipePrinter Pro. Add them one at a time, then print them together as a single job. The card size and the theme apply to every recipe waiting to print, so a week of dinners comes out matching.",
       },
       {
         question: "Can I still get the recipe if the post is gone?",
@@ -1079,7 +1079,7 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
       },
       {
         name: "Choose a card or a page",
-        text: "A 4 by 6 card for the recipe box, or a letter page for a binder. Print the batch in one job, or save it as a PDF.",
+        text: "A 4 by 6 card for the recipe box, or a letter page for a binder. Print the whole batch in one job with RecipePrinter Pro, or save each recipe as a PDF for free.",
       },
     ],
     featureSections: [
@@ -1116,7 +1116,7 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
       {
         question: "Can I print my whole Paprika library at once?",
         answer:
-          "You can, though most people don't want to. The export arrives as a list to choose from, so you can add just the recipes you actually cook to the print queue and print those in one job.",
+          "You can, with RecipePrinter Pro, though most people don't want to. The export arrives as a list to choose from, so you can add just the recipes you actually cook to the print queue and print those in one job.",
       },
       {
         question: "Do the notes and categories I added come across?",
@@ -1322,7 +1322,7 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
       {
         question: "Do I need an account to keep a collection together?",
         answer:
-          "Not to print. Without an account your recipes stay in the browser for that session, which is all you need to print a batch and file it. Sign in and the project is saved, so you can come back later and add to the same collection instead of starting again.",
+          "Not to print one at a time. Without an account your recipes stay in the browser for that session, which is all you need to print single recipes and file them. Printing several in one job needs RecipePrinter Pro. Sign in and the project is saved, so you can come back later and add to the same collection instead of starting again.",
       },
     ],
     links: [
@@ -1611,7 +1611,7 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
         heading: "The same first step, a different second one",
         proof: "before-after",
         body:
-          "Just the Recipe keeps the cleaned-up recipe on a screen, with serving adjustments and printing on its Premium plan. RecipePrinter is built for the paper end of it: a card for the box, a full page for the binder, or a batch of both for the week, printed free without an account.",
+          "Just the Recipe keeps the cleaned-up recipe on a screen, with serving adjustments and printing on its Premium plan. RecipePrinter is built for the paper end of it: a full page for the binder, printed free without an account, or a recipe-box card and a batch of several at once with RecipePrinter Pro.",
       },
       {
         heading: "Recipes that never had a link",
@@ -1623,7 +1623,7 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
         heading: "Card or page, cut lines, several at once",
         image: "card-in-box",
         body:
-          "Choose a 4 by 6 card sized for a recipe box or a full letter page, pick a theme, turn on cut lines for card stock, and print several recipes in one job. Printing is free and works without an account, so you can try it on the recipe you were about to print anyway.",
+          "Choose a full letter page or a 4 by 6 card sized for a recipe box, pick a theme, turn on cut lines for card stock, and print several recipes in one job. Full-page printing is free and works without an account; the card format, themes, and printing several at once are RecipePrinter Pro, previewable free before you buy.",
       },
     ],
     comparison: {
@@ -1645,10 +1645,10 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
         {
           title: "Printing",
           rows: [
-            { feature: "Printing a recipe", us: "Free, no account", them: "Paid plan" },
-            { feature: "Recipe card sizes and themes", us: true, them: false },
-            { feature: "Cut lines for card stock", us: true, them: false },
-            { feature: "Printing several recipes in one job", us: true, them: false },
+            { feature: "Printing a full-page recipe", us: "Free, no account", them: "Paid plan" },
+            { feature: "Recipe card sizes and themes", us: "RecipePrinter Pro", them: false },
+            { feature: "Cut lines for card stock", us: "RecipePrinter Pro", them: false },
+            { feature: "Printing several recipes in one job", us: "RecipePrinter Pro", them: false },
           ],
         },
         {
@@ -1675,7 +1675,7 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
       {
         question: "What does each one cost?",
         answer:
-          "Just the Recipe is free to read recipes and to save up to 20; printing, unlimited saves and serving adjustments are on Premium. RecipePrinter is free to print, with no account and no limit, and sells premium themes and cookbooks one at a time, never on subscription.",
+          "Just the Recipe is free to read recipes and to save up to 20; printing, unlimited saves and serving adjustments are on Premium. RecipePrinter is free to print full-page recipes, with no account and no limit. The recipe-card format — every theme, 4x6 cards, the card toolkit — is RecipePrinter Pro, $4.99 a month or $39.99 a year. Cookbooks are separate: $19.99 per book, paid once.",
       },
       {
         question: "Can I bring my saved Just the Recipe recipes over?",
@@ -1746,9 +1746,9 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
         {
           title: "What you can print",
           rows: [
-            { feature: "A 4 by 6 card for a recipe box, with cut lines", us: true, them: false },
+            { feature: "A 4 by 6 card for a recipe box, with cut lines", us: "RecipePrinter Pro", them: false },
             { feature: "A full letter page for a binder", us: true, them: false },
-            { feature: "Printing it yourself", us: "Free, no account", them: true },
+            { feature: "Printing it yourself", us: "Free for full-page; Pro for cards", them: true },
           ],
         },
         {
@@ -1777,7 +1777,7 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
       {
         question: "What does each one cost?",
         answer:
-          "ReciScan is free to use, with a $4.99 monthly subscription for covers and extras, and printed books starting at $18. RecipePrinter is free to print. Premium themes are $1.99 and yours for life, and a cookbook is $19.99 for each one you build. Neither renews.",
+          "ReciScan is free to use, with a $4.99 monthly subscription for covers and extras, and printed books starting at $18. RecipePrinter is free to print full-page recipes, with no account. The recipe-card format — every theme, 4x6 cards, and the card toolkit — is RecipePrinter Pro: $4.99 a month or $39.99 a year. A cookbook is separate: $19.99 for each one you build, paid once.",
       },
       {
         question: "Can RecipePrinter send me a printed cookbook?",

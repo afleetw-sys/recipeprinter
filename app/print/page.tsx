@@ -30,14 +30,11 @@ import { Checkbox, CheckboxGroup } from "@/components/Controls";
 import { RecipeLoadingState } from "@/components/RecipeLoadingState";
 import { useModalFocus } from "@/lib/useModalFocus";
 import { navigateAfterOverlayHistory, useBackDismiss } from "@/lib/useBackDismiss";
-import {
-  PRINT_CARD_SIZE_OPTIONS,
-  type PrintCardSize,
-  type RecipePrintTemplate,
-} from "@/components/RecipeCardPrint";
+import type { PrintCardSize, RecipePrintTemplate } from "@/components/RecipeCardPrint";
 import { PHOTO_STYLE_OPTIONS } from "@/components/print/photoStyle";
 import { MobileStructureSheet } from "@/components/print/MobileStructureSheet";
 import { PrintConfigPanel } from "@/components/print/PrintConfigPanel";
+import { PrintFormatToggle } from "@/components/print/PrintFormatToggle";
 import { PageRail, type RailSortMode } from "@/components/print/PageRail";
 import { PrintDeck, pendingSlotIndexIn } from "@/components/print/PrintDeck";
 import {
@@ -75,6 +72,12 @@ import {
 } from "@/lib/printProjects";
 import { adoptAnonymousProject, readAdoptionManifest } from "@/lib/anonymousProjectAdoption";
 import { forgetSaveIntent, rememberSaveIntent, takeSaveIntent } from "@/lib/saveIntent";
+import {
+  forgetProUpgradeIntent,
+  rememberProUpgradeIntent,
+  takeProUpgradeIntent,
+} from "@/lib/proUpgradeIntent";
+import type { ProBillingCycle } from "@/lib/proProduct";
 import { loadLocalProject } from "@/lib/localProjects";
 import { printDocumentTitle } from "@/lib/printDocumentTitle";
 import { useRecipeInlineEditor } from "@/lib/useRecipeInlineEditor";
@@ -84,6 +87,14 @@ import { PAGE_DIMS } from "@/lib/printGeometry";
 import { useDeckScroller } from "@/lib/useDeckScroller";
 import { usePremiumTemplatePurchase } from "@/lib/usePremiumTemplatePurchase";
 import { useCookbookPurchase } from "@/lib/useCookbookPurchase";
+import { useProPurchase } from "@/lib/useProPurchase";
+import { ProUpgradeDialog } from "@/components/ProUpgradeDialog";
+import { ProBadge } from "@/components/ProBadge";
+import {
+  canUseCardSize,
+  hasMultiRecipeEntitlement,
+  hasTemplateOrProEntitlement,
+} from "@/lib/recipePrinterPurchases";
 import { COOKBOOK_ENABLED } from "@/lib/cookbookProduct";
 import {
   DEFAULT_COOKBOOK_PRESET_ID,
@@ -180,7 +191,7 @@ function sectionRecipeImages(section: Section): string[] {
 
 
 // Fresh cookbooks open on a premium theme (unlocked inside the $19.99 book, so
-// no paywall — see `templateLocked`), rotating through them so the first view
+// no paywall — see `themeLocked`), rotating through them so the first view
 // looks designed rather than the plain Classic default. The rotation index
 // persists in localStorage so each new book lands on the next theme.
 const COOKBOOK_TEMPLATE_ROTATION: RecipePrintTemplate[] = [
@@ -2570,7 +2581,12 @@ export default function PrintPage() {
 
     // Says what the wait is FOR. Nothing is being kept when there was nothing
     // made, and claiming otherwise would be the same kind of lie the flight was.
-    setLeavingHome(printable ? "Saving your recipes…" : "Going home…");
+    // A confirmed leave is the cook having just told the "Keep this project?"
+    // dialog no, so "Saving your recipes…" on the way out of that would be the
+    // dialog's own answer contradicting itself — the crash-net write below still
+    // runs (nothing here changes what `fileProjectLocally` is for), it is just
+    // never described as a save the cook asked for.
+    setLeavingHome(printable && !options?.confirmed ? "Saving your recipes…" : "Going home…");
     if (!printable) {
       goHome();
       return;
@@ -2794,18 +2810,33 @@ export default function PrintPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [cookPilotUser?.uid, projectAttachChecked, projectLoading, items, projectMeta.hydrated]);
 
+  // Resumes checkout once an account exists, for a cook who chose a Pro plan
+  // and was then sent through a phone's sign-in redirect — which reloads the
+  // page and would otherwise lose the plan they already chose inside
+  // `ProUpgradeDialog`. A same-tab sign-in (popup or email/password) never
+  // reaches this effect at all: the dialog calls `onChoose` itself the
+  // moment `CookPilotLoginForm` reports success, with no reload in between.
+  // No project to wait on here, unlike the save intent above — just an
+  // account.
+  useEffect(() => {
+    if (!cookPilotUser) return;
+    const intent = takeProUpgradeIntent();
+    if (!intent) return;
+    continueProCheckout(intent.cycle);
+    // The uid, not the User object — see the save-intent effect above.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [cookPilotUser?.uid]);
+
   const {
     revenueCatUserId,
     customerInfo,
-    purchaseBusy,
+    setCustomerInfo,
     claimBusy,
     freeTemplateBannerDismissed,
     setFreeTemplateBannerDismissed,
     selectedPremiumTemplate,
-    selectedTemplateLocked,
     hasUnclaimedFreeTemplate,
     canClaimSelectedTemplateFree,
-    unlockTemplateAndPrint,
     claimTemplateAndPrint,
   } = usePremiumTemplatePurchase({
     items,
@@ -2817,9 +2848,6 @@ export default function PrintPage() {
     showToast,
     clearToast: () => setToastMessage(null),
     printNow,
-    onFreshPurchase: () => {
-      postPrintActionRef.current = cookPilotUser ? "none" : "protect-purchase";
-    },
   });
 
   const {
@@ -2840,15 +2868,134 @@ export default function PrintPage() {
     onFreshPurchase: () => undefined,
   });
 
-  // Every theme is included with the cookbook purchase, so the per-template
-  // paywall is suppressed while in cookbook mode — the cookbook unlock is the
-  // only gate there. Switching back to recipe cards restores normal gating.
-  const templateLocked = selectedTemplateLocked && !projectMeta.meta.cookbookMode;
+  const { proBusy, purchaseProAndContinue } = useProPurchase({
+    revenueCatUserId,
+    customerInfo,
+    setCustomerInfo,
+    cookPilotUser,
+    showToast,
+    clearToast: () => setToastMessage(null),
+    // Unlike a template purchase, Pro checkout only ever runs signed in (see
+    // `ProUpgradeDialog`'s sign-in step and `continueProCheckout`), so there
+    // is no signed-out buyer to prompt for an account afterward — this
+    // always resolves to "none".
+    onFreshPurchase: () => {
+      postPrintActionRef.current = "none";
+    },
+  });
+  const [showProUpgradeDialog, setShowProUpgradeDialog] = useState(false);
+  // State, not a ref: the dialog's title/description read this during render
+  // (see `proUpgradeLockReasons` below) to name the actual reason it opened,
+  // which needs a re-render to show up.
+  const [proUpgradeTrigger, setProUpgradeTrigger] = useState<string>("print_button");
 
+  // Every theme (and every Pro-only card size) is included with the cookbook
+  // purchase, so neither paywall applies while in cookbook mode — the
+  // cookbook unlock is the only gate there. Switching back to recipe cards
+  // restores normal gating.
+  const themeLocked =
+    Boolean(selectedPremiumTemplate) &&
+    !hasTemplateOrProEntitlement(customerInfo, template) &&
+    !cookbookMode;
+  const cardSizeLocked = !cookbookMode && !canUseCardSize(customerInfo, cardSize);
+  // Printing more than one recipe in one job (outside a cookbook, which has
+  // its own separate purchase model) is its own Pro-gated capability — see
+  // `hasMultiRecipeEntitlement`. There's nothing to preview here the way a
+  // locked theme or card size can be: `openAddRecipeBelow` refuses to add a
+  // second recipe at all rather than adding it and only blocking Print.
+  const recipeCount = items?.filter((item) => Boolean(item.recipe)).length ?? 0;
+  const multiRecipeLocked =
+    !cookbookMode && !hasMultiRecipeEntitlement(customerInfo) && recipeCount > 1;
+  // Whether the NEXT add would be the locked one — reused by `openAddRecipeBelow`
+  // (the actual gate) and by the rail's badge (just the visual mark), so the
+  // two can never disagree about when Add more recipes is restricted.
+  const multiRecipeAddLocked =
+    !cookbookMode && recipeCount >= 1 && !hasMultiRecipeEntitlement(customerInfo);
+  // All three resolve to the same purchase now (RecipePrinter Pro) — see
+  // lib/purchaseAccess.ts's purchaseGate.
+  const proLocked = themeLocked || cardSizeLocked || multiRecipeLocked;
+  // One place to name which lock(s) are actually in effect — reused by
+  // analytics (`pro_feature_encountered`/`pro_feature_used`) and by the
+  // upgrade dialog's own title/description below, so none of them can report
+  // or describe a different reason for the same click. Multi-recipe has two
+  // triggers: the print job already holding more than one recipe
+  // (`multiRecipeLocked`), or the cook just tried to add a second one — at
+  // that moment the job still only holds one recipe, so `multiRecipeLocked`
+  // alone wouldn't see it and the "add_more_recipes" trigger stands in for it
+  // (see `openAddRecipeBelow`).
+  function activeProLockReasons(trigger: string): Array<"theme" | "card_size" | "multi_recipe"> {
+    const reasons: Array<"theme" | "card_size" | "multi_recipe"> = [];
+    if (themeLocked) reasons.push("theme");
+    if (cardSizeLocked) reasons.push("card_size");
+    if (multiRecipeLocked || trigger === "add_more_recipes") reasons.push("multi_recipe");
+    return reasons;
+  }
+  function proLockFeature(): "batch_print" | "card_size" | "theme" {
+    const reasons = activeProLockReasons("print_button");
+    if (reasons.includes("multi_recipe")) return "batch_print";
+    return reasons.includes("card_size") ? "card_size" : "theme";
+  }
+  // Names the actual reason(s) this dialog opened rather than a generic
+  // pitch, and says so plainly when more than one applies at once (a locked
+  // theme AND a locked card size, say) instead of silently picking whichever
+  // happens to be checked first.
+  const proUpgradeLockReasons = activeProLockReasons(proUpgradeTrigger);
+  const proUpgradeTitle =
+    proUpgradeLockReasons.length === 1 && proUpgradeLockReasons[0] === "multi_recipe"
+      ? "Print multiple recipes with Pro"
+      : "Print with RecipePrinter Pro";
+  const proUpgradeDescription =
+    proUpgradeLockReasons.length > 1
+      ? "A few things here are part of RecipePrinter Pro."
+      : proUpgradeLockReasons[0] === "multi_recipe"
+        ? "Printing more than one recipe in the same job is part of RecipePrinter Pro."
+        : proUpgradeLockReasons[0] === "card_size"
+          ? "4×6 recipe cards are part of RecipePrinter Pro."
+          : proUpgradeLockReasons[0] === "theme"
+            ? "This theme is part of RecipePrinter Pro."
+            : "Unlock the full RecipePrinter Pro toolkit.";
 
+  /**
+   * Opens the upgrade dialog — plan choice first, for everyone, signed in or
+   * not. `ProUpgradeDialog` itself turns into sign-in in place if the cook
+   * picks a plan while signed out (see `onSignInRequired`/`onChoose` below);
+   * this function no longer branches on sign-in state at all.
+   */
+  function openProUpgradeDialog(trigger: string) {
+    setProUpgradeTrigger(trigger);
+    track("paywall_viewed", { trigger });
+    setShowProUpgradeDialog(true);
+  }
+
+  /**
+   * A plan was chosen while signed out — `ProUpgradeDialog` is about to swap
+   * to its own sign-in step, and checkout will start automatically once that
+   * succeeds (see `onAuthenticated` inside the dialog, and the intent-
+   * spending effect below for the case where sign-in reloads the page).
+   */
+  function handleProSignInRequired(cycle: ProBillingCycle) {
+    rememberProUpgradeIntent(proUpgradeTrigger, cycle);
+  }
+
+  /** Starts checkout for `cycle` — called by `ProUpgradeDialog` once it's
+   *  known the cook is signed in (immediately, or right after signing in
+   *  inside the dialog's own sign-in step). Settles to every outcome the
+   *  same way: close the dialog and return to the editor; only a completed
+   *  purchase also resumes the print that triggered the upgrade. */
+  function continueProCheckout(cycle: ProBillingCycle) {
+    void purchaseProAndContinue(cycle, (outcome) => {
+      setShowProUpgradeDialog(false);
+      if (outcome !== "purchased" && outcome !== "already-active") return;
+      if (outcome === "purchased") {
+        track("pro_feature_used", { feature: proLockFeature() });
+        if (cookPilotUser) void handleSaveProject();
+      }
+      void handlePrint();
+    });
+  }
 
   async function handlePrint() {
-    if (purchaseBusy || claimBusy || cookbookPurchaseBusy) return;
+    if (claimBusy || cookbookPurchaseBusy || proBusy) return;
     if (!printLayoutReady) {
       // Remember it and let the effect below fire once the layout settles,
       // instead of turning them away — the button shows a spinner meanwhile.
@@ -2863,13 +3010,13 @@ export default function PrintPage() {
       // the closed-over `cookbookLocked` is still true. Without this second
       // check the re-run would re-enter the purchase and recurse forever.
       cookbookLocked: cookbookLocked && !isCookbookProjectUnlocked(cookbookProjectId),
-      templateLocked: Boolean(selectedPremiumTemplate && templateLocked),
+      proLocked,
     });
     if (gate === "unlock-cookbook") {
       // No interstitial paywall dialog — a click on Export goes straight to
       // checkout, which states the price and collects the email itself (same
-      // shape as the premium-template branch below). A completed purchase
-      // re-runs handlePrint, which now clears the gate and exports. Signed-out
+      // shape as the Pro branch below). A completed purchase re-runs
+      // handlePrint, which now clears the gate and exports. Signed-out
       // buying is intentionally allowed; the unlock is backed up to Firestore
       // as soon as the buyer has an account (at purchase if signed in, else on
       // the adopt-on-sign-in path).
@@ -2888,16 +3035,29 @@ export default function PrintPage() {
       });
       return;
     }
-    if (gate === "unlock-template" && selectedPremiumTemplate) {
-      // No interstitial paywall dialog anymore — the price is stated inline under
-      // Themes, and the button already reads "Unlock & Print", so a click goes
-      // straight to the purchase (or a silent free claim for eligible CookPilot
-      // members, so they're never charged). Both paths print on success.
-      if (canClaimSelectedTemplateFree) {
+    if (gate === "unlock-pro") {
+      // A CookPilot-member free claim only ever unlocks a theme, never a
+      // Pro-only card size or multi-recipe printing — so if a locked theme is
+      // the only reason this is gated, try that free, silent path first
+      // (nobody is charged). If something else is what's actually locked,
+      // this either does nothing useful (no unclaimed free template) or
+      // claims the theme and then correctly re-gates on the remaining reason
+      // when handlePrint re-runs.
+      if (themeLocked && canClaimSelectedTemplateFree && selectedPremiumTemplate) {
         void claimTemplateAndPrint(selectedPremiumTemplate);
-      } else {
-        void unlockTemplateAndPrint(selectedPremiumTemplate);
+        return;
       }
+      // A real Pro upsell screen, unlike the cookbook's single-purchase
+      // straight-to-checkout flow — Pro unlocks many things at once, so it
+      // earns a dialog instead of firing checkout on the spot. The button
+      // itself never reveals this in its label (always "Print") — pressing
+      // it is what decides whether the job goes straight through or opens
+      // this. See components/ProUpgradeDialog.tsx.
+      track("pro_feature_encountered", {
+        feature: proLockFeature(),
+        source: "print_button",
+      });
+      openProUpgradeDialog("print_button");
       return;
     }
     // An unlocked cookbook export lands on the "Print your cookbook" screen,
@@ -3017,7 +3177,7 @@ export default function PrintPage() {
    * a locked premium theme or an unpurchased cookbook. Nothing about the
    * on-screen preview changes; this only marks the paper.
    */
-  const printWatermarked = templateLocked || cookbookLocked;
+  const printWatermarked = proLocked || cookbookLocked;
 
   /**
    * What the header calls this project. Inherits the cookbook's cover title
@@ -3032,7 +3192,7 @@ export default function PrintPage() {
     Math.max((items?.length ?? 0) - 1, 0),
   );
 
-  const printBlocked = purchaseBusy || claimBusy || cookbookPurchaseBusy;
+  const printBlocked = proBusy || claimBusy || cookbookPurchaseBusy;
   // `printAwaitingBrowser` is the second or so between asking to print and
   // knowing whether the browser took it. Nothing is on screen during that gap
   // when the answer turns out to be no, and a button that looks untouched is
@@ -3059,10 +3219,10 @@ export default function PrintPage() {
   // actually waiting, and `handlePrint` clears the flag as it proceeds so this
   // fires once, not on every subsequent settle.
   useEffect(() => {
-    if (printPending && printLayoutReady && !purchaseBusy && !cookbookPurchaseBusy) {
+    if (printPending && printLayoutReady && !proBusy && !cookbookPurchaseBusy) {
       void handlePrintRef.current();
     }
-  }, [printPending, printLayoutReady, purchaseBusy, cookbookPurchaseBusy]);
+  }, [printPending, printLayoutReady, proBusy, cookbookPurchaseBusy]);
 
   const moveProjectItem = projectMeta.moveItem;
 
@@ -3864,14 +4024,6 @@ export default function PrintPage() {
       const postPrintAction = postPrintActionRef.current;
       postPrintActionRef.current = "donate";
       const prompt = postPrintPrompt(postPrintAction, !shouldShowPostPrintDialog());
-      // Only a fresh premium-template purchase can open the protection dialog
-      // automatically. Cookbook purchases use the persistent in-page banner,
-      // which is visible without interrupting the editing/export flow.
-      if (prompt === "protect-purchase" && !cookbookMode) {
-        setCookPilotLoginReason("purchase");
-        window.setTimeout(() => setShowCookPilotLogin(true), 150);
-        return;
-      }
       // The cookbook's own post-export screen replaces the donate/feedback nudge
       // (afterprint fires whether the user saved, printed, or cancelled, so it
       // can't stand in for "you exported a cookbook"). Only plain-card prints
@@ -3969,7 +4121,26 @@ export default function PrintPage() {
       gridMax: 9,
     };
   };
+  /**
+   * The one place every "add a recipe" entry point goes through — the rail's
+   * header button, the mobile toolbar's Recipe button, and the empty-deck's
+   * own Add recipes button all call this rather than opening the dialog
+   * directly, so the multi-recipe Pro gate lives in exactly one place rather
+   * than being re-checked (and possibly re-derived slightly differently) at
+   * each button. The gate only applies once there is already a recipe to add
+   * a second one to — an empty project's first recipe is always free — and
+   * never in cookbook mode, which has always supported many recipes under
+   * its own, separate per-project purchase (see hasMultiRecipeEntitlement's
+   * doc comment). A cookbook's own per-chapter "Add recipes" button bypasses
+   * this function entirely (it sets the pending-add state directly), which
+   * is correct for the same reason.
+   */
   function openAddRecipeBelow(navItem: NavItem | null = activeNavItem) {
+    if (multiRecipeAddLocked) {
+      track("pro_feature_encountered", { feature: "batch_print", source: "add_more_recipes" });
+      openProUpgradeDialog("add_more_recipes");
+      return;
+    }
     const location = sectionForNavItem(navItem);
     const anchorId = navItem?.kind === "recipe" || navItem?.kind === "divider" ? navItem.recipeId : null;
     const insertionIndex = navItem?.kind === "recipe"
@@ -4922,11 +5093,18 @@ export default function PrintPage() {
                   ) : (
                     <PrintIcon size={ICON_SIZE.md} />
                   )}
-                  {/* Shorter than "Purchase & Print", and still says that money
-                      is involved — which it has to. A button that charges has
-                      to say so before it is pressed, however clearly the price
+                  {/* "Buy & Print" still says money is involved for a cookbook
+                      that hasn't been paid for — a button that charges has to
+                      say so before it is pressed, however clearly the price
                       was stated on the way in: someone reopening a book days
-                      later has not just read that dialog.
+                      later has not just read that dialog. RecipePrinter Pro is
+                      different on purpose: the label never reveals whether the
+                      current setup is Pro-locked. Pressing "Print" either
+                      prints or opens the upgrade flow, decided by the same
+                      gate this button's onClick already calls — see
+                      `purchaseGate` in handlePrint. A locked setup is already
+                      marked where the choice was made (the theme, the card
+                      size, Add more recipes), not re-announced here.
 
                       The price is deliberately NOT in the label. `cookbookPrice`
                       is a hardcoded fallback, not the customer's price — see
@@ -4936,11 +5114,7 @@ export default function PrintPage() {
                       the wrong currency and the wrong amount to anyone outside
                       the US, and would go stale the moment the product's price
                       changes. Checkout states the authoritative price. */}
-                  {cookbookLocked
-                    ? "Buy & Print"
-                    : templateLocked
-                      ? "Unlock & Print"
-                      : "Print"}
+                  {cookbookLocked ? "Buy & Print" : "Print"}
                 </button>
               </>
             ) : undefined
@@ -5041,6 +5215,8 @@ export default function PrintPage() {
           )}
         </button>
         <PageRail
+          hasRecipes={Boolean(items?.length)}
+          multiRecipeAddLocked={multiRecipeAddLocked}
           railScrollRef={railScrollRef}
           railDrag={railDrag}
           railSelection={railSelection}
@@ -5259,6 +5435,7 @@ export default function PrintPage() {
                 <PlusIcon size={ICON_SIZE.lg} />
               </span>
               Recipe
+              {multiRecipeAddLocked && <ProBadge variant="inline" />}
             </button>
             {/* Pages/structure — the mobile stand-in for the drag-only desktop
                 rail, which is hidden on touch. Cookbook mode only. */}
@@ -5300,25 +5477,19 @@ export default function PrintPage() {
                   Size
                 </button>
                 {sizeMenuOpen && (
-                  <div className="recipe-mobile-size-menu" role="menu" aria-label="Card size">
-                    {PRINT_CARD_SIZE_OPTIONS.map((option) => (
-                      <button
-                        key={option.id}
-                        type="button"
-                        role="menuitemradio"
-                        aria-checked={cardSize === option.id}
-                        className={`recipe-mobile-size-menu__option ${
-                          cardSize === option.id ? "is-active" : ""
-                        }`}
-                        onClick={() => {
-                          setCardSize(option.id);
-                          setSizeMenuOpen(false);
-                        }}
-                      >
-                        {option.label}
-                        {cardSize === option.id && <CheckIcon size={ICON_SIZE.xs} />}
-                      </button>
-                    ))}
+                  <div className="recipe-mobile-size-menu">
+                    {/* Same component the desktop panel uses (PrintFormatToggle)
+                        — one card-size picker, not two that could drift apart.
+                        Closes itself on pick, since this is a transient popover
+                        rather than a persistent panel. */}
+                    <PrintFormatToggle
+                      cardSize={cardSize}
+                      setCardSize={(next) => {
+                        setCardSize(next);
+                        setSizeMenuOpen(false);
+                      }}
+                      customerInfo={customerInfo}
+                    />
                   </div>
                 )}
               </div>
@@ -5388,7 +5559,7 @@ export default function PrintPage() {
             disabled={printBlocked}
           >
             {printSpinner ? <SpinnerIcon size={ICON_SIZE.md} /> : <PrintIcon size={ICON_SIZE.md} />}
-            {cookbookLocked ? "Purchase & Print" : templateLocked ? "Unlock & Print" : "Print"}
+            {cookbookLocked ? "Purchase & Print" : "Print"}
           </button>
         </div>
 
@@ -5511,9 +5682,8 @@ export default function PrintPage() {
            project Projects has never shown. */
         description={
           <>
-            Signing in keeps this project in your account, so it is there on your phone and
-            any other computer. Leaving without one means it is not saved, and the workspace
-            starts empty next time.
+            Signing in saves it to your account, so it&apos;s there on your phone and any
+            computer. Otherwise it&apos;s not saved, and the workspace starts empty next time.
           </>
         }
         confirmLabel="Sign in and save it"
@@ -5556,6 +5726,24 @@ export default function PrintPage() {
         }}
       />
       <CookbookBuildReveal open={cookbookBuilding} />
+      {showProUpgradeDialog && (
+        <ProUpgradeDialog
+          busy={proBusy}
+          cookPilotUser={cookPilotUser}
+          title={proUpgradeTitle}
+          description={proUpgradeDescription}
+          onClose={() => {
+            // Closing after picking a plan but before finishing sign-in must
+            // drop the stored intent — otherwise signing in later through an
+            // unrelated flow (e.g. pressing Save) would surprise-launch a
+            // checkout for a plan the cook never actually committed to.
+            forgetProUpgradeIntent();
+            setShowProUpgradeDialog(false);
+          }}
+          onSignInRequired={handleProSignInRequired}
+          onChoose={continueProCheckout}
+        />
+      )}
       <CookbookReadyDialog
         open={showCookbookPrintDialog}
         justPurchased={cookbookJustPurchased}

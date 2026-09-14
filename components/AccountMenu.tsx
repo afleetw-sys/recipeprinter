@@ -15,9 +15,19 @@ import { useMenuDismiss } from "@/lib/useMenuDismiss";
 import { COOKBOOK_ENABLED } from "@/lib/cookbookProduct";
 import type { PrintProjectSummary } from "@/types/recipe";
 import type { User } from "firebase/auth";
+import type { CustomerInfo } from "@revenuecat/purchases-js";
 import { IconButton } from "@/components/Controls";
 import { RecipeLoadingState } from "@/components/RecipeLoadingState";
+import { ProBadge } from "@/components/ProBadge";
+import { ProUpgradeDialog } from "@/components/ProUpgradeDialog";
 import { withTimeout } from "@/lib/withTimeout";
+import { track } from "@/lib/analytics";
+import {
+  loadRecipePrinterCustomerInfo,
+  proManagementUrl,
+  proSubscriptionDetails,
+} from "@/lib/recipePrinterPurchases";
+import { useProPurchase } from "@/lib/useProPurchase";
 
 // Two initials from the signed-in identity — first+last of a display name, else
 // the first letter of the email — so a logged-in avatar shows who's signed in.
@@ -272,6 +282,85 @@ export default function AccountMenu({
     };
   }, [openingProjectId]);
 
+  /**
+   * RecipePrinter Pro status for the account menu's own section.
+   *
+   * Reads `customerInfo` directly (not the Firestore entitlement mirror
+   * `/print` also consults) because only the live RevenueCat SDK object
+   * carries `willRenew` — the mirror stores just `active`/`expiresAt`, which
+   * cannot distinguish "renewing" from "canceled, still active until the
+   * date already paid for". That distinction is the whole point of this
+   * section, so it has to come from here.
+   *
+   * `loadRecipePrinterCustomerInfo` is the same "null if this browser has
+   * never had a reason to exist in RevenueCat" read `usePremiumTemplatePurchase`
+   * uses — a Free user who has never purchased or subscribed costs nothing
+   * extra to open this menu.
+   */
+  const [proCustomerInfo, setProCustomerInfo] = useState<CustomerInfo | null>(null);
+  const [proInfoLoading, setProInfoLoading] = useState(false);
+  const [proMessage, setProMessage] = useState<string | null>(null);
+  const [showProUpgradeDialog, setShowProUpgradeDialog] = useState(false);
+
+  const refreshProCustomerInfo = useCallback(async () => {
+    if (!uid) return;
+    try {
+      const info = await loadRecipePrinterCustomerInfo(uid);
+      setProCustomerInfo(info);
+    } catch (error) {
+      console.warn("RecipePrinter: could not load Pro status", error);
+    }
+  }, [uid]);
+
+  useEffect(() => {
+    if (!open || !uid) return;
+    setProInfoLoading(true);
+    void refreshProCustomerInfo().finally(() => setProInfoLoading(false));
+  }, [open, uid, refreshProCustomerInfo]);
+
+  // `managementURL` opens RevenueCat's billing portal in a new tab, so there
+  // is no in-app navigation to hook when the cook comes back from canceling
+  // or changing plans. Refetch on refocus, scoped to while the menu is open,
+  // so the "active until {date}" line updates without a manual reload.
+  useEffect(() => {
+    if (!open || !uid) return;
+    function onFocus() {
+      void refreshProCustomerInfo();
+    }
+    window.addEventListener("focus", onFocus);
+    return () => window.removeEventListener("focus", onFocus);
+  }, [open, uid, refreshProCustomerInfo]);
+
+  const proDetails = proSubscriptionDetails(proCustomerInfo);
+  const proManagementLink = proManagementUrl(proCustomerInfo);
+
+  const { proBusy, purchaseProAndContinue } = useProPurchase({
+    revenueCatUserId: uid ?? null,
+    customerInfo: proCustomerInfo,
+    setCustomerInfo: setProCustomerInfo,
+    cookPilotUser: user ?? null,
+    showToast: setProMessage,
+    clearToast: () => setProMessage(null),
+    // No print/export action to return to from here — the account menu is a
+    // standing status surface, not something a purchase resumes into.
+    onFreshPurchase: () => undefined,
+  });
+
+  function planLabel(cycle: "monthly" | "annual" | null): string {
+    if (cycle === "annual") return "Annual";
+    if (cycle === "monthly") return "Monthly";
+    return "Pro";
+  }
+
+  function formatDate(ms: number | null): string | null {
+    if (ms === null) return null;
+    return new Date(ms).toLocaleDateString(undefined, {
+      year: "numeric",
+      month: "short",
+      day: "numeric",
+    });
+  }
+
   /* The read behind both lists is a single call, so both say the same thing
      when it doesn't answer: what happened, and the way to ask again. Never an
      empty state — "Your saved cookbooks will appear here" under a failed read
@@ -465,6 +554,55 @@ export default function AccountMenu({
               )}
             </div>
           )}
+          <div className="mt-cp-4 border-t border-line pt-cp-3">
+            <div className="flex items-center justify-between gap-cp-2">
+              <span className="text-cp-small font-bold text-ink">RecipePrinter Pro</span>
+              {proDetails.active && <ProBadge variant="inline" />}
+            </div>
+            {proInfoLoading ? (
+              <p className="mt-1 text-cp-small text-ink-soft">Loading…</p>
+            ) : proDetails.active ? (
+              <>
+                <p className="mt-1 text-cp-small text-ink-soft">{planLabel(proDetails.cycle)} plan</p>
+                <p className="text-cp-small text-ink-soft">
+                  {proDetails.willRenew
+                    ? `Renews ${formatDate(proDetails.expiresAtMs) ?? "soon"}`
+                    : `Active through ${formatDate(proDetails.expiresAtMs) ?? "your paid period"}`}
+                </p>
+                {/* Prominent on purpose — cancellation must not be hard to
+                    find. This opens RevenueCat's own hosted billing portal;
+                    there is no custom cancel flow to build or maintain. */}
+                <button
+                  type="button"
+                  className="btn btn-secondary btn-compact mt-cp-2 w-full"
+                  disabled={!proManagementLink}
+                  title={proManagementLink ? undefined : "Manage subscription isn't ready yet. Try again in a moment."}
+                  onClick={() => {
+                    if (!proManagementLink) return;
+                    track("manage_subscription_clicked", {});
+                    window.open(proManagementLink, "_blank", "noopener,noreferrer");
+                  }}
+                >
+                  Manage subscription
+                </button>
+              </>
+            ) : (
+              <>
+                <p className="mt-1 text-cp-small text-ink-soft">Free plan</p>
+                <button
+                  type="button"
+                  className="btn btn-primary btn-compact mt-cp-2 w-full"
+                  onClick={() => {
+                    track("paywall_viewed", { trigger: "account_menu" });
+                    setShowProUpgradeDialog(true);
+                  }}
+                >
+                  Upgrade to Pro
+                </button>
+              </>
+            )}
+            {proMessage && <p className="mt-1 text-cp-small text-ink-soft">{proMessage}</p>}
+          </div>
           <button
               type="button"
               className="btn-ghost btn-compact mt-cp-3 w-full"
@@ -473,6 +611,15 @@ export default function AccountMenu({
               Sign out
             </button>
         </div>
+      )}
+
+      {showProUpgradeDialog && (
+        <ProUpgradeDialog
+          busy={proBusy}
+          cookPilotUser={user}
+          onClose={() => setShowProUpgradeDialog(false)}
+          onChoose={(cycle) => void purchaseProAndContinue(cycle, () => setShowProUpgradeDialog(false))}
+        />
       )}
 
       {showLogin && !user && (

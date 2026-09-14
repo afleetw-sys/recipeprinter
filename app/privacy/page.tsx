@@ -182,9 +182,10 @@ export default function PrivacyPage() {
             of that project are stored under your account.
           </li>
           <li>
-            <strong>Purchases.</strong> When you buy a cookbook or a premium
-            template, we receive a record of what was bought and the email
-            address attached to it. Card numbers go to Stripe and never reach us.
+            <strong>Purchases.</strong> When you buy a cookbook or subscribe to
+            RecipePrinter Pro, we receive a record of what was bought, its
+            renewal status if it&apos;s a subscription, and the email address
+            attached to it. Card numbers go to Stripe and never reach us.
           </li>
           <li>
             <strong>Feedback.</strong> If you use the feedback form, we store

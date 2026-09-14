@@ -8,8 +8,9 @@ import {
 } from "@/components/RecipeCardPrint";
 import { CrownIcon, XIcon, CheckIcon, ICON_SIZE } from "@/components/icons";
 import { TemplateThumbnail } from "@/components/print/TemplateThumbnail";
+import { ProBadge } from "@/components/ProBadge";
 import { isPremiumTemplate } from "@/lib/premiumTemplates";
-import { hasTemplateEntitlement } from "@/lib/recipePrinterPurchases";
+import { hasTemplateOrProEntitlement } from "@/lib/recipePrinterPurchases";
 import { track } from "@/lib/analytics";
 
 interface ThemePickerProps {
@@ -64,21 +65,21 @@ export function ThemePicker({
       <h3 className="recipe-config-label">Themes</h3>
       {!cookbookMode && (
         <p className="recipe-template-caption">
-          Premium themes are $1.99, and yours for life.
+          Every theme is included with RecipePrinter Pro.
         </p>
       )}
       <div className="recipe-template-list">
         {RECIPE_PRINT_TEMPLATE_OPTIONS.map((option) => {
           const premiumTemplate = isPremiumTemplate(option.id) ? option.id : null;
           // In cookbook mode every theme comes with the cookbook, so none
-          // read as locked (no crown, no paywall).
+          // read as locked (no badge, no paywall).
           const locked =
             premiumTemplate !== null &&
-            !hasTemplateEntitlement(customerInfo, premiumTemplate) &&
+            !hasTemplateOrProEntitlement(customerInfo, option.id) &&
             !cookbookMode;
           const owned =
             premiumTemplate !== null &&
-            hasTemplateEntitlement(customerInfo, premiumTemplate) &&
+            hasTemplateOrProEntitlement(customerInfo, option.id) &&
             !cookbookMode;
 
           // A real card renders <div>s, which aren't valid inside a
@@ -103,7 +104,7 @@ export function ThemePicker({
                 template === option.id ? "is-active" : ""
               }`}
               aria-pressed={template === option.id}
-              aria-label={`${option.label}${locked ? " premium" : owned ? " owned" : ""}`}
+              aria-label={`${option.label}${locked ? " Pro" : owned ? " owned" : ""}`}
               onClick={selectTemplate}
               onKeyDown={(e) => {
                 if (e.key === "Enter" || e.key === " ") {
@@ -113,13 +114,11 @@ export function ThemePicker({
               }}
             >
               {/* Status only — no price here. The picker's job is "pick how it
-                  looks"; cost only ever appears at the moment printing this
-                  template is actually requested (see the Print button below). */}
-              {locked && (
-                <span className="recipe-template-option__premium" aria-label="Premium">
-                  <CrownIcon size={ICON_SIZE.xs} />
-                </span>
-              )}
+                  looks"; the Pro paywall only ever appears at the moment
+                  printing this template is actually requested (see the Print
+                  button below) — locked themes stay fully selectable and
+                  previewable here. */}
+              {locked && <ProBadge />}
               {owned && (
                 <span className="recipe-template-option__owned" aria-label="Owned">
                   <CheckIcon size={ICON_SIZE.xs} />

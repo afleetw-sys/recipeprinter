@@ -1,27 +1,41 @@
 export type PurchaseGate =
   | "unlock-cookbook"
-  | "unlock-template"
+  | "unlock-pro"
   | "continue";
 
+/**
+ * `proLocked` covers both a locked theme and a locked card size — both are
+ * the same purchase now (RecipePrinter Pro), so both resolve to the same
+ * `"unlock-pro"` gate. There is no `"unlock-template"` branch: a single
+ * premium-template purchase is retired for new sales, so nothing reaches
+ * this function locked on a theme it doesn't also consider Pro-unlockable
+ * (see `hasTemplateOrProEntitlement` in lib/recipePrinterPurchases.ts) — an
+ * already-owned legacy theme is simply not locked in the first place.
+ */
 export function purchaseGate({
   cookbookLocked,
-  templateLocked,
+  proLocked,
 }: {
   cookbookLocked: boolean;
-  templateLocked: boolean;
+  proLocked: boolean;
 }): PurchaseGate {
   if (cookbookLocked) return "unlock-cookbook";
-  if (templateLocked) return "unlock-template";
+  if (proLocked) return "unlock-pro";
   return "continue";
 }
 
-export type PostPrintAction = "donate" | "protect-purchase" | "none";
+// "protect-purchase" (prompting a signed-out buyer to make an account right
+// after printing) was retired along with the per-template purchase it
+// existed for: a cookbook purchase uses its own persistent banner instead,
+// and RecipePrinter Pro checkout requires signing in before it can even
+// start (see `openProUpgradeDialog` in app/print/page.tsx), so there is no
+// remaining signed-out purchase for this to protect.
+export type PostPrintAction = "donate" | "none";
 
 export function postPrintPrompt(
   action: PostPrintAction,
   donationAlreadyShown: boolean,
-): "donate" | "protect-purchase" | null {
-  if (action === "protect-purchase") return "protect-purchase";
+): "donate" | null {
   if (action === "none" || donationAlreadyShown) return null;
   return "donate";
 }

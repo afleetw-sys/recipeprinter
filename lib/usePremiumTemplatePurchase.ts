@@ -5,14 +5,13 @@ import type { User } from "firebase/auth";
 import type { CustomerInfo } from "@revenuecat/purchases-js";
 import { RECIPE_PRINT_TEMPLATE_OPTIONS } from "@/lib/printTemplates";
 import type { RecipePrintTemplate } from "@/types/recipe";
-import { track, truncateReason } from "@/lib/analytics";
-import { friendlyClaimError, friendlyPurchaseSetupError } from "@/lib/friendlyErrors";
+import { track } from "@/lib/analytics";
+import { friendlyClaimError } from "@/lib/friendlyErrors";
 import { isPremiumTemplate, type PremiumRecipePrintTemplate } from "@/lib/premiumTemplates";
 import {
   hasTemplateEntitlement,
   identifyRecipePrinterCustomer,
   loadRecipePrinterCustomerInfo,
-  purchaseRecipePrinterTemplate,
   recipePrinterCustomerId,
   syncRecipePrinterCustomerAttributes,
 } from "@/lib/recipePrinterPurchases";
@@ -33,15 +32,17 @@ interface UsePremiumTemplatePurchaseOptions {
   showToast: (message: string) => void;
   clearToast: () => void;
   printNow: () => void;
-  onFreshPurchase: () => void;
 }
 
 /**
- * Owns the RevenueCat premium-template purchase/claim flow: linking a
- * RevenueCat customer id (anonymous, then aliased to the CookPilot account on
- * sign-in), loading entitlements and prices, and the two paths to unlocking a
- * locked template (buy it, or claim the CookPilot-member free template) —
- * both of which print immediately once the template is confirmed unlocked.
+ * Owns RecipePrinter's RevenueCat customer identity: linking a RevenueCat
+ * customer id (anonymous, then aliased to the CookPilot account on sign-in),
+ * loading entitlements, and the one remaining way to unlock a locked
+ * template without a Pro subscription — an eligible CookPilot member
+ * claiming their one free template, which prints immediately once granted.
+ * Buying a single template is retired; `useProPurchase` (a sibling hook)
+ * owns the Pro subscription purchase that now covers every theme, reusing
+ * the identity this hook establishes rather than duplicating it.
  */
 export function usePremiumTemplatePurchase({
   items,
@@ -53,11 +54,9 @@ export function usePremiumTemplatePurchase({
   showToast,
   clearToast,
   printNow,
-  onFreshPurchase,
 }: UsePremiumTemplatePurchaseOptions) {
   const [revenueCatUserId, setRevenueCatUserId] = useState<string | null>(null);
   const [customerInfo, setCustomerInfo] = useState<CustomerInfo | null>(null);
-  const [purchaseBusy, setPurchaseBusy] = useState(false);
   const [claimBusy, setClaimBusy] = useState(false);
   const [freeTemplateBannerDismissed, setFreeTemplateBannerDismissed] = useState(false);
   const linkedCookPilotUidRef = useRef<string | null>(null);
@@ -100,73 +99,6 @@ export function usePremiumTemplatePurchase({
       setCustomerInfo(info);
     }
     return info;
-  }
-
-  async function unlockTemplateAndPrint(premiumTemplate: PremiumRecipePrintTemplate) {
-    if (!revenueCatUserId) {
-      showToast("Purchases aren't ready yet. Wait a moment, then try again.");
-      return;
-    }
-
-    setPurchaseBusy(true);
-    clearToast();
-    try {
-      const latestInfo = customerInfo ?? (await refreshCustomerInfo(revenueCatUserId));
-      if (hasTemplateEntitlement(latestInfo, premiumTemplate)) {
-        printNow();
-        return;
-      }
-
-      track("purchase_started", {
-        product: "premium_template",
-        template: premiumTemplate,
-        customerId: revenueCatUserId,
-      });
-      const result = await purchaseRecipePrinterTemplate({
-        userId: revenueCatUserId,
-        email: cookPilotUser?.email,
-        template: premiumTemplate,
-      });
-      setCustomerInfo(result.customerInfo);
-
-      if (result.cancelled) {
-        track("purchase_cancelled", {
-          product: "premium_template",
-          template: premiumTemplate,
-          customerId: revenueCatUserId,
-        });
-        showToast("Purchase cancelled. Your recipe cards are still here when you're ready.");
-        return;
-      }
-
-      track("purchase_completed", {
-        product: "premium_template",
-        template: premiumTemplate,
-        customerId: revenueCatUserId,
-      });
-
-      if (!hasTemplateEntitlement(result.customerInfo, premiumTemplate)) {
-        showToast("Your purchase went through, but the template isn't ready yet. Wait a moment, then tap Print again.");
-        return;
-      }
-
-      onFreshPurchase();
-      printNow();
-    } catch (error) {
-      // The money may well have moved. RevenueCat and Stripe both record a
-      // charge the moment it clears; if the SDK then throws on the way back
-      // (a dropped connection, a closed window after payment), this is the
-      // only place that knows, and it used to end at a toast.
-      track("purchase_failed", {
-        product: "premium_template",
-        template: premiumTemplate,
-        reason: truncateReason(error),
-        customerId: revenueCatUserId,
-      });
-      showToast(friendlyPurchaseSetupError(error));
-    } finally {
-      setPurchaseBusy(false);
-    }
   }
 
   async function claimTemplateAndPrint(premiumTemplate: PremiumRecipePrintTemplate) {
@@ -270,10 +202,10 @@ export function usePremiumTemplatePurchase({
 
   useEffect(() => {
     if (!revenueCatUserId) return;
-    // Background refresh: prime entitlements so owned templates show as owned.
-    // Failures here are silent on purpose — the user only needs to hear about a
-    // problem if they actually try to unlock/print a premium template, which is
-    // handled with a clear toast in unlockTemplateAndPrint.
+    // Background refresh: prime entitlements so owned templates (and Pro)
+    // show as owned. Failures here are silent on purpose — the user only
+    // needs to hear about a problem if they actually try to claim a free
+    // template or upgrade to Pro, which show their own clear toasts.
     refreshCustomerInfo(revenueCatUserId).catch((error) => {
       console.warn("RecipePrinter: could not refresh customer info", error);
     });
@@ -283,7 +215,12 @@ export function usePremiumTemplatePurchase({
   return {
     revenueCatUserId,
     customerInfo,
-    purchaseBusy,
+    // Exposed so `useProPurchase` (a sibling hook, not a duplicate identity/
+    // SDK setup) can push the fresh `CustomerInfo` a Pro purchase returns
+    // into this shared state, the same way this hook updates it internally
+    // after a claim.
+    setCustomerInfo,
+    refreshCustomerInfo,
     claimBusy,
     freeTemplateBannerDismissed,
     setFreeTemplateBannerDismissed,
@@ -292,7 +229,6 @@ export function usePremiumTemplatePurchase({
     selectedTemplateLocked,
     hasUnclaimedFreeTemplate,
     canClaimSelectedTemplateFree,
-    unlockTemplateAndPrint,
     claimTemplateAndPrint,
   };
 }

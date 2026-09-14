@@ -141,7 +141,7 @@ export async function POST(request: Request) {
     // Copy note: this deliberately does not explain where the purchase is kept
     // or why an account is what proves it. That is our storage model, not
     // something a customer should have to understand to download the book they
-    // paid for. The sign-in dialog itself says why ("Don't lose your purchase").
+    // paid for. The sign-in dialog itself says why ("Save your recipes and purchases").
     return jsonError("Create a free account to download your cookbook.", 401, {
       needsAuth: true,
       needsAccount: true,

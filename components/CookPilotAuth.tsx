@@ -270,30 +270,40 @@ export async function checkEmailProviders(email: string): Promise<string[]> {
   }
 }
 
-export function CookPilotLoginDialog({
-  onClose,
+/**
+ * The interactive half of RecipePrinter's sign-in: the email/password/create
+ * steps and the Google/Apple buttons, with no heading, no close button, and
+ * no `Dialog` wrapper of its own.
+ *
+ * Split out of `CookPilotLoginDialog` so a caller that needs sign-in to
+ * happen *inside* a modal it already owns — the Pro upgrade dialog
+ * transitioning from plan choice to sign-in without opening a second popup —
+ * can embed the exact same form, error handling, and provider logic rather
+ * than duplicating any of it. `CookPilotLoginDialog` below is now a thin
+ * `Dialog` + heading shell around this.
+ */
+export function CookPilotLoginForm({
   onAuthenticated,
-  reason = "default",
-  footer,
+  autoFocus = true,
+  onBusyChange,
 }: {
-  onClose: () => void;
-  onAuthenticated?: () => void;
-  reason?: "default" | "purchase";
-  /**
-   * Something the surface that opened this needs to say underneath it, usually
-   * a way on for someone who is not going to sign in.
-   *
-   * A node rather than another `reason`, because what belongs here is known
-   * only to the caller: the account menu puts a link to a cookbook this device
-   * already holds, which this module has no business knowing about. Shared
-   * auth stays shared.
-   */
-  footer?: ReactNode;
+  onAuthenticated: () => void;
+  /** Off when this form isn't the first interactive thing on screen — e.g.
+      mounted mid-dialog, after a plan-choice step that already had focus. */
+  autoFocus?: boolean;
+  /** So a host that owns its own close button (e.g. `CookPilotLoginDialog`)
+      can disable it while a request is in flight, without this form needing
+      to know about dialogs at all. */
+  onBusyChange?: (busy: boolean) => void;
 }) {
   const [step, setStep] = useState<"email" | "password" | "create">("email");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [busy, setBusy] = useState(false);
+  const [busy, setBusyState] = useState(false);
+  const setBusy = (value: boolean) => {
+    setBusyState(value);
+    onBusyChange?.(value);
+  };
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
   const [resetSent, setResetSent] = useState(false);
@@ -368,7 +378,7 @@ export function CookPilotLoginDialog({
       } else {
         await signInWithEmailAndPassword(getFirebaseAuth(), email.trim().toLowerCase(), password);
       }
-      (onAuthenticated ?? onClose)();
+      onAuthenticated();
     } catch (err) {
       setError(
         friendlyAuthError(
@@ -426,34 +436,7 @@ export function CookPilotLoginDialog({
   }
 
   return (
-    <Dialog
-      onClose={onClose}
-      closeDisabled={busy}
-      label={reason === "purchase" ? "Protect your purchase" : "Create an account or sign in"}
-      portal
-      className="fixed inset-0 z-50 flex items-stretch sm:items-center justify-center dialog-scrim p-0 sm:px-cp-4 sm:py-cp-6"
-      panelClassName="panel panel--modal w-full sm:max-w-[420px] h-full sm:h-auto rounded-none border-0 sm:rounded-2xl sm:border p-cp-5 flex flex-col gap-cp-4 relative overflow-y-auto"
-    >
-        <button
-          type="button"
-          className="absolute right-3 top-3 icon-close-btn"
-          onClick={onClose}
-          aria-label="Close"
-        >
-          <XIcon size={ICON_SIZE.md} />
-        </button>
-
-        <div className="pr-cp-7">
-          <h3 className="font-extrabold tracking-[-0.02em] text-cp-dialog-title">
-            {reason === "purchase" ? "Don’t lose your purchase" : "Create an account or sign in"}
-          </h3>
-          <p className="text-cp-small text-ink-soft mt-1">
-            {reason === "purchase"
-              ? "Create a free account or sign in so you can access your purchase on another device."
-              : "An account keeps these projects saved on every device you use."}
-          </p>
-        </div>
-
+    <>
         {step === "email" ? (
           <form className="flex flex-col gap-cp-3" onSubmit={handleEmailContinue}>
             <div>
@@ -466,7 +449,7 @@ export function CookPilotLoginDialog({
                 className="field"
                 type="email"
                 autoComplete="username"
-                autoFocus
+                autoFocus={autoFocus}
                 value={email}
                 onChange={(event) => {
                   setEmail(event.target.value);
@@ -520,7 +503,7 @@ export function CookPilotLoginDialog({
                 className="field"
                 type="password"
                 autoComplete={step === "create" ? "new-password" : "current-password"}
-                autoFocus
+                autoFocus={autoFocus}
                 value={password}
                 onChange={(event) => {
                   setPassword(event.target.value);
@@ -577,9 +560,64 @@ export function CookPilotLoginDialog({
             <p>{notice}</p>
           </div>
         )}
+    </>
+  );
+}
 
-        {footer && <div className="border-t border-line pt-cp-3">{footer}</div>}
+export function CookPilotLoginDialog({
+  onClose,
+  onAuthenticated,
+  reason = "default",
+  footer,
+}: {
+  onClose: () => void;
+  onAuthenticated?: () => void;
+  reason?: "default" | "purchase";
+  /**
+   * Something the surface that opened this needs to say underneath it, usually
+   * a way on for someone who is not going to sign in.
+   *
+   * A node rather than another `reason`, because what belongs here is known
+   * only to the caller: the account menu puts a link to a cookbook this device
+   * already holds, which this module has no business knowing about. Shared
+   * auth stays shared.
+   */
+  footer?: ReactNode;
+}) {
+  const [busy, setBusy] = useState(false);
+  return (
+    <Dialog
+      onClose={onClose}
+      closeDisabled={busy}
+      label={reason === "purchase" ? "Save your recipes and purchases" : "Create an account or sign in"}
+      portal
+      className="fixed inset-0 z-50 flex items-stretch sm:items-center justify-center dialog-scrim p-0 sm:px-cp-4 sm:py-cp-6"
+      panelClassName="panel panel--modal w-full sm:max-w-[420px] h-full sm:h-auto rounded-none border-0 sm:rounded-2xl sm:border p-cp-5 flex flex-col gap-cp-4 relative overflow-y-auto"
+    >
+      <button
+        type="button"
+        className="absolute right-3 top-3 icon-close-btn"
+        onClick={onClose}
+        aria-label="Close"
+        disabled={busy}
+      >
+        <XIcon size={ICON_SIZE.md} />
+      </button>
 
+      <div className="pr-cp-7">
+        <h3 className="font-extrabold tracking-[-0.02em] text-cp-dialog-title">
+          {reason === "purchase" ? "Save your recipes and purchases" : "Create an account or sign in"}
+        </h3>
+        <p className="text-cp-small text-ink-soft mt-1">
+          {reason === "purchase"
+            ? "Signing in keeps your recipes, purchases, and Pro access with your account, so they're all here when you come back on this device or any other."
+            : "An account keeps these projects saved on every device you use."}
+        </p>
+      </div>
+
+      <CookPilotLoginForm onAuthenticated={onAuthenticated ?? onClose} onBusyChange={setBusy} />
+
+      {footer && <div className="border-t border-line pt-cp-3">{footer}</div>}
     </Dialog>
   );
 }

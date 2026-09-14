@@ -1,12 +1,10 @@
 "use client";
 
 import type { Dispatch, ReactNode, SetStateAction } from "react";
+import type { CustomerInfo } from "@revenuecat/purchases-js";
 import { Checkbox, CheckboxGroup, SelectTile } from "@/components/Controls";
-import { SelectMenu } from "@/components/Select";
-import {
-  PRINT_CARD_SIZE_OPTIONS,
-  type PrintCardSize,
-} from "@/components/RecipeCardPrint";
+import { PrintFormatToggle } from "@/components/print/PrintFormatToggle";
+import type { PrintCardSize } from "@/components/RecipeCardPrint";
 import { PHOTO_STYLE_OPTIONS, PhotoStylePreview } from "@/components/print/photoStyle";
 import type { PhotoStyle } from "@/lib/project";
 
@@ -14,6 +12,11 @@ interface PrintSetupControlsProps {
   cookbookMode: boolean;
   cardSize: PrintCardSize;
   setCardSize: Dispatch<SetStateAction<PrintCardSize>>;
+  /** The live entitlement state, purely to mark a Pro-only size with the
+      shared badge (see `canUseCardSize` in lib/recipePrinterPurchases.ts) —
+      a size stays fully selectable and previewable either way; only
+      Print/Export enforces the gate. */
+  customerInfo: CustomerInfo | null;
   anyRecipeHasImage: boolean;
   anyRecipeHasSourceUrl: boolean;
   /** How many recipes still carry the blurb their website came with. Zero
@@ -39,12 +42,11 @@ interface PrintSetupControlsProps {
  * settings slot, and the plain-cards Include toggles (photo / link). The theme
  * grid and the Print button live alongside this in the panel.
  */
-const PRINT_CARD_SIZE_LABELS = PRINT_CARD_SIZE_OPTIONS.map(({ id, label }) => ({ id, label }));
-
 export function PrintSetupControls({
   cookbookMode,
   cardSize,
   setCardSize,
+  customerInfo,
   anyRecipeHasImage,
   anyRecipeHasSourceUrl,
   bookPhotoStyle,
@@ -60,22 +62,15 @@ export function PrintSetupControls({
 }: PrintSetupControlsProps) {
   return (
     <>
-      {/* Size is a recipe-card concept only. A cookbook is always bound
-          letter pages, so the size control is hidden in cookbook mode. */}
+      {/* Print format is a recipe-card concept only. A cookbook is always
+          bound letter pages, so this control is hidden in cookbook mode. */}
       {!cookbookMode && (
         <div className="recipe-config-section recipe-config-section--size">
-          <label className="recipe-config-label" htmlFor="recipe-print-size">
-            Size
-          </label>
-          {/* Our own menu rather than the OS's, so the list matches every other
-              menu in the workspace. Labels only — each size also carries a
-              `detail`, but "Full page" and "6 x 4 card" already say it. */}
-          <SelectMenu
-            id="recipe-print-size"
-            label="Card size"
-            value={cardSize}
-            options={PRINT_CARD_SIZE_LABELS}
-            onChange={(next) => setCardSize(next as PrintCardSize)}
+          <span className="recipe-config-label">Print Format</span>
+          <PrintFormatToggle
+            cardSize={cardSize}
+            setCardSize={setCardSize}
+            customerInfo={customerInfo}
           />
         </div>
       )}

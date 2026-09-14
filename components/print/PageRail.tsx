@@ -29,6 +29,7 @@ import {
   TrashIcon,
 } from "@/components/icons";
 import { IconButton } from "@/components/Controls";
+import { ProBadge } from "@/components/ProBadge";
 import { ScaledPage } from "@/components/print/ScaledPage";
 import { PendingImportRows } from "@/components/print/PendingImportRows";
 import { pendingAnchorIndex, sectionDrawsNestingLine } from "@/lib/railPending";
@@ -118,6 +119,21 @@ function LazyRailThumb({
 }
 
 interface PageRailProps {
+  /** Whether the queue already holds at least one recipe — the header's Add
+      action reads "Add more recipes" once it does, "Add recipes" for a
+      genuinely empty project (see the matching empty-state button in
+      PrintDeck.tsx, which always says "Add recipes" since it's never shown
+      once anything exists). */
+  hasRecipes: boolean;
+  /** Whether the NEXT recipe added here would be the one that requires Pro —
+      true once a project already has a recipe and the customer lacks Pro
+      (see `hasMultiRecipeEntitlement` in lib/recipePrinterPurchases.ts).
+      Purely visual: it only decides whether this header button shows a
+      `ProBadge`. The actual gate lives once, in `openAddRecipeBelow` in
+      app/print/page.tsx, which this button still calls unconditionally — so
+      the badge and the gate can never disagree about when Add more recipes
+      is restricted. */
+  multiRecipeAddLocked: boolean;
   railScrollRef: MutableRefObject<HTMLElement | null>;
   railDrag: ReturnType<typeof useRailDrag>;
   railSelection: ReturnType<typeof useRailSelection>;
@@ -189,6 +205,8 @@ interface PageRailProps {
 // card view (single-page thumbnails, HTML5 drag-and-drop).
 export function PageRail(props: PageRailProps) {
   const {
+    hasRecipes,
+    multiRecipeAddLocked,
     railScrollRef,
     railDrag,
     railSelection,
@@ -475,7 +493,8 @@ export function PageRail(props: PageRailProps) {
                     already matched them; the icon was a step down, which made the
                     whole button read as smaller than the ones in the header. */}
                 <PlusIcon size={ICON_SIZE.md} />
-                Add recipes
+                {hasRecipes ? "Add more recipes" : "Add recipes"}
+                {multiRecipeAddLocked && <ProBadge variant="inline" />}
               </button>
               {/* "Add chapter" is NOT here. This whole header only renders when
                   `!organizeMode`, so the copy that used to sit at this spot was

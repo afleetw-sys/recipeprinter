@@ -160,6 +160,7 @@ export function PrintConfigPanel({
           cookbookMode={cookbookMode}
           cardSize={cardSize}
           setCardSize={setCardSize}
+          customerInfo={customerInfo}
           anyRecipeHasImage={anyRecipeHasImage}
           anyRecipeHasSourceUrl={anyRecipeHasSourceUrl}
           bookPhotoStyle={bookPhotoStyle}
