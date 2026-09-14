@@ -28,6 +28,8 @@ import {
   proSubscriptionDetails,
 } from "@/lib/recipePrinterPurchases";
 import { useProPurchase } from "@/lib/useProPurchase";
+import { resolveEffectiveCustomerInfo, type CustomerInfoLoadStatus } from "@/lib/proAccessFallback";
+import { loadRecipePrinterUserProfile, type RecipePrinterMirroredEntitlement } from "@/lib/recipePrinterFreeTemplateClaim";
 
 // Two initials from the signed-in identity — first+last of a display name, else
 // the first letter of the email — so a logged-in avatar shows who's signed in.
@@ -285,12 +287,14 @@ export default function AccountMenu({
   /**
    * RecipePrinter Pro status for the account menu's own section.
    *
-   * Reads `customerInfo` directly (not the Firestore entitlement mirror
-   * `/print` also consults) because only the live RevenueCat SDK object
-   * carries `willRenew` — the mirror stores just `active`/`expiresAt`, which
-   * cannot distinguish "renewing" from "canceled, still active until the
-   * date already paid for". That distinction is the whole point of this
-   * section, so it has to come from here.
+   * Prefers the live RevenueCat SDK read (only it carries `willRenew` — the
+   * mirror stores just `active`/`expiresAt`/`willRenew`* — see below — which
+   * on its own still can't beat a live answer, since RevenueCat is the
+   * actual billing authority). Falls back to the Firestore entitlement
+   * mirror `/print` also consults only when the live read itself fails, via
+   * the same `resolveEffectiveCustomerInfo` used there — see
+   * lib/proAccessFallback.ts — so this section can't silently read as "Free
+   * plan" during a RevenueCat/network outage the way it used to.
    *
    * `loadRecipePrinterCustomerInfo` is the same "null if this browser has
    * never had a reason to exist in RevenueCat" read `usePremiumTemplatePurchase`
@@ -298,17 +302,34 @@ export default function AccountMenu({
    * extra to open this menu.
    */
   const [proCustomerInfo, setProCustomerInfo] = useState<CustomerInfo | null>(null);
+  const [proInfoStatus, setProInfoStatus] = useState<CustomerInfoLoadStatus>("idle");
+  const [proInfoLastVerifiedAtMs, setProInfoLastVerifiedAtMs] = useState<number | null>(null);
+  const [proMirroredEntitlements, setProMirroredEntitlements] =
+    useState<Record<string, RecipePrinterMirroredEntitlement> | null>(null);
+  const [proMirrorSyncedAtMs, setProMirrorSyncedAtMs] = useState<number | null>(null);
   const [proInfoLoading, setProInfoLoading] = useState(false);
   const [proMessage, setProMessage] = useState<string | null>(null);
   const [showProUpgradeDialog, setShowProUpgradeDialog] = useState(false);
 
   const refreshProCustomerInfo = useCallback(async () => {
     if (!uid) return;
-    try {
-      const info = await loadRecipePrinterCustomerInfo(uid);
-      setProCustomerInfo(info);
-    } catch (error) {
-      console.warn("RecipePrinter: could not load Pro status", error);
+    const [liveResult, mirrorResult] = await Promise.allSettled([
+      loadRecipePrinterCustomerInfo(uid),
+      loadRecipePrinterUserProfile(uid),
+    ]);
+    if (liveResult.status === "fulfilled") {
+      setProCustomerInfo(liveResult.value);
+      setProInfoStatus("ok");
+      setProInfoLastVerifiedAtMs(Date.now());
+    } else {
+      console.warn("RecipePrinter: could not load live Pro status", liveResult.reason);
+      setProInfoStatus("error");
+    }
+    if (mirrorResult.status === "fulfilled") {
+      setProMirroredEntitlements(mirrorResult.value.mirroredEntitlements);
+      setProMirrorSyncedAtMs(mirrorResult.value.syncedAtMs);
+    } else {
+      console.warn("RecipePrinter: could not load Pro status mirror", mirrorResult.reason);
     }
   }, [uid]);
 
@@ -331,13 +352,29 @@ export default function AccountMenu({
     return () => window.removeEventListener("focus", onFocus);
   }, [open, uid, refreshProCustomerInfo]);
 
-  const proDetails = proSubscriptionDetails(proCustomerInfo);
-  const proManagementLink = proManagementUrl(proCustomerInfo);
+  const effectiveProInfo = useMemo(
+    () =>
+      resolveEffectiveCustomerInfo({
+        liveCustomerInfo: proCustomerInfo,
+        liveStatus: proInfoStatus,
+        liveLastVerifiedAtMs: proInfoLastVerifiedAtMs,
+        mirroredEntitlements: proMirroredEntitlements,
+        mirrorSyncedAtMs: proMirrorSyncedAtMs,
+        nowMs: Date.now(),
+      }),
+    [proCustomerInfo, proInfoStatus, proInfoLastVerifiedAtMs, proMirroredEntitlements, proMirrorSyncedAtMs],
+  );
+  const proDetails = proSubscriptionDetails(effectiveProInfo.customerInfo);
+  const proManagementLink = proManagementUrl(effectiveProInfo.customerInfo);
 
   const { proBusy, purchaseProAndContinue } = useProPurchase({
     revenueCatUserId: uid ?? null,
-    customerInfo: proCustomerInfo,
+    customerInfo: effectiveProInfo.customerInfo,
     setCustomerInfo: setProCustomerInfo,
+    markCustomerInfoVerified: () => {
+      setProInfoStatus("ok");
+      setProInfoLastVerifiedAtMs(Date.now());
+    },
     cookPilotUser: user ?? null,
     showToast: setProMessage,
     clearToast: () => setProMessage(null),
@@ -561,6 +598,20 @@ export default function AccountMenu({
             </div>
             {proInfoLoading ? (
               <p className="mt-1 text-cp-small text-ink-soft">Loading…</p>
+            ) : effectiveProInfo.source === "none" && effectiveProInfo.stale ? (
+              // A real RevenueCat/network failure with nothing to fall back
+              // on — distinct from "Free plan" on purpose, so a temporary
+              // outage never reads as having lost a subscription.
+              <>
+                <p className="mt-1 text-cp-small text-ink-soft">Couldn&rsquo;t load your subscription status.</p>
+                <button
+                  type="button"
+                  className="btn btn-secondary btn-compact mt-cp-2 w-full"
+                  onClick={() => void refreshProCustomerInfo()}
+                >
+                  Retry
+                </button>
+              </>
             ) : proDetails.active ? (
               <>
                 <p className="mt-1 text-cp-small text-ink-soft">{planLabel(proDetails.cycle)} plan</p>
@@ -569,6 +620,15 @@ export default function AccountMenu({
                     ? `Renews ${formatDate(proDetails.expiresAtMs) ?? "soon"}`
                     : `Active through ${formatDate(proDetails.expiresAtMs) ?? "your paid period"}`}
                 </p>
+                {effectiveProInfo.source === "mirror-fallback" && (
+                  <p className="text-cp-small text-ink-soft">
+                    Showing your last verified plan
+                    {effectiveProInfo.lastVerifiedAtMs
+                      ? ` (as of ${formatDate(effectiveProInfo.lastVerifiedAtMs) ?? "recently"})`
+                      : ""}
+                    .
+                  </p>
+                )}
                 {/* Prominent on purpose — cancellation must not be hard to
                     find. This opens RevenueCat's own hosted billing portal;
                     there is no custom cancel flow to build or maintain. */}

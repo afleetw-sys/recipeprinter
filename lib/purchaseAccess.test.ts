@@ -4,6 +4,8 @@ import {
   purchaseGate,
   revenueCatIdentityTransition,
 } from "./purchaseAccess";
+import { computeProLocks } from "./recipePrinterPurchases";
+import { resolveEffectiveCustomerInfo } from "./proAccessFallback";
 
 describe("paid purchase access", () => {
   it("opens the appropriate paywall without requiring authentication", () => {
@@ -42,5 +44,76 @@ describe("paid purchase access", () => {
     ).toBe("identify");
     expect(revenueCatIdentityTransition("existing-account", "existing-account")).toBe("reuse");
     expect(revenueCatIdentityTransition("another-account", "existing-account")).toBe("switch");
+  });
+});
+
+describe("sign-out / sign-in and account switching (revenueCatIdentityTransition)", () => {
+  it("signing out and back in as the SAME account reuses the identity already configured — no re-alias, no gap in entitlements", () => {
+    expect(revenueCatIdentityTransition("user-a", "user-a")).toBe("reuse");
+  });
+
+  it("a DIFFERENT user signing into the same browser switches identity outright — user A's entitlements are never aliased onto user B", () => {
+    expect(revenueCatIdentityTransition("user-a", "user-b")).toBe("switch");
+  });
+
+  it("a guest purchase is claimed (aliased) the first time an account signs in, not switched away from", () => {
+    expect(revenueCatIdentityTransition("$RCAnonymousID:guest123", "user-a")).toBe("identify");
+  });
+});
+
+describe("purchaseGate driven end-to-end by resolveEffectiveCustomerInfo (fallback reliability)", () => {
+  const NOW = Date.parse("2026-06-01T00:00:00Z");
+
+  function proLockedFor(mirroredEntitlements: Parameters<typeof resolveEffectiveCustomerInfo>[0]["mirroredEntitlements"]) {
+    const effective = resolveEffectiveCustomerInfo({
+      liveCustomerInfo: null,
+      liveStatus: "error",
+      liveLastVerifiedAtMs: null,
+      mirroredEntitlements,
+      mirrorSyncedAtMs: NOW - 1_000,
+      nowMs: NOW,
+    });
+    return computeProLocks({
+      customerInfo: effective.customerInfo,
+      cookbookMode: false,
+      template: "classic",
+      selectedPremiumTemplate: null,
+      cardSize: "card-6x4",
+      recipeCount: 1,
+    }).proLocked;
+  }
+
+  it("a RevenueCat outage with a valid, unexpired mirror still lets an already-paying user continue", () => {
+    const proLocked = proLockedFor({
+      pro: { active: true, expiresAtMs: NOW + 1_000_000, productIdentifier: "pro_monthly", willRenew: true },
+    });
+    expect(purchaseGate({ cookbookLocked: false, proLocked })).toBe("continue");
+  });
+
+  it("a RevenueCat outage with a mirror that's actually past its real expiration still gates Pro — the fallback never grants access forever", () => {
+    const proLocked = proLockedFor({
+      pro: { active: true, expiresAtMs: NOW - 1_000_000, productIdentifier: "pro_monthly", willRenew: true },
+    });
+    expect(purchaseGate({ cookbookLocked: false, proLocked })).toBe("unlock-pro");
+  });
+
+  it("a RevenueCat outage with no mirror at all (never subscribed) fails locked, same as today", () => {
+    const effective = resolveEffectiveCustomerInfo({
+      liveCustomerInfo: null,
+      liveStatus: "error",
+      liveLastVerifiedAtMs: null,
+      mirroredEntitlements: null,
+      mirrorSyncedAtMs: null,
+      nowMs: NOW,
+    });
+    const { proLocked } = computeProLocks({
+      customerInfo: effective.customerInfo,
+      cookbookMode: false,
+      template: "classic",
+      selectedPremiumTemplate: null,
+      cardSize: "card-6x4",
+      recipeCount: 1,
+    });
+    expect(purchaseGate({ cookbookLocked: false, proLocked })).toBe("unlock-pro");
   });
 });

@@ -494,7 +494,7 @@ export function PageRail(props: PageRailProps) {
                     whole button read as smaller than the ones in the header. */}
                 <PlusIcon size={ICON_SIZE.md} />
                 {hasRecipes ? "Add more recipes" : "Add recipes"}
-                {multiRecipeAddLocked && <ProBadge variant="inline" />}
+                {multiRecipeAddLocked && <ProBadge variant="inline" label={false} />}
               </button>
               {/* "Add chapter" is NOT here. This whole header only renders when
                   `!organizeMode`, so the copy that used to sit at this spot was

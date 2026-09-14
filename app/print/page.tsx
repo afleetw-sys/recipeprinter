@@ -91,10 +91,10 @@ import { useProPurchase } from "@/lib/useProPurchase";
 import { ProUpgradeDialog } from "@/components/ProUpgradeDialog";
 import { ProBadge } from "@/components/ProBadge";
 import {
-  canUseCardSize,
-  hasMultiRecipeEntitlement,
-  hasTemplateOrProEntitlement,
+  activeProLockReasons,
+  computeProLocks,
 } from "@/lib/recipePrinterPurchases";
+import { resolveEffectiveCustomerInfo } from "@/lib/proAccessFallback";
 import { COOKBOOK_ENABLED } from "@/lib/cookbookProduct";
 import {
   DEFAULT_COOKBOOK_PRESET_ID,
@@ -128,6 +128,7 @@ import { CookPilotLoginDialog, useCookPilotAuth } from "@/components/CookPilotAu
 import {
   loadRecipePrinterUserProfile,
   type RecipePrinterFreeTemplateStatus,
+  type RecipePrinterMirroredEntitlement,
 } from "@/lib/recipePrinterFreeTemplateClaim";
 import {
   createCurrentPrintJob,
@@ -569,6 +570,13 @@ export default function PrintPage() {
       page (see `failedImports`) — but saves, prints and exports still can. */
   const [toastTone, setToastTone] = useState<"info" | "error">("info");
   const [freeTemplateStatus, setFreeTemplateStatus] = useState<RecipePrinterFreeTemplateStatus | null>(null);
+  // The durable, server-verified fallback for when the live RevenueCat SDK
+  // can't be reached — see lib/proAccessFallback.ts. Null until a signed-in
+  // profile has actually loaded; there is nothing to fall back to for a
+  // signed-out browser (an anonymous purchase has no server-side mirror).
+  const [mirroredEntitlements, setMirroredEntitlements] =
+    useState<Record<string, RecipePrinterMirroredEntitlement> | null>(null);
+  const [mirrorSyncedAtMs, setMirrorSyncedAtMs] = useState<number | null>(null);
   const {
     user: cookPilotUser,
     ready: cookPilotAuthReady,
@@ -2830,7 +2838,10 @@ export default function PrintPage() {
   const {
     revenueCatUserId,
     customerInfo,
+    customerInfoStatus,
+    customerInfoLastVerifiedAtMs,
     setCustomerInfo,
+    markCustomerInfoVerified,
     claimBusy,
     freeTemplateBannerDismissed,
     setFreeTemplateBannerDismissed,
@@ -2872,6 +2883,7 @@ export default function PrintPage() {
     revenueCatUserId,
     customerInfo,
     setCustomerInfo,
+    markCustomerInfoVerified,
     cookPilotUser,
     showToast,
     clearToast: () => setToastMessage(null),
@@ -2889,49 +2901,40 @@ export default function PrintPage() {
   // which needs a re-render to show up.
   const [proUpgradeTrigger, setProUpgradeTrigger] = useState<string>("print_button");
 
-  // Every theme (and every Pro-only card size) is included with the cookbook
-  // purchase, so neither paywall applies while in cookbook mode — the
-  // cookbook unlock is the only gate there. Switching back to recipe cards
-  // restores normal gating.
-  const themeLocked =
-    Boolean(selectedPremiumTemplate) &&
-    !hasTemplateOrProEntitlement(customerInfo, template) &&
-    !cookbookMode;
-  const cardSizeLocked = !cookbookMode && !canUseCardSize(customerInfo, cardSize);
-  // Printing more than one recipe in one job (outside a cookbook, which has
-  // its own separate purchase model) is its own Pro-gated capability — see
-  // `hasMultiRecipeEntitlement`. There's nothing to preview here the way a
-  // locked theme or card size can be: `openAddRecipeBelow` refuses to add a
-  // second recipe at all rather than adding it and only blocking Print.
+  // The live RevenueCat read whenever it succeeded — even confirming
+  // "nothing owned" — or, only when that live check itself failed, a
+  // bounded fallback built from the last server-verified Firestore mirror.
+  // Every entitlement predicate downstream (via `computeProLocks`) reads
+  // this instead of the raw `customerInfo`, so an already-verified paying
+  // user isn't randomly locked out by a momentary RevenueCat/network outage
+  // — and a mirror that's actually past its real expiration still fails
+  // locked, recomputed against the current clock on every render. See
+  // lib/proAccessFallback.ts.
+  const effectiveCustomerInfo = useMemo(
+    () =>
+      resolveEffectiveCustomerInfo({
+        liveCustomerInfo: customerInfo,
+        liveStatus: customerInfoStatus,
+        liveLastVerifiedAtMs: customerInfoLastVerifiedAtMs,
+        mirroredEntitlements,
+        mirrorSyncedAtMs,
+        nowMs: Date.now(),
+      }),
+    [customerInfo, customerInfoStatus, customerInfoLastVerifiedAtMs, mirroredEntitlements, mirrorSyncedAtMs],
+  );
+
   const recipeCount = items?.filter((item) => Boolean(item.recipe)).length ?? 0;
-  const multiRecipeLocked =
-    !cookbookMode && !hasMultiRecipeEntitlement(customerInfo) && recipeCount > 1;
-  // Whether the NEXT add would be the locked one — reused by `openAddRecipeBelow`
-  // (the actual gate) and by the rail's badge (just the visual mark), so the
-  // two can never disagree about when Add more recipes is restricted.
-  const multiRecipeAddLocked =
-    !cookbookMode && recipeCount >= 1 && !hasMultiRecipeEntitlement(customerInfo);
-  // All three resolve to the same purchase now (RecipePrinter Pro) — see
-  // lib/purchaseAccess.ts's purchaseGate.
-  const proLocked = themeLocked || cardSizeLocked || multiRecipeLocked;
-  // One place to name which lock(s) are actually in effect — reused by
-  // analytics (`pro_feature_encountered`/`pro_feature_used`) and by the
-  // upgrade dialog's own title/description below, so none of them can report
-  // or describe a different reason for the same click. Multi-recipe has two
-  // triggers: the print job already holding more than one recipe
-  // (`multiRecipeLocked`), or the cook just tried to add a second one — at
-  // that moment the job still only holds one recipe, so `multiRecipeLocked`
-  // alone wouldn't see it and the "add_more_recipes" trigger stands in for it
-  // (see `openAddRecipeBelow`).
-  function activeProLockReasons(trigger: string): Array<"theme" | "card_size" | "multi_recipe"> {
-    const reasons: Array<"theme" | "card_size" | "multi_recipe"> = [];
-    if (themeLocked) reasons.push("theme");
-    if (cardSizeLocked) reasons.push("card_size");
-    if (multiRecipeLocked || trigger === "add_more_recipes") reasons.push("multi_recipe");
-    return reasons;
-  }
+  const { themeLocked, cardSizeLocked, multiRecipeLocked, multiRecipeAddLocked, proLocked } =
+    computeProLocks({
+      customerInfo: effectiveCustomerInfo.customerInfo,
+      cookbookMode,
+      template,
+      selectedPremiumTemplate,
+      cardSize,
+      recipeCount,
+    });
   function proLockFeature(): "batch_print" | "card_size" | "theme" {
-    const reasons = activeProLockReasons("print_button");
+    const reasons = activeProLockReasons({ themeLocked, cardSizeLocked, multiRecipeLocked }, "print_button");
     if (reasons.includes("multi_recipe")) return "batch_print";
     return reasons.includes("card_size") ? "card_size" : "theme";
   }
@@ -2939,7 +2942,10 @@ export default function PrintPage() {
   // pitch, and says so plainly when more than one applies at once (a locked
   // theme AND a locked card size, say) instead of silently picking whichever
   // happens to be checked first.
-  const proUpgradeLockReasons = activeProLockReasons(proUpgradeTrigger);
+  const proUpgradeLockReasons = activeProLockReasons(
+    { themeLocked, cardSizeLocked, multiRecipeLocked },
+    proUpgradeTrigger,
+  );
   const proUpgradeTitle =
     proUpgradeLockReasons.length === 1 && proUpgradeLockReasons[0] === "multi_recipe"
       ? "Print multiple recipes with Pro"
@@ -2948,7 +2954,7 @@ export default function PrintPage() {
     proUpgradeLockReasons.length > 1
       ? "A few things here are part of RecipePrinter Pro."
       : proUpgradeLockReasons[0] === "multi_recipe"
-        ? "Printing more than one recipe in the same job is part of RecipePrinter Pro."
+        ? "Printing multiple recipes at once is part of RecipePrinter Pro."
         : proUpgradeLockReasons[0] === "card_size"
           ? "4×6 recipe cards are part of RecipePrinter Pro."
           : proUpgradeLockReasons[0] === "theme"
@@ -3938,6 +3944,8 @@ export default function PrintPage() {
     if (!cookPilotUser) {
       setFreeTemplateStatus(null);
       setIsRecipePrinterAdmin(false);
+      setMirroredEntitlements(null);
+      setMirrorSyncedAtMs(null);
       return;
     }
     let cancelled = false;
@@ -3946,11 +3954,16 @@ export default function PrintPage() {
         if (cancelled) return;
         setFreeTemplateStatus(profile.freeTemplateStatus);
         setIsRecipePrinterAdmin(profile.isAdmin);
+        setMirroredEntitlements(profile.mirroredEntitlements);
+        setMirrorSyncedAtMs(profile.syncedAtMs);
       })
       .catch((error) => {
         if (cancelled) return;
         console.warn("RecipePrinter: could not load free-template status", error);
         setIsRecipePrinterAdmin(false);
+        // Leave mirroredEntitlements/mirrorSyncedAtMs at whatever they were —
+        // a Firestore read failure here shouldn't discard an already-loaded
+        // fallback the live-SDK path might still need a moment from now.
       });
     return () => {
       cancelled = true;
@@ -5386,7 +5399,7 @@ export default function PrintPage() {
           bookDesignSettings={renderBookDesignSettings()}
           template={template}
           setTemplate={setTemplate}
-          customerInfo={customerInfo}
+          customerInfo={effectiveCustomerInfo.customerInfo}
           hasUnclaimedFreeTemplate={hasUnclaimedFreeTemplate}
           freeTemplateBannerDismissed={freeTemplateBannerDismissed}
           setFreeTemplateBannerDismissed={setFreeTemplateBannerDismissed}
@@ -5435,7 +5448,7 @@ export default function PrintPage() {
                 <PlusIcon size={ICON_SIZE.lg} />
               </span>
               Recipe
-              {multiRecipeAddLocked && <ProBadge variant="inline" />}
+              {multiRecipeAddLocked && <ProBadge variant="inline" label={false} />}
             </button>
             {/* Pages/structure — the mobile stand-in for the drag-only desktop
                 rail, which is hidden on touch. Cookbook mode only. */}
@@ -5488,7 +5501,7 @@ export default function PrintPage() {
                         setCardSize(next);
                         setSizeMenuOpen(false);
                       }}
-                      customerInfo={customerInfo}
+                      customerInfo={effectiveCustomerInfo.customerInfo}
                     />
                   </div>
                 )}

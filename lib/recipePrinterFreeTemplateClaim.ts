@@ -1,4 +1,5 @@
-import type { PremiumRecipePrintTemplate } from "@/lib/premiumTemplates";
+import { PREMIUM_TEMPLATE_ENTITLEMENTS, type PremiumRecipePrintTemplate } from "@/lib/premiumTemplates";
+import { RECIPEPRINTER_PRO_ENTITLEMENT_ID } from "@/lib/proProduct";
 import { recipePrinterUserPath } from "@/lib/firebase/recipePrinterPaths";
 
 // Mirrors CookPilot's revenueCat.ts LIFETIME_EXPIRY_MS sentinel for a
@@ -15,32 +16,51 @@ export interface RecipePrinterFreeTemplateStatus {
 }
 
 /**
- * Server-mirrored RecipePrinter Pro status, read off the same doc's
- * `recipePrinterEntitlements.pro` field — written by the RevenueCat webhook
- * on every subscription event (CookPilot functions/src/recipePrinterRevenueCat.ts),
- * never by the client (firestore.rules denies it — see
- * `serverOwnedSharedUserFields`). This is what "don't trust client-side state
- * alone" means in practice: prefer this over the live RevenueCat SDK read
- * whenever a signed-in profile is available, since it reflects what the
- * server last confirmed rather than only what this browser's SDK instance
- * currently holds.
+ * One entitlement as the server last confirmed it — `recipePrinterEntitlements.{id}`,
+ * written only by the RevenueCat webhook (CookPilot's
+ * functions/src/recipePrinterRevenueCat.ts), never by the client
+ * (firestore.rules denies it — see `serverOwnedSharedUserFields`). Every
+ * mirrored entitlement (the four legacy templates and `pro`) is covered, not
+ * just Pro, so a legacy theme owner's fallback works the same way a Pro
+ * subscriber's does — see lib/proAccessFallback.ts, the only consumer that
+ * should read this map for a gating decision.
  */
-export interface RecipePrinterProStatus {
+export interface RecipePrinterMirroredEntitlement {
   active: boolean;
   expiresAtMs: number | null;
+  productIdentifier: string | null;
+  /** Null when the server never recorded one (a lifetime template, or an
+   *  entitlement that's never existed for this account) — "unknown," not
+   *  "false." */
+  willRenew: boolean | null;
 }
+
+// Every entitlement id the webhook mirrors — must match
+// RECIPEPRINTER_MIRRORED_ENTITLEMENTS in CookPilot's
+// functions/src/recipePrinterRevenueCat.ts (separate repo, kept in sync by
+// hand, same as the ids themselves already are).
+const MIRRORED_ENTITLEMENT_IDS = [
+  ...Object.values(PREMIUM_TEMPLATE_ENTITLEMENTS),
+  RECIPEPRINTER_PRO_ENTITLEMENT_ID,
+];
 
 /**
  * Centralized RecipePrinter user-profile read: everything gated on the
  * shared CookPilot `users/{uid}` Firestore doc (admin flag, free-template
- * claim status, Pro status) is derived from one `getDoc`, not one per gate —
- * a signed-in `/print` visit used to fire two independent reads of this same
- * doc.
+ * claim status, mirrored entitlements) is derived from one `getDoc`, not one
+ * per gate — a signed-in `/print` visit used to fire two independent reads
+ * of this same doc.
  */
 export interface RecipePrinterUserProfile {
   isAdmin: boolean;
   freeTemplateStatus: RecipePrinterFreeTemplateStatus;
-  proStatus: RecipePrinterProStatus;
+  mirroredEntitlements: Record<string, RecipePrinterMirroredEntitlement>;
+  /** When the webhook last successfully verified this account against
+   *  RevenueCat (`recipePrinterRevenueCatSyncedAt`) — null if it's never
+   *  synced. This is the real "last verified at ___" timestamp used
+   *  whenever a fallback actually falls back to this mirror; never made up
+   *  or approximated (lib/proAccessFallback.ts). */
+  syncedAtMs: number | null;
 }
 
 async function fetchRecipePrinterUserDoc(uid: string): Promise<Record<string, unknown>> {
@@ -76,15 +96,33 @@ async function fetchRecipePrinterUserDoc(uid: string): Promise<Record<string, un
   return { ...(legacy?.data() ?? {}), ...(namespaced?.data() ?? {}) };
 }
 
-function deriveProStatus(data: Record<string, unknown>): RecipePrinterProStatus {
-  const entitlements = data.recipePrinterEntitlements as
-    | Record<string, { active?: unknown; expiresAt?: { toMillis?: () => number } } | undefined>
-    | undefined;
-  const pro = entitlements?.pro;
-  return {
-    active: pro?.active === true,
-    expiresAtMs: pro?.expiresAt?.toMillis?.() ?? null,
-  };
+type RawMirroredEntitlement = {
+  active?: unknown;
+  expiresAt?: { toMillis?: () => number } | null;
+  productIdentifier?: unknown;
+  willRenew?: unknown;
+} | undefined;
+
+function deriveMirroredEntitlements(
+  data: Record<string, unknown>,
+): Record<string, RecipePrinterMirroredEntitlement> {
+  const raw = data.recipePrinterEntitlements as Record<string, RawMirroredEntitlement> | undefined;
+  const resolved: Record<string, RecipePrinterMirroredEntitlement> = {};
+  for (const entitlementId of MIRRORED_ENTITLEMENT_IDS) {
+    const entitlement = raw?.[entitlementId];
+    resolved[entitlementId] = {
+      active: entitlement?.active === true,
+      expiresAtMs: entitlement?.expiresAt?.toMillis?.() ?? null,
+      productIdentifier: typeof entitlement?.productIdentifier === "string" ? entitlement.productIdentifier : null,
+      willRenew: typeof entitlement?.willRenew === "boolean" ? entitlement.willRenew : null,
+    };
+  }
+  return resolved;
+}
+
+function deriveSyncedAtMs(data: Record<string, unknown>): number | null {
+  const syncedAt = data.recipePrinterRevenueCatSyncedAt as { toMillis?: () => number } | undefined;
+  return syncedAt?.toMillis?.() ?? null;
 }
 
 function deriveFreeTemplateStatus(data: Record<string, unknown>): RecipePrinterFreeTemplateStatus {
@@ -117,13 +155,14 @@ export async function loadFreeTemplateStatus(
 }
 
 /** Single read of `users/{uid}` powering the admin gate, free-template
- *  status, and RecipePrinter Pro status. */
+ *  status, and the mirrored-entitlement fallback. */
 export async function loadRecipePrinterUserProfile(uid: string): Promise<RecipePrinterUserProfile> {
   const data = await fetchRecipePrinterUserDoc(uid);
   return {
     isAdmin: data.recipePrinterAdmin === true,
     freeTemplateStatus: deriveFreeTemplateStatus(data),
-    proStatus: deriveProStatus(data),
+    mirroredEntitlements: deriveMirroredEntitlements(data),
+    syncedAtMs: deriveSyncedAtMs(data),
   };
 }
 

@@ -1,13 +1,16 @@
 import { describe, expect, test } from "vitest";
 import type { CustomerInfo } from "@revenuecat/purchases-js";
 import {
+  activeProLockReasons,
   canUseCardSize,
+  computeProLocks,
   hasMultiRecipeEntitlement,
   hasProEntitlement,
   hasTemplateEntitlement,
   hasTemplateOrProEntitlement,
   proSubscriptionDetails,
 } from "./recipePrinterPurchases";
+import { synthesizeCustomerInfoFromMirror } from "./proAccessFallback";
 
 /**
  * A minimal `CustomerInfo` stand-in: every function under test only ever
@@ -238,5 +241,164 @@ describe("proSubscriptionDetails", () => {
     expect(details.active).toBe(true);
     expect(details.willRenew).toBe(false);
     expect(details.expiresAtMs).toBe(expires.getTime());
+  });
+});
+
+describe("computeProLocks — the print page's Pro-gate matrix", () => {
+  const baseArgs = {
+    cookbookMode: false,
+    template: "classic" as const,
+    selectedPremiumTemplate: null,
+    cardSize: "card-6x4" as const,
+    recipeCount: 1,
+  };
+
+  test("free user: card size locked, nothing owned", () => {
+    const locks = computeProLocks({ ...baseArgs, customerInfo: NO_ENTITLEMENTS });
+    expect(locks.cardSizeLocked).toBe(true);
+    expect(locks.proLocked).toBe(true);
+  });
+
+  test("new monthly Pro purchase: nothing locked", () => {
+    const info = customerWith({ pro: { productIdentifier: "pro_monthly" } });
+    const locks = computeProLocks({ ...baseArgs, customerInfo: info });
+    expect(locks.proLocked).toBe(false);
+  });
+
+  test("new annual Pro purchase: nothing locked, identical to monthly", () => {
+    const info = customerWith({ pro: { productIdentifier: "pro_annual" } });
+    const locks = computeProLocks({ ...baseArgs, customerInfo: info });
+    expect(locks.proLocked).toBe(false);
+  });
+
+  test("a renewed subscription (willRenew: true, future expiry) is unlocked", () => {
+    const info = customerWith({
+      pro: { productIdentifier: "pro_monthly", willRenew: true, expirationDate: new Date(Date.now() + 1_000_000) },
+    });
+    expect(computeProLocks({ ...baseArgs, customerInfo: info }).proLocked).toBe(false);
+  });
+
+  test("canceled but still active through the paid period is unlocked — locks care about `active`, not `willRenew`", () => {
+    const info = customerWith({
+      pro: { productIdentifier: "pro_annual", willRenew: false, expirationDate: new Date(Date.now() + 1_000_000) },
+    });
+    expect(computeProLocks({ ...baseArgs, customerInfo: info }).proLocked).toBe(false);
+  });
+
+  test("an expired subscription is locked again", () => {
+    // `customerWith` always puts whatever key it's given straight into
+    // `entitlements.active` (matching how the real SDK only ever populates
+    // `.active` with entitlements that ARE active) — so "expired" has to be
+    // modeled via the mirror synthesizer, which does its own expiry check,
+    // not by handing `customerWith` an inactive-but-present entry.
+    const info = synthesizeCustomerInfoFromMirror(
+      {
+        pro: {
+          active: true,
+          expiresAtMs: Date.now() - 1_000_000,
+          productIdentifier: "pro_monthly",
+          willRenew: true,
+        },
+      },
+      Date.now(),
+    );
+    expect(computeProLocks({ ...baseArgs, customerInfo: info }).proLocked).toBe(true);
+  });
+
+  test("restoring on a new device (a freshly-fetched live CustomerInfo for the same account) unlocks identically to the original device", () => {
+    const originalDeviceInfo = customerWith({ pro: { productIdentifier: "pro_monthly" } });
+    // A second device signing in gets its own fresh `CustomerInfo` object from
+    // RevenueCat, not a copy of the first — same account, same entitlement
+    // data, different object identity. Locks must not care about identity.
+    const secondDeviceInfo = customerWith({ pro: { productIdentifier: "pro_monthly" } });
+    expect(computeProLocks({ ...baseArgs, customerInfo: originalDeviceInfo }))
+      .toEqual(computeProLocks({ ...baseArgs, customerInfo: secondDeviceInfo }));
+  });
+
+  test("a legacy $1.99 theme owner without Pro: their theme works, but 4x6 stays locked", () => {
+    const owner = customerWith({ template_heirloom: {} });
+    expect(
+      computeProLocks({ ...baseArgs, customerInfo: owner, template: "heirloom", selectedPremiumTemplate: "heirloom" })
+        .themeLocked,
+    ).toBe(false);
+    expect(computeProLocks({ ...baseArgs, customerInfo: owner }).cardSizeLocked).toBe(true);
+  });
+
+  test("a cookbook owner without Pro: cookbook ownership grants nothing here", () => {
+    const owner = customerWith({ cookbook: {} });
+    expect(computeProLocks({ ...baseArgs, customerInfo: owner }).proLocked).toBe(true);
+  });
+
+  test("a legacy theme owner who also has Pro: Pro accounts for everything, theme ownership is redundant but harmless", () => {
+    const owner = customerWith({ template_heirloom: {}, pro: { productIdentifier: "pro_monthly" } });
+    expect(computeProLocks({ ...baseArgs, customerInfo: owner }).proLocked).toBe(false);
+  });
+
+  test("cookbook mode exempts every lock regardless of entitlement", () => {
+    const locks = computeProLocks({ ...baseArgs, customerInfo: NO_ENTITLEMENTS, cookbookMode: true, recipeCount: 5 });
+    expect(locks.proLocked).toBe(false);
+    expect(locks.multiRecipeLocked).toBe(false);
+  });
+
+  test("printing more than one recipe requires Pro; a single recipe never does", () => {
+    const free = { ...baseArgs, customerInfo: NO_ENTITLEMENTS, template: "classic" as const, cardSize: "letter" as const };
+    // The print JOB itself isn't locked with only one recipe in it...
+    expect(computeProLocks({ ...free, recipeCount: 1 }).multiRecipeLocked).toBe(false);
+    expect(computeProLocks({ ...free, recipeCount: 2 }).multiRecipeLocked).toBe(true);
+    // ...but the NEXT add (recipe #2) is already known to be locked before
+    // it's ever added — this is what drives the Add-more-recipes gate/badge.
+    expect(computeProLocks({ ...free, recipeCount: 1 }).multiRecipeAddLocked).toBe(true);
+    expect(computeProLocks({ ...free, recipeCount: 0 }).multiRecipeAddLocked).toBe(false);
+  });
+
+  test("a fallback CustomerInfo synthesized from the Firestore mirror unlocks identically to a live one showing the same entitlement", () => {
+    const nowMs = Date.now();
+    const liveInfo = customerWith({
+      pro: { productIdentifier: "pro_monthly", expirationDate: new Date(nowMs + 1_000_000) },
+    });
+    const fallbackInfo = synthesizeCustomerInfoFromMirror(
+      { pro: { active: true, expiresAtMs: nowMs + 1_000_000, productIdentifier: "pro_monthly", willRenew: true } },
+      nowMs,
+    );
+    expect(computeProLocks({ ...baseArgs, customerInfo: liveInfo }))
+      .toEqual(computeProLocks({ ...baseArgs, customerInfo: fallbackInfo }));
+  });
+});
+
+describe("activeProLockReasons", () => {
+  test("clicking Add more recipes always names multi-recipe alone, even if a theme and a card size are also locked", () => {
+    expect(
+      activeProLockReasons(
+        { themeLocked: true, cardSizeLocked: true, multiRecipeLocked: false },
+        "add_more_recipes",
+      ),
+    ).toEqual(["multi_recipe"]);
+  });
+
+  test("the print button reports every lock currently in effect, combined", () => {
+    expect(
+      activeProLockReasons(
+        { themeLocked: true, cardSizeLocked: true, multiRecipeLocked: false },
+        "print_button",
+      ),
+    ).toEqual(["theme", "card_size"]);
+  });
+
+  test("the print button reports a single reason plainly when only one applies", () => {
+    expect(
+      activeProLockReasons(
+        { themeLocked: false, cardSizeLocked: true, multiRecipeLocked: false },
+        "print_button",
+      ),
+    ).toEqual(["card_size"]);
+  });
+
+  test("the print button includes multi-recipe when the job already holds more than one", () => {
+    expect(
+      activeProLockReasons(
+        { themeLocked: false, cardSizeLocked: false, multiRecipeLocked: true },
+        "print_button",
+      ),
+    ).toEqual(["multi_recipe"]);
   });
 });

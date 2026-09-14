@@ -10,14 +10,21 @@ import type { PrintCardSize } from "@/types/recipe";
 /** A tiny page illustration per format, same idea as the cookbook's
  *  "Photos" style tiles (`components/print/photoStyle.tsx`) — a full page
  *  reads as a tall portrait sheet, a recipe card as a small landscape card,
- *  so the choice is legible without reading the label. */
+ *  so the choice is legible without reading the label. A few abstract ghost
+ *  lines stand in for the recipe text itself, same device `PhotoStylePreview`
+ *  uses, so the mockup reads as "a page with writing on it" rather than a
+ *  blank swatch. */
 function PrintFormatPreview({ id }: { id: PrintCardSize }) {
   return (
     <span
       className={`print-format-preview ${id === "card-6x4" ? "print-format-preview--card" : ""}`}
       aria-hidden
     >
-      <span className="print-format-preview__page" />
+      <span className="print-format-preview__page">
+        <span className="print-format-preview__line" />
+        <span className="print-format-preview__line" />
+        <span className="print-format-preview__line print-format-preview__line--short" />
+      </span>
     </span>
   );
 }
@@ -64,9 +71,12 @@ export function PrintFormatToggle({
               onChange={() => setCardSize(option.id)}
             />
             <PrintFormatPreview id={option.id} />
-            <span className="print-format-toggle__label">
-              {option.label}
-              {locked && <ProBadge variant="inline" />}
+            <span className="print-format-toggle__text">
+              <span className="print-format-toggle__label">
+                {option.label}
+                {locked && <ProBadge variant="inline" label={false} />}
+              </span>
+              <span className="print-format-toggle__detail">{option.detail}</span>
             </span>
           </SelectTile>
         );

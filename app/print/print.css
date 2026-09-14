@@ -2194,6 +2194,13 @@
   outline-offset: var(--cp-focus-ring-offset);
 }
 
+.print-format-toggle__text {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1px;
+}
+
 .print-format-toggle__label {
   display: flex;
   align-items: center;
@@ -2209,9 +2216,20 @@
   color: var(--cp-selected-text);
 }
 
+.print-format-toggle__detail {
+  font-size: var(--cp-fs-label);
+  color: var(--cp-ink-soft);
+  line-height: 1;
+}
+
+.print-format-toggle__tile.is-active .print-format-toggle__detail {
+  color: var(--cp-selected-text);
+}
+
 /* Full Page is a tall portrait sheet; Recipe Card is a small landscape card
    — the same aspect difference as the real output, so the illustration
-   doubles as an explanation. */
+   doubles as an explanation. A few abstract ghost lines stand in for the
+   recipe's own text, same device as .recipe-photo-preview's line above. */
 .print-format-preview {
   display: flex;
   height: 42px;
@@ -2220,11 +2238,26 @@
 }
 
 .print-format-preview__page {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 3px;
   width: 26px;
   height: 36px;
+  padding: 4px 3px;
   border: 1px solid var(--cp-line-strong);
   border-radius: 3px;
   background: var(--cp-card);
+}
+
+.print-format-preview__line {
+  height: 2px;
+  border-radius: 1px;
+  background: color-mix(in srgb, var(--cp-ink-soft) 45%, transparent);
+}
+
+.print-format-preview__line--short {
+  width: 65%;
 }
 
 .print-format-preview--card .print-format-preview__page {
@@ -2309,39 +2342,43 @@
 /* The shared Pro indicator (components/ProBadge.tsx) — one consistent look
    for "requires Pro" everywhere it appears (themes, card sizes, Add more
    recipes, and any future gated control), so no surface invents its own
-   crown treatment. Same quiet neutral tokens as `.recipe-template-option__owned`
-   just below — a small, muted "here's what this is" mark rather than a
-   bright gold "buy this" flag. Deliberately not --cp-premium: a crown on
-   every gated control at full colour read as the editor selling itself, not
-   describing itself, and made the whole panel feel like an ad for its own
-   upgrade. */
+   crown treatment. A brighter yellow-gold than --cp-premium on purpose: that
+   token is tuned for ink-sized text on a light tint, not a small icon on a
+   dark backing, where its darker gold read as too muted to notice. */
 .pro-badge {
   display: inline-flex;
   align-items: center;
+  justify-content: center;
   gap: 3px;
-  border: 1px solid var(--cp-line-strong);
-  border-radius: 999px;
-  background: var(--cp-surface-strong);
-  color: var(--cp-ink-soft);
+  color: #f0b429;
   font-size: var(--cp-fs-label);
   font-weight: 700;
   line-height: 1;
 }
 
+/* Sitting on top of a theme thumbnail or card-size preview — arbitrary art
+   or colour behind it — needs a backing plate to stay legible, the same
+   idea Canva's own Pro crown badge uses: a solid, warm dark plate (not a
+   translucent black wash) with just enough corner rounding to read as a
+   soft chip rather than a circle or a sharp rectangle. */
 .pro-badge--overlay {
   position: absolute;
-  top: 3px;
-  right: 3px;
+  top: 4px;
+  right: 4px;
   z-index: 2;
-  justify-content: center;
-  min-width: 22px;
-  height: 22px;
-  padding: 0 6px;
+  padding: 4px;
+  border-radius: 8px;
+  background: #431922;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.35);
 }
 
+/* Sitting inline in a plain text row (a format-tile label, "Add more
+   recipes") already has a plain background of its own — no backing plate
+   needed there, just the bare crown. Back to --cp-premium here specifically
+   because that token IS tuned for exactly this: ink-weight colour read
+   directly against a light card surface, not against a dark plate. */
 .pro-badge--inline {
-  height: 20px;
-  padding: 2px 8px;
+  color: var(--cp-premium);
 }
 
 .pro-badge__label {

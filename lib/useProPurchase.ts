@@ -18,6 +18,11 @@ interface UseProPurchaseOptions {
       `usePremiumTemplatePurchase` owns, so every other gate (theme lock, card
       size lock) sees the new Pro entitlement immediately. */
   setCustomerInfo: (info: CustomerInfo) => void;
+  /** A successful purchase call is itself a live, successful RevenueCat
+      verification — mark it as such the same way `usePremiumTemplatePurchase`
+      does internally, so a fallback to the Firestore mirror never lingers
+      past the moment a fresh purchase just proved the live SDK works. */
+  markCustomerInfoVerified: () => void;
   cookPilotUser: User | null;
   showToast: (message: string) => void;
   clearToast: () => void;
@@ -46,6 +51,7 @@ export function useProPurchase({
   revenueCatUserId,
   customerInfo,
   setCustomerInfo,
+  markCustomerInfoVerified,
   cookPilotUser,
   showToast,
   clearToast,
@@ -85,6 +91,7 @@ export function useProPurchase({
         cycle,
       });
       setCustomerInfo(result.customerInfo);
+      markCustomerInfoVerified();
 
       if (result.cancelled) {
         track("purchase_cancelled", { product: "pro", cycle, customerId: revenueCatUserId });

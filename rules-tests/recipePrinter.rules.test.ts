@@ -481,6 +481,12 @@ describe("server-owned fields on the shared CookPilot user document", () => {
     await assertFails(
       setDoc(doc(user, "users/pro-faker"), { recipePrinterRevenueCatSyncedAt: new Date() }, { merge: true }),
     );
+    // Backdating this to fake a fresher-than-reality sync would let a client
+    // resurrect an entitlement the webhook's concurrency guard had already
+    // correctly retired — same server-only field family, same guard.
+    await assertFails(
+      setDoc(doc(user, "users/pro-faker"), { recipePrinterRevenueCatFetchedAtMs: Date.now() + 1_000_000 }, { merge: true }),
+    );
   });
 
   test("a real Pro subscriber can still read their entitlement and edit unrelated fields", async () => {

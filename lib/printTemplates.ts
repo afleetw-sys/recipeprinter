@@ -26,8 +26,8 @@ export const PRINT_CARD_SIZE_OPTIONS: Array<{
    *  conditional at each call site. */
   proOnly: boolean;
 }> = [
-  { id: "letter", label: "Full Page", detail: "Letter paper", proOnly: false },
-  { id: "card-6x4", label: "Recipe Card", detail: "4 x 6, landscape", proOnly: true },
+  { id: "letter", label: "Full Page", detail: "Letter", proOnly: false },
+  { id: "card-6x4", label: "Recipe Card", detail: "4×6", proOnly: true },
 ];
 
 export const PRO_ONLY_CARD_SIZES: readonly PrintCardSize[] = PRINT_CARD_SIZE_OPTIONS.filter(

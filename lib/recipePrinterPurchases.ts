@@ -269,6 +269,97 @@ export function hasMultiRecipeEntitlement(customerInfo: CustomerInfo | null): bo
   return hasProEntitlement(customerInfo);
 }
 
+export interface ProLocks {
+  themeLocked: boolean;
+  cardSizeLocked: boolean;
+  multiRecipeLocked: boolean;
+  multiRecipeAddLocked: boolean;
+  proLocked: boolean;
+}
+
+/**
+ * Every Pro-gate boolean the print page needs, computed in one pure,
+ * independently-testable place — extracted out of app/print/page.tsx so this
+ * logic (and every combination of entitlement/cookbook-mode/theme/card-size
+ * it has to get right) can be pinned down by a test without rendering the
+ * whole page. Pure extraction, no behavior change: matches exactly what
+ * page.tsx computed inline before.
+ */
+export function computeProLocks({
+  customerInfo,
+  cookbookMode,
+  template,
+  selectedPremiumTemplate,
+  cardSize,
+  recipeCount,
+}: {
+  customerInfo: CustomerInfo | null;
+  cookbookMode: boolean;
+  template: RecipePrintTemplate;
+  selectedPremiumTemplate: PremiumRecipePrintTemplate | null;
+  cardSize: PrintCardSize;
+  recipeCount: number;
+}): ProLocks {
+  // Every theme (and every Pro-only card size) is included with the cookbook
+  // purchase, so neither paywall applies while in cookbook mode — the
+  // cookbook unlock is the only gate there. Switching back to recipe cards
+  // restores normal gating.
+  const themeLocked =
+    Boolean(selectedPremiumTemplate) &&
+    !hasTemplateOrProEntitlement(customerInfo, template) &&
+    !cookbookMode;
+  const cardSizeLocked = !cookbookMode && !canUseCardSize(customerInfo, cardSize);
+  // Printing more than one recipe in one job (outside a cookbook, which has
+  // its own separate purchase model) is its own Pro-gated capability — see
+  // `hasMultiRecipeEntitlement`. There's nothing to preview here the way a
+  // locked theme or card size can be: `openAddRecipeBelow` refuses to add a
+  // second recipe at all rather than adding it and only blocking Print.
+  const multiRecipeLocked =
+    !cookbookMode && !hasMultiRecipeEntitlement(customerInfo) && recipeCount > 1;
+  // Whether the NEXT add would be the locked one — reused by `openAddRecipeBelow`
+  // (the actual gate) and by the rail's badge (just the visual mark), so the
+  // two can never disagree about when Add more recipes is restricted.
+  const multiRecipeAddLocked =
+    !cookbookMode && recipeCount >= 1 && !hasMultiRecipeEntitlement(customerInfo);
+  // All three resolve to the same purchase now (RecipePrinter Pro) — see
+  // lib/purchaseAccess.ts's purchaseGate.
+  const proLocked = themeLocked || cardSizeLocked || multiRecipeLocked;
+  return { themeLocked, cardSizeLocked, multiRecipeLocked, multiRecipeAddLocked, proLocked };
+}
+
+export type ProLockReason = "theme" | "card_size" | "multi_recipe";
+
+/**
+ * One place to name which lock(s) are actually in effect — reused by
+ * analytics (`pro_feature_encountered`/`pro_feature_used`) and by the
+ * upgrade dialog's own title/description, so none of them can report or
+ * describe a different reason for the same click.
+ *
+ * Clicking "Add more recipes" always names multi-recipe printing alone, even
+ * if a locked theme or card size also happens to be true at that moment —
+ * the cook pressed a specific control asking specifically about adding a
+ * recipe, so that's the one reason worth naming, not a "few things" message
+ * that buries what they actually clicked. Only the print button (or any
+ * other non-"add_more_recipes" trigger) reports every lock currently in
+ * effect, since pressing Print really is asking "can this whole job go
+ * through," and every restriction on it is relevant there. At that moment
+ * the job still only holds one recipe (the second hasn't been added yet),
+ * so `multiRecipeLocked` alone wouldn't see the "add_more_recipes" case —
+ * the trigger name stands in for it (see `openAddRecipeBelow` in
+ * app/print/page.tsx).
+ */
+export function activeProLockReasons(
+  locks: Pick<ProLocks, "themeLocked" | "cardSizeLocked" | "multiRecipeLocked">,
+  trigger: string,
+): ProLockReason[] {
+  if (trigger === "add_more_recipes") return ["multi_recipe"];
+  const reasons: ProLockReason[] = [];
+  if (locks.themeLocked) reasons.push("theme");
+  if (locks.cardSizeLocked) reasons.push("card_size");
+  if (locks.multiRecipeLocked) reasons.push("multi_recipe");
+  return reasons;
+}
+
 /**
  * Entitlements for a customer we already know exists.
  *
