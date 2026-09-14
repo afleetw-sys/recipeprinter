@@ -22,7 +22,11 @@ import {
 // applied that discount; a Pro subscriber was charged the same $19.99 as
 // anyone else. Don't add a benefit back here without wiring the real thing
 // behind it first.
-const PRO_BENEFITS = [
+//
+// Exported so `AccountProStatus` can show the same list to a Free account —
+// one list, so a change here doesn't quietly leave the two surfaces
+// disagreeing about what Pro actually includes.
+export const PRO_BENEFITS = [
   "All premium themes",
   "4×6 recipe cards",
   "Print multiple recipes at once",
@@ -145,8 +149,8 @@ export function ProUpgradeDialog({
               <p className="pro-plan-card__price">
                 <span className="pro-plan-card__price--was">{annualAtMonthlyRate}</span>
                 {PRO_ANNUAL_PRICE_FALLBACK}
-                <span className="pro-plan-card__note">Save {savingsPercent}% vs. monthly</span>
               </p>
+              <p className="pro-plan-card__note">Save {savingsPercent}% vs. monthly</p>
             </SelectTile>
             <SelectTile selected={selectedCycle === "monthly"} className="pro-plan-card">
               <input

@@ -237,15 +237,12 @@ export default function AccountAvatarButton({
             onClick={closeMenu}
           >
             <BookIcon size={ICON_SIZE.md} className="shrink-0 text-ink-soft" />
-            {/* A plain count, not a pill — the same "· N" the project cards
-                already use for recipe counts, so this doesn't introduce a
-                second way the app marks a number next to a label. */}
-            <span className="flex-1">
-              Projects
-              {projectCount !== null && (
-                <span className="text-ink-soft"> · {projectCount}</span>
-              )}
-            </span>
+            <span className="flex-1">Projects</span>
+            {projectCount !== null && (
+              <span className="flex h-5 min-w-5 shrink-0 items-center justify-center rounded-full border border-line bg-page px-1 text-cp-caption font-bold leading-none text-ink-soft">
+                {projectCount}
+              </span>
+            )}
           </Link>
           <div className="mt-cp-1 border-t border-line pt-cp-1">
             <button

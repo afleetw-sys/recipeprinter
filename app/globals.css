@@ -1571,7 +1571,6 @@
     text-decoration: line-through;
   }
   .pro-plan-card__note {
-    margin-left: 6px;
     color: var(--cp-ink-soft);
     font-size: var(--cp-fs-label);
     font-weight: 500;
