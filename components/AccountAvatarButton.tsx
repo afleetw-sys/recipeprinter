@@ -185,7 +185,20 @@ export default function AccountAvatarButton({
   useMenuDismiss(rootRef, closeMenu, { enabled: open, closeOnScroll: false });
 
   return (
-    <div ref={rootRef} className="relative flex items-center">
+    <div
+      ref={rootRef}
+      className="relative flex items-center"
+      // Read by `.recipe-mobile-topbar:has([data-account-menu-open])` in
+      // app/print/print.css — on mobile /print, this button sits inside that
+      // bar, which normally sits at z-index 6 (tied with, and sometimes
+      // losing to, the deck's own floating controls). That rule was written
+      // to lift the bar above them while the panel is open, but nothing ever
+      // set this attribute for it to match against, so it never fired and
+      // the panel stayed paintable-over. `|| undefined` so the attribute is
+      // absent (not `data-account-menu-open="false"`, which `:has([attr])`
+      // would still match) whenever the panel is closed.
+      data-account-menu-open={open && user ? "" : undefined}
+    >
       {/* One control, signed in or not — see the same button in
           `AccountControl`, which draws it while this chunk is still loading.
           Signed in it holds your initials on the accent; signed out, a person
