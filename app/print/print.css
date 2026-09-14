@@ -1899,13 +1899,13 @@
   text-align: left;
 }
 
-/* Both call sites (the desktop dialog and the mobile settings menu) nest this
+/* Both call sites (the desktop dialog and the mobile settings sheet) nest this
    inside `.print-success-dialog`, whose own `p` rule is otherwise more
    specific (class + element beats a single class) and was overriding this
    with its larger body-copy size — the two extra ancestor selectors below
    restore precedence without resorting to `!important`. */
 .print-settings-dialog__body .recipe-print-settings-banner,
-.recipe-mobile-settings-menu .recipe-print-settings-banner {
+.recipe-mobile-sheet__scroll .recipe-print-settings-banner {
   padding: 10px 12px;
   margin-top: 0;
   border: 1px solid color-mix(in srgb, var(--cp-accent) 28%, transparent);
@@ -2438,13 +2438,9 @@
 
 .recipe-mobile-topbar,
 .recipe-mobile-toolbar,
-.recipe-mobile-settings-backdrop,
-.recipe-mobile-size-menu-backdrop,
-.recipe-mobile-size-menu,
-.recipe-mobile-settings-menu,
 .recipe-mobile-actions,
-.recipe-structure-sheet,
-.recipe-structure-sheet__backdrop,
+.recipe-mobile-sheet,
+.recipe-mobile-sheet__backdrop,
 .recipe-config-panel__close {
   display: none;
 }
@@ -2616,11 +2612,6 @@
     display: none;
   }
 
-  .recipe-mobile-toolbar__btn-wrap {
-    position: relative;
-    flex: 0 0 auto;
-  }
-
   /* One filled tile per tool: icon over label, the whole thing the target.
      Widened from 84px so "Recipe" plus its Pro crown (see
      `.recipe-mobile-toolbar__btn-label` below) has room to sit on one line —
@@ -2701,67 +2692,33 @@
     transform: translateY(-50%) rotate(-45deg);
   }
 
-  .recipe-mobile-size-menu-backdrop {
-    position: fixed;
-    inset: 0;
-    /* Below .recipe-mobile-topbar (z-index 6) and .recipe-mobile-actions
-       (z-index 75) — each is its own stacking context, so this only needs to
-       clear plain page content, not out-rank them, for the popovers nested
-       inside those bars to still receive clicks over the backdrop. */
-    z-index: 5;
-    display: block;
-    border: 0;
-    background: transparent;
-  }
-
-  /* ONE mobile pattern, stated once: anything opened from the bottom bar is a
-     bottom SHEET, not a popover anchored to its button. Two reasons, and the
-     second is why this changed.
-       1. It is where the thumb already is, and it is what the structure sheet
-          (`.recipe-structure-sheet`) has always been — the app should not have
-          two answers for "a tool opened from the bar".
-       2. A popover cannot live in that bar any more. The tool row scrolls
-          horizontally now, and `overflow-x: auto` computes `overflow-y` to
-          `auto` too — so a menu positioned ABOVE its button was clipped by the
-          scroller and simply never appeared. Size looked like a dead button.
-     Confirmations stay centred dialogs; they are interruptions, not tools. */
-  .recipe-mobile-size-menu,
-  .recipe-mobile-settings-menu {
-    position: fixed;
-    right: 0;
-    /* Anchored to the viewport, over the action bar rather than above it —
-       the same place `.recipe-structure-sheet` opens. Its z-index (77) already
-       clears the bar (75), so the bar is covered while a sheet is open, which
-       is what makes it feel like one surface replacing another. */
-    bottom: 0;
-    left: 0;
-    z-index: 77;
-    display: flex;
-    flex-direction: column;
-    gap: 2px;
-    max-height: 60dvh;
-    padding: 10px 16px calc(10px + env(safe-area-inset-bottom));
-    border-top: 1px solid var(--cp-line);
-    border-top-left-radius: 20px;
-    border-top-right-radius: 20px;
-    background: var(--cp-card);
-    overflow-y: auto;
-    box-shadow: var(--cp-shadow-sheet);
-  }
-
-  .recipe-mobile-settings-menu {
-    gap: 12px;
-    padding: 16px 16px calc(16px + env(safe-area-inset-bottom));
-  }
-
   .recipe-page-rail {
     display: none;
   }
 
-  /* Mobile structure sheet — the touch replacement for the drag-only rail.
-     A bottom sheet that slides up over the deck; the toolbar "Pages" button
-     toggles `.is-open`. */
-  .recipe-structure-sheet__backdrop {
+  /* ONE mobile pattern, stated once: anything opened from the bottom bar (or
+     the topbar's Print-settings gear) is a bottom SHEET, not a popover
+     anchored to its button — Book, Size and Print settings all render through
+     the shared `<MobileSheet>` component, and this is its only chrome.
+     Two reasons.
+       1. It is where the thumb already is, and it is what the structure sheet
+          has always been — the app should not have two answers for "a tool
+          opened from the bar".
+       2. A popover cannot live in the bar. The tool row scrolls horizontally,
+          and `overflow-x: auto` computes `overflow-y` to `auto` too — so a
+          menu positioned ABOVE its button was clipped by the scroller and
+          simply never appeared. Size looked like a dead button.
+     Confirmations stay centred dialogs; they are interruptions, not tools.
+
+     Every sheet renders as a sibling at the top of the page tree rather than
+     nested inside `.recipe-mobile-topbar` or `.recipe-mobile-actions` — both
+     of those establish their own stacking context (`position` + `z-index`),
+     which caps any descendant's z-index against THEIR siblings, not the
+     document's. A sheet nested in the topbar (z-index 6) could declare
+     z-index 999 and still paint behind `.recipe-mobile-actions` (z-index 75).
+     Rendering at the top level is what actually gets a sheet above the
+     bottom nav, not the z-index number alone. */
+  .recipe-mobile-sheet__backdrop {
     position: fixed;
     inset: 0;
     z-index: 80;
@@ -2771,7 +2728,7 @@
     backdrop-filter: var(--cp-scrim-blur);
   }
 
-  .recipe-structure-sheet {
+  .recipe-mobile-sheet {
     position: fixed;
     left: 0;
     right: 0;
@@ -2789,17 +2746,17 @@
     transition: transform 240ms ease;
   }
 
-  .recipe-structure-sheet.is-open {
+  .recipe-mobile-sheet.is-open {
     transform: translateY(0);
   }
 
   @media (prefers-reduced-motion: reduce) {
-    .recipe-structure-sheet {
+    .recipe-mobile-sheet {
       transition: none;
     }
   }
 
-  .recipe-structure-sheet__grabber {
+  .recipe-mobile-sheet__grabber {
     width: 40px;
     height: 4px;
     margin: 8px auto 0;
@@ -2807,22 +2764,21 @@
     background: var(--cp-line);
   }
 
-  .recipe-structure-sheet__header {
+  .recipe-mobile-sheet__header {
     display: flex;
     align-items: flex-start;
     justify-content: space-between;
     gap: 12px;
     padding: 10px 16px 12px;
-    border-bottom: 1px solid var(--cp-line);
   }
 
-  .recipe-structure-sheet__header h2 {
+  .recipe-mobile-sheet__header h2 {
     font-size: var(--cp-fs-dialog-title);
     font-weight: 800;
     letter-spacing: -0.01em;
   }
 
-  .recipe-structure-sheet__header span {
+  .recipe-mobile-sheet__header span {
     display: block;
     margin-top: 2px;
     color: var(--cp-ink-soft);
@@ -2830,7 +2786,7 @@
     font-weight: 600;
   }
 
-  .recipe-structure-sheet__scroll {
+  .recipe-mobile-sheet__scroll {
     flex: 1 1 auto;
     min-height: 0;
     overflow-y: auto;
@@ -2989,14 +2945,14 @@
     transform: rotate(180deg);
   }
 
-  .recipe-structure-sheet__footer {
+  .recipe-mobile-sheet__footer {
     display: flex;
     gap: 8px;
     padding: 10px 16px calc(10px + env(safe-area-inset-bottom));
     border-top: 1px solid var(--cp-line);
   }
 
-  .recipe-structure-sheet__footer .btn {
+  .recipe-mobile-sheet__footer .btn {
     flex: 1 1 auto;
     justify-content: center;
   }
@@ -3062,6 +3018,26 @@
     opacity: 0.72;
   }
 
+  /* The same edge the desktop page rail uses for its selected thumbnail
+     (`.recipe-page-rail__item.is-active`, above) — the rail itself is hidden
+     on this width (`.recipe-page-rail { display: none }`), so nothing else on
+     screen says which card of the deck is the one in focus. Direct child, not
+     a descendant selector: a cookbook spread's two halves already get their
+     own per-page ring (`.recipe-spread__page.is-focused`), and this would
+     otherwise double up on both of them at once.
+     An outline, not a border-color/box-shadow swap: those sit flush against
+     the card's own edge, and read as part of the card rather than as a
+     selection mark around it. `outline-offset` is what buys the gap — the
+     same reason `.recipe-spread__page.is-focused` (below) uses outline too.
+     `[data-single-recipe="true"]` excludes the one-recipe deck: with nothing
+     else to swipe to, there's no "which one is focused" question for the
+     ring to answer, and it would just be a permanent blue box around the
+     only card on screen. */
+  .recipe-page-canvas:not([data-single-recipe="true"]) .recipe-page-slide.is-active > .recipe-page-scaler {
+    outline: 2px solid var(--cp-selected-border);
+    outline-offset: 4px;
+  }
+
   /* This is a horizontal swipe deck, not a vertical stack, so the flip
      control always floats here (even for the first slide) — there's no
      sticky header above it to collide with, and nothing to push down. */
@@ -3119,6 +3095,19 @@
     align-items: center;
     justify-content: space-between;
     gap: 12px;
+    /* The desktop panel's own header divider (`.recipe-config-panel__header`,
+       above) and its downsized title (`.recipe-config-panel h2`, below the
+       base rule) are both right for a persistent sidebar — but this same
+       markup doubles as the mobile Themes SHEET, which sits beside Book,
+       Size and Print settings (all `<MobileSheet>`, none of which divide
+       their header or shrink their title) and needs to read as one of them,
+       not as the odd one out. */
+    padding-bottom: 0;
+    border-bottom: 0;
+  }
+
+  .recipe-config-panel__header h2 {
+    font-size: var(--cp-fs-dialog-title);
   }
 
   .recipe-config-panel__close {

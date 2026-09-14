@@ -1419,6 +1419,26 @@
     opacity: .5;
   }
 
+  /* `.icon-close-btn` closes a dialog or sheet — the one `.icon-button` role
+     that, below the width every such surface becomes a full mobile sheet
+     (matches the print workspace's own sheet breakpoint), sits directly
+     beside a title rather than in a row of other controls. The bordered box
+     is right for a row; next to a heading it reads as a second shape drawn
+     around a glyph that already reads as one thing with the words beside it
+     — the same reasoning `.icon-button--bare` documents above, applied by
+     width instead of by an opt-in class so every dialog's close X follows it
+     without each caller remembering to ask. */
+  @media screen and (max-width: 820px) {
+    .icon-close-btn {
+      border-color: transparent;
+      background: transparent;
+    }
+    .icon-close-btn:hover:not(:disabled) {
+      border-color: transparent;
+      background: var(--cp-surface-strong);
+    }
+  }
+
   .status-badge {
     display: inline-flex;
     align-items: center;
@@ -1908,6 +1928,25 @@
      Feedback/CookPilot login dialogs add for that. */
   .panel--modal {
     box-shadow: var(--cp-shadow-xl);
+  }
+
+  /* The slide-up entrance for a Tailwind dialog whose mobile layout has
+     become a bottom sheet (bottom-anchored, rounded top corners — see the
+     panel's own `items-end`/`rounded-t-2xl` utilities). `Dialog` mounts and
+     unmounts on `open` rather than toggling a class on a persistent node, so
+     there is no "closed" state to transition FROM the way `.recipe-mobile-
+     sheet` (a print-workspace-only class, always mounted) animates via
+     `transform` + `.is-open` — an entrance keyframe that plays once on mount
+     is the equivalent for a dialog that doesn't stay in the DOM. */
+  @media screen and (max-width: 820px) {
+    .mobile-sheet-panel {
+      animation: mobile-sheet-in 240ms cubic-bezier(0.4, 0, 0.2, 1);
+    }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .mobile-sheet-panel {
+      animation: none;
+    }
   }
 
   /* Eyebrow (mirrors .cp-eyebrow) */
@@ -2703,6 +2742,12 @@
 @keyframes rp-attention-ring {
   0%, 100% { box-shadow: 0 0 0 0 transparent; }
   30%, 60% { box-shadow: 0 0 0 3px color-mix(in srgb, var(--cp-accent) 60%, transparent); }
+}
+
+/* `.mobile-sheet-panel`'s entrance, above. */
+@keyframes mobile-sheet-in {
+  from { transform: translateY(100%); }
+  to { transform: translateY(0); }
 }
 /* Site-wide print rules. The recipe card/template/print-page CSS that used to
    follow here now lives in app/print/print.css, loaded only by the print

@@ -3,7 +3,7 @@
 import { useState } from "react";
 import type { User } from "firebase/auth";
 import { Dialog } from "@/components/Dialog";
-import { IconButton, SelectTile } from "@/components/Controls";
+import { SelectTile } from "@/components/Controls";
 import { CookPilotLoginForm } from "@/components/CookPilotAuth";
 import { CheckIcon, CrownIcon, ICON_SIZE, XIcon } from "@/components/icons";
 import { track } from "@/lib/analytics";
@@ -102,18 +102,19 @@ export function ProUpgradeDialog({
       onClose={onClose}
       closeDisabled={closeDisabled}
       labelledBy="pro-upgrade-title"
-      className="fixed inset-0 z-50 flex items-stretch sm:items-center justify-center dialog-scrim p-0 sm:px-cp-4 sm:py-cp-6"
-      panelClassName="panel panel--modal w-full sm:max-w-[440px] h-full sm:h-auto rounded-none border-0 sm:rounded-2xl sm:border p-cp-5 flex flex-col gap-cp-4 relative overflow-y-auto"
+      className="fixed inset-0 z-50 flex items-end sm:items-center justify-center dialog-scrim p-0 sm:px-cp-4 sm:py-cp-6"
+      panelClassName="panel panel--modal mobile-sheet-panel w-full sm:max-w-[440px] max-h-[88dvh] sm:max-h-none sm:h-auto rounded-t-2xl sm:rounded-2xl border-0 sm:border p-cp-5 pb-[max(20px,env(safe-area-inset-bottom))] sm:pb-cp-5 flex flex-col gap-cp-4 relative overflow-y-auto"
       portal
     >
-      <IconButton
-        className="absolute right-3 top-3"
+      <button
+        type="button"
+        className="icon-close-btn absolute right-3 top-3"
         aria-label="Close"
         disabled={closeDisabled}
         onClick={onClose}
       >
         <XIcon size={ICON_SIZE.md} />
-      </IconButton>
+      </button>
 
       {step === "plan" ? (
         <>

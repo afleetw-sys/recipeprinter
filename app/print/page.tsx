@@ -32,6 +32,7 @@ import { navigateAfterOverlayHistory, useBackDismiss } from "@/lib/useBackDismis
 import type { PrintCardSize, RecipePrintTemplate } from "@/components/RecipeCardPrint";
 import { PHOTO_STYLE_OPTIONS } from "@/components/print/photoStyle";
 import { MobileStructureSheet } from "@/components/print/MobileStructureSheet";
+import { MobileSheet } from "@/components/print/MobileSheet";
 import { PrintConfigPanel } from "@/components/print/PrintConfigPanel";
 import { PrintFormatToggle } from "@/components/print/PrintFormatToggle";
 import { PageRail, type RailSortMode } from "@/components/print/PageRail";
@@ -5449,12 +5450,10 @@ export default function PrintPage() {
           onRemoveImport={queue.remove}
           pendingAddAfterRecipeId={pendingAddAfterRecipeId}
           openAddRecipeBelow={openAddRecipeBelow}
-          sizeMenuOpen={sizeMenuOpen}
           setSizeMenuOpen={setSizeMenuOpen}
           settingsMenuOpen={settingsMenuOpen}
           setSettingsMenuOpen={setSettingsMenuOpen}
           hasPrintSettingsFields={hasPrintSettingsFields}
-          renderPrintSettingsFields={renderPrintSettingsFields}
           renderAllPages={renderAllPages}
         />
 
@@ -5563,39 +5562,21 @@ export default function PrintPage() {
             {/* Size is a recipe-card concept only — hidden in cookbook mode,
                 where every page is a bound letter page. */}
             {!projectMeta.meta.cookbookMode && (
-              <div className="recipe-mobile-toolbar__btn-wrap">
-                <button
-                  type="button"
-                  className={`recipe-mobile-toolbar__btn ${sizeMenuOpen ? "is-active" : ""}`}
-                  aria-haspopup="true"
-                  aria-expanded={sizeMenuOpen}
-                  onClick={() => {
-                    setSettingsMenuOpen(false);
-                    setSizeMenuOpen((open) => !open);
-                  }}
-                >
-                  <span className="recipe-mobile-toolbar__btn-icon">
-                    <SizeIcon size={ICON_SIZE.lg} />
-                  </span>
-                  Size
-                </button>
-                {sizeMenuOpen && (
-                  <div className="recipe-mobile-size-menu">
-                    {/* Same component the desktop panel uses (PrintFormatToggle)
-                        — one card-size picker, not two that could drift apart.
-                        Closes itself on pick, since this is a transient popover
-                        rather than a persistent panel. */}
-                    <PrintFormatToggle
-                      cardSize={cardSize}
-                      setCardSize={(next) => {
-                        setCardSize(next);
-                        setSizeMenuOpen(false);
-                      }}
-                      customerInfo={effectiveCustomerInfo.customerInfo}
-                    />
-                  </div>
-                )}
-              </div>
+              <button
+                type="button"
+                className={`recipe-mobile-toolbar__btn ${sizeMenuOpen ? "is-active" : ""}`}
+                aria-haspopup="dialog"
+                aria-expanded={sizeMenuOpen}
+                onClick={() => {
+                  setSettingsMenuOpen(false);
+                  setSizeMenuOpen((open) => !open);
+                }}
+              >
+                <span className="recipe-mobile-toolbar__btn-icon">
+                  <SizeIcon size={ICON_SIZE.lg} />
+                </span>
+                Size
+              </button>
             )}
             <button
               type="button"
@@ -5685,6 +5666,35 @@ export default function PrintPage() {
           structureSheetOpen={structureSheetOpen}
           setStructureSheetOpen={setStructureSheetOpen}
         />
+
+        <MobileSheet
+          open={sizeMenuOpen}
+          onClose={() => setSizeMenuOpen(false)}
+          title="Size"
+        >
+          {/* Same component the desktop panel uses (PrintFormatToggle) — one
+              card-size picker, not two that could drift apart. Closes itself
+              on pick, since this sheet is a transient chooser rather than a
+              persistent panel. */}
+          <PrintFormatToggle
+            cardSize={cardSize}
+            setCardSize={(next) => {
+              setCardSize(next);
+              setSizeMenuOpen(false);
+            }}
+            customerInfo={effectiveCustomerInfo.customerInfo}
+          />
+        </MobileSheet>
+
+        {hasPrintSettingsFields && (
+          <MobileSheet
+            open={settingsMenuOpen}
+            onClose={() => setSettingsMenuOpen(false)}
+            title="Print settings"
+          >
+            {renderPrintSettingsFields()}
+          </MobileSheet>
+        )}
       </main>
     </>
 

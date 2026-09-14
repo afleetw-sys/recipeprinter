@@ -253,12 +253,10 @@ interface PrintDeckProps {
       placeholder page right after that recipe, the way the rail does. */
   pendingAddAfterRecipeId: string | null;
   // Mobile topbar
-  sizeMenuOpen: boolean;
   setSizeMenuOpen: Dispatch<SetStateAction<boolean>>;
   settingsMenuOpen: boolean;
   setSettingsMenuOpen: Dispatch<SetStateAction<boolean>>;
   hasPrintSettingsFields: boolean;
-  renderPrintSettingsFields: () => ReactNode;
   /** Draw every page regardless of the window — set while printing, when the
       deck IS the output and a placeholder would print blank. */
   renderAllPages: boolean;
@@ -344,12 +342,10 @@ export function PrintDeck(props: PrintDeckProps) {
     onRepairImportWithImages,
     onRemoveImport,
     pendingAddAfterRecipeId,
-    sizeMenuOpen,
     setSizeMenuOpen,
     settingsMenuOpen,
     setSettingsMenuOpen,
     hasPrintSettingsFields,
-    renderPrintSettingsFields,
     renderAllPages,
   } = props;
 
@@ -1019,17 +1015,6 @@ export function PrintDeck(props: PrintDeckProps) {
             onSet={onZoomSet}
           />
 
-          {(sizeMenuOpen || settingsMenuOpen) && (
-            <button
-              type="button"
-              className="recipe-mobile-size-menu-backdrop no-print"
-              aria-label="Close menu"
-              onClick={() => {
-                setSizeMenuOpen(false);
-                setSettingsMenuOpen(false);
-              }}
-            />
-          )}
           <div className="recipe-mobile-topbar no-print">
             <Link href="/" className="recipe-mobile-topbar__logo" aria-label="RecipePrinter home">
               <LogoMark size={26} rounded={0} />
@@ -1037,26 +1022,19 @@ export function PrintDeck(props: PrintDeckProps) {
             </Link>
             <div className="recipe-mobile-topbar__actions">
               {hasPrintSettingsFields && (
-                <div className="recipe-mobile-toolbar__btn-wrap">
-                  <button
-                    type="button"
-                    className={`recipe-mobile-topbar__icon-btn ${settingsMenuOpen ? "is-active" : ""}`}
-                    aria-haspopup="true"
-                    aria-expanded={settingsMenuOpen}
-                    aria-label="Print settings"
-                    onClick={() => {
-                      setSizeMenuOpen(false);
-                      setSettingsMenuOpen((open) => !open);
-                    }}
-                  >
-                    <SettingsIcon size={ICON_SIZE.lg} />
-                  </button>
-                  {settingsMenuOpen && (
-                    <div className="recipe-mobile-settings-menu" role="menu" aria-label="Print settings">
-                      {renderPrintSettingsFields()}
-                    </div>
-                  )}
-                </div>
+                <button
+                  type="button"
+                  className={`recipe-mobile-topbar__icon-btn ${settingsMenuOpen ? "is-active" : ""}`}
+                  aria-haspopup="dialog"
+                  aria-expanded={settingsMenuOpen}
+                  aria-label="Print settings"
+                  onClick={() => {
+                    setSizeMenuOpen(false);
+                    setSettingsMenuOpen((open) => !open);
+                  }}
+                >
+                  <SettingsIcon size={ICON_SIZE.lg} />
+                </button>
               )}
               {/* Print is NOT here any more. It moved to the bottom bar, where the
                   thumb is and where the tools it finishes already live. */}
