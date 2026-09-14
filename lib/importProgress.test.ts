@@ -26,7 +26,7 @@ describe("importLoadingLabel", () => {
   });
 
   it("has a line for every import method, including ones with no dedicated case", () => {
-    const methods = ["url", "image", "text", "cookpilot", "paprika", "shared", "manual"] as const;
+    const methods = ["url", "image", "text", "cookpilot", "paprika", "manual"] as const;
     for (const method of methods) {
       const label = importLoadingLabel({ method, source: "x" });
       expect(label.length).toBeGreaterThan(0);

@@ -167,7 +167,6 @@ export type ImportMethod =
   | "text"
   | "cookpilot"
   | "paprika"
-  | "shared"
   /** Typed in by hand on the deck rather than imported from anywhere — the
       blank recipe "or add manually" starts. Its own provenance on purpose:
       these skip the parser entirely, so counting them as an import would put

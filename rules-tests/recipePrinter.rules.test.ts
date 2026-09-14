@@ -104,20 +104,6 @@ describe("Recipe Printer Firestore namespace", () => {
     );
   });
 
-  test("public users can read published shared cards only", async () => {
-    await environment.withSecurityRulesDisabled(async (context) => {
-      await setDoc(doc(context.firestore(), "products/recipePrinter/sharedRecipeCards/live"), {
-        published: true,
-      });
-      await setDoc(doc(context.firestore(), "products/recipePrinter/sharedRecipeCards/draft"), {
-        published: false,
-      });
-    });
-    const publicDb = environment.unauthenticatedContext().firestore();
-    await assertSucceeds(getDoc(doc(publicDb, "products/recipePrinter/sharedRecipeCards/live")));
-    await assertFails(getDoc(doc(publicDb, "products/recipePrinter/sharedRecipeCards/draft")));
-  });
-
   test("feedback can be created but not read", async () => {
     const publicDb = environment.unauthenticatedContext().firestore();
     const feedback = doc(publicDb, "products/recipePrinter/feedback/feedback-1");
@@ -424,14 +410,15 @@ describe("the project content subdocument", () => {
 });
 
 describe("server-owned fields on the shared CookPilot user document", () => {
-  // `recipePrinterAdmin()` ORs a namespaced check with a legacy one that reads
-  // `users/{uid}.recipePrinterAdmin`. The namespaced account document pins its
-  // keys to a harmless allowlist, so the flag cannot be set there — but the
-  // legacy CookPilot document it falls back to was `allow write: if owns(uid)`
-  // with no field validation at all, which let any signed-in user grant
-  // themselves the flag and then publish or overwrite shared recipe cards on
-  // the public site. The same document carries the CookPilot membership and
-  // free-template claim fields, which are server-owned for the same reason.
+  // The namespaced account document pins its keys to a harmless allowlist, so
+  // the admin flag cannot be set there — but the legacy CookPilot document it
+  // falls back to was `allow write: if owns(uid)` with no field validation at
+  // all, which let any signed-in user grant themselves the flag. No current
+  // feature reads it (the admin-only shared-recipe-card feature it used to
+  // gate was removed), but it stays denied here rather than left open for
+  // whatever reads it next. The same document carries the CookPilot
+  // membership and free-template claim fields, which are server-owned for
+  // the same reason.
   test("a signed-in user cannot grant themselves the admin role", async () => {
     const user = environment.authenticatedContext("escalator").firestore();
     await assertFails(
@@ -544,22 +531,4 @@ describe("server-owned fields on the shared CookPilot user document", () => {
     );
   });
 
-  test("an admin planted by the server still administers shared cards", async () => {
-    // The legacy admin read stays in place until the backfill is verified, so
-    // a flag written with the admin SDK must keep working. Only the client
-    // write path is closed.
-    await environment.withSecurityRulesDisabled(async (context) => {
-      await setDoc(doc(context.firestore(), "users/planted-admin"), {
-        recipePrinterAdmin: true,
-      });
-    });
-    const planted = environment.authenticatedContext("planted-admin").firestore();
-    await assertSucceeds(
-      setDoc(doc(planted, "products/recipePrinter/sharedRecipeCards/from-planted"), {
-        published: true,
-        createdBy: "planted-admin",
-        title: "Legitimate",
-      }),
-    );
-  });
 });

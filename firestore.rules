@@ -10,22 +10,6 @@ service cloud.firestore {
       return signedIn() && request.auth.uid == uid;
     }
 
-    function namespacedRecipePrinterAdmin() {
-      return signedIn()
-        && get(/databases/$(database)/documents/products/recipePrinter/users/$(request.auth.uid)).data.recipePrinterAdmin == true;
-    }
-
-    function legacyRecipePrinterAdmin() {
-      return signedIn()
-        && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.recipePrinterAdmin == true;
-    }
-
-    function recipePrinterAdmin() {
-      // Compatibility release: recognize both locations until the admin
-      // backfill is verified, then remove the legacy half.
-      return namespacedRecipePrinterAdmin() || legacyRecipePrinterAdmin();
-    }
-
     // Recipe Printer fields carried on the shared CookPilot user document that
     // are server-owned by contract (docs/firebase-inventory.md): the admin role
     // is written by "server/admin only", `plusExpiresAt` by the "CookPilot
@@ -64,16 +48,16 @@ service cloud.firestore {
     // ── Existing CookPilot rules ───────────────────────────────────────────
     // Kept intact while CookPilot remains on these paths.
     match /users/{userId} {
-      // `recipePrinterAdmin()` falls back to reading this document, and the
-      // free-template gate reads `plusExpiresAt` and the claim fields off it.
-      // A blanket `allow write: if owns(userId)` therefore let any signed-in
-      // user grant themselves the admin role — and with it create/update on
-      // both `sharedRecipeCards` collections, which publish public indexed
-      // pages — or fake an active CookPilot membership to reach the free
-      // premium template. The namespaced account document already pins its
-      // keys to a harmless allowlist; this document cannot, because CookPilot
-      // owns its schema and writes fields this repo does not know about. So
-      // deny the specific server-owned fields instead of allowlisting.
+      // The free-template gate reads `plusExpiresAt` and the claim fields off
+      // this document. A blanket `allow write: if owns(userId)` therefore let
+      // any signed-in user fake an active CookPilot membership to reach the
+      // free premium template — or grant themselves the admin role, which no
+      // current feature reads but is still denied here rather than left open
+      // for whatever next reads it. The namespaced account document already
+      // pins its keys to a harmless allowlist; this document cannot, because
+      // CookPilot owns its schema and writes fields this repo does not know
+      // about. So deny the specific server-owned fields instead of
+      // allowlisting.
       allow read: if owns(userId);
       allow create: if owns(userId)
         && !request.resource.data.keys().hasAny(serverOwnedSharedUserFields());
@@ -240,20 +224,6 @@ service cloud.firestore {
       }
     }
 
-    match /products/recipePrinter/sharedRecipeCards/{slug} {
-      allow read: if resource == null || resource.data.published == true;
-      allow create: if recipePrinterAdmin()
-        && request.resource.data.createdBy == request.auth.uid;
-      // Admin only. There used to be a second clause letting ANYONE increment
-      // `viewCount` by one — the only unauthenticated write this collection
-      // had, and it existed for a counter nothing ever read back. The client
-      // that made those writes is gone (see SharedRecipeCardRedirect), so the
-      // permission goes with it rather than staying open for a caller that no
-      // longer exists.
-      allow update: if recipePrinterAdmin();
-      allow delete: if false;
-    }
-
     match /products/recipePrinter/feedback/{feedbackId} {
       allow create: if request.resource.data.keys().hasOnly([
           "type", "message", "email", "pageUrl", "pagePath", "userAgent",
@@ -270,20 +240,6 @@ service cloud.firestore {
 
     // ── Recipe Printer migration compatibility ─────────────────────────────
     // Keep these until the backfill and backend claim migration are verified.
-    match /sharedRecipeCards/{slug} {
-      allow read: if resource == null || resource.data.published == true;
-      allow create: if recipePrinterAdmin()
-        && request.resource.data.createdBy == request.auth.uid;
-      // Admin only. There used to be a second clause letting ANYONE increment
-      // `viewCount` by one — the only unauthenticated write this collection
-      // had, and it existed for a counter nothing ever read back. The client
-      // that made those writes is gone (see SharedRecipeCardRedirect), so the
-      // permission goes with it rather than staying open for a caller that no
-      // longer exists.
-      allow update: if recipePrinterAdmin();
-      allow delete: if false;
-    }
-
     match /users/{uid}/printProjects/{projectId} {
       allow read, write: if owns(uid);
     }

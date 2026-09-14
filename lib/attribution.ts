@@ -226,7 +226,9 @@ export const UTM_SOURCE_ALIASES: ReadonlyArray<{
   { source: "Godly", keywords: ["godly"] },
   { source: "Email", keywords: ["email", "e-mail", "newsletter", "klaviyo", "mailchimp", "substack"] },
   { source: "CookPilot", keywords: ["cookpilot"] },
-  // Our own share links (see components/AdminShareLinkDialog).
+  // The admin-only share-link feature this was for has been removed, but the
+  // taxonomy stays so historical traffic tagged shared_card still classifies
+  // correctly instead of falling through to "Referral" unlabeled.
   { source: "Shared Card", keywords: ["shared_card", "shared-card"] },
 ];
 

@@ -4,7 +4,6 @@ import {
   friendlyPhotoUploadError,
   friendlyPurchaseSetupError,
   friendlyRecipeLibraryError,
-  friendlyShareLinkError,
   isPlaceholderHost,
   placeholderHostMessage,
   shortImportError,
@@ -27,10 +26,6 @@ describe("user-facing errors", () => {
   });
 
   it("does not expose raw backend messages for unknown failures", () => {
-    const technical = new Error("Firestore REST read failed: 503");
-    expect(friendlyShareLinkError(technical)).toBe(
-      "We couldn't create that link right now. Please try again.",
-    );
     expect(friendlyPurchaseSetupError(new Error("internal stack trace"))).toBe(
       "We couldn't unlock that template. Please try again.",
     );

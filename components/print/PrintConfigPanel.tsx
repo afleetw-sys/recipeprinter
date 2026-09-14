@@ -47,10 +47,6 @@ interface PrintConfigPanelProps {
   freeTemplateBannerDismissed: boolean;
   setFreeTemplateBannerDismissed: Dispatch<SetStateAction<boolean>>;
   setToastMessage: Dispatch<SetStateAction<string | null>>;
-  // Footer actions
-  isRecipePrinterAdmin: boolean;
-  canShareActiveRecipe: boolean;
-  setShowShareDialog: Dispatch<SetStateAction<boolean>>;
   hasPrintSettingsFields: boolean;
   setPrintSettingsOpen: Dispatch<SetStateAction<boolean>>;
 }
@@ -58,9 +54,9 @@ interface PrintConfigPanelProps {
 /**
  * The right-hand Print-setup / Book-settings panel (a mobile drawer under
  * `is-mobile-open`). Header + the setup controls + the theme grid + the footer
- * actions (Print / Purchase & Print / Unlock & Print, Save project, share link,
- * Print settings). Purely presentational — every value and callback is owned by
- * the print page.
+ * actions (Print / Purchase & Print / Unlock & Print, Save project, Print
+ * settings). Purely presentational — every value and callback is owned by the
+ * print page.
  */
 export function PrintConfigPanel({
   configPanelRef,
@@ -89,9 +85,6 @@ export function PrintConfigPanel({
   freeTemplateBannerDismissed,
   setFreeTemplateBannerDismissed,
   setToastMessage,
-  isRecipePrinterAdmin,
-  canShareActiveRecipe,
-  setShowShareDialog,
   hasPrintSettingsFields,
   setPrintSettingsOpen,
 }: PrintConfigPanelProps) {
@@ -197,19 +190,6 @@ export function PrintConfigPanel({
             document this is. "Save project" went earlier, and saving itself has
             since gone too: leaving the workspace files the project on the way
             out. What is left here is genuinely settings. */}
-        {/* Share links are a single-recipe-card feature; a cookbook is a
-            whole bound book, so this is hidden in cookbook mode even for the
-            admin user. */}
-        {isRecipePrinterAdmin && canShareActiveRecipe && !cookbookMode && (
-          <button
-            type="button"
-            className="recipe-print-settings-link"
-            aria-haspopup="dialog"
-            onClick={() => setShowShareDialog(true)}
-          >
-            Save as share link
-          </button>
-        )}
       </div>
     </aside>
   );

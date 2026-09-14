@@ -63,11 +63,6 @@ export function ThemePicker({
         </div>
       )}
       <h3 className="recipe-config-label">Themes</h3>
-      {!cookbookMode && (
-        <p className="recipe-template-caption">
-          Every theme is included with RecipePrinter Pro.
-        </p>
-      )}
       <div className="recipe-template-list">
         {RECIPE_PRINT_TEMPLATE_OPTIONS.map((option) => {
           const premiumTemplate = isPremiumTemplate(option.id) ? option.id : null;

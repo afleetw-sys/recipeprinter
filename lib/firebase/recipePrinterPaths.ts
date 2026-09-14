@@ -20,11 +20,6 @@ export function recipePrinterUnlockPath(uid: string, unlockId: string) {
   return [...recipePrinterUnlocksPath(uid), unlockId] as const;
 }
 
-export const RECIPE_PRINTER_SHARED_CARDS_PATH = [
-  ...RECIPE_PRINTER_PRODUCT_PATH,
-  "sharedRecipeCards",
-] as const;
-
 export const RECIPE_PRINTER_FEEDBACK_PATH = [
   ...RECIPE_PRINTER_PRODUCT_PATH,
   "feedback",

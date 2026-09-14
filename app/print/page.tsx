@@ -4,7 +4,6 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { flushSync } from "react-dom";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
-import dynamic from "next/dynamic";
 import { SiteHeader } from "@/components/SiteHeader";
 import { SAVE_FAILURES, SAVE_STATUS_LABEL } from "@/components/AccountControl";
 import { ProjectHeading } from "@/components/print/ProjectHeading";
@@ -160,11 +159,6 @@ import {
 } from "@/lib/printErrorRecovery";
 import { hasPendingImport, takePendingImport } from "@/lib/pendingImport";
 import { nextPaint } from "@/lib/nextPaint";
-
-const AdminShareLinkDialog = dynamic(
-  () => import("@/components/AdminShareLinkDialog").then((mod) => mod.AdminShareLinkDialog),
-  { ssr: false, loading: () => null },
-);
 
 const POST_PRINT_DIALOG_STORAGE_KEY = "recipeprinter:post-print-dialog:last-shown:v1";
 
@@ -416,7 +410,6 @@ export default function PrintPage() {
   // arrangement A–Z replaced, so switching back restores it rather than leaving
   // the book alphabetized forever.
   const [customOrderUndo, setCustomOrderUndo] = useState<ProjectMeta["sections"] | null>(null);
-  const [showShareDialog, setShowShareDialog] = useState(false);
   const [pendingDelete, setPendingDelete] = useState<
     | { kind: "recipe"; id: string; title: string }
     | { kind: "section"; id: string; title: string; recipeIds: string[] }
@@ -634,7 +627,6 @@ export default function PrintPage() {
     setSaveStatus(null);
   }, [cookPilotUser?.uid]);
 
-  const [isRecipePrinterAdmin, setIsRecipePrinterAdmin] = useState(false);
   const [showCookPilotLogin, setShowCookPilotLogin] = useState(false);
   const [cookPilotLoginReason, setCookPilotLoginReason] = useState<"default" | "purchase">("default");
   const printRequestedRef = useRef(false);
@@ -3962,7 +3954,6 @@ export default function PrintPage() {
   useEffect(() => {
     if (!cookPilotUser) {
       setFreeTemplateStatus(null);
-      setIsRecipePrinterAdmin(false);
       setMirroredEntitlements(null);
       setMirrorSyncedAtMs(null);
       setFirstCookbookGrantedAt(null);
@@ -3973,7 +3964,6 @@ export default function PrintPage() {
       .then((profile) => {
         if (cancelled) return;
         setFreeTemplateStatus(profile.freeTemplateStatus);
-        setIsRecipePrinterAdmin(profile.isAdmin);
         setMirroredEntitlements(profile.mirroredEntitlements);
         setMirrorSyncedAtMs(profile.syncedAtMs);
         setFirstCookbookGrantedAt(profile.firstCookbookGrantedAt);
@@ -3981,7 +3971,6 @@ export default function PrintPage() {
       .catch((error) => {
         if (cancelled) return;
         console.warn("RecipePrinter: could not load free-template status", error);
-        setIsRecipePrinterAdmin(false);
         // Leave mirroredEntitlements/mirrorSyncedAtMs at whatever they were —
         // a Firestore read failure here shouldn't discard an already-loaded
         // fallback the live-SDK path might still need a moment from now.
@@ -5425,9 +5414,6 @@ export default function PrintPage() {
           freeTemplateBannerDismissed={freeTemplateBannerDismissed}
           setFreeTemplateBannerDismissed={setFreeTemplateBannerDismissed}
           setToastMessage={setToastMessage}
-          isRecipePrinterAdmin={isRecipePrinterAdmin}
-          canShareActiveRecipe={Boolean(activeRecipeItem?.recipe)}
-          setShowShareDialog={setShowShareDialog}
           hasPrintSettingsFields={hasPrintSettingsFields}
           setPrintSettingsOpen={setPrintSettingsOpen}
         />
@@ -5617,14 +5603,6 @@ export default function PrintPage() {
           setStructureSheetOpen={setStructureSheetOpen}
         />
       </main>
-      {showShareDialog && activeRecipeItem?.recipe && cookPilotUser && (
-        <AdminShareLinkDialog
-          recipe={activeRecipeItem.recipe}
-          settings={{ template, cardSize, showPhoto, showSourceUrl, showCutLines, doubleSided }}
-          uid={cookPilotUser.uid}
-          onClose={() => setShowShareDialog(false)}
-        />
-      )}
     </>
 
       <PrintDialogs

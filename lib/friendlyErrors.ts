@@ -170,22 +170,6 @@ export function friendlyPurchaseSetupError(error: unknown): string {
   return "We couldn't unlock that template. Please try again.";
 }
 
-export function friendlyShareLinkError(error: unknown): string {
-  const { code, message } = errorParts(error);
-
-  if (/already taken/i.test(message) || code.includes("already-exists")) {
-    return "That link name is already in use. Try a different one.";
-  }
-  if (code.includes("permission-denied") || code.includes("unauthenticated")) {
-    return "Your sign-in has expired. Sign in again, then try creating the link.";
-  }
-  if (isNetworkFailure(code, message)) {
-    return "We couldn't create the link. Check your connection and try again.";
-  }
-
-  return "We couldn't create that link right now. Please try again.";
-}
-
 /**
  * RFC 2606 reserves these names for documentation, so none of them is ever a
  * real site. Someone pasting one is trying the box out rather than importing

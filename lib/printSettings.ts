@@ -29,9 +29,7 @@ import { localStore } from "@/lib/storage";
  */
 
 // Layout preferences carry over across visits (device-local, no account/sync)
-// so going back to add another recipe doesn't reset the print setup. Shared
-// with the /print/[slug] loader, which seeds these from a sharedRecipeCards
-// doc before handing off to the real /print page.
+// so going back to add another recipe doesn't reset the print setup.
 export const PRINT_SETTINGS_STORAGE_KEY = "recipeprinter:print-settings:v1";
 
 export interface StoredPrintSettings {

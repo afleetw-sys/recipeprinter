@@ -46,13 +46,12 @@ const MIRRORED_ENTITLEMENT_IDS = [
 
 /**
  * Centralized RecipePrinter user-profile read: everything gated on the
- * shared CookPilot `users/{uid}` Firestore doc (admin flag, free-template
- * claim status, mirrored entitlements) is derived from one `getDoc`, not one
- * per gate — a signed-in `/print` visit used to fire two independent reads
- * of this same doc.
+ * shared CookPilot `users/{uid}` Firestore doc (free-template claim status,
+ * mirrored entitlements) is derived from one `getDoc`, not one per gate — a
+ * signed-in `/print` visit used to fire two independent reads of this same
+ * doc.
  */
 export interface RecipePrinterUserProfile {
-  isAdmin: boolean;
   freeTemplateStatus: RecipePrinterFreeTemplateStatus;
   mirroredEntitlements: Record<string, RecipePrinterMirroredEntitlement>;
   /** When the webhook last successfully verified this account against
@@ -87,9 +86,9 @@ async function fetchRecipePrinterUserDoc(uid: string): Promise<Record<string, un
    * lib/cookbookUnlocks) isolate each side for exactly this reason.
    *
    * And when NEITHER answers, that is not a profile — it is the absence of one.
-   * Returning `{}` would say "not a CookPilot subscriber, nothing claimed, not
-   * an admin" with total confidence, which is the same lie an unread projects
-   * list used to tell. The caller on /print already treats a rejection
+   * Returning `{}` would say "not a CookPilot subscriber, nothing claimed"
+   * with total confidence, which is the same lie an unread projects list used
+   * to tell. The caller on /print already treats a rejection
    * correctly: it leaves `freeTemplateStatus` null, which reads as unknown
    * rather than as a subscriber being told they have no free template.
    */
@@ -158,7 +157,7 @@ function deriveFreeTemplateStatus(data: Record<string, unknown>): RecipePrinterF
  * this is a plain client read — no callable needed. Used on its own right
  * after a claim, where a fresh read is the point; for the general-purpose
  * page load, prefer `loadRecipePrinterUserProfile` so it isn't a second read
- * of the same doc alongside the admin check.
+ * of the same doc alongside the rest of the profile.
  */
 export async function loadFreeTemplateStatus(
   uid: string,
@@ -166,12 +165,11 @@ export async function loadFreeTemplateStatus(
   return deriveFreeTemplateStatus(await fetchRecipePrinterUserDoc(uid));
 }
 
-/** Single read of `users/{uid}` powering the admin gate, free-template
- *  status, and the mirrored-entitlement fallback. */
+/** Single read of `users/{uid}` powering the free-template status and the
+ *  mirrored-entitlement fallback. */
 export async function loadRecipePrinterUserProfile(uid: string): Promise<RecipePrinterUserProfile> {
   const data = await fetchRecipePrinterUserDoc(uid);
   return {
-    isAdmin: data.recipePrinterAdmin === true,
     freeTemplateStatus: deriveFreeTemplateStatus(data),
     mirroredEntitlements: deriveMirroredEntitlements(data),
     syncedAtMs: deriveSyncedAtMs(data),
