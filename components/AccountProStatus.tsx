@@ -212,17 +212,6 @@ export function AccountProStatus({ user }: { user: User }) {
           // `ProUpgradeDialog` itself leads with, so this and the dialog it
           // opens never disagree about what Pro includes.
           <div className="mt-1">
-            <div className="mb-cp-3 flex justify-end">
-              <SegmentedControl
-                label="Billing cycle"
-                value={billingCycle}
-                onChange={setBillingCycle}
-                options={[
-                  { id: "monthly", label: "Monthly" },
-                  { id: "annual", label: "Annual" },
-                ]}
-              />
-            </div>
             <div className="grid gap-cp-3 sm:grid-cols-2">
               {/* `h-full flex-col` on the card plus `flex-1` on the benefit
                   list is what keeps both buttons on one baseline regardless
@@ -245,9 +234,20 @@ export function AccountProStatus({ user }: { user: User }) {
                 </button>
               </div>
               <div className="flex h-full flex-col rounded-lg border border-line p-cp-3">
-                <div className="flex items-center gap-2">
-                  <CrownIcon size={ICON_SIZE.md} className="text-[var(--cp-premium-bright)]" />
-                  <h3 className="text-cp-h2 font-extrabold text-ink">Pro</h3>
+                <div className="flex flex-wrap items-center justify-between gap-cp-2">
+                  <div className="flex items-center gap-2">
+                    <CrownIcon size={ICON_SIZE.md} className="text-[var(--cp-premium-bright)]" />
+                    <h3 className="text-cp-h2 font-extrabold text-ink">Pro</h3>
+                  </div>
+                  <SegmentedControl
+                    label="Billing cycle"
+                    value={billingCycle}
+                    onChange={setBillingCycle}
+                    options={[
+                      { id: "monthly", label: "Monthly" },
+                      { id: "annual", label: "Annual" },
+                    ]}
+                  />
                 </div>
                 <p className="mt-1 text-cp-body font-bold text-ink-soft">
                   {PRO_PRICE_FALLBACKS[billingCycle]}
