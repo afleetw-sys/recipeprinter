@@ -25,4 +25,18 @@ describe("cookbook classifier", () => {
       ingredients: [{ name: "chocolate" }, { name: "chicken" }],
     })).category).toBe("Uncategorized");
   });
+
+  it("does not send a savory pie or cake to Desserts on the word alone", () => {
+    expect(classifyRecipe(recipe("Spinach Pie")).category).toBe("Main Dishes");
+    expect(classifyRecipe(recipe("Crab Cake")).category).toBe("Main Dishes");
+    expect(classifyRecipe(recipe("Shepherd's Pie")).category).toBe("Main Dishes");
+    // A real dessert pie still counts — nothing savory contradicts it.
+    expect(classifyRecipe(recipe("Apple Pie")).category).toBe("Desserts");
+  });
+
+  it("recognizes mac and cheese as a main dish instead of falling to the catch-all", () => {
+    expect(classifyRecipe(recipe("Mac and Cheese")).category).toBe("Main Dishes");
+    expect(classifyRecipe(recipe("Mac n Cheese")).category).toBe("Main Dishes");
+    expect(classifyRecipe(recipe("Baked Macaroni")).category).toBe("Main Dishes");
+  });
 });
