@@ -148,7 +148,13 @@ export function AccountProStatus({ user }: { user: User }) {
   return (
     <section className="mb-cp-7 rounded-xl border border-line bg-card p-cp-5">
       <div>
-        <div className="flex items-center justify-between gap-cp-2">
+        {/* The Basic/Pro comparison drops its card borders on mobile in favor
+            of a plain divided list (see the grid below), so the heading needs
+            its own line under it there — otherwise "Plan" ran straight into
+            the first divided row with nothing marking where the heading
+            stopped. Desktop keeps the cards, which already separate
+            themselves from the heading with their own borders. */}
+        <div className="flex items-center justify-between gap-cp-2 border-b border-line pb-cp-3 sm:border-b-0 sm:pb-0">
           <h2 className="text-cp-h2 font-extrabold text-ink">Plan</h2>
           {proDetails.active && <ProBadge variant="inline" />}
         </div>
@@ -191,8 +197,8 @@ export function AccountProStatus({ user }: { user: User }) {
                 Basic goes back to being a plain comparison card with nothing
                 to click, since there's no action to start from that side
                 while you're on Pro. */}
-            <div className="grid gap-cp-3 sm:grid-cols-2">
-              <div className="flex h-full flex-col rounded-lg border border-line p-cp-3">
+            <div className="grid gap-0 sm:grid-cols-2 sm:gap-cp-3">
+              <div className="flex h-full flex-col border-line py-cp-3 sm:rounded-lg sm:border sm:p-cp-3">
                 <h3 className="text-cp-body font-extrabold text-ink">Basic</h3>
                 <p className="mt-1 text-cp-body font-bold text-ink-soft">Free</p>
                 <ul className="mt-cp-2 flex flex-1 flex-col gap-cp-1">
@@ -204,7 +210,7 @@ export function AccountProStatus({ user }: { user: User }) {
                   ))}
                 </ul>
               </div>
-              <div className="flex h-full flex-col rounded-lg border border-line bg-[var(--cp-premium-soft)] p-cp-3">
+              <div className="flex h-full flex-col border-t border-line py-cp-3 sm:rounded-lg sm:border sm:bg-[var(--cp-premium-soft)] sm:p-cp-3">
                 <div className="flex items-center gap-2">
                   <CrownIcon size={ICON_SIZE.md} className="text-[var(--cp-premium-bright)]" />
                   <h3 className="text-cp-body font-extrabold text-ink">Pro</h3>
@@ -281,13 +287,13 @@ export function AccountProStatus({ user }: { user: User }) {
           // `ProUpgradeDialog` itself leads with, so this and the dialog it
           // opens never disagree about what Pro includes.
           <div className="mt-cp-3">
-            <div className="grid gap-cp-3 sm:grid-cols-2">
+            <div className="grid gap-0 sm:grid-cols-2 sm:gap-cp-3">
               {/* `h-full flex-col` on the card plus `flex-1` on the benefit
                   list is what keeps both buttons on one baseline regardless
                   of which list is longer — the grid already stretches both
                   cards to the tallest one, this just decides where the slack
                   inside each card goes. */}
-              <div className="flex h-full flex-col rounded-lg border border-line p-cp-3">
+              <div className="flex h-full flex-col border-line py-cp-3 sm:rounded-lg sm:border sm:p-cp-3">
                 <h3 className="text-cp-body font-extrabold text-ink">Basic</h3>
                 <p className="mt-1 text-cp-body font-bold text-ink-soft">Free</p>
                 <ul className="mt-cp-2 flex flex-1 flex-col gap-cp-1">
@@ -302,7 +308,7 @@ export function AccountProStatus({ user }: { user: User }) {
                   Your current plan
                 </button>
               </div>
-              <div className="flex h-full flex-col rounded-lg border border-line p-cp-3">
+              <div className="flex h-full flex-col border-t border-line py-cp-3 sm:rounded-lg sm:border sm:p-cp-3">
                 <div className="flex flex-wrap items-center justify-between gap-cp-2">
                   <div className="flex items-center gap-2">
                     <CrownIcon size={ICON_SIZE.md} className="text-[var(--cp-premium-bright)]" />

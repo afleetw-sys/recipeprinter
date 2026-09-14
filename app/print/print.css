@@ -2793,6 +2793,13 @@
     padding: 8px 12px 4px;
   }
 
+  /* Size has no footer to trail off into the way Book's tip+buttons do, and
+     nothing else follows its two tiles — the shared scroll padding's 4px
+     read as the sheet cutting the content off right under it. */
+  .recipe-mobile-size-sheet .recipe-mobile-sheet__scroll {
+    padding-bottom: 24px;
+  }
+
   .recipe-structure-sheet__settings {
     display: flex;
     flex-direction: column;

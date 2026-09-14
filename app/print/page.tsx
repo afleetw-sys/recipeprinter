@@ -5671,6 +5671,7 @@ export default function PrintPage() {
           open={sizeMenuOpen}
           onClose={() => setSizeMenuOpen(false)}
           title="Size"
+          className="recipe-mobile-size-sheet"
         >
           {/* Same component the desktop panel uses (PrintFormatToggle) — one
               card-size picker, not two that could drift apart. Closes itself
