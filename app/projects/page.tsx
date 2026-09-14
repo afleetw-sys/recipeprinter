@@ -284,7 +284,7 @@ export default function ProjectsPage() {
           (32px), so `py-cp-8` was a class Tailwind never emitted — the page had
           no vertical padding at all, which is why the title sat against the
           sticky header and the last row of cards ran into the bottom edge. */}
-      <main className="mx-auto w-full max-w-5xl px-cp-6 py-cp-7">
+      <main className="mx-auto w-full max-w-5xl px-cp-4 py-cp-5 sm:px-cp-6 sm:py-cp-7">
         {/* Page header on the same scale as every other standalone page (see
             `PageHeader` in components/PageShell): an h1 at --cp-fs-hero-sm over
             a --cp-fs-body-lg lede. This used to reach for `text-cp-page-title`
@@ -301,7 +301,7 @@ export default function ProjectsPage() {
         {loading ? (
           <div className="recipe-loading-state min-h-48"><SpinnerIcon size={ICON_SIZE.lg} /><span>Loading projects…</span></div>
         ) : error && projects.length === 0 ? (
-          <div className="rounded-xl border border-line bg-card p-cp-6 text-center">
+          <div className="rounded-xl border border-line bg-card p-cp-4 text-center sm:p-cp-6">
             <p className="text-error">{error}</p>
             <button type="button" className="btn btn-secondary mt-cp-4" onClick={() => void refresh()}>Try again</button>
           </div>
@@ -310,7 +310,7 @@ export default function ProjectsPage() {
              someone who may have a shelf full of books that they have none
              would be a lie — the honest answer is that their library lives in
              an account we can't see yet. */
-          <div className="flex flex-col items-center rounded-xl border border-line bg-card px-cp-6 py-cp-7 text-center">
+          <div className="flex flex-col items-center rounded-xl border border-line bg-card px-cp-4 py-cp-5 text-center sm:px-cp-6 sm:py-cp-7">
             <div className="flex h-16 w-16 items-center justify-center rounded-full bg-[var(--cp-accent-warm)]">
               <BookIcon size={28} className="text-[var(--cp-on-accent-warm)]" />
             </div>
@@ -331,7 +331,7 @@ export default function ProjectsPage() {
             <StartNewProject className="mt-cp-5" onStart={startNew} />
           </div>
         ) : projects.length === 0 ? (
-          <div className="flex flex-col items-center rounded-xl border border-line bg-card px-cp-6 py-cp-7 text-center">
+          <div className="flex flex-col items-center rounded-xl border border-line bg-card px-cp-4 py-cp-5 text-center sm:px-cp-6 sm:py-cp-7">
             <div className="flex h-16 w-16 items-center justify-center rounded-full bg-[var(--cp-accent-warm)]">
               <BookIcon size={28} className="text-[var(--cp-on-accent-warm)]" />
             </div>

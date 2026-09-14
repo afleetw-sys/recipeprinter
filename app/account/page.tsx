@@ -37,7 +37,7 @@ export default function AccountPage() {
   return (
     <div className="min-h-screen bg-page text-ink">
       <SiteHeader />
-      <main className="mx-auto w-full max-w-5xl px-cp-6 py-cp-7">
+      <main className="mx-auto w-full max-w-5xl px-cp-4 py-cp-5 sm:px-cp-6 sm:py-cp-7">
         <header className="mb-cp-7 flex flex-wrap items-start justify-between gap-cp-4">
           <div>
             <h1 className="text-cp-hero-sm font-extrabold tracking-[-0.04em] leading-[1.08]">Settings</h1>
@@ -58,7 +58,7 @@ export default function AccountPage() {
              Reachable only by a direct visit or a bookmark: the header avatar
              opens the sign-in dialog straight away for a signed-out click
              (see AccountAvatarButton), never routing here first. */
-          <div className="flex flex-col items-center rounded-xl border border-line bg-card px-cp-6 py-cp-7 text-center">
+          <div className="flex flex-col items-center rounded-xl border border-line bg-card px-cp-4 py-cp-5 text-center sm:px-cp-6 sm:py-cp-7">
             <div className="flex h-16 w-16 items-center justify-center rounded-full bg-[var(--cp-accent-warm)]">
               <AccountIcon size={28} className="text-[var(--cp-on-accent-warm)]" />
             </div>
