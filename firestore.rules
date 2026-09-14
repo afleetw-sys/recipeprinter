@@ -224,6 +224,16 @@ service cloud.firestore {
       }
     }
 
+    // A RecipePrinter-authored share link. Creating one is gone — the
+    // admin-only UI and its client write path were removed along with
+    // `recipePrinterAdmin()` — but links already handed out must keep
+    // resolving, so the public read stays exactly as it was: unpublished or
+    // missing reads as not-found, `write` is closed to every client.
+    match /products/recipePrinter/sharedRecipeCards/{slug} {
+      allow read: if resource == null || resource.data.published == true;
+      allow write: if false;
+    }
+
     match /products/recipePrinter/feedback/{feedbackId} {
       allow create: if request.resource.data.keys().hasOnly([
           "type", "message", "email", "pageUrl", "pagePath", "userAgent",
@@ -242,6 +252,13 @@ service cloud.firestore {
     // Keep these until the backfill and backend claim migration are verified.
     match /users/{uid}/printProjects/{projectId} {
       allow read, write: if owns(uid);
+    }
+
+    // The pre-namespace share-link location. Same read-only shape as the
+    // namespaced one above, kept for links created before the namespace move.
+    match /sharedRecipeCards/{slug} {
+      allow read: if resource == null || resource.data.published == true;
+      allow write: if false;
     }
 
     // The pre-namespace location. Existing docs stay readable so current owners

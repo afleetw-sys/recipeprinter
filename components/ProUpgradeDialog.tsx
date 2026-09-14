@@ -11,6 +11,7 @@ import {
   PRO_ANNUAL_PRICE_FALLBACK,
   PRO_MONTHLY_PRICE_FALLBACK,
   PRO_PRICE_FALLBACKS,
+  proAnnualPriceAtMonthlyRate,
   proAnnualSavingsPercent,
   type ProBillingCycle,
 } from "@/lib/proProduct";
@@ -90,6 +91,7 @@ export function ProUpgradeDialog({
 
   const closeDisabled = busy || formBusy;
   const savingsPercent = proAnnualSavingsPercent();
+  const annualAtMonthlyRate = proAnnualPriceAtMonthlyRate();
 
   return (
     <Dialog
@@ -139,9 +141,9 @@ export function ProUpgradeDialog({
               />
               <div className="pro-plan-card__row">
                 <span className="pro-plan-card__name">Annual</span>
-                <span className="pro-plan-tile__flag">Recommended</span>
               </div>
               <p className="pro-plan-card__price">
+                <span className="pro-plan-card__price--was">{annualAtMonthlyRate}</span>
                 {PRO_ANNUAL_PRICE_FALLBACK}
                 <span className="pro-plan-card__note">Save {savingsPercent}% vs. monthly</span>
               </p>

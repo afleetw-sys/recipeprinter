@@ -1539,8 +1539,10 @@
      and focus state convention: shared --cp-selected-... and --cp-focus-ring
      tokens, applied via `.select-tile.is-active` once a tile is selected),
      not a pair of independent "Continue with X" actions. One CTA below the
-     pair commits whichever plan is currently selected. Annual's "Recommended"
-     flag is informational and stays regardless of which tile is selected. */
+     pair commits whichever plan is currently selected. Annual no longer wears
+     a "Recommended" flag: crossing out what a year would cost at the monthly
+     rate, right next to what it actually costs, makes the better deal a
+     number to see rather than a label to trust. */
   .pro-plan-card {
     display: flex;
     flex-direction: column;
@@ -1557,19 +1559,16 @@
   .pro-plan-card__name {
     font-weight: 700;
   }
-  .pro-plan-tile__flag {
-    padding: 1px 7px;
-    border-radius: 999px;
-    background: var(--cp-premium-soft);
-    color: var(--cp-premium);
-    font-size: var(--cp-fs-label);
-    font-weight: 700;
-    text-transform: uppercase;
-    letter-spacing: 0.02em;
-  }
   .pro-plan-card__price {
     font-size: var(--cp-fs-body);
     font-weight: 800;
+  }
+  .pro-plan-card__price--was {
+    margin-right: 6px;
+    color: var(--cp-ink-soft);
+    font-size: var(--cp-fs-label);
+    font-weight: 500;
+    text-decoration: line-through;
   }
   .pro-plan-card__note {
     margin-left: 6px;

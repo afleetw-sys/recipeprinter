@@ -61,3 +61,11 @@ export function proAnnualSavingsPercent(): number {
   const savings = 1 - PRO_ANNUAL_PRICE_USD / yearlyAtMonthlyRate;
   return Math.floor(savings * 100);
 }
+
+/** Twelve months at the monthly rate, formatted the same way as the price
+ *  fallbacks above — the "was" figure a struck-through price needs to make
+ *  the annual plan's saving legible as a number, not just a claimed percent. */
+export function proAnnualPriceAtMonthlyRate(): string {
+  const yearlyAtMonthlyRate = PRO_MONTHLY_PRICE_USD * 12;
+  return `$${yearlyAtMonthlyRate.toFixed(2)}/yr`;
+}

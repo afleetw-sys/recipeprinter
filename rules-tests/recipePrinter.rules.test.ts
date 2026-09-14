@@ -104,6 +104,30 @@ describe("Recipe Printer Firestore namespace", () => {
     );
   });
 
+  test("public users can read published shared cards only", async () => {
+    await environment.withSecurityRulesDisabled(async (context) => {
+      await setDoc(doc(context.firestore(), "products/recipePrinter/sharedRecipeCards/live"), {
+        published: true,
+      });
+      await setDoc(doc(context.firestore(), "products/recipePrinter/sharedRecipeCards/draft"), {
+        published: false,
+      });
+    });
+    const publicDb = environment.unauthenticatedContext().firestore();
+    await assertSucceeds(getDoc(doc(publicDb, "products/recipePrinter/sharedRecipeCards/live")));
+    await assertFails(getDoc(doc(publicDb, "products/recipePrinter/sharedRecipeCards/draft")));
+  });
+
+  test("no client, admin or otherwise, can create a shared card any more", async () => {
+    const publicDb = environment.unauthenticatedContext().firestore();
+    await assertFails(
+      setDoc(doc(publicDb, "products/recipePrinter/sharedRecipeCards/new-link"), {
+        published: true,
+        createdBy: "someone",
+      }),
+    );
+  });
+
   test("feedback can be created but not read", async () => {
     const publicDb = environment.unauthenticatedContext().firestore();
     const feedback = doc(publicDb, "products/recipePrinter/feedback/feedback-1");

@@ -3,17 +3,24 @@
 import Link from "next/link";
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { signOut } from "firebase/auth";
-import { AccountIcon, ChevronRightIcon, ICON_SIZE } from "@/components/icons";
+import { AccountIcon, BookIcon, ICON_SIZE, LogoutIcon, SettingsIcon } from "@/components/icons";
 import { CookPilotLoginDialog, useCookPilotAuth } from "@/components/CookPilotAuth";
 import { getFirebaseAuth } from "@/lib/firebase/client";
 import { loadLocalProjects } from "@/lib/localProjects";
-import { summarizePrintProject } from "@/lib/printProjects";
+import { loadPrintProjectSummaries, summarizePrintProject } from "@/lib/printProjects";
 import { hasLocalCookbookUnlocks } from "@/lib/cookbookUnlocks";
 import { libraryProjects } from "@/lib/projectLibrary";
 import { useMenuDismiss } from "@/lib/useMenuDismiss";
 import type { PrintProjectSummary } from "@/types/recipe";
 import type { User } from "firebase/auth";
 import { IconButton } from "@/components/Controls";
+
+// Reopening the dropdown moments after closing it re-ran the same Firestore
+// read for a number that had not changed. Same fresh-window idea as the old
+// preview dropdown's own `projectsCache` — a badge is worth a cheap number,
+// not a fresh one on every open.
+const projectCountCache = new Map<string, { count: number; at: number }>();
+const PROJECT_COUNT_FRESH_MS = 10_000;
 
 // Two initials from the signed-in identity — first+last of a display name, else
 // the first letter of the email — so a logged-in avatar shows who's signed in.
@@ -100,6 +107,40 @@ export default function AccountAvatarButton({
   );
 
   /**
+   * The number on the "Projects" row — the same merged (account + on-device)
+   * count `/projects` itself shows, out of the same `libraryProjects` rule.
+   * Read only on open, and cached briefly, exactly the trade-off the old
+   * preview dropdown made for its own project list: a badge doesn't need to
+   * be more current than the last few seconds, and every open of a header
+   * control is not worth a fresh Firestore read.
+   */
+  const uid = user?.uid;
+  const [projectCount, setProjectCount] = useState<number | null>(null);
+  useEffect(() => {
+    if (!open || !uid) return;
+    const cached = projectCountCache.get(uid);
+    if (cached && Date.now() - cached.at < PROJECT_COUNT_FRESH_MS) {
+      setProjectCount(cached.count);
+      return;
+    }
+    let cancelled = false;
+    Promise.all([loadPrintProjectSummaries(uid), Promise.resolve(loadLocalProjects().map(summarizePrintProject))])
+      .then(([accountProjects, freshLocalProjects]) => {
+        if (cancelled) return;
+        const count = libraryProjects({ accountProjects, localProjects: freshLocalProjects }).length;
+        projectCountCache.set(uid, { count, at: Date.now() });
+        setProjectCount(count);
+      })
+      .catch(() => {
+        // No badge is a truer answer than a wrong one — leave whatever was
+        // last known (possibly null) rather than showing a count that failed.
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [open, uid]);
+
+  /**
    * What pressing the avatar does, in one place.
    *
    * Signed in it opens the dropdown — Settings or Projects, your call. Signed
@@ -184,29 +225,38 @@ export default function AccountAvatarButton({
         <div className="absolute right-0 top-11 z-50 w-[min(220px,calc(100vw-2rem))] rounded-2xl border border-line bg-card p-cp-2 shadow-cp-lg">
           <Link
             href="/account"
-            className="flex items-center justify-between gap-2 rounded-lg px-cp-3 py-cp-2 text-cp-small font-semibold text-ink hover:bg-page"
+            className="flex items-center gap-2 rounded-lg px-cp-3 py-cp-2 text-cp-small font-semibold text-ink hover:bg-page"
             onClick={closeMenu}
           >
+            <SettingsIcon size={ICON_SIZE.md} className="shrink-0 text-ink-soft" />
             Settings
-            <ChevronRightIcon size={ICON_SIZE.sm} />
           </Link>
           <Link
             href="/projects"
-            className="flex items-center justify-between gap-2 rounded-lg px-cp-3 py-cp-2 text-cp-small font-semibold text-ink hover:bg-page"
+            className="flex items-center gap-2 rounded-lg px-cp-3 py-cp-2 text-cp-small font-semibold text-ink hover:bg-page"
             onClick={closeMenu}
           >
-            Projects
-            <ChevronRightIcon size={ICON_SIZE.sm} />
+            <BookIcon size={ICON_SIZE.md} className="shrink-0 text-ink-soft" />
+            {/* A plain count, not a pill — the same "· N" the project cards
+                already use for recipe counts, so this doesn't introduce a
+                second way the app marks a number next to a label. */}
+            <span className="flex-1">
+              Projects
+              {projectCount !== null && (
+                <span className="text-ink-soft"> · {projectCount}</span>
+              )}
+            </span>
           </Link>
           <div className="mt-cp-1 border-t border-line pt-cp-1">
             <button
               type="button"
-              className="w-full rounded-lg px-cp-3 py-cp-2 text-left text-cp-small font-semibold text-ink hover:bg-page"
+              className="flex w-full items-center gap-2 rounded-lg px-cp-3 py-cp-2 text-left text-cp-small font-semibold text-ink hover:bg-page"
               onClick={() => {
                 closeMenu();
                 void signOut(getFirebaseAuth());
               }}
             >
+              <LogoutIcon size={ICON_SIZE.md} className="shrink-0 text-ink-soft" />
               Sign out
             </button>
           </div>
