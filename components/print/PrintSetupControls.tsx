@@ -6,6 +6,7 @@ import { Checkbox, CheckboxGroup, SelectTile } from "@/components/Controls";
 import { PrintFormatToggle } from "@/components/print/PrintFormatToggle";
 import type { PrintCardSize } from "@/components/RecipeCardPrint";
 import { PHOTO_STYLE_OPTIONS, PhotoStylePreview } from "@/components/print/photoStyle";
+import { hasMultiRecipeEntitlement } from "@/lib/recipePrinterPurchases";
 import type { PhotoStyle } from "@/lib/project";
 
 interface PrintSetupControlsProps {
@@ -60,6 +61,18 @@ export function PrintSetupControls({
   setShowSourceUrl,
   bookDesignSettings,
 }: PrintSetupControlsProps) {
+  /**
+   * "Every recipe" is only an honest title where more than one recipe is
+   * actually possible. Outside cookbook mode, a Free account can never hold
+   * more than one at a time (`multiRecipeAddLocked` in
+   * lib/recipePrinterPurchases.ts blocks adding a second) — so every Free
+   * cook would read a title promising something about "every" recipe that,
+   * for them, is always exactly one. A cookbook is exempt: it is a bound
+   * book of recipes independent of Pro, so it can hold many regardless of
+   * this entitlement, and keeps the plural title unconditionally.
+   */
+  const multiRecipeCapable = cookbookMode || hasMultiRecipeEntitlement(customerInfo);
+  const everyOrThisRecipe = multiRecipeCapable ? "Every recipe" : "This recipe";
   return (
     <>
       {/* Print format is a recipe-card concept only. A cookbook is always
@@ -153,11 +166,12 @@ export function PrintSetupControls({
       )}
 
       {/* Recipe cards have no pages to add, so they get only the second group —
-          and it is the same group, under the same word, holding the same
-          "Recipe link" checkbox a cookbook has. It said "Include" until the
-          cookbook's copy stopped. */}
+          and it is the same group, holding the same "Recipe link" checkbox a
+          cookbook has. It said "Include" until the cookbook's copy stopped;
+          now it says "Every recipe" only when there could BE more than one —
+          see `multiRecipeCapable` above. */}
       {!cookbookMode && (anyRecipeHasImage || anyRecipeHasSourceUrl) && (
-        <CheckboxGroup label="Every recipe" className="recipe-config-section recipe-config-section--settings">
+        <CheckboxGroup label={everyOrThisRecipe} className="recipe-config-section recipe-config-section--settings">
           {anyRecipeHasImage && (
             <Checkbox
                 label="Recipe photo"

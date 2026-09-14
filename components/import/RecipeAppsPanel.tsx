@@ -395,7 +395,10 @@ export function RecipeAppsPanel({
           note={cookPilotNote}
           addedCount={addedCounts.cookpilot}
           icon={<CookPilotLogoIcon size={22} />}
-          action="Choose recipes"
+          // Pressing this while signed out lands on a sign-in screen, not a
+          // recipe list (see CookPilotImportSource's `!user` branch) — the
+          // button has to say so rather than promise the wrong next screen.
+          action={user ? "Choose recipes" : "Sign in"}
           onOpen={() => open("cookpilot")}
         />
         <IntegrationCard
