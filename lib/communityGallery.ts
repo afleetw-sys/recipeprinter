@@ -89,9 +89,12 @@ const PHOTOS: CommunityPhoto[] = [
   },
   {
     src: "/images/card-caprese-pasta-salad.jpeg",
-    width: 1200,
-    height: 1600,
-    alt: "A printed Caprese Pasta Salad card standing on a sunny outdoor table.",
+    width: 1333,
+    height: 2000,
+    // The card sits low in the frame; centred, the slot would cut it in half.
+    objectPosition: "center 57%",
+    alt:
+      "A printed Caprese Pasta Salad card on a wooden board, with fresh basil and cherry tomatoes laid out above it.",
   },
   {
     // The only landscape frame and the only garden table. Sitting mid-run, it
