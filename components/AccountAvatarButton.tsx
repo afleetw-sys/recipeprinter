@@ -24,7 +24,10 @@ const PROJECT_COUNT_FRESH_MS = 10_000;
 
 // Two initials from the signed-in identity — first+last of a display name, else
 // the first letter of the email — so a logged-in avatar shows who's signed in.
-function accountInitials(user: User): string {
+// Exported for AccountPersonalDetails, which draws the same avatar at the top
+// of /account — one rule for "what does this account's avatar say" rather
+// than a second copy that could drift from this one.
+export function accountInitials(user: User): string {
   const name = user.displayName?.trim();
   if (name) {
     const parts = name.split(/\s+/).filter(Boolean);

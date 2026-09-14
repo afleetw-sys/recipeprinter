@@ -4,13 +4,18 @@ import { useState } from "react";
 import { signOut, updateProfile } from "firebase/auth";
 import type { User } from "firebase/auth";
 import { refreshCookPilotAuthUser } from "@/components/CookPilotAuth";
+import { accountInitials } from "@/components/AccountAvatarButton";
 import { getFirebaseAuth } from "@/lib/firebase/client";
-import { ICON_SIZE, SpinnerIcon } from "@/components/icons";
+import { AccountIcon, ICON_SIZE, PencilIcon, SpinnerIcon } from "@/components/icons";
 import { friendlyAuthError } from "@/lib/friendlyErrors";
 
 /**
- * Email (read-only), full name (editable in place), and Sign out — this
- * account's identity and the one action that ends your session with it.
+ * Identity: the same avatar the header uses, your name above your email,
+ * and — right on that row, not a separate section — the two things you can
+ * do about either: edit the name, or end the session. No "Account details"
+ * label over any of it; an avatar beside a name and email already reads as
+ * an identity card, and a heading just restated what the row already showed.
+ *
  * Sign out doesn't get its own card: it isn't a plan decision (it was
  * grouped under "Plan" before, which made no sense) and it isn't
  * substantial enough on its own to justify a third card on this page next
@@ -68,26 +73,24 @@ export function AccountPersonalDetails({ user }: { user: User }) {
     }
   }
 
+  const initials = accountInitials(user);
+
   return (
     <section className="mb-cp-7 rounded-xl border border-line bg-card p-cp-5">
       <div className="flex flex-wrap items-center justify-between gap-cp-3">
-        <h2 className="text-cp-small font-bold text-ink">Account details</h2>
-      </div>
-
-      <div className="mt-cp-3">
-        <span className="field-label">Email</span>
-        <p className="text-cp-body text-ink-soft">{user.email || "No email on file"}</p>
-      </div>
-
-      <div className="mt-cp-3">
-        <span className="field-label">Full name</span>
-        {editingName ? (
-          <>
-            <div className="flex flex-wrap items-start gap-cp-2">
+        <div className="flex min-w-0 items-center gap-cp-3">
+          <span
+            aria-hidden
+            className="flex h-12 w-12 shrink-0 items-center justify-center rounded-[var(--cp-radius-control)] bg-[var(--cp-accent)] text-cp-h2 font-bold text-[var(--cp-on-accent)]"
+          >
+            {initials || <AccountIcon size={ICON_SIZE.md} />}
+          </span>
+          <div className="min-w-0">
+            {editingName ? (
               <input
                 id="account-display-name"
                 aria-label="Full name"
-                className="field min-w-48 flex-1"
+                className="field min-w-0 max-w-64"
                 autoFocus
                 value={displayName}
                 onChange={(event) => {
@@ -95,6 +98,30 @@ export function AccountPersonalDetails({ user }: { user: User }) {
                   if (nameError) setNameError(null);
                 }}
               />
+            ) : (
+              <div className="flex items-center gap-cp-1">
+                <p className="truncate text-cp-body font-bold text-ink">
+                  {user.displayName || "Not set"}
+                </p>
+                <button
+                  type="button"
+                  className="inline-flex h-6 w-6 shrink-0 items-center justify-center rounded text-ink-soft transition-colors hover:bg-[var(--cp-surface-strong)] hover:text-ink"
+                  aria-label="Edit name"
+                  onClick={startEditingName}
+                >
+                  <PencilIcon size={ICON_SIZE.sm} />
+                </button>
+              </div>
+            )}
+            <p className="truncate text-cp-small text-ink-soft">
+              {user.email || "No email on file"}
+            </p>
+          </div>
+        </div>
+
+        <div className="flex shrink-0 items-center gap-cp-2">
+          {editingName ? (
+            <>
               <button
                 type="button"
                 className="btn btn-secondary btn-compact"
@@ -112,32 +139,21 @@ export function AccountPersonalDetails({ user }: { user: User }) {
               >
                 Cancel
               </button>
-            </div>
-            {nameError && <p className="field-error" role="alert">{nameError}</p>}
-          </>
-        ) : (
-          // Edit sits right next to the name it edits, not flung to the far
-          // edge of the card by `justify-between` — the row is only as wide
-          // as its content.
-          <div className="flex items-center gap-cp-3">
-            <p className="text-cp-body text-ink-soft">{user.displayName || "Not set"}</p>
-            <button type="button" className="btn-ghost btn-compact" onClick={startEditingName}>
-              Edit
+            </>
+          ) : (
+            <button
+              type="button"
+              className="btn btn-secondary btn-compact"
+              onClick={() => void signOut(getFirebaseAuth())}
+            >
+              Sign out
             </button>
-          </div>
-        )}
-        {nameSaved && !editingName && <p className="mt-1 text-cp-small text-ink-soft">Saved.</p>}
+          )}
+        </div>
       </div>
 
-      <div className="mt-cp-4 border-t border-line pt-cp-3">
-        <button
-          type="button"
-          className="btn-ghost btn-compact w-full sm:w-auto"
-          onClick={() => void signOut(getFirebaseAuth())}
-        >
-          Sign out
-        </button>
-      </div>
+      {nameError && <p className="field-error mt-cp-2" role="alert">{nameError}</p>}
+      {nameSaved && !editingName && <p className="mt-cp-2 text-cp-small text-ink-soft">Saved.</p>}
     </section>
   );
 }

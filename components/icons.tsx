@@ -183,6 +183,12 @@ export const SaveIcon = (p: IconProps) => (
   </Base>
 );
 
+export const PencilIcon = (p: IconProps) => (
+  <Base {...p}>
+    <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z" />
+  </Base>
+);
+
 export const TrashIcon = (p: IconProps) => (
   <Base {...p}>
     <path d="M4 7h16" />

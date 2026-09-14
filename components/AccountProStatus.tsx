@@ -149,7 +149,7 @@ export function AccountProStatus({ user }: { user: User }) {
     <section className="mb-cp-7 rounded-xl border border-line bg-card p-cp-5">
       <div>
         <div className="flex items-center justify-between gap-cp-2">
-          <h2 className="text-cp-small font-bold text-ink">Plan</h2>
+          <h2 className="text-cp-h2 font-extrabold text-ink">Plan</h2>
           {proDetails.active && <ProBadge variant="inline" />}
         </div>
         {proInfoLoading ? (
@@ -193,7 +193,7 @@ export function AccountProStatus({ user }: { user: User }) {
                 while you're on Pro. */}
             <div className="grid gap-cp-3 sm:grid-cols-2">
               <div className="flex h-full flex-col rounded-lg border border-line p-cp-3">
-                <h3 className="text-cp-h2 font-extrabold text-ink">Basic</h3>
+                <h3 className="text-cp-body font-extrabold text-ink">Basic</h3>
                 <p className="mt-1 text-cp-body font-bold text-ink-soft">Free</p>
                 <ul className="mt-cp-2 flex flex-1 flex-col gap-cp-1">
                   {BASIC_BENEFITS.map((benefit) => (
@@ -207,7 +207,7 @@ export function AccountProStatus({ user }: { user: User }) {
               <div className="flex h-full flex-col rounded-lg border border-line bg-[var(--cp-premium-soft)] p-cp-3">
                 <div className="flex items-center gap-2">
                   <CrownIcon size={ICON_SIZE.md} className="text-[var(--cp-premium-bright)]" />
-                  <h3 className="text-cp-h2 font-extrabold text-ink">Pro</h3>
+                  <h3 className="text-cp-body font-extrabold text-ink">Pro</h3>
                 </div>
                 <p className="mt-1 text-cp-body font-bold text-ink-soft">
                   {proDetails.cycle ? PRO_PRICE_FALLBACKS[proDetails.cycle] : "Your plan"}
@@ -288,7 +288,7 @@ export function AccountProStatus({ user }: { user: User }) {
                   cards to the tallest one, this just decides where the slack
                   inside each card goes. */}
               <div className="flex h-full flex-col rounded-lg border border-line p-cp-3">
-                <h3 className="text-cp-h2 font-extrabold text-ink">Basic</h3>
+                <h3 className="text-cp-body font-extrabold text-ink">Basic</h3>
                 <p className="mt-1 text-cp-body font-bold text-ink-soft">Free</p>
                 <ul className="mt-cp-2 flex flex-1 flex-col gap-cp-1">
                   {BASIC_BENEFITS.map((benefit) => (
@@ -306,7 +306,7 @@ export function AccountProStatus({ user }: { user: User }) {
                 <div className="flex flex-wrap items-center justify-between gap-cp-2">
                   <div className="flex items-center gap-2">
                     <CrownIcon size={ICON_SIZE.md} className="text-[var(--cp-premium-bright)]" />
-                    <h3 className="text-cp-h2 font-extrabold text-ink">Pro</h3>
+                    <h3 className="text-cp-body font-extrabold text-ink">Pro</h3>
                   </div>
                   <SegmentedControl
                     label="Billing cycle"
