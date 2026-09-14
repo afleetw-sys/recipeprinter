@@ -2357,10 +2357,11 @@
 }
 
 /* Sitting on top of a theme thumbnail or card-size preview — arbitrary art
-   or colour behind it — needs a backing plate to stay legible, the same
-   idea Canva's own Pro crown badge uses: a solid, warm dark plate (not a
-   translucent black wash) with just enough corner rounding to read as a
-   soft chip rather than a circle or a sharp rectangle. */
+   or colour behind it — needs a backing plate to stay legible. --cp-ink
+   rather than an invented hue (a maroon plate read as disconnected from the
+   rest of the app's palette, which never uses that colour anywhere else) —
+   this app's own dark neutral, already familiar from body text everywhere
+   else, just enough corner rounding to read as a soft chip. */
 .pro-badge--overlay {
   position: absolute;
   top: 4px;
@@ -2368,7 +2369,7 @@
   z-index: 2;
   padding: 4px;
   border-radius: 8px;
-  background: #431922;
+  background: var(--cp-ink);
   box-shadow: 0 1px 2px rgba(0, 0, 0, 0.35);
 }
 
