@@ -71,7 +71,7 @@ export function AccountPersonalDetails({ user }: { user: User }) {
   return (
     <section className="mb-cp-7 rounded-xl border border-line bg-card p-cp-5">
       <div className="flex flex-wrap items-center justify-between gap-cp-3">
-        <h2 className="text-cp-small font-bold text-ink">Personal details</h2>
+        <h2 className="text-cp-small font-bold text-ink">Account details</h2>
       </div>
 
       <div className="mt-cp-3">

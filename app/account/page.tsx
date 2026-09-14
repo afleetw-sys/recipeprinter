@@ -40,7 +40,7 @@ export default function AccountPage() {
       <main className="mx-auto w-full max-w-5xl px-cp-6 py-cp-7">
         <header className="mb-cp-7 flex flex-wrap items-start justify-between gap-cp-4">
           <div>
-            <h1 className="text-cp-hero-sm font-extrabold tracking-[-0.04em] leading-[1.08]">Account</h1>
+            <h1 className="text-cp-hero-sm font-extrabold tracking-[-0.04em] leading-[1.08]">Settings</h1>
           </div>
         </header>
 

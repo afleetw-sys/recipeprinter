@@ -1576,6 +1576,70 @@
     font-weight: 500;
   }
 
+  /* Base `SegmentedControl` look — a single pill "thumb" (positioned by JS
+     to the active option) that slides between plain-text options, rather
+     than each button toggling its own background. Used to live only in
+     app/print/print.css, which the print workspace's own
+     `.rp-project-heading__kinds` variant still overrides there for its
+     denser toolbar shape — but print.css is only loaded under /print, so
+     any OTHER page reaching for this control (the account page's billing
+     toggle, for one) got a bare pair of unstyled buttons. This is the part
+     that isn't print-specific at all, moved here so it works everywhere. */
+  .segmented-control {
+    position: relative;
+    isolation: isolate;
+    display: inline-flex;
+    align-items: center;
+    gap: 2px;
+    background: transparent;
+  }
+  .segmented-control__thumb {
+    position: absolute;
+    z-index: 0;
+    top: 0;
+    bottom: 0;
+    left: 0;
+    border-radius: 12px;
+    background: var(--cp-surface-strong);
+    transition:
+      transform 0.26s cubic-bezier(0.4, 0, 0.2, 1),
+      width 0.26s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+  .segmented-control__option {
+    position: relative;
+    z-index: 1;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    border: 0;
+    background: transparent;
+    color: var(--cp-ink);
+    font-weight: var(--cp-fw-bold);
+    font-size: var(--cp-fs-small);
+    line-height: 1;
+    padding: 9px 16px;
+    border-radius: 12px;
+    cursor: pointer;
+    white-space: nowrap;
+    transition: color 0.2s ease;
+  }
+  .segmented-control__option:not(.is-active):hover {
+    color: var(--cp-ink);
+  }
+  .segmented-control__option.is-active {
+    color: var(--cp-ink);
+    cursor: default;
+  }
+  .segmented-control__option:focus-visible {
+    outline: var(--cp-focus-ring);
+    outline-offset: var(--cp-focus-ring-offset);
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .segmented-control__thumb {
+      transition: none;
+    }
+  }
+
   .recipe-loading-state {
     display: flex;
     flex-direction: column;

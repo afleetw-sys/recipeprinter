@@ -5,6 +5,7 @@ import type { User } from "firebase/auth";
 import type { CustomerInfo } from "@revenuecat/purchases-js";
 import { CheckIcon, CrownIcon, ICON_SIZE } from "@/components/icons";
 import { ProBadge } from "@/components/ProBadge";
+import { SegmentedControl } from "@/components/Controls";
 import { PRO_BENEFITS, ProUpgradeDialog } from "@/components/ProUpgradeDialog";
 import { track } from "@/lib/analytics";
 import {
@@ -15,18 +16,19 @@ import {
 import { useProPurchase } from "@/lib/useProPurchase";
 import { resolveEffectiveCustomerInfo, type CustomerInfoLoadStatus } from "@/lib/proAccessFallback";
 import { loadRecipePrinterUserProfile, type RecipePrinterMirroredEntitlement } from "@/lib/recipePrinterFreeTemplateClaim";
+import { PRO_PRICE_FALLBACKS, type ProBillingCycle } from "@/lib/proProduct";
 
-// What Free actually includes — and it's a lot, which the old "Classic &
-// Pantry themes / Full Page printing / one recipe at a time" list undersold
-// by leading with a limitation. "Import from any site" / "Import from
-// Instagram, TikTok..." / "Unlimited imports" were three lines making the
-// same point (importing has no limit); folded into two by saying
+// What Basic (the free tier) actually includes — and it's a lot, which the
+// old "Classic & Pantry themes / Full Page printing / one recipe at a time"
+// list undersold by leading with a limitation. "Import from any site" /
+// "Import from Instagram, TikTok..." / "Unlimited imports" were three lines
+// making the same point (importing has no limit); folded into two by saying
 // "Unlimited" on each rather than splitting it out as its own line.
 // "One recipe at a time" is real (see PrintSetupControls.tsx's "This
 // recipe" title) but it's a constraint, not a benefit, so it doesn't belong
-// on a list meant to make the case for staying on Free being a perfectly
+// on a list meant to make the case for staying on Basic being a perfectly
 // good deal.
-const FREE_BENEFITS = [
+const BASIC_BENEFITS = [
   "Unlimited imports from any recipe website",
   "Unlimited imports from Instagram, TikTok, Pinterest & more",
   "Letter-size printing with two free themes",
@@ -68,6 +70,10 @@ export function AccountProStatus({ user }: { user: User }) {
   const [proInfoLoading, setProInfoLoading] = useState(false);
   const [proMessage, setProMessage] = useState<string | null>(null);
   const [showProUpgradeDialog, setShowProUpgradeDialog] = useState(false);
+  /** Only changes which price the Pro card quotes before you've bought
+      anything — `ProUpgradeDialog` still has its own cycle picker once
+      you're actually choosing. */
+  const [billingCycle, setBillingCycle] = useState<ProBillingCycle>("annual");
 
   const refreshProCustomerInfo = useCallback(async () => {
     const [liveResult, mirrorResult] = await Promise.allSettled([
@@ -201,52 +207,74 @@ export function AccountProStatus({ user }: { user: User }) {
           // app that should make the case for Pro to someone who hasn't
           // bought it yet was the quietest screen about it. Side by side so
           // the difference is what's on the Pro card, not a claim to take on
-          // faith; the Pro list opens with "Everything in Free" rather than
+          // faith; the Pro list opens with "Everything in Basic" rather than
           // repeating the same three lines, and then the real benefit list
           // `ProUpgradeDialog` itself leads with, so this and the dialog it
           // opens never disagree about what Pro includes.
-          <div className="mt-1 grid gap-cp-3 sm:grid-cols-2">
-            <div className="rounded-lg border border-line p-cp-3">
-              <h3 className="text-cp-small font-bold text-ink">Free</h3>
-              <ul className="mt-cp-2 flex flex-col gap-cp-1">
-                {FREE_BENEFITS.map((benefit) => (
-                  <li key={benefit} className="flex items-start gap-cp-2 text-cp-small text-ink-soft">
-                    <CheckIcon size={ICON_SIZE.sm} className="mt-[3px] shrink-0" />
-                    {benefit}
-                  </li>
-                ))}
-              </ul>
-              <button type="button" className="btn btn-primary btn-compact mt-cp-3 w-full" disabled>
-                Your current plan
-              </button>
+          <div className="mt-1">
+            <div className="mb-cp-3 flex justify-end">
+              <SegmentedControl
+                label="Billing cycle"
+                value={billingCycle}
+                onChange={setBillingCycle}
+                options={[
+                  { id: "monthly", label: "Monthly" },
+                  { id: "annual", label: "Annual" },
+                ]}
+              />
             </div>
-            <div className="rounded-lg border border-line p-cp-3">
-              <div className="flex items-center gap-2">
-                <CrownIcon size={ICON_SIZE.md} className="text-[var(--cp-premium-bright)]" />
-                <h3 className="text-cp-small font-bold text-ink">Pro</h3>
+            <div className="grid gap-cp-3 sm:grid-cols-2">
+              {/* `h-full flex-col` on the card plus `flex-1` on the benefit
+                  list is what keeps both buttons on one baseline regardless
+                  of which list is longer — the grid already stretches both
+                  cards to the tallest one, this just decides where the slack
+                  inside each card goes. */}
+              <div className="flex h-full flex-col rounded-lg border border-line p-cp-3">
+                <h3 className="text-cp-h2 font-extrabold text-ink">Basic</h3>
+                <p className="mt-1 text-cp-body font-bold text-ink-soft">Free</p>
+                <ul className="mt-cp-2 flex flex-1 flex-col gap-cp-1">
+                  {BASIC_BENEFITS.map((benefit) => (
+                    <li key={benefit} className="flex items-start gap-cp-2 text-cp-small text-ink-soft">
+                      <CheckIcon size={ICON_SIZE.sm} className="mt-[3px] shrink-0" />
+                      {benefit}
+                    </li>
+                  ))}
+                </ul>
+                <button type="button" className="btn btn-primary btn-compact mt-cp-3 w-full" disabled>
+                  Your current plan
+                </button>
               </div>
-              <ul className="mt-cp-2 flex flex-col gap-cp-1">
-                <li className="flex items-start gap-cp-2 text-cp-small font-semibold text-ink">
-                  <CheckIcon size={ICON_SIZE.sm} className="mt-[3px] shrink-0" />
-                  Everything in Free
-                </li>
-                {PRO_BENEFITS.map((benefit) => (
-                  <li key={benefit} className="flex items-start gap-cp-2 text-cp-small text-ink-soft">
+              <div className="flex h-full flex-col rounded-lg border border-line p-cp-3">
+                <div className="flex items-center gap-2">
+                  <CrownIcon size={ICON_SIZE.md} className="text-[var(--cp-premium-bright)]" />
+                  <h3 className="text-cp-h2 font-extrabold text-ink">Pro</h3>
+                </div>
+                <p className="mt-1 text-cp-body font-bold text-ink-soft">
+                  {PRO_PRICE_FALLBACKS[billingCycle]}
+                </p>
+                <ul className="mt-cp-2 flex flex-1 flex-col gap-cp-1">
+                  <li className="flex items-start gap-cp-2 text-cp-small font-semibold text-ink">
                     <CheckIcon size={ICON_SIZE.sm} className="mt-[3px] shrink-0" />
-                    {benefit}
+                    Everything in Basic
                   </li>
-                ))}
-              </ul>
-              <button
-                type="button"
-                className="btn btn-primary btn-compact mt-cp-3 w-full"
-                onClick={() => {
-                  track("paywall_viewed", { trigger: "account_menu" });
-                  setShowProUpgradeDialog(true);
-                }}
-              >
-                Upgrade
-              </button>
+                  {PRO_BENEFITS.map((benefit) => (
+                    <li key={benefit} className="flex items-start gap-cp-2 text-cp-small text-ink-soft">
+                      <CheckIcon size={ICON_SIZE.sm} className="mt-[3px] shrink-0" />
+                      {benefit}
+                    </li>
+                  ))}
+                </ul>
+                <button
+                  type="button"
+                  className="btn btn-primary btn-compact mt-cp-3 w-full"
+                  onClick={() => {
+                    track("paywall_viewed", { trigger: "account_menu" });
+                    setShowProUpgradeDialog(true);
+                  }}
+                >
+                  Upgrade
+                </button>
+              </div>
             </div>
           </div>
         )}

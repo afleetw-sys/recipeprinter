@@ -59,7 +59,7 @@ export function ProUpgradeDialog({
   busy,
   cookPilotUser,
   title = "RecipePrinter Pro",
-  description = "Unlock every theme, 4×6 cards, and the rest of the print toolkit.",
+  description = "Unlock every premium theme, every print size, and multi-recipe printing.",
 }: {
   onClose: () => void;
   /** Starts checkout for `cycle` — called immediately for a signed-in cook,

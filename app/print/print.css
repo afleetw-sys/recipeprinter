@@ -5151,88 +5151,11 @@ textarea.recipe-card__toc-title {
   field-sizing: content;
 }
 
-/* Recipe-cards ↔ Cookbook segmented switch (header + mobile top bar). */
-/* Segmented Recipe cards / Cookbook switch: two equal cells with a single
-   pill "thumb" that slides between them, rather than each button toggling its
-   own background — reads as one modern control instead of two chips. */
-/* Segmented Recipe cards / Cookbook switch: no tray — each option hugs its own
-   content, and a single ink "thumb" (positioned by JS to the active option)
-   slides + resizes between them. */
-.segmented-control {
-  position: relative;
-  isolation: isolate;
-  display: inline-flex;
-  align-items: center;
-  gap: 2px;
-  /* No track — only the selected pill is colored; the other side is plain. */
-  background: transparent;
-}
-.segmented-control__thumb {
-  position: absolute;
-  z-index: 0;
-  top: 0;
-  bottom: 0;
-  left: 0;
-  border-radius: 12px;
-  /* The app's one grey: the same `--cp-surface-strong` behind `.btn-neutral`
-     and the signed-out avatar. This was a color-mix off `--cp-ink-soft`, which
-     is blue-tinted — so the selected tab was a different grey from the buttons
-     it sits beside, in a bar where they are read together. */
-  background: var(--cp-surface-strong);
-  transition:
-    transform 0.26s cubic-bezier(0.4, 0, 0.2, 1),
-    width 0.26s cubic-bezier(0.4, 0, 0.2, 1);
-}
-.segmented-control__option {
-  position: relative;
-  z-index: 1;
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  border: 0;
-  background: transparent;
-  /* Ink, not ink-soft. The `--kinds` variant of this control has a grey track
-     (--cp-surface-strong), and Stone on it is 4.25:1 — a fail, and one that
-     only appears once a project can become a cookbook, which is why earlier
-     sweeps of this page never saw it. Selection is carried by the white thumb
-     sliding under the chosen label, which is how a track-and-thumb control is
-     meant to read; dimming the other label was doing that job a second time
-     and paying contrast for it. */
-  color: var(--cp-ink);
-  /* 700, not 800. The tracking here is and always was normal — the same as
-     every control beside it — so "spaced out" was really "too heavy": 800 is
-     what the weight scale in globals.css reserves for panel and dialog titles,
-     while the button next to this is 600, the other segmented picker is 700,
-     and the project title it sits beside is 700. A display weight on a control
-     label, set smaller than that title, is what made the letters look pushed
-     apart. The typeface change amplified it — Karla at 800 is wider than the
-     Manrope this was drawn against. */
-  font-weight: var(--cp-fw-bold);
-  font-size: var(--cp-fs-small);
-  line-height: 1;
-  padding: 9px 16px;
-  border-radius: 12px;
-  cursor: pointer;
-  white-space: nowrap;
-  transition: color 0.2s ease;
-}
-.segmented-control__option:not(.is-active):hover {
-  color: var(--cp-ink);
-}
-/* The selected pill is light gray, so its label stays dark ink (not white). */
-.segmented-control__option.is-active {
-  color: var(--cp-ink);
-  cursor: default;
-}
-.segmented-control__option:focus-visible {
-  outline: var(--cp-focus-ring);
-  outline-offset: var(--cp-focus-ring-offset);
-}
-@media (prefers-reduced-motion: reduce) {
-  .segmented-control__thumb {
-    transition: none;
-  }
-}
+/* Recipe-cards ↔ Cookbook segmented switch (header + mobile top bar).
+   The base `.segmented-control`/`.segmented-control__option`/
+   `.segmented-control__thumb` look now lives in globals.css (it isn't
+   print-specific — see the comment there); only this page's denser toolbar
+   variant stays here. */
 
 .recipe-print-preview--card-6x4 .recipe-card__divider-title,
 .recipe-print-preview--card-6x4 .recipe-card__cover-title {
