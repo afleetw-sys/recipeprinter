@@ -512,6 +512,23 @@ export default function PrintPage() {
   const [projectAttachChecked, setProjectAttachChecked] = useState(false);
   const projectRevisionRef = useRef(0);
   const lastSavedFingerprintRef = useRef<string | null>(null);
+  /**
+   * Whether the LAST successful save agreed with the mode being edited right
+   * now — the thing `autosaveEnabled` alone can't tell apart.
+   *
+   * `autosaveEnabled` answers "has this document ever been saved," which is
+   * not the same question as "has THIS MODE of it." A recipe-cards project
+   * that was explicitly saved gives a free pass to a cookbook scaffold that
+   * was never asked to be kept: switch to Cookbook, and `scaffoldCookbook`'s
+   * cover/chapters would autosave within the 1.5s debounce below, with
+   * nobody having pressed anything. Comparing this ref against the current
+   * `cookbookMode` is what tells "an edit to something already agreed to be
+   * kept" apart from "a mode nobody has said yes to yet" — set on every
+   * successful save (`writeProject`) and on load (a reopened project's own
+   * `cookbookMode` IS the last thing it was saved as, so it starts agreeing
+   * with itself).
+   */
+  const lastSavedCookbookModeRef = useRef<boolean>(false);
   const lastAttemptedFingerprintRef = useRef<string | null>(null);
   const saveInFlightRef = useRef(false);
   /**
@@ -727,7 +744,7 @@ export default function PrintPage() {
    *
    * It deliberately no longer decides whether the project SAVES itself. Holding
    * a book is not the same as having asked us to keep one — see
-   * `autosaveEnabled`.
+   * `autosaveEnabledForCurrentMode`.
    */
   const isCookbookDocument = cookbookMode || Boolean(projectMeta.meta.stashedCookbook);
   // The cookbook's remembered export format (US Letter / 8×10 hardcover). This
@@ -2476,6 +2493,9 @@ export default function PrintPage() {
       projectRevisionRef.current = Number(saved.revision ?? 0);
       savedProjectIdRef.current = saved.id;
       setSavedProjectId(saved.id);
+      // This write just made THIS mode the last-agreed one — see
+      // `lastSavedCookbookModeRef`'s own comment.
+      lastSavedCookbookModeRef.current = Boolean(project.settings.cookbookMode);
       /**
        * The photos are in Storage now, so stop treating the browser's copy as
        * the source.
@@ -2590,12 +2610,16 @@ export default function PrintPage() {
 
     // Says what the wait is FOR. Nothing is being kept when there was nothing
     // made, and claiming otherwise would be the same kind of lie the flight was.
-    // A confirmed leave is the cook having just told the "Keep this project?"
-    // dialog no, so "Saving your recipes…" on the way out of that would be the
-    // dialog's own answer contradicting itself — the crash-net write below still
-    // runs (nothing here changes what `fileProjectLocally` is for), it is just
-    // never described as a save the cook asked for.
-    setLeavingHome(printable && !options?.confirmed ? "Saving your recipes…" : "Going home…");
+    // "Saving your recipes…" is only honest when `handleSaveProject` below is
+    // actually about to run — gated on `autosaveEnabledForCurrentMode`, i.e.
+    // THIS mode has been explicitly saved once already. A fresh project, or a
+    // mode switched into but never saved, only ever gets the local crash-net
+    // write (`fileProjectLocally`), and a confirmed leave is the cook having
+    // just told the "Keep this project?" dialog no — none of those is a save
+    // the cook asked for, so they all just say "Going home…".
+    setLeavingHome(
+      printable && !options?.confirmed && autosaveEnabledForCurrentMode ? "Saving your recipes…" : "Going home…"
+    );
     if (!printable) {
       goHome();
       return;
@@ -2622,13 +2646,14 @@ export default function PrintPage() {
      * touch, and a library that fills itself with every Tuesday's dinner prints
      * is a log rather than a library.
      *
-     * `autosaveEnabled` is the existing answer to "did the cook ask us to keep
-     * this" — a project that has been saved at least once. Reusing it rather
-     * than restating the condition keeps the two from drifting apart. The local
-     * shelf below is unaffected: that is the working copy people rely on when
-     * they reopen /print, and it never leaves the device.
+     * `autosaveEnabledForCurrentMode` is the existing answer to "did the cook
+     * ask us to keep THIS" — this mode of this project has been saved at
+     * least once. Reusing it rather than restating the condition keeps the
+     * two from drifting apart. The local shelf below is unaffected: that is
+     * the working copy people rely on when they reopen /print, and it never
+     * leaves the device.
      */
-    if (filed && autosaveEnabled) void handleSaveProject(filed);
+    if (filed && autosaveEnabledForCurrentMode) void handleSaveProject(filed);
 
     // Only now is the desk safe to clear — and releasing the project id is the
     // half that makes the next import a NEW project rather than another edit
@@ -2651,7 +2676,7 @@ export default function PrintPage() {
   // would write and could bump the revision other tabs are editing against.
   useEffect(() => {
     flushOnHideRef.current = () => {
-      if (!autosaveEnabled || !projectAttachChecked) return;
+      if (!autosaveEnabledForCurrentMode || !projectAttachChecked) return;
       if (!items || items.length === 0) return;
       // A save is already carrying this book — either in flight or waiting its
       // turn holding a snapshot of it.
@@ -3382,6 +3407,10 @@ export default function PrintPage() {
           savedProjectIdRef.current = project.id;
           setSavedProjectId(project.id);
           lastSavedFingerprintRef.current = "__loaded__";
+          // Whatever this document loaded as IS the last thing it was saved
+          // as — the same value just used to set `cookbookMode` above, so a
+          // reopened project starts agreeing with itself.
+          lastSavedCookbookModeRef.current = savedProjectOpensAsCookbook(project);
           setSaveStatus("saved");
         }
     };
@@ -3615,11 +3644,27 @@ export default function PrintPage() {
    */
   const autosaveEnabled = savedToProfile;
 
+  /**
+   * `autosaveEnabled` alone answers "has this document ever been saved" —
+   * not "has THIS MODE of it." Comparing `lastSavedCookbookModeRef` (set on
+   * every successful save and on load — see its own comment) against the
+   * CURRENT `cookbookMode` is what closes the gap: a cards project already
+   * saved keeps autosaving cards edits normally (the two already agree), but
+   * the moment `cookbookMode` flips to `true` in memory without a save
+   * having happened yet, they disagree and every automatic save site below
+   * stands down until an explicit Save press brings them back into
+   * agreement. Explicit saves (a button press, a completed purchase, the
+   * sign-in-intent replay) are untouched by this — they should always be
+   * allowed to save regardless of which mode was last agreed to, since an
+   * explicit save is exactly what restores agreement.
+   */
+  const autosaveEnabledForCurrentMode = autosaveEnabled && lastSavedCookbookModeRef.current === cookbookMode;
+
   useEffect(() => {
     if (projectLoading || !projectAttachChecked || !items?.length) return;
-    // A draft nobody asked to keep. The status this project does show is the
-    // draft effect's business, below.
-    if (!autosaveEnabled) return;
+    // A draft nobody asked to keep, or a mode nobody has saved yet. The
+    // status this project does show is the draft effect's business, below.
+    if (!autosaveEnabledForCurrentMode) return;
     // Lazily computed — the fingerprint is a JSON.stringify of the whole book, so
     // it's produced only where actually needed (the load baseline below, and once
     // per debounce settle inside the timer), never eagerly on every keystroke.
@@ -3664,7 +3709,7 @@ export default function PrintPage() {
     showDescription,
     projectLoading,
     projectAttachChecked,
-    autosaveEnabled,
+    autosaveEnabledForCurrentMode,
     saveStatus,
   ]);
 
@@ -3681,7 +3726,9 @@ export default function PrintPage() {
       if (saveStatus === "offline") void handleSaveProject();
     };
     const offline = () => {
-      if (autosaveEnabled) setSaveStatus("offline");
+      // Same reasoning as the debounce effect: a mode that hasn't been
+      // explicitly saved yet has nothing pending to report as "offline."
+      if (autosaveEnabledForCurrentMode) setSaveStatus("offline");
     };
     window.addEventListener("online", online);
     window.addEventListener("offline", offline);
@@ -3690,7 +3737,7 @@ export default function PrintPage() {
       window.removeEventListener("offline", offline);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [saveStatus, autosaveEnabled]);
+  }, [saveStatus, autosaveEnabledForCurrentMode]);
 
   // Flush a pending save when the tab goes away. `pagehide` is the reliable
   // teardown signal (fires on close/navigation, and on mobile bfcache freeze);
@@ -5093,7 +5140,11 @@ export default function PrintPage() {
                     onClick={() => void handleSaveProject()}
                   >
                     <SaveIcon size={ICON_SIZE.md} />
-                    Save
+                    {/* Same click, same document — but naming which thing is
+                        being kept, given how separate a cookbook and its
+                        recipe cards are meant to feel even though they share
+                        one save today. */}
+                    {cookbookMode ? "Save cookbook" : "Save"}
                   </button>
                 )}
 
