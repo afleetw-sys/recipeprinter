@@ -1,20 +1,26 @@
 "use client";
 
 import { useState } from "react";
-import { updateProfile } from "firebase/auth";
+import { signOut, updateProfile } from "firebase/auth";
 import type { User } from "firebase/auth";
 import { refreshCookPilotAuthUser } from "@/components/CookPilotAuth";
+import { getFirebaseAuth } from "@/lib/firebase/client";
 import { ICON_SIZE, SpinnerIcon } from "@/components/icons";
 import { friendlyAuthError } from "@/lib/friendlyErrors";
 
 /**
- * Email (read-only) and full name, editable in place — the two things
- * "Personal details" means for an account with no other profile fields to
- * speak of. Password change isn't here: RecipePrinter and CookPilot share
- * one Firebase Auth project, so a password reset already exists on the
- * sign-in form itself (`CookPilotLoginForm`'s "Forgot password?"), and a
- * second, narrower way to do the same thing on this page was one more place
- * for the two to drift apart.
+ * Email (read-only), full name (editable in place), and Sign out — this
+ * account's identity and the one action that ends your session with it.
+ * Sign out doesn't get its own card: it isn't a plan decision (it was
+ * grouped under "Plan" before, which made no sense) and it isn't
+ * substantial enough on its own to justify a third card on this page next
+ * to the two real ones.
+ *
+ * Password change isn't here: RecipePrinter and CookPilot share one
+ * Firebase Auth project, so a password reset already exists on the sign-in
+ * form itself (`CookPilotLoginForm`'s "Forgot password?"), and a second,
+ * narrower way to do the same thing on this page was one more place for the
+ * two to drift apart.
  */
 export function AccountPersonalDetails({ user }: { user: User }) {
   /**
@@ -121,6 +127,16 @@ export function AccountPersonalDetails({ user }: { user: User }) {
           </div>
         )}
         {nameSaved && !editingName && <p className="mt-1 text-cp-small text-ink-soft">Saved.</p>}
+      </div>
+
+      <div className="mt-cp-4 border-t border-line pt-cp-3">
+        <button
+          type="button"
+          className="btn-ghost btn-compact w-full sm:w-auto"
+          onClick={() => void signOut(getFirebaseAuth())}
+        >
+          Sign out
+        </button>
       </div>
     </section>
   );
