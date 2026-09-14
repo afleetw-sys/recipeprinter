@@ -175,7 +175,7 @@ export function ProUpgradeDialog({
             Continue with {PRO_CYCLE_LABEL[selectedCycle]} ({PRO_PRICE_FALLBACKS[selectedCycle]})
           </button>
           <p className="text-cp-label text-ink-soft">
-            Cancel anytime from your account. Cookbooks are sold separately.
+            Cancel anytime from your account. Cookbooks sold separately.
           </p>
         </>
       ) : (
