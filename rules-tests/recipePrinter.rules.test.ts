@@ -487,6 +487,12 @@ describe("server-owned fields on the shared CookPilot user document", () => {
     await assertFails(
       setDoc(doc(user, "users/pro-faker"), { recipePrinterRevenueCatFetchedAtMs: Date.now() + 1_000_000 }, { merge: true }),
     );
+    // Clearing (or setting) this would let a client fraudulently re-become
+    // "eligible" for the 20%-off-first-cookbook discount forever, or fake
+    // having already used it to hide abuse — same server-only family.
+    await assertFails(
+      setDoc(doc(user, "users/pro-faker"), { recipePrinterFirstCookbookGrantedAt: new Date() }, { merge: true }),
+    );
   });
 
   test("a real Pro subscriber can still read their entitlement and edit unrelated fields", async () => {

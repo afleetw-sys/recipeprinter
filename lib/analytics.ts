@@ -296,18 +296,24 @@ type EventProps = {
     template?: RecipePrintTemplate;
     /** Monthly vs. annual — only meaningful for `product: "pro"`. */
     cycle?: "monthly" | "annual";
+    /** Set only for a `product: "cookbook"` purchase resolved against the
+     *  discounted product — lets the funnel measure how often the 20%-off
+     *  first-cookbook perk is actually used, not just offered. */
+    discount?: "pro_first";
     customerId?: string;
   };
   purchase_completed: {
     product: PurchasedProduct;
     template?: RecipePrintTemplate;
     cycle?: "monthly" | "annual";
+    discount?: "pro_first";
     customerId?: string;
   };
   purchase_cancelled: {
     product: PurchasedProduct;
     template?: RecipePrintTemplate;
     cycle?: "monthly" | "annual";
+    discount?: "pro_first";
     customerId?: string;
   };
   /**
@@ -323,6 +329,7 @@ type EventProps = {
     product: PurchasedProduct;
     template?: RecipePrintTemplate;
     cycle?: "monthly" | "annual";
+    discount?: "pro_first";
     reason: string;
     customerId?: string;
   };

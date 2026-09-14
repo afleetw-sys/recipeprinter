@@ -61,6 +61,13 @@ export interface RecipePrinterUserProfile {
    *  whenever a fallback actually falls back to this mirror; never made up
    *  or approximated (lib/proAccessFallback.ts). */
   syncedAtMs: number | null;
+  /** When this account's first-ever cookbook was granted
+   *  (`recipePrinterFirstCookbookGrantedAt`, write-once by CookPilot's
+   *  `recordFirstCookbookGrant`) — null means never. The only consumer
+   *  should be `isFirstCookbookDiscountEligible` in lib/cookbookProduct.ts;
+   *  this field says nothing about *access* to any specific cookbook,
+   *  which stays the separate per-project unlock doc it's always been. */
+  firstCookbookGrantedAt: number | null;
 }
 
 async function fetchRecipePrinterUserDoc(uid: string): Promise<Record<string, unknown>> {
@@ -125,6 +132,11 @@ function deriveSyncedAtMs(data: Record<string, unknown>): number | null {
   return syncedAt?.toMillis?.() ?? null;
 }
 
+function deriveFirstCookbookGrantedAt(data: Record<string, unknown>): number | null {
+  const grantedAt = data.recipePrinterFirstCookbookGrantedAt as { toMillis?: () => number } | undefined;
+  return grantedAt?.toMillis?.() ?? null;
+}
+
 function deriveFreeTemplateStatus(data: Record<string, unknown>): RecipePrinterFreeTemplateStatus {
   const expiresAtMs = (data.plusExpiresAt as { toMillis?: () => number } | undefined)
     ?.toMillis?.() ?? null;
@@ -163,6 +175,7 @@ export async function loadRecipePrinterUserProfile(uid: string): Promise<RecipeP
     freeTemplateStatus: deriveFreeTemplateStatus(data),
     mirroredEntitlements: deriveMirroredEntitlements(data),
     syncedAtMs: deriveSyncedAtMs(data),
+    firstCookbookGrantedAt: deriveFirstCookbookGrantedAt(data),
   };
 }
 

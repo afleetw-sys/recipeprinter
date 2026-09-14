@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import type { User } from "firebase/auth";
-import { COOKBOOK_PRICE_FALLBACK } from "@/lib/cookbookProduct";
+import { COOKBOOK_DISCOUNT_PRICE_FALLBACK, COOKBOOK_PRICE_FALLBACK } from "@/lib/cookbookProduct";
 import { friendlyPurchaseSetupError } from "@/lib/friendlyErrors";
 import { track, truncateReason } from "@/lib/analytics";
 import {
@@ -23,9 +23,21 @@ interface UseCookbookPurchaseOptions {
   cookPilotUser: User | null;
   cookbookMode: boolean;
   projectId: string;
+  /** Whether THIS purchase, right now, qualifies for 20% off (active Pro,
+      never granted a cookbook before) — computed by the caller from
+      `effectiveCustomerInfo`/the signed-in profile (lib/cookbookProduct.ts's
+      `isFirstCookbookDiscountEligible`), re-checked fresh at call time
+      rather than cached here. */
+  discountEligible: boolean;
   showToast: (message: string) => void;
   clearToast: () => void;
   onFreshPurchase: () => void;
+  /** Fired once a purchase actually grants (never on cancel/failure) with
+      whether it used the discount — lets the caller optimistically mark
+      this account as no longer eligible immediately, without waiting for a
+      Firestore round trip, so a second cookbook purchase started later in
+      the same session can't also resolve the discounted product. */
+  onCookbookGranted: (usedDiscount: boolean) => void;
 }
 
 /**
@@ -34,20 +46,27 @@ interface UseCookbookPurchaseOptions {
  * usePremiumTemplatePurchase's unlock-then-continue shape, against a
  * per-project unlock rather than a per-template entitlement.
  *
- * It takes no RevenueCat customer, deliberately. It used to accept
+ * It takes no RevenueCat `CustomerInfo`, deliberately. It used to accept
  * `customerInfo` and `refreshCustomerInfo` and read neither — both were left
  * behind when the account-wide entitlement bridge below was deleted, and while
  * they sat in the signature this looked like a hook that consults entitlements.
- * It does not. Access here is one thing: a server-written unlock document.
+ * It does not: ACCESS here is one thing, a server-written unlock document,
+ * unrelated to Pro. `discountEligible` is the one exception, and it's
+ * PRICE, not access — a plain boolean the caller has already resolved
+ * (Pro status and prior-grant history live entirely outside this hook), used
+ * only to pick which of two identically-unlocking RevenueCat products to
+ * check out with.
  */
 export function useCookbookPurchase({
   revenueCatUserId,
   cookPilotUser,
   cookbookMode,
   projectId,
+  discountEligible,
   showToast,
   clearToast,
   onFreshPurchase,
+  onCookbookGranted,
 }: UseCookbookPurchaseOptions) {
   const [cookbookPurchaseBusy, setCookbookPurchaseBusy] = useState(false);
   const [projectUnlocked, setProjectUnlocked] = useState(() =>
@@ -146,6 +165,10 @@ export function useCookbookPurchase({
 
     setCookbookPurchaseBusy(true);
     clearToast();
+    // Captured once, at the start of this specific purchase: whatever was
+    // true the moment the buyer committed, not re-read mid-flow, and visible
+    // to the catch block below too.
+    const usingDiscount = discountEligible;
     try {
       if (isCookbookProjectUnlocked(projectId)) {
         setProjectUnlocked(true);
@@ -153,20 +176,33 @@ export function useCookbookPurchase({
         return;
       }
 
-      track("purchase_started", { product: "cookbook", customerId: revenueCatUserId });
+      track("purchase_started", {
+        product: "cookbook",
+        customerId: revenueCatUserId,
+        ...(usingDiscount ? { discount: "pro_first" as const } : {}),
+      });
       const result = await purchaseRecipePrinterCookbook({
         userId: revenueCatUserId,
         email: cookPilotUser?.email,
         projectId,
+        discountEligible: usingDiscount,
       });
 
       if (result.cancelled) {
-        track("purchase_cancelled", { product: "cookbook", customerId: revenueCatUserId });
+        track("purchase_cancelled", {
+          product: "cookbook",
+          customerId: revenueCatUserId,
+          ...(usingDiscount ? { discount: "pro_first" as const } : {}),
+        });
         showToast("Purchase cancelled. Your cookbook is still here when you're ready.");
         return;
       }
 
-      track("purchase_completed", { product: "cookbook", customerId: revenueCatUserId });
+      track("purchase_completed", {
+        product: "cookbook",
+        customerId: revenueCatUserId,
+        ...(usingDiscount ? { discount: "pro_first" as const } : {}),
+      });
 
       markCookbookUnlockPending(projectId);
       markCookbookProjectUnlockedLocal(projectId);
@@ -184,6 +220,7 @@ export function useCookbookPurchase({
       // while the webhook lands.
 
       onFreshPurchase();
+      onCookbookGranted(usingDiscount);
       onUnlocked(true);
     } catch (error) {
       // See the same catch in usePremiumTemplatePurchase: a charge that
@@ -192,6 +229,7 @@ export function useCookbookPurchase({
         product: "cookbook",
         reason: truncateReason(error),
         customerId: revenueCatUserId,
+        ...(usingDiscount ? { discount: "pro_first" as const } : {}),
       });
       showToast(friendlyPurchaseSetupError(error));
     } finally {
@@ -203,8 +241,10 @@ export function useCookbookPurchase({
     // Static fallback rather than the live RevenueCat price: with the paywall
     // dialog gone there's no pre-purchase surface to load it into, and loading
     // it eagerly would configure the SDK (minting a customer record) for anyone
-    // who merely opens a cookbook. Checkout states the authoritative price.
-    cookbookPrice: COOKBOOK_PRICE_FALLBACK,
+    // who merely opens a cookbook. Checkout states the authoritative price —
+    // this is just which fallback to show beforehand, picked the same way
+    // `packageForCookbook` picks which product to actually buy.
+    cookbookPrice: discountEligible ? COOKBOOK_DISCOUNT_PRICE_FALLBACK : COOKBOOK_PRICE_FALLBACK,
     cookbookLocked,
     cookbookAccessStatus,
     cookbookPurchaseBusy,

@@ -94,9 +94,10 @@ import {
   activeProLockReasons,
   computeProLocks,
   describeProLockReasons,
+  hasProEntitlement,
 } from "@/lib/recipePrinterPurchases";
 import { resolveEffectiveCustomerInfo } from "@/lib/proAccessFallback";
-import { COOKBOOK_ENABLED } from "@/lib/cookbookProduct";
+import { COOKBOOK_ENABLED, isFirstCookbookDiscountEligible } from "@/lib/cookbookProduct";
 import {
   DEFAULT_COOKBOOK_PRESET_ID,
   getCookbookPreset,
@@ -578,6 +579,13 @@ export default function PrintPage() {
   const [mirroredEntitlements, setMirroredEntitlements] =
     useState<Record<string, RecipePrinterMirroredEntitlement> | null>(null);
   const [mirrorSyncedAtMs, setMirrorSyncedAtMs] = useState<number | null>(null);
+  // When this account's first-ever cookbook was granted (server-written,
+  // write-once — see lib/cookbookProduct.ts's isFirstCookbookDiscountEligible).
+  // Null means never. Set optimistically the instant a discounted purchase
+  // grants (see the `onCookbookGranted` callback below) so a second cookbook
+  // purchase started later in the SAME session can't also resolve the
+  // discounted product before the next real profile load would catch it.
+  const [firstCookbookGrantedAt, setFirstCookbookGrantedAt] = useState<number | null>(null);
   const {
     user: cookPilotUser,
     ready: cookPilotAuthReady,
@@ -2862,6 +2870,39 @@ export default function PrintPage() {
     printNow,
   });
 
+  // The live RevenueCat read whenever it succeeded — even confirming
+  // "nothing owned" — or, only when that live check itself failed, a
+  // bounded fallback built from the last server-verified Firestore mirror.
+  // Every entitlement predicate downstream (via `computeProLocks`) reads
+  // this instead of the raw `customerInfo`, so an already-verified paying
+  // user isn't randomly locked out by a momentary RevenueCat/network outage
+  // — and a mirror that's actually past its real expiration still fails
+  // locked, recomputed against the current clock on every render. See
+  // lib/proAccessFallback.ts.
+  const effectiveCustomerInfo = useMemo(
+    () =>
+      resolveEffectiveCustomerInfo({
+        liveCustomerInfo: customerInfo,
+        liveStatus: customerInfoStatus,
+        liveLastVerifiedAtMs: customerInfoLastVerifiedAtMs,
+        mirroredEntitlements,
+        mirrorSyncedAtMs,
+        nowMs: Date.now(),
+      }),
+    [customerInfo, customerInfoStatus, customerInfoLastVerifiedAtMs, mirroredEntitlements, mirrorSyncedAtMs],
+  );
+
+  // Eligible for 20% off THIS cookbook purchase — active Pro (through the
+  // same fallback-aware resolution as every other Pro check, never the raw
+  // SDK value directly, since a discount is money) and this account has
+  // never had a cookbook grant land before. Recomputed every render, not
+  // cached past a purchase — see `onCookbookGranted` below for how a fresh
+  // grant invalidates this immediately, in the same session.
+  const cookbookDiscountEligible = isFirstCookbookDiscountEligible({
+    hasPro: hasProEntitlement(effectiveCustomerInfo.customerInfo),
+    firstCookbookGrantedAt,
+  });
+
   const {
     cookbookPrice,
     cookbookLocked,
@@ -2873,11 +2914,19 @@ export default function PrintPage() {
     cookPilotUser,
     cookbookMode: Boolean(projectMeta.meta.cookbookMode),
     projectId: cookbookProjectId,
+    discountEligible: cookbookDiscountEligible,
     showToast,
     clearToast: () => setToastMessage(null),
     // Cookbook protection is handled by the persistent banner in cookbook
     // mode. Do not interrupt a newly purchased book with a login modal.
     onFreshPurchase: () => undefined,
+    // Optimistic: the real, webhook-confirmed timestamp lands in Firestore
+    // asynchronously regardless, but a second cookbook purchase attempted
+    // later in this same session must not also see `firstCookbookGrantedAt`
+    // as null before that round trip completes.
+    onCookbookGranted: (usedDiscount) => {
+      if (usedDiscount) setFirstCookbookGrantedAt(Date.now());
+    },
   });
 
   const { proBusy, purchaseProAndContinue } = useProPurchase({
@@ -2901,28 +2950,6 @@ export default function PrintPage() {
   // (see `proUpgradeLockReasons` below) to name the actual reason it opened,
   // which needs a re-render to show up.
   const [proUpgradeTrigger, setProUpgradeTrigger] = useState<string>("print_button");
-
-  // The live RevenueCat read whenever it succeeded — even confirming
-  // "nothing owned" — or, only when that live check itself failed, a
-  // bounded fallback built from the last server-verified Firestore mirror.
-  // Every entitlement predicate downstream (via `computeProLocks`) reads
-  // this instead of the raw `customerInfo`, so an already-verified paying
-  // user isn't randomly locked out by a momentary RevenueCat/network outage
-  // — and a mirror that's actually past its real expiration still fails
-  // locked, recomputed against the current clock on every render. See
-  // lib/proAccessFallback.ts.
-  const effectiveCustomerInfo = useMemo(
-    () =>
-      resolveEffectiveCustomerInfo({
-        liveCustomerInfo: customerInfo,
-        liveStatus: customerInfoStatus,
-        liveLastVerifiedAtMs: customerInfoLastVerifiedAtMs,
-        mirroredEntitlements,
-        mirrorSyncedAtMs,
-        nowMs: Date.now(),
-      }),
-    [customerInfo, customerInfoStatus, customerInfoLastVerifiedAtMs, mirroredEntitlements, mirrorSyncedAtMs],
-  );
 
   const recipeCount = items?.filter((item) => Boolean(item.recipe)).length ?? 0;
   const { themeLocked, cardSizeLocked, multiRecipeLocked, multiRecipeAddLocked, proLocked } =
@@ -3938,6 +3965,7 @@ export default function PrintPage() {
       setIsRecipePrinterAdmin(false);
       setMirroredEntitlements(null);
       setMirrorSyncedAtMs(null);
+      setFirstCookbookGrantedAt(null);
       return;
     }
     let cancelled = false;
@@ -3948,6 +3976,7 @@ export default function PrintPage() {
         setIsRecipePrinterAdmin(profile.isAdmin);
         setMirroredEntitlements(profile.mirroredEntitlements);
         setMirrorSyncedAtMs(profile.syncedAtMs);
+        setFirstCookbookGrantedAt(profile.firstCookbookGrantedAt);
       })
       .catch((error) => {
         if (cancelled) return;

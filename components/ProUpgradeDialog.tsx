@@ -112,7 +112,7 @@ export function ProUpgradeDialog({
       {step === "plan" ? (
         <>
           <div className="flex items-center gap-2 pr-8">
-            <CrownIcon size={ICON_SIZE.md} className="text-[#f0b429]" />
+            <CrownIcon size={ICON_SIZE.md} className="text-[var(--cp-premium-bright)]" />
             <h2 id="pro-upgrade-title" className="text-cp-dialog-title font-extrabold tracking-tight">
               {title}
             </h2>

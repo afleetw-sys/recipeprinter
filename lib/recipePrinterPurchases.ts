@@ -13,6 +13,8 @@ import {
 import { isProductionRuntime } from "@/lib/appEnvironment";
 import { localStore } from "@/lib/storage";
 import {
+  RECIPEPRINTER_COOKBOOK_DISCOUNT_PACKAGE_ID,
+  RECIPEPRINTER_COOKBOOK_DISCOUNT_PRODUCT_ID,
   RECIPEPRINTER_COOKBOOK_OFFERING_ID,
   RECIPEPRINTER_COOKBOOK_PACKAGE_ID,
   RECIPEPRINTER_COOKBOOK_PRODUCT_ID,
@@ -609,12 +611,24 @@ async function checkout(
   }
 }
 
-async function packageForCookbook(purchases: Purchases): Promise<Package> {
-  const rcPackage = findPackage(
-    await offeringFor(purchases, RECIPEPRINTER_COOKBOOK_OFFERING_ID),
-    RECIPEPRINTER_COOKBOOK_PACKAGE_ID,
-    RECIPEPRINTER_COOKBOOK_PRODUCT_ID,
-  );
+/**
+ * Resolves the regular cookbook package, or — when `discountEligible` — the
+ * discounted one instead. Same entitlement either way (see
+ * lib/cookbookProduct.ts); only the price and product id differ, exactly
+ * how `packageForPro` already picks between two priced variants of `pro`.
+ */
+async function packageForCookbook(
+  purchases: Purchases,
+  discountEligible: boolean,
+): Promise<Package> {
+  const offering = await offeringFor(purchases, RECIPEPRINTER_COOKBOOK_OFFERING_ID);
+  const rcPackage = discountEligible
+    ? findPackage(
+        offering,
+        RECIPEPRINTER_COOKBOOK_DISCOUNT_PACKAGE_ID,
+        RECIPEPRINTER_COOKBOOK_DISCOUNT_PRODUCT_ID,
+      )
+    : findPackage(offering, RECIPEPRINTER_COOKBOOK_PACKAGE_ID, RECIPEPRINTER_COOKBOOK_PRODUCT_ID);
   if (!rcPackage) throw new Error("The cookbook upgrade isn't ready to buy yet.");
   return rcPackage;
 }
@@ -623,13 +637,15 @@ export async function purchaseRecipePrinterCookbook({
   userId,
   email,
   projectId,
+  discountEligible,
 }: {
   userId: string;
   email?: string | null;
   projectId: string;
+  discountEligible: boolean;
 }): Promise<{ customerInfo: CustomerInfo; cancelled: boolean }> {
   const purchases = await getPurchases(userId);
-  const rcPackage = await packageForCookbook(purchases);
+  const rcPackage = await packageForCookbook(purchases, discountEligible);
   // Give the cookbook-unlock webhook a reliable purchase→project map. Webhook
   // payloads carry subscriber attributes, but not the purchase-time `metadata`
   // below — so set both (attribute for the server, metadata kept for parity).
@@ -640,6 +656,7 @@ export async function purchaseRecipePrinterCookbook({
     product: "recipeprinter",
     offer: "cookbook",
     cookbook_project_id: projectId,
+    ...(discountEligible ? { discount: "pro_first" } : {}),
   });
 }
 

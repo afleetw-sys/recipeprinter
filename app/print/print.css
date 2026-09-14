@@ -2342,7 +2342,7 @@
 /* The shared Pro indicator (components/ProBadge.tsx) — one consistent look
    for "requires Pro" everywhere it appears (themes, card sizes, Add more
    recipes, and any future gated control), so no surface invents its own
-   crown treatment. A brighter yellow-gold than --cp-premium on purpose: that
+   crown treatment. --cp-premium-bright rather than --cp-premium itself: that
    token is tuned for ink-sized text on a light tint, not a small icon on a
    dark backing, where its darker gold read as too muted to notice. */
 .pro-badge {
@@ -2350,7 +2350,7 @@
   align-items: center;
   justify-content: center;
   gap: 3px;
-  color: #f0b429;
+  color: var(--cp-premium-bright);
   font-size: var(--cp-fs-label);
   font-weight: 700;
   line-height: 1;
@@ -2370,7 +2370,7 @@
   padding: 4px;
   border-radius: 8px;
   background: var(--cp-ink);
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.35);
+  box-shadow: var(--cp-shadow-xs);
 }
 
 /* Sitting inline in a plain text row (a format-tile label, "Add more

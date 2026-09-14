@@ -45,7 +45,8 @@ service cloud.firestore {
         "recipePrinterFreeTemplateGrantedAt",
         "recipePrinterEntitlements",
         "recipePrinterRevenueCatSyncedAt",
-        "recipePrinterRevenueCatFetchedAtMs"
+        "recipePrinterRevenueCatFetchedAtMs",
+        "recipePrinterFirstCookbookGrantedAt"
       ];
     }
 
