@@ -16,7 +16,14 @@ import {
 import { useProPurchase } from "@/lib/useProPurchase";
 import { resolveEffectiveCustomerInfo, type CustomerInfoLoadStatus } from "@/lib/proAccessFallback";
 import { loadRecipePrinterUserProfile, type RecipePrinterMirroredEntitlement } from "@/lib/recipePrinterFreeTemplateClaim";
-import { PRO_PRICE_FALLBACKS, type ProBillingCycle } from "@/lib/proProduct";
+import {
+  PRO_ANNUAL_PRICE_FALLBACK,
+  PRO_MONTHLY_PRICE_FALLBACK,
+  PRO_PRICE_FALLBACKS,
+  proAnnualPriceAtMonthlyRate,
+  proAnnualSavingsPercent,
+  type ProBillingCycle,
+} from "@/lib/proProduct";
 
 // What Basic (the free tier) actually includes — and it's a lot, which the
 // old "Classic & Pantry themes / Full Page printing / one recipe at a time"
@@ -162,31 +169,9 @@ export function AccountProStatus({ user }: { user: User }) {
             </button>
           </>
         ) : proDetails.active ? (
-          <div className="mt-1">
-            {/* The renewal date and price are the one thing a subscriber
-                actually needs to know at a glance — surfaced as its own
-                callout, not a quiet line of caption text under the plan
-                name, so nobody has to hunt for "when am I charged, and how
-                much." Sized like the rest of this card's text (small/bold,
-                same as the "Plan" heading above it) — the tinted background
-                is what makes it stand out, not an oversized font. */}
-            <div className="flex flex-wrap items-baseline gap-x-2 gap-y-1 rounded-lg bg-[var(--cp-premium-soft)] px-cp-3 py-cp-2">
-              <p className="text-cp-small font-bold text-ink">
-                {proDetails.willRenew
-                  ? `Renews ${formatDate(proDetails.expiresAtMs) ?? "soon"}`
-                  : `Ends ${formatDate(proDetails.expiresAtMs) ?? "at the end of your paid period"}`}
-              </p>
-              {proDetails.willRenew && proDetails.cycle && (
-                <p className="text-cp-small text-ink-soft">for {PRO_PRICE_FALLBACKS[proDetails.cycle]}</p>
-              )}
-            </div>
-            {!proDetails.willRenew && (
-              <p className="mt-1 text-cp-small text-ink-soft">
-                You canceled, but you can pick Pro back up any time before then.
-              </p>
-            )}
+          <div className="mt-cp-3">
             {effectiveProInfo.source === "mirror-fallback" && (
-              <p className="mt-1 text-cp-small text-ink-soft">
+              <p className="mb-cp-2 text-cp-small text-ink-soft">
                 Showing your last verified plan
                 {effectiveProInfo.lastVerifiedAtMs
                   ? ` (as of ${formatDate(effectiveProInfo.lastVerifiedAtMs) ?? "recently"})`
@@ -197,14 +182,16 @@ export function AccountProStatus({ user }: { user: User }) {
 
             {/* Same two cards a not-yet-subscriber sees, kept on purpose —
                 the benefit lists are still the reminder of what this plan is
-                worth, not just a receipt. Buttons flip: Basic's becomes the
-                (secondary, not primary — this isn't the action to draw the
-                eye to) way out, Pro's becomes the disabled "you're already
-                here" state the Basic card used to show — unless a
-                cancellation is already in motion, in which case Pro needs a
-                working way back rather than a dead button, and Basic just
-                confirms where they're headed. */}
-            <div className="mt-cp-3 grid gap-cp-3 sm:grid-cols-2">
+                worth, not just a receipt. The Pro card gets a low-opacity
+                tint so the active plan is the one your eye lands on, and it's
+                now the only place a subscription action lives: renewal date
+                and price sit right there, and the one button links straight
+                out to actually manage or cancel it — no "Downgrade" button of
+                ours that just opens a page where you press cancel again.
+                Basic goes back to being a plain comparison card with nothing
+                to click, since there's no action to start from that side
+                while you're on Pro. */}
+            <div className="grid gap-cp-3 sm:grid-cols-2">
               <div className="flex h-full flex-col rounded-lg border border-line p-cp-3">
                 <h3 className="text-cp-h2 font-extrabold text-ink">Basic</h3>
                 <p className="mt-1 text-cp-body font-bold text-ink-soft">Free</p>
@@ -216,30 +203,8 @@ export function AccountProStatus({ user }: { user: User }) {
                     </li>
                   ))}
                 </ul>
-                {proDetails.willRenew ? (
-                  // Opens RevenueCat's own hosted billing portal to actually
-                  // cancel; there is no custom cancel flow to build or
-                  // maintain.
-                  <button
-                    type="button"
-                    className="btn btn-secondary btn-compact mt-cp-3 w-full"
-                    disabled={!proManagementLink}
-                    title={proManagementLink ? undefined : "Downgrading isn't ready yet. Try again in a moment."}
-                    onClick={() => {
-                      if (!proManagementLink) return;
-                      track("manage_subscription_clicked", {});
-                      window.open(proManagementLink, "_blank", "noopener,noreferrer");
-                    }}
-                  >
-                    Downgrade
-                  </button>
-                ) : (
-                  <button type="button" className="btn btn-secondary btn-compact mt-cp-3 w-full" disabled>
-                    You&rsquo;re switching to this
-                  </button>
-                )}
               </div>
-              <div className="flex h-full flex-col rounded-lg border border-line p-cp-3">
+              <div className="flex h-full flex-col rounded-lg border border-line bg-[var(--cp-premium-soft)] p-cp-3">
                 <div className="flex items-center gap-2">
                   <CrownIcon size={ICON_SIZE.md} className="text-[var(--cp-premium-bright)]" />
                   <h3 className="text-cp-h2 font-extrabold text-ink">Pro</h3>
@@ -247,6 +212,16 @@ export function AccountProStatus({ user }: { user: User }) {
                 <p className="mt-1 text-cp-body font-bold text-ink-soft">
                   {proDetails.cycle ? PRO_PRICE_FALLBACKS[proDetails.cycle] : "Your plan"}
                 </p>
+                <p className="mt-1 text-cp-small font-bold text-ink">
+                  {proDetails.willRenew
+                    ? `Renews ${formatDate(proDetails.expiresAtMs) ?? "soon"}`
+                    : `Ends ${formatDate(proDetails.expiresAtMs) ?? "at the end of your paid period"}`}
+                </p>
+                {!proDetails.willRenew && (
+                  <p className="text-cp-small text-ink-soft">
+                    You canceled, but you can pick Pro back up any time before then.
+                  </p>
+                )}
                 <ul className="mt-cp-2 flex flex-1 flex-col gap-cp-1">
                   <li className="flex items-start gap-cp-2 text-cp-small font-semibold text-ink">
                     <CheckIcon size={ICON_SIZE.sm} className="mt-[3px] shrink-0" />
@@ -260,8 +235,21 @@ export function AccountProStatus({ user }: { user: User }) {
                   ))}
                 </ul>
                 {proDetails.willRenew ? (
-                  <button type="button" className="btn btn-primary btn-compact mt-cp-3 w-full" disabled>
-                    Your current plan
+                  // Opens RevenueCat's own hosted billing portal, where
+                  // canceling actually happens — there's no separate
+                  // "Downgrade" step of ours in front of it anymore.
+                  <button
+                    type="button"
+                    className="btn btn-secondary btn-compact mt-cp-3 w-full"
+                    disabled={!proManagementLink}
+                    title={proManagementLink ? undefined : "Managing your subscription isn't ready yet. Try again in a moment."}
+                    onClick={() => {
+                      if (!proManagementLink) return;
+                      track("manage_subscription_clicked", {});
+                      window.open(proManagementLink, "_blank", "noopener,noreferrer");
+                    }}
+                  >
+                    Manage subscription
                   </button>
                 ) : (
                   // Reuses the same purchase flow a first-time upgrade uses —
@@ -292,7 +280,7 @@ export function AccountProStatus({ user }: { user: User }) {
           // repeating the same three lines, and then the real benefit list
           // `ProUpgradeDialog` itself leads with, so this and the dialog it
           // opens never disagree about what Pro includes.
-          <div className="mt-1">
+          <div className="mt-cp-3">
             <div className="grid gap-cp-3 sm:grid-cols-2">
               {/* `h-full flex-col` on the card plus `flex-1` on the benefit
                   list is what keeps both buttons on one baseline regardless
@@ -330,9 +318,21 @@ export function AccountProStatus({ user }: { user: User }) {
                     ]}
                   />
                 </div>
-                <p className="mt-1 text-cp-body font-bold text-ink-soft">
-                  {PRO_PRICE_FALLBACKS[billingCycle]}
-                </p>
+                {billingCycle === "annual" ? (
+                  <div className="mt-1">
+                    {/* Same struck-through "was" price ProUpgradeDialog shows
+                        for Annual — without it, this teaser and the dialog
+                        it opens told two different stories about what
+                        Annual saves. */}
+                    <p className="pro-plan-card__price text-ink-soft">
+                      <span className="pro-plan-card__price--was">{proAnnualPriceAtMonthlyRate()}</span>
+                      {PRO_ANNUAL_PRICE_FALLBACK}
+                    </p>
+                    <p className="pro-plan-card__note">Save {proAnnualSavingsPercent()}% vs. monthly</p>
+                  </div>
+                ) : (
+                  <p className="mt-1 text-cp-body font-bold text-ink-soft">{PRO_MONTHLY_PRICE_FALLBACK}</p>
+                )}
                 <ul className="mt-cp-2 flex flex-1 flex-col gap-cp-1">
                   <li className="flex items-start gap-cp-2 text-cp-small font-semibold text-ink">
                     <CheckIcon size={ICON_SIZE.sm} className="mt-[3px] shrink-0" />
