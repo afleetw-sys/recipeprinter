@@ -82,7 +82,17 @@ export function SiteHeader({
         compact ? "min-h-[56px]" : "min-h-[62px]"
       } ${
         sticky
-          ? `sticky top-0 z-10 border-b border-line ${
+          ? /* `--z-sticky` (globals.css), not a bare Tailwind number — this
+               header is what establishes the account dropdown's own stacking
+               context (it's a positioned descendant of THIS element, not the
+               page root), so whatever tier the header sits at is the ceiling
+               the dropdown can ever reach, no matter its own z-index. On
+               /print, a plain `z-10` here left the dropdown trapped below the
+               floating mobile toolbar (z-index 75) and the mobile sheets
+               (77-81) — raising the header to the tier the app's own scale
+               already reserves for "the workspace header, the rail, the
+               mobile bars" clears all of them at once. */
+            `sticky top-0 z-[var(--z-sticky)] border-b border-line ${
               /* `compact` already means "app chrome" (above), and chrome is
                  what decides this too: in the workspace the bar is one side of
                  the frame around the deck and takes the frame's near-white,
