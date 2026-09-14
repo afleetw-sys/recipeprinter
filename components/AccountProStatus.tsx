@@ -216,8 +216,8 @@ export function AccountProStatus({ user }: { user: User }) {
                   </li>
                 ))}
               </ul>
-              <button type="button" className="btn btn-secondary btn-compact mt-cp-3 w-full" disabled>
-                Your plan
+              <button type="button" className="btn btn-primary btn-compact mt-cp-3 w-full" disabled>
+                Your current plan
               </button>
             </div>
             <div className="rounded-lg border border-line p-cp-3">
