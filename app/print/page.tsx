@@ -5535,8 +5535,10 @@ export default function PrintPage() {
               <span className="recipe-mobile-toolbar__btn-icon">
                 <PlusIcon size={ICON_SIZE.lg} />
               </span>
-              Recipe
-              {multiRecipeAddLocked && <ProBadge variant="inline" label={false} />}
+              <span className="recipe-mobile-toolbar__btn-label">
+                Recipe
+                {multiRecipeAddLocked && <ProBadge variant="inline" label={false} />}
+              </span>
             </button>
             {/* Pages/structure — the mobile stand-in for the drag-only desktop
                 rail, which is hidden on touch. Cookbook mode only. */}

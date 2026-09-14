@@ -222,7 +222,16 @@ export default function AccountAvatarButton({
       </IconButton>
 
       {open && user && (
-        <div className="absolute right-0 top-11 z-50 w-[min(220px,calc(100vw-2rem))] rounded-2xl border border-line bg-card p-cp-2 shadow-cp-lg">
+        // `z-[var(--z-menu)]`, not a bare Tailwind `z-50` — this panel sits
+        // directly in the page's normal flow (SiteHeader isn't always
+        // `sticky`, e.g. on /projects and /account, so it has no elevated
+        // stacking context of its own), and page content below it — a
+        // project card's absolutely positioned hover controls, for one — was
+        // winning the stacking order and rendering through it. The app's own
+        // menu tier (above chrome, below dialogs — see the --z-* scale and
+        // .cp-menu in globals.css) is unambiguously above anything a page's
+        // own content ever declares.
+        <div className="absolute right-0 top-11 z-[var(--z-menu)] w-[min(220px,calc(100vw-2rem))] rounded-2xl border border-line bg-card p-cp-2 shadow-cp-lg">
           <Link
             href="/account"
             className="flex items-center gap-2 rounded-lg px-cp-3 py-cp-2 text-cp-small font-semibold text-ink hover:bg-page"

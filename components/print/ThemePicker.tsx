@@ -6,11 +6,11 @@ import {
   RECIPE_PRINT_TEMPLATE_OPTIONS,
   type RecipePrintTemplate,
 } from "@/components/RecipeCardPrint";
-import { CrownIcon, XIcon, CheckIcon, ICON_SIZE } from "@/components/icons";
+import { CrownIcon, XIcon, ICON_SIZE } from "@/components/icons";
 import { TemplateThumbnail } from "@/components/print/TemplateThumbnail";
 import { ProBadge } from "@/components/ProBadge";
 import { isPremiumTemplate } from "@/lib/premiumTemplates";
-import { hasProEntitlement, hasTemplateEntitlement, hasTemplateOrProEntitlement } from "@/lib/recipePrinterPurchases";
+import { hasTemplateOrProEntitlement } from "@/lib/recipePrinterPurchases";
 import { track } from "@/lib/analytics";
 
 interface ThemePickerProps {
@@ -28,9 +28,14 @@ interface ThemePickerProps {
 /**
  * The theme grid in the Print-setup / Book-settings panel. Each option renders
  * the real card (via TemplateThumbnail) so previews can't drift from output.
- * Premium themes show a crown (or a check when owned) outside cookbook mode;
- * inside a cookbook every theme is included, so nothing reads as locked. The
- * price/paywall only ever appears at print time (the Print button), never here.
+ * Premium themes show a crown outside cookbook mode; inside a cookbook every
+ * theme is included, so nothing reads as locked. There's no separate "owned"
+ * mark for one you already have (a legacy single-theme purchase or Pro) — the
+ * crown's absence already says that, and a check next to it on top said the
+ * same thing twice while implying a distinction ("this one specifically is
+ * yours") that a Pro subscriber, who owns all of them at once, doesn't have.
+ * The price/paywall only ever appears at print time (the Print button), never
+ * here.
  */
 export function ThemePicker({
   cookbookMode,
@@ -72,15 +77,6 @@ export function ThemePicker({
             premiumTemplate !== null &&
             !hasTemplateOrProEntitlement(customerInfo, option.id) &&
             !cookbookMode;
-          // A Pro subscriber owns every theme at once, so a checkmark on
-          // each one individually reads as noise, not information — it's
-          // reserved for a legacy $1.99 single-theme purchase, the one case
-          // where "you specifically bought this" is actually true.
-          const owned =
-            premiumTemplate !== null &&
-            !cookbookMode &&
-            !hasProEntitlement(customerInfo) &&
-            hasTemplateEntitlement(customerInfo, premiumTemplate);
 
           // A real card renders <div>s, which aren't valid inside a
           // <button> (its content model is phrasing only) — so the option
@@ -104,7 +100,7 @@ export function ThemePicker({
                 template === option.id ? "is-active" : ""
               }`}
               aria-pressed={template === option.id}
-              aria-label={`${option.label}${locked ? " Pro" : owned ? " owned" : ""}`}
+              aria-label={`${option.label}${locked ? " Pro" : ""}`}
               onClick={selectTemplate}
               onKeyDown={(e) => {
                 if (e.key === "Enter" || e.key === " ") {
@@ -119,11 +115,6 @@ export function ThemePicker({
                   button below) — locked themes stay fully selectable and
                   previewable here. */}
               {locked && <ProBadge />}
-              {owned && (
-                <span className="recipe-template-option__owned" aria-label="Owned">
-                  <CheckIcon size={ICON_SIZE.xs} />
-                </span>
-              )}
               <TemplateThumbnail template={option.id} />
             </div>
           );

@@ -2361,25 +2361,6 @@
   box-shadow: var(--cp-shadow-xs);
 }
 
-.recipe-template-option__owned {
-  position: absolute;
-  top: 3px;
-  right: 3px;
-  z-index: 2;
-  display: grid;
-  place-items: center;
-  width: 22px;
-  height: 22px;
-  /* Neutral, and deliberately quiet. "You already own this" is the absence of
-     anything to do — nothing to buy, nothing to notice — so it gets the
-     absence of a colour. It also has to be told apart at a glance from the
-     gold badge above on the same grid, which colouring both warm defeated. */
-  border: 1px solid var(--cp-line-strong);
-  border-radius: 999px;
-  background: var(--cp-surface-strong);
-  color: var(--cp-ink);
-}
-
 .recipe-toast {
   position: fixed;
   right: 18px;
@@ -2640,7 +2621,11 @@
     flex: 0 0 auto;
   }
 
-  /* One filled tile per tool: icon over label, the whole thing the target. */
+  /* One filled tile per tool: icon over label, the whole thing the target.
+     Widened from 84px so "Recipe" plus its Pro crown (see
+     `.recipe-mobile-toolbar__btn-label` below) has room to sit on one line —
+     every tile shares this width so the row still reads as one matched set,
+     not one oddly-wide tile among plain ones. */
   .recipe-mobile-toolbar__btn {
     display: flex;
     flex: 0 0 auto;
@@ -2648,7 +2633,7 @@
     align-items: center;
     justify-content: center;
     gap: 5px;
-    width: 84px;
+    width: 92px;
     padding: 10px 6px;
     border: 0;
     border-radius: 14px;
@@ -2672,6 +2657,15 @@
     display: grid;
     place-items: center;
     color: inherit;
+  }
+
+  /* Wraps a tile's text (and, on "Recipe," its Pro badge) as one row — the
+     button itself is a column flex, so without this the badge fell onto its
+     own line under the label instead of sitting beside it. */
+  .recipe-mobile-toolbar__btn-label {
+    display: inline-flex;
+    align-items: center;
+    gap: 3px;
   }
 
   .recipe-mobile-toolbar__btn.is-active {
