@@ -443,7 +443,7 @@ export function useRecipeInlineEditor({
                   target.index,
                   title.trim(),
                   (section) => ({ step: 0, text: "", section }),
-                ),
+                ).map((step, i) => ({ ...step, step: i + 1 })),
               };
         applyRecipeUpdate(activeRecipeItem.id, printableRecipe(next));
         setEditingEdit({
@@ -480,7 +480,8 @@ export function useRecipeInlineEditor({
           target.index,
           (text, section) => ({ step: 0, text, section }),
         );
-        applyRecipeUpdate(activeRecipeItem.id, printableRecipe({ ...recipe, instructions }));
+        const renumbered = instructions.map((step, i) => ({ ...step, step: i + 1 }));
+        applyRecipeUpdate(activeRecipeItem.id, printableRecipe({ ...recipe, instructions: renumbered }));
         setEditingEdit({
           recipeId: activeRecipeItem.id,
           target: { kind: "step", index: target.index },
