@@ -22,7 +22,7 @@ import {
 // anyone else. Don't add a benefit back here without wiring the real thing
 // behind it first.
 const PRO_BENEFITS = [
-  "All premium templates",
+  "All premium themes",
   "4×6 recipe cards",
   "Print multiple recipes at once",
 ];
@@ -112,7 +112,7 @@ export function ProUpgradeDialog({
       {step === "plan" ? (
         <>
           <div className="flex items-center gap-2 pr-8">
-            <CrownIcon size={ICON_SIZE.md} />
+            <CrownIcon size={ICON_SIZE.md} className="text-[#f0b429]" />
             <h2 id="pro-upgrade-title" className="text-cp-dialog-title font-extrabold tracking-tight">
               {title}
             </h2>
@@ -166,7 +166,7 @@ export function ProUpgradeDialog({
             disabled={busy}
             onClick={() => handleContinue(selectedCycle)}
           >
-            Continue with {PRO_CYCLE_LABEL[selectedCycle]}
+            Continue with {PRO_CYCLE_LABEL[selectedCycle]} ({PRO_PRICE_FALLBACKS[selectedCycle]})
           </button>
           <p className="text-cp-label text-ink-soft">
             Cancel anytime from your account. Cookbooks are sold separately, $19.99 per book.

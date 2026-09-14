@@ -57,7 +57,7 @@ export function PrintFormatToggle({
   customerInfo: CustomerInfo | null;
 }) {
   return (
-    <div className="print-format-toggle" role="radiogroup" aria-label="Print format">
+    <div className="print-format-toggle" role="radiogroup" aria-label="Size">
       {PRINT_CARD_SIZE_OPTIONS.map((option) => {
         const selected = cardSize === option.id;
         const locked = !canUseCardSize(customerInfo, option.id);

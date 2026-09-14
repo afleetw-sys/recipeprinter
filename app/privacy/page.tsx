@@ -200,7 +200,7 @@ export default function PrivacyPage() {
           <li>
             <strong>Product analytics.</strong> A deliberately small, fixed list
             of events: a page was viewed, an import started, an import succeeded
-            or failed and why, a recipe was printed, a template was chosen, a
+            or failed and why, a recipe was printed, a theme was chosen, a
             paywall was seen, a purchase completed, feedback was sent. We record
             the <em>hostname</em> of a recipe site you import from, so we can see
             which sites we fail on. We do not record the full address of the

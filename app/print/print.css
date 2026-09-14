@@ -2374,13 +2374,8 @@
 }
 
 /* Sitting inline in a plain text row (a format-tile label, "Add more
-   recipes") already has a plain background of its own — no backing plate
-   needed there, just the bare crown. Back to --cp-premium here specifically
-   because that token IS tuned for exactly this: ink-weight colour read
-   directly against a light card surface, not against a dark plate. */
-.pro-badge--inline {
-  color: var(--cp-premium);
-}
+   recipes") already has a plain background of its own — no backing plate,
+   no shadow, just the same bright gold as everywhere else. */
 
 .pro-badge__label {
   text-transform: uppercase;

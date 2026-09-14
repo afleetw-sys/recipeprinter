@@ -50,7 +50,7 @@ export function ThemePicker({
           <CrownIcon size={ICON_SIZE.md} />
           <div className="recipe-free-template-banner__copy">
             <strong>Thanks for being a CookPilot member!</strong>
-            <span>Enjoy a free lifetime template, on us. Pick any premium design below.</span>
+            <span>Enjoy a free lifetime theme, on us. Pick any premium design below.</span>
           </div>
           <button
             type="button"

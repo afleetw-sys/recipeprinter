@@ -66,7 +66,7 @@ export function PrintSetupControls({
           bound letter pages, so this control is hidden in cookbook mode. */}
       {!cookbookMode && (
         <div className="recipe-config-section recipe-config-section--size">
-          <span className="recipe-config-label">Print Format</span>
+          <span className="recipe-config-label">Size</span>
           <PrintFormatToggle
             cardSize={cardSize}
             setCardSize={setCardSize}

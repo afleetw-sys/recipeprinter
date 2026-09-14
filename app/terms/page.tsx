@@ -199,7 +199,7 @@ export default function TermsPage() {
             to run a printing service for other people&apos;s recipes;
           </li>
           <li>
-            scrape or extract the site&apos;s content or templates for use in
+            scrape or extract the site&apos;s content or themes for use in
             another product, or train a machine learning model on them;
           </li>
           <li>
@@ -374,7 +374,7 @@ export default function TermsPage() {
         <p>
           RecipePrinter itself belongs to {LEGAL_ENTITY} and is protected by
           copyright and other laws. That covers the software, the page and card
-          templates, the layouts, the artwork, the name, and the look of the
+          themes, the layouts, the artwork, the name, and the look of the
           site. You may use
           it to make and print your own recipe cards, books, and PDFs, and those
           outputs are yours to print and keep, including for the personal purposes
@@ -388,7 +388,7 @@ export default function TermsPage() {
           .
         </p>
         <p>
-          You may not copy, adapt, or redistribute the templates or the software
+          You may not copy, adapt, or redistribute the themes or the software
           themselves, or present them as your own. Feedback you send us is
           gratefully received, and we may act on it without owing you anything for
           it.
