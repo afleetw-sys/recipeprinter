@@ -1640,6 +1640,21 @@
     }
   }
 
+  /* Smaller instance of the same pill — for a spot like the Pro card's
+     Monthly/Annual toggle, which sits inline next to a card title rather
+     than owning its own row, and read as oversized at the default (a
+     settings-panel-scale) padding and font. Same look and behavior, just
+     tighter — not a redesign like `.rp-project-heading__kinds`'s recessed
+     tab-bar variant. */
+  .segmented-control--compact .segmented-control__option {
+    padding: 5px 10px;
+    border-radius: 9px;
+    font-size: var(--cp-fs-caption);
+  }
+  .segmented-control--compact .segmented-control__thumb {
+    border-radius: 9px;
+  }
+
   /* Base look for the shared Pro indicator (components/ProBadge.tsx) — one
      consistent "requires Pro" treatment (themes, card sizes, Add more
      recipes, the /account Plan section, any future gated control), so no

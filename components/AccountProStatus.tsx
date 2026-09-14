@@ -310,6 +310,7 @@ export function AccountProStatus({ user }: { user: User }) {
                   </div>
                   <SegmentedControl
                     label="Billing cycle"
+                    className="segmented-control--compact"
                     value={billingCycle}
                     onChange={setBillingCycle}
                     options={[
