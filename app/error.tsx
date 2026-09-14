@@ -17,8 +17,8 @@ import { captureException } from "@/lib/analytics";
  * client-side exception has occurred" with no route back.
  *
  * The bigger gap was telemetry. `captureException` had exactly one call site,
- * inside the /print boundary, so a crash on /projects, /export, a shared card,
- * or any landing page was invisible in production. A more specific segment
+ * inside the /print boundary, so a crash on /account, /export, or any landing
+ * page was invisible in production. A more specific segment
  * boundary still wins over this one, so adding those later costs nothing.
  */
 export default function AppError({

@@ -7076,7 +7076,7 @@ textarea.recipe-card__toc-title {
 
 .print-success-dialog__panel {
   position: relative;
-  width: min(100%, 390px);
+  width: min(100%, 440px);
   max-height: calc(100dvh - 48px);
   padding: 28px;
   overflow-y: auto;

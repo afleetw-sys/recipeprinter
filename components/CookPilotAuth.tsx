@@ -186,6 +186,24 @@ export function useCookPilotAuth() {
   return state;
 }
 
+/**
+ * Re-publishes the signed-in user after something mutated it in place.
+ *
+ * `updateProfile`/`updatePassword` (Firebase's modular SDK) write straight
+ * onto the existing `User` object rather than handing back a new one, and
+ * neither fires `onAuthStateChanged` — profile fields changing isn't a change
+ * of identity. So `authState.user` above is already the updated object the
+ * moment either call resolves, but nothing has told its subscribers to
+ * re-render: same reference, so a plain `setState` upstream wouldn't even
+ * see a difference. Call this right after such a mutation succeeds so every
+ * `useCookPilotAuth()` consumer (the header avatar's initials, this page's
+ * own identity block) picks up the new value immediately instead of waiting
+ * for the next real auth event or a reload.
+ */
+export function refreshCookPilotAuthUser(): void {
+  publishAuthState({ user: getFirebaseAuth().currentUser });
+}
+
 /** Which sign-in providers an email is already registered with, from CookPilot's own
  * `checkUserProviders` callable (Firebase Auth's provider list isn't usable here since
  * the project has email-enumeration protection on). Mirrors the iOS app's

@@ -13,11 +13,12 @@ import { onCookPilotSignedInChange, readCookPilotWasSignedIn } from "@/lib/cookP
  * renders on every route, so whatever it can reach statically is shipped to
  * every route — including the homepage, the FAQ, and all sixteen SEO landing
  * pages, which are prerendered content and carry the organic search traffic.
- * Reaching `AccountMenu` from here loaded `firebase/auth` (86 KB) plus the
- * functions and app SDKs on all of them, to draw a circle with a person in it.
+ * Reaching `AccountAvatarButton` from here loaded `firebase/auth` (86 KB)
+ * plus the functions and app SDKs on all of them, to draw a circle with a
+ * person in it.
  *
- * So the menu is fetched on demand, and the decision about WHEN uses the one
- * fact available without Firebase: has this browser ever been signed in?
+ * So it is fetched on demand, and the decision about WHEN uses the one fact
+ * available without Firebase: has this browser ever been signed in?
  *
  *  - Yes → fetch it when the browser goes idle, so the avatar is live and
  *    correct by the time anyone looks at it. They have an account; they are
@@ -27,16 +28,17 @@ import { onCookPilotSignedInChange, readCookPilotWasSignedIn } from "@/lib/cookP
  *    remembered and replayed (`activateOnReady`), so the sign-in dialog still
  *    opens from one press.
  *
- * The save status stays here rather than moving with the menu: it is driven
- * entirely by props from the print page and has no account dependency at all.
+ * The save status stays here rather than moving with the avatar button: it is
+ * driven entirely by props from the print page and has no account dependency
+ * at all.
  */
 
-const AccountMenu = dynamic(() => import("@/components/AccountMenu"), {
+const AccountAvatarButton = dynamic(() => import("@/components/AccountAvatarButton"), {
   ssr: false,
-  // Nothing, deliberately: the placeholder below stays on screen until the real
-  // menu has actually mounted (`menuMounted`), rather than being swapped out
-  // the instant `showMenu` flips. Rendering a second avatar here would put two
-  // of them in the row for as long as the chunk takes to arrive.
+  // Nothing, deliberately: the placeholder below stays on screen until the
+  // real button has actually mounted (`menuMounted`), rather than being
+  // swapped out the instant `showMenu` flips. Rendering a second avatar here
+  // would put two of them in the row for as long as the chunk takes to arrive.
   loading: () => null,
 });
 
@@ -158,9 +160,9 @@ export function AccountControl({
    * placeholder out, and the dynamic import renders nothing while it loads —
    * so on any visit where the chunk was not already cached, clicking the avatar
    * made the avatar vanish until the download finished. The placeholder stays
-   * until this says the real one is on screen; `AccountMenu` reports it from a
-   * layout effect, so the handover happens before a paint and the two are never
-   * both visible.
+   * until this says the real one is on screen; `AccountAvatarButton` reports
+   * it from a layout effect, so the handover happens before a paint and the
+   * two are never both visible.
    */
   const [menuMounted, setMenuMounted] = useState(false);
   const handleMenuMounted = useCallback(() => setMenuMounted(true), []);
@@ -222,7 +224,7 @@ export function AccountControl({
       {saveStatus && <SaveStatus status={saveStatus} onRetry={onRetry} />}
 
       {showMenu && (
-        <AccountMenu
+        <AccountAvatarButton
           compact={compact}
           activateOnReady={pendingClick}
           onActivated={() => setPendingClick(false)}
@@ -236,11 +238,11 @@ export function AccountControl({
            "Sign in" made the signed-out state a different shape in the row, and
            the shape then had to change again the moment auth resolved.
 
-           `AccountMenu` renders this same button once its chunk lands, and this
-           one is removed in the same commit (see `menuMounted`), so the
-           handover is invisible. The click is remembered and replayed
-           (`activateOnReady`), so the menu still opens from one press even
-           though the chunk isn't here yet. */
+           `AccountAvatarButton` renders this same button once its chunk
+           lands, and this one is removed in the same commit (see
+           `menuMounted`), so the handover is invisible. The click is
+           remembered and replayed (`activateOnReady`), so the press still
+           routes correctly even though the chunk isn't here yet. */
         <IconButton
           data-rp-avatar={compact ? "compact" : "full"}
           className="icon-button--filled"

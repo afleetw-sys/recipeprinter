@@ -6,14 +6,17 @@ import type { PrintProjectSummary } from "@/types/recipe";
 /**
  * What is in this cook's library, as every surface that shows it should agree.
  *
- * Two surfaces show it — `/projects` and the account dropdown — and they each
- * composed their own answer out of the same three helpers. They disagreed, in
- * the one direction that costs money: signed in, the dropdown listed ONLY the
+ * `/projects` and the header's account dropdown each used to compose their
+ * own answer out of the same three helpers, and disagreed, in the one
+ * direction that costs money — signed in, the dropdown listed ONLY the
  * account's projects and never merged the device shelf, so a cookbook bought
  * while signed out (its unlock recorded locally against the local project id,
  * until the webhook lands or the book is adopted) appeared on `/projects` and
- * was missing from the menu. Both files' comments say that is the one thing
- * that must never be hidden.
+ * was missing from the menu. The dropdown no longer carries a projects list
+ * of its own at all — it just links to `/projects` now — but the rule stays
+ * here, in one place, so the same mistake can't happen again the moment a
+ * second caller shows up (the dropdown's own "a cookbook is saved on this
+ * device" check is exactly that second caller today).
  *
  * The three rules, in one place:
  *

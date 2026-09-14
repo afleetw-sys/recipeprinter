@@ -166,9 +166,9 @@ export default function ProjectsPage() {
   }, [accountProjects, localProjects]);
 
   /**
-   * One list, newest first — and the same list the account dropdown shows, out
-   * of the same function. This page and that menu each used to compose their
-   * own answer from the same helpers and quietly disagreed; see
+   * One list, newest first — the same list the account dropdown used to show,
+   * out of the same function. This page and that menu each used to compose
+   * their own answer from the same helpers and quietly disagreed; see
    * `libraryProjects`, which now holds the rules and the reason.
    *
    * Nothing is deleted by listing. The local shelf is untouched on disk; a
