@@ -2339,24 +2339,12 @@
   mask-image: linear-gradient(to bottom, #000 74%, transparent);
 }
 
-/* The shared Pro indicator (components/ProBadge.tsx) — one consistent look
-   for "requires Pro" everywhere it appears (themes, card sizes, Add more
-   recipes, and any future gated control), so no surface invents its own
-   crown treatment. --cp-premium-bright rather than --cp-premium itself: that
-   token is tuned for ink-sized text on a light tint, not a small icon on a
-   dark backing, where its darker gold read as too muted to notice. */
-.pro-badge {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 3px;
-  color: var(--cp-premium-bright);
-  font-size: var(--cp-fs-label);
-  font-weight: 700;
-  line-height: 1;
-}
-
-/* Sitting on top of a theme thumbnail or card-size preview — arbitrary art
+/* The shared Pro indicator (components/ProBadge.tsx). The base
+   `.pro-badge`/`.pro-badge__label` look now lives in globals.css — it isn't
+   print-specific, and ProBadge itself renders outside /print too (e.g. the
+   Plan section on /account) — only this page's thumbnail-corner "overlay"
+   variant stays here.
+   Sitting on top of a theme thumbnail or card-size preview — arbitrary art
    or colour behind it — needs a backing plate to stay legible. --cp-ink
    rather than an invented hue (a maroon plate read as disconnected from the
    rest of the app's palette, which never uses that colour anywhere else) —
@@ -2371,15 +2359,6 @@
   border-radius: 8px;
   background: var(--cp-ink);
   box-shadow: var(--cp-shadow-xs);
-}
-
-/* Sitting inline in a plain text row (a format-tile label, "Add more
-   recipes") already has a plain background of its own — no backing plate,
-   no shadow, just the same bright gold as everywhere else. */
-
-.pro-badge__label {
-  text-transform: uppercase;
-  letter-spacing: 0.02em;
 }
 
 .recipe-template-option__owned {

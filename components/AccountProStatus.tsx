@@ -34,12 +34,6 @@ const BASIC_BENEFITS = [
   "Letter-size printing with two free themes",
 ];
 
-function planLabel(cycle: "monthly" | "annual" | null): string {
-  if (cycle === "annual") return "Annual";
-  if (cycle === "monthly") return "Monthly";
-  return "Pro";
-}
-
 function formatDate(ms: number | null): string | null {
   if (ms === null) return null;
   return new Date(ms).toLocaleDateString(undefined, {
@@ -168,15 +162,25 @@ export function AccountProStatus({ user }: { user: User }) {
             </button>
           </>
         ) : proDetails.active ? (
-          <>
-            <p className="mt-1 text-cp-small text-ink-soft">{planLabel(proDetails.cycle)} plan</p>
-            <p className="text-cp-small text-ink-soft">
-              {proDetails.willRenew
-                ? `Renews ${formatDate(proDetails.expiresAtMs) ?? "soon"}`
-                : `Active through ${formatDate(proDetails.expiresAtMs) ?? "your paid period"}`}
-            </p>
+          <div className="mt-1">
+            {/* The renewal date and price are the one thing a subscriber
+                actually needs to know at a glance — surfaced as its own
+                callout, not a quiet line of caption text under the plan
+                name, so nobody has to hunt for "when am I charged, and how
+                much." */}
+            <div className="flex flex-wrap items-baseline gap-x-2 gap-y-1 rounded-lg bg-[var(--cp-premium-soft)] px-cp-3 py-cp-2">
+              <p className="text-cp-body font-extrabold text-ink">
+                {proDetails.willRenew
+                  ? `Renews ${formatDate(proDetails.expiresAtMs) ?? "soon"}`
+                  : `Active through ${formatDate(proDetails.expiresAtMs) ?? "your paid period"}`}
+              </p>
+              {proDetails.willRenew && proDetails.cycle && (
+                <p className="text-cp-small font-bold text-ink-soft">for {PRO_PRICE_FALLBACKS[proDetails.cycle]}</p>
+              )}
+              {!proDetails.willRenew && <p className="text-cp-small font-bold text-ink-soft">Canceled — won&rsquo;t renew</p>}
+            </div>
             {effectiveProInfo.source === "mirror-fallback" && (
-              <p className="text-cp-small text-ink-soft">
+              <p className="mt-1 text-cp-small text-ink-soft">
                 Showing your last verified plan
                 {effectiveProInfo.lastVerifiedAtMs
                   ? ` (as of ${formatDate(effectiveProInfo.lastVerifiedAtMs) ?? "recently"})`
@@ -184,23 +188,68 @@ export function AccountProStatus({ user }: { user: User }) {
                 .
               </p>
             )}
-            {/* Prominent on purpose — cancellation must not be hard to find.
-                This opens RevenueCat's own hosted billing portal; there is no
-                custom cancel flow to build or maintain. */}
-            <button
-              type="button"
-              className="btn btn-secondary btn-compact mt-cp-2 w-full sm:w-auto"
-              disabled={!proManagementLink}
-              title={proManagementLink ? undefined : "Manage subscription isn't ready yet. Try again in a moment."}
-              onClick={() => {
-                if (!proManagementLink) return;
-                track("manage_subscription_clicked", {});
-                window.open(proManagementLink, "_blank", "noopener,noreferrer");
-              }}
-            >
-              Manage subscription
-            </button>
-          </>
+
+            {/* Same two cards a not-yet-subscriber sees, kept on purpose —
+                the benefit lists are still the reminder of what this plan is
+                worth, not just a receipt. Only the buttons flip: Basic's
+                becomes the (secondary, not primary — this isn't the action
+                to draw the eye to) way out, Pro's becomes the disabled
+                "you're already here" state the Basic card used to show. */}
+            <div className="mt-cp-3 grid gap-cp-3 sm:grid-cols-2">
+              <div className="flex h-full flex-col rounded-lg border border-line p-cp-3">
+                <h3 className="text-cp-h2 font-extrabold text-ink">Basic</h3>
+                <p className="mt-1 text-cp-body font-bold text-ink-soft">Free</p>
+                <ul className="mt-cp-2 flex flex-1 flex-col gap-cp-1">
+                  {BASIC_BENEFITS.map((benefit) => (
+                    <li key={benefit} className="flex items-start gap-cp-2 text-cp-small text-ink-soft">
+                      <CheckIcon size={ICON_SIZE.sm} className="mt-[3px] shrink-0" />
+                      {benefit}
+                    </li>
+                  ))}
+                </ul>
+                {/* Opens RevenueCat's own hosted billing portal to actually
+                    cancel; there is no custom cancel flow to build or
+                    maintain. */}
+                <button
+                  type="button"
+                  className="btn btn-secondary btn-compact mt-cp-3 w-full"
+                  disabled={!proManagementLink}
+                  title={proManagementLink ? undefined : "Downgrading isn't ready yet. Try again in a moment."}
+                  onClick={() => {
+                    if (!proManagementLink) return;
+                    track("manage_subscription_clicked", {});
+                    window.open(proManagementLink, "_blank", "noopener,noreferrer");
+                  }}
+                >
+                  Downgrade
+                </button>
+              </div>
+              <div className="flex h-full flex-col rounded-lg border border-line p-cp-3">
+                <div className="flex items-center gap-2">
+                  <CrownIcon size={ICON_SIZE.md} className="text-[var(--cp-premium-bright)]" />
+                  <h3 className="text-cp-h2 font-extrabold text-ink">Pro</h3>
+                </div>
+                <p className="mt-1 text-cp-body font-bold text-ink-soft">
+                  {proDetails.cycle ? PRO_PRICE_FALLBACKS[proDetails.cycle] : "Your plan"}
+                </p>
+                <ul className="mt-cp-2 flex flex-1 flex-col gap-cp-1">
+                  <li className="flex items-start gap-cp-2 text-cp-small font-semibold text-ink">
+                    <CheckIcon size={ICON_SIZE.sm} className="mt-[3px] shrink-0" />
+                    Everything in Basic
+                  </li>
+                  {PRO_BENEFITS.map((benefit) => (
+                    <li key={benefit} className="flex items-start gap-cp-2 text-cp-small text-ink-soft">
+                      <CheckIcon size={ICON_SIZE.sm} className="mt-[3px] shrink-0" />
+                      {benefit}
+                    </li>
+                  ))}
+                </ul>
+                <button type="button" className="btn btn-primary btn-compact mt-cp-3 w-full" disabled>
+                  Your current plan
+                </button>
+              </div>
+            </div>
+          </div>
         ) : (
           // A flat "Free plan" line with nothing under it answered the
           // status question honestly but sold nothing — the one place in the

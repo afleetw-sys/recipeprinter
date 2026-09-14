@@ -1640,6 +1640,32 @@
     }
   }
 
+  /* Base look for the shared Pro indicator (components/ProBadge.tsx) — one
+     consistent "requires Pro" treatment (themes, card sizes, Add more
+     recipes, the /account Plan section, any future gated control), so no
+     surface invents its own crown styling. Used to live only in
+     app/print/print.css (which still keeps the thumbnail-corner "overlay"
+     variant, since that one really is print-workspace-specific), but the
+     "inline" variant renders outside /print too — moved here for the same
+     reason the segmented-control base rules were.
+     --cp-premium-bright rather than --cp-premium itself: that token is tuned
+     for ink-sized text on a light tint, not a small icon next to plain text,
+     where its darker gold read as too muted to notice. */
+  .pro-badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 3px;
+    color: var(--cp-premium-bright);
+    font-size: var(--cp-fs-label);
+    font-weight: 700;
+    line-height: 1;
+  }
+  .pro-badge__label {
+    text-transform: uppercase;
+    letter-spacing: 0.02em;
+  }
+
   .recipe-loading-state {
     display: flex;
     flex-direction: column;
