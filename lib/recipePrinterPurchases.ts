@@ -360,6 +360,39 @@ export function activeProLockReasons(
   return reasons;
 }
 
+// Subject + verb-agreement for each reason on its own ("This theme IS...",
+// "4×6 recipe cards ARE...", since that phrase's own grammatical number
+// doesn't depend on how many OTHER reasons are also in play).
+const PRO_LOCK_REASON_PHRASES: Record<ProLockReason, { text: string; plural: boolean }> = {
+  theme: { text: "this theme", plural: false },
+  card_size: { text: "4×6 recipe cards", plural: true },
+  multi_recipe: { text: "printing multiple recipes at once", plural: false },
+};
+
+/**
+ * The upgrade dialog's description, naming exactly which of `reasons` is/are
+ * in effect — never a vague "a few things here," which doesn't tell anyone
+ * WHICH few things. A compound subject (more than one reason) always takes
+ * "are," regardless of whether any individual reason would take "is" on its
+ * own — "This theme and 4×6 recipe cards are part of RecipePrinter Pro."
+ */
+export function describeProLockReasons(reasons: ProLockReason[]): string {
+  if (reasons.length === 0) return "Unlock the full RecipePrinter Pro toolkit.";
+  const entries = reasons.map((reason) => PRO_LOCK_REASON_PHRASES[reason]);
+  const subject =
+    entries.length === 1
+      ? entries[0].text
+      : entries.length === 2
+        ? `${entries[0].text} and ${entries[1].text}`
+        : `${entries
+            .slice(0, -1)
+            .map((entry) => entry.text)
+            .join(", ")}, and ${entries[entries.length - 1].text}`;
+  const capitalizedSubject = subject.charAt(0).toUpperCase() + subject.slice(1);
+  const verb = entries.length === 1 ? (entries[0].plural ? "are" : "is") : "are";
+  return `${capitalizedSubject} ${verb} part of RecipePrinter Pro.`;
+}
+
 /**
  * Entitlements for a customer we already know exists.
  *

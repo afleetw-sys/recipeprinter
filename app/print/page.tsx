@@ -93,6 +93,7 @@ import { ProBadge } from "@/components/ProBadge";
 import {
   activeProLockReasons,
   computeProLocks,
+  describeProLockReasons,
 } from "@/lib/recipePrinterPurchases";
 import { resolveEffectiveCustomerInfo } from "@/lib/proAccessFallback";
 import { COOKBOOK_ENABLED } from "@/lib/cookbookProduct";
@@ -2950,16 +2951,7 @@ export default function PrintPage() {
     proUpgradeLockReasons.length === 1 && proUpgradeLockReasons[0] === "multi_recipe"
       ? "Print multiple recipes with Pro"
       : "Print with RecipePrinter Pro";
-  const proUpgradeDescription =
-    proUpgradeLockReasons.length > 1
-      ? "A few things here are part of RecipePrinter Pro."
-      : proUpgradeLockReasons[0] === "multi_recipe"
-        ? "Printing multiple recipes at once is part of RecipePrinter Pro."
-        : proUpgradeLockReasons[0] === "card_size"
-          ? "4×6 recipe cards are part of RecipePrinter Pro."
-          : proUpgradeLockReasons[0] === "theme"
-            ? "This theme is part of RecipePrinter Pro."
-            : "Unlock the full RecipePrinter Pro toolkit.";
+  const proUpgradeDescription = describeProLockReasons(proUpgradeLockReasons);
 
   /**
    * Opens the upgrade dialog — plan choice first, for everyone, signed in or

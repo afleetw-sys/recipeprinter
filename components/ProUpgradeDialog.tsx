@@ -15,11 +15,16 @@ import {
   type ProBillingCycle,
 } from "@/lib/proProduct";
 
+// Every one of these is a real, implemented gate (see computeProLocks in
+// lib/recipePrinterPurchases.ts) — a "20% off your first cookbook export"
+// line used to sit here too, but no checkout path anywhere ever actually
+// applied that discount; a Pro subscriber was charged the same $19.99 as
+// anyone else. Don't add a benefit back here without wiring the real thing
+// behind it first.
 const PRO_BENEFITS = [
   "All premium templates",
   "4×6 recipe cards",
   "Print multiple recipes at once",
-  "20% off your first cookbook export",
 ];
 
 const PRO_CYCLE_LABEL: Record<ProBillingCycle, string> = {
@@ -164,8 +169,7 @@ export function ProUpgradeDialog({
             Continue with {PRO_CYCLE_LABEL[selectedCycle]}
           </button>
           <p className="text-cp-label text-ink-soft">
-            Cancel anytime from your account. Cookbook exports are sold separately, with 20% off
-            your first export with Pro.
+            Cancel anytime from your account. Cookbooks are sold separately, $19.99 per book.
           </p>
         </>
       ) : (
