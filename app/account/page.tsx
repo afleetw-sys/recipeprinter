@@ -1,19 +1,22 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { signOut } from "firebase/auth";
 import { SiteHeader } from "@/components/SiteHeader";
 import { SiteFooter } from "@/components/SiteFooter";
 import { CookPilotLoginDialog, useCookPilotAuth } from "@/components/CookPilotAuth";
 import { AccountPersonalDetails } from "@/components/AccountPersonalDetails";
 import { AccountProStatus } from "@/components/AccountProStatus";
+import { getFirebaseAuth } from "@/lib/firebase/client";
 import { AccountIcon, ICON_SIZE, SpinnerIcon } from "@/components/icons";
 
 /**
- * Settings: personal details (email, editable name, password), Plan/billing,
- * and Sign out. Separate from `/projects` — which reader would look for a
- * cookbook under "Account settings"? — even though both are one tap away from
- * the same header avatar (see `components/AccountAvatarButton.tsx`'s
- * dropdown).
+ * Settings: personal details (email, editable name), Plan/billing, and Sign
+ * out — each its own card rather than one grouped under another, since
+ * signing out isn't a plan decision or a personal detail. Separate from
+ * `/projects` — which reader would look for a cookbook under "Account
+ * settings"? — even though both are one tap away from the same header
+ * avatar (see `components/AccountAvatarButton.tsx`'s dropdown).
  */
 export default function AccountPage() {
   const { user, ready } = useCookPilotAuth();
@@ -34,7 +37,7 @@ export default function AccountPage() {
 
   return (
     <div className="min-h-screen bg-page text-ink">
-      <SiteHeader sticky />
+      <SiteHeader />
       <main className="mx-auto w-full max-w-5xl px-cp-6 py-cp-7">
         <header className="mb-cp-7 flex flex-wrap items-start justify-between gap-cp-4">
           <div>
@@ -48,6 +51,15 @@ export default function AccountPage() {
           <>
             <AccountPersonalDetails user={user} />
             <AccountProStatus user={user} />
+            <section className="rounded-xl border border-line bg-card p-cp-5">
+              <button
+                type="button"
+                className="btn-ghost btn-compact w-full sm:w-auto"
+                onClick={() => void signOut(getFirebaseAuth())}
+              >
+                Sign out
+              </button>
+            </section>
           </>
         ) : (
           /* Nothing here belongs to a signed-out visitor — no name, no email,

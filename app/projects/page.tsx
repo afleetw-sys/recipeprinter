@@ -279,7 +279,7 @@ export default function ProjectsPage() {
 
   return (
     <div className="min-h-screen bg-page text-ink">
-      <SiteHeader sticky />
+      <SiteHeader />
       {/* py-cp-7, not py-cp-8: the CookPilot spacing scale tops out at cp-7
           (32px), so `py-cp-8` was a class Tailwind never emitted — the page had
           no vertical padding at all, which is why the title sat against the

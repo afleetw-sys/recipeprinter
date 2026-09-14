@@ -1,10 +1,8 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { signOut } from "firebase/auth";
 import type { User } from "firebase/auth";
 import type { CustomerInfo } from "@revenuecat/purchases-js";
-import { getFirebaseAuth } from "@/lib/firebase/client";
 import { CheckIcon, CrownIcon, ICON_SIZE } from "@/components/icons";
 import { ProBadge } from "@/components/ProBadge";
 import { PRO_BENEFITS, ProUpgradeDialog } from "@/components/ProUpgradeDialog";
@@ -18,14 +16,19 @@ import { useProPurchase } from "@/lib/useProPurchase";
 import { resolveEffectiveCustomerInfo, type CustomerInfoLoadStatus } from "@/lib/proAccessFallback";
 import { loadRecipePrinterUserProfile, type RecipePrinterMirroredEntitlement } from "@/lib/recipePrinterFreeTemplateClaim";
 
-// What Free actually includes, not a generic "getting started" gloss — the
-// two non-premium themes (lib/premiumTemplates.ts), the one free card size
-// (lib/printTemplates.ts's `proOnly: false` entry), and the one-recipe cap
-// PrintSetupControls.tsx's own "This recipe" title exists to be honest about.
+// What Free actually includes — and it's a lot, which the old "Classic &
+// Pantry themes / Full Page printing / one recipe at a time" list undersold
+// by leading with a limitation. Real recipe parsing (not just simple sites),
+// social imports, and no cap on how many you bring in are the actual product;
+// themes and page size are the minor add. "One recipe at a time" is real
+// (see PrintSetupControls.tsx's "This recipe" title) but it's a constraint,
+// not a benefit, so it doesn't belong on a list meant to make the case for
+// staying on Free being a perfectly good deal.
 const FREE_BENEFITS = [
-  "Classic & Pantry themes",
-  "Full Page (Letter) printing",
-  "One recipe at a time",
+  "Import from any recipe website",
+  "Import from Instagram, TikTok, Pinterest & more",
+  "Unlimited imports",
+  "Letter-size printing with two free themes",
 ];
 
 function planLabel(cycle: "monthly" | "annual" | null): string {
@@ -44,11 +47,14 @@ function formatDate(ms: number | null): string | null {
 }
 
 /**
- * The identity header, RecipePrinter Pro status/management, and the app's
- * only Sign out button — all of it lifted out of the old `AccountMenu`
+ * RecipePrinter Plan status/management — lifted out of the old `AccountMenu`
  * dropdown onto `/account`, which is always its "open" state now that it's a
  * page section rather than a popover: every load-on-open gate that dropdown
  * had (`if (!open || !uid) return`) is just `if (!uid) return` here.
+ *
+ * Sign out lives on its own, directly in app/account/page.tsx — it isn't
+ * part of your plan, it's part of your session, and grouping it under "Plan"
+ * read as if ending your session were a billing action.
  */
 export function AccountProStatus({ user }: { user: User }) {
   const uid = user.uid;
@@ -244,16 +250,6 @@ export function AccountProStatus({ user }: { user: User }) {
           </div>
         )}
         {proMessage && <p className="mt-1 text-cp-small text-ink-soft">{proMessage}</p>}
-      </div>
-
-      <div className="mt-cp-4 border-t border-line pt-cp-3">
-        <button
-          type="button"
-          className="btn-ghost btn-compact w-full sm:w-auto"
-          onClick={() => void signOut(getFirebaseAuth())}
-        >
-          Sign out
-        </button>
       </div>
 
       {showProUpgradeDialog && (
