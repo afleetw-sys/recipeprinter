@@ -2856,7 +2856,13 @@ export default function PrintPage() {
     if (!cookPilotUser) return;
     const intent = takeProUpgradeIntent();
     if (!intent) return;
-    continueProCheckout(intent.cycle);
+    // `intent.trigger` is passed explicitly rather than left to read
+    // `proUpgradeTrigger` state: `setProUpgradeTrigger` below wouldn't be
+    // reflected until the next render, and `continueProCheckout` needs the
+    // right answer in THIS call, synchronously, to decide whether to resume
+    // a print afterward.
+    setProUpgradeTrigger(intent.trigger);
+    continueProCheckout(intent.cycle, intent.trigger);
     // The uid, not the User object — see the save-intent effect above.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [cookPilotUser?.uid]);
@@ -3023,16 +3029,40 @@ export default function PrintPage() {
    *  known the cook is signed in (immediately, or right after signing in
    *  inside the dialog's own sign-in step). Settles to every outcome the
    *  same way: close the dialog and return to the editor; only a completed
-   *  purchase also resumes the print that triggered the upgrade. */
-  function continueProCheckout(cycle: ProBillingCycle) {
+   *  purchase started from the PRINT button also resumes that print.
+   *
+   *  `trigger` defaults to the current `proUpgradeTrigger` state — right for
+   *  the direct, same-tab path (`ProUpgradeDialog`'s `onChoose`), where
+   *  nothing has reloaded between opening the dialog and choosing a plan.
+   *  The sign-in-redirect resumption effect passes it explicitly instead,
+   *  since it needs the answer synchronously and a `setProUpgradeTrigger`
+   *  call right before this one wouldn't be reflected in state until the
+   *  next render.
+   *
+   *  Every OTHER trigger — "add_more_recipes" chief among them — opens this
+   *  exact same dialog but was never a print attempt, so a completed
+   *  purchase from one of those must not open the system print dialog: a
+   *  cook who clicked "Add more recipes," bought Pro, and landed back on
+   *  /print to find the browser's print sheet already open over it, as if
+   *  they'd clicked Print, is the bug this guards against.
+   *
+   *  Same reasoning applies to the save right below: a completed purchase
+   *  is not a Save click, so it must not be the thing that first writes an
+   *  unsaved project to the account (see the "save then autosave" rule —
+   *  nothing reaches Firestore before an explicit Save). It only continues
+   *  a save that was already agreed to, via `autosaveEnabledForCurrentMode`
+   *  — the same gate the debounced autosave effect uses — so a project
+   *  that's already been saved once keeps saving through a purchase, but
+   *  one that never was doesn't get its first save from a purchase alone. */
+  function continueProCheckout(cycle: ProBillingCycle, trigger: string = proUpgradeTrigger) {
     void purchaseProAndContinue(cycle, (outcome) => {
       setShowProUpgradeDialog(false);
       if (outcome !== "purchased" && outcome !== "already-active") return;
       if (outcome === "purchased") {
         track("pro_feature_used", { feature: proLockFeature() });
-        if (cookPilotUser) void handleSaveProject();
+        if (cookPilotUser && autosaveEnabledForCurrentMode) void handleSaveProject();
       }
-      void handlePrint();
+      if (trigger === "print_button") void handlePrint();
     });
   }
 

@@ -10,7 +10,7 @@ import { CrownIcon, XIcon, CheckIcon, ICON_SIZE } from "@/components/icons";
 import { TemplateThumbnail } from "@/components/print/TemplateThumbnail";
 import { ProBadge } from "@/components/ProBadge";
 import { isPremiumTemplate } from "@/lib/premiumTemplates";
-import { hasTemplateOrProEntitlement } from "@/lib/recipePrinterPurchases";
+import { hasProEntitlement, hasTemplateEntitlement, hasTemplateOrProEntitlement } from "@/lib/recipePrinterPurchases";
 import { track } from "@/lib/analytics";
 
 interface ThemePickerProps {
@@ -72,10 +72,15 @@ export function ThemePicker({
             premiumTemplate !== null &&
             !hasTemplateOrProEntitlement(customerInfo, option.id) &&
             !cookbookMode;
+          // A Pro subscriber owns every theme at once, so a checkmark on
+          // each one individually reads as noise, not information — it's
+          // reserved for a legacy $1.99 single-theme purchase, the one case
+          // where "you specifically bought this" is actually true.
           const owned =
             premiumTemplate !== null &&
-            hasTemplateOrProEntitlement(customerInfo, option.id) &&
-            !cookbookMode;
+            !cookbookMode &&
+            !hasProEntitlement(customerInfo) &&
+            hasTemplateEntitlement(customerInfo, premiumTemplate);
 
           // A real card renders <div>s, which aren't valid inside a
           // <button> (its content model is phrasing only) — so the option
