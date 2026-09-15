@@ -15,7 +15,6 @@ import {
   ComparisonTable,
   FeatureRows,
   HeroProductPhoto,
-  PdfFileObject,
   HowItWorks,
   PhotoGallery,
 } from "@/components/seo/LandingVisuals";
@@ -143,6 +142,7 @@ export default function SeoLandingPage({ params }: PageProps) {
         note={page.statusNote}
         asideAlign={usesDecorativePdf ? "start" : showsAllImportModes ? "center-once" : undefined}
         asideWidth={usesDecorativePdf ? "small-aside" : showsAllImportModes ? "narrow" : undefined}
+        verticalPadding={usesDecorativePdf ? "roomy" : undefined}
         actions={
           isGuide ? (
             // No "See how it works" link beside it. On a guide-first page the
@@ -155,9 +155,13 @@ export default function SeoLandingPage({ params }: PageProps) {
           )
         }
         aside={
-          usesDecorativePdf ? (
-            <PdfFileObject />
-          ) : (
+          <div
+            className={
+              usesDecorativePdf
+                ? "mx-auto w-full max-w-[280px] -rotate-[3deg] lg:-translate-y-cp-3"
+                : undefined
+            }
+          >
             <HeroProductPhoto
               imageKey={page.heroImage}
               cardKey={heroCardKey(page)}
@@ -173,11 +177,11 @@ export default function SeoLandingPage({ params }: PageProps) {
                     : "Printed from a recipe link"
               }
               priority
-              wide={!showsAllImportModes}
-              crop={showsAllImportModes}
+              wide={usesDecorativePdf || !showsAllImportModes}
+              crop={showsAllImportModes && !usesDecorativePdf}
               frame={page.heroFrame}
             />
-          )
+          </div>
         }
       />
 

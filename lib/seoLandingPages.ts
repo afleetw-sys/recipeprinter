@@ -1100,7 +1100,7 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
     // which is what that field records. It stays out of the reviewed set until
     // someone has actually gone over the copy.
     slug: "print-paprika-recipes",
-    contentUpdated: "2026-09-09",
+    contentUpdated: "2026-09-15",
 
     primaryKeyword: "print Paprika recipes",
     secondaryKeywords: [
@@ -1117,6 +1117,8 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
     intent: "Utility SEO",
     initialImportMode: "apps",
     importSubmitLabel: "Open a Paprika file",
+    heroImage: "paprika-import",
+    heroFrame: "none",
     title: "Print Recipes from Paprika | RecipePrinter",
     description:
       "Export your Paprika recipe library, open it in RecipePrinter, and choose which recipes to print as clean pages or 4×6 recipe cards.",

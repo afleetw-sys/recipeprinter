@@ -78,6 +78,13 @@ export const FEATURE_IMAGES: Record<string, ProofImage> = {
     alt:
       "A Honey Garlic Salmon Stir Fry Noodles recipe saved as a PDF file.",
   },
+  "paprika-import": {
+    src: "/images/paprika.png",
+    width: 6350,
+    height: 3800,
+    alt:
+      "A Paprika recipe export opened in RecipePrinter, showing two imported recipes ready to select and print.",
+  },
   "handwritten-card": {
     src: "/images/jackie-card.jpeg",
     width: 1800,

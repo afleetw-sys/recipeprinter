@@ -63,11 +63,9 @@ export function HeroProductPhoto({
       every printed-card hero uses — a thin border, barely-there padding,
       cropped to a fixed 4:3. `document` is a dark, padded canvas with a
       shadow, for a hero that IS a document but still wants to read as
-      something being VIEWED. `none` keeps that same light hairline
-      border/padding but drops the 4:3 crop, showing the image at its own
-      aspect ratio uncropped — for a screenshot whose content shouldn't
-      lose any edges (a whole window, say) but still wants the same quiet
-      border every other hero photo has. */
+      something being VIEWED. `none` leaves the source completely unframed
+      and uncropped, for transparent artwork or a composed screenshot that
+      already owns its background and edges. */
   frame?: "card" | "document" | "none";
 }) {
   const named = imageKey ? FEATURE_IMAGES[imageKey] : undefined;
@@ -102,7 +100,9 @@ export function HeroProductPhoto({
         className={
           isDocument
             ? "overflow-hidden rounded-2xl bg-ink p-6 sm:p-10"
-            : "overflow-hidden rounded-2xl border border-line bg-card p-1.5"
+            : frame === "none"
+              ? "overflow-visible bg-transparent"
+              : "overflow-hidden rounded-2xl border border-line bg-card p-1.5"
         }
       >
         {image}
@@ -113,29 +113,6 @@ export function HeroProductPhoto({
           {annotation}
         </span>
       )}
-    </div>
-  );
-}
-
-/**
- * The PDF converter's opener is an object placed on the page, not a photograph
- * in the shared hero frame. The source PNG already contains a page curl,
- * transparent edges, and a soft cast shadow, so a small rotation is enough to
- * make it feel casually set beside the copy rather than presented as a second
- * rectangular panel.
- */
-export function PdfFileObject() {
-  return (
-    <div className="mx-auto w-[clamp(160px,18vw,230px)] -rotate-[3deg] lg:-translate-y-cp-3">
-      <Image
-        src="/images/pdf.png"
-        width={1108}
-        height={1384}
-        alt="A Honey Garlic Salmon Stir Fry Noodles recipe saved as a PDF file."
-        sizes="(max-width: 1023px) 52vw, 230px"
-        priority
-        className="h-auto w-full"
-      />
     </div>
   );
 }

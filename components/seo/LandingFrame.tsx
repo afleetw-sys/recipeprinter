@@ -108,6 +108,7 @@ export function LandingHero({
   align = "split",
   asideAlign = "center",
   asideWidth = "even",
+  verticalPadding = "default",
 }: {
   h1: string;
   lede: string;
@@ -150,8 +151,11 @@ export function LandingHero({
       text/actions column a little more of the row so the full import switch
       stays comfortable, without reducing its photo to a thumbnail. */
   asideWidth?: "even" | "narrow" | "small-aside";
+  /** Adds extra breathing room above and below unusually compact heroes. */
+  verticalPadding?: "default" | "roomy";
 }) {
   const centered = align === "centered";
+  const heroPadding = verticalPadding === "roomy" ? "py-cp-7" : "py-cp-3";
   // Without a photo there is no second column to balance, so the grid would
   // hold the words to half the page and leave the other half empty. A single
   // column instead, with the measure capped: an h1 running the full 1240 is a
@@ -210,12 +214,12 @@ export function LandingHero({
       <section
         className={
           centered
-            ? "flex flex-col gap-cp-7 py-cp-3"
+            ? `flex flex-col gap-cp-7 ${heroPadding}`
             : soloColumn
-              ? "py-cp-3"
+              ? heroPadding
               : asideAlign === "center-once"
-                ? "py-cp-3"
-                : `${splitGridClassName} ${asideAlign === "start" ? "items-start" : "items-center"} py-cp-3`
+                ? heroPadding
+                : `${splitGridClassName} ${asideAlign === "start" ? "items-start" : "items-center"} ${heroPadding}`
         }
         aria-labelledby="landing-heading"
       >
