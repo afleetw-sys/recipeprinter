@@ -244,10 +244,7 @@ interface PrintDeckProps {
   onSelectImport?: (item: QueueItem) => void;
   /** Recipes that just finished parsing, for the beat they settle in. */
   settlingIds?: ReadonlySet<string>;
-  canRetryImport: (item: QueueItem) => boolean;
-  onRetryImport: (id: string) => void;
-  onRepairImportWithText: (id: string, text: string) => void;
-  onRepairImportWithImages: (id: string, files: File[]) => void;
+  onTryAnotherImportWay: (id: string) => void;
   onRemoveImport: (id: string) => void;
   /** The recipe an import was added BELOW, if any — the deck places its
       placeholder page right after that recipe, the way the rail does. */
@@ -336,10 +333,7 @@ export function PrintDeck(props: PrintDeckProps) {
     activeImportId,
     onSelectImport,
     settlingIds,
-    canRetryImport,
-    onRetryImport,
-    onRepairImportWithText,
-    onRepairImportWithImages,
+    onTryAnotherImportWay,
     onRemoveImport,
     pendingAddAfterRecipeId,
     setSizeMenuOpen,
@@ -974,10 +968,7 @@ export function PrintDeck(props: PrintDeckProps) {
             >
               <FailedImportCard
                 item={failedItem}
-                canRetry={canRetryImport(failedItem)}
-                onRetry={() => onRetryImport(failedItem.id)}
-                onRepairWithText={(text) => onRepairImportWithText(failedItem.id, text)}
-                onRepairWithImages={(files) => onRepairImportWithImages(failedItem.id, files)}
+                onTryAnotherWay={() => onTryAnotherImportWay(failedItem.id)}
                 onRemove={() => onRemoveImport(failedItem.id)}
               />
             </div>

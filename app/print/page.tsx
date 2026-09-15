@@ -1256,17 +1256,11 @@ export default function PrintPage() {
   /**
    * Failures hold their slot instead of becoming a toast.
    *
-   * The toast was the whole answer, and it was the wrong shape twice over. It
-   * expired, so "what happened to the one I just added?" outlived the reply;
-   * and it carried `shortImportError(errorCode)` — a bucket label — while the
-   * sentence written for this exact moment sat unused on `item.error`, which
-   * the home page had been showing all along. The workspace said less about a
-   * failure than the page the cook came from.
-   *
-   * It also had nowhere to put the actions. Our commonest failure is a site
-   * that blocks readers, and that error ends "Paste the recipe text or upload
-   * a screenshot to go around it" — an instruction with nothing to click. On a
-   * card those are buttons, and they repair the slot in place.
+   * A persistent card answers "what happened to the one I just added?" after
+   * a toast would have expired. It deliberately offers one recovery route:
+   * reopen the shared Add recipes sheet and choose another source. Repeating
+   * the same parse is normally deterministic, and separate paste/photo buttons
+   * only recreated part of that sheet here.
    */
   const failedImports = pendingImportItems.filter((item) => item.status === "error");
 
@@ -4412,6 +4406,20 @@ export default function PrintPage() {
     setPendingAddAfterRecipeId(anchorId);
     setShowAddRecipeDialog(true);
   }
+  /**
+   * A failed parse has no useful same-input retry. Clear its terminal
+   * placeholder and reopen the shared source picker so the cook can choose a
+   * link, recipe app, image, or pasted text without meeting a second recovery
+   * UI. This bypasses the normal "add another" gate because the failed item is
+   * being replaced, not added to.
+   */
+  function tryAnotherImportWay(id: string) {
+    queue.remove(id);
+    setPendingAddSectionId(sections[0]?.id ?? null);
+    setPendingAddIndex(0);
+    setPendingAddAfterRecipeId(null);
+    setShowAddRecipeDialog(true);
+  }
   function navigateToRecipe(itemId: string) {
     const index = navItems.findIndex(
       (nav) => nav.kind === "recipe" && nav.recipeId === itemId,
@@ -5609,10 +5617,7 @@ export default function PrintPage() {
           onSelectImport={selectImport}
           settlingIds={settlingIds}
           failedImports={failedImports}
-          canRetryImport={queue.canRetry}
-          onRetryImport={queue.retry}
-          onRepairImportWithText={(id, text) => queue.repairItem(id, { kind: "text", text })}
-          onRepairImportWithImages={(id, files) => queue.repairItem(id, { kind: "images", files })}
+          onTryAnotherImportWay={tryAnotherImportWay}
           onRemoveImport={queue.remove}
           pendingAddAfterRecipeId={pendingAddAfterRecipeId}
           openAddRecipeBelow={openAddRecipeBelow}

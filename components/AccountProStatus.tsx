@@ -318,7 +318,10 @@ export function AccountProStatus({ user }: { user: User }) {
                     label="Billing cycle"
                     className="segmented-control--compact"
                     value={billingCycle}
-                    onChange={setBillingCycle}
+                    onChange={(cycle) => {
+                      setBillingCycle(cycle);
+                      track("pro_plan_selected", { cycle });
+                    }}
                     options={[
                       { id: "monthly", label: "Monthly" },
                       { id: "annual", label: "Annual" },
@@ -355,12 +358,14 @@ export function AccountProStatus({ user }: { user: User }) {
                 <button
                   type="button"
                   className="btn btn-primary btn-compact mt-cp-3 w-full"
+                  disabled={proBusy}
                   onClick={() => {
                     track("paywall_viewed", { trigger: "account_menu" });
-                    setShowProUpgradeDialog(true);
+                    track("pro_continue_clicked", { cycle: billingCycle });
+                    void purchaseProAndContinue(billingCycle, () => undefined);
                   }}
                 >
-                  Upgrade
+                  {proBusy ? "Opening checkout…" : "Upgrade"}
                 </button>
               </div>
             </div>
