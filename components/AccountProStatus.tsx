@@ -74,7 +74,7 @@ export function AccountProStatus({ user }: { user: User }) {
   /** Only changes which price the Pro card quotes before you've bought
       anything — `ProUpgradeDialog` still has its own cycle picker once
       you're actually choosing. */
-  const [billingCycle, setBillingCycle] = useState<ProBillingCycle>("annual");
+  const [billingCycle, setBillingCycle] = useState<ProBillingCycle>("monthly");
 
   const refreshProCustomerInfo = useCallback(async () => {
     const [liveResult, mirrorResult] = await Promise.allSettled([

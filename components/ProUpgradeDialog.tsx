@@ -77,7 +77,7 @@ export function ProUpgradeDialog({
   description?: string;
 }) {
   const [step, setStep] = useState<"plan" | "signin">("plan");
-  const [selectedCycle, setSelectedCycle] = useState<ProBillingCycle>("annual");
+  const [selectedCycle, setSelectedCycle] = useState<ProBillingCycle>("monthly");
   const [pendingCycle, setPendingCycle] = useState<ProBillingCycle | null>(null);
   const [formBusy, setFormBusy] = useState(false);
 
