@@ -105,6 +105,7 @@ export function LandingHero({
   aside,
   above,
   align = "split",
+  asideAlign = "center",
 }: {
   h1: string;
   lede: string;
@@ -127,6 +128,14 @@ export function LandingHero({
    * argument.
    */
   align?: "split" | "centered";
+  /** Cross-axis alignment of the two `split` columns. `center` (the default,
+      unchanged everywhere else) balances a short text column against a
+      taller photo. `start` pins the photo to the top instead — worth it on
+      a page whose `actions` column changes height on its own (a capture
+      block with a mode switch), where centering re-litigates the photo's
+      position every time that height does. No effect on `centered`/solo
+      layouts, which never had a second column to align against. */
+  asideAlign?: "center" | "start";
 }) {
   const centered = align === "centered";
   // Without a photo there is no second column to balance, so the grid would
@@ -143,7 +152,7 @@ export function LandingHero({
             ? "flex flex-col gap-cp-7 py-cp-3"
             : soloColumn
               ? "py-cp-3"
-              : "grid items-center gap-cp-7 py-cp-3 lg:grid-cols-2 lg:gap-[64px]"
+              : `grid ${asideAlign === "start" ? "items-start" : "items-center"} gap-cp-7 py-cp-3 lg:grid-cols-2 lg:gap-[64px]`
         }
         aria-labelledby="landing-heading"
       >

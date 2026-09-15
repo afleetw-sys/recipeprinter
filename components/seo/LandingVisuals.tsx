@@ -1,4 +1,5 @@
 import Image from "next/image";
+import type { ReactNode } from "react";
 import { FEATURE_IMAGES, PRINTED_CARDS, type ProofImage } from "@/lib/seoAssets";
 import {
   CheckIcon,
@@ -164,7 +165,10 @@ export function FeatureRows({
 }: {
   features: {
     heading: string;
-    body: string;
+    /** A plain string on every caller but one — CookbookPitch composes an
+        inline link into its own last sentence, which a plain string can't
+        carry. */
+    body: ReactNode;
     proof?: SeoProofKind;
     caption?: string;
     image?: string;

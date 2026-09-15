@@ -105,6 +105,12 @@ export type SeoLandingPage = {
       the built-in captions describe the printed cards, and a page showing
       something else should not inherit one. Omit for no label. */
   heroAnnotation?: string;
+  /** Pins the hero photo to the top of its column instead of centering it
+      against the text column (see `LandingHero`'s `asideAlign`). Worth
+      setting only where `actions` is a capture block whose own height
+      changes (a mode switch) — centered, the photo visibly moved every time
+      that height did. */
+  heroAlign?: "center" | "start";
   /** Heading over the guide-first capture block. Hardcoded to "Start your
       family cookbook" until four guide pages that are not about cookbooks
       inherited it. */
@@ -508,6 +514,7 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
     initialImportMode: "url",
     importSubmitLabel: "Make recipe card",
     importModes: ["url", "apps", "image", "text"],
+    heroAlign: "start",
     title: "Recipe Card Printer | Make & Print 4×6 Recipe Cards",
     description:
       "Turn recipes from websites, photos, screenshots, and text into printable 4×6 recipe cards. Preview your card online, choose a design, and print it at home.",
