@@ -136,6 +136,19 @@ export function ProUpgradeDialog({
           </ul>
 
           <div className="flex flex-col gap-cp-2" role="radiogroup" aria-label="Billing plan">
+            <SelectTile selected={selectedCycle === "monthly"} className="pro-plan-card">
+              <input
+                type="radio"
+                name="pro-cycle"
+                className="sr-only"
+                checked={selectedCycle === "monthly"}
+                onChange={() => setSelectedCycle("monthly")}
+              />
+              <div className="pro-plan-card__row">
+                <span className="pro-plan-card__name">Monthly</span>
+              </div>
+              <p className="pro-plan-card__price">{PRO_MONTHLY_PRICE_FALLBACK}</p>
+            </SelectTile>
             <SelectTile selected={selectedCycle === "annual"} className="pro-plan-card">
               <input
                 type="radio"
@@ -152,19 +165,6 @@ export function ProUpgradeDialog({
                 {PRO_ANNUAL_PRICE_FALLBACK}
               </p>
               <p className="pro-plan-card__note">Save {savingsPercent}% vs. monthly</p>
-            </SelectTile>
-            <SelectTile selected={selectedCycle === "monthly"} className="pro-plan-card">
-              <input
-                type="radio"
-                name="pro-cycle"
-                className="sr-only"
-                checked={selectedCycle === "monthly"}
-                onChange={() => setSelectedCycle("monthly")}
-              />
-              <div className="pro-plan-card__row">
-                <span className="pro-plan-card__name">Monthly</span>
-              </div>
-              <p className="pro-plan-card__price">{PRO_MONTHLY_PRICE_FALLBACK}</p>
             </SelectTile>
           </div>
           <button
