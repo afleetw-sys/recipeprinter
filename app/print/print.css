@@ -1977,6 +1977,18 @@
   line-height: 1.4;
 }
 
+/* Reassurance under the Size toggle once Card is picked — the format looks
+   like a small preview graphic, and "is this actually the real print size,
+   or just a thumbnail" is a reasonable thing to wonder before committing a
+   sheet of cardstock to it. Unlike `.recipe-template-caption` this trails
+   its own control rather than tucking under a label, so it takes the
+   section's plain flex gap instead of cancelling it. */
+.recipe-format-note {
+  color: var(--cp-ink-soft);
+  font-size: var(--cp-fs-label);
+  line-height: 1.4;
+}
+
 .recipe-free-template-banner {
   /* Warm — the whole notice/ownership family below runs on the palette's
      warm half: free, protected, purchased, owned. See --cp-accent-warm in

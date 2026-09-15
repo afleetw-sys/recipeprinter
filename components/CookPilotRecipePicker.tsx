@@ -30,6 +30,7 @@ import {
   partialAddMessage,
   selectableQueueIds,
   toggleSelection,
+  toggleSingleSelection,
 } from "@/lib/importSelection";
 import type { QueueItem } from "@/types/recipe";
 import { EmptyState } from "@/components/EmptyState";
@@ -127,12 +128,23 @@ function SignedInCookPilotImport({
   onAddRecipes,
   commitLabel,
   commitLeavesPage,
+  locked,
+  singleSelect,
+  onLockedTap,
 }: {
   user: User;
   items: QueueItem[];
   onAddRecipes: (recipes: QueueItem[]) => number;
   commitLabel: string;
   commitLeavesPage: boolean;
+  /** See `RecipeSourceList`'s own `locked` doc — this account already has the
+      one recipe a free, non-cookbook plan can print. */
+  locked: boolean;
+  /** Free, non-cookbook, empty project: the next add is the one free recipe,
+      so ticking a second row swaps the first out. */
+  singleSelect: boolean;
+  /** Opens the Pro upgrade dialog — only ever called while `locked`. */
+  onLockedTap?: () => void;
 }) {
   const [summaries, setSummaries] = useState<CookPilotRecipeSummary[]>(
     () => getCachedCookPilotSummaries(user.uid) ?? [],
@@ -306,12 +318,18 @@ function SignedInCookPilotImport({
   /** Local and instant: nothing is read from CookPilot until the commit. */
   function handleToggle(row: ImportSummary) {
     if (addedIds.has(row.queueId)) return;
+    if (locked) {
+      onLockedTap?.();
+      return;
+    }
     if (error) setError(null);
-    setSelectedIds((current) => toggleSelection(current, row.queueId));
+    setSelectedIds((current) =>
+      singleSelect ? toggleSingleSelection(current, row.queueId) : toggleSelection(current, row.queueId),
+    );
   }
 
   async function handleToggleAll() {
-    if (bulkBusy || committing) return;
+    if (bulkBusy || committing || locked) return;
     if (allVisibleSelected) {
       const visible = new Set(visibleRows.map((row) => row.queueId));
       // Only what is on screen: a selection made under an earlier search is
@@ -405,6 +423,8 @@ function SignedInCookPilotImport({
       commitLabel={commitLabel}
       commitLeavesPage={commitLeavesPage}
       committing={committing}
+      locked={locked}
+      singleSelect={singleSelect}
       queryText={queryText}
       onQueryChange={setQueryText}
       searchId="cookpilot-search"
@@ -470,6 +490,9 @@ export function CookPilotImportSource({
   onAddRecipes,
   commitLabel,
   commitLeavesPage = false,
+  locked = false,
+  singleSelect = false,
+  onLockedTap,
 }: {
   items: QueueItem[];
   onAddRecipes: (recipes: QueueItem[]) => number;
@@ -477,6 +500,12 @@ export function CookPilotImportSource({
   commitLabel: string;
   /** And whether pressing it navigates, which decides its icon. */
   commitLeavesPage?: boolean;
+  /** See `RecipeSourceList`'s own `locked` doc. */
+  locked?: boolean;
+  /** See `SignedInCookPilotImport`'s own `singleSelect` doc. */
+  singleSelect?: boolean;
+  /** Opens the Pro upgrade dialog — only ever called while `locked`. */
+  onLockedTap?: () => void;
 }) {
   const { user, ready, redirectError } = useCookPilotAuth();
   const [showEmailLogin, setShowEmailLogin] = useState(false);
@@ -506,6 +535,9 @@ export function CookPilotImportSource({
           onAddRecipes={onAddRecipes}
           commitLabel={commitLabel}
           commitLeavesPage={commitLeavesPage}
+          locked={locked}
+          singleSelect={singleSelect}
+          onLockedTap={onLockedTap}
         />
       )}
 

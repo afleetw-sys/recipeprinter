@@ -379,6 +379,12 @@ type EventProps = {
   /** Switched back from a cookbook to plain recipe cards — how sticky the mode
       is (build one, then bail?). `recipeCount` for consistent segmentation. */
   cookbook_exited: { recipeCount: number };
+  /** The one-way "make a cookbook from these recipes" / "make recipe cards
+      from this book" copy (lib/projectCopy.ts) — a brand-new, independent
+      project, not the reversible toggle `cookbook_exited` reports on.
+      `direction` separates the two; `recipeCount` for consistent
+      segmentation. */
+  cookbook_copy_created: { recipeCount: number; direction: "to_cookbook" | "to_cards" };
   cookbook_cover_layout_selected: { layout: "photo" | "collage" | "typographic" };
   cookbook_front_matter_enabled: { kind: "dedication" | "introduction" };
   cookbook_section_created_from_selection: { count: number };

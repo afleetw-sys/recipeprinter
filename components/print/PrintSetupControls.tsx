@@ -85,6 +85,17 @@ export function PrintSetupControls({
             setCardSize={setCardSize}
             customerInfo={customerInfo}
           />
+          {/* The toggle's own preview is a small illustration, not a scale
+              drawing — worth saying so once Card is actually picked, since
+              "is this really 4x6 or just a thumbnail of one" is a fair thing
+              to wonder before loading cardstock. Cut lines (for the
+              full-sheet route) live in Print settings, not repeated here. */}
+          {cardSize === "card-6x4" && (
+            <p className="recipe-format-note">
+              True to size on 4×6 cardstock, or trim it from a full sheet
+              using the cut lines in Print settings.
+            </p>
+          )}
         </div>
       )}
 

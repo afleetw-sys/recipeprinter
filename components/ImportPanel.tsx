@@ -81,6 +81,9 @@ export function ImportPanel({
   onAddText,
   onAddReadyRecipes,
   commitRef,
+  libraryLocked = false,
+  librarySingleSelect,
+  onLibraryLockedTap,
 }: {
   items: QueueItem[];
   workspace?: boolean;
@@ -118,6 +121,19 @@ export function ImportPanel({
   /** Filled in by this panel with a function that submits whatever is in the
       form, so a parent's own "done" button can finish the job. */
   commitRef?: MutableRefObject<(() => boolean) | null>;
+  /** This account already has the one recipe a free, non-cookbook plan can
+      print (see `RecipeSourceList`'s own `locked` doc) — passed straight
+      through to the "Recipe apps" tab's library pickers. */
+  libraryLocked?: boolean;
+  /** Free, non-cookbook, and the project is still empty — the library
+      pickers cap selection to one instead of letting it pile up. Leave unset
+      to let `RecipeAppsPanel` work it out itself from CookPilot auth state
+      (what the homepage front door does — see its own doc comment there);
+      pass a real boolean when the caller already knows its own entitlement
+      precisely, which always wins. */
+  librarySingleSelect?: boolean;
+  /** Opens the Pro upgrade dialog — only ever called while `libraryLocked`. */
+  onLibraryLockedTap?: () => void;
 }) {
   useEffect(() => {
     // The recipe-app sources are a primary import option, but CookPilot's
@@ -450,6 +466,9 @@ export function ImportPanel({
             commitLabel={submitLabel}
             commitLeavesPage={workspace}
             reselects={reselects}
+            locked={libraryLocked}
+            singleSelect={librarySingleSelect}
+            onLockedTap={onLibraryLockedTap}
           />
         </div>
       ) : (

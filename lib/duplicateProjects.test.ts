@@ -118,6 +118,18 @@ describe("planning the duplicate cleanup", () => {
     expect(remove).toHaveLength(0);
   });
 
+  it("never pairs a project with the one it was deliberately copied from", async () => {
+    // lib/projectCopy.ts always flips kind, which the check above already
+    // catches — but this is the one function whose whole job is telling a
+    // deliberate second project apart from an accidental fork, so it also
+    // short-circuits on the marker directly (defense in depth for a future
+    // same-kind copy feature).
+    const source = book("cards-1", ["r1", "r2"], 100, "printProject");
+    const copy = { ...book("book-1", ["r1", "r2"], 200, "cookbook"), sourceProjectId: "cards-1" };
+    expect(projectContainment(source, copy)).toBe(0);
+    expect(projectContainment(copy, source)).toBe(0);
+  });
+
   it("treats an empty project as unidentifiable, so empties are never removed", async () => {
     expect(projectContainment(book("empty-1", [], 100), book("empty-2", [], 90))).toBe(0);
     const { remove } = await planDuplicateCleanup("user-1", [

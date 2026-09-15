@@ -116,6 +116,12 @@ export function recipePagePlacementHasValues(placement: RecipePagePlacement): bo
 export interface ProjectMeta {
   /** Stable identity for purchase scoping and saved-project hydration. */
   projectId?: string;
+  /** See `PrintProject.sourceProjectId` (types/recipe.ts) — set once, at
+      creation, by `lib/projectCopy.ts`. Identifies the project this one was
+      copied from. Absent means either a legacy document (still using the
+      reversible `cookbookMode`/`stashedCookbook` toggle) or one that has
+      never been copied. See `isLegacyCookbookMechanism`. */
+  sourceProjectId?: string;
   cover?: CoverConfig;
   /**
    * What this project is called in the app, as distinct from what is printed
@@ -530,6 +536,33 @@ export function projectDisplayTitle(
   const recipe = firstRecipeTitle?.trim();
   if (recipe) return extraCount > 0 ? `${recipe} + ${extraCount} more` : recipe;
   return meta.cookbookMode ? "Untitled cookbook" : "Recipe cards";
+}
+
+/**
+ * Whether this document is still on the old shared-document mechanism — one
+ * project id serving both "recipe cards" and "cookbook" as a reversible
+ * `cookbookMode` toggle, with `exitCookbook`/`restoreCookbook` shuffling the
+ * book into and out of `stashedCookbook`.
+ *
+ * A document born from `lib/projectCopy.ts`'s one-way "make a cookbook from
+ * these recipes" / "make recipe cards from this book" action carries
+ * `sourceProjectId` from the moment it's created, and is NEVER legacy — not
+ * even once it's saved with `cookbookMode: true`, which is structurally
+ * identical to a document converted in place by the old toggle. That's the
+ * whole reason the field exists: `cookbookMode`/`stashedCookbook` alone can't
+ * tell "entered via the old toggle" apart from "born already a cookbook via
+ * the new copy."
+ *
+ * Without a `sourceProjectId`, a `stashedCookbook` or a saved `cookbookMode`
+ * means this document has already gone through `exitCookbook`/`scaffoldCookbook`
+ * — the only code paths that ever produce either — so it keeps the old
+ * reversible toggle for good.
+ */
+export function isLegacyCookbookMechanism(
+  meta: Pick<ProjectMeta, "stashedCookbook" | "cookbookMode" | "sourceProjectId">,
+): boolean {
+  if (meta.sourceProjectId) return false;
+  return Boolean(meta.stashedCookbook) || Boolean(meta.cookbookMode);
 }
 
 export function useProjectMeta() {

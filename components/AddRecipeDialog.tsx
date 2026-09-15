@@ -27,6 +27,9 @@ export function AddRecipeDialog({
   onAddReadyRecipes,
   lastSource,
   onSourceUsed,
+  libraryLocked = false,
+  librarySingleSelect = false,
+  onLibraryLockedTap,
 }: {
   open: boolean;
   onClose: () => void;
@@ -44,6 +47,12 @@ export function AddRecipeDialog({
   /** A recipe was actually added from this source. Only an add reports — see
       `setLastImportSource`. */
   onSourceUsed: (source: ImportTab) => void;
+  /** See `ImportPanel`'s own `libraryLocked` doc. */
+  libraryLocked?: boolean;
+  /** See `ImportPanel`'s own `librarySingleSelect` doc. */
+  librarySingleSelect?: boolean;
+  /** Opens the Pro upgrade dialog — only ever called while `libraryLocked`. */
+  onLibraryLockedTap?: () => void;
 }) {
   /** Filled in by the import panel; lets Add finish the entry in the form. */
   const commitImportRef = useRef<(() => boolean) | null>(null);
@@ -172,6 +181,9 @@ export function AddRecipeDialog({
             }
             return onAddReadyRecipes(recipes);
           }}
+          libraryLocked={libraryLocked}
+          librarySingleSelect={librarySingleSelect}
+          onLibraryLockedTap={onLibraryLockedTap}
         />
 
         {duplicateTitle && (

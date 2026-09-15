@@ -4,6 +4,7 @@ import type { ComponentType, ReactNode } from "react";
 import type { ImportSummary } from "@/lib/importSummary";
 import { formatRecipeTime } from "@/lib/time";
 import { EmptyState } from "@/components/EmptyState";
+import { ProBadge } from "@/components/ProBadge";
 import {
   ArrowRightIcon,
   CheckIcon,
@@ -39,6 +40,8 @@ function RecipeRow({
   added,
   selected,
   showMeta,
+  locked,
+  singleSelect,
   fallbackIcon: FallbackIcon,
   onToggle,
 }: {
@@ -47,6 +50,17 @@ function RecipeRow({
   selected: boolean;
   /** Whether the cooking time and serving count go under the title. */
   showMeta: boolean;
+  /** This account can't add another recipe at all (see `RecipeSourceList`'s
+   *  own `locked` doc) — the row stays tappable (see `ProBadge`'s own rule:
+   *  it marks a control, never disables it), it just doesn't tick; tapping it
+   *  is a way to reach the upgrade dialog. */
+  locked: boolean;
+  /** Picking here can only ever hold one recipe (see `RecipeSourceList`'s own
+   *  `singleSelect` doc on `RecipeSourceList`). An empty tickbox on every other row promises "tick
+   *  as many as you like," which isn't true here — so an unselected row shows
+   *  nothing at all, and the one that IS picked shows a plain check mark
+   *  instead of a filled box, closer to a radio than a checklist. */
+  singleSelect: boolean;
   fallbackIcon: ComponentType<{ size?: number }>;
   onToggle: () => void;
 }) {
@@ -56,17 +70,19 @@ function RecipeRow({
   return (
     <button
       type="button"
-      role="checkbox"
-      aria-checked={added || selected}
+      role={locked && !added ? "button" : singleSelect ? "radio" : "checkbox"}
+      aria-checked={locked && !added ? undefined : added || selected}
       aria-disabled={added || undefined}
       disabled={added}
       onClick={onToggle}
       aria-label={
         added
           ? `${summary.title} is already in your print list`
-          : selected
-            ? `Don't add ${summary.title}`
-            : `Add ${summary.title}`
+          : locked
+            ? `${summary.title} — printing more than one recipe needs Pro`
+            : selected
+              ? `Don't add ${summary.title}`
+              : `Add ${summary.title}`
       }
       className={`import-recipe-row group flex w-full items-center gap-cp-3 rounded-xl border p-cp-2 text-left transition-colors ${
         selected
@@ -133,6 +149,14 @@ function RecipeRow({
           <CheckIcon size={ICON_SIZE.sm} />
           Added
         </span>
+      ) : locked ? (
+        <ProBadge variant="inline" className="flex-shrink-0" />
+      ) : singleSelect ? (
+        // No box when unselected — an empty tickbox next to every other row
+        // reads as "tick as many as you want," which isn't true here. The
+        // row's own selected styling (the tinted background/border above)
+        // already says which one is picked; this is just the confirming mark.
+        selected && <CheckIcon size={ICON_SIZE.md} className="flex-shrink-0 text-[var(--cp-selected-text)]" />
       ) : (
         /* A tickbox, because that is what it now is. The row still reads as a
            whole control — the box is the mark, not the hit area. */
@@ -177,6 +201,8 @@ export function RecipeSourceList({
   showNoMatches = true,
   fallbackIcon,
   footer,
+  locked = false,
+  singleSelect = false,
 }: {
   heading: string;
   /** e.g. "(120+)" — the source knows whether it has seen its whole library. */
@@ -221,6 +247,18 @@ export function RecipeSourceList({
   /** Anything that belongs under the list: CookPilot's paging sentinel and its
       "Loading more" line. */
   footer?: ReactNode;
+  /** This account already has the one recipe it can print without Pro (see
+      `useQueue`'s `singleRecipeOnly`), so nothing here can be added at all —
+      every row is a Pro badge instead of a tickbox (tapping still calls
+      `onToggle`; the caller opens the upgrade dialog rather than selecting),
+      "Select all" has nothing to offer, and the commit button has nothing to
+      ever commit, so it stays off screen instead of sitting there disabled. */
+  locked?: boolean;
+  /** This account can only ever add one more recipe (see `singleSelect` on
+      the library sources) — "Select all" would build a selection it can
+      never commit in full, so it doesn't offer to, and each row drops its
+      empty tickbox (see `RecipeRow`'s own doc) since it isn't one. */
+  singleSelect?: boolean;
 }) {
   const isSearching = queryText.trim().length > 0;
   const selectedCount = selectedIds.size;
@@ -229,7 +267,9 @@ export function RecipeSourceList({
   const alreadyAdded = summaries.filter((summary) => addedIds.has(summary.queueId)).length;
   // Nothing addable left to select, so the control has nothing to offer.
   const canSelectAll =
-    allSelectableSelected || summaries.some((summary) => !addedIds.has(summary.queueId));
+    !locked &&
+    !singleSelect &&
+    (allSelectableSelected || summaries.some((summary) => !addedIds.has(summary.queueId)));
 
   return (
     <div className="flex flex-col gap-cp-4">
@@ -272,6 +312,13 @@ export function RecipeSourceList({
           )}
         </div>
       </div>
+
+      {locked && (
+        <p className="flex items-center gap-cp-2 rounded-xl bg-page p-cp-3 text-cp-caption text-ink-soft">
+          <ProBadge variant="inline" label={false} className="flex-shrink-0" />
+          Free plan prints one recipe at a time. Tap any recipe to see Pro.
+        </p>
+      )}
 
       <div className="relative">
         <SearchIcon
@@ -323,6 +370,8 @@ export function RecipeSourceList({
                 summary={summary}
                 added={addedIds.has(summary.queueId)}
                 selected={selectedIds.has(summary.queueId)}
+                locked={locked}
+                singleSelect={singleSelect}
                 fallbackIcon={fallbackIcon}
                 onToggle={() => onToggle(summary)}
               />
@@ -344,7 +393,7 @@ export function RecipeSourceList({
 
           It says what the panel's other submit buttons say — see `commitLabel`.
           The count it used to carry is up beside "Select all". */}
-      {!loading && (selectedCount > 0 || summaries.length > 0) && (
+      {!locked && !loading && (selectedCount > 0 || summaries.length > 0) && (
         <div className="import-source-commit">
           <button
             type="button"
