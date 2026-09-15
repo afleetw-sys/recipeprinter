@@ -609,8 +609,8 @@ export function CookPilotLoginDialog({
       closeDisabled={busy}
       label={reason === "purchase" ? "Save your recipes and purchases" : "Create an account or sign in"}
       portal
-      className="fixed inset-0 z-[var(--z-dialog)] flex items-stretch sm:items-center justify-center dialog-scrim p-0 sm:px-cp-4 sm:py-cp-6"
-      panelClassName="panel panel--modal w-full sm:max-w-[420px] h-full sm:h-auto rounded-none border-0 sm:rounded-2xl sm:border p-cp-5 flex flex-col gap-cp-4 relative overflow-y-auto"
+      className="fixed inset-0 z-[var(--z-dialog)] flex items-end sm:items-center justify-center dialog-scrim p-0 sm:px-cp-4 sm:py-cp-6"
+      panelClassName="panel panel--modal mobile-sheet-panel w-full sm:max-w-[420px] max-h-[88dvh] sm:max-h-none sm:h-auto rounded-t-2xl sm:rounded-2xl border-0 sm:border p-cp-5 pb-[max(20px,env(safe-area-inset-bottom))] sm:pb-cp-5 flex flex-col gap-cp-4 relative overflow-y-auto"
     >
       <button
         type="button"
