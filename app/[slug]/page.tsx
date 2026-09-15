@@ -89,6 +89,7 @@ function CaptureBlock({ page }: { page: SeoLandingPage }) {
         submitLabel={page.importSubmitLabel ?? "Start printing"}
         fieldLabel={page.importFieldLabel}
         placeholder={page.importPlaceholder}
+        modes={page.importModes}
       />
       {page.captureReassurance !== false && (
         <p className="mt-cp-3 text-cp-small text-ink-soft">
@@ -176,17 +177,14 @@ export default function SeoLandingPage({ params }: PageProps) {
         </section>
       )}
 
-      {page.intro && (
-        <p className="max-w-[46rem] text-cp-h2-lg font-semibold leading-snug tracking-[-0.02em] text-ink">
-          {page.intro}
-        </p>
-      )}
-
       {page.howTo && page.howTo.length > 0 && (
         <section aria-labelledby="howto-heading">
           <div id="howto-heading">
-            <SectionHeading>How it works</SectionHeading>
+            <SectionHeading>{page.howToHeading ?? "How it works"}</SectionHeading>
           </div>
+          {page.intro && (
+            <p className="mt-cp-2 text-ink-soft text-cp-body leading-relaxed">{page.intro}</p>
+          )}
           <div className="mt-cp-6">
             <HowItWorks steps={page.howTo} />
           </div>
@@ -212,7 +210,7 @@ export default function SeoLandingPage({ params }: PageProps) {
         </section>
       )}
 
-      {page.cookbookPitch && <CookbookPitch />}
+      {page.cookbookPitch && <CookbookPitch body={page.cookbookPitchBody} />}
 
       {page.examples && page.examples.length > 0 && (
         <section aria-labelledby="examples-heading">
@@ -220,7 +218,7 @@ export default function SeoLandingPage({ params }: PageProps) {
             <SectionHeading>Real cards, really printed</SectionHeading>
           </div>
           <p className="mt-cp-2 text-ink-soft text-cp-body leading-relaxed">
-            Actual recipe cards printed with RecipePrinter, no mockups.
+            {page.examplesSubtitle ?? "Actual recipe cards printed with RecipePrinter, no mockups."}
           </p>
           <div className="mt-cp-6">
             <PhotoGallery cardKeys={page.examples} />
@@ -231,7 +229,7 @@ export default function SeoLandingPage({ params }: PageProps) {
       {/* ── FAQ ───────────────────────────────────────────────────────── */}
       <section aria-labelledby="faq-heading">
         <div id="faq-heading">
-          <SectionHeading>Questions people ask</SectionHeading>
+          <SectionHeading>{page.faqHeading ?? "Questions people ask"}</SectionHeading>
         </div>
         <dl className="mt-cp-5 grid gap-cp-4 sm:grid-cols-2">
           {page.faqs.map((item, index) => (

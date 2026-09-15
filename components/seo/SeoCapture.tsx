@@ -3,15 +3,16 @@
 import { useRef, useState, type DragEvent, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
 import { ArrowRightIcon, ICON_SIZE, SpinnerIcon, UploadIcon } from "@/components/icons";
+import { ImportPanel } from "@/components/ImportPanel";
 import { stashPendingImport } from "@/lib/pendingImport";
 import { imageLabel, partitionImageFiles, validateImageFiles } from "@/lib/imageImport";
 import { normalizeImportURL } from "@/lib/cookpilot";
 import { track } from "@/lib/analytics";
-import type { ImportTab } from "@/types/recipe";
+import type { ImportTab, QueueItem } from "@/types/recipe";
 
 // A deliberately minimal capture for the SEO landing pages: just the one input
 // that matches the page's intent (a URL field, a paste box, or a photo dropzone)
-// plus an import button, no mode toggles, no other options. On submit it stashes
+// plus an import button, no mode toggle, no other options. On submit it stashes
 // the payload and hands off to the print page, which finishes the import.
 //
 // It used to hand off to "/", and that was teaching the wrong thing in the first
@@ -23,6 +24,8 @@ import type { ImportTab } from "@/types/recipe";
 // printable card actually is skips the lesson and the round trip both.
 //
 // An EMPTY field is the exception and still goes to "/" — see `openWorkspace`.
+// This whole single-field path is skipped when `modes` names more than one
+// source — see the component below.
 type CaptureMode = "url" | "text" | "image";
 
 function resolveMode(tab?: ImportTab): CaptureMode {
@@ -31,11 +34,45 @@ function resolveMode(tab?: ImportTab): CaptureMode {
   return "url";
 }
 
+/**
+ * Hands a stashed payload to `/print`, which finishes the import — shared by
+ * both branches below (the lightweight single-field form and the full
+ * ImportPanel switch), and the same shape PrinterWorkspace's own `handoff`
+ * uses for the homepage. Kept here rather than duplicated in each branch.
+ */
+function useHandoff() {
+  const router = useRouter();
+  const [busy, setBusy] = useState(false);
+
+  async function handoff(payload: Parameters<typeof stashPendingImport>[0]) {
+    setBusy(true);
+    track("recipe_import_submitted", {
+      surface: "capture",
+      source:
+        payload.kind === "images" || payload.kind === "imageFiles"
+          ? "image"
+          : payload.kind === "text"
+            ? "text"
+            : payload.kind === "ready"
+              ? (payload.recipes[0]?.method ?? "manual")
+              : "url",
+    });
+    const ok = await stashPendingImport(payload);
+    // Even if persistence failed (private mode, quota), send them to the working
+    // tool rather than stranding them on the landing page.
+    router.push("/print");
+    if (!ok) setBusy(false);
+  }
+
+  return { router, busy, setBusy, handoff };
+}
+
 export function SeoCapture({
   initialMode = "url",
   submitLabel = "Start printing",
   fieldLabel,
   placeholder,
+  modes,
 }: {
   initialMode?: ImportTab;
   submitLabel?: string;
@@ -49,32 +86,110 @@ export function SeoCapture({
    * "Instagram link" is an answer to the question the visitor arrived with. It
    * also quietly rules a source in — someone holding a Reel URL, unsure whether
    * that counts as a recipe link, can stop wondering.
+   *
+   * Only read on the single-field path — a page showing every source (see
+   * `modes`) is inherently general, so ImportPanel's own generic copy applies.
    */
   fieldLabel?: string;
   placeholder?: string;
+  /**
+   * Which sources this page offers. Defaults to just `initialMode` — the
+   * deliberately minimal single field every existing page keeps, since a page
+   * written around one search phrase (Pinterest, a photo, a paste) answering
+   * with every other mode too is a box nobody who searched that phrase asked
+   * for. Name two or more and this renders the real ImportPanel switch — the
+   * same Link / Recipe apps / Image / Text control the homepage and the
+   * Add-recipe dialog use — restricted to the sources listed, instead of a
+   * second implementation of the same picker.
+   */
+  modes?: ImportTab[];
 }) {
-  const router = useRouter();
-  const mode = resolveMode(initialMode);
+  const singleMode = !modes || modes.length <= 1 ? (modes?.[0] ?? initialMode) : null;
+
+  if (singleMode) {
+    return (
+      <SingleFieldCapture
+        mode={resolveMode(singleMode)}
+        submitLabel={submitLabel}
+        fieldLabel={fieldLabel}
+        placeholder={placeholder}
+      />
+    );
+  }
+
+  return (
+    <FullCapture initialMode={initialMode} submitLabel={submitLabel} modes={modes ?? undefined} />
+  );
+}
+
+/** The multi-source switch — a thin adapter over the shared ImportPanel,
+    wired to stash-and-redirect instead of adding to a live queue (there is
+    none here; every landing page hands off to `/print` the moment something
+    validates). */
+function FullCapture({
+  initialMode,
+  submitLabel,
+  modes,
+}: {
+  initialMode: ImportTab;
+  submitLabel: string;
+  modes: ImportTab[] | undefined;
+}) {
+  const { busy, handoff } = useHandoff();
+
+  return (
+    // The hero photo sits beside this in a `items-center` grid (LandingHero),
+    // so its own height decides where the photo lands. Recipe apps runs
+    // ~150px taller than the Link field, and without a floor here the photo
+    // visibly jumped every time the tab changed — reserving the tallest
+    // mode's height up front keeps that grid row a constant height across
+    // all four, at the cost of some empty space under the shorter ones.
+    <div className="min-h-[400px]">
+      <ImportPanel
+        // Always empty, and that is the point: this page holds no print list,
+        // so nothing can be marked as already added and every enabled source
+        // stays on show — see PrinterWorkspace, which does the same.
+        items={[]}
+        workspace
+        modes={modes}
+        initialMode={initialMode}
+        submitLabel={submitLabel}
+        submitBusy={busy}
+        autoFocusUrl={false}
+        onAddUrl={(url) => void handoff({ kind: "url", url })}
+        onAddText={(text) => void handoff({ kind: "text", text })}
+        onAddImageFiles={(files, label) => void handoff({ kind: "imageFiles", files, label })}
+        onAddReadyRecipes={(recipes: QueueItem[]) => {
+          if (recipes.length === 0) return 0;
+          void handoff({ kind: "ready", recipes });
+          return recipes.length;
+        }}
+      />
+    </div>
+  );
+}
+
+/** The original one-field capture, unchanged in behavior: a URL field, a
+    paste box, or a photo dropzone, matching whichever single mode the page
+    was given. */
+function SingleFieldCapture({
+  mode,
+  submitLabel,
+  fieldLabel,
+  placeholder,
+}: {
+  mode: CaptureMode;
+  submitLabel: string;
+  fieldLabel?: string;
+  placeholder?: string;
+}) {
+  const { router, busy, setBusy, handoff } = useHandoff();
   const [url, setUrl] = useState("");
   const [text, setText] = useState("");
   const [files, setFiles] = useState<File[]>([]);
   const [dragging, setDragging] = useState(false);
-  const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const warmedRef = useRef(false);
-
-  async function handoff(payload: Parameters<typeof stashPendingImport>[0]) {
-    setBusy(true);
-    track("recipe_import_submitted", {
-      surface: "capture",
-      source: payload.kind === "images" ? "image" : payload.kind === "text" ? "text" : "url",
-    });
-    const ok = await stashPendingImport(payload);
-    // Even if persistence failed (private mode, quota), send them to the working
-    // tool rather than stranding them on the landing page.
-    router.push("/print");
-    if (!ok) setBusy(false);
-  }
 
   /**
    * Start fetching the print page the moment someone touches this.
@@ -179,11 +294,7 @@ export function SeoCapture({
     // show a photo being worked on.
     const validationError = validateImageFiles(files);
     if (validationError) return setError(validationError.message);
-    setBusy(true);
-    track("recipe_import_submitted", { surface: "capture", source: "image" });
-    const ok = await stashPendingImport({ kind: "imageFiles", files, label: imageLabel(files) });
-    router.push("/print");
-    if (!ok) setBusy(false);
+    return handoff({ kind: "imageFiles", files, label: imageLabel(files) });
   }
 
   const submitButton = (
@@ -296,7 +407,6 @@ export function SeoCapture({
           {submitButton}
         </>
       )}
-
     </form>
   );
 }

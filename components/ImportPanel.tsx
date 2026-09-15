@@ -73,6 +73,7 @@ export function ImportPanel({
   submitBusy = false,
   hideSubmit = false,
   showAllModes = false,
+  modes,
   onModeChange,
   autoFocusUrl = true,
   onAddUrl,
@@ -85,6 +86,13 @@ export function ImportPanel({
   workspace?: boolean;
   initialMode?: ImportTab;
   submitLabel?: string;
+  /** Restricts which sources the toggle offers — the workspace rail and the
+      Add-recipe dialog both want every source, so they leave this unset and
+      get all four; an SEO page built around one search phrase (or a
+      deliberately narrow set) passes the subset that actually applies.
+      `initialMode` must be one of these. A single entry drops the toggle
+      row entirely: one source is a field, not a choice. */
+  modes?: ImportTab[];
   /** The submit is busy taking you somewhere, so say so on the button.
       Owned by the surface, not by this panel: the panel's own work ends the
       moment it validates (see `handleSubmit`), and what takes the time happens
@@ -157,7 +165,12 @@ export function ImportPanel({
     // back from someone who had just moved to another field.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
-  const overflowActive = OVERFLOW_MODES.some((option) => option.id === mode);
+  // Unfiltered by default (every existing caller), so this changes nothing
+  // for the workspace rail or the Add-recipe dialog.
+  const enabledModes = modes ? MODES.filter((option) => modes.includes(option.id)) : MODES;
+  const enabledPrimary = modes ? PRIMARY_MODES.filter((option) => modes.includes(option.id)) : PRIMARY_MODES;
+  const enabledOverflow = modes ? OVERFLOW_MODES.filter((option) => modes.includes(option.id)) : OVERFLOW_MODES;
+  const overflowActive = enabledOverflow.some((option) => option.id === mode);
   // While the print list is empty, surface every import option so people learn
   // what's available; once a recipe is added, tuck the extras into the overflow.
   // Inside the add dialog that rule inverts — see `showAllModes`.
@@ -373,54 +386,57 @@ export function ImportPanel({
       aria-label={workspace ? "Add a recipe" : "Import recipes"}
     >
 
-      {/* Mode toggle */}
-      <div className="mode-toggle-shell">
-        <ButtonToggle
-          className={`mode-toggle ${expanded ? "mode-toggle--expanded" : ""}`}
-          label="Import source"
-          options={expanded ? MODES : PRIMARY_MODES}
-          value={mode}
-          onChange={chooseMode}
-        >
-          {!expanded && (
-            <div ref={overflowRef} className="mode-toggle-overflow">
-              {/* Wears the option's own class so it sits in the row as a
-                  sibling, but it opens a menu rather than choosing a mode, so
-                  it is not one of the toggle's options. */}
-              <button
-                type="button"
-                aria-label="More import options"
-                aria-haspopup="menu"
-                aria-expanded={overflowOpen}
-                className={`btn-toggle__option btn-toggle__option--icon ${
-                  overflowActive ? "is-active" : ""
-                }`}
-                onClick={() => setOverflowOpen((open) => !open)}
-              >
-                <MoreVerticalIcon size={18} />
-              </button>
+      {/* Mode toggle — one enabled source is a field, not a choice, so there
+          is nothing to pick between and the row is skipped entirely. */}
+      {enabledModes.length > 1 && (
+        <div className="mode-toggle-shell">
+          <ButtonToggle
+            className={`mode-toggle ${expanded ? "mode-toggle--expanded" : ""}`}
+            label="Import source"
+            options={expanded ? enabledModes : enabledPrimary}
+            value={mode}
+            onChange={chooseMode}
+          >
+            {!expanded && enabledOverflow.length > 0 && (
+              <div ref={overflowRef} className="mode-toggle-overflow">
+                {/* Wears the option's own class so it sits in the row as a
+                    sibling, but it opens a menu rather than choosing a mode, so
+                    it is not one of the toggle's options. */}
+                <button
+                  type="button"
+                  aria-label="More import options"
+                  aria-haspopup="menu"
+                  aria-expanded={overflowOpen}
+                  className={`btn-toggle__option btn-toggle__option--icon ${
+                    overflowActive ? "is-active" : ""
+                  }`}
+                  onClick={() => setOverflowOpen((open) => !open)}
+                >
+                  <MoreVerticalIcon size={18} />
+                </button>
 
-              {overflowOpen && (
-                <div className="cp-menu mode-toggle-menu" role="menu" aria-label="More import options">
-                  {OVERFLOW_MODES.map(({ id, label, icon: Icon }) => (
-                    <button
-                      key={id}
-                      type="button"
-                      role="menuitemradio"
-                      aria-checked={mode === id}
-                      className={`cp-menu__item ${mode === id ? "is-active" : ""}`}
-                      onClick={() => chooseMode(id)}
-                    >
-                      <Icon size={18} />
-                      <span>{label}</span>
-                    </button>
-                  ))}
-                </div>
-              )}
-            </div>
-          )}
-        </ButtonToggle>
-      </div>
+                {overflowOpen && (
+                  <div className="cp-menu mode-toggle-menu" role="menu" aria-label="More import options">
+                    {enabledOverflow.map(({ id, label, icon: Icon }) => (
+                      <button
+                        key={id}
+                        type="button"
+                        role="menuitemradio"
+                        aria-checked={mode === id}
+                        className={`cp-menu__item ${mode === id ? "is-active" : ""}`}
+                        onClick={() => chooseMode(id)}
+                      >
+                        <Icon size={18} />
+                        <span>{label}</span>
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
+          </ButtonToggle>
+        </div>
+      )}
 
       {mode === "apps" ? (
         <div className="mt-cp-4">

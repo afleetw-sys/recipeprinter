@@ -168,7 +168,7 @@ export const PRINTED_CARDS: Record<string, PrintedCard> = {
     width: 1200,
     height: 1600,
     recipe: "Caprese Pasta Salad",
-    template: "Bistro",
+    template: "Classic",
     alt: "A Caprese pasta salad recipe card printed with RecipePrinter, standing on a sunny outdoor table.",
   },
   korean: {
@@ -184,7 +184,7 @@ export const PRINTED_CARDS: Record<string, PrintedCard> = {
     width: 1200,
     height: 1600,
     recipe: "Basil Pesto",
-    template: "Keepsake",
+    template: "Pantry",
     alt: "A basil pesto recipe card printed with RecipePrinter, standing on a sunny outdoor table.",
   },
 };

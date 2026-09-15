@@ -17,12 +17,18 @@ import { SectionHeading } from "@/components/seo/LandingFrame";
 // preserve-family-recipes, the comparison pages) leave `cookbookPitch` off.
 // ─────────────────────────────────────────────────────────────────────────
 
-export function CookbookPitch({ heading }: { heading?: string }) {
+export function CookbookPitch({ heading, body }: { heading?: string; body?: string }) {
   return (
     <section aria-labelledby="cookbook-pitch-heading">
       <div id="cookbook-pitch-heading">
         <SectionHeading>{heading ?? "When the stack becomes a book"}</SectionHeading>
       </div>
+      <p className="mt-cp-2 text-ink-soft text-cp-body leading-relaxed">
+        <Link href="/family-recipe-book" className="font-bold text-ink hover:underline">
+          Family recipe book ideas
+        </Link>{" "}
+        walks through what goes in one and how people put them together.
+      </p>
       <div className="mt-cp-6">
         <FeatureRows
           features={[
@@ -30,17 +36,12 @@ export function CookbookPitch({ heading }: { heading?: string }) {
               heading: "Bind the recipes you keep coming back to",
               image: "bound-cookbook",
               body:
+                body ??
                 "Once enough recipes have earned a place, RecipePrinter sorts them into chapters, generates the cover, and builds the table of contents. Rearrange anything you want moved, then print it at home on US Letter or send the file to Lulu or Blurb for a hardcover or spiral bound cookbook. Each cookbook is its own one-off purchase.",
             },
           ]}
         />
       </div>
-      <p className="mt-cp-5 text-ink-soft text-cp-body leading-relaxed">
-        <Link href="/family-recipe-book" className="font-bold text-ink hover:underline">
-          Family recipe book ideas
-        </Link>{" "}
-        walks through what goes in one and how people put them together.
-      </p>
     </section>
   );
 }

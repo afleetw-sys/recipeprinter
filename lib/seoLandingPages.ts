@@ -90,6 +90,13 @@ export type SeoLandingPage = {
   /** Placeholder text inside the capture field, for the same reason as
       `importFieldLabel`. Defaults to the generic per-mode copy. */
   importPlaceholder?: string;
+  /** Which sources this page offers. Defaults to just `initialImportMode` —
+      the deliberately minimal single field every page keeps by design (see
+      the file-level comment on SeoCapture). Name two or more only where the
+      page's own subject IS the choice between sources, not one of them —
+      it swaps the field for the shared ImportPanel switch, restricted to
+      the sources listed. */
+  importModes?: ImportTab[];
   /** A FEATURE_IMAGES key for the hero photo, when the page's subject is not
       one of the printed cards. Without it every utility page opens on the same
       card. */
@@ -138,7 +145,8 @@ export type SeoLandingPage = {
    */
   pickerGroup?: "source" | "output" | "comparison";
   lede: string;
-  /** One-sentence emotional hook opening the content scaffold. */
+  /** One-sentence subtitle under the how-to section's heading. Renders only
+      alongside `howTo` — nothing on its own if that's unset. */
   intro?: string;
   /**
    * Render the shared cookbook section (components/seo/CookbookPitch).
@@ -150,8 +158,16 @@ export type SeoLandingPage = {
    * cookbook itself, or the same claim lands twice.
    */
   cookbookPitch?: boolean;
+  /** Overrides the shared section's body paragraph, for a page that wants
+      the cookbook mentioned more lightly than the default pitch argues it —
+      own recipe-card or one-off intent shouldn't read as a cookbook page.
+      The heading, the feature image, and the link to family-recipe-book
+      stay the shared ones. */
+  cookbookPitchBody?: string;
   /** "How to …" steps, renders the section and the HowTo JSON-LD. */
   howTo?: { name: string; text: string }[];
+  /** Heading over the how-to section. Defaults to "How it works". */
+  howToHeading?: string;
   /** 2–3 deep-dive sections, each targeting a secondary keyword, with a proof
       visual. `caption` labels that row's visual; omit it when the image already
       labels itself, rather than captioning it with something generic. */
@@ -187,6 +203,11 @@ export type SeoLandingPage = {
   };
   /** Real printed-card photo keys (PRINTED_CARDS) for the examples gallery. */
   examples?: string[];
+  /** Subtitle under the examples gallery's heading. Defaults to "Actual
+      recipe cards printed with RecipePrinter, no mockups." */
+  examplesSubtitle?: string;
+  /** Heading over the FAQ section. Defaults to "Questions people ask". */
+  faqHeading?: string;
   /** `links` hangs outbound chips under an answer, for the questions whose
       real answer is somewhere else. The JSON-LD keeps `answer` alone: the
       structured data is the answer, not the chrome around it. */
@@ -486,31 +507,39 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
     intent: "Utility SEO",
     initialImportMode: "url",
     importSubmitLabel: "Make recipe card",
-    title: "Recipe Card Printer",
+    importModes: ["url", "apps", "image", "text"],
+    title: "Recipe Card Printer | Make & Print 4×6 Recipe Cards",
     description:
-      "A recipe card maker and printer: turn links, photos, screenshots, or text into printable recipe cards, including 4x6 and recipe-box-friendly layouts. Importing and editing are free; 4x6 card printing is a RecipePrinter Pro feature.",
-    h1: "Printable recipe card generator",
-    // "recipe card printer" is the phrase this page's traffic actually arrives
-    // on, and it is the one word the h1 and title both leave out.
+      "Turn recipes from websites, photos, screenshots, and text into printable 4×6 recipe cards. Preview your card online, choose a design, and print it at home.",
+    h1: "Recipe Card Printer",
     anchor: "Recipe card printer",
     lede:
-      "Whatever form the recipe is in, it comes back as a 4 by 6 card with the ingredients and steps already set, ready for the box — a RecipePrinter Pro feature, free to preview on your own recipe before you print it.",
+      "Turn recipes from websites, photos, screenshots, or text into clean 4×6 recipe cards ready to print and keep.",
+    captureReassurance:
+      "Free to import and preview. 4×6 card printing is included with RecipePrinter Pro.",
+    intro:
+      "RecipePrinter works as a printable recipe card generator for recipes you already have.",
+    cookbookPitchBody:
+      "When your recipe card collection grows into something bigger, RecipePrinter can turn it into a cookbook. Organize recipes into chapters, create a cover and table of contents, rearrange pages, then print at home or export the file for professional printing.",
+    examplesSubtitle: "Real 4×6 recipe cards printed with RecipePrinter. No mockups.",
+    faqHeading: "Recipe card printing questions",
+    howToHeading: "How to print recipe cards",
     howTo: [
       {
-        name: "Add the recipe",
-        text: "Paste a recipe link, drop in a photo of an old card, or paste the text. The ingredients and steps land where they belong.",
+        name: "Add your recipe",
+        text: "Paste a recipe link, upload a photo, or paste the text. RecipePrinter pulls the ingredients and steps into a clean format.",
       },
       {
-        name: "Switch to the card size",
-        text: "In print setup, choose the 4 by 6 card instead of a full page. Every recipe waiting to print changes with it. Card printing is a RecipePrinter Pro feature; you can preview it free before printing.",
+        name: "Choose 4×6 recipe cards",
+        text: "Switch from a full page to the 4×6 card size. You can preview the finished card before printing with Pro.",
       },
       {
-        name: "Pick a theme",
-        text: "Themes change the card's type, borders, and how the photo sits. Two are free; every other theme comes with RecipePrinter Pro.",
+        name: "Pick a design",
+        text: "Choose a theme for the type, borders, and photo layout. Pro includes every premium theme.",
       },
       {
-        name: "Print and file it",
-        text: "Turn on cut lines if you want a trim guide, print on card stock, and file the finished card in the box.",
+        name: "Print and keep it",
+        text: "Print directly on 4×6 card stock or use cut lines to trim a letter-size sheet, then add the finished card to your recipe box.",
       },
     ],
     featureSections: [
@@ -529,6 +558,11 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
     ],
     examples: ["caprese", "korean", "pesto"],
     faqs: [
+      {
+        question: "Can I turn an online recipe into a recipe card?",
+        answer:
+          "Yes. Paste the recipe link and RecipePrinter pulls out the ingredients and instructions, removes the surrounding page clutter, and formats it as a printable recipe card.",
+      },
       {
         question: "What should I print recipe cards on?",
         answer:
