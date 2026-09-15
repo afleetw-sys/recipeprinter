@@ -138,34 +138,33 @@ function FullCapture({
   const { busy, handoff } = useHandoff();
 
   return (
-    // The hero photo sits beside this in a `items-center` grid (LandingHero),
-    // so its own height decides where the photo lands. Recipe apps runs
-    // ~150px taller than the Link field, and without a floor here the photo
-    // visibly jumped every time the tab changed — reserving the tallest
-    // mode's height up front keeps that grid row a constant height across
-    // all four, at the cost of some empty space under the shorter ones.
-    <div className="min-h-[400px]">
-      <ImportPanel
-        // Always empty, and that is the point: this page holds no print list,
-        // so nothing can be marked as already added and every enabled source
-        // stays on show — see PrinterWorkspace, which does the same.
-        items={[]}
-        workspace
-        modes={modes}
-        initialMode={initialMode}
-        submitLabel={submitLabel}
-        submitBusy={busy}
-        autoFocusUrl={false}
-        onAddUrl={(url) => void handoff({ kind: "url", url })}
-        onAddText={(text) => void handoff({ kind: "text", text })}
-        onAddImageFiles={(files, label) => void handoff({ kind: "imageFiles", files, label })}
-        onAddReadyRecipes={(recipes: QueueItem[]) => {
-          if (recipes.length === 0) return 0;
-          void handoff({ kind: "ready", recipes });
-          return recipes.length;
-        }}
-      />
-    </div>
+    // No reserved min-height here on purpose. That was the original fix for
+    // the hero photo jumping as the mode changed height — it worked, but it
+    // also left dead space below every shorter mode, pushing whatever comes
+    // after this (the reassurance line) down with it. The real fix is the
+    // page passing `heroAlign: "start"` to LandingHero: top-aligned, the
+    // photo's position never depended on this column's height to begin
+    // with, so there's nothing left to reserve against.
+    <ImportPanel
+      // Always empty, and that is the point: this page holds no print list,
+      // so nothing can be marked as already added and every enabled source
+      // stays on show — see PrinterWorkspace, which does the same.
+      items={[]}
+      workspace
+      modes={modes}
+      initialMode={initialMode}
+      submitLabel={submitLabel}
+      submitBusy={busy}
+      autoFocusUrl={false}
+      onAddUrl={(url) => void handoff({ kind: "url", url })}
+      onAddText={(text) => void handoff({ kind: "text", text })}
+      onAddImageFiles={(files, label) => void handoff({ kind: "imageFiles", files, label })}
+      onAddReadyRecipes={(recipes: QueueItem[]) => {
+        if (recipes.length === 0) return 0;
+        void handoff({ kind: "ready", recipes });
+        return recipes.length;
+      }}
+    />
   );
 }
 
