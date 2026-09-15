@@ -106,6 +106,7 @@ export function LandingHero({
   above,
   align = "split",
   asideAlign = "center",
+  asideWidth = "even",
 }: {
   h1: string;
   lede: string;
@@ -136,6 +137,13 @@ export function LandingHero({
       position every time that height does. No effect on `centered`/solo
       layouts, which never had a second column to align against. */
   asideAlign?: "center" | "start";
+  /** Column ratio of the two `split` columns. `even` (the default,
+      unchanged everywhere else) is a plain 50/50 grid. `narrow` gives the
+      text/actions column more of the row — the point of shrinking the photo
+      on a multi-source capture page is to hand that width back to the
+      wider toggle and its longer field row, not to leave it empty beside a
+      smaller photo. */
+  asideWidth?: "even" | "narrow";
 }) {
   const centered = align === "centered";
   // Without a photo there is no second column to balance, so the grid would
@@ -152,7 +160,9 @@ export function LandingHero({
             ? "flex flex-col gap-cp-7 py-cp-3"
             : soloColumn
               ? "py-cp-3"
-              : `grid ${asideAlign === "start" ? "items-start" : "items-center"} gap-cp-7 py-cp-3 lg:grid-cols-2 lg:gap-[64px]`
+              : `grid ${asideAlign === "start" ? "items-start" : "items-center"} gap-cp-7 py-cp-3 ${
+                  asideWidth === "narrow" ? "lg:grid-cols-[3fr_2fr]" : "lg:grid-cols-2"
+                } lg:gap-[64px]`
         }
         aria-labelledby="landing-heading"
       >
