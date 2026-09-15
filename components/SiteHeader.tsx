@@ -45,10 +45,11 @@ export function SiteHeader({
   sticky?: boolean;
   /** Paints the sticky bar with the workspace's off-white `bg-chrome` — the
       /print editor only (and its own loading/error states, which are still
-      that page). Every other sticky header stays transparent (or, on a
-      marketing page, its own plain-white band — see below); a background
-      here used to be tied to `compact` alone, which every app-chrome-styled
-      header opted into whether or not it was actually /print. */
+      that page). Every other sticky header, marketing pages included, stays
+      transparent; a background here used to be tied to `compact` alone,
+      which every app-chrome-styled header opted into whether or not it was
+      actually /print, and marketing headers carried their own plain-white
+      fill regardless of this prop at all. */
   chrome?: boolean;
   saveStatus?: AccountSaveStatus | null;
   onRetrySave?: () => void;
@@ -100,20 +101,19 @@ export function SiteHeader({
                (77-81) — raising the header to the tier the app's own scale
                already reserves for "the workspace header, the rail, the
                mobile bars" clears all of them at once. */
-            `sticky top-0 z-[var(--z-sticky)] border-b border-line ${
+            `sticky top-0 z-[var(--z-sticky)] ${
               compact ? "py-cp-2" : "py-cp-3"
             } ${
               /* Only the actual `chrome` callers (the /print workspace, and
                  the loading/error states that are still that same page) get
-                 a fill: there the bar is one side of the frame around the
+                 a fill — there the bar is one side of the frame around the
                  deck and takes the frame's near-white, matching the rail and
-                 the settings panel. Everything else that merely borrowed
-                 `compact`'s sizing for app-chrome-styled controls (a global
-                 error page, a share-link redirect) stays transparent — that
-                 off-white was never meant to follow `compact` everywhere it
-                 was used. A marketing page has no frame at all; its bar is
-                 its own plain-white band over the page. */
-              chrome ? "bg-chrome" : compact ? "" : "bg-card"
+                 the settings panel, and the hairline is what separates it
+                 from the deck below. Every other sticky header — marketing
+                 pages included — stays fully transparent, no border either:
+                 with nothing painted behind it, a dividing line would just be
+                 a stray rule floating over whatever scrolls underneath. */
+              chrome ? "bg-chrome border-b border-line" : ""
             }`
           : ""
       }`}
