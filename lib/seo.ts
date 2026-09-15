@@ -264,7 +264,7 @@ export const FAQ: FaqItem[] = [
     answer:
       "Yes. Paste a recipe link, upload a screenshot or photo, or paste recipe text, then choose a printable recipe card layout before printing.",
     guides: [
-      "printable-recipe-card-generator",
+      "recipe-card-printer",
     ],
   },
   {
@@ -337,7 +337,7 @@ export const FAQ: FaqItem[] = [
     answer:
       "A 4 by 6 card, the size a standard recipe box takes, or a letter-size page for a binder. Cut lines give you a trim guide when you print on card stock, and a recipe too long for one side prints on the back too.",
     guides: [
-      "printable-recipe-card-generator",
+      "recipe-card-printer",
     ],
   },
   {

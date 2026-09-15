@@ -42,6 +42,15 @@ const nextConfig = {
         destination: "/print-recipe-from-website",
         permanent: true,
       },
+      {
+        // Same page, renamed to the phrase it was already ranking for —
+        // "recipe card printer" is what people search, and the old slug
+        // ("printable recipe card generator") never appeared anywhere on
+        // the page except in the URL itself once the title changed to match.
+        source: "/printable-recipe-card-generator",
+        destination: "/recipe-card-printer",
+        permanent: true,
+      },
     ];
   },
 

@@ -294,7 +294,7 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
       },
     ],
     links: [
-      { href: "/printable-recipe-card-generator", label: "Make printable recipe cards" },
+      { href: "/recipe-card-printer", label: "Make printable recipe cards" },
       { href: "/print-recipe-without-ads", label: "Print recipes without ads" },
       { href: "/just-the-recipe-alternative", label: "Just the Recipe alternative" },
       { href: "/convert-recipe-to-pdf", label: "Convert a recipe to PDF" },
@@ -461,11 +461,11 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
     links: [
       { href: "/print-recipe-from-website", label: "Print from a website" },
       { href: "/print-recipe-without-ads", label: "Print without ads" },
-      { href: "/printable-recipe-card-generator", label: "Make recipe cards" },
+      { href: "/recipe-card-printer", label: "Make recipe cards" },
     ],
   },
   {
-    slug: "printable-recipe-card-generator",
+    slug: "recipe-card-printer",
     contentUpdated: "2026-09-09",
     lastReviewed: "2026-09-09",
     primaryKeyword: "printable recipe card generator",
@@ -486,7 +486,7 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
     intent: "Utility SEO",
     initialImportMode: "url",
     importSubmitLabel: "Make recipe card",
-    title: "Recipe Card Printer and Maker",
+    title: "Recipe Card Printer",
     description:
       "A recipe card maker and printer: turn links, photos, screenshots, or text into printable recipe cards, including 4x6 and recipe-box-friendly layouts. Importing and editing are free; 4x6 card printing is a RecipePrinter Pro feature.",
     h1: "Printable recipe card generator",
@@ -644,7 +644,7 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
     links: [
       { href: "/preserve-family-recipes", label: "Preserve family recipes" },
       { href: "/reciscan-alternative", label: "ReciScan alternative" },
-      { href: "/printable-recipe-card-generator", label: "Recipe card printer" },
+      { href: "/recipe-card-printer", label: "Recipe card printer" },
       { href: "/family-recipe-book", label: "Build a family cookbook" },
     ],
   },
@@ -1311,7 +1311,7 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
           "Yes. Print letter pages for a three ring binder or 4 by 6 cards for a box, and every recipe comes out at the same size with the same layout, so a collection built over months still looks like one collection.",
         links: [
           { href: "/recipe-binder", label: "Recipe binder ideas" },
-          { href: "/printable-recipe-card-generator", label: "Printable recipe cards" },
+          { href: "/recipe-card-printer", label: "Printable recipe cards" },
         ],
       },
       {
@@ -1329,7 +1329,7 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
       { href: "/recipe-binder", label: "Recipe binder ideas" },
       { href: "/print-paprika-recipes", label: "Print Paprika recipes" },
       { href: "/print-pinterest-recipes", label: "Print Pinterest recipes" },
-      { href: "/printable-recipe-card-generator", label: "Printable recipe cards" },
+      { href: "/recipe-card-printer", label: "Printable recipe cards" },
     ],
   },
   {
@@ -1371,7 +1371,7 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
     links: [
       { href: "/organize-recipes", label: "Organize recipes" },
       { href: "/print-paprika-recipes", label: "Print Paprika recipes" },
-      { href: "/printable-recipe-card-generator", label: "Printable recipe cards" },
+      { href: "/recipe-card-printer", label: "Printable recipe cards" },
       { href: "/family-recipe-book", label: "Family recipe book ideas" },
     ],
   },
@@ -1469,7 +1469,7 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
       { href: "/print-recipe-from-photo", label: "Print a recipe from a photo" },
       { href: "/reciscan-alternative", label: "ReciScan alternative" },
       { href: "/recipe-binder", label: "Build a recipe binder" },
-      { href: "/printable-recipe-card-generator", label: "Make recipe cards" },
+      { href: "/recipe-card-printer", label: "Make recipe cards" },
     ],
   },
   {
@@ -1691,7 +1691,7 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
     links: [
       { href: "/print-recipe-from-website", label: "Print a recipe from a website" },
       { href: "/print-recipe-without-ads", label: "Print without ads" },
-      { href: "/printable-recipe-card-generator", label: "Make printable recipe cards" },
+      { href: "/recipe-card-printer", label: "Make printable recipe cards" },
     ],
   },
   {
