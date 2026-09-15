@@ -56,12 +56,14 @@ export function HeroProductPhoto({
   wide?: boolean;
   /** `card` (default, unchanged everywhere else) is the light photo-frame
       every printed-card hero uses — a thin border, barely-there padding,
-      cropped to a fixed 4:3. `document` is for a hero that IS a document
-      (a saved PDF, say): a dark canvas with real padding and a shadow, so
-      the page reads as something being VIEWED rather than a flat card
-      graphic, and the full page shows uncropped instead of being forced
-      into the 4:3 slot a photo needs. */
-  frame?: "card" | "document";
+      cropped to a fixed 4:3. `document` is a dark, padded canvas with a
+      shadow, for a hero that IS a document but still wants to read as
+      something being VIEWED. `none` keeps that same light hairline
+      border/padding but drops the 4:3 crop, showing the image at its own
+      aspect ratio uncropped — for a screenshot whose content shouldn't
+      lose any edges (a whole window, say) but still wants the same quiet
+      border every other hero photo has. */
+  frame?: "card" | "document" | "none";
 }) {
   const named = imageKey ? FEATURE_IMAGES[imageKey] : undefined;
   const card = named ?? PRINTED_CARDS[cardKey] ?? PRINTED_CARDS.korean;
@@ -70,6 +72,25 @@ export function HeroProductPhoto({
   // slot already; honour its own objectPosition, or leave it centred.
   const objectPosition = named ? (named.objectPosition ?? "50% 50%") : "50% 86%";
   const isDocument = frame === "document";
+  const isUncropped = frame === "none" || isDocument;
+  const image = (
+    <Image
+      src={card.src}
+      width={card.width}
+      height={card.height}
+      alt={card.alt}
+      sizes="(max-width: 1023px) 90vw, 460px"
+      priority={priority}
+      className={
+        isDocument
+          ? "h-auto w-full rounded-sm shadow-2xl"
+          : isUncropped
+            ? "h-auto w-full rounded-xl"
+            : "aspect-[4/3] w-full rounded-xl object-cover"
+      }
+      style={isUncropped ? undefined : { objectPosition }}
+    />
+  );
   return (
     <div className={`relative mx-auto w-full ${wide ? "max-w-[860px]" : "max-w-[460px]"}`}>
       <div
@@ -79,16 +100,7 @@ export function HeroProductPhoto({
             : "overflow-hidden rounded-2xl border border-line bg-card p-1.5"
         }
       >
-        <Image
-          src={card.src}
-          width={card.width}
-          height={card.height}
-          alt={card.alt}
-          sizes="(max-width: 1023px) 90vw, 460px"
-          priority={priority}
-          className={isDocument ? "h-auto w-full rounded-sm shadow-2xl" : "aspect-[4/3] w-full rounded-xl object-cover"}
-          style={isDocument ? undefined : { objectPosition }}
-        />
+        {image}
       </div>
       {annotation && (
         <span className="absolute -bottom-3 left-5 inline-flex items-center gap-1.5 rounded-full border border-line bg-card px-cp-3 py-1.5 text-cp-caption font-bold text-ink">
