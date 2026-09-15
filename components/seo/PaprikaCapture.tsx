@@ -8,6 +8,7 @@ import {
 } from "@/components/import/PaprikaImportSource";
 import { SpinnerIcon, UploadIcon } from "@/components/icons";
 import { cachedPaprikaLibrary } from "@/lib/paprikaLibrary";
+import { useSingleRecipeOnly } from "@/lib/useSingleRecipeOnly";
 import type { QueueItem } from "@/types/recipe";
 
 /** Paprika-only entry into the same library picker used on the homepage. */
@@ -18,6 +19,13 @@ export function PaprikaCapture({
   busy: boolean;
   onAddRecipes: (recipes: QueueItem[]) => number;
 }) {
+  // This capture always starts from an empty print list (`items={[]}` below,
+  // same as PrinterWorkspace's own front door), so there's never a case where
+  // this account already has a recipe to be locked out of adding a second —
+  // only whether the next pick should cap at one. See the hook's own doc for
+  // why every direct renderer of `PaprikaImportSource` needs this itself
+  // rather than relying on RecipeAppsPanel's copy: this is the other one.
+  const singleSelect = useSingleRecipeOnly();
   const inputRef = useRef<HTMLInputElement>(null);
   const readingRef = useRef(false);
   const [reading, setReading] = useState(false);
@@ -75,6 +83,7 @@ export function PaprikaCapture({
             commitLeavesPage
             onChooseAnotherFile={() => inputRef.current?.click()}
             replaceError={error}
+            singleSelect={singleSelect}
           />
           {reading && <p role="status" className="text-cp-caption text-ink-soft">Reading your Paprika file…</p>}
         </>

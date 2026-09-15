@@ -13,10 +13,7 @@ import {
   loadCookPilotRecipeTotal,
 } from "@/lib/cookpilotRecipes";
 import { cachedPaprikaLibrary } from "@/lib/paprikaLibrary";
-import {
-  hasMultiRecipeEntitlement,
-  loadRecipePrinterCustomerInfo,
-} from "@/lib/recipePrinterPurchases";
+import { useSingleRecipeOnly } from "@/lib/useSingleRecipeOnly";
 import { Dialog } from "@/components/Dialog";
 import type { QueueItem } from "@/types/recipe";
 import {
@@ -235,9 +232,8 @@ export function RecipeAppsPanel({
       entitlement precisely (mirror-fallback and all — see `computeProLocks`)
       and always passes a real boolean, which wins outright. The homepage
       front door deliberately stays free of Firebase/RevenueCat itself (see
-      PrinterWorkspace.tsx's own comment), so when it leaves this unset, the
-      self-check below fills in for it using the CookPilot auth this panel
-      already loads for its own status chip. */
+      PrinterWorkspace.tsx's own comment), so when it leaves this unset,
+      `useSingleRecipeOnly` fills in for it. */
   singleSelect?: boolean;
   /** Opens the Pro upgrade dialog — only ever called while `locked`. */
   onLockedTap?: () => void;
@@ -265,30 +261,12 @@ export function RecipeAppsPanel({
   const [libraryNonce, setLibraryNonce] = useState(0);
   const { user, ready } = useCookPilotAuth();
 
-  /**
-   * The homepage front door's own fallback answer for `singleSelect`, used
-   * only when the caller didn't supply one (see the prop's own doc comment).
-   * Pessimistic while unresolved and for a signed-out visitor — Pro is only
-   * ever held by a signed-in account, so no user means no entitlement, no
-   * network call, and no async gap to worry about. A real Pro subscriber can
-   * see one render of the free/single-select behavior before this resolves;
-   * a free cook can never see the reverse.
-   */
-  const [selfCheckedMultiRecipe, setSelfCheckedMultiRecipe] = useState(false);
-  useEffect(() => {
-    if (!user) {
-      setSelfCheckedMultiRecipe(false);
-      return;
-    }
-    let alive = true;
-    loadRecipePrinterCustomerInfo(user.uid).then((info) => {
-      if (alive) setSelfCheckedMultiRecipe(hasMultiRecipeEntitlement(info));
-    });
-    return () => {
-      alive = false;
-    };
-  }, [user]);
-  const effectiveSingleSelect = singleSelect ?? !selfCheckedMultiRecipe;
+  // Fallback answer for `singleSelect`, used only when the caller didn't
+  // supply one (see the prop's own doc comment) — see the hook's own doc for
+  // why this can't just live here: this isn't the only direct renderer of
+  // these sources any more.
+  const selfCheckedSingleRecipeOnly = useSingleRecipeOnly();
+  const effectiveSingleSelect = singleSelect ?? selfCheckedSingleRecipeOnly;
 
   function open(next: SourceId | null) {
     lastOpenSource = next;
