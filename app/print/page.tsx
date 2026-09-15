@@ -46,10 +46,16 @@ import {
   projectDisplayTitle,
   defaultSectionGridImages,
   resolveSectionPhotoMode,
+  isLegacyCookbookMechanism,
   useProjectMeta,
   type ProjectMeta,
   type PhotoStyle,
 } from "@/lib/project";
+import {
+  copyCardsToNewCookbook,
+  copyCookbookToNewCards,
+  type CookbookScaffoldPatch,
+} from "@/lib/projectCopy";
 import { materializeProjectPhotos } from "@/lib/photoStorage";
 import {
   claimPrintRearm,
@@ -93,6 +99,7 @@ import {
   activeProLockReasons,
   computeProLocks,
   describeProLockReasons,
+  hasMultiRecipeEntitlement,
   hasProEntitlement,
 } from "@/lib/recipePrinterPurchases";
 import { resolveEffectiveCustomerInfo } from "@/lib/proAccessFallback";
@@ -135,14 +142,17 @@ import {
   createCurrentPrintJob,
   readCurrentPrintJobIds,
   useQueue,
+  type MultiRecipeBlockedInfo,
 } from "@/lib/queue";
 import {
   isPrintCardSize,
   isRecipePrintTemplate,
   usePrintSettingsPersistence,
+  writePrintSettings,
 } from "@/lib/printSettings";
 import { openingPageFor } from "@/lib/frontMatterPage";
 import type {
+  CookbookFrontMatter,
   CookbookPresetId,
   CoverConfig,
   PrintProject,
@@ -405,6 +415,11 @@ export default function PrintPage() {
    * that reports it, held until that toast goes.
    */
   const [lineDeleteUndo, setLineDeleteUndo] = useState<(() => void) | null>(null);
+  /** The toast reporting that a roundup URL, a multi-recipe photo, or a
+      library commit found more than one recipe but this account can only add
+      one (see `queue.configureMultiRecipeGate`) carries an Upgrade action —
+      held until that toast goes, same as `lineDeleteUndo`. */
+  const [multiRecipeUpsellPending, setMultiRecipeUpsellPending] = useState(false);
   // The organizer's "Sort by". `custom` is whatever order the cook has built by
   // hand; `title` is A–Z within every section. `customOrderUndo` holds the
   // arrangement A–Z replaced, so switching back restores it rather than leaving
@@ -1410,10 +1425,97 @@ export default function PrintPage() {
     };
   }
 
+  /**
+   * The defaults that turn a stack of recipes into a book: a cover, a table
+   * of contents, and chapters when there's enough to group. Pure — reads
+   * `meta`/`scaffoldItems`/`currentTemplate`, returns a patch rather than
+   * committing one — so the SAME scaffold can seed a copy into a brand-new
+   * project (`lib/projectCopy.ts`'s `copyCardsToNewCookbook`, used by
+   * `makeCookbookFromCards` below) as well as the live one `scaffoldCookbook`
+   * applies in place for a legacy document. Anything already set up (a cover,
+   * named sections) is respected, not overwritten — each field is only
+   * returned when the source doesn't already have one.
+   */
+  function buildCookbookScaffoldPatch(
+    meta: ProjectMeta,
+    scaffoldItems: QueueItem[],
+    currentTemplate: RecipePrintTemplate,
+  ): CookbookScaffoldPatch {
+    const joinedSections = buildSections(scaffoldItems, meta);
+    // Open a fresh book on a rotating premium theme so the first view looks
+    // designed. A premium theme the cook already chose is respected; anything
+    // else (the plain Classic default) rotates to the next premium one.
+    const bookTemplate = isPremiumTemplate(currentTemplate) ? currentTemplate : nextCookbookTemplate();
+    // Lead with a confident, giftable title instead of exposing an empty-state
+    // implementation detail such as "Untitled Cookbook".
+    const images = Array.from(
+      new Set(scaffoldItems.map((item) => item.recipe?.image).filter((src): src is string => Boolean(src))),
+    );
+    const gridCount = images.length >= 6 ? 6 : images.length >= 4 ? 4 : images.length >= 2 ? 2 : 0;
+    const cover: CoverConfig | undefined = meta.cover
+      ? undefined
+      : {
+          title: "Our Favorite Recipes",
+          subtitle: "Recipes worth making again and again",
+          template: bookTemplate,
+          style: "photo",
+          creditLabel: "compiled-by",
+          layout: gridCount > 0 ? "collage" : images.length === 1 ? "photo" : "typographic",
+          ...(gridCount > 0
+            ? { gridImages: images.slice(0, gridCount) }
+            : images.length === 1
+              ? { imageUrl: images[0] }
+              : {}),
+        };
+    // A minimal closing page (template band on the theme's paper); the cook
+    // can add a blurb / "from the kitchen of" line by editing it.
+    const backCover: CoverConfig | undefined = meta.backCover
+      ? undefined
+      : { title: "", template: bookTemplate };
+    const frontMatter: CookbookFrontMatter | undefined =
+      namedSectionCount(joinedSections) === 0 && !meta.frontMatter && !meta.dedication
+        ? { kind: "dedication", heading: "Dedication", body: "" }
+        : undefined;
+    // Chapter the book they already have. Turning a stack of recipes into a
+    // cookbook and handing back one undivided run of pages leaves the cook to
+    // do by hand the thing the book was for — and "Organize for me" is a button
+    // they have to find, in a panel they have to open, to get a result we could
+    // already have given them. Only for a book with enough recipes to group,
+    // and never over chapters they made themselves.
+    const shouldAutoOrganize =
+      namedSectionCount(joinedSections) === 0 &&
+      scaffoldItems.filter((item) => item.recipe).length >= 2;
+    const organizedSections = shouldAutoOrganize
+      ? organizationSectionsForApply(
+          suggestCookbookOrganization(scaffoldItems),
+          scaffoldItems.filter((item) => item.recipe).map((item) => item.id),
+          meta.sections,
+        )
+      : undefined;
+    return {
+      template: bookTemplate,
+      // Give the book a default print format (US Letter) so export geometry is
+      // set from the start; a returning book keeps whatever it chose.
+      cookbookPreset: meta.cookbookPreset ? undefined : DEFAULT_COOKBOOK_PRESET_ID,
+      // The premium default is an editorial spread: the recipe's full-bleed
+      // photograph on the left, with its recipe page facing it on the right.
+      photoStyle: meta.photoStyle ? undefined : "full",
+      cover,
+      backCover,
+      tableOfContents: true,
+      sectionDividers: false,
+      frontMatter,
+      sections: organizedSections,
+    };
+  }
+
   // Turning a print job into a cookbook shouldn't drop the cook into an empty
-  // shell — scaffold the book they'd have built by hand: a cover, a table of
-  // contents, and recipes grouped into chapters with dividers on. Anything they
-  // already set up (a cover, named sections) is respected, not overwritten.
+  // shell — scaffold the book they'd have built by hand. This is the LEGACY,
+  // in-place path: it stays wired to the old reversible toggle
+  // (`startCookbook`/`exitCookbookToCards`) for any document that has already
+  // entered that mechanism — see `isLegacyCookbookMechanism`. A document that
+  // hasn't gets the new one-way copy instead (`makeCookbookFromCards`), which
+  // never calls this.
   function scaffoldCookbook() {
     // A cookbook is a bound book, never a 4×6 card, and it wants its photos.
     // These are component-level (not meta), so they apply whether we restore a
@@ -1426,57 +1528,76 @@ export default function PrintPage() {
     // the pre-restore meta snapshot).
     if (projectMeta.restoreCookbook()) return undefined;
     projectMeta.setCookbookMode(true);
-    // Open a fresh book on a rotating premium theme so the first view looks
-    // designed. A premium theme the cook already chose is respected; anything
-    // else (the plain Classic default) rotates to the next premium one.
-    const bookTemplate = isPremiumTemplate(template) ? template : nextCookbookTemplate();
-    if (bookTemplate !== template) setTemplate(bookTemplate);
+    const patch = buildCookbookScaffoldPatch(projectMeta.meta, items ?? [], template);
+    if (patch.template !== template) setTemplate(patch.template);
     // Turn recipe photos on so the scaffolded book looks finished rather than
     // bare. The source link stays OFF by default — a bound cookbook rarely wants
     // a URL under every recipe; the cook can turn it on if they do.
-    // Give the book a default print format (US Letter) so export geometry is
-    // set from the start; a returning book keeps whatever it chose.
-    if (!projectMeta.meta.cookbookPreset) projectMeta.setCookbookPreset(DEFAULT_COOKBOOK_PRESET_ID);
-    // The premium default is an editorial spread: the recipe's full-bleed
-    // photograph on the left, with its recipe page facing it on the right.
-    if (!projectMeta.meta.photoStyle) projectMeta.setPhotoStyle("full");
-    if (!projectMeta.meta.cover) {
-      projectMeta.setCover({ ...defaultCover(), template: bookTemplate });
-    }
-    if (!projectMeta.meta.backCover) {
-      // A minimal closing page (template band on the theme's paper); the cook
-      // can add a blurb / "from the kitchen of" line by editing it.
-      projectMeta.setBackCover({ title: "", template: bookTemplate });
-    }
-    projectMeta.setTableOfContents(true);
-    projectMeta.setSectionDividers(false);
-    if (
-      namedSectionCount(sections) === 0 &&
-      !projectMeta.meta.frontMatter &&
-      !projectMeta.meta.dedication
-    ) {
-      projectMeta.setFrontMatter({
-        kind: "dedication",
-        heading: "Dedication",
-        body: "",
-      });
-    }
-    // Chapter the book they already have. Turning a stack of recipes into a
-    // cookbook and handing back one undivided run of pages leaves the cook to
-    // do by hand the thing the book was for — and "Organize for me" is a button
-    // they have to find, in a panel they have to open, to get a result we could
-    // already have given them. Only for a book with enough recipes to group,
-    // and never over chapters they made themselves.
-    if (
-      namedSectionCount(sections) === 0 &&
-      (items ?? []).filter((item) => item.recipe).length >= 2
-    ) {
-      applyCookbookOrganization({ automatic: true });
-    }
+    if (patch.cookbookPreset) projectMeta.setCookbookPreset(patch.cookbookPreset);
+    if (patch.photoStyle) projectMeta.setPhotoStyle(patch.photoStyle);
+    if (patch.cover) projectMeta.setCover(patch.cover);
+    if (patch.backCover) projectMeta.setBackCover(patch.backCover);
+    projectMeta.setTableOfContents(patch.tableOfContents);
+    projectMeta.setSectionDividers(patch.sectionDividers);
+    if (patch.frontMatter) projectMeta.setFrontMatter(patch.frontMatter);
+    if (patch.sections) applyCookbookOrganization({ automatic: true });
     projectMeta.setCookbookWelcomeCompleted(true);
     // Every recipe gets its own full page — no auto-pairing. The cook can turn
     // an individual recipe into a full-page photo spread from the page controls.
-    return bookTemplate;
+    return patch.template;
+  }
+
+  /**
+   * The one-way "make a cookbook from these recipes" action: copies the
+   * current recipes into a brand-new, independent cookbook project rather
+   * than converting this one in place. The source project — cards, or a
+   * legacy book — is left exactly as it was. See lib/projectCopy.ts for what
+   * carries over and what doesn't.
+   *
+   * `app/print/page.tsx` keeps a lot of state keyed to "whichever project is
+   * open" that only resets cleanly on a fresh mount, so this seeds the new
+   * project into this tab's storage and does a full reload rather than a
+   * client-side route change — the same reason the conflict-recovery path
+   * below uses `window.location.assign` instead of `router.push`.
+   */
+  function makeCookbookFromCards() {
+    const patch = buildCookbookScaffoldPatch(projectMeta.meta, items ?? [], template);
+    const result = copyCardsToNewCookbook({ meta: projectMeta.meta, items: items ?? [] }, patch);
+    const newItemIds = result.items.map((item) => item.id);
+    // Written directly rather than through `setJobIds`/state — the reload
+    // below fires in this same tick, before React would get a chance to run
+    // the effects that normally persist these (see `createCurrentPrintJob`'s
+    // and `writePrintSettings`'s own call sites).
+    createCurrentPrintJob(newItemIds);
+    writePrintSettings({
+      cardSize: "letter",
+      template: patch.template,
+      doubleSided,
+      showCutLines,
+      showPhoto: true,
+      showSourceUrl,
+    });
+    queue.replaceAll(result.items);
+    setJobIds(newItemIds);
+    projectMeta.replaceMeta(result.meta);
+    track("cookbook_copy_created", { recipeCount: newItemIds.length, direction: "to_cookbook" });
+    window.location.assign("/print");
+  }
+
+  /**
+   * The one-way "make recipe cards from this book" action: the mirror of
+   * `makeCookbookFromCards`. Copies this book's recipes into a brand-new,
+   * independent recipe-cards project; the cookbook itself is untouched.
+   */
+  function makeCardsFromCookbook() {
+    const result = copyCookbookToNewCards({ meta: projectMeta.meta, items: items ?? [] });
+    const newItemIds = result.items.map((item) => item.id);
+    createCurrentPrintJob(newItemIds);
+    queue.replaceAll(result.items);
+    setJobIds(newItemIds);
+    projectMeta.replaceMeta(result.meta);
+    track("cookbook_copy_created", { recipeCount: newItemIds.length, direction: "to_cards" });
+    window.location.assign("/print");
   }
 
   function beginCookbookBuild({ offerAfter = false }: { offerAfter?: boolean } = {}) {
@@ -2943,6 +3064,34 @@ export default function PrintPage() {
       cardSize,
       recipeCount,
     });
+  // A free, non-cookbook account can never hold more than one recipe — see
+  // `hasMultiRecipeEntitlement`'s doc comment ("nothing to grandfather...
+  // either allowed or it doesn't happen"). Unlike `multiRecipeAddLocked`
+  // above, this is NOT recipe-count-dependent: it's what lets an empty
+  // project's library picker still offer exactly one pick rather than none.
+  const singleRecipeOnly = !cookbookMode && !hasMultiRecipeEntitlement(effectiveCustomerInfo.customerInfo);
+  function handleMultiRecipeBlocked(info: MultiRecipeBlockedInfo) {
+    if (info.source === "library") {
+      // The pickers already refuse to let a locked account select more than
+      // fits (see `libraryLocked`/`librarySingleSelect` below), so this only
+      // fires as a safety net — still worth saying something rather than the
+      // recipes just quietly not being there.
+      showToast("Adding more than one recipe at a time is part of Pro.");
+    } else {
+      const noun = info.source === "image" ? "photo" : "page";
+      showToast(
+        `This ${noun} had ${info.foundCount} recipes — we kept the first. Printing more than one at a time is part of Pro.`,
+      );
+    }
+    setMultiRecipeUpsellPending(true);
+  }
+  // Called every render (not from an effect — see `configureMultiRecipeGate`'s
+  // own doc comment): cheap, and keeps the gate correct within the very
+  // render that first resolves entitlement rather than one render behind.
+  queue.configureMultiRecipeGate({
+    singleRecipeOnly,
+    onMultiRecipeBlocked: handleMultiRecipeBlocked,
+  });
   function proLockFeature(): "batch_print" | "card_size" | "theme" {
     const reasons = activeProLockReasons({ themeLocked, cardSizeLocked, multiRecipeLocked }, "print_button");
     if (reasons.includes("multi_recipe")) return "batch_print";
@@ -4079,6 +4228,13 @@ export default function PrintPage() {
     if (!toastMessage?.startsWith("Deleted ")) setLineDeleteUndo(null);
   }, [toastMessage]);
 
+  // Same reasoning as `lineDeleteUndo` above: the Upgrade action belongs to
+  // the toast that explained why a recipe didn't make it in, not to whatever
+  // toast shows up next.
+  useEffect(() => {
+    if (!toastMessage?.endsWith("part of Pro.")) setMultiRecipeUpsellPending(false);
+  }, [toastMessage]);
+
   useEffect(() => {
     function handleBeforePrint() {
       // The browser has taken the print. Two things follow from that: the
@@ -4955,12 +5111,12 @@ export default function PrintPage() {
       document.removeEventListener("pointerdown", onPointerDown);
       document.removeEventListener("keydown", onKeyDown);
     };
-  }, [addMenuOpen, effectiveRailSelection.size]);
+  }, [addMenuOpen, clearRailSelection, effectiveRailSelection.size]);
   // Selection is a cookbook-only, page-scoped concern: drop it whenever we leave
   // cookbook mode or the recipe set changes, so stale ids can't linger.
   useEffect(() => {
     clearRailSelection();
-  }, [cookbookMode, items]);
+  }, [clearRailSelection, cookbookMode, items]);
 
   /**
    * A bookmarked project link that cannot be opened. Must come BEFORE the
@@ -5111,8 +5267,13 @@ export default function PrintPage() {
                 onRename={projectMeta.setProjectTitle}
                 cookbookMode={cookbookMode}
                 canBecomeCookbook={COOKBOOK_ENABLED}
+                isLegacy={
+                  isLegacyCookbookMechanism(projectMeta.meta) || Boolean(projectMeta.meta.cookbookIntent)
+                }
                 onSwitchToCards={exitCookbookToCards}
                 onSwitchToCookbook={startCookbook}
+                onCopyToCookbook={makeCookbookFromCards}
+                onCopyToCards={makeCardsFromCookbook}
               />
             )
           }
@@ -5893,6 +6054,12 @@ export default function PrintPage() {
         onAddReadyRecipes={queue.addReadyRecipes}
         lastSource={projectMeta.meta.lastImportSource ?? "url"}
         onSourceUsed={projectMeta.setLastImportSource}
+        libraryLocked={multiRecipeAddLocked}
+        librarySingleSelect={singleRecipeOnly && !multiRecipeAddLocked}
+        onLibraryLockedTap={() => {
+          track("pro_feature_encountered", { feature: "batch_print", source: "add_more_recipes" });
+          openProUpgradeDialog("add_more_recipes");
+        }}
       />
       <FeedbackDialog
         open={showFeedbackDialog}
@@ -5934,6 +6101,23 @@ export default function PrintPage() {
           {organizationUndo && toastMessage === "Cookbook organized" && (
             <button type="button" className="recipe-toast__action" onClick={undoCookbookOrganization}>
               Undo
+            </button>
+          )}
+          {multiRecipeUpsellPending && (
+            <button
+              type="button"
+              className="recipe-toast__action"
+              onClick={() => {
+                setToastMessage(null);
+                // Same trigger the rail's own `+ Add recipe` gate uses:
+                // `activeProLockReasons` special-cases it to name the
+                // multi-recipe feature outright rather than counting
+                // recipes on screen, which would read as zero right after
+                // this toast kept the deck at exactly one.
+                openProUpgradeDialog("add_more_recipes");
+              }}
+            >
+              Upgrade
             </button>
           )}
           <button

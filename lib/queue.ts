@@ -316,7 +316,58 @@ function canonicalUrl(rawUrl: string): string | null {
   }
 }
 
+/** Where an extra recipe got refused because the account can only ever carry
+    one outside Pro/cookbook mode — see `singleRecipeOnly` below. */
+export interface MultiRecipeBlockedInfo {
+  source: "url" | "image" | "library";
+  /** How many recipes the parse/selection actually found — always > 1. */
+  foundCount: number;
+}
+
 export function useQueue() {
+  // Latest-value refs, not state: entitlement (customerInfo, cookbookMode)
+  // isn't known yet at the point a caller calls `useQueue()` — it's computed
+  // later in the same render, from state this hook doesn't own — so it
+  // arrives through `configureMultiRecipeGate` instead of a constructor
+  // argument. Reading through a ref rather than component state keeps
+  // `runParse`/`addReadyRecipes`'s identity stable across entitlement
+  // changing, and reading it fresh at the moment a recipe actually lands
+  // (rather than a value captured once) is what lets a mid-session upgrade
+  // unlock the very next import with no reload.
+  const singleRecipeOnlyRef = useRef(false);
+  const onMultiRecipeBlockedRef = useRef<((info: MultiRecipeBlockedInfo) => void) | undefined>(
+    undefined,
+  );
+  /**
+   * True for an account with neither Pro nor cookbook mode: outside a
+   * cookbook, printing more than one recipe at a time is the premium action
+   * itself (see `hasMultiRecipeEntitlement`'s doc comment in
+   * lib/recipePrinterPurchases.ts) — "there is nothing to grandfather or
+   * preview here." So this isn't recipe-count-dependent the way
+   * `multiRecipeAddLocked` is: a free/non-cookbook account can never end up
+   * with more than one recipe, full stop, whether it already has one or is
+   * completely empty. `onMultiRecipeBlocked` fires when that limit actually
+   * costs the cook something — a roundup URL or a multi-recipe photo bloomed
+   * into more than one recipe and the extras were dropped, or (defense in
+   * depth; the pickers shouldn't let this happen) a library commit arrived
+   * with more than the one recipe a locked account can add.
+   *
+   * Called unconditionally on every render rather than from an effect: it
+   * only ever assigns refs, so there's nothing to gain from delaying it a
+   * tick, and calling it plainly keeps the gate correct even within the
+   * render that first computes entitlement, rather than one render behind.
+   */
+  const configureMultiRecipeGate = useCallback(
+    (config: {
+      singleRecipeOnly: boolean;
+      onMultiRecipeBlocked?: (info: MultiRecipeBlockedInfo) => void;
+    }) => {
+      singleRecipeOnlyRef.current = config.singleRecipeOnly;
+      onMultiRecipeBlockedRef.current = config.onMultiRecipeBlocked;
+    },
+    [],
+  );
+
   const [items, setItems] = useState<QueueItem[]>([]);
   const [focusedItemId, setFocusedItemId] = useState<string | null>(null);
   // Bumped on every `focusItem` call — even when the same id is focused twice in
@@ -547,9 +598,33 @@ export function useQueue() {
             "no_recipe",
           );
         }
-        const [first, ...rest] = recipes;
+        const [first, ...allRest] = recipes;
         patch(id, { status: "ready", recipe: first, title: first.title || "Untitled recipe" });
         track("recipe_imported", outcome);
+        if (allRest.length > 0) {
+          track("multi_recipe_found", {
+            source: origin.source,
+            hostname: origin.hostname,
+            count: recipes.length,
+          });
+        }
+        // A free, non-cookbook account can never hold more than one recipe
+        // (see `singleRecipeOnly` on this hook's options) — `first` above is
+        // that one recipe, so a roundup page or a multi-recipe photo never
+        // blooms into the rest for it. This is not "add the second one only
+        // if there's room": there is never room, the same way `+ Add recipe`
+        // refuses outright rather than adding and blocking at Print.
+        const rest = singleRecipeOnlyRef.current ? [] : allRest;
+        if (allRest.length > 0 && rest.length === 0) {
+          onMultiRecipeBlockedRef.current?.({
+            source: origin.source === "image" ? "image" : "url",
+            foundCount: recipes.length,
+          });
+          track("pro_feature_encountered", {
+            feature: "batch_print",
+            source: origin.source === "image" ? "photo_multi_recipe" : "url_multi_recipe",
+          });
+        }
         if (rest.length > 0) {
           // A roundup URL: keep the first recipe on this item and add the rest as
           // their own ready items, mirroring this item's URL context so retry/dedupe
@@ -567,11 +642,6 @@ export function useQueue() {
           }));
           commit([...itemsRef.current, ...extras]);
           rest.forEach(() => track("recipe_imported", outcome));
-          track("multi_recipe_found", {
-            source: origin.source,
-            hostname: origin.hostname,
-            count: recipes.length,
-          });
         }
       } catch (err) {
         // A reserved documentation domain gets its own answer. The generic
@@ -781,7 +851,20 @@ export function useQueue() {
     (recipes: QueueItem[]) => {
       if (recipes.length === 0) return 0;
       const existingIds = new Set(itemsRef.current.map((item) => item.id));
-      const nextRecipes = recipes.filter((recipe) => !existingIds.has(recipe.id));
+      let nextRecipes = recipes.filter((recipe) => !existingIds.has(recipe.id));
+      // Same one-recipe ceiling as the bloom in `runParse` — the library
+      // pickers already refuse to let a locked account select more than fits
+      // (see `singleSelect`/`locked` on RecipeSourceList), so this only ever
+      // bites if a commit somehow arrives oversized anyway. Never drop
+      // silently: whatever this trims, `onMultiRecipeBlocked` says so.
+      if (singleRecipeOnlyRef.current) {
+        const allowed = Math.max(0, 1 - itemsRef.current.length);
+        if (nextRecipes.length > allowed) {
+          onMultiRecipeBlockedRef.current?.({ source: "library", foundCount: nextRecipes.length });
+          track("pro_feature_encountered", { feature: "batch_print", source: "library_multi_select" });
+        }
+        nextRecipes = nextRecipes.slice(0, allowed);
+      }
       if (nextRecipes.length === 0) return 0;
       commit([...itemsRef.current, ...nextRecipes]);
       // These can arrive from ANOTHER document: a Paprika pick made on the home
@@ -934,5 +1017,6 @@ export function useQueue() {
     replaceAll,
     focusItem,
     updateRecipe,
+    configureMultiRecipeGate,
   };
 }

@@ -87,6 +87,7 @@ export function summarizePrintProject(project: PrintProject): PrintProjectSummar
     revision: project.revision,
     ownerUid: project.ownerUid,
     title: project.title,
+    sourceProjectId: project.sourceProjectId,
     createdAt: project.createdAt,
     updatedAt: project.updatedAt,
     recipeCount: recipeCountOf(sections),
@@ -153,6 +154,8 @@ export interface AssembleProjectParams {
   id: string;
   ownerUid: string;
   title?: string;
+  /** See `PrintProject.sourceProjectId`. */
+  sourceProjectId?: string;
   /** A name the cook typed. Carried through so a rename survives being saved
       and reopened — see `PrintProject.projectTitle`. */
   projectTitle?: string;
@@ -233,6 +236,7 @@ export function projectContentFromMeta(
   | "settings"
   | "itemPlacements"
   | "stashedCookbook"
+  | "sourceProjectId"
 > {
   const stash = meta.stashedCookbook;
   return {
@@ -240,6 +244,7 @@ export function projectContentFromMeta(
     // from a cover name. Folding the two together would force a choice between
     // losing the rename and having cover edits stop renaming the project.
     projectTitle: meta.projectTitle,
+    sourceProjectId: meta.sourceProjectId,
     cover: meta.cover ?? stash?.cover,
     backCover: meta.backCover ?? stash?.backCover,
     dedication: meta.dedication ?? stash?.dedication,
@@ -305,6 +310,7 @@ export function assemblePrintProject(params: AssembleProjectParams): PrintProjec
     ownerUid: params.ownerUid,
     title: params.title,
     projectTitle: params.projectTitle,
+    sourceProjectId: params.sourceProjectId,
     sections: params.sections,
     cover: params.cover,
     backCover: params.backCover,

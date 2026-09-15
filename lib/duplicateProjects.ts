@@ -86,6 +86,13 @@ function projectKind(project: PrintProjectSummary): string {
     the older copy on purpose: the question is whether anything would be lost by
     deleting it, not how similar the two books look. */
 export function projectContainment(older: PrintProjectSummary, keeper: PrintProjectSummary): number {
+  // A deliberate copy (lib/projectCopy.ts's "make a cookbook from these
+  // recipes" / "make recipe cards from this book"), never a fork. The `kind`
+  // check below already catches every copy this module knows about today —
+  // both directions flip kind — but a same-kind copy feature could exist
+  // later, and this is the one function whose entire job is telling a
+  // deliberate second project apart from an accidental one.
+  if (older.sourceProjectId === keeper.id || keeper.sourceProjectId === older.id) return 0;
   if (projectKind(older) !== projectKind(keeper)) return 0;
   const olderIds = projectItemIds(older);
   const keeperIds = projectItemIds(keeper);

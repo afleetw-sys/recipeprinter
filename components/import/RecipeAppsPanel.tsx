@@ -13,6 +13,10 @@ import {
   loadCookPilotRecipeTotal,
 } from "@/lib/cookpilotRecipes";
 import { cachedPaprikaLibrary } from "@/lib/paprikaLibrary";
+import {
+  hasMultiRecipeEntitlement,
+  loadRecipePrinterCustomerInfo,
+} from "@/lib/recipePrinterPurchases";
 import { Dialog } from "@/components/Dialog";
 import type { QueueItem } from "@/types/recipe";
 import {
@@ -207,6 +211,9 @@ export function RecipeAppsPanel({
   commitLabel,
   commitLeavesPage = false,
   reselects = 0,
+  locked = false,
+  singleSelect,
+  onLockedTap,
 }: {
   items: QueueItem[];
   onAddRecipes: (recipes: QueueItem[]) => number;
@@ -217,6 +224,23 @@ export function RecipeAppsPanel({
   /** Bumped when the Recipe apps tab is pressed while already on it. Closes
       the open library and shows the sources again. */
   reselects?: number;
+  /** See `RecipeSourceList`'s own `locked` doc — passed straight through to
+      whichever source is open. Only /print's rail can ever reach this
+      (recipeCount only exceeds one there — see `openAddRecipeBelow`), so the
+      homepage front door never needs its own answer the way `singleSelect`
+      below does. */
+  locked?: boolean;
+  /** See `PaprikaImportSource`'s own `singleSelect` doc. Left `undefined`
+      rather than defaulted to `false`: /print already knows its own
+      entitlement precisely (mirror-fallback and all — see `computeProLocks`)
+      and always passes a real boolean, which wins outright. The homepage
+      front door deliberately stays free of Firebase/RevenueCat itself (see
+      PrinterWorkspace.tsx's own comment), so when it leaves this unset, the
+      self-check below fills in for it using the CookPilot auth this panel
+      already loads for its own status chip. */
+  singleSelect?: boolean;
+  /** Opens the Pro upgrade dialog — only ever called while `locked`. */
+  onLockedTap?: () => void;
 }) {
   const [source, setSource] = useState<SourceId | null>(lastOpenSource);
   // Paprika holds ONE library at a time, so there is nothing to choose between
@@ -240,6 +264,31 @@ export function RecipeAppsPanel({
   // Bumped when the open Paprika file changes, so the row below re-reads it.
   const [libraryNonce, setLibraryNonce] = useState(0);
   const { user, ready } = useCookPilotAuth();
+
+  /**
+   * The homepage front door's own fallback answer for `singleSelect`, used
+   * only when the caller didn't supply one (see the prop's own doc comment).
+   * Pessimistic while unresolved and for a signed-out visitor — Pro is only
+   * ever held by a signed-in account, so no user means no entitlement, no
+   * network call, and no async gap to worry about. A real Pro subscriber can
+   * see one render of the free/single-select behavior before this resolves;
+   * a free cook can never see the reverse.
+   */
+  const [selfCheckedMultiRecipe, setSelfCheckedMultiRecipe] = useState(false);
+  useEffect(() => {
+    if (!user) {
+      setSelfCheckedMultiRecipe(false);
+      return;
+    }
+    let alive = true;
+    loadRecipePrinterCustomerInfo(user.uid).then((info) => {
+      if (alive) setSelfCheckedMultiRecipe(hasMultiRecipeEntitlement(info));
+    });
+    return () => {
+      alive = false;
+    };
+  }, [user]);
+  const effectiveSingleSelect = singleSelect ?? !selfCheckedMultiRecipe;
 
   function open(next: SourceId | null) {
     lastOpenSource = next;
@@ -360,6 +409,9 @@ export function RecipeAppsPanel({
             onAddRecipes={onAddRecipes}
             commitLabel={commitLabel}
             commitLeavesPage={commitLeavesPage}
+            locked={locked}
+            singleSelect={effectiveSingleSelect}
+            onLockedTap={onLockedTap}
           />
         ) : (
           <PaprikaImportSource
@@ -375,6 +427,9 @@ export function RecipeAppsPanel({
             commitLabel={commitLabel}
             commitLeavesPage={commitLeavesPage}
             onLibraryChange={() => setLibraryNonce((value) => value + 1)}
+            locked={locked}
+            singleSelect={effectiveSingleSelect}
+            onLockedTap={onLockedTap}
           />
         )}
         {paprikaFileInput}

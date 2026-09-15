@@ -8,6 +8,7 @@ import {
   partialAddMessage,
   selectableQueueIds,
   toggleSelection,
+  toggleSingleSelection,
 } from "@/lib/importSelection";
 import { localPhotoUrl, putLocalPhoto } from "@/lib/localPhotos";
 import {
@@ -114,6 +115,9 @@ export function PaprikaImportSource({
   onLibraryChange,
   onChooseAnotherFile,
   replaceError,
+  locked = false,
+  singleSelect = false,
+  onLockedTap,
 }: {
   items: QueueItem[];
   onAddRecipes: (recipes: QueueItem[]) => number;
@@ -128,6 +132,18 @@ export function PaprikaImportSource({
   /** A file chosen from in here that would not read. Shown under the banner
       naming the file it failed to replace. */
   replaceError?: string | null;
+  /** This account already has the one recipe a free, non-cookbook plan can
+      print — see `RecipeSourceList`'s own `locked` doc. Every row shows a Pro
+      badge instead of a tickbox and tapping one calls `onLockedTap` instead
+      of selecting. */
+  locked?: boolean;
+  /** Free, non-cookbook, and the project is still empty: this account's
+      *next* add is the one free recipe it gets, so ticking a second row
+      swaps the first out rather than piling up a selection nothing can ever
+      commit in full. */
+  singleSelect?: boolean;
+  /** Opens the Pro upgrade dialog — only ever called while `locked`. */
+  onLockedTap?: () => void;
 }) {
   // Read once on mount and never set again: a new file remounts this component
   // (see the `key` on the call site), so there is no in-place swap to make.
@@ -156,12 +172,18 @@ export function PaprikaImportSource({
   /** Local and instant: no photo is stored until the commit. */
   function handleToggle(row: ImportSummary) {
     if (addedIds.has(row.queueId)) return;
+    if (locked) {
+      onLockedTap?.();
+      return;
+    }
     if (error) setError(null);
-    setSelectedIds((current) => toggleSelection(current, row.queueId));
+    setSelectedIds((current) =>
+      singleSelect ? toggleSingleSelection(current, row.queueId) : toggleSelection(current, row.queueId),
+    );
   }
 
   function handleToggleAll() {
-    if (committing) return;
+    if (committing || locked) return;
     if (error) setError(null);
     if (allVisibleSelected) {
       // Only what is on screen: a selection made under an earlier search is
@@ -272,6 +294,8 @@ export function PaprikaImportSource({
         commitLabel={commitLabel}
         commitLeavesPage={commitLeavesPage}
         committing={committing}
+        locked={locked}
+        singleSelect={singleSelect}
         queryText={queryText}
         onQueryChange={setQueryText}
         searchId="paprika-search"

@@ -4,6 +4,7 @@ import {
   partialAddMessage,
   selectableQueueIds,
   toggleSelection,
+  toggleSingleSelection,
 } from "@/lib/importSelection";
 import type { ImportSummary } from "@/lib/importSummary";
 
@@ -34,6 +35,22 @@ describe("toggleSelection", () => {
     let selected = new Set<string>();
     for (const id of ["c", "a", "b"]) selected = toggleSelection(selected, id);
     expect(Array.from(selected)).toEqual(["c", "a", "b"]);
+  });
+});
+
+describe("toggleSingleSelection", () => {
+  it("replaces whatever was ticked with the new row", () => {
+    const before = new Set(["a"]);
+    expect(Array.from(toggleSingleSelection(before, "b"))).toEqual(["b"]);
+    expect(Array.from(before)).toEqual(["a"]);
+  });
+
+  it("clears the selection when the same row is tapped again", () => {
+    expect(Array.from(toggleSingleSelection(new Set(["a"]), "a"))).toEqual([]);
+  });
+
+  it("starts a selection from empty", () => {
+    expect(Array.from(toggleSingleSelection(new Set(), "a"))).toEqual(["a"]);
   });
 });
 

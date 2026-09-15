@@ -464,6 +464,14 @@ export interface PrintProject {
   id: string;
   /** Distinguishes automatic cookbook persistence from opt-in card projects. */
   kind?: "cookbook" | "printProject";
+  /** The project this one was copied from, by the one-way "make a cookbook
+      from these recipes" / "make recipe cards from this book" action — see
+      lib/projectCopy.ts. Absent means either a legacy document (still using
+      the reversible cookbookMode/stashedCookbook toggle) or one that has
+      never been copied. Pure lineage: nothing renders from it, and nothing
+      about the two projects stays in sync. Never set for a document created
+      any other way. */
+  sourceProjectId?: string;
   /** Optimistic-concurrency version. Legacy documents default to 0. */
   revision?: number;
   /** Present only once the project has been saved to Firestore. */
@@ -549,6 +557,10 @@ export interface PrintProjectSummary {
   revision?: number;
   ownerUid?: string;
   title?: string;
+  /** See `PrintProject.sourceProjectId`. Carried onto the summary so
+      `lib/duplicateProjects.ts` can tell a deliberate copy apart from an
+      accidental fork without reading the heavy content document. */
+  sourceProjectId?: string;
   createdAt: number;
   updatedAt: number;
   /** Total recipes across all sections. */

@@ -45,6 +45,22 @@ export function toggleSelection(
 }
 
 /**
+ * Tick one row, replacing whatever else was ticked — for an account that can
+ * only ever carry one recipe outside Pro/cookbook mode (see
+ * `hasMultiRecipeEntitlement`'s doc comment: there is nothing to grandfather
+ * or preview here, so the picker itself should never let a free cook build up
+ * a selection it cannot commit). Retapping the one already-selected row
+ * clears it, the same as `toggleSelection` unticking its own row.
+ */
+export function toggleSingleSelection(
+  selected: ReadonlySet<string>,
+  queueId: string,
+): Set<string> {
+  if (selected.size === 1 && selected.has(queueId)) return new Set();
+  return new Set([queueId]);
+}
+
+/**
  * Whether the header control should read "Clear selection" rather than
  * "Select all".
  *

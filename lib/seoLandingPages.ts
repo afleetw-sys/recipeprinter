@@ -238,7 +238,7 @@ export type SeoLandingPage = {
 export const SEO_LANDING_PAGES: SeoLandingPage[] = [
   {
     slug: "print-recipe-from-website",
-    contentUpdated: "2026-09-09",
+    contentUpdated: "2026-09-15",
     lastReviewed: "2026-09-02",
     primaryKeyword: "print recipe from website",
     secondaryKeywords: [
@@ -1117,71 +1117,67 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
     intent: "Utility SEO",
     initialImportMode: "apps",
     importSubmitLabel: "Open a Paprika file",
-    title: "Print Paprika Recipes",
+    title: "Print Recipes from Paprika | RecipePrinter",
     description:
-      "Open a Paprika export file and turn the recipes you have collected into printable recipe cards, pages, and PDFs. The file is read in your browser.",
+      "Export your Paprika recipe library, open it in RecipePrinter, and choose which recipes to print as clean pages or 4×6 recipe cards.",
     h1: "Print recipes from Paprika",
     anchor: "Print Paprika recipes",
     lede:
-      "Years of recipes live in Paprika, and every one of them is on a screen. Export the library, open the file here, and pick the ones that deserve to be on paper.",
+      "Export your Paprika recipe library, open the file in RecipePrinter, and choose the recipes you want to print as pages or 4×6 cards.",
+    howToHeading: "How to print recipes from Paprika",
     howTo: [
       {
         name: "Export from Paprika",
-        text: "Open the Paprika app, click the menu at the top left, go to Settings, then Export Recipes and Export. You get a single .paprikarecipes file holding the whole library.",
+        text: "In Paprika, open Settings → Export Recipes and export your library as a .paprikarecipes file.",
       },
       {
-        name: "Open the file here",
-        text: "Drop the file into the box above. It's read in your browser and never uploaded, so the library doesn't leave your computer.",
+        name: "Open the Paprika export",
+        text: "Drop the file into RecipePrinter. It is read in your browser, so the library does not need to be uploaded.",
       },
       {
-        name: "Pick the ones worth printing",
-        text: "The whole library arrives as a list you can go through. Add the recipes you actually cook to the print queue and leave the rest where they are.",
+        name: "Choose the recipes you want",
+        text: "Browse the imported library and add the recipes you actually want to print to the queue.",
       },
       {
-        name: "Choose a card or a page",
-        text: "A 4 by 6 card for the recipe box, or a letter page for a binder. Print the whole batch in one job with RecipePrinter Pro, or save each recipe as a PDF for free.",
+        name: "Print as cards or pages",
+        text: "Choose a 4×6 recipe card or full letter page. Batch printing is included with RecipePrinter Pro, while individual full-page recipes can still be printed or saved as PDF for free.",
       },
     ],
     featureSections: [
       {
-        heading: "The library comes across, not just the titles",
+        heading: "Your Paprika recipes come with their details",
         image: "paste-in-app",
         body:
-          "Ingredients, directions, the notes you added, prep and cook time, servings, the source it came from, and the categories you filed it under all carry over. A rating and a difficulty do not, because neither belongs on a printed card. What you have been keeping in Paprika arrives as a recipe, not as a row in a list.",
+          "Ingredients, directions, notes, prep and cook time, servings, source, and categories all come across with the recipe. Ratings and difficulty do not appear on the printed version.",
       },
       {
-        heading: "It's read in your browser, not uploaded",
+        heading: "Turn your Paprika favorites into something you can keep",
         image: "card-in-box",
         body:
-          "The export file is opened and unpacked on your own machine. Nothing is sent to a server, no account is needed to do it, and the library isn't stored anywhere afterwards. Open the same file twice and the queue recognises what is already in it rather than stacking up a second copy of everything.",
-      },
-      {
-        heading: "A collection that survives the app",
-        image: "bound-cookbook",
-        body:
-          "A recipe manager is only as permanent as the company behind it and the phone in your hand. Printed cards in a box, pages in a binder, or a bound cookbook on a shelf keep working when the subscription lapses, the export format changes, or the app is gone.",
+          "Browse the recipes you’ve already saved in Paprika and choose the ones you actually want to bring into RecipePrinter. From there, turn those favorites into 4×6 cards, binder pages, or a cookbook you can pull off the shelf.",
       },
     ],
+    faqHeading: "Paprika printing questions",
     faqs: [
       {
         question: "What file does Paprika export?",
         answer:
-          "A single .paprikarecipes file containing the whole library, one entry per recipe with its photo embedded. Open the Paprika app, click the menu at the top left, go to Settings, then Export Recipes and Export.",
+          "Paprika exports your library as a single .paprikarecipes file containing your recipes and their saved details.",
       },
       {
         question: "Does my Paprika library get uploaded?",
         answer:
-          "No. The file is opened and read in your browser, on your own machine. Nothing is sent to a server and no account is required to do it.",
+          "No. RecipePrinter reads the file in your browser on your device. Nothing is uploaded to a server.",
       },
       {
         question: "Can I print my whole Paprika library at once?",
         answer:
-          "You can, with RecipePrinter Pro, though most people don't want to. The export arrives as a list to choose from, so you can add just the recipes you actually cook to the print queue and print those in one job.",
+          "Yes, with RecipePrinter Pro. You can also choose only the recipes you actually want and add those to the print queue.",
       },
       {
         question: "Do the notes and categories I added come across?",
         answer:
-          "Yes. Notes, prep and cook time, servings, the original source, and the categories you filed a recipe under all carry over. Ratings and difficulty do not, since neither reads as part of a printed recipe.",
+          "Yes. Notes, prep and cook time, servings, source, and categories are preserved when supported by the exported recipe. Ratings and difficulty are not printed.",
       },
     ],
     links: [
@@ -1878,9 +1874,15 @@ export function layoutForPage(page: SeoLandingPage): "capture-first" | "guide-fi
 }
 
 export function seoLandingPageMetadata(page: SeoLandingPage): Metadata {
-  return pageMetadata({
+  const metadata = pageMetadata({
     title: page.title,
     description: page.description,
     path: `/${page.slug}`,
   });
+  if (page.slug === "print-paprika-recipes") {
+    metadata.title = { absolute: page.title };
+    metadata.openGraph = { ...metadata.openGraph, title: page.title };
+    metadata.twitter = { ...metadata.twitter, title: page.title };
+  }
+  return metadata;
 }

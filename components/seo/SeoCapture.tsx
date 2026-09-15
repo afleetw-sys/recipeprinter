@@ -3,6 +3,7 @@
 import { useRef, useState, type DragEvent, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
 import { ArrowRightIcon, ICON_SIZE, SpinnerIcon, UploadIcon } from "@/components/icons";
+import { PaprikaCapture } from "@/components/seo/PaprikaCapture";
 import { ImportPanel } from "@/components/ImportPanel";
 import { stashPendingImport } from "@/lib/pendingImport";
 import { imageLabel, partitionImageFiles, validateImageFiles } from "@/lib/imageImport";
@@ -106,6 +107,8 @@ export function SeoCapture({
 }) {
   const singleMode = !modes || modes.length <= 1 ? (modes?.[0] ?? initialMode) : null;
 
+  if (singleMode === "apps") return <PaprikaFileCapture />;
+
   if (singleMode) {
     return (
       <SingleFieldCapture
@@ -119,6 +122,39 @@ export function SeoCapture({
 
   return (
     <FullCapture initialMode={initialMode} submitLabel={submitLabel} modes={modes ?? undefined} />
+  );
+}
+
+/** Keep file reading and recipe selection here until the visitor commits. */
+function PaprikaFileCapture() {
+  const router = useRouter();
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  async function handoff(recipes: QueueItem[]) {
+    setBusy(true);
+    setError(null);
+    track("recipe_import_submitted", { surface: "capture", source: "paprika" });
+    if (!(await stashPendingImport({ kind: "ready", recipes }))) {
+      setBusy(false);
+      setError("We couldn't open that recipe. Please try again.");
+      return;
+    }
+    router.push("/print");
+  }
+
+  return (
+    <>
+      <PaprikaCapture
+        busy={busy}
+        onAddRecipes={(recipes) => {
+          if (busy || recipes.length === 0) return 0;
+          void handoff(recipes);
+          return recipes.length;
+        }}
+      />
+      {error && <p className="field-error" role="alert">{error}</p>}
+    </>
   );
 }
 
