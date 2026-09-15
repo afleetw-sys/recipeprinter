@@ -119,6 +119,13 @@ export default function SeoLandingPage({ params }: PageProps) {
   if (!page) notFound();
 
   const isGuide = layoutForPage(page) === "guide-first";
+  // The full Link/Recipe apps/Image/Text switch runs taller than the single
+  // field every other page shows, and its height changes as the mode does —
+  // centered against that (the hero grid's default), the photo re-litigated
+  // its own position on every tab. Top-aligned it stops depending on this
+  // column's height at all, and a smaller photo leaves the taller capture
+  // block more room before the two columns fight for vertical space.
+  const showsAllImportModes = (page.importModes?.length ?? 0) > 1;
 
   return (
     <LandingFrame headerActions={<LandingCta label="Go to printer" compact />}>
@@ -132,7 +139,7 @@ export default function SeoLandingPage({ params }: PageProps) {
         lede={page.lede}
         above={<Breadcrumb trail={breadcrumbTrail(page)} />}
         note={page.statusNote}
-        asideAlign={page.heroAlign}
+        asideAlign={showsAllImportModes ? "start" : undefined}
         actions={
           isGuide ? (
             // No "See how it works" link beside it. On a guide-first page the
@@ -160,7 +167,7 @@ export default function SeoLandingPage({ params }: PageProps) {
                   : "Printed from a recipe link"
             }
             priority
-            wide
+            wide={!showsAllImportModes}
           />
         }
       />
