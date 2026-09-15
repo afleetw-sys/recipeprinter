@@ -4949,7 +4949,7 @@ export default function PrintPage() {
     }[projectAccess];
     return (
       <div className="h-full flex flex-col">
-        <SiteHeader compact sticky wordmark={false} />
+        <SiteHeader compact sticky chrome wordmark={false} />
         <div className="flex-1 flex flex-col items-center justify-center gap-cp-4 text-center px-cp-6">
           <div className="flex h-16 w-16 items-center justify-center rounded-full bg-[var(--cp-accent-warm)]">
             <BookIcon size={28} className="text-[var(--cp-on-accent-warm)]" />
@@ -5014,7 +5014,7 @@ export default function PrintPage() {
   ) {
     return (
       <div className="h-full flex flex-col">
-        <SiteHeader compact sticky wordmark={false} />
+        <SiteHeader compact sticky chrome wordmark={false} />
         <RecipeLoadingState
           className="flex-1"
           label={
@@ -5045,6 +5045,7 @@ export default function PrintPage() {
         <SiteHeader
           compact
           sticky
+          chrome
           wordmark={false}
           /*
             The top left says WHICH document this is, in place of the product's

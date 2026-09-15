@@ -55,7 +55,7 @@ export function SharedRecipeCardRedirect({ card }: { card: SharedRecipeCard }) {
 
   return (
     <div className="h-full flex flex-col">
-      <SiteHeader compact sticky />
+      <SiteHeader compact sticky chrome />
       <div className="flex-1 grid place-items-center text-ink-soft">Preparing…</div>
     </div>
   );

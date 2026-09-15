@@ -12,6 +12,7 @@ export function SiteHeader({
   centerActions = false,
   compact = false,
   sticky = false,
+  chrome = false,
   saveStatus,
   onRetrySave,
   onSave,
@@ -42,6 +43,13 @@ export function SiteHeader({
   wordmark?: boolean;
   compact?: boolean;
   sticky?: boolean;
+  /** Paints the sticky bar with the workspace's off-white `bg-chrome` — the
+      /print editor only (and its own loading/error states, which are still
+      that page). Every other sticky header stays transparent (or, on a
+      marketing page, its own plain-white band — see below); a background
+      here used to be tied to `compact` alone, which every app-chrome-styled
+      header opted into whether or not it was actually /print. */
+  chrome?: boolean;
   saveStatus?: AccountSaveStatus | null;
   onRetrySave?: () => void;
   onSave?: () => void;
@@ -93,12 +101,19 @@ export function SiteHeader({
                already reserves for "the workspace header, the rail, the
                mobile bars" clears all of them at once. */
             `sticky top-0 z-[var(--z-sticky)] border-b border-line ${
-              /* `compact` already means "app chrome" (above), and chrome is
-                 what decides this too: in the workspace the bar is one side of
-                 the frame around the deck and takes the frame's near-white,
-                 matching the rail and the settings panel. A marketing page has
-                 no frame — its bar is a white band over the page. */
-              compact ? "bg-chrome py-cp-2" : "bg-card py-cp-3"
+              compact ? "py-cp-2" : "py-cp-3"
+            } ${
+              /* Only the actual `chrome` callers (the /print workspace, and
+                 the loading/error states that are still that same page) get
+                 a fill: there the bar is one side of the frame around the
+                 deck and takes the frame's near-white, matching the rail and
+                 the settings panel. Everything else that merely borrowed
+                 `compact`'s sizing for app-chrome-styled controls (a global
+                 error page, a share-link redirect) stays transparent — that
+                 off-white was never meant to follow `compact` everywhere it
+                 was used. A marketing page has no frame at all; its bar is
+                 its own plain-white band over the page. */
+              chrome ? "bg-chrome" : compact ? "" : "bg-card"
             }`
           : ""
       }`}
