@@ -25,7 +25,6 @@ export function AddRecipeDialog({
   onAddImageFiles,
   onAddText,
   onAddReadyRecipes,
-  onAddManual,
   lastSource,
   onSourceUsed,
 }: {
@@ -39,8 +38,6 @@ export function AddRecipeDialog({
   onAddImageFiles: (files: File[], label: string) => void;
   onAddText: (text: string) => void;
   onAddReadyRecipes: (recipes: QueueItem[]) => number;
-  /** Start an empty recipe on the deck and close — see the footer. */
-  onAddManual: () => void;
   /** The source this project was last filled from, and therefore the one this
       opens on. See `PrintProjectSettings.lastImportSource`. */
   lastSource: ImportTab;
@@ -208,24 +205,6 @@ export function AddRecipeDialog({
           }}
         >
           {addsOnPick ? "Done" : "Add"}
-        </button>
-        {/* The escape hatch for a recipe that isn't anywhere to import FROM —
-            a card off a relative, something out of your own head. Deliberately
-            NOT a fourth tab or a mode switch beside url/photo/paste: those all
-            answer "where is it coming from", and this one answers "nowhere",
-            so sitting it in that row would make it look like a fourth source
-            with its own form. A quiet line under the primary action reads as
-            the way out of the dialog that it is, and costs the three real
-            import paths nothing. */}
-        <button
-          type="button"
-          className="btn btn-ghost btn-compact recipe-add-dialog__manual"
-          onClick={() => {
-            onAddManual();
-            onClose();
-          }}
-        >
-          or add manually
         </button>
       </div>
     </Dialog>

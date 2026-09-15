@@ -7394,20 +7394,6 @@ textarea.recipe-card__toc-title {
   background: var(--cp-card);
 }
 
-/* "or add manually", under the primary Add.
-
-   Quiet on purpose: importing is what almost everyone is here to do, and this
-   is the exit for the one recipe that has no source to import from. Full width
-   so it reads as belonging to the button above it rather than floating loose
-   in the footer, and `--cp-fs-caption` so it sits a step below Add in the
-   hierarchy instead of competing with it. */
-.recipe-add-dialog__manual {
-  width: 100%;
-  margin-top: 6px;
-  font-size: var(--cp-fs-caption);
-  font-weight: 600;
-}
-
 /* A bottom sheet on a phone, not a full screen — the same shape as every other
    tool opened from the bottom bar (Size, print settings, the structure sheet).
    Full-screen made it the only overlay in the app that read as a PAGE you had

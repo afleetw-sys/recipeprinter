@@ -12,7 +12,6 @@ import type { AccountSaveStatus } from "@/components/AccountControl";
 import { FeedbackDialog } from "@/components/FeedbackButton";
 import { PrintDialogs } from "@/components/PrintDialogs";
 import { AddRecipeDialog } from "@/components/AddRecipeDialog";
-import { uid } from "@/lib/ids";
 import { sectionOrderChanged, sortSectionsByTitle } from "@/lib/sectionSort";
 import { ConfirmDialog } from "@/components/ConfirmDialog";
 import { CookbookBuildReveal, CookbookWelcomeDialog } from "@/components/CookbookWelcomeDialog";
@@ -1930,47 +1929,6 @@ export default function PrintPage() {
       if (rearmForPrint()) return;
       setPrintRefusedNotice(true);
     }, PRINT_ACCEPTANCE_GRACE_MS);
-  }
-
-  /**
-   * Starts an empty recipe on the deck — the "or add manually" way out of the
-   * Add dialog, for a recipe that is not anywhere to import FROM.
-   *
-   * Goes through `addReadyRecipes` rather than the import queue on purpose:
-   * there is nothing to parse, so `runParse` would have to be taught to skip
-   * itself, and a placeholder page would flash "importing" for a recipe that
-   * arrived complete. `status: "ready"` is the truth — it is finished, it is
-   * just empty.
-   *
-   * The blank card already knows how to be filled in: a recipe with no
-   * ingredients still renders an "Add ingredient" prompt (see RecipeCardPrint),
-   * revealed by the page's own Fields button, which shows itself because a
-   * blank recipe is nothing but hidden fields.
-   */
-  function addManualRecipe() {
-    const id = uid();
-    const added = queue.addReadyRecipes([
-      {
-        id,
-        method: "manual",
-        // No origin to name. The rail falls back to `title` for its label, and
-        // an empty one there would render a nameless row, so this says what the
-        // page is until the cook titles it.
-        source: "Added by hand",
-        status: "ready",
-        title: "Untitled recipe",
-        addedAt: Date.now(),
-        recipe: {
-          // Empty, not placeholder text: every one of these is a field the card
-          // renders as an editable, and seeding them with words would make the
-          // cook delete our copy before writing theirs.
-          title: "",
-          ingredients: [],
-          instructions: [],
-        },
-      },
-    ]);
-    if (added > 0) queue.focusItem(id);
   }
 
   function showToast(message: string) {
@@ -5886,7 +5844,6 @@ export default function PrintPage() {
         onAddImageFiles={queue.addImageFiles}
         onAddText={queue.addText}
         onAddReadyRecipes={queue.addReadyRecipes}
-        onAddManual={addManualRecipe}
         lastSource={projectMeta.meta.lastImportSource ?? "url"}
         onSourceUsed={projectMeta.setLastImportSource}
       />
