@@ -218,7 +218,9 @@ export default function SeoLandingPage({ params }: PageProps) {
         </section>
       )}
 
-      {page.cookbookPitch && <CookbookPitch body={page.cookbookPitchBody} />}
+      {page.cookbookPitch && (
+        <CookbookPitch heading={page.cookbookPitchHeading} body={page.cookbookPitchBody} />
+      )}
 
       {page.examples && page.examples.length > 0 && (
         <section aria-labelledby="examples-heading">
