@@ -379,9 +379,6 @@ export function useQueue() {
   const [hydrated, setHydrated] = useState(false);
   const [hydratedWithItems, setHydratedWithItems] = useState(false);
   const itemsRef = useRef<QueueItem[]>([]);
-  // Pasted text payloads are kept in memory only (too large/private to persist)
-  // so a failed text import can be retried within the same session.
-  const textPayloads = useRef<Map<string, string>>(new Map());
 
   const commit = useCallback((next: QueueItem[]) => {
     itemsRef.current = next;
@@ -835,7 +832,6 @@ export function useQueue() {
         title: firstLine.slice(0, 60),
         addedAt: Date.now(),
       };
-      textPayloads.current.set(id, trimmed);
       commit([...itemsRef.current, item]);
       void runParse(id, { source: "text" }, () => parseText(trimmed), { failedText: trimmed });
     },
@@ -885,90 +881,8 @@ export function useQueue() {
     [commit, rehydrateLocalPhotos],
   );
 
-  /** Whether a failed item can be retried in place (URL + text only). */
-  const canRetry = useCallback((item: QueueItem) => {
-    if (item.method === "url") return Boolean(item.originalUrl);
-    if (item.method === "text") return textPayloads.current.has(item.id);
-    return false; // images must be re-added
-  }, []);
-
-  const retry = useCallback(
-    (id: string) => {
-      const item = itemsRef.current.find((it) => it.id === id);
-      if (!item) return;
-      if (item.method === "url" && item.originalUrl) {
-        const url = item.originalUrl;
-        void runParse(
-          id,
-          { source: "url", hostname: hostnameOf(url), url },
-          () => parseUrlAll(url),
-          { failedText: url },
-        );
-      } else if (item.method === "text") {
-        const text = textPayloads.current.get(id);
-        if (text) void runParse(id, { source: "text" }, () => parseText(text), { failedText: text });
-      }
-    },
-    [runParse],
-  );
-
-  /**
-   * Re-runs a FAILED import in place, from a different source than it started.
-   *
-   * The distinction from `retry` is where the input comes from. `retry` re-runs
-   * the same input and is the right answer to a flaky site; this is the answer
-   * to a site that will never let us in, where the way through is the cook
-   * pasting the text or photographing the page. Both are offered on the failed
-   * card, and the second is the one the "blocked" error has been telling people
-   * to do all along.
-   *
-   * In place matters. Routing a fix through `addText`/`addImageFiles` would
-   * append a fresh card at the end of the deck and leave the dead one behind to
-   * be deleted by hand — so a repair would cost the cook their page order and
-   * an extra chore, for our failure. The id, the slot and the original URL all
-   * survive, so the card that comes back is the one that failed, now holding a
-   * recipe, and it still says where it came from.
-   */
-  const repairItem = useCallback(
-    (id: string, payload: { kind: "text"; text: string } | { kind: "images"; files: File[] }) => {
-      const item = itemsRef.current.find((it) => it.id === id);
-      if (!item) return;
-
-      if (payload.kind === "text") {
-        const trimmed = payload.text.trim();
-        if (!trimmed) return;
-        // Retryable from here on: the pasted text is what `retry` re-runs, so a
-        // repaired-then-flaky import doesn't dead-end.
-        textPayloads.current.set(id, trimmed);
-        patch(id, { method: "text" });
-        void runParse(id, { source: "text" }, () => parseText(trimmed), { failedText: trimmed });
-        return;
-      }
-
-      if (payload.files.length === 0) return;
-      // Photos are not kept, so this stays un-retryable (`canRetry` says so) —
-      // the cook re-picks. Mirrors `addImageFiles`: the placeholder is already
-      // up, and `runParse` owns decode, downscale and parse as one job.
-      textPayloads.current.delete(id);
-      patch(id, { method: "image" });
-      const failedImages: Array<Blob | string> = [...payload.files];
-      void runParse(
-        id,
-        { source: "image" },
-        async () => {
-          const images = await prepareImageDataUrls(payload.files);
-          failedImages.splice(0, failedImages.length, ...images);
-          return parseImages(images);
-        },
-        { failedImages },
-      );
-    },
-    [patch, runParse],
-  );
-
   const remove = useCallback(
     (id: string) => {
-      textPayloads.current.delete(id);
       const going = itemsRef.current.find((it) => it.id === id);
       commit(itemsRef.current.filter((it) => it.id !== id));
       if (going) releaseLocalPhotos([going], itemsRef.current);
@@ -977,7 +891,6 @@ export function useQueue() {
   );
 
   const clear = useCallback(() => {
-    textPayloads.current.clear();
     const going = itemsRef.current;
     setFocusedItemId(null);
     commit([]);
@@ -987,7 +900,6 @@ export function useQueue() {
   /** Replaces the browser queue when opening a saved project. */
   const replaceAll = useCallback(
     (next: QueueItem[]) => {
-      textPayloads.current.clear();
       setFocusedItemId(next[0]?.id ?? null);
       commit(next);
       // The project may be older than this document — any photo it is still
@@ -1009,9 +921,6 @@ export function useQueue() {
     addText,
     addReadyRecipes,
     adoptUploadedPhotos,
-    retry,
-    canRetry,
-    repairItem,
     remove,
     clear,
     replaceAll,

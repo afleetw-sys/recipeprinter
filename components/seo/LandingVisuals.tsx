@@ -43,6 +43,7 @@ export function HeroProductPhoto({
   annotation,
   priority = false,
   wide = false,
+  crop = false,
   frame = "card",
 }: {
   cardKey?: string;
@@ -54,6 +55,10 @@ export function HeroProductPhoto({
   annotation?: string;
   priority?: boolean;
   wide?: boolean;
+  /** Force an uncropped named image into the shared 4:3 hero footprint. Used
+      by full-import heroes so a very wide source image does not collapse into
+      a banner beside the much taller import panel. */
+  crop?: boolean;
   /** `card` (default, unchanged everywhere else) is the light photo-frame
       every printed-card hero uses — a thin border, barely-there padding,
       cropped to a fixed 4:3. `document` is a dark, padded canvas with a
@@ -72,7 +77,7 @@ export function HeroProductPhoto({
   // slot already; honour its own objectPosition, or leave it centred.
   const objectPosition = named ? (named.objectPosition ?? "50% 50%") : "50% 86%";
   const isDocument = frame === "document";
-  const isUncropped = frame === "none" || isDocument;
+  const isUncropped = !crop && (frame === "none" || isDocument);
   const image = (
     <Image
       src={card.src}
@@ -83,7 +88,7 @@ export function HeroProductPhoto({
       priority={priority}
       className={
         isDocument
-          ? "h-auto w-full rounded-sm shadow-2xl"
+          ? "h-auto w-full rounded-sm shadow-cp-xl"
           : isUncropped
             ? "h-auto w-full rounded-xl"
             : "aspect-[4/3] w-full rounded-xl object-cover"
@@ -92,11 +97,11 @@ export function HeroProductPhoto({
     />
   );
   return (
-    <div className={`relative mx-auto w-full ${wide ? "max-w-[860px]" : "max-w-[460px]"}`}>
+    <div className={`relative mx-auto w-full ${wide ? "max-w-[860px]" : "max-w-[520px]"}`}>
       <div
         className={
           isDocument
-            ? "overflow-hidden rounded-2xl bg-[#1c1c1e] p-6 sm:p-10"
+            ? "overflow-hidden rounded-2xl bg-ink p-6 sm:p-10"
             : "overflow-hidden rounded-2xl border border-line bg-card p-1.5"
         }
       >
@@ -108,6 +113,29 @@ export function HeroProductPhoto({
           {annotation}
         </span>
       )}
+    </div>
+  );
+}
+
+/**
+ * The PDF converter's opener is an object placed on the page, not a photograph
+ * in the shared hero frame. The source PNG already contains a page curl,
+ * transparent edges, and a soft cast shadow, so a small rotation is enough to
+ * make it feel casually set beside the copy rather than presented as a second
+ * rectangular panel.
+ */
+export function PdfFileObject() {
+  return (
+    <div className="mx-auto w-[clamp(160px,18vw,230px)] -rotate-[3deg] lg:-translate-y-cp-3">
+      <Image
+        src="/images/pdf.png"
+        width={1108}
+        height={1384}
+        alt="A Honey Garlic Salmon Stir Fry Noodles recipe saved as a PDF file."
+        sizes="(max-width: 1023px) 52vw, 230px"
+        priority
+        className="h-auto w-full"
+      />
     </div>
   );
 }

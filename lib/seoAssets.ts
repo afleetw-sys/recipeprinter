@@ -70,14 +70,13 @@ export const FEATURE_IMAGES: Record<string, ProofImage> = {
       "A saved recipe PDF open in a document viewer, with a search for sesame oil finding it on two pages.",
   },
   "convert-to-pdf": {
-    src: "/images/pdf-convert.png",
-    width: 2460,
-    height: 2460,
-    // The actual, unedited Preview.app screenshot — window chrome, page
-    // thumbnails, and all. Shown uncropped (see `frame: "document"` on
-    // HeroProductPhoto), by request: not a cropped product shot.
+    src: "/images/pdf.png",
+    width: 1108,
+    height: 1384,
+    // A transparent file object, placed loose in the converter's opener rather
+    // than inside HeroProductPhoto's framed photography treatment.
     alt:
-      "A Honey Garlic Salmon Stir Fry Noodles recipe open as a saved PDF in Preview, showing the two-column ingredients and steps layout and three more recipe pages in the sidebar.",
+      "A Honey Garlic Salmon Stir Fry Noodles recipe saved as a PDF file.",
   },
   "handwritten-card": {
     src: "/images/jackie-card.jpeg",

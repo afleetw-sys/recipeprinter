@@ -43,13 +43,9 @@ export function SiteHeader({
   wordmark?: boolean;
   compact?: boolean;
   sticky?: boolean;
-  /** Paints the sticky bar with the workspace's off-white `bg-chrome` — the
-      /print editor only (and its own loading/error states, which are still
-      that page). Every other sticky header, marketing pages included, stays
-      transparent; a background here used to be tied to `compact` alone,
-      which every app-chrome-styled header opted into whether or not it was
-      actually /print, and marketing headers carried their own plain-white
-      fill regardless of this prop at all. */
+  /** Paints a sticky bar with the off-white `bg-chrome` surface and its
+      dividing hairline. Used by the /print workspace and the shared SEO-page
+      frame; other utility headers remain transparent unless they opt in. */
   chrome?: boolean;
   saveStatus?: AccountSaveStatus | null;
   onRetrySave?: () => void;
@@ -104,15 +100,9 @@ export function SiteHeader({
             `sticky top-0 z-[var(--z-sticky)] ${
               compact ? "py-cp-2" : "py-cp-3"
             } ${
-              /* Only the actual `chrome` callers (the /print workspace, and
-                 the loading/error states that are still that same page) get
-                 a fill — there the bar is one side of the frame around the
-                 deck and takes the frame's near-white, matching the rail and
-                 the settings panel, and the hairline is what separates it
-                 from the deck below. Every other sticky header — marketing
-                 pages included — stays fully transparent, no border either:
-                 with nothing painted behind it, a dividing line would just be
-                 a stray rule floating over whatever scrolls underneath. */
+              /* Explicit callers get the near-white surface and hairline.
+                 Everything else stays transparent; with nothing painted
+                 behind it, a divider would be a stray floating rule. */
               chrome ? "bg-chrome border-b border-line" : ""
             }`
           : ""

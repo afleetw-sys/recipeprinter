@@ -6391,9 +6391,6 @@ textarea.recipe-card__toc-title {
 .recipe-page-failed__heading {
   font-weight: var(--cp-fw-display);
   color: var(--cp-error);
-  /* Wraps rather than truncates: the source is a hostname or a filename and
-     the cook needs to know WHICH import this was when several are in flight. */
-  overflow-wrap: anywhere;
 }
 
 .recipe-page-failed__message {
@@ -6406,40 +6403,6 @@ textarea.recipe-card__toc-title {
   flex-wrap: wrap;
   gap: 8px;
   width: 100%;
-}
-
-.recipe-page-failed__paste {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-  width: 100%;
-}
-
-.recipe-page-failed__label {
-  font-size: var(--cp-fs-caption);
-  font-weight: var(--cp-fw-bold);
-  color: var(--cp-ink-soft);
-}
-
-.recipe-page-failed__textarea {
-  width: 100%;
-  min-height: 8lh;
-  padding: 8px;
-  border: 1px solid var(--cp-line-strong);
-  border-radius: var(--cp-radius-sm);
-  background: var(--cp-card);
-  font: inherit;
-  resize: vertical;
-}
-
-.recipe-page-failed__textarea:focus-visible {
-  outline: var(--cp-focus-ring);
-  outline-offset: 2px;
-}
-
-.recipe-page-failed__file-error {
-  color: var(--cp-error);
-  font-size: var(--cp-fs-caption);
 }
 
 /* The rail's label for that page. A row, not a tile with its own buttons: the

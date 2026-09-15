@@ -32,8 +32,8 @@ interface PendingImportRowsProps {
  * ONLY record of the failure, expired on a timer, and on a phone (which has no
  * rail) was the only thing that ever mentioned the import at all.
  *
- * The actions — Try again, paste the text, add a screenshot, remove — live on
- * the card, which has the room for them. See FailedImportCard.
+ * Recovery lives on the card, which opens the shared Add recipes sheet so the
+ * cook can choose a different source. See FailedImportCard.
  */
 export function PendingImportRows({
   items,

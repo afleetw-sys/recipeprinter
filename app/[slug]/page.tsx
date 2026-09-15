@@ -15,6 +15,7 @@ import {
   ComparisonTable,
   FeatureRows,
   HeroProductPhoto,
+  PdfFileObject,
   HowItWorks,
   PhotoGallery,
 } from "@/components/seo/LandingVisuals";
@@ -121,10 +122,12 @@ export default function SeoLandingPage({ params }: PageProps) {
   // mode does — plain CSS centering (the hero grid's default) re-litigated
   // the photo's position on every tab. `center-once` (see HeroSplitRow)
   // measures once after mount instead, so the photo still reads centered but
-  // stops moving when the mode does. The narrower column ratio is what
-  // actually hands the toggle row and its longer field the extra width — a
-  // smaller photo alone just leaves that width empty beside it.
+  // stops moving when the mode does. The slightly wider copy column keeps the
+  // toggle and field comfortable without reducing the photo to a thumbnail.
+  // Its fixed 4:3 crop gives even very wide source art the same visual weight
+  // as the other hero photos without moving the controls farther down.
   const showsAllImportModes = (page.importModes?.length ?? 0) > 1;
+  const usesDecorativePdf = page.slug === "convert-recipe-to-pdf";
 
   return (
     <LandingFrame headerActions={<LandingCta label="Go to printer" compact />}>
@@ -138,8 +141,8 @@ export default function SeoLandingPage({ params }: PageProps) {
         lede={page.lede}
         above={<Breadcrumb trail={breadcrumbTrail(page)} />}
         note={page.statusNote}
-        asideAlign={showsAllImportModes ? "center-once" : undefined}
-        asideWidth={showsAllImportModes ? "narrow" : undefined}
+        asideAlign={usesDecorativePdf ? "start" : showsAllImportModes ? "center-once" : undefined}
+        asideWidth={usesDecorativePdf ? "small-aside" : showsAllImportModes ? "narrow" : undefined}
         actions={
           isGuide ? (
             // No "See how it works" link beside it. On a guide-first page the
@@ -152,24 +155,29 @@ export default function SeoLandingPage({ params }: PageProps) {
           )
         }
         aside={
-          <HeroProductPhoto
-            imageKey={page.heroImage}
-            cardKey={heroCardKey(page)}
-            // The two defaults describe the CARD photos, which is what
-            // the hero was before a page could name its own. A page that
-            // names one is showing something else, so it captions it or
-            // says nothing.
-            annotation={
-              page.heroImage
-                ? page.heroAnnotation
-                : isGuide
-                  ? "Ready for a family cookbook"
-                  : "Printed from a recipe link"
-            }
-            priority
-            wide={!showsAllImportModes}
-            frame={page.heroFrame}
-          />
+          usesDecorativePdf ? (
+            <PdfFileObject />
+          ) : (
+            <HeroProductPhoto
+              imageKey={page.heroImage}
+              cardKey={heroCardKey(page)}
+              // The two defaults describe the CARD photos, which is what
+              // the hero was before a page could name its own. A page that
+              // names one is showing something else, so it captions it or
+              // says nothing.
+              annotation={
+                page.heroImage
+                  ? page.heroAnnotation
+                  : isGuide
+                    ? "Ready for a family cookbook"
+                    : "Printed from a recipe link"
+              }
+              priority
+              wide={!showsAllImportModes}
+              crop={showsAllImportModes}
+              frame={page.heroFrame}
+            />
+          )
         }
       />
 

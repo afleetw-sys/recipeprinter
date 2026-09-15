@@ -144,14 +144,12 @@ export function LandingHero({
       reads centered at rest but stops moving for reasons that have nothing
       to do with it. No effect on `centered`/solo layouts, which never had a
       second column to align against. */
-  asideAlign?: "center" | "center-once";
+  asideAlign?: "center" | "center-once" | "start";
   /** Column ratio of the two `split` columns. `even` (the default,
       unchanged everywhere else) is a plain 50/50 grid. `narrow` gives the
-      text/actions column more of the row — the point of shrinking the photo
-      on a multi-source capture page is to hand that width back to the
-      wider toggle and its longer field row, not to leave it empty beside a
-      smaller photo. */
-  asideWidth?: "even" | "narrow";
+      text/actions column a little more of the row so the full import switch
+      stays comfortable, without reducing its photo to a thumbnail. */
+  asideWidth?: "even" | "narrow" | "small-aside";
 }) {
   const centered = align === "centered";
   // Without a photo there is no second column to balance, so the grid would
@@ -200,7 +198,11 @@ export function LandingHero({
     </div>
   );
   const splitGridClassName = `grid gap-cp-7 ${
-    asideWidth === "narrow" ? "lg:grid-cols-[3fr_2fr]" : "lg:grid-cols-2"
+    asideWidth === "narrow"
+      ? "lg:grid-cols-[11fr_9fr]"
+      : asideWidth === "small-aside"
+        ? "lg:grid-cols-[2fr_1fr]"
+        : "lg:grid-cols-2"
   } lg:gap-[64px]`;
   return (
     <div className="flex flex-col gap-cp-6">
@@ -213,7 +215,7 @@ export function LandingHero({
               ? "py-cp-3"
               : asideAlign === "center-once"
                 ? "py-cp-3"
-                : `${splitGridClassName} items-center py-cp-3`
+                : `${splitGridClassName} ${asideAlign === "start" ? "items-start" : "items-center"} py-cp-3`
         }
         aria-labelledby="landing-heading"
       >
@@ -269,7 +271,7 @@ export function LandingFrame({
           placeholder and submit wording; sending someone to the home page
           would throw all of that away and land them somewhere they did not
           ask for. */}
-      <SiteHeader actions={headerActions} sticky />
+      <SiteHeader actions={headerActions} sticky chrome />
       <main className="flex-1 px-cp-6 sm:px-cp-7 lg:px-[40px]">
         <div className="max-w-content mx-auto flex flex-col gap-[72px] lg:gap-[96px] pt-cp-5 pb-[80px]">
           {children}
