@@ -142,9 +142,10 @@ function FullCapture({
     // the hero photo jumping as the mode changed height — it worked, but it
     // also left dead space below every shorter mode, pushing whatever comes
     // after this (the reassurance line) down with it. The real fix is the
-    // page passing `heroAlign: "start"` to LandingHero: top-aligned, the
-    // photo's position never depended on this column's height to begin
-    // with, so there's nothing left to reserve against.
+    // page passing `asideAlign: "center-once"` to LandingHero (see
+    // HeroSplitRow): the photo's position is measured once after mount and
+    // frozen, so it doesn't depend on this column's height after that, and
+    // there's nothing left to reserve against.
     <ImportPanel
       // Always empty, and that is the point: this page holds no print list,
       // so nothing can be marked as already added and every enabled source
@@ -341,7 +342,7 @@ function SingleFieldCapture({
             />
             {submitButton}
           </div>
-          {error && <p className="field-error" role="alert">{error}</p>}
+          <FieldError error={error} />
         </div>
       )}
 
@@ -361,7 +362,7 @@ function SingleFieldCapture({
               if (error) setError(null);
             }}
           />
-          {error && <p className="field-error" role="alert">{error}</p>}
+          <FieldError error={error} />
           {submitButton}
         </>
       )}
@@ -402,10 +403,25 @@ function SingleFieldCapture({
               {placeholder ?? "Snap a cookbook page or screenshot, or drop a photo"}
             </span>
           </label>
-          {error && <p className="field-error" role="alert">{error}</p>}
+          <FieldError error={error} />
           {submitButton}
         </>
       )}
     </form>
+  );
+}
+
+/**
+ * Same slot whether or not there's an error to show. Left unreserved, an
+ * error appearing or clearing changes this column's height, and the hero
+ * grid it sits in (`LandingHero`'s default `items-center`) re-centers the
+ * whole row against that — which reads as the product photo beside it
+ * jumping for a reason that has nothing to do with the photo.
+ */
+function FieldError({ error }: { error: string | null }) {
+  return (
+    <p className={`field-error ${error ? "" : "invisible"}`} role="alert" aria-hidden={error ? undefined : true}>
+      {error || " "}
+    </p>
   );
 }

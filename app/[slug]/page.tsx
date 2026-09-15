@@ -118,11 +118,12 @@ export default function SeoLandingPage({ params }: PageProps) {
   const isGuide = layoutForPage(page) === "guide-first";
   // The full Link/Recipe apps/Image/Text switch runs taller AND wider than
   // the single field every other page shows, and its height changes as the
-  // mode does — centered against that (the hero grid's default), the photo
-  // re-litigated its own position on every tab. Top-aligned it stops
-  // depending on this column's height at all. The narrower column ratio is
-  // what actually hands the toggle row and its longer field the extra
-  // width — a smaller photo alone just leaves that width empty beside it.
+  // mode does — plain CSS centering (the hero grid's default) re-litigated
+  // the photo's position on every tab. `center-once` (see HeroSplitRow)
+  // measures once after mount instead, so the photo still reads centered but
+  // stops moving when the mode does. The narrower column ratio is what
+  // actually hands the toggle row and its longer field the extra width — a
+  // smaller photo alone just leaves that width empty beside it.
   const showsAllImportModes = (page.importModes?.length ?? 0) > 1;
 
   return (
@@ -137,7 +138,7 @@ export default function SeoLandingPage({ params }: PageProps) {
         lede={page.lede}
         above={<Breadcrumb trail={breadcrumbTrail(page)} />}
         note={page.statusNote}
-        asideAlign={showsAllImportModes ? "start" : undefined}
+        asideAlign={showsAllImportModes ? "center-once" : undefined}
         asideWidth={showsAllImportModes ? "narrow" : undefined}
         actions={
           isGuide ? (

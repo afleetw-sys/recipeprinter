@@ -2,6 +2,7 @@ import Link from "next/link";
 import type { ReactNode } from "react";
 import { SiteFooter } from "@/components/SiteFooter";
 import { SiteHeader } from "@/components/SiteHeader";
+import { HeroSplitRow } from "@/components/seo/HeroSplitRow";
 import { ICON_SIZE, PrintIcon } from "@/components/icons";
 
 // ─────────────────────────────────────────────────────────────────────────
@@ -131,12 +132,19 @@ export function LandingHero({
   align?: "split" | "centered";
   /** Cross-axis alignment of the two `split` columns. `center` (the default,
       unchanged everywhere else) balances a short text column against a
-      taller photo. `start` pins the photo to the top instead — worth it on
-      a page whose `actions` column changes height on its own (a capture
-      block with a mode switch), where centering re-litigates the photo's
-      position every time that height does. No effect on `centered`/solo
-      layouts, which never had a second column to align against. */
-  asideAlign?: "center" | "start";
+      taller photo with plain CSS — fine as long as nothing after the first
+      paint changes that text column's height.
+      `center-once` is for the page where something does: a capture block
+      whose `actions` column changes height on its own (an import-mode
+      switch, a validation error). Plain `center` would re-litigate the
+      photo's position every time that height changed, because a Grid row's
+      center is `max(left, aside)`, recomputed on every reflow — see
+      `HeroSplitRow`, which this renders through instead. It measures the
+      columns once after mount and freezes the result, so the photo still
+      reads centered at rest but stops moving for reasons that have nothing
+      to do with it. No effect on `centered`/solo layouts, which never had a
+      second column to align against. */
+  asideAlign?: "center" | "center-once";
   /** Column ratio of the two `split` columns. `even` (the default,
       unchanged everywhere else) is a plain 50/50 grid. `narrow` gives the
       text/actions column more of the row — the point of shrinking the photo
@@ -151,6 +159,49 @@ export function LandingHero({
   // column instead, with the measure capped: an h1 running the full 1240 is a
   // banner, not a heading.
   const soloColumn = !centered && !aside;
+  const copy = (
+    <div
+      className={
+        centered
+          ? "flex flex-col items-center text-center"
+          : soloColumn
+            ? "max-w-[46rem]"
+            : undefined
+      }
+    >
+      <h1
+        id="landing-heading"
+        // Centred, the heading had the full 1240 to run into and set as a
+        // banner across the page. Capped, it breaks into a block the eye
+        // takes in at once, which is the only reason to centre it.
+        className={`text-cp-hero-lg font-extrabold leading-[1.04] tracking-[-0.04em]${
+          centered ? " max-w-[18ch]" : ""
+        }`}
+      >
+        {h1}
+      </h1>
+      <p
+        className={`mt-cp-4 max-w-[40rem] text-cp-body-lg leading-relaxed text-ink-soft${
+          centered ? " mx-auto" : ""
+        }`}
+      >
+        {lede}
+      </p>
+      {actions && <div className="mt-cp-5">{actions}</div>}
+      {note && (
+        <p
+          className={`mt-cp-5 text-cp-small leading-relaxed text-ink-soft ${
+            centered ? "max-w-[46rem]" : "max-w-[40rem]"
+          }`}
+        >
+          {note}
+        </p>
+      )}
+    </div>
+  );
+  const splitGridClassName = `grid gap-cp-7 ${
+    asideWidth === "narrow" ? "lg:grid-cols-[3fr_2fr]" : "lg:grid-cols-2"
+  } lg:gap-[64px]`;
   return (
     <div className="flex flex-col gap-cp-6">
       {above}
@@ -160,57 +211,30 @@ export function LandingHero({
             ? "flex flex-col gap-cp-7 py-cp-3"
             : soloColumn
               ? "py-cp-3"
-              : `grid ${asideAlign === "start" ? "items-start" : "items-center"} gap-cp-7 py-cp-3 ${
-                  asideWidth === "narrow" ? "lg:grid-cols-[3fr_2fr]" : "lg:grid-cols-2"
-                } lg:gap-[64px]`
+              : asideAlign === "center-once"
+                ? "py-cp-3"
+                : `${splitGridClassName} items-center py-cp-3`
         }
         aria-labelledby="landing-heading"
       >
-        <div
-          className={
-            centered
-              ? "flex flex-col items-center text-center"
-              : soloColumn
-                ? "max-w-[46rem]"
-                : undefined
-          }
-        >
-          <h1
-            id="landing-heading"
-            // Centred, the heading had the full 1240 to run into and set as a
-            // banner across the page. Capped, it breaks into a block the eye
-            // takes in at once, which is the only reason to centre it.
-            className={`text-cp-hero-lg font-extrabold leading-[1.04] tracking-[-0.04em]${
-              centered ? " max-w-[18ch]" : ""
-            }`}
-          >
-            {h1}
-          </h1>
-          <p
-            className={`mt-cp-4 max-w-[40rem] text-cp-body-lg leading-relaxed text-ink-soft${
-              centered ? " mx-auto" : ""
-            }`}
-          >
-            {lede}
-          </p>
-          {actions && <div className="mt-cp-5">{actions}</div>}
-          {note && (
-            <p
-              className={`mt-cp-5 text-cp-small leading-relaxed text-ink-soft ${
-                centered ? "max-w-[46rem]" : "max-w-[40rem]"
-              }`}
-            >
-              {note}
-            </p>
-          )}
-        </div>
-        {/* Split gives the photo half the row, which caps it on its own. Centred
-            it has the full content width to grow into, and at 860 the opening
-            ran past the fold on a laptop and pushed the first section off the
-            screen entirely. The image still opens the page; it just stops being
-            the only thing on it. */}
-        {aside &&
-          (centered ? <div className="mx-auto w-full max-w-[640px]">{aside}</div> : aside)}
+        {!centered && !soloColumn && asideAlign === "center-once" ? (
+          <HeroSplitRow
+            gridClassName={`${splitGridClassName} items-start`}
+            left={copy}
+            aside={aside}
+          />
+        ) : (
+          <>
+            {copy}
+            {/* Split gives the photo half the row, which caps it on its own.
+                Centred it has the full content width to grow into, and at
+                860 the opening ran past the fold on a laptop and pushed the
+                first section off the screen entirely. The image still opens
+                the page; it just stops being the only thing on it. */}
+            {aside &&
+              (centered ? <div className="mx-auto w-full max-w-[640px]">{aside}</div> : aside)}
+          </>
+        )}
       </section>
     </div>
   );

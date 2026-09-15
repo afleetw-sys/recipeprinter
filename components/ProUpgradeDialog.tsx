@@ -17,10 +17,14 @@ import {
 } from "@/lib/proProduct";
 
 // Every one of these is a real, implemented gate (see computeProLocks in
-// lib/recipePrinterPurchases.ts) — a "20% off your first cookbook export"
-// line used to sit here too, but no checkout path anywhere ever actually
-// applied that discount; a Pro subscriber was charged the same $19.99 as
-// anyone else. Don't add a benefit back here without wiring the real thing
+// lib/recipePrinterPurchases.ts). A "20% off your first cookbook export"
+// line used to sit here too, then got pulled because no checkout path
+// anywhere actually applied the discount — a Pro subscriber was charged the
+// same $19.99 as anyone else. That's fixed now (see
+// lib/cookbookProduct.ts's isFirstCookbookDiscountEligible, threaded through
+// lib/useCookbookPurchase.ts to lib/recipePrinterPurchases.ts's
+// packageForCookbook, which resolves RevenueCat's real `cookbook_pro_first`
+// package). Don't add a benefit back here without wiring the real thing
 // behind it first.
 //
 // Exported so `AccountProStatus` can show the same list to a Free account —
@@ -30,6 +34,7 @@ export const PRO_BENEFITS = [
   "All premium themes",
   "4×6 recipe cards",
   "Print multiple recipes at once",
+  "20% off your first cookbook",
 ];
 
 const PRO_CYCLE_LABEL: Record<ProBillingCycle, string> = {
