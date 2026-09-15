@@ -3195,10 +3195,11 @@ export default function PrintPage() {
     void handlePrint();
   }
 
-  // The Print button is only truly *disabled* while a purchase is settling —
-  // there's a real async operation the click can't preempt. It is NOT disabled
-  // for a measuring layout: a click then is queued (see `printPending`), so the
-  // button stays live and just shows a spinner until the layout is ready.
+  // The Print button is truly *disabled* while a purchase is settling (a real
+  // async operation the click can't preempt) or while the deck is empty (there
+  // is nothing a print could do). It is NOT disabled for a measuring layout: a
+  // click then is queued (see `printPending`), so the button stays live and
+  // just shows a spinner until the layout is ready.
   /**
    * Would a print right now produce something that hasn't been paid for?
    *
@@ -3223,12 +3224,19 @@ export default function PrintPage() {
     Math.max((items?.length ?? 0) - 1, 0),
   );
 
-  const printBlocked = proBusy || claimBusy || cookbookPurchaseBusy;
+  // Nothing on the deck yet — recipe cards read `navItems`, a cookbook reads
+  // `spreads` (cookbookView is itself `spreads.length > 0`, so this only ever
+  // fires in the recipe-cards case, but checking both keeps this correct if
+  // that relationship ever changes).
+  const nothingToPrint = navItems.length === 0 && spreads.length === 0;
+  const printBlocked = proBusy || claimBusy || cookbookPurchaseBusy || nothingToPrint;
   // `printAwaitingBrowser` is the second or so between asking to print and
   // knowing whether the browser took it. Nothing is on screen during that gap
   // when the answer turns out to be no, and a button that looks untouched is
-  // what a refused print has always looked like.
-  const printSpinner = printBlocked || printPending || printAwaitingBrowser;
+  // what a refused print has always looked like. Deliberately NOT keyed on
+  // `nothingToPrint` — a spinner reads as "working", and a disabled button
+  // sitting on an empty deck isn't.
+  const printSpinner = proBusy || claimBusy || cookbookPurchaseBusy || printPending || printAwaitingBrowser;
 
   // Always the current `handlePrint`, for the auto-print effect below.
   //
