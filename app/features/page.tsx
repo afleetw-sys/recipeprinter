@@ -65,15 +65,15 @@ export default function FeaturesPage() {
 
       <LandingHero
         align="centered"
-        h1="A recipe printing tool for the ones worth keeping"
-        lede="Recipes live on screens and get cooked in kitchens. RecipePrinter moves them onto paper you can hold, mark up, and hand down."
+        h1="A recipe printer for the ones worth keeping"
+        lede="Recipes live on screens and get cooked in kitchens. RecipePrinter turns them into clean pages and recipe cards you can print, save, and keep."
         above={<Breadcrumb trail={TRAIL} />}
         actions={<LandingCta href="/" label="Start printing for free" />}
       />
 
       <LandingSection
         id="print-heading"
-        heading="Print how you want"
+        heading="Print recipes how you want"
       >
         <FeatureCards items={PRINT_CARDS} />
         <PickerRow label="Guides by what you end up with" pages={byGroup("output")} />
