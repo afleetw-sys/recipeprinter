@@ -92,8 +92,7 @@ export function PrintSetupControls({
               full-sheet route) live in Print settings, not repeated here. */}
           {cardSize === "card-6x4" && (
             <p className="recipe-format-note">
-              True to size on 4×6 cardstock, or trim it from a full sheet
-              using the cut lines in Print settings.
+              True to size on 4×6 cardstock.
             </p>
           )}
         </div>

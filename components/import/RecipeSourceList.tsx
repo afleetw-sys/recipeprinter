@@ -288,7 +288,10 @@ export function RecipeSourceList({
               nobody can follow without being told the missing one is already
               in the print list. Select all deliberately skips those, so the
               count that explains the gap is shown beside it. */}
-          {selectedCount > 0 && (
+          {/* "1 selected" is only informative where a count can vary — with
+              `singleSelect` it's always zero or one, which the row's own
+              highlight (and the checkmark next to it) already says. */}
+          {!singleSelect && selectedCount > 0 && (
             <span className="text-cp-caption font-bold text-ink" role="status">
               {selectedCount} selected
               {alreadyAdded > 0 && (
