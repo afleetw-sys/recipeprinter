@@ -91,22 +91,19 @@ function CaptureBlock({ page }: { page: SeoLandingPage }) {
         placeholder={page.importPlaceholder}
         modes={page.importModes}
       />
-      {/* Full-contrast, deliberately NOT the muted caption weight
-          ImportPanel's own inline notes use (the "Works with Instagram…"
-          line under the URL field, an error) — this is pricing/access
-          context, not another usage tip, and reading as one more line in
-          that same quiet grey stream buried it. The weight alone is enough
-          to tell the two apart; it sits right under the component rather
-          than needing extra distance from it too. */}
-      {page.captureReassurance !== false && (
-        <p className="mt-cp-3 text-cp-small font-semibold text-ink">
-          {page.captureReassurance ?? "Free to use. No account, no clutter."}
-        </p>
+      {/* Off by default — see the field's own doc comment. Full-contrast,
+          deliberately NOT the muted caption weight ImportPanel's own inline
+          notes use (the "Works with Instagram…" line under the URL field,
+          an error) — this is pricing/access context, not another usage
+          tip, and reading as one more line in that same quiet grey stream
+          buried it. The weight alone is enough to tell the two apart; it
+          sits right under the component rather than needing extra distance
+          from it too. */}
+      {page.captureReassurance && (
+        <p className="mt-cp-3 text-cp-small font-semibold text-ink">{page.captureReassurance}</p>
       )}
       {page.importHint && (
-        <p
-          className={`${page.captureReassurance === false ? "mt-cp-3" : "mt-cp-2"} text-cp-small text-ink-soft`}
-        >
+        <p className={`${page.captureReassurance ? "mt-cp-2" : "mt-cp-3"} text-cp-small text-ink-soft`}>
           {page.importHint}
         </p>
       )}
@@ -170,6 +167,7 @@ export default function SeoLandingPage({ params }: PageProps) {
             }
             priority
             wide={!showsAllImportModes}
+            frame={page.heroFrame}
           />
         }
       />

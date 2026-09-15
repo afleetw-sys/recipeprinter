@@ -43,6 +43,7 @@ export function HeroProductPhoto({
   annotation,
   priority = false,
   wide = false,
+  frame = "card",
 }: {
   cardKey?: string;
   /** A FEATURE_IMAGES key, when a page's hero is not one of the card photos.
@@ -53,6 +54,14 @@ export function HeroProductPhoto({
   annotation?: string;
   priority?: boolean;
   wide?: boolean;
+  /** `card` (default, unchanged everywhere else) is the light photo-frame
+      every printed-card hero uses — a thin border, barely-there padding,
+      cropped to a fixed 4:3. `document` is for a hero that IS a document
+      (a saved PDF, say): a dark canvas with real padding and a shadow, so
+      the page reads as something being VIEWED rather than a flat card
+      graphic, and the full page shows uncropped instead of being forced
+      into the 4:3 slot a photo needs. */
+  frame?: "card" | "document";
 }) {
   const named = imageKey ? FEATURE_IMAGES[imageKey] : undefined;
   const card = named ?? PRINTED_CARDS[cardKey] ?? PRINTED_CARDS.korean;
@@ -60,9 +69,16 @@ export function HeroProductPhoto({
   // 86% crop to keep it centred. A named image is composed for a landscape
   // slot already; honour its own objectPosition, or leave it centred.
   const objectPosition = named ? (named.objectPosition ?? "50% 50%") : "50% 86%";
+  const isDocument = frame === "document";
   return (
     <div className={`relative mx-auto w-full ${wide ? "max-w-[860px]" : "max-w-[460px]"}`}>
-      <div className="overflow-hidden rounded-2xl border border-line bg-card p-1.5">
+      <div
+        className={
+          isDocument
+            ? "overflow-hidden rounded-2xl bg-[#1c1c1e] p-6 sm:p-10"
+            : "overflow-hidden rounded-2xl border border-line bg-card p-1.5"
+        }
+      >
         <Image
           src={card.src}
           width={card.width}
@@ -70,8 +86,8 @@ export function HeroProductPhoto({
           alt={card.alt}
           sizes="(max-width: 1023px) 90vw, 460px"
           priority={priority}
-          className="aspect-[4/3] w-full rounded-xl object-cover"
-          style={{ objectPosition }}
+          className={isDocument ? "h-auto w-full rounded-sm shadow-2xl" : "aspect-[4/3] w-full rounded-xl object-cover"}
+          style={isDocument ? undefined : { objectPosition }}
         />
       </div>
       {annotation && (
@@ -85,6 +101,23 @@ export function HeroProductPhoto({
 }
 
 /** Numbered steps as a clean, connected row, big accent numerals, hairline spine. */
+/** Bolds "RecipePrinter Pro" wherever a step mentions it — the plan name is
+    the one word in these short descriptions worth it standing out, and the
+    JSON-LD (`howToNode`, built from the same plain `step.text`) is
+    unaffected since this only touches how it's drawn, not the string
+    itself. */
+function boldProMentions(text: string) {
+  const marker = "RecipePrinter Pro";
+  const parts = text.split(marker);
+  if (parts.length === 1) return text;
+  return parts.map((part, i) => (
+    <span key={i}>
+      {part}
+      {i < parts.length - 1 && <strong className="font-bold text-ink">{marker}</strong>}
+    </span>
+  ));
+}
+
 export function HowItWorks({ steps }: { steps: { name: string; text: string }[] }) {
   return (
     <ol className="grid gap-cp-6 sm:grid-cols-2 lg:grid-cols-4">
@@ -102,7 +135,9 @@ export function HowItWorks({ steps }: { steps: { name: string; text: string }[] 
             )}
           </div>
           <h3 className="mt-cp-3 font-bold tracking-[-0.01em]">{step.name}</h3>
-          <p className="mt-cp-1 text-ink-soft text-cp-small leading-relaxed">{step.text}</p>
+          <p className="mt-cp-1 text-ink-soft text-cp-small leading-relaxed">
+            {boldProMentions(step.text)}
+          </p>
         </li>
       ))}
     </ol>

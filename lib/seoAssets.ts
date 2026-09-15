@@ -69,6 +69,17 @@ export const FEATURE_IMAGES: Record<string, ProofImage> = {
     alt:
       "A saved recipe PDF open in a document viewer, with a search for sesame oil finding it on two pages.",
   },
+  "convert-to-pdf": {
+    src: "/images/convert-to-pdf.png",
+    width: 2245,
+    height: 1950,
+    // Cropped from a Preview.app window screenshot down to just the page
+    // itself — no title bar, sidebar, or toolbar. Still short of the hero
+    // slot's 4:3, so a mild, centered trim off the top and bottom is
+    // expected; the title and all nine steps survive it.
+    alt:
+      "A Honey Garlic Salmon Stir Fry Noodles recipe saved as a clean two-column PDF, ingredients on the left and steps on the right.",
+  },
   "handwritten-card": {
     src: "/images/jackie-card.jpeg",
     width: 1800,

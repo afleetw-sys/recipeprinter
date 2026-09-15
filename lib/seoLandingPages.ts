@@ -105,15 +105,25 @@ export type SeoLandingPage = {
       the built-in captions describe the printed cards, and a page showing
       something else should not inherit one. Omit for no label. */
   heroAnnotation?: string;
+  /** `document` swaps the light photo-frame for a dark, padded canvas with
+      a shadow — for a `heroImage` that IS a document (a saved PDF) rather
+      than a photographed card, so it reads as something being viewed
+      instead of a flat rectangle. Defaults to the usual `card` frame. */
+  heroFrame?: "card" | "document";
   /** Heading over the guide-first capture block. Hardcoded to "Start your
       family cookbook" until four guide pages that are not about cookbooks
       inherited it. */
   captureHeading?: string;
-  /** Reassurance below capture; false hides the default utility-page message. */
-  captureReassurance?: string | false;
+  /** Reassurance below capture. Off by default — set it only where there's
+      something worth clarifying: a recipe-card page's Pro-gated 4x6
+      printing, a Pro-only capability the page argues for. Most utility
+      pages have no pricing wrinkle to explain and just went quiet. */
+  captureReassurance?: string;
   /** Short hint shown under the capture block when the preselected mode needs a caveat. */
   importHint?: string;
   title: string;
+  /** Complete title when this page needs to bypass the site title template. */
+  absoluteTitle?: string;
   description: string;
   h1: string;
   /**
@@ -158,6 +168,7 @@ export type SeoLandingPage = {
    * cookbook itself, or the same claim lands twice.
    */
   cookbookPitch?: boolean;
+  relatedNote?: { body: string; inlineLinks?: { href: string; label: string }[] };
   /** Overrides the shared section's heading ("When the stack becomes a
       book"), for a page whose own subject wants a different frame on the
       same pitch (a PDF page becoming "When one recipe becomes a
@@ -179,6 +190,7 @@ export type SeoLandingPage = {
   featureSections?: {
     heading: string;
     body: string;
+    inlineLinks?: { href: string; label: string }[];
     proof?: SeoProofKind;
     caption?: string;
     /** Names a specific visual, overriding the one `proof` would pick. Use when
@@ -219,6 +231,7 @@ export type SeoLandingPage = {
   faqs: {
     question: string;
     answer: string;
+    inlineLinks?: { href: string; label: string }[];
     links?: { href: string; label: string; note?: string }[];
   }[];
   links: { href: string; label: string }[];
@@ -227,96 +240,74 @@ export type SeoLandingPage = {
 export const SEO_LANDING_PAGES: SeoLandingPage[] = [
   {
     slug: "print-recipe-from-website",
-    contentUpdated: "2026-09-09",
+    contentUpdated: "2026-09-15",
     lastReviewed: "2026-09-02",
     primaryKeyword: "print recipe from website",
-    secondaryKeywords: [
-      "print recipe from food blog",
-      "print recipe from recipe site",
-      "print recipe website without clutter",
-      "website to print recipes",
-      // Absorbed from the retired /print-recipe-from-url page. Pasting a link
-      // and pasting a URL are the same job, and two pages split the signal for
-      // it; this one had the depth, so it took the phrasing too.
-      "print recipe from URL",
-      "recipe URL printer",
-      "print recipe link",
-      "printable recipe from link",
-    ],
-    cookbookPitch: true,
+    secondaryKeywords: ["print recipe from URL", "print online recipe", "print recipe without ads", "save recipe as PDF"],
     shortLabel: "A website or blog",
     pickerGroup: "source",
     intent: "Utility SEO",
     initialImportMode: "url",
-    title: "Print a Recipe from Any Website",
-    description:
-      "Paste a recipe website or food blog link and turn it into a clean printable recipe card, page, or PDF.",
+    title: "Print a Recipe From a Website or URL",
+    absoluteTitle: "Print a Recipe From a Website or URL | RecipePrinter",
+    description: "Paste a recipe URL and turn it into a clean printable recipe card, full page, or PDF without the extra webpage clutter.",
     h1: "Print a recipe from a website",
-    lede:
-      "Paste a link from a food blog or recipe site. RecipePrinter pulls out the recipe and sets it as a clean printable card, full page, or PDF.",
+    lede: "Paste a recipe URL from a food blog or recipe site. RecipePrinter pulls out the ingredients and instructions and turns them into a clean recipe card, full page, or PDF.",
+    howToHeading: "How to print a recipe from a website",
     howTo: [
-      {
-        name: "Copy the recipe link",
-        text: "On the food blog or recipe site, copy the page link from your browser's address bar or the app's share button.",
-      },
-      {
-        name: "Paste it in",
-        text: "Paste the link into the box above. RecipePrinter reads the page and rebuilds the recipe as a clean, printable layout.",
-      },
-      {
-        name: "Set the format",
-        text: "Choose a recipe card or a full page, keep or drop the photo, and make any edits you want before you print.",
-      },
-      {
-        name: "Print or save as PDF",
-        text: "Send it to your printer, or choose Save as PDF in the print dialog to keep a copy on your phone or computer.",
-      },
+      { name: "Copy the recipe link", text: "Copy the URL from the recipe page." },
+      { name: "Paste it into RecipePrinter", text: "RecipePrinter pulls out the ingredients, instructions, times, and servings." },
+      { name: "Choose a format", text: "Pick a 4 × 6 recipe card or full page, then make any edits you want." },
+      { name: "Print or save as PDF", text: "Print it directly or save a PDF for later." },
     ],
     featureSections: [
       {
-        heading: "It keeps the recipe and drops everything else",
+        heading: "Print the recipe, not the whole webpage",
         proof: "before-after",
-        body:
-          "Printed straight from the browser, that caprese pasta salad runs to 26 sheets. RecipePrinter reads the same page and keeps only what you cook from: the ingredient list with amounts, the numbered steps, the prep and cook times, and the servings. The blogger's backstory, the autoplay video, the comments, and the ads stay behind. You can print the original link on the card too, so the page is easy to find again.",
+        body: "Printing straight from a recipe website can include ads, navigation, comments, photos, and other page clutter. RecipePrinter keeps the recipe itself and turns it into a clean printable layout.",
+        inlineLinks: [{ href: "/print-recipe-without-ads", label: "clean printable layout" }],
       },
       {
-        heading: "Print it the way your kitchen actually works",
+        heading: "Choose a recipe card, full page, or PDF",
         proof: "card",
-        body:
-          "Pick the format that fits how you cook. A 4 by 6 card drops straight into a recipe box or an index-card binder. A full letter page suits long bakes and doubled batches, with room in the margin for your own notes. Keep the finished-dish photo or leave it off to save ink, and the type stays large enough to read from across the counter.",
+        body: "Print as a 4 × 6 recipe card or a full letter-size page. Keep the photo or remove it to save ink. You can also save the finished recipe as a PDF.",
+        inlineLinks: [{ href: "/recipe-card-printer", label: "4 × 6 recipe card" }, { href: "/convert-recipe-to-pdf", label: "save the finished recipe as a PDF" }],
       },
       {
-        heading: "For the pages that fight back",
+        heading: "What if a recipe website won't import?",
         image: "paste-in-app",
-        body:
-          "Some recipes hide behind a login, sit on a site that blocks importers, or live only in a video's description. When a link won't import cleanly, paste the recipe text or upload a screenshot, and RecipePrinter structures it into the same clean printout. It works from a phone too, so you can grab a recipe on the couch and print it from the kitchen later.",
+        body: "If a recipe URL doesn't import cleanly, paste the recipe text or upload a screenshot instead. RecipePrinter formats it into the same clean printable layout.",
       },
     ],
+    relatedNote: {
+      body: "Want to keep building your collection? You can also turn your saved recipes into a cookbook.",
+      inlineLinks: [{ href: "/family-recipe-book", label: "turn your saved recipes into a cookbook" }],
+    },
     faqs: [
       {
-        question: "How does it know which part of the page is the recipe?",
-        answer:
-          "Most recipe sites keep a tidy copy of the recipe for search engines to read. RecipePrinter takes that copy, so the amounts and the steps arrive the way the site wrote them rather than being picked out of the words on the page.",
+        question: "Can I print a recipe from any website?",
+        answer: "Most food blogs and recipe websites work. If one doesn't, paste the recipe text or upload a screenshot instead.",
+        inlineLinks: [{ href: "/print-recipe-from-photo", label: "upload a screenshot" }],
       },
       {
-        question: "Can I save the recipe as a PDF instead of printing?",
-        answer:
-          "Yes. RecipePrinter builds a print-ready page, so in the print dialog you can choose Save as PDF and keep a clean copy on your phone or computer to print whenever you want.",
+        question: "How do I print a recipe from a website without ads?",
+        answer: "Paste the recipe URL into RecipePrinter instead of printing the webpage. It keeps the recipe and leaves out the surrounding page clutter.",
+        inlineLinks: [{ href: "/print-recipe-without-ads", label: "leaves out the surrounding page clutter" }],
       },
       {
-        question: "Can I do this from my phone?",
-        answer:
-          "Yes. Paste the link in a phone browser and set the recipe up there, then use the phone's own print dialog to reach a wireless printer, or choose Save as PDF and print it from a computer later.",
+        question: "Can I turn an online recipe into a 4 × 6 recipe card?",
+        answer: "Yes. Paste the recipe link and choose the 4 × 6 card format before printing.",
+        inlineLinks: [{ href: "/recipe-card-printer", label: "4 × 6 card format" }],
       },
       {
-        question: "Can I print several recipes in one go?",
-        answer:
-          "Yes, with RecipePrinter Pro. Add as many recipes as you want and print them as one job instead of one trip to the printer per recipe, which is most of the point when you're printing a week of dinners at once. A single recipe prints free, no account needed.",
+        question: "Can I save a recipe from a website as a PDF?",
+        answer: "Yes. Choose Save as PDF from the browser's print dialog.",
+        inlineLinks: [{ href: "/convert-recipe-to-pdf", label: "Save as PDF" }],
       },
       {
-        question: "What happens if the original page disappears?",
-        answer:
-          "Nothing, which is the reason to print one in the first place. A recipe page can go behind a paywall, get rewritten around a new story, or go offline entirely, and none of that reaches the card already sitting in your kitchen.",
+        question: "What if the recipe URL doesn't work?",
+        answer: "Paste the recipe text or upload a screenshot instead.",
+        inlineLinks: [{ href: "/print-recipe-from-photo", label: "upload a screenshot" }],
       },
     ],
     links: [
@@ -425,6 +416,14 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
     intent: "Utility SEO",
     initialImportMode: "url",
     importModes: ["url", "apps", "image", "text"],
+    // Overrides the default printed-card hero photo — this page's subject is
+    // the PDF itself, and showing one of the same recipe-card photos every
+    // other utility page opens on would answer a different question than
+    // the one someone searching "convert recipe to PDF" asked. No
+    // `heroAnnotation` on purpose: the default "Printed from a recipe link"
+    // caption describes a printed CARD, and would be wrong here.
+    heroImage: "convert-to-pdf",
+    heroFrame: "document",
     title: "Convert Recipe to PDF | Save Recipes as Clean PDFs",
     description:
       "Turn recipes from websites, photos, screenshots, or text into clean PDFs you can save, share, and print. Free, with no account required.",
@@ -525,8 +524,6 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
     anchor: "Recipe card printer",
     lede:
       "Turn recipes from websites, photos, screenshots, or text into clean 4×6 recipe cards ready to print and keep.",
-    captureReassurance:
-      "Free to import and preview. 4×6 card printing is included with RecipePrinter Pro.",
     intro:
       "RecipePrinter works as a printable recipe card generator for recipes you already have.",
     cookbookPitchBody:
@@ -541,7 +538,7 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
       },
       {
         name: "Choose 4×6 recipe cards",
-        text: "Switch from a full page to the 4×6 card size. You can preview the finished card before printing with Pro.",
+        text: "Switch from a full page to the 4×6 card size. You can preview the finished card free — printing it takes RecipePrinter Pro, $4.99/mo.",
       },
       {
         name: "Pick a design",
@@ -712,7 +709,6 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
     pickerGroup: "source",
     intent: "Utility SEO",
     initialImportMode: "url",
-    captureReassurance: false,
     importHint:
       "If a pin won't import, paste the recipe text or upload a screenshot instead.",
     title: "Free Pinterest Recipe Printer",
@@ -1547,7 +1543,6 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
     lede:
       "RecipePrinter turns online recipes, old cards, photos, and typed-in notes into clean, matching pages, then binds them into a cookbook with a cover, chapters, and a table of contents.",
     importSubmitLabel: "Start the cookbook",
-    captureReassurance: false,
     howTo: [
       {
         name: "Gather the recipes",
@@ -1863,9 +1858,15 @@ export function layoutForPage(page: SeoLandingPage): "capture-first" | "guide-fi
 }
 
 export function seoLandingPageMetadata(page: SeoLandingPage): Metadata {
-  return pageMetadata({
+  const metadata = pageMetadata({
     title: page.title,
     description: page.description,
     path: `/${page.slug}`,
   });
+  if (page.absoluteTitle) {
+    metadata.title = { absolute: page.absoluteTitle };
+    metadata.openGraph = { ...metadata.openGraph, title: page.absoluteTitle };
+    metadata.twitter = { ...metadata.twitter, title: page.absoluteTitle };
+  }
+  return metadata;
 }

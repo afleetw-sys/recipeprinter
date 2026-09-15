@@ -3589,6 +3589,44 @@ export default function PrintPage() {
     let cancelled = false;
     void takePendingImport().then((pending) => {
       if (cancelled || !pending) return;
+      // A landing page's capture block means "start me a fresh recipe",
+      // never "add to whatever is already open" — the whole point of that
+      // page is a free, single-recipe import (see SeoCapture's own file
+      // comment). Import one, then use Back to return to the SEO page you
+      // came from (the project you just built is still sitting on /print)
+      // and submit a second link there, and it used to land in that SAME
+      // project — which on the free tier meant either silently growing a
+      // batch-print job nobody paid for, or (an earlier version of this
+      // fix) refusing the second recipe outright. Neither is right: the
+      // cook didn't ask to combine two recipes, they asked to import a
+      // different one. Clearing first makes the second import replace the
+      // first, the same "fresh start" the capture block always promised —
+      // and it only applies on the free tier, where nothing could have
+      // been printed as a batch anyway; Pro and cookbook mode keep
+      // accumulating recipes across imports, same as before.
+      //
+      // Recomputed here rather than reusing the outer `multiRecipeAddLocked`
+      // on purpose: that one is derived from `items`, which is itself
+      // projected through `jobIds` — and `jobIds` is only set by a LATER
+      // bootstrap effect that reads a separately-persisted job-id list,
+      // which can still be empty on a brand-new mount even once the queue
+      // itself already holds the earlier recipe. `queue.items` doesn't go
+      // through that second hop: `useQueue`'s hydration sets it in the same
+      // batch as `hydrated`, so it's already correct the moment this effect
+      // (gated on `queue.hydrated`) runs — which is exactly the fresh-mount
+      // case this happens in (Back always remounts this page).
+      const recipeCountNow = queue.items.filter(
+        (it) => it.status === "ready" && Boolean(it.recipe),
+      ).length;
+      const { multiRecipeAddLocked: wouldBeLocked } = computeProLocks({
+        customerInfo: effectiveCustomerInfo.customerInfo,
+        cookbookMode,
+        template,
+        selectedPremiumTemplate,
+        cardSize,
+        recipeCount: recipeCountNow,
+      });
+      if (wouldBeLocked) queue.clear();
       if (pending.kind === "url") queue.addUrl(pending.url);
       else if (pending.kind === "text") queue.addText(pending.text);
       else if (pending.kind === "ready") queue.addReadyRecipes(pending.recipes);
