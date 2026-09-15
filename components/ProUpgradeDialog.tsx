@@ -81,8 +81,14 @@ export function ProUpgradeDialog({
   const [pendingCycle, setPendingCycle] = useState<ProBillingCycle | null>(null);
   const [formBusy, setFormBusy] = useState(false);
 
-  function handleContinue(cycle: ProBillingCycle) {
+  function selectCycle(cycle: ProBillingCycle) {
+    if (cycle === selectedCycle) return;
+    setSelectedCycle(cycle);
     track("pro_plan_selected", { cycle });
+  }
+
+  function handleContinue(cycle: ProBillingCycle) {
+    track("pro_continue_clicked", { cycle });
     setPendingCycle(cycle);
     if (cookPilotUser) {
       onChoose(cycle);
@@ -142,7 +148,7 @@ export function ProUpgradeDialog({
                 name="pro-cycle"
                 className="sr-only"
                 checked={selectedCycle === "monthly"}
-                onChange={() => setSelectedCycle("monthly")}
+                onChange={() => selectCycle("monthly")}
               />
               <div className="pro-plan-card__row">
                 <span className="pro-plan-card__name">Monthly</span>
@@ -155,7 +161,7 @@ export function ProUpgradeDialog({
                 name="pro-cycle"
                 className="sr-only"
                 checked={selectedCycle === "annual"}
-                onChange={() => setSelectedCycle("annual")}
+                onChange={() => selectCycle("annual")}
               />
               <div className="pro-plan-card__row">
                 <span className="pro-plan-card__name">Annual</span>

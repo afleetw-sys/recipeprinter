@@ -259,11 +259,21 @@ type EventProps = {
    *  `pro_feature_encountered`'s `source` when it opened one, or names the
    *  entry point otherwise (e.g. "account_menu"). */
   paywall_viewed: { trigger: string };
-  /** A plan was chosen in the upgrade dialog, before checkout opens. */
+  /** The Monthly/Annual tile was picked in the upgrade dialog — an interest
+   *  signal, fired the moment the toggle changes, before Continue is ever
+   *  pressed. Separate from `pro_continue_clicked` so the funnel can tell
+   *  "compared plans" apart from "committed to one". */
   pro_plan_selected: { cycle: "monthly" | "annual" };
+  /** Continue was pressed on the upgrade dialog's plan step, for whichever
+   *  cycle was selected at the time — the step right before checkout (signed
+   *  in) or the sign-in gate (signed out). */
+  pro_continue_clicked: { cycle: "monthly" | "annual" };
   /** The sign-in dialog opened specifically because signing in was required
    *  to continue a Pro purchase (as opposed to the cookbook's existing
-   *  "protect your purchase" use of the same dialog). */
+   *  "protect your purchase" use of the same dialog). Doubles as the
+   *  drop-off checkpoint for signed-out buyers: compare this against
+   *  `purchase_completed` (product: "pro") to see how many never finish
+   *  signing in. */
   auth_started_from_upgrade: { trigger: string };
   /** A now-unlocked Pro action actually completed after upgrading (e.g. a
    *  previously-locked card size printed). Separate from `purchase_completed`
