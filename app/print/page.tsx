@@ -3048,14 +3048,22 @@ export default function PrintPage() {
   // which needs a re-render to show up.
   const [proUpgradeTrigger, setProUpgradeTrigger] = useState<string>("print_button");
 
-  // Counts a still-parsing item too, not just a resolved one: a free account
-  // that has just started its one recipe is still "holding" it for every
-  // purpose this feeds (the add-gate, the print-time lock). Counting only
-  // `Boolean(item.recipe)` left a window between clicking Add and the parse
-  // resolving where `recipeCount` read 0 and a second add could start before
-  // the first had anywhere to be blocked from — two imports racing to
-  // "ready" with nothing ever having refused the second one.
-  const recipeCount = items?.filter((item) => item.status !== "error").length ?? 0;
+  // `items` (below) is projected through `jobIds`, which only gains an id
+  // once a parse resolves to "ready" — see the "newlyReady" effect further
+  // down. So a fresh import this session just started never shows up here
+  // at all while it's still parsing, and counting only `items` left the free
+  // tier's one-recipe gate reading 0 for the entire time recipe #1 was
+  // loading: nothing stopped a second "+Add recipe" click (or a second
+  // landing-page import) from starting in that window, and both could land
+  // as real recipes with neither ever having been refused. `isOursToAwait`
+  // (used the same way by that same effect) scopes this to an import this
+  // page session actually started, not some unrelated stale "parsing" item
+  // left behind by a crashed tab — that kind of ghost item should never be
+  // able to permanently lock a free account out of adding anything.
+  const hasInFlightImport = queue.items.some(
+    (item) => item.status === "parsing" && isOursToAwait(item.id),
+  );
+  const recipeCount = (items?.length ?? 0) + (hasInFlightImport ? 1 : 0);
   const { themeLocked, cardSizeLocked, multiRecipeLocked, multiRecipeAddLocked, proLocked } =
     computeProLocks({
       customerInfo: effectiveCustomerInfo.customerInfo,
