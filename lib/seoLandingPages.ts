@@ -912,7 +912,7 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
     slug: "print-facebook-recipes",
     importFieldLabel: "Facebook link",
     importPlaceholder: "Paste a Facebook post or video link here",
-    contentUpdated: "2026-09-10",
+    contentUpdated: "2026-09-16",
     primaryKeyword: "print recipe from Facebook",
     secondaryKeywords: [
       "print recipes from Facebook",
@@ -924,75 +924,83 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
     pickerGroup: "source",
     intent: "Utility SEO",
     initialImportMode: "url",
-    title: "Free Facebook Recipe Printer",
+    title: "Print Recipes from Facebook | RecipePrinter",
     description:
-      "Paste a Facebook post, group post, or Reel link and turn the recipe into a printable recipe card, page, or PDF.",
+      "Paste a Facebook post or Reel link and turn the recipe into a clean printable page or 4×6 recipe card, even when the recipe is in the post image.",
     h1: "Print recipes from Facebook",
     lede:
-      "Facebook recipes are usually typed straight into a post, with no blog behind them. Paste the post's link and RecipePrinter turns it into something you can cook from.",
+      "Paste a Facebook post or Reel link and RecipePrinter turns the recipe into a clean page or 4×6 card. It can read from the post, a linked recipe, or the image itself.",
+    howToHeading: "How to print a recipe from Facebook",
     howTo: [
       {
-        name: "Copy the post's link",
-        text: "On the post, tap the three dots and choose Copy link. Reels have the same option under Share.",
+        name: "Copy the Facebook post or Reel link",
+        text: "Open the post, tap Share or the three dots, and copy the link. That’s all you need to get started.",
       },
       {
-        name: "Paste it in",
-        text: "Paste the link into the box above. RecipePrinter reads the recipe out of the post, whether it was typed in directly or sits on a site the post links to.",
+        name: "Paste it into RecipePrinter",
+        text: "Paste the Facebook link into RecipePrinter. It looks for the recipe in the post or any recipe link attached to it.",
       },
       {
-        name: "Choose a card or a page",
-        text: "A 4 by 6 card for a recipe box, or a letter page when the post runs to a wall of text. Every line can be edited before it prints.",
+        name: "RecipePrinter finds the recipe",
+        text: "It pulls out the ingredients and steps. If the recipe is only shown in an image, RecipePrinter can read that too.",
       },
       {
-        name: "Print it or save it as a PDF",
-        text: "Send it to the printer, or choose Save as PDF in the print dialog to keep a copy that doesn't live in the feed.",
+        name: "Print it your way",
+        text: "Print a full letter page for free or save it as a PDF. Pro adds 4×6 recipe cards and batch printing.",
       },
     ],
     featureSections: [
       {
-        heading: "Group recipes are hard to find twice",
-        image: "counter-card",
-        body:
-          "A good one goes past in a group at nine at night. A month later it's four hundred posts back, and you can't search for it because you never knew what it was called. Printing it takes it out of the feed: the card doesn't depend on the group, on the post staying up, or on remembering who shared it.",
-      },
-      {
-        heading: "Most of them were typed, not linked",
+        heading: "The recipe isn’t always in the same place",
         image: "steps",
         body:
-          "Someone writes the whole thing into the post. A few lines about their mother, then the ingredients, then the method run together in one paragraph. There's no blog behind it and nothing to click through to. RecipePrinter takes the post as written and sorts it into an ingredient list with amounts and numbered steps you can follow at the stove.",
+          "Some Facebook recipes are typed into the caption. Others link to a recipe site, and some put the ingredients and directions right in the photo. Whether the recipe is in the caption, behind a link, or written into the image, RecipePrinter pulls it into the same clean format.",
       },
       {
-        heading: "The recipes worth keeping are often the oldest ones",
+        heading: "Keep the good ones from getting lost in the feed",
+        image: "counter-card",
+        body:
+          "A good recipe shared in a group can be hard to find again a few weeks later. Once you print it or save it as a PDF, you no longer have to remember who posted it, what the post was called, or how far back in the group it lives.",
+      },
+      {
+        heading: "Private post? You still have options",
+        image: "paste-in-app",
+        body:
+          "RecipePrinter may not be able to open a Facebook post that only group members can see. In that case, copy and paste the recipe text instead, or upload a screenshot of the recipe. You still end up with the same clean printable format.",
+      },
+      {
+        heading: "Keep the recipes worth coming back to",
         image: "bound-cookbook",
         body:
-          "Family groups hold recipes that were handwritten long before they were typed, posted by people who are not always still around to ask. Printing gives one of those somewhere to live that isn't a platform: a box on the counter, a binder, or later a bound cookbook that everyone in the group can have a copy of.",
+          "Facebook groups are full of recipes you might only see once. Printing the good ones gives them somewhere more permanent to live, whether that is a recipe box, a binder, or eventually a family cookbook.",
       },
     ],
+    faqHeading: "Facebook recipe printing questions",
     faqs: [
       {
         question: "Can I print recipes from Facebook Reels?",
         answer:
-          "Yes. Copy the Reel's link the same way you would a post. The recipe usually sits in the caption underneath, and that is what RecipePrinter reads.",
+          "Yes. Paste the Reel link into RecipePrinter. It can read the recipe from the Reel caption, a linked recipe, or the image when needed.",
       },
       {
-        question: "What about a recipe posted in a private group?",
+        question: "What if the recipe is only shown in a photo?",
         answer:
-          "A post that only members can see won't always open for RecipePrinter the way a public one does. Copy the text of the post and paste that in instead, and you get the same card.",
+          "RecipePrinter can fall back to reading the recipe from the image when the ingredients or directions are not available as normal post text.",
+      },
+      {
+        question: "What about recipes posted in private Facebook groups?",
+        answer:
+          "Private posts may not be accessible from the link alone. Copy and paste the recipe text or upload a screenshot instead.",
       },
       {
         question: "Do I need to connect my Facebook account?",
         answer:
-          "No. RecipePrinter doesn't ask for access to your account, your groups, or your saved posts. It works from a link or from text you paste across.",
+          "No. RecipePrinter does not need access to your Facebook account, groups, or saved posts. You provide the post link, text, or image you want to use.",
       },
       {
-        question: "Can I keep the recipe if the post is deleted?",
+        question: "Can I print a Facebook recipe from my phone?",
         answer:
-          "Yes, and that is most of the reason to print it. Once the card is printed or saved as a PDF it doesn't depend on the post, the group, or the account that shared it.",
-      },
-      {
-        question: "How do I print a Facebook recipe from my phone?",
-        answer:
-          "Copy the post's link in the app, then open RecipePrinter in your phone browser and paste it there. Set the card up and use the phone's own print dialog to reach a wireless printer, or choose Save as PDF and print it later.",
+          "Yes. Copy the Facebook post link, open RecipePrinter in your browser, paste it in, and then print or save the finished recipe as a PDF.",
       },
     ],
     links: [
@@ -1881,7 +1889,7 @@ export function seoLandingPageMetadata(page: SeoLandingPage): Metadata {
     description: page.description,
     path: `/${page.slug}`,
   });
-  if (page.slug === "print-paprika-recipes") {
+  if (page.slug === "print-paprika-recipes" || page.slug === "print-facebook-recipes") {
     metadata.title = { absolute: page.title };
     metadata.openGraph = { ...metadata.openGraph, title: page.title };
     metadata.twitter = { ...metadata.twitter, title: page.title };
