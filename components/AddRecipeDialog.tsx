@@ -100,9 +100,17 @@ export function AddRecipeDialog({
    * the one-line URL input to the paste box's full 340px. The fix is not that
    * neither survives the close — it is that both land on the same answer, and
    * the answer is `lastSource`, which is also what the panel remounts with.
+   *
+   * The duplicate banner rides along for the same reason: it is keyed to
+   * whatever import last matched, not to what's currently on screen, so a
+   * stale "already in this project" line could otherwise sit under an
+   * unrelated tab after a close/reopen.
    */
   useEffect(() => {
-    if (!open) setMode(lastSource);
+    if (!open) {
+      setMode(lastSource);
+      setDuplicateTitle(null);
+    }
   }, [open, lastSource]);
 
   function clearDuplicate() {
@@ -164,7 +172,10 @@ export function AddRecipeDialog({
           /* Read once per open: `Dialog` renders nothing while closed, so the
              panel is a fresh mount every time the sheet appears. */
           initialMode={lastSource}
-          onModeChange={setMode}
+          onModeChange={(nextMode) => {
+            setMode(nextMode);
+            clearDuplicate();
+          }}
           items={items}
           onAddUrl={handleAddUrl}
           onAddImageFiles={handleAddImageFiles}

@@ -3048,7 +3048,14 @@ export default function PrintPage() {
   // which needs a re-render to show up.
   const [proUpgradeTrigger, setProUpgradeTrigger] = useState<string>("print_button");
 
-  const recipeCount = items?.filter((item) => Boolean(item.recipe)).length ?? 0;
+  // Counts a still-parsing item too, not just a resolved one: a free account
+  // that has just started its one recipe is still "holding" it for every
+  // purpose this feeds (the add-gate, the print-time lock). Counting only
+  // `Boolean(item.recipe)` left a window between clicking Add and the parse
+  // resolving where `recipeCount` read 0 and a second add could start before
+  // the first had anywhere to be blocked from — two imports racing to
+  // "ready" with nothing ever having refused the second one.
+  const recipeCount = items?.filter((item) => item.status !== "error").length ?? 0;
   const { themeLocked, cardSizeLocked, multiRecipeLocked, multiRecipeAddLocked, proLocked } =
     computeProLocks({
       customerInfo: effectiveCustomerInfo.customerInfo,
@@ -4410,10 +4417,18 @@ export default function PrintPage() {
    * A failed parse has no useful same-input retry. Clear its terminal
    * placeholder and reopen the shared source picker so the cook can choose a
    * link, recipe app, image, or pasted text without meeting a second recovery
-   * UI. This bypasses the normal "add another" gate because the failed item is
-   * being replaced, not added to.
+   * UI. This bypasses the normal "add another" gate only for the failed slot
+   * itself — being replaced isn't being added to. It does NOT bypass the gate
+   * for a free account that already has a real recipe sitting somewhere else:
+   * that recipe was never the failed item, so removing the failed item
+   * doesn't free up anything for it to be replacing.
    */
   function tryAnotherImportWay(id: string) {
+    if (multiRecipeAddLocked) {
+      track("pro_feature_encountered", { feature: "batch_print", source: "add_more_recipes" });
+      openProUpgradeDialog("add_more_recipes");
+      return;
+    }
     queue.remove(id);
     setPendingAddSectionId(sections[0]?.id ?? null);
     setPendingAddIndex(0);
