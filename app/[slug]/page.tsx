@@ -277,7 +277,13 @@ export default function SeoLandingPage({ params }: PageProps) {
                 <span className="pt-1">{item.question}</span>
               </dt>
               <dd className="mt-cp-3 border-t border-line pt-cp-3 text-ink-soft text-cp-body leading-relaxed">
-                {item.answer}
+                {item.answerEmphasis && item.answer.includes(item.answerEmphasis) ? (
+                  <>
+                    {item.answer.slice(0, item.answer.indexOf(item.answerEmphasis))}
+                    <strong>{item.answerEmphasis}</strong>
+                    {item.answer.slice(item.answer.indexOf(item.answerEmphasis) + item.answerEmphasis.length)}
+                  </>
+                ) : item.answer}
                 {item.links && item.links.length > 0 && (
                   <span className="mt-cp-3 flex flex-wrap gap-cp-2">
                     {item.links.map((link) => (

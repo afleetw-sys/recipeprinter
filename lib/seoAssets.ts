@@ -43,6 +43,26 @@ export type FeatureCard = {
 };
 
 export const FEATURE_IMAGES: Record<string, ProofImage> = {
+  "buffalo-chicken": {
+    src: "/images/printed-cards/buffalo-chicken.jpeg",
+    width: 1333,
+    height: 2000,
+    alt: "A printed Buffalo Chicken Bake card with a blue checkered edge on a yellow surface.",
+    objectPosition: "50% 50%",
+  },
+  souvlaki: {
+    src: "/images/printed-cards/souvlaki.jpeg",
+    width: 2000,
+    height: 1500,
+    alt: "A printed Chicken Tzatziki Bowls recipe on a garden table beside the finished bowl.",
+  },
+  crunchwrap: {
+    src: "/images/printed-cards/crunchwrap.jpeg",
+    width: 3024,
+    height: 4032,
+    alt: "A printed Crunchwrap Supreme recipe card beside the finished crunchwrap.",
+    objectPosition: "50% 100%",
+  },
   "multi-themes": {
     src: "/images/multi-themes.png",
     width: 2400,
