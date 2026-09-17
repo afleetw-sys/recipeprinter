@@ -10,6 +10,7 @@ import {
 import { SeoCapture } from "@/components/seo/SeoCapture";
 import { Breadcrumb, type Crumb } from "@/components/seo/Breadcrumb";
 import { CookbookPitch } from "@/components/seo/CookbookPitch";
+import { RecipeBinderSections } from "@/components/seo/RecipeBinderSections";
 import { heroCardKey } from "@/lib/seoImages";
 import {
   ComparisonTable,
@@ -46,7 +47,7 @@ export function generateMetadata({ params }: PageProps): Metadata {
 function breadcrumbTrail(page: SeoLandingPage): Crumb[] {
   return [
     { name: "Home", href: "/" },
-    { name: page.h1, href: `/${page.slug}` },
+    { name: page.breadcrumbLabel ?? page.h1, href: `/${page.slug}` },
   ];
 }
 
@@ -238,6 +239,8 @@ export default function SeoLandingPage({ params }: PageProps) {
         </section>
       )}
 
+      {page.slug === "recipe-binder" && <RecipeBinderSections />}
+
       {page.cookbookPitch && (
         <CookbookPitch heading={page.cookbookPitchHeading} body={page.cookbookPitchBody} />
       )}
@@ -277,7 +280,13 @@ export default function SeoLandingPage({ params }: PageProps) {
                 <span className="pt-1">{item.question}</span>
               </dt>
               <dd className="mt-cp-3 border-t border-line pt-cp-3 text-ink-soft text-cp-body leading-relaxed">
-                {item.answer}
+                {item.answerEmphasis && item.answer.includes(item.answerEmphasis) ? (
+                  <>
+                    {item.answer.slice(0, item.answer.indexOf(item.answerEmphasis))}
+                    <strong>{item.answerEmphasis}</strong>
+                    {item.answer.slice(item.answer.indexOf(item.answerEmphasis) + item.answerEmphasis.length)}
+                  </>
+                ) : item.answer}
                 {item.links && item.links.length > 0 && (
                   <span className="mt-cp-3 flex flex-wrap gap-cp-2">
                     {item.links.map((link) => (

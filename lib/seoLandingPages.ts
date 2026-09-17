@@ -127,6 +127,8 @@ export type SeoLandingPage = {
   title: string;
   description: string;
   h1: string;
+  /** Shorter label for the breadcrumb when the page heading is descriptive. */
+  breadcrumbLabel?: string;
   /**
    * Link text other pages use when they point here. Anchor text is one of the
    * signals Google reads to decide what a page is about, so a link that says
@@ -230,6 +232,7 @@ export type SeoLandingPage = {
   faqs: {
     question: string;
     answer: string;
+    answerEmphasis?: string;
     links?: { href: string; label: string; note?: string }[];
   }[];
   links: { href: string; label: string }[];
@@ -712,7 +715,7 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
   {
     slug: "print-pinterest-recipes",
     importFieldLabel: "Pinterest link",
-    importPlaceholder: "Paste a Pin link here",
+    importPlaceholder: "Paste Pinterest link",
     contentUpdated: "2026-09-10",
     lastReviewed: "2026-09-07",
     primaryKeyword: "print Pinterest recipes",
@@ -815,7 +818,7 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
   {
     slug: "print-instagram-recipes",
     importFieldLabel: "Instagram link",
-    importPlaceholder: "Paste an Instagram post or Reel link here",
+    importPlaceholder: "Paste Instagram link",
     contentUpdated: "2026-09-10",
     lastReviewed: "2026-09-09",
     primaryKeyword: "print Instagram recipes",
@@ -911,8 +914,11 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
   {
     slug: "print-facebook-recipes",
     importFieldLabel: "Facebook link",
-    importPlaceholder: "Paste a Facebook post or video link here",
-    contentUpdated: "2026-09-10",
+    importPlaceholder: "Paste Facebook link",
+    heroImage: "buffalo-chicken",
+    heroAnnotation: "Printed from Facebook link",
+    contentUpdated: "2026-09-16",
+    lastReviewed: "2026-09-16",
     primaryKeyword: "print recipe from Facebook",
     secondaryKeywords: [
       "print recipes from Facebook",
@@ -924,75 +930,83 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
     pickerGroup: "source",
     intent: "Utility SEO",
     initialImportMode: "url",
-    title: "Free Facebook Recipe Printer",
+    title: "Print Recipes from Facebook | RecipePrinter",
     description:
-      "Paste a Facebook post, group post, or Reel link and turn the recipe into a printable recipe card, page, or PDF.",
+      "Paste a Facebook post or Reel link and turn the recipe into a clean printable page or 4×6 recipe card, even when the recipe is in the post image.",
     h1: "Print recipes from Facebook",
     lede:
-      "Facebook recipes are usually typed straight into a post, with no blog behind them. Paste the post's link and RecipePrinter turns it into something you can cook from.",
+      "Paste a Facebook post or Reel link and RecipePrinter turns the recipe into a clean page or 4×6 card. It can read from the post, a linked recipe, or the image itself.",
+    howToHeading: "How to print a recipe from Facebook",
     howTo: [
       {
-        name: "Copy the post's link",
-        text: "On the post, tap the three dots and choose Copy link. Reels have the same option under Share.",
+        name: "Copy the Facebook post or Reel link",
+        text: "Open the post, tap Share or the three dots, and copy the link. That’s all you need to get started.",
       },
       {
-        name: "Paste it in",
-        text: "Paste the link into the box above. RecipePrinter reads the recipe out of the post, whether it was typed in directly or sits on a site the post links to.",
+        name: "Paste it into RecipePrinter",
+        text: "Paste the Facebook link into RecipePrinter. It looks for the recipe in the post or any recipe link attached to it.",
       },
       {
-        name: "Choose a card or a page",
-        text: "A 4 by 6 card for a recipe box, or a letter page when the post runs to a wall of text. Every line can be edited before it prints.",
+        name: "RecipePrinter finds the recipe",
+        text: "It pulls out the ingredients and steps. If the recipe is only shown in an image, RecipePrinter can read that too.",
       },
       {
-        name: "Print it or save it as a PDF",
-        text: "Send it to the printer, or choose Save as PDF in the print dialog to keep a copy that doesn't live in the feed.",
+        name: "Print it your way",
+        text: "Print a full letter page for free or save it as a PDF. Pro adds 4×6 recipe cards and batch printing.",
       },
     ],
     featureSections: [
       {
-        heading: "Group recipes are hard to find twice",
-        image: "counter-card",
-        body:
-          "A good one goes past in a group at nine at night. A month later it's four hundred posts back, and you can't search for it because you never knew what it was called. Printing it takes it out of the feed: the card doesn't depend on the group, on the post staying up, or on remembering who shared it.",
-      },
-      {
-        heading: "Most of them were typed, not linked",
+        heading: "The recipe isn’t always in the same place",
         image: "steps",
         body:
-          "Someone writes the whole thing into the post. A few lines about their mother, then the ingredients, then the method run together in one paragraph. There's no blog behind it and nothing to click through to. RecipePrinter takes the post as written and sorts it into an ingredient list with amounts and numbered steps you can follow at the stove.",
+          "Some Facebook recipes are typed into the caption. Others link to a recipe site, and some put the ingredients and directions right in the photo. Whether the recipe is in the caption, behind a link, or written into the image, RecipePrinter pulls it into the same clean format.",
       },
       {
-        heading: "The recipes worth keeping are often the oldest ones",
+        heading: "Keep the good ones from getting lost in the feed",
+        image: "counter-card",
+        body:
+          "A good recipe shared in a group can be hard to find again a few weeks later. Once you print it or save it as a PDF, you no longer have to remember who posted it, what the post was called, or how far back in the group it lives.",
+      },
+      {
+        heading: "Private post? You still have options",
+        image: "paste-in-app",
+        body:
+          "RecipePrinter may not be able to open a Facebook post that only group members can see. In that case, copy and paste the recipe text instead, or upload a screenshot of the recipe. You still end up with the same clean printable format.",
+      },
+      {
+        heading: "Keep the recipes worth coming back to",
         image: "bound-cookbook",
         body:
-          "Family groups hold recipes that were handwritten long before they were typed, posted by people who are not always still around to ask. Printing gives one of those somewhere to live that isn't a platform: a box on the counter, a binder, or later a bound cookbook that everyone in the group can have a copy of.",
+          "Facebook groups are full of recipes you might only see once. Printing the good ones gives them somewhere more permanent to live, whether that is a recipe box, a binder, or eventually a family cookbook.",
       },
     ],
+    faqHeading: "Facebook recipe printing questions",
     faqs: [
       {
         question: "Can I print recipes from Facebook Reels?",
         answer:
-          "Yes. Copy the Reel's link the same way you would a post. The recipe usually sits in the caption underneath, and that is what RecipePrinter reads.",
+          "Yes. Paste the Reel link into RecipePrinter. It can read the recipe from the Reel caption, a linked recipe, or the image when needed.",
       },
       {
-        question: "What about a recipe posted in a private group?",
+        question: "What if the recipe is only shown in a photo?",
         answer:
-          "A post that only members can see won't always open for RecipePrinter the way a public one does. Copy the text of the post and paste that in instead, and you get the same card.",
+          "RecipePrinter can fall back to reading the recipe from the image when the ingredients or directions are not available as normal post text.",
+      },
+      {
+        question: "What about recipes posted in private Facebook groups?",
+        answer:
+          "Private posts may not be accessible from the link alone. Copy and paste the recipe text or upload a screenshot instead.",
       },
       {
         question: "Do I need to connect my Facebook account?",
         answer:
-          "No. RecipePrinter doesn't ask for access to your account, your groups, or your saved posts. It works from a link or from text you paste across.",
+          "No. RecipePrinter does not need access to your Facebook account, groups, or saved posts. You provide the post link, text, or image you want to use.",
       },
       {
-        question: "Can I keep the recipe if the post is deleted?",
+        question: "Can I print a Facebook recipe from my phone?",
         answer:
-          "Yes, and that is most of the reason to print it. Once the card is printed or saved as a PDF it doesn't depend on the post, the group, or the account that shared it.",
-      },
-      {
-        question: "How do I print a Facebook recipe from my phone?",
-        answer:
-          "Copy the post's link in the app, then open RecipePrinter in your phone browser and paste it there. Set the card up and use the phone's own print dialog to reach a wireless printer, or choose Save as PDF and print it later.",
+          "Yes. Copy the Facebook post link, open RecipePrinter in your browser, paste it in, and then print or save the finished recipe as a PDF.",
       },
     ],
     links: [
@@ -1004,8 +1018,10 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
   {
     slug: "print-tiktok-recipes",
     importFieldLabel: "TikTok link",
-    importPlaceholder: "Paste a TikTok link here",
-    contentUpdated: "2026-09-10",
+    importPlaceholder: "Paste TikTok link",
+    heroImage: "crunchwrap",
+    heroAnnotation: "Printed from TikTok video",
+    contentUpdated: "2026-09-16",
     primaryKeyword: "print TikTok recipes",
     secondaryKeywords: [
       "print recipe from TikTok",
@@ -1018,28 +1034,29 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
     pickerGroup: "source",
     intent: "Utility SEO",
     initialImportMode: "url",
-    title: "Free TikTok Recipe Printer",
+    title: "Print TikTok Recipes | RecipePrinter",
     description:
-      "Paste a TikTok link and turn the recipe in the caption into a printable recipe card, page, or PDF you can cook from.",
+      "Paste a TikTok recipe link and turn the written recipe into a clean printable page or 4×6 recipe card you can save and keep.",
     h1: "Print TikTok recipes",
     lede:
-      "A TikTok shows you the dish and moves on. Paste the video's link and RecipePrinter turns the recipe into a card that stays where you put it.",
+      "Paste a TikTok video link and RecipePrinter turns the written recipe into a clean page or 4×6 card you can print and keep.",
+    howToHeading: "How to print a recipe from TikTok",
     howTo: [
       {
-        name: "Copy the video's link",
-        text: "Tap Share on the video and choose Copy link. That's the link to the video itself, and it's the only one you need.",
+        name: "Copy the TikTok link",
+        text: "Tap Share on the video and choose Copy link. That gives RecipePrinter the video you want to use.",
       },
       {
-        name: "Paste it in",
-        text: "Paste the link into the box above. RecipePrinter reads the caption and the pinned comment, which is where creators write the ingredients and the method out.",
+        name: "Paste it into RecipePrinter",
+        text: "Paste the TikTok link into RecipePrinter. It looks for the written recipe in the caption or pinned comment.",
       },
       {
-        name: "Choose a card or a page",
-        text: "A 4 by 6 card for the box, or a letter page if the method runs long. Edit any line, including the amount you had to watch three times to catch.",
+        name: "Check the recipe",
+        text: "RecipePrinter separates the ingredients and steps into a clean format. You can fix or add anything before printing.",
       },
       {
-        name: "Print it or save it as a PDF",
-        text: "Print it, or choose Save as PDF in the print dialog so the recipe is on your phone without the video around it.",
+        name: "Print it your way",
+        text: "Print a full letter page for free or save it as a PDF. Pro adds 4×6 recipe cards and batch printing.",
       },
     ],
     featureSections: [
@@ -1047,46 +1064,48 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
         heading: "A video is a demonstration. A card is a reference.",
         image: "counter-card",
         body:
-          "Watching someone make it once is genuinely useful. Cooking along with it is a different job: scrubbing back fifteen seconds with a wet hand to check whether that was one teaspoon or two, while the video has already moved on to the plating. A printed card gives the amounts once and stays open at the right place for the whole hour you're in the kitchen.",
+          "TikTok is great for seeing how a recipe comes together, but less useful when you need to check an amount halfway through cooking. A printed recipe keeps the ingredients and steps in front of you without replaying the video.",
       },
       {
-        heading: "The recipe is usually already written down",
+        heading: "The useful part is usually in the caption",
         image: "steps",
         body:
-          "Most creators put the ingredients and the steps in the caption or a pinned comment, because they know the video on its own is hard to cook from. That writing is what RecipePrinter reads when you paste the link, so what comes out is the creator's own recipe, set as a list of ingredients with amounts and numbered steps.",
+          "Many TikTok creators put the ingredients and directions in the caption or a pinned comment. RecipePrinter pulls that written recipe out and turns it into a format that is much easier to cook from.",
       },
       {
-        heading: "The ones you actually make again",
+        heading: "Get the good ones out of your saved videos",
         image: "card-in-box",
         body:
-          "Most saved videos are never made twice. The few that are earn a place off the app: printed, filed in a recipe box or a binder, and out of a feed built around the next video rather than the last one.",
+          "Saving a TikTok is easy. Finding the exact recipe again months later is not. Print the recipes you actually want to keep so they have a permanent place in your recipe box, binder, or cookbook.",
       },
     ],
+    faqHeading: "TikTok recipe printing questions",
     faqs: [
       {
-        question: "Can RecipePrinter print a recipe straight from a TikTok?",
+        question: "Can RecipePrinter print a recipe straight from TikTok?",
         answer:
-          "Yes. Paste the video's link and it reads the recipe from the caption and the pinned comment, which is where it's nearly always written.",
+          "Yes. Paste the TikTok link and RecipePrinter looks for the written recipe in the caption or pinned comment.",
       },
       {
         question: "What if the amounts are only spoken in the video?",
         answer:
-          "Some videos never write the recipe down anywhere. You can paste in what you catch and shape it from there. Every line on the card is editable, so a half-caught measurement is fixed once and stays fixed.",
+          "If the creator never wrote them down, RecipePrinter does not guess. You can add the amounts or notes you catch from the video before printing.",
       },
       {
-        question: "What happens when the video disappears?",
+        question: "What happens if the TikTok is deleted later?",
         answer:
-          "A printed card doesn't depend on it. Videos come down, accounts go private, and sounds get pulled, and none of that reaches a recipe already in the box.",
+          "Once you have printed the recipe or saved it as a PDF, your copy no longer depends on the original video staying online.",
       },
       {
         question: "Can I save a TikTok recipe as a PDF?",
         answer:
-          "Yes. Once the recipe is set up, choose Save as PDF in your browser's print dialog and keep it with the rest of your recipes.",
+          "Yes. Once the recipe is formatted, open your browser’s print dialog and choose Save as PDF.",
+        answerEmphasis: "Save as PDF",
       },
       {
-        question: "Do I need a TikTok account to use this?",
+        question: "Do I need a TikTok account to use RecipePrinter?",
         answer:
-          "No. RecipePrinter works from the link, so there's nothing to connect and nothing to sign into on our side.",
+          "No. RecipePrinter works from the TikTok link you provide, so there is nothing to connect or sign into.",
       },
     ],
     links: [
@@ -1191,8 +1210,10 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
   {
     slug: "print-youtube-recipes",
     importFieldLabel: "YouTube link",
-    importPlaceholder: "Paste a YouTube video link here",
-    contentUpdated: "2026-09-10",
+    importPlaceholder: "Paste YouTube link",
+    heroImage: "souvlaki",
+    heroAnnotation: "Printed from YouTube video",
+    contentUpdated: "2026-09-16",
     primaryKeyword: "print recipe from YouTube",
     secondaryKeywords: [
       "how to print recipe from YouTube",
@@ -1204,75 +1225,78 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
     pickerGroup: "source",
     intent: "Utility SEO",
     initialImportMode: "url",
-    title: "Free YouTube Recipe Printer",
+    title: "Print a Recipe from YouTube | RecipePrinter",
     description:
-      "Paste a YouTube link and turn the recipe written in the description into a printable recipe card, page, or searchable PDF.",
+      "Paste a YouTube cooking video link and turn the written recipe into a clean printable page or 4×6 recipe card you can save and keep.",
     h1: "Print a recipe from YouTube",
     lede:
-      "The recipe in a cooking video is usually written out in the description. Paste the video's link and RecipePrinter lifts it onto a card or a page.",
+      "Paste a YouTube video link and RecipePrinter turns the written recipe into a clean page or 4×6 card you can print and keep.",
+    howToHeading: "How to print a recipe from YouTube",
     howTo: [
       {
-        name: "Copy the video's link",
-        text: "Use Share, then Copy link, or take the address straight out of your browser. Both point at the same video.",
+        name: "Copy the YouTube video link",
+        text: "Tap Share and copy the link, or copy the address from your browser. Either one works.",
       },
       {
-        name: "Paste it in",
-        text: "Paste the link into the box above. RecipePrinter reads the description, where the ingredients and the method are usually written out in full.",
+        name: "Paste it into RecipePrinter",
+        text: "Paste the video link into RecipePrinter. It looks for the written recipe in the video description.",
       },
       {
-        name: "Choose a card or a page",
-        text: "A letter page suits a long bake with a dozen steps, and a 4 by 6 card suits a weeknight. Edit any line, and decide whether the photo prints.",
+        name: "RecipePrinter pulls out the recipe",
+        text: "The ingredients and steps are separated into a clean format you can edit before anything prints.",
       },
       {
-        name: "Print it or save it as a PDF",
-        text: "Print it, or choose Save as PDF in the print dialog to keep it with your other recipes.",
+        name: "Print it your way",
+        text: "Print a full letter page for free or save it as a PDF. Pro adds 4×6 recipe cards and batch printing.",
       },
     ],
     featureSections: [
       {
-        heading: "The description holds the recipe, and everything else",
+        heading: "Keep the recipe, skip everything around it",
         image: "steps",
         body:
-          "Under the video there's the recipe, and around it the discount code, the equipment links, the chapter timestamps, the other channels, and a paragraph about the newsletter. RecipePrinter keeps the ingredients with their amounts, the numbered steps, the times, and the servings, and leaves the rest where it is.",
+          "YouTube descriptions often mix the recipe with equipment links, discount codes, timestamps, and channel information. RecipePrinter pulls out the ingredients and steps so you are left with the part you actually need in the kitchen.",
       },
       {
         heading: "Twenty minutes of video, one sheet of paper",
         image: "counter-card",
         body:
-          "A cooking video is paced for watching. Ingredients arrive as they are used, the oven temperature is said once around minute four, and finding it again means dragging a timeline with flour on your hands. On paper the whole thing is in front of you at once, in the order you need it.",
+          "Cooking videos are great for watching a recipe come together, but not always for checking an ingredient with messy hands. A printed recipe puts the ingredients, amounts, and steps in front of you at once without scrubbing back through the video.",
       },
       {
-        heading: "A PDF you can search",
+        heading: "Keep the recipe and the video",
         image: "pdf-search",
         body:
-          "Save the recipe as a PDF and it behaves like a document rather than a video. Search it for sesame oil and it tells you which page. Keep a folder of them and the phone in your kitchen becomes something you look things up in, instead of a watch history you scroll.",
+          "Print the ingredients and steps for everyday cooking, and keep the YouTube link with the recipe so you can jump back to the original video when you need to see a technique again.",
       },
     ],
+    faqHeading: "YouTube recipe printing questions",
     faqs: [
       {
-        question: "Can RecipePrinter get the recipe from any cooking video?",
+        question: "Can RecipePrinter get the recipe from any YouTube cooking video?",
         answer:
-          "It works from the recipe the channel wrote down, which usually means the description and sometimes a pinned comment. When a video has no written recipe anywhere, there's nothing to read from, and you can paste your own notes in instead.",
+          "RecipePrinter needs a written recipe to work from, usually in the video description. If the creator did not include one, you can paste your own notes or recipe text instead.",
       },
       {
         question: "Can I print a recipe from a YouTube Short?",
         answer:
-          "Yes, the same way. Shorts have descriptions and pinned comments too. They tend to be briefer, so there's more often a line to fill in by hand before you print.",
+          "Yes, as long as the Short includes enough written recipe information to work from. Paste the Short link the same way you would any other YouTube video.",
       },
       {
         question: "Can I save a YouTube recipe as a PDF?",
         answer:
-          "Yes. Choose Save as PDF in your browser's print dialog once the recipe is set up, and it saves as a normal file you can keep or send on.",
+          "Yes. Once the recipe is formatted, open your browser’s print dialog and choose Save as PDF instead of a printer.",
+        answerEmphasis: "Save as PDF",
       },
       {
-        question: "The description links to the channel's own site. Which should I paste?",
+        question: "What if the YouTube description links to the creator’s recipe website?",
         answer:
-          "Either works, and they give you slightly different things. The video's link gets you the recipe as the description states it. The site's link usually gets you a fuller version, with the notes and substitutions the channel had room for there.",
+          "You can use either link. The YouTube description may have a shorter version, while the creator’s website may include extra notes, substitutions, or details.",
       },
       {
-        question: "Will the card link back to the video?",
+        question: "Will the printed recipe link back to the YouTube video?",
         answer:
-          "It can, and that's your call. The video's link can print on the card, so the channel is credited and the demonstration is one tap away when you want to see a technique again.",
+          "You can include the source link so it is easy to return to the video when you want to watch a technique again.",
       },
     ],
     links: [
@@ -1283,9 +1307,12 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
   },
   {
     slug: "organize-recipes",
-    contentUpdated: "2026-09-09",
+    contentUpdated: "2026-09-16",
     captureHeading: "Start with one recipe",
     importSubmitLabel: "Add your first recipe",
+    initialImportMode: "url",
+    importModes: ["url", "apps", "image", "text"],
+    layout: "capture-first",
     primaryKeyword: "organize recipes",
     secondaryKeywords: [
       "recipe organization ideas",
@@ -1303,9 +1330,9 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
     title: "Organize Recipes from the Internet",
     description:
       "Bring scattered links, screenshots, and saved posts into one collection: print them to match, file them by course or season, and keep a searchable PDF too.",
-    h1: "Organize recipes from the internet",
+    h1: "Organize your recipes",
     lede:
-      "Recipes end up scattered: a bookmark here, a screenshot there, a link someone texted you last year. RecipePrinter brings them into one place and prints them to match, which is the difference between a stack of paper and a collection.",
+      "Bring recipe links, app exports, photos, and text into one place. Print matching pages or cards to keep.",
     howTo: [
       {
         name: "Gather them from wherever they are",
@@ -1392,38 +1419,51 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
   },
   {
     slug: "recipe-binder",
-    contentUpdated: "2026-09-09",
-    captureHeading: "Start your binder",
-    primaryKeyword: "recipe binder",
+    contentUpdated: "2026-09-16",
+    layout: "capture-first",
+    initialImportMode: "url",
+    importModes: ["url", "apps", "image", "text"],
+    primaryKeyword: "how to make a recipe binder",
     secondaryKeywords: [
+      "how to organize recipes in a binder",
+      "organize recipes in a binder",
+      "recipe binder organization",
       "recipe binder ideas",
-      "recipe binder printables",
-      "recipe notebook ideas",
-      "recipe organization ideas",
+      "recipe binder categories",
+      "printable recipes for binder",
+      "organize printed recipes",
     ],
-    cookbookPitch: true,
     shortLabel: "A binder",
     pickerGroup: "output",
     intent: "Organization SEO",
-    statusNote:
-      "Coming soon: dedicated binder-building features. For now, RecipePrinter helps you create the printable pages, cards, and PDFs that can go into a binder.",
-    title: "Recipe Binder Ideas for Online Recipes",
+    title: "How to Make & Organize a Recipe Binder | RecipePrinter",
     description:
-      "Build a recipe binder from online recipes, printable recipe cards, PDFs, screenshots, and family favorites.",
-    h1: "Recipe binder ideas for recipes you find online",
-    anchor: "Recipe binder ideas",
+      "Make a recipe binder from recipes you find online, screenshots, photos, and family recipe cards. Print clean pages and organize your favorites in one place.",
+    h1: "Build a recipe binder your way",
+    breadcrumbLabel: "Recipe binder",
+    anchor: "Make a recipe binder",
     lede:
-      "A recipe binder is still one of the simplest ways to keep favorite recipes close. RecipePrinter helps turn online recipes into printable pages, cards, and PDFs you can file now, with more binder-specific tools coming soon.",
+      "Turn recipes from anywhere into clean full pages or 4×6 cards you can print, organize, and add to over time.",
     faqs: [
       {
         question: "Should a recipe binder use cards or full pages?",
         answer:
-          "Both can work. Full pages are easiest for long recipes, while cards are nice for short favorites, baking, and gifts.",
+          "Both can work. Use US Letter pages for longer recipes and 4×6 cards for shorter favorites. Binder sleeves sized for each format let you keep both together.",
       },
       {
         question: "Can I make a binder from recipes I found online?",
         answer:
-          "Yes. RecipePrinter formats online recipes into printable pages and cards that can be filed in a physical binder. A dedicated binder-building workflow is planned.",
+          "Yes. RecipePrinter formats recipes from websites, social media, screenshots, photos, and handwritten cards into consistent printable pages or cards for your binder.",
+      },
+      {
+        question: "What size binder is best for recipes?",
+        answer:
+          "A standard US Letter binder is the simplest choice for recipes printed at home. It gives longer recipes enough room and works with inexpensive sheet protectors and dividers.",
+      },
+      {
+        question: "How should I organize recipes in a binder?",
+        answer:
+          "Start with broad categories you already use when deciding what to cook, such as breakfast, mains, sides, baking, and desserts. You can always split a section later as your collection grows.",
       },
     ],
     links: [
@@ -1532,7 +1572,7 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
   },
   {
     slug: "family-recipe-book",
-    contentUpdated: "2026-09-09",
+    contentUpdated: "2026-09-16",
     // Signed off on the writing. The three feature rows still ask for `photo`
     // and `book` proof kinds that have no image behind them, so they render as
     // text-only blocks: there is no finished family cookbook to photograph yet.
@@ -1544,6 +1584,8 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
     // explanation buried the only thing there is to do.
     layout: "capture-first",
     heroImage: "bound-cookbook",
+    initialImportMode: "url",
+    importModes: ["url", "apps", "image", "text"],
     primaryKeyword: "family recipe book",
     secondaryKeywords: [
       "create a family cookbook",
@@ -1753,7 +1795,7 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
   },
   {
     slug: "reciscan-alternative",
-    contentUpdated: "2026-09-09",
+    contentUpdated: "2026-09-16",
     lastReviewed: "2026-09-02",
     primaryKeyword: "ReciScan alternative",
     secondaryKeywords: [
@@ -1769,6 +1811,8 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
     // to try the thing now, so capture stays in the hero like the other
     // alternative page rather than waiting below an explanation.
     layout: "capture-first",
+    initialImportMode: "image",
+    importModes: ["url", "image", "text"],
     title: "ReciScan Alternative",
     description:
       "Comparing RecipePrinter and ReciScan: both read old recipe cards, and they differ on what comes out, what it costs, and how long it takes.",
@@ -1881,7 +1925,7 @@ export function seoLandingPageMetadata(page: SeoLandingPage): Metadata {
     description: page.description,
     path: `/${page.slug}`,
   });
-  if (page.slug === "print-paprika-recipes") {
+  if (page.slug === "recipe-binder" || page.slug === "print-paprika-recipes" || page.slug === "print-facebook-recipes" || page.slug === "print-youtube-recipes" || page.slug === "print-tiktok-recipes") {
     metadata.title = { absolute: page.title };
     metadata.openGraph = { ...metadata.openGraph, title: page.title };
     metadata.twitter = { ...metadata.twitter, title: page.title };
