@@ -67,3 +67,56 @@ export function takeProUpgradeIntent(now = Date.now()): ProUpgradeIntent | null 
   const expired = !Number.isFinite(intent.at) || now - intent.at > PRO_UPGRADE_INTENT_TTL_MS;
   return expired ? null : { trigger: intent.trigger, cycle: intent.cycle };
 }
+
+/**
+ * "I clicked Print, and then checkout asked me to leave the page."
+ *
+ * Checkout itself is normally a same-page RevenueCat/Stripe overlay that
+ * resolves via a promise — no reload, so `continueProCheckout`'s own
+ * `onSettled` callback is what closes the dialog and resumes the print.
+ * Some payment methods (a bank redirect, 3-D Secure) break out of that
+ * overlay into a full top-level navigation instead, the same way a phone's
+ * Google sign-in does — which abandons that promise mid-flight along with
+ * every bit of in-memory state, and comes back to a plain reload of /print
+ * with no way to tell a resumed print from a first visit.
+ *
+ * This is that flag, spanning the checkout itself rather than the sign-in
+ * before it. It records only that a print was waiting, never a plan or
+ * cycle, because the effect that reads it (see app/print/page.tsx) only
+ * ever resumes the print once a live entitlement check confirms Pro is
+ * actually active — it must not retry the purchase itself, which could
+ * double-charge a payment that already went through before the reload.
+ */
+const PENDING_PRINT_AFTER_CHECKOUT_KEY = "recipeprinter:pro-checkout-pending-print:v1";
+const PENDING_PRINT_AFTER_CHECKOUT_TTL_MS = 30 * 60 * 1000;
+
+interface StoredPendingPrint {
+  at: number;
+}
+
+/** Records that a print is waiting on the checkout about to start. */
+export function rememberPendingPrintAfterCheckout(): void {
+  sessionStore.setJson(PENDING_PRINT_AFTER_CHECKOUT_KEY, { at: Date.now() } satisfies StoredPendingPrint);
+}
+
+/** Drops it — checkout settled without a reload, or the resume already ran. */
+export function forgetPendingPrintAfterCheckout(): void {
+  sessionStore.remove(PENDING_PRINT_AFTER_CHECKOUT_KEY);
+}
+
+/**
+ * Peeks rather than spends: the caller needs to hold onto this across
+ * however many renders it takes the live entitlement check to resolve, and
+ * only clear it once that check actually runs (see the effect that reads
+ * this in app/print/page.tsx).
+ */
+export function hasPendingPrintAfterCheckout(now = Date.now()): boolean {
+  const record = sessionStore.getJson<StoredPendingPrint>(PENDING_PRINT_AFTER_CHECKOUT_KEY);
+  if (!record) return false;
+  const expired = !Number.isFinite(record.at) || now - record.at > PENDING_PRINT_AFTER_CHECKOUT_TTL_MS;
+  if (expired) {
+    forgetPendingPrintAfterCheckout();
+    return false;
+  }
+  return true;
+}

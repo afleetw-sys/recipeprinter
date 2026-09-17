@@ -78,7 +78,10 @@ import {
 import { adoptAnonymousProject, readAdoptionManifest } from "@/lib/anonymousProjectAdoption";
 import { forgetSaveIntent, rememberSaveIntent, takeSaveIntent } from "@/lib/saveIntent";
 import {
+  forgetPendingPrintAfterCheckout,
   forgetProUpgradeIntent,
+  hasPendingPrintAfterCheckout,
+  rememberPendingPrintAfterCheckout,
   rememberProUpgradeIntent,
   takeProUpgradeIntent,
 } from "@/lib/proUpgradeIntent";
@@ -2989,6 +2992,29 @@ export default function PrintPage() {
     [customerInfo, customerInfoStatus, customerInfoLastVerifiedAtMs, mirroredEntitlements, mirrorSyncedAtMs],
   );
 
+  // Resumes a print that was waiting on Pro checkout when a reload tore the
+  // page down mid-purchase — see `rememberPendingPrintAfterCheckout`'s doc
+  // comment for why that can happen even though checkout is normally a
+  // same-page overlay. Never retries the purchase itself: it only fires
+  // once `customerInfoStatus` reaches "ok", a live RevenueCat read, and only
+  // then checks whether that read actually shows Pro active. A purchase that
+  // hadn't gone through before the reload just leaves the cook back at a
+  // locked Print button, exactly as if they'd never opened checkout — never
+  // a second charge attempt.
+  useEffect(() => {
+    if (customerInfoStatus !== "ok") return;
+    if (!hasPendingPrintAfterCheckout()) return;
+    forgetPendingPrintAfterCheckout();
+    if (hasProEntitlement(effectiveCustomerInfo.customerInfo)) void handlePrint();
+    // `handlePrint` and `effectiveCustomerInfo` are both defined further
+    // down in this component (a hoisted function declaration and a plain
+    // value respectively); omitted here because effectiveCustomerInfo
+    // recomputes on every RevenueCat poll and would otherwise refire this
+    // effect on each one — `customerInfoStatus` settling to "ok" is the one
+    // transition actually worth reacting to.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [customerInfoStatus]);
+
   // Eligible for 20% off THIS cookbook purchase — active Pro (through the
   // same fallback-aware resolution as every other Pro check, never the raw
   // SDK value directly, since a discount is money) and this account has
@@ -3172,7 +3198,14 @@ export default function PrintPage() {
    *  that's already been saved once keeps saving through a purchase, but
    *  one that never was doesn't get its first save from a purchase alone. */
   function continueProCheckout(cycle: ProBillingCycle, trigger: string = proUpgradeTrigger) {
+    // Covers checkout itself being torn down by a reload (a bank redirect, 3-D
+    // Secure) the same way `rememberProUpgradeIntent` covers the sign-in step
+    // before it — see that function's doc comment. Cleared the moment
+    // `onSettled` actually runs, since that only happens when checkout
+    // resolved in this same session and needs no persisted fallback.
+    if (trigger === "print_button") rememberPendingPrintAfterCheckout();
     void purchaseProAndContinue(cycle, (outcome) => {
+      forgetPendingPrintAfterCheckout();
       setShowProUpgradeDialog(false);
       if (outcome !== "purchased" && outcome !== "already-active") return;
       if (outcome === "purchased") {
@@ -4279,6 +4312,14 @@ export default function PrintPage() {
       printAcceptedRef.current = true;
       markPrintSpent();
       setRenderAllPages(false);
+      // Chrome on macOS sometimes doesn't hand keyboard/mouse focus back to
+      // the page once a native panel (the OS "system dialog" print sheet,
+      // reached via Print -> Advanced) closes - the tab looks normal but
+      // stops receiving input until something forces a refocus. A reload
+      // does it, which is why "refresh a few times" was the only fix a cook
+      // found; asking the window to refocus itself here is the same fix
+      // without losing their place.
+      window.focus();
       if (!printRequestedRef.current) return;
       printRequestedRef.current = false;
       // Undo the cookbook filename override once the print dialog closes.

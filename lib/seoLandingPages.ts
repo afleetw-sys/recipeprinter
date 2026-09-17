@@ -127,6 +127,8 @@ export type SeoLandingPage = {
   title: string;
   description: string;
   h1: string;
+  /** Shorter label for the breadcrumb when the page heading is descriptive. */
+  breadcrumbLabel?: string;
   /**
    * Link text other pages use when they point here. Anchor text is one of the
    * signals Google reads to decide what a page is about, so a link that says
@@ -1421,34 +1423,47 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
     layout: "capture-first",
     initialImportMode: "url",
     importModes: ["url", "apps", "image", "text"],
-    primaryKeyword: "recipe binder",
+    primaryKeyword: "how to make a recipe binder",
     secondaryKeywords: [
+      "how to organize recipes in a binder",
+      "organize recipes in a binder",
+      "recipe binder organization",
       "recipe binder ideas",
-      "recipe binder printables",
-      "recipe notebook ideas",
-      "recipe organization ideas",
+      "recipe binder categories",
+      "printable recipes for binder",
+      "organize printed recipes",
     ],
-    cookbookPitch: true,
     shortLabel: "A binder",
     pickerGroup: "output",
     intent: "Organization SEO",
-    title: "Recipe Binder Ideas for Online Recipes",
+    title: "How to Make & Organize a Recipe Binder | RecipePrinter",
     description:
-      "Build a recipe binder from online recipes, printable recipe cards, PDFs, screenshots, and family favorites.",
-    h1: "Recipe binder ideas for recipes you find online",
-    anchor: "Recipe binder ideas",
+      "Make a recipe binder from recipes you find online, screenshots, photos, and family recipe cards. Print clean pages and organize your favorites in one place.",
+    h1: "Build a recipe binder your way",
+    breadcrumbLabel: "Recipe binder",
+    anchor: "Make a recipe binder",
     lede:
-      "A recipe binder keeps favorite recipes close. RecipePrinter turns links, photos, and family favorites into printable pages you can file in a binder or collect in a cookbook laid out for spiral binding.",
+      "Turn recipes from anywhere into clean full pages or 4×6 cards you can print, organize, and add to over time.",
     faqs: [
       {
         question: "Should a recipe binder use cards or full pages?",
         answer:
-          "Both can work. Full pages are easiest for long recipes, while cards are nice for short favorites, baking, and gifts.",
+          "Both can work. Use US Letter pages for longer recipes and 4×6 cards for shorter favorites. Binder sleeves sized for each format let you keep both together.",
       },
       {
         question: "Can I make a binder from recipes I found online?",
         answer:
-          "Yes. RecipePrinter formats online recipes into printable pages and cards you can file in a physical binder. You can also build a cookbook laid out for spiral binding.",
+          "Yes. RecipePrinter formats recipes from websites, social media, screenshots, photos, and handwritten cards into consistent printable pages or cards for your binder.",
+      },
+      {
+        question: "What size binder is best for recipes?",
+        answer:
+          "A standard US Letter binder is the simplest choice for recipes printed at home. It gives longer recipes enough room and works with inexpensive sheet protectors and dividers.",
+      },
+      {
+        question: "How should I organize recipes in a binder?",
+        answer:
+          "Start with broad categories you already use when deciding what to cook, such as breakfast, mains, sides, baking, and desserts. You can always split a section later as your collection grows.",
       },
     ],
     links: [
@@ -1910,7 +1925,7 @@ export function seoLandingPageMetadata(page: SeoLandingPage): Metadata {
     description: page.description,
     path: `/${page.slug}`,
   });
-  if (page.slug === "print-paprika-recipes" || page.slug === "print-facebook-recipes" || page.slug === "print-youtube-recipes" || page.slug === "print-tiktok-recipes") {
+  if (page.slug === "recipe-binder" || page.slug === "print-paprika-recipes" || page.slug === "print-facebook-recipes" || page.slug === "print-youtube-recipes" || page.slug === "print-tiktok-recipes") {
     metadata.title = { absolute: page.title };
     metadata.openGraph = { ...metadata.openGraph, title: page.title };
     metadata.twitter = { ...metadata.twitter, title: page.title };
