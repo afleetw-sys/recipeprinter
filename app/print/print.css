@@ -1126,16 +1126,17 @@
   }
 }
 
-/* An error card sits at the hovered weight already, and does not move under
-   the pointer.
+/* No dimming at all, active or not — not even the hovered-weight 0.7 this
+   used to settle for.
    The deck dims what you are not looking at, which is right for pages: one is
    as good as the next and the dim says which is yours. An error is not that.
-   It carries the reason the import failed and the buttons that fix it, so at
-   0.4 it was a problem you had to hover to read, and lifting only on hover
-   made the card twitch under the pointer while you were trying to read it. */
+   It carries the reason the import failed and two real buttons that fix it,
+   and anything short of full opacity reads as disabled controls on a page
+   you can't act on — backwards for the one card in the deck that most needs
+   a click. */
 .recipe-page-slide.recipe-page-failed:not(.is-active),
 .recipe-page-slide.recipe-page-failed:not(.is-active):hover {
-  opacity: 0.7;
+  opacity: 1;
 }
 
 /* ── Cookbook book view: a slide is a two-page spread ──────────────────────

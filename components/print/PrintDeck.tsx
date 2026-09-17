@@ -1130,7 +1130,7 @@ export function PrintDeck(props: PrintDeckProps) {
                       onClick={() => openAddRecipeBelow(null)}
                     >
                       <PlusIcon size={ICON_SIZE.md} />
-                      Add recipes
+                      Add recipe
                     </button>
                   </div>
                 </div>

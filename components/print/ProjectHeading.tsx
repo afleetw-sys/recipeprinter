@@ -177,7 +177,7 @@ export function ProjectHeading({
               className="btn btn-secondary btn-compact"
               onClick={() => setConfirmOpen(true)}
             >
-              Make it a cookbook
+              Make a cookbook
               <span className="rp-project-heading__new">New</span>
             </button>
             <ConfirmDialog

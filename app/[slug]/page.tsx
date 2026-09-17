@@ -10,6 +10,7 @@ import {
 import { SeoCapture } from "@/components/seo/SeoCapture";
 import { Breadcrumb, type Crumb } from "@/components/seo/Breadcrumb";
 import { CookbookPitch } from "@/components/seo/CookbookPitch";
+import { RecipeBinderSections } from "@/components/seo/RecipeBinderSections";
 import { heroCardKey } from "@/lib/seoImages";
 import {
   ComparisonTable,
@@ -46,7 +47,7 @@ export function generateMetadata({ params }: PageProps): Metadata {
 function breadcrumbTrail(page: SeoLandingPage): Crumb[] {
   return [
     { name: "Home", href: "/" },
-    { name: page.h1, href: `/${page.slug}` },
+    { name: page.breadcrumbLabel ?? page.h1, href: `/${page.slug}` },
   ];
 }
 
@@ -237,6 +238,8 @@ export default function SeoLandingPage({ params }: PageProps) {
           </div>
         </section>
       )}
+
+      {page.slug === "recipe-binder" && <RecipeBinderSections />}
 
       {page.cookbookPitch && (
         <CookbookPitch heading={page.cookbookPitchHeading} body={page.cookbookPitchBody} />
