@@ -73,7 +73,9 @@ export function HeroProductPhoto({
   // The card photos are portrait with the card low in frame, so they need the
   // 86% crop to keep it centred. A named image is composed for a landscape
   // slot already; honour its own objectPosition, or leave it centred.
-  const objectPosition = named ? (named.objectPosition ?? "50% 50%") : "50% 86%";
+  const objectPosition = named
+    ? (named.objectPosition ?? "50% 50%")
+    : (card.objectPosition ?? "50% 86%");
   const isDocument = frame === "document";
   const isUncropped = !crop && (frame === "none" || isDocument);
   const image = (
@@ -221,6 +223,7 @@ export function FeatureRows({
         inline link into its own last sentence, which a plain string can't
         carry. */
     body: ReactNode;
+    afterBody?: string;
     proof?: SeoProofKind;
     caption?: string;
     image?: string;
@@ -244,6 +247,9 @@ export function FeatureRows({
           <>
             <h3 className="text-cp-h2-lg font-extrabold tracking-[-0.03em]">{feature.heading}</h3>
             <p className="mt-cp-3 text-ink-soft text-cp-body-lg leading-relaxed">{feature.body}</p>
+            {feature.afterBody && (
+              <p className="mt-cp-3 text-ink-soft text-cp-body-lg leading-relaxed">{feature.afterBody}</p>
+            )}
           </>
         );
 
@@ -300,7 +306,8 @@ export function PhotoGallery({ cardKeys }: { cardKeys: string[] }) {
                 height={card.height}
                 alt={card.alt}
                 sizes="(max-width: 640px) 90vw, 380px"
-                className="aspect-square w-full rounded-lg object-cover [object-position:50%_88%]"
+                className="aspect-square w-full rounded-lg object-cover"
+                style={{ objectPosition: card.objectPosition ?? "50% 88%" }}
               />
             </div>
             <figcaption className="text-cp-caption font-semibold text-ink-soft">
@@ -365,7 +372,7 @@ export function ComparisonTable({
         {mine ? "RecipePrinter" : competitor}
       </span>
       {v === false ? (
-        <span className="inline-flex items-center" title="Not offered">
+        <span className="inline-flex items-center">
           <span className="h-px w-4 rounded bg-line-strong" aria-hidden />
           <span className="sr-only">No</span>
         </span>

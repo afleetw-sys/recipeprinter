@@ -440,6 +440,7 @@ function Arrow({
       // thing.
       tabIndex={-1}
       aria-hidden="true"
+      title={side === "left" ? "Previous photos" : "Next photos"}
       onClick={onClick}
       className={`absolute top-1/2 ${
         side === "left" ? "left-cp-2" : "right-cp-2"

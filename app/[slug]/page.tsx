@@ -259,6 +259,19 @@ export default function SeoLandingPage({ params }: PageProps) {
         </section>
       )}
 
+      {page.slug === "digitize-recipe-cards" && (
+        <section aria-labelledby="digitize-collection-heading" className="max-w-[46rem]">
+          <div id="digitize-collection-heading">
+            <SectionHeading>One card or a whole recipe box</SectionHeading>
+          </div>
+          <p className="mt-cp-3 text-cp-body-lg text-ink-soft leading-relaxed">
+            Start with a single favorite or work through an inherited recipe box a few cards at a time.
+            Once they’re digitized, the recipes can use the same clean format even if the originals are
+            different sizes, handwriting styles, or ages.
+          </p>
+        </section>
+      )}
+
       {/* ── FAQ ───────────────────────────────────────────────────────── */}
       <section aria-labelledby="faq-heading">
         <div id="faq-heading">
@@ -296,7 +309,6 @@ export default function SeoLandingPage({ params }: PageProps) {
                         target="_blank"
                         rel="noopener noreferrer"
                         className="btn btn-secondary btn-compact"
-                        title={link.note}
                       >
                         {link.label}
                         {/* These are the only links on the page that leave

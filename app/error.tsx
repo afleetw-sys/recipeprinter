@@ -35,7 +35,7 @@ export default function AppError({
 
   return (
     <div className="h-full flex flex-col">
-      <SiteHeader compact sticky />
+      <SiteHeader sticky />
       <div className="flex-1 flex flex-col items-center justify-center gap-cp-4 text-center px-cp-6">
         <p className="font-bold text-cp-h2">This page ran into a problem</p>
         <p className="text-ink-soft max-w-sm">

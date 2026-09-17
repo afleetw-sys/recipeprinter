@@ -24,6 +24,7 @@ export type ProofImage = {
 
 export type PrintedCard = {
   src: string;
+  objectPosition?: string;
   /** Natural pixel dimensions of the source photo (portrait phone shots). */
   width: number;
   height: number;

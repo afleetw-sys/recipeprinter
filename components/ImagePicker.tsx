@@ -488,7 +488,6 @@ export function ImagePicker({
           setOpen(true);
         }}
         aria-haspopup="dialog"
-        title={label}
       >
         <ImageIcon size={ICON_SIZE.md} />
         <span>{label}</span>

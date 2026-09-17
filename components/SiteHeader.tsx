@@ -10,7 +10,6 @@ export function SiteHeader({
   backHref,
   actions,
   centerActions = false,
-  compact = false,
   sticky = false,
   chrome = false,
   saveStatus,
@@ -41,7 +40,6 @@ export function SiteHeader({
       that put something more useful than the product's own name in that
       corner. */
   wordmark?: boolean;
-  compact?: boolean;
   sticky?: boolean;
   /** Paints a sticky bar with the off-white `bg-chrome` surface and its
       dividing hairline. Used by the /print workspace and the shared SEO-page
@@ -57,7 +55,7 @@ export function SiteHeader({
 }) {
   const logo = (
     <>
-      <LogoMark size={compact ? 26 : 30} rounded={0} />
+      <LogoMark size={28} rounded={0} />
       {wordmark && (
         /* The mark alone below `sm`. The name next to it is the same word the
            logo already is, and on a phone it was spending a third of the bar
@@ -66,11 +64,7 @@ export function SiteHeader({
            and the link around it is named "RecipePrinter home" (see
            HomeLink). */
         <Wordmark
-          className={`hidden sm:inline-flex ${
-            compact
-              ? "text-[length:var(--cp-fs-wordmark-compact)]"
-              : "text-[length:var(--cp-fs-wordmark)]"
-          } text-ink`}
+          className={`hidden sm:inline-flex text-[length:var(--cp-fs-wordmark-header)] text-ink`}
         />
       )}
     </>
@@ -78,14 +72,11 @@ export function SiteHeader({
 
   return (
     <header
-      /* 50px in the workspace, 62px everywhere else. The bar holds 30px
-         controls, so 62px was 16px of air above and below them — a document
-         header's proportions on a page that is a tool. `compact` already means
-         "app chrome" (it picks the smaller wordmark), so the marketing pages
-         keep the taller bar they want. */
-      className={`no-print relative flex items-center justify-between gap-cp-3 sm:gap-cp-4 px-cp-4 sm:px-cp-6 flex-nowrap ${
-        compact ? "min-h-[56px]" : "min-h-[62px]"
-      } ${
+      /* One bar height everywhere: the workspace and the marketing pages used
+         to run 56px and 62px respectively (`compact`), which is the sizing
+         mismatch this component now avoids on purpose — every route gets the
+         same chrome. */
+      className={`no-print relative flex items-center justify-between gap-cp-3 sm:gap-cp-4 px-cp-4 sm:px-cp-6 flex-nowrap min-h-[59px] ${
         sticky
           ? /* `--z-sticky` (globals.css), not a bare Tailwind number — this
                header is what establishes the account dropdown's own stacking
@@ -97,9 +88,7 @@ export function SiteHeader({
                (77-81) — raising the header to the tier the app's own scale
                already reserves for "the workspace header, the rail, the
                mobile bars" clears all of them at once. */
-            `sticky top-0 z-[var(--z-sticky)] ${
-              compact ? "py-cp-2" : "py-cp-3"
-            } ${
+            `sticky top-0 z-[var(--z-sticky)] py-[10px] ${
               /* Explicit callers get the near-white surface and hairline.
                  Everything else stays transparent; with nothing painted
                  behind it, a divider would be a stray floating rule. */
@@ -134,12 +123,11 @@ export function SiteHeader({
       )}
       <div className="relative z-[1] flex items-center gap-cp-2 sm:gap-cp-3 flex-nowrap justify-end shrink-0">
         {actions && !centerActions ? actions : null}
-        {/* `compact` is this bar's answer to "am I app chrome or a page?",
-            and the controls inside it need it for the same reason the bar and
-            the wordmark do — otherwise the account control is workspace-sized
-            on a marketing page and reads 4px short beside the CTA. */}
+        {/* "header" is this bar's own control size — see `AccountControl`,
+            which sits between the workspace's 30px chrome and the 34px full
+            size neither of which this shared bar uses anymore. */}
         <AccountControl
-          compact={compact}
+          compact="header"
           saveStatus={saveStatus}
           onRetry={onRetrySave}
           onSave={onSave}

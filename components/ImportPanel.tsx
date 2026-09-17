@@ -442,13 +442,12 @@ export function ImportPanel({
 
                 {overflowOpen && (
                   <div className="cp-menu mode-toggle-menu" role="menu" aria-label="More import options">
-                    {enabledOverflow.map(({ id, label, hint, icon: Icon }) => (
+                    {enabledOverflow.map(({ id, label, icon: Icon }) => (
                       <button
                         key={id}
                         type="button"
                         role="menuitemradio"
                         aria-checked={mode === id}
-                        title={hint}
                         className={`cp-menu__item ${mode === id ? "is-active" : ""}`}
                         onClick={() => chooseMode(id)}
                       >

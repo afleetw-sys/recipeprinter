@@ -126,7 +126,6 @@ export function MobileStructureSheet({
                         key={option.id}
                         selected={bookPhotoStyle === option.id}
                         className="recipe-photo-style__tile"
-                        title={option.hint}
                       >
                         <input
                           type="radio"

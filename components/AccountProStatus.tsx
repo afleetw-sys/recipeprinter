@@ -248,7 +248,6 @@ export function AccountProStatus({ user }: { user: User }) {
                     type="button"
                     className="btn btn-secondary btn-compact mt-cp-3 w-full"
                     disabled={!proManagementLink}
-                    title={proManagementLink ? undefined : "Managing your subscription isn't ready yet. Try again in a moment."}
                     onClick={() => {
                       if (!proManagementLink) return;
                       track("manage_subscription_clicked", {});

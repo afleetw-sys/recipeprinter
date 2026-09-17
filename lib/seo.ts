@@ -52,6 +52,9 @@ export const SITE_KEYWORDS = [
   "print recipe from Instagram Reels",
   "print recipe from TikTok",
   "print recipe from YouTube",
+  "digitize recipe cards",
+  "print recipe from screenshot",
+  "print multiple recipes",
   "convert online recipes to printable",
   "printable recipe",
   "printable recipe cards",
@@ -322,6 +325,8 @@ export const FAQ: FaqItem[] = [
       "Yes. Upload a screenshot, cookbook page, old recipe card, or saved image and RecipePrinter will read the recipe and format it into a printable version.",
     guides: [
       "print-recipe-from-photo",
+      "print-recipe-from-screenshot",
+      "digitize-recipe-cards",
       "reciscan-alternative",
     ],
   },
@@ -358,6 +363,7 @@ export const FAQ: FaqItem[] = [
     answer:
       "Yes, with RecipePrinter Pro. Add as many as you like to the print queue and send them all in one job, which is what most people do for a recipe binder, a week of dinners, or a family cookbook. Printing one recipe at a time is free, no account needed.",
     guides: [
+      "print-multiple-recipes",
       "recipe-binder",
     ],
   },

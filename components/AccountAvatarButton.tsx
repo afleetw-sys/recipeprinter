@@ -70,7 +70,7 @@ export default function AccountAvatarButton({
       through `AccountControl`, which renders the very same button while this
       chunk is still loading. They have to agree, or the handover is a visible
       resize. */
-  compact?: boolean;
+  compact?: boolean | "header";
   /** A click landed on the placeholder avatar before this chunk arrived. Opens
       the dropdown (or the sign-in dialog) the moment auth resolves, exactly
       what the real button would have done. */
@@ -208,7 +208,7 @@ export default function AccountAvatarButton({
           on the neutral fill. Same box either way, so nothing resizes when auth
           resolves and nothing has to guess what shape to hold in the meantime. */}
       <IconButton
-        data-rp-avatar={compact ? "compact" : "full"}
+        data-rp-avatar={compact === "header" ? "header" : compact ? "compact" : "full"}
         className={
           user
             /* --cp-on-accent, not --cp-ink. Ink on the accent is 2.66:1 —
@@ -218,8 +218,8 @@ export default function AccountAvatarButton({
             ? "border border-transparent bg-[var(--cp-accent)] text-[var(--cp-on-accent)] font-bold tracking-tight"
             : "icon-button--filled"
         }
-        aria-label="RecipePrinter account"
-        title="RecipePrinter account"
+        aria-label={user ? "Open account menu" : "Sign in to RecipePrinter"}
+        title={user ? "Open account menu" : "Sign in to RecipePrinter"}
         aria-busy={openWhenReady || undefined}
         onClick={() => {
           if (!ready) {

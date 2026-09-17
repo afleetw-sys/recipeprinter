@@ -153,6 +153,7 @@
   --cp-fs-hero-lg: clamp(2.15rem, 0.9rem + 6vw, 4rem); /* marketing landing page H1 */
   --cp-fs-wordmark: 1.2rem;
   --cp-fs-wordmark-compact: 1.05rem;
+  --cp-fs-wordmark-header: 1.125rem; /* SiteHeader's own size, between the two above */
 
   /* ── Font-weight scale ───────────────────────────────────────────────────
      The size ramp above had names and a rule; weight had neither, so it was
@@ -1147,6 +1148,7 @@
     --cp-fs-hero-lg: clamp(2.2rem, 1.4rem + 4.8vw, 3.4rem);
     --cp-fs-wordmark: 1.1rem;
     --cp-fs-wordmark-compact: 1rem;
+    --cp-fs-wordmark-header: 1.05rem;
   }
 }
 
@@ -1158,6 +1160,7 @@
     --cp-fs-hero-lg: clamp(2.05rem, 1.35rem + 3.6vw, 2.6rem);
     --cp-fs-wordmark: 0.98rem;
     --cp-fs-wordmark-compact: 0.94rem;
+    --cp-fs-wordmark-header: 0.96rem;
   }
 }
 
@@ -1302,6 +1305,17 @@
     @apply text-cp-small;
   }
 
+  /* `SiteHeader`'s own size, between `.btn-compact` (the workspace) and the
+     plain `.btn` (used to be the marketing pages) — one bar height for every
+     route means the Save button in it needs a size of its own rather than
+     picking a side. */
+  .btn-header {
+    min-height: 32px;
+    padding: 0 12px;
+    border-radius: 9px;
+    @apply text-cp-small;
+  }
+
   /* Destructive actions. Two tiers off the shared --cp-error token so an
      irreversible action never reads with the same weight as a safe primary:
      .btn-danger is the filled "commit" button in a confirm dialog (Delete,
@@ -1348,10 +1362,11 @@
   }
   /* The account control takes the size of the buttons it sits beside, rather
      than standing a third taller than all of them at `.icon-button`'s 40px.
-     Which size that is depends on the bar: a marketing header is a row of
-     full `.btn`s, the workspace is a row of `.btn-compact` chrome. Same rule
-     the buttons themselves follow, applied to the one control in the row that
-     isn't one — see `SiteHeader`'s `compact`, which decides it.
+     `SiteHeader` always asks for the 32px "header" size (see `.btn-header`
+     beside it) now that every route shares one bar; the 34px default here and
+     30px `.btn-compact` remain for callers outside it, like the print
+     workspace's own mobile toolbar. Same rule the buttons themselves follow,
+     applied to the one control in the row that isn't one.
 
      Deliberately scoped to the avatar and not to `.icon-button` at large: the
      other icon buttons live in dialogs and the rail, where 40px is a touch
@@ -1376,6 +1391,13 @@
     width: 30px;
     height: 30px;
     border-radius: 8px;
+    font-size: var(--cp-fs-small);
+  }
+  /* `SiteHeader`'s own size — see `.btn-header` beside it. */
+  [data-rp-avatar="header"] {
+    width: 32px;
+    height: 32px;
+    border-radius: 9px;
     font-size: var(--cp-fs-small);
   }
 

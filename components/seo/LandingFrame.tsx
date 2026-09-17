@@ -151,11 +151,17 @@ export function LandingHero({
       text/actions column a little more of the row so the full import switch
       stays comfortable, without reducing its photo to a thumbnail. */
   asideWidth?: "even" | "narrow" | "small-aside";
-  /** Adds extra breathing room above and below unusually compact heroes. */
+  /** Adds extra breathing room above unusually compact heroes. */
   verticalPadding?: "default" | "roomy";
 }) {
   const centered = align === "centered";
-  const heroPadding = verticalPadding === "roomy" ? "py-cp-7" : "py-cp-3";
+  // Top only. The bottom used to carry the same padding, stacked on top of
+  // the page's own gap between sections (see LandingFrame), so the hero had
+  // noticeably more air below it than any other section break did. No
+  // bottom padding here means that gap alone sets the space below the hero,
+  // same as everywhere else on the ladder — the extra room stays only where
+  // it opens the page, above the hero.
+  const heroPadding = verticalPadding === "roomy" ? "pt-cp-7 lg:pt-[88px]" : "pt-cp-6 lg:pt-[64px]";
   // Without a photo there is no second column to balance, so the grid would
   // hold the words to half the page and leave the other half empty. A single
   // column instead, with the measure capped: an h1 running the full 1240 is a
@@ -252,10 +258,14 @@ export function LandingHero({
  * The vertical rhythm is a three-step ladder, and each rung has to clear the
  * one below it or the grouping stops being readable: 32px between a feature
  * row's copy and its own image, 56px between one feature row and the next
- * (see FeatureRows), and 96px here between whole sections. At the old 72px a
+ * (see FeatureRows), and 112px here between whole sections. At the old 72px a
  * section break was only 16px more than a row break, so "new section" and
  * "next row in this section" looked nearly alike. Mobile steps the whole
- * ladder down to 20 / 40 / 72.
+ * ladder down to 20 / 40 / 84. The hero gets its own, larger padding on top
+ * only (see `verticalPadding` on `LandingHero`) — it opens the page, so the
+ * space above it earns more air than a section break lower down does. Below
+ * the hero, this same gap is the only space there is, same as everywhere
+ * else on the ladder.
  */
 export function LandingFrame({
   headerActions,
@@ -277,7 +287,7 @@ export function LandingFrame({
           ask for. */}
       <SiteHeader actions={headerActions} sticky chrome />
       <main className="flex-1 px-cp-6 sm:px-cp-7 lg:px-[40px]">
-        <div className="max-w-content mx-auto flex flex-col gap-[72px] lg:gap-[96px] pt-cp-5 pb-[80px]">
+        <div className="max-w-content mx-auto flex flex-col gap-[84px] lg:gap-[112px] pt-cp-5 pb-[80px]">
           {children}
         </div>
       </main>

@@ -106,7 +106,6 @@ export function ProjectHeading({
       <button
         type="button"
         className="rp-project-heading__title"
-        title={`${title} — double-click to rename`}
         onDoubleClick={() => {
           setDraft(title);
           setEditing(true);

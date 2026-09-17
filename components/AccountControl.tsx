@@ -138,10 +138,11 @@ export function AccountControl({
   onRetry,
   onSave,
 }: {
-  /** App chrome rather than a page — see `SiteHeader`, which decides it. Sizes
-      every control in here to the bar it is in: 30px `.btn-compact` in the
-      workspace, the full 34px `.btn` on the marketing pages. */
-  compact?: boolean;
+  /** Sizes every control in here to the bar it is in. `true` is the
+      workspace's own 30px chrome (the print deck's mobile bar); `"header"` is
+      `SiteHeader`'s one shared bar size, 32px, used on every route so /print
+      and the marketing pages read as the same control. */
+  compact?: boolean | "header";
   saveStatus?: AccountSaveStatus | null;
   onRetry?: () => void;
   /** Save the current project. Given only by surfaces that have something
@@ -215,7 +216,9 @@ export function AccountControl({
       {!saveStatus && onSave && (
         <button
           type="button"
-          className={`btn btn-secondary${compact ? " btn-compact" : ""}`}
+          className={`btn btn-secondary${
+            compact === "header" ? " btn-header" : compact ? " btn-compact" : ""
+          }`}
           onClick={onSave}
         >
           Save
@@ -244,10 +247,10 @@ export function AccountControl({
            remembered and replayed (`activateOnReady`), so the press still
            routes correctly even though the chunk isn't here yet. */
         <IconButton
-          data-rp-avatar={compact ? "compact" : "full"}
+          data-rp-avatar={compact === "header" ? "header" : compact ? "compact" : "full"}
           className="icon-button--filled"
-          aria-label="RecipePrinter account"
-          title="RecipePrinter account"
+          aria-label="Open account or sign in"
+          title="Open account or sign in"
           onClick={() => {
             setPendingClick(true);
             setShowMenu(true);

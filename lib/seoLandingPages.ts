@@ -101,6 +101,7 @@ export type SeoLandingPage = {
       one of the printed cards. Without it every utility page opens on the same
       card. */
   heroImage?: string;
+  heroCardKey?: string;
   /** The little label on the hero photo. Only read when `heroImage` is set —
       the built-in captions describe the printed cards, and a page showing
       something else should not inherit one. Omit for no label. */
@@ -192,6 +193,7 @@ export type SeoLandingPage = {
   featureSections?: {
     heading: string;
     body: string;
+    afterBody?: string;
     proof?: SeoProofKind;
     caption?: string;
     /** Names a specific visual, overriding the one `proof` would pick. Use when
@@ -621,6 +623,103 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
     ],
   },
   {
+    slug: "print-multiple-recipes",
+    contentUpdated: "2026-09-16",
+    primaryKeyword: "print multiple recipes",
+    secondaryKeywords: [
+      "print multiple recipes at once",
+      "how to print multiple recipes",
+      "bulk print recipes",
+    ],
+    shortLabel: "Several recipes at once",
+    pickerGroup: "output",
+    intent: "Utility SEO",
+    initialImportMode: "url",
+    importModes: ["url", "apps", "image", "text"],
+    importSubmitLabel: "Add your first recipe",
+    captureReassurance: "Printing multiple recipes in one job is a RecipePrinter Pro feature.",
+    heroImage: "card",
+    heroAnnotation: "Print several recipes together",
+    title: "Print Multiple Recipes | RecipePrinter",
+    description:
+      "Add recipes from links, photos, apps, or text and print them together in one job with RecipePrinter Pro.",
+    h1: "Print multiple recipes at once",
+    lede:
+      "Add the recipes you want to keep, choose a print layout, and send them to the printer together. Batch printing is included with RecipePrinter Pro.",
+    howToHeading: "How to print multiple recipes",
+    howTo: [
+      {
+        name: "Add your first recipe",
+        text: "Paste a recipe link, upload a photo, open a recipe app export, or paste the text. Check the ingredients and steps before printing.",
+      },
+      {
+        name: "Add the rest of your recipes",
+        text: "With RecipePrinter Pro, add more recipes to the same print job. You can mix sources in one collection.",
+      },
+      {
+        name: "Choose how they print",
+        text: "Use full letter pages or 4×6 recipe cards, then choose a theme. The print settings apply across the job.",
+      },
+      {
+        name: "Print them in one job",
+        text: "Send the set to your printer, or choose Save as PDF in the print dialog to keep a digital copy.",
+      },
+    ],
+    featureSections: [
+      {
+        heading: "One trip to the printer for the whole set",
+        image: "cookpilot-export",
+        body:
+          "A week of dinners or a stack for a recipe box is easier to handle as one print job. Add each recipe, check it, and print the set together instead of starting a new print dialog for every page.",
+      },
+      {
+        heading: "Bring recipes from different places",
+        image: "multi-themes",
+        body:
+          "The recipes do not have to come from the same site. Add a link, a screenshot, a photo of a card, pasted text, or a supported recipe app export, and print them in a consistent layout.",
+      },
+      {
+        heading: "Batch printing is part of Pro",
+        image: "card-in-box",
+        body:
+          "Printing one full letter page at a time is free. RecipePrinter Pro lets you add multiple recipes to one print job and includes 4×6 recipe cards and print themes for a matching set.",
+      },
+    ],
+    faqHeading: "Multiple recipe printing questions",
+    faqs: [
+      {
+        question: "Can I print multiple recipes at once for free?",
+        answer:
+          "You can print full letter pages one recipe at a time for free. Printing several recipes in one job requires RecipePrinter Pro.",
+      },
+      {
+        question: "Can I mix links, screenshots, and recipe app exports?",
+        answer:
+          "Yes. Add recipes from different supported sources to the same print job. Check each one before printing so the ingredients and steps are right.",
+      },
+      {
+        question: "Will all the recipes use the same card size and theme?",
+        answer:
+          "Yes. The selected size and theme apply to every recipe in the print job, so the finished pages or cards match.",
+      },
+      {
+        question: "Can I save the batch as a PDF?",
+        answer:
+          "Yes. Once the recipes are ready, open the print dialog and choose Save as PDF to keep the set as a file.",
+      },
+      {
+        question: "Do I need to add all the recipes at once?",
+        answer:
+          "No. Start with one recipe and add more before you print. If you want to come back to a saved project later, sign in and save it to your account.",
+      },
+    ],
+    links: [
+      { href: "/recipe-card-printer", label: "Make recipe cards" },
+      { href: "/organize-recipes", label: "Organize recipes" },
+      { href: "/recipe-binder", label: "Build a recipe binder" },
+    ],
+  },
+  {
     // No lastReviewed: written today, not read through yet.
     slug: "print-recipe-from-photo",
     contentUpdated: "2026-09-09",
@@ -710,6 +809,102 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
       { href: "/reciscan-alternative", label: "ReciScan alternative" },
       { href: "/recipe-card-printer", label: "Recipe card printer" },
       { href: "/family-recipe-book", label: "Build a family cookbook" },
+    ],
+  },
+  {
+    slug: "print-recipe-from-screenshot",
+    contentUpdated: "2026-09-16",
+    primaryKeyword: "print recipe from screenshot",
+    secondaryKeywords: [
+      "recipe screenshot to text",
+      "convert recipe screenshot",
+      "recipe screenshot converter",
+    ],
+    shortLabel: "A recipe screenshot",
+    pickerGroup: "source",
+    intent: "Utility SEO",
+    initialImportMode: "image",
+    importFieldLabel: "Recipe screenshots",
+    importSubmitLabel: "Read the screenshot",
+    heroImage: "inline-editing",
+    heroAnnotation: "Edit the recipe before printing",
+    title: "Recipe Screenshot to Printable Recipe | RecipePrinter",
+    description:
+      "Upload a recipe screenshot, turn the ingredients and steps into editable text, and print a clean page or save it as a PDF.",
+    h1: "Print a recipe from a screenshot",
+    lede:
+      "Upload a screenshot of a recipe from a post, message, or website. RecipePrinter pulls the ingredients and steps into an editable layout you can print or save.",
+    howToHeading: "How to print a recipe from a screenshot",
+    howTo: [
+      {
+        name: "Save the recipe screenshot",
+        text: "Capture the ingredients and directions. If they are spread across several screens, save each part.",
+      },
+      {
+        name: "Upload it to RecipePrinter",
+        text: "Add the screenshot images. RecipePrinter reads the recipe text from the images without needing the original post or page link.",
+      },
+      {
+        name: "Review the recipe text",
+        text: "The ingredients and steps become editable. Check amounts, line breaks, and anything the screenshot cut off.",
+      },
+      {
+        name: "Print or save it",
+        text: "Print a full letter page for free or save it as a PDF. Pro adds 4×6 recipe cards.",
+      },
+    ],
+    featureSections: [
+      {
+        heading: "Turn a recipe screenshot into text you can edit",
+        image: "steps",
+        body:
+          "A screenshot is useful for saving a recipe quickly, but it is still an image. RecipePrinter reads the text and separates ingredients from directions, so you can correct the result before you print.",
+      },
+      {
+        heading: "Use the screenshot when the link will not help",
+        image: "instagram",
+        body:
+          "The recipe may be in a social post, a private group, or a message you cannot open from a public link. Upload the screenshot you have and work from the visible recipe instead.",
+      },
+      {
+        heading: "Make a clean copy for the kitchen",
+        image: "card-in-box",
+        body:
+          "Print the recipe without the rest of the phone screen around it. A letter page is free; RecipePrinter Pro adds 4×6 cards that fit a recipe box.",
+      },
+    ],
+    faqHeading: "Recipe screenshot printing questions",
+    faqs: [
+      {
+        question: "Can RecipePrinter convert a recipe screenshot to text?",
+        answer:
+          "Yes. Upload the screenshot and RecipePrinter reads the visible recipe into editable ingredients and steps. Check the result before printing.",
+      },
+      {
+        question: "What if the recipe takes more than one screenshot?",
+        answer:
+          "Upload the screenshots together. RecipePrinter can use up to four images for one recipe, so the ingredients and directions can come from separate captures.",
+      },
+      {
+        question: "Does the original post or website have to be public?",
+        answer:
+          "No. You can upload a screenshot of recipe text you can see, even when RecipePrinter cannot open the original link.",
+      },
+      {
+        question: "Can I fix mistakes after the screenshot is read?",
+        answer:
+          "Yes. Edit the title, ingredients, amounts, and steps before you print or save the recipe.",
+      },
+      {
+        question: "Can I print a recipe screenshot from my phone?",
+        answer:
+          "Yes. Open RecipePrinter in your phone browser, upload the screenshot, check the recipe, and print it or save it as a PDF.",
+      },
+    ],
+    links: [
+      { href: "/print-recipe-from-photo", label: "Print from a photo" },
+      { href: "/digitize-recipe-cards", label: "Digitize recipe cards" },
+      { href: "/print-facebook-recipes", label: "Print Facebook recipes" },
     ],
   },
   {
@@ -1474,6 +1669,111 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
     ],
   },
   {
+    slug: "digitize-recipe-cards",
+    contentUpdated: "2026-09-17",
+    primaryKeyword: "digitize recipe cards",
+    secondaryKeywords: [
+      "scan recipe cards",
+      "scan handwritten recipes",
+      "recipe card scanner",
+      "digitize handwritten recipes",
+      "convert handwritten recipe to text",
+    ],
+    shortLabel: "Handwritten recipe cards",
+    pickerGroup: "source",
+    intent: "Utility SEO",
+    initialImportMode: "image",
+    importFieldLabel: "Recipe card images",
+    importPlaceholder:
+      "Upload a photo or scan of your recipe card. Add the front and back together if the recipe uses both sides.",
+    importSubmitLabel: "Digitize the card",
+    heroImage: "handwritten-card",
+    heroAnnotation: "Start with a photo of the card",
+    title: "Digitize Recipe Cards & Handwritten Recipes | RecipePrinter",
+    description:
+      "Digitize handwritten recipe cards from a photo or scan. RecipePrinter turns them into clean, editable recipes you can print, save as a PDF, or add to a family collection.",
+    h1: "Digitize recipe cards",
+    lede:
+      "Turn handwritten recipe cards into clean, editable recipes you can print, save, or keep in a family collection. No retyping required.",
+    howToHeading: "How to digitize a recipe card",
+    howTo: [
+      {
+        name: "Photograph or scan the card",
+        text: "Take a clear photo with the entire card in focus. If the recipe continues on the back, photograph both sides.",
+      },
+      {
+        name: "Upload the images",
+        text: "Add the photos or scans together so RecipePrinter can read them as one recipe.",
+      },
+      {
+        name: "Review the recipe",
+        text: "RecipePrinter separates the ingredients and instructions into editable fields. Fix anything the handwriting made unclear.",
+      },
+      {
+        name: "Print or save it",
+        text: "Print a clean full-page copy, save a PDF, or use a 4×6 recipe card with Pro.",
+      },
+    ],
+    featureSections: [
+      {
+        heading: "Turn handwriting into an editable recipe",
+        image: "inline-editing",
+        body:
+          "A photo keeps the original handwriting, but it isn’t very easy to cook from or update. RecipePrinter reads the card into separate ingredient and instruction fields, so you can correct a faded word, fix an amount, or clean up an old recipe before printing.",
+        afterBody:
+          "Instead of giving you a block of extracted text, RecipePrinter rebuilds it as a recipe.",
+      },
+      {
+        heading: "Scan both sides as one recipe",
+        body:
+          "Older recipe cards often continue on the back. Upload photos or scans of both sides together and RecipePrinter will treat them as one recipe.",
+      },
+      {
+        heading: "Preserve the original. Use the clean copy.",
+        image: "card-in-box",
+        body:
+          "Keep the handwritten card safe, then use the clean RecipePrinter version for everyday cooking, a recipe box, binder, or family cookbook.",
+      },
+    ],
+    faqHeading: "Recipe card digitizing questions",
+    faqs: [
+      {
+        question: "Do I need a scanner to digitize recipe cards?",
+        answer:
+          "No. A clear phone photo works. Lay the card flat, avoid shadows, and make sure every line is in focus.",
+      },
+      {
+        question: "Can RecipePrinter read handwritten recipes?",
+        answer:
+          "Yes, though handwriting can be hard to read perfectly. Check the result and edit any words or amounts that came through wrong before printing.",
+      },
+      {
+        question: "What if the recipe is written on both sides?",
+        answer:
+          "Upload photos or scans of the front and back together. RecipePrinter can use up to four images for one recipe.",
+      },
+      {
+        question: "Can I save a digitized recipe card as a PDF?",
+        answer:
+          "Yes. Once the recipe is formatted, choose Save as PDF in your browser’s print dialog.",
+      },
+      {
+        question: "Can I digitize old or faded recipe cards?",
+        answer:
+          "Yes. A clear photo is often enough, although faded ink or difficult handwriting may need a little cleanup after the recipe is read. Everything is editable before you print.",
+      },
+      {
+        question: "Can I convert a handwritten recipe to text?",
+        answer:
+          "Yes. RecipePrinter reads the handwriting and separates the recipe into editable ingredients and instructions, so you can correct the result before printing or saving it.",
+      },
+    ],
+    links: [
+      { href: "/print-recipe-from-photo", label: "Print a recipe from a photo" },
+      { href: "/preserve-family-recipes", label: "Preserve family recipes" },
+    ],
+  },
+  {
     slug: "preserve-family-recipes",
     importPlaceholder: "Photograph a handwritten card, or drop a scan",
     contentUpdated: "2026-09-10",
@@ -1925,7 +2225,7 @@ export function seoLandingPageMetadata(page: SeoLandingPage): Metadata {
     description: page.description,
     path: `/${page.slug}`,
   });
-  if (page.slug === "recipe-binder" || page.slug === "print-paprika-recipes" || page.slug === "print-facebook-recipes" || page.slug === "print-youtube-recipes" || page.slug === "print-tiktok-recipes") {
+  if (page.slug === "digitize-recipe-cards" || page.slug === "print-recipe-from-screenshot" || page.slug === "print-multiple-recipes" || page.slug === "recipe-binder" || page.slug === "print-paprika-recipes" || page.slug === "print-facebook-recipes" || page.slug === "print-youtube-recipes" || page.slug === "print-tiktok-recipes") {
     metadata.title = { absolute: page.title };
     metadata.openGraph = { ...metadata.openGraph, title: page.title };
     metadata.twitter = { ...metadata.twitter, title: page.title };

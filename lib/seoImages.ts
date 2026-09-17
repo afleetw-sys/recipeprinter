@@ -28,7 +28,7 @@ import { layoutForPage, type SeoLandingPage } from "@/lib/seoLandingPages";
  * everyday one. Called by both the page and the sitemap so they cannot disagree.
  */
 export function heroCardKey(page: SeoLandingPage): string {
-  return layoutForPage(page) === "guide-first" ? "pesto" : "korean";
+  return page.heroCardKey ?? (layoutForPage(page) === "guide-first" ? "pesto" : "korean");
 }
 
 /** Every image URL a landing page renders, in the order it renders them. */

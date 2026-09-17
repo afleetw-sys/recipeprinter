@@ -3,6 +3,7 @@ import { Birthstone, Gochi_Hand, Karla, Manrope, Playfair_Display } from "next/f
 import "./globals.css";
 import { KeyboardInsetWatcher } from "@/components/KeyboardInsetWatcher";
 import { AnalyticsProvider } from "@/components/AnalyticsProvider";
+import { ActionTitles } from "@/components/ActionTitles";
 import { ProductHuntBanner } from "@/components/ProductHuntBanner";
 import {
   SITE_URL,
@@ -162,6 +163,7 @@ export default function RootLayout({
       <body>
         <KeyboardInsetWatcher />
         <AnalyticsProvider />
+        <ActionTitles />
         {/* Launch-day bar. Retires itself on its own end date (see the file),
             and skips the print workspace, so it can be deleted whenever. */}
         <ProductHuntBanner />
