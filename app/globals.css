@@ -1363,6 +1363,22 @@
     font-size: var(--cp-fs-small);
   }
 
+  /* Same move as `[data-rp-avatar="compact"]` above, generalized: an icon
+     button that has to sit in a `.btn-compact` row (print workspace's Save,
+     next to Print) rather than stand alone in a dialog or the rail. Without
+     this, matching Save to its neighbor's height meant reaching for the
+     unrelated `.btn` family instead — different border colour, different
+     hover (a background fill and a lift, where this hovers by darkening its
+     border and text like every other icon button) — so the one icon-only
+     control that WASN'T a dialog close or the rail's back button read as a
+     visually different kind of thing than both of them, not just a smaller
+     one. This keeps it the same button, sized down. */
+  .icon-button--compact {
+    width: 30px;
+    height: 30px;
+    border-radius: 8px;
+  }
+
   .icon-button:hover:not(:disabled),
   .icon-close-btn:hover:not(:disabled) {
     color: var(--cp-ink);

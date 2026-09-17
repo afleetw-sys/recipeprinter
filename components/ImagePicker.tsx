@@ -2,11 +2,31 @@
 
 import { useEffect, useRef, useState } from "react";
 import { Dialog } from "@/components/Dialog";
+import { MobileSheet } from "@/components/print/MobileSheet";
 import { IconButton } from "@/components/Controls";
 import { CheckIcon, ICON_SIZE, ImageIcon, UploadIcon, XIcon } from "@/components/icons";
 import { friendlyPhotoUploadError } from "@/lib/friendlyErrors";
 import { partitionImageFiles } from "@/lib/imageImport";
 import { uploadPhotoFile } from "@/lib/photoStorage";
+import { DECK_MOBILE_QUERY, isDeckMobile } from "@/lib/useDeckScroller";
+
+/** Same breakpoint the print workspace already switches its own chrome on
+    (the rail-vs-filmstrip deck, the config panel's drawer) — reused here
+    rather than picked fresh, so "mobile" never means two different widths
+    on the same page. Reactive (unlike `isDeckMobile()` alone) because this
+    decides which of two different component trees to mount, not just a
+    CSS class to toggle. */
+function useIsMobileSheet(): boolean {
+  const [mobile, setMobile] = useState(isDeckMobile);
+  useEffect(() => {
+    const mql = window.matchMedia(DECK_MOBILE_QUERY);
+    const update = () => setMobile(mql.matches);
+    update();
+    mql.addEventListener("change", update);
+    return () => mql.removeEventListener("change", update);
+  }, []);
+  return mobile;
+}
 
 export function ImagePicker({
   current,
@@ -60,6 +80,7 @@ export function ImagePicker({
   useEffect(() => {
     if (openSignal) setOpen(true);
   }, [openSignal]);
+  const isMobile = useIsMobileSheet();
   const [uploading, setUploading] = useState(false);
   const [dragging, setDragging] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -238,71 +259,46 @@ export function ImagePicker({
     };
   }, [open]);
 
-  return (
+  const headingTitle = gridMode ? "Choose photos" : recipeMode ? "Recipe photo" : "Choose an image";
+  const headingDescription = gridMode
+    ? `Pick up to ${gridMax} photos for the collage. Tap to add or remove, or drag photos in.`
+    : recipeMode
+      ? "Set the placement, then pick a photo or drag one in."
+      : // Deliberately not "in this cookbook": this dialog is the
+        // photo control for plain recipe cards too now, where there
+        // is no cookbook to have a photo in.
+        "Use a photo you already have, or drag in a new one.";
+
+  // On mobile, closing has to stay blocked during an upload the same way
+  // the desktop Dialog's `closeDisabled` blocks it — MobileSheet (shared
+  // with Size/Book/Themes) has no such prop of its own, so this wraps
+  // `onClose` instead of adding one just for this one caller.
+  const closeSheet = () => {
+    if (!uploading) setOpen(false);
+  };
+
+  // Shared by both chromes below: the drop veil, the placement row (recipe
+  // mode only), the photo grid (or the "hidden" note in its place), and any
+  // error. Only the HEADING and the grid-mode footer differ — the desktop
+  // Dialog draws its own heading inline and the footer sits in its own
+  // flow; MobileSheet takes both as `title`/`subtitle` and `footer` props
+  // instead, so it can render the same grabber-handle sheet chrome every
+  // other mobile picker already uses (Size, Book, Themes).
+  const pickerBody = (
     <>
-      <button
-        type="button"
-        className={`image-picker__trigger no-print ${className}`}
-        // Don't let mousedown pull focus off a currently-edited field (e.g. the
-        // section/chapter title textarea): that blur would commit-and-close the
-        // edit before this picker ever opens. The click still fires.
-        onMouseDown={(event) => event.preventDefault()}
-        onClick={(event) => {
-          event.stopPropagation();
-          setOpen(true);
-        }}
-        aria-haspopup="dialog"
-        title={label}
-      >
-        <ImageIcon size={ICON_SIZE.md} />
-        <span>{label}</span>
-      </button>
-
-      <Dialog
-        open={open}
-        onClose={() => setOpen(false)}
-        closeDisabled={uploading}
-        labelledBy="image-picker-title"
-        dismissOnBackdropClick
-        portal
-        className="image-picker"
-        backdropClassName="image-picker__backdrop"
-        panelClassName="image-picker__panel"
-      >
-        {/* Painted over the whole screen, matching the window-wide drop target
-            below, so the dialog says plainly that letting go here works. */}
-        {dragging && !uploading && !placementNone && (
-          <div className="image-picker__dropveil" aria-hidden>
-            <div className="image-picker__dropveil-card">
-              <UploadIcon size={26} />
-              <span>{gridMode ? "Drop photos to add them to the collage" : "Drop a photo to use it"}</span>
-            </div>
+      {/* Painted over the whole screen, matching the window-wide drop target
+          below, so the dialog says plainly that letting go here works. */}
+      {dragging && !uploading && !placementNone && (
+        <div className="image-picker__dropveil" aria-hidden>
+          <div className="image-picker__dropveil-card">
+            <UploadIcon size={26} />
+            <span>{gridMode ? "Drop photos to add them to the collage" : "Drop a photo to use it"}</span>
           </div>
-        )}
-
-        <div className="image-picker__heading">
-          <div>
-            <h2 id="image-picker-title">
-              {gridMode ? "Choose photos" : recipeMode ? "Recipe photo" : "Choose an image"}
-            </h2>
-            <p>
-              {gridMode
-                ? `Pick up to ${gridMax} photos for the collage. Tap to add or remove, or drag photos in.`
-                : recipeMode
-                  ? "Set the placement, then pick a photo or drag one in."
-                  : // Deliberately not "in this cookbook": this dialog is the
-                    // photo control for plain recipe cards too now, where there
-                    // is no cookbook to have a photo in.
-                    "Use a photo you already have, or drag in a new one."}
-            </p>
-          </div>
-          <IconButton className="image-picker__close" onClick={() => setOpen(false)} aria-label="Close">
-            <XIcon size={ICON_SIZE.md} />
-          </IconButton>
         </div>
+      )}
 
-        {recipeMode && placementOptions && (
-          <section className="image-picker__placement" aria-label="Where the photo goes">
+      {recipeMode && placementOptions && (
+        <section className="image-picker__placement" aria-label="Where the photo goes">
             <div className="image-picker__placement-row" role="group">
               {placementOptions.map((option) => (
                 <button
@@ -461,24 +457,84 @@ export function ImagePicker({
         </>
         )}
         {error && <p className="field-error" role="alert">{error}</p>}
-        {gridMode && (
-          <div className="image-picker__footer">
-            <span className="image-picker__count">
-              {selectedGrid.length === 0
-                ? "No photos yet"
-                : `${selectedGrid.length} photo${selectedGrid.length === 1 ? "" : "s"} selected`}
-              {selectedGrid.length >= gridMax && " · grid full"}
-            </span>
-            <button
-              type="button"
-              className="btn btn-primary btn-compact"
-              onClick={() => setOpen(false)}
-            >
-              Done
-            </button>
+    </>
+  );
+
+  const gridFooter = gridMode ? (
+    <div className="image-picker__footer">
+      <span className="image-picker__count">
+        {selectedGrid.length === 0
+          ? "No photos yet"
+          : `${selectedGrid.length} photo${selectedGrid.length === 1 ? "" : "s"} selected`}
+        {selectedGrid.length >= gridMax && " · grid full"}
+      </span>
+      <button type="button" className="btn btn-primary btn-compact" onClick={closeSheet}>
+        Done
+      </button>
+    </div>
+  ) : null;
+
+  return (
+    <>
+      <button
+        type="button"
+        className={`image-picker__trigger no-print ${className}`}
+        // Don't let mousedown pull focus off a currently-edited field (e.g. the
+        // section/chapter title textarea): that blur would commit-and-close the
+        // edit before this picker ever opens. The click still fires.
+        onMouseDown={(event) => event.preventDefault()}
+        onClick={(event) => {
+          event.stopPropagation();
+          setOpen(true);
+        }}
+        aria-haspopup="dialog"
+        title={label}
+      >
+        <ImageIcon size={ICON_SIZE.md} />
+        <span>{label}</span>
+      </button>
+
+      {isMobile ? (
+        <MobileSheet
+          open={open}
+          onClose={closeSheet}
+          title={headingTitle}
+          subtitle={headingDescription}
+          footer={gridFooter}
+          className="image-picker-sheet"
+          // Every call site (a recipe card, a cover, a chapter opener) sits
+          // deep inside the scaled/transformed print deck — see the portal
+          // prop's own doc comment on MobileSheet for why that breaks a
+          // plain `position: fixed` sheet.
+          portal
+        >
+          {pickerBody}
+        </MobileSheet>
+      ) : (
+        <Dialog
+          open={open}
+          onClose={() => setOpen(false)}
+          closeDisabled={uploading}
+          labelledBy="image-picker-title"
+          dismissOnBackdropClick
+          portal
+          className="image-picker"
+          backdropClassName="image-picker__backdrop"
+          panelClassName="image-picker__panel"
+        >
+          <div className="image-picker__heading">
+            <div>
+              <h2 id="image-picker-title">{headingTitle}</h2>
+              <p>{headingDescription}</p>
+            </div>
+            <IconButton className="image-picker__close" onClick={() => setOpen(false)} aria-label="Close">
+              <XIcon size={ICON_SIZE.md} />
+            </IconButton>
           </div>
-        )}
-      </Dialog>
+          {pickerBody}
+          {gridFooter}
+        </Dialog>
+      )}
     </>
   );
 }

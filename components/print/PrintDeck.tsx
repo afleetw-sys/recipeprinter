@@ -10,13 +10,13 @@ import type {
 } from "react";
 import Link from "next/link";
 import { AccountControl } from "@/components/AccountControl";
-import { LogoMark, Wordmark } from "@/components/Logo";
+import { LogoMark } from "@/components/Logo";
 import {
   ChevronLeftIcon,
   ChevronRightIcon,
   ICON_SIZE,
   InfoIcon,
-  SettingsIcon,
+  LinkIcon,
   MoveToSectionIcon,
   PlusIcon,
   TrashIcon,
@@ -154,6 +154,10 @@ export function pendingSlotIndexIn(
 }
 
 interface PrintDeckProps {
+  /** Save state / button, pre-rendered by the page (`renderSaveControl`) so
+      the mobile topbar reports the exact same thing the desktop header does
+      — see that function's doc comment in app/print/page.tsx. */
+  saveControl: ReactNode;
   // Layout / preview geometry
   singleRecipePrintView: boolean;
   cookbookView: boolean;
@@ -166,8 +170,19 @@ interface PrintDeckProps {
   cardSize: PrintCardSize;
   showCutLines: boolean;
   showSourceUrl: boolean;
+  setShowSourceUrl: Dispatch<SetStateAction<boolean>>;
   sourceUrlOn: boolean;
   showDescription: boolean;
+  /** No multi-recipe entitlement and not a cookbook — the one recipe a Free
+      cook can hold. Only then is the page toolbar's link toggle unambiguous:
+      it reads as "this recipe's link" and IS this recipe's link, because
+      there's nothing else it could be acting on. With more than one recipe
+      possible the toggle is still the single book-wide `showSourceUrl`
+      flag underneath — putting it on a per-page toolbar there would read as
+      a per-recipe control while quietly changing every recipe's link, which
+      is worse than not offering it; the panel's "Every recipe" section
+      stays the one place for that instead. */
+  singleRecipeOnly: boolean;
   // Sheets / nav / spreads
   sheets: ReturnType<typeof usePrintSheets>["sheets"];
   navItems: ReturnType<typeof usePrintSheets>["navItems"];
@@ -249,11 +264,6 @@ interface PrintDeckProps {
   /** The recipe an import was added BELOW, if any — the deck places its
       placeholder page right after that recipe, the way the rail does. */
   pendingAddAfterRecipeId: string | null;
-  // Mobile topbar
-  setSizeMenuOpen: Dispatch<SetStateAction<boolean>>;
-  settingsMenuOpen: boolean;
-  setSettingsMenuOpen: Dispatch<SetStateAction<boolean>>;
-  hasPrintSettingsFields: boolean;
   /** Draw every page regardless of the window — set while printing, when the
       deck IS the output and a placeholder would print blank. */
   renderAllPages: boolean;
@@ -269,6 +279,7 @@ export function PrintDeck(props: PrintDeckProps) {
   // menu closes itself on an outside press, Escape, a scroll or a resize.
   const [moveMenuAt, setMoveMenuAt] = useState<{ x: number; y: number } | null>(null);
   const {
+    saveControl,
     singleRecipePrintView,
     cookbookView,
     previewMeasuring,
@@ -280,8 +291,10 @@ export function PrintDeck(props: PrintDeckProps) {
     cardSize,
     showCutLines,
     showSourceUrl,
+    setShowSourceUrl,
     sourceUrlOn,
     showDescription,
+    singleRecipeOnly,
     sheets,
     navItems,
     spreads,
@@ -336,10 +349,6 @@ export function PrintDeck(props: PrintDeckProps) {
     onTryAnotherImportWay,
     onRemoveImport,
     pendingAddAfterRecipeId,
-    setSizeMenuOpen,
-    settingsMenuOpen,
-    setSettingsMenuOpen,
-    hasPrintSettingsFields,
     renderAllPages,
   } = props;
 
@@ -479,6 +488,33 @@ export function PrintDeck(props: PrintDeckProps) {
               : navItem.kind === "section-photo"
                 ? renderSectionPhotoControl(navItem.recipeId)
                 : null;
+    // The recipe-link toggle, next to the photo control. Only where the book
+    // can't hold more than this one recipe (`singleRecipeOnly`) — otherwise
+    // the underlying flag is book-wide, and a button living on ONE recipe's
+    // toolbar would read as that recipe's own switch while silently toggling
+    // every recipe's link. That case keeps the panel's "Every recipe" section
+    // as the one place to reach it instead.
+    const recipeForLink =
+      singleRecipeOnly && navItem.kind === "recipe"
+        ? items?.find((item) => item.id === navItem.recipeId)?.recipe
+        : null;
+    const linkControl = recipeForLink?.sourceUrl ? (
+      <button
+        type="button"
+        className={`recipe-page-toolbar__btn recipe-page-toolbar__btn--icon ${
+          showSourceUrl ? "is-active" : ""
+        }`}
+        aria-pressed={showSourceUrl}
+        aria-label={showSourceUrl ? "Hide recipe link" : "Show recipe link"}
+        title={showSourceUrl ? "Hide recipe link" : "Show recipe link"}
+        onClick={(event) => {
+          event.stopPropagation();
+          setShowSourceUrl((value) => !value);
+        }}
+      >
+        <LinkIcon size={ICON_SIZE.md} />
+      </button>
+    ) : null;
     /**
      * The way back to the derived chapter intro.
      *
@@ -535,7 +571,7 @@ export function PrintDeck(props: PrintDeckProps) {
 
     // The art pages have no text and no reveal, but they DO have a photo — and
     // the toolbar is the only place their photo can be changed from now.
-    if (!navItem.flip && !editable && !photoControl) return null;
+    if (!navItem.flip && !editable && !photoControl && !linkControl) return null;
     return (
       <div
         className="recipe-page-canvas__controls no-print"
@@ -638,6 +674,7 @@ export function PrintDeck(props: PrintDeckProps) {
               it led the bar only because that is where the placement toggle it
               replaced used to sit. */}
           {photoControl && <div className="recipe-page-toolbar__group">{photoControl}</div>}
+          {linkControl && <div className="recipe-page-toolbar__group">{linkControl}</div>}
           {/* Move this recipe into another chapter.
               
               Until now the only way was the Organize panel: leave the page you
@@ -1007,33 +1044,28 @@ export function PrintDeck(props: PrintDeckProps) {
           />
 
           <div className="recipe-mobile-topbar no-print">
+            {/* Mark only, matching the desktop header's own `wordmark={false}`
+                (SiteHeader, called from app/print/page.tsx) — the name next
+                to the mark repeats what the mark already is, and this bar is
+                tight enough on a phone that a page-title bar right below it
+                already says which app you're in. */}
             <Link href="/" className="recipe-mobile-topbar__logo" aria-label="RecipePrinter home">
               <LogoMark size={26} rounded={0} />
-              <Wordmark className="text-[length:var(--cp-fs-wordmark-compact)] text-ink" />
             </Link>
             <div className="recipe-mobile-topbar__actions">
-              {hasPrintSettingsFields && (
-                <button
-                  type="button"
-                  className={`recipe-mobile-topbar__icon-btn ${settingsMenuOpen ? "is-active" : ""}`}
-                  aria-haspopup="dialog"
-                  aria-expanded={settingsMenuOpen}
-                  aria-label="Print settings"
-                  onClick={() => {
-                    setSizeMenuOpen(false);
-                    setSettingsMenuOpen((open) => !open);
-                  }}
-                >
-                  <SettingsIcon size={ICON_SIZE.lg} />
-                </button>
-              )}
+              {/* The gear icon that opened a separate "Print settings" sheet
+                  is gone — cut lines / two-sided now live inline in the Size
+                  sheet, right where Card gets picked, so there's nothing left
+                  behind a second trigger. */}
               {/* Print is NOT here any more. It moved to the bottom bar, where the
                   thumb is and where the tools it finishes already live. */}
-              {/* The same account control the desktop header carries. The two
-                  bars cannot be identical — the desktop one centres the kind
-                  tabs and still has room for Save, which 375px does not — but
-                  "where is my account" should not have a different answer on a
-                  phone, and it had none at all here. */}
+              {/* Same save control the desktop header carries (see
+                  `renderSaveControl` in app/print/page.tsx) — right next to
+                  the account control, the same order the desktop bar keeps. */}
+              {saveControl}
+              {/* The same account control the desktop header carries.
+                  "Where is my account" should not have a different answer on
+                  a phone, and it had none at all here. */}
               <AccountControl compact />
             </div>
           </div>
@@ -1130,7 +1162,7 @@ export function PrintDeck(props: PrintDeckProps) {
                       onClick={() => openAddRecipeBelow(null)}
                     >
                       <PlusIcon size={ICON_SIZE.md} />
-                      Add recipes
+                      Add recipe
                     </button>
                   </div>
                 </div>
@@ -1272,6 +1304,8 @@ export function PrintDeck(props: PrintDeckProps) {
                       role="button"
                       tabIndex={0}
                       aria-current={isActive}
+                      aria-label={`Spread ${index + 1}`}
+                      data-action-hint={`${isActive ? "View" : "Go to"} spread ${index + 1}`}
                     >
                       {isActive &&
                         activeNavItem &&
@@ -1346,6 +1380,7 @@ export function PrintDeck(props: PrintDeckProps) {
                   tabIndex={0}
                   aria-current={isActive}
                   aria-label={navItem.label}
+                  data-action-hint={`${isActive ? "View" : "Go to"} ${navItem.label ?? "page"}`}
                   onKeyDown={(event) => {
                     if (
                       event.target instanceof HTMLInputElement ||

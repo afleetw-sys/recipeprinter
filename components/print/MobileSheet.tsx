@@ -1,6 +1,7 @@
 "use client";
 
-import { useCallback, useRef, type ReactNode } from "react";
+import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
+import { createPortal } from "react-dom";
 import { useBackDismiss } from "@/lib/useBackDismiss";
 import { useModalFocus } from "@/lib/useModalFocus";
 import { XIcon, ICON_SIZE } from "@/components/icons";
@@ -15,6 +16,17 @@ interface MobileSheetProps {
   footer?: ReactNode;
   /** Extra class(es) on the sheet element itself, for a caller's own content-scoped rules. */
   className?: string;
+  /** Render into `document.body` instead of wherever this is called from.
+      Every existing caller (Size, Book, Themes) is a direct child of the
+      page's own top-level return, which the class doc below already leans
+      on: `position: fixed` targets the viewport there. A caller mounted
+      deep inside the deck (the per-page photo toolbar, which sits under the
+      scaled/zoomed print preview) doesn't get that for free — a `transform`
+      anywhere in that ancestry makes ITSELF the containing block for a
+      `position: fixed` descendant, so the sheet ends up sized and placed
+      relative to some card preview instead of the screen. Off by default so
+      every existing caller's render tree is untouched. */
+  portal?: boolean;
   children: ReactNode;
 }
 
@@ -39,6 +51,7 @@ export function MobileSheet({
   ariaLabel,
   footer,
   className,
+  portal = false,
   children,
 }: MobileSheetProps) {
   const sheetRef = useRef<HTMLElement>(null);
@@ -46,9 +59,14 @@ export function MobileSheet({
   useModalFocus(sheetRef, close, { disabled: !open });
   useBackDismiss(open, close);
 
+  // Portals need a real DOM to target, which doesn't exist during SSR or the
+  // first hydration pass — same reasoning as Dialog's own `mounted` gate.
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => setMounted(true), []);
+
   const resolvedLabel = ariaLabel ?? (typeof title === "string" ? title : undefined);
 
-  return (
+  const sheet = (
     <>
       {open && (
         <button
@@ -84,4 +102,7 @@ export function MobileSheet({
       </aside>
     </>
   );
+
+  if (!portal) return sheet;
+  return mounted ? createPortal(sheet, document.body) : null;
 }

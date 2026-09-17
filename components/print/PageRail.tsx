@@ -119,11 +119,20 @@ function LazyRailThumb({
 }
 
 interface PageRailProps {
-  /** Whether the queue already holds at least one recipe — the header's Add
-      action reads "Add more recipes" once it does, "Add recipes" for a
-      genuinely empty project (see the matching empty-state button in
-      PrintDeck.tsx, which always says "Add recipes" since it's never shown
-      once anything exists). */
+  /** Whether the queue already holds — or is already fetching — at least one
+      recipe. The header's Add action reads "Add more recipes" once it does,
+      "Add recipe" (singular: there's exactly one thing to add to a blank
+      project) for a genuinely empty project (see the matching empty-state
+      button in PrintDeck.tsx, which always says "Add recipe" since it's
+      never shown once anything exists, loading or not).
+
+      Counts an in-flight import on purpose, the same way
+      `multiRecipeAddLocked` does: the two are read off the same count at the
+      call site so the label and the Pro badge next to it always change
+      together. Reading only settled recipes here left a window, for the
+      whole time recipe #1 was parsing, where the label still said "Add
+      recipe" (singular) while the badge had already appeared beside it —
+      neither of this button's two intended states. */
   hasRecipes: boolean;
   /** Whether the NEXT recipe added here would be the one that requires Pro —
       true once a project already has a recipe and the customer lacks Pro
@@ -493,7 +502,7 @@ export function PageRail(props: PageRailProps) {
                     already matched them; the icon was a step down, which made the
                     whole button read as smaller than the ones in the header. */}
                 <PlusIcon size={ICON_SIZE.md} />
-                {hasRecipes ? "Add more recipes" : "Add recipes"}
+                {hasRecipes ? "Add more recipes" : "Add recipe"}
                 {multiRecipeAddLocked && <ProBadge variant="inline" label={false} />}
               </button>
               {/* "Add chapter" is NOT here. This whole header only renders when

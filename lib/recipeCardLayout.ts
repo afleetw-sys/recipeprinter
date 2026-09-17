@@ -87,6 +87,20 @@ const TEMPLATE_STACKED_FRONT_LIMIT_OVERRIDES: Partial<
       withPhoto: { instructions: 4 },
     },
   },
+  // Heirloom's utensil band (the foot of the card — the inverse of Counter's
+  // header band) was deliberately NOT given the same treatment here. This
+  // override only shapes the INITIAL guess; the live pagination corrector
+  // (components/RecipeFaceMeasurer.tsx) then measures the real rendered card
+  // and "pulls" content back onto a face whenever it finds real spare room —
+  // and the band is a decorative `::before` layer that never participates in
+  // the box model, so nothing about it ever reads as an overflow. Confirmed
+  // live: a tightened guess here still settled back to the uncorrected
+  // count once the corrector ran. Actually reserving the space would need a
+  // real layout change (a `padding-bottom` on `.recipe-card__cols` for
+  // card-6x4, the way `.recipe-print-preview--letter` already does — see the
+  // comment above `.recipe-print-preview--card-6x4
+  // .recipe-template--heirloom .recipe-card:not(...)::before` in print.css),
+  // which is out of scope here.
 };
 
 // Bistro and pantry both push the card's left padding in further to clear a

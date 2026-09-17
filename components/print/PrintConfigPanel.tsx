@@ -2,12 +2,7 @@
 
 import type { Dispatch, ReactNode, RefObject, SetStateAction } from "react";
 import type { CustomerInfo } from "@revenuecat/purchases-js";
-import {
-  CheckIcon,
-  ICON_SIZE,
-  XIcon,
-  SlidersIcon,
-} from "@/components/icons";
+import { CheckIcon, ICON_SIZE, XIcon } from "@/components/icons";
 import { PrintSetupControls } from "@/components/print/PrintSetupControls";
 import { ThemePicker } from "@/components/print/ThemePicker";
 import type { PhotoStyle } from "@/lib/project";
@@ -47,8 +42,14 @@ interface PrintConfigPanelProps {
   freeTemplateBannerDismissed: boolean;
   setFreeTemplateBannerDismissed: Dispatch<SetStateAction<boolean>>;
   setToastMessage: Dispatch<SetStateAction<string | null>>;
+  /** Whether there's a card-format setting to offer at all (cut lines, a
+      back side to toggle) — see `hasPrintSettingsFields` in app/print/page.tsx.
+      Gates the "Card settings" section below so an empty fieldset never
+      shows for a cookbook or a recipe with no back side. */
   hasPrintSettingsFields: boolean;
-  setPrintSettingsOpen: Dispatch<SetStateAction<boolean>>;
+  /** Cut lines / two-sided, pre-rendered by the page (`renderPrintSettingsFields`)
+      so this panel doesn't need its own copy of which fields apply when. */
+  cardSettingsFields: ReactNode;
 }
 
 /**
@@ -86,7 +87,7 @@ export function PrintConfigPanel({
   setFreeTemplateBannerDismissed,
   setToastMessage,
   hasPrintSettingsFields,
-  setPrintSettingsOpen,
+  cardSettingsFields,
 }: PrintConfigPanelProps) {
   return (
     <aside
@@ -99,44 +100,22 @@ export function PrintConfigPanel({
       data-mobile-drawer={mobileDrawer ?? undefined}
     >
       <div className="recipe-config-panel__header">
-        {/* In a book this heading is the book's NAME, not "Book Settings" —
-            the workspace has to say which document you're editing somewhere,
-            and a generic label was spending the most prominent line in the
-            panel to state something the surrounding UI already makes obvious.
-            One line, truncated: a long title should never push the Purchased
-            chip or the close button around. */}
-        <h2 className="text-cp-dialog-title font-extrabold tracking-[-0.02em] min-w-0 truncate">
-          {/* Says what the panel IS, not what the document is called. The
-              document's name is already in the top-left corner of the bar, so
-              repeating it here spent the panel's only heading on a fact that
-              was on screen twice — and left the panel itself unlabelled. */}
-          {mobileDrawer === "template"
-            ? "Themes"
-            : cookbookMode
-              ? "Cookbook settings"
-              : "Print setup"}
-        </h2>
+        {/* The persistent desktop sidebar needs no heading of its own — the
+            panel's contents (theme grid, photo/link controls) already say
+            what it is, and the document's name is in the top-left corner of
+            the bar. Only the mobile Themes SHEET still needs one: it's a
+            transient dialog with nothing else on screen to say what it's
+            showing. */}
+        {mobileDrawer === "template" && (
+          <h2 className="text-cp-dialog-title font-extrabold tracking-[-0.02em] min-w-0 truncate">
+            Themes
+          </h2>
+        )}
         {cookbookMode && !cookbookLocked && mobileDrawer !== "template" && (
           <span className="recipe-purchased-chip" title="You own this cookbook. Export it as often as you like">
             <CheckIcon size={ICON_SIZE.xs} />
             Purchased
           </span>
-        )}
-        {/* The rest of the print settings — cut lines, double-sided, source URL
-            — behind one icon, in line with the heading of the panel they belong
-            to. They used to sit at the very bottom as a text link, below a
-            scroll, which is the last place someone looks for a setting. */}
-        {hasPrintSettingsFields && (
-          <button
-            type="button"
-            className="recipe-config-panel__settings icon-button"
-            aria-haspopup="dialog"
-            aria-label="Print settings"
-            title="Print settings"
-            onClick={() => setPrintSettingsOpen(true)}
-          >
-            <SlidersIcon size={ICON_SIZE.md} />
-          </button>
         )}
         <button
           type="button"
@@ -166,6 +145,8 @@ export function PrintConfigPanel({
           anyRecipeHasDescription={anyRecipeHasDescription}
           setShowSourceUrl={setShowSourceUrl}
           bookDesignSettings={bookDesignSettings}
+          hasPrintSettingsFields={hasPrintSettingsFields}
+          cardSettingsFields={cardSettingsFields}
         />
 
         <ThemePicker

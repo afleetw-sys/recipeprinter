@@ -23,7 +23,6 @@ import {
 } from "@/lib/cookbookPdfExport";
 import type { CoverSheetSpec } from "@/types/export";
 import { ImagePicker } from "@/components/ImagePicker";
-import { Dialog } from "@/components/Dialog";
 import { Checkbox, CheckboxGroup } from "@/components/Controls";
 import { RecipeLoadingState } from "@/components/RecipeLoadingState";
 import { useModalFocus } from "@/lib/useModalFocus";
@@ -78,7 +77,10 @@ import {
 import { adoptAnonymousProject, readAdoptionManifest } from "@/lib/anonymousProjectAdoption";
 import { forgetSaveIntent, rememberSaveIntent, takeSaveIntent } from "@/lib/saveIntent";
 import {
+  forgetPendingPrintAfterCheckout,
   forgetProUpgradeIntent,
+  hasPendingPrintAfterCheckout,
+  rememberPendingPrintAfterCheckout,
   rememberProUpgradeIntent,
   takeProUpgradeIntent,
 } from "@/lib/proUpgradeIntent";
@@ -94,7 +96,6 @@ import { usePremiumTemplatePurchase } from "@/lib/usePremiumTemplatePurchase";
 import { useCookbookPurchase } from "@/lib/useCookbookPurchase";
 import { useProPurchase } from "@/lib/useProPurchase";
 import { ProUpgradeDialog } from "@/components/ProUpgradeDialog";
-import { ProBadge } from "@/components/ProBadge";
 import {
   activeProLockReasons,
   computeProLocks,
@@ -116,12 +117,13 @@ import {
   suggestCookbookOrganization,
 } from "@/lib/cookbookOrganizer";
 import {
-  CheckIcon,
   BookIcon,
   ChevronLeftIcon,
   ChevronRightIcon,
+  CrownIcon,
   ICON_SIZE,
   ImageIcon,
+  InfoIcon,
   LinkIcon,
   PlusIcon,
   PrintIcon,
@@ -373,7 +375,6 @@ export default function PrintPage() {
   );
   const [doubleSided, setDoubleSided] = useState(true);
   const [showCutLines, setShowCutLines] = useState(false);
-  const [printSettingsOpen, setPrintSettingsOpen] = useState(false);
   /* On by default: a recipe that came in with a photo should print with it
      until someone says otherwise. Off meant the common case — import, print —
      dropped the picture silently, and the only clue was a checkbox two panels
@@ -2554,6 +2555,10 @@ export default function PrintPage() {
         stashedCookbook: pending.project.stashedCookbook,
       });
       const project: PrintProject = { ...pending.project, ...photos };
+      // Read before this write can set it — this is the one signal for
+      // "is this THE first save" (see the toast below), and by the next
+      // line it's already gone true for good.
+      const isFirstSave = !savedProjectIdRef.current;
       const saved = savedProjectIdRef.current
         ? await savePrintProject(project)
         : await adoptAnonymousProject(ownerUid, project, {
@@ -2600,6 +2605,14 @@ export default function PrintPage() {
         pending.layout,
       );
       setSaveStatus("saved");
+      // Said once, at the one moment it's true: the button that just
+      // reported every save from here in disappears (see
+      // `renderSaveControl`), and a cook who never sees it again
+      // shouldn't have to guess why. Not shown again after this — every
+      // later save already looks exactly like what this promises.
+      if (isFirstSave) {
+        setToastMessage("Saved to your account. We'll autosave from here on.");
+      }
     } catch (error) {
       console.warn("RecipePrinter: could not save project", error);
       if (!current()) return;
@@ -2989,6 +3002,29 @@ export default function PrintPage() {
     [customerInfo, customerInfoStatus, customerInfoLastVerifiedAtMs, mirroredEntitlements, mirrorSyncedAtMs],
   );
 
+  // Resumes a print that was waiting on Pro checkout when a reload tore the
+  // page down mid-purchase — see `rememberPendingPrintAfterCheckout`'s doc
+  // comment for why that can happen even though checkout is normally a
+  // same-page overlay. Never retries the purchase itself: it only fires
+  // once `customerInfoStatus` reaches "ok", a live RevenueCat read, and only
+  // then checks whether that read actually shows Pro active. A purchase that
+  // hadn't gone through before the reload just leaves the cook back at a
+  // locked Print button, exactly as if they'd never opened checkout — never
+  // a second charge attempt.
+  useEffect(() => {
+    if (customerInfoStatus !== "ok") return;
+    if (!hasPendingPrintAfterCheckout()) return;
+    forgetPendingPrintAfterCheckout();
+    if (hasProEntitlement(effectiveCustomerInfo.customerInfo)) void handlePrint();
+    // `handlePrint` and `effectiveCustomerInfo` are both defined further
+    // down in this component (a hoisted function declaration and a plain
+    // value respectively); omitted here because effectiveCustomerInfo
+    // recomputes on every RevenueCat poll and would otherwise refire this
+    // effect on each one — `customerInfoStatus` settling to "ok" is the one
+    // transition actually worth reacting to.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [customerInfoStatus]);
+
   // Eligible for 20% off THIS cookbook purchase — active Pro (through the
   // same fallback-aware resolution as every other Pro check, never the raw
   // SDK value directly, since a discount is money) and this account has
@@ -3172,7 +3208,14 @@ export default function PrintPage() {
    *  that's already been saved once keeps saving through a purchase, but
    *  one that never was doesn't get its first save from a purchase alone. */
   function continueProCheckout(cycle: ProBillingCycle, trigger: string = proUpgradeTrigger) {
+    // Covers checkout itself being torn down by a reload (a bank redirect, 3-D
+    // Secure) the same way `rememberProUpgradeIntent` covers the sign-in step
+    // before it — see that function's doc comment. Cleared the moment
+    // `onSettled` actually runs, since that only happens when checkout
+    // resolved in this same session and needs no persisted fallback.
+    if (trigger === "print_button") rememberPendingPrintAfterCheckout();
     void purchaseProAndContinue(cycle, (outcome) => {
+      forgetPendingPrintAfterCheckout();
       setShowProUpgradeDialog(false);
       if (outcome !== "purchased" && outcome !== "already-active") return;
       if (outcome === "purchased") {
@@ -3679,6 +3722,26 @@ export default function PrintPage() {
         projectRevisionRef.current = head.revision;
         savedProjectIdRef.current = head.id;
         setSavedProjectId(head.id);
+        // The other reattach path (the `?project=` loader above) sets these
+        // same three right after finding its match; this one didn't, which
+        // is the whole bug report — a refresh restored the ID (autosave
+        // correctly kept targeting the real document) but never told
+        // `saveStatus` or the header about it, so the Save button came back
+        // for a project that was never actually unsaved.
+        setSaveStatus("saved");
+        // `"__loaded__"` is a sentinel the autosave effect below already
+        // knows how to consume: it seeds the real fingerprint from the
+        // live document on its first pass instead of comparing against
+        // nothing, which is what a bare `null` here would do — declaring
+        // an untouched reload "changed" and firing a real save at nothing.
+        lastSavedFingerprintRef.current = "__loaded__";
+        // `loadPrintProjectHead` reads identity and revision only (see its
+        // own doc comment) — not settings, so there's no saved `cookbookMode`
+        // to read here the way the full-project loader above has one. The
+        // live value is the right stand-in: nothing has changed it since
+        // the save this is reattaching to, or there'd be a real edit to
+        // autosave in the first place.
+        lastSavedCookbookModeRef.current = cookbookMode;
       })
       .catch((error) => {
         console.warn("RecipePrinter: could not match the working copy to a saved project", error);
@@ -4057,6 +4120,102 @@ export default function PrintPage() {
      the library. The header is left to say which document you're in and let you
      get back to the rest of them. */
 
+  /**
+   * How this project stands, or the button to change that — shared by the
+   * desktop header and the mobile topbar (see PrintDeck.tsx) so the two
+   * can't drift into reporting save state differently.
+   *
+   * The control and the state are one thing, and which one shows is decided
+   * by whether there is a save to report — NOT by whether this kind of
+   * project autosaves. It used to be the latter, and that hid the two
+   * moments that matter most: a project that does not autosave yet showed a
+   * Save button throughout its own first save, so pressing Save did nothing
+   * visible while a book full of photos uploaded, and a first save that
+   * FAILED was cleared back to the same button with no word said. The one
+   * press a cook has to trust was the one press that never reported
+   * anything.
+   *
+   * This isn't a traditional "save your work or lose it" button — the
+   * document already lives in this browser session either way, and Save's
+   * real job is the one-time "put this in my account" decision
+   * (`savedToProfile`, set the moment that first save lands). Everything
+   * after that is autosave, which — like Figma, Notion or Canva's — earns
+   * the right to stay quiet: a cook who already said yes once doesn't need
+   * a running commentary on every save it makes on their behalf.
+   *
+   * So: nothing saved yet, a button; that FIRST save in flight, a spinner
+   * in the same spot, because nothing has earned "automatic" yet and a
+   * cook who just pressed something deliberate should see it respond;
+   * every save after that (in flight or landed), nothing at all — there's
+   * nothing left to decide, so there's nothing shown, and the idle button
+   * only reappears if a save actually needs retrying; a save that failed,
+   * the word as a button that retries. Leaving the workspace files it
+   * anyway (see `handleNavigateHome`); this is for saving without leaving.
+   */
+  function renderSaveControl() {
+    if (saveStatus) {
+      // A button only when there is something to retry — a focusable
+      // control that does nothing when activated is worse than plain text.
+      if (SAVE_FAILURES.has(saveStatus)) {
+        return (
+          <button
+            type="button"
+            className="rp-save-state rp-save-state--failed"
+            onClick={handleRetrySave}
+            aria-live="polite"
+          >
+            {SAVE_STATUS_LABEL[saveStatus]}
+          </button>
+        );
+      }
+      // Saving, before this project has ever been saved: still the
+      // icon-only box, so a cook who just pressed the one deliberate,
+      // rare "put this in my account" button sees it respond — the one
+      // case above where showing nothing would read as broken rather
+      // than automatic, because nothing has EARNED "automatic" yet.
+      if (saveStatus === "saving" && !savedToProfile) {
+        return (
+          <span
+            className="icon-button icon-button--compact"
+            role="status"
+            aria-live="polite"
+            aria-label={SAVE_STATUS_LABEL.saving}
+          >
+            <SpinnerIcon size={ICON_SIZE.md} />
+          </span>
+        );
+      }
+      // Every ordinary autosave after that (saving or landed) once the
+      // project already belongs to the account: nothing. Every comparable
+      // cloud document — Figma, Notion, Canva — shows nothing during its
+      // own routine autosave either, and only breaks silence for a real
+      // problem (the failure branch above). Showing a spinner-then-check
+      // for every keystroke's save cycle was reporting a decision the
+      // cook already made once, over and over. Still announced for
+      // anyone on a screen reader, just not painted.
+      return (
+        <span className="sr-only" role="status" aria-live="polite">
+          {SAVE_STATUS_LABEL[saveStatus]}
+        </span>
+      );
+    }
+    return (
+      <button
+        type="button"
+        className="icon-button icon-button--compact"
+        onClick={() => void handleSaveProject()}
+        /* Naming which thing is being kept, given how separate a cookbook
+           and its recipe cards are meant to feel even though they share one
+           save today — carried on aria-label now that the button is
+           icon-only; ActionTitles (components/ActionTitles.tsx) turns this
+           into the same native hover title the text used to give for free. */
+        aria-label={cookbookMode ? "Save cookbook" : "Save"}
+      >
+        <SaveIcon size={ICON_SIZE.md} />
+      </button>
+    );
+  }
+
   // Card-format print settings (behind the "Print settings" trigger). Cookbook
   // book settings are NOT here — they're inline in the panel (see
   // `renderBookSettings`), so a cookbook never opens this at all.
@@ -4075,17 +4234,57 @@ export default function PrintPage() {
             `continueOnBack`), so the toggle would do nothing there. */}
         {hasRecipeBackSide && !projectMeta.meta.cookbookMode && (
           <Checkbox
-              label="Two-sided"
+              label={
+                <span className="recipe-checkbox-label-row">
+                  Two-sided
+                  {/* Always here, on or off: the instruction is "how to set
+                      this up once it's on," which is worth knowing while
+                      deciding whether to turn it on at all, not only after.
+                      It used to sit below as a permanent banner shown only
+                      once the toggle was already on — this hint replaces
+                      that, and doesn't wait for the same condition its
+                      predecessor did. */}
+                  <span className="recipe-hint">
+                    <button
+                      type="button"
+                      className="recipe-hint__trigger"
+                      aria-label="How to set up two-sided printing"
+                      /* Empty on purpose: every actionable element gets a
+                         native hover title for free from ActionTitles
+                         (components/ActionTitles.tsx), built off aria-label
+                         — which duplicated this button's own bubble right
+                         beside it. `title=""` is the escape hatch that
+                         component already checks for (an element that
+                         already has a `title` attribute is left alone), so
+                         this stays the only tooltip. */
+                      title=""
+                      /* Inside the checkbox's own <label>, so a plain click
+                         would toggle the checkbox via the browser's normal
+                         label-activates-control behavior — this is a hint,
+                         not a second control, so it swallows the click
+                         rather than fire that. */
+                      onClick={(event) => {
+                        event.preventDefault();
+                        event.stopPropagation();
+                      }}
+                    >
+                      <InfoIcon size={ICON_SIZE.sm} />
+                    </button>
+                    <span className="recipe-hint__bubble" role="tooltip">
+                      {/* The period lives INSIDE the <strong>, not after it
+                          — the closing tag is a break opportunity in this
+                          narrow a box, and with the period on the outside
+                          it would wrap onto its own line by itself. */}
+                      Turn on two-sided printing in your printer&apos;s settings, flipped on the{" "}
+                      <strong>long edge.</strong>
+                    </span>
+                  </span>
+                </span>
+              }
               hint="Longer recipes print on the back too."
               checked={doubleSided}
               onChange={(event) => setDoubleSided(event.target.checked)}
           />
-        )}
-        {hasRecipeBackSide && doubleSided && !projectMeta.meta.cookbookMode && (
-          <p className="recipe-print-settings-banner" role="note">
-            Turn on two-sided printing in your printer&apos;s settings, flipped on the{" "}
-            <strong>long edge</strong>.
-          </p>
         )}
       </>
     );
@@ -4279,6 +4478,14 @@ export default function PrintPage() {
       printAcceptedRef.current = true;
       markPrintSpent();
       setRenderAllPages(false);
+      // Chrome on macOS sometimes doesn't hand keyboard/mouse focus back to
+      // the page once a native panel (the OS "system dialog" print sheet,
+      // reached via Print -> Advanced) closes - the tab looks normal but
+      // stops receiving input until something forces a refocus. A reload
+      // does it, which is why "refresh a few times" was the only fix a cook
+      // found; asking the window to refocus itself here is the same fix
+      // without losing their place.
+      window.focus();
       if (!printRequestedRef.current) return;
       printRequestedRef.current = false;
       // Undo the cookbook filename override once the print dialog closes.
@@ -4707,19 +4914,6 @@ export default function PrintPage() {
    */
   useBackDismiss(Boolean(mobileDrawer), () => setMobileDrawer(null));
   const [sizeMenuOpen, setSizeMenuOpen] = useState(false);
-  const [settingsMenuOpen, setSettingsMenuOpen] = useState(false);
-
-  // Close print settings whenever their trigger disappears. Cookbook settings
-  // live inline in the setup panel, so neither card-settings surface belongs
-  // in cookbook mode.
-  useEffect(() => {
-    if (projectMeta.meta.cookbookMode || (!hasRecipeBackSide && cardSize !== "card-6x4")) {
-      setPrintSettingsOpen(false);
-    }
-    if (projectMeta.meta.cookbookMode) {
-      setSettingsMenuOpen(false);
-    }
-  }, [projectMeta.meta.cookbookMode, hasRecipeBackSide, cardSize]);
 
 
   /* `<= 1`, not `=== 1`: an empty deck behaves exactly like a one-page deck —
@@ -5317,64 +5511,13 @@ export default function PrintPage() {
                     already visible and two controls for it in one bar was one
                     too many. See ProjectHeading. */
                 }
-                {/*
-                  How this project stands, to the LEFT of the action rather than
-                  out by the avatar. It reads as part of the same sentence as
-                  Print, and the avatar goes back to being only the account.
-
-                  The control and the state are one thing, and which one you see
-                  is decided by whether there is a save to report — NOT by
-                  whether this kind of project autosaves. It used to be the
-                  latter, and that hid the two moments that matter most: a
-                  project that does not autosave yet showed a Save button
-                  throughout its own first save, so pressing Save did nothing
-                  visible while a book full of photos uploaded, and a first save
-                  that FAILED was cleared back to the same button with no word
-                  said. The one press a cook has to trust was the one press that
-                  never reported anything.
-
-                  So: nothing saved yet, a button; a save happening or landed,
-                  the word; a save that failed, the word as a button that
-                  retries. Leaving the workspace files it anyway (see
-                  `handleNavigateHome`); this is for saving without leaving.
-                */}
-                {saveStatus ? (
-                  /* A button only when there is something to retry — a
-                     focusable control that does nothing when activated is
-                     worse than plain text. */
-                  SAVE_FAILURES.has(saveStatus) ? (
-                    <button
-                      type="button"
-                      className="rp-save-state rp-save-state--failed"
-                      onClick={handleRetrySave}
-                      aria-live="polite"
-                    >
-                      {SAVE_STATUS_LABEL[saveStatus]}
-                    </button>
-                  ) : (
-                    <span className="rp-save-state" role="status" aria-live="polite">
-                      {saveStatus === "saving" ? (
-                        <SpinnerIcon size={ICON_SIZE.sm} />
-                      ) : saveStatus === "saved" ? (
-                        <CheckIcon size={ICON_SIZE.sm} />
-                      ) : null}
-                      {SAVE_STATUS_LABEL[saveStatus]}
-                    </span>
-                  )
-                ) : (
-                  <button
-                    type="button"
-                    className="btn btn-secondary btn-compact"
-                    onClick={() => void handleSaveProject()}
-                  >
-                    <SaveIcon size={ICON_SIZE.md} />
-                    {/* Same click, same document — but naming which thing is
-                        being kept, given how separate a cookbook and its
-                        recipe cards are meant to feel even though they share
-                        one save today. */}
-                    {cookbookMode ? "Save cookbook" : "Save"}
-                  </button>
-                )}
+                {/* How this project stands, to the LEFT of the action rather
+                    than out by the avatar — it reads as part of the same
+                    sentence as Print, and the avatar goes back to being only
+                    the account. See `renderSaveControl`'s own doc comment
+                    for why the control and the state are one thing. Shared
+                    with the mobile topbar (PrintDeck.tsx). */}
+                {renderSaveControl()}
 
                 {/*
                   One button, not two. Buying and printing are not separate
@@ -5517,7 +5660,16 @@ export default function PrintPage() {
           )}
         </button>
         <PageRail
-          hasRecipes={Boolean(items?.length)}
+          /* `recipeCount`, not `items?.length`: it already folds in an
+             in-flight import (see its own definition above), which
+             `multiRecipeAddLocked` reads too. Reading `items` here instead
+             — ready recipes only — let the two disagree for the whole time
+             recipe #1 was parsing: this stayed "Add recipe" (nothing ready
+             yet) while the lock had already engaged, so the button briefly
+             read "Add recipe" with a Pro badge bolted on — neither of the
+             two states this button is supposed to have. Sharing the same
+             count means the label and the badge always flip together. */
+          hasRecipes={recipeCount > 0}
           multiRecipeAddLocked={multiRecipeAddLocked}
           railScrollRef={railScrollRef}
           railDrag={railDrag}
@@ -5577,6 +5729,7 @@ export default function PrintPage() {
 
         {/* Center: large preview of the selected page */}
         <PrintDeck
+          saveControl={renderSaveControl()}
           singleRecipePrintView={singleRecipePrintView}
           cookbookView={cookbookView}
           previewMeasuring={previewMeasuring}
@@ -5588,8 +5741,10 @@ export default function PrintPage() {
           cardSize={cardSize}
           showCutLines={showCutLines}
           showSourceUrl={showSourceUrl}
+          setShowSourceUrl={setShowSourceUrl}
           showDescription={showDescription}
           sourceUrlOn={sourceUrlOn}
+          singleRecipeOnly={singleRecipeOnly}
           sheets={sheets}
           navItems={navItems}
           spreads={spreads}
@@ -5644,10 +5799,6 @@ export default function PrintPage() {
           onRemoveImport={queue.remove}
           pendingAddAfterRecipeId={pendingAddAfterRecipeId}
           openAddRecipeBelow={openAddRecipeBelow}
-          setSizeMenuOpen={setSizeMenuOpen}
-          settingsMenuOpen={settingsMenuOpen}
-          setSettingsMenuOpen={setSettingsMenuOpen}
-          hasPrintSettingsFields={hasPrintSettingsFields}
           renderAllPages={renderAllPages}
         />
 
@@ -5689,28 +5840,8 @@ export default function PrintPage() {
           setFreeTemplateBannerDismissed={setFreeTemplateBannerDismissed}
           setToastMessage={setToastMessage}
           hasPrintSettingsFields={hasPrintSettingsFields}
-          setPrintSettingsOpen={setPrintSettingsOpen}
+          cardSettingsFields={renderPrintSettingsFields()}
         />
-
-        <Dialog
-          open={printSettingsOpen}
-          onClose={() => setPrintSettingsOpen(false)}
-          labelledBy="print-settings-dialog-title"
-          className="print-success-dialog no-print"
-          backdropClassName="print-success-dialog__backdrop"
-          panelClassName="print-success-dialog__panel"
-        >
-          <button
-            type="button"
-            className="print-success-dialog__close icon-close-btn"
-            aria-label="Close"
-            onClick={() => setPrintSettingsOpen(false)}
-          >
-            <XIcon size={ICON_SIZE.md} />
-          </button>
-          <h2 id="print-settings-dialog-title">Print settings</h2>
-          <div className="print-settings-dialog__body">{renderPrintSettingsFields()}</div>
-        </Dialog>
 
         <div className="recipe-mobile-actions no-print">
           {/* No way into a cookbook here on purpose. Building a book — covers,
@@ -5725,13 +5856,20 @@ export default function PrintPage() {
               className="recipe-mobile-toolbar__btn"
               onClick={() => openAddRecipeBelow()}
             >
+              {/* The crown REPLACES the plus rather than sitting in a corner
+                  over it — a corner badge needs room to hang off, which
+                  a 92px-wide scrolling tile row doesn't reliably have (see
+                  the clipping this fixed vs. reintroduced). Swapping the
+                  glyph itself says the same thing — this action needs Pro —
+                  without needing any of that room. */}
               <span className="recipe-mobile-toolbar__btn-icon">
-                <PlusIcon size={ICON_SIZE.lg} />
+                {multiRecipeAddLocked ? (
+                  <CrownIcon size={ICON_SIZE.lg} className="text-[var(--cp-premium-bright)]" />
+                ) : (
+                  <PlusIcon size={ICON_SIZE.lg} />
+                )}
               </span>
-              <span className="recipe-mobile-toolbar__btn-label">
-                Recipe
-                {multiRecipeAddLocked && <ProBadge variant="inline" label={false} />}
-              </span>
+              Add more
             </button>
             {/* Pages/structure — the mobile stand-in for the drag-only desktop
                 rail, which is hidden on touch. Cookbook mode only. */}
@@ -5743,7 +5881,6 @@ export default function PrintPage() {
                 aria-haspopup="dialog"
                 onClick={() => {
                   setSizeMenuOpen(false);
-                  setSettingsMenuOpen(false);
                   setStructureSheetOpen((open) => !open);
                 }}
               >
@@ -5761,10 +5898,7 @@ export default function PrintPage() {
                 className={`recipe-mobile-toolbar__btn ${sizeMenuOpen ? "is-active" : ""}`}
                 aria-haspopup="dialog"
                 aria-expanded={sizeMenuOpen}
-                onClick={() => {
-                  setSettingsMenuOpen(false);
-                  setSizeMenuOpen((open) => !open);
-                }}
+                onClick={() => setSizeMenuOpen((open) => !open)}
               >
                 <span className="recipe-mobile-toolbar__btn-icon">
                   <SizeIcon size={ICON_SIZE.lg} />
@@ -5778,7 +5912,6 @@ export default function PrintPage() {
               aria-pressed={mobileDrawer === "template"}
               onClick={() => {
                 setSizeMenuOpen(false);
-                setSettingsMenuOpen(false);
                 setMobileDrawer((drawer) => (drawer === "template" ? null : "template"));
               }}
             >
@@ -5787,7 +5920,14 @@ export default function PrintPage() {
               </span>
               Themes
             </button>
-            {anyRecipeHasImage && !cookbookMode && (
+            {/* With more than one recipe possible, this is the only place on
+                mobile to show/hide photos across all of them at once — the
+                per-page toolbar's photo control only ever acts on the one
+                recipe it's floating over. `singleRecipeOnly` drops it: with
+                exactly one recipe, that page's own toolbar already covers
+                the same ground (its picker's "None" tile hides the photo),
+                so this became a second control for the same one thing. */}
+            {anyRecipeHasImage && !cookbookMode && !singleRecipeOnly && (
               <button
                 type="button"
                 className="recipe-mobile-toolbar__btn"
@@ -5801,10 +5941,16 @@ export default function PrintPage() {
                 >
                   <ImageIcon size={ICON_SIZE.lg} />
                 </span>
-                Photo
+                Show Photo
               </button>
             )}
-            {anyRecipeHasSourceUrl && (
+            {/* Same reasoning as Show Photo above, but this one still shows
+                in a cookbook (`singleRecipeOnly` is always false there — a
+                book can hold many recipes regardless of Pro) since a
+                cookbook's per-page toolbar has no link toggle of its own;
+                see the matching gate on that toolbar button in
+                PrintDeck.tsx. */}
+            {anyRecipeHasSourceUrl && !singleRecipeOnly && (
               <button
                 type="button"
                 className="recipe-mobile-toolbar__btn"
@@ -5818,7 +5964,7 @@ export default function PrintPage() {
                 >
                   <LinkIcon size={ICON_SIZE.lg} />
                 </span>
-                Link
+                Show Link
               </button>
             )}
           </div>
@@ -5868,28 +6014,34 @@ export default function PrintPage() {
           className="recipe-mobile-size-sheet"
         >
           {/* Same component the desktop panel uses (PrintFormatToggle) — one
-              card-size picker, not two that could drift apart. Closes itself
-              on pick, since this sheet is a transient chooser rather than a
-              persistent panel. */}
+              card-size picker, not two that could drift apart. Still closes
+              itself on Full Page, which is the same transient-chooser pick
+              it always was; Card no longer does, since Card settings (below)
+              only appear once Card is actually chosen, and closing the
+              instant it's tapped would hide the very settings that choice
+              just made relevant. */}
           <PrintFormatToggle
             cardSize={cardSize}
             setCardSize={(next) => {
               setCardSize(next);
-              setSizeMenuOpen(false);
+              if (next !== "card-6x4") setSizeMenuOpen(false);
             }}
             customerInfo={effectiveCustomerInfo.customerInfo}
           />
+          {/* Cut lines / two-sided, right under the size that makes them
+              relevant — the same "Card settings" section the desktop panel
+              shows inline, now here instead of behind its own separate
+              gear-icon sheet (which had nothing left in it once this moved).
+              See the matching desktop section in PrintSetupControls.tsx for
+              why this isn't gated to `cardSize === "card-6x4"`: two-sided can
+              still matter for a long recipe printed at Full Page. */}
+          {hasPrintSettingsFields && (
+            <div className="recipe-mobile-size-sheet__card-settings">
+              <span className="recipe-config-label">Card settings</span>
+              {renderPrintSettingsFields()}
+            </div>
+          )}
         </MobileSheet>
-
-        {hasPrintSettingsFields && (
-          <MobileSheet
-            open={settingsMenuOpen}
-            onClose={() => setSettingsMenuOpen(false)}
-            title="Print settings"
-          >
-            {renderPrintSettingsFields()}
-          </MobileSheet>
-        )}
       </main>
     </>
 

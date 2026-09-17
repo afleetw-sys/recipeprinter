@@ -130,8 +130,16 @@ export function ProUpgradeDialog({
       {step === "plan" ? (
         <>
           <div className="flex items-center gap-2 pr-8">
-            <CrownIcon size={ICON_SIZE.md} className="text-[var(--cp-premium-bright)]" />
-            <h2 id="pro-upgrade-title" className="text-cp-dialog-title font-extrabold tracking-tight">
+            {/* Trailing on the mobile sheet (below `sm`, the same breakpoint
+                that switches this panel from centered dialog to bottom
+                sheet above), leading again on desktop — `order` rather than
+                two copies, so the DOM/reading order stays "the icon marks
+                Pro" either way and only the visual position moves. */}
+            <CrownIcon size={ICON_SIZE.md} className="order-2 sm:order-none text-[var(--cp-premium-bright)]" />
+            <h2
+              id="pro-upgrade-title"
+              className="order-1 sm:order-none text-cp-dialog-title font-extrabold tracking-tight"
+            >
               {title}
             </h2>
           </div>
@@ -186,9 +194,7 @@ export function ProUpgradeDialog({
           >
             Continue with {PRO_CYCLE_LABEL[selectedCycle]} ({PRO_PRICE_FALLBACKS[selectedCycle]})
           </button>
-          <p className="text-cp-label text-ink-soft">
-            Cancel anytime from your account. Cookbooks sold separately.
-          </p>
+          <p className="text-cp-label text-ink-soft">Cancel anytime from your account settings page.</p>
         </>
       ) : (
         <>

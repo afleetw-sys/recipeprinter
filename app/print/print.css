@@ -1126,16 +1126,17 @@
   }
 }
 
-/* An error card sits at the hovered weight already, and does not move under
-   the pointer.
+/* No dimming at all, active or not — not even the hovered-weight 0.7 this
+   used to settle for.
    The deck dims what you are not looking at, which is right for pages: one is
    as good as the next and the dim says which is yours. An error is not that.
-   It carries the reason the import failed and the buttons that fix it, so at
-   0.4 it was a problem you had to hover to read, and lifting only on hover
-   made the card twitch under the pointer while you were trying to read it. */
+   It carries the reason the import failed and two real buttons that fix it,
+   and anything short of full opacity reads as disabled controls on a page
+   you can't act on — backwards for the one card in the deck that most needs
+   a click. */
 .recipe-page-slide.recipe-page-failed:not(.is-active),
 .recipe-page-slide.recipe-page-failed:not(.is-active):hover {
-  opacity: 0.7;
+  opacity: 1;
 }
 
 /* ── Cookbook book view: a slide is a two-page spread ──────────────────────
@@ -1842,8 +1843,6 @@
   align-items: center;
   justify-content: space-between;
   gap: 10px;
-  padding-bottom: 10px;
-  border-bottom: 1px solid var(--cp-line);
 }
 
 .recipe-config-panel__scroll {
@@ -1891,29 +1890,86 @@
   color: var(--cp-ink);
 }
 
-.print-settings-dialog__body {
-  display: flex;
-  flex-direction: column;
-  gap: 14px;
-  margin-top: 18px;
-  text-align: left;
+/* The Two-sided checkbox's own label row, so the hint icon that follows the
+   word sits on the same line as it rather than wrapping under. `.control-checkbox
+   span` (globals.css) is a descendant selector — it matches ANY span inside a
+   checkbox, including this one nested inside `<strong>`, and its class+element
+   specificity beat a bare class selector here, stacking the word and the icon
+   into two lines instead of one. `.control-checkbox` prefixed onto this
+   selector (two classes) outranks that class+element pair, so this wins on
+   specificity alone regardless of source order. */
+.control-checkbox .recipe-checkbox-label-row {
+  display: inline-flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 6px;
 }
 
-/* Both call sites (the desktop dialog and the mobile settings sheet) nest this
-   inside `.print-success-dialog`, whose own `p` rule is otherwise more
-   specific (class + element beats a single class) and was overriding this
-   with its larger body-copy size — the two extra ancestor selectors below
-   restore precedence without resorting to `!important`. */
-.print-settings-dialog__body .recipe-print-settings-banner,
-.recipe-mobile-sheet__scroll .recipe-print-settings-banner {
-  padding: 10px 12px;
-  margin-top: 0;
-  border: 1px solid color-mix(in srgb, var(--cp-accent) 28%, transparent);
-  background: var(--cp-accent-soft);
-  border-radius: 12px;
+/* A hover/click hint, replacing the permanent "how to set up two-sided
+   printing" banner that used to sit under the checkbox whether or not anyone
+   needed it — see `renderPrintSettingsFields` in app/print/page.tsx. Hover
+   and focus both reveal it in CSS alone: a tap on a touch device focuses the
+   trigger the same way a keyboard Tab would, so it needs no click handler of
+   its own (the one it has only stops the click from reaching the checkbox
+   underneath — see the comment at the call site). */
+.recipe-hint {
+  position: relative;
+  display: inline-flex;
+}
+
+.recipe-hint__trigger {
+  display: grid;
+  place-items: center;
+  width: 18px;
+  height: 18px;
+  padding: 0;
+  border: 0;
+  border-radius: 999px;
+  background: none;
+  color: var(--cp-ink-soft);
+  cursor: help;
+}
+
+.recipe-hint__trigger:hover,
+.recipe-hint__trigger:focus-visible {
   color: var(--cp-ink);
+}
+
+/* Solid, not a pale tint: this is a tooltip standing on its own over the
+   panel, not an inline callout sitting flush against the page background
+   (which is what `--cp-accent-soft` was right for, on the banner this
+   replaced). A light fill read as faint/half-there floating over the deck. */
+/* Centred under the trigger, not anchored to either of its edges: the icon
+   sits near the LEFT of the row on a full-width mobile sheet but near the
+   RIGHT of a narrow desktop panel, so a bubble that always grew the same
+   direction ran off whichever edge was closer in one context or the other.
+   The `min()` on max-width is the same insurance for the window itself —
+   without it, 220px flatly could still exceed a narrow viewport regardless
+   of how the bubble is centred. */
+.recipe-hint__bubble {
+  position: absolute;
+  bottom: calc(100% + 8px);
+  left: 50%;
+  z-index: 5;
+  width: max-content;
+  max-width: min(220px, calc(100vw - 32px));
+  padding: 8px 10px;
+  border-radius: 8px;
+  background: var(--cp-ink);
+  color: var(--cp-card);
   font-size: var(--cp-fs-label);
   line-height: 1.4;
+  opacity: 0;
+  pointer-events: none;
+  transform: translate(-50%, 4px);
+  transition: opacity 120ms ease, transform 120ms ease;
+}
+
+.recipe-hint__trigger:hover + .recipe-hint__bubble,
+.recipe-hint__trigger:focus-visible + .recipe-hint__bubble {
+  opacity: 1;
+  pointer-events: auto;
+  transform: translate(-50%, 0);
 }
 
 /* ── Workspace density ────────────────────────────────────────────────────
@@ -1942,6 +1998,19 @@
 }
 .control-checkbox-group.recipe-config-section {
   gap: 0;
+}
+
+/* "Every recipe" reads fine at 0 gap: it's a longer, denser list of simple
+   rows. Card settings only ever holds one or two, so the same 0 gap left the
+   legend crowding the first checkbox and the two checkboxes crowding each
+   other — cramped rather than dense. Same specificity as the rule above
+   (two classes each), so source order is what makes this win. */
+.control-checkbox-group.recipe-config-section--card-settings {
+  gap: 10px;
+}
+
+.recipe-config-section--card-settings .control-checkbox-group__items {
+  gap: 10px;
 }
 
 /* A field's name inside a settings group. Normal body text, sentence case:
@@ -2530,28 +2599,6 @@
     gap: 10px;
   }
 
-  .recipe-mobile-topbar__icon-btn {
-    display: grid;
-    place-items: center;
-    width: 40px;
-    height: 40px;
-    border: 1px solid var(--cp-line);
-    border-radius: var(--cp-radius-control);
-    background: var(--cp-card);
-    color: var(--cp-ink);
-    transition:
-      background 150ms ease,
-      border-color 150ms ease,
-      color 150ms ease;
-  }
-
-  .recipe-mobile-topbar__icon-btn.is-active {
-    border-color: var(--cp-selected-border);
-    background: var(--cp-selected-fill);
-    box-shadow: var(--cp-selected-ring);
-    color: var(--cp-selected-text);
-  }
-
   @media (max-width: 440px) {
     .recipe-mobile-topbar {
       gap: 8px;
@@ -2598,6 +2645,16 @@
     display: flex;
     flex: 0 0 auto;
     gap: 8px;
+    /* `safe center`: center the row under Print when the tiles are narrower
+       than it (a short row reading left-aligned looked like it was avoiding
+       the right half of the bar for no reason) — but fall back to plain
+       `flex-start` the instant they don't fit, which is what `safe` means
+       here. Plain `center` doesn't degrade that way: once the row overflows,
+       centering a scroll container can start it scrolled INTO the overflow
+       on either side, clipping the first tile behind the left edge with no
+       way back to it short of a manual scroll. `safe` is the one keyword
+       that centers exactly until that would happen and never after. */
+    justify-content: safe center;
     /* Bleeds past the bar's own padding so a tile can sit half-off the edge
        rather than stopping short of it, which reads as the end of the list.
        The negative margin has to match the bar's inset exactly, or the first
@@ -2625,8 +2682,7 @@
   }
 
   /* One filled tile per tool: icon over label, the whole thing the target.
-     Widened from 84px so "Recipe" plus its Pro crown (see
-     `.recipe-mobile-toolbar__btn-label` below) has room to sit on one line —
+     Widened from 84px so "Add more" fits its own line without wrapping —
      every tile shares this width so the row still reads as one matched set,
      not one oddly-wide tile among plain ones. */
   .recipe-mobile-toolbar__btn {
@@ -2660,15 +2716,6 @@
     display: grid;
     place-items: center;
     color: inherit;
-  }
-
-  /* Wraps a tile's text (and, on "Recipe," its Pro badge) as one row — the
-     button itself is a column flex, so without this the badge fell onto its
-     own line under the label instead of sitting beside it. */
-  .recipe-mobile-toolbar__btn-label {
-    display: inline-flex;
-    align-items: center;
-    gap: 3px;
   }
 
   .recipe-mobile-toolbar__btn.is-active {
@@ -2778,10 +2825,26 @@
 
   .recipe-mobile-sheet__header {
     display: flex;
-    align-items: flex-start;
+    /* Centered by default: most sheets ("Size", "Themes") have a single-line
+       title, and centering is what lines the X up with it. Only a sheet
+       that ALSO has a subtitle (a two-line title block — see the `span`
+       rule below) switches to top-alignment, so the X sits level with the
+       first line instead of the vertical middle of both. Centering
+       unconditionally was the bug: it looked right for every title-only
+       sheet and quietly wrong for the one with a subtitle underneath it. */
+    align-items: center;
     justify-content: space-between;
     gap: 12px;
-    padding: 10px 16px 12px;
+    /* Right side only pulled in from the title's own 16px: the close button
+       is already a 40px touch target (`.icon-close-btn`, globals.css) with
+       its own empty margin around the X glyph, so the full 16px on top of
+       that read as an oversized gap to the sheet's edge that the title's
+       side didn't have to match. */
+    padding: 10px 8px 12px 16px;
+  }
+
+  .recipe-mobile-sheet__header:has(span) {
+    align-items: flex-start;
   }
 
   .recipe-mobile-sheet__header h2 {
@@ -2806,10 +2869,32 @@
   }
 
   /* Size has no footer to trail off into the way Book's tip+buttons do, and
-     nothing else follows its two tiles — the shared scroll padding's 4px
-     read as the sheet cutting the content off right under it. */
+     nothing follows it (Card settings, when shown, is the sheet's own last
+     thing too) — the shared scroll padding's 4px read as the sheet cutting
+     the content off right under it. */
   .recipe-mobile-size-sheet .recipe-mobile-sheet__scroll {
     padding-bottom: 24px;
+  }
+
+  /* Same reasoning as Size, above: the photo grid is this sheet's own last
+     thing on every picker that isn't in grid-collage mode (no footer
+     trailing it), and the shared 4px read as the grid running into the
+     sheet's edge. Grid mode DOES have a footer (Done) — the extra room
+     here just widens the gap above its border slightly, which is harmless. */
+  .image-picker-sheet .recipe-mobile-sheet__scroll {
+    padding-bottom: 24px;
+  }
+
+  /* Cut lines / two-sided, under the size tiles in the same sheet — see the
+     call site in app/print/page.tsx. A plain flex column with real gap: these
+     are bare `<Checkbox>` siblings here (no CheckboxGroup fieldset the way
+     the desktop panel wraps them), so without this they'd simply touch with
+     no space between the "Card settings" label and each other. */
+  .recipe-mobile-size-sheet__card-settings {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    margin-top: 18px;
   }
 
   .recipe-structure-sheet__settings {
@@ -3114,15 +3199,6 @@
     align-items: center;
     justify-content: space-between;
     gap: 12px;
-    /* The desktop panel's own header divider (`.recipe-config-panel__header`,
-       above) and its downsized title (`.recipe-config-panel h2`, below the
-       base rule) are both right for a persistent sidebar — but this same
-       markup doubles as the mobile Themes SHEET, which sits beside Book,
-       Size and Print settings (all `<MobileSheet>`, none of which divide
-       their header or shrink their title) and needs to read as one of them,
-       not as the odd one out. */
-    padding-bottom: 0;
-    border-bottom: 0;
   }
 
   .recipe-config-panel__header h2 {
@@ -4945,6 +5021,15 @@
   justify-content: space-between;
   gap: 12px;
   margin-top: 20px;
+}
+/* On mobile this sits inside MobileSheet's own `footer` slot (shared with
+   Size/Book/Themes), whose `.recipe-mobile-sheet__footer .btn` rule stretches
+   a footer button to fill the row — right for that sheet's own single
+   full-width action, wrong here where the count text needs its own room
+   beside a compact Done. Restores the button to its natural size so
+   `.image-picker__footer`'s own space-between still does the layout. */
+.recipe-mobile-sheet__footer .image-picker__footer .btn {
+  flex: none;
 }
 .image-picker__count {
   font-size: var(--cp-fs-caption);
@@ -7278,14 +7363,6 @@ textarea.recipe-card__toc-title {
   .recipe-deck-zoom {
     display: none;
   }
-}
-
-.recipe-config-panel__settings {
-  margin-left: auto;
-  flex: none;
-  width: 30px;
-  height: 30px;
-  border-radius: 8px;
 }
 
 .recipe-add-dialog__panel--paste .field {

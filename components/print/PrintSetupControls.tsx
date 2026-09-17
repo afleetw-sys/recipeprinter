@@ -35,6 +35,14 @@ interface PrintSetupControlsProps {
       rendered between the photo control and the include toggles. Passed as a
       node because it's still owned by the print page. */
   bookDesignSettings: ReactNode;
+  /** Whether there's a card-format setting to offer at all — see
+      `hasPrintSettingsFields` in app/print/page.tsx. Gates the "Card
+      settings" section so it never shows empty (a cookbook, or a recipe
+      short enough to need neither cut lines nor a back side). */
+  hasPrintSettingsFields: boolean;
+  /** Cut lines / two-sided, pre-rendered by the page — see
+      `renderPrintSettingsFields`. */
+  cardSettingsFields: ReactNode;
 }
 
 /**
@@ -60,19 +68,20 @@ export function PrintSetupControls({
   anyRecipeHasDescription,
   setShowSourceUrl,
   bookDesignSettings,
+  hasPrintSettingsFields,
+  cardSettingsFields,
 }: PrintSetupControlsProps) {
   /**
    * "Every recipe" is only an honest title where more than one recipe is
    * actually possible. Outside cookbook mode, a Free account can never hold
    * more than one at a time (`multiRecipeAddLocked` in
-   * lib/recipePrinterPurchases.ts blocks adding a second) — so every Free
-   * cook would read a title promising something about "every" recipe that,
-   * for them, is always exactly one. A cookbook is exempt: it is a bound
+   * lib/recipePrinterPurchases.ts blocks adding a second) — so the section
+   * below is skipped entirely for them; the page's own toolbar governs their
+   * one recipe's photo and link instead. A cookbook is exempt: it is a bound
    * book of recipes independent of Pro, so it can hold many regardless of
-   * this entitlement, and keeps the plural title unconditionally.
+   * this entitlement, and keeps the section unconditionally.
    */
   const multiRecipeCapable = cookbookMode || hasMultiRecipeEntitlement(customerInfo);
-  const everyOrThisRecipe = multiRecipeCapable ? "Every recipe" : "This recipe";
   return (
     <>
       {/* Print format is a recipe-card concept only. A cookbook is always
@@ -88,9 +97,30 @@ export function PrintSetupControls({
           {/* The toggle's own preview is a small illustration, not a scale
               drawing — worth saying so once Card is actually picked, since
               "is this really 4x6 or just a thumbnail of one" is a fair thing
-              to wonder before loading cardstock. Cut lines (for the
-              full-sheet route) live in Print settings, not repeated here. */}
+              to wonder before loading cardstock. Cut lines sit in their own
+              section right below, not repeated here. */}
         </div>
+      )}
+
+      {/* Cut lines and the two-sided toggle, right under Size — this used to
+          be a dialog behind a gear icon in the panel header, reachable but
+          not really discoverable: nothing on screen said it existed until you
+          went looking. Both fields are card-format concerns (cut lines only
+          ever apply to the 4x6 card; two-sided only matters once a recipe is
+          long enough to spill onto a second page), so they live right where
+          that format gets chosen instead of in a separate dialog for a
+          different kind of "settings". Gated on `hasPrintSettingsFields`
+          rather than `cardSize === "card-6x4"`: a long recipe printed at
+          Full Page can still need its back-side toggle, and hiding the
+          section only because Card isn't selected would have taken that
+          away. */}
+      {!cookbookMode && hasPrintSettingsFields && (
+        <CheckboxGroup
+          label="Card settings"
+          className="recipe-config-section recipe-config-section--card-settings"
+        >
+          {cardSettingsFields}
+        </CheckboxGroup>
       )}
 
       {/* A cookbook's settings answer two different questions, and they used to
@@ -174,9 +204,16 @@ export function PrintSetupControls({
           and it is the same group, holding the same "Recipe link" checkbox a
           cookbook has. It said "Include" until the cookbook's copy stopped;
           now it says "Every recipe" only when there could BE more than one —
-          see `multiRecipeCapable` above. */}
-      {!cookbookMode && (anyRecipeHasImage || anyRecipeHasSourceUrl) && (
-        <CheckboxGroup label={everyOrThisRecipe} className="recipe-config-section recipe-config-section--settings">
+          see `multiRecipeCapable` above.
+
+          With exactly one recipe possible, this section governed exactly one
+          recipe's photo and link — the same thing the page's own toolbar now
+          does directly (the photo picker's "None" tile, and the toolbar's
+          link toggle). A second control for the same one recipe, sitting in a
+          different panel, was redundant at best and disagreed with itself at
+          worst; it's only offered once there's a real "every" for it to mean. */}
+      {!cookbookMode && multiRecipeCapable && (anyRecipeHasImage || anyRecipeHasSourceUrl) && (
+        <CheckboxGroup label="Every recipe" className="recipe-config-section recipe-config-section--settings">
           {anyRecipeHasImage && (
             <Checkbox
                 label="Recipe photo"
