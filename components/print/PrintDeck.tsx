@@ -158,6 +158,10 @@ interface PrintDeckProps {
       the mobile topbar reports the exact same thing the desktop header does
       — see that function's doc comment in app/print/page.tsx. */
   saveControl: ReactNode;
+  /** The Pro upsell button, pre-rendered by the page
+      (`renderProUpgradeButton`) — `null` once Pro is active, so this and
+      the desktop header can never disagree about whether it's owed. */
+  proUpgradeButton: ReactNode;
   // Layout / preview geometry
   singleRecipePrintView: boolean;
   cookbookView: boolean;
@@ -280,6 +284,7 @@ export function PrintDeck(props: PrintDeckProps) {
   const [moveMenuAt, setMoveMenuAt] = useState<{ x: number; y: number } | null>(null);
   const {
     saveControl,
+    proUpgradeButton,
     singleRecipePrintView,
     cookbookView,
     previewMeasuring,
@@ -1063,6 +1068,11 @@ export function PrintDeck(props: PrintDeckProps) {
                   `renderSaveControl` in app/print/page.tsx) — right next to
                   the account control, the same order the desktop bar keeps. */}
               {saveControl}
+              {/* Same order as the desktop header: Save, then the Pro
+                  upsell — see `renderProUpgradeButton` in app/print/page.tsx
+                  for why this is reachable on its own rather than only
+                  showing up as a lock icon on some other control. */}
+              {proUpgradeButton}
               {/* The same account control the desktop header carries.
                   "Where is my account" should not have a different answer on
                   a phone, and it had none at all here. */}

@@ -50,11 +50,7 @@ import {
   type ProjectMeta,
   type PhotoStyle,
 } from "@/lib/project";
-import {
-  copyCardsToNewCookbook,
-  copyCookbookToNewCards,
-  type CookbookScaffoldPatch,
-} from "@/lib/projectCopy";
+import { type CookbookScaffoldPatch } from "@/lib/projectCopy";
 import { materializeProjectPhotos } from "@/lib/photoStorage";
 import {
   claimPrintRearm,
@@ -150,7 +146,6 @@ import {
   isPrintCardSize,
   isRecipePrintTemplate,
   usePrintSettingsPersistence,
-  writePrintSettings,
 } from "@/lib/printSettings";
 import { openingPageFor } from "@/lib/frontMatterPage";
 import type {
@@ -1424,12 +1419,10 @@ export default function PrintPage() {
    * The defaults that turn a stack of recipes into a book: a cover, a table
    * of contents, and chapters when there's enough to group. Pure — reads
    * `meta`/`scaffoldItems`/`currentTemplate`, returns a patch rather than
-   * committing one — so the SAME scaffold can seed a copy into a brand-new
-   * project (`lib/projectCopy.ts`'s `copyCardsToNewCookbook`, used by
-   * `makeCookbookFromCards` below) as well as the live one `scaffoldCookbook`
-   * applies in place for a legacy document. Anything already set up (a cover,
-   * named sections) is respected, not overwritten — each field is only
-   * returned when the source doesn't already have one.
+   * committing one — which is what lets `scaffoldCookbook` below apply it in
+   * place for a legacy document. Anything already set up (a cover, named
+   * sections) is respected, not overwritten — each field is only returned
+   * when the source doesn't already have one.
    */
   function buildCookbookScaffoldPatch(
     meta: ProjectMeta,
@@ -1505,12 +1498,10 @@ export default function PrintPage() {
   }
 
   // Turning a print job into a cookbook shouldn't drop the cook into an empty
-  // shell — scaffold the book they'd have built by hand. This is the LEGACY,
-  // in-place path: it stays wired to the old reversible toggle
-  // (`startCookbook`/`exitCookbookToCards`) for any document that has already
-  // entered that mechanism — see `isLegacyCookbookMechanism`. A document that
-  // hasn't gets the new one-way copy instead (`makeCookbookFromCards`), which
-  // never calls this.
+  // shell — scaffold the book they'd have built by hand. Reached two ways:
+  // the reversible toggle (`startCookbook`/`exitCookbookToCards`) for a
+  // legacy document — see `isLegacyCookbookMechanism` — and the pending-import
+  // effect above, for a fresh project born from the homepage's Cookbook tab.
   function scaffoldCookbook() {
     // A cookbook is a bound book, never a 4×6 card, and it wants its photos.
     // These are component-level (not meta), so they apply whether we restore a
@@ -1540,59 +1531,6 @@ export default function PrintPage() {
     // Every recipe gets its own full page — no auto-pairing. The cook can turn
     // an individual recipe into a full-page photo spread from the page controls.
     return patch.template;
-  }
-
-  /**
-   * The one-way "make a cookbook from these recipes" action: copies the
-   * current recipes into a brand-new, independent cookbook project rather
-   * than converting this one in place. The source project — cards, or a
-   * legacy book — is left exactly as it was. See lib/projectCopy.ts for what
-   * carries over and what doesn't.
-   *
-   * `app/print/page.tsx` keeps a lot of state keyed to "whichever project is
-   * open" that only resets cleanly on a fresh mount, so this seeds the new
-   * project into this tab's storage and does a full reload rather than a
-   * client-side route change — the same reason the conflict-recovery path
-   * below uses `window.location.assign` instead of `router.push`.
-   */
-  function makeCookbookFromCards() {
-    const patch = buildCookbookScaffoldPatch(projectMeta.meta, items ?? [], template);
-    const result = copyCardsToNewCookbook({ meta: projectMeta.meta, items: items ?? [] }, patch);
-    const newItemIds = result.items.map((item) => item.id);
-    // Written directly rather than through `setJobIds`/state — the reload
-    // below fires in this same tick, before React would get a chance to run
-    // the effects that normally persist these (see `createCurrentPrintJob`'s
-    // and `writePrintSettings`'s own call sites).
-    createCurrentPrintJob(newItemIds);
-    writePrintSettings({
-      cardSize: "letter",
-      template: patch.template,
-      doubleSided,
-      showCutLines,
-      showPhoto: true,
-      showSourceUrl,
-    });
-    queue.replaceAll(result.items);
-    setJobIds(newItemIds);
-    projectMeta.replaceMeta(result.meta);
-    track("cookbook_copy_created", { recipeCount: newItemIds.length, direction: "to_cookbook" });
-    window.location.assign("/print");
-  }
-
-  /**
-   * The one-way "make recipe cards from this book" action: the mirror of
-   * `makeCookbookFromCards`. Copies this book's recipes into a brand-new,
-   * independent recipe-cards project; the cookbook itself is untouched.
-   */
-  function makeCardsFromCookbook() {
-    const result = copyCookbookToNewCards({ meta: projectMeta.meta, items: items ?? [] });
-    const newItemIds = result.items.map((item) => item.id);
-    createCurrentPrintJob(newItemIds);
-    queue.replaceAll(result.items);
-    setJobIds(newItemIds);
-    projectMeta.replaceMeta(result.meta);
-    track("cookbook_copy_created", { recipeCount: newItemIds.length, direction: "to_cards" });
-    window.location.assign("/print");
   }
 
   function beginCookbookBuild({ offerAfter = false }: { offerAfter?: boolean } = {}) {
@@ -3810,6 +3748,26 @@ export default function PrintPage() {
     let cancelled = false;
     void takePendingImport().then((pending) => {
       if (cancelled || !pending) return;
+      // The homepage's Cookbook tab carries its choice the same way "New
+      // cookbook" from the library does — `cookbookIntent` on project meta,
+      // set by `startNewProject({ cookbook: true })` right before the
+      // handoff. Consumed HERE rather than left to the separate
+      // cookbookIntent effect further down: that one waits on `items` to
+      // finish hydrating, and the recipe this same pending import is about
+      // to start parsing can resolve before it gets there. A roundup link or
+      // a multi-recipe photo blooms into every recipe it found only while
+      // `cookbookMode` is already true (see `singleRecipeOnlyRef` in
+      // lib/queue.ts) — so the scaffold has to land before `queue.addX`
+      // below, not sometime after it.
+      //
+      // `offerAfter: true`, unlike the library's "New cookbook" flow: the
+      // homepage tab dropped its own pricing banner in favor of this dialog
+      // doing that job once the book is actually built, over the finished
+      // article rather than a bare choice of tabs.
+      if (projectMeta.meta.cookbookIntent && !projectMeta.meta.cookbookMode) {
+        projectMeta.clearCookbookIntent();
+        beginCookbookBuild({ offerAfter: true });
+      }
       // A landing page's capture block means "start me a fresh recipe",
       // never "add to whatever is already open" — the whole point of that
       // page is a free, single-recipe import (see SeoCapture's own file
@@ -4212,6 +4170,42 @@ export default function PrintPage() {
         aria-label={cookbookMode ? "Save cookbook" : "Save"}
       >
         <SaveIcon size={ICON_SIZE.md} />
+      </button>
+    );
+  }
+
+  /**
+   * The one place Pro is offered as a product, not as a lock icon on
+   * whichever control a cook happened to reach first.
+   *
+   * Every other Pro touchpoint (a theme tile's crown, "Add more recipes"
+   * turning gold, the size picker) marks something ELSE as gated — which
+   * teaches "this one thing needs Pro," not "Pro is a thing I could just
+   * go get." This button is reachable the same way regardless of what a
+   * cook is doing when they think of it, which is the only way "anytime"
+   * actually holds. Reuses the exact same dialog and `openProUpgradeDialog`
+   * every gated control already opens, so nothing here is a second upgrade
+   * flow — only a second door into the one that exists. Hidden once Pro
+   * is actually active; the point is to be found, not to nag someone who
+   * already bought it.
+   *
+   * Also hidden in cookbook mode. Pro and cookbook are two separate
+   * purchases — `computeProLocks` already waives every theme, card-size and
+   * multi-recipe gate the moment `cookbookMode` is true, so there is nothing
+   * left in here for Pro to unlock. A cook who owns neither would otherwise
+   * see an "Upgrade to Pro" door standing open in a room where nothing is
+   * actually locked.
+   */
+  function renderProUpgradeButton() {
+    if (cookbookMode || hasProEntitlement(effectiveCustomerInfo.customerInfo)) return null;
+    return (
+      <button
+        type="button"
+        className="btn btn-premium btn-compact"
+        onClick={() => openProUpgradeDialog("topbar_button")}
+      >
+        <CrownIcon size={ICON_SIZE.md} className="text-[var(--cp-premium-bright)]" />
+        Upgrade to Pro
       </button>
     );
   }
@@ -5484,21 +5478,18 @@ export default function PrintPage() {
               <ProjectHeading
                 title={headingTitle}
                 /* A cookbook is a named thing you come back to, so its name
-                   belongs in the bar. A card job is not: "Banana Bread + 2
-                   more" is a description of the queue, not a title anyone
-                   chose, and it was showing there the moment the project
-                   happened to be saved. */
-                showTitle={savedToProfile && cookbookMode}
+                   belongs in the bar the moment there IS a book — saved to
+                   an account or not, the name is real either way. A card job
+                   is not: "Banana Bread + 2 more" is a description of the
+                   queue, not a title anyone chose, so recipe cards shows a
+                   plain "Recipe cards" label instead (see ProjectHeading). */
+                showTitle={cookbookMode}
                 onRename={projectMeta.setProjectTitle}
                 cookbookMode={cookbookMode}
                 canBecomeCookbook={COOKBOOK_ENABLED}
-                isLegacy={
-                  isLegacyCookbookMechanism(projectMeta.meta) || Boolean(projectMeta.meta.cookbookIntent)
-                }
+                isLegacy={isLegacyCookbookMechanism(projectMeta.meta)}
                 onSwitchToCards={exitCookbookToCards}
                 onSwitchToCookbook={startCookbook}
-                onCopyToCookbook={makeCookbookFromCards}
-                onCopyToCards={makeCardsFromCookbook}
               />
             )
           }
@@ -5518,6 +5509,7 @@ export default function PrintPage() {
                     for why the control and the state are one thing. Shared
                     with the mobile topbar (PrintDeck.tsx). */}
                 {renderSaveControl()}
+                {renderProUpgradeButton()}
 
                 {/*
                   One button, not two. Buying and printing are not separate
@@ -5730,6 +5722,7 @@ export default function PrintPage() {
         {/* Center: large preview of the selected page */}
         <PrintDeck
           saveControl={renderSaveControl()}
+          proUpgradeButton={renderProUpgradeButton()}
           singleRecipePrintView={singleRecipePrintView}
           cookbookView={cookbookView}
           previewMeasuring={previewMeasuring}

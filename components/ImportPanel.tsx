@@ -9,6 +9,7 @@ import {
   type DragEvent,
   type FormEvent,
   type MutableRefObject,
+  type ReactNode,
 } from "react";
 import dynamic from "next/dynamic";
 import type { ImportTab } from "@/types/recipe";
@@ -38,14 +39,15 @@ import { useMenuDismiss } from "@/lib/useMenuDismiss";
 const MODES: {
   id: ImportTab;
   label: string;
+  hint: string;
   icon: ComponentType<{ size?: number; className?: string }>;
 }[] = [
-  { id: "url", label: "Link", icon: LinkIcon },
-  { id: "apps", label: "Recipe apps", icon: AppsIcon },
-  { id: "image", label: "Image", icon: ImageIcon },
+  { id: "url", label: "Link", hint: "Import a recipe from a link", icon: LinkIcon },
+  { id: "apps", label: "Recipe apps", hint: "Import recipes from a recipe app", icon: AppsIcon },
+  { id: "image", label: "Image", hint: "Read a recipe from a photo or screenshot", icon: ImageIcon },
   // "Text", not "Paste Text": every other option in this row names the thing
   // you have, and one verb among three nouns read as the odd one out.
-  { id: "text", label: "Text", icon: TextIcon },
+  { id: "text", label: "Text", hint: "Paste recipe text to import", icon: TextIcon },
 ];
 
 const PRIMARY_MODES = MODES.filter((mode) => mode.id === "url" || mode.id === "apps");
@@ -68,6 +70,7 @@ const RecipeAppsPanel = dynamic(() => loadRecipeApps().then((mod) => mod.RecipeA
 export function ImportPanel({
   items,
   workspace = false,
+  aboveModes,
   initialMode = "url",
   submitLabel = "Add",
   submitBusy = false,
@@ -87,6 +90,11 @@ export function ImportPanel({
 }: {
   items: QueueItem[];
   workspace?: boolean;
+  /** Rendered first, above the mode toggle — the front door's Recipe
+      cards/Cookbook choice. Nothing else needs a slot above the sources it
+      is choosing between, so this stays a bare, optional node rather than a
+      named concept the panel itself knows anything about. */
+  aboveModes?: ReactNode;
   initialMode?: ImportTab;
   submitLabel?: string;
   /** Restricts which sources the toggle offers — the workspace rail and the
@@ -401,6 +409,7 @@ export function ImportPanel({
       // name, which a heading was the only thing providing.
       aria-label={workspace ? "Add a recipe" : "Import recipes"}
     >
+      {aboveModes}
 
       {/* Mode toggle — one enabled source is a field, not a choice, so there
           is nothing to pick between and the row is skipped entirely. */}
@@ -433,12 +442,13 @@ export function ImportPanel({
 
                 {overflowOpen && (
                   <div className="cp-menu mode-toggle-menu" role="menu" aria-label="More import options">
-                    {enabledOverflow.map(({ id, label, icon: Icon }) => (
+                    {enabledOverflow.map(({ id, label, hint, icon: Icon }) => (
                       <button
                         key={id}
                         type="button"
                         role="menuitemradio"
                         aria-checked={mode === id}
+                        title={hint}
                         className={`cp-menu__item ${mode === id ? "is-active" : ""}`}
                         onClick={() => chooseMode(id)}
                       >
@@ -455,7 +465,7 @@ export function ImportPanel({
       )}
 
       {mode === "apps" ? (
-        <div className="mt-cp-4">
+        <div className={workspace ? "mt-cp-5" : "mt-cp-4"}>
           <RecipeAppsPanel
             items={items}
             onAddRecipes={onAddReadyRecipes}
@@ -472,7 +482,10 @@ export function ImportPanel({
           />
         </div>
       ) : (
-      <form className="flex flex-col gap-cp-4 mt-cp-4" onSubmit={handleSubmit}>
+      <form
+        className={`flex flex-col ${workspace ? "gap-cp-5 mt-cp-5" : "gap-cp-4 mt-cp-4"}`}
+        onSubmit={handleSubmit}
+      >
         {mode === "url" && (
           <div className="flex flex-col">
             <label className="field-label" htmlFor="rp-url">

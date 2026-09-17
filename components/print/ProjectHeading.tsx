@@ -3,7 +3,6 @@
 import { useCallback, useLayoutEffect, useRef, useState } from "react";
 import { ChevronDownIcon, ICON_SIZE } from "@/components/icons";
 import { SegmentedControl } from "@/components/Controls";
-import { ConfirmDialog } from "@/components/ConfirmDialog";
 import { useMenuDismiss } from "@/lib/useMenuDismiss";
 
 /**
@@ -23,8 +22,6 @@ export function ProjectHeading({
   isLegacy,
   onSwitchToCards,
   onSwitchToCookbook,
-  onCopyToCookbook,
-  onCopyToCards,
 }: {
   title: string;
   /** Whether this project is in the account yet. A name is a thing you can come
@@ -40,23 +37,19 @@ export function ProjectHeading({
   /** Whether this document has already entered the old shared-document
       cookbook mechanism — a `stashedCookbook`, or `cookbookMode` saved under
       the old code paths — and so keeps the reversible in-place toggle
-      (`onSwitchToCards`/`onSwitchToCookbook`) forever. A document born from
-      `onCopyToCookbook`/`onCopyToCards` is never legacy, no matter what
-      `cookbookMode` says — see `isLegacyCookbookMechanism` in lib/project.ts. */
+      (`onSwitchToCards`/`onSwitchToCookbook`) forever. Everything else is
+      just told what it is, not offered a way to become the other thing: the
+      homepage's Recipe cards/Cookbook tabs are the one place that choice is
+      made now, so a project born from either tab never gets a second,
+      in-workspace way to flip — see `isLegacyCookbookMechanism` in
+      lib/project.ts. */
   isLegacy: boolean;
   onSwitchToCards: () => void;
   onSwitchToCookbook: () => void;
-  /** One-way: copies the current recipes into a brand-new cookbook project.
-      Only offered when `!isLegacy`. */
-  onCopyToCookbook: () => void;
-  /** One-way: copies this book's recipes into a brand-new cards project.
-      Only offered when `!isLegacy`. */
-  onCopyToCards: () => void;
 }) {
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState(title);
   const [menuOpen, setMenuOpen] = useState(false);
-  const [confirmOpen, setConfirmOpen] = useState(false);
   const inputRef = useRef<HTMLInputElement | null>(null);
   const menuRef = useRef<HTMLDivElement | null>(null);
 
@@ -130,159 +123,88 @@ export function ProjectHeading({
       )}
 
       {/*
-        Two shapes, because the control has two jobs.
-
-        In recipe cards it is an OFFER: both kinds are shown side by side, so
-        the cookbook is something you can see rather than something you have to
-        suspect is behind a menu. Nobody discovered the paid half of the product
-        by using the free half, and a closed dropdown was most of the reason.
-        For a legacy document that offer is still the reversible toggle; for
-        everything else, it's the one-way copy — see `isLegacy`.
-
-        In a cookbook it is STATUS: you are already in the thing, so it shrinks
-        back to a chip that names what you are looking at and quietly offers the
-        way back (a real "back" for a legacy document, a copy-out for anything
-        else).
+        Legacy documents keep the real, reversible toggle they have always
+        had — a genuine "back" in each direction, not a copy, so there is
+        nothing else that could stand in for it. Everything else just gets
+        told what it is: the homepage's Recipe cards/Cookbook tabs are the
+        only place that choice gets made now, so there is no offer to make
+        here and no way back to dangle either.
       */}
-      {!cookbookMode && canBecomeCookbook ? (
-        isLegacy ? (
+      {isLegacy ? (
+        !cookbookMode && canBecomeCookbook ? (
           <SegmentedControl
             className="rp-project-heading__kinds"
             label="Document kind"
             value="cards"
             options={[
               { id: "cards", label: "Recipe cards" },
-              {
-                id: "book",
-                /* The tab makes the cookbook visible; the flag says it is worth
-                   looking at. Only in cards mode, which is the only mode where
-                   this is news — inside a cookbook it would be labelling the
-                   thing you are already using. */
-                label: (
-                  <>
-                    Cookbook
-                    <span className="rp-project-heading__new">New</span>
-                  </>
-                ),
-              },
+              { id: "book", label: "Cookbook" },
             ]}
             onChange={(next) => {
               if (next === "book") onSwitchToCookbook();
             }}
           />
         ) : (
-          <>
+          <div className="rp-project-heading__kind" ref={menuRef}>
             <button
               type="button"
-              className="btn btn-secondary btn-compact"
-              onClick={() => setConfirmOpen(true)}
+              className="rp-project-heading__kind-trigger"
+              aria-haspopup="menu"
+              aria-expanded={menuOpen}
+              onClick={() => setMenuOpen((open) => !open)}
             >
-              Make a cookbook
-              <span className="rp-project-heading__new">New</span>
+              {cookbookMode ? "Cookbook" : "Recipe cards"}
+              <ChevronDownIcon size={ICON_SIZE.xs} />
             </button>
-            <ConfirmDialog
-              open={confirmOpen}
-              title="Make a cookbook?"
-              description="We'll copy your recipes into a new cookbook. Your recipe cards stay just as they are."
-              tone="primary"
-              confirmLabel="Make a cookbook"
-              onCancel={() => setConfirmOpen(false)}
-              onConfirm={() => {
-                setConfirmOpen(false);
-                onCopyToCookbook();
-              }}
-            />
-          </>
-        )
-      ) : (
-      <div className="rp-project-heading__kind" ref={menuRef}>
-        <button
-          type="button"
-          className="rp-project-heading__kind-trigger"
-          aria-haspopup="menu"
-          aria-expanded={menuOpen}
-          onClick={() => setMenuOpen((open) => !open)}
-        >
-          {cookbookMode ? "Cookbook" : "Recipe cards"}
-          <ChevronDownIcon size={ICON_SIZE.xs} />
-        </button>
 
-        {menuOpen && (
-          <div className="cp-menu rp-project-heading__menu" role="menu">
-            {/* For a non-legacy cookbook there is no real "Recipe cards"
-                destination to show as a status item beside the one real
-                action below — that would be a second, dead-looking control
-                for the same idea. Legacy documents (a real switch back) and
-                anything not currently a cookbook (already active, harmless)
-                still get it. */}
-            {(isLegacy || !cookbookMode) && (
-              <button
-                type="button"
-                role="menuitemradio"
-                aria-checked={!cookbookMode}
-                className={`cp-menu__item cp-menu__item--stacked ${!cookbookMode ? "is-active" : ""}`}
-                onClick={() => {
-                  setMenuOpen(false);
-                  if (cookbookMode) onSwitchToCards();
-                }}
-              >
-                <span className="cp-menu__label">Recipe cards</span>
-                <span className="cp-menu__note">
-                  One card per recipe, free to print.
-                </span>
-              </button>
-            )}
+            {menuOpen && (
+              <div className="cp-menu rp-project-heading__menu" role="menu">
+                <button
+                  type="button"
+                  role="menuitemradio"
+                  aria-checked={!cookbookMode}
+                  className={`cp-menu__item cp-menu__item--stacked ${!cookbookMode ? "is-active" : ""}`}
+                  onClick={() => {
+                    setMenuOpen(false);
+                    if (cookbookMode) onSwitchToCards();
+                  }}
+                >
+                  <span className="cp-menu__label">Recipe cards</span>
+                  <span className="cp-menu__note">
+                    One card per recipe, free to print.
+                  </span>
+                </button>
 
-            {isLegacy && canBecomeCookbook && (
-              <button
-                type="button"
-                role="menuitemradio"
-                aria-checked={cookbookMode}
-                className={`cp-menu__item cp-menu__item--stacked ${cookbookMode ? "is-active" : ""}`}
-                onClick={() => {
-                  setMenuOpen(false);
-                  if (!cookbookMode) onSwitchToCookbook();
-                }}
-              >
-                <span className="cp-menu__label">Cookbook</span>
-                <span className="cp-menu__note">
-                  A bound book with a cover and chapters.
-                </span>
-              </button>
-            )}
-
-            {!isLegacy && cookbookMode && (
-              <button
-                type="button"
-                role="menuitem"
-                className="cp-menu__item cp-menu__item--stacked"
-                onClick={() => {
-                  setMenuOpen(false);
-                  setConfirmOpen(true);
-                }}
-              >
-                <span className="cp-menu__label">Make recipe cards from this book</span>
-                <span className="cp-menu__note">A separate, independent project.</span>
-              </button>
+                {canBecomeCookbook && (
+                  <button
+                    type="button"
+                    role="menuitemradio"
+                    aria-checked={cookbookMode}
+                    className={`cp-menu__item cp-menu__item--stacked ${cookbookMode ? "is-active" : ""}`}
+                    onClick={() => {
+                      setMenuOpen(false);
+                      if (!cookbookMode) onSwitchToCookbook();
+                    }}
+                  >
+                    <span className="cp-menu__label">Cookbook</span>
+                    <span className="cp-menu__note">
+                      A bound book with a cover and chapters.
+                    </span>
+                  </button>
+                )}
+              </div>
             )}
           </div>
-        )}
-      </div>
-      )}
-
-      {!isLegacy && cookbookMode && (
-        <ConfirmDialog
-          open={confirmOpen}
-          title="Make recipe cards?"
-          description="We'll copy this book's recipes into new recipe cards. Your cookbook stays just as it is."
-          tone="primary"
-          confirmLabel="Make recipe cards"
-          onCancel={() => setConfirmOpen(false)}
-          onConfirm={() => {
-            setConfirmOpen(false);
-            onCopyToCards();
-          }}
-        />
+        )
+      ) : (
+        // A cookbook's name is already on show via the title button above
+        // (`showTitle` is `cookbookMode`) — labelling it "Cookbook" too
+        // would be a second word for the one fact. Recipe cards has no title
+        // of its own to show there, so this is the only place that says so.
+        // Plain text at the title's own size, not `.rp-project-heading__kind-trigger`
+        // (that class's filled background and padding are what made the
+        // legacy dropdown LOOK pressable; this one isn't a button at all).
+        !cookbookMode && <span className="text-cp-body font-bold text-ink">Recipe cards</span>
       )}
     </div>
   );

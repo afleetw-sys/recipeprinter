@@ -170,6 +170,17 @@ export interface ProjectMeta {
       an empty-handed cook, which is exactly the trip that wiped it; the library
       goes straight to the workspace now. */
   cookbookIntent?: boolean;
+  /** Set alongside `cookbookIntent`, but never consumed — this one survives
+      into the scaffolded book itself. `cookbookIntent` only says "open as a
+      book on arrival"; once `scaffoldCookbook` runs, the project looks
+      structurally identical to a document converted in place by the old
+      reversible toggle (`cookbookMode: true`, no `sourceProjectId`), which
+      is exactly what `isLegacyCookbookMechanism` reads as legacy. This flag
+      is the difference: it means the project was born a cookbook — there is
+      no prior recipe-cards state for it to ever switch back to — so it
+      should never be treated as legacy, no matter what `scaffoldCookbook`
+      does to `cookbookMode`/`stashedCookbook` after this is set. */
+  cookbookBornFresh?: boolean;
   /** The print-format preset this cookbook exports at (trim/bleed/margin/gutter
       — see lib/cookbookPresets.ts). Absent = the default preset. Cookbook-only;
       cleared by `exitCookbook`. */
@@ -544,24 +555,27 @@ export function projectDisplayTitle(
  * `cookbookMode` toggle, with `exitCookbook`/`restoreCookbook` shuffling the
  * book into and out of `stashedCookbook`.
  *
- * A document born from `lib/projectCopy.ts`'s one-way "make a cookbook from
- * these recipes" / "make recipe cards from this book" action carries
- * `sourceProjectId` from the moment it's created, and is NEVER legacy — not
- * even once it's saved with `cookbookMode: true`, which is structurally
- * identical to a document converted in place by the old toggle. That's the
- * whole reason the field exists: `cookbookMode`/`stashedCookbook` alone can't
- * tell "entered via the old toggle" apart from "born already a cookbook via
- * the new copy."
+ * Two ways to be exempt. A document born from `lib/projectCopy.ts`'s old
+ * one-way "make a cookbook from these recipes" / "make recipe cards from
+ * this book" action carried `sourceProjectId` from the moment it was
+ * created — that mechanism is gone, but a document one already produced
+ * keeps reading as non-legacy forever. A document born straight from the
+ * homepage's Cookbook tab carries `cookbookBornFresh` instead: it was never
+ * recipe cards to begin with, so there is nothing for it to fall back to.
+ * Either way, the point is the same — `cookbookMode: true` with no
+ * `stashedCookbook` is structurally identical whether a document got there
+ * by the old in-place toggle or by starting there, and only these flags
+ * say which one actually happened.
  *
- * Without a `sourceProjectId`, a `stashedCookbook` or a saved `cookbookMode`
- * means this document has already gone through `exitCookbook`/`scaffoldCookbook`
+ * Without either flag, a `stashedCookbook` or a saved `cookbookMode` means
+ * this document has already gone through `exitCookbook`/`scaffoldCookbook`
  * — the only code paths that ever produce either — so it keeps the old
  * reversible toggle for good.
  */
 export function isLegacyCookbookMechanism(
-  meta: Pick<ProjectMeta, "stashedCookbook" | "cookbookMode" | "sourceProjectId">,
+  meta: Pick<ProjectMeta, "stashedCookbook" | "cookbookMode" | "sourceProjectId" | "cookbookBornFresh">,
 ): boolean {
-  if (meta.sourceProjectId) return false;
+  if (meta.sourceProjectId || meta.cookbookBornFresh) return false;
   return Boolean(meta.stashedCookbook) || Boolean(meta.cookbookMode);
 }
 
@@ -1063,6 +1077,7 @@ export function useProjectMeta() {
         ...EMPTY_META,
         projectId: uid(),
         cookbookIntent: options.cookbook || undefined,
+        cookbookBornFresh: options.cookbook || undefined,
         // Whether the cookbook pitch has been seen is a fact about the PERSON,
         // not the project. Resetting it per project would re-pitch the product
         // to someone already on their second book.

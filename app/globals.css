@@ -1249,6 +1249,22 @@
     background: var(--cp-overlay-hover);
   }
 
+  /* The one button that IS the Pro upsell, not a lock badge marking some
+     other control as gated behind it — `--cp-premium`/`--cp-premium-soft`
+     are the reserved "this costs money" semantic (see the note above their
+     definitions), so this reuses that meaning rather than inventing a
+     colour, and stays a tint-and-ink outline rather than a solid fill for
+     the same contrast reason the crown badge does. */
+  .btn-premium {
+    border: 1px solid color-mix(in srgb, var(--cp-premium) 45%, transparent);
+    background: var(--cp-premium-soft);
+    color: var(--cp-premium);
+  }
+  .btn-premium:hover:not(:disabled) {
+    border-color: var(--cp-premium);
+    background: color-mix(in srgb, var(--cp-premium-soft) 82%, var(--cp-premium) 8%);
+  }
+
   /* Ghost / icon */
   .btn-ghost {
     /* 6px between an icon and its label: this had none, and `.btn`'s 8px read
@@ -2076,6 +2092,41 @@
      with a separator — the way a document header names a file and its branch.
      Stacked, it was two lines deep in a bar that is only 62px tall, which is
      what made the header feel like a page heading rather than a toolbar. */
+  /* Accent fill on a tab that is otherwise plain text, so it reads as a flag
+     rather than a second word in the label. WARM, because "new" is the product
+     announcing something rather than the system reporting state.
+
+     Solid clay with white on it, at 3.7:1 — and that is a DELIBERATE
+     exception, not an oversight, so please don't quietly "fix" it. White on
+     clay clears WCAG's 3:1 for large text but this flag is 9.9px, which is
+     held to 4.5:1. Amelia was shown the number and the two alternatives (keep
+     the accessible tint, or grow the flag past 18.66px so it passes) and chose
+     the solid chip, because it is the shape the brand mark wants and a 19px
+     flag would out-shout the tab it rides on.
+
+     It is the one surface in the app that does not clear AA. Everything else
+     the notice family paints — Purchased, Free template, the protect bar —
+     stays a tint with an ink word, because none of those had a reason to
+     spend the same exception. */
+  .rp-new-badge {
+    padding: 1px 5px;
+    border: 1px solid var(--cp-accent-warm);
+    border-radius: 999px;
+    background: var(--cp-accent-warm);
+    color: var(--cp-on-accent-warm);
+    /* A flag has to sit well under the label it rides on or it stops reading as
+       a flag. */
+    font-size: var(--cp-fs-micro);
+    /* 700, down from 800. Worth knowing alongside the contrast note above:
+       this chip is already the app's one AA exception at 3.7:1, and thinner
+       strokes do not help that. It is a two-letter flag at a size nobody
+       reads for meaning, so the trade is acceptable — but it IS a trade. */
+    font-weight: var(--cp-fw-bold);
+    letter-spacing: .02em;
+    line-height: 1.1;
+    text-transform: uppercase;
+  }
+
   .rp-project-heading {
     @apply flex flex-row items-center;
     /* Names run long — "Original NESTLÉ TOLL HOUSE Chocolate Chip Cookies" is
@@ -2208,43 +2259,6 @@
     box-shadow: none;
   }
 
-  /* Accent fill on a tab that is otherwise plain text, so it reads as a flag
-     rather than a second word in the label. WARM, because "new" is the product
-     announcing something rather than the system reporting state.
-
-     Solid clay with white on it, at 3.7:1 — and that is a DELIBERATE
-     exception, not an oversight, so please don't quietly "fix" it. White on
-     clay clears WCAG's 3:1 for large text but this flag is 9.9px, which is
-     held to 4.5:1. Amelia was shown the number and the two alternatives (keep
-     the accessible tint, or grow the flag past 18.66px so it passes) and chose
-     the solid chip, because it is the shape the brand mark wants and a 19px
-     flag would out-shout the 12.8px tab it rides on.
-
-     It is the one surface in the app that does not clear AA. Everything else
-     the notice family paints — Purchased, Free template, the protect bar —
-     stays a tint with an ink word, because none of those had a reason to
-     spend the same exception. */
-  .rp-project-heading__new {
-    margin-left: 5px;
-    padding: 1px 5px;
-    border: 1px solid var(--cp-accent-warm);
-    border-radius: 999px;
-    background: var(--cp-accent-warm);
-    color: var(--cp-on-accent-warm);
-    /* A flag has to sit well under the label it rides on or it stops reading as
-       a flag. `--cp-fs-label` was only a step below the 12.8px tab, which is
-       close enough to look like a second word; this is the ramp's badge
-       step. */
-    font-size: var(--cp-fs-micro);
-    /* 700, down from 800. Worth knowing alongside the contrast note above:
-       this chip is already the app's one AA exception at 3.7:1, and thinner
-       strokes do not help that. It is a two-letter flag at a size nobody
-       reads for meaning, so the trade is acceptable — but it IS a trade. */
-    font-weight: var(--cp-fw-bold);
-    letter-spacing: .02em;
-    line-height: 1.1;
-    text-transform: uppercase;
-  }
 
   .rp-project-heading__kind {
     @apply relative flex items-center;

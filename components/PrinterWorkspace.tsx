@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { ImportPanel } from "@/components/ImportPanel";
 import { useQueue } from "@/lib/queue";
@@ -11,6 +11,11 @@ import { imageLabel, validateImageFiles } from "@/lib/imageImport";
 import { track } from "@/lib/analytics";
 import { nextPaint } from "@/lib/nextPaint";
 import type { ImportMethod, ImportTab, QueueItem } from "@/types/recipe";
+
+/** Which kind of project the front door is about to start. Recipe cards is
+    the default and asks for nothing; Cookbook is the one-project, $19.99,
+    unlimited-recipe alternative — see the tab row and banner below. */
+type ImportKind = "cards" | "cookbook";
 
 /**
  * The front door: the box you put a recipe into, and nothing else.
@@ -73,8 +78,34 @@ export function PrinterWorkspace({
   /** A handoff is on its way to /print, so the submit wears a spinner instead
       of its arrow. Stays true for the rest of this page's life — see `handoff`. */
   const [opening, setOpening] = useState(false);
+  const [importKind, setImportKind] = useState<ImportKind>("cards");
   const leftCookbookRef = useRef(false);
   const warmedRef = useRef(false);
+  const tabListRef = useRef<HTMLDivElement | null>(null);
+  /** Where the selected fill sits, measured off the DOM rather than assumed
+      from `importKind` alone — the two labels aren't the same width, so the
+      fill has to know the active button's actual box to slide to it rather
+      than just toggle between two guessed positions. Same technique as
+      `SegmentedControl`'s thumb (components/Controls.tsx); not reused
+      directly because these tabs carry their own padding, dimming and
+      "New" badge that control doesn't know about. */
+  const [tabFill, setTabFill] = useState<{ left: number; width: number } | null>(null);
+
+  useLayoutEffect(() => {
+    const root = tabListRef.current;
+    if (!root) return;
+    function measure() {
+      const active = root!.querySelector<HTMLElement>('[aria-selected="true"]');
+      if (active && active.offsetWidth > 0) {
+        setTabFill({ left: active.offsetLeft, width: active.offsetWidth });
+      }
+    }
+    measure();
+    const observer = new ResizeObserver(measure);
+    observer.observe(root);
+    if (document.fonts?.ready) document.fonts.ready.then(measure).catch(() => undefined);
+    return () => observer.disconnect();
+  }, [importKind]);
 
   /**
    * Coming home means you finished with what you were working on, so this page
@@ -173,6 +204,14 @@ export function PrinterWorkspace({
   async function handoff(payload: PendingImport) {
     setHandoffError(null);
     setOpening(true);
+    // Stamps the choice onto the project /print is about to open — the same
+    // `cookbookIntent` carrier "New cookbook" already uses from the library
+    // (see `startNewProject`'s own doc comment for why nothing but this
+    // survives the trip). Safe to remint here: this project is still empty,
+    // nothing has been added to it yet, so replacing its id costs nothing.
+    // Left alone for the Recipe cards tab — the id this page already minted
+    // on mount is exactly what a recipe-cards import should land in.
+    if (importKind === "cookbook") startNewProject({ cookbook: true });
     // Counted here rather than where the parse starts: by then every import in
     // the product looks like it happened on /print. See `recipe_import_submitted`.
     track("recipe_import_submitted", { surface: "home", source: sourceOf(payload) });
@@ -276,13 +315,93 @@ export function PrinterWorkspace({
              stays on show. */
           items={[]}
           workspace
+          /* `mb-cp-5` below, not a bespoke value: the same gap ImportPanel
+             puts between its own mode-toggle row and the form below it
+             (`mt-cp-5` there, on the workspace front door specifically) and
+             between every field inside it (`gap-cp-5`) — matching it here
+             means the tabs read as one more row in that same rhythm rather
+             than a separately spaced header sitting on top of it. */
+          aboveModes={
+            <div className="mb-cp-5">
+              {/* What kind of project this import starts, inside the same
+                  card as the sources it's choosing between rather than
+                  floating above it. A very light recessed fill marks the
+                  selected one and SLIDES to it rather than each button
+                  fading its own copy in and out — one fill, moved, reads as
+                  a single control picking between two states; two fills
+                  independently crossfading read as two buttons that happen
+                  to take turns. The fill is a single absolutely-positioned
+                  element measured off the active button's own box (see
+                  `tabFill` above) so it can slide by any distance between
+                  two differently-sized labels. The unselected label stays
+                  dimmed rather than plain, layered on top of that.
+
+                  No horizontal offset on the row: the fill's BOX edge lines
+                  up with the field/mode-button borders below (all start at
+                  the panel's own content edge), the same way those buttons'
+                  boxes do — matching the text baseline instead would have
+                  put it further left than everything under it. Tighter
+                  padding than `.btn-toggle__option` below on purpose — that
+                  row is thumb-sized targets, this is a compact text switch,
+                  and matching its own radius (not its padding) is what makes
+                  the fill still read as the same visual language. No
+                  vertical offset either: the panel's own top padding
+                  (`.rp-import-panel`'s `p-3`/`lg:p-cp-6`) is what puts space
+                  above this row, on both breakpoints, matching what it
+                  already puts below the submit button. */}
+              <div ref={tabListRef} className="relative isolate flex gap-cp-2" role="tablist" aria-label="What you're printing">
+                {tabFill && (
+                  <span
+                    aria-hidden
+                    className="absolute inset-y-0 z-0 rounded bg-[var(--cp-surface-muted)] transition-[transform,width] duration-200 ease-out"
+                    style={{ transform: `translateX(${tabFill.left}px)`, width: `${tabFill.width}px` }}
+                  />
+                )}
+                <button
+                  type="button"
+                  role="tab"
+                  aria-selected={importKind === "cards"}
+                  onClick={() => setImportKind("cards")}
+                  className={`relative z-10 rounded px-cp-2 py-cp-1 text-cp-body font-bold text-ink transition-opacity duration-200 ease-out ${
+                    importKind === "cards" ? "opacity-100" : "opacity-45 hover:opacity-70"
+                  }`}
+                >
+                  Recipe cards
+                </button>
+                <button
+                  type="button"
+                  role="tab"
+                  aria-selected={importKind === "cookbook"}
+                  onClick={() => setImportKind("cookbook")}
+                  className={`relative z-10 flex items-center gap-1 rounded px-cp-2 py-cp-1 text-cp-body font-bold text-ink transition-opacity duration-200 ease-out ${
+                    importKind === "cookbook" ? "opacity-100" : "opacity-45 hover:opacity-70"
+                  }`}
+                >
+                  Cookbook
+                  <span className="rp-new-badge">New</span>
+                </button>
+              </div>
+              {/* No pricing banner here — submitting on this tab builds the
+                  book and hands straight off to CookbookWelcomeDialog on
+                  /print, which pitches the price over the finished article
+                  instead of a bare choice of tabs (see the pending-import
+                  effect's `offerAfter: true`). */}
+            </div>
+          }
           initialMode={initialImportMode}
-          submitLabel={importSubmitLabel}
+          submitLabel={importKind === "cookbook" ? "Start my cookbook" : importSubmitLabel}
           submitBusy={opening}
           onAddUrl={handleAddUrl}
           onAddImageFiles={(files, label) => void handleAddImageFiles(files, label)}
           onAddText={handleAddText}
           onAddReadyRecipes={handleAddReadyRecipes}
+          /* Recipe apps' library pickers cap selection to one recipe unless
+             told otherwise (see `librarySingleSelect`'s own doc comment) —
+             for the Cookbook tab there's no cap to enforce, so this forces
+             the picker open rather than leaving it to `useSingleRecipeOnly`'s
+             Pro-only check. Left unset for Recipe cards: that's exactly the
+             check that tab is supposed to go through. */
+          librarySingleSelect={importKind === "cookbook" ? false : undefined}
         />
         {handoffError && (
           <p className="field-error mt-cp-3" role="alert">
