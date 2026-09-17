@@ -43,8 +43,10 @@ export function SiteHeader({
   sticky?: boolean;
   /** Paints a sticky bar with the off-white `bg-chrome` surface and its
       dividing hairline. Used by the /print workspace and the shared SEO-page
-      frame; other utility headers remain transparent unless they opt in. */
-  chrome?: boolean;
+      frame; other utility headers remain transparent unless they opt in.
+      `"mobile"` (the SEO frame's own choice) keeps that surface below `sm`
+      only, and goes transparent at `sm` and up. */
+  chrome?: boolean | "mobile";
   saveStatus?: AccountSaveStatus | null;
   onRetrySave?: () => void;
   onSave?: () => void;
@@ -91,8 +93,13 @@ export function SiteHeader({
             `sticky top-0 z-[var(--z-sticky)] py-[10px] ${
               /* Explicit callers get the near-white surface and hairline.
                  Everything else stays transparent; with nothing painted
-                 behind it, a divider would be a stray floating rule. */
-              chrome ? "bg-chrome border-b border-line" : ""
+                 behind it, a divider would be a stray floating rule.
+                 `"mobile"` drops both again at `sm` and up. */
+              chrome === "mobile"
+                ? "bg-chrome border-b border-line sm:bg-transparent sm:border-b-0"
+                : chrome
+                  ? "bg-chrome border-b border-line"
+                  : ""
             }`
           : ""
       }`}

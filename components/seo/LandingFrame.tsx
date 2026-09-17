@@ -32,15 +32,17 @@ export function LandingCta({
       block of their own, so they send the reader to the printer instead. */
   href?: string;
   variant?: "primary" | "secondary";
-  /** Tighten padding/text on mobile so the header CTA fits inline with the
-      wordmark and account button; full size returns at the `sm` breakpoint. */
+  /** Sizes this down to `.btn-header`, `SiteHeader`'s own control size, so the
+      header CTA matches the Save/account controls beside it — and the Print
+      button on /print — instead of standing a size taller than everything
+      else in the bar. */
   compact?: boolean;
 }) {
   return (
     <Link
       href={href}
       className={`btn ${variant === "primary" ? "btn-primary" : "btn-secondary"}${
-        compact ? " px-cp-3 text-cp-small sm:px-[18px] sm:text-cp-body" : ""
+        compact ? " btn-header" : ""
       }`}
     >
       <PrintIcon size={ICON_SIZE.md} />
@@ -285,7 +287,7 @@ export function LandingFrame({
           placeholder and submit wording; sending someone to the home page
           would throw all of that away and land them somewhere they did not
           ask for. */}
-      <SiteHeader actions={headerActions} sticky chrome />
+      <SiteHeader actions={headerActions} sticky chrome="mobile" />
       <main className="flex-1 px-cp-6 sm:px-cp-7 lg:px-[40px]">
         <div className="max-w-content mx-auto flex flex-col gap-[84px] lg:gap-[112px] pt-cp-5 pb-[80px]">
           {children}
