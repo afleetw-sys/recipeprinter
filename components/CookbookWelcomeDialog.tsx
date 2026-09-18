@@ -54,12 +54,12 @@ export function CookbookWelcomeDialog({
       </div>
       <div className="cookbook-welcome__copy">
         <div className="cookbook-welcome__lede">
-          <h2 id="cookbook-welcome-title">Your cookbook is ready.</h2>
-          <p>Add recipes whenever you like. You’ll only pay when you’re ready to export.</p>
+          <h2 id="cookbook-welcome-title">Your cookbook is ready for recipes.</h2>
+          <p>Add recipes, photos, and make changes anytime. You won’t pay until you’re ready to export.</p>
         </div>
         <div className="cookbook-welcome__price">
           <b>{price} one time</b>
-          <span>Includes your cover, chapters, table of contents, photos, and a print-ready PDF.</span>
+          <span>Export a print-ready PDF, then keep editing and re-exporting this cookbook at no extra cost.</span>
         </div>
         <div className="cookbook-welcome__actions">
           <button type="button" className="btn btn-primary" onClick={onStart}>
