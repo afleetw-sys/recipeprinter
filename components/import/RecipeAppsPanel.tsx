@@ -1,7 +1,6 @@
 "use client";
 
 import { type ReactNode, useEffect, useMemo, useRef, useState } from "react";
-import { useRouter } from "next/navigation";
 import { useCookPilotAuth } from "@/components/CookPilotAuth";
 import { CookPilotImportSource, prewarmCookPilotImport } from "@/components/CookPilotRecipePicker";
 import {
@@ -15,6 +14,7 @@ import {
 } from "@/lib/cookpilotRecipes";
 import { cachedPaprikaLibrary } from "@/lib/paprikaLibrary";
 import { useSingleRecipeOnly } from "@/lib/useSingleRecipeOnly";
+import { useStandaloneProUpgrade } from "@/lib/useStandaloneProUpgrade";
 import { Dialog } from "@/components/Dialog";
 import type { QueueItem } from "@/types/recipe";
 import {
@@ -263,17 +263,19 @@ export function RecipeAppsPanel({
   // Bumped when the open Paprika file changes, so the row below re-reads it.
   const [libraryNonce, setLibraryNonce] = useState(0);
   const { user, ready } = useCookPilotAuth();
-  const router = useRouter();
-  // The print page opens its own upgrade dialog. The home page has none, so
-  // "upgrade to Pro" there goes to the account's Pro card, which does.
-  const onUpgradeTap = onLockedTap ?? (() => router.push("/account"));
+  // /print hands in its own handler, tied to the print job it would resume. On
+  // every other page "upgrade to Pro" opens the same dialog right here, rather
+  // than sending the cook off to /account to find it.
+  const { openProUpgrade, proUpgradeDialog, proMessage, proJustActivated } =
+    useStandaloneProUpgrade("recipe_apps_upgrade");
+  const onUpgradeTap = onLockedTap ?? openProUpgrade;
 
   // Fallback answer for `singleSelect`, used only when the caller didn't
   // supply one (see the prop's own doc comment) — see the hook's own doc for
   // why this can't just live here: this isn't the only direct renderer of
   // these sources any more.
   const selfCheckedSingleRecipeOnly = useSingleRecipeOnly();
-  const effectiveSingleSelect = singleSelect ?? selfCheckedSingleRecipeOnly;
+  const effectiveSingleSelect = singleSelect ?? (selfCheckedSingleRecipeOnly && !proJustActivated);
 
   function open(next: SourceId | null) {
     lastOpenSource = next;
@@ -420,6 +422,12 @@ export function RecipeAppsPanel({
           />
         )}
         {paprikaFileInput}
+        {proMessage && (
+          <p className="text-cp-caption text-ink-soft" role="status">
+            {proMessage}
+          </p>
+        )}
+        {proUpgradeDialog}
       </div>
     );
   }
@@ -479,6 +487,12 @@ export function RecipeAppsPanel({
         />
       </ul>
       {paprikaFileInput}
+      {proMessage && (
+        <p className="text-cp-caption text-ink-soft" role="status">
+          {proMessage}
+        </p>
+      )}
+      {proUpgradeDialog}
     </div>
   );
 }
