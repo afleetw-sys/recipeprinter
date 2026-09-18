@@ -78,8 +78,8 @@ export function CookbookWelcomeDialog({
             {purchased
               ? "Your cover, chapters and layout are all still here."
               : empty
-                ? "A cover and pages are ready behind this. Add recipes whenever you like, and change anything on it."
-                : "Your recipes are laid out behind this, with a cover and chapters. Everything on it is yours to change."}
+                ? "Your cover and pages are set up. Add recipes whenever you like, and change anything."
+                : "Your recipes are laid out with a cover and chapters. Everything is yours to change."}
           </p>
         </div>
         <ul className="cookbook-feature-chips">
