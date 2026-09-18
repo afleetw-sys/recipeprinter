@@ -487,7 +487,7 @@
   display: grid;
   gap: .3rem;
   padding-left: 1rem;
-  border-left: var(--cp-accent-warm);
+  border-left: 3px solid var(--cp-accent-warm);
   color: var(--cp-ink-soft);
   font-size: var(--cp-fs-small);
   line-height: 1.4;
