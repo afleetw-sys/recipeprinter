@@ -315,14 +315,12 @@ export function PrinterWorkspace({
              stays on show. */
           items={[]}
           workspace
-          /* `mb-cp-5` below, not a bespoke value: the same gap ImportPanel
-             puts between its own mode-toggle row and the form below it
-             (`mt-cp-5` there, on the workspace front door specifically) and
-             between every field inside it (`gap-cp-5`) — matching it here
-             means the tabs read as one more row in that same rhythm rather
-             than a separately spaced header sitting on top of it. */
+          /* `mb-cp-6`/`lg:mb-cp-7` below: more air under the divider than the
+             rhythm ImportPanel keeps between its own rows (`gap-cp-5`), on
+             purpose — the tabs are a header for everything under them, and the
+             hairline reads as a rule that wants space beneath it. */
           aboveModes={
-            <div className="mb-cp-5">
+            <div className="mb-cp-6 lg:mb-cp-7">
               {/* What kind of project this import starts, inside the same
                   card as the sources it's choosing between rather than
                   floating above it. A hairline runs the full width of the row
