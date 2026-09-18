@@ -344,7 +344,7 @@ export function PrinterWorkspace({
                   thumb-sized targets, this is a compact text switch. */}
               <div
                 ref={tabListRef}
-                className="relative isolate -mx-3 -mt-cp-1 flex gap-cp-2 border-b border-[var(--cp-line)] px-3 lg:-mx-cp-6 lg:-mt-cp-3 lg:px-cp-6"
+                className="relative isolate -mx-3 -mt-cp-1 flex gap-cp-4 border-b border-[var(--cp-line)] px-3 lg:-mx-cp-6 lg:-mt-cp-3 lg:px-cp-6"
                 role="tablist"
                 aria-label="What you're printing"
               >
