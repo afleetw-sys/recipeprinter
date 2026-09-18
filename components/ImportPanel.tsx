@@ -415,6 +415,12 @@ export function ImportPanel({
           is nothing to pick between and the row is skipped entirely. */}
       {enabledModes.length > 1 && (
         <div className="mode-toggle-shell">
+          {/* Names the row for the front door only, where it sits directly
+              under the project-type tabs and reads as a second set of tabs
+              without it. The same `field-label` as "Recipe link" below so the
+              two read as one system, and small enough not to bring back the
+              heading this panel dropped (see the aria-label above). */}
+          {workspace && <p className="field-label">Add from</p>}
           <ButtonToggle
             className={`mode-toggle ${expanded ? "mode-toggle--expanded" : ""}`}
             label="Import source"
