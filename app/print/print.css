@@ -6285,6 +6285,7 @@ textarea.recipe-card__toc-title {
 }
 
 .recipe-card__section-title--editable {
+  position: relative;
   cursor: pointer;
 }
 
@@ -6727,6 +6728,7 @@ textarea.recipe-card__toc-title {
    meant "someone is typing in this row", and Add below appeared under the
    caret in the one moment it is certainly not what they are reaching for. */
 .recipe-card__editable-line:hover > .recipe-card__add-line,
+.recipe-card__section-title--editable:hover > .recipe-card__add-line,
 .recipe-card__add-line:focus-visible {
   opacity: 1;
   pointer-events: auto;

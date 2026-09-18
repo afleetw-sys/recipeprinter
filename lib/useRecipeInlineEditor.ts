@@ -295,7 +295,11 @@ function applyRecipeTargetEdit(
 export function sectionForInsertion<T extends { section?: string }>(
   items: T[],
   index: number,
+  sectionHeading?: string,
 ): string | undefined {
+  // A heading sits immediately before its first row. In that one case the
+  // row ABOVE belongs to the previous group, so the heading names the answer.
+  if (sectionHeading !== undefined) return sectionHeading;
   const above = items[index - 1];
   return above ? above.section : items[index]?.section;
 }
@@ -493,7 +497,7 @@ export function useRecipeInlineEditor({
   );
 
   const insertIngredientAt = useCallback(
-    (index: number) => {
+    (index: number, sectionOverride?: string) => {
       if (!activeRecipeItem?.recipe) return;
       // Clicking Add blurs the current field just before the click fires. Build
       // from that in-progress edit directly so the blur/save and insertion can
@@ -502,7 +506,7 @@ export function useRecipeInlineEditor({
         editingEdit?.recipeId === activeRecipeItem.id
           ? applyRecipeTargetEdit(activeRecipeItem.recipe, editingEdit.target, editValue, includeDescription)
           : activeRecipeItem.recipe;
-      const section = sectionForInsertion(recipe.ingredients, index);
+      const section = sectionForInsertion(recipe.ingredients, index, sectionOverride);
       const ingredients = recipe.ingredients.slice();
       ingredients.splice(index, 0, { raw: "", section });
       const nextRecipe = printableRecipe({ ...recipe, ingredients });
@@ -514,13 +518,13 @@ export function useRecipeInlineEditor({
   );
 
   const insertStepAt = useCallback(
-    (index: number) => {
+    (index: number, sectionOverride?: string) => {
       if (!activeRecipeItem?.recipe) return;
       const recipe =
         editingEdit?.recipeId === activeRecipeItem.id
           ? applyRecipeTargetEdit(activeRecipeItem.recipe, editingEdit.target, editValue, includeDescription)
           : activeRecipeItem.recipe;
-      const section = sectionForInsertion(recipe.instructions, index);
+      const section = sectionForInsertion(recipe.instructions, index, sectionOverride);
       const instructions = recipe.instructions.slice();
       instructions.splice(index, 0, { step: 0, text: "", section });
       const renumbered = instructions.map((step, i) => ({ ...step, step: i + 1 }));

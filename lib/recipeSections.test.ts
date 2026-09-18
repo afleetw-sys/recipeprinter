@@ -120,6 +120,11 @@ describe("sectionForInsertion", () => {
   // "Add below row N" inserts at N + 1, which is how every caller addresses it.
   const below = (items: Row[], row: number) => sectionForInsertion(items, row + 1);
 
+  it("inserts below a heading into that heading's section", () => {
+    const items = rows(["flour", "Dough"], ["butter", "Sauce"]);
+    expect(sectionForInsertion(items, 1, "Sauce")).toBe("Sauce");
+  });
+
   it("keeps the last line of a section in that section", () => {
     // The bug this exists for: two sections, Add below the second (last)
     // ingredient of the first one. The row being pushed down is the next

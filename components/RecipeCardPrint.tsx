@@ -678,17 +678,22 @@ export const RecipeCardFace = memo(function RecipeCardFace({
     };
   }
 
-  function insertIngredientAt(index: number) {
-    inlineEdit?.onInsertIngredient(index);
+  function insertIngredientAt(index: number, section?: string) {
+    inlineEdit?.onInsertIngredient(index, section);
   }
 
-  function insertStepAt(index: number) {
-    inlineEdit?.onInsertStep(index);
+  function insertStepAt(index: number, section?: string) {
+    inlineEdit?.onInsertStep(index, section);
   }
 
   // The between-row action appears only after its row has hover/focus. This
   // preserves exact insertion without making the whole gap a click target.
-  function addLine(kind: "ingredient" | "step", index: number, variant: "between" | "empty" = "between") {
+  function addLine(
+    kind: "ingredient" | "step",
+    index: number,
+    variant: "between" | "empty" = "between",
+    section?: string,
+  ) {
     if (!canEdit || !inlineEdit) return null;
     const label = kind === "ingredient" ? "Add ingredient" : "Add step";
     return (
@@ -711,8 +716,8 @@ export const RecipeCardFace = memo(function RecipeCardFace({
         onMouseDown={(event) => {
           event.preventDefault();
           event.stopPropagation();
-          if (kind === "ingredient") insertIngredientAt(index);
-          else insertStepAt(index);
+          if (kind === "ingredient") insertIngredientAt(index, section);
+          else insertStepAt(index, section);
         }}
         onClick={(event) => event.stopPropagation()}
       >
@@ -747,6 +752,7 @@ export const RecipeCardFace = memo(function RecipeCardFace({
           onClick={() => startEdit(target, title)}
         >
           {title}
+          {addLine(kind === "ingredientSection" ? "ingredient" : "step", index, "between", title)}
         </h3>
       );
     }

@@ -731,8 +731,9 @@ export interface RecipeCardInlineEdit {
     liveValue?: string,
   ) => void;
   onCancel: () => void;
-  onInsertIngredient: (index: number) => void;
-  onInsertStep: (index: number) => void;
+  /** A heading supplies its own section when inserting before its first row. */
+  onInsertIngredient: (index: number, section?: string) => void;
+  onInsertStep: (index: number, section?: string) => void;
   onSplitLine: (target: RecipeCardEditTarget, before: string, after: string) => void;
   /**
    * Every line a selection ran across, gone in one go.
