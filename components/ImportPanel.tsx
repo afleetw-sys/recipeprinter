@@ -69,7 +69,6 @@ const RecipeAppsPanel = dynamic(() => loadRecipeApps().then((mod) => mod.RecipeA
 export function ImportPanel({
   items,
   workspace = false,
-  modeLabel,
   initialMode = "url",
   submitLabel = "Add",
   submitBusy = false,
@@ -89,10 +88,6 @@ export function ImportPanel({
 }: {
   items: QueueItem[];
   workspace?: boolean;
-  /** A small label over the source buttons. The front door sets it because
-      the tabs above the card would otherwise leave that row unnamed and reading
-      as a second set of tabs; surfaces whose row needs no name leave it unset. */
-  modeLabel?: string;
   initialMode?: ImportTab;
   submitLabel?: string;
   /** Restricts which sources the toggle offers — the workspace rail and the
@@ -411,12 +406,6 @@ export function ImportPanel({
           is nothing to pick between and the row is skipped entirely. */}
       {enabledModes.length > 1 && (
         <div className="mode-toggle-shell">
-          {/* Names the row for the front door only, where it sits directly
-              under the project-type tabs and reads as a second set of tabs
-              without it. The same `field-label` as "Recipe link" below so the
-              two read as one system, and small enough not to bring back the
-              heading this panel dropped (see the aria-label above). */}
-          {modeLabel && <p className="field-label">{modeLabel}</p>}
           <ButtonToggle
             className={`mode-toggle ${expanded ? "mode-toggle--expanded" : ""}`}
             label="Import source"

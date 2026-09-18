@@ -368,9 +368,6 @@ export function PrinterWorkspace({
              stays on show. */
           items={[]}
           workspace
-          /* Names the source row now that the tabs above it live outside the
-             card and no longer read as its header. */
-          modeLabel="Add from"
           initialMode={initialImportMode}
           submitLabel={importKind === "cookbook" ? "Start my cookbook" : importSubmitLabel}
           submitBusy={opening}
