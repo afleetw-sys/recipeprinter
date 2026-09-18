@@ -420,7 +420,7 @@ export function ImportPanel({
               without it. The same `field-label` as "Recipe link" below so the
               two read as one system, and small enough not to bring back the
               heading this panel dropped (see the aria-label above). */}
-          {workspace && <p className="field-label">Add from</p>}
+          {workspace && aboveModes && <p className="field-label">Add from</p>}
           <ButtonToggle
             className={`mode-toggle ${expanded ? "mode-toggle--expanded" : ""}`}
             label="Import source"
