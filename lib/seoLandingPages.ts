@@ -1263,7 +1263,7 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
       },
       {
         heading: "The useful part is usually in the caption",
-        image: "steps",
+        image: "tiktok-import",
         body:
           "Many TikTok creators put the ingredients and directions in the caption or a pinned comment. RecipePrinter pulls that written recipe out and turns it into a format that is much easier to cook from.",
       },

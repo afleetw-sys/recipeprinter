@@ -41,12 +41,9 @@ export function SiteHeader({
       corner. */
   wordmark?: boolean;
   sticky?: boolean;
-  /** Paints a sticky bar with the off-white `bg-chrome` surface and its
-      dividing hairline. Used by the /print workspace and the shared SEO-page
-      frame; other utility headers remain transparent unless they opt in.
-      `"mobile"` (the SEO frame's own choice) keeps that surface below `sm`
-      only, and goes transparent at `sm` and up. */
-  chrome?: boolean | "mobile";
+  /** Surface for a sticky header. `"page"` matches the page background while
+      keeping scrolled content from showing through the bar. */
+  chrome?: boolean | "mobile" | "page";
   saveStatus?: AccountSaveStatus | null;
   onRetrySave?: () => void;
   onSave?: () => void;
@@ -91,11 +88,12 @@ export function SiteHeader({
                already reserves for "the workspace header, the rail, the
                mobile bars" clears all of them at once. */
             `sticky top-0 z-[var(--z-sticky)] py-[10px] ${
-              /* Explicit callers get the near-white surface and hairline.
-                 Everything else stays transparent; with nothing painted
-                 behind it, a divider would be a stray floating rule.
-                 `"mobile"` drops both again at `sm` and up. */
-              chrome === "mobile"
+              /* Marketing pages use the opaque page surface so scrolled
+                 content cannot show through. Workspace chrome keeps its
+                 separate near-white surface and hairline. */
+              chrome === "page"
+                ? "bg-page"
+                : chrome === "mobile"
                 ? "bg-chrome border-b border-line sm:bg-transparent sm:border-b-0"
                 : chrome
                   ? "bg-chrome border-b border-line"

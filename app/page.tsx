@@ -24,7 +24,7 @@ export default function Home() {
         Skip to the recipe printer
       </a>
 
-      <SiteHeader />
+      <SiteHeader sticky chrome="page" />
 
       <main id="rp-main" className="flex-1 px-cp-6">
         {/* Two measures, on purpose. The front door is a narrow centred column
