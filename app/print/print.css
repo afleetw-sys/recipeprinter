@@ -6208,7 +6208,6 @@ textarea.recipe-card__toc-title {
 }
 
 .recipe-card__label {
-  position: relative;
   font-size: var(--recipe-card-label-size);
   font-weight: 800;
   text-transform: uppercase;
@@ -6218,10 +6217,21 @@ textarea.recipe-card__toc-title {
   margin-bottom: 6px;
 }
 
+/* Anchors "+ Add below" to the label's own text width, not the full-width
+   <h2> — that block spans the whole column, so a right:0 button anchored to
+   IT lands wherever the column happens to end, nowhere near a short word
+   like "Ingredients". Shrink-wrapping this span to its content puts the
+   button right after the word instead, same as it sits right after a row's
+   own (usually line-filling) text. */
+.recipe-card__label-inline {
+  position: relative;
+  display: inline-block;
+}
+
 /* Same hover-reveal as a row's own "+ Add below" (see `.recipe-card__editable-
    line:hover` above) — this one lets a section title go in first, before any
    existing ingredient/step, instead of only ever landing after one. */
-.recipe-card__label:hover > .recipe-card__add-line {
+.recipe-card__label-inline:hover > .recipe-card__add-line {
   opacity: 1;
   pointer-events: auto;
 }

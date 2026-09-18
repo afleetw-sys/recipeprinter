@@ -1096,8 +1096,10 @@ export const RecipeCardFace = memo(function RecipeCardFace({
             ref={ingredientsWide ? ingredientColumns.sectionRef : undefined}
           >
             <h2 className="recipe-card__label">
-              Ingredients
-              {ingredientGroups.length > 0 && addLine("ingredient", 0)}
+              <span className="recipe-card__label-inline">
+                Ingredients
+                {ingredientGroups.length > 0 && addLine("ingredient", 0)}
+              </span>
             </h2>
             {ingredientGroups.length === 0 ? (
               showEmptyIngredients && (
@@ -1173,21 +1175,23 @@ export const RecipeCardFace = memo(function RecipeCardFace({
             ref={methodWide ? methodColumns.sectionRef : undefined}
           >
             <h2 className="recipe-card__label">
-              Steps
-              {side === "front" && hasBackFace && !continued ? (
-                // A cookbook continues on the NEXT LEAF, never on the back of
-                // this one (see `continueOnBack` in lib/usePrintSheets.tsx —
-                // duplex is the recipe-card path only), so "on back" sent the
-                // cook looking at the wrong side of the page.
-                <span className="recipe-card__continued-inline">
-                  {cookbookMode ? " (continued on the next page)" : " (continued on back)"}
-                </span>
-              ) : side === "back" || continued ? (
-                " continued"
-              ) : (
-                ""
-              )}
-              {instructionGroups.length > 0 && addLine("step", 0)}
+              <span className="recipe-card__label-inline">
+                Steps
+                {side === "front" && hasBackFace && !continued ? (
+                  // A cookbook continues on the NEXT LEAF, never on the back of
+                  // this one (see `continueOnBack` in lib/usePrintSheets.tsx —
+                  // duplex is the recipe-card path only), so "on back" sent the
+                  // cook looking at the wrong side of the page.
+                  <span className="recipe-card__continued-inline">
+                    {cookbookMode ? " (continued on the next page)" : " (continued on back)"}
+                  </span>
+                ) : side === "back" || continued ? (
+                  " continued"
+                ) : (
+                  ""
+                )}
+                {instructionGroups.length > 0 && addLine("step", 0)}
+              </span>
             </h2>
             {instructionGroups.length === 0 ? (
               showEmptyInstructions && (
