@@ -1253,19 +1253,20 @@
   }
 
   /* The one button that IS the Pro upsell, not a lock badge marking some
-     other control as gated behind it — `--cp-premium`/`--cp-premium-soft`
-     are the reserved "this costs money" semantic (see the note above their
-     definitions), so this reuses that meaning rather than inventing a
-     colour, and stays a tint-and-ink outline rather than a solid fill for
-     the same contrast reason the crown badge does. */
+     other control as gated behind it — `--cp-premium` is the reserved "this
+     costs money" semantic (see the note above its definition), so this reuses
+     that meaning rather than inventing a colour. A secondary button in gold:
+     the same shape as `.btn-secondary` with the gray outline swapped for the
+     premium one and NO fill, so it reads as quieter than Print beside it. The
+     border is the full premium ink, not a tint of it — the light gold is under
+     3:1 against the bar. */
   .btn-premium {
-    border: 1px solid color-mix(in srgb, var(--cp-premium) 45%, transparent);
-    background: var(--cp-premium-soft);
+    border: 1px solid var(--cp-premium);
+    background: transparent;
     color: var(--cp-premium);
   }
   .btn-premium:hover:not(:disabled) {
-    border-color: var(--cp-premium);
-    background: color-mix(in srgb, var(--cp-premium-soft) 82%, var(--cp-premium) 8%);
+    background: var(--cp-premium-soft);
   }
 
   /* Ghost / icon */
@@ -2147,193 +2148,6 @@
     letter-spacing: .02em;
     line-height: 1.1;
     text-transform: uppercase;
-  }
-
-  .rp-project-heading {
-    @apply flex flex-row items-center;
-    /* Names run long — "Original NESTLÉ TOLL HOUSE Chocolate Chip Cookies" is
-       a real one — and this corner has the room, since the only things
-       competing for it are two buttons and an avatar. Still a cap rather than
-       none, so a pathological title cannot push them off the bar. */
-    max-width: min(52vw, 40rem);
-    gap: 2px;
-    min-width: 0;
-    /* Zero, not a gap: both children already carry padding for their own hover
-       targets, so the visible space between them is that padding. The name and
-       what kind of thing it is are one label on two lines, and they should sit
-       like one. (`gap` rejects negative values, so tightening further is the
-       children's line-height and padding, below — not a negative gap here.) */
-    gap: 0;
-    min-width: 0;
-  }
-
-  /* Reads as text until you go near it, then as something you can act on.
-     A control that announces itself with a border at rest would compete with
-     the buttons either side of it for a job that is mostly just a label. */
-  .rp-project-heading__title {
-    @apply max-w-full truncate rounded font-bold transition-colors;
-    /* Room for the ellipsis to be the exception rather than the rule. */
-    min-width: 0;
-    padding: 1px 6px;
-    border: 1px solid transparent;
-    background: transparent;
-    color: var(--cp-ink);
-    font-size: var(--cp-fs-body);
-    line-height: 1.2;
-    cursor: text;
-  }
-
-  .rp-project-heading__title:hover {
-    background: var(--cp-overlay-hover);
-  }
-
-  .rp-project-heading__title:focus-visible {
-    border-color: var(--cp-accent);
-    outline: none;
-  }
-
-  /* Same box as the title it replaces, so renaming doesn't move the bar. */
-  .rp-project-heading__input {
-    @apply w-full rounded font-bold;
-    max-width: 22rem;
-    padding: 2px 8px;
-    border: 1px solid var(--cp-accent);
-    background: var(--cp-card);
-    color: var(--cp-ink);
-    font-size: var(--cp-fs-body);
-    line-height: 1.25;
-    outline: none;
-  }
-
-  /* `flex`, not a plain block: an inline-flex child inside a block sits on a
-     text baseline and the line box adds descender space under it — about 6px
-     of gap that belongs to nothing and cannot be tuned away with padding. */
-  /* Only the kind control — a draft has no name to show. Nothing to cap or
-     truncate, and no left-hand sibling for the tabs to sit beside, so the
-     margin that parts them goes too. */
-  .rp-project-heading--kind-only {
-    max-width: none;
-  }
-  .rp-project-heading--kind-only .rp-project-heading__kinds {
-    margin-left: 0;
-  }
-
-  /* Header-sized tabs. The shared segmented control is built for a settings
-     panel, where it is a primary choice with room around it and deliberately
-     has no track; here it sits in a 62px bar beside the document's name, and
-     it is the control that says WHICH DOCUMENT you are looking at, so it
-     takes a tab bar's shape instead: a recessed grey track with the selected
-     tab lifted out of it in card white.
-
-     The selector doubles up on `.segmented-control` on purpose. The base rule
-     in print.css sets `background: transparent` at the same specificity and
-     loads after this file, so a single class here silently lost the track and
-     left the pair looking like two bare labels.
-
-     Sizing is measured against the buttons beside it, not against the zoom
-     control: Save, Print and the avatar are all 30px, and a track that wraps
-     30px tabs is 38px, which made the one control naming the document the
-     tallest thing in a 62px bar. The tabs carry the padding instead, so the
-     OUTER height is 30px and the row lines up. Radius follows the family's
-     rule of inner + padding, so the track's corner stays concentric with the
-     tab's.
-
-     The shell is `.btn-secondary`: transparent on a hairline. The fill is
-     spent on the selected tab instead, which is the thing worth pointing at.
-     A filled track with a white tab in it puts the strongest value in the
-     part that carries no information. */
-  .segmented-control.rp-project-heading__kinds {
-    flex: 0 0 auto;
-    margin-left: 8px;
-    padding: 3px;
-    border: 0;
-    border-radius: 11px;
-    /* Our own grey as the ground, the selection lifted out of it in card
-       white. The track does the grouping so no frame is needed, and the
-       white tab is the only thing that has to be found. */
-    background: var(--cp-surface-strong);
-  }
-
-  .rp-project-heading__kinds .segmented-control__option {
-    min-height: 24px;
-    padding: 0 10px;
-    font-size: var(--cp-fs-small);
-    font-weight: 700;
-    border-radius: 8px;
-  }
-
-  /* The selected tab is the only filled thing here, in the app's one grey.
-     No shadow: it sits IN the control rather than over it, and the flat rule
-     keeps elevation for things that actually float.
-
-     `inset` matters: the base thumb is `top: 0; bottom: 0` because the base
-     track has no padding. Here it does, so an unadjusted thumb spanned the
-     full shell while the tab it marks was shorter — the pill sat taller than
-     its own label and read as misaligned rather than as a tab. */
-  .segmented-control.rp-project-heading__kinds .segmented-control__thumb {
-    top: 3px;
-    bottom: 3px;
-    /* 8px inside 11px outside: the same inner + padding relationship the zoom
-       control and the page toolbar use, so the corner stays concentric. */
-    border-radius: 8px;
-    border: 1px solid var(--cp-line);
-    background: var(--cp-card);
-    box-shadow: none;
-  }
-
-
-  .rp-project-heading__kind {
-    @apply relative flex items-center;
-    flex: 0 0 auto;
-  }
-
-  /* A chip, not a word with a chevron after it. Filled and enclosed, it reads
-     as a piece of METADATA about the document — the same way a branch name
-     does beside a file name — rather than as part of the title. That also
-     makes it obviously pressable, which bare text next to a name was not:
-     nothing said the kind could be changed. */
-  /* This is the SAME control as the kind tabs, collapsed because the bar ran
-     out of room — so it is the same size and wears the same frame. It used to
-     be a 22px chip in a row of 30px controls, which made the document's own
-     name look like a footnote next to Save and Print, and made the two ways of
-     showing one choice look like two different things. */
-  .rp-project-heading__kind-trigger {
-    @apply inline-flex items-center gap-1 font-bold transition-colors;
-    /* Filled, not outlined, and tighter than the tabs it stands in for. This
-       is the collapsed form of the kind control, and the expanded one is a
-       filled grey track — an outline here made the same choice look like a
-       different kind of control depending on how much room the bar had. */
-    min-height: 22px;
-    padding: 0 5px 0 8px;
-    border: 0;
-    border-radius: 7px;
-    background: var(--cp-surface-strong);
-    color: var(--cp-ink);
-    font-size: var(--cp-fs-caption);
-    line-height: 1;
-  }
-
-  .rp-project-heading__kind-trigger:hover {
-    background: var(--cp-surface-strong-hover);
-    color: var(--cp-ink);
-  }
-
-  .rp-project-heading__kind-trigger:focus-visible {
-    outline: var(--cp-focus-ring);
-    outline-offset: 1px;
-  }
-
-  /* Left-anchored, not centred. This menu's trigger is the first thing in the
-     header, hard against the left edge, and the menu is up to 20rem wide — so
-     centring it on the trigger hung most of it off the left of the window,
-     with the option labels cut in half. It grows rightward into the header
-     instead, where there is nothing but room. */
-  .rp-project-heading__menu {
-    position: absolute;
-    top: calc(100% + 8px);
-    left: 0;
-    width: max-content;
-    max-width: min(20rem, calc(100vw - 32px));
   }
 
   .rp-save-state {

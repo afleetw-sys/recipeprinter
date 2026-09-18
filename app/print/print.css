@@ -850,6 +850,24 @@
   gap: 8px;
 }
 
+/* A cookbook's recipe count and whether it is kept, above Add recipes. */
+.recipe-page-rail__book {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.recipe-page-rail__book-meta {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 4px 8px;
+  margin: 0;
+  padding: 0 2px;
+  font-size: var(--cp-fs-caption);
+  color: var(--cp-ink-soft);
+}
+
 .recipe-page-rail__add-row {
   position: relative;
   display: flex;
@@ -2131,24 +2149,6 @@
   border-color: var(--cp-accent);
   background: var(--cp-card);
   color: var(--cp-accent);
-}
-
-/* Quiet "you own this" acknowledgement in the Book Settings header, so a
-   purchased cookbook reads as paid-for even for a signed-in owner (who never
-   sees the back-up bar). */
-.recipe-purchased-chip {
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-  flex: 0 0 auto;
-  padding: 3px 9px;
-  border-radius: 999px;
-  /* Neutral, matching the owned marker on a template tile: both say "you
-     already have this", and a settled state is not a notice. */
-  background: var(--cp-surface-strong);
-  color: var(--cp-ink);
-  font-size: var(--cp-fs-caption);
-  font-weight: 700;
 }
 
 /* Book-wide "Photos" style (cookbook Print setup) — three visual tiles, each a

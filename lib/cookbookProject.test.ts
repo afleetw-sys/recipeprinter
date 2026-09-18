@@ -1,7 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
   deleteSectionFromMeta,
-  isLegacyCookbookMechanism,
   moveItemsInMeta,
   normalizeProjectMeta,
   projectDisplayTitle,
@@ -282,44 +281,5 @@ describe("a name the cook typed", () => {
 
   it("is not kept when it is only whitespace", () => {
     expect(normalizeProjectMeta({ sections: [], projectTitle: "   " }).projectTitle).toBeUndefined();
-  });
-});
-
-describe("distinguishing the old shared-document cookbook mechanism from a copy", () => {
-  it("is not legacy for a bare cards project that has never been a cookbook", () => {
-    expect(isLegacyCookbookMechanism({})).toBe(false);
-  });
-
-  it("is legacy once a book has been stashed by exitCookbook", () => {
-    expect(
-      isLegacyCookbookMechanism({
-        stashedCookbook: { sections: [] },
-      }),
-    ).toBe(true);
-  });
-
-  it("is legacy for a document already saved with cookbookMode true", () => {
-    expect(isLegacyCookbookMechanism({ cookbookMode: true })).toBe(true);
-  });
-
-  it("is never legacy for a document born from the copy primitive, even once cookbookMode is true", () => {
-    // The exact ambiguity isLegacyCookbookMechanism exists to resolve: a
-    // document lib/projectCopy.ts created looks structurally identical to a
-    // legacy in-place conversion once saved (cookbookMode true, no stash).
-    expect(
-      isLegacyCookbookMechanism({
-        cookbookMode: true,
-        sourceProjectId: "source-1",
-      }),
-    ).toBe(false);
-  });
-
-  it("a sourceProjectId wins even over a stash", () => {
-    expect(
-      isLegacyCookbookMechanism({
-        stashedCookbook: { sections: [] },
-        sourceProjectId: "source-1",
-      }),
-    ).toBe(false);
   });
 });

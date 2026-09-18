@@ -134,6 +134,9 @@ interface PageRailProps {
       recipe" (singular) while the badge had already appeared beside it —
       neither of this button's two intended states. */
   hasRecipes: boolean;
+  /** A cookbook's name, recipe count and save state, shown above Add recipes.
+      Absent for recipe cards, which have no name of their own. */
+  bookHeader?: ReactNode;
   /** Whether the NEXT recipe added here would be the one that requires Pro —
       true once a project already has a recipe and the customer lacks Pro
       (see `hasMultiRecipeEntitlement` in lib/recipePrinterPurchases.ts).
@@ -215,6 +218,7 @@ interface PageRailProps {
 export function PageRail(props: PageRailProps) {
   const {
     hasRecipes,
+    bookHeader,
     multiRecipeAddLocked,
     railScrollRef,
     railDrag,
@@ -479,6 +483,7 @@ export function PageRail(props: PageRailProps) {
               gives. */}
           {!organizeMode && (
             <div className="recipe-page-rail__head">
+              {bookHeader}
               {/* Adding a recipe gets the rail's full width. It had been
                   squeezed onto one line beside a recipe count, which cost the
                   primary action of this panel most of its size to state a
@@ -502,7 +507,7 @@ export function PageRail(props: PageRailProps) {
                     already matched them; the icon was a step down, which made the
                     whole button read as smaller than the ones in the header. */}
                 <PlusIcon size={ICON_SIZE.md} />
-                {hasRecipes ? "Add more recipes" : "Add recipe"}
+                {hasRecipes ? (projectMeta.meta.cookbookMode ? "Add recipes" : "Add more recipes") : "Add recipe"}
                 {multiRecipeAddLocked && <ProBadge variant="inline" label={false} />}
               </button>
               {/* "Add chapter" is NOT here. This whole header only renders when

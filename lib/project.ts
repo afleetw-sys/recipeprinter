@@ -118,9 +118,7 @@ export interface ProjectMeta {
   projectId?: string;
   /** See `PrintProject.sourceProjectId` (types/recipe.ts) — set once, at
       creation, by `lib/projectCopy.ts`. Identifies the project this one was
-      copied from. Absent means either a legacy document (still using the
-      reversible `cookbookMode`/`stashedCookbook` toggle) or one that has
-      never been copied. See `isLegacyCookbookMechanism`. */
+      copied from. Absent means it has never been copied. */
   sourceProjectId?: string;
   cover?: CoverConfig;
   /**
@@ -172,18 +170,12 @@ export interface ProjectMeta {
   cookbookIntent?: boolean;
   /** Set alongside `cookbookIntent`, but never consumed — this one survives
       into the scaffolded book itself. `cookbookIntent` only says "open as a
-      book on arrival"; once `scaffoldCookbook` runs, the project looks
-      structurally identical to a document converted in place by the old
-      reversible toggle (`cookbookMode: true`, no `sourceProjectId`), which
-      is exactly what `isLegacyCookbookMechanism` reads as legacy. This flag
-      is the difference: it means the project was born a cookbook — there is
-      no prior recipe-cards state for it to ever switch back to — so it
-      should never be treated as legacy, no matter what `scaffoldCookbook`
-      does to `cookbookMode`/`stashedCookbook` after this is set. */
+      book on arrival"; once `scaffoldCookbook` runs, this records that the
+      project was born a cookbook, with no prior recipe-cards state. */
   cookbookBornFresh?: boolean;
   /** The print-format preset this cookbook exports at (trim/bleed/margin/gutter
       — see lib/cookbookPresets.ts). Absent = the default preset. Cookbook-only;
-      cleared by `exitCookbook`. */
+      cleared when the project stops being a cookbook. */
   cookbookPreset?: CookbookPresetId;
   /** Section metadata only (id/title/order/chapter-opener fields) — item ids,
       not recipe content. `photoUrl`/`intro` drive the cookbook chapter opener. */
@@ -193,9 +185,10 @@ export interface ProjectMeta {
       lifecycle stays untouched by a book-only concern (see the type's comment).
       Absent/`full` = one card per sheet, i.e. today's behavior. */
   itemPlacements?: Record<string, RecipePagePlacement>;
-  /** Set by `exitCookbook` when the cook switches back to plain recipe cards:
-      the whole book (cover, chapters, layouts, settings) tucked away so a later
-      `restoreCookbook` brings it back exactly. Absent = no book to restore.
+  /** A book set aside by the old in-place "back to recipe cards" switch, which
+      no longer exists: the whole book (cover, chapters, layouts, settings)
+      tucked away so `restoreCookbook` can bring it back exactly. Nothing writes
+      one any more; documents saved before that still carry it. Absent = no book to restore.
       Never read by the renderer — recipe-cards mode sees a meta with no
       cookbook fields, identical to a project that never had a book. */
   stashedCookbook?: StashedCookbook;
@@ -549,36 +542,6 @@ export function projectDisplayTitle(
   return meta.cookbookMode ? "Untitled cookbook" : "Recipe cards";
 }
 
-/**
- * Whether this document is still on the old shared-document mechanism — one
- * project id serving both "recipe cards" and "cookbook" as a reversible
- * `cookbookMode` toggle, with `exitCookbook`/`restoreCookbook` shuffling the
- * book into and out of `stashedCookbook`.
- *
- * Two ways to be exempt. A document born from `lib/projectCopy.ts`'s old
- * one-way "make a cookbook from these recipes" / "make recipe cards from
- * this book" action carried `sourceProjectId` from the moment it was
- * created — that mechanism is gone, but a document one already produced
- * keeps reading as non-legacy forever. A document born straight from the
- * homepage's Cookbook tab carries `cookbookBornFresh` instead: it was never
- * recipe cards to begin with, so there is nothing for it to fall back to.
- * Either way, the point is the same — `cookbookMode: true` with no
- * `stashedCookbook` is structurally identical whether a document got there
- * by the old in-place toggle or by starting there, and only these flags
- * say which one actually happened.
- *
- * Without either flag, a `stashedCookbook` or a saved `cookbookMode` means
- * this document has already gone through `exitCookbook`/`scaffoldCookbook`
- * — the only code paths that ever produce either — so it keeps the old
- * reversible toggle for good.
- */
-export function isLegacyCookbookMechanism(
-  meta: Pick<ProjectMeta, "stashedCookbook" | "cookbookMode" | "sourceProjectId" | "cookbookBornFresh">,
-): boolean {
-  if (meta.sourceProjectId || meta.cookbookBornFresh) return false;
-  return Boolean(meta.stashedCookbook) || Boolean(meta.cookbookMode);
-}
-
 export function useProjectMeta() {
   const [meta, setMeta] = useState<ProjectMeta>(EMPTY_META);
   const [hydrated, setHydrated] = useState(false);
@@ -913,64 +876,7 @@ export function useProjectMeta() {
     [update],
   );
 
-  /** Leaving cookbook mode returns to a plain print job WITHOUT discarding the
-      book: every cookbook-only artifact — cover, back cover, chapters/dividers,
-      table of contents, per-recipe page layouts, and book settings — is tucked
-      into `stashedCookbook` so `restoreCookbook` can bring it back untouched.
-      The recipes themselves live in the queue; clearing `sections` collapses
-      them into one implicit untitled section for card printing (see
-      `buildSections`). */
-  const exitCookbook = useCallback(() => {
-    update((current) => {
-      const stashedCookbook: StashedCookbook = {
-        cover: current.cover,
-        backCover: current.backCover,
-        dedication: current.dedication,
-        frontMatter: current.frontMatter,
-        photoStyle: current.photoStyle,
-        tableOfContents: current.tableOfContents,
-        tocKicker: current.tocKicker,
-        tocTitle: current.tocTitle,
-        railSortMode: current.railSortMode,
-        sectionDividers: current.sectionDividers,
-        cookbookPreset: current.cookbookPreset,
-        sections: current.sections,
-        itemPlacements: current.itemPlacements,
-      };
-      return {
-        projectId: current.projectId,
-        // A name the cook gave this PROJECT, not to the book inside it, so it
-        // survives the book being set aside. It is not in the stash for the
-        // same reason: stashing it would hand the name back only on the way
-        // into cookbook mode, and a card job is equally entitled to be called
-        // something. Dropping it here is how "print as recipe cards instead"
-        // used to quietly rename someone's project.
-        projectTitle: current.projectTitle,
-        // Recipe cards, stated rather than merely absent.
-        //
-        // Leaving it unset read as cards everywhere in memory, so the switch
-        // looked like it worked — but an unset field is dropped on the way into
-        // Firestore, and a reopened document with no `settings.cookbookMode`
-        // falls back to asking what KIND it is. The kind is still "cookbook"
-        // (the stash is the book, and it has to stay one so a purchase and a
-        // cover survive), so every saved card job that had ever been a cookbook
-        // came back as a cookbook. Choosing recipe cards only lasted as long as
-        // the tab.
-        cookbookMode: false,
-        cookbookWelcomeCompleted: current.cookbookWelcomeCompleted,
-        // How this cook adds recipes is not a cookbook idea, and this object
-        // replaces the meta wholesale — anything not named here is dropped. A
-        // book filled by pasting text is still filled by pasting text once it
-        // is a stack of cards. Deliberately NOT in the stash above for the same
-        // reason: the stash hands things back only on the way INTO a book.
-        lastImportSource: current.lastImportSource,
-        sections: [],
-        stashedCookbook,
-      };
-    });
-  }, [update]);
-
-  /** Re-enters cookbook mode from the stash left by `exitCookbook`, restoring
+  /** Re-enters cookbook mode from a stash saved with the document, restoring
       the cover, chapters, layouts, and every book setting in a single commit.
       Returns false (a no-op) when nothing is stashed, so the caller can fall
       back to scaffolding a fresh book. */
@@ -1160,7 +1066,6 @@ export function useProjectMeta() {
     setSectionDividers,
     setCookbookMode,
     setCookbookPreset,
-    exitCookbook,
     restoreCookbook,
     setItemPlacement,
     setItemPhotoMode,

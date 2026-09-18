@@ -155,7 +155,7 @@ export function PrintSetupControls({
               hand-typed recipes the checkbox would govern nothing. */}
           {anyRecipeHasDescription && (
             <Checkbox
-              label="Website description"
+              label="Description"
               checked={showDescription}
               onChange={(event) => setShowDescription(event.target.checked)}
             />

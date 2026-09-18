@@ -6,7 +6,6 @@ import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { SiteHeader } from "@/components/SiteHeader";
 import { SAVE_FAILURES, SAVE_STATUS_LABEL } from "@/components/AccountControl";
-import { ProjectHeading } from "@/components/print/ProjectHeading";
 import { fileProjectLocally } from "@/lib/localProjects";
 import type { AccountSaveStatus } from "@/components/AccountControl";
 import { FeedbackDialog } from "@/components/FeedbackButton";
@@ -42,10 +41,8 @@ import {
 import {
   buildSections,
   namedSectionCount,
-  projectDisplayTitle,
   defaultSectionGridImages,
   resolveSectionPhotoMode,
-  isLegacyCookbookMechanism,
   useProjectMeta,
   type ProjectMeta,
   type PhotoStyle,
@@ -100,7 +97,7 @@ import {
   hasProEntitlement,
 } from "@/lib/recipePrinterPurchases";
 import { resolveEffectiveCustomerInfo } from "@/lib/proAccessFallback";
-import { COOKBOOK_ENABLED, isFirstCookbookDiscountEligible } from "@/lib/cookbookProduct";
+import { isFirstCookbookDiscountEligible } from "@/lib/cookbookProduct";
 import {
   DEFAULT_COOKBOOK_PRESET_ID,
   getCookbookPreset,
@@ -114,6 +111,7 @@ import {
 } from "@/lib/cookbookOrganizer";
 import {
   BookIcon,
+  CheckIcon,
   ChevronLeftIcon,
   ChevronRightIcon,
   CrownIcon,
@@ -123,7 +121,6 @@ import {
   LinkIcon,
   PlusIcon,
   PrintIcon,
-  SaveIcon,
   SizeIcon,
   SpinnerIcon,
   TemplateIcon,
@@ -542,6 +539,9 @@ export default function PrintPage() {
   const lastSavedCookbookModeRef = useRef<boolean>(false);
   const lastAttemptedFingerprintRef = useRef<string | null>(null);
   const saveInFlightRef = useRef(false);
+  /** The first save of a new cookbook is made on the cook's behalf, so it does not
+      announce "Saved to your account" the way a Save they pressed does. */
+  const quietFirstSaveRef = useRef(false);
   /**
    * Which write the page is currently waiting on.
    *
@@ -1498,10 +1498,9 @@ export default function PrintPage() {
   }
 
   // Turning a print job into a cookbook shouldn't drop the cook into an empty
-  // shell — scaffold the book they'd have built by hand. Reached two ways:
-  // the reversible toggle (`startCookbook`/`exitCookbookToCards`) for a
-  // legacy document — see `isLegacyCookbookMechanism` — and the pending-import
-  // effect above, for a fresh project born from the homepage's Cookbook tab.
+  // shell — scaffold the book they'd have built by hand. Reached from the
+  // pending-import effect above, for a fresh project born from the homepage's
+  // Cookbook tab.
   function scaffoldCookbook() {
     // A cookbook is a bound book, never a 4×6 card, and it wants its photos.
     // These are component-level (not meta), so they apply whether we restore a
@@ -1551,68 +1550,10 @@ export default function PrintPage() {
       setCookbookBuilding(false);
       if (!offerAfter) return;
       // The offer lands on top of the finished book, not in front of an idea of
-      // one. See `startCookbook`.
+      // one: someone should see a book before being asked to pay for one.
       track("cookbook_welcome_shown", { price: cookbookPrice, recipeCount: items?.length ?? 0 });
       setShowCookbookOfferDialog(true);
     }, 1650);
-  }
-
-  /**
-   * Switching the kind control from Recipe cards to Cookbook. One path, every
-   * time: the build reveal, then the offer over the finished book.
-   *
-   * This used to fork three ways on whether the welcome had been seen and
-   * whether a stash existed, and two of those forks were worse. A returning
-   * book got a bare 650ms spinner instead of the reveal; a *second* book got
-   * no loading state at all — it snapped over mid-relayout — and never fired
-   * `cookbook_workspace_entered`, so every book after someone's first was
-   * invisible in analytics. That last branch went from rare to normal once
-   * `cookbookWelcomeCompleted` started surviving `startNewProject`.
-   *
-   * Nothing was gained for the branching: `scaffoldCookbook` already decides
-   * restore-vs-fresh on its own, from `stashedCookbook`.
-   */
-  function startCookbook() {
-    // Build first, ask second.
-    //
-    // The offer used to open the moment the kind control moved to Cookbook, on
-    // top of a screen of loose cards: someone had to buy the idea of a book
-    // before ever seeing one. Switching the mode first means
-    // the reveal runs, their own recipes assemble into a cover and chapters,
-    // and the offer arrives over the finished article.
-    //
-    // Safe to show the book before the money: `cookbookLocked` only watermarks
-    // the PRINT, and the switch is reversible either way — the book is stashed
-    // on the same project id, so "Back to recipe cards" puts everything back.
-    beginCookbookBuild({ offerAfter: true });
-  }
-
-  /**
-   * Recipe cards ↔ Cookbook. One document, one id, two modes.
-   *
-   * This used to do two extra things, and both were wrong.
-   *
-   * It showed a confirm dialog, for an action that loses nothing: the book is
-   * tucked into `stashedCookbook` and — since that stash is now persisted with
-   * the saved document — comes back intact on the way in.
-   *
-   * Worse, for any saved book it minted a fresh project id first, on the
-   * reasoning that a card job must never autosave over the cookbook. But the
-   * PURCHASE hangs off the project id, and `restoreCookbook` brings the book
-   * back under whatever id is current — so toggling out of a paid cookbook and
-   * back returned the book on a brand-new id with no unlock attached, and asked
-   * the cook to buy the book they had already bought. On unpaid books the same
-   * fork simply manufactured the duplicate projects `lib/duplicateProjects.ts`
-   * exists to sweep up, once per curious click.
-   *
-   * Keeping the id makes both problems go away: the document holds either an
-   * active book or a card job with the book stashed beside it, the unlock stays
-   * attached either way, and the switch is genuinely reversible — which is the
-   * only thing that justified it being a toggle in the first place.
-   */
-  function exitCookbookToCards() {
-    track("cookbook_exited", { recipeCount: items?.length ?? 0 });
-    projectMeta.exitCookbook();
   }
 
   // The single per-recipe photo axis, matching the book-wide "Photos" control:
@@ -2548,9 +2489,10 @@ export default function PrintPage() {
       // `renderSaveControl`), and a cook who never sees it again
       // shouldn't have to guess why. Not shown again after this — every
       // later save already looks exactly like what this promises.
-      if (isFirstSave) {
+      if (isFirstSave && !quietFirstSaveRef.current) {
         setToastMessage("Saved to your account. We'll autosave from here on.");
       }
+      quietFirstSaveRef.current = false;
     } catch (error) {
       console.warn("RecipePrinter: could not save project", error);
       if (!current()) return;
@@ -3327,19 +3269,6 @@ export default function PrintPage() {
    */
   const printWatermarked = proLocked || cookbookLocked;
 
-  /**
-   * What the header calls this project. Inherits the cookbook's cover title
-   * unless it has been renamed, and falls back to the recipes themselves —
-   * "Banana Bread + 2 more" tells you which project this is, and "Recipe cards"
-   * does not.
-   */
-  const firstRecipeTitle = items?.find((item) => item.recipe)?.recipe?.title;
-  const headingTitle = projectDisplayTitle(
-    projectMeta.meta,
-    firstRecipeTitle,
-    Math.max((items?.length ?? 0) - 1, 0),
-  );
-
   // Nothing on the deck yet — recipe cards read `navItems`, a cookbook reads
   // `spreads` (cookbookView is itself `spreads.length > 0`, so this only ever
   // fires in the recipe-cards case, but checking both keeps this correct if
@@ -3851,6 +3780,80 @@ export default function PrintPage() {
    */
   const autosaveEnabledForCurrentMode = autosaveEnabled && lastSavedCookbookModeRef.current === cookbookMode;
 
+  /**
+   * A cookbook signed in cooks build is kept from the moment it exists.
+   *
+   * Recipe cards still wait for a first Save press (see `autosaveEnabled`), but
+   * a book is not a Tuesday's dinner print: making one is deliberate, and it is
+   * the thing most worth not losing. This is the one save nobody presses. It
+   * fires once per project, after the build reveal has finished so the book
+   * that lands is the finished one and not the empty shell, and it hands over
+   * to the ordinary autosave the moment it lands (`savedProjectId` is set,
+   * and `lastSavedCookbookModeRef` now agrees with the mode).
+   *
+   * The two reasons cookbooks lost this before are answered differently. A card
+   * job that was once a cookbook no longer counts — the switch back to recipe
+   * cards is gone, and this reads `cookbookMode`, never the stash. And the save
+   * is not silent: the rail says "Saving…" then "Saved" beside the recipe
+   * count, and a failure surfaces in the header with a retry.
+   */
+  const cookbookCreateSaveRef = useRef<string | null>(null);
+  useEffect(() => {
+    if (!cookPilotUser || !cookbookMode || savedToProfile) return;
+    if (projectLoading || !projectAttachChecked || cookbookBuilding || !items?.length) return;
+    if (cookbookCreateSaveRef.current === cookbookProjectId) return;
+    cookbookCreateSaveRef.current = cookbookProjectId;
+    quietFirstSaveRef.current = true;
+    void handleSaveProject();
+    // handleSaveProject reads the latest render state, like the autosave below.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [
+    cookPilotUser,
+    cookbookMode,
+    savedToProfile,
+    projectLoading,
+    projectAttachChecked,
+    cookbookBuilding,
+    items,
+    cookbookProjectId,
+  ]);
+
+
+  /**
+   * How many recipes a cookbook holds, and whether it is kept — at the top of
+   * the page rail, above Add recipes. There is no separate name for the book
+   * here: its title is the one on its cover, edited on the page itself, and the
+   * header keeps the product's name the way every other page does.
+   *
+   * Saved is only ever said for a signed-in cook whose book is in the account
+   * (`savedToProfile`) or is on its way there. A failure is not repeated here:
+   * the header's save control already carries it, with the retry.
+   */
+  const bookSaveNote =
+    cookPilotUser && saveStatus === "saving" ? (
+      <span className="rp-save-status" role="status" aria-live="polite">
+        <SpinnerIcon size={ICON_SIZE.sm} />
+        {SAVE_STATUS_LABEL.saving}
+      </span>
+    ) : cookPilotUser && savedToProfile && !(saveStatus && SAVE_FAILURES.has(saveStatus)) ? (
+      <span className="rp-save-status" role="status" aria-live="polite">
+        <CheckIcon size={ICON_SIZE.sm} />
+        {SAVE_STATUS_LABEL.saved}
+      </span>
+    ) : null;
+  const railBookHeader = cookbookMode ? (
+    <div className="recipe-page-rail__book">
+      <p className="recipe-page-rail__book-meta">
+        <span>
+          {recipeCount} {recipeCount === 1 ? "recipe" : "recipes"}
+        </span>
+        {bookSaveNote && <span aria-hidden>·</span>}
+        {bookSaveNote}
+      </p>
+    </div>
+  ) : null;
+
+
   useEffect(() => {
     if (projectLoading || !projectAttachChecked || !items?.length) return;
     // A draft nobody asked to keep, or a mode nobody has saved yet. The
@@ -4108,15 +4111,15 @@ export default function PrintPage() {
       // rare "put this in my account" button sees it respond — the one
       // case above where showing nothing would read as broken rather
       // than automatic, because nothing has EARNED "automatic" yet.
-      if (saveStatus === "saving" && !savedToProfile) {
+      if (saveStatus === "saving" && !savedToProfile && !(cookbookMode && cookPilotUser)) {
         return (
           <span
-            className="icon-button icon-button--compact"
+            className="btn btn-secondary btn-compact"
             role="status"
             aria-live="polite"
-            aria-label={SAVE_STATUS_LABEL.saving}
           >
             <SpinnerIcon size={ICON_SIZE.md} />
+            {SAVE_STATUS_LABEL.saving}
           </span>
         );
       }
@@ -4137,16 +4140,14 @@ export default function PrintPage() {
     return (
       <button
         type="button"
-        className="icon-button icon-button--compact"
+        className="btn btn-secondary btn-compact"
         onClick={() => void handleSaveProject()}
-        /* Naming which thing is being kept, given how separate a cookbook
-           and its recipe cards are meant to feel even though they share one
-           save today — carried on aria-label now that the button is
-           icon-only; ActionTitles (components/ActionTitles.tsx) turns this
-           into the same native hover title the text used to give for free. */
+        /* The visible word is just "Save"; the label still says which thing
+           is being kept, given how separate a cookbook and its recipe cards
+           are meant to feel even though they share one save today. */
         aria-label={cookbookMode ? "Save cookbook" : "Save"}
       >
-        <SaveIcon size={ICON_SIZE.md} />
+        Save
       </button>
     );
   }
@@ -4303,10 +4304,8 @@ export default function PrintPage() {
     if (!projectMeta.meta.cookbookIntent) return;
     if (items === null || projectLoading || projectMeta.meta.cookbookMode) return;
     projectMeta.clearCookbookIntent();
-    // `beginCookbookBuild`, not `startCookbook`: the latter opens the offer
-    // dialog for anyone who hasn't seen it, and pitching the cookbook to
-    // someone who just clicked "New cookbook" is asking a question they have
-    // already answered.
+    // No `offerAfter`: pitching the cookbook to someone who just clicked
+    // "New cookbook" is asking a question they have already answered.
     beginCookbookBuild();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [projectMeta.meta.cookbookIntent, projectMeta.meta.cookbookMode, items === null, projectLoading]);
@@ -5340,7 +5339,7 @@ export default function PrintPage() {
     }[projectAccess];
     return (
       <div className="h-full flex flex-col">
-        <SiteHeader sticky chrome wordmark={false} />
+        <SiteHeader sticky chrome />
         <div className="flex-1 flex flex-col items-center justify-center gap-cp-4 text-center px-cp-6">
           <div className="flex h-16 w-16 items-center justify-center rounded-full bg-[var(--cp-accent-warm)]">
             <BookIcon size={28} className="text-[var(--cp-on-accent-warm)]" />
@@ -5404,7 +5403,7 @@ export default function PrintPage() {
   ) {
     return (
       <div className="h-full flex flex-col">
-        <SiteHeader sticky chrome wordmark={false} />
+        <SiteHeader sticky chrome />
         <RecipeLoadingState
           className="flex-1"
           label={accountProjectId ? "Loading your project…" : "Preparing…"}
@@ -5433,49 +5432,17 @@ export default function PrintPage() {
         <SiteHeader
           sticky
           chrome
-          wordmark={false}
           /*
-            The top left says WHICH document this is, in place of the product's
-            own name — on this page you already know what app you are in, and
-            the thing you don't know is which project is open. The mark stays
-            beside it as the way home. The right says what you can DO to it, in
+            The wordmark stays, for cookbooks too. A cookbook's own name lives
+            at the top of the page rail, above Add recipes (see `railBookHeader`),
+            where it sits with the count and the save state it belongs with. The right says what you can DO to it, in
             the order you'd reach for them: how it stands, then the action that
             finishes it.
           */
-          lead={
-            /* Rendered even with nothing in the queue. Recipe cards vs Cookbook
-               is a choice ABOUT the project, not about its contents, and an
-               emptied workspace is still a workspace — dropping the control
-               made the bar go blank at exactly the moment the page below it
-               already looked bare. */
-            (
-              <ProjectHeading
-                title={headingTitle}
-                /* A cookbook is a named thing you come back to, so its name
-                   belongs in the bar the moment there IS a book — saved to
-                   an account or not, the name is real either way. A card job
-                   is not: "Banana Bread + 2 more" is a description of the
-                   queue, not a title anyone chose, so recipe cards shows a
-                   plain "Recipe cards" label instead (see ProjectHeading). */
-                showTitle={cookbookMode}
-                onRename={projectMeta.setProjectTitle}
-                cookbookMode={cookbookMode}
-                canBecomeCookbook={COOKBOOK_ENABLED}
-                isLegacy={isLegacyCookbookMechanism(projectMeta.meta)}
-                onSwitchToCards={exitCookbookToCards}
-                onSwitchToCookbook={startCookbook}
-              />
-            )
-          }
+          lead={renderProUpgradeButton()}
           actions={
             items?.length ? (
               <>
-                {/* The "Make it a cookbook" button that sat here is gone: the
-                    kind control in the middle of the bar now shows both kinds
-                    side by side while you are in recipe cards, so the offer is
-                    already visible and two controls for it in one bar was one
-                    too many. See ProjectHeading. */
-                }
                 {/* How this project stands, to the LEFT of the action rather
                     than out by the avatar — it reads as part of the same
                     sentence as Print, and the avatar goes back to being only
@@ -5483,7 +5450,6 @@ export default function PrintPage() {
                     for why the control and the state are one thing. Shared
                     with the mobile topbar (PrintDeck.tsx). */}
                 {renderSaveControl()}
-                {renderProUpgradeButton()}
 
                 {/*
                   One button, not two. Buying and printing are not separate
@@ -5636,6 +5602,7 @@ export default function PrintPage() {
              two states this button is supposed to have. Sharing the same
              count means the label and the badge always flip together. */
           hasRecipes={recipeCount > 0}
+          bookHeader={railBookHeader}
           multiRecipeAddLocked={multiRecipeAddLocked}
           railScrollRef={railScrollRef}
           railDrag={railDrag}
@@ -5787,7 +5754,6 @@ export default function PrintPage() {
           mobileDrawer={mobileDrawer}
           setMobileDrawer={setMobileDrawer}
           cookbookMode={cookbookMode}
-          cookbookLocked={cookbookLocked}
           cardSize={cardSize}
           setCardSize={setCardSize}
           anyRecipeHasImage={anyRecipeHasImage}
@@ -6133,12 +6099,6 @@ export default function PrintPage() {
           // of it is not a decision to throw it away.
           track("cookbook_onboarding_dismissed", { price: cookbookPrice });
           setShowCookbookOfferDialog(false);
-        }}
-        onLeave={() => {
-          // Only the button that says "Back to recipe cards" undoes the switch.
-          track("cookbook_onboarding_dismissed", { price: cookbookPrice });
-          setShowCookbookOfferDialog(false);
-          exitCookbookToCards();
         }}
         onStart={() => {
           setShowCookbookOfferDialog(false);

@@ -12,7 +12,6 @@ export function CookbookWelcomeDialog({
   purchased = false,
   onStart,
   onClose,
-  onLeave,
 }: {
   open: boolean;
   cover: CoverConfig;
@@ -26,15 +25,8 @@ export function CookbookWelcomeDialog({
    */
   purchased?: boolean;
   onStart: () => void;
-  /**
-   * Dismiss and stay in the book. This fires for the X, Escape and the
-   * backdrop — every gesture that means "get this panel off my screen". It
-   * used to also switch back to recipe cards, which threw away the book the
-   * cook had just watched being built because they closed a panel.
-   */
+  /** Dismiss and stay in the book: the X, Escape and the backdrop. */
   onClose: () => void;
-  /** Leave the book for recipe cards. Only the button that says so. */
-  onLeave: () => void;
 }) {
   return (
     <Dialog
@@ -107,9 +99,7 @@ export function CookbookWelcomeDialog({
             </>
           )}
         </div>
-        {/* Cancel-left, commit-right, as every confirm dialog in the app is. */}
         <div className="cookbook-welcome__actions">
-          <button type="button" className="btn btn-ghost" onClick={onLeave}>Back to recipe cards</button>
           <button type="button" className="btn btn-primary" onClick={onStart}>
             {purchased ? "Open my cookbook" : "Start editing"}
           </button>

@@ -378,7 +378,6 @@ type EventProps = {
   cookbook_onboarding_dismissed: { price?: string };
   /** Switched back from a cookbook to plain recipe cards — how sticky the mode
       is (build one, then bail?). `recipeCount` for consistent segmentation. */
-  cookbook_exited: { recipeCount: number };
   cookbook_cover_layout_selected: { layout: "photo" | "collage" | "typographic" };
   cookbook_front_matter_enabled: { kind: "dedication" | "introduction" };
   cookbook_section_created_from_selection: { count: number };

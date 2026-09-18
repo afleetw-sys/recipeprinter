@@ -2,7 +2,7 @@
 
 import type { Dispatch, ReactNode, RefObject, SetStateAction } from "react";
 import type { CustomerInfo } from "@revenuecat/purchases-js";
-import { CheckIcon, ICON_SIZE, XIcon } from "@/components/icons";
+import { ICON_SIZE, XIcon } from "@/components/icons";
 import { PrintSetupControls } from "@/components/print/PrintSetupControls";
 import { ThemePicker } from "@/components/print/ThemePicker";
 import type { PhotoStyle } from "@/lib/project";
@@ -13,7 +13,6 @@ interface PrintConfigPanelProps {
   mobileDrawer: "template" | null;
   setMobileDrawer: Dispatch<SetStateAction<"template" | null>>;
   cookbookMode: boolean;
-  cookbookLocked: boolean;
   /** Turns this print job into a cookbook. A create action, not a view change —
       see `renderModeSwitch`'s removal in app/print/page.tsx. */
   /** The cover title — this panel's heading in cookbook mode. */
@@ -64,7 +63,6 @@ export function PrintConfigPanel({
   mobileDrawer,
   setMobileDrawer,
   cookbookMode,
-  cookbookLocked,
   cardSize,
   setCardSize,
   anyRecipeHasImage,
@@ -110,12 +108,6 @@ export function PrintConfigPanel({
           <h2 className="text-cp-dialog-title font-extrabold tracking-[-0.02em] min-w-0 truncate">
             Themes
           </h2>
-        )}
-        {cookbookMode && !cookbookLocked && mobileDrawer !== "template" && (
-          <span className="recipe-purchased-chip" title="You own this cookbook. Export it as often as you like">
-            <CheckIcon size={ICON_SIZE.xs} />
-            Purchased
-          </span>
         )}
         <button
           type="button"
