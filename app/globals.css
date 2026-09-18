@@ -489,7 +489,7 @@
   padding-left: 1rem;
   border-left: var(--cp-accent-warm);
   color: var(--cp-ink-soft);
-  font-size: var(--cp-fs-body);
+  font-size: var(--cp-fs-small);
   line-height: 1.4;
 }
 .cookbook-welcome__price strong {
@@ -502,7 +502,6 @@
   font-size: var(--cp-fs-h2);
   line-height: 1.15;
 }
-/* Same slot as the price, for a book that's already paid for. */
 /* Export failure — a server render can fail in ways a print dialog never
    could (renderer down, timeout), so the dialog has somewhere to say it. */
 .cookbook-ready__error {
