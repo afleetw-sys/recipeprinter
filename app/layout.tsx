@@ -84,7 +84,7 @@ export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),
   title: {
     // Homepage uses the full default; inner pages get "<page> · RecipePrinter".
-    default: "Print Recipes from Any Website | Free Recipe Printer",
+    default: "Free Recipe Printer for Online Recipes",
     template: `%s · ${SITE_NAME}`,
   },
   description: SITE_DESCRIPTION,
@@ -113,14 +113,14 @@ export const metadata: Metadata = {
   openGraph: {
     type: "website",
     siteName: SITE_NAME,
-    title: "Print Recipes from Any Website | Free Recipe Printer",
+    title: "Free Recipe Printer for Online Recipes",
     description: SITE_DESCRIPTION,
     url: "/",
     locale: "en_US",
   },
   twitter: {
     card: "summary_large_image",
-    title: "Print Recipes from Any Website | Free Recipe Printer",
+    title: "Free Recipe Printer for Online Recipes",
     description: SITE_DESCRIPTION,
   },
   robots: {

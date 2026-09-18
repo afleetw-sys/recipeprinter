@@ -7007,12 +7007,10 @@ textarea.recipe-card__toc-title {
 .print-success-dialog {
   position: fixed;
   inset: 0;
-  /* Above `.recipe-mobile-actions` (75) and the mobile sheets (77-81). A modal
-     is the whole screen's answer, so nothing the page was already showing may
-     sit on top of it — at 50 the phone's Recipe/Size/Themes bar was painted
-     over the bottom of every one of these. Below `.cookbook-welcome` (90),
-     which is a modal over the modals. */
-  z-index: 85;
+  /* var(--z-dialog), not a local number: at the old z-index: 85 this sat
+     below the sticky header's z-index: 100, so the scrim dimmed the page
+     but left the header untouched. */
+  z-index: var(--z-dialog);
   display: grid;
   place-items: center;
   padding: 24px;
@@ -7167,12 +7165,10 @@ textarea.recipe-card__toc-title {
 .recipe-add-dialog {
   position: fixed;
   inset: 0;
-  /* Above `.recipe-mobile-actions` (75) and the mobile sheets (77-81). A modal
-     is the whole screen's answer, so nothing the page was already showing may
-     sit on top of it — at 50 the phone's Recipe/Size/Themes bar was painted
-     over the bottom of every one of these. Below `.cookbook-welcome` (90),
-     which is a modal over the modals. */
-  z-index: 85;
+  /* var(--z-dialog), not a local number: at the old z-index: 85 this sat
+     below the sticky header's z-index: 100, so the scrim dimmed the page
+     but left the header untouched. */
+  z-index: var(--z-dialog);
   display: grid;
   place-items: center;
   padding: 24px;
