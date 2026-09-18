@@ -31,6 +31,9 @@ const pendingImages = idbStore("recipeprinter", 1, "pending-import");
 /** What the capture block asks the app to import on arrival. `ready` carries
     already-parsed recipes, whatever library they came from. */
 export type PendingImport =
+  /** Nothing to import: a cookbook begun with no recipes in it. Carries only
+      the choice already stamped on the project (`cookbookIntent`). */
+  | { kind: "empty" }
   | { kind: "url"; url: string }
   | { kind: "text"; text: string }
   | { kind: "ready"; recipes: QueueItem[] }
@@ -61,6 +64,7 @@ export type PendingImport =
 // The sessionStorage descriptor never carries image bytes — for `images` it holds
 // only the label and defers the data-URLs to IndexedDB.
 type StoredDescriptor =
+  | { kind: "empty" }
   | { kind: "url"; url: string }
   | { kind: "text"; text: string }
   | { kind: "ready"; recipes: QueueItem[] }

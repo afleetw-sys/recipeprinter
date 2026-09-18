@@ -189,6 +189,8 @@ export function RecipeSourceList({
   onCommit,
   commitLabel,
   commitLeavesPage = false,
+  onCommitEmpty,
+  onUpgrade,
   committing = false,
   queryText,
   onQueryChange,
@@ -229,6 +231,13 @@ export function RecipeSourceList({
   /** Whether pressing it navigates: an arrow if so, a plus if it adds to what
       is already on screen. Follows the panel's own submit — see ImportPanel. */
   commitLeavesPage?: boolean;
+  /** Start with nothing: the button works with no recipe selected and calls
+      this instead of `onCommit`. */
+  onCommitEmpty?: () => void;
+  /** Opens the Pro upgrade dialog. Offered as one line under the heading while
+      `singleSelect` (a Free account choosing its one recipe), so the limit is
+      stated where it is met instead of discovered at the second tap. */
+  onUpgrade?: () => void;
   committing?: boolean;
   queryText: string;
   onQueryChange: (value: string) => void;
@@ -316,6 +325,20 @@ export function RecipeSourceList({
         </div>
       </div>
 
+      {singleSelect && !locked && onUpgrade && (
+        <p className="text-cp-caption text-ink-soft">
+          Choose a recipe, or{" "}
+          <button
+            type="button"
+            className="font-bold text-brand-ink underline underline-offset-2"
+            onClick={onUpgrade}
+          >
+            upgrade to Pro
+          </button>{" "}
+          to print several at once.
+        </p>
+      )}
+
       {locked && (
         <p className="flex items-center gap-cp-2 rounded-xl bg-page p-cp-3 text-cp-caption text-ink-soft">
           <ProBadge variant="inline" label={false} className="flex-shrink-0" />
@@ -401,8 +424,8 @@ export function RecipeSourceList({
           <button
             type="button"
             className="btn btn-primary w-full"
-            onClick={onCommit}
-            disabled={selectedCount === 0 || committing}
+            onClick={selectedCount === 0 && onCommitEmpty ? onCommitEmpty : onCommit}
+            disabled={(selectedCount === 0 && !onCommitEmpty) || committing}
           >
             {/* Trailing arrow when the button is a door, leading plus when it
                 adds to the page you are on — the same order the panel's own

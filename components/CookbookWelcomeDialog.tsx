@@ -10,6 +10,7 @@ export function CookbookWelcomeDialog({
   cover,
   price,
   purchased = false,
+  empty = false,
   onStart,
   onClose,
 }: {
@@ -24,6 +25,8 @@ export function CookbookWelcomeDialog({
    * single loudest way to suggest their purchase didn't survive.
    */
   purchased?: boolean;
+  /** The book has no recipes yet — a cook may start one from nothing. */
+  empty?: boolean;
   onStart: () => void;
   /** Dismiss and stay in the book: the X, Escape and the backdrop. */
   onClose: () => void;
@@ -74,7 +77,9 @@ export function CookbookWelcomeDialog({
           <p>
             {purchased
               ? "Your cover, chapters and layout are all still here."
-              : "Your recipes are laid out behind this, with a cover and chapters. Everything on it is yours to change."}
+              : empty
+                ? "A cover and pages are ready behind this. Add recipes whenever you like, and change anything on it."
+                : "Your recipes are laid out behind this, with a cover and chapters. Everything on it is yours to change."}
           </p>
         </div>
         <ul className="cookbook-feature-chips">
@@ -95,7 +100,10 @@ export function CookbookWelcomeDialog({
           ) : (
             <>
               <b>{price}</b>
-              <span>Paid once, the first time you export this cookbook. Editing it is free until then.</span>
+              <span>
+                One purchase for a fully custom cookbook, paid the first time you export it. Nothing
+                is mailed to you: it is yours to print wherever you like. Editing is free until then.
+              </span>
             </>
           )}
         </div>

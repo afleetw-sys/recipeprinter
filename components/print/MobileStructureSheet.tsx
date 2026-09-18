@@ -102,14 +102,14 @@ export function MobileStructureSheet({
             <div className="recipe-structure-sheet__settings">
               <span className="recipe-structure-sheet__group-label">Extra pages</span>
               <Checkbox
+                  label="Dedication"
+                  checked={Boolean(projectMeta.meta.frontMatter || projectMeta.meta.dedication)}
+                  onChange={toggleDedication}
+              />
+              <Checkbox
                   label="Table of contents"
                   checked={Boolean(projectMeta.meta.tableOfContents)}
                   onChange={(event) => projectMeta.setTableOfContents(event.target.checked)}
-              />
-              <Checkbox
-                  label="Opening page"
-                  checked={Boolean(projectMeta.meta.frontMatter || projectMeta.meta.dedication)}
-                  onChange={toggleDedication}
               />
               {anyRecipeHasImage && (
                 <div className="recipe-structure-sheet__photos">

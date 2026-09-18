@@ -860,7 +860,9 @@
 .recipe-page-rail__book-meta {
   display: flex;
   align-items: center;
-  flex-wrap: wrap;
+  /* The count sits left and the save state right, whether or not there is a
+     save state to show. */
+  justify-content: space-between;
   gap: 4px 8px;
   margin: 0;
   padding: 0 2px;
@@ -4397,6 +4399,15 @@
   -webkit-print-color-adjust: exact;
   print-color-adjust: exact;
 }
+/* The hard split is the FRONT cover's design: its title sits below it, on paper.
+   The back cover and the dedication page centre their text across the middle of
+   the page, which is exactly where the dark block ends, so dark ink landed on
+   dark ground and the dedication could not be read (the same block also
+   dominated their thumbnails in the page rail). Both go to plain paper; the
+   accent disc stays as the one thing that says Counter. */
+.recipe-template--counter .recipe-card--cover-back .recipe-card__cover-photo {
+  background: var(--recipe-bg);
+}
 .recipe-template--counter .recipe-card__cover-scrim,
 .recipe-template--counter .recipe-card__cover-band {
   display: none;
@@ -4672,9 +4683,12 @@
 }
 
 /* Heirloom's utensil row occupies the lower decorative margin. Keep the
-   running footer as a distinct bar above it instead of laying text over art. */
-.recipe-card-page:has(.recipe-template--heirloom) .recipe-book-runhead,
-.recipe-card-page:has(.recipe-template--heirloom) .recipe-book-folio {
+   running footer as a distinct bar above it instead of laying text over art.
+   The template class sits on the page's ANCESTOR (`.recipe-card-set`), so this
+   is a descendant selector: the `.recipe-card-page:has(...)` form it used to
+   be never matched, and the chapter name and page number printed on the art. */
+.recipe-template--heirloom .recipe-book-runhead,
+.recipe-template--heirloom .recipe-book-folio {
   bottom: 0.62in;
 }
 

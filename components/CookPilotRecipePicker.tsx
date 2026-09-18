@@ -128,6 +128,7 @@ function SignedInCookPilotImport({
   onAddRecipes,
   commitLabel,
   commitLeavesPage,
+  onCommitEmpty,
   locked,
   singleSelect,
   onLockedTap,
@@ -137,6 +138,7 @@ function SignedInCookPilotImport({
   onAddRecipes: (recipes: QueueItem[]) => number;
   commitLabel: string;
   commitLeavesPage: boolean;
+  onCommitEmpty?: () => void;
   /** See `RecipeSourceList`'s own `locked` doc — this account already has the
       one recipe a free, non-cookbook plan can print. */
   locked: boolean;
@@ -422,6 +424,8 @@ function SignedInCookPilotImport({
       onCommit={handleCommit}
       commitLabel={commitLabel}
       commitLeavesPage={commitLeavesPage}
+      onCommitEmpty={onCommitEmpty}
+      onUpgrade={onLockedTap}
       committing={committing}
       locked={locked}
       singleSelect={singleSelect}
@@ -490,6 +494,7 @@ export function CookPilotImportSource({
   onAddRecipes,
   commitLabel,
   commitLeavesPage = false,
+  onCommitEmpty,
   locked = false,
   singleSelect = false,
   onLockedTap,
@@ -500,6 +505,7 @@ export function CookPilotImportSource({
   commitLabel: string;
   /** And whether pressing it navigates, which decides its icon. */
   commitLeavesPage?: boolean;
+  onCommitEmpty?: () => void;
   /** See `RecipeSourceList`'s own `locked` doc. */
   locked?: boolean;
   /** See `SignedInCookPilotImport`'s own `singleSelect` doc. */
@@ -535,6 +541,7 @@ export function CookPilotImportSource({
           onAddRecipes={onAddRecipes}
           commitLabel={commitLabel}
           commitLeavesPage={commitLeavesPage}
+          onCommitEmpty={onCommitEmpty}
           locked={locked}
           singleSelect={singleSelect}
           onLockedTap={onLockedTap}

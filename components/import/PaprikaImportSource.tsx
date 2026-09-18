@@ -112,6 +112,7 @@ export function PaprikaImportSource({
   onAddRecipes,
   commitLabel,
   commitLeavesPage = false,
+  onCommitEmpty,
   onLibraryChange,
   onChooseAnotherFile,
   replaceError,
@@ -125,6 +126,7 @@ export function PaprikaImportSource({
   commitLabel: string;
   /** And whether pressing it navigates, which decides its icon. */
   commitLeavesPage?: boolean;
+  onCommitEmpty?: () => void;
   /** Lets the integrations list re-read the open file's name and count. */
   onLibraryChange?: () => void;
   /** Opens the file dialog again, which lives on the card. */
@@ -293,6 +295,8 @@ export function PaprikaImportSource({
         onCommit={handleCommit}
         commitLabel={commitLabel}
         commitLeavesPage={commitLeavesPage}
+        onCommitEmpty={onCommitEmpty}
+        onUpgrade={onLockedTap}
         committing={committing}
         locked={locked}
         singleSelect={singleSelect}

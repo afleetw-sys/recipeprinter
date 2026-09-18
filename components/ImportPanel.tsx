@@ -84,6 +84,7 @@ export function ImportPanel({
   commitRef,
   libraryLocked = false,
   librarySingleSelect,
+  onStartEmpty,
   onLibraryLockedTap,
 }: {
   items: QueueItem[];
@@ -133,6 +134,11 @@ export function ImportPanel({
       pass a real boolean when the caller already knows its own entitlement
       precisely, which always wins. */
   librarySingleSelect?: boolean;
+  /** Start with nothing. When given, submitting an EMPTY form (or the library
+      picker with nothing selected) calls this instead of asking for input —
+      the Cookbook tab uses it so a book can begin with no recipes. Something
+      typed that is not usable is still an error. */
+  onStartEmpty?: () => void;
   /** Opens the Pro upgrade dialog — only ever called while `libraryLocked`. */
   onLibraryLockedTap?: () => void;
 }) {
@@ -270,7 +276,7 @@ export function ImportPanel({
 
     if (mode === "url") {
       const trimmed = url.trim();
-      if (!trimmed) return fail("Paste a recipe link first.");
+      if (!trimmed) return onStartEmpty ? startEmpty(onStartEmpty) : fail("Paste a recipe link first.");
       try {
         // Validate through the same normalizer the queue and parser use, so the
         // client gate can't reject a URL the pipeline would happily import (it
@@ -289,9 +295,10 @@ export function ImportPanel({
       // other image failure the queue never gets to report them. Emit the
       // started+failed pair ourselves so they don't vanish from the funnel
       // (this is where "Choose at least one photo" was hiding).
+      if (imageFiles.length === 0 && onStartEmpty) return startEmpty(onStartEmpty);
       if (imageFiles.length === 0) {
         trackImageFailure("no_files", "no usable photo selected");
-        return fail("Choose at least one photo.");
+        return fail("Please add an image to start.");
       }
       const validationError = validateImageFiles(imageFiles);
       if (validationError) {
@@ -304,9 +311,15 @@ export function ImportPanel({
     }
 
     const trimmed = text.trim();
+    if (!trimmed && onStartEmpty) return startEmpty(onStartEmpty);
     if (trimmed.length < 20) return fail("Paste a bit more recipe text first.");
     onAddText(trimmed);
     setText("");
+    return true;
+  }
+
+  function startEmpty(go: () => void): true {
+    go();
     return true;
   }
 
@@ -468,6 +481,7 @@ export function ImportPanel({
             reselects={reselects}
             locked={libraryLocked}
             singleSelect={librarySingleSelect}
+            onCommitEmpty={onStartEmpty}
             onLockedTap={onLibraryLockedTap}
           />
         </div>

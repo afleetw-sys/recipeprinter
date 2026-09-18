@@ -1,6 +1,7 @@
 "use client";
 
 import { type ReactNode, useEffect, useMemo, useRef, useState } from "react";
+import { useRouter } from "next/navigation";
 import { useCookPilotAuth } from "@/components/CookPilotAuth";
 import { CookPilotImportSource, prewarmCookPilotImport } from "@/components/CookPilotRecipePicker";
 import {
@@ -207,6 +208,7 @@ export function RecipeAppsPanel({
   onAddRecipes,
   commitLabel,
   commitLeavesPage = false,
+  onCommitEmpty,
   reselects = 0,
   locked = false,
   singleSelect,
@@ -218,6 +220,7 @@ export function RecipeAppsPanel({
   commitLabel: string;
   /** And whether pressing it navigates, which decides its icon. */
   commitLeavesPage?: boolean;
+  onCommitEmpty?: () => void;
   /** Bumped when the Recipe apps tab is pressed while already on it. Closes
       the open library and shows the sources again. */
   reselects?: number;
@@ -260,6 +263,10 @@ export function RecipeAppsPanel({
   // Bumped when the open Paprika file changes, so the row below re-reads it.
   const [libraryNonce, setLibraryNonce] = useState(0);
   const { user, ready } = useCookPilotAuth();
+  const router = useRouter();
+  // The print page opens its own upgrade dialog. The home page has none, so
+  // "upgrade to Pro" there goes to the account's Pro card, which does.
+  const onUpgradeTap = onLockedTap ?? (() => router.push("/account"));
 
   // Fallback answer for `singleSelect`, used only when the caller didn't
   // supply one (see the prop's own doc comment) — see the hook's own doc for
@@ -387,9 +394,10 @@ export function RecipeAppsPanel({
             onAddRecipes={onAddRecipes}
             commitLabel={commitLabel}
             commitLeavesPage={commitLeavesPage}
+            onCommitEmpty={onCommitEmpty}
             locked={locked}
             singleSelect={effectiveSingleSelect}
-            onLockedTap={onLockedTap}
+            onLockedTap={onUpgradeTap}
           />
         ) : (
           <PaprikaImportSource
@@ -404,10 +412,11 @@ export function RecipeAppsPanel({
             onAddRecipes={onAddRecipes}
             commitLabel={commitLabel}
             commitLeavesPage={commitLeavesPage}
+            onCommitEmpty={onCommitEmpty}
             onLibraryChange={() => setLibraryNonce((value) => value + 1)}
             locked={locked}
             singleSelect={effectiveSingleSelect}
-            onLockedTap={onLockedTap}
+            onLockedTap={onUpgradeTap}
           />
         )}
         {paprikaFileInput}

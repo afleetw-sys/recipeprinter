@@ -241,9 +241,15 @@ export function PrinterWorkspace({
     if (payload.kind === "url") return "url";
     if (payload.kind === "text") return "text";
     if (payload.kind === "images" || payload.kind === "imageFiles") return "image";
+    if (payload.kind === "empty") return "manual";
     // A library pick is whatever library it came from, and a batch is never
     // mixed: the picker that produced it only reads one source.
     return payload.recipes[0]?.method ?? "manual";
+  }
+
+  /** A cookbook begun with nothing in it. */
+  function handleStartEmpty() {
+    void handoff({ kind: "empty" });
   }
 
   function handleAddUrl(url: string) {
@@ -382,6 +388,9 @@ export function PrinterWorkspace({
              Pro-only check. Left unset for Recipe cards: that's exactly the
              check that tab is supposed to go through. */
           librarySingleSelect={importKind === "cookbook" ? false : undefined}
+          /* A book may start with no recipes in it, on any of the four tabs.
+             Recipe cards still ask for something to print. */
+          onStartEmpty={importKind === "cookbook" ? handleStartEmpty : undefined}
         />
         {handoffError && (
           <p className="field-error mt-cp-3" role="alert">

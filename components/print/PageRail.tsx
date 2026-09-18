@@ -134,8 +134,8 @@ interface PageRailProps {
       recipe" (singular) while the badge had already appeared beside it —
       neither of this button's two intended states. */
   hasRecipes: boolean;
-  /** A cookbook's name, recipe count and save state, shown above Add recipes.
-      Absent for recipe cards, which have no name of their own. */
+  /** A cookbook's recipe count and save state, shown above Add recipes. Absent
+      for recipe cards. */
   bookHeader?: ReactNode;
   /** Whether the NEXT recipe added here would be the one that requires Pro —
       true once a project already has a recipe and the customer lacks Pro
@@ -507,7 +507,7 @@ export function PageRail(props: PageRailProps) {
                     already matched them; the icon was a step down, which made the
                     whole button read as smaller than the ones in the header. */}
                 <PlusIcon size={ICON_SIZE.md} />
-                {hasRecipes ? (projectMeta.meta.cookbookMode ? "Add recipes" : "Add more recipes") : "Add recipe"}
+                {projectMeta.meta.cookbookMode ? "Add recipes" : hasRecipes ? "Add more recipes" : "Add recipe"}
                 {multiRecipeAddLocked && <ProBadge variant="inline" label={false} />}
               </button>
               {/* "Add chapter" is NOT here. This whole header only renders when

@@ -3674,6 +3674,9 @@ export default function PrintPage() {
         projectMeta.clearCookbookIntent();
         beginCookbookBuild({ offerAfter: true });
       }
+      // A cookbook begun with nothing in it: the book is built above, and
+      // there is no recipe to add.
+      if (pending.kind === "empty") return;
       // A landing page's capture block means "start me a fresh recipe",
       // never "add to whatever is already open" — the whole point of that
       // page is a free, single-recipe import (see SeoCapture's own file
@@ -3847,7 +3850,6 @@ export default function PrintPage() {
         <span>
           {recipeCount} {recipeCount === 1 ? "recipe" : "recipes"}
         </span>
-        {bookSaveNote && <span aria-hidden>·</span>}
         {bookSaveNote}
       </p>
     </div>
@@ -4271,14 +4273,14 @@ export default function PrintPage() {
     return (
       <CheckboxGroup label="Extra pages" className="recipe-config-section recipe-config-section--settings">
         <Checkbox
+            label="Dedication"
+            checked={Boolean(projectMeta.meta.frontMatter || projectMeta.meta.dedication)}
+            onChange={toggleDedication}
+        />
+        <Checkbox
             label="Table of contents"
             checked={Boolean(projectMeta.meta.tableOfContents)}
             onChange={(event) => projectMeta.setTableOfContents(event.target.checked)}
-        />
-        <Checkbox
-            label="Opening page"
-            checked={Boolean(projectMeta.meta.frontMatter || projectMeta.meta.dedication)}
-            onChange={toggleDedication}
         />
       </CheckboxGroup>
     );
@@ -6093,6 +6095,7 @@ export default function PrintPage() {
            all, so the unlock has to be read directly — this screen is shown
            FROM recipe-cards mode, where `cookbookMode` is false. */
         purchased={isCookbookProjectUnlocked(cookbookProjectId)}
+        empty={recipeCount === 0}
         onClose={() => {
           // The X, Escape and the backdrop only dismiss the panel. The cook
           // just watched this book get built; closing the thing sitting on top
