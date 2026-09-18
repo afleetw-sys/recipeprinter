@@ -2566,41 +2566,31 @@ export default function PrintPage() {
   }
 
   /**
-   * Going home: put this project away, show it going, and start a fresh one.
+   * Going home: navigate right away, then put this project away and start a
+   * fresh one behind that.
    *
-   * Three things have to happen in the right order, and the order is chosen
-   * around what is safe to lose.
+   * The filing work — `fileProjectLocally` re-serializes the WHOLE local
+   * shelf, up to `MAX_LOCAL_PROJECTS` projects with their recipes inline (see
+   * the comment on that constant) — used to run before `goHome()`, on the
+   * reasoning that clearing the desk had to be gated on the write succeeding.
+   * That reasoning still holds, but blocking the navigation on it does not:
+   * a click on the logo froze on however large the shelf had grown, when nothing
+   * about leaving actually depends on the write finishing first.
    *
-   * The DEVICE copy is written first and synchronously, and clearing is gated
-   * on it. That is what makes this safe: the desk is only wiped once the
-   * project is definitely on the shelf, so a failed write (private mode, quota)
-   * leaves the working copy exactly where it was rather than destroying it. The
-   * homepage will try again on arrival and reach the same conclusion.
+   * So navigation goes first, and the write/clear/save follow in a `setTimeout`
+   * right after — off the paint that takes you to "/", not off the safety
+   * gate. Clearing still only happens once the write reports success: a
+   * failed write (private mode, quota) leaves the working copy exactly where
+   * it was, sessionStorage and all, and the homepage's own recovery has
+   * nothing to do because there was never a `/print` reload to recover from.
    *
-   * The ACCOUNT copy is fired and deliberately not awaited. It is not
-   * load-bearing — the device copy already made this safe — and waiting on a
-   * network round trip before navigating would make going home feel broken on
-   * a bad connection. This is a client-side navigation, so the request survives
-   * it, and the existing `pagehide` flush covers a genuine tab close. A
-   * signed-in cook therefore ends up with both copies, and the local one is
-   * swept on the next library load.
-   *
-   * The FLIGHT overlaps both, so the animation costs no extra wait: by the time
-   * the project has finished travelling into the profile, the writes have
-   * usually already happened.
+   * The ACCOUNT copy is fired and not awaited, same as before — it is not
+   * load-bearing, the device copy already made this safe, and a signed-in
+   * cook ends up with both copies regardless of timing.
    */
-  /**
-   * Non-null while a click on the logo is on its way out, and it holds the line
-   * to show while it is.
-   *
-   * Leaving clears the desk and THEN navigates, and a React render happens in
-   * between — so for a beat the page re-rendered as an emptied workspace before
-   * the home page arrived, which read as the recipes having been deleted rather
-   * than filed. (The flight into the profile used to cover this gap; nothing
-   * did once it went.) The page holds a loading state across the whole
-   * departure instead.
-   */
-  const [leavingHome, setLeavingHome] = useState<string | null>(null);
+  /** Re-entrancy guard: one click on the logo should file the project once,
+      not once per click before navigation actually leaves. */
+  const leavingHomeRef = useRef(false);
   /** Leaving with work that only exists on this device — see `handleNavigateHome`. */
   const [confirmLeave, setConfirmLeave] = useState(false);
 
@@ -2616,8 +2606,8 @@ export default function PrintPage() {
     navigateAfterOverlayHistory(() => router.push("/"));
   }
 
-  async function handleNavigateHome(options?: { confirmed?: boolean }) {
-    if (leavingHome) return;
+  function handleNavigateHome(options?: { confirmed?: boolean }) {
+    if (leavingHomeRef.current) return;
 
     const printable = queue.items.some((item) => item.status === "ready" && item.recipe);
     /**
@@ -2633,61 +2623,48 @@ export default function PrintPage() {
       return;
     }
 
-    // Says what the wait is FOR. Nothing is being kept when there was nothing
-    // made, and claiming otherwise would be the same kind of lie the flight was.
-    // "Saving your recipes…" is only honest when `handleSaveProject` below is
-    // actually about to run — gated on `autosaveEnabledForCurrentMode`, i.e.
-    // THIS mode has been explicitly saved once already. A fresh project, or a
-    // mode switched into but never saved, only ever gets the local crash-net
-    // write (`fileProjectLocally`), and a confirmed leave is the cook having
-    // just told the "Keep this project?" dialog no — none of those is a save
-    // the cook asked for, so they all just say "Going home…".
-    setLeavingHome(
-      printable && !options?.confirmed && autosaveEnabledForCurrentMode ? "Saving your recipes…" : "Going home…"
-    );
-    if (!printable) {
-      goHome();
-      return;
-    }
-
-    // No flight into the profile on the way out. It was a promise the app can
-    // no longer keep: it showed the project travelling to the avatar, which
-    // said "this is in your projects now" — and since saving became an explicit
-    // choice, leaving does not necessarily put it there. An animation that
-    // answers a question wrongly is worse than one that never answered it.
-    //
-    // Files under the project this content already is, if it has been printed
-    // before — so the account save below is pointed at the same document
-    // rather than creating its own copy of it.
-    const filed = fileProjectLocally(queue.items, projectMeta.meta);
-    if (filed) projectMeta.setProjectId(filed);
-    /**
-     * Leaving does not put a draft in the account.
-     *
-     * This used to be `cookPilotUser && filed`, so being signed in was the
-     * whole condition: print a few cards, click the logo, and a copy landed in
-     * the profile of someone who never asked for one. Signing in is how you
-     * reach your saved work, not a standing instruction to keep everything you
-     * touch, and a library that fills itself with every Tuesday's dinner prints
-     * is a log rather than a library.
-     *
-     * `autosaveEnabledForCurrentMode` is the existing answer to "did the cook
-     * ask us to keep THIS" — this mode of this project has been saved at
-     * least once. Reusing it rather than restating the condition keeps the
-     * two from drifting apart. The local shelf below is unaffected: that is
-     * the working copy people rely on when they reopen /print, and it never
-     * leaves the device.
-     */
-    if (filed && autosaveEnabledForCurrentMode) void handleSaveProject(filed);
-
-    // Only now is the desk safe to clear — and releasing the project id is the
-    // half that makes the next import a NEW project rather than another edit
-    // of this one.
-    if (filed) {
-      queue.clear();
-      projectMeta.startNewProject();
-    }
+    leavingHomeRef.current = true;
     goHome();
+    if (!printable) return;
+
+    // Filing the project — and the account save riding on it — happens after
+    // navigation has actually kicked off, so the (possibly large) shelf
+    // rewrite in `fileProjectLocally` never sits between a click and the page
+    // leaving. See the comment above this function for why blocking on it was
+    // never required for safety in the first place.
+    window.setTimeout(() => {
+      // Files under the project this content already is, if it has been
+      // printed before — so the account save below is pointed at the same
+      // document rather than creating its own copy of it.
+      const filed = fileProjectLocally(queue.items, projectMeta.meta);
+      if (filed) projectMeta.setProjectId(filed);
+      /**
+       * Leaving does not put a draft in the account.
+       *
+       * This used to be `cookPilotUser && filed`, so being signed in was the
+       * whole condition: print a few cards, click the logo, and a copy landed
+       * in the profile of someone who never asked for one. Signing in is how
+       * you reach your saved work, not a standing instruction to keep
+       * everything you touch, and a library that fills itself with every
+       * Tuesday's dinner prints is a log rather than a library.
+       *
+       * `autosaveEnabledForCurrentMode` is the existing answer to "did the
+       * cook ask us to keep THIS" — this mode of this project has been saved
+       * at least once. Reusing it rather than restating the condition keeps
+       * the two from drifting apart. The local shelf below is unaffected:
+       * that is the working copy people rely on when they reopen /print, and
+       * it never leaves the device.
+       */
+      if (filed && autosaveEnabledForCurrentMode) void handleSaveProject(filed);
+
+      // Only now is the desk safe to clear — and releasing the project id is
+      // the half that makes the next import a NEW project rather than another
+      // edit of this one.
+      if (filed) {
+        queue.clear();
+        projectMeta.startNewProject();
+      }
+    }, 0);
   }
 
   // Best-effort push to Firestore when the tab is being hidden/closed, so a
@@ -5412,7 +5389,6 @@ export default function PrintPage() {
    * payload has run, and deliberately without consuming it.
    */
   if (
-    leavingHome ||
     // `items === null` is the print job not yet read out of sessionStorage. It
     // earns a whole-page screen when the deck is about to be REPLACED, because
     // the alternative is a frame of the wrong contents. It does not earn one
@@ -5431,9 +5407,7 @@ export default function PrintPage() {
         <SiteHeader sticky chrome wordmark={false} />
         <RecipeLoadingState
           className="flex-1"
-          label={
-            leavingHome ?? (accountProjectId ? "Loading your project…" : "Preparing…")
-          }
+          label={accountProjectId ? "Loading your project…" : "Preparing…"}
         />
       </div>
     );
@@ -5556,7 +5530,7 @@ export default function PrintPage() {
               </>
             ) : undefined
           }
-          onNavigateHome={() => void handleNavigateHome()}
+          onNavigateHome={() => handleNavigateHome()}
         />
 
         {/* One-line "back up your cookbook" bar under the toolbar, shown to any
@@ -6135,7 +6109,7 @@ export default function PrintPage() {
         secondaryLabel="Leave without saving"
         onSecondary={() => {
           setConfirmLeave(false);
-          void handleNavigateHome({ confirmed: true });
+          handleNavigateHome({ confirmed: true });
         }}
         onCancel={() => setConfirmLeave(false)}
         onConfirm={() => {
