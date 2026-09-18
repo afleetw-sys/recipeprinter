@@ -336,18 +336,17 @@ export function PrinterWorkspace({
                   stretch of it rather than stacking on top. The unselected
                   label stays dimmed rather than plain.
 
-                  No horizontal offset on the row: the hairline's edges line up
-                  with the field/mode-button borders below (all start at the
-                  panel's own content edge). Tighter padding than
+                  The row bleeds out to the panel's own edges (`-mx-3`/`lg:-mx-cp-6`
+                  undoing ImportPanel's padding, restored as `px-*` so the tabs
+                  still start on the content edge) so the hairline spans the
+                  whole card rather than stopping at its padding, and the
+                  negative top margin trims the panel's top padding above it.
+                  Tighter padding than
                   `.btn-toggle__option` below on purpose — that row is
-                  thumb-sized targets, this is a compact text switch. No
-                  vertical offset either: the panel's own top padding
-                  (`.rp-import-panel`'s `p-3`/`lg:p-cp-6`) is what puts space
-                  above this row, on both breakpoints, matching what it
-                  already puts below the submit button. */}
+                  thumb-sized targets, this is a compact text switch. */}
               <div
                 ref={tabListRef}
-                className="relative isolate flex gap-cp-2 border-b border-[var(--cp-line)]"
+                className="relative isolate -mx-3 -mt-cp-1 flex gap-cp-2 border-b border-[var(--cp-line)] px-3 lg:-mx-cp-6 lg:-mt-cp-3 lg:px-cp-6"
                 role="tablist"
                 aria-label="What you're printing"
               >
@@ -363,7 +362,7 @@ export function PrinterWorkspace({
                   role="tab"
                   aria-selected={importKind === "cards"}
                   onClick={() => setImportKind("cards")}
-                  className={`relative z-10 px-cp-2 py-cp-2 text-cp-body font-bold text-ink transition-opacity duration-200 ease-out ${
+                  className={`relative z-10 px-cp-2 pb-cp-2 pt-cp-1 text-cp-body-lg font-bold text-ink transition-opacity duration-200 ease-out ${
                     importKind === "cards" ? "opacity-100" : "opacity-45 hover:opacity-70"
                   }`}
                 >
@@ -374,7 +373,7 @@ export function PrinterWorkspace({
                   role="tab"
                   aria-selected={importKind === "cookbook"}
                   onClick={() => setImportKind("cookbook")}
-                  className={`relative z-10 flex items-center gap-1 px-cp-2 py-cp-2 text-cp-body font-bold text-ink transition-opacity duration-200 ease-out ${
+                  className={`relative z-10 flex items-center gap-1 px-cp-2 pb-cp-2 pt-cp-1 text-cp-body-lg font-bold text-ink transition-opacity duration-200 ease-out ${
                     importKind === "cookbook" ? "opacity-100" : "opacity-45 hover:opacity-70"
                   }`}
                 >
