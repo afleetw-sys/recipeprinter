@@ -9,7 +9,6 @@ import {
   type DragEvent,
   type FormEvent,
   type MutableRefObject,
-  type ReactNode,
 } from "react";
 import dynamic from "next/dynamic";
 import type { ImportTab } from "@/types/recipe";
@@ -70,7 +69,7 @@ const RecipeAppsPanel = dynamic(() => loadRecipeApps().then((mod) => mod.RecipeA
 export function ImportPanel({
   items,
   workspace = false,
-  aboveModes,
+  modeLabel,
   initialMode = "url",
   submitLabel = "Add",
   submitBusy = false,
@@ -90,11 +89,10 @@ export function ImportPanel({
 }: {
   items: QueueItem[];
   workspace?: boolean;
-  /** Rendered first, above the mode toggle — the front door's Recipe
-      cards/Cookbook choice. Nothing else needs a slot above the sources it
-      is choosing between, so this stays a bare, optional node rather than a
-      named concept the panel itself knows anything about. */
-  aboveModes?: ReactNode;
+  /** A small label over the source buttons. The front door sets it because
+      the tabs above the card would otherwise leave that row unnamed and reading
+      as a second set of tabs; surfaces whose row needs no name leave it unset. */
+  modeLabel?: string;
   initialMode?: ImportTab;
   submitLabel?: string;
   /** Restricts which sources the toggle offers — the workspace rail and the
@@ -409,8 +407,6 @@ export function ImportPanel({
       // name, which a heading was the only thing providing.
       aria-label={workspace ? "Add a recipe" : "Import recipes"}
     >
-      {aboveModes}
-
       {/* Mode toggle — one enabled source is a field, not a choice, so there
           is nothing to pick between and the row is skipped entirely. */}
       {enabledModes.length > 1 && (
@@ -420,7 +416,7 @@ export function ImportPanel({
               without it. The same `field-label` as "Recipe link" below so the
               two read as one system, and small enough not to bring back the
               heading this panel dropped (see the aria-label above). */}
-          {workspace && aboveModes && <p className="field-label">Add from</p>}
+          {modeLabel && <p className="field-label">{modeLabel}</p>}
           <ButtonToggle
             className={`mode-toggle ${expanded ? "mode-toggle--expanded" : ""}`}
             label="Import source"

@@ -302,6 +302,59 @@ export function PrinterWorkspace({
 
   return (
     <div className="rp-printer-workspace rp-printer-workspace--landing">
+      {/* What kind of project this import starts, centred under the subtitle
+          and outside the card: it chooses what the whole panel below makes,
+          so it reads as a header to the card rather than a row inside it.
+          The selected tab carries a thick accent underline that SLIDES to it
+          rather than each tab drawing its own — one bar, moved, reads as a
+          single control picking between two states. The bar is a single
+          absolutely-positioned element measured off the active button's own
+          box (see `tabFill` above) so it can slide by any distance between two
+          differently-sized labels. The unselected label stays dimmed rather
+          than plain. The row hugs its tabs (`w-fit`) so `offsetLeft` is
+          measured from the first tab. Spacing to the card is the workspace's
+          own `gap-cp-6`.
+          No pricing banner here — submitting on the Cookbook tab builds the
+          book and hands straight off to CookbookWelcomeDialog on /print,
+          which pitches the price over the finished article instead of a bare
+          choice of tabs (see the pending-import effect's `offerAfter: true`). */}
+      <div
+        ref={tabListRef}
+        className="relative isolate mx-auto flex w-fit gap-cp-4"
+        role="tablist"
+        aria-label="What you're printing"
+      >
+        {tabFill && (
+          <span
+            aria-hidden
+            className="absolute bottom-0 left-0 z-0 h-[3px] bg-[var(--cp-accent)] transition-[transform,width] duration-200 ease-out"
+            style={{ transform: `translateX(${tabFill.left}px)`, width: `${tabFill.width}px` }}
+          />
+        )}
+        <button
+          type="button"
+          role="tab"
+          aria-selected={importKind === "cards"}
+          onClick={() => setImportKind("cards")}
+          className={`relative z-10 px-cp-2 pb-cp-2 pt-cp-1 text-cp-body-lg font-bold text-ink transition-opacity duration-200 ease-out ${
+            importKind === "cards" ? "opacity-100" : "opacity-45 hover:opacity-70"
+          }`}
+        >
+          Recipe cards
+        </button>
+        <button
+          type="button"
+          role="tab"
+          aria-selected={importKind === "cookbook"}
+          onClick={() => setImportKind("cookbook")}
+          className={`relative z-10 flex items-center gap-1 px-cp-2 pb-cp-2 pt-cp-1 text-cp-body-lg font-bold text-ink transition-opacity duration-200 ease-out ${
+            importKind === "cookbook" ? "opacity-100" : "opacity-45 hover:opacity-70"
+          }`}
+        >
+          Cookbook
+          <span className="rp-new-badge">New</span>
+        </button>
+      </div>
       {/* Warmed on the first touch anywhere in the panel, which covers typing,
           dropping a photo and opening a library alike — see `warmWorkspace`. */}
       <div
@@ -315,72 +368,9 @@ export function PrinterWorkspace({
              stays on show. */
           items={[]}
           workspace
-          /* `mb-cp-6`/`lg:mb-cp-7` below: more air under the tabs than the
-             rhythm ImportPanel keeps between its own rows (`gap-cp-5`), on
-             purpose — the tabs are a header for everything under them. */
-          aboveModes={
-            <div className="mb-cp-6 lg:mb-cp-7">
-              {/* What kind of project this import starts, inside the same
-                  card as the sources it's choosing between rather than
-                  floating above it. The selected tab carries a thick accent
-                  underline that SLIDES to it rather than each tab drawing its
-                  own — one bar, moved, reads as a single control picking
-                  between two states. The bar is a single absolutely-positioned
-                  element measured off the active button's own box (see
-                  `tabFill` above) so it can slide by any distance between two
-                  differently-sized labels. The unselected label stays dimmed
-                  rather than plain.
-
-                  The row bleeds out to the panel's own edges (`-mx-3`/`lg:-mx-cp-6`
-                  undoing ImportPanel's padding, restored as `px-*` so the tabs
-                  still start on the content edge), and the negative top margin
-                  trims the panel's top padding above it. Tighter padding than
-                  `.btn-toggle__option` below on purpose — that row is
-                  thumb-sized targets, this is a compact text switch. */}
-              <div
-                ref={tabListRef}
-                className="relative isolate -mx-3 -mt-cp-1 flex gap-cp-4 px-3 lg:-mx-cp-6 lg:-mt-cp-3 lg:px-cp-6"
-                role="tablist"
-                aria-label="What you're printing"
-              >
-                {tabFill && (
-                  <span
-                    aria-hidden
-                    className="absolute bottom-0 left-0 z-0 h-[3px] bg-[var(--cp-accent)] transition-[transform,width] duration-200 ease-out"
-                    style={{ transform: `translateX(${tabFill.left}px)`, width: `${tabFill.width}px` }}
-                  />
-                )}
-                <button
-                  type="button"
-                  role="tab"
-                  aria-selected={importKind === "cards"}
-                  onClick={() => setImportKind("cards")}
-                  className={`relative z-10 px-cp-2 pb-cp-2 pt-cp-1 text-cp-body-lg font-bold text-ink transition-opacity duration-200 ease-out ${
-                    importKind === "cards" ? "opacity-100" : "opacity-45 hover:opacity-70"
-                  }`}
-                >
-                  Recipe cards
-                </button>
-                <button
-                  type="button"
-                  role="tab"
-                  aria-selected={importKind === "cookbook"}
-                  onClick={() => setImportKind("cookbook")}
-                  className={`relative z-10 flex items-center gap-1 px-cp-2 pb-cp-2 pt-cp-1 text-cp-body-lg font-bold text-ink transition-opacity duration-200 ease-out ${
-                    importKind === "cookbook" ? "opacity-100" : "opacity-45 hover:opacity-70"
-                  }`}
-                >
-                  Cookbook
-                  <span className="rp-new-badge">New</span>
-                </button>
-              </div>
-              {/* No pricing banner here — submitting on this tab builds the
-                  book and hands straight off to CookbookWelcomeDialog on
-                  /print, which pitches the price over the finished article
-                  instead of a bare choice of tabs (see the pending-import
-                  effect's `offerAfter: true`). */}
-            </div>
-          }
+          /* Names the source row now that the tabs above it live outside the
+             card and no longer read as its header. */
+          modeLabel="Add from"
           initialMode={initialImportMode}
           submitLabel={importKind === "cookbook" ? "Start my cookbook" : importSubmitLabel}
           submitBusy={opening}
