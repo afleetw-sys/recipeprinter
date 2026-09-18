@@ -608,7 +608,7 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
       {
         question: "Can I fix a recipe before it prints?",
         answer:
-          "Yes. The title, the ingredients, the steps, and the notes are editable right on the card, so you can correct an amount, drop a step you don't need, or add a note of your own before anything reaches the printer.",
+          "Yes. The title, the ingredients, and the steps are editable right on the card, so you can correct an amount, drop a step you don't need, or reword a line before anything reaches the printer.",
       },
       {
         question: "Can I print a whole stack at once?",
@@ -1284,7 +1284,7 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
       {
         question: "What if the amounts are only spoken in the video?",
         answer:
-          "If the creator never wrote them down, RecipePrinter does not guess. You can add the amounts or notes you catch from the video before printing.",
+          "If the creator never wrote them down, RecipePrinter does not guess. You can add the amounts you catch from the video before printing.",
       },
       {
         question: "What happens if the TikTok is deleted later?",
@@ -1364,7 +1364,7 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
         heading: "Your Paprika recipes come with their details",
         image: "paste-in-app",
         body:
-          "Ingredients, directions, prep and cook time, servings, source, and categories all come across with the recipe. Ratings and difficulty do not appear on the printed version.",
+          "Ingredients, directions, prep and cook time, servings, source, and categories all come across with the recipe. Notes appear only in a cookbook, not on recipe cards or single pages. Ratings and difficulty do not appear on the printed version.",
       },
       {
         heading: "Turn your Paprika favorites into something you can keep",
@@ -1393,7 +1393,7 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
       {
         question: "Do my categories and cooking times come across?",
         answer:
-          "Yes. Prep and cook time, servings, source, and categories are preserved when the export has them. Notes, ratings and difficulty are not printed. You can add a note of your own on the card before printing.",
+          "Yes. Prep and cook time, servings, source, and categories are preserved when the export has them. Ratings and difficulty are not printed. Notes appear in a cookbook, not on recipe cards or single pages.",
       },
     ],
     links: [

@@ -84,9 +84,9 @@ export function CookbookWelcomeDialog({
         </div>
         <ul className="cookbook-feature-chips">
           {[
-            "A cover you can put your own photo on",
-            "Chapters and a table of contents, sorted for you",
-            "Nothing ships to you. Print at Lulu, Staples or your own printer",
+            "A cover, chapters and a table of contents, made for you",
+            "Your own photo on the cover, and on any recipe page",
+            "A print-ready PDF for spiral or hardcover binding",
           ].map((item) => (
             <li key={item}><CheckIcon size={ICON_SIZE.sm} />{item}</li>
           ))}

@@ -349,7 +349,7 @@ export const FAQ: FaqItem[] = [
     question: "Can I edit a recipe before printing it?",
     group: "what-you-get",
     answer:
-      "Yes. The title, the ingredients, the steps and the notes are all editable on the card itself. Correct an amount, cut a step you don't need, or add the note you would otherwise have written in the margin.",
+      "Yes. The title, the ingredients and the steps are all editable on the card itself. Correct an amount, cut a step you don't need, or reword a line to say what you actually do.",
   },
   {
     question: "Can I change how the recipe cards look?",

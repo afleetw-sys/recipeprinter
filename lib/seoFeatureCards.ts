@@ -53,7 +53,7 @@ export const YOURS_CARDS: FeatureCard[] = [
     heading: "Inline editing",
     image: "inline-editing",
     body:
-      "The title, ingredients, steps, and notes are editable right on the card. Correct an amount, drop a step you don't need, or add the note you would otherwise have written in the margin.",
+      "The title, ingredients, and steps are editable right on the card. Correct an amount, drop a step you don't need, or reword a line to say what you actually do.",
   },
   {
     heading: "Photos on the card",
@@ -118,6 +118,6 @@ export const POINTS: FeatureCard[] = [
     heading: "Nothing prints until you say so",
     image: "inline-editing",
     body:
-      "You see the card before it goes anywhere, and nothing on it is fixed. Change an amount, cut a step, add a note in your own words.",
+      "You see the card before it goes anywhere, and nothing on it is fixed. Change an amount, cut a step, reword a line in your own words.",
   },
 ];
