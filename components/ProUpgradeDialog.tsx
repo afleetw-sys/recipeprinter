@@ -7,40 +7,20 @@ import { SelectTile } from "@/components/Controls";
 import { CookPilotLoginForm } from "@/components/CookPilotAuth";
 import { CheckIcon, CrownIcon, ICON_SIZE, XIcon } from "@/components/icons";
 import { track } from "@/lib/analytics";
+import { PRO_BENEFITS } from "@/lib/proUpgradeCopy";
 import {
-  PRO_ANNUAL_PRICE_FALLBACK,
-  PRO_MONTHLY_PRICE_FALLBACK,
   PRO_PRICE_FALLBACKS,
-  proAnnualPriceAtMonthlyRate,
   proAnnualSavingsPercent,
   type ProBillingCycle,
 } from "@/lib/proProduct";
-
-// Every one of these is a real, implemented gate (see computeProLocks in
-// lib/recipePrinterPurchases.ts). A "20% off your first cookbook export"
-// line used to sit here too, then got pulled because no checkout path
-// anywhere actually applied the discount — a Pro subscriber was charged the
-// same $19.99 as anyone else. That's fixed now (see
-// lib/cookbookProduct.ts's isFirstCookbookDiscountEligible, threaded through
-// lib/useCookbookPurchase.ts to lib/recipePrinterPurchases.ts's
-// packageForCookbook, which resolves RevenueCat's real `cookbook_pro_first`
-// package). Don't add a benefit back here without wiring the real thing
-// behind it first.
-//
-// Exported so `AccountProStatus` can show the same list to a Free account —
-// one list, so a change here doesn't quietly leave the two surfaces
-// disagreeing about what Pro actually includes.
-export const PRO_BENEFITS = [
-  "All premium themes",
-  "4×6 recipe cards",
-  "Print multiple recipes at once",
-  "20% off your first cookbook",
-];
 
 const PRO_CYCLE_LABEL: Record<ProBillingCycle, string> = {
   annual: "Annual",
   monthly: "Monthly",
 };
+
+// Display order of the plan tiles — Monthly always first, whichever is selected.
+const PRO_PLAN_CYCLES: ProBillingCycle[] = ["monthly", "annual"];
 
 /**
  * The one Pro upsell screen in the app — one dialog, start to finish.
@@ -64,7 +44,8 @@ export function ProUpgradeDialog({
   busy,
   cookPilotUser,
   title = "RecipePrinter Pro",
-  description = "Unlock every premium theme, every print size, and multi-recipe printing.",
+  benefits = PRO_BENEFITS,
+  ctaLabel = "Unlock Pro and continue",
 }: {
   onClose: () => void;
   /** Starts checkout for `cycle` — called immediately for a signed-in cook,
@@ -79,7 +60,9 @@ export function ProUpgradeDialog({
   busy: boolean;
   cookPilotUser: User | null;
   title?: string;
-  description?: string;
+  /** Same benefits as `PRO_BENEFITS`, reordered to lead with what opened this. */
+  benefits?: string[];
+  ctaLabel?: string;
 }) {
   const [step, setStep] = useState<"plan" | "signin">("plan");
   const [selectedCycle, setSelectedCycle] = useState<ProBillingCycle>("monthly");
@@ -106,7 +89,6 @@ export function ProUpgradeDialog({
 
   const closeDisabled = busy || formBusy;
   const savingsPercent = proAnnualSavingsPercent();
-  const annualAtMonthlyRate = proAnnualPriceAtMonthlyRate();
 
   return (
     <Dialog
@@ -143,10 +125,9 @@ export function ProUpgradeDialog({
               {title}
             </h2>
           </div>
-          <p className="text-cp-body text-ink-soft">{description}</p>
 
           <ul className="flex flex-col gap-cp-1">
-            {PRO_BENEFITS.map((benefit) => (
+            {benefits.map((benefit) => (
               <li key={benefit} className="flex items-start gap-cp-2 text-cp-body">
                 <CheckIcon size={ICON_SIZE.sm} className="mt-[3px] shrink-0" />
                 {benefit}
@@ -155,36 +136,33 @@ export function ProUpgradeDialog({
           </ul>
 
           <div className="flex flex-col gap-cp-2" role="radiogroup" aria-label="Billing plan">
-            <SelectTile selected={selectedCycle === "monthly"} className="pro-plan-card">
-              <input
-                type="radio"
-                name="pro-cycle"
-                className="sr-only"
-                checked={selectedCycle === "monthly"}
-                onChange={() => selectCycle("monthly")}
-              />
-              <div className="pro-plan-card__row">
-                <span className="pro-plan-card__name">Monthly</span>
-              </div>
-              <p className="pro-plan-card__price">{PRO_MONTHLY_PRICE_FALLBACK}</p>
-            </SelectTile>
-            <SelectTile selected={selectedCycle === "annual"} className="pro-plan-card">
-              <input
-                type="radio"
-                name="pro-cycle"
-                className="sr-only"
-                checked={selectedCycle === "annual"}
-                onChange={() => selectCycle("annual")}
-              />
-              <div className="pro-plan-card__row">
-                <span className="pro-plan-card__name">Annual</span>
-              </div>
-              <p className="pro-plan-card__price">
-                <span className="pro-plan-card__price--was">{annualAtMonthlyRate}</span>
-                {PRO_ANNUAL_PRICE_FALLBACK}
-              </p>
-              <p className="pro-plan-card__note">Save {savingsPercent}% vs. monthly</p>
-            </SelectTile>
+            {PRO_PLAN_CYCLES.map((cycle) => {
+              const selected = selectedCycle === cycle;
+              return (
+                <SelectTile
+                  key={cycle}
+                  selected={selected}
+                  className={selected ? "pro-plan-card" : "pro-plan-card pro-plan-card--compact"}
+                >
+                  <input
+                    type="radio"
+                    name="pro-cycle"
+                    className="sr-only"
+                    checked={selected}
+                    onChange={() => selectCycle(cycle)}
+                  />
+                  <div className="pro-plan-card__row">
+                    <span className="pro-plan-card__name">{PRO_CYCLE_LABEL[cycle]}</span>
+                  </div>
+                  <p className="pro-plan-card__price">
+                    {PRO_PRICE_FALLBACKS[cycle]}
+                    {cycle === "annual" && (
+                      <span className="pro-plan-card__note"> · Save {savingsPercent}%</span>
+                    )}
+                  </p>
+                </SelectTile>
+              );
+            })}
           </div>
           <button
             type="button"
@@ -192,9 +170,9 @@ export function ProUpgradeDialog({
             disabled={busy}
             onClick={() => handleContinue(selectedCycle)}
           >
-            Continue with {PRO_CYCLE_LABEL[selectedCycle]} ({PRO_PRICE_FALLBACKS[selectedCycle]})
+            {ctaLabel}
           </button>
-          <p className="text-cp-label text-ink-soft">Cancel anytime from your account settings page.</p>
+          <p className="text-cp-label text-ink-soft text-center">Cancel anytime from your account settings page.</p>
         </>
       ) : (
         <>

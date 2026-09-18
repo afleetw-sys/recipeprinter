@@ -6,7 +6,8 @@ import type { CustomerInfo } from "@revenuecat/purchases-js";
 import { CheckIcon, CrownIcon, ICON_SIZE } from "@/components/icons";
 import { ProBadge } from "@/components/ProBadge";
 import { SegmentedControl } from "@/components/Controls";
-import { PRO_BENEFITS, ProUpgradeDialog } from "@/components/ProUpgradeDialog";
+import { ProUpgradeDialog } from "@/components/ProUpgradeDialog";
+import { PRO_BENEFITS } from "@/lib/proUpgradeCopy";
 import { track } from "@/lib/analytics";
 import {
   loadRecipePrinterCustomerInfo,
@@ -20,7 +21,6 @@ import {
   PRO_ANNUAL_PRICE_FALLBACK,
   PRO_MONTHLY_PRICE_FALLBACK,
   PRO_PRICE_FALLBACKS,
-  proAnnualPriceAtMonthlyRate,
   proAnnualSavingsPercent,
   type ProBillingCycle,
 } from "@/lib/proProduct";
@@ -328,17 +328,10 @@ export function AccountProStatus({ user }: { user: User }) {
                   />
                 </div>
                 {billingCycle === "annual" ? (
-                  <div className="mt-1">
-                    {/* Same struck-through "was" price ProUpgradeDialog shows
-                        for Annual — without it, this teaser and the dialog
-                        it opens told two different stories about what
-                        Annual saves. */}
-                    <p className="pro-plan-card__price text-ink-soft">
-                      <span className="pro-plan-card__price--was">{proAnnualPriceAtMonthlyRate()}</span>
-                      {PRO_ANNUAL_PRICE_FALLBACK}
-                    </p>
-                    <p className="pro-plan-card__note">Save {proAnnualSavingsPercent()}% vs. monthly</p>
-                  </div>
+                  <p className="mt-1 text-cp-body font-bold text-ink-soft">
+                    {PRO_ANNUAL_PRICE_FALLBACK}{" "}
+                    <span className="pro-plan-card__note">· Save {proAnnualSavingsPercent()}%</span>
+                  </p>
                 ) : (
                   <p className="mt-1 text-cp-body font-bold text-ink-soft">{PRO_MONTHLY_PRICE_FALLBACK}</p>
                 )}

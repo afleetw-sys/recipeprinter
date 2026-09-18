@@ -4,7 +4,6 @@ import {
   activeProLockReasons,
   canUseCardSize,
   computeProLocks,
-  describeProLockReasons,
   hasMultiRecipeEntitlement,
   hasProEntitlement,
   hasTemplateEntitlement,
@@ -401,45 +400,5 @@ describe("activeProLockReasons", () => {
         "print_button",
       ),
     ).toEqual(["multi_recipe"]);
-  });
-});
-
-describe("describeProLockReasons", () => {
-  test("no reasons falls back to the generic pitch", () => {
-    expect(describeProLockReasons([])).toBe("Unlock the full RecipePrinter Pro toolkit.");
-  });
-
-  test("a single theme lock", () => {
-    expect(describeProLockReasons(["theme"])).toBe("This theme is part of RecipePrinter Pro.");
-  });
-
-  test("a single card-size lock uses plural agreement for its own noun phrase", () => {
-    expect(describeProLockReasons(["card_size"])).toBe(
-      "4×6 recipe cards are part of RecipePrinter Pro.",
-    );
-  });
-
-  test("a single multi-recipe lock", () => {
-    expect(describeProLockReasons(["multi_recipe"])).toBe(
-      "Printing multiple recipes at once is part of RecipePrinter Pro.",
-    );
-  });
-
-  test("two reasons are named explicitly, not summarized as 'a few things'", () => {
-    expect(describeProLockReasons(["theme", "card_size"])).toBe(
-      "This theme and 4×6 recipe cards are part of RecipePrinter Pro.",
-    );
-  });
-
-  test("all three reasons are listed with a serial comma", () => {
-    expect(describeProLockReasons(["theme", "card_size", "multi_recipe"])).toBe(
-      "This theme, 4×6 recipe cards, and printing multiple recipes at once are part of RecipePrinter Pro.",
-    );
-  });
-
-  test("a compound subject always takes 'are', even when every individual reason would take 'is' alone", () => {
-    expect(describeProLockReasons(["theme", "multi_recipe"])).toBe(
-      "This theme and printing multiple recipes at once are part of RecipePrinter Pro.",
-    );
   });
 });

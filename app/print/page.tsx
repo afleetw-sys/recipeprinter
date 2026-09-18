@@ -89,10 +89,10 @@ import { usePremiumTemplatePurchase } from "@/lib/usePremiumTemplatePurchase";
 import { useCookbookPurchase } from "@/lib/useCookbookPurchase";
 import { useProPurchase } from "@/lib/useProPurchase";
 import { ProUpgradeDialog } from "@/components/ProUpgradeDialog";
+import { proUpgradeCopy } from "@/lib/proUpgradeCopy";
 import {
   activeProLockReasons,
   computeProLocks,
-  describeProLockReasons,
   hasMultiRecipeEntitlement,
   hasProEntitlement,
 } from "@/lib/recipePrinterPurchases";
@@ -2937,7 +2937,7 @@ export default function PrintPage() {
     },
   });
   const [showProUpgradeDialog, setShowProUpgradeDialog] = useState(false);
-  // State, not a ref: the dialog's title/description read this during render
+  // State, not a ref: the dialog's title read this during render
   // (see `proUpgradeLockReasons` below) to name the actual reason it opened,
   // which needs a re-render to show up.
   const [proUpgradeTrigger, setProUpgradeTrigger] = useState<string>("print_button");
@@ -3008,11 +3008,7 @@ export default function PrintPage() {
     { themeLocked, cardSizeLocked, multiRecipeLocked },
     proUpgradeTrigger,
   );
-  const proUpgradeTitle =
-    proUpgradeLockReasons.length === 1 && proUpgradeLockReasons[0] === "multi_recipe"
-      ? "Print multiple recipes with Pro"
-      : "Print with RecipePrinter Pro";
-  const proUpgradeDescription = describeProLockReasons(proUpgradeLockReasons);
+  const proUpgradeDialogCopy = proUpgradeCopy(proUpgradeLockReasons, proUpgradeTrigger);
 
   /**
    * Opens the upgrade dialog — plan choice first, for everyone, signed in or
@@ -6113,8 +6109,7 @@ export default function PrintPage() {
         <ProUpgradeDialog
           busy={proBusy}
           cookPilotUser={cookPilotUser}
-          title={proUpgradeTitle}
-          description={proUpgradeDescription}
+          {...proUpgradeDialogCopy}
           onClose={() => {
             // Closing after picking a plan but before finishing sign-in must
             // drop the stored intent — otherwise signing in later through an
