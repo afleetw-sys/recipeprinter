@@ -6092,7 +6092,6 @@ export default function PrintPage() {
            all, so the unlock has to be read directly — this screen is shown
            FROM recipe-cards mode, where `cookbookMode` is false. */
         purchased={isCookbookProjectUnlocked(cookbookProjectId)}
-        empty={recipeCount === 0}
         onClose={() => {
           // The X, Escape and the backdrop only dismiss the panel. The cook
           // just watched this book get built; closing the thing sitting on top

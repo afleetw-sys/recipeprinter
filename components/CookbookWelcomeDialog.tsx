@@ -10,7 +10,6 @@ export function CookbookWelcomeDialog({
   cover,
   price,
   purchased = false,
-  empty = false,
   onStart,
   onClose,
 }: {
@@ -25,8 +24,6 @@ export function CookbookWelcomeDialog({
    * single loudest way to suggest their purchase didn't survive.
    */
   purchased?: boolean;
-  /** The book has no recipes yet — a cook may start one from nothing. */
-  empty?: boolean;
   onStart: () => void;
   /** Dismiss and stay in the book: the X, Escape and the backdrop. */
   onClose: () => void;
@@ -72,21 +69,19 @@ export function CookbookWelcomeDialog({
           <h2 id="cookbook-welcome-title">
             {purchased
               ? "Your cookbook is right where you left it."
-              : "Your cookbook is built."}
+              : "Your cookbook is ready to fill."}
           </h2>
           <p>
             {purchased
               ? "Your cover, chapters and layout are all still here."
-              : empty
-                ? "Your cover and pages are set up. Add recipes whenever you like, and change anything."
-                : "Your recipes are laid out with a cover and chapters. Everything is yours to change."}
+              : "Add recipes, photos, and make changes whenever you like. You won’t pay until you’re ready to export."}
           </p>
         </div>
         <ul className="cookbook-feature-chips">
           {[
-            "A cover, chapters and a table of contents, made for you",
-            "Your own photo on the cover, and on any recipe page",
-            "A print-ready PDF for spiral or hardcover binding",
+            "Cover, chapters, and table of contents",
+            "Add your own photos to the cover or recipe pages",
+            "Print-ready PDF for spiral or hardcover binding",
           ].map((item) => (
             <li key={item}><CheckIcon size={ICON_SIZE.sm} />{item}</li>
           ))}
@@ -99,14 +94,14 @@ export function CookbookWelcomeDialog({
             </span>
           ) : (
             <>
-              <b>{price}</b>
-              <span>Paid once, the first time you export this cookbook. Editing it is free until then.</span>
+              <b>{price} one time</b>
+              <span>Pay when you export. After that, you can keep editing and re-exporting this cookbook at no extra cost.</span>
             </>
           )}
         </div>
         <div className="cookbook-welcome__actions">
           <button type="button" className="btn btn-primary" onClick={onStart}>
-            {purchased ? "Open my cookbook" : "Start editing"}
+            {purchased ? "Open my cookbook" : "Start adding recipes"}
           </button>
         </div>
       </div>
