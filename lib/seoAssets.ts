@@ -112,6 +112,12 @@ export const FEATURE_IMAGES: Record<string, ProofImage> = {
     height: 3800,
     alt: "A TikTok recipe brought into RecipePrinter for editing and printing.",
   },
+  "youtube-import": {
+    src: "/images/youtube.png",
+    width: 6350,
+    height: 3800,
+    alt: "A YouTube recipe brought into RecipePrinter for editing and printing.",
+  },
   "handwritten-card": {
     src: "/images/jackie-card.jpeg",
     width: 1800,

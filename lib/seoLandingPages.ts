@@ -1448,7 +1448,7 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
     featureSections: [
       {
         heading: "Keep the recipe, skip everything around it",
-        image: "steps",
+        image: "youtube-import",
         body:
           "YouTube descriptions often mix the recipe with equipment links, discount codes, timestamps, and channel information. RecipePrinter pulls out the ingredients and steps so you are left with the part you actually need in the kitchen.",
       },
