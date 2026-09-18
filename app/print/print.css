@@ -6208,6 +6208,7 @@ textarea.recipe-card__toc-title {
 }
 
 .recipe-card__label {
+  position: relative;
   font-size: var(--recipe-card-label-size);
   font-weight: 800;
   text-transform: uppercase;
@@ -6215,6 +6216,14 @@ textarea.recipe-card__toc-title {
   color: var(--recipe-accent);
   margin-top: 4px;
   margin-bottom: 6px;
+}
+
+/* Same hover-reveal as a row's own "+ Add below" (see `.recipe-card__editable-
+   line:hover` above) — this one lets a section title go in first, before any
+   existing ingredient/step, instead of only ever landing after one. */
+.recipe-card__label:hover > .recipe-card__add-line {
+  opacity: 1;
+  pointer-events: auto;
 }
 
 .recipe-card__continued-inline {

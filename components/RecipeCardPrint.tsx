@@ -1095,7 +1095,10 @@ export const RecipeCardFace = memo(function RecipeCardFace({
             className={`recipe-card__ingredients ${ingredientsWide ? "recipe-card__ingredients--wide" : ""}`}
             ref={ingredientsWide ? ingredientColumns.sectionRef : undefined}
           >
-            <h2 className="recipe-card__label">Ingredients</h2>
+            <h2 className="recipe-card__label">
+              Ingredients
+              {ingredientGroups.length > 0 && addLine("ingredient", 0)}
+            </h2>
             {ingredientGroups.length === 0 ? (
               showEmptyIngredients && (
                 <div className="recipe-card__section-groups">
@@ -1184,6 +1187,7 @@ export const RecipeCardFace = memo(function RecipeCardFace({
               ) : (
                 ""
               )}
+              {instructionGroups.length > 0 && addLine("step", 0)}
             </h2>
             {instructionGroups.length === 0 ? (
               showEmptyInstructions && (
