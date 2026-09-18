@@ -59,16 +59,16 @@ export function CookbookWelcomeDialog({
         </div>
         <ul className="cookbook-feature-chips">
           {[
-            "Cover, chapters, table of contents, and page layout done for you",
-            "Add your own recipes and photos, and change anything anytime",
-            "Export a print-ready PDF for spiral or hardcover binding",
+            "Layout, cover, chapters, and table of contents done for you",
+            "Add your own recipes and photos. Change anything anytime.",
+            "Print-ready PDF for spiral or hardcover binding",
           ].map((item) => (
             <li key={item}><CheckIcon size={ICON_SIZE.sm} />{item}</li>
           ))}
         </ul>
         <div className="cookbook-welcome__price">
           <b>{price} one time</b>
-          <span>Pay only when you’re ready to export. Keep editing and re-exporting this cookbook at no extra cost.</span>
+          <span>Pay when you export. Edit and re-export this cookbook anytime at no extra cost.</span>
         </div>
         <div className="cookbook-welcome__actions">
           <button type="button" className="btn btn-primary" onClick={onStart}>
