@@ -2,7 +2,7 @@
 
 import Image from "next/image";
 import { Dialog } from "@/components/Dialog";
-import { ICON_SIZE, XIcon } from "@/components/icons";
+import { CheckIcon, ICON_SIZE, XIcon } from "@/components/icons";
 import type { CoverConfig } from "@/types/recipe";
 
 export function CookbookWelcomeDialog({
@@ -54,12 +54,21 @@ export function CookbookWelcomeDialog({
       </div>
       <div className="cookbook-welcome__copy">
         <div className="cookbook-welcome__lede">
-          <h2 id="cookbook-welcome-title">Your cookbook is ready for recipes.</h2>
-          <p>Add recipes, photos, and make changes anytime. You won’t pay until you’re ready to export.</p>
+          <h2 id="cookbook-welcome-title">Turn your recipes into a finished cookbook.</h2>
+          <p>We’ll handle the layout as you add recipes, so you can focus on making it yours.</p>
         </div>
+        <ul className="cookbook-feature-chips">
+          {[
+            "Cover, chapters, table of contents, and page layout done for you",
+            "Add your own recipes and photos, and change anything anytime",
+            "Export a print-ready PDF for spiral or hardcover binding",
+          ].map((item) => (
+            <li key={item}><CheckIcon size={ICON_SIZE.sm} />{item}</li>
+          ))}
+        </ul>
         <div className="cookbook-welcome__price">
           <b>{price} one time</b>
-          <span>Export a print-ready PDF, then keep editing and re-exporting this cookbook at no extra cost.</span>
+          <span>Pay only when you’re ready to export. Keep editing and re-exporting this cookbook at no extra cost.</span>
         </div>
         <div className="cookbook-welcome__actions">
           <button type="button" className="btn btn-primary" onClick={onStart}>

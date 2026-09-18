@@ -460,6 +460,29 @@
   font-size: var(--cp-fs-body);
   line-height: 1.5;
 }
+.cookbook-feature-chips {
+  display: grid;
+  gap: .55rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.cookbook-feature-chips li {
+  display: flex;
+  align-items: center;
+  gap: .55rem;
+  color: var(--cp-ink);
+  font-size: var(--cp-fs-body);
+  font-weight: 600;
+  line-height: 1.25;
+}
+.cookbook-feature-chips li svg {
+  flex: none;
+  /* The ink sibling, not the base: these ticks carry the meaning "included",
+     so they are read rather than decorative. Raw clay is 3.7:1 on card — over
+     the 3:1 icon bar but under the bar for anything load-bearing. */
+  color: var(--cp-accent-warm);
+}
 .cookbook-welcome__price {
   display: grid;
   gap: .3rem;
@@ -983,6 +1006,12 @@
   .cookbook-welcome__copy {
     gap: 1rem;
     padding: 1.25rem;
+  }
+  .cookbook-feature-chips {
+    gap: .45rem;
+  }
+  .cookbook-feature-chips li {
+    font-size: var(--cp-fs-small);
   }
 }
 
