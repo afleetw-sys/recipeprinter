@@ -4,6 +4,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import Image from "next/image";
 import { ChevronLeftIcon, ChevronRightIcon, ICON_SIZE, XIcon } from "@/components/icons";
 import { Dialog } from "@/components/Dialog";
+import { AddYoursDialog } from "@/components/AddYoursDialog";
 import { COMMUNITY_PHOTOS, type CommunityPhoto } from "@/lib/communityGallery";
 
 // ─────────────────────────────────────────────────────────────────────────
@@ -71,6 +72,7 @@ export function CommunityGallery({
   const cards: CommunityPhoto[] = showPlaceholder ? PLACEHOLDERS : items;
 
   const [spotlight, setSpotlight] = useState<number | null>(null);
+  const [addYoursOpen, setAddYoursOpen] = useState(false);
 
   if (cards.length === 0) return null;
 
@@ -83,7 +85,16 @@ export function CommunityGallery({
       className="pt-[5rem] sm:pt-[10rem] flex flex-col gap-cp-3"
       aria-labelledby="rp-gallery-heading"
     >
-      <Header />
+      <div className="flex items-center justify-between gap-cp-3">
+        <Header />
+        <button
+          type="button"
+          onClick={() => setAddYoursOpen(true)}
+          className="btn btn-secondary btn-compact shrink-0"
+        >
+          Add yours
+        </button>
+      </div>
       <Carousel
         count={cards.length}
         label="Photos of printed recipe cards"
@@ -121,6 +132,8 @@ export function CommunityGallery({
         onIndex={setSpotlight}
         onClose={() => setSpotlight(null)}
       />
+
+      <AddYoursDialog open={addYoursOpen} onClose={() => setAddYoursOpen(false)} />
     </section>
   );
 }

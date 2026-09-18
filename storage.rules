@@ -91,6 +91,15 @@ service firebase.storage {
       allow create: if validDebugCapture();
     }
 
+    // "Add yours" on the homepage gallery (lib/gallerySubmissions.ts). Same
+    // write-only drop box as the one above: unauthenticated create, no read,
+    // so a submitted photo can only be retrieved from the Firebase console
+    // (admin access, not these rules) — never served back to a browser.
+    match /recipeprinter/gallery-submissions/{path=**} {
+      allow read, update, delete: if false;
+      allow create: if validImage();
+    }
+
     // ── Recipe Printer migration compatibility ─────────────────────────────
     // Photos written by an older build, at recipeprinter/photos/{uid}/... or
     // recipeprinter/photos/anon/.... READ-ONLY, and that is the fix.

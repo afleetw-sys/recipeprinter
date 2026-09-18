@@ -25,8 +25,18 @@ export const RECIPE_PRINTER_FEEDBACK_PATH = [
   "feedback",
 ] as const;
 
+/** "Add yours" on the homepage gallery — see lib/gallerySubmissions. Write-only
+    from the browser, same shape as feedback above: reviewing one means opening
+    the Firebase console, not reading it back through the client SDK. */
+export const RECIPE_PRINTER_GALLERY_SUBMISSIONS_PATH = [
+  ...RECIPE_PRINTER_PRODUCT_PATH,
+  "gallerySubmissions",
+] as const;
+
 export const RECIPE_PRINTER_PHOTO_ROOT = "recipeprinter/photos";
 export const RECIPE_PRINTER_DEBUG_ROOT = "recipeprinter/debug/failed-imports";
+export const RECIPE_PRINTER_GALLERY_SUBMISSIONS_STORAGE_ROOT =
+  "recipeprinter/gallery-submissions";
 
 export function recipePrinterUserPhotoRoot(uid: string) {
   return `${RECIPE_PRINTER_PHOTO_ROOT}/users/${uid}`;

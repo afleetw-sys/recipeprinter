@@ -248,6 +248,22 @@ service cloud.firestore {
       allow read, update, delete: if false;
     }
 
+    // "Add yours" on the homepage gallery (see lib/gallerySubmissions.ts).
+    // Same write-only shape as feedback above — create only, never read back
+    // by a client, reviewed from the Firebase console instead.
+    match /products/recipePrinter/gallerySubmissions/{submissionId} {
+      allow create: if request.resource.data.keys().hasOnly([
+          "email", "imagePath", "status", "source", "createdAt"
+        ])
+        && (request.resource.data.email == null
+            || (request.resource.data.email is string && request.resource.data.email.size() <= 200))
+        && request.resource.data.imagePath is string
+        && request.resource.data.imagePath.matches("recipeprinter/gallery-submissions/.*")
+        && request.resource.data.status == "new"
+        && request.resource.data.source == "fresh-off-the-printer";
+      allow read, update, delete: if false;
+    }
+
     // ── Recipe Printer migration compatibility ─────────────────────────────
     // Keep these until the backfill and backend claim migration are verified.
     match /users/{uid}/printProjects/{projectId} {

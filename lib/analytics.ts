@@ -402,6 +402,10 @@ type EventProps = {
   duplicate_projects_cleaned: { count: number };
 
   feedback_submitted: { type: FeedbackType };
+
+  /** "Add yours" on the homepage's "Fresh off the printer" strip. Fires once
+      the photo and doc have actually landed — see lib/gallerySubmissions. */
+  gallery_photo_submitted: {};
 };
 
 export type AnalyticsEventName = keyof EventProps;

@@ -10,14 +10,11 @@
 // a photo of a spiral cookbook open on a counter answers the question a
 // visitor actually has, which is whether this looks good on paper.
 //
-// Curated. Entries are committed here, so there is no upload endpoint, no
-// Storage rules and no moderation queue.
-//
-// There is no way for a visitor to submit one at the moment. If that comes
-// back, it belongs on email rather than an upload box, and the thread is what
-// records the sender's permission: these are photographs of other people's
-// homes, so the ask has to name where the picture may be used and how to have
-// it taken down.
+// Curated. Entries are committed here — a visitor's submission does not land
+// in this array by itself. "Add yours" (see lib/gallerySubmissions.ts) writes
+// a photo and a short note to a write-only Firebase inbox; getting one onto
+// this page is still a person reviewing the console and adding it here by
+// hand, exactly like every entry already below.
 // ─────────────────────────────────────────────────────────────────────────
 
 export type CommunityPhoto = {
