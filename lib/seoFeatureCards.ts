@@ -30,7 +30,7 @@ export const IMPORT_CARDS: FeatureCard[] = [
     heading: "Ad-free imports",
     image: "before-after",
     body:
-      "The title, ingredients, instructions, notes, prep time, cook time, and servings come across when the page has them. Ads, pop-ups, comments, autoplay video, and the story before the recipe do not.",
+      "The title, ingredients, instructions, prep time, cook time, and servings come across when the page has them. Ads, pop-ups, comments, autoplay video, and the story before the recipe do not.",
   },
   {
     heading: "Links, photos, screenshots, and text",

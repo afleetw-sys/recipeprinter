@@ -2,7 +2,7 @@
 
 import Image from "next/image";
 import { Dialog } from "@/components/Dialog";
-import { CheckIcon, ICON_SIZE, SpinnerIcon, XIcon } from "@/components/icons";
+import { CheckIcon, ICON_SIZE, XIcon } from "@/components/icons";
 import type { CoverConfig } from "@/types/recipe";
 
 export function CookbookWelcomeDialog({
@@ -113,38 +113,3 @@ export function CookbookWelcomeDialog({
     </Dialog>
   );
 }
-
-export function CookbookBuildReveal({ open }: { open: boolean }) {
-  /**
-   * One reveal, whatever the book has in it.
-   *
-   * This used to gather a pile of the cook's recipe photos — a good picture of
-   * assembling a book FROM a collection, and the wrong one for the person
-   * meeting this screen, who usually has one recipe and often no photo. The
-   * fix was briefly a second animation for that case, which made the wait look
-   * like two different operations depending on how much you happened to have.
-   *
-   * It is the same operation. It gets the same spinner.
-   */
-  return (
-    <Dialog
-      open={open}
-      onClose={() => undefined}
-      closeDisabled
-      label="Making your cookbook"
-      className="cookbook-build-reveal no-print"
-      portal
-    >
-      <div className="cookbook-build-reveal__glow" aria-hidden />
-      <div className="cookbook-build-reveal__content">
-        <span className="cookbook-build-reveal__spinner" aria-hidden>
-          <SpinnerIcon size={32} />
-        </span>
-        <div className="cookbook-build-reveal__copy">
-          <strong>Making your cookbook…</strong>
-        </div>
-      </div>
-    </Dialog>
-  );
-}
-

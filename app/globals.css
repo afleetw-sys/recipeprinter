@@ -314,95 +314,6 @@
   opacity: .34;
 }
 
-.cookbook-build-reveal {
-  position: fixed;
-  inset: 0;
-  z-index: 100;
-  display: grid;
-  place-items: center;
-  overflow: hidden;
-  background: color-mix(in srgb, var(--cp-page) 95%, var(--cp-card));
-  backdrop-filter: blur(16px);
-  animation: cookbook-reveal-in 260ms ease both;
-}
-/* Soft accent "aurora" — two blurred blobs drifting behind the book. */
-.cookbook-build-reveal__glow {
-  position: absolute;
-  width: min(64vw, 640px);
-  aspect-ratio: 1;
-  border-radius: 50%;
-  background: radial-gradient(circle, color-mix(in srgb, var(--cp-accent-warm) 26%, transparent), transparent 66%);
-  filter: blur(32px);
-  animation: cookbook-reveal-drift 6.5s ease-in-out infinite alternate;
-}
-.cookbook-build-reveal__glow::after {
-  content: "";
-  position: absolute;
-  inset: -24% -30% auto auto;
-  width: 68%;
-  aspect-ratio: 1;
-  border-radius: 50%;
-  background: radial-gradient(circle, color-mix(in srgb, var(--cp-accent-warm) 20%, transparent), transparent 64%);
-  filter: blur(30px);
-  animation: cookbook-reveal-drift 8s ease-in-out infinite alternate-reverse;
-}
-.cookbook-build-reveal__content {
-  position: relative;
-  display: grid;
-  place-items: center;
-  gap: .75rem;
-  text-align: center;
-  animation: cookbook-reveal-book 640ms cubic-bezier(.2, .8, .2, 1) both;
-}
-/* The build overlay: one spinner, whatever is in the book. No progress bar,
-   because there is no honest number to show. */
-.cookbook-build-reveal__spinner svg {
-  color: var(--cp-accent-warm);
-}
-
-.cookbook-build-reveal__spinner {
-  display: grid;
-  place-items: center;
-  /* Clay lives on the child svg, not here: a spinner is a graphic and clears
-     the 3:1 bar, but the rule painting it has to say so — see the clay check
-     in scripts/design-system-audit.mjs. */
-  /* Room around the 32px spinner without the panel collapsing to it. Was 96,
-     sized for a photo pile this no longer draws. */
-  height: 56px;
-}
-.cookbook-build-reveal__copy {
-  display: grid;
-  justify-items: center;
-  gap: .5rem;
-  color: var(--cp-ink);
-}
-.cookbook-build-reveal__copy span {
-  color: var(--cp-ink);
-  font-size: var(--cp-fs-label);
-  font-weight: 800;
-  letter-spacing: .16em;
-  text-transform: uppercase;
-}
-/* A dialog title, at the scale every other dialog title uses. This was
-   clamp(1.4rem, 3vw, 1.95rem) — up to 31px, larger than any heading the app
-   shows anywhere else — for a line that says a spinner is spinning. */
-.cookbook-build-reveal__copy strong {
-  font-size: var(--cp-fs-h2);
-  font-weight: 800;
-  letter-spacing: -.01em;
-}
-@keyframes cookbook-reveal-in {
-  from { opacity: 0; }
-}
-@keyframes cookbook-reveal-book {
-  from { opacity: 0; transform: translateY(22px); }
-  to { opacity: 1; transform: translateY(0); }
-}
-@keyframes cookbook-reveal-drift {
-  from { transform: translate3d(-4%, -2%, 0) scale(1); opacity: .85; }
-  to { transform: translate3d(5%, 3%, 0) scale(1.12); opacity: 1; }
-}
-
 .cookbook-welcome,
 .cookbook-ready {
   position: fixed;
@@ -1125,12 +1036,6 @@
   }
   .recipe-print-shell--entering-cookbook {
     transform: none;
-  }
-  .cookbook-build-reveal,
-  .cookbook-build-reveal__glow,
-  .cookbook-build-reveal__glow::after,
-  .cookbook-build-reveal__content {
-    animation: none;
   }
 }
 

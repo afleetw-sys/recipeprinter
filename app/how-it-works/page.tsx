@@ -41,7 +41,7 @@ const FAQS = [
   {
     question: "Does it change the recipe?",
     answer:
-      "No. It copies rather than rewrites, so amounts, steps, notes and times arrive as the source wrote them. A photo or a video takes more reading than a written page does, and either way you see the finished card before anything prints.",
+      "No. It copies rather than rewrites, so amounts, steps and times arrive as the source wrote them. A photo or a video takes more reading than a written page does, and either way you see the finished card before anything prints.",
   },
   {
     question: "What if the recipe only exists as a photo?",

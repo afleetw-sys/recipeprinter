@@ -1364,7 +1364,7 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
         heading: "Your Paprika recipes come with their details",
         image: "paste-in-app",
         body:
-          "Ingredients, directions, notes, prep and cook time, servings, source, and categories all come across with the recipe. Ratings and difficulty do not appear on the printed version.",
+          "Ingredients, directions, prep and cook time, servings, source, and categories all come across with the recipe. Ratings and difficulty do not appear on the printed version.",
       },
       {
         heading: "Turn your Paprika favorites into something you can keep",
@@ -1391,9 +1391,9 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
           "Yes, with RecipePrinter Pro. You can also choose only the recipes you actually want and add those to the print queue.",
       },
       {
-        question: "Do the notes and categories I added come across?",
+        question: "Do my categories and cooking times come across?",
         answer:
-          "Yes. Notes, prep and cook time, servings, source, and categories are preserved when supported by the exported recipe. Ratings and difficulty are not printed.",
+          "Yes. Prep and cook time, servings, source, and categories are preserved when the export has them. Notes, ratings and difficulty are not printed. You can add a note of your own on the card before printing.",
       },
     ],
     links: [

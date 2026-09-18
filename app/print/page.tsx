@@ -13,7 +13,7 @@ import { PrintDialogs } from "@/components/PrintDialogs";
 import { AddRecipeDialog } from "@/components/AddRecipeDialog";
 import { sectionOrderChanged, sortSectionsByTitle } from "@/lib/sectionSort";
 import { ConfirmDialog } from "@/components/ConfirmDialog";
-import { CookbookBuildReveal, CookbookWelcomeDialog } from "@/components/CookbookWelcomeDialog";
+import { CookbookWelcomeDialog } from "@/components/CookbookWelcomeDialog";
 import { CookbookReadyDialog } from "@/components/CookbookReadyDialog";
 import {
   CookbookPdfError,
@@ -2138,7 +2138,7 @@ export default function PrintPage() {
     );
     projectMeta.setSectionStructure(next);
     track("relayout_applied", { sectionCount: next.length, automatic });
-    // No toast for the automatic run: it lands mid-build-reveal, where it would
+    // No toast for the automatic run: it lands while the book is being built, where it would
     // be a notification about something the cook is already watching happen.
     if (!automatic) showToast(cookbookMode ? "Cookbook organized" : "Recipes organized");
   }
@@ -5547,7 +5547,7 @@ export default function PrintPage() {
       <main
         className={`recipe-print-shell px-cp-6 print:p-0 ${
           previewMeasuring ? "recipe-print-shell--measuring" : ""
-        } ${showCookbookOfferDialog || cookbookBuilding ? "recipe-print-shell--entering-cookbook" : ""} ${
+        } ${showCookbookOfferDialog ? "recipe-print-shell--entering-cookbook" : ""} ${
           organizeMode ? "recipe-print-shell--organizing" : ""
         } ${organizeWide ? "recipe-print-shell--organize-wide" : ""} ${
           organizeAnimating ? "recipe-print-shell--organize-animating" : ""
@@ -6104,7 +6104,6 @@ export default function PrintPage() {
           setShowCookbookOfferDialog(false);
         }}
       />
-      <CookbookBuildReveal open={cookbookBuilding} />
       {showProUpgradeDialog && (
         <ProUpgradeDialog
           busy={proBusy}
