@@ -106,6 +106,12 @@ export const FEATURE_IMAGES: Record<string, ProofImage> = {
     alt:
       "A Paprika recipe export opened in RecipePrinter, showing two imported recipes ready to select and print.",
   },
+  "tiktok-import": {
+    src: "/images/tiktok.png",
+    width: 6350,
+    height: 3800,
+    alt: "A TikTok recipe brought into RecipePrinter for editing and printing.",
+  },
   "handwritten-card": {
     src: "/images/jackie-card.jpeg",
     width: 1800,

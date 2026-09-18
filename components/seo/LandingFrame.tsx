@@ -287,7 +287,7 @@ export function LandingFrame({
           placeholder and submit wording; sending someone to the home page
           would throw all of that away and land them somewhere they did not
           ask for. */}
-      <SiteHeader actions={headerActions} sticky chrome="mobile" />
+      <SiteHeader actions={headerActions} sticky chrome="page" />
       <main className="flex-1 px-cp-6 sm:px-cp-7 lg:px-[40px]">
         <div className="max-w-content mx-auto flex flex-col gap-[84px] lg:gap-[112px] pt-cp-5 pb-[80px]">
           {children}
