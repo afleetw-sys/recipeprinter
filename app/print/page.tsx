@@ -539,8 +539,9 @@ export default function PrintPage() {
   const lastSavedCookbookModeRef = useRef<boolean>(false);
   const lastAttemptedFingerprintRef = useRef<string | null>(null);
   const saveInFlightRef = useRef(false);
-  /** The first save of a new cookbook is made on the cook's behalf, so it does not
-      announce "Saved to your account" the way a Save they pressed does. */
+  /** The first save of a new cookbook is made on the cook's behalf and the rail
+      already reports it, so it skips the "Saved to Projects" toast a card job's
+      first save gets. */
   const quietFirstSaveRef = useRef(false);
   /**
    * Which write the page is currently waiting on.
@@ -2484,13 +2485,13 @@ export default function PrintPage() {
         pending.layout,
       );
       setSaveStatus("saved");
-      // Said once, at the one moment it's true: the button that just
-      // reported every save from here in disappears (see
-      // `renderSaveControl`), and a cook who never sees it again
-      // shouldn't have to guess why. Not shown again after this — every
-      // later save already looks exactly like what this promises.
+      // Said once, at the one moment it's true. A card job becomes a project
+      // when its second recipe arrives, with nobody pressing anything, so this
+      // is the only place a cook learns it happened and that it will keep
+      // going. After it the header carries a quiet "Saved" (see
+      // `renderSaveControl`); it is not announced again.
       if (isFirstSave && !quietFirstSaveRef.current) {
-        setToastMessage("Saved to your account. We'll autosave from here on.");
+        setToastMessage("Saved to Projects. This project will keep saving automatically.");
       }
       quietFirstSaveRef.current = false;
     } catch (error) {
@@ -3750,9 +3751,10 @@ export default function PrintPage() {
    * Which projects write themselves to the account, without being asked: the
    * ones somebody asked us to keep, and only those. One rule, both kinds.
    *
-   * Save once, and every edit after that is an edit to a thing in your library,
-   * so it goes there on its own. Until then nothing is written, and the bar
-   * shows a Save button rather than a claim.
+   * Once a copy exists, every edit after that is an edit to a thing in your
+   * library, so it goes there on its own. Until then nothing is written and the
+   * bar makes no claim. What starts the first copy is `keptAutomatically` (a
+   * cookbook, or a second recipe) or a signed-out cook signing in to keep it.
    *
    * Cookbooks used to be exempt — `isCookbookDocument` was ORed in here, so a
    * book autosaved from its first edit on the reasoning that building one was
@@ -3784,35 +3786,48 @@ export default function PrintPage() {
   const autosaveEnabledForCurrentMode = autosaveEnabled && lastSavedCookbookModeRef.current === cookbookMode;
 
   /**
-   * A cookbook signed in cooks build is kept from the moment it exists.
+   * The two kinds of job a signed-in cook never has to ask us to keep.
    *
-   * Recipe cards still wait for a first Save press (see `autosaveEnabled`), but
-   * a book is not a Tuesday's dinner print: making one is deliberate, and it is
-   * the thing most worth not losing. This is the one save nobody presses. It
-   * fires once per project, after the build reveal has finished so the book
-   * that lands is the finished one and not the empty shell, and it hands over
-   * to the ordinary autosave the moment it lands (`savedProjectId` is set,
-   * and `lastSavedCookbookModeRef` now agrees with the mode).
+   * A cookbook is kept from the moment it exists: it is deliberate, and it is
+   * the thing most worth not losing. A card job is kept once it has a second
+   * recipe: one recipe is a quick print that should not feel like a project,
+   * two is something a cook is putting together and will want back. Neither
+   * has a Save button. Below that (one card) nothing is written until the job
+   * grows or somebody signs in and asks, from the leave dialog.
    *
-   * The two reasons cookbooks lost this before are answered differently. A card
-   * job that was once a cookbook no longer counts — the switch back to recipe
-   * cards is gone, and this reads `cookbookMode`, never the stash. And the save
-   * is not silent: the rail says "Saving…" then "Saved" beside the recipe
-   * count, and a failure surfaces in the header with a retry.
+   * This is the one save nobody presses. It fires once per project, after the
+   * build reveal has finished so the book that lands is the finished one and
+   * not the empty shell, and it hands over to the ordinary autosave the moment
+   * it lands (`savedProjectId` is set, and `lastSavedCookbookModeRef` now
+   * agrees with the mode). It is level-triggered, not an event on "a recipe
+   * was added": a job that reaches two recipes while signed out is kept the
+   * moment its cook signs in, and a job restored with several recipes is not a
+   * quick print either.
+   *
+   * The reasons cookbooks lost this before are answered differently. A card
+   * job that was once a cookbook no longer counts as one — the switch back to
+   * recipe cards is gone, and this reads `cookbookMode`, never the stash. And
+   * the save is not silent: the header (cards) or the rail (cookbooks) says
+   * "Saving…" then "Saved", the first save of a card job says so in a toast,
+   * and a failure surfaces in the header with a retry.
    */
-  const cookbookCreateSaveRef = useRef<string | null>(null);
+  const keptOnItsOwnRef = useRef<string | null>(null);
+  const keptAutomatically = cookbookMode || (items?.length ?? 0) >= 2;
   useEffect(() => {
-    if (!cookPilotUser || !cookbookMode || savedToProfile) return;
+    if (!cookPilotUser || !keptAutomatically || savedToProfile) return;
     if (projectLoading || !projectAttachChecked || cookbookBuilding || !items?.length) return;
-    if (cookbookCreateSaveRef.current === cookbookProjectId) return;
-    cookbookCreateSaveRef.current = cookbookProjectId;
-    quietFirstSaveRef.current = true;
+    if (keptOnItsOwnRef.current === cookbookProjectId) return;
+    keptOnItsOwnRef.current = cookbookProjectId;
+    // A save is already carrying this job (a sign-in intent replayed just
+    // before this ran). It reports itself, and a failure has its own retry.
+    if (saveInFlightRef.current) return;
+    quietFirstSaveRef.current = cookbookMode;
     void handleSaveProject();
     // handleSaveProject reads the latest render state, like the autosave below.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [
     cookPilotUser,
-    cookbookMode,
+    keptAutomatically,
     savedToProfile,
     projectLoading,
     projectAttachChecked,
@@ -4061,36 +4076,27 @@ export default function PrintPage() {
      get back to the rest of them. */
 
   /**
-   * How this project stands, or the button to change that — shared by the
-   * desktop header and the mobile topbar (see PrintDeck.tsx) so the two
-   * can't drift into reporting save state differently.
+   * How this project stands — shared by the desktop header and the mobile
+   * topbar (see PrintDeck.tsx) so the two can't drift into reporting save
+   * state differently.
    *
-   * The control and the state are one thing, and which one shows is decided
-   * by whether there is a save to report — NOT by whether this kind of
-   * project autosaves. It used to be the latter, and that hid the two
-   * moments that matter most: a project that does not autosave yet showed a
-   * Save button throughout its own first save, so pressing Save did nothing
-   * visible while a book full of photos uploaded, and a first save that
-   * FAILED was cleared back to the same button with no word said. The one
-   * press a cook has to trust was the one press that never reported
-   * anything.
+   * There is no prominent Save button. One recipe is a quick, one-time print
+   * and should not feel like a project; from the second recipe, and from the
+   * start for a cookbook, a signed-in cook's job is kept on its own (see
+   * `keptAutomatically`). So this reports rather than asks:
    *
-   * This isn't a traditional "save your work or lose it" button — the
-   * document already lives in this browser session either way, and Save's
-   * real job is the one-time "put this in my account" decision
-   * (`savedToProfile`, set the moment that first save lands). Everything
-   * after that is autosave, which — like Figma, Notion or Canva's — earns
-   * the right to stay quiet: a cook who already said yes once doesn't need
-   * a running commentary on every save it makes on their behalf.
+   * - a failure: the word as a button that retries, in the error colour;
+   * - saving: a quiet spinner and "Saving…";
+   * - kept: a quiet, persistent check and "Saved". A cookbook says this in
+   *   the page rail beside its recipe count (`bookSaveNote`), so its header
+   *   keeps it screen-reader-only instead of saying it twice;
+   * - not kept and nothing to report: nothing.
    *
-   * So: nothing saved yet, a button; that FIRST save in flight, a spinner
-   * in the same spot, because nothing has earned "automatic" yet and a
-   * cook who just pressed something deliberate should see it respond;
-   * every save after that (in flight or landed), nothing at all — there's
-   * nothing left to decide, so there's nothing shown, and the idle button
-   * only reappears if a save actually needs retrying; a save that failed,
-   * the word as a button that retries. Leaving the workspace files it
-   * anyway (see `handleNavigateHome`); this is for saving without leaving.
+   * The one place a button survives is a SIGNED-OUT cook with a project worth
+   * keeping (two recipes or a cookbook). There is no account to write to, so
+   * nothing can happen automatically and the only way to keep it is to sign
+   * in; "Save" is the door to that. A single card gets no door at all here,
+   * though the leave dialog still offers one on the way out.
    */
   function renderSaveControl() {
     if (saveStatus) {
@@ -4108,46 +4114,41 @@ export default function PrintPage() {
           </button>
         );
       }
-      // Saving, before this project has ever been saved: still the
-      // icon-only box, so a cook who just pressed the one deliberate,
-      // rare "put this in my account" button sees it respond — the one
-      // case above where showing nothing would read as broken rather
-      // than automatic, because nothing has EARNED "automatic" yet.
-      if (saveStatus === "saving" && !savedToProfile && !(cookbookMode && cookPilotUser)) {
+      // A cookbook's rail already says Saving/Saved; still announced here
+      // for anyone on a screen reader, just not painted twice.
+      if (cookbookMode) {
         return (
-          <span
-            className="btn btn-secondary btn-compact"
-            role="status"
-            aria-live="polite"
-          >
-            <SpinnerIcon size={ICON_SIZE.md} />
+          <span className="sr-only" role="status" aria-live="polite">
+            {SAVE_STATUS_LABEL[saveStatus]}
+          </span>
+        );
+      }
+      if (saveStatus === "saving") {
+        return (
+          <span className="rp-save-status" role="status" aria-live="polite">
+            <SpinnerIcon size={ICON_SIZE.sm} />
             {SAVE_STATUS_LABEL.saving}
           </span>
         );
       }
-      // Every ordinary autosave after that (saving or landed) once the
-      // project already belongs to the account: nothing. Every comparable
-      // cloud document — Figma, Notion, Canva — shows nothing during its
-      // own routine autosave either, and only breaks silence for a real
-      // problem (the failure branch above). Showing a spinner-then-check
-      // for every keystroke's save cycle was reporting a decision the
-      // cook already made once, over and over. Still announced for
-      // anyone on a screen reader, just not painted.
-      return (
-        <span className="sr-only" role="status" aria-live="polite">
-          {SAVE_STATUS_LABEL[saveStatus]}
+    }
+    if (savedToProfile) {
+      return cookbookMode ? null : (
+        <span className="rp-save-status" role="status" aria-live="polite">
+          <CheckIcon size={ICON_SIZE.sm} />
+          {SAVE_STATUS_LABEL.saved}
         </span>
       );
     }
+    // Signed in, not kept yet: a single card, or a job about to be kept on its
+    // own. Nothing to press and nothing to claim.
+    if (cookPilotUser || !keptAutomatically) return null;
     return (
       <button
         type="button"
         className="btn btn-secondary btn-compact"
         onClick={() => void handleSaveProject()}
-        /* The visible word is just "Save"; the label still says which thing
-           is being kept, given how separate a cookbook and its recipe cards
-           are meant to feel even though they share one save today. */
-        aria-label={cookbookMode ? "Save cookbook" : "Save"}
+        aria-label={cookbookMode ? "Sign in to save cookbook" : "Sign in to save project"}
       >
         Save
       </button>
@@ -6061,8 +6062,8 @@ export default function PrintPage() {
         tone="primary"
         title="Keep this project?"
         /* Says the thing that is true, which is not the thing anyone wants to
-           hear. Saving is one action now (an explicit press, into an account),
-           so a project nobody signed in for is not saved, and the device shelf
+           hear. Saving needs an account, so a project nobody signed in for is
+           not saved, and the device shelf
            is a crash net rather than somewhere to come back to: nothing lists
            it (see `listableLocalProjects`) and the workspace is released on the
            way out. The previous wording sent people to Projects to look for a
