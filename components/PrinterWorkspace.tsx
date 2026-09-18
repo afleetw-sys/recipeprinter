@@ -82,9 +82,9 @@ export function PrinterWorkspace({
   const leftCookbookRef = useRef(false);
   const warmedRef = useRef(false);
   const tabListRef = useRef<HTMLDivElement | null>(null);
-  /** Where the selected fill sits, measured off the DOM rather than assumed
+  /** Where the selected underline sits, measured off the DOM rather than assumed
       from `importKind` alone — the two labels aren't the same width, so the
-      fill has to know the active button's actual box to slide to it rather
+      underline has to know the active button's actual box to slide to it rather
       than just toggle between two guessed positions. Same technique as
       `SegmentedControl`'s thumb (components/Controls.tsx); not reused
       directly because these tabs carry their own padding, dimming and
@@ -325,35 +325,36 @@ export function PrinterWorkspace({
             <div className="mb-cp-5">
               {/* What kind of project this import starts, inside the same
                   card as the sources it's choosing between rather than
-                  floating above it. A very light recessed fill marks the
-                  selected one and SLIDES to it rather than each button
-                  fading its own copy in and out — one fill, moved, reads as
-                  a single control picking between two states; two fills
-                  independently crossfading read as two buttons that happen
-                  to take turns. The fill is a single absolutely-positioned
-                  element measured off the active button's own box (see
-                  `tabFill` above) so it can slide by any distance between
-                  two differently-sized labels. The unselected label stays
-                  dimmed rather than plain, layered on top of that.
+                  floating above it. A hairline runs the full width of the row
+                  and the selected tab carries a thicker accent underline that
+                  SLIDES to it rather than each tab drawing its own — one bar,
+                  moved, reads as a single control picking between two states.
+                  The bar is a single absolutely-positioned element measured off
+                  the active button's own box (see `tabFill` above) so it can
+                  slide by any distance between two differently-sized labels,
+                  and sits over the hairline (`-bottom-px`) so it replaces that
+                  stretch of it rather than stacking on top. The unselected
+                  label stays dimmed rather than plain.
 
-                  No horizontal offset on the row: the fill's BOX edge lines
-                  up with the field/mode-button borders below (all start at
-                  the panel's own content edge), the same way those buttons'
-                  boxes do — matching the text baseline instead would have
-                  put it further left than everything under it. Tighter
-                  padding than `.btn-toggle__option` below on purpose — that
-                  row is thumb-sized targets, this is a compact text switch,
-                  and matching its own radius (not its padding) is what makes
-                  the fill still read as the same visual language. No
+                  No horizontal offset on the row: the hairline's edges line up
+                  with the field/mode-button borders below (all start at the
+                  panel's own content edge). Tighter padding than
+                  `.btn-toggle__option` below on purpose — that row is
+                  thumb-sized targets, this is a compact text switch. No
                   vertical offset either: the panel's own top padding
                   (`.rp-import-panel`'s `p-3`/`lg:p-cp-6`) is what puts space
                   above this row, on both breakpoints, matching what it
                   already puts below the submit button. */}
-              <div ref={tabListRef} className="relative isolate flex gap-cp-2" role="tablist" aria-label="What you're printing">
+              <div
+                ref={tabListRef}
+                className="relative isolate flex gap-cp-2 border-b border-[var(--cp-line)]"
+                role="tablist"
+                aria-label="What you're printing"
+              >
                 {tabFill && (
                   <span
                     aria-hidden
-                    className="absolute inset-y-0 z-0 rounded bg-[var(--cp-surface-muted)] transition-[transform,width] duration-200 ease-out"
+                    className="absolute -bottom-px left-0 z-0 h-[3px] bg-[var(--cp-accent)] transition-[transform,width] duration-200 ease-out"
                     style={{ transform: `translateX(${tabFill.left}px)`, width: `${tabFill.width}px` }}
                   />
                 )}
@@ -362,7 +363,7 @@ export function PrinterWorkspace({
                   role="tab"
                   aria-selected={importKind === "cards"}
                   onClick={() => setImportKind("cards")}
-                  className={`relative z-10 rounded px-cp-2 py-cp-1 text-cp-body font-bold text-ink transition-opacity duration-200 ease-out ${
+                  className={`relative z-10 px-cp-2 py-cp-2 text-cp-body font-bold text-ink transition-opacity duration-200 ease-out ${
                     importKind === "cards" ? "opacity-100" : "opacity-45 hover:opacity-70"
                   }`}
                 >
@@ -373,7 +374,7 @@ export function PrinterWorkspace({
                   role="tab"
                   aria-selected={importKind === "cookbook"}
                   onClick={() => setImportKind("cookbook")}
-                  className={`relative z-10 flex items-center gap-1 rounded px-cp-2 py-cp-1 text-cp-body font-bold text-ink transition-opacity duration-200 ease-out ${
+                  className={`relative z-10 flex items-center gap-1 px-cp-2 py-cp-2 text-cp-body font-bold text-ink transition-opacity duration-200 ease-out ${
                     importKind === "cookbook" ? "opacity-100" : "opacity-45 hover:opacity-70"
                   }`}
                 >
