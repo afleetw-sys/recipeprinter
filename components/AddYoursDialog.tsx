@@ -2,7 +2,7 @@
 
 import { useId, useRef, useState, type FormEvent } from "react";
 import { Dialog } from "@/components/Dialog";
-import { ICON_SIZE, SpinnerIcon, UploadIcon, XIcon } from "@/components/icons";
+import { CheckIcon, ICON_SIZE, SpinnerIcon, UploadIcon, XIcon } from "@/components/icons";
 import { partitionImageFiles } from "@/lib/imageImport";
 import { friendlyPhotoUploadError } from "@/lib/friendlyErrors";
 import { submitGalleryPhoto } from "@/lib/gallerySubmissions";
@@ -104,18 +104,26 @@ export function AddYoursDialog({ open, onClose }: { open: boolean; onClose: () =
         <XIcon size={ICON_SIZE.md} />
       </button>
 
-      <div className="pr-cp-7">
-        <h3 className="font-extrabold text-cp-dialog-title">Add yours</h3>
-        <p className="mt-1 text-cp-small text-ink-soft">
-          Show others how you took a recipe off the screen and into the kitchen.
-        </p>
-      </div>
-
       {sent ? (
-        <div className="state state--success" role="status">
-          <h4>Thanks for sharing</h4>
+        // The title and the ask are done with, so they go: what is left is the
+        // answer to "did that work?", centred with room around it.
+        <div className="flex flex-col items-center gap-cp-3 px-cp-4 py-cp-6 text-center" role="status">
+          <span className="grid h-14 w-14 place-items-center rounded-full bg-brand-100 text-brand-ink">
+            <CheckIcon size={28} />
+          </span>
+          <div>
+            <h3 className="font-extrabold text-cp-dialog-title">We got your photo</h3>
+            <p className="mt-1 text-cp-small text-ink-soft">Thanks for sharing.</p>
+          </div>
         </div>
       ) : (
+        <>
+        <div className="pr-cp-7">
+          <h3 className="font-extrabold text-cp-dialog-title">Add yours</h3>
+          <p className="mt-1 text-cp-small text-ink-soft">
+            Show others how you took a recipe off the screen and into the kitchen.
+          </p>
+        </div>
         <form className="flex flex-col gap-cp-3" onSubmit={handleSubmit}>
           <div>
             <input
@@ -185,6 +193,7 @@ export function AddYoursDialog({ open, onClose }: { open: boolean; onClose: () =
             </p>
           </div>
         </form>
+        </>
       )}
     </Dialog>
   );
