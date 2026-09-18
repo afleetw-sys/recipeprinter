@@ -4758,6 +4758,7 @@ export default function PrintPage() {
         // recipe came in without a photo.
         label={own ? "Photo" : "Add photo"}
         className="recipe-page-toolbar__photo"
+        openSignal={photoDialogSignal(recipeId)}
       />
     );
   };
