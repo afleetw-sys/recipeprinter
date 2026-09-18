@@ -2,28 +2,19 @@
 
 import Image from "next/image";
 import { Dialog } from "@/components/Dialog";
-import { CheckIcon, ICON_SIZE, XIcon } from "@/components/icons";
+import { ICON_SIZE, XIcon } from "@/components/icons";
 import type { CoverConfig } from "@/types/recipe";
 
 export function CookbookWelcomeDialog({
   open,
   cover,
   price,
-  purchased = false,
   onStart,
   onClose,
 }: {
   open: boolean;
   cover: CoverConfig;
   price: string;
-  /**
-   * This project's cookbook is already paid for — the cook switched to recipe
-   * cards and is on their way back in. Every entry into a book goes through
-   * this screen (one path, always, with the build reveal after it), so without
-   * this it quoted $19.99 at someone who had already paid it, which is the
-   * single loudest way to suggest their purchase didn't survive.
-   */
-  purchased?: boolean;
   onStart: () => void;
   /** Dismiss and stay in the book: the X, Escape and the backdrop. */
   onClose: () => void;
@@ -63,45 +54,16 @@ export function CookbookWelcomeDialog({
       </div>
       <div className="cookbook-welcome__copy">
         <div className="cookbook-welcome__lede">
-          {/* This screen now opens ON TOP of the built book rather than in
-              front of the idea of one, so it describes what is already on the
-              screen behind it. */}
-          <h2 id="cookbook-welcome-title">
-            {purchased
-              ? "Your cookbook is right where you left it."
-              : "Your cookbook is ready to fill."}
-          </h2>
-          <p>
-            {purchased
-              ? "Your cover, chapters and layout are all still here."
-              : "Add recipes, photos, and make changes whenever you like. You won’t pay until you’re ready to export."}
-          </p>
+          <h2 id="cookbook-welcome-title">Your cookbook is ready.</h2>
+          <p>Add recipes whenever you like. You’ll only pay when you’re ready to export.</p>
         </div>
-        <ul className="cookbook-feature-chips">
-          {[
-            "Cover, chapters, and table of contents",
-            "Add your own photos to the cover or recipe pages",
-            "Print-ready PDF for spiral or hardcover binding",
-          ].map((item) => (
-            <li key={item}><CheckIcon size={ICON_SIZE.sm} />{item}</li>
-          ))}
-        </ul>
         <div className="cookbook-welcome__price">
-          {purchased ? (
-            <span className="cookbook-welcome__owned">
-              <CheckIcon size={ICON_SIZE.sm} />
-              You own this cookbook. Export it as often as you like.
-            </span>
-          ) : (
-            <>
-              <b>{price} one time</b>
-              <span>Pay when you export. After that, you can keep editing and re-exporting this cookbook at no extra cost.</span>
-            </>
-          )}
+          <b>{price} one time</b>
+          <span>Includes your cover, chapters, table of contents, photos, and a print-ready PDF.</span>
         </div>
         <div className="cookbook-welcome__actions">
           <button type="button" className="btn btn-primary" onClick={onStart}>
-            {purchased ? "Open my cookbook" : "Start adding recipes"}
+            Start adding recipes
           </button>
         </div>
       </div>
