@@ -86,7 +86,7 @@ export function CookbookWelcomeDialog({
           {[
             "A cover you can put your own photo on",
             "Chapters and a table of contents, sorted for you",
-            "Sized to print at Lulu, Staples or your own printer",
+            "Nothing ships to you. Print at Lulu, Staples or your own printer",
           ].map((item) => (
             <li key={item}><CheckIcon size={ICON_SIZE.sm} />{item}</li>
           ))}
@@ -100,10 +100,7 @@ export function CookbookWelcomeDialog({
           ) : (
             <>
               <b>{price}</b>
-              <span>
-                One purchase for a fully custom cookbook, paid the first time you export it. Nothing
-                is mailed to you: it is yours to print wherever you like. Editing is free until then.
-              </span>
+              <span>Paid once, the first time you export this cookbook. Editing it is free until then.</span>
             </>
           )}
         </div>

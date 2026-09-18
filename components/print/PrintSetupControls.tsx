@@ -173,6 +173,14 @@ export function PrintSetupControls({
           <span className="recipe-config-sublabel" id="recipe-photos-label">
             Photos
           </span>
+          {/* A subtitle under the label. These tiles change nothing on screen
+              until a recipe has a photo, so a new book can look as though they
+              are broken. Say why. */}
+          {!anyRecipeHasImage && (
+            <p className="-mt-1 text-cp-caption text-ink-soft">
+              Add a photo to a recipe to see these layouts on its page.
+            </p>
+          )}
           <div
             className="recipe-photo-style"
             role="radiogroup"
@@ -196,13 +204,6 @@ export function PrintSetupControls({
               </SelectTile>
             ))}
           </div>
-          {/* These tiles change nothing on screen until a recipe has a photo, so
-              a new book can look as though they are broken. Say why. */}
-          {!anyRecipeHasImage && (
-            <p className="text-cp-caption text-ink-soft">
-              Add a photo to a recipe to see these layouts on its page.
-            </p>
-          )}
         </div>
       )}
 
