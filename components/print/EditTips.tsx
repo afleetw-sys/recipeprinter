@@ -6,10 +6,7 @@ import { useEffect, useState } from "react";
     Two lists rather than one because "press return" is noise until a line is
     open, and "tap a line" is noise once one is. */
 const IDLE_TIPS = ["Tap any line to edit it", "Pinch the page to zoom in"];
-const EDITING_TIPS = [
-  "Press return to start a new line",
-  "Select some words, then tap B or I to style them",
-];
+const EDITING_TIPS = ["Press return to start a new line", "Tap another line to edit it"];
 
 const DISMISSED_KEY = "rp-edit-tips-dismissed";
 const LOADS_KEY = "rp-edit-tips-loads";

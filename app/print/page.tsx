@@ -5746,7 +5746,10 @@ export default function PrintPage() {
                   <PlusIcon size={ICON_SIZE.lg} />
                 )}
               </span>
-              Add more
+              {/* "Add recipe" for a blank project, "Add more" once there is
+                  one — the desktop rail's same rule, read off the same count
+                  (an import still parsing counts), so the two never disagree. */}
+              {recipeCount > 0 ? "Add more" : "Add recipe"}
             </button>
             {/* Pages/structure — the mobile stand-in for the drag-only desktop
                 rail, which is hidden on touch. Cookbook mode only. */}
