@@ -11,6 +11,7 @@ import type { AccountSaveStatus } from "@/components/AccountControl";
 import { FeedbackDialog } from "@/components/FeedbackButton";
 import { PrintDialogs } from "@/components/PrintDialogs";
 import { AddRecipeDialog } from "@/components/AddRecipeDialog";
+import { EditTips } from "@/components/print/EditTips";
 import { sectionOrderChanged, sortSectionsByTitle } from "@/lib/sectionSort";
 import { ConfirmDialog } from "@/components/ConfirmDialog";
 import { CookbookWelcomeDialog } from "@/components/CookbookWelcomeDialog";
@@ -5719,6 +5720,7 @@ export default function PrintPage() {
         />
 
         <div className="recipe-mobile-actions no-print">
+          <EditTips editing={Boolean(activeInlineEdit?.editingTarget)} show={!nothingToPrint} />
           {/* No way into a cookbook here on purpose. Building a book — covers,
               chapters, page layouts, the organizer — is not something the phone
               layout does well yet, and selling someone a $19.99 document they
@@ -5744,7 +5746,10 @@ export default function PrintPage() {
                   <PlusIcon size={ICON_SIZE.lg} />
                 )}
               </span>
-              Add more
+              {/* "Add recipe" for a blank project, "Add more" once there is
+                  one — the desktop rail's same rule, read off the same count
+                  (an import still parsing counts), so the two never disagree. */}
+              {recipeCount > 0 ? "Add more" : "Add recipe"}
             </button>
             {/* Pages/structure — the mobile stand-in for the drag-only desktop
                 rail, which is hidden on touch. Cookbook mode only. */}

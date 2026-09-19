@@ -3106,14 +3106,33 @@
     scroll-snap-type: x mandatory;
     -webkit-overflow-scrolling: touch;
     scrollbar-width: none;
+    /* Pan, but never pinch: a pinch on the card is the DECK's zoom
+       (`useDeckScroller`), and left to the browser it would scale the whole
+       page — header, bottom bar and all — instead of just the card. */
+    touch-action: pan-x pan-y;
+  }
+
+  /* Zoomed in past fit (set by `useDeckScroller`), the card is bigger than the
+     strip it sits in. So the strip stops snapping, and scrolls in both
+     directions where it only ever scrolled sideways. `safe` for the same reason
+     as the deck's own centring: plain `center` puts half the overflow before
+     the scroll origin, where nothing can reach it. */
+  .recipe-page-deck[data-free-scroll="true"] {
+    overflow-y: auto;
+    scroll-snap-type: none;
+    align-items: safe center;
   }
 
   .recipe-page-slide {
     display: grid;
     place-items: center;
     /* Leaves ~40px of the neighbouring slide peeking in on each side, so it
-       reads as a horizontally scrollable deck rather than a single page. */
-    flex: 0 0 calc(100vw - 96px);
+       reads as a horizontally scrollable deck rather than a single page.
+       A floor rather than a fixed width: a zoomed card is wider than that, and
+       a slide that stayed the same width let it spill out both sides, where the
+       left half is past the scroll origin and cannot be scrolled to. */
+    flex: 0 0 auto;
+    min-width: calc(100vw - 96px);
     scroll-snap-align: center;
     opacity: 1;
     cursor: default;
@@ -3284,6 +3303,68 @@
     padding: 10px var(--rp-mobile-bar-inset) max(10px, env(safe-area-inset-bottom));
     border-top: 1px solid var(--cp-line);
     background: var(--cp-page);
+  }
+
+  /* One line of how-to, sitting on the top edge of the action bar rather than
+     inside it: absolutely placed, so it takes none of the bar's height and the
+     deck's reserve for that bar is still the right size. It fills the spare
+     room under the card, and rides up with the bar when the keyboard opens.
+     The strip ignores pointers, so it can never eat a tap meant for the page
+     under it; only the close button takes them. */
+  .recipe-edit-tips {
+    position: absolute;
+    right: 0;
+    bottom: 100%;
+    left: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    min-height: 28px;
+    padding: 0 12px;
+    pointer-events: none;
+    color: var(--cp-ink-soft);
+    font-size: 12.5px;
+    line-height: 1.3;
+    text-align: center;
+  }
+
+  .recipe-edit-tips__text {
+    animation: recipe-edit-tip-in 260ms ease-out;
+  }
+
+  .recipe-edit-tips__dismiss {
+    display: inline-grid;
+    place-items: center;
+    flex: 0 0 auto;
+    width: 28px;
+    height: 28px;
+    padding: 0;
+    border: 0;
+    border-radius: 50%;
+    background: transparent;
+    color: inherit;
+    font-size: 18px;
+    line-height: 1;
+    pointer-events: auto;
+    cursor: pointer;
+  }
+
+  @keyframes recipe-edit-tip-in {
+    from {
+      opacity: 0;
+      transform: translateY(3px);
+    }
+    to {
+      opacity: 1;
+      transform: none;
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .recipe-edit-tips__text {
+      animation: none;
+    }
   }
 }
 
@@ -6245,9 +6326,11 @@ textarea.recipe-card__toc-title {
 /* Same hover-reveal as a row's own "+ Add below" (see `.recipe-card__editable-
    line:hover` above) — this one lets a section title go in first, before any
    existing ingredient/step, instead of only ever landing after one. */
-.recipe-card__label-inline:hover > .recipe-card__add-line {
-  opacity: 1;
-  pointer-events: auto;
+@media (hover: hover) {
+  .recipe-card__label-inline:hover > .recipe-card__add-line {
+    opacity: 1;
+    pointer-events: auto;
+  }
 }
 
 .recipe-card__continued-inline {
@@ -6740,12 +6823,24 @@ textarea.recipe-card__toc-title {
 /* Hover, or the button's own keyboard focus — deliberately NOT
    `:focus-within`. In edit mode every line is a real field, so focus-within
    meant "someone is typing in this row", and Add below appeared under the
-   caret in the one moment it is certainly not what they are reaching for. */
-.recipe-card__editable-line:hover > .recipe-card__add-line,
-.recipe-card__section-title--editable:hover > .recipe-card__add-line,
+   caret in the one moment it is certainly not what they are reaching for.
+
+   The hover half is fenced to devices that can actually hover, and that is
+   load-bearing rather than tidy. iOS Safari answers a first tap on anything
+   whose :hover reveals content by treating the tap AS the hover and holding
+   back the click — so every line took two taps to open, the first one only
+   surfacing this pill. On a touch screen Enter in the field is how a line gets
+   added. */
 .recipe-card__add-line:focus-visible {
   opacity: 1;
   pointer-events: auto;
+}
+@media (hover: hover) {
+  .recipe-card__editable-line:hover > .recipe-card__add-line,
+  .recipe-card__section-title--editable:hover > .recipe-card__add-line {
+    opacity: 1;
+    pointer-events: auto;
+  }
 }
 
 /* ── Body / heading glyphs ───────────────────────────────────────────────────

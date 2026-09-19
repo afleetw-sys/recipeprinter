@@ -9,7 +9,7 @@ import {
   type Dispatch,
   type SetStateAction,
 } from "react";
-import { zoomFromWheel } from "@/lib/deckZoom";
+import { TOUCH_ZOOM_RANGE, zoomFromPinch, zoomFromWheel } from "@/lib/deckZoom";
 import type { PrintCardSize } from "@/types/recipe";
 
 const PREVIEW_SELECTOR = ".recipe-page-scaler";
@@ -320,8 +320,30 @@ export function useDeckScroller({
   const applyDeckGeometry = useCallback(
     (el: HTMLDivElement, scale: number) => {
       // The mobile deck is a horizontal filmstrip with its own fixed padding
-      // and no snapport to centre anything in.
-      if (isDeckMobile()) return;
+      // and no snapport to centre anything in — so none of the centring below
+      // applies. The one thing it does need is the same free-scroll switch: a
+      // pinched-in card is bigger than the strip it sits in, and the strip
+      // snaps and clips vertically until told to stop (see print.css).
+      if (isDeckMobile()) {
+        const slideW = el.clientWidth - 96;
+        const slideH = el.clientHeight;
+        if (slideW <= 0 || slideH <= 0) return;
+        // The fit, worked out the way the fit effect below works it out. Free
+        // scroll is "past fit" rather than "bigger than the window": at fit the
+        // card fills its slot almost to the pixel, and measuring overflow
+        // against the window would flip the deck in and out of free scroll on
+        // rounding alone.
+        const fit = Math.max(
+          0.12,
+          Math.min(1.05, slideW / pageWidth, (slideH * 0.86) / pageHeight),
+        );
+        if (scale > fit * 1.02) {
+          el.dataset.freeScroll = "true";
+        } else if (!zoomGestureRef.current) {
+          delete el.dataset.freeScroll;
+        }
+        return;
+      }
       const availW = el.clientWidth - 40;
       const availH = el.clientHeight;
       if (availW <= 0 || availH <= 0) return;
@@ -629,6 +651,127 @@ export function useDeckScroller({
       pendingDeltaRef.current = 0;
     };
   }, [deckNode, onZoomChange, zoomRange, applyDeckGeometry]);
+
+  /**
+   * Pinch to zoom the card on a phone — the card, not the browser.
+   *
+   * Left alone, a two-finger pinch on a phone zooms the whole page: header,
+   * bottom bar and every control scale with it and half of them leave the
+   * screen. The card is the only thing that needs to get bigger, so the pinch
+   * is taken here and fed to the same zoom the desktop trackpad drives, and
+   * the chrome stays exactly where it is.
+   *
+   * Two things are needed to keep the browser out of it, and neither alone is
+   * enough. `touch-action: pan-x pan-y` on the deck (print.css) tells it not to
+   * start a pinch there, and older iOS ignores that for a pinch that begins on
+   * a child — hence `gesturestart`, which is Safari's own pinch event and is the
+   * one that can be cancelled. The `touchmove` cancel is for everything else.
+   *
+   * Mobile layout only: a touch laptop pinch arrives as a `wheel` with ctrlKey
+   * and is already handled above.
+   */
+  useEffect(() => {
+    const el = deckNode;
+    if (!el || !onZoomChange || !zoomRange) return;
+
+    // The floor is fit; the ceiling is whichever is higher, so a build that
+    // ever raises the desktop range does not quietly lower this one.
+    const range = { min: TOUCH_ZOOM_RANGE.min, max: Math.max(zoomRange.max, TOUCH_ZOOM_RANGE.max) };
+    let start: { distance: number; zoom: number } | null = null;
+    let pending: number | null = null;
+    let frame = 0;
+
+    const distanceOf = (touches: TouchList) =>
+      Math.hypot(
+        touches[0].clientX - touches[1].clientX,
+        touches[0].clientY - touches[1].clientY,
+      );
+
+    // Aimed at the deck if either finger-midpoint sits over it. A dialog or
+    // sheet is the exception, as with the wheel: a pinch there is not ours.
+    const aimedAtDeck = (target: EventTarget | null, x: number, y: number) => {
+      if (target instanceof Element && target.closest('[role="dialog"], .cp-menu, .cp-sheet')) {
+        return false;
+      }
+      if (target instanceof Node && el.contains(target)) return true;
+      const rect = el.getBoundingClientRect();
+      return x >= rect.left && x <= rect.right && y >= rect.top && y <= rect.bottom;
+    };
+
+    const apply = () => {
+      frame = 0;
+      const next = pending;
+      pending = null;
+      if (next === null || Math.abs(next - zoomRef.current) < 0.001) return;
+      zoomRef.current = next;
+      // Re-armed every frame: the layout effect consumes it, and the anchor is
+      // the same page-fraction for the whole gesture.
+      pendingZoomAnchorRef.current = gestureAnchorRef.current;
+      onZoomChange(next);
+    };
+
+    const onTouchStart = (event: TouchEvent) => {
+      if (event.touches.length !== 2 || !isDeckMobile()) return;
+      const x = (event.touches[0].clientX + event.touches[1].clientX) / 2;
+      const y = (event.touches[0].clientY + event.touches[1].clientY) / 2;
+      if (!aimedAtDeck(event.target, x, y)) return;
+      start = { distance: distanceOf(event.touches), zoom: zoomRef.current };
+      zoomGestureRef.current = true;
+      // Once, between the two fingers, as a fraction of the page there — the
+      // same anchor the wheel takes under the cursor.
+      const page =
+        (event.target as Element | null)?.closest?.<HTMLElement>(".recipe-page-slide") ??
+        document.elementFromPoint(x, y)?.closest<HTMLElement>(".recipe-page-slide") ??
+        el.querySelector<HTMLElement>(".recipe-page-slide");
+      const rect = page?.getBoundingClientRect();
+      gestureAnchorRef.current =
+        page && rect && rect.width > 0 && rect.height > 0
+          ? { x, y, page, fx: (x - rect.left) / rect.width, fy: (y - rect.top) / rect.height }
+          : null;
+    };
+
+    const onTouchMove = (event: TouchEvent) => {
+      if (!start || event.touches.length !== 2) return;
+      event.preventDefault();
+      pending = zoomFromPinch(start.zoom, start.distance, distanceOf(event.touches), range);
+      if (!frame) frame = requestAnimationFrame(apply);
+    };
+
+    const onTouchEnd = (event: TouchEvent) => {
+      if (!start || event.touches.length >= 2) return;
+      start = null;
+      pending = null;
+      zoomGestureRef.current = false;
+      gestureAnchorRef.current = null;
+      const deck = deckRef.current;
+      if (deck) applyDeckGeometry(deck, deckScaleRef.current);
+    };
+
+    // Safari's own pinch event. Cancelling it is what actually stops the page
+    // zooming on iOS versions that let a child's pinch through `touch-action`.
+    const onGestureStart = (event: Event) => {
+      if (!isDeckMobile()) return;
+      const touch = event as Event & { clientX?: number; clientY?: number };
+      if (aimedAtDeck(event.target, touch.clientX ?? 0, touch.clientY ?? 0)) {
+        event.preventDefault();
+      }
+    };
+
+    document.addEventListener("touchstart", onTouchStart, { passive: true });
+    document.addEventListener("touchmove", onTouchMove, { passive: false });
+    document.addEventListener("touchend", onTouchEnd, { passive: true });
+    document.addEventListener("touchcancel", onTouchEnd, { passive: true });
+    document.addEventListener("gesturestart", onGestureStart, { passive: false });
+    return () => {
+      document.removeEventListener("touchstart", onTouchStart);
+      document.removeEventListener("touchmove", onTouchMove);
+      document.removeEventListener("touchend", onTouchEnd);
+      document.removeEventListener("touchcancel", onTouchEnd);
+      document.removeEventListener("gesturestart", onGestureStart);
+      if (frame) cancelAnimationFrame(frame);
+      if (start) zoomGestureRef.current = false;
+    };
+  }, [deckNode, onZoomChange, zoomRange, applyDeckGeometry, deckRef]);
 
   /**
    * Keep the deck's padding and free-scroll in step with the scale in the SAME

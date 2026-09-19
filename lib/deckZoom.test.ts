@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { textBarScale, zoomFromWheel } from "./deckZoom";
+import { TOUCH_ZOOM_RANGE, textBarScale, zoomFromPinch, zoomFromWheel } from "./deckZoom";
 
 const RANGE = { min: 0.25, max: 4 };
 
@@ -74,5 +74,26 @@ describe("textBarScale", () => {
   it("holds still for a zoom that is not a number", () => {
     expect(textBarScale(Number.NaN)).toBe(1);
     expect(textBarScale(Infinity)).toBe(1);
+  });
+});
+
+describe("zoomFromPinch", () => {
+  it("fingers moving apart zoom in, together zoom out", () => {
+    expect(zoomFromPinch(1, 100, 200, TOUCH_ZOOM_RANGE)).toBeCloseTo(2, 10);
+    expect(zoomFromPinch(2, 100, 50, TOUCH_ZOOM_RANGE)).toBeCloseTo(1, 10);
+  });
+
+  it("returns to where it started when the fingers do", () => {
+    expect(zoomFromPinch(1.7, 120, 120, TOUCH_ZOOM_RANGE)).toBeCloseTo(1.7, 10);
+  });
+
+  it("stays inside the range", () => {
+    expect(zoomFromPinch(1, 100, 10_000, TOUCH_ZOOM_RANGE)).toBe(TOUCH_ZOOM_RANGE.max);
+    expect(zoomFromPinch(1, 100, 1, TOUCH_ZOOM_RANGE)).toBe(TOUCH_ZOOM_RANGE.min);
+  });
+
+  it("leaves the zoom alone for a degenerate start or a non-finite distance", () => {
+    expect(zoomFromPinch(1.5, 0, 100, TOUCH_ZOOM_RANGE)).toBe(1.5);
+    expect(zoomFromPinch(1.5, 100, Number.NaN, TOUCH_ZOOM_RANGE)).toBe(1.5);
   });
 });
