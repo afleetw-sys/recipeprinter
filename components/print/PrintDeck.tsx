@@ -1,5 +1,6 @@
 "use client";
 
+import { EditTips } from "@/components/print/EditTips";
 import { Fragment, useRef, useState, type KeyboardEvent as ReactKeyboardEvent } from "react";
 import type {
   CSSProperties,
@@ -1333,6 +1334,9 @@ export function PrintDeck(props: PrintDeckProps) {
                               ? -((previewDims.w * deckScale + 12) / 2)
                               : (previewDims.w * deckScale + 12) / 2,
                         )}
+                      {isActive && (
+                        <EditTips editing={Boolean(activeInlineEdit?.editingTarget)} />
+                      )}
                       <div
                         className={`recipe-spread ${spread.single ? "recipe-spread--single" : ""} ${
                           isActive &&
@@ -1417,6 +1421,7 @@ export function PrintDeck(props: PrintDeckProps) {
                   {isActive &&
                     activeNavItem &&
                     renderActiveControls(activeNavItem, previewDims.w * deckScale)}
+                  {isActive && <EditTips editing={Boolean(activeInlineEdit?.editingTarget)} />}
                   {!(renderAllPages || Math.abs(index - activeNavIndex) <= DECK_WINDOW) ? (
                     <PagePlaceholder
                       // The SAME box the real page occupies. A cookbook page is

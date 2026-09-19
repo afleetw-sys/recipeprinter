@@ -481,6 +481,13 @@
   }
 }
 
+/* The editing tip is a phone-layout thing (see the block in the phone media
+   query below). It renders inside the deck at every size, so it is off until
+   that block turns it on. */
+.recipe-edit-tips {
+  display: none;
+}
+
 @media screen and (max-width: 820px) {
   /* The two panel-collapse arrows are a DESKTOP control: everything that makes
      them one — `position: absolute`, the size, riding `--rail-w`/`--panel-w` —
@@ -3305,22 +3312,20 @@
     background: var(--cp-page);
   }
 
-  /* One line of how-to, sitting on the top edge of the action bar rather than
-     inside it: absolutely placed, so it takes none of the bar's height and the
-     deck's reserve for that bar is still the right size. It fills the spare
-     room under the card, and rides up with the bar when the keyboard opens.
-     The strip ignores pointers, so it can never eat a tap meant for the page
-     under it. */
+  /* One line of how-to on the artboard, hanging off the bottom edge of the
+     active page. It is a child of the page's slide, so it scrolls and zooms
+     with it: zoom in and it leaves the frame along with the card's edge rather
+     than staying pinned over a card that has outgrown it. Centred on the page,
+     not on the screen, for the same reason. The strip ignores pointers, so it
+     can never eat a tap meant for anything under it. */
   .recipe-edit-tips {
     position: absolute;
-    right: 0;
-    bottom: 100%;
-    left: 0;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    min-height: 28px;
-    padding: 0 12px;
+    top: 100%;
+    left: 50%;
+    display: block;
+    margin-top: 12px;
+    transform: translateX(-50%);
+    white-space: nowrap;
     pointer-events: none;
     color: var(--cp-ink-soft);
     font-size: 12.5px;

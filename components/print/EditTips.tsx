@@ -36,24 +36,23 @@ function thisLoadNumber(): number {
 }
 
 /**
- * A single line of "how do I" above the phone's action bar, one of the things a
- * first-time editor does not know they can do.
+ * A single line of "how do I" on the artboard under the page being edited, one
+ * of the things a first-time editor does not know they can do.
  *
  * One per LOAD, not a rotation. A line that changes while you are reading it or
  * in the middle of a task is a distraction, and these are the wrong thing to be
  * distracted by. Each visit gets the next tip along and keeps it.
  *
- * It lives in the action bar rather than over the page because that is the one
- * strip of the phone layout with room for text and nothing else in it: the card
- * fills the deck above, and a line of copy over the card is a line of copy over
- * the thing being edited. Being part of the bar means it also rides up with the
- * keyboard, which is when the editing tips are wanted.
+ * It hangs off the bottom edge of the active page rather than sitting in the
+ * action bar, so it belongs to the artboard: zoom in and it travels with the
+ * page and leaves the frame, instead of staying pinned over a card that has
+ * grown past it. It is rendered by the active slide (see PrintDeck), which is
+ * also why it needs no "is there a recipe" check of its own.
  *
- * Quiet by construction. It waits for a recipe to be on the page, it is one
- * italic line, and it never moves under a finger (the strip takes no pointer
- * events at all).
+ * Quiet by construction: one italic line that takes no pointer events, so it
+ * can never eat a tap meant for the page.
  */
-export function EditTips({ editing, show }: { editing: boolean; show: boolean }) {
+export function EditTips({ editing }: { editing: boolean }) {
   // Unknown until mounted: `localStorage` does not exist on the server, so the
   // load number can only be read on the client, and a strip that renders with
   // the wrong tip and then swaps is worse than one that appears.
@@ -64,7 +63,7 @@ export function EditTips({ editing, show }: { editing: boolean; show: boolean })
     setLoad(thisLoadNumber());
   }, []);
 
-  if (!show || load === null) return null;
+  if (load === null) return null;
 
   return (
     <div className="recipe-edit-tips no-print" role="note">
