@@ -1,26 +1,20 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { isDeckMobile } from "@/lib/useDeckScroller";
 
 /** What is on offer while nothing is being typed into, and while something is.
     Two lists rather than one because "press return" is noise until a line is
     open, and "tap a line" is noise once one is. */
-const IDLE_TIPS = [
-  "Tap any line to edit it",
-  "Pinch the page to zoom in",
-  "Swipe sideways to move between pages",
-];
+const IDLE_TIPS = ["Tap any line to edit it", "Pinch the page to zoom in"];
+/** Only worth saying when there is somewhere to swipe to. */
+const SWIPE_TIP = "Swipe sideways to move between pages";
 const EDITING_TIPS = [
   "Press return to start a new line",
   "Select some words, then tap B or I to style them",
 ];
 
-/** Long enough to read one line twice over; short enough that the strip is
-    never the same thing for long. */
-const TIP_INTERVAL_MS = 6_000;
-
 const DISMISSED_KEY = "rp-edit-tips-dismissed";
+const LOADS_KEY = "rp-edit-tips-loads";
 
 function readDismissed(): boolean {
   try {
@@ -30,9 +24,38 @@ function readDismissed(): boolean {
   }
 }
 
+/** Held for the life of the page, so it is counted once per LOAD. A component
+    can mount more than once in a load (React runs effects twice in development,
+    and the strip remounts if the workspace does), and counting each of those
+    would step past tips and, with an even number of them, land on the same one
+    every visit. */
+let loadNumber: number | null = null;
+
 /**
- * A single line of "how do I" above the phone's action bar, rotating through the
- * things a first-time editor does not know they can do.
+ * Which visit this is, counted on this device. The tip is chosen from it, so
+ * each load shows the next one along rather than a random pick that can repeat
+ * itself twice running. Without storage it falls back to a random number, which
+ * is as good as it can do.
+ */
+function thisLoadNumber(): number {
+  if (loadNumber !== null) return loadNumber;
+  try {
+    const count = (Number.parseInt(window.localStorage.getItem(LOADS_KEY) ?? "0", 10) || 0) + 1;
+    window.localStorage.setItem(LOADS_KEY, String(count));
+    loadNumber = count;
+  } catch {
+    loadNumber = Math.floor(Math.random() * 1000);
+  }
+  return loadNumber;
+}
+
+/**
+ * A single line of "how do I" above the phone's action bar, one of the things a
+ * first-time editor does not know they can do.
+ *
+ * One per LOAD, not a rotation. A line that changes while you are reading it or
+ * in the middle of a task is a distraction, and these are the wrong thing to be
+ * distracted by. Each visit gets the next tip along and keeps it.
  *
  * It lives in the action bar rather than over the page because that is the one
  * strip of the phone layout with room for text and nothing else in it: the card
@@ -44,41 +67,34 @@ function readDismissed(): boolean {
  * line, it never moves under a finger (the strip does not take pointer events,
  * only its own close button does), and once dismissed it stays dismissed.
  */
-export function EditTips({ editing, show }: { editing: boolean; show: boolean }) {
+export function EditTips({
+  editing,
+  show,
+  multiplePages,
+}: {
+  editing: boolean;
+  show: boolean;
+  multiplePages: boolean;
+}) {
   // Unknown until mounted: `localStorage` does not exist on the server, and a
   // strip that renders and then vanishes is worse than one that appears.
   const [dismissed, setDismissed] = useState<boolean | null>(null);
-  const [index, setIndex] = useState(0);
-  const tips = editing ? EDITING_TIPS : IDLE_TIPS;
+  const [load, setLoad] = useState(0);
+  const tips = editing ? EDITING_TIPS : multiplePages ? [...IDLE_TIPS, SWIPE_TIP] : IDLE_TIPS;
 
   useEffect(() => {
     setDismissed(readDismissed());
+    setLoad(thisLoadNumber());
   }, []);
 
-  // A different list starts from its first line, not from wherever the last one
-  // had got to.
-  useEffect(() => {
-    setIndex(0);
-  }, [editing]);
-
-  const visible = show && dismissed === false;
-  useEffect(() => {
-    if (!visible || !isDeckMobile()) return;
-    const timer = window.setInterval(() => {
-      // Nothing to read while the tab is in the background.
-      if (document.hidden) return;
-      setIndex((current) => (current + 1) % tips.length);
-    }, TIP_INTERVAL_MS);
-    return () => window.clearInterval(timer);
-  }, [visible, tips.length]);
-
-  if (!visible) return null;
+  if (!show || dismissed !== false) return null;
 
   return (
     <div className="recipe-edit-tips no-print" role="note">
-      {/* Keyed on the text so each new line plays the fade-in once. */}
-      <span key={`${editing}-${index}`} className="recipe-edit-tips__text">
-        {tips[index % tips.length]}
+      {/* Keyed on the text so the line plays its fade-in when it changes, which
+          it does once: when a field is opened or closed and the two lists swap. */}
+      <span key={`${editing}-${load}`} className="recipe-edit-tips__text">
+        {tips[load % tips.length]}
       </span>
       <button
         type="button"
