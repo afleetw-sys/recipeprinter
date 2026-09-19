@@ -84,7 +84,7 @@ export function readQueue(): QueueItem[] {
     return [];
   }
   if (!Array.isArray(parsed)) return [];
-  const sanitized = printableQueue(parsed as QueueItem[]);
+  const sanitized = settleInterruptedParses(printableQueue(parsed as QueueItem[]));
   // A read stays pure: it never rewrites storage, even when sanitizing
   // normalized a field — the next `commit` persists that. The one exception is
   // recovery: a fresh tab reseeding from the durable mirror writes the set into
@@ -314,6 +314,91 @@ function canonicalUrl(rawUrl: string): string | null {
   } catch {
     return null;
   }
+}
+
+/**
+ * The imports this document is working on right now.
+ *
+ * A parse only ever runs inside the document that started it, so a `parsing`
+ * item found in storage that is not in here has nothing behind it: the page that
+ * was waiting on it is gone. Module scope is what makes this mean "this
+ * document". A client-side navigation keeps it, so an import started on one
+ * screen is still live on the next, and a real load throws it away with the rest
+ * of the module, which is exactly when every stored `parsing` item becomes an
+ * orphan.
+ */
+const liveParseIds = new Set<string>();
+const parseIsLive = (id: string): boolean => liveParseIds.has(id);
+
+const INTERRUPTED_IMPORT_MESSAGE =
+  "This import was interrupted before it finished. Add it again to import it.";
+
+/**
+ * Turns `parsing` items nobody is parsing into failures the deck already knows
+ * how to show.
+ *
+ * Left as `parsing` they are invisible (the deck only awaits imports it started
+ * itself) and permanent (nothing ever resumes or expires one), and the same link
+ * pasted again matched them as a duplicate and did nothing at all.
+ */
+export function settleInterruptedParses(
+  items: QueueItem[],
+  isLive: (id: string) => boolean = parseIsLive,
+): QueueItem[] {
+  if (!items.some((item) => item.status === "parsing" && !isLive(item.id))) return items;
+  return items.map((item) =>
+    item.status === "parsing" && !isLive(item.id)
+      ? {
+          ...item,
+          status: "error" as const,
+          error: INTERRUPTED_IMPORT_MESSAGE,
+          errorCode: "unknown" as const,
+          interrupted: true,
+        }
+      : item,
+  );
+}
+
+function isSameImportUrl(item: QueueItem, key: string): boolean {
+  return item.method === "url" && Boolean(item.originalUrl) && canonicalUrl(item.originalUrl as string) === key;
+}
+
+/**
+ * The item a pasted link is a duplicate of, if there is one worth pointing at.
+ *
+ * Only something the cook can actually have: a finished recipe, an import still
+ * running here, or a failure the parser really gave. An interrupted import is
+ * none of those, so it is not a duplicate; it is the thing they are trying
+ * again (see `withoutSupersededImports`).
+ */
+export function findDuplicateImport(
+  items: QueueItem[],
+  key: string,
+  isLive: (id: string) => boolean = parseIsLive,
+): QueueItem | undefined {
+  return items.find(
+    (item) =>
+      isSameImportUrl(item, key) &&
+      (item.status === "ready" ||
+        (item.status === "parsing" && isLive(item.id)) ||
+        (item.status === "error" && !item.interrupted)),
+  );
+}
+
+/** The queue without earlier attempts at this link that never finished, so
+    adding it again replaces them rather than sitting beside them. */
+export function withoutSupersededImports(
+  items: QueueItem[],
+  key: string,
+  isLive: (id: string) => boolean = parseIsLive,
+): QueueItem[] {
+  return items.filter(
+    (item) =>
+      !(
+        isSameImportUrl(item, key) &&
+        ((item.status === "error" && item.interrupted) || (item.status === "parsing" && !isLive(item.id)))
+      ),
+  );
 }
 
 /** Where an extra recipe got refused because the account can only ever carry
@@ -579,6 +664,7 @@ export function useQueue() {
       // makes the narrowing the compiler's job instead of a promise in a
       // comment: `outcome` has no `url` to leak.
       const { url, ...outcome } = origin;
+      liveParseIds.add(id);
       patch(id, { status: "parsing", error: undefined });
       // Before `work()` — the parse has not been asked for anything yet, and
       // this is a `capture` on the analytics queue, so it neither awaits
@@ -699,6 +785,8 @@ export function useQueue() {
           // the response itself.
           ...(err instanceof ImportError && err.meta ? err.meta : {}),
         });
+      } finally {
+        liveParseIds.delete(id);
       }
     },
     [patch, commit],
@@ -709,11 +797,7 @@ export function useQueue() {
       const url = rawUrl.trim();
       if (!url) return;
       const key = canonicalUrl(unwrapRedirectUrl(url));
-      const duplicate = key
-        ? itemsRef.current.find(
-            (item) => item.method === "url" && item.originalUrl && canonicalUrl(item.originalUrl) === key,
-          )
-        : null;
+      const duplicate = key ? findDuplicateImport(itemsRef.current, key) : null;
       if (duplicate) {
         focusItem(duplicate.id);
         return;
@@ -738,7 +822,10 @@ export function useQueue() {
         title: host,
         addedAt: Date.now(),
       };
-      commit([...itemsRef.current, item]);
+      // An earlier attempt at this same link that never finished is replaced,
+      // not kept beside the new one.
+      const rest = key ? withoutSupersededImports(itemsRef.current, key) : itemsRef.current;
+      commit([...rest, item]);
       void runParse(
         id,
         // `normalizedUrl`, the same string handed to the parser on the next
@@ -899,7 +986,9 @@ export function useQueue() {
 
   /** Replaces the browser queue when opening a saved project. */
   const replaceAll = useCallback(
-    (next: QueueItem[]) => {
+    (incoming: QueueItem[]) => {
+      // A project saved mid-import carries `parsing` items no parse is behind.
+      const next = settleInterruptedParses(incoming);
       setFocusedItemId(next[0]?.id ?? null);
       commit(next);
       // The project may be older than this document — any photo it is still
