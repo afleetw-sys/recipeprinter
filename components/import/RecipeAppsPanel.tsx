@@ -180,7 +180,7 @@ function IntegrationCard({
           portal
           dismissOnBackdropClick
           labelledBy={`${name}-help-title`}
-          className="fixed inset-0 z-50 grid place-items-center dialog-scrim p-cp-4"
+          className="fixed inset-0 z-[var(--z-dialog)] grid place-items-center dialog-scrim p-cp-4"
           panelClassName="relative w-full max-w-md rounded-2xl border border-line bg-card p-cp-6 shadow-cp-lg"
         >
           <h2

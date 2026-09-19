@@ -193,7 +193,7 @@ function Spotlight({
       // `rp-photo-scrim`, a step darker than the shared `dialog-scrim`. A form
       // dialog paints its own white card and the scrim only has to separate
       // the two; a photograph paints no card, so the scrim is the surround.
-      className="fixed inset-0 z-50 flex items-center justify-center rp-photo-scrim p-cp-4 sm:p-cp-6"
+      className="fixed inset-0 z-[var(--z-dialog)] flex items-center justify-center rp-photo-scrim p-cp-4 sm:p-cp-6"
     >
       <div className="relative flex max-h-full flex-col items-center gap-cp-3">
         {/* Above the photograph, not under it. Where you are in a set is
