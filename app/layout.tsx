@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import { Birthstone, Gochi_Hand, Karla, Manrope, Playfair_Display } from "next/font/google";
 import "./globals.css";
+import { NoFocusZoom } from "@/components/NoFocusZoom";
 import { KeyboardInsetWatcher } from "@/components/KeyboardInsetWatcher";
 import { AnalyticsProvider } from "@/components/AnalyticsProvider";
 import { ActionTitles } from "@/components/ActionTitles";
@@ -162,6 +163,7 @@ export default function RootLayout({
     >
       <body>
         <KeyboardInsetWatcher />
+        <NoFocusZoom />
         <AnalyticsProvider />
         <ActionTitles />
         {/* Launch-day bar. Retires itself on its own end date (see the file),

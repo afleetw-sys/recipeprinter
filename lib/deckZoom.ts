@@ -40,6 +40,41 @@ export function zoomFromWheel(
 }
 
 /**
+ * How far a finger pinch can take the deck on a phone.
+ *
+ * Its own range rather than the +/- control's. The desktop zoom tops out at 2x
+ * the fit, which on a laptop is a page at about real size. A phone's fit is a
+ * letter page squeezed into ~300 points, so 2x of that is still small print —
+ * and the whole point of pinching there is to read it. The floor is fit: below
+ * it the page would only shrink inside a filmstrip that is already sized to it.
+ */
+export const TOUCH_ZOOM_RANGE = { min: 1, max: 4 };
+
+/**
+ * Where two fingers put the zoom.
+ *
+ * The ratio of how far apart they are now to how far apart they started, applied
+ * to the zoom they started at. Anchored on the START of the gesture rather than
+ * accumulated frame to frame, so fingers that return to where they began return
+ * the page to where it was — an accumulating gesture drifts, and a pinch has no
+ * business ending somewhere the fingers do not.
+ *
+ * A degenerate start (fingers on the same point) leaves the zoom where it was
+ * instead of dividing by zero.
+ */
+export function zoomFromPinch(
+  startZoom: number,
+  startDistance: number,
+  distance: number,
+  range: { min: number; max: number },
+): number {
+  if (!(startDistance > 0) || !Number.isFinite(distance)) return startZoom;
+  const next = startZoom * (distance / startDistance);
+  if (!Number.isFinite(next)) return startZoom;
+  return Math.min(range.max, Math.max(range.min, next));
+}
+
+/**
  * How big the bars that float over the text are at a given deck zoom.
  *
  * The two of them (formatting, and delete-these-lines) sit ON the words rather
