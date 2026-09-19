@@ -239,6 +239,13 @@ export interface QueueItem {
       (the toast). Absent on items that failed before this was recorded. */
   errorCode?: ImportFailureCode;
   /**
+   * The page that was parsing this went away before the parse finished (a
+   * reload, a sign-in redirect, a discarded tab), so there is no answer to wait
+   * for. Set by the queue, never by a parser, and it is what lets the same link
+   * be added again instead of being mistaken for a duplicate of itself.
+   */
+  interrupted?: boolean;
+  /**
    * A photo this browser is holding locally and has not uploaded (the key into
    * `lib/localPhotos.ts`). Paprika exports embed their photos as base64 inside
    * the file, and we deliberately don't upload those on import — a photo only
