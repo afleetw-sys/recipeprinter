@@ -11,7 +11,6 @@ import type { AccountSaveStatus } from "@/components/AccountControl";
 import { FeedbackDialog } from "@/components/FeedbackButton";
 import { PrintDialogs } from "@/components/PrintDialogs";
 import { AddRecipeDialog } from "@/components/AddRecipeDialog";
-import { EditTips } from "@/components/print/EditTips";
 import { sectionOrderChanged, sortSectionsByTitle } from "@/lib/sectionSort";
 import { ConfirmDialog } from "@/components/ConfirmDialog";
 import { CookbookWelcomeDialog } from "@/components/CookbookWelcomeDialog";
@@ -5720,7 +5719,6 @@ export default function PrintPage() {
         />
 
         <div className="recipe-mobile-actions no-print">
-          <EditTips editing={Boolean(activeInlineEdit?.editingTarget)} show={!nothingToPrint} />
           {/* No way into a cookbook here on purpose. Building a book — covers,
               chapters, page layouts, the organizer — is not something the phone
               layout does well yet, and selling someone a $19.99 document they
