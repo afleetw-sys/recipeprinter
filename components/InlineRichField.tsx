@@ -49,6 +49,14 @@ export function InlineRichField({
   const initialHtml = useRef(richTextToHtml(value));
   // Escape must not let the blur that follows it commit the abandoned text.
   const cancelled = useRef(false);
+  // The mount-only listener below has to call the CURRENT `onSplit`, and a
+  // closure over the first render's would split against a stale row.
+  const onSplitRef = useRef(onSplit);
+  onSplitRef.current = onSplit;
+  // Whether Shift is down. A soft keyboard's Return arrives as a `beforeinput`,
+  // not a keydown, and Shift+Enter arrives as the same input type a bare Return
+  // does on some of them — this is what tells the two apart.
+  const shiftDown = useRef(false);
 
   useEffect(() => {
     const el = ref.current;
@@ -62,6 +70,24 @@ export function InlineRichField({
       // Not fatal — a browser that refuses this still produces tags.
     }
     placeCaret(el, caret ?? plainTextLength(el));
+
+    // Return on a phone. Soft keyboards do not send a usable `keydown` for it:
+    // Android's arrives as key "Unidentified" (keyCode 229), so `handleKeyDown`
+    // never saw an Enter and the field took a hard line break inside the line
+    // instead of starting the next one. `beforeinput` is the event every
+    // keyboard agrees on. Native rather than React's `onBeforeInput`, which is
+    // a synthetic of `keypress` and not this event.
+    const onBeforeInput = (event: InputEvent) => {
+      const paragraph = event.inputType === "insertParagraph";
+      const lineBreak = event.inputType === "insertLineBreak" && !shiftDown.current;
+      if (!paragraph && !lineBreak) return;
+      event.preventDefault();
+      const split = onSplitRef.current;
+      if (split) split(...splitAtCaret(el));
+      else el.blur();
+    };
+    el.addEventListener("beforeinput", onBeforeInput);
+    return () => el.removeEventListener("beforeinput", onBeforeInput);
     // Mount only: re-running this would fight the caret on every parent render.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -69,6 +95,7 @@ export function InlineRichField({
   const read = () => (ref.current ? nodesToRichText(ref.current) : value);
 
   const handleKeyDown = (event: ReactKeyboardEvent<HTMLDivElement>) => {
+    shiftDown.current = event.shiftKey;
     if ((event.metaKey || event.ctrlKey) && !event.altKey) {
       const key = event.key.toLowerCase();
       if (key === "b" || key === "i") {
@@ -106,6 +133,9 @@ export function InlineRichField({
       className={className}
       dangerouslySetInnerHTML={{ __html: initialHtml.current }}
       onKeyDown={handleKeyDown}
+      onKeyUp={(event) => {
+        shiftDown.current = event.shiftKey;
+      }}
       onBlur={() => {
         if (cancelled.current) return;
         onCommit(read());
