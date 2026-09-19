@@ -685,9 +685,6 @@ export default function PrintPage() {
   /** Between `window.print()` and the verdict above. Shows the button's spinner
       so the wait reads as working rather than as broken. */
   const [printAwaitingBrowser, setPrintAwaitingBrowser] = useState(false);
-  /** The browser refused and a fresh document is not going to change that.
-      Last resort, after the reload has already been tried. */
-  const [printRefusedNotice, setPrintRefusedNotice] = useState(false);
   const autoPrintAttemptedRef = useRef(false);
   const postPrintActionRef = useRef<PostPrintAction>("donate");
   // A print the user asked for while the layout was still measuring. Rather
@@ -1922,8 +1919,10 @@ export default function PrintPage() {
       // so it separates "the first attempt was refused" from "the reload didn't
       // help either", which are different bugs with different fixes.
       track("print_refused_by_browser", { template, cardSize, afterRearm: shouldPrint });
-      if (rearmForPrint()) return;
-      setPrintRefusedNotice(true);
+      // One reload to a fresh document. If that one is refused too, say nothing:
+      // the button is live again and another tap simply tries again, which
+      // beats a dialog that explains a browser limit nobody can act on.
+      rearmForPrint();
     }, PRINT_ACCEPTANCE_GRACE_MS);
   }
 
@@ -6023,36 +6022,6 @@ export default function PrintPage() {
           app cannot keep is worse than no promise, so it is gone rather than
           reworded. What is left says only what is true: an account is what
           carries this project off this one device. */}
-      {/* The print never opened, and reloading into a fresh document did not
-          change that (see lib/printRearm) — so the remaining explanation is a
-          browser that cannot print at all, which is what the ones built into
-          other apps are. Say the one useful thing about that and offer the one
-          action still worth taking. What it must never do is nothing, which is
-          what a refused print looked like before: twenty-four taps on a button
-          that answered none of them. */}
-      <ConfirmDialog
-        open={printRefusedNotice}
-        tone="primary"
-        title="The print dialog didn't open"
-        description={
-          <>
-            Some browsers that run inside other apps can&apos;t open one. If you got here from
-            a link in another app, opening recipeprinter.com in Safari or Chrome will print.
-          </>
-        }
-        confirmLabel="Try again"
-        secondaryLabel="Close"
-        onSecondary={() => setPrintRefusedNotice(false)}
-        onCancel={() => setPrintRefusedNotice(false)}
-        onConfirm={() => {
-          setPrintRefusedNotice(false);
-          // A fresh document is still the best shot, and the marker that says
-          // "we already tried that" is what stopped this one being taken
-          // automatically. They asked, so let it.
-          clearPrintRetryMarker();
-          window.location.href = printAgainHref(window.location);
-        }}
-      />
       <ConfirmDialog
         open={confirmLeave}
         tone="primary"
