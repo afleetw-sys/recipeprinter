@@ -50,13 +50,6 @@ import {
 import { type CookbookScaffoldPatch } from "@/lib/projectCopy";
 import { materializeProjectPhotos } from "@/lib/photoStorage";
 import {
-  claimPrintRearm,
-  clearPrintRetryMarker,
-  markPrintSpent,
-  preferFreshDocumentForPrint,
-  printAgainHref,
-} from "@/lib/printRearm";
-import {
   createPrintProjectId,
   savePrintProject,
   savedProjectOpensAsCookbook,
@@ -329,27 +322,6 @@ export default function PrintPage() {
   useEffect(() => {
     const stableTimer = window.setTimeout(markPrintPreviewStable, PRINT_PREVIEW_STABILITY_MS);
     return () => window.clearTimeout(stableTimer);
-  }, []);
-
-  /**
-   * Arrive on a document that can still print.
-   *
-   * A phone browser gives a document one print and silently refuses the rest
-   * (see lib/printRearm), and coming back to `/print` for a second recipe is a
-   * client-side route change, so the same spent document is what meets the next
-   * tap. Spend the reload here instead, while the page is arriving and there is
-   * nothing on screen yet to lose — the queue, the project meta and the pending
-   * save all flush on `pagehide`, so a reload costs the load and nothing else.
-   *
-   * Only where the refusal happens: `preferFreshDocumentForPrint` is false on
-   * desktop, which prints the same document as often as you ask it to.
-   */
-  useEffect(() => {
-    if (!preferFreshDocumentForPrint()) return;
-    // Mark the fresh document as the retry, so a refusal there ends in the
-    // "Ready to print" prompt rather than another reload.
-    if (new URLSearchParams(window.location.search).get("print") === "1") claimPrintRearm();
-    window.location.reload();
   }, []);
 
   const router = useRouter();
@@ -689,10 +661,6 @@ export default function PrintPage() {
   /** Between `window.print()` and the verdict above. Shows the button's spinner
       so the wait reads as working rather than as broken. */
   const [printAwaitingBrowser, setPrintAwaitingBrowser] = useState(false);
-  /** The reloaded document tried to print on its own and the browser declined,
-      which a phone does when no tap stands behind `print()`. Asking for one
-      here is the fallback, not the path: it is only shown after a refusal. */
-  const [printReadyPrompt, setPrintReadyPrompt] = useState(false);
   const autoPrintAttemptedRef = useRef(false);
   const postPrintActionRef = useRef<PostPrintAction>("donate");
   // A print the user asked for while the layout was still measuring. Rather
@@ -1830,25 +1798,7 @@ export default function PrintPage() {
 
   const [mobileDrawer, setMobileDrawer] = useState<"template" | null>(null);
 
-  /**
-   * Go and get a document that can print, when this one can't.
-   *
-   * Returns true once it has started the load, and the caller stops there: the
-   * print carries on the other side, because `print=1` is the flag this page
-   * already reads to print on arrival. Refuses when this document IS that fresh
-   * load, so a browser we can't satisfy meets the message rather than a reload
-   * loop (see lib/printRearm).
-   */
-  function rearmForPrint(): boolean {
-    if (!claimPrintRearm()) return false;
-    window.location.href = printAgainHref(window.location);
-    return true;
-  }
-
   async function printNow() {
-    // This document has already spent its one print, and asking it again is the
-    // silent no-op that made the button look dead. Go the long way round.
-    if (preferFreshDocumentForPrint() && rearmForPrint()) return;
     printRequestedRef.current = true;
     track("print_started", {
       template,
@@ -1901,38 +1851,28 @@ export default function PrintPage() {
 
     // Deferring `print()` past a frame takes it out of the click's own task.
     // That is not new ground: the `print=1` auto-print path has always called
-    // it from a 350ms `setTimeout` with no gesture at all, and that path is
-    // what the mobile rearm depends on (see lib/printRearm). The watchdog
-    // below is the backstop either way — it is exactly the mechanism for "the
-    // browser did not take it".
+    // it from a 350ms `setTimeout` with no gesture at all.
     window.print();
-    // `window.print()` returns the same either way, so watch for the browser
-    // taking it. A print that happened has fired `beforeprint` by now, in every
-    // engine; nothing at all means the browser declined without saying so, and
-    // that is the twenty-four dead taps this whole path exists to prevent. Try
-    // once from a document that hasn't printed yet, and if that was already
-    // this document, say so plainly instead of leaving a button that does
-    // nothing.
+    // `window.print()` returns at once whether or not a sheet opens, so watch
+    // for `beforeprint`. iOS Safari lets a tab print once and puts its own
+    // "blocked from automatically printing" alert (Ignore / Allow) in front of
+    // every print after that. `print()` has already returned and no event fires
+    // until they tap Allow, so from here this looks exactly like a refusal, and
+    // it is not one: leave the page alone. Reloading it here, as this used to,
+    // took the alert away with it and made the tap look eaten (see
+    // one-print-per-document in memory). The sheet still arrives via
+    // `beforeprint`, which re-renders the deck itself.
     if (printWatchdogRef.current !== null) window.clearTimeout(printWatchdogRef.current);
     printWatchdogRef.current = window.setTimeout(() => {
       printWatchdogRef.current = null;
       setPrintAwaitingBrowser(false);
       if (printAcceptedRef.current) return;
-      markPrintSpent();
-      // Nothing took the print, so nothing is going to fire `afterprint` to put
-      // the deck back to its five-page window. Left as it is, a refused print
-      // leaves the entire book rendered on a page the cook is still using.
+      // No `beforeprint` yet, so nothing is going to fire `afterprint` to put
+      // the deck back to its five-page window. Left as it is, a print that is
+      // still waiting on Safari's alert (or was dismissed) leaves the entire
+      // book rendered on a page the cook is still using.
       setRenderAllPages(false);
-      // `shouldPrint` is `print=1`, which is how a rearmed document arrives —
-      // so it separates "the first attempt was refused" from "the reload didn't
-      // help either", which are different bugs with different fixes.
-      track("print_refused_by_browser", { template, cardSize, afterRearm: shouldPrint });
-      // One reload to a fresh document, which prints on arrival with no second
-      // tap. A browser that wants a tap behind `print()` refuses that one too,
-      // and this is where it lands: ask for the tap, rather than leaving the
-      // one they already gave looking like it did nothing.
-      if (rearmForPrint()) return;
-      setPrintReadyPrompt(true);
+      track("print_refused_by_browser", { template, cardSize });
     }, PRINT_ACCEPTANCE_GRACE_MS);
   }
 
@@ -4423,15 +4363,10 @@ export default function PrintPage() {
 
   useEffect(() => {
     function handleBeforePrint() {
-      // The browser has taken the print. Two things follow from that: the
-      // watchdog in `printNow` has its answer, and this document has now spent
-      // the one print a phone browser will give it (see lib/printRearm), so the
-      // next one has to come from a fresh load. `beforeprint` rather than
-      // `afterprint` because it is the hook that fires for the user's own ⌘P
-      // too, and that spends the document just the same.
+      // The browser has taken the print, so the watchdog in `printNow` has its
+      // answer. This also fires late, after a tap on Safari's "blocked from
+      // automatically printing" alert, which is why it re-renders the deck.
       printAcceptedRef.current = true;
-      markPrintSpent();
-      clearPrintRetryMarker();
       // Synchronous on purpose: window.print() does not yield, so a normal
       // state update would not have committed before the snapshot is taken.
       //
@@ -4454,7 +4389,6 @@ export default function PrintPage() {
       // at all means the print was real, so the watchdog must not call it
       // refused.
       printAcceptedRef.current = true;
-      markPrintSpent();
       setRenderAllPages(false);
       // Chrome on macOS sometimes doesn't hand keyboard/mouse focus back to
       // the page once a native panel (the OS "system dialog" print sheet,
@@ -6032,22 +5966,6 @@ export default function PrintPage() {
           app cannot keep is worse than no promise, so it is gone rather than
           reworded. What is left says only what is true: an account is what
           carries this project off this one device. */}
-      <ConfirmDialog
-        open={printReadyPrompt}
-        tone="primary"
-        autoFocusConfirm
-        title="Ready to print"
-        description="Your recipe is loaded. Tap Print to open the print dialog."
-        confirmLabel="Print"
-        onCancel={() => {
-          setPrintReadyPrompt(false);
-          clearPrintRetryMarker();
-        }}
-        onConfirm={() => {
-          setPrintReadyPrompt(false);
-          void printNow();
-        }}
-      />
       <ConfirmDialog
         open={confirmLeave}
         tone="primary"
