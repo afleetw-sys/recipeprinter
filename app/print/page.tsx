@@ -5786,11 +5786,7 @@ export default function PrintPage() {
         />
 
         <div className="recipe-mobile-actions no-print">
-          <EditTips
-            editing={Boolean(activeInlineEdit?.editingTarget)}
-            show={!nothingToPrint}
-            multiplePages={(cookbookView ? spreads.length : navItems.length) > 1}
-          />
+          <EditTips editing={Boolean(activeInlineEdit?.editingTarget)} show={!nothingToPrint} />
           {/* No way into a cookbook here on purpose. Building a book — covers,
               chapters, page layouts, the organizer — is not something the phone
               layout does well yet, and selling someone a $19.99 document they

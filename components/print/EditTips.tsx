@@ -6,8 +6,6 @@ import { useEffect, useState } from "react";
     Two lists rather than one because "press return" is noise until a line is
     open, and "tap a line" is noise once one is. */
 const IDLE_TIPS = ["Tap any line to edit it", "Pinch the page to zoom in"];
-/** Only worth saying when there is somewhere to swipe to. */
-const SWIPE_TIP = "Swipe sideways to move between pages";
 const EDITING_TIPS = [
   "Press return to start a new line",
   "Select some words, then tap B or I to style them",
@@ -67,20 +65,12 @@ function thisLoadNumber(): number {
  * line, it never moves under a finger (the strip does not take pointer events,
  * only its own close button does), and once dismissed it stays dismissed.
  */
-export function EditTips({
-  editing,
-  show,
-  multiplePages,
-}: {
-  editing: boolean;
-  show: boolean;
-  multiplePages: boolean;
-}) {
+export function EditTips({ editing, show }: { editing: boolean; show: boolean }) {
   // Unknown until mounted: `localStorage` does not exist on the server, and a
   // strip that renders and then vanishes is worse than one that appears.
   const [dismissed, setDismissed] = useState<boolean | null>(null);
   const [load, setLoad] = useState(0);
-  const tips = editing ? EDITING_TIPS : multiplePages ? [...IDLE_TIPS, SWIPE_TIP] : IDLE_TIPS;
+  const tips = editing ? EDITING_TIPS : IDLE_TIPS;
 
   useEffect(() => {
     setDismissed(readDismissed());
