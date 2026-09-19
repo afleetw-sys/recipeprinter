@@ -8,16 +8,7 @@ import { useEffect, useState } from "react";
 const IDLE_TIPS = ["Tap any line to edit it", "Pinch the page to zoom in"];
 const EDITING_TIPS = ["Press return to start a new line"];
 
-const DISMISSED_KEY = "rp-edit-tips-dismissed";
 const LOADS_KEY = "rp-edit-tips-loads";
-
-function readDismissed(): boolean {
-  try {
-    return window.localStorage.getItem(DISMISSED_KEY) === "1";
-  } catch {
-    return false;
-  }
-}
 
 /** Held for the life of the page, so it is counted once per LOAD. A component
     can mount more than once in a load (React runs effects twice in development,
@@ -59,22 +50,21 @@ function thisLoadNumber(): number {
  * keyboard, which is when the editing tips are wanted.
  *
  * Quiet by construction. It waits for a recipe to be on the page, it is one
- * line, it never moves under a finger (the strip does not take pointer events,
- * only its own close button does), and once dismissed it stays dismissed.
+ * italic line, and it never moves under a finger (the strip takes no pointer
+ * events at all).
  */
 export function EditTips({ editing, show }: { editing: boolean; show: boolean }) {
-  // Unknown until mounted: `localStorage` does not exist on the server, and a
-  // strip that renders and then vanishes is worse than one that appears.
-  const [dismissed, setDismissed] = useState<boolean | null>(null);
-  const [load, setLoad] = useState(0);
+  // Unknown until mounted: `localStorage` does not exist on the server, so the
+  // load number can only be read on the client, and a strip that renders with
+  // the wrong tip and then swaps is worse than one that appears.
+  const [load, setLoad] = useState<number | null>(null);
   const tips = editing ? EDITING_TIPS : IDLE_TIPS;
 
   useEffect(() => {
-    setDismissed(readDismissed());
     setLoad(thisLoadNumber());
   }, []);
 
-  if (!show || dismissed !== false) return null;
+  if (!show || load === null) return null;
 
   return (
     <div className="recipe-edit-tips no-print" role="note">
@@ -83,21 +73,6 @@ export function EditTips({ editing, show }: { editing: boolean; show: boolean })
       <span key={`${editing}-${load}`} className="recipe-edit-tips__text">
         {tips[load % tips.length]}
       </span>
-      <button
-        type="button"
-        className="recipe-edit-tips__dismiss"
-        aria-label="Hide tips"
-        onClick={() => {
-          setDismissed(true);
-          try {
-            window.localStorage.setItem(DISMISSED_KEY, "1");
-          } catch {
-            // Hidden for this visit either way.
-          }
-        }}
-      >
-        ×
-      </button>
     </div>
   );
 }
