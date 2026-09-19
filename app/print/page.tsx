@@ -345,7 +345,11 @@ export default function PrintPage() {
    * desktop, which prints the same document as often as you ask it to.
    */
   useEffect(() => {
-    if (preferFreshDocumentForPrint()) window.location.reload();
+    if (!preferFreshDocumentForPrint()) return;
+    // Mark the fresh document as the retry, so a refusal there ends in the
+    // "Ready to print" prompt rather than another reload.
+    if (new URLSearchParams(window.location.search).get("print") === "1") claimPrintRearm();
+    window.location.reload();
   }, []);
 
   const router = useRouter();
@@ -685,6 +689,10 @@ export default function PrintPage() {
   /** Between `window.print()` and the verdict above. Shows the button's spinner
       so the wait reads as working rather than as broken. */
   const [printAwaitingBrowser, setPrintAwaitingBrowser] = useState(false);
+  /** The reloaded document tried to print on its own and the browser declined,
+      which a phone does when no tap stands behind `print()`. Asking for one
+      here is the fallback, not the path: it is only shown after a refusal. */
+  const [printReadyPrompt, setPrintReadyPrompt] = useState(false);
   const autoPrintAttemptedRef = useRef(false);
   const postPrintActionRef = useRef<PostPrintAction>("donate");
   // A print the user asked for while the layout was still measuring. Rather
@@ -1919,10 +1927,12 @@ export default function PrintPage() {
       // so it separates "the first attempt was refused" from "the reload didn't
       // help either", which are different bugs with different fixes.
       track("print_refused_by_browser", { template, cardSize, afterRearm: shouldPrint });
-      // One reload to a fresh document. If that one is refused too, say nothing:
-      // the button is live again and another tap simply tries again, which
-      // beats a dialog that explains a browser limit nobody can act on.
-      rearmForPrint();
+      // One reload to a fresh document, which prints on arrival with no second
+      // tap. A browser that wants a tap behind `print()` refuses that one too,
+      // and this is where it lands: ask for the tap, rather than leaving the
+      // one they already gave looking like it did nothing.
+      if (rearmForPrint()) return;
+      setPrintReadyPrompt(true);
     }, PRINT_ACCEPTANCE_GRACE_MS);
   }
 
@@ -6022,6 +6032,22 @@ export default function PrintPage() {
           app cannot keep is worse than no promise, so it is gone rather than
           reworded. What is left says only what is true: an account is what
           carries this project off this one device. */}
+      <ConfirmDialog
+        open={printReadyPrompt}
+        tone="primary"
+        autoFocusConfirm
+        title="Ready to print"
+        description="Your recipe is loaded. Tap Print to open the print dialog."
+        confirmLabel="Print"
+        onCancel={() => {
+          setPrintReadyPrompt(false);
+          clearPrintRetryMarker();
+        }}
+        onConfirm={() => {
+          setPrintReadyPrompt(false);
+          void printNow();
+        }}
+      />
       <ConfirmDialog
         open={confirmLeave}
         tone="primary"
