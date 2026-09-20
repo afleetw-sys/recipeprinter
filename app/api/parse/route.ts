@@ -3,6 +3,7 @@ import { isIP } from "node:net";
 import { NextResponse } from "next/server";
 import { adaptCookPilotRecipes, normalizeImportURL } from "@/lib/cookpilot";
 import { BLOCKED_REMEDY, searchPageMessage, unwrapRedirectUrl } from "@/lib/importUrl";
+import { isBlockedAddress } from "@/lib/server/publicAddress";
 import { callerKey, rateLimit } from "@/lib/server/rateLimit";
 import { requestDeadline, type Deadline } from "@/lib/server/requestDeadline";
 import { placeholderHostMessage } from "@/lib/friendlyErrors";
@@ -137,47 +138,6 @@ function errorResponse(error: string, opts: ErrorOptions = {}) {
   );
 }
 
-function isPrivateIPv4(address: string): boolean {
-  const parts = address.split(".").map(Number);
-  if (parts.length !== 4 || parts.some((part) => !Number.isInteger(part) || part < 0 || part > 255)) {
-    return true;
-  }
-
-  const [a, b] = parts;
-  return (
-    a === 0 ||
-    a === 10 ||
-    a === 127 ||
-    (a === 100 && b >= 64 && b <= 127) ||
-    (a === 169 && b === 254) ||
-    (a === 172 && b >= 16 && b <= 31) ||
-    (a === 192 && b === 168) ||
-    (a === 198 && (b === 18 || b === 19)) ||
-    a >= 224
-  );
-}
-
-function isPrivateIPv6(address: string): boolean {
-  const normalized = address.toLowerCase();
-  return (
-    normalized === "::" ||
-    normalized === "::1" ||
-    normalized.startsWith("fc") ||
-    normalized.startsWith("fd") ||
-    normalized.startsWith("fe80:") ||
-    normalized.startsWith("::ffff:127.") ||
-    normalized.startsWith("::ffff:10.") ||
-    normalized.startsWith("::ffff:192.168.")
-  );
-}
-
-function isBlockedAddress(address: string): boolean {
-  const family = isIP(address);
-  if (family === 4) return isPrivateIPv4(address);
-  if (family === 6) return isPrivateIPv6(address);
-  return true;
-}
-
 async function validatePublicHttpUrl(url: URL) {
   if (url.protocol !== "http:" && url.protocol !== "https:") {
     throw new ParseHttpError("Use a regular website link that starts with http:// or https://.");
@@ -188,8 +148,12 @@ async function validatePublicHttpUrl(url: URL) {
     throw new ParseHttpError("That URL doesn't look like a public recipe page.");
   }
 
-  if (isIP(hostname)) {
-    if (isBlockedAddress(hostname)) {
+  // `URL` keeps the brackets on an IPv6 literal (`[::1]`), and `isIP` rejects
+  // them, so a literal used to skip this branch, fail the DNS lookup below, and
+  // surface as a generic 500 instead of being named for what it is.
+  const literal = hostname.startsWith("[") && hostname.endsWith("]") ? hostname.slice(1, -1) : hostname;
+  if (isIP(literal)) {
+    if (isBlockedAddress(literal)) {
       throw new ParseHttpError("That URL doesn't look like a public recipe page.");
     }
     return;
