@@ -4,6 +4,32 @@
 // optimizer can't run against unpredictable third-party hosts) — don't add a
 // wildcard remotePatterns here, it'd turn the Image Optimization endpoint
 // into an open proxy for any HTTPS URL the moment something does use <Image>.
+// Firebase Auth's sign-in helper pages (`/__/auth/handler`, `/__/auth/iframe`),
+// served from OUR origin.
+//
+// Firebase's default is to serve them from `<project>.firebaseapp.com`, which is a
+// different site from ours. Safari 16.1+, Firefox 109+ and Chrome 115+ block the
+// third-party storage that redirect sign-in reads its result back through, so for
+// an app hosted outside Firebase Hosting a redirect sign-in returns the visitor
+// signed out with no error. Serving these pages under our own domain makes that
+// storage first-party. Firebase's own guidance for this setup (a reverse proxy
+// that forwards transparently, not a redirect):
+// https://firebase.google.com/docs/auth/web/redirect-best-practices
+//
+// This does nothing until `NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN` is set to the host
+// people sign in on (www.recipeprinter.com) AND that host's
+// `https://www.recipeprinter.com/__/auth/handler` is added as an authorized
+// redirect URI for the Google and Apple sign-in providers, in that order.
+const firebaseProjectId = process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID;
+const firebaseAuthProxy = firebaseProjectId
+  ? [
+      {
+        source: "/__/auth/:path*",
+        destination: `https://${firebaseProjectId}.firebaseapp.com/__/auth/:path*`,
+      },
+    ]
+  : [];
+
 const nextConfig = {
   // Allows an isolated build dir (e.g. when a second dev server is running
   // against this checkout) via NEXT_DIST_DIR. Defaults to .next, so prod and
@@ -16,6 +42,7 @@ const nextConfig = {
   // aren't a random sample. Paired with `api_host: "/ingest"` in lib/analytics.
   async rewrites() {
     return [
+      ...firebaseAuthProxy,
       {
         source: "/ingest/static/:path*",
         destination: "https://us-assets.i.posthog.com/static/:path*",
