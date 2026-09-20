@@ -30,6 +30,9 @@ interface UseCookbookPurchaseOptions {
       rather than cached here. */
   discountEligible: boolean;
   showToast: (message: string) => void;
+  /** For a failure the cook needs to notice. Optional: a caller with only one
+      kind of message (the account menu's inline status) falls back to `showToast`. */
+  showErrorToast?: (message: string) => void;
   clearToast: () => void;
   onFreshPurchase: () => void;
   /** Fired once a purchase actually grants (never on cancel/failure) with
@@ -64,6 +67,7 @@ export function useCookbookPurchase({
   projectId,
   discountEligible,
   showToast,
+  showErrorToast = showToast,
   clearToast,
   onFreshPurchase,
   onCookbookGranted,
@@ -230,7 +234,7 @@ export function useCookbookPurchase({
         customerId: revenueCatUserId,
         ...(usingDiscount ? { discount: "pro_first" as const } : {}),
       });
-      showToast(friendlyPurchaseSetupError(error));
+      showErrorToast(friendlyPurchaseSetupError(error));
     } finally {
       setCookbookPurchaseBusy(false);
     }

@@ -449,7 +449,15 @@ export default function PrintPage() {
       is for one write, not a standing permission. */
   const adoptionOverwriteApprovedRef = useRef(false);
   const projectIdRef = useRef<string>(createPrintProjectId());
-  const { toastMessage, setToastMessage, toastTone, setToastTone, showToast, clearToast } = useToast();
+  const {
+    toastMessage,
+    setToastMessage,
+    toastTone,
+    setToastTone,
+    showToast,
+    showErrorToast,
+    clearToast,
+  } = useToast();
   // The durable, server-verified fallback for when the live RevenueCat SDK
   // can't be reached — see lib/proAccessFallback.ts. Null until a signed-in
   // profile has actually loaded; there is nothing to fall back to for a
@@ -2225,7 +2233,7 @@ export default function PrintPage() {
       adoptionFailed: () => readAdoptionManifest()?.status === "failed",
       setSaveStatus,
       setSavedProjectId,
-      setToastMessage,
+      showToast,
       adoptUploadedPhotos: (uploaded) => queue.adoptUploadedPhotos(uploaded),
       metaProjectId: () => projectMeta.meta.projectId,
       setMetaProjectId: (id) => projectMeta.setProjectId(id),
@@ -2544,6 +2552,7 @@ export default function PrintPage() {
     cookPilotAuthReady,
     template,
     showToast,
+    showErrorToast,
   });
 
   // The live RevenueCat read whenever it succeeded — even confirming
@@ -2615,6 +2624,7 @@ export default function PrintPage() {
     projectId: cookbookProjectId,
     discountEligible: cookbookDiscountEligible,
     showToast,
+    showErrorToast,
     clearToast,
     // Cookbook protection is handled by the persistent banner in cookbook
     // mode. Do not interrupt a newly purchased book with a login modal.
@@ -2635,6 +2645,7 @@ export default function PrintPage() {
     markCustomerInfoVerified,
     cookPilotUser,
     showToast,
+    showErrorToast,
     clearToast,
     // Unlike a template purchase, Pro checkout only ever runs signed in (see
     // `ProUpgradeDialog`'s sign-in step and `continueProCheckout`), so there
@@ -4049,7 +4060,7 @@ export default function PrintPage() {
   ]);
 
   useEffect(() => {
-    if (cookPilotRedirectError) showToast(cookPilotRedirectError);
+    if (cookPilotRedirectError) showErrorToast(cookPilotRedirectError);
   }, [cookPilotRedirectError]);
 
   useEffect(() => {

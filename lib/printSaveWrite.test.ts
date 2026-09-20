@@ -97,7 +97,7 @@ function makeHarness(
     adoptionFailed: () => false,
     setSaveStatus: (status: string) => statuses.push(status),
     setSavedProjectId,
-    setToastMessage: (message: string) => toasts.push(message),
+    showToast: (message: string) => toasts.push(message),
     adoptUploadedPhotos,
     metaProjectId: () => "proj-1",
     setMetaProjectId,

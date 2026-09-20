@@ -53,7 +53,9 @@ export interface SaveWriteContext {
   adoptionFailed: () => boolean;
   setSaveStatus: (status: AccountSaveStatus) => void;
   setSavedProjectId: (id: string) => void;
-  setToastMessage: (message: string) => void;
+  /** A confirmation, not a failure: must put the toast back to its informational
+      tone, or it would show red right after an error toast. */
+  showToast: (message: string) => void;
   adoptUploadedPhotos: (uploaded: MaterializedPhotos["uploadedRecipeImages"]) => void;
   /** The working copy's own project id, read when the write lands. A getter so
       it is evaluated at the same moment it always was, after the await. */
@@ -184,7 +186,7 @@ export async function writeProject(pending: PendingSave, ctx: SaveWriteContext):
     // going. After it the header carries a quiet "Saved" (see
     // `renderSaveControl`); it is not announced again.
     if (isFirstSave && !refs.quietFirstSave.current) {
-      ctx.setToastMessage(FIRST_SAVE_TOAST);
+      ctx.showToast(FIRST_SAVE_TOAST);
     }
     refs.quietFirstSave.current = false;
   } catch (error) {

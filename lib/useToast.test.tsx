@@ -68,6 +68,32 @@ describe("useToast", () => {
     expect(result.current.toastTone).toBe("info");
   });
 
+  it("showErrorToast shows a failure, and it dismisses like any other toast", () => {
+    const { result } = renderHook(() => useToast());
+    act(() => result.current.showErrorToast("Couldn't restore your purchases"));
+    expect(result.current.toastMessage).toBe("Couldn't restore your purchases");
+    expect(result.current.toastTone).toBe("error");
+
+    act(() => vi.advanceTimersByTime(TOAST_DURATION_MS));
+    expect(result.current.toastMessage).toBeNull();
+  });
+
+  it("a confirmation after a failure is not red", () => {
+    // The sequence that would otherwise show "Saved to Projects" in the failure
+    // tone: an error toast, then a confirmation.
+    const { result } = renderHook(() => useToast());
+    act(() => result.current.showErrorToast("Sign-in failed"));
+    act(() => result.current.showToast("Saved to Projects"));
+    expect(result.current.toastTone).toBe("info");
+  });
+
+  it("a failure after a confirmation is red", () => {
+    const { result } = renderHook(() => useToast());
+    act(() => result.current.showToast("Saved"));
+    act(() => result.current.showErrorToast("Sign-in failed"));
+    expect(result.current.toastTone).toBe("error");
+  });
+
   it("setToastMessage alone leaves the tone alone", () => {
     // The page sets a message directly in two places (the save confirmation and
     // the theme picker's clear). Neither resets the tone; that is today's

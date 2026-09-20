@@ -17,8 +17,7 @@ export type ToastTone = "info" | "error";
 export function useToast() {
   const [toastMessage, setToastMessage] = useState<string | null>(null);
   /** Whether the toast is reporting a FAILURE or just confirming something.
-      Import failures no longer come through here at all — they hold their own
-      page (see `failedImports`) — but saves, prints and exports still can. */
+      Only `showErrorToast` sets "error"; `showToast` puts it back to "info". */
   const [toastTone, setToastTone] = useState<ToastTone>("info");
 
   // Keyed on the message: a new message restarts the clock, but showing the
@@ -34,9 +33,25 @@ export function useToast() {
     setToastTone("info");
   }
 
+  /** A failure the cook needs to notice: red, and announced assertively to
+      screen readers. Import failures do not come through here (they hold their
+      own page); sign-in and purchase failures do. */
+  function showErrorToast(message: string) {
+    setToastMessage(message);
+    setToastTone("error");
+  }
+
   function clearToast() {
     setToastMessage(null);
   }
 
-  return { toastMessage, setToastMessage, toastTone, setToastTone, showToast, clearToast };
+  return {
+    toastMessage,
+    setToastMessage,
+    toastTone,
+    setToastTone,
+    showToast,
+    showErrorToast,
+    clearToast,
+  };
 }
