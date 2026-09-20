@@ -272,6 +272,39 @@ type EventProps = {
    *  `purchase_completed` (product: "pro") to see how many never finish
    *  signing in. */
   auth_started_from_upgrade: { trigger: string };
+  /** The email step got its answer. `outcome` is what the form did next, and the
+   *  address itself is never sent. `error` carries the Firebase code. */
+  auth_email_checked: {
+    outcome: "new" | "password" | "google_only" | "apple_only" | "error";
+    errorCode?: string;
+  };
+  /** A sign-in or sign-up was attempted. `via` is only there for Google and
+   *  Apple: a redirect leaves the page, so this is the denominator for
+   *  `auth_redirect_returned`. */
+  auth_attempted: {
+    method: "email_create" | "email_signin" | "google" | "apple";
+    via?: "popup" | "redirect";
+  };
+  /** It worked. `recovered` says the create was refused because the account
+   *  already existed and the person was signed in anyway. */
+  auth_succeeded: {
+    method: "email_create" | "email_signin" | "google" | "apple";
+    recovered?: "already_signed_in" | "signed_in_existing";
+  };
+  /** It did not. Just the Firebase code (`auth/invalid-credential`), never a
+   *  message, which can carry what was typed. */
+  auth_failed: {
+    method: "email_create" | "email_signin" | "google" | "apple";
+    code: string;
+  };
+  /** The page that a Google/Apple redirect came back to has read its result.
+   *  `no_result` is a redirect that left and returned with nobody signed in and
+   *  no error, which is exactly what browsers blocking third-party storage do to
+   *  redirect sign-in. Compare against `auth_attempted` with `via: "redirect"`. */
+  auth_redirect_returned: {
+    outcome: "signed_in" | "no_result" | "error";
+    code?: string;
+  };
   /** A now-unlocked Pro action actually completed after upgrading (e.g. a
    *  previously-locked card size printed). Separate from `purchase_completed`
    *  so the funnel shows "paid" versus "got value" as two distinct steps. */

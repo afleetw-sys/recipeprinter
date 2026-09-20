@@ -19,7 +19,7 @@ import {
 } from "firebase/auth";
 import { getFirebaseAuth } from "@/lib/firebase/client";
 import { ensureRecipePrinterAccount } from "@/lib/firebase/recipePrinterAccount";
-import { friendlyAuthError } from "@/lib/friendlyErrors";
+import { authFailureCode, friendlyAuthError } from "@/lib/friendlyErrors";
 import { createAccountOrRecover, isEmailInUseError } from "@/lib/signUpRecovery";
 import {
   clearAuthRedirectPending,
@@ -31,7 +31,7 @@ import {
   settleAnonymousPurge,
   trackAnonymousPurge,
 } from "@/lib/anonymousSession";
-import { identifyUser } from "@/lib/analytics";
+import { identifyUser, track } from "@/lib/analytics";
 import {
   readCookPilotWasSignedIn,
   rememberCookPilotSignedIn,
@@ -58,6 +58,10 @@ appleProvider.addScope("name");
 // below). This flag stops the auth listener's purge from racing that in-flight
 // call and deleting the session out from under it before the callable resolves.
 let checkingEmailProviders = false;
+
+function providerMethod(providerId: string | null | undefined): "google" | "apple" {
+  return providerId === "apple.com" ? "apple" : "google";
+}
 
 function shouldUseRedirectSignIn(): boolean {
   if (typeof window === "undefined") return true;
@@ -176,8 +180,15 @@ function resolveRedirectOnce(): void {
   };
   const timer = window.setTimeout(settle, REDIRECT_READ_TIMEOUT_MS);
   redirectPromise = getRedirectResult(getFirebaseAuth(), browserPopupRedirectResolver)
-    .then(() => undefined)
+    .then((result) => {
+      // A redirect left this tab and came back. `no_result` (nobody signed in, no
+      // error) is what browsers that block third-party storage do to it, so this
+      // is the measure of whether redirect sign-in works, per browser.
+      track("auth_redirect_returned", { outcome: result ? "signed_in" : "no_result" });
+      if (result) track("auth_succeeded", { method: providerMethod(result.providerId) });
+    })
     .catch((err) => {
+      track("auth_redirect_returned", { outcome: "error", code: authFailureCode(err) });
       publishAuthState({
         redirectError: friendlyAuthError(err, "We couldn't finish signing you in. Please try again."),
       });
@@ -407,6 +418,27 @@ export function CookPilotLoginForm({
     void prewarmCookPilotAuth();
   }, []);
 
+  /**
+   * Google or Apple, by whichever route this device takes. The one place the
+   * attempt, the outcome and the failure code are recorded for all three ways in
+   * (the buttons and the Google-only hand-off from the email step), so they
+   * cannot drift apart.
+   *
+   * A redirect leaves the page, so it has no outcome here: what it returns is
+   * recorded by `resolveRedirectOnce` on the page that comes back.
+   */
+  async function signInWithProvider(provider: AuthProvider, method: "google" | "apple") {
+    const via = shouldUseRedirectSignIn() ? "redirect" : "popup";
+    track("auth_attempted", { method, via });
+    try {
+      await signInWithCookPilotProvider(provider);
+      if (via === "popup") track("auth_succeeded", { method });
+    } catch (err) {
+      track("auth_failed", { method, code: authFailureCode(err) });
+      throw err;
+    }
+  }
+
   async function handleEmailContinue(event: FormEvent) {
     event.preventDefault();
     if (busy || signedIn || submittingRef.current) return;
@@ -426,11 +458,16 @@ export function CookPilotLoginForm({
         providers.includes(GoogleAuthProvider.PROVIDER_ID) &&
         !providers.includes(EmailAuthProvider.PROVIDER_ID)
       ) {
+        track("auth_email_checked", { outcome: "google_only" });
         // This account only has Google sign-in set up, so a password will
         // never work for it. Send them straight into the Google flow, the
         // same redirect the iOS app does for this case.
         await settleAnonymousPurge();
-        await signInWithCookPilotProvider(googleProvider);
+        try {
+          await signInWithProvider(googleProvider, "google");
+        } catch (err) {
+          setError(friendlyAuthError(err, "We couldn't sign in with Google. Please try again."));
+        }
         return;
       }
 
@@ -439,12 +476,15 @@ export function CookPilotLoginForm({
         !providers.includes(GoogleAuthProvider.PROVIDER_ID) &&
         !providers.includes(EmailAuthProvider.PROVIDER_ID)
       ) {
+        track("auth_email_checked", { outcome: "apple_only" });
         setNotice("This account uses Sign in with Apple. Close this and tap Continue with Apple instead.");
         return;
       }
 
+      track("auth_email_checked", { outcome: providers.length === 0 ? "new" : "password" });
       setStep(providers.length === 0 ? "create" : "password");
     } catch (err) {
+      track("auth_email_checked", { outcome: "error", errorCode: authFailureCode(err) });
       setError(friendlyAuthError(err, "We couldn't verify that email. Please try again."));
     } finally {
       setBusy(false);
@@ -467,10 +507,13 @@ export function CookPilotLoginForm({
     await settleAnonymousPurge();
     const auth = getFirebaseAuth();
     const normalizedEmail = email.trim().toLowerCase();
+    const method = step === "create" ? "email_create" : "email_signin";
+    track("auth_attempted", { method });
     try {
       const signIn = () => signInWithEmailAndPassword(auth, normalizedEmail, password);
+      let recovered: "already_signed_in" | "signed_in_existing" | undefined;
       if (step === "create") {
-        await createAccountOrRecover(
+        const outcome = await createAccountOrRecover(
           {
             create: () => createUserWithEmailAndPassword(auth, normalizedEmail, password),
             signIn,
@@ -478,12 +521,16 @@ export function CookPilotLoginForm({
           },
           normalizedEmail,
         );
+        if (outcome === "already-signed-in") recovered = "already_signed_in";
+        else if (outcome === "signed-in-existing") recovered = "signed_in_existing";
       } else {
         await signIn();
       }
+      track("auth_succeeded", { method, ...(recovered ? { recovered } : {}) });
       setSignedIn(true);
       onAuthenticated();
     } catch (err) {
+      track("auth_failed", { method, code: authFailureCode(err) });
       if (step === "create" && isEmailInUseError(err)) {
         // A real existing account, and not one this password opens. Move to the
         // step that fits, so the way forward (sign in, or reset the password) is
@@ -531,7 +578,7 @@ export function CookPilotLoginForm({
     setBusy(true);
     setError(null);
     try {
-      await signInWithCookPilotProvider(googleProvider);
+      await signInWithProvider(googleProvider, "google");
     } catch (err) {
       setError(friendlyAuthError(err, "We couldn't sign in with Google. Please try again."));
       setBusy(false);
@@ -542,7 +589,7 @@ export function CookPilotLoginForm({
     setBusy(true);
     setError(null);
     try {
-      await signInWithCookPilotProvider(appleProvider);
+      await signInWithProvider(appleProvider, "apple");
     } catch (err) {
       setError(friendlyAuthError(err, "We couldn't sign in with Apple. Please try again."));
       setBusy(false);
@@ -630,6 +677,9 @@ export function CookPilotLoginForm({
                 }}
               />
               {error && <p className="field-error" role="alert">{error}</p>}
+              {step === "create" && !error && (
+                <p className="mt-1 text-cp-caption leading-4 text-ink-soft">At least 6 characters.</p>
+              )}
               {step === "password" && (
                 <div className="mt-2">
                   {resetSent ? (

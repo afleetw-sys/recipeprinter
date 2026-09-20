@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
+  authFailureCode,
   friendlyAuthError,
   friendlyPhotoUploadError,
   friendlyPurchaseSetupError,
@@ -87,5 +88,55 @@ describe("isPlaceholderHost", () => {
   it("ignores the www prefix, the casing and stray whitespace", () => {
     expect(isPlaceholderHost("  WWW.Example.COM ")).toBe(true);
     expect(isPlaceholderHost("")).toBe(false);
+  });
+});
+
+describe("sign-in errors that used to fall through to the generic line", () => {
+  const say = (code: string) => friendlyAuthError({ code }, "FALLBACK");
+
+  it("explains an email that already signs in another way", () => {
+    expect(say("auth/account-exists-with-different-credential")).toMatch(/signs in a different way/);
+  });
+
+  it("names a browser that is blocking sign-in and says what fixes it", () => {
+    expect(say("auth/web-storage-unsupported")).toMatch(/Safari or Chrome/);
+    expect(say("auth/operation-not-supported-in-this-environment")).toMatch(/Safari or Chrome/);
+  });
+
+  it("does not blame the person when the fault is ours", () => {
+    for (const code of ["auth/operation-not-allowed", "auth/unauthorized-domain", "auth/internal-error"]) {
+      expect(say(code)).toMatch(/isn't available right now/);
+    }
+  });
+
+  it("handles a malformed address, a disabled account, and a stale session", () => {
+    expect(say("auth/invalid-email")).toMatch(/Check the email address/);
+    expect(say("auth/user-disabled")).toMatch(/turned off/);
+    expect(say("auth/requires-recent-login")).toMatch(/sign in again/);
+  });
+
+  it("still falls back for a code it does not know", () => {
+    expect(say("auth/something-new")).toBe("FALLBACK");
+  });
+
+  it("keeps the copy rules: no em dashes anywhere in these messages", () => {
+    const codes = [
+      "auth/account-exists-with-different-credential", "auth/web-storage-unsupported",
+      "auth/operation-not-allowed", "auth/invalid-email", "auth/user-disabled", "auth/requires-recent-login",
+    ];
+    for (const code of codes) expect(say(code)).not.toContain("\u2014");
+  });
+});
+
+describe("authFailureCode", () => {
+  it("passes a Firebase code through", () => {
+    expect(authFailureCode({ code: "auth/invalid-credential" })).toBe("auth/invalid-credential");
+    expect(authFailureCode({ code: "functions/unavailable" })).toBe("functions/unavailable");
+  });
+
+  it("never passes a message or an address through", () => {
+    expect(authFailureCode(new Error("nope for lacey@example.com"))).toBe("unknown");
+    expect(authFailureCode({ code: "lacey@example.com" })).toBe("unknown");
+    expect(authFailureCode(null)).toBe("unknown");
   });
 });
