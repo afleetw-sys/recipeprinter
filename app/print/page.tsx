@@ -158,7 +158,8 @@ import { hasPendingImport, takePendingImport } from "@/lib/pendingImport";
 import { nextPaint } from "@/lib/nextPaint";
 import { markPostPrintDialogShown, shouldShowPostPrintDialog } from "@/lib/postPrintDialog";
 import { useToast } from "@/lib/useToast";
-import { printProjectFingerprint, SAVE_TIMEOUT_MS, type PendingSave } from "@/lib/printSave";
+import { printProjectFingerprint, type PendingSave } from "@/lib/printSave";
+import { writeProject as runSaveWrite } from "@/lib/printSaveWrite";
 
 // The section opener's photo placement — the SAME None/In-card/Full-page row as
 // a recipe, so the two pickers read identically. A collage isn't a fourth
@@ -2198,139 +2199,37 @@ export default function PrintPage() {
   }
 
   /**
-   * Writes one assembled document, and is the only place that says a save is
-   * happening — so the two can never disagree.
+   * Writes one assembled document — the body lives in `lib/printSaveWrite`, which
+   * has the latch, the generation and the deadline and is tested on its own.
+   * What stays here is only what belongs to this component: the refs it shares
+   * with the rest of the save path, and the setters and I/O the write reports
+   * through. Built when a write starts and reused for a queued replay, which is
+   * what the closure this replaced did.
    */
   async function writeProject(pending: PendingSave) {
-    // The account this document was assembled FOR, not whoever is signed in by
-    // the time it gets written. A save that waited its turn while somebody
-    // signed out and back in as someone else must still go to the account it
-    // was built for — `savePrintProject` already writes under the document's
-    // own `ownerUid`, and adoption takes the uid it is handed, so handing it
-    // the live one is how one person's book reaches another person's library.
-    const ownerUid = pending.project.ownerUid;
-    if (!ownerUid) return;
-    const generation = saveGenerationRef.current + 1;
-    saveGenerationRef.current = generation;
-    /** Whether this write is still the one the page is waiting on. A write that
-        was given up on, or overtaken, reports nothing: its news is old. */
-    const current = () => saveGenerationRef.current === generation;
-    saveInFlightRef.current = true;
-    setSaveStatus("saving");
-    // Releases the latch exactly once, whichever of the write and the deadline
-    // gets there first, and starts whatever was queued behind it.
-    let released = false;
-    const release = () => {
-      if (released) return;
-      released = true;
-      saveInFlightRef.current = false;
-      const queued = queuedSaveRef.current;
-      if (queued) {
-        queuedSaveRef.current = null;
-        window.setTimeout(() => void writeProject(queued), 0);
-      }
-    };
-    const deadline = window.setTimeout(() => {
-      if (!current()) return;
-      // Stop claiming, and stop blocking. The write is NOT cancelled and the
-      // generation is NOT bumped — "we gave up waiting" is not "it did not
-      // happen", so if this write does land it is still the current one and still gets
-      // to report itself, revision and all. What ends here is the spinner and
-      // the latch: the cook gets a failure they can retry, and the next save is
-      // free to run instead of queueing behind a promise that never answers.
-      //
-      // `lastSavedFingerprintRef` is deliberately untouched, so nothing is
-      // recorded as saved on the strength of a write we did not see finish.
-      console.warn("RecipePrinter: a save is taking too long; no longer waiting on it");
-      setSaveStatus("error");
-      release();
-    }, SAVE_TIMEOUT_MS);
-    try {
-      // Every field that can hold a photo, not just the ones that were easy to
-      // remember. A chapter collage defaults to its own recipes' images and a
-      // recipe's photo history holds the ones it has worn before, so on a
-      // Paprika book both were full of `blob:` URLs going straight into the
-      // document. See `materializeProjectPhotos`.
-      const { photos, uploadedRecipeImages } = await materializeProjectPhotos({
-        sections: pending.project.sections,
-        cover: pending.project.cover,
-        backCover: pending.project.backCover,
-        dedication: pending.project.dedication,
-        itemPlacements: pending.project.itemPlacements,
-        stashedCookbook: pending.project.stashedCookbook,
-      });
-      const project: PrintProject = { ...pending.project, ...photos };
-      // Read before this write can set it — this is the one signal for
-      // "is this THE first save" (see the toast below), and by the next
-      // line it's already gone true for good.
-      const isFirstSave = !savedProjectIdRef.current;
-      const saved = savedProjectIdRef.current
-        ? await savePrintProject(project)
-        : await adoptAnonymousProject(ownerUid, project, {
-            overwriteExisting: pending.overwriteApproved,
-          });
-      // Everything below describes THIS write, so a write that has been
-      // overtaken says none of it: its revision is behind the one that
-      // overtook it, and adopting it here would send the next save into a
-      // conflict over a document nothing is actually fighting for.
-      if (!current()) return;
-      projectRevisionRef.current = Number(saved.revision ?? 0);
-      savedProjectIdRef.current = saved.id;
-      setSavedProjectId(saved.id);
-      // This write just made THIS mode the last-agreed one — see
-      // `lastSavedCookbookModeRef`'s own comment.
-      lastSavedCookbookModeRef.current = Boolean(project.settings.cookbookMode);
-      /**
-       * The photos are in Storage now, so stop treating the browser's copy as
-       * the source.
-       *
-       * Only after the save has actually landed — the queue must not start
-       * claiming a URL for a document that was never written. Before this the
-       * working copy kept its `blob:` URLs forever, so every subsequent save
-       * fetched, re-encoded and re-uploaded the same photos and orphaned the
-       * previous objects. On a four-hundred-photo Paprika library that was the
-       * whole library, per edit.
-       *
-       * Costs one extra autosave: the queue changing is a content change, and
-       * the next pass finds nothing left to upload and settles. The content
-       * document itself is not rewritten for it — the signature is unchanged,
-       * so `savePrintProject` skips that half.
-       */
-      queue.adoptUploadedPhotos(uploadedRecipeImages);
-      if (saved.id !== projectMeta.meta.projectId) {
-        projectMeta.setProjectId(saved.id);
-      }
-      // The baseline describes the book that was WRITTEN, taken from the
-      // workspace this document was assembled from. Reading live state here
-      // instead meant a save that landed after an edit recorded the edit as
-      // saved too, and nothing ever went back for it.
-      lastSavedFingerprintRef.current = printProjectFingerprint(
-        pending.items,
-        { ...pending.meta, projectId: saved.id },
-        pending.layout,
-      );
-      setSaveStatus("saved");
-      // Said once, at the one moment it's true. A card job becomes a project
-      // when its second recipe arrives, with nobody pressing anything, so this
-      // is the only place a cook learns it happened and that it will keep
-      // going. After it the header carries a quiet "Saved" (see
-      // `renderSaveControl`); it is not announced again.
-      if (isFirstSave && !quietFirstSaveRef.current) {
-        setToastMessage("Saved to Projects. This project will keep saving automatically.");
-      }
-      quietFirstSaveRef.current = false;
-    } catch (error) {
-      console.warn("RecipePrinter: could not save project", error);
-      if (!current()) return;
-      if (error instanceof PrintProjectConflictError) {
-        setSaveStatus("conflict");
-      } else {
-        setSaveStatus(readAdoptionManifest()?.status === "failed" ? "adoption" : "error");
-      }
-    } finally {
-      window.clearTimeout(deadline);
-      release();
-    }
+    await runSaveWrite(pending, {
+      refs: {
+        saveInFlight: saveInFlightRef,
+        saveGeneration: saveGenerationRef,
+        queuedSave: queuedSaveRef,
+        projectRevision: projectRevisionRef,
+        savedProjectId: savedProjectIdRef,
+        lastSavedCookbookMode: lastSavedCookbookModeRef,
+        lastSavedFingerprint: lastSavedFingerprintRef,
+        quietFirstSave: quietFirstSaveRef,
+      },
+      materializePhotos: materializeProjectPhotos,
+      saveProject: savePrintProject,
+      adoptProject: adoptAnonymousProject,
+      isConflictError: (error) => error instanceof PrintProjectConflictError,
+      adoptionFailed: () => readAdoptionManifest()?.status === "failed",
+      setSaveStatus,
+      setSavedProjectId,
+      setToastMessage,
+      adoptUploadedPhotos: (uploaded) => queue.adoptUploadedPhotos(uploaded),
+      metaProjectId: () => projectMeta.meta.projectId,
+      setMetaProjectId: (id) => projectMeta.setProjectId(id),
+    });
   }
 
   /**
