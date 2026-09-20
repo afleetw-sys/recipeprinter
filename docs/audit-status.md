@@ -4,6 +4,12 @@ Living status doc for the product-quality audit and the `app/print/page.tsx`
 god-file decomposition. Updated 2026-08-13 (branch `cookbook`). Latest work:
 god-file decomposition finished (A1) and the first architecture cleanups (A5, A11).
 
+> **Corrected 2026-09-20: A1 is NOT finished.** The 3,197-line figure below was
+> true on 2026-08-13; `app/print/page.tsx` has since grown back to ~5,840 lines as
+> features landed faster than slices left. `PageRail` and `PrintDeck` are out, but
+> the page still holds ~70 `useState` and ~45 `useEffect`. See "Where A1 really
+> stands" under the decomposition heading.
+
 To resume: start a Claude Code session in this repo and say *"continue the
 print-page decomposition — see docs/audit-status.md"* (or *"work the audit"*).
 
@@ -35,7 +41,25 @@ print-page decomposition — see docs/audit-status.md"* (or *"work the audit"*).
 
 ---
 
-## 🏗️ God-file decomposition (audit A1) — ✅ DONE
+## 🏗️ God-file decomposition (audit A1) — ⚠️ JSX extraction done, state is not
+
+### Where A1 really stands (2026-09-20)
+
+The markup is out; the state and effects are not. `app/print/page.tsx` is ~5,840
+lines, up from the 3,197 recorded below. Since then, out of the page:
+`lib/printSave` (fingerprint, `PendingSave`), `lib/printSaveWrite` (the save write:
+in-flight latch, generation, deadline, one-deep queue), `lib/printAutosave` (the
+autosave and flush-on-hide decisions), `lib/useToast`, `lib/postPrintDialog`.
+
+Still in the page, and untested: the effects around the save path (account-change
+reset, sign-in-then-save replay, keep-automatically, conflict recovery) and their
+source-order dependencies; also print flow, organize mode and project identity.
+
+Not a performance item. Mount cost was measured on 2026-09-20 in a production
+build: `/` to `/print` shows the shell and first card in ~20-40 ms, so the hook
+count is a reviewability and testing problem, not a speed one.
+
+### As of 2026-08-13 (historical)
 
 `app/print/page.tsx`: **~5,768 → 3,197 lines (~45% out)**, into 12 new modules:
 `lib/printGeometry`, `lib/useRailSelection`, and `components/print/{ScaledPage,
@@ -82,7 +106,7 @@ unauth-writable (P3) · S6 two firestore.rules for one backend (P2, documented) 
 S7 no security headers (P3).
 
 **🏗️ Architecture** — all worked; A2 now fully done.
-- ✅ **A1** god-file (P1 — page.tsx ~5,768→3,197, 12 modules, orchestrator collapsed).
+- ⚠️ **A1** god-file (P1 — JSX out and page.tsx was 3,197 on 2026-08-13, but it has grown back to ~5,840; state/effects remain, see the correction at the top).
 - ✅ **A2** dual source of truth (P1) — the full single-source rewrite is done.
   `useQueue` gained `updateRecipe` (edits drive `commit`, so the hook's React
   state and storage move together); the page's `items` is now a `useMemo`
@@ -171,7 +195,7 @@ still written-but-unread, left as passive pageview analytics (P3).
 ---
 
 ## Suggested order
-1. ✅ Finish the god-file — `<PageRail>` → `<PrintDeck>` → collapse the orchestrator. **Done.**
+1. ⚠️ God-file — `<PageRail>` → `<PrintDeck>` → collapse the orchestrator were done in August; the page has since grown back and its state/effects are still in it.
 2. ✅ Architecture cleanups — A1, A2, A3, A4, A5, A7, A8, A9, A10, A11 all done.
    Remaining architecture work: only the P3 tails deliberately scoped out above
    (A7 checkmark color, A8 SeoCapture validation mirror, A10 anon-prefix hardening).
