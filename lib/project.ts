@@ -157,8 +157,7 @@ export interface ProjectMeta {
   lastImportSource?: ImportTab;
   sectionDividers?: boolean;
   /** Opted into the cookbook experience (cover/sections) via "Make it a
-      cookbook" — false/undefined means the plain print-cards UI. Gated off at
-      the entry points for now; see COOKBOOK_ENABLED in lib/cookbookProduct.ts. */
+      cookbook" — false/undefined means the plain print-cards UI. */
   cookbookMode?: boolean;
   /** "New cookbook" was chosen from the library. Carries that choice into the
       workspace so it opens as a book instead of dropping the cook into recipe

@@ -1,32 +1,3 @@
-/**
- * Whether the cookbook experience is offered at all.
- *
- * Off until it's ready to launch. Only the two entry points are gated — "Make
- * it a cookbook" in the header and the mobile toolbar — so everything behind
- * them (the sections/cover/divider layer in lib/project.ts, the divider and
- * cover faces, the sheet packing that places them, the purchase flow) stays
- * live, compiled and type-checked. A project already in cookbook mode from
- * before the gate, or restored from a saved project, keeps rendering exactly
- * as it did rather than silently losing its cover and sections.
- *
- * A named constant rather than the `false &&` this replaced: a literal-false
- * branch is invisible to TypeScript, ESLint and grep, so it survives refactors
- * unnoticed and reads like a mistake to anyone who finds it. This is greppable,
- * says why, and makes relaunching a one-line change — same approach as the
- * Fruit Stand template's gate in components/RecipeCardPrint.tsx.
- *
- * Server-authoritative since 2026-09-13 (see docs/cookbook-unlock-webhook.md):
- * the `cookbook_project_id` attribute ships, the RevenueCat webhook is
- * deployed and confirmed configured in RevenueCat's dashboard, a sandbox
- * purchase has been traced through the flow by code review, and
- * `firestore.rules` denies client writes on `cookbookUnlocks`. Without all
- * of that a signed-in user could grant themselves the paid unlock for free
- * and refunds would never revoke — that was true for a period after this
- * flag first went `true`, which is why the docs file above is worth reading
- * before assuming this kind of gate is safe just because the flag is on.
- */
-export const COOKBOOK_ENABLED = true;
-
 // One purchase unlocks one stable cookbook project. The RevenueCat web product
 // behind this identifier must be configured as a repeat-purchasable consumable;
 // the permanent ownership record is our project-scoped unlock, not a global

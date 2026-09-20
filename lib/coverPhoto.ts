@@ -86,13 +86,8 @@ async function encodeScaledJpeg(source: Blob): Promise<Blob> {
   });
 }
 
-export async function fileToCoverDataUrl(file: File): Promise<string> {
-  const canvas = await blobToScaledCanvas(file);
-  return canvas.toDataURL("image/jpeg", JPEG_QUALITY);
-}
-
-/** Same downscale as `fileToCoverDataUrl`, but returns a compressed JPEG Blob —
-    used when the image is going straight to Firebase Storage (uploadBytes wants
+/** Downscales a picked photo and returns it as a compressed JPEG Blob — used
+    when the image is going straight to Firebase Storage (uploadBytes wants
     bytes, not a data URL, and this avoids a base64 round-trip).
 
     Throws if the image can't be decoded or encoded: this is the picker, where

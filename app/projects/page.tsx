@@ -285,8 +285,7 @@ export default function ProjectsPage() {
           no vertical padding at all, which is why the title sat against the
           sticky header and the last row of cards ran into the bottom edge. */}
       <main className="mx-auto w-full max-w-5xl px-cp-4 py-cp-5 sm:px-cp-6 sm:py-cp-7">
-        {/* Page header on the same scale as every other standalone page (see
-            `PageHeader` in components/PageShell): an h1 at --cp-fs-hero-sm over
+        {/* Page header on the same scale as every other standalone page: an h1 at --cp-fs-hero-sm over
             a --cp-fs-body-lg lede. This used to reach for `text-cp-page-title`
             and `text-cp-section-title`, neither of which exists in the Tailwind
             scale — so Tailwind emitted nothing, preflight's `font-size: inherit`

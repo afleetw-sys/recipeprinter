@@ -126,11 +126,10 @@ export function useCookbookPurchase({
      cookbook, open another in incognito, and it unlocked. The Firestore rules
      lockdown could not touch it: it writes nothing, it just flips local state.
 
-     It is deleted rather than repaired because it protects nobody.
-     `COOKBOOK_ENABLED` has only ever been true on the `cookbook` branch, never
-     on the default branch, so the cookbook has never been publicly purchasable
-     and no customer can hold the former account-wide unlock. Entitlement is now
-     one thing only: a server-written unlock document. */
+     It is deleted rather than repaired because it protects nobody: the cookbook
+     was not yet on sale when it went, so no customer can hold the former
+     account-wide unlock. Entitlement is now one thing only: a server-written
+     unlock document. */
 
   // The local marker is evidence of NEITHER answer for a signed-in account: a
   // missing one may just be a new device, and a present one may be stale (a
