@@ -1,14 +1,12 @@
 "use client";
 
 import { adaptCookPilotRecipe, adaptCookPilotRecipes, normalizeImportURL } from "@/lib/cookpilot";
-import { BLOCKED_REMEDY } from "@/lib/importUrl";
+import { BLOCKED_REMEDY, searchPageMessage, unwrapRedirectUrl } from "@/lib/importUrl";
 import { errorParts } from "@/lib/friendlyErrors";
-import { searchPageMessage, unwrapRedirectUrl } from "@/lib/importUrl";
 import { anonymousOwnerId } from "@/lib/anonymousOwner";
 import type { ImportFailureCode } from "@/lib/analytics";
-import type { BotWallVendor } from "@/types/recipe";
 import { parseRecipeText } from "@/lib/textRecipe";
-import type { ParseResponse, Recipe } from "@/types/recipe";
+import type { BotWallVendor, ParseResponse, Recipe } from "@/types/recipe";
 
 interface LocalParseOutcome {
   recipes: Recipe[] | null;

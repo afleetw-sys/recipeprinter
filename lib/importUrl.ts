@@ -74,9 +74,6 @@ export const BLOCKED_REMEDY =
 export const SEARCH_PAGE_MESSAGE =
   "That looks like a search results page. Copy the link from the recipe you want and paste it here.";
 
-/** The toast has room for about five words; see `shortImportError`. */
-export const SEARCH_PAGE_SHORT_MESSAGE = "That's a search results page";
-
 /**
  * Search engines, matched as patterns rather than a flat list because the big
  * ones are a family of country domains: `google.com`, `google.co.uk` and
