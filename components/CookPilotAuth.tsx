@@ -22,6 +22,11 @@ import { getFirebaseAuth } from "@/lib/firebase/client";
 import { ensureRecipePrinterAccount } from "@/lib/firebase/recipePrinterAccount";
 import { friendlyAuthError } from "@/lib/friendlyErrors";
 import { createAccountOrRecover, isEmailInUseError } from "@/lib/signUpRecovery";
+import {
+  purgeAnonymousUser as purgeAnonymousUserFor,
+  settleAnonymousPurge,
+  trackAnonymousPurge,
+} from "@/lib/anonymousSession";
 import { identifyUser } from "@/lib/analytics";
 import {
   readCookPilotWasSignedIn,
@@ -64,15 +69,8 @@ export async function signInWithCookPilotProvider(provider: AuthProvider) {
   await signInWithPopup(auth, provider);
 }
 
-export async function purgeAnonymousUser(user: User) {
-  await deleteUser(user).catch(async () => {
-    // The user may have completed a real sign-in while best-effort anonymous
-    // cleanup was running. Never let cleanup sign that newer user back out.
-    const auth = getFirebaseAuth();
-    if (auth.currentUser?.uid === user.uid) {
-      await signOut(auth).catch(() => {});
-    }
-  });
+export function purgeAnonymousUser(user: User): Promise<void> {
+  return purgeAnonymousUserFor(getFirebaseAuth(), user);
 }
 
 let authReadyPromise: Promise<void> | null = null;
@@ -284,7 +282,10 @@ export async function checkEmailProviders(email: string): Promise<string[]> {
     // This session has already done its job. Cleanup must not hold the UI on a
     // spinner before the password field appears.
     if (temporaryUser?.isAnonymous) {
-      void purgeAnonymousUser(temporaryUser);
+      // Tracked, not just fired: whoever signs in next waits for it, because a
+      // delete still running when they do signs them straight back out. See
+      // lib/anonymousSession.
+      trackAnonymousPurge(purgeAnonymousUser(temporaryUser));
     }
   }
 }
@@ -364,6 +365,7 @@ export function CookPilotLoginForm({
         // This account only has Google sign-in set up, so a password will
         // never work for it. Send them straight into the Google flow, the
         // same redirect the iOS app does for this case.
+        await settleAnonymousPurge();
         await signInWithCookPilotProvider(googleProvider);
         return;
       }
@@ -396,6 +398,9 @@ export function CookPilotLoginForm({
     submittingRef.current = true;
     setBusy(true);
     setError(null);
+    // The anonymous session the email check borrowed may still be being deleted.
+    // Signing in before that finishes lets the delete sign the new account out.
+    await settleAnonymousPurge();
     const auth = getFirebaseAuth();
     const normalizedEmail = email.trim().toLowerCase();
     try {
