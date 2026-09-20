@@ -341,7 +341,6 @@ type EventProps = {
     customerId?: string;
   };
   /** Claimed via a CookPilot entitlement rather than paid for. */
-  free_template_claimed: { template: RecipePrintTemplate };
 
   // ---- Cookbook export format ------------------------------------------
   /** The print-format preset picker was used to choose a format. */

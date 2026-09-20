@@ -98,25 +98,6 @@ export function friendlyRecipeLibraryError(
   return fallback;
 }
 
-export function friendlyClaimError(error: unknown): string {
-  const { code, message } = errorParts(error);
-
-  if (code.includes("already-exists")) {
-    return "You've already claimed your free template.";
-  }
-  if (code.includes("failed-precondition")) {
-    return "An active CookPilot subscription is required to claim a free template.";
-  }
-  if (code.includes("unauthenticated")) {
-    return "Please sign in with your CookPilot account to claim a free template.";
-  }
-  if (isNetworkFailure(code, message)) {
-    return "We couldn't finish claiming your template. Check your connection and try again.";
-  }
-
-  return "We couldn't claim that template right now. Please try again.";
-}
-
 export function friendlyPhotoUploadError(error: unknown): string {
   const { code, message } = errorParts(error);
 

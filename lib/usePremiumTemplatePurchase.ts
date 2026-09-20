@@ -5,9 +5,7 @@ import type { User } from "firebase/auth";
 import type { CustomerInfo } from "@revenuecat/purchases-js";
 import { RECIPE_PRINT_TEMPLATE_OPTIONS } from "@/lib/printTemplates";
 import type { RecipePrintTemplate } from "@/types/recipe";
-import { track } from "@/lib/analytics";
-import { friendlyClaimError } from "@/lib/friendlyErrors";
-import { isPremiumTemplate, type PremiumRecipePrintTemplate } from "@/lib/premiumTemplates";
+import { isPremiumTemplate } from "@/lib/premiumTemplates";
 import {
   hasTemplateEntitlement,
   identifyRecipePrinterCustomer,
@@ -16,11 +14,6 @@ import {
   syncRecipePrinterCustomerAttributes,
 } from "@/lib/recipePrinterPurchases";
 import type { CustomerInfoLoadStatus } from "@/lib/proAccessFallback";
-import {
-  claimFreeRecipePrinterTemplate,
-  loadFreeTemplateStatus,
-  type RecipePrinterFreeTemplateStatus,
-} from "@/lib/recipePrinterFreeTemplateClaim";
 import type { QueueItem } from "@/types/recipe";
 
 interface UsePremiumTemplatePurchaseOptions {
@@ -28,33 +21,23 @@ interface UsePremiumTemplatePurchaseOptions {
   cookPilotUser: User | null;
   cookPilotAuthReady: boolean;
   template: RecipePrintTemplate;
-  freeTemplateStatus: RecipePrinterFreeTemplateStatus | null;
-  setFreeTemplateStatus: (status: RecipePrinterFreeTemplateStatus | null) => void;
   showToast: (message: string) => void;
-  clearToast: () => void;
-  printNow: () => void;
 }
 
 /**
  * Owns RecipePrinter's RevenueCat customer identity: linking a RevenueCat
  * customer id (anonymous, then aliased to the CookPilot account on sign-in),
- * loading entitlements, and the one remaining way to unlock a locked
- * template without a Pro subscription — an eligible CookPilot member
- * claiming their one free template, which prints immediately once granted.
- * Buying a single template is retired; `useProPurchase` (a sibling hook)
- * owns the Pro subscription purchase that now covers every theme, reusing
- * the identity this hook establishes rather than duplicating it.
+ * and loading entitlements. Buying a single template is retired;
+ * `useProPurchase` (a sibling hook) owns the Pro subscription purchase that
+ * now covers every theme, reusing the identity this hook establishes rather
+ * than duplicating it.
  */
 export function usePremiumTemplatePurchase({
   items,
   cookPilotUser,
   cookPilotAuthReady,
   template,
-  freeTemplateStatus,
-  setFreeTemplateStatus,
   showToast,
-  clearToast,
-  printNow,
 }: UsePremiumTemplatePurchaseOptions) {
   const [revenueCatUserId, setRevenueCatUserId] = useState<string | null>(null);
   const [customerInfo, setCustomerInfo] = useState<CustomerInfo | null>(null);
@@ -66,8 +49,6 @@ export function usePremiumTemplatePurchase({
   // lib/proAccessFallback.ts's `resolveEffectiveCustomerInfo`).
   const [customerInfoStatus, setCustomerInfoStatus] = useState<CustomerInfoLoadStatus>("idle");
   const [customerInfoLastVerifiedAtMs, setCustomerInfoLastVerifiedAtMs] = useState<number | null>(null);
-  const [claimBusy, setClaimBusy] = useState(false);
-  const [freeTemplateBannerDismissed, setFreeTemplateBannerDismissed] = useState(false);
   const linkedCookPilotUidRef = useRef<string | null>(null);
   const revenueCatUserIdRef = useRef<string | null>(null);
   const identityRequestRef = useRef(0);
@@ -91,9 +72,6 @@ export function usePremiumTemplatePurchase({
   const selectedTemplateLocked =
     selectedPremiumTemplate !== null &&
     !hasTemplateEntitlement(customerInfo, selectedPremiumTemplate);
-  const hasUnclaimedFreeTemplate =
-    Boolean(freeTemplateStatus?.cookPilotActive) && !freeTemplateStatus?.granted;
-  const canClaimSelectedTemplateFree = selectedTemplateLocked && hasUnclaimedFreeTemplate;
 
   async function refreshCustomerInfo(userId = revenueCatUserId): Promise<CustomerInfo | null> {
     if (!userId) return null;
@@ -134,36 +112,6 @@ export function usePremiumTemplatePurchase({
       setCustomerInfoLastVerifiedAtMs(Date.now());
     }
     return info;
-  }
-
-  async function claimTemplateAndPrint(premiumTemplate: PremiumRecipePrintTemplate) {
-    if (!cookPilotUser) return;
-
-    setClaimBusy(true);
-    clearToast();
-    try {
-      await claimFreeRecipePrinterTemplate(premiumTemplate);
-      const [status] = await Promise.all([
-        loadFreeTemplateStatus(cookPilotUser.uid).then((result) => {
-          setFreeTemplateStatus(result);
-          return result;
-        }),
-        refreshCustomerInfo(),
-      ]);
-
-      if (!status.grantedConfirmed) {
-        showToast("Your template is almost ready. Wait a moment, then tap Print again.");
-        return;
-      }
-
-      track("free_template_claimed", { template: premiumTemplate });
-
-      printNow();
-    } catch (error) {
-      showToast(friendlyClaimError(error));
-    } finally {
-      setClaimBusy(false);
-    }
   }
 
   const hasItems = (items?.length ?? 0) > 0;
@@ -269,14 +217,8 @@ export function usePremiumTemplatePurchase({
       setCustomerInfoLastVerifiedAtMs(Date.now());
     },
     refreshCustomerInfo,
-    claimBusy,
-    freeTemplateBannerDismissed,
-    setFreeTemplateBannerDismissed,
     selectedPremiumTemplate,
     selectedTemplateLabel,
     selectedTemplateLocked,
-    hasUnclaimedFreeTemplate,
-    canClaimSelectedTemplateFree,
-    claimTemplateAndPrint,
   };
 }

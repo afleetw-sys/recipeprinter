@@ -1,6 +1,6 @@
 import type { CustomerInfo } from "@revenuecat/purchases-js";
 import { PREMIUM_TEMPLATE_ENTITLEMENTS } from "@/lib/premiumTemplates";
-import type { RecipePrinterMirroredEntitlement } from "@/lib/recipePrinterFreeTemplateClaim";
+import type { RecipePrinterMirroredEntitlement } from "@/lib/recipePrinterUserProfile";
 
 // Only a one-time legacy template purchase is a legitimate "no expiration
 // means lifetime" entitlement — see CookPilot's matching rule in
