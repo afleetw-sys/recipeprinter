@@ -3800,8 +3800,8 @@ export default function PrintPage() {
    * The one place a button survives is a SIGNED-OUT cook with a project worth
    * keeping (two recipes or a cookbook). There is no account to write to, so
    * nothing can happen automatically and the only way to keep it is to sign
-   * in; "Save" is the door to that. A single card gets no door at all here,
-   * though the leave dialog still offers one on the way out.
+   * in; "Save" is the door to that. A single card gets no door at all: it is a
+   * quick print, and leaving never asks about it.
    */
   function renderSaveControl() {
     if (saveStatus) {

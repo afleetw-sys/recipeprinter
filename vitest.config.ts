@@ -12,6 +12,9 @@ import { defineConfig } from "vitest/config";
 // `// @vitest-environment jsdom` comment on the first line and use
 // @testing-library/react's renderHook, so the pure tests keep running in node.
 export default defineConfig({
+  // Next compiles JSX itself (tsconfig has `jsx: preserve`), so vitest's esbuild
+  // needs telling how, or a .tsx file under test fails with "React is not defined".
+  esbuild: { jsx: "automatic" },
   test: {
     environment: "node",
     // `scripts/` covers the build-time guards (the design-system audit's
