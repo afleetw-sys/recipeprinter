@@ -692,12 +692,6 @@
   font-size: var(--cp-fs-caption);
   line-height: 1.45;
 }
-/* What this book would cost here. The row's whole argument, so it leads in the
-   ink colour rather than the soft grey the rest of the caption uses. */
-.cookbook-destination__price {
-  color: var(--cp-ink);
-  font-weight: 700;
-}
 
 /* The tile column. A fixed box whatever it holds, so a glyph row and a
    monogram row start their text at the same place. */
@@ -734,13 +728,6 @@
   color: var(--cp-ink-soft);
   font-size: var(--cp-fs-caption);
   line-height: 1.45;
-}
-/* What it costs, and what it trades away. This is the row's whole argument, so
-   the money leads in the ink colour and the two trade-offs sit under it as a
-   pair, marked rather than bulleted so they read at a glance. */
-.cookbook-destination__price {
-  color: var(--cp-ink);
-  font-weight: 700;
 }
 
 /* Step three: the files landed, here is what they are for. A list and a

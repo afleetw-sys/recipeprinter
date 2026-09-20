@@ -5,8 +5,6 @@ import {
   bindingLabels,
   downloadSummary,
   settingsIntro,
-  destinationPriceLine,
-  estimateTotalUsd,
   destinationPresets,
   destinationPrinter,
   destinationSettings,
@@ -261,84 +259,21 @@ describe("binding labels", () => {
   });
 });
 
-describe("what it costs", () => {
-  it("returns the measured order's own price at its own page count", () => {
-    // The anchor has to reproduce itself, or the scaling is wrong at the one
-    // point we actually know the answer for.
+describe("what the destination list says", () => {
+  it("never puts a price on a row", () => {
+    // What a book costs turns on the binding, the paper and the shop's own
+    // rates. The rows describe the place instead.
     for (const destination of PRINT_DESTINATIONS) {
-      const observed = destination.economics.observed;
-      if (!observed) continue;
-      expect(estimateTotalUsd(destination, observed.pages)).toBe(observed.totalUsd);
+      expect(destination.tagline ?? "").not.toMatch(/[$£€]|\bcost|\bprice/i);
+      expect(destination).not.toHaveProperty("economics");
     }
   });
 
-  it("scales with the book", () => {
-    // A cookbook's price is almost entirely its page count, so a flat figure
-    // would be wrong for everyone whose book is not the size we measured.
-    // $12 for 95 pages, so twice the book is twice the bill.
-    const lulu = getPrintDestination("lulu");
-    expect(estimateTotalUsd(lulu, 190)).toBe(24);
-    expect(estimateTotalUsd(lulu, 285)).toBe(36);
-  });
-
-  it("quotes no price for a shop nobody has ordered from", () => {
-    // Blurb is real and we have never bought a book there. An invented rate
-    // presented beside two measured ones would read exactly as trustworthy.
-    expect(getPrintDestination("blurb").economics.observed).toBeUndefined();
-    expect(estimateTotalUsd(getPrintDestination("blurb"), 64)).toBeNull();
-    expect(destinationPriceLine(getPrintDestination("blurb"), 64)).not.toContain("$");
-  });
-
-  it("never shows a price for a book of no pages", () => {
+  it("describes every place except the one whose name says it all", () => {
     for (const destination of PRINT_DESTINATIONS) {
-      expect(estimateTotalUsd(destination, 0)).toBeNull();
-      expect(destinationPriceLine(destination, 0)).not.toContain("$0");
+      if (destination.id === "other") expect(destination.tagline).toBeUndefined();
+      else expect(destination.tagline?.length).toBeGreaterThan(0);
     }
-  });
-
-  it("keeps the two real orders comparable, because they are the same book", () => {
-    // This pair is the whole argument for asking where before anything else:
-    // one book, two counters, and the file each of them needs is different.
-    const lulu = getPrintDestination("lulu").economics.observed!;
-    const shop = getPrintDestination("copy-shop").economics.observed!;
-    expect(lulu.pages).toBe(shop.pages);
-    expect(lulu.totalUsd).toBeLessThan(shop.totalUsd);
-  });
-
-  it("says “from”, because the binding is chosen on the next step", () => {
-    // Both anchors are spiral books; a hardcover costs more everywhere that
-    // binds one. A floor is honest where a midpoint would not be.
-    expect(destinationPriceLine(getPrintDestination("lulu"), 95)).toBe(
-      "From about $12 for your 95 pages",
-    );
-    expect(destinationPriceLine(getPrintDestination("copy-shop"), 95)).toBe(
-      "From about $72 for your 95 pages",
-    );
-  });
-
-  it("says what a home printer costs without inventing a bill", () => {
-    expect(destinationPriceLine(getPrintDestination("home"), 95)).toBe(
-      "Ink and paper only",
-    );
-  });
-
-  it("names the page count the price is for", () => {
-    // An unqualified "$28" reads as the price of a cookbook. It is the price
-    // of THIS cookbook, and a longer one costs more.
-    expect(destinationPriceLine(getPrintDestination("lulu"), 95)).toBe(
-      "From about $12 for your 95 pages",
-    );
-    expect(destinationPriceLine(getPrintDestination("lulu"), 190)).toContain("190 pages");
-  });
-
-  it("falls back to describing the place when there is no price", () => {
-    // Blurb, and any shop we have not bought from. The row still says
-    // something useful; it just does not say a number we made up.
-    const blurb = destinationPriceLine(getPrintDestination("blurb"), 95);
-    expect(blurb).toBe(getPrintDestination("blurb").tagline);
-    expect(blurb).not.toContain("$");
-    // And nothing at all where the name is the whole answer.
-    expect(destinationPriceLine(getPrintDestination("other"), 95)).toBe("");
   });
 });
 

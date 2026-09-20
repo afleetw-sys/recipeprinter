@@ -21,7 +21,6 @@ import {
   PRINT_DESTINATIONS,
   bindingLabels,
   destinationPresets,
-  destinationPriceLine,
   downloadSummary,
   destinationPrinter as printerFor,
   destinationSettings,
@@ -249,14 +248,9 @@ export function CookbookReadyDialog({
               <DestinationMark id={option.id} name={option.name} />
               <span className="cookbook-destination__text">
                 <strong>{option.name}</strong>
-                {/* Nothing at all where there is neither a price nor anything
-                    worth saying: an empty line under the name is worse than a
-                    row that is simply its name. */}
-                {destinationPriceLine(option, pageCount) && (
-                  <small className="cookbook-destination__price">
-                    {destinationPriceLine(option, pageCount)}
-                  </small>
-                )}
+                {/* Nothing at all where the name is the whole answer: an empty
+                    line under it is worse than a row that is simply its name. */}
+                {option.tagline && <small>{option.tagline}</small>}
               </span>
             </button>
           ))}

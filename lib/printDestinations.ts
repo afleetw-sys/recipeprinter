@@ -28,8 +28,10 @@ export interface PrintDestination {
   /** What it is called on the first screen. */
   name: string;
   /**
-   * One line, describing the destination rather than the file. Shown only when
-   * there is no price to show instead.
+   * One line, describing the destination rather than the file. It is the whole
+   * of the row's second line: no price is shown anywhere in this dialog, because
+   * what a book costs depends on the binding, the paper and the shop's own
+   * rates, none of which we set.
    *
    * Optional, and "Somewhere else" is why: the name already says everything
    * there is to say about a shop we know nothing about, and a line under it
@@ -65,37 +67,6 @@ export interface PrintDestination {
    * confidently wrong setting is worse than no setting, because it is followed.
    */
   extraSettings?: PrintSetting[];
-  /** What it costs and what it trades away, for the list where places are
-      compared against each other. */
-  economics: DestinationEconomics;
-}
-
-/**
- * The money and the trade-offs, for step one.
- *
- * Step one is where someone decides WHERE, and the two things that decide it
- * are what it costs and what it gives up. Neither is knowable from the book.
- *
- * Prices scale, because a cookbook's price is almost entirely its page count —
- * the same book that cost $28 at Lulu costs roughly twice that at twice the
- * length, and quoting one flat figure would be wrong for everyone whose book
- * is not the size of the one we measured.
- */
-export interface DestinationEconomics {
-  /**
-   * A real order, with what it cost and how many pages it was.
-   *
-   * The only honest anchor there is: every figure shown is this one scaled to
-   * the book in front of the cook. A published "from" rate is a different
-   * book's price under a different set of options, and we would be presenting
-   * it as though it were this one's.
-   *
-   * Absent means we have not bought a book there and will not guess at one.
-   */
-  observed?: { pages: number; totalUsd: number; note: string };
-  /** Shown in place of a dollar figure where there is no bill to scale — you
-      are not buying anything, you are using up ink. */
-  fixedNote?: string;
 }
 
 /** One row of "choose this" on the screen after the download. */
@@ -110,7 +81,6 @@ export const PRINT_DESTINATIONS: PrintDestination[] = [
     name: "My own printer",
     tagline: "No bleed, so art stops short of the edge.",
     presetIds: ["us-letter"],
-    economics: { fixedNote: "Ink and paper only" },
   },
   {
     // Coil, comb, adhesive spine, 3-ring, stapled. NOT hardcover: a copy shop
@@ -123,9 +93,6 @@ export const PRINT_DESTINATIONS: PrintDestination[] = [
     presetIds: ["us-letter"],
     printerId: "staples",
     extraSettings: [{ label: "Colour", value: "Full colour, printed on both sides" }],
-    economics: {
-      observed: { pages: 95, totalUsd: 72, note: "95-page spiral book, bound at a Staples counter" },
-    },
   },
   {
     id: "lulu",
@@ -137,16 +104,6 @@ export const PRINT_DESTINATIONS: PrintDestination[] = [
     // so this is a price decision rather than a requirement, and it is stated
     // as an option rather than an instruction.
     extraSettings: [{ label: "Interior", value: "Standard or premium colour" }],
-    economics: {
-      // The same book as the Staples order above, which is what makes the
-      // comparison worth showing: one book, two counters, $12 against $72.
-      //
-      // Standard colour, because this figure is a floor and the row says
-      // "from". The same book in premium colour was $28 — still well under
-      // half the copy shop, and the choice is theirs to make on Lulu's own
-      // form rather than ours to make for them by quoting the dearer one.
-      observed: { pages: 95, totalUsd: 12, note: "95-page spiral book, standard colour" },
-    },
   },
   {
     id: "blurb",
@@ -155,9 +112,6 @@ export const PRINT_DESTINATIONS: PrintDestination[] = [
     presetIds: ["hardcover-8x10"],
     printerId: "blurb",
     extraSettings: [{ label: "Interior", value: "Full colour" }],
-    // No `observed`, because no one here has ordered from Blurb. The row shows
-    // its description instead of a guessed price — see `estimateTotalUsd`.
-    economics: {},
   },
   {
     id: "other",
@@ -178,7 +132,6 @@ export const PRINT_DESTINATIONS: PrintDestination[] = [
     // two rows up.
     presetIds: ["coil-us-letter", "hardcover-us-letter"],
     unknownSpec: true,
-    economics: {},
   },
 ];
 
@@ -294,61 +247,6 @@ export function bindingLabels(presets: CookbookPreset[]): string[] {
     return `${preset.bindingName} ${dim(preset.trimWidthIn)} × ${dim(preset.trimHeightIn)}`;
   });
 }
-
-/**
- * What this destination would cost for a book of this many pages, in whole
- * dollars, or null where we have no order to scale from.
- *
- * Straight-line from one measured order, which is a deliberate simplification
- * and a stated one: a real quote has setup costs, binding costs and volume
- * breaks in it, and with a single data point there is no way to separate a
- * fixed part from a per-page part. Scaling the whole bill per page slightly
- * overstates a short book and understates a long one.
- *
- * That is the right error to make here. The number is labelled as an estimate
- * from one order, and it is being used to choose between places whose real
- * difference is more than twofold — a few dollars of curve does not change
- * which row you pick. What WOULD change it is inventing a rate for a shop
- * nobody has bought from, which is why an absent order returns null and the
- * row simply shows no price.
- */
-export function estimateTotalUsd(
-  destination: PrintDestination,
-  pages: number,
-): number | null {
-  const observed = destination.economics.observed;
-  if (!observed || observed.pages <= 0 || pages <= 0) return null;
-  return Math.round((observed.totalUsd / observed.pages) * pages);
-}
-
-/**
- * The one line under a destination's name: what this book would cost there.
- *
- * The price alone, tied to the book in front of them. It used to carry a
- * shorthand file count too ("· two files"), and a pro and a con underneath,
- * which turned a list of five places into twenty lines of argument to read
- * before anything could be clicked. What the file looks like belongs on step
- * two, where it is about to be downloaded; step one is a question about money.
- *
- * "From about", never "about". Two things it has not asked yet both cost more:
- * the binding, since these anchors are spiral books and a hardcover is dearer
- * everywhere that binds one, and at Lulu the colour tier, since $12 is the
- * standard-colour price and premium is $28. The floor is honest; a midpoint
- * would not be.
- *
- * The page count is named rather than implied. An unqualified "$28" invites
- * being read as the price of a cookbook; it is the price of THIS cookbook, and
- * a longer one costs more.
- */
-export function destinationPriceLine(
-  destination: PrintDestination,
-  pages: number,
-): string {
-  const estimate = estimateTotalUsd(destination, pages);
-  if (estimate !== null) return `From about $${estimate} for your ${pages} pages`;
-  return destination.economics.fixedNote ?? destination.tagline ?? "";
-}
-
 
 /**
  * One sentence above the Save button saying what pressing it produces, and who
