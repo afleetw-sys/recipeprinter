@@ -27,6 +27,7 @@ import { MoveToSectionMenu } from "@/components/print/MoveToSectionMenu";
 import { ZoomControl } from "@/components/print/ZoomControl";
 import { ScaledPage } from "@/components/print/ScaledPage";
 import { formatRecipeTime } from "@/lib/time";
+import { recipeLinkOn } from "@/lib/recipeLink";
 import { gutterSideForRole } from "@/lib/cookbookPresets";
 import { chapterIntroFromRecipes, chapterRecipeTitles } from "@/lib/chapterIntro";
 import { composeNote } from "@/lib/recipeNote";
@@ -176,7 +177,6 @@ interface PrintDeckProps {
   showCutLines: boolean;
   showSourceUrl: boolean;
   setShowSourceUrl: Dispatch<SetStateAction<boolean>>;
-  sourceUrlOn: boolean;
   showDescription: boolean;
   /** No multi-recipe entitlement and not a cookbook — the one recipe a Free
       cook can hold. Only then is the page toolbar's link toggle unambiguous:
@@ -298,7 +298,6 @@ export function PrintDeck(props: PrintDeckProps) {
     showCutLines,
     showSourceUrl,
     setShowSourceUrl,
-    sourceUrlOn,
     showDescription,
     singleRecipeOnly,
     sheets,
@@ -405,29 +404,47 @@ export function PrintDeck(props: PrintDeckProps) {
      * which was a different question from whether anything was missing; now
      * that they edit by being clicked, it is the same question.
      */
+    /**
+     * The names of the recipe fields that are empty, in the order the button
+     * lists them. In a cookbook the button says these out loud, because "More
+     * fields" gave nobody a reason to press it to find where a link goes.
+     */
+    const missingRecipeFields = (): string[] => {
+      if (navItem.kind !== "recipe") return [];
+      const recipe = items?.find((item) => item.id === navItem.recipeId)?.recipe;
+      if (!recipe) return [];
+      const cookbook = Boolean(projectMeta.meta.cookbookMode);
+      const missing: string[] = [];
+      // A cookbook recipe can be given a link by hand whatever the book-wide
+      // setting says (it gets its own override on commit), so a missing link is
+      // always a hidden field there. Elsewhere the field only exists while the
+      // setting is on, so a missing link is only a hidden FIELD when that field
+      // would show.
+      if ((cookbook || showSourceUrl) && !recipe.sourceUrl) missing.push("link");
+      if (!formatRecipeTime(recipe.totalTime || recipe.cookTime || recipe.prepTime)) missing.push("time");
+      if (!(recipe.servings ?? recipe.yield)) missing.push("servings");
+      // Ask what the note WOULD print, not whether the website blurb
+      // exists. The card shows `composeNote(description, note,
+      // showDescription)`, so a recipe that arrived with a blurb and no
+      // note of its own prints nothing once the website-description
+      // checkbox is off — an empty line with no way to reach it, because
+      // this test read the stored blurb and concluded the field was
+      // filled. Reading the composed line also stops the opposite: a cook's
+      // own note with no blurb behind it printed fine and still offered to
+      // reveal a field that was never missing.
+      if (cookbook && !composeNote(recipe.description, recipe.note, showDescription).trim()) {
+        missing.push("note");
+      }
+      return missing;
+    };
     const pageHasHiddenFields = (): boolean => {
       if (navItem.kind === "recipe") {
         const recipe = items?.find((item) => item.id === navItem.recipeId)?.recipe;
         if (!recipe) return false;
-        const cookbook = Boolean(projectMeta.meta.cookbookMode);
         return (
           recipe.ingredients.length === 0 ||
           recipe.instructions.length === 0 ||
-          !formatRecipeTime(recipe.totalTime || recipe.cookTime || recipe.prepTime) ||
-          !(recipe.servings ?? recipe.yield) ||
-          // Ask what the note WOULD print, not whether the website blurb
-          // exists. The card shows `composeNote(description, note,
-          // showDescription)`, so a recipe that arrived with a blurb and no
-          // note of its own prints nothing once the website-description
-          // checkbox is off — an empty line with no way to reach it, because
-          // this test read the stored blurb and concluded the field was
-          // filled. Reading the composed line also stops the opposite: a cook's
-          // own note with no blurb behind it printed fine and still offered to
-          // reveal a field that was never missing.
-          (cookbook && !composeNote(recipe.description, recipe.note, showDescription).trim()) ||
-          // The link field only exists while the source-link setting is on, so
-          // a missing link is only a hidden FIELD when that field would show.
-          (showSourceUrl && !recipe.sourceUrl)
+          missingRecipeFields().length > 0
         );
       }
       if (navItem.kind === "cover") {
@@ -494,27 +511,42 @@ export function PrintDeck(props: PrintDeckProps) {
               : navItem.kind === "section-photo"
                 ? renderSectionPhotoControl(navItem.recipeId)
                 : null;
-    // The recipe-link toggle, next to the photo control. Only where the book
-    // can't hold more than this one recipe (`singleRecipeOnly`) — otherwise
-    // the underlying flag is book-wide, and a button living on ONE recipe's
-    // toolbar would read as that recipe's own switch while silently toggling
-    // every recipe's link. That case keeps the panel's "Every recipe" section
-    // as the one place to reach it instead.
+    // The recipe-link toggle, next to the photo control.
+    //
+    // Where the book can't hold more than this one recipe (`singleRecipeOnly`)
+    // it flips the setting, which IS that recipe's link. In a cookbook the
+    // setting is book-wide, so the button writes THIS recipe's own override
+    // instead (the link's counterpart to the photo picker's per-recipe "None"),
+    // and choosing what the book already does drops the override so the recipe
+    // follows the book again. Multi-recipe recipe cards have no per-recipe
+    // placement, so there the panel's "Every recipe" section stays the one place
+    // to reach it.
+    const linkCookbook = Boolean(projectMeta.meta.cookbookMode);
     const recipeForLink =
-      singleRecipeOnly && navItem.kind === "recipe"
+      (singleRecipeOnly || linkCookbook) && navItem.kind === "recipe"
         ? items?.find((item) => item.id === navItem.recipeId)?.recipe
         : null;
+    const linkShown =
+      navItem.kind === "recipe"
+        ? recipeLinkOn(showSourceUrl, linkCookbook, projectMeta.meta.itemPlacements?.[navItem.recipeId])
+        : showSourceUrl;
     const linkControl = recipeForLink?.sourceUrl ? (
       <button
         type="button"
         className={`recipe-page-toolbar__btn recipe-page-toolbar__btn--icon ${
-          showSourceUrl ? "is-active" : ""
+          linkShown ? "is-active" : ""
         }`}
-        aria-pressed={showSourceUrl}
-        aria-label={showSourceUrl ? "Hide recipe link" : "Show recipe link"}
-        title={showSourceUrl ? "Hide recipe link" : "Show recipe link"}
+        aria-pressed={linkShown}
+        aria-label={linkShown ? "Hide recipe link" : "Show recipe link"}
+        title={linkShown ? "Hide recipe link" : "Show recipe link"}
         onClick={(event) => {
           event.stopPropagation();
+          if (linkCookbook && navItem.kind === "recipe") {
+            projectMeta.setItemPlacement(navItem.recipeId, {
+              showSourceUrl: !linkShown === showSourceUrl ? undefined : !linkShown,
+            });
+            return;
+          }
           setShowSourceUrl((value) => !value);
         }}
       >
@@ -657,7 +689,11 @@ export function PrintDeck(props: PrintDeckProps) {
                     clicked into existence because they take up no room. So it
                     says what appears rather than "Edit", which would promise a
                     mode that is not there any more. */}
-                {editing ? "Done" : "More fields"}
+                {editing
+                  ? "Done"
+                  : projectMeta.meta.cookbookMode && missingRecipeFields().length > 0
+                    ? `Add ${missingRecipeFields().join(", ")}`
+                    : "More fields"}
               </button>
             </div>
           )}
@@ -815,9 +851,14 @@ export function PrintDeck(props: PrintDeckProps) {
       cookbookMode={Boolean(projectMeta.meta.cookbookMode)}
       showEmptyFields={showEmptyFields}
       showDescription={showDescription}
-      showSourceUrl={
-        sourceUrlOn ||
-        (showSourceUrl && showEmptyFields && focused && activeRecipeItem?.id === navItem.recipeId)
+      // The recipe's own link decision travels on its slot. What is left for
+      // the deck to say is the reveal: "More fields" shows the empty slot a link
+      // would be typed into, which in a cookbook needs no setting on first.
+      revealSourceUrl={
+        showEmptyFields &&
+        focused &&
+        activeRecipeItem?.id === navItem.recipeId &&
+        (Boolean(projectMeta.meta.cookbookMode) || showSourceUrl)
       }
       showCutLines={showCutLines && cardSize === "card-6x4"}
       inlineEdit={
@@ -1452,17 +1493,18 @@ export function PrintDeck(props: PrintDeckProps) {
                     doubleSided={continueOnBack}
                     cookbookMode={Boolean(projectMeta.meta.cookbookMode)}
                     showEmptyFields={showEmptyFields}
-                    // While actively editing with the checkbox on, keep the link
-                    // field visible even if deleting it just made this the only
-                    // recipe without one (which flips the cross-recipe
-                    // `sourceUrlOn` gate off) — otherwise clearing it mid-edit
-                    // hides the very field that would let the user type it back
-                    // in. Gated on the checkbox itself so Edit never shows a
-                    // link field the user has turned off.
+                    // While revealing empty fields, keep the link field visible
+                    // even if deleting the link just took away the last one in
+                    // the book — otherwise clearing it mid-edit hides the very
+                    // field that would let the user type it back in. Outside a
+                    // cookbook it is gated on the setting itself so the reveal
+                    // never shows a link field the user has turned off.
                     showDescription={showDescription}
-                    showSourceUrl={
-                      sourceUrlOn ||
-                      (showSourceUrl && showEmptyFields && isActive && activeRecipeItem?.id === navItem.recipeId)
+                    revealSourceUrl={
+                      showEmptyFields &&
+                      isActive &&
+                      activeRecipeItem?.id === navItem.recipeId &&
+                      (Boolean(projectMeta.meta.cookbookMode) || showSourceUrl)
                     }
                     showCutLines={showCutLines && cardSize === "card-6x4"}
                     inlineEdit={

@@ -59,7 +59,7 @@ export const ScaledPage = memo(function ScaledPage({
   size,
   template,
   doubleSided,
-  showSourceUrl,
+  revealSourceUrl = false,
   showDescription,
   showCutLines,
   showDecoration = true,
@@ -86,7 +86,11 @@ export const ScaledPage = memo(function ScaledPage({
   size: PrintCardSize;
   template: RecipePrintTemplate;
   doubleSided: boolean;
-  showSourceUrl: boolean;
+  /** Draw the source-link field even where the recipe's own resolved setting
+      (`slot.showSourceUrl`) has it off: the editor's "More fields" reveal, which
+      has to show the empty slot a link would be typed into. Never set by the
+      export or the rail. */
+  revealSourceUrl?: boolean;
   showDescription: boolean;
   cookbookMode?: boolean;
   /** Reveal the fields a recipe does not have yet — see RecipeCardPrint. */
@@ -608,7 +612,7 @@ export const ScaledPage = memo(function ScaledPage({
                     hasBackFace={slot.hasBack}
                     showImage={slot.showPhoto}
                     photoOnFacingPage={slot.hidePhoto}
-                    showSourceUrl={showSourceUrl}
+                    showSourceUrl={slot.showSourceUrl || revealSourceUrl}
                     showDescription={showDescription}
                     continued={slot.isContinuation}
                     template={template}

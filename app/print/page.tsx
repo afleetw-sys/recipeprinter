@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, type SetStateAction } from "react";
 import { flushSync } from "react-dom";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
@@ -12,6 +12,7 @@ import { FeedbackDialog } from "@/components/FeedbackButton";
 import { PrintDialogs } from "@/components/PrintDialogs";
 import { AddRecipeDialog } from "@/components/AddRecipeDialog";
 import { sectionOrderChanged, sortSectionsByTitle } from "@/lib/sectionSort";
+import { recipeLinkOn } from "@/lib/recipeLink";
 import { CookbookWelcomeDialog } from "@/components/CookbookWelcomeDialog";
 import { CookbookReadyDialog } from "@/components/CookbookReadyDialog";
 import {
@@ -743,7 +744,6 @@ export default function PrintPage() {
   // Per-recipe photo now travels baked into each slot's `showPhoto` (resolved
   // in usePrintSheets against the committed frame), so there's no global
   // preview-photo flag to thread to the faces anymore.
-  const previewSourceUrlOn = previewConfig?.sourceUrlOn ?? sourceUrlOn;
 
   // Every named section has an opener page, so its divider nav item carries the
   // title and recipe rows never need a synthetic section header.
@@ -1464,6 +1464,21 @@ export default function PrintPage() {
     const modes = new Set(withImage.map((item) => photoModeFor(item.id)));
     return modes.size === 1 ? (Array.from(modes)[0] as PhotoStyle) : null;
   }, [items, photoModeFor, photoStyle]);
+
+  // Toggling the book-wide "Recipe link" setting overrides every per-recipe
+  // choice, the same way a book-wide Photos option does (above): the book snaps
+  // to what was just chosen, so "off" means off. Handed to every control that
+  // flips the setting; loading a saved project sets it directly and leaves the
+  // overrides alone.
+  const setBookShowSourceUrl = useCallback(
+    (next: SetStateAction<boolean>) => {
+      setShowSourceUrl(next);
+      projectMeta.clearItemLinkOverrides();
+    },
+    // `clearItemLinkOverrides` is stable.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [projectMeta.clearItemLinkOverrides],
+  );
 
   // Picking a book-wide Photos option overrides every per-recipe choice: set the
   // default AND clear the individual placement overrides so the whole book snaps
@@ -4803,6 +4818,24 @@ export default function PrintPage() {
           });
         }
       }
+      /**
+       * Typing a link into one recipe is choosing to SHOW it on that recipe,
+       * for the same reason as a photo above: the book-wide "Recipe link"
+       * setting starts off, so a link typed before anyone found the setting
+       * was stored and then hidden. Written as this recipe's own override,
+       * never the book-wide setting, so one recipe's link does not switch
+       * links on for the rest of the book.
+       *
+       * Cookbook only: a recipe card has no per-recipe placement.
+       */
+      if (
+        cookbookMode &&
+        next.sourceUrl &&
+        next.sourceUrl !== previous?.sourceUrl &&
+        !recipeLinkOn(showSourceUrl, true, projectMeta.meta.itemPlacements?.[id])
+      ) {
+        projectMeta.setItemPlacement(id, { showSourceUrl: true });
+      }
       if (!next.image || next.image === previous?.image) return;
       if (cookbookMode) {
         if (photoModeFor(id) === "none") projectMeta.setItemPhotoMode(id, "card");
@@ -4817,7 +4850,7 @@ export default function PrintPage() {
     },
     // `setItemPhotoMode` and `updateRecipe` are stable; the rest is read fresh.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [items, photoModeFor, cookbookMode, showPhoto, queue.updateRecipe, projectMeta.setItemPhotoMode],
+    [items, photoModeFor, cookbookMode, showPhoto, showSourceUrl, queue.updateRecipe, projectMeta.setItemPhotoMode],
   );
 
   const { showEmptyFields, toggleShowEmptyFields, activeInlineEdit } = useRecipeInlineEditor({
@@ -5311,7 +5344,6 @@ export default function PrintPage() {
           previewTemplate={previewTemplate}
           continueOnBack={continueOnBack}
           previewDescriptionOn={showDescription}
-          previewSourceUrlOn={previewSourceUrlOn}
           organizeMode={organizeMode}
           enterOrganizeMode={enterOrganizeMode}
           exitOrganizeMode={exitOrganizeMode}
@@ -5374,9 +5406,8 @@ export default function PrintPage() {
           cardSize={cardSize}
           showCutLines={showCutLines}
           showSourceUrl={showSourceUrl}
-          setShowSourceUrl={setShowSourceUrl}
+          setShowSourceUrl={setBookShowSourceUrl}
           showDescription={showDescription}
-          sourceUrlOn={sourceUrlOn}
           singleRecipeOnly={singleRecipeOnly}
           sheets={sheets}
           navItems={navItems}
@@ -5462,7 +5493,7 @@ export default function PrintPage() {
           showPhoto={showPhoto}
           setShowPhoto={setShowPhoto}
           showSourceUrl={showSourceUrl}
-          setShowSourceUrl={setShowSourceUrl}
+          setShowSourceUrl={setBookShowSourceUrl}
           bookDesignSettings={renderBookDesignSettings()}
           template={template}
           setTemplate={setTemplate}
@@ -5587,7 +5618,7 @@ export default function PrintPage() {
                 type="button"
                 className="recipe-mobile-toolbar__btn"
                 aria-pressed={showSourceUrl}
-                onClick={() => setShowSourceUrl((value) => !value)}
+                onClick={() => setBookShowSourceUrl((value) => !value)}
               >
                 <span
                   className={`recipe-mobile-toolbar__btn-icon ${

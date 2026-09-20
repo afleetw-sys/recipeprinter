@@ -160,13 +160,15 @@ export function PrintSetupControls({
               onChange={(event) => setShowDescription(event.target.checked)}
             />
           )}
-          {anyRecipeHasSourceUrl && (
-            <Checkbox
-                label="Recipe link"
-                checked={showSourceUrl}
-                onChange={(event) => setShowSourceUrl(event.target.checked)}
-            />
-          )}
+          {/* Always offered in a cookbook, not only once a recipe has a link:
+              a recipe can be given one by hand from its own toolbar, and this is
+              the book-wide default that link is measured against. Toggling it
+              resets every recipe's own choice, as the Photos tiles below do. */}
+          <Checkbox
+              label="Recipe link"
+              checked={showSourceUrl}
+              onChange={(event) => setShowSourceUrl(event.target.checked)}
+          />
           {/* Plain text, not a second uppercase heading: the tiles belong to
               "Every recipe" like the checkboxes above them, and an eyebrow here
               made them a section of their own. */}
