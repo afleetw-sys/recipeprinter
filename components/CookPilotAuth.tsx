@@ -20,6 +20,7 @@ import { getFirebaseAuth } from "@/lib/firebase/client";
 import { ensureRecipePrinterAccount } from "@/lib/firebase/recipePrinterAccount";
 import { authFailureCode, friendlyAuthError } from "@/lib/friendlyErrors";
 import { createAccountOrRecover, isEmailInUseError } from "@/lib/signUpRecovery";
+import { isPopupDismissal, watchForPopupReturn } from "@/lib/authPopup";
 import {
   clearAuthRedirectPending,
   hasAuthRedirectPending,
@@ -417,12 +418,26 @@ export function CookPilotLoginForm({
   async function signInWithProvider(provider: AuthProvider, method: "google" | "apple") {
     const via = shouldUseRedirectSignIn() ? "redirect" : "popup";
     track("auth_attempted", { method, via });
+    // Firebase only learns a popup was closed by polling, then waits eight more
+    // seconds before rejecting, so awaiting it alone leaves this dialog disabled
+    // for up to ten seconds after someone closes Google's window. Hand the dialog
+    // back as soon as focus returns to this page instead (see lib/authPopup).
+    const stopWatching = via === "popup" ? watchForPopupReturn(() => setBusy(false)) : undefined;
     try {
       await signInWithCookPilotProvider(provider);
       if (via === "popup") track("auth_succeeded", { method });
     } catch (err) {
       track("auth_failed", { method, code: authFailureCode(err) });
+      // Closing the window is a choice, not a failure: the form is simply back.
+      // It arrives after the dialog has already been handed back, or, where the
+      // browser never reports focus returning, is what hands it back.
+      if (isPopupDismissal(err)) {
+        setBusy(false);
+        return;
+      }
       throw err;
+    } finally {
+      stopWatching?.();
     }
   }
 
