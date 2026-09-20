@@ -156,10 +156,8 @@ import {
 import { hasPendingImport, takePendingImport } from "@/lib/pendingImport";
 import { nextPaint } from "@/lib/nextPaint";
 import { nextCookbookTemplate } from "@/lib/cookbookTemplateRotation";
+import { markPostPrintDialogShown, shouldShowPostPrintDialog } from "@/lib/postPrintDialog";
 import { printProjectFingerprint, SAVE_TIMEOUT_MS, type PendingSave } from "@/lib/printSave";
-
-const POST_PRINT_DIALOG_STORAGE_KEY = "recipeprinter:post-print-dialog:last-shown:v1";
-
 
 // The section opener's photo placement — the SAME None/In-card/Full-page row as
 // a recipe, so the two pickers read identically. A collage isn't a fourth
@@ -185,16 +183,6 @@ function sectionRecipeImages(section: Section): string[] {
 // content (not a hidden placeholder), so a cook who likes it can just keep it
 // and it prints as-is.
 const DEFAULT_DEDICATION_BODY = "For the ones who taught us to cook, and who made every table feel like home.";
-
-// A short, generic recipe used only to fill each theme's picker preview. Kept
-// intentionally small so it lays out as a clean single front face at 6x4.
-function shouldShowPostPrintDialog() {
-  return localStore.get(POST_PRINT_DIALOG_STORAGE_KEY) === null;
-}
-
-function markPostPrintDialogShown() {
-  localStore.set(POST_PRINT_DIALOG_STORAGE_KEY, "1");
-}
 
 function initialPrintCardSize(value: string | null): PrintCardSize {
   return isPrintCardSize(value) ? value : "letter";
