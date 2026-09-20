@@ -77,6 +77,7 @@ import { useRecipeInlineEditor } from "@/lib/useRecipeInlineEditor";
 import { useRailDrag, type RailDragKind, type RailDropResolved } from "@/lib/useRailDrag";
 import { useRailSelection } from "@/lib/useRailSelection";
 import { PAGE_DIMS } from "@/lib/printGeometry";
+import { addRecipeTarget } from "@/lib/addRecipeTarget";
 import { useDeckScroller } from "@/lib/useDeckScroller";
 import { usePremiumTemplatePurchase } from "@/lib/usePremiumTemplatePurchase";
 import { useCookbookPurchase } from "@/lib/useCookbookPurchase";
@@ -4283,14 +4284,10 @@ export default function PrintPage() {
       openProUpgradeDialog("add_more_recipes");
       return;
     }
-    const location = sectionForNavItem(navItem);
-    const anchorId = navItem?.kind === "recipe" || navItem?.kind === "divider" ? navItem.recipeId : null;
-    const insertionIndex = navItem?.kind === "recipe"
-      ? (sectionAndIndexForItem(navItem.recipeId)?.index ?? -1) + 1
-      : 0;
-    setPendingAddSectionId(location?.id ?? sections[0]?.id ?? null);
-    setPendingAddIndex(Math.max(0, insertionIndex));
-    setPendingAddAfterRecipeId(anchorId);
+    const target = addRecipeTarget(navItem, sections);
+    setPendingAddSectionId(target?.sectionId ?? sections[0]?.id ?? null);
+    setPendingAddIndex(target?.index ?? 0);
+    setPendingAddAfterRecipeId(target?.anchorId ?? null);
     setShowAddRecipeDialog(true);
   }
   /**
