@@ -25,6 +25,8 @@ interface UseProPurchaseOptions {
   markCustomerInfoVerified: () => void;
   cookPilotUser: User | null;
   showToast: (message: string) => void;
+  /** For a failure the cook needs to notice; falls back to `showToast`. */
+  showErrorToast?: (message: string) => void;
   clearToast: () => void;
   onFreshPurchase: () => void;
 }
@@ -54,6 +56,7 @@ export function useProPurchase({
   markCustomerInfoVerified,
   cookPilotUser,
   showToast,
+  showErrorToast = showToast,
   clearToast,
   onFreshPurchase,
 }: UseProPurchaseOptions) {
@@ -103,7 +106,7 @@ export function useProPurchase({
       track("purchase_completed", { product: "pro", cycle, customerId: revenueCatUserId });
 
       if (!hasProEntitlement(result.customerInfo)) {
-        showToast("Your purchase went through, but Pro isn't ready yet. Wait a moment, then try again.");
+        showErrorToast("Your purchase went through, but Pro isn't ready yet. Wait a moment, then try again.");
         onSettled("failed");
         return;
       }
@@ -120,7 +123,7 @@ export function useProPurchase({
         reason: truncateReason(error),
         customerId: revenueCatUserId,
       });
-      showToast(friendlyPurchaseSetupError(error));
+      showErrorToast(friendlyPurchaseSetupError(error));
       onSettled("failed");
     } finally {
       setProBusy(false);

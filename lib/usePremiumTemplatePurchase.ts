@@ -22,6 +22,8 @@ interface UsePremiumTemplatePurchaseOptions {
   cookPilotAuthReady: boolean;
   template: RecipePrintTemplate;
   showToast: (message: string) => void;
+  /** For a failure the cook needs to notice; falls back to `showToast`. */
+  showErrorToast?: (message: string) => void;
 }
 
 /**
@@ -38,6 +40,7 @@ export function usePremiumTemplatePurchase({
   cookPilotAuthReady,
   template,
   showToast,
+  showErrorToast = showToast,
 }: UsePremiumTemplatePurchaseOptions) {
   const [revenueCatUserId, setRevenueCatUserId] = useState<string | null>(null);
   const [customerInfo, setCustomerInfo] = useState<CustomerInfo | null>(null);
@@ -168,7 +171,7 @@ export function usePremiumTemplatePurchase({
         if (cancelled || identityRequestRef.current !== requestId) return;
         console.warn("RecipePrinter: could not link CookPilot account to purchases", error);
         setCustomerInfoStatus("error");
-        showToast("You're signed in, but we couldn't restore your purchases. Check your connection and try again.");
+        showErrorToast("You're signed in, but we couldn't restore your purchases. Check your connection and try again.");
       });
     return () => {
       cancelled = true;

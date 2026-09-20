@@ -30,10 +30,11 @@ const OVERLAY_POP_GRACE_MS = 400;
  * cook pressed Back", so that late arrival gets attributed to the wrong thing —
  * and the wrong thing is usually the overlay that was just opened.
  *
- * Clicking "Sign in and save it" in the "Keep this project?" confirm is the
- * case that shows it: the confirm closes and pops its entry, the sign-in dialog
- * opens 8ms later, the pop lands 4ms after that, and the sign-in dialog reads
- * it as a Back and closes itself. The click looks like it did nothing.
+ * A confirm whose button opens the sign-in dialog is the case that shows it
+ * (the print page's old "Keep this project?" was where it was found): the
+ * confirm closes and pops its entry, the sign-in dialog opens 8ms later, the pop
+ * lands 4ms after that, and the sign-in dialog reads it as a Back and closes
+ * itself. The click looks like it did nothing.
  *
  * So the pops this module starts are counted. They are not Back presses and
  * nothing may treat them as one.

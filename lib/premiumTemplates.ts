@@ -23,6 +23,18 @@ export function isPremiumTemplate(
   return template in PREMIUM_TEMPLATE_ENTITLEMENTS;
 }
 
+// A fresh cookbook opens on a premium theme (unlocked inside the book, so no
+// paywall) so the first view looks designed rather than the plain Classic
+// default. Always the same one: it used to rotate through the four per device,
+// which made a cook's first book depend on what they had made before.
+export const DEFAULT_COOKBOOK_TEMPLATE: PremiumRecipePrintTemplate = "bistro";
+
+/** The theme a new cookbook opens on: a premium theme the cook already chose is
+    respected, anything else (the Classic default) becomes the default book theme. */
+export function cookbookTemplateFor(current: RecipePrintTemplate): PremiumRecipePrintTemplate {
+  return isPremiumTemplate(current) ? current : DEFAULT_COOKBOOK_TEMPLATE;
+}
+
 export function entitlementForTemplate(template: PremiumRecipePrintTemplate): string {
   return PREMIUM_TEMPLATE_ENTITLEMENTS[template];
 }
