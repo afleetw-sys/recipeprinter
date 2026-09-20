@@ -160,6 +160,7 @@ import { markPostPrintDialogShown, shouldShowPostPrintDialog } from "@/lib/postP
 import { useToast } from "@/lib/useToast";
 import { printProjectFingerprint, type PendingSave } from "@/lib/printSave";
 import { writeProject as runSaveWrite } from "@/lib/printSaveWrite";
+import { autosaveVerdict, LOADED_BASELINE, shouldFlushOnHide } from "@/lib/printAutosave";
 
 // The section opener's photo placement — the SAME None/In-card/Full-page row as
 // a recipe, so the two pickers read identically. A collage isn't a fourth
@@ -2345,15 +2346,18 @@ export default function PrintPage() {
   // would write and could bump the revision other tabs are editing against.
   useEffect(() => {
     flushOnHideRef.current = () => {
-      if (!autosaveEnabledForCurrentMode || !projectAttachChecked) return;
-      if (!items || items.length === 0) return;
-      // A save is already carrying this book — either in flight or waiting its
-      // turn holding a snapshot of it.
-      if (saveInFlightRef.current || queuedSaveRef.current) return;
-      if (lastSavedFingerprintRef.current === "__loaded__") return;
-      const fp = printProjectFingerprint(items, projectMeta.meta, currentLayoutSettings());
-      if (fp === lastSavedFingerprintRef.current) return;
-      void handleSaveProject();
+      const worthFlushing = shouldFlushOnHide(
+        {
+          autosaveEnabledForCurrentMode,
+          projectAttachChecked,
+          itemCount: items?.length ?? 0,
+          saveInFlight: saveInFlightRef.current,
+          saveQueued: queuedSaveRef.current !== null,
+          lastSavedFingerprint: lastSavedFingerprintRef.current,
+        },
+        () => printProjectFingerprint(items, projectMeta.meta, currentLayoutSettings()),
+      );
+      if (worthFlushing) void handleSaveProject();
     };
   });
 
@@ -3089,7 +3093,7 @@ export default function PrintPage() {
      *    the ADOPTION path (`adoptAnonymousProject`), which migrates the book's
      *    anonymous photo assets and re-keys its cookbook unlock — exactly what
      *    moving a device-local book into an account has to do. Deliberately no
-     *    `"__loaded__"` sentinel either: that sentinel exists to stop a freshly
+     *    `LOADED_BASELINE` sentinel either: that sentinel exists to stop a freshly
      *    loaded account document re-saving itself unchanged, and here the save
      *    is the point. Opening a shelved book while signed in files it to the
      *    account, which is the product's rule for cookbooks.
@@ -3148,7 +3152,7 @@ export default function PrintPage() {
           projectRevisionRef.current = Number(project.revision ?? 0);
           savedProjectIdRef.current = project.id;
           setSavedProjectId(project.id);
-          lastSavedFingerprintRef.current = "__loaded__";
+          lastSavedFingerprintRef.current = LOADED_BASELINE;
           // Whatever this document loaded as IS the last thing it was saved
           // as — the same value just used to set `cookbookMode` above, so a
           // reopened project starts agreeing with itself.
@@ -3273,12 +3277,12 @@ export default function PrintPage() {
         // `saveStatus` or the header about it, so the Save button came back
         // for a project that was never actually unsaved.
         setSaveStatus("saved");
-        // `"__loaded__"` is a sentinel the autosave effect below already
+        // `LOADED_BASELINE` is a sentinel the autosave effect below already
         // knows how to consume: it seeds the real fingerprint from the
         // live document on its first pass instead of comparing against
         // nothing, which is what a bare `null` here would do — declaring
         // an untouched reload "changed" and firing a real save at nothing.
-        lastSavedFingerprintRef.current = "__loaded__";
+        lastSavedFingerprintRef.current = LOADED_BASELINE;
         // `loadPrintProjectHead` reads identity and revision only (see its
         // own doc comment) — not settings, so there's no saved `cookbookMode`
         // to read here the way the full-project loader above has one. The
@@ -3580,7 +3584,7 @@ export default function PrintPage() {
     // per debounce settle inside the timer), never eagerly on every keystroke.
     const fingerprint = () =>
       printProjectFingerprint(items, projectMeta.meta, currentLayoutSettings());
-    if (lastSavedFingerprintRef.current === "__loaded__") {
+    if (lastSavedFingerprintRef.current === LOADED_BASELINE) {
       lastSavedFingerprintRef.current = fingerprint();
       return;
     }
@@ -3590,13 +3594,14 @@ export default function PrintPage() {
     // therefore run inside the timer, against that single settled fingerprint.
     const timer = window.setTimeout(() => {
       const fp = fingerprint();
-      if (fp === lastSavedFingerprintRef.current) return;
-      // Only autosave once per genuine content change. Without this, a failed save
-      // (e.g. a permissions error) never advances lastSavedFingerprintRef, so every
-      // saveStatus flip re-fires this effect and re-schedules the identical save —
-      // an unbounded retry storm. Manual retry and the reconnect handler still call
-      // handleSaveProject directly, so real retries keep working.
-      if (fp === lastAttemptedFingerprintRef.current) return;
+      // Only autosave once per genuine content change — see `autosaveVerdict`,
+      // which explains the retry storm this stands between the page and.
+      if (
+        autosaveVerdict(fp, lastSavedFingerprintRef.current, lastAttemptedFingerprintRef.current) !==
+        "save"
+      ) {
+        return;
+      }
       lastAttemptedFingerprintRef.current = fp;
       void handleSaveProject();
     }, 1500);
