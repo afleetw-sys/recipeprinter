@@ -1,11 +1,5 @@
 import { getApp, getApps, initializeApp, type FirebaseApp } from "firebase/app";
-import {
-  browserPopupRedirectResolver,
-  getAuth,
-  indexedDBLocalPersistence,
-  initializeAuth,
-  type Auth,
-} from "firebase/auth";
+import { getAuth, indexedDBLocalPersistence, initializeAuth, type Auth } from "firebase/auth";
 import { ensureAppCheck } from "./appCheck";
 
 // Initializes the same Firebase project CookPilot uses, so RecipePrinter is a
@@ -53,9 +47,13 @@ export function getFirebaseAuth(): Auth {
     return authInstance;
   }
   try {
+    // No `popupRedirectResolver` here, on purpose. Handing it to `initializeAuth`
+    // makes the SDK initialise it during startup on mobile and Safari, which
+    // loads a cross-origin iframe and Google's script before auth is ready. It
+    // is passed to the calls that need it instead (see CookPilotAuth and
+    // lib/authRedirect).
     authInstance = initializeAuth(app, {
       persistence: indexedDBLocalPersistence,
-      popupRedirectResolver: browserPopupRedirectResolver,
     });
   } catch {
     authInstance = getAuth(app);

@@ -4,10 +4,10 @@ import { useEffect, useRef, useState, type FormEvent, type ReactNode } from "rea
 import {
   EmailAuthProvider,
   GoogleAuthProvider,
+  browserPopupRedirectResolver,
   type AuthProvider,
   OAuthProvider,
   createUserWithEmailAndPassword,
-  deleteUser,
   sendPasswordResetEmail,
   getRedirectResult,
   onAuthStateChanged,
@@ -15,13 +15,17 @@ import {
   signInWithEmailAndPassword,
   signInWithPopup,
   signInWithRedirect,
-  signOut,
   type User,
 } from "firebase/auth";
 import { getFirebaseAuth } from "@/lib/firebase/client";
 import { ensureRecipePrinterAccount } from "@/lib/firebase/recipePrinterAccount";
 import { friendlyAuthError } from "@/lib/friendlyErrors";
 import { createAccountOrRecover, isEmailInUseError } from "@/lib/signUpRecovery";
+import {
+  clearAuthRedirectPending,
+  hasAuthRedirectPending,
+  markAuthRedirectPending,
+} from "@/lib/authRedirect";
 import {
   purgeAnonymousUser as purgeAnonymousUserFor,
   settleAnonymousPurge,
@@ -62,11 +66,22 @@ function shouldUseRedirectSignIn(): boolean {
 
 export async function signInWithCookPilotProvider(provider: AuthProvider) {
   const auth = getFirebaseAuth();
+  // The resolver is passed here, at the call that needs it, rather than to
+  // `initializeAuth`: given there, the SDK loads its cross-origin iframe during
+  // startup on mobile and Safari, for every visitor (see lib/authRedirect).
   if (shouldUseRedirectSignIn()) {
-    await signInWithRedirect(auth, provider);
+    // Marked BEFORE leaving, so the page that comes back knows there is a result
+    // to read. If the redirect cannot even start, nothing is coming back.
+    markAuthRedirectPending();
+    try {
+      await signInWithRedirect(auth, provider, browserPopupRedirectResolver);
+    } catch (error) {
+      clearAuthRedirectPending();
+      throw error;
+    }
     return;
   }
-  await signInWithPopup(auth, provider);
+  await signInWithPopup(auth, provider, browserPopupRedirectResolver);
 }
 
 export function purgeAnonymousUser(user: User): Promise<void> {
@@ -104,7 +119,14 @@ interface AuthState {
   redirectError: string | null;
 }
 
-let authState: AuthState = { user: null, ready: !readCookPilotWasSignedIn(), redirectError: null };
+// `ready` also waits on a pending redirect: the page that comes back from Google or
+// Apple has no stored user yet, and "no user" there means "still being read", not
+// "signed out".
+let authState: AuthState = {
+  user: null,
+  ready: !readCookPilotWasSignedIn() && !hasAuthRedirectPending(),
+  redirectError: null,
+};
 const authSubscribers = new Set<(state: AuthState) => void>();
 let unsubscribeAuth: (() => void) | null = null;
 let redirectPromise: Promise<void> | null = null;
@@ -114,15 +136,55 @@ function publishAuthState(patch: Partial<AuthState>) {
   authSubscribers.forEach((notify) => notify(authState));
 }
 
-/** Resolves the pending Google/Apple redirect exactly once per page load. */
+/** True from the moment a pending redirect starts being read until it has been. */
+let redirectInFlight = false;
+
+/**
+ * How long "still being read" may hold auth back from reporting a signed-out
+ * visitor. A read that is genuinely stuck (a blocked iframe, a dead connection)
+ * must not leave the app waiting on a sign-in that is never going to be
+ * announced; if it does arrive later, the listener still delivers the user.
+ */
+const REDIRECT_READ_TIMEOUT_MS = 10_000;
+
+/**
+ * Reads the Google/Apple redirect result, once per page load, and only when a
+ * redirect actually left from this tab.
+ *
+ * Most loads are not the return leg of a redirect, and reading a result is what
+ * loads the SDK's cross-origin iframe, so those loads skip it entirely (see
+ * lib/authRedirect). When one IS pending, auth is not reported as ready with no
+ * user until it has been read: without that the app would see a signed-out
+ * visitor for as long as the read takes, and act on it.
+ */
 function resolveRedirectOnce(): void {
   if (redirectPromise) return;
-  redirectPromise = getRedirectResult(getFirebaseAuth())
+  if (!hasAuthRedirectPending()) {
+    redirectPromise = Promise.resolve();
+    return;
+  }
+  redirectInFlight = true;
+  const settle = () => {
+    if (!redirectInFlight) return;
+    redirectInFlight = false;
+    clearAuthRedirectPending();
+    // A successful read has already announced the user through the listener. If
+    // there is none, the answer is now known to be "signed out", and the
+    // listener held it back until this moment.
+    const current = getFirebaseAuth().currentUser;
+    if (!current || current.isAnonymous) publishAuthState({ user: null, ready: true });
+  };
+  const timer = window.setTimeout(settle, REDIRECT_READ_TIMEOUT_MS);
+  redirectPromise = getRedirectResult(getFirebaseAuth(), browserPopupRedirectResolver)
     .then(() => undefined)
     .catch((err) => {
       publishAuthState({
         redirectError: friendlyAuthError(err, "We couldn't finish signing you in. Please try again."),
       });
+    })
+    .finally(() => {
+      window.clearTimeout(timer);
+      settle();
     });
 }
 
@@ -144,6 +206,8 @@ function startAuthSubscription(): void {
       publishAuthState({ user: null, ready: true });
       return;
     }
+    // A redirect result is still being read, so "no user" is "not yet".
+    if (!nextUser && redirectInFlight) return;
     rememberCookPilotSignedIn(Boolean(nextUser));
     if (nextUser) {
       // The one place a real CookPilot account becomes known — identify the
