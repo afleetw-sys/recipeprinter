@@ -96,7 +96,6 @@ import {
   getCookbookPreset,
   presetCardDims,
 } from "@/lib/cookbookPresets";
-import { localStore } from "@/lib/storage";
 import { track } from "@/lib/analytics";
 import {
   organizationSectionsForApply,
@@ -119,7 +118,7 @@ import {
   TemplateIcon,
   XIcon,
 } from "@/components/icons";
-import { isPremiumTemplate } from "@/lib/premiumTemplates";
+import { cookbookTemplateFor } from "@/lib/premiumTemplates";
 import { CookPilotLoginDialog, useCookPilotAuth } from "@/components/CookPilotAuth";
 import {
   loadRecipePrinterUserProfile,
@@ -157,7 +156,6 @@ import {
 } from "@/lib/printErrorRecovery";
 import { hasPendingImport, takePendingImport } from "@/lib/pendingImport";
 import { nextPaint } from "@/lib/nextPaint";
-import { nextCookbookTemplate } from "@/lib/cookbookTemplateRotation";
 import { markPostPrintDialogShown, shouldShowPostPrintDialog } from "@/lib/postPrintDialog";
 import { printProjectFingerprint, SAVE_TIMEOUT_MS, type PendingSave } from "@/lib/printSave";
 
@@ -1288,10 +1286,10 @@ export default function PrintPage() {
     currentTemplate: RecipePrintTemplate,
   ): CookbookScaffoldPatch {
     const joinedSections = buildSections(scaffoldItems, meta);
-    // Open a fresh book on a rotating premium theme so the first view looks
-    // designed. A premium theme the cook already chose is respected; anything
-    // else (the plain Classic default) rotates to the next premium one.
-    const bookTemplate = isPremiumTemplate(currentTemplate) ? currentTemplate : nextCookbookTemplate();
+    // Open a fresh book on a premium theme so the first view looks designed. A
+    // premium theme the cook already chose is respected; anything else (the plain
+    // Classic default) opens on Bistro.
+    const bookTemplate = cookbookTemplateFor(currentTemplate);
     // Lead with a confident, giftable title instead of exposing an empty-state
     // implementation detail such as "Untitled Cookbook".
     const images = Array.from(
