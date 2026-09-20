@@ -52,6 +52,16 @@ function providerMethod(providerId: string | null | undefined): "google" | "appl
   return providerId === "apple.com" ? "apple" : "google";
 }
 
+/** Safari has no requestIdleCallback, so a short timer stands in for it. The
+    timeout on the real one stops a permanently busy page postponing this for ever. */
+function runWhenIdle(run: () => void): void {
+  if (typeof window.requestIdleCallback === "function") {
+    window.requestIdleCallback(run, { timeout: 5_000 });
+  } else {
+    window.setTimeout(run, 2_000);
+  }
+}
+
 function shouldUseRedirectSignIn(): boolean {
   if (typeof window === "undefined") return true;
   return window.matchMedia("(max-width: 820px), (pointer: coarse)").matches;
@@ -214,8 +224,17 @@ function startAuthSubscription(): void {
       // Account metadata is best-effort and must never hold the sign-in UI
       // hostage. Rules allow only these harmless timestamps; server-owned
       // purchases, entitlements, grants, and roles cannot be changed here.
-      void ensureRecipePrinterAccount(nextUser).catch((error) => {
-        console.warn("Could not initialize RecipePrinter account metadata.", error);
+      //
+      // And it need not compete with the page loading either: it pulls in the
+      // Firestore SDK (about 127 KB gzipped) for a timestamp, and nothing depends
+      // on the shell existing yet (no security rule reads it, and its readers,
+      // /print and /account, load Firestore themselves). So it waits for the
+      // browser to be idle. It is already skipped outright for 12 hours after a
+      // successful write (see lib/firebase/recipePrinterAccount).
+      runWhenIdle(() => {
+        void ensureRecipePrinterAccount(nextUser).catch((error) => {
+          console.warn("Could not initialize RecipePrinter account metadata.", error);
+        });
       });
     }
     publishAuthState({ user: nextUser ?? null, ready: true });
