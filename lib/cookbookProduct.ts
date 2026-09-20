@@ -13,7 +13,7 @@ export const RECIPEPRINTER_COOKBOOK_PRODUCT_ID = "cookbook";
 // RECIPEPRINTER_COOKBOOK_DISCOUNT_PRODUCT_ID in CookPilot's
 // functions/src/recipePrinterRevenueCat.ts (separate repo, kept in sync by
 // hand). CookPilot's `recordFirstCookbookGrant` is what decides eligibility
-// server-side (see lib/recipePrinterFreeTemplateClaim.ts's
+// server-side (see lib/recipePrinterUserProfile.ts's
 // `firstCookbookGrantedAt` for how the client reads that signal back).
 export const RECIPEPRINTER_COOKBOOK_DISCOUNT_PACKAGE_ID = "cookbook_pro_first";
 export const RECIPEPRINTER_COOKBOOK_DISCOUNT_PRODUCT_ID = "cookbook_pro_first";
@@ -33,7 +33,7 @@ export const COOKBOOK_DISCOUNT_PRICE_FALLBACK = "$15.99";
  * RevenueCat outage must not wrongly charge a real Pro subscriber full
  * price the same way it must not wrongly lock them out of a feature.
  * `firstCookbookGrantedAt` is the server-written signal from
- * `lib/recipePrinterFreeTemplateClaim.ts`'s profile read (CookPilot's
+ * `lib/recipePrinterUserProfile.ts`'s profile read (CookPilot's
  * `recordFirstCookbookGrant`, write-once) — `null` means this account has
  * never received a cookbook.
  */

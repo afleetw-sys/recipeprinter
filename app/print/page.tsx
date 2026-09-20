@@ -123,9 +123,8 @@ import { isPremiumTemplate } from "@/lib/premiumTemplates";
 import { CookPilotLoginDialog, useCookPilotAuth } from "@/components/CookPilotAuth";
 import {
   loadRecipePrinterUserProfile,
-  type RecipePrinterFreeTemplateStatus,
   type RecipePrinterMirroredEntitlement,
-} from "@/lib/recipePrinterFreeTemplateClaim";
+} from "@/lib/recipePrinterUserProfile";
 import {
   createCurrentPrintJob,
   readCurrentPrintJobIds,
@@ -569,7 +568,6 @@ export default function PrintPage() {
       Import failures no longer come through here at all — they hold their own
       page (see `failedImports`) — but saves, prints and exports still can. */
   const [toastTone, setToastTone] = useState<"info" | "error">("info");
-  const [freeTemplateStatus, setFreeTemplateStatus] = useState<RecipePrinterFreeTemplateStatus | null>(null);
   // The durable, server-verified fallback for when the live RevenueCat SDK
   // can't be reached — see lib/proAccessFallback.ts. Null until a signed-in
   // profile has actually loaded; there is nothing to fall back to for a
@@ -2770,23 +2768,13 @@ export default function PrintPage() {
     customerInfoLastVerifiedAtMs,
     setCustomerInfo,
     markCustomerInfoVerified,
-    claimBusy,
-    freeTemplateBannerDismissed,
-    setFreeTemplateBannerDismissed,
     selectedPremiumTemplate,
-    hasUnclaimedFreeTemplate,
-    canClaimSelectedTemplateFree,
-    claimTemplateAndPrint,
   } = usePremiumTemplatePurchase({
     items,
     cookPilotUser,
     cookPilotAuthReady,
     template,
-    freeTemplateStatus,
-    setFreeTemplateStatus,
     showToast,
-    clearToast: () => setToastMessage(null),
-    printNow,
   });
 
   // The live RevenueCat read whenever it succeeded — even confirming
@@ -3032,7 +3020,7 @@ export default function PrintPage() {
   }
 
   async function handlePrint() {
-    if (claimBusy || cookbookPurchaseBusy || proBusy) return;
+    if (cookbookPurchaseBusy || proBusy) return;
     if (!printLayoutReady) {
       // Remember it and let the effect below fire once the layout settles,
       // instead of turning them away — the button shows a spinner meanwhile.
@@ -3073,17 +3061,6 @@ export default function PrintPage() {
       return;
     }
     if (gate === "unlock-pro") {
-      // A CookPilot-member free claim only ever unlocks a theme, never a
-      // Pro-only card size or multi-recipe printing — so if a locked theme is
-      // the only reason this is gated, try that free, silent path first
-      // (nobody is charged). If something else is what's actually locked,
-      // this either does nothing useful (no unclaimed free template) or
-      // claims the theme and then correctly re-gates on the remaining reason
-      // when handlePrint re-runs.
-      if (themeLocked && canClaimSelectedTemplateFree && selectedPremiumTemplate) {
-        void claimTemplateAndPrint(selectedPremiumTemplate);
-        return;
-      }
       // A real Pro upsell screen, unlike the cookbook's single-purchase
       // straight-to-checkout flow — Pro unlocks many things at once, so it
       // earns a dialog instead of firing checkout on the spot. The button
@@ -3222,14 +3199,14 @@ export default function PrintPage() {
   // fires in the recipe-cards case, but checking both keeps this correct if
   // that relationship ever changes).
   const nothingToPrint = navItems.length === 0 && spreads.length === 0;
-  const printBlocked = proBusy || claimBusy || cookbookPurchaseBusy || nothingToPrint;
+  const printBlocked = proBusy || cookbookPurchaseBusy || nothingToPrint;
   // `printAwaitingBrowser` is the second or so between asking to print and
   // knowing whether the browser took it. Nothing is on screen during that gap
   // when the answer turns out to be no, and a button that looks untouched is
   // what a refused print has always looked like. Deliberately NOT keyed on
   // `nothingToPrint` — a spinner reads as "working", and a disabled button
   // sitting on an empty deck isn't.
-  const printSpinner = proBusy || claimBusy || cookbookPurchaseBusy || printPending || printAwaitingBrowser;
+  const printSpinner = proBusy || cookbookPurchaseBusy || printPending || printAwaitingBrowser;
 
   // Always the current `handlePrint`, for the auto-print effect below.
   //
@@ -4312,7 +4289,6 @@ export default function PrintPage() {
 
   useEffect(() => {
     if (!cookPilotUser) {
-      setFreeTemplateStatus(null);
       setMirroredEntitlements(null);
       setMirrorSyncedAtMs(null);
       setFirstCookbookGrantedAt(null);
@@ -4322,14 +4298,13 @@ export default function PrintPage() {
     loadRecipePrinterUserProfile(cookPilotUser.uid)
       .then((profile) => {
         if (cancelled) return;
-        setFreeTemplateStatus(profile.freeTemplateStatus);
         setMirroredEntitlements(profile.mirroredEntitlements);
         setMirrorSyncedAtMs(profile.syncedAtMs);
         setFirstCookbookGrantedAt(profile.firstCookbookGrantedAt);
       })
       .catch((error) => {
         if (cancelled) return;
-        console.warn("RecipePrinter: could not load free-template status", error);
+        console.warn("RecipePrinter: could not load account profile", error);
         // Leave mirroredEntitlements/mirrorSyncedAtMs at whatever they were —
         // a Firestore read failure here shouldn't discard an already-loaded
         // fallback the live-SDK path might still need a moment from now.
@@ -5712,9 +5687,6 @@ export default function PrintPage() {
           template={template}
           setTemplate={setTemplate}
           customerInfo={effectiveCustomerInfo.customerInfo}
-          hasUnclaimedFreeTemplate={hasUnclaimedFreeTemplate}
-          freeTemplateBannerDismissed={freeTemplateBannerDismissed}
-          setFreeTemplateBannerDismissed={setFreeTemplateBannerDismissed}
           setToastMessage={setToastMessage}
           hasPrintSettingsFields={hasPrintSettingsFields}
           cardSettingsFields={renderPrintSettingsFields()}

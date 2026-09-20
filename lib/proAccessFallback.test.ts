@@ -8,7 +8,7 @@ import {
   resolveEffectiveCustomerInfo,
   synthesizeCustomerInfoFromMirror,
 } from "./proAccessFallback";
-import type { RecipePrinterMirroredEntitlement } from "./recipePrinterFreeTemplateClaim";
+import type { RecipePrinterMirroredEntitlement } from "./recipePrinterUserProfile";
 
 const NOW = Date.parse("2026-06-01T00:00:00Z");
 

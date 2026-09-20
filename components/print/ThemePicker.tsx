@@ -6,7 +6,6 @@ import {
   RECIPE_PRINT_TEMPLATE_OPTIONS,
   type RecipePrintTemplate,
 } from "@/components/RecipeCardPrint";
-import { CrownIcon, XIcon, ICON_SIZE } from "@/components/icons";
 import { TemplateThumbnail } from "@/components/print/TemplateThumbnail";
 import { ProBadge } from "@/components/ProBadge";
 import { isPremiumTemplate } from "@/lib/premiumTemplates";
@@ -18,9 +17,6 @@ interface ThemePickerProps {
   template: RecipePrintTemplate;
   setTemplate: Dispatch<SetStateAction<RecipePrintTemplate>>;
   customerInfo: CustomerInfo | null;
-  hasUnclaimedFreeTemplate: boolean;
-  freeTemplateBannerDismissed: boolean;
-  setFreeTemplateBannerDismissed: Dispatch<SetStateAction<boolean>>;
   setToastMessage: Dispatch<SetStateAction<string | null>>;
   setMobileDrawer: Dispatch<SetStateAction<"template" | null>>;
 }
@@ -42,31 +38,11 @@ export function ThemePicker({
   template,
   setTemplate,
   customerInfo,
-  hasUnclaimedFreeTemplate,
-  freeTemplateBannerDismissed,
-  setFreeTemplateBannerDismissed,
   setToastMessage,
   setMobileDrawer,
 }: ThemePickerProps) {
   return (
     <div className="recipe-config-section recipe-config-section--template">
-      {hasUnclaimedFreeTemplate && !freeTemplateBannerDismissed && !cookbookMode && (
-        <div className="recipe-free-template-banner" role="status">
-          <CrownIcon size={ICON_SIZE.md} />
-          <div className="recipe-free-template-banner__copy">
-            <strong>Thanks for being a CookPilot member!</strong>
-            <span>Enjoy a free lifetime theme, on us. Pick any premium design below.</span>
-          </div>
-          <button
-            type="button"
-            className="recipe-free-template-banner__dismiss icon-close-btn"
-            aria-label="Dismiss"
-            onClick={() => setFreeTemplateBannerDismissed(true)}
-          >
-            <XIcon size={ICON_SIZE.xs} />
-          </button>
-        </div>
-      )}
       <h3 className="recipe-config-label">Themes</h3>
       <div className="recipe-template-list">
         {RECIPE_PRINT_TEMPLATE_OPTIONS.map((option) => {

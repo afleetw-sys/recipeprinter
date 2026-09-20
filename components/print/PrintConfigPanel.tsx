@@ -37,9 +37,6 @@ interface PrintConfigPanelProps {
   template: RecipePrintTemplate;
   setTemplate: Dispatch<SetStateAction<RecipePrintTemplate>>;
   customerInfo: CustomerInfo | null;
-  hasUnclaimedFreeTemplate: boolean;
-  freeTemplateBannerDismissed: boolean;
-  setFreeTemplateBannerDismissed: Dispatch<SetStateAction<boolean>>;
   setToastMessage: Dispatch<SetStateAction<string | null>>;
   /** Whether there's a card-format setting to offer at all (cut lines, a
       back side to toggle) — see `hasPrintSettingsFields` in app/print/page.tsx.
@@ -80,9 +77,6 @@ export function PrintConfigPanel({
   template,
   setTemplate,
   customerInfo,
-  hasUnclaimedFreeTemplate,
-  freeTemplateBannerDismissed,
-  setFreeTemplateBannerDismissed,
   setToastMessage,
   hasPrintSettingsFields,
   cardSettingsFields,
@@ -146,9 +140,6 @@ export function PrintConfigPanel({
           template={template}
           setTemplate={setTemplate}
           customerInfo={customerInfo}
-          hasUnclaimedFreeTemplate={hasUnclaimedFreeTemplate}
-          freeTemplateBannerDismissed={freeTemplateBannerDismissed}
-          setFreeTemplateBannerDismissed={setFreeTemplateBannerDismissed}
           setToastMessage={setToastMessage}
           setMobileDrawer={setMobileDrawer}
         />

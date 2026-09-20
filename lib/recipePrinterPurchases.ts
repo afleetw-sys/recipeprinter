@@ -60,8 +60,8 @@ function markRecipePrinterCustomerLinked(uid: string): void {
  * RevenueCat is a billing ledger: a customer record should mean "someone with
  * a purchase relationship", not "someone who opened the site". Calling
  * `configure()` is what mints that record, so it's deferred until there is
- * actually something to find — a purchase, a claimed free template, or a
- * signed-in account that might own either. A first-time anonymous visitor has
+ * actually something to find — a purchase, or a signed-in account that might
+ * own one. A first-time anonymous visitor has
  * no entitlements *by definition*, so asking RevenueCat about them is a
  * guaranteed empty answer bought with a permanent row in the customer list.
  */

@@ -27,10 +27,10 @@ that half of the original warning stands.
 | --- | --- | --- | --- | --- | --- |
 | Firebase identity | Shared Firebase Auth project | Unchanged | `CookPilotAuth`, RevenueCat identity link | Firebase Auth providers | No user duplication |
 | CookPilot recipes | `users/{uid}/recipes/**` | Unchanged | `lib/cookpilotRecipes.ts` | CookPilot | Intentional cross-product read |
-| CookPilot membership | `users/{uid}.plusExpiresAt` | Unchanged | free-template eligibility | CookPilot backend | Read alongside namespaced Recipe Printer account |
+| CookPilot membership | `users/{uid}.plusExpiresAt` | Unchanged | Nothing: the member free-template perk was retired 2026-09-20 | CookPilot backend | RecipePrinter no longer reads it. `firestore.rules` still denies client writes to it |
 | Recipe Printer profile | Recipe Printer fields on `users/{uid}` | `products/recipePrinter/users/{uid}` | print-page account gates | `claimRecipePrinterFreeTemplate`, administrators | Namespace-first plus legacy merge until backend/backfill completes |
 | Admin role | `users/{uid}.recipePrinterAdmin` | namespaced user document | shared-card administration | server/admin only | Backfill; clients cannot write |
-| Free template claim | `recipePrinterFreeTemplateGranted*` on `users/{uid}` plus RevenueCat grant | namespaced user document plus RevenueCat entitlement | claim UI and RevenueCat customer info | `claimRecipePrinterFreeTemplate` callable | Reconcile both stores; do not infer from a single field |
+| Free template claim | `recipePrinterFreeTemplateGranted*` on `users/{uid}` plus RevenueCat grant | namespaced user document plus RevenueCat entitlement | RevenueCat customer info only | `claimRecipePrinterFreeTemplate` callable | Retired 2026-09-20: the claim UI and client call are gone. Templates already granted keep working as RevenueCat entitlements. The callable is still deployed in CookPilot |
 | Template purchases | RevenueCat entitlements `template_*` | RevenueCat remains purchase source; namespaced account may hold server reconciliation metadata | purchase hooks | RevenueCat Web Billing/webhooks | RevenueCat identity aliasing remains required |
 | Cookbook purchase | Project unlock docs (the sole record; there is no account-wide `cookbook` entitlement to read) | namespaced `cookbookUnlocks` | `useCookbookPurchase` | RevenueCat webhook only — clients cannot write | Local marker carries access on the buying device until the webhook lands |
 | RevenueCat identity | `recipeprinter:customer-id:v1` and known-customer marker | Unchanged | purchase module | purchase module/SDK | Anonymous RevenueCat customer is aliased on login |
@@ -61,8 +61,9 @@ that half of the original warning stands.
    2026-09-04** -- there is no separate source; this repo is it. Both rulesets
    are deployed and verified live. What this blocker should have said is
    "remember to deploy after editing," which is now the header above.
-2. Update `claimRecipePrinterFreeTemplate` to merge Recipe Printer claim fields
-   into the namespaced account document.
+2. ~~Update `claimRecipePrinterFreeTemplate` to merge Recipe Printer claim fields
+   into the namespaced account document.~~ No longer needed by RecipePrinter: the
+   member free-template perk was retired 2026-09-20.
 3. Confirm RevenueCat webhook destinations and reconcile all existing template
    and cookbook customers; no webhook implementation exists in this repo.
 4. Backfill profile fields, projects, unlocks, shared cards, and feedback before

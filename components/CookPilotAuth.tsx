@@ -263,7 +263,7 @@ export async function checkEmailProviders(email: string): Promise<string[]> {
       temporaryUser = credential.user;
     }
     // Both halves dynamic, together — the shape every other callable site uses
-    // (lib/parser, lib/recipePrinterFreeTemplateClaim). `httpsCallable` was a
+    // (lib/parser). `httpsCallable` was a
     // STATIC import, which pulled `firebase/functions` into this chunk anyway,
     // so the `await import` beside it bought nothing and the prewarm below was
     // overlapping a download that had already happened.
