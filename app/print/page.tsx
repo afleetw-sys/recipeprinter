@@ -2207,10 +2207,13 @@ export default function PrintPage() {
     // the way through — see `projectContentFromMeta`, which the device shelf
     // and the PDF export read too.
     const fromMeta = projectContentFromMeta(projectMeta.meta, currentLayoutSettings());
-    // A name the cook typed outranks any we would derive — the same order
-    // `projectDisplayTitle` applies in the workspace bar. Without this the
+    // A name the cook typed outranks any we would derive — the same first rule
+    // `projectDisplayTitle` applies to the device shelf. Without this the
     // rename lived only in session metadata: the library went on showing the
     // cover's title, and reopening the project dropped the new name entirely.
+    // Past that first rule the two chains differ: the shelf appends "+ N more"
+    // and ends in a plain label, an account save takes the first recipe's title
+    // as it is and ends in a dated one.
     const defaultTitle =
       projectMeta.meta.projectTitle?.trim() ||
       fromMeta.cover?.title ||

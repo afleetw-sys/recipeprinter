@@ -51,3 +51,16 @@ export function libraryProjects({
     (a, b) => Number(b.updatedAt ?? b.createdAt ?? 0) - Number(a.updatedAt ?? a.createdAt ?? 0),
   );
 }
+
+/**
+ * What to call a library entry on screen when it has no title of its own.
+ *
+ * A saved project normally carries one (see `projectDisplayTitle` and the save
+ * path in the workspace), so this is the floor rather than the rule. It lived
+ * as the same ternary three times on `/projects` — the card's label, its title,
+ * and the delete confirmation — and a fourth copy is how one of them ends up
+ * saying something different from the others.
+ */
+export function projectListTitle(project: Pick<PrintProjectSummary, "title" | "kind">): string {
+  return project.title || (project.kind === "printProject" ? "Untitled recipe cards" : "Untitled cookbook");
+}

@@ -7,7 +7,7 @@ import type {
   RecipePrintTemplate,
 } from "@/types/recipe";
 import { localStore } from "@/lib/storage";
-import { buildSections, type ProjectMeta } from "@/lib/project";
+import { buildSections, projectDisplayTitle, type ProjectMeta } from "@/lib/project";
 import { assemblePrintProject, projectContentFromMeta } from "@/lib/printProjects";
 import { readPrintSettings } from "@/lib/printSettings";
 import { uid } from "@/lib/ids";
@@ -276,14 +276,6 @@ function filingProjectId(contentKey: string | null, ownId: string | undefined): 
   return indexed;
 }
 
-/** A name someone can find this by later, from the recipes in it. */
-function describeProject(printable: QueueItem[], cookbook: boolean): string {
-  const first = printable.find((item) => item.recipe)?.recipe?.title?.trim();
-  if (!first) return cookbook ? "Untitled cookbook" : "Recipe cards";
-  const rest = printable.length - 1;
-  return rest > 0 ? `${first} + ${rest} more` : first;
-}
-
 export function fileProjectLocally(items: QueueItem[], meta: ProjectMeta): string | null {
   const printable = items.filter((item) => item.status === "ready" && item.recipe);
   if (printable.length === 0) return null;
@@ -329,10 +321,11 @@ export function fileProjectLocally(items: QueueItem[], meta: ProjectMeta): strin
     // findable later in a way that "Recipe cards — 22/08/2026" never is. This
     // is the shelf's own answer and deliberately not the workspace's: a list of
     // filed work needs a name you can pick out, not a timestamp.
-    title:
-      meta.projectTitle?.trim() ||
-      fromMeta.cover?.title ||
-      describeProject(printable, Boolean(meta.cookbookMode)),
+    title: projectDisplayTitle(
+      { projectTitle: meta.projectTitle, cover: fromMeta.cover, cookbookMode: meta.cookbookMode },
+      printable.find((item) => item.recipe)?.recipe?.title,
+      printable.length - 1,
+    ),
     sections: buildSections(printable, meta),
   });
 

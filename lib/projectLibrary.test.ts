@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { libraryProjects } from "@/lib/projectLibrary";
+import { libraryProjects, projectListTitle } from "@/lib/projectLibrary";
 import type { PrintProjectSummary } from "@/types/recipe";
 
 /* What is in a cook's library, as both surfaces that show it must agree.
@@ -116,5 +116,20 @@ describe("what is in the library", () => {
       isPaidCookbook: nonePaid,
     });
     expect(listed.map((p) => p.id)).toEqual(["keeper"]);
+  });
+});
+
+describe("projectListTitle", () => {
+  it("shows the title a project has", () => {
+    expect(projectListTitle({ title: "Nana’s Kitchen", kind: "cookbook" })).toBe("Nana’s Kitchen");
+  });
+
+  it("names an untitled project by what kind of thing it is", () => {
+    expect(projectListTitle({ title: "", kind: "printProject" })).toBe("Untitled recipe cards");
+    expect(projectListTitle({ title: "", kind: "cookbook" })).toBe("Untitled cookbook");
+  });
+
+  it("treats a summary with no kind as a cookbook, as the page always has", () => {
+    expect(projectListTitle({ title: "" })).toBe("Untitled cookbook");
   });
 });

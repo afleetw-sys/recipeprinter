@@ -24,7 +24,7 @@ import {
   loadLocalProjects,
   pruneLocalProjects,
 } from "@/lib/localProjects";
-import { libraryProjects } from "@/lib/projectLibrary";
+import { libraryProjects, projectListTitle } from "@/lib/projectLibrary";
 import { photoGridLayout } from "@/lib/photoGrid";
 import type { PrintProjectSummary } from "@/types/recipe";
 
@@ -381,7 +381,7 @@ export default function ProjectsPage() {
                   <Link
                     href={`/print?project=${encodeURIComponent(project.id)}`}
                     className="absolute inset-0 z-10 rounded-xl focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--cp-accent)]"
-                    aria-label={`Open ${project.title || (project.kind === "printProject" ? "Untitled recipe cards" : "Untitled cookbook")}`}
+                    aria-label={`Open ${projectListTitle(project)}`}
                   />
                   <ProjectCover project={project} />
                   <div className="flex flex-1 flex-col p-cp-4">
@@ -394,7 +394,7 @@ export default function ProjectsPage() {
                             hierarchy, so it takes --cp-fs-body, not the section
                             heading's size. */}
                         <h3 className="mt-cp-1 line-clamp-2 text-cp-body font-bold leading-snug">
-                          {project.title || (project.kind === "printProject" ? "Untitled recipe cards" : "Untitled cookbook")}
+                          {projectListTitle(project)}
                         </h3>
                       </div>
                       <IconButton className="relative z-20" tone="danger" aria-label={`Delete ${project.title || "project"}`} onClick={() => setPendingDelete(project)}>
@@ -469,7 +469,7 @@ export default function ProjectsPage() {
       <ConfirmDialog
         open={pendingDelete !== null}
         title="Delete project?"
-        description={<>“{pendingDelete?.title || (pendingDelete?.kind === "printProject" ? "Untitled recipe cards" : "Untitled cookbook")}” will be permanently removed from your account.</>}
+        description={<>“{pendingDelete ? projectListTitle(pendingDelete) : ""}” will be permanently removed from your account.</>}
         confirmLabel="Delete project"
         confirmIcon={<TrashIcon size={ICON_SIZE.md} />}
         busy={deleting}
