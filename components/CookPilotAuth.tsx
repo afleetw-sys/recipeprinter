@@ -11,7 +11,6 @@ import {
   sendPasswordResetEmail,
   getRedirectResult,
   onAuthStateChanged,
-  signInAnonymously,
   signInWithEmailAndPassword,
   signInWithPopup,
   signInWithRedirect,
@@ -26,11 +25,7 @@ import {
   hasAuthRedirectPending,
   markAuthRedirectPending,
 } from "@/lib/authRedirect";
-import {
-  purgeAnonymousUser as purgeAnonymousUserFor,
-  settleAnonymousPurge,
-  trackAnonymousPurge,
-} from "@/lib/anonymousSession";
+import { purgeAnonymousUser as purgeAnonymousUserFor } from "@/lib/anonymousSession";
 import { identifyUser, track } from "@/lib/analytics";
 import {
   readCookPilotWasSignedIn,
@@ -52,12 +47,6 @@ export const appleProvider = new OAuthProvider("apple.com");
 appleProvider.addScope("email");
 appleProvider.addScope("name");
 
-
-// `checkEmailProviders` briefly signs in anonymously just to authorize its
-// `checkUserProviders` call, then deletes that session itself once done (see
-// below). This flag stops the auth listener's purge from racing that in-flight
-// call and deleting the session out from under it before the callable resolves.
-let checkingEmailProviders = false;
 
 function providerMethod(providerId: string | null | undefined): "google" | "apple" {
   return providerId === "apple.com" ? "apple" : "google";
@@ -204,15 +193,12 @@ function startAuthSubscription(): void {
   if (unsubscribeAuth) return;
   unsubscribeAuth = onAuthStateChanged(getFirebaseAuth(), (nextUser) => {
     // RecipePrinter has no use for anonymous accounts, and they don't count
-    // as being logged in to a CookPilot recipe library. `checkEmailProviders`
-    // creates one briefly to authorize a callable and cleans it up itself;
-    // skip purging here while that's in flight so we don't race it. Anything
-    // else anonymous restored from a stale session gets purged on sight
-    // instead of just hidden, so it doesn't linger as an orphaned user.
+    // as being logged in to a CookPilot recipe library. It no longer creates any
+    // (the email check is attested by App Check instead), but older builds did,
+    // and one can still be restored from a stale session. Purged on sight rather
+    // than just hidden, so it doesn't linger as an orphaned user.
     if (nextUser?.isAnonymous) {
-      if (!checkingEmailProviders) {
-        purgeAnonymousUser(nextUser);
-      }
+      purgeAnonymousUser(nextUser);
       rememberCookPilotSignedIn(false);
       publishAuthState({ user: null, ready: true });
       return;
@@ -325,44 +311,26 @@ export async function sendCookPilotPasswordReset(email: string): Promise<void> {
 }
 
 export async function checkEmailProviders(email: string): Promise<string[]> {
-  const auth = getFirebaseAuth();
-  await prewarmCookPilotAuth();
-  checkingEmailProviders = true;
-  let temporaryUser: User | null = null;
-  try {
-    if (!auth.currentUser) {
-      // checkUserProviders just requires *some* signed-in uid; an anonymous
-      // session is enough, same as CookPilot's ensureAnonymousUserIfNeeded.
-      // Scoped to this login flow only, not the shared parser call path.
-      const credential = await signInAnonymously(auth);
-      temporaryUser = credential.user;
-    }
-    // Both halves dynamic, together — the shape every other callable site uses
-    // (lib/parser). `httpsCallable` was a
-    // STATIC import, which pulled `firebase/functions` into this chunk anyway,
-    // so the `await import` beside it bought nothing and the prewarm below was
-    // overlapping a download that had already happened.
-    const [{ httpsCallable }, { getFns }] = await Promise.all([
-      import("firebase/functions"),
-      import("@/lib/firebase/functions"),
-    ]);
-    const checkUserProviders = httpsCallable<{ email: string }, { providers: string[] | null }>(
-      getFns(),
-      "checkUserProviders",
-    );
-    const { data } = await checkUserProviders({ email });
-    return data.providers ?? [];
-  } finally {
-    checkingEmailProviders = false;
-    // This session has already done its job. Cleanup must not hold the UI on a
-    // spinner before the password field appears.
-    if (temporaryUser?.isAnonymous) {
-      // Tracked, not just fired: whoever signs in next waits for it, because a
-      // delete still running when they do signs them straight back out. See
-      // lib/anonymousSession.
-      trackAnonymousPurge(purgeAnonymousUser(temporaryUser));
-    }
-  }
+  // Both halves dynamic, together, the shape every other callable site uses
+  // (lib/parser). `httpsCallable` was a
+  // STATIC import, which pulled `firebase/functions` into this chunk anyway, so
+  // the `await import` beside it bought nothing and the prewarm in the form was
+  // overlapping a download that had already happened.
+  const [{ httpsCallable }, { getFns }] = await Promise.all([
+    import("firebase/functions"),
+    import("@/lib/firebase/functions"),
+  ]);
+  // No sign-in of any kind first. This used to borrow an anonymous Firebase user
+  // just to be allowed to ask, which cost a sign-in and a delete in front of the
+  // password field, and a delete that could land late and sign the real account
+  // out. The callable accepts an App Check attestation instead, and every request
+  // from `getFns()` already carries one (see lib/firebase/appCheck).
+  const checkUserProviders = httpsCallable<{ email: string }, { providers: string[] | null }>(
+    getFns(),
+    "checkUserProviders",
+  );
+  const { data } = await checkUserProviders({ email });
+  return data.providers ?? [];
 }
 
 /**
@@ -462,7 +430,6 @@ export function CookPilotLoginForm({
         // This account only has Google sign-in set up, so a password will
         // never work for it. Send them straight into the Google flow, the
         // same redirect the iOS app does for this case.
-        await settleAnonymousPurge();
         try {
           await signInWithProvider(googleProvider, "google");
         } catch (err) {
@@ -502,9 +469,6 @@ export function CookPilotLoginForm({
     submittingRef.current = true;
     setBusy(true);
     setError(null);
-    // The anonymous session the email check borrowed may still be being deleted.
-    // Signing in before that finishes lets the delete sign the new account out.
-    await settleAnonymousPurge();
     const auth = getFirebaseAuth();
     const normalizedEmail = email.trim().toLowerCase();
     const method = step === "create" ? "email_create" : "email_signin";
