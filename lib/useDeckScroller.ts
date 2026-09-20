@@ -931,6 +931,13 @@ export function useDeckScroller({
     [centerSlide, suppressScrollSync],
   );
 
+  // Read through a ref so the scroll listeners bind to the deck and its slides,
+  // not to whichever callback the caller happened to pass this render. An inline
+  // function here would otherwise tear the listeners down and re-add them on
+  // every render.
+  const onImportSlideChangeRef = useRef(onImportSlideChange);
+  onImportSlideChangeRef.current = onImportSlideChange;
+
   // Scrolling the deck selects whichever slide is closest to the centre.
   // Every nav item — including a second recipe sharing a sheet with the
   // first — has its own slide, so this is a direct index lookup.
@@ -1014,11 +1021,11 @@ export function useDeckScroller({
                     (mobile ? el.clientWidth / 2 : el.clientHeight / 2),
                 );
           if (nearestImport.dist < pageDist) {
-            onImportSlideChange?.(nearestImport.id);
+            onImportSlideChangeRef.current?.(nearestImport.id);
             return;
           }
         }
-        onImportSlideChange?.(null);
+        onImportSlideChangeRef.current?.(null);
         if (next !== null) setActiveNavIndex(next);
       });
     };

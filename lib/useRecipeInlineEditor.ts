@@ -396,7 +396,7 @@ export function useRecipeInlineEditor({
       setEditingEdit(null);
       setEditValue("");
     },
-    [editValue, editingEdit, editingRecipeItem, applyRecipeUpdate],
+    [editValue, editingEdit, editingRecipeItem, applyRecipeUpdate, includeDescription],
   );
 
   /**
@@ -493,7 +493,7 @@ export function useRecipeInlineEditor({
         setEditValue(title);
       }
     },
-    [activeRecipeItem, editingEdit, editValue, applyRecipeUpdate],
+    [activeRecipeItem, editingEdit, editValue, applyRecipeUpdate, includeDescription],
   );
 
   const insertIngredientAt = useCallback(
