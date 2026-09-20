@@ -283,3 +283,41 @@ describe("a name the cook typed", () => {
     expect(normalizeProjectMeta({ sections: [], projectTitle: "   " }).projectTitle).toBeUndefined();
   });
 });
+
+describe("projectDisplayTitle: falling back to the recipes", () => {
+  it("borrows the first recipe's title when nothing else names the project", () => {
+    expect(projectDisplayTitle({}, "Banana Bread")).toBe("Banana Bread");
+  });
+
+  it("says how many more there are, so a shelf of forty stays findable", () => {
+    expect(projectDisplayTitle({}, "Banana Bread", 2)).toBe("Banana Bread + 2 more");
+  });
+
+  it("trims the recipe title, and ignores one that is only whitespace", () => {
+    expect(projectDisplayTitle({}, "  Banana Bread  ")).toBe("Banana Bread");
+    expect(projectDisplayTitle({}, "   ")).toBe("Recipe cards");
+  });
+
+  it("ends in a plain label that says which kind of project it is", () => {
+    expect(projectDisplayTitle({})).toBe("Recipe cards");
+    expect(projectDisplayTitle({ cookbookMode: true })).toBe("Untitled cookbook");
+  });
+
+  it("puts a cover title ahead of the recipes, and a whitespace one behind them", () => {
+    expect(
+      projectDisplayTitle({ cover: { title: "Our Favorite Recipes", template: "heirloom" } }, "Banana Bread", 3),
+    ).toBe("Our Favorite Recipes");
+    expect(projectDisplayTitle({ cover: { title: "   ", template: "heirloom" } }, "Banana Bread")).toBe(
+      "Banana Bread",
+    );
+  });
+
+  it("falls back to the cover of a book set aside behind a card job", () => {
+    expect(
+      projectDisplayTitle({
+        stashedCookbook: { cover: { title: "The Stashed Book", template: "keepsake" } },
+      } as Parameters<typeof projectDisplayTitle>[0]),
+    ).toBe("The Stashed Book");
+  });
+});
+
