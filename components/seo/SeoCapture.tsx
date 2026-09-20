@@ -1,15 +1,25 @@
 "use client";
 
 import { useRef, useState, type DragEvent, type FormEvent } from "react";
+import dynamic from "next/dynamic";
 import { useRouter } from "next/navigation";
 import { ArrowRightIcon, ICON_SIZE, SpinnerIcon, UploadIcon } from "@/components/icons";
-import { PaprikaCapture } from "@/components/seo/PaprikaCapture";
 import { ImportPanel } from "@/components/ImportPanel";
 import { stashPendingImport } from "@/lib/pendingImport";
 import { imageLabel, partitionImageFiles, validateImageFiles } from "@/lib/imageImport";
 import { normalizeImportURL } from "@/lib/cookpilot";
 import { track } from "@/lib/analytics";
 import type { ImportTab, QueueItem } from "@/types/recipe";
+
+// Only the Paprika pages render this, but a static import put it in every SEO
+// page's bundle. Its `useSingleRecipeOnly` reaches CookPilotAuth (Firebase Auth
+// and its IndexedDB persistence) and the purchase code, none of which a visitor
+// on a URL, photo or paste page ever runs. Still server-rendered, on purpose:
+// it is the dropzone above the fold on the pages that do use it, so there is
+// no loading state to flash and the HTML arrives complete.
+const PaprikaCapture = dynamic(() =>
+  import("@/components/seo/PaprikaCapture").then((mod) => mod.PaprikaCapture),
+);
 
 // A deliberately minimal capture for the SEO landing pages: just the one input
 // that matches the page's intent (a URL field, a paste box, or a photo dropzone)
