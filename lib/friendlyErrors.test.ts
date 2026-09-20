@@ -21,7 +21,7 @@ describe("user-facing errors", () => {
       "Choose a stronger password with at least 6 characters.",
     );
     expect(friendlyAuthError({ code: "auth/email-already-in-use" })).toBe(
-      "An account already uses that email. Go back and sign in instead.",
+      "That email already has an account. Enter its password to sign in.",
     );
   });
 

@@ -61,7 +61,7 @@ export function friendlyAuthError(error: unknown, fallback = "We couldn't sign y
     return "Choose a stronger password with at least 6 characters.";
   }
   if (code.includes("email-already-in-use")) {
-    return "An account already uses that email. Go back and sign in instead.";
+    return "That email already has an account. Enter its password to sign in.";
   }
   if (code.includes("popup-closed") || code.includes("cancelled")) {
     return "Sign-in was cancelled.";

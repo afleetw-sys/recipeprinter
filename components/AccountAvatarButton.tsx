@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { signOut } from "firebase/auth";
 import { AccountIcon, BookIcon, ICON_SIZE, LogoutIcon, SettingsIcon } from "@/components/icons";
@@ -9,6 +10,7 @@ import { getFirebaseAuth } from "@/lib/firebase/client";
 import { loadLocalProjects } from "@/lib/localProjects";
 import { loadPrintProjectSummaries, summarizePrintProject } from "@/lib/printProjects";
 import { hasLocalCookbookUnlocks } from "@/lib/cookbookUnlocks";
+import { navigateAfterOverlayHistory } from "@/lib/useBackDismiss";
 import { libraryProjects } from "@/lib/projectLibrary";
 import { useMenuDismiss } from "@/lib/useMenuDismiss";
 import type { PrintProjectSummary } from "@/types/recipe";
@@ -92,6 +94,7 @@ export default function AccountAvatarButton({
   /** A press that landed before auth resolved, opened once it has. */
   const [openWhenReady, setOpenWhenReady] = useState(false);
   const [showLogin, setShowLogin] = useState(false);
+  const router = useRouter();
   const rootRef = useRef<HTMLDivElement>(null);
   /**
    * Books saved on THIS device, signed out — the escape hatch for someone who
@@ -301,16 +304,25 @@ export default function AccountAvatarButton({
            */
           footer={
             listed.length > 0 ? (
-              <p className="text-cp-small text-ink-soft leading-relaxed">
-                A cookbook you bought is saved in this browser.{" "}
+              <p className="text-center text-cp-small">
                 <Link
                   href="/projects"
-                  className="underline underline-offset-2"
-                  onClick={() => setShowLogin(false)}
+                  className="text-ink-soft underline underline-offset-2"
+                  // Closes the dialog AND navigates, which is the collision
+                  // `navigateAfterOverlayHistory` exists for: the dialog's
+                  // teardown pops the history entry it pushed, and that pop
+                  // throws away a navigation started in the same click. Left to
+                  // the link alone, the press closed the dialog and went
+                  // nowhere.
+                  onClick={(event) => {
+                    if (event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
+                    event.preventDefault();
+                    setShowLogin(false);
+                    navigateAfterOverlayHistory(() => router.push("/projects"));
+                  }}
                 >
-                  Open it
-                </Link>{" "}
-                without signing in.
+                  Open your cookbook without signing in
+                </Link>
               </p>
             ) : undefined
           }
