@@ -132,6 +132,8 @@ import {
   type MultiRecipeBlockedInfo,
 } from "@/lib/queue";
 import {
+  initialPrintCardSize,
+  initialRecipePrintTemplate,
   isPrintCardSize,
   isRecipePrintTemplate,
   usePrintSettingsPersistence,
@@ -183,14 +185,6 @@ function sectionRecipeImages(section: Section): string[] {
 // content (not a hidden placeholder), so a cook who likes it can just keep it
 // and it prints as-is.
 const DEFAULT_DEDICATION_BODY = "For the ones who taught us to cook, and who made every table feel like home.";
-
-function initialPrintCardSize(value: string | null): PrintCardSize {
-  return isPrintCardSize(value) ? value : "letter";
-}
-
-function initialRecipePrintTemplate(value: string | null): RecipePrintTemplate {
-  return isRecipePrintTemplate(value) ? value : "classic";
-}
 
 
 /** How far the deck's zoom can travel either side of fit-to-window. */

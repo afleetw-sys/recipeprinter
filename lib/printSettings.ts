@@ -60,6 +60,14 @@ export function isRecipePrintTemplate(value: string | null): value is RecipePrin
   return RECIPE_PRINT_TEMPLATE_OPTIONS.some((option) => option.id === value);
 }
 
+export function initialPrintCardSize(value: string | null): PrintCardSize {
+  return isPrintCardSize(value) ? value : "letter";
+}
+
+export function initialRecipePrintTemplate(value: string | null): RecipePrintTemplate {
+  return isRecipePrintTemplate(value) ? value : "classic";
+}
+
 interface PrintSettingsState {
   cardSize: PrintCardSize;
   setCardSize: (value: PrintCardSize) => void;
