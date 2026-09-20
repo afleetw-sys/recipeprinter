@@ -49,14 +49,54 @@ function isNetworkFailure(code: string, message: string): boolean {
   );
 }
 
+/**
+ * The Firebase error code, in a form safe to send as an analytics property.
+ *
+ * Only ever a code (`auth/invalid-credential`, `functions/unavailable`), never a
+ * message: messages can carry the address that was typed. Anything that does not
+ * look like a code is reported as `unknown` rather than passed through.
+ */
+export function authFailureCode(error: unknown): string {
+  const { code } = errorParts(error);
+  return /^[a-z][a-z0-9-]*\/[a-z0-9-]+$/i.test(code) ? code.slice(0, 64) : "unknown";
+}
+
 export function friendlyAuthError(error: unknown, fallback = "We couldn't sign you in. Please try again."): string {
   const { code, message } = errorParts(error);
 
   if (code.includes("invalid-credential") || code.includes("wrong-password") || code.includes("user-not-found")) {
     return "That email or password didn't match an account.";
   }
-  if (code.includes("weak-password")) {
+  if (code.includes("weak-password") || code.includes("password-does-not-meet-requirements")) {
     return "Choose a stronger password with at least 6 characters.";
+  }
+  if (code.includes("account-exists-with-different-credential")) {
+    // Google or Apple was chosen for an email that already signs in another way.
+    // Which way is not something the error tells us, so say the true, useful thing.
+    return "That email already has an account that signs in a different way. Try Google, Apple, or your email and password.";
+  }
+  if (code.includes("invalid-email")) {
+    return "Check the email address and try again.";
+  }
+  if (code.includes("user-disabled")) {
+    return "That account has been turned off. Please contact us and we'll sort it out.";
+  }
+  if (code.includes("requires-recent-login")) {
+    return "For your security, please sign in again and then retry that.";
+  }
+  if (
+    code.includes("web-storage-unsupported") ||
+    code.includes("operation-not-supported-in-this-environment")
+  ) {
+    return "This browser is blocking sign-in. Opening recipeprinter.com in Safari or Chrome will fix it.";
+  }
+  if (
+    code.includes("operation-not-allowed") ||
+    code.includes("unauthorized-domain") ||
+    code.includes("internal-error") ||
+    code.includes("app-not-authorized")
+  ) {
+    return "Sign-in isn't available right now. Please try again in a little while.";
   }
   if (code.includes("email-already-in-use")) {
     return "That email already has an account. Enter its password to sign in.";

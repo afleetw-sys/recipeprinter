@@ -1,26 +1,21 @@
 import { deleteUser, signOut, type Auth, type User } from "firebase/auth";
 
 /**
- * Cleaning up the anonymous session the email check borrows, without ever
- * signing anyone else out.
+ * Deleting a stale anonymous session without ever signing anyone else out.
  *
- * `checkEmailProviders` signs in anonymously only to authorize one callable, and
- * then deletes that user. The SDK's `User.delete()` finishes with
- * `auth.signOut()`, and that signs out whoever is signed in AT THAT MOMENT, not
- * the user that was deleted. The delete was not awaited, so when it landed late
- * (a slow connection, or someone quick with a saved password) it landed on the
- * real account that had just been created or signed in to. The person was
- * signed out of an account that existed, and the next time through the form its
- * email was refused as already in use. Reproduced against the Auth emulator:
- * create succeeds, the late delete leaves `currentUser` null, and the second
- * create answers `auth/email-already-in-use`.
+ * The email check used to sign in anonymously just to be allowed to ask, then
+ * delete that user in the background. It no longer does (the callable takes an
+ * App Check attestation instead), but a browser that ran an older build can still
+ * restore one, and this is what removes it.
  *
- * Two guards, because either alone leaves a gap:
- *
- *  - `purgeAnonymousUser` does nothing when a different user is signed in.
- *    Better an orphaned anonymous record than a signed-out customer.
- *  - Whoever is about to sign in waits for the purge to finish first
- *    (`settleAnonymousPurge`), so it is not still running when they do.
+ * The SDK's `User.delete()` finishes with `auth.signOut()`, and that signs out
+ * whoever is signed in AT THAT MOMENT, not the user that was deleted. So a delete
+ * that lands after a real account has signed in signs that account out: the
+ * person is signed out of an account that exists, and the next time through the
+ * form its email is refused as already in use. Reproduced against the Auth
+ * emulator (see lib/anonymousSession.emulator.test.ts). Hence the guard below:
+ * do nothing when a different user is signed in. Better an orphaned anonymous
+ * record than a signed-out customer.
  */
 export async function purgeAnonymousUser(auth: Auth, user: User): Promise<void> {
   if (auth.currentUser && auth.currentUser.uid !== user.uid) return;
@@ -31,25 +26,4 @@ export async function purgeAnonymousUser(auth: Auth, user: User): Promise<void> 
       await signOut(auth).catch(() => {});
     }
   });
-}
-
-let pendingPurge: Promise<void> = Promise.resolve();
-
-/** Remember the purge that was just started, so a sign-in can wait for it. */
-export function trackAnonymousPurge(purge: Promise<void>): void {
-  pendingPurge = purge.catch(() => {});
-}
-
-/**
- * Resolves once the tracked purge is done, or after `timeoutMs`, whichever comes
- * first. It only ever delays a sign-in by the length of one small request, and a
- * hung connection must not be able to hold the form hostage.
- */
-export async function settleAnonymousPurge(timeoutMs = 4000): Promise<void> {
-  let timer: ReturnType<typeof setTimeout> | undefined;
-  const timeout = new Promise<void>((resolve) => {
-    timer = setTimeout(resolve, timeoutMs);
-  });
-  await Promise.race([pendingPurge, timeout]);
-  clearTimeout(timer);
 }

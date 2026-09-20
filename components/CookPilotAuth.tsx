@@ -4,30 +4,30 @@ import { useEffect, useRef, useState, type FormEvent, type ReactNode } from "rea
 import {
   EmailAuthProvider,
   GoogleAuthProvider,
+  browserPopupRedirectResolver,
   type AuthProvider,
   OAuthProvider,
   createUserWithEmailAndPassword,
-  deleteUser,
   sendPasswordResetEmail,
   getRedirectResult,
   onAuthStateChanged,
-  signInAnonymously,
   signInWithEmailAndPassword,
   signInWithPopup,
   signInWithRedirect,
-  signOut,
   type User,
 } from "firebase/auth";
 import { getFirebaseAuth } from "@/lib/firebase/client";
 import { ensureRecipePrinterAccount } from "@/lib/firebase/recipePrinterAccount";
-import { friendlyAuthError } from "@/lib/friendlyErrors";
+import { authFailureCode, friendlyAuthError } from "@/lib/friendlyErrors";
 import { createAccountOrRecover, isEmailInUseError } from "@/lib/signUpRecovery";
+import { isPopupDismissal, watchForPopupReturn } from "@/lib/authPopup";
 import {
-  purgeAnonymousUser as purgeAnonymousUserFor,
-  settleAnonymousPurge,
-  trackAnonymousPurge,
-} from "@/lib/anonymousSession";
-import { identifyUser } from "@/lib/analytics";
+  clearAuthRedirectPending,
+  hasAuthRedirectPending,
+  markAuthRedirectPending,
+} from "@/lib/authRedirect";
+import { purgeAnonymousUser as purgeAnonymousUserFor } from "@/lib/anonymousSession";
+import { identifyUser, track } from "@/lib/analytics";
 import {
   readCookPilotWasSignedIn,
   rememberCookPilotSignedIn,
@@ -49,11 +49,19 @@ appleProvider.addScope("email");
 appleProvider.addScope("name");
 
 
-// `checkEmailProviders` briefly signs in anonymously just to authorize its
-// `checkUserProviders` call, then deletes that session itself once done (see
-// below). This flag stops the auth listener's purge from racing that in-flight
-// call and deleting the session out from under it before the callable resolves.
-let checkingEmailProviders = false;
+function providerMethod(providerId: string | null | undefined): "google" | "apple" {
+  return providerId === "apple.com" ? "apple" : "google";
+}
+
+/** Safari has no requestIdleCallback, so a short timer stands in for it. The
+    timeout on the real one stops a permanently busy page postponing this for ever. */
+function runWhenIdle(run: () => void): void {
+  if (typeof window.requestIdleCallback === "function") {
+    window.requestIdleCallback(run, { timeout: 5_000 });
+  } else {
+    window.setTimeout(run, 2_000);
+  }
+}
 
 function shouldUseRedirectSignIn(): boolean {
   if (typeof window === "undefined") return true;
@@ -62,11 +70,22 @@ function shouldUseRedirectSignIn(): boolean {
 
 export async function signInWithCookPilotProvider(provider: AuthProvider) {
   const auth = getFirebaseAuth();
+  // The resolver is passed here, at the call that needs it, rather than to
+  // `initializeAuth`: given there, the SDK loads its cross-origin iframe during
+  // startup on mobile and Safari, for every visitor (see lib/authRedirect).
   if (shouldUseRedirectSignIn()) {
-    await signInWithRedirect(auth, provider);
+    // Marked BEFORE leaving, so the page that comes back knows there is a result
+    // to read. If the redirect cannot even start, nothing is coming back.
+    markAuthRedirectPending();
+    try {
+      await signInWithRedirect(auth, provider, browserPopupRedirectResolver);
+    } catch (error) {
+      clearAuthRedirectPending();
+      throw error;
+    }
     return;
   }
-  await signInWithPopup(auth, provider);
+  await signInWithPopup(auth, provider, browserPopupRedirectResolver);
 }
 
 export function purgeAnonymousUser(user: User): Promise<void> {
@@ -104,7 +123,14 @@ interface AuthState {
   redirectError: string | null;
 }
 
-let authState: AuthState = { user: null, ready: !readCookPilotWasSignedIn(), redirectError: null };
+// `ready` also waits on a pending redirect: the page that comes back from Google or
+// Apple has no stored user yet, and "no user" there means "still being read", not
+// "signed out".
+let authState: AuthState = {
+  user: null,
+  ready: !readCookPilotWasSignedIn() && !hasAuthRedirectPending(),
+  redirectError: null,
+};
 const authSubscribers = new Set<(state: AuthState) => void>();
 let unsubscribeAuth: (() => void) | null = null;
 let redirectPromise: Promise<void> | null = null;
@@ -114,15 +140,62 @@ function publishAuthState(patch: Partial<AuthState>) {
   authSubscribers.forEach((notify) => notify(authState));
 }
 
-/** Resolves the pending Google/Apple redirect exactly once per page load. */
+/** True from the moment a pending redirect starts being read until it has been. */
+let redirectInFlight = false;
+
+/**
+ * How long "still being read" may hold auth back from reporting a signed-out
+ * visitor. A read that is genuinely stuck (a blocked iframe, a dead connection)
+ * must not leave the app waiting on a sign-in that is never going to be
+ * announced; if it does arrive later, the listener still delivers the user.
+ */
+const REDIRECT_READ_TIMEOUT_MS = 10_000;
+
+/**
+ * Reads the Google/Apple redirect result, once per page load, and only when a
+ * redirect actually left from this tab.
+ *
+ * Most loads are not the return leg of a redirect, and reading a result is what
+ * loads the SDK's cross-origin iframe, so those loads skip it entirely (see
+ * lib/authRedirect). When one IS pending, auth is not reported as ready with no
+ * user until it has been read: without that the app would see a signed-out
+ * visitor for as long as the read takes, and act on it.
+ */
 function resolveRedirectOnce(): void {
   if (redirectPromise) return;
-  redirectPromise = getRedirectResult(getFirebaseAuth())
-    .then(() => undefined)
+  if (!hasAuthRedirectPending()) {
+    redirectPromise = Promise.resolve();
+    return;
+  }
+  redirectInFlight = true;
+  const settle = () => {
+    if (!redirectInFlight) return;
+    redirectInFlight = false;
+    clearAuthRedirectPending();
+    // A successful read has already announced the user through the listener. If
+    // there is none, the answer is now known to be "signed out", and the
+    // listener held it back until this moment.
+    const current = getFirebaseAuth().currentUser;
+    if (!current || current.isAnonymous) publishAuthState({ user: null, ready: true });
+  };
+  const timer = window.setTimeout(settle, REDIRECT_READ_TIMEOUT_MS);
+  redirectPromise = getRedirectResult(getFirebaseAuth(), browserPopupRedirectResolver)
+    .then((result) => {
+      // A redirect left this tab and came back. `no_result` (nobody signed in, no
+      // error) is what browsers that block third-party storage do to it, so this
+      // is the measure of whether redirect sign-in works, per browser.
+      track("auth_redirect_returned", { outcome: result ? "signed_in" : "no_result" });
+      if (result) track("auth_succeeded", { method: providerMethod(result.providerId) });
+    })
     .catch((err) => {
+      track("auth_redirect_returned", { outcome: "error", code: authFailureCode(err) });
       publishAuthState({
         redirectError: friendlyAuthError(err, "We couldn't finish signing you in. Please try again."),
       });
+    })
+    .finally(() => {
+      window.clearTimeout(timer);
+      settle();
     });
 }
 
@@ -131,19 +204,18 @@ function startAuthSubscription(): void {
   if (unsubscribeAuth) return;
   unsubscribeAuth = onAuthStateChanged(getFirebaseAuth(), (nextUser) => {
     // RecipePrinter has no use for anonymous accounts, and they don't count
-    // as being logged in to a CookPilot recipe library. `checkEmailProviders`
-    // creates one briefly to authorize a callable and cleans it up itself;
-    // skip purging here while that's in flight so we don't race it. Anything
-    // else anonymous restored from a stale session gets purged on sight
-    // instead of just hidden, so it doesn't linger as an orphaned user.
+    // as being logged in to a CookPilot recipe library. It no longer creates any
+    // (the email check is attested by App Check instead), but older builds did,
+    // and one can still be restored from a stale session. Purged on sight rather
+    // than just hidden, so it doesn't linger as an orphaned user.
     if (nextUser?.isAnonymous) {
-      if (!checkingEmailProviders) {
-        purgeAnonymousUser(nextUser);
-      }
+      purgeAnonymousUser(nextUser);
       rememberCookPilotSignedIn(false);
       publishAuthState({ user: null, ready: true });
       return;
     }
+    // A redirect result is still being read, so "no user" is "not yet".
+    if (!nextUser && redirectInFlight) return;
     rememberCookPilotSignedIn(Boolean(nextUser));
     if (nextUser) {
       // The one place a real CookPilot account becomes known — identify the
@@ -153,8 +225,17 @@ function startAuthSubscription(): void {
       // Account metadata is best-effort and must never hold the sign-in UI
       // hostage. Rules allow only these harmless timestamps; server-owned
       // purchases, entitlements, grants, and roles cannot be changed here.
-      void ensureRecipePrinterAccount(nextUser).catch((error) => {
-        console.warn("Could not initialize RecipePrinter account metadata.", error);
+      //
+      // And it need not compete with the page loading either: it pulls in the
+      // Firestore SDK (about 127 KB gzipped) for a timestamp, and nothing depends
+      // on the shell existing yet (no security rule reads it, and its readers,
+      // /print and /account, load Firestore themselves). So it waits for the
+      // browser to be idle. It is already skipped outright for 12 hours after a
+      // successful write (see lib/firebase/recipePrinterAccount).
+      runWhenIdle(() => {
+        void ensureRecipePrinterAccount(nextUser).catch((error) => {
+          console.warn("Could not initialize RecipePrinter account metadata.", error);
+        });
       });
     }
     publishAuthState({ user: nextUser ?? null, ready: true });
@@ -250,44 +331,26 @@ export async function sendCookPilotPasswordReset(email: string): Promise<void> {
 }
 
 export async function checkEmailProviders(email: string): Promise<string[]> {
-  const auth = getFirebaseAuth();
-  await prewarmCookPilotAuth();
-  checkingEmailProviders = true;
-  let temporaryUser: User | null = null;
-  try {
-    if (!auth.currentUser) {
-      // checkUserProviders just requires *some* signed-in uid; an anonymous
-      // session is enough, same as CookPilot's ensureAnonymousUserIfNeeded.
-      // Scoped to this login flow only, not the shared parser call path.
-      const credential = await signInAnonymously(auth);
-      temporaryUser = credential.user;
-    }
-    // Both halves dynamic, together — the shape every other callable site uses
-    // (lib/parser). `httpsCallable` was a
-    // STATIC import, which pulled `firebase/functions` into this chunk anyway,
-    // so the `await import` beside it bought nothing and the prewarm below was
-    // overlapping a download that had already happened.
-    const [{ httpsCallable }, { getFns }] = await Promise.all([
-      import("firebase/functions"),
-      import("@/lib/firebase/functions"),
-    ]);
-    const checkUserProviders = httpsCallable<{ email: string }, { providers: string[] | null }>(
-      getFns(),
-      "checkUserProviders",
-    );
-    const { data } = await checkUserProviders({ email });
-    return data.providers ?? [];
-  } finally {
-    checkingEmailProviders = false;
-    // This session has already done its job. Cleanup must not hold the UI on a
-    // spinner before the password field appears.
-    if (temporaryUser?.isAnonymous) {
-      // Tracked, not just fired: whoever signs in next waits for it, because a
-      // delete still running when they do signs them straight back out. See
-      // lib/anonymousSession.
-      trackAnonymousPurge(purgeAnonymousUser(temporaryUser));
-    }
-  }
+  // Both halves dynamic, together, the shape every other callable site uses
+  // (lib/parser). `httpsCallable` was a
+  // STATIC import, which pulled `firebase/functions` into this chunk anyway, so
+  // the `await import` beside it bought nothing and the prewarm in the form was
+  // overlapping a download that had already happened.
+  const [{ httpsCallable }, { getFns }] = await Promise.all([
+    import("firebase/functions"),
+    import("@/lib/firebase/functions"),
+  ]);
+  // No sign-in of any kind first. This used to borrow an anonymous Firebase user
+  // just to be allowed to ask, which cost a sign-in and a delete in front of the
+  // password field, and a delete that could land late and sign the real account
+  // out. The callable accepts an App Check attestation instead, and every request
+  // from `getFns()` already carries one (see lib/firebase/appCheck).
+  const checkUserProviders = httpsCallable<{ email: string }, { providers: string[] | null }>(
+    getFns(),
+    "checkUserProviders",
+  );
+  const { data } = await checkUserProviders({ email });
+  return data.providers ?? [];
 }
 
 /**
@@ -343,6 +406,41 @@ export function CookPilotLoginForm({
     void prewarmCookPilotAuth();
   }, []);
 
+  /**
+   * Google or Apple, by whichever route this device takes. The one place the
+   * attempt, the outcome and the failure code are recorded for all three ways in
+   * (the buttons and the Google-only hand-off from the email step), so they
+   * cannot drift apart.
+   *
+   * A redirect leaves the page, so it has no outcome here: what it returns is
+   * recorded by `resolveRedirectOnce` on the page that comes back.
+   */
+  async function signInWithProvider(provider: AuthProvider, method: "google" | "apple") {
+    const via = shouldUseRedirectSignIn() ? "redirect" : "popup";
+    track("auth_attempted", { method, via });
+    // Firebase only learns a popup was closed by polling, then waits eight more
+    // seconds before rejecting, so awaiting it alone leaves this dialog disabled
+    // for up to ten seconds after someone closes Google's window. Hand the dialog
+    // back as soon as focus returns to this page instead (see lib/authPopup).
+    const stopWatching = via === "popup" ? watchForPopupReturn(() => setBusy(false)) : undefined;
+    try {
+      await signInWithCookPilotProvider(provider);
+      if (via === "popup") track("auth_succeeded", { method });
+    } catch (err) {
+      track("auth_failed", { method, code: authFailureCode(err) });
+      // Closing the window is a choice, not a failure: the form is simply back.
+      // It arrives after the dialog has already been handed back, or, where the
+      // browser never reports focus returning, is what hands it back.
+      if (isPopupDismissal(err)) {
+        setBusy(false);
+        return;
+      }
+      throw err;
+    } finally {
+      stopWatching?.();
+    }
+  }
+
   async function handleEmailContinue(event: FormEvent) {
     event.preventDefault();
     if (busy || signedIn || submittingRef.current) return;
@@ -362,11 +460,15 @@ export function CookPilotLoginForm({
         providers.includes(GoogleAuthProvider.PROVIDER_ID) &&
         !providers.includes(EmailAuthProvider.PROVIDER_ID)
       ) {
+        track("auth_email_checked", { outcome: "google_only" });
         // This account only has Google sign-in set up, so a password will
         // never work for it. Send them straight into the Google flow, the
         // same redirect the iOS app does for this case.
-        await settleAnonymousPurge();
-        await signInWithCookPilotProvider(googleProvider);
+        try {
+          await signInWithProvider(googleProvider, "google");
+        } catch (err) {
+          setError(friendlyAuthError(err, "We couldn't sign in with Google. Please try again."));
+        }
         return;
       }
 
@@ -375,12 +477,15 @@ export function CookPilotLoginForm({
         !providers.includes(GoogleAuthProvider.PROVIDER_ID) &&
         !providers.includes(EmailAuthProvider.PROVIDER_ID)
       ) {
+        track("auth_email_checked", { outcome: "apple_only" });
         setNotice("This account uses Sign in with Apple. Close this and tap Continue with Apple instead.");
         return;
       }
 
+      track("auth_email_checked", { outcome: providers.length === 0 ? "new" : "password" });
       setStep(providers.length === 0 ? "create" : "password");
     } catch (err) {
+      track("auth_email_checked", { outcome: "error", errorCode: authFailureCode(err) });
       setError(friendlyAuthError(err, "We couldn't verify that email. Please try again."));
     } finally {
       setBusy(false);
@@ -398,15 +503,15 @@ export function CookPilotLoginForm({
     submittingRef.current = true;
     setBusy(true);
     setError(null);
-    // The anonymous session the email check borrowed may still be being deleted.
-    // Signing in before that finishes lets the delete sign the new account out.
-    await settleAnonymousPurge();
     const auth = getFirebaseAuth();
     const normalizedEmail = email.trim().toLowerCase();
+    const method = step === "create" ? "email_create" : "email_signin";
+    track("auth_attempted", { method });
     try {
       const signIn = () => signInWithEmailAndPassword(auth, normalizedEmail, password);
+      let recovered: "already_signed_in" | "signed_in_existing" | undefined;
       if (step === "create") {
-        await createAccountOrRecover(
+        const outcome = await createAccountOrRecover(
           {
             create: () => createUserWithEmailAndPassword(auth, normalizedEmail, password),
             signIn,
@@ -414,12 +519,16 @@ export function CookPilotLoginForm({
           },
           normalizedEmail,
         );
+        if (outcome === "already-signed-in") recovered = "already_signed_in";
+        else if (outcome === "signed-in-existing") recovered = "signed_in_existing";
       } else {
         await signIn();
       }
+      track("auth_succeeded", { method, ...(recovered ? { recovered } : {}) });
       setSignedIn(true);
       onAuthenticated();
     } catch (err) {
+      track("auth_failed", { method, code: authFailureCode(err) });
       if (step === "create" && isEmailInUseError(err)) {
         // A real existing account, and not one this password opens. Move to the
         // step that fits, so the way forward (sign in, or reset the password) is
@@ -467,7 +576,7 @@ export function CookPilotLoginForm({
     setBusy(true);
     setError(null);
     try {
-      await signInWithCookPilotProvider(googleProvider);
+      await signInWithProvider(googleProvider, "google");
     } catch (err) {
       setError(friendlyAuthError(err, "We couldn't sign in with Google. Please try again."));
       setBusy(false);
@@ -478,7 +587,7 @@ export function CookPilotLoginForm({
     setBusy(true);
     setError(null);
     try {
-      await signInWithCookPilotProvider(appleProvider);
+      await signInWithProvider(appleProvider, "apple");
     } catch (err) {
       setError(friendlyAuthError(err, "We couldn't sign in with Apple. Please try again."));
       setBusy(false);
@@ -566,6 +675,9 @@ export function CookPilotLoginForm({
                 }}
               />
               {error && <p className="field-error" role="alert">{error}</p>}
+              {step === "create" && !error && (
+                <p className="mt-1 text-cp-caption leading-4 text-ink-soft">At least 6 characters.</p>
+              )}
               {step === "password" && (
                 <div className="mt-2">
                   {resetSent ? (
