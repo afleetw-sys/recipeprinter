@@ -155,14 +155,11 @@ import {
 } from "@/lib/printErrorRecovery";
 import { hasPendingImport, takePendingImport } from "@/lib/pendingImport";
 import { nextPaint } from "@/lib/nextPaint";
+import { nextCookbookTemplate } from "@/lib/cookbookTemplateRotation";
 import { printProjectFingerprint, SAVE_TIMEOUT_MS, type PendingSave } from "@/lib/printSave";
 
 const POST_PRINT_DIALOG_STORAGE_KEY = "recipeprinter:post-print-dialog:last-shown:v1";
 
-
-// Per-recipe cookbook page-layout choices. `full` = a plain full-page card;
-// `image-spread` = the card facing a full-bleed photo page. A cookbook always
-// gives each recipe its own full page.
 
 // The section opener's photo placement — the SAME None/In-card/Full-page row as
 // a recipe, so the two pickers read identically. A collage isn't a fourth
@@ -184,42 +181,10 @@ function sectionRecipeImages(section: Section): string[] {
 }
 
 
-// Fresh cookbooks open on a premium theme (unlocked inside the $19.99 book, so
-// no paywall — see `themeLocked`), rotating through them so the first view
-// looks designed rather than the plain Classic default. The rotation index
-// persists in localStorage so each new book lands on the next theme.
-const COOKBOOK_TEMPLATE_ROTATION: RecipePrintTemplate[] = [
-  "heirloom",
-  "bistro",
-  "counter",
-  "keepsake",
-];
-/**
- * How many recipes before the workspace suggests binding them.
- *
- * Three, because that is the point where a stack of cards starts to look like
- * a collection. Below it the suggestion is a pitch at someone who has printed
- * one thing; at or above it, it names something they have already half done.
- */
-
-const COOKBOOK_TEMPLATE_ROTATION_KEY = "recipeprinter:cookbook-template-rotation";
-
 // A ready-made dedication seeded when the page is turned on — real, editable
 // content (not a hidden placeholder), so a cook who likes it can just keep it
 // and it prints as-is.
 const DEFAULT_DEDICATION_BODY = "For the ones who taught us to cook, and who made every table feel like home.";
-function nextCookbookTemplate(): RecipePrintTemplate {
-  // Through `localStore` rather than `window.localStorage`: the read here was
-  // bare, and reading storage THROWS (it does not return null) in Safari
-  // private mode and anywhere site data is blocked — which would have taken
-  // the whole new-cookbook path down over a cosmetic default. A rotation that
-  // never persists just means everyone starts at the same theme.
-  if (typeof window === "undefined") return COOKBOOK_TEMPLATE_ROTATION[0];
-  const prev = Number(localStore.get(COOKBOOK_TEMPLATE_ROTATION_KEY));
-  const next = ((Number.isFinite(prev) ? prev : -1) + 1) % COOKBOOK_TEMPLATE_ROTATION.length;
-  localStore.set(COOKBOOK_TEMPLATE_ROTATION_KEY, String(next));
-  return COOKBOOK_TEMPLATE_ROTATION[next];
-}
 
 // A short, generic recipe used only to fill each theme's picker preview. Kept
 // intentionally small so it lays out as a clean single front face at 6x4.
