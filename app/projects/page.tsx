@@ -8,6 +8,8 @@ import { ConfirmDialog } from "@/components/ConfirmDialog";
 import { Badge, IconButton } from "@/components/Controls";
 import { CookPilotLoginDialog, useCookPilotAuth } from "@/components/CookPilotAuth";
 import { useProjectMeta } from "@/lib/project";
+import { useQueue } from "@/lib/queue";
+import { releaseWorkingProject } from "@/lib/releaseWorkingProject";
 import { useRouter } from "next/navigation";
 import { BookIcon, CheckIcon, ICON_SIZE, PlusIcon, SpinnerIcon, TrashIcon } from "@/components/icons";
 import { deletePrintProject, loadPrintProjectSummaries, summarizePrintProject } from "@/lib/printProjects";
@@ -103,7 +105,8 @@ function StartNewProject({
 export default function ProjectsPage() {
   const { user, ready } = useCookPilotAuth();
   const router = useRouter();
-  const { startNewProject } = useProjectMeta();
+  const { meta, hydrated: metaHydrated, startNewProject } = useProjectMeta();
+  const { items, hydrated: queueHydrated, clear: clearQueue } = useQueue();
 
   /**
    * The missing entry point. Until now the only way into a cookbook was the
@@ -112,12 +115,14 @@ export default function ProjectsPage() {
    * one, and no way to buy one. Every book is its own project and its own
    * purchase, so "new" has to mean a new project id.
    *
-   * Deliberately does NOT clear the recipe list. Emptying it to hand the cook a
-   * blank page throws away work to make room for work — the recipes they have
-   * are exactly what a new book gets made from, which is what "make it a
-   * cookbook" has always done. All that has to be new is the project IDENTITY,
-   * so the book being built is its own document and its own purchase rather
-   * than an edit of whichever one happened to be open.
+   * Starts from nothing. The recipe queue is a separate store from the project
+   * identity, so minting a new id alone left every recipe the device was last
+   * holding sitting in the "new" project: a 70-recipe cookbook became 70 recipe
+   * cards, and a second saved copy of the book once autosave ran. The open
+   * project is filed to the on-device shelf first, so it stays in the library
+   * under its own id and its own purchase (see `releaseWorkingProject`). If the
+   * shelf cannot be written to, the queue is left alone rather than lose the
+   * book.
    *
    * Always opens the workspace, empty-handed or not.
    *
@@ -137,6 +142,10 @@ export default function ProjectsPage() {
    * which is a truer answer to "new cookbook" than an importer is.
    */
   function startNew(cookbook: boolean) {
+    // Both stores must have read the device before they are filed or emptied;
+    // until then `meta` is the blank default and would file the book as one.
+    if (!queueHydrated || !metaHydrated) return;
+    releaseWorkingProject(items, meta, clearQueue);
     startNewProject({ cookbook });
     router.push("/print");
   }
