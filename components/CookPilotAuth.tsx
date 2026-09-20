@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, type FormEvent, type ReactNode } from "react";
+import { useEffect, useRef, useState, type FormEvent, type ReactNode } from "react";
 import {
   EmailAuthProvider,
   GoogleAuthProvider,
@@ -21,13 +21,14 @@ import {
 import { getFirebaseAuth } from "@/lib/firebase/client";
 import { ensureRecipePrinterAccount } from "@/lib/firebase/recipePrinterAccount";
 import { friendlyAuthError } from "@/lib/friendlyErrors";
+import { createAccountOrRecover, isEmailInUseError } from "@/lib/signUpRecovery";
 import { identifyUser } from "@/lib/analytics";
 import {
   readCookPilotWasSignedIn,
   rememberCookPilotSignedIn,
 } from "@/lib/cookPilotSession";
 import { Dialog } from "@/components/Dialog";
-import { AppleIcon, GoogleIcon, ICON_SIZE, SpinnerIcon, XIcon } from "@/components/icons";
+import { AppleIcon, CheckIcon, GoogleIcon, ICON_SIZE, SpinnerIcon, XIcon } from "@/components/icons";
 
 /* ──────────────────────────────────────────────────────────────────────────
    Shared RecipePrinter login: same Firebase project, same providers, same
@@ -325,6 +326,14 @@ export function CookPilotLoginForm({
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
   const [resetSent, setResetSent] = useState(false);
+  // Signed in, and the host has been told. The form is finished: some hosts (the
+  // Pro upgrade dialog) keep it mounted while they carry on with checkout, and a
+  // form left showing its "Create account" button is one a person presses again.
+  const [signedIn, setSignedIn] = useState(false);
+  // Read synchronously, unlike `busy`, which only changes on the next render: two
+  // submits in the same tick (a doubled Enter, a double tap) would both see
+  // `busy` false and both go through.
+  const submittingRef = useRef(false);
 
   useEffect(() => {
     // Overlap the Functions chunk download with the time spent entering an
@@ -335,7 +344,7 @@ export function CookPilotLoginForm({
 
   async function handleEmailContinue(event: FormEvent) {
     event.preventDefault();
-    if (busy) return;
+    if (busy || signedIn || submittingRef.current) return;
     const normalizedEmail = email.trim().toLowerCase();
     if (!normalizedEmail) {
       setError("Enter your email address.");
@@ -378,26 +387,43 @@ export function CookPilotLoginForm({
 
   async function handlePasswordSubmit(event: FormEvent) {
     event.preventDefault();
-    if (busy) return;
+    if (busy || signedIn || submittingRef.current) return;
     if (!password) {
       setError("Enter your password.");
       return;
     }
 
+    submittingRef.current = true;
     setBusy(true);
     setError(null);
+    const auth = getFirebaseAuth();
+    const normalizedEmail = email.trim().toLowerCase();
     try {
+      const signIn = () => signInWithEmailAndPassword(auth, normalizedEmail, password);
       if (step === "create") {
-        await createUserWithEmailAndPassword(
-          getFirebaseAuth(),
-          email.trim().toLowerCase(),
-          password,
+        await createAccountOrRecover(
+          {
+            create: () => createUserWithEmailAndPassword(auth, normalizedEmail, password),
+            signIn,
+            currentUserEmail: () => (auth.currentUser?.isAnonymous ? null : auth.currentUser?.email),
+          },
+          normalizedEmail,
         );
       } else {
-        await signInWithEmailAndPassword(getFirebaseAuth(), email.trim().toLowerCase(), password);
+        await signIn();
       }
+      setSignedIn(true);
       onAuthenticated();
     } catch (err) {
+      if (step === "create" && isEmailInUseError(err)) {
+        // A real existing account, and not one this password opens. Move to the
+        // step that fits, so the way forward (sign in, or reset the password) is
+        // right there instead of in a message telling them to go and find it.
+        setStep("password");
+        setPassword("");
+        setError("That email already has an account. Enter its password to sign in.");
+        return;
+      }
       setError(
         friendlyAuthError(
           err,
@@ -407,6 +433,7 @@ export function CookPilotLoginForm({
         ),
       );
     } finally {
+      submittingRef.current = false;
       setBusy(false);
     }
   }
@@ -455,7 +482,12 @@ export function CookPilotLoginForm({
 
   return (
     <>
-        {step === "email" ? (
+        {signedIn ? (
+          <div className="state flex items-center gap-cp-2" role="status">
+            <CheckIcon size={ICON_SIZE.md} />
+            <p>You&apos;re signed in.</p>
+          </div>
+        ) : step === "email" ? (
           <form className="flex flex-col gap-cp-3" onSubmit={handleEmailContinue}>
             <div>
               <label className="field-label" htmlFor="cookpilot-email">
