@@ -1,4 +1,5 @@
 import { localStore } from "@/lib/storage";
+import { uid } from "@/lib/ids";
 
 /**
  * The browser's own anonymous identity, in a module with no dependencies but
@@ -20,10 +21,7 @@ export const ANONYMOUS_OWNER_STORAGE_KEY = "recipeprinter:anonymous-owner:v1";
 export function anonymousOwnerId(): string {
   const existing = localStore.get(ANONYMOUS_OWNER_STORAGE_KEY);
   if (existing) return existing;
-  const next =
-    typeof crypto !== "undefined" && "randomUUID" in crypto
-      ? crypto.randomUUID()
-      : `${Date.now()}-${Math.random().toString(36).slice(2, 12)}`;
+  const next = uid();
   localStore.set(ANONYMOUS_OWNER_STORAGE_KEY, next);
   return next;
 }
