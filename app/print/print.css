@@ -1732,11 +1732,6 @@
   box-shadow: none;
 }
 
-.rp-queue-item--focused > button:first-of-type {
-  border-color: var(--cp-accent);
-  box-shadow: 0 0 0 3px color-mix(in srgb, var(--cp-accent) 18%, transparent);
-}
-
 /* Duplicate-import cue on the print rail: the already-present recipe's row
    shakes (keyframes `rp-shake` / `rp-attention-ring` live in globals.css). */
 .recipe-page-rail__item.is-shaking {
@@ -1904,19 +1899,6 @@
   padding-top: 2px;
 }
 
-.recipe-print-settings-link {
-  display: block;
-  width: 100%;
-  text-align: center;
-  color: var(--cp-ink-soft);
-  font-size: var(--cp-fs-caption);
-  font-weight: 700;
-}
-
-.recipe-print-settings-link:hover {
-  color: var(--cp-ink);
-}
-
 /* The Two-sided checkbox's own label row, so the hint icon that follows the
    word sits on the same line as it rather than wrapping under. `.control-checkbox
    span` (globals.css) is a descendant selector — it matches ANY span inside a
@@ -2059,30 +2041,6 @@
   font-weight: 700;
   letter-spacing: 0.08em;
   text-transform: uppercase;
-}
-
-/* Inline note under the Themes heading — states that every theme comes with
-   Pro up front so the paywall no longer needs its own explanatory dialog. */
-.recipe-template-caption {
-  /* Negative top margin cancels most of the section's 9px flex gap so the note
-     tucks directly under the "Themes" label rather than floating midway to the
-     thumbnails; the small bottom margin keeps a little air before the grid. */
-  margin: -6px 0 2px;
-  color: var(--cp-ink-soft);
-  font-size: var(--cp-fs-label);
-  line-height: 1.4;
-}
-
-/* Reassurance under the Size toggle once Card is picked — the format looks
-   like a small preview graphic, and "is this actually the real print size,
-   or just a thumbnail" is a reasonable thing to wonder before committing a
-   sheet of cardstock to it. Unlike `.recipe-template-caption` this trails
-   its own control rather than tucking under a label, so it takes the
-   section's plain flex gap instead of cancelling it. */
-.recipe-format-note {
-  color: var(--cp-ink-soft);
-  font-size: var(--cp-fs-label);
-  line-height: 1.4;
 }
 
 .recipe-free-template-banner {
@@ -2616,29 +2574,6 @@
     .recipe-mobile-topbar__actions {
       min-width: 0;
       gap: 7px;
-    }
-    /* Collapses to an icon-only circle. Flex, not grid: `font-size: 0` hides
-       the label but the label is still a bare text node, which grid promotes
-       to an anonymous ITEM on its own row — with `align-content: stretch` the
-       spare height split between the two rows (29px + 11px), so the icon
-       centred inside the first row rather than inside the circle and sat 7.5px
-       high. In a single-line flex row the collapsed label takes no width and
-       nothing to centre against changes. */
-    .recipe-mobile-topbar__print {
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      flex: 0 0 40px;
-      width: 40px;
-      height: 40px;
-      gap: 0;
-      padding: 0;
-      overflow: hidden;
-      font-size: 0;
-    }
-    .recipe-mobile-topbar__print svg {
-      width: 18px;
-      height: 18px;
     }
   }
 
@@ -7872,40 +7807,6 @@ textarea.recipe-card__toc-title {
      a bitmap. So the crisp page-level spine (a card SIBLING, outside the
      transform) still does the drawing — pinned to the SAME edge and the SAME
      width the preview uses, so it is the preview's spine, only sharper. */
-  /* The hardcover spine page (see `spine` in app/export/page.tsx). A full book
-     sheet — same size as every other page, so the PDF stays one uniform trim —
-     carrying the spine panel at its true printed width, centred, on the book's
-     own paper. Sizing the PAGE to the spine instead would hand a printer a file
-     whose pages disagree about their trim, which is the one thing a print shop
-     cannot accept. */
-  .recipe-spine-page {
-    display: flex !important;
-    align-items: center;
-    justify-content: center;
-    background: var(--recipe-bg, #fff);
-    overflow: hidden;
-  }
-  .recipe-spine-page > .recipe-card--spine {
-    /* `display` is re-asserted, not merely set: the shared print rules force
-       every `.recipe-card` to `display: block !important` (one card per page),
-       which silently beats `.recipe-card--spine`'s own flex centring and drops
-       the title to the top of the panel. This is the same override that clips
-       the cover wrap and is why `COVER_WRAP_ENABLED` is still false — worth
-       knowing when that file is finally turned on. */
-    display: flex !important;
-    align-items: center;
-    justify-content: center;
-    width: var(--rp-spine-w);
-    height: 100%;
-    min-height: 0;
-    margin: 0;
-    /* A hairline so the panel is findable. The sheet behind it is the same
-       paper, so without an edge nobody can see where the spine actually starts
-       and ends — least of all whoever has to print it. Templates that already
-       give their spine an edge (classic, keepsake) keep theirs. */
-    outline: 1px solid var(--recipe-line, rgba(0, 0, 0, 0.18));
-    outline-offset: 0;
-  }
 
   /* The page-level copy of bistro's spine is gone with the transform that made
      it necessary: it existed only because a scaled card flattened the in-card

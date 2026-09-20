@@ -173,16 +173,6 @@ export const PrintIcon = (p: IconProps) => (
   </Base>
 );
 
-/** Floppy disk — the conventional "save" glyph, and the only one people read
-    as save rather than as download or upload. */
-export const SaveIcon = (p: IconProps) => (
-  <Base {...p}>
-    <path d="M5 3h11l5 5v13a1 1 0 01-1 1H5a1 1 0 01-1-1V4a1 1 0 011-1z" />
-    <path d="M8 3v6h7V3" />
-    <path d="M8 21v-7h8v7" />
-  </Base>
-);
-
 export const PencilIcon = (p: IconProps) => (
   <Base {...p}>
     <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z" />
@@ -430,13 +420,3 @@ export function AppleIcon({ size = ICON_SIZE.md }: { size?: number }) {
   );
 }
 
-/** Sliders — the print settings that live behind a dialog rather than in the
-    panel itself (cut lines, double-sided, source URL). */
-export const SlidersIcon = (p: IconProps) => (
-  <Base {...p}>
-    <path d="M4 6h10M18 6h2M4 12h2M10 12h10M4 18h8M16 18h4" />
-    <circle cx="16" cy="6" r="2" />
-    <circle cx="8" cy="12" r="2" />
-    <circle cx="14" cy="18" r="2" />
-  </Base>
-);

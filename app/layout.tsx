@@ -5,7 +5,6 @@ import { NoFocusZoom } from "@/components/NoFocusZoom";
 import { KeyboardInsetWatcher } from "@/components/KeyboardInsetWatcher";
 import { AnalyticsProvider } from "@/components/AnalyticsProvider";
 import { ActionTitles } from "@/components/ActionTitles";
-import { ProductHuntBanner } from "@/components/ProductHuntBanner";
 import {
   SITE_URL,
   SITE_NAME,
@@ -166,9 +165,6 @@ export default function RootLayout({
         <NoFocusZoom />
         <AnalyticsProvider />
         <ActionTitles />
-        {/* Launch-day bar. Retires itself on its own end date (see the file),
-            and skips the print workspace, so it can be deleted whenever. */}
-        <ProductHuntBanner />
         {children}
       </body>
     </html>

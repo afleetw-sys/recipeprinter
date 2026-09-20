@@ -742,26 +742,6 @@
   color: var(--cp-ink);
   font-weight: 700;
 }
-.cookbook-destination__pro,
-.cookbook-destination__con {
-  display: flex;
-  gap: .4rem;
-}
-.cookbook-destination__pro::before,
-.cookbook-destination__con::before {
-  flex: 0 0 auto;
-  width: .7rem;
-  font-weight: 800;
-}
-.cookbook-destination__pro::before {
-  content: "+";
-  color: var(--cp-accent);
-}
-.cookbook-destination__con::before {
-  /* A minus sign, not a hyphen: this sits opposite a "+" and has to balance
-     it. U+2212. */
-  content: "−";
-}
 
 /* Step three: the files landed, here is what they are for. A list and a
    definition list rather than prose, because this gets read while someone is
@@ -961,25 +941,6 @@
 .cookbook-cover-size__fields input:focus-visible {
   outline: var(--cp-focus-ring);
   outline-offset: 1px;
-}
-/* Same hairline-bordered accent callout as the print-settings banner — a quiet
-   note, not a warning: nothing has gone wrong, the cook just needs to pick the
-   right destination in the window that's about to open. Flat by policy: a
-   border and a tinted ground, no shadow (it isn't a floating element). */
-.cookbook-ready__note {
-  color: var(--cp-ink-soft);
-  font-size: var(--cp-fs-small);
-  line-height: 1.55;
-}
-.cookbook-ready__printer-link {
-  color: var(--cp-accent);
-  font-weight: 700;
-  text-decoration: underline;
-  text-underline-offset: 2px;
-  cursor: pointer;
-}
-.cookbook-ready__printer-link:hover {
-  text-decoration: none;
 }
 
 .recipe-card__cover-edition,
@@ -2154,13 +2115,6 @@
     flex-direction: column;
     align-items: stretch;
     gap: 1px;
-  }
-
-  /* The row's own label, when a note sits under it. */
-  .cp-menu__label {
-    font-size: var(--cp-fs-small);
-    font-weight: 700;
-    color: inherit;
   }
 
   .cp-menu__note {

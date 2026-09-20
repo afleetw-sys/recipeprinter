@@ -1,8 +1,9 @@
 # Server-authoritative cookbook unlocks (RevenueCat webhook)
 
 > ## ✅ Status (confirmed 2026-09-13): shipped and live
-> All five steps below are done: `COOKBOOK_ENABLED = true` in
-> `lib/cookbookProduct.ts`, the webhook is deployed
+> All five steps below are done: the cookbook is on for everyone (the
+> `COOKBOOK_ENABLED` flag that used to gate it was always `true` and nothing read
+> it, so it has been removed), the webhook is deployed
 > (`recipePrinterRevenueCatWebhook`, CookPilot `functions/src/recipePrinterRevenueCat.ts`,
 > last redeployed 2026-09-01) and confirmed configured in RevenueCat's
 > dashboard — production and sandbox, all apps, all events, correct

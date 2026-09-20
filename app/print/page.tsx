@@ -2357,8 +2357,7 @@ export default function PrintPage() {
       if (!current()) return;
       // Stop claiming, and stop blocking. The write is NOT cancelled and the
       // generation is NOT bumped — "we gave up waiting" is not "it did not
-      // happen" (see lib/withTimeout, which says the same thing about reads),
-      // so if this write does land it is still the current one and still gets
+      // happen", so if this write does land it is still the current one and still gets
       // to report itself, revision and all. What ends here is the spinner and
       // the latch: the cook gets a failure they can retry, and the next save is
       // free to run instead of queueing behind a promise that never answers.

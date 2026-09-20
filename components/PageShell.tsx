@@ -15,21 +15,3 @@ export function PageShell({ children }: { children: React.ReactNode }) {
     </div>
   );
 }
-
-/** Page header: an eyebrow, the page <h1>, and a short lede. */
-export function PageHeader({
-  title,
-  lede,
-}: {
-  title: string;
-  lede: string;
-}) {
-  return (
-    <header className="mb-cp-7">
-      <h1 className="mt-cp-2 text-cp-hero-sm font-extrabold tracking-[-0.04em] leading-[1.08]">
-        {title}
-      </h1>
-      <p className="mt-cp-4 text-ink-soft text-cp-body-lg leading-relaxed">{lede}</p>
-    </header>
-  );
-}

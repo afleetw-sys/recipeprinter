@@ -1,7 +1,7 @@
 /**
  * The SEO pages' image tables and the shapes they use, as data.
  *
- * Split out of components/seo/LandingVisuals, ProductMockup and FeatureCards,
+ * Split out of components/seo/LandingVisuals and FeatureCards,
  * which is where they are RENDERED. They are also read by lib/seoImages and
  * lib/seoFeatureCards, and through those by `app/image-sitemap.xml/route.ts` —
  * a server route that emits XML and had no business pulling a 500-line React

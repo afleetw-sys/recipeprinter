@@ -21,7 +21,7 @@ print-page decomposition — see docs/audit-status.md"* (or *"work the audit"*).
 **Security (S1) — code complete, NOT deployed (launch-gated)**
 - RevenueCat webhook (grant/revoke/transfer) + `cookbook_project_id` attribute +
   runbook (`docs/cookbook-unlock-webhook.md`). Deploy the 5-step sequence BEFORE
-  `COOKBOOK_ENABLED=true` ships to prod (reminder at the flag + runbook).
+  the cookbook is turned on in prod (the launch flag has since been removed).
 
 **Dead code**
 - Deleted `CookbookOrganizeBoard` (+145L CSS), the dead cookbook-print dialog,
