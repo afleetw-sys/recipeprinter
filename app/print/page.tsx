@@ -157,6 +157,7 @@ import {
 import { hasPendingImport, takePendingImport } from "@/lib/pendingImport";
 import { nextPaint } from "@/lib/nextPaint";
 import { markPostPrintDialogShown, shouldShowPostPrintDialog } from "@/lib/postPrintDialog";
+import { useToast } from "@/lib/useToast";
 import { printProjectFingerprint, SAVE_TIMEOUT_MS, type PendingSave } from "@/lib/printSave";
 
 // The section opener's photo placement — the SAME None/In-card/Full-page row as
@@ -447,11 +448,7 @@ export default function PrintPage() {
       is for one write, not a standing permission. */
   const adoptionOverwriteApprovedRef = useRef(false);
   const projectIdRef = useRef<string>(createPrintProjectId());
-  const [toastMessage, setToastMessage] = useState<string | null>(null);
-  /** Whether the toast is reporting a FAILURE or just confirming something.
-      Import failures no longer come through here at all — they hold their own
-      page (see `failedImports`) — but saves, prints and exports still can. */
-  const [toastTone, setToastTone] = useState<"info" | "error">("info");
+  const { toastMessage, setToastMessage, toastTone, setToastTone, showToast, clearToast } = useToast();
   // The durable, server-verified fallback for when the live RevenueCat SDK
   // can't be reached — see lib/proAccessFallback.ts. Null until a signed-in
   // profile has actually loaded; there is nothing to fall back to for a
@@ -1758,11 +1755,6 @@ export default function PrintPage() {
     }, PRINT_ACCEPTANCE_GRACE_MS);
   }
 
-  function showToast(message: string) {
-    setToastMessage(message);
-    setToastTone("info");
-  }
-
   /**
    * Say what a drag-delete took, and keep the way back.
    *
@@ -2730,7 +2722,7 @@ export default function PrintPage() {
     projectId: cookbookProjectId,
     discountEligible: cookbookDiscountEligible,
     showToast,
-    clearToast: () => setToastMessage(null),
+    clearToast,
     // Cookbook protection is handled by the persistent banner in cookbook
     // mode. Do not interrupt a newly purchased book with a login modal.
     onFreshPurchase: () => undefined,
@@ -2750,7 +2742,7 @@ export default function PrintPage() {
     markCustomerInfoVerified,
     cookPilotUser,
     showToast,
-    clearToast: () => setToastMessage(null),
+    clearToast,
     // Unlike a template purchase, Pro checkout only ever runs signed in (see
     // `ProUpgradeDialog`'s sign-in step and `continueProCheckout`), so there
     // is no signed-out buyer to prompt for an account afterward — this
@@ -4201,12 +4193,6 @@ export default function PrintPage() {
     // keys its account effects this way and documents why.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [cookPilotUser?.uid]);
-
-  useEffect(() => {
-    if (!toastMessage) return;
-    const timeout = window.setTimeout(() => setToastMessage(null), 5200);
-    return () => window.clearTimeout(timeout);
-  }, [toastMessage]);
 
   // The way back to deleted lines lives on their toast, so it goes when the
   // toast does — an Undo that outlives the message it belongs to would put a
