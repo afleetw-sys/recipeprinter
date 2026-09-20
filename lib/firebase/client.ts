@@ -1,5 +1,13 @@
 import { getApp, getApps, initializeApp, type FirebaseApp } from "firebase/app";
-import { getAuth, indexedDBLocalPersistence, initializeAuth, type Auth } from "firebase/auth";
+import {
+  browserLocalPersistence,
+  browserSessionPersistence,
+  getAuth,
+  inMemoryPersistence,
+  indexedDBLocalPersistence,
+  initializeAuth,
+  type Auth,
+} from "firebase/auth";
 import { ensureAppCheck } from "./appCheck";
 
 // Initializes the same Firebase project CookPilot uses, so RecipePrinter is a
@@ -52,8 +60,22 @@ export function getFirebaseAuth(): Auth {
     // loads a cross-origin iframe and Google's script before auth is ready. It
     // is passed to the calls that need it instead (see CookPilotAuth and
     // lib/authRedirect).
+    //
+    // Persistence is a LIST, in order of preference, and the SDK uses the first one
+    // the browser will actually let it use. It was IndexedDB alone, so a browser
+    // that blocks IndexedDB (some in-app browsers, some private or locked-down
+    // profiles) signed people in and then forgot them on the very next page load.
+    // Measured against the Auth emulator with IndexedDB blocked: IndexedDB-only
+    // restores no session on the second load, this list restores it from
+    // localStorage. In-memory is last so that a browser blocking ALL storage still
+    // signs in, for that page.
     authInstance = initializeAuth(app, {
-      persistence: indexedDBLocalPersistence,
+      persistence: [
+        indexedDBLocalPersistence,
+        browserLocalPersistence,
+        browserSessionPersistence,
+        inMemoryPersistence,
+      ],
     });
   } catch {
     authInstance = getAuth(app);
