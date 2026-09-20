@@ -12,7 +12,6 @@ import { FeedbackDialog } from "@/components/FeedbackButton";
 import { PrintDialogs } from "@/components/PrintDialogs";
 import { AddRecipeDialog } from "@/components/AddRecipeDialog";
 import { sectionOrderChanged, sortSectionsByTitle } from "@/lib/sectionSort";
-import { ConfirmDialog } from "@/components/ConfirmDialog";
 import { CookbookWelcomeDialog } from "@/components/CookbookWelcomeDialog";
 import { CookbookReadyDialog } from "@/components/CookbookReadyDialog";
 import {
@@ -2259,37 +2258,28 @@ export default function PrintPage() {
   /** Re-entrancy guard: one click on the logo should file the project once,
       not once per click before navigation actually leaves. */
   const leavingHomeRef = useRef(false);
-  /** Leaving with work that only exists on this device — see `handleNavigateHome`. */
-  const [confirmLeave, setConfirmLeave] = useState(false);
 
   /**
    * Home, on the far side of any dialog's history bookkeeping.
    *
-   * Both exits from this page can be reached from inside the "Keep this
-   * project?" confirm, and a dialog closing in the same breath as a navigation
-   * used to eat the navigation outright — see `navigateAfterOverlayHistory`,
-   * which is where the whole mechanism is written down.
+   * A dialog closing in the same breath as a navigation used to eat the
+   * navigation outright — see `navigateAfterOverlayHistory`, which is where the
+   * whole mechanism is written down.
    */
   function goHome() {
     navigateAfterOverlayHistory(() => router.push("/"));
   }
 
-  function handleNavigateHome(options?: { confirmed?: boolean }) {
+  /**
+   * Leaving never asks. There used to be a "Keep this project?" confirm here for
+   * a signed-out cook; it is gone on purpose. It showed for a lone recipe (a
+   * quick print, which is not a project) and could show for signed-in cooks whose
+   * auth had not resolved yet, and neither is a moment to interrupt someone leaving.
+   */
+  function handleNavigateHome() {
     if (leavingHomeRef.current) return;
 
     const printable = queue.items.some((item) => item.status === "ready" && item.recipe);
-    /**
-     * Signed out, this project is filed to the device and nowhere else, and
-     * there is no library on the way out to find it in again. Watched in a
-     * session replay: an hour of editing, one click on the logo, gone.
-     *
-     * So ask — and make signing in the way out of the question, since that is
-     * the thing that actually keeps the work.
-     */
-    if (printable && !cookPilotUser && !options?.confirmed) {
-      setConfirmLeave(true);
-      return;
-    }
 
     leavingHomeRef.current = true;
     goHome();
@@ -5695,58 +5685,6 @@ export default function PrintPage() {
         onCancelDeleteRecipe={() => setPendingDelete(null)}
         onConfirmDeleteRecipe={confirmPendingDelete}
         onConfirmDeleteSectionRecipes={confirmDeleteSectionRecipes}
-      />
-      {/* Leaving with a project that only exists on this device.
-          
-          The old copy contradicted its own button: the description said the
-          project would be kept on this device while the button underneath said
-          "Leave without saving". Nothing is lost by leaving, and saying so is
-          what makes the real difference (this device vs every device) worth
-          reading.
-
-          "Browser" was how it said that, and it is our word rather than
-          anyone else's — people do not think of their recipes as living in a
-          browser, and the same sentence one screen away already said "this
-          device" (the cookbook protect bar). One vocabulary, and the plainer
-          one.
-
-          It also promised a route it does not have: "you can open it again
-          from Projects" is not true of a signed-out card job, which
-          `listableLocalProjects` deliberately keeps out of the library and
-          which /projects will not show a signed-out cook at all. A promise the
-          app cannot keep is worse than no promise, so it is gone rather than
-          reworded. What is left says only what is true: an account is what
-          carries this project off this one device. */}
-      <ConfirmDialog
-        open={confirmLeave}
-        tone="primary"
-        title="Keep this project?"
-        /* Says the thing that is true, which is not the thing anyone wants to
-           hear. Saving needs an account, so a project nobody signed in for is
-           not saved, and the device shelf
-           is a crash net rather than somewhere to come back to: nothing lists
-           it (see `listableLocalProjects`) and the workspace is released on the
-           way out. The previous wording sent people to Projects to look for a
-           project Projects has never shown. */
-        description={
-          <>
-            Signing in saves it to your account, so it&apos;s there on your phone and any
-            computer. Otherwise it&apos;s not saved, and the workspace starts empty next time.
-          </>
-        }
-        confirmLabel="Sign in and save it"
-        secondaryLabel="Leave without saving"
-        onSecondary={() => {
-          setConfirmLeave(false);
-          handleNavigateHome({ confirmed: true });
-        }}
-        onCancel={() => setConfirmLeave(false)}
-        onConfirm={() => {
-          setConfirmLeave(false);
-          // Arms `saveAfterLoginRef` and opens the sign-in dialog; the save
-          // runs itself the moment an account exists.
-          void handleSaveProject();
-        }}
       />
       <CookbookWelcomeDialog
         open={showCookbookOfferDialog}
