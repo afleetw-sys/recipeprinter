@@ -33,6 +33,7 @@ import { PrintConfigPanel } from "@/components/print/PrintConfigPanel";
 import { PrintFormatToggle } from "@/components/print/PrintFormatToggle";
 import { PageRail, type RailSortMode } from "@/components/print/PageRail";
 import { PrintDeck, pendingSlotIndexIn } from "@/components/print/PrintDeck";
+import { deckIndexForPendingSlot } from "@/lib/pendingDeckSlot";
 import {
   usePrintSheets,
   type NavItem,
@@ -4927,7 +4928,14 @@ export default function PrintPage() {
         // to it. Both compare against `activeNavIndex` — pointing it at the
         // slot now makes the first a no-op and the second skip its scroll,
         // instead of bolting a "do not scroll" flag onto either.
-        setActiveNavIndex(pendingSlotIndexIn(navItems, pendingAddAfterRecipeId));
+        setActiveNavIndex(
+          deckIndexForPendingSlot({
+            cookbookView,
+            slot: pendingSlotIndexIn(navItems, pendingAddAfterRecipeId),
+            navItems,
+            spreads,
+          }),
+        );
         return;
       }
       if ((attempts += 1) > 8) return;
