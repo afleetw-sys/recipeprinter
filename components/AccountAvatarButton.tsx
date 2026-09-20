@@ -301,16 +301,14 @@ export default function AccountAvatarButton({
            */
           footer={
             listed.length > 0 ? (
-              <p className="text-cp-small text-ink-soft leading-relaxed">
-                A cookbook you bought is saved in this browser.{" "}
+              <p className="text-center text-cp-small">
                 <Link
                   href="/projects"
-                  className="underline underline-offset-2"
+                  className="text-ink-soft underline underline-offset-2"
                   onClick={() => setShowLogin(false)}
                 >
-                  Open it
-                </Link>{" "}
-                without signing in.
+                  Open your cookbook without signing in
+                </Link>
               </p>
             ) : undefined
           }
