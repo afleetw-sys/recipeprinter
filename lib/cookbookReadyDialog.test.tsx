@@ -97,11 +97,32 @@ describe("the cookbook print dialog", () => {
     expect(save().disabled).toBe(false);
   });
 
-  it("says what will happen when the answers do not suit the destination", () => {
+  it("clears the shortcut once an answer no longer suits it, rather than leaving a stale claim", () => {
     renderDialog(95);
     fillInFor("home");
     fireEvent.click(pill("Edge to edge"));
-    expect(screen.getByText(/cut off/)).toBeTruthy();
+    // "Fill in for Home" sitting over a file Home can't use would be a claim
+    // the file doesn't back up. Resetting it is more honest than a note under
+    // controls that still say "Home".
+    expect(screen.getByRole("button", { name: /fill in for/i }).textContent).toContain(
+      "Choose a printer",
+    );
+    expect(screen.queryByText(/cut off/)).toBeNull();
+    // Not a lock either direction: the book itself is untouched.
+    expect(pill("Edge to edge").checked).toBe(true);
+    expect(save().disabled).toBe(false);
+  });
+
+  it("leaves the shortcut alone when the new answer is still a book that destination makes", () => {
+    renderDialog(95);
+    // Lulu offers both of its own books — switching between them is not a
+    // disagreement, so the shortcut should survive it.
+    fillInFor("lulu");
+    fireEvent.click(pill("Hardcover"));
+    fireEvent.click(screen.getByRole("button", { name: /fill in for/i }));
+    expect(screen.getByRole("menuitemradio", { name: "Lulu" }).getAttribute("aria-checked")).toBe(
+      "true",
+    );
   });
 
   it("never calls the book a product we guessed at, whoever is printing it", () => {

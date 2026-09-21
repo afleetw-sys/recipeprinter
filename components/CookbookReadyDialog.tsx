@@ -130,7 +130,19 @@ export function CookbookReadyDialog({
     onExportAnother?.();
   };
   const changeChoice = (patch: Partial<BookChoice>) => {
-    setChoice((current) => ({ ...current, ...patch }));
+    const next = { ...choice, ...patch };
+    setChoice(next);
+    // The destination was only ever a shortcut that filled in a book to match
+    // it — once the cook picks a different one by hand, "Fill in for Lulu"
+    // sitting above a file Lulu doesn't take is a stale claim, not a shortcut.
+    // Clearing it (rather than leaving the soft warning below to do the work)
+    // means the dropdown never disagrees with the book it's next to. Left
+    // alone while the choice is still incomplete (`presetForChoice` null) —
+    // there's nothing to disagree with yet.
+    const nextPreset = presetForChoice(next);
+    if (destinationId && nextPreset && !getPrintDestination(destinationId).presetIds.includes(nextPreset.id)) {
+      setDestinationId(null);
+    }
     onExportAnother?.();
   };
   const destination = destinationId ? getPrintDestination(destinationId) : null;
