@@ -407,6 +407,19 @@ export interface CookbookFrontMatter {
   body?: string;
   /** Optional closing line, e.g. "— The Smith Family". */
   signature?: string;
+  /** A full-bleed photo in place of the page's words — the opening page's
+      counterpart to a chapter opener's photo-only facing page. Heading/body/
+      signature are kept rather than cleared when this is set, so turning the
+      photo off hands back exactly what was written. */
+  imageUrl?: string;
+  /** A curated collage instead of one photo. Takes precedence over `imageUrl`
+      when `layout` is "collage" — mirrors `CoverConfig.gridImages`. */
+  gridImages?: string[];
+  /** "typographic" (default) prints the heading/body/signature; "photo"/
+      "collage" prints the image full-bleed with no text at all. Same union as
+      `CoverConfig.layout` on purpose — this travels through that shape on its
+      way to and from the shared cover editor and `CoverFace`. */
+  layout?: "typographic" | "photo" | "collage";
 }
 
 export interface PrintProjectSettings {

@@ -49,4 +49,40 @@ describe("the book's opening page", () => {
       openingPageFor({ frontMatter: { kind: "dedication", heading: "  ", body: "  " }, template }),
     ).toBeUndefined();
   });
+
+  it("carries the signature through, which the preview already showed", () => {
+    // coverForSide (app/print/page.tsx) maps signature -> author for the live
+    // preview; this function used to drop it, so the exported PDF was quietly
+    // missing the closing line the cook saw on screen.
+    const page = openingPageFor({
+      frontMatter: { kind: "dedication", heading: "For Grandma", signature: "— The Smiths" },
+      template,
+    });
+    expect(page?.author).toBe("— The Smiths");
+  });
+
+  it("is present for a photo alone, with no heading or body typed", () => {
+    // A full-page photo replaces the words rather than needing one first —
+    // see CoverFace's dedication branch.
+    const page = openingPageFor({
+      frontMatter: { kind: "dedication", layout: "photo", imageUrl: "https://example.com/a.jpg" },
+      template,
+    });
+    expect(page).toBeDefined();
+    expect(page?.imageUrl).toBe("https://example.com/a.jpg");
+    expect(page?.layout).toBe("photo");
+  });
+
+  it("carries a collage through the same way", () => {
+    const page = openingPageFor({
+      frontMatter: {
+        kind: "dedication",
+        layout: "collage",
+        gridImages: ["a.jpg", "b.jpg"],
+      },
+      template,
+    });
+    expect(page?.gridImages).toEqual(["a.jpg", "b.jpg"]);
+    expect(page?.layout).toBe("collage");
+  });
 });

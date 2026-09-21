@@ -30,12 +30,26 @@ export function openingPageFor({
   dedication?: CoverConfig;
   template: RecipePrintTemplate;
 }): CoverConfig | undefined {
-  if (frontMatter && (frontMatter.heading?.trim() || frontMatter.body?.trim())) {
+  const hasContent =
+    frontMatter &&
+    (frontMatter.heading?.trim() ||
+      frontMatter.body?.trim() ||
+      frontMatter.signature?.trim() ||
+      frontMatter.imageUrl ||
+      frontMatter.gridImages?.length);
+  if (frontMatter && hasContent) {
     return {
       title:
         frontMatter.heading?.trim() ||
         (frontMatter.kind === "dedication" ? "Dedication" : "Introduction"),
       blurb: frontMatter.body,
+      // Dropped here previously, which the live preview never did (see
+      // `coverForSide` in app/print/page.tsx) — the exported PDF was quietly
+      // missing the signature line the cook saw on screen.
+      author: frontMatter.signature,
+      imageUrl: frontMatter.imageUrl,
+      gridImages: frontMatter.gridImages,
+      layout: frontMatter.layout,
       template,
     };
   }

@@ -1561,6 +1561,9 @@ export default function PrintPage() {
             (frontMatter.kind === "dedication" ? "Dedication" : "Introduction"),
           blurb: frontMatter.body,
           author: frontMatter.signature,
+          imageUrl: frontMatter.imageUrl,
+          gridImages: frontMatter.gridImages,
+          layout: frontMatter.layout,
           template,
         };
       }
@@ -1582,6 +1585,9 @@ export default function PrintPage() {
               heading: cover.title || undefined,
               body: cover.blurb,
               signature: cover.author || undefined,
+              imageUrl: cover.imageUrl,
+              gridImages: cover.gridImages,
+              layout: cover.layout,
             }
           : undefined,
       );

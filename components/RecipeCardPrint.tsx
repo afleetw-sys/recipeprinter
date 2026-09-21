@@ -1832,9 +1832,65 @@ export const CoverFace = memo(function CoverFace({
     ) : null;
   }
 
-  // Dedication: a quiet front-matter page on the template's own paper — a short,
-  // centered dedication line, no photo. Shares the back cover's paper treatment.
+  // Dedication: a quiet front-matter page on the template's own paper — a
+  // short, centered dedication line — UNLESS a photo has been chosen for it,
+  // in which case it prints as a full-bleed image with no text at all, the
+  // opening page's counterpart to a chapter opener's photo-only facing page.
+  // Heading/body/signature stay in `draft` either way; only the render
+  // differs, so turning the photo off hands back exactly what was written.
   if (side === "dedication") {
+    const dedicationGridImages = (draft.gridImages ?? []).filter(Boolean);
+    const dedicationLayout =
+      draft.layout ??
+      (dedicationGridImages.length > 0 ? "collage" : draft.imageUrl ? "photo" : "typographic");
+    const dedicationMode =
+      dedicationLayout === "collage" && dedicationGridImages.length > 0
+        ? "grid"
+        : dedicationLayout === "photo" && draft.imageUrl
+          ? "photo"
+          : "none";
+
+    if (dedicationMode !== "none") {
+      const { columns: dedicationGridColumns, firstSpans: dedicationGridFirstSpans } =
+        photoGridLayout(dedicationGridImages.length);
+      return (
+        <article
+          className="recipe-card recipe-card--cover recipe-card--cover-back recipe-card--cover-dedication"
+          data-cover-mode={dedicationMode}
+          data-preview-hidden={previewHidden ? "true" : undefined}
+        >
+          <div
+            className={`recipe-card__cover-photo ${dedicationMode === "grid" ? "recipe-card__cover-photo--grid" : ""}`}
+            style={
+              dedicationMode === "grid"
+                ? ({ "--cover-grid-cols": dedicationGridColumns } as CSSProperties)
+                : undefined
+            }
+            aria-hidden
+          >
+            {dedicationMode === "grid" &&
+              dedicationGridImages.slice(0, 6).map((image, index) => (
+                <span
+                  key={`${image}-${index}`}
+                  className={`recipe-card__cover-grid-cell ${
+                    dedicationGridFirstSpans && index === 0 ? "recipe-card__cover-grid-img--wide" : ""
+                  }`}
+                >
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img src={image} alt="" className="recipe-card__cover-grid-img" onLoad={(event) => markImageAvailable(event.currentTarget)} onError={(event) => markImageUnavailable(event.currentTarget)} />
+                  <span className="photo-unavailable-message">Photo unavailable</span>
+                </span>
+              ))}
+            {dedicationMode === "photo" && (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img src={draft.imageUrl} alt="" className="recipe-card__cover-image" onLoad={(event) => markImageAvailable(event.currentTarget)} onError={(event) => markImageUnavailable(event.currentTarget)} />
+            )}
+            {dedicationMode === "photo" && <span className="photo-unavailable-message">Photo unavailable</span>}
+          </div>
+        </article>
+      );
+    }
+
     return (
       <article
         className="recipe-card recipe-card--cover recipe-card--cover-back recipe-card--cover-dedication"

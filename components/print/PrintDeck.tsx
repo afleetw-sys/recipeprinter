@@ -505,7 +505,10 @@ export function PrintDeck(props: PrintDeckProps) {
         const cover = coverForSide(side);
         // The opening page's heading prints as "Dedication" when nobody types
         // one, so it is never an empty slot — it always has something to click.
+        // A full-page photo replaces the words rather than sitting behind
+        // them (see CoverFace), so nothing text-shaped is missing from it.
         if (side === "dedication") {
+          if (cover?.imageUrl || cover?.gridImages?.length) return [];
           return [!cover?.blurb && "message", !cover?.author && "signature"].filter(
             (name): name is string => Boolean(name),
           );
@@ -583,11 +586,13 @@ export function PrintDeck(props: PrintDeckProps) {
         : navItem.kind === "divider"
           ? renderCardPhotoControl(navItem.recipeId)
           : navItem.kind === "cover"
-            ? // Only the front cover draws a photo. The back cover and the
-              // opening page are paper with text on it; offering the button
-              // there saved an image that nothing ever rendered.
-              coverSideFromNavItem(navItem) === "front"
-              ? renderCoverPhotoControl("front")
+            ? // The back cover is paper with text on it; offering the button
+              // there saved an image that nothing ever rendered. The front
+              // cover and the opening page both draw one — the opening page's
+              // is a full-page photo that replaces its words (see CoverFace).
+              coverSideFromNavItem(navItem) === "front" ||
+              coverSideFromNavItem(navItem) === "dedication"
+              ? renderCoverPhotoControl(coverSideFromNavItem(navItem))
               : null
             : // The art pages: a full-page recipe photo, and a chapter's facing
               // art. These used to carry their own button ON the picture, which
