@@ -39,9 +39,13 @@ export function openingPageFor({
       frontMatter.gridImages?.length);
   if (frontMatter && hasContent) {
     return {
-      title:
-        frontMatter.heading?.trim() ||
-        (frontMatter.kind === "dedication" ? "Dedication" : "Introduction"),
+      // No "Dedication"/"Introduction" fallback: toggleDedication() (the only
+      // thing that creates this page) already seeds real heading text, so an
+      // empty one means the cook cleared it on purpose — matching what
+      // coverForSide (app/print/page.tsx) hands the live preview. Forcing a
+      // name back in here specifically would have meant the exported PDF
+      // disagreed with the on-screen page the cook approved.
+      title: frontMatter.heading?.trim() ?? "",
       blurb: frontMatter.body,
       // Dropped here previously, which the live preview never did (see
       // `coverForSide` in app/print/page.tsx) — the exported PDF was quietly

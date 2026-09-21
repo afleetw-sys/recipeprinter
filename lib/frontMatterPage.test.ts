@@ -29,14 +29,21 @@ describe("the book's opening page", () => {
     expect(page?.title).toBe("Introduction");
   });
 
-  it("names an untitled page by what kind it is", () => {
+  it("does not invent a heading when one was cleared on purpose", () => {
+    // toggleDedication() is the only thing that creates this page, and it
+    // always seeds real heading text — an empty one here can only mean the
+    // cook deleted it, not "never got a chance to type one". Forcing
+    // "Dedication"/"Introduction" back in was the bug: clearing the heading
+    // in the editor looked like it worked and then silently reappeared,
+    // because this function and coverForSide (app/print/page.tsx) both used
+    // to reintroduce it independently.
     expect(
       openingPageFor({ frontMatter: { kind: "dedication", body: "No heading." }, template })?.title,
-    ).toBe("Dedication");
+    ).toBe("");
     expect(
       openingPageFor({ frontMatter: { kind: "introduction", body: "No heading." }, template })
         ?.title,
-    ).toBe("Introduction");
+    ).toBe("");
   });
 
   it("is absent when nothing has been written", () => {

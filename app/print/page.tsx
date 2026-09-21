@@ -1547,9 +1547,12 @@ export default function PrintPage() {
       const frontMatter = projectMeta.meta.frontMatter;
       if (frontMatter) {
         return {
-          title:
-            frontMatter.heading ||
-            (frontMatter.kind === "dedication" ? "Dedication" : "Introduction"),
+          // No "Dedication"/"Introduction" fallback here: toggleDedication()
+          // already seeds real heading text on a fresh page, so an empty
+          // string only ever means the cook cleared it on purpose. Forcing a
+          // name back in was the bug — clearing the heading looked like it
+          // worked and then un-did itself the next render.
+          title: frontMatter.heading ?? "",
           blurb: frontMatter.body,
           author: frontMatter.signature,
           imageUrl: frontMatter.imageUrl,
