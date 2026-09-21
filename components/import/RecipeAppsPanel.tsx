@@ -134,19 +134,10 @@ function IntegrationCard({
       {/* `mt-auto` so the two buttons sit on one line when the descriptions
           wrap to different heights, which they do at most widths. */}
       <div className="mt-auto flex flex-col gap-cp-2">
-        <div className="flex flex-wrap items-center gap-cp-2">
-          <button
-            type="button"
-            onClick={onOpen}
-            disabled={busy}
-            // Opens with the product's name, and keeps the visible words inside
-            // the accessible name so voice control can say what it reads.
-            aria-label={`${action} from ${name}`}
-            className="btn btn-secondary btn-compact"
-          >
-            {busy && <SpinnerIcon size={ICON_SIZE.sm} />}
-            {action}
-          </button>
+        {/* The how-to sits ABOVE the action: you read how to get the file
+            before you are asked to open it, and the action then lands on the
+            same line as the buttons on cards with no how-to. */}
+        <div className="flex flex-col items-start gap-cp-2">
           {help && onToggleHelp && (
             /* The icon sits BESIDE the words, not instead of them. On its own
                an ⓘ is a guess; with the label it is a signpost, and the label
@@ -161,6 +152,18 @@ function IntegrationCard({
               {helpLabel}
             </button>
           )}
+          <button
+            type="button"
+            onClick={onOpen}
+            disabled={busy}
+            // Opens with the product's name, and keeps the visible words inside
+            // the accessible name so voice control can say what it reads.
+            aria-label={`${action} from ${name}`}
+            className="btn btn-secondary btn-compact"
+          >
+            {busy && <SpinnerIcon size={ICON_SIZE.sm} />}
+            {action}
+          </button>
         </div>
 
         {error && (
