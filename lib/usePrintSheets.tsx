@@ -14,6 +14,7 @@ import {
   defaultSectionGridImages,
   resolveCardPhotoMode,
   resolveArtPhotoMode,
+  sectionHasArtPage,
   sectionDisplayTitle,
   type PhotoStyle,
 } from "@/lib/project";
@@ -936,10 +937,7 @@ export function usePrintSheets({
                 ? section.artGridImages
                 : defaultSectionGridImages(ownImages)
               : [];
-          const hasFacing =
-            (artMode === "photo" && Boolean(artPhoto)) ||
-            (artMode === "grid" && artGridImages.length > 0) ||
-            Boolean(section.artCaption?.trim());
+          const hasFacing = sectionHasArtPage(section, ownImages, photoStyle);
           if (hasFacing) {
             out.push({
               id: `sheet-section-photo-${section.id}`,
