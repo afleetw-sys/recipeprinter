@@ -2,7 +2,12 @@
 import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { afterEach, describe, expect, it } from "vitest";
 import { CookbookReadyDialog } from "@/components/CookbookReadyDialog";
-import { PHOTOS_HELP, PRINT_DESTINATIONS } from "@/lib/printDestinations";
+import {
+  PHOTOS_HELP,
+  PRINT_DESTINATIONS,
+  getPrintDestination,
+  type PrintDestinationId,
+} from "@/lib/printDestinations";
 
 afterEach(cleanup);
 
@@ -22,8 +27,12 @@ function renderDialog(pageCount: number) {
 }
 
 const pill = (label: string) => screen.getByLabelText(label) as HTMLInputElement;
-const fillInFor = (id: string) =>
-  fireEvent.change(screen.getByLabelText("Fill in for"), { target: { value: id } });
+// The shortcut is a menu: open it, then pick a row. An empty id clears it.
+const fillInFor = (id: string) => {
+  fireEvent.click(screen.getByRole("button", { name: /fill in for/i }));
+  const name = id ? getPrintDestination(id as PrintDestinationId).name : "None";
+  fireEvent.click(screen.getByRole("menuitemradio", { name }));
+};
 const save = () => screen.getByRole("button", { name: /save pdf/i }) as HTMLButtonElement;
 
 describe("the cookbook print dialog", () => {
@@ -31,11 +40,12 @@ describe("the cookbook print dialog", () => {
     renderDialog(95);
     const dialog = screen.getByRole("dialog");
     expect(dialog.textContent).not.toMatch(/[$£€]|\bfrom about\b|\bcost/i);
+    fireEvent.click(screen.getByRole("button", { name: /fill in for/i }));
     for (const destination of PRINT_DESTINATIONS) {
-      expect(screen.getByRole("option", { name: destination.name })).toBeTruthy();
+      expect(screen.getByRole("menuitemradio", { name: destination.name })).toBeTruthy();
     }
     // Optional: it starts on nothing, and the questions are all there without it.
-    expect((screen.getByLabelText("Fill in for") as HTMLSelectElement).value).toBe("");
+    expect(screen.getByRole("button", { name: /fill in for/i }).textContent).toContain("Choose a printer");
     expect(screen.getByRole("radiogroup", { name: "How it will be bound" })).toBeTruthy();
   });
 
@@ -100,6 +110,25 @@ describe("the cookbook print dialog", () => {
       fillInFor(destination.id);
       expect(screen.getByRole("dialog").textContent).not.toMatch(/spiral cookbook|hardcover book/i);
     }
+  });
+
+  it("puts the way out to the place's site under the menu once one is chosen", () => {
+    renderDialog(95);
+    expect(screen.queryByRole("button", { name: /^open /i })).toBeNull();
+    fillInFor("copy-shop");
+    expect(screen.getByRole("button", { name: /open staples/i })).toBeTruthy();
+    fillInFor("home");
+    expect(screen.queryByRole("button", { name: /^open /i })).toBeNull();
+  });
+
+  it("closes the menu when a choice is made, and on Escape", () => {
+    renderDialog(95);
+    fireEvent.click(screen.getByRole("button", { name: /fill in for/i }));
+    expect(screen.getByRole("menu")).toBeTruthy();
+    fireEvent.keyDown(document, { key: "Escape" });
+    expect(screen.queryByRole("menu")).toBeNull();
+    fillInFor("lulu");
+    expect(screen.queryByRole("menu")).toBeNull();
   });
 
   it("keeps the answers when the shortcut is cleared", () => {

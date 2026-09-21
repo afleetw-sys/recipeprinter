@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 
 import { Dialog } from "@/components/Dialog";
-import { Select } from "@/components/Select";
+import { MenuSelect } from "@/components/MenuSelect";
 import {
   CheckIcon,
   ExternalIcon,
@@ -312,25 +312,16 @@ function ChooseBook({
   return (
     <>
       <div className="cookbook-ready__preset">
-        <label htmlFor="cookbook-preset" className="cookbook-ready__preset-label">
-          Fill in for
-        </label>
-        <Select
-          id="cookbook-preset"
-          variant="compact"
-          value={destination?.id ?? ""}
+        <MenuSelect
+          label="Fill in for"
+          placeholder="Choose a printer"
+          clearLabel="None"
           disabled={busy}
-          onChange={(event) =>
-            onChooseDestination(event.target.value ? (event.target.value as PrintDestinationId) : null)
-          }
-        >
-          <option value="">Choose a printer</option>
-          {PRINT_DESTINATIONS.map((option) => (
-            <option key={option.id} value={option.id}>
-              {option.name}
-            </option>
-          ))}
-        </Select>
+          value={destination?.id ?? null}
+          options={PRINT_DESTINATIONS.map((option) => ({ value: option.id, label: option.name }))}
+          onChange={onChooseDestination}
+        />
+        {/* Under the menu, where the place it belongs to is. */}
         {printer && (
           <button
             type="button"

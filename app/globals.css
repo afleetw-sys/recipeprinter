@@ -714,24 +714,66 @@
   cursor: default;
 }
 
-/* The optional shortcut: one quiet line, smaller than the questions under it. */
+/* The optional shortcut: one quiet line, smaller than the questions under it,
+   with the way out to the place's own site beneath. */
 .cookbook-ready__preset {
-  display: flex;
-  align-items: center;
-  flex-wrap: wrap;
-  gap: .4rem .6rem;
-}
-.cookbook-ready__preset-label {
-  color: var(--cp-ink-soft);
-  font-size: var(--cp-fs-caption);
-}
-.cookbook-ready__preset .select-shell {
-  min-width: 11rem;
+  display: grid;
+  justify-items: start;
+  gap: .4rem;
 }
 .cookbook-ready__place {
   display: inline-flex;
   align-items: center;
   gap: .25rem;
+}
+/* MenuSelect: a label and a trigger on one line, the list under the trigger. The
+   list itself is the shared `cp-menu` surface. */
+.menu-select {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: .5rem;
+}
+.menu-select__label {
+  color: var(--cp-ink-soft);
+  font-size: var(--cp-fs-caption);
+}
+.menu-select__trigger {
+  display: inline-flex;
+  align-items: center;
+  gap: .5rem;
+  min-height: 2rem;
+  padding: .3rem .6rem;
+  border: 1px solid var(--cp-line-strong);
+  border-radius: var(--cp-radius-control);
+  background: var(--cp-page);
+  color: var(--cp-ink);
+  font-size: var(--cp-fs-small);
+  font-weight: 700;
+  cursor: pointer;
+}
+.menu-select__trigger:hover:not(:disabled) {
+  border-color: var(--cp-accent);
+}
+.menu-select__trigger:focus-visible {
+  outline: var(--cp-focus-ring);
+  outline-offset: var(--cp-focus-ring-offset);
+}
+.menu-select__trigger:disabled {
+  opacity: .6;
+  cursor: default;
+}
+.menu-select__menu {
+  position: absolute;
+  top: calc(100% + 4px);
+  right: 0;
+  min-width: 11rem;
+}
+.menu-select__check {
+  display: inline-grid;
+  place-items: center;
+  width: 1rem;
+  flex: 0 0 auto;
 }
 /* A quiet heads-up, not an alert: the cook can still save what they chose. */
 .cookbook-ready__note {
