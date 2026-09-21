@@ -1832,12 +1832,13 @@ export const CoverFace = memo(function CoverFace({
     ) : null;
   }
 
-  // Dedication: a quiet front-matter page on the template's own paper — a
-  // short, centered dedication line — UNLESS a photo has been chosen for it,
-  // in which case it prints as a full-bleed image with no text at all, the
-  // opening page's counterpart to a chapter opener's photo-only facing page.
-  // Heading/body/signature stay in `draft` either way; only the render
-  // differs, so turning the photo off hands back exactly what was written.
+  // Dedication: a quiet front-matter page — a short, centered dedication
+  // line, on the template's own paper by default or over a chosen photo/
+  // collage. The photo sits BEHIND the words, like a front cover's own photo
+  // layout, rather than replacing them: choosing one is a background choice,
+  // not an instruction to delete what was written. Each line (heading, body,
+  // signature) clears independently, the same way a back cover's already do —
+  // an emptied line simply prints nothing, whether or not a photo is set.
   if (side === "dedication") {
     const dedicationGridImages = (draft.gridImages ?? []).filter(Boolean);
     const dedicationLayout =
@@ -1849,16 +1850,18 @@ export const CoverFace = memo(function CoverFace({
         : dedicationLayout === "photo" && draft.imageUrl
           ? "photo"
           : "none";
+    const { columns: dedicationGridColumns, firstSpans: dedicationGridFirstSpans } =
+      photoGridLayout(dedicationGridImages.length);
 
-    if (dedicationMode !== "none") {
-      const { columns: dedicationGridColumns, firstSpans: dedicationGridFirstSpans } =
-        photoGridLayout(dedicationGridImages.length);
-      return (
-        <article
-          className="recipe-card recipe-card--cover recipe-card--cover-back recipe-card--cover-dedication"
-          data-cover-mode={dedicationMode}
-          data-preview-hidden={previewHidden ? "true" : undefined}
-        >
+    return (
+      <article
+        className="recipe-card recipe-card--cover recipe-card--cover-back recipe-card--cover-dedication"
+        data-cover-mode={dedicationMode}
+        data-preview-hidden={previewHidden ? "true" : undefined}
+      >
+        {dedicationMode === "none" ? (
+          <div className="recipe-card__cover-photo recipe-card__cover-photo--paper" aria-hidden />
+        ) : (
           <div
             className={`recipe-card__cover-photo ${dedicationMode === "grid" ? "recipe-card__cover-photo--grid" : ""}`}
             style={
@@ -1887,16 +1890,7 @@ export const CoverFace = memo(function CoverFace({
             )}
             {dedicationMode === "photo" && <span className="photo-unavailable-message">Photo unavailable</span>}
           </div>
-        </article>
-      );
-    }
-
-    return (
-      <article
-        className="recipe-card recipe-card--cover recipe-card--cover-back recipe-card--cover-dedication"
-        data-preview-hidden={previewHidden ? "true" : undefined}
-      >
-        <div className="recipe-card__cover-photo recipe-card__cover-photo--paper" aria-hidden />
+        )}
         <TemplateDecoration
           template={template ?? draft.template}
           show={showDecoration && (template ?? draft.template) !== "bistro"}
@@ -1908,7 +1902,10 @@ export const CoverFace = memo(function CoverFace({
           {coverField({
             name: "dedication-heading",
             value: draft.title,
-            fallback: "Dedication",
+            // No fallback: a heading cleared on purpose prints nothing, the
+            // same as the body and signature below it. Only a page that has
+            // never been touched carries real text here (toggleDedication
+            // seeds it), so this never surprises a fresh page with blankness.
             placeholder: "Opening page heading",
             ariaLabel: "Opening page heading",
             className: "recipe-card__cover-dedication-label",

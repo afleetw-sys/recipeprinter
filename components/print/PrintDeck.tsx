@@ -503,13 +503,10 @@ export function PrintDeck(props: PrintDeckProps) {
       if (navItem.kind === "cover") {
         const side = coverSideFromNavItem(navItem);
         const cover = coverForSide(side);
-        // The opening page's heading prints as "Dedication" when nobody types
-        // one, so it is never an empty slot — it always has something to click.
-        // A full-page photo replaces the words rather than sitting behind
-        // them (see CoverFace), so nothing text-shaped is missing from it.
+        // A photo behind the opening page's words (see CoverFace) doesn't
+        // make them optional — it's a background choice, not a replacement.
         if (side === "dedication") {
-          if (cover?.imageUrl || cover?.gridImages?.length) return [];
-          return [!cover?.blurb && "message", !cover?.author && "signature"].filter(
+          return [!cover?.title && "heading", !cover?.blurb && "message", !cover?.author && "signature"].filter(
             (name): name is string => Boolean(name),
           );
         }

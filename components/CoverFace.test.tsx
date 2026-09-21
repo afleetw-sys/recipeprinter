@@ -48,7 +48,7 @@ const renderDedication = (patch: Partial<CoverConfig>) =>
     />,
   );
 
-describe("the opening page's full-page photo", () => {
+describe("the opening page's photo", () => {
   it("prints its text by default, with no photo chosen", () => {
     const html = renderDedication({ blurb: "For the ones who taught us." });
     expect(html).toContain("For the ones who taught us.");
@@ -56,7 +56,7 @@ describe("the opening page's full-page photo", () => {
     expect(html).not.toContain("recipe-card__cover-image");
   });
 
-  it("replaces the text entirely once a photo is chosen", () => {
+  it("sits behind the words rather than replacing them", () => {
     const html = renderDedication({
       layout: "photo",
       imageUrl: "https://example.com/a.jpg",
@@ -65,24 +65,28 @@ describe("the opening page's full-page photo", () => {
     });
     expect(html).toContain("recipe-card__cover-image");
     expect(html).toContain("https://example.com/a.jpg");
-    // The words are still in the data (so turning the photo back off hands
-    // them back), but none of them are on the page.
-    expect(html).not.toContain("For the ones who taught us.");
-    expect(html).not.toContain("The Smiths");
-    expect(html).not.toContain("recipe-card__cover-dedication-label");
+    // Choosing a photo is a background choice, not an instruction to delete
+    // what was written — both the photo and every line are on the page.
+    expect(html).toContain("For the ones who taught us.");
+    expect(html).toContain("The Smiths");
+    expect(html).toContain("recipe-card__cover-dedication-label");
   });
 
-  it("prints a collage the same way", () => {
-    const html = renderDedication({ layout: "collage", gridImages: ["a.jpg", "b.jpg"] });
+  it("prints a collage the same way, words still on top of it", () => {
+    const html = renderDedication({
+      layout: "collage",
+      gridImages: ["a.jpg", "b.jpg"],
+      blurb: "For the ones who taught us.",
+    });
     expect(html).toContain("recipe-card__cover-grid-cell");
     expect(html).toContain("recipe-card__cover-photo--grid");
-    expect(html).not.toContain("recipe-card__cover-dedication-label");
+    expect(html).toContain("For the ones who taught us.");
   });
 
-  it("falls back to text when the layout is set back to typographic, even with a photo still on file", () => {
+  it("falls back to paper when the layout is set back to typographic, even with a photo still on file", () => {
     // Turning the photo off in the picker clears imageUrl in practice, but the
     // layout flag is what actually decides the render — a stray URL left
-    // behind must not resurrect the photo page.
+    // behind must not resurrect the photo.
     const html = renderDedication({
       layout: "typographic",
       imageUrl: "https://example.com/a.jpg",
@@ -90,5 +94,27 @@ describe("the opening page's full-page photo", () => {
     });
     expect(html).not.toContain("recipe-card__cover-image");
     expect(html).toContain("For the ones who taught us.");
+  });
+});
+
+describe("the opening page's lines, cleared one at a time", () => {
+  it("prints nothing for a heading cleared on purpose, same as the body and signature already do", () => {
+    const html = renderDedication({ title: "", blurb: "", author: "" });
+    expect(html).not.toContain("recipe-card__cover-dedication-label");
+    expect(html).not.toContain("recipe-card__cover-dedication-text");
+    expect(html).not.toContain("recipe-card__cover-dedication-sign");
+    expect(html).not.toMatch(/>Dedication</);
+  });
+
+  it("clears independently of whether a photo is set", () => {
+    const html = renderDedication({
+      title: "",
+      blurb: "Still here.",
+      layout: "photo",
+      imageUrl: "https://example.com/a.jpg",
+    });
+    expect(html).toContain("recipe-card__cover-image");
+    expect(html).not.toContain("recipe-card__cover-dedication-label");
+    expect(html).toContain("Still here.");
   });
 });
