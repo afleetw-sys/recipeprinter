@@ -762,11 +762,13 @@
   opacity: .6;
   cursor: default;
 }
-/* Portalled and placed from the trigger (see MenuSelect), so it is fixed and
+/* An AnchoredMenu is portalled and placed from its trigger, so it is fixed and
    sits ABOVE dialogs: the shared menu layer is deliberately below them. */
-.menu-select__menu {
+.anchored-menu {
   position: fixed;
   z-index: calc(var(--z-dialog) + 1);
+}
+.menu-select__menu {
   min-width: 11rem;
 }
 .menu-select__check {
