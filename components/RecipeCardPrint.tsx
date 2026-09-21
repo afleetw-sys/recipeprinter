@@ -1394,6 +1394,10 @@ export const DividerFace = memo(function DividerFace({
    * leave it alone.
    */
   const derivedIntro = useMemo(() => chapterIntroFromRecipes(recipeTitles), [recipeTitles]);
+  // `""` is a description the cook removed: it prints nothing, and neither the
+  // read-mode fallback nor the field's prompt may quietly bring the recipes'
+  // names back. Only an intro that was never written (`undefined`) follows them.
+  const introRemoved = (inlineEdit?.intro ?? intro) === "";
 
   /**
    * Move the caret between this page's lines.
@@ -1556,22 +1560,30 @@ export const DividerFace = memo(function DividerFace({
         })}
         {openerField({
           name: "intro",
-          value: inlineEdit?.intro ?? intro ?? "",
-          // The prompt is the line that would actually print, not a generic
-          // "write something here" — an untouched intro is a decision, so show
-          // its result rather than hiding it until the cook clicks away. The
-          // way back once it HAS been typed over lives in the page toolbar,
-          // with the rest of the app's chrome: a control in here would be drawn
-          // at the card's print scale, which is a third of a legible size.
-          placeholder: derivedIntro,
-          ariaLabel: "Chapter intro",
+          // Opening the auto line puts its words IN the field. As a placeholder
+          // they were only a picture of text: the box opened empty, so there was
+          // nothing to select and delete, and no way to reach "removed". Left
+          // unchanged they are never written back (nothing is stored until an
+          // edit happens), so the line keeps following the chapter's recipes;
+          // emptying the field is what removes it.
+          value: inlineEdit?.intro ?? intro ?? (editingField === "intro" ? derivedIntro : ""),
+          // While untouched the prompt is the line that would actually print,
+          // not a generic "write something here" — an untouched description is a
+          // decision, so show its result rather than hiding it until the cook
+          // clicks away. Once it has been removed nothing prints, so the prompt
+          // is a plain invitation like every other empty field. The way back to
+          // the recipes' names lives in the page toolbar, with the rest of the
+          // app's chrome: a control in here would be drawn at the card's print
+          // scale, which is a third of a legible size.
+          placeholder: introRemoved ? "Section description" : derivedIntro,
+          ariaLabel: "Chapter description",
           className: "recipe-card__chapter-intro",
           // Two rows, unlike the lines above it: `field-sizing: content` grows
           // the box to the text (or the prompt) where it is supported and
           // ignores `rows` entirely, and where it isn't, the derived line's two
           // lines are what has to fit.
           rows: 2,
-          fallback: derivedIntro,
+          fallback: introRemoved ? undefined : derivedIntro,
           onChange: (value) => inlineEdit?.onIntroChange?.(value),
         })}
       </div>
@@ -1854,11 +1866,21 @@ export const CoverFace = memo(function CoverFace({
   // Responsive collage: columns + banner adapt to the photo count so any number
   // (2, 3, 5, …) fills the frame with no empty cells. Shared with section grids.
   const { columns: gridColumns, firstSpans: gridFirstSpans } = photoGridLayout(gridImages.length);
+  // A cover with nothing written on it has no text to read, so nothing that
+  // exists for the text is left standing: the scrim that darkens the photo, the
+  // plate that backs it, its rule and its ornament (see `data-cover-text` in
+  // print.css). Not while the fields are revealed or one is open, when the empty
+  // lines have to be there to be typed into.
+  const coverTextEmpty =
+    ![draft.title, draft.subtitle, draft.author, draft.edition].some((line) => line?.trim()) &&
+    !showEmpty &&
+    editingField === null;
 
   return (
     <article
       className="recipe-card recipe-card--cover recipe-card--cover-front"
       data-cover-mode={coverMode}
+      data-cover-text={coverTextEmpty ? "none" : undefined}
       data-preview-hidden={previewHidden ? "true" : undefined}
     >
       <div

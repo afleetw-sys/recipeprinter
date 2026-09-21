@@ -109,6 +109,7 @@ export function recipePagePlacementHasValues(placement: RecipePagePlacement): bo
     placement.heroFocusY !== undefined ||
     placement.heroZoom !== undefined ||
     placement.showPhoto !== undefined ||
+    placement.showSourceUrl !== undefined ||
     (placement.photoHistory?.length ?? 0) > 0
   );
 }
@@ -222,7 +223,10 @@ export function normalizeProjectMeta(value: unknown): ProjectMeta {
           gridImages: Array.isArray(section.gridImages)
             ? section.gridImages.filter((url): url is string => typeof url === "string" && Boolean(url))
             : undefined,
-          intro: cleanText(section.intro),
+          // `undefined` prints the recipes' names; `""` is a line the cook took
+          // away and prints nothing. Blank-but-present text is kept as `""`
+          // rather than dropped, or a removed intro would come back on reload.
+          intro: typeof section.intro === "string" ? (section.intro.trim() ? section.intro : "") : undefined,
           // Named cookbook sections always receive an opener. Keep the field
           // in persisted data for backward compatibility, but never preserve
           // an old user-disabled value.
@@ -664,13 +668,16 @@ export function useProjectMeta() {
     [update],
   );
 
-  /** Chapter-opener intro line for a section (cookbook mode). */
+  /** Chapter-opener description line for a section (cookbook mode).
+      `undefined` follows the chapter's recipes (the derived line); `""` is the
+      cook having removed it, which prints nothing. The two are not the same, so
+      neither is coerced into the other here. */
   const setSectionIntro = useCallback(
     (sectionId: string, intro: string | undefined) => {
       update((current) => ({
         ...current,
         sections: current.sections.map((section) =>
-          section.id === sectionId ? { ...section, intro: intro || undefined } : section,
+          section.id === sectionId ? { ...section, intro } : section,
         ),
       }));
     },
@@ -950,6 +957,9 @@ export function useProjectMeta() {
         if (placement.heroFocusX !== undefined) kept.heroFocusX = placement.heroFocusX;
         if (placement.heroFocusY !== undefined) kept.heroFocusY = placement.heroFocusY;
         if (placement.heroZoom !== undefined) kept.heroZoom = placement.heroZoom;
+        // The link override is not a photo placement either. Picking a book-wide
+        // Photos option must not quietly turn one recipe's link back on or off.
+        if (placement.showSourceUrl !== undefined) kept.showSourceUrl = placement.showSourceUrl;
         // The photos this recipe has worn before, which are not a PLACEMENT at
         // all — they are the picker's "put the old one back" list, and the only
         // record that an imported photo replaced by an upload ever existed.
@@ -957,6 +967,25 @@ export function useProjectMeta() {
         // threw away every photo anyone had swapped out.
         if (placement.photoHistory?.length) kept.photoHistory = placement.photoHistory;
         if (recipePagePlacementHasValues(kept)) next[id] = kept;
+      }
+      return { ...current, itemPlacements: next };
+    });
+  }, [update]);
+
+  /** Drops every per-recipe link override so the whole book follows the book-wide
+      "Recipe link" setting again -- the link's counterpart to
+      `clearItemPhotoOverrides`, used when that setting is toggled. Nothing else
+      in a placement is touched. */
+  const clearItemLinkOverrides = useCallback(() => {
+    update((current) => {
+      const placements = current.itemPlacements;
+      if (!placements || !Object.values(placements).some((p) => p.showSourceUrl !== undefined)) {
+        return current;
+      }
+      const next: Record<string, RecipePagePlacement> = {};
+      for (const [id, placement] of Object.entries(placements)) {
+        const { showSourceUrl: _dropped, ...rest } = placement;
+        if (recipePagePlacementHasValues(rest)) next[id] = rest;
       }
       return { ...current, itemPlacements: next };
     });
@@ -1026,10 +1055,14 @@ export function useProjectMeta() {
     (itemId: string, mode: PhotoStyle, heroImageUrl?: string) => {
       update((current) => {
         const map = { ...(current.itemPlacements ?? {}) };
+        // Rewrites the photo half of the placement; the link override is not part
+        // of it and has to ride along.
+        const showSourceUrl = map[itemId]?.showSourceUrl;
+        const link = showSourceUrl !== undefined ? { showSourceUrl } : {};
         if (mode === "full") {
-          map[itemId] = { pageLayout: "image-spread", ...(heroImageUrl ? { heroImageUrl } : {}) };
+          map[itemId] = { pageLayout: "image-spread", ...(heroImageUrl ? { heroImageUrl } : {}), ...link };
         } else {
-          map[itemId] = { pageLayout: "full", showPhoto: mode === "card" };
+          map[itemId] = { pageLayout: "full", showPhoto: mode === "card", ...link };
         }
         return { ...current, itemPlacements: map };
       });
@@ -1069,6 +1102,7 @@ export function useProjectMeta() {
     setItemPlacement,
     setItemPhotoMode,
     clearItemPhotoOverrides,
+    clearItemLinkOverrides,
     clearSectionPhotoModes,
     setPhotoStyle,
     startNewProject,

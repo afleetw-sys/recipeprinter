@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { adaptCookPilotRecipe, adaptCookPilotRecipes } from "@/lib/cookpilot";
+import { adaptCookPilotRecipe, adaptCookPilotRecipes, sourceUrlFromResponse } from "@/lib/cookpilot";
 
 // A minimal CookPilot RecipeData (section-based) with one ingredient and one step.
 function recipeData(title: string) {
@@ -109,5 +109,32 @@ describe("a section named after the dish", () => {
     });
     expect(recipe?.instructions[0].section).toBeUndefined();
     expect(recipe?.instructions[1].section).toBe("To serve");
+  });
+});
+
+describe("sourceUrlFromResponse", () => {
+  it("takes the link CookPilot found in pasted text", () => {
+    expect(sourceUrlFromResponse({ recipe: recipeData("Bread"), sourceURL: "https://example.com/bread" })).toBe(
+      "https://example.com/bread",
+    );
+  });
+
+  it("is undefined when the response carries none", () => {
+    expect(sourceUrlFromResponse({ recipe: recipeData("Bread") })).toBeUndefined();
+    expect(sourceUrlFromResponse(null)).toBeUndefined();
+    expect(sourceUrlFromResponse("nope")).toBeUndefined();
+  });
+
+  it("refuses anything that is not an absolute http(s) address, since it is printed", () => {
+    expect(sourceUrlFromResponse({ sourceURL: "example.com/bread" })).toBeUndefined();
+    expect(sourceUrlFromResponse({ sourceURL: "javascript:alert(1)" })).toBeUndefined();
+    expect(sourceUrlFromResponse({ sourceURL: "  " })).toBeUndefined();
+  });
+
+  it("lands on the adapted recipe as its source", () => {
+    const body = { recipe: recipeData("Bread"), sourceURL: "https://www.example.com/bread" };
+    const recipe = adaptCookPilotRecipe(body, sourceUrlFromResponse(body));
+    expect(recipe?.sourceUrl).toBe("https://www.example.com/bread");
+    expect(recipe?.sourceName).toBe("example.com");
   });
 });

@@ -1444,6 +1444,23 @@
   cursor: pointer;
 }
 
+/* The reveal button names what it reveals ("Add link, time, servings, note"),
+   which is wider than a phone's page. It is the one label allowed to wrap, so
+   its group gives up the "never squish" rule and the words break onto a second
+   line inside the bar instead of running out of it. */
+.recipe-page-toolbar__group--fields {
+  flex: 0 1 auto;
+  min-width: 0;
+}
+
+.recipe-page-toolbar__btn--fields {
+  min-width: 0;
+  padding-block: 4px;
+  line-height: 1.25;
+  text-align: center;
+  white-space: normal;
+}
+
 /* Square, for the ones that are a glyph and nothing else. */
 .recipe-page-toolbar__btn--icon {
   width: 28px;
@@ -5070,6 +5087,18 @@
   .has-unavailable-photo > .photo-unavailable-message {
     font-size: 0;
   }
+}
+
+/* A cover with nothing written on it. The text is gone, so everything that was
+   there for the text goes with it: the scrim that darkens the photo behind it,
+   the plate that backs it on the paper themes, and the lockup's own rule and
+   ornament. What belongs to the cover rather than to its words stays: the photo
+   or collage, and the template's accent (top band, frame, decoration). The
+   lockup is one box holding all of the above, so hiding it leaves no padding
+   reserved either. Only set when nothing is being typed into; see CoverFace. */
+.recipe-card--cover-front[data-cover-text="none"] .recipe-card__cover-scrim,
+.recipe-card--cover-front[data-cover-text="none"] .recipe-card__cover-content {
+  display: none;
 }
 
 /* Photo-free cover — a proper typographic cover on the template's paper in its

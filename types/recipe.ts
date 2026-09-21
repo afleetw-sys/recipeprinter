@@ -344,6 +344,12 @@ export interface RecipePagePlacement {
       force this recipe's header photo on/off regardless. Ignored for
       `image-spread`, whose photo IS the facing page. */
   showPhoto?: boolean;
+  /** Per-recipe override of the book-wide "Recipe link" setting (cookbook mode),
+      the link's counterpart to `showPhoto`. `undefined` = follow the book;
+      `true`/`false` = force this recipe's source link on/off. Adding a link to
+      one recipe sets this on that recipe alone, so it never turns links on for
+      the rest of the book. */
+  showSourceUrl?: boolean;
   /**
    * Photos this recipe has worn, oldest first, minus whichever is current.
    *

@@ -50,10 +50,15 @@ function inlineFieldFrom(node: EventTarget | null): HTMLElement | null {
 export function TextFieldToolbar({
   inlineEdit,
   zoom = 1,
+  introReset,
 }: {
   inlineEdit?: RecipeCardInlineEdit;
   /** The deck's zoom. The bar grows with it — see `textBarScale`. */
   zoom?: number;
+  /** The way back from a chapter's own description to the line built from its
+      recipes' names. Present only while there is something to go back from; it
+      is offered on that one field and nowhere else. */
+  introReset?: { derived: string; onReset: () => void };
 }) {
   const [field, setField] = useState<HTMLElement | null>(null);
   const barRef = useRef<HTMLDivElement | null>(null);
@@ -119,6 +124,39 @@ export function TextFieldToolbar({
   useFloatingBarPlacement({ barRef, getAnchorRect, observe: field, active: Boolean(field) });
 
   if (!field || spansLines) return null;
+
+  // A chapter's description is a plain textarea with no formatting to offer, so
+  // the bar it gets holds the one thing that is specific to it.
+  if (field.classList.contains("recipe-card__chapter-intro")) {
+    if (!introReset) return null;
+    return createPortal(
+      <div
+        ref={barRef}
+        className="recipe-page-toolbar recipe-text-toolbar no-print"
+        style={{ "--rp-text-bar-scale": textBarScale(zoom) } as CSSProperties}
+        role="toolbar"
+        aria-label="Chapter description"
+        onMouseDown={(event) => event.preventDefault()}
+      >
+        <div className="recipe-page-toolbar__group">
+          <button
+            type="button"
+            className="recipe-page-toolbar__btn"
+            title={introReset.derived}
+            // On mousedown with the default prevented, like every control on
+            // this bar: a click would blur the field first and close it.
+            onMouseDown={(event) => {
+              event.preventDefault();
+              introReset.onReset();
+            }}
+          >
+            Use recipe names
+          </button>
+        </div>
+      </div>,
+      document.body,
+    );
+  }
 
   // Only a line has a kind to change. The title, the times, the note and the
   // link are themselves and cannot become headings.

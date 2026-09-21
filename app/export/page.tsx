@@ -409,7 +409,6 @@ function InteriorDocument({ payload }: { payload: ExportPayload }) {
             template={template}
             doubleSided={settings.doubleSided}
             cookbookMode={cookbookMode}
-            showSourceUrl={settings.showSourceUrl && anyRecipeHasSourceUrl}
             showDescription={settings.showDescription ?? true}
             showCutLines={settings.showCutLines && cardSize === "card-6x4"}
             tocKicker={settings.tocKicker}

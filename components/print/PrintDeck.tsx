@@ -27,6 +27,7 @@ import { MoveToSectionMenu } from "@/components/print/MoveToSectionMenu";
 import { ZoomControl } from "@/components/print/ZoomControl";
 import { ScaledPage } from "@/components/print/ScaledPage";
 import { formatRecipeTime } from "@/lib/time";
+import { recipeLinkOn } from "@/lib/recipeLink";
 import { gutterSideForRole } from "@/lib/cookbookPresets";
 import { chapterIntroFromRecipes, chapterRecipeTitles } from "@/lib/chapterIntro";
 import { composeNote } from "@/lib/recipeNote";
@@ -176,7 +177,6 @@ interface PrintDeckProps {
   showCutLines: boolean;
   showSourceUrl: boolean;
   setShowSourceUrl: Dispatch<SetStateAction<boolean>>;
-  sourceUrlOn: boolean;
   showDescription: boolean;
   /** No multi-recipe entitlement and not a cookbook — the one recipe a Free
       cook can hold. Only then is the page toolbar's link toggle unambiguous:
@@ -298,7 +298,6 @@ export function PrintDeck(props: PrintDeckProps) {
     showCutLines,
     showSourceUrl,
     setShowSourceUrl,
-    sourceUrlOn,
     showDescription,
     singleRecipeOnly,
     sheets,
@@ -395,7 +394,7 @@ export function PrintDeck(props: PrintDeckProps) {
     /**
      * Does this page have a field nobody can see yet?
      *
-     * "More fields" reveals the slots a page has not filled in. On a page where
+     * The reveal button shows the slots a page has not filled in. On a page where
      * everything IS filled in it reveals nothing, so offering it is offering a
      * button that does nothing — and the reveal is the button's whole job now
      * that the text is editable by clicking it.
@@ -405,54 +404,92 @@ export function PrintDeck(props: PrintDeckProps) {
      * which was a different question from whether anything was missing; now
      * that they edit by being clicked, it is the same question.
      */
-    const pageHasHiddenFields = (): boolean => {
+    /**
+     * The names of the fields this page has not filled in, in the order they
+     * appear on it. The button says them out loud ("Add link, time, servings"),
+     * because a generic "More fields" gave nobody a reason to press it, and it
+     * is also the answer to whether there is anything to offer: no names, no
+     * button. The same on every kind of page, so the toolbar never has to be
+     * learnt page by page.
+     */
+    const missingFieldNames = (): string[] => {
       if (navItem.kind === "recipe") {
         const recipe = items?.find((item) => item.id === navItem.recipeId)?.recipe;
-        if (!recipe) return false;
+        if (!recipe) return [];
         const cookbook = Boolean(projectMeta.meta.cookbookMode);
-        return (
-          recipe.ingredients.length === 0 ||
-          recipe.instructions.length === 0 ||
-          !formatRecipeTime(recipe.totalTime || recipe.cookTime || recipe.prepTime) ||
-          !(recipe.servings ?? recipe.yield) ||
-          // Ask what the note WOULD print, not whether the website blurb
-          // exists. The card shows `composeNote(description, note,
-          // showDescription)`, so a recipe that arrived with a blurb and no
-          // note of its own prints nothing once the website-description
-          // checkbox is off — an empty line with no way to reach it, because
-          // this test read the stored blurb and concluded the field was
-          // filled. Reading the composed line also stops the opposite: a cook's
-          // own note with no blurb behind it printed fine and still offered to
-          // reveal a field that was never missing.
-          (cookbook && !composeNote(recipe.description, recipe.note, showDescription).trim()) ||
-          // The link field only exists while the source-link setting is on, so
-          // a missing link is only a hidden FIELD when that field would show.
-          (showSourceUrl && !recipe.sourceUrl)
-        );
+        const missing: string[] = [];
+        // A cookbook recipe can be given a link by hand whatever the book-wide
+        // setting says (it gets its own override on commit), so a missing link is
+        // always a hidden field there. Elsewhere the field only exists while the
+        // setting is on, so a missing link is only a hidden FIELD when that field
+        // would show.
+        if ((cookbook || showSourceUrl) && !recipe.sourceUrl) missing.push("link");
+        if (!formatRecipeTime(recipe.totalTime || recipe.cookTime || recipe.prepTime)) missing.push("time");
+        if (!(recipe.servings ?? recipe.yield)) missing.push("servings");
+        // Ask what the note WOULD print, not whether the website blurb
+        // exists. The card shows `composeNote(description, note,
+        // showDescription)`, so a recipe that arrived with a blurb and no
+        // note of its own prints nothing once the website-description
+        // checkbox is off — an empty line with no way to reach it, because
+        // this test read the stored blurb and concluded the field was
+        // filled. Reading the composed line also stops the opposite: a cook's
+        // own note with no blurb behind it printed fine and still offered to
+        // reveal a field that was never missing.
+        if (cookbook && !composeNote(recipe.description, recipe.note, showDescription).trim()) {
+          missing.push("note");
+        }
+        if (recipe.ingredients.length === 0) missing.push("ingredients");
+        if (recipe.instructions.length === 0) missing.push("steps");
+        return missing;
       }
       if (navItem.kind === "cover") {
         const side = coverSideFromNavItem(navItem);
         const cover = coverForSide(side);
-        if (!cover) return true;
         // The opening page's heading prints as "Dedication" when nobody types
         // one, so it is never an empty slot — it always has something to click.
-        if (side === "dedication") return !cover.blurb || !cover.author;
-        if (side === "back") return !cover.blurb || !cover.author;
-        return !cover.subtitle || !cover.title || !cover.author || !cover.edition;
+        if (side === "dedication") {
+          return [!cover?.blurb && "message", !cover?.author && "signature"].filter(
+            (name): name is string => Boolean(name),
+          );
+        }
+        if (side === "back") {
+          return [!cover?.blurb && "closing line", !cover?.author && "credit"].filter(
+            (name): name is string => Boolean(name),
+          );
+        }
+        return [
+          !cover?.subtitle && "subtitle",
+          !cover?.title && "title",
+          !cover?.author && "author",
+          !cover?.edition && "edition",
+        ].filter((name): name is string => Boolean(name));
       }
       if (navItem.kind === "divider") {
-        // The title always prints, and the intro prints the chapter's recipe
-        // names when nobody has written one — so the subtitle is the opener's
-        // only line that can be invisible for want of being written.
         const section = sections.find((candidate) => candidate.id === navItem.recipeId);
-        return !section?.subtitle?.trim();
+        // The title always prints. The description prints the chapter's recipe
+        // names until the cook writes their own or removes it, so it is only a
+        // hidden field once it has been removed (`""`); left alone it is not
+        // missing, it is being drawn for them.
+        return [
+          !section?.subtitle?.trim() && "subtitle",
+          section?.intro === "" && "description",
+        ].filter((name): name is string => Boolean(name));
       }
       // Nothing on the contents page can be missing: both of its lines print a
       // default ("Contents", "What's inside") when nobody types one, and the
       // entries are generated.
-      if (navItem.kind === "toc") return false;
-      return true;
+      return [];
     };
+    const missingNames = missingFieldNames();
+    const pageHasHiddenFields = (): boolean => missingNames.length > 0;
+    // Four names is what fits a phone's pill on two lines; any more collapse
+    // into a count. A blank recipe would otherwise list six.
+    const fieldsLabel =
+      missingNames.length === 0
+        ? "Add fields"
+        : `Add ${missingNames.slice(0, 4).join(", ")}${
+            missingNames.length > 4 ? ` +${missingNames.length - 4}` : ""
+          }`;
 
     // Whether this KIND of page has an edit/reveal button at all.
     const editable =
@@ -494,61 +531,48 @@ export function PrintDeck(props: PrintDeckProps) {
               : navItem.kind === "section-photo"
                 ? renderSectionPhotoControl(navItem.recipeId)
                 : null;
-    // The recipe-link toggle, next to the photo control. Only where the book
-    // can't hold more than this one recipe (`singleRecipeOnly`) — otherwise
-    // the underlying flag is book-wide, and a button living on ONE recipe's
-    // toolbar would read as that recipe's own switch while silently toggling
-    // every recipe's link. That case keeps the panel's "Every recipe" section
-    // as the one place to reach it instead.
+    // The recipe-link toggle, next to the photo control.
+    //
+    // Where the book can't hold more than this one recipe (`singleRecipeOnly`)
+    // it flips the setting, which IS that recipe's link. In a cookbook the
+    // setting is book-wide, so the button writes THIS recipe's own override
+    // instead (the link's counterpart to the photo picker's per-recipe "None"),
+    // and choosing what the book already does drops the override so the recipe
+    // follows the book again. Multi-recipe recipe cards have no per-recipe
+    // placement, so there the panel's "Every recipe" section stays the one place
+    // to reach it.
+    const linkCookbook = Boolean(projectMeta.meta.cookbookMode);
     const recipeForLink =
-      singleRecipeOnly && navItem.kind === "recipe"
+      (singleRecipeOnly || linkCookbook) && navItem.kind === "recipe"
         ? items?.find((item) => item.id === navItem.recipeId)?.recipe
         : null;
+    const linkShown =
+      navItem.kind === "recipe"
+        ? recipeLinkOn(showSourceUrl, linkCookbook, projectMeta.meta.itemPlacements?.[navItem.recipeId])
+        : showSourceUrl;
     const linkControl = recipeForLink?.sourceUrl ? (
       <button
         type="button"
         className={`recipe-page-toolbar__btn recipe-page-toolbar__btn--icon ${
-          showSourceUrl ? "is-active" : ""
+          linkShown ? "is-active" : ""
         }`}
-        aria-pressed={showSourceUrl}
-        aria-label={showSourceUrl ? "Hide recipe link" : "Show recipe link"}
-        title={showSourceUrl ? "Hide recipe link" : "Show recipe link"}
+        aria-pressed={linkShown}
+        aria-label={linkShown ? "Hide recipe link" : "Show recipe link"}
+        title={linkShown ? "Hide recipe link" : "Show recipe link"}
         onClick={(event) => {
           event.stopPropagation();
+          if (linkCookbook && navItem.kind === "recipe") {
+            projectMeta.setItemPlacement(navItem.recipeId, {
+              showSourceUrl: !linkShown === showSourceUrl ? undefined : !linkShown,
+            });
+            return;
+          }
           setShowSourceUrl((value) => !value);
         }}
       >
         <LinkIcon size={ICON_SIZE.md} />
       </button>
     ) : null;
-    /**
-     * The way back to the derived chapter intro.
-     *
-     * An opener left alone names the recipes filed under it, and re-words itself
-     * whenever they move. Typing an intro of your own replaces that line for
-     * good — nothing overwrites what a cook wrote — which leaves no way back
-     * except guessing that emptying the field restores it. So the offer is made
-     * out loud, while that chapter is being edited and only once there is
-     * something to undo, and it says the line it would restore.
-     *
-     * Under the reveal, with the rest of "show me everything about this page" —
-     * an opener has no edit mode of its own left to hang it on, and a button
-     * standing there permanently would be shouting an offer nobody asked for.
-     *
-     * In the toolbar rather than beside the field it resets: the card is drawn
-     * at print scale, where 9px of app chrome lands at about a third of a
-     * legible size.
-     */
-    const introReset = (() => {
-      if (navItem.kind !== "divider" || !showEmptyFields) return null;
-      const section = sections.find((candidate) => candidate.id === navItem.recipeId);
-      if (!section?.intro?.trim()) return null;
-      return {
-        sectionId: section.id,
-        derived: chapterIntroFromRecipes(chapterRecipeTitles(section.items)),
-      };
-    })();
-
     /**
      * The chapters this recipe could move to, or null outside a cookbook and
      * on anything that isn't a recipe. An untitled section is the implicit
@@ -641,10 +665,10 @@ export function PrintDeck(props: PrintDeckProps) {
             </div>
           )}
           {showFieldsButton && (
-            <div className="recipe-page-toolbar__group">
+            <div className="recipe-page-toolbar__group recipe-page-toolbar__group--fields">
               <button
                 type="button"
-                className={`recipe-page-toolbar__btn ${editing ? "is-active" : ""}`}
+                className={`recipe-page-toolbar__btn recipe-page-toolbar__btn--fields ${editing ? "is-active" : ""}`}
                 aria-pressed={editing}
                 onClick={(event) => {
                   event.stopPropagation();
@@ -657,22 +681,7 @@ export function PrintDeck(props: PrintDeckProps) {
                     clicked into existence because they take up no room. So it
                     says what appears rather than "Edit", which would promise a
                     mode that is not there any more. */}
-                {editing ? "Done" : "More fields"}
-              </button>
-            </div>
-          )}
-          {introReset && (
-            <div className="recipe-page-toolbar__group">
-              <button
-                type="button"
-                className="recipe-page-toolbar__btn"
-                title={introReset.derived}
-                onClick={(event) => {
-                  event.stopPropagation();
-                  projectMeta.setSectionIntro(introReset.sectionId, undefined);
-                }}
-              >
-                Use recipe names
+                {editing ? "Done" : fieldsLabel}
               </button>
             </div>
           )}
@@ -789,7 +798,10 @@ export function PrintDeck(props: PrintDeckProps) {
       onSubtitleChange: (value: string) =>
         projectMeta.updateSection(sectionId, { subtitle: value || undefined }),
       intro: section?.intro,
-      onIntroChange: (value: string) => projectMeta.setSectionIntro(sectionId, value || undefined),
+      // Kept as typed, `""` included: emptying the field removes the line. It no
+      // longer hands the page back to the recipes' names, which is what made the
+      // line impossible to get rid of.
+      onIntroChange: (value: string) => projectMeta.setSectionIntro(sectionId, value),
     };
   };
 
@@ -815,9 +827,14 @@ export function PrintDeck(props: PrintDeckProps) {
       cookbookMode={Boolean(projectMeta.meta.cookbookMode)}
       showEmptyFields={showEmptyFields}
       showDescription={showDescription}
-      showSourceUrl={
-        sourceUrlOn ||
-        (showSourceUrl && showEmptyFields && focused && activeRecipeItem?.id === navItem.recipeId)
+      // The recipe's own link decision travels on its slot. What is left for
+      // the deck to say is the reveal: the button shows the empty slot a link
+      // would be typed into, which in a cookbook needs no setting on first.
+      revealSourceUrl={
+        showEmptyFields &&
+        focused &&
+        activeRecipeItem?.id === navItem.recipeId &&
+        (Boolean(projectMeta.meta.cookbookMode) || showSourceUrl)
       }
       showCutLines={showCutLines && cardSize === "card-6x4"}
       inlineEdit={
@@ -1021,6 +1038,27 @@ export function PrintDeck(props: PrintDeckProps) {
     ) : null;
 
 
+  /**
+   * The way back to the derived chapter description, for the field it belongs to.
+   *
+   * An opener left alone names the recipes filed under it, and re-words itself
+   * whenever they move. Writing a description of your own, or removing it,
+   * replaces that line for good — nothing overwrites what a cook wrote — so the
+   * offer to go back is made where the words are: on the description field's own
+   * bar, like bold and italic, and only while that field is the one being edited
+   * and there is something to undo. `undefined` until then, which keeps the bar
+   * off a field that is still following the recipes.
+   */
+  const activeIntroReset = (() => {
+    if (activeNavItem?.kind !== "divider") return undefined;
+    const section = sections.find((candidate) => candidate.id === activeNavItem.recipeId);
+    if (!section || section.intro === undefined) return undefined;
+    return {
+      derived: chapterIntroFromRecipes(chapterRecipeTitles(section.items)),
+      onReset: () => projectMeta.setSectionIntro(section.id, undefined),
+    };
+  })();
+
   return (
         <section
           className="recipe-page-canvas"
@@ -1030,7 +1068,7 @@ export function PrintDeck(props: PrintDeckProps) {
           {/* Body/heading and bold/italic, floating over the line being typed
               rather than joining the page's bar. It anchors itself to whatever
               field has focus, so it is mounted once for the whole deck. */}
-          <TextFieldToolbar inlineEdit={activeInlineEdit} zoom={deckZoom} />
+          <TextFieldToolbar inlineEdit={activeInlineEdit} zoom={deckZoom} introReset={activeIntroReset} />
           {/* Its twin, for a drag that ran across several lines rather than a
               caret sitting in one. Mounted once for the whole deck, the same
               way and for the same reason. */}
@@ -1452,17 +1490,18 @@ export function PrintDeck(props: PrintDeckProps) {
                     doubleSided={continueOnBack}
                     cookbookMode={Boolean(projectMeta.meta.cookbookMode)}
                     showEmptyFields={showEmptyFields}
-                    // While actively editing with the checkbox on, keep the link
-                    // field visible even if deleting it just made this the only
-                    // recipe without one (which flips the cross-recipe
-                    // `sourceUrlOn` gate off) — otherwise clearing it mid-edit
-                    // hides the very field that would let the user type it back
-                    // in. Gated on the checkbox itself so Edit never shows a
-                    // link field the user has turned off.
+                    // While revealing empty fields, keep the link field visible
+                    // even if deleting the link just took away the last one in
+                    // the book — otherwise clearing it mid-edit hides the very
+                    // field that would let the user type it back in. Outside a
+                    // cookbook it is gated on the setting itself so the reveal
+                    // never shows a link field the user has turned off.
                     showDescription={showDescription}
-                    showSourceUrl={
-                      sourceUrlOn ||
-                      (showSourceUrl && showEmptyFields && isActive && activeRecipeItem?.id === navItem.recipeId)
+                    revealSourceUrl={
+                      showEmptyFields &&
+                      isActive &&
+                      activeRecipeItem?.id === navItem.recipeId &&
+                      (Boolean(projectMeta.meta.cookbookMode) || showSourceUrl)
                     }
                     showCutLines={showCutLines && cardSize === "card-6x4"}
                     inlineEdit={

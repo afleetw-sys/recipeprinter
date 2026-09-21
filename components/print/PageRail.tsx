@@ -153,7 +153,6 @@ interface PageRailProps {
   cardSize: PrintCardSize;
   previewTemplate: RecipePrintTemplate;
   continueOnBack: boolean;
-  previewSourceUrlOn: boolean;
   previewDescriptionOn: boolean;
   organizeMode: boolean;
   enterOrganizeMode: () => void;
@@ -227,7 +226,6 @@ export function PageRail(props: PageRailProps) {
     cardSize,
     previewTemplate,
     continueOnBack,
-    previewSourceUrlOn,
     previewDescriptionOn,
     organizeMode,
     enterOrganizeMode,
@@ -1071,7 +1069,6 @@ export function PageRail(props: PageRailProps) {
                                 size={previewCardSize}
                                 template={previewTemplate}
                                 doubleSided={continueOnBack}
-                                showSourceUrl={previewSourceUrlOn}
                                 showDescription={previewDescriptionOn}
                                 showCutLines={false}
                                 // See the single-thumb note: flat stand-in only.
@@ -1186,7 +1183,6 @@ export function PageRail(props: PageRailProps) {
                         size={previewCardSize}
                         template={previewTemplate}
                         doubleSided={continueOnBack}
-                        showSourceUrl={previewSourceUrlOn}
                         showDescription={previewDescriptionOn}
                         showCutLines={false}
                         // Rail thumbnails paint a flat CSS stand-in for the

@@ -169,7 +169,7 @@ export function deleteRecipeLines(recipe: Recipe, targets: RecipeCardLineTarget[
   return printableRecipe({ ...recipe, ingredients, instructions });
 }
 
-function applyRecipeTargetEdit(
+export function applyRecipeTargetEdit(
   recipe: Recipe,
   target: RecipeCardEditTarget,
   value: string,
@@ -192,10 +192,16 @@ function applyRecipeTargetEdit(
     });
   }
   if (target.kind === "cookTime") {
+    // The card shows ONE time, read as `totalTime || cookTime || prepTime`. What
+    // is typed replaces the first two, which is enough to win that read. Emptying
+    // the field has to clear the third as well: an import that carried only a
+    // prep time (or one beside its total) would otherwise fall through to it and
+    // print a time the cook had just deleted, with nothing left to edit it away.
     return printableRecipe({
       ...recipe,
       cookTime: trimmed || undefined,
       totalTime: trimmed || undefined,
+      ...(trimmed ? {} : { prepTime: undefined }),
     });
   }
   if (target.kind === "servings") {

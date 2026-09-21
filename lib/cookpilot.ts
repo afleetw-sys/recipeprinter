@@ -111,6 +111,23 @@ function flattenInstructions(sections: unknown, recipeTitle?: string): RecipeIns
 }
 
 /**
+ * The link CookPilot found in pasted text and offers as its source (a top-level
+ * `sourceURL` beside `recipe`), or undefined. Only an absolute http(s) address is
+ * taken: it is printed in a book, and the print path drops anything else.
+ */
+export function sourceUrlFromResponse(body: unknown): string | undefined {
+  const raw = (body as AnyRecord | null | undefined)?.sourceURL;
+  if (typeof raw !== "string") return undefined;
+  const trimmed = raw.trim();
+  if (!/^https?:\/\//i.test(trimmed)) return undefined;
+  try {
+    return new URL(trimmed).toString();
+  } catch {
+    return undefined;
+  }
+}
+
+/**
  * Adapts CookPilot's parser output into a flat `Recipe`. `body` is the parsed
  * JSON from CookPilot; `sourceUrl` is the original import URL when known.
  */
