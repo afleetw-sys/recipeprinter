@@ -12,7 +12,7 @@ describe("trimSizeLabel", () => {
 describe("cookbookPdfFileName", () => {
   it("carries the trim size, so a print shop's size question is answerable", () => {
     expect(cookbookPdfFileName("Our Favorite Recipes", "us-letter")).toBe(
-      "Our-Favorite-Recipes-Spiral-8.5x11.pdf",
+      "Our-Favorite-Recipes-Standard-8.5x11.pdf",
     );
     expect(cookbookPdfFileName("Our Favorite Recipes", "hardcover-8x10")).toBe(
       "Our-Favorite-Recipes-Hardcover-8x10.pdf",
@@ -26,10 +26,10 @@ describe("cookbookPdfFileName", () => {
   });
 
   it("falls back to a usable name when the book is untitled", () => {
-    expect(cookbookPdfFileName(undefined, "us-letter")).toBe("Cookbook-Spiral-8.5x11.pdf");
-    expect(cookbookPdfFileName("   ", "us-letter")).toBe("Cookbook-Spiral-8.5x11.pdf");
-    // Punctuation-only titles slug to nothing and must not yield "-Spiral-8.5x11.pdf".
-    expect(cookbookPdfFileName("!!!", "us-letter")).toBe("Cookbook-Spiral-8.5x11.pdf");
+    expect(cookbookPdfFileName(undefined, "us-letter")).toBe("Cookbook-Standard-8.5x11.pdf");
+    expect(cookbookPdfFileName("   ", "us-letter")).toBe("Cookbook-Standard-8.5x11.pdf");
+    // Punctuation-only titles slug to nothing and must not yield "-Standard-8.5x11.pdf".
+    expect(cookbookPdfFileName("!!!", "us-letter")).toBe("Cookbook-Standard-8.5x11.pdf");
   });
 });
 

@@ -1,4 +1,5 @@
 import {
+  COOKBOOK_PRESETS,
   getCookbookPreset,
   PRINTERS,
   type CookbookPreset,
@@ -27,6 +28,8 @@ export interface PrintDestination {
   id: PrintDestinationId;
   /** What it is called on the first screen. */
   name: string;
+  /** How a sentence refers to it: "for your own printer", "for Lulu". */
+  place: string;
   /**
    * One line, describing the destination rather than the file. It is the whole
    * of the row's second line: no price is shown anywhere in this dialog, because
@@ -79,6 +82,7 @@ export const PRINT_DESTINATIONS: PrintDestination[] = [
   {
     id: "home",
     name: "My own printer",
+    place: "your own printer",
     tagline: "No bleed, so art stops short of the edge.",
     presetIds: ["us-letter"],
   },
@@ -89,6 +93,7 @@ export const PRINT_DESTINATIONS: PrintDestination[] = [
     // gutter that a cased spine needs has no home here.
     id: "copy-shop",
     name: "A copy shop",
+    place: "a copy shop",
     tagline: "Staples, FedEx Office and the like.",
     presetIds: ["us-letter"],
     printerId: "staples",
@@ -97,6 +102,7 @@ export const PRINT_DESTINATIONS: PrintDestination[] = [
   {
     id: "lulu",
     name: "Lulu",
+    place: "Lulu",
     tagline: "Print on demand.",
     presetIds: ["coil-us-letter", "hardcover-us-letter"],
     printerId: "lulu",
@@ -108,7 +114,8 @@ export const PRINT_DESTINATIONS: PrintDestination[] = [
   {
     id: "blurb",
     name: "Blurb",
-    tagline: "Hardcover, at their 8 × 10 trim.",
+    place: "Blurb",
+    tagline: "Books at their 8 × 10 in trim.",
     presetIds: ["hardcover-8x10"],
     printerId: "blurb",
     extraSettings: [{ label: "Interior", value: "Full colour" }],
@@ -116,6 +123,7 @@ export const PRINT_DESTINATIONS: PrintDestination[] = [
   {
     id: "other",
     name: "Somewhere else",
+    place: "another printer",
     // No tagline. "Somewhere else" is self-describing, and the cover-size
     // warning that used to live here is on step two, beside the fields it is
     // about.
@@ -203,7 +211,7 @@ export function destinationSettings(
 
   return [
     { label: "Size", value: preset.trimLabel },
-    { label: "Binding", value: preset.coilBound ? "Coil bound" : "Hardcover, case wrap" },
+    { label: "Binding", value: bindingSetting(preset) },
     ...(destination.extraSettings ?? []),
     {
       label: "Files",
@@ -212,6 +220,12 @@ export function destinationSettings(
         : "One file, with the cover as page 1",
     },
   ];
+}
+
+/** The binding to ask a shop for, as a suggestion that matches the file. */
+function bindingSetting(preset: CookbookPreset): string {
+  if (!preset.coilBound) return "Hardcover, case wrap";
+  return preset.wrapRequired ? "Coil bound" : "Coil, comb or another lay-flat binding";
 }
 
 /**
@@ -226,26 +240,90 @@ export function exportFileRoles(fileCount: number): string[] {
 }
 
 /**
- * Labels for a destination's bindings, guaranteed distinct within the group.
+ * How a book format is described, by what it IS rather than by where it goes.
  *
- * "Spiral" and "Hardcover" are the right words where a destination binds one
- * of each. They are not enough for "somewhere else", which offers two
- * hardcovers at different trims — the picker would have shown "Hardcover"
- * twice, and picking either would have looked like the same click.
+ * These used to be named for a binding ("Spiral Cookbook", "Hardcover Book"),
+ * which is a claim about what somebody is printing, and for a home printer, a
+ * copy shop or Blurb we have no idea. The four formats differ in four plain
+ * facts: the trim, whether art runs to the edge, whether there is room on the
+ * inside edge for a spine, and whether the cover is its own file. Those are the
+ * facts stated here, and which binding each one suits comes last, as a
+ * suggestion.
  *
- * So the trim is appended only where it is doing work. A label carries the
- * size when, and only when, another book in the same list shares its binding.
+ * Every format is offered whatever the destination. A destination only decides
+ * which one is chosen to begin with.
  */
-export function bindingLabels(presets: CookbookPreset[]): string[] {
-  const counts = new Map<string, number>();
-  for (const preset of presets) {
-    counts.set(preset.bindingName, (counts.get(preset.bindingName) ?? 0) + 1);
-  }
-  return presets.map((preset) => {
-    if ((counts.get(preset.bindingName) ?? 0) < 2) return preset.bindingName;
-    const dim = (inches: number) => String(Number(inches.toFixed(2)));
-    return `${preset.bindingName} ${dim(preset.trimWidthIn)} × ${dim(preset.trimHeightIn)}`;
-  });
+const FORMAT_COPY: Record<CookbookPresetId, { title: string; detail: string }> = {
+  "us-letter": {
+    title: "US Letter, standard",
+    detail:
+      "One file with the cover as page 1. Art stops short of the edge, so a desktop printer can print it all.",
+  },
+  "coil-us-letter": {
+    title: "US Letter, edge to edge",
+    detail:
+      "Pages and cover as two files. Art runs to the edge, with no margin for binding, so it lies flat in a coil or comb.",
+  },
+  "hardcover-us-letter": {
+    title: "US Letter, with a spine margin",
+    detail:
+      "Pages and cover wrap as two files. Art runs to the edge, with room on the inside edge for a bound spine.",
+  },
+  "hardcover-8x10": {
+    title: "8 × 10 in, with a spine margin",
+    detail:
+      "Pages and cover wrap as two files. Art runs to the edge, with room on the inside edge for a bound spine.",
+  },
+};
+
+export function formatOption(preset: CookbookPreset): { title: string; detail: string } {
+  return FORMAT_COPY[preset.id];
+}
+
+/**
+ * Every format, in the order they are offered. The same four whatever the
+ * destination is: choosing a destination picks one of these, it does not
+ * remove the others.
+ */
+export function allFormats(): CookbookPreset[] {
+  return COOKBOOK_PRESETS;
+}
+
+/**
+ * The destination the after-download instructions should be written for.
+ *
+ * The destination is optional now: somebody can pick a format without saying
+ * where it is going. Instructions still need a shape to follow, and the file
+ * itself says which one — a book with no separate cover is what comes off a
+ * desktop printer, and one with a cover wrap goes to a service that states its
+ * own numbers.
+ */
+export function effectiveDestination(
+  destination: PrintDestination | null,
+  preset: CookbookPreset,
+): PrintDestination {
+  if (destination) return destination;
+  return getPrintDestination(preset.wrapRequired ? "other" : "home");
+}
+
+/**
+ * A quiet heads-up when the chosen format is not what a destination is set up
+ * for, or null when it is (or when we know nothing about the destination).
+ *
+ * Never a block and never a warning in red: only Lulu and Blurb are checked
+ * against real orders, and for the rest we state our defaults as defaults. The
+ * cook can still save whatever they chose.
+ */
+export function destinationNote(
+  destination: PrintDestination | null,
+  preset: CookbookPreset,
+): string | null {
+  if (!destination || destination.unknownSpec) return null;
+  if (destination.presetIds.includes(preset.id)) return null;
+  const suggested = destinationPresets(destination)
+    .map((option) => formatOption(option).title)
+    .join(" or ");
+  return `For ${destination.place} we suggest ${suggested}. You can still save this one.`;
 }
 
 /**
@@ -264,7 +342,12 @@ export function downloadSummary(
   preset: CookbookPreset,
 ): string {
   if (preset.wrapRequired) {
-    const printer = destinationPrinter(destination);
+    // Only where this shop is set up for this format: a copy shop handed an
+    // edge-to-edge book does not "ask for" two files, and saying so would put
+    // words in Staples' mouth.
+    const printer = destination.presetIds.includes(preset.id)
+      ? destinationPrinter(destination)
+      : undefined;
     // "Somewhere else" has no name to put in the sentence, so the category
     // takes the subject instead of us inventing a shop.
     return printer
@@ -299,7 +382,9 @@ export function settingsIntro(
   if (!preset.wrapRequired) {
     return "That’s everything the shop needs. Ask for:";
   }
-  const printer = destinationPrinter(destination);
+  const printer = destination.presetIds.includes(preset.id)
+    ? destinationPrinter(destination)
+    : undefined;
   const who = printer ? printer.name : "a print service";
   return `That’s everything ${who} needs. When you upload, choose:`;
 }

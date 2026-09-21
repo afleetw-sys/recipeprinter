@@ -555,61 +555,10 @@
   gap: .4rem;
   padding-right: 2.25rem;
 }
-/* The way back, level with the heading it leaves. Pulled left of the panel's
-   own padding so the heading itself does not shift when the button appears on
-   step two — a title that moves sideways as you navigate reads as two
-   different titles. */
-.cookbook-ready__back {
-  display: grid;
-  place-items: center;
-  flex: 0 0 auto;
-  margin-left: -.5rem;
-  padding: .25rem;
-  border-radius: var(--cp-radius-control);
-  color: var(--cp-ink-soft);
-  cursor: pointer;
-}
-.cookbook-ready__back:hover:not(:disabled) {
-  color: var(--cp-ink);
-  background: var(--cp-surface-muted);
-}
-.cookbook-ready__back:focus-visible {
-  outline: var(--cp-focus-ring);
-  outline-offset: 2px;
-}
-.cookbook-ready__back:disabled {
-  opacity: .5;
-  cursor: default;
-}
 .cookbook-ready__title {
   display: grid;
   gap: .1rem;
   min-width: 0;
-}
-.cookbook-ready__title-row {
-  display: flex;
-  align-items: center;
-  gap: .4rem;
-  min-width: 0;
-}
-/* A way out to the shop's own site, for someone still deciding. Quiet: it is
-   an aside next to the heading, not the action of the screen. */
-.cookbook-ready__visit {
-  display: grid;
-  place-items: center;
-  flex: 0 0 auto;
-  padding: .25rem;
-  border-radius: var(--cp-radius-control);
-  color: var(--cp-ink-soft);
-  cursor: pointer;
-}
-.cookbook-ready__visit:hover {
-  color: var(--cp-accent);
-  background: var(--cp-surface-muted);
-}
-.cookbook-ready__visit:focus-visible {
-  outline: var(--cp-focus-ring);
-  outline-offset: 2px;
 }
 .cookbook-ready__subtitle {
   color: var(--cp-ink-soft);
@@ -625,111 +574,10 @@
   display: grid;
   gap: .7rem;
 }
-/* Step one: where the book is going. Rows rather than cards — this is a list
-   of places, and the second screen is where a book gets chosen. */
-.cookbook-ready__destinations {
-  display: grid;
-  gap: .5rem;
-}
 .cookbook-ready__lead {
   color: var(--cp-ink-soft);
   font-size: var(--cp-fs-small);
 }
-.cookbook-destination {
-  display: grid;
-  grid-template-columns: auto 1fr;
-  align-items: center;
-  gap: .85rem;
-  padding: .8rem 1rem;
-  border: 1px solid var(--cp-line-strong);
-  border-radius: var(--cp-radius-control);
-  background: var(--cp-page);
-  text-align: left;
-  cursor: pointer;
-  transition: border-color 120ms ease, background 120ms ease;
-}
-.cookbook-destination:hover {
-  border-color: var(--cp-accent);
-  background: var(--cp-accent-soft);
-}
-.cookbook-destination:focus-visible {
-  outline: var(--cp-focus-ring);
-  outline-offset: 2px;
-}
-/* The tile column. A fixed box whatever it holds, so a glyph row and a
-   monogram row start their text at the same place. */
-.cookbook-destination__mark {
-  display: grid;
-  place-items: center;
-  width: 34px;
-  height: 34px;
-  border: 1px solid var(--cp-line);
-  border-radius: var(--cp-radius-control);
-  background: var(--cp-surface-muted);
-  color: var(--cp-ink-soft);
-}
-.cookbook-destination:hover .cookbook-destination__mark {
-  border-color: var(--cp-accent);
-  color: var(--cp-accent);
-}
-.cookbook-destination__monogram {
-  font-size: var(--cp-fs-body-lg);
-  font-weight: 800;
-  line-height: 1;
-}
-.cookbook-destination__text {
-  display: grid;
-  gap: .15rem;
-  min-width: 0;
-}
-.cookbook-destination strong {
-  color: var(--cp-ink);
-  font-size: var(--cp-fs-body-lg);
-  font-weight: 800;
-}
-.cookbook-destination small {
-  color: var(--cp-ink-soft);
-  font-size: var(--cp-fs-caption);
-  line-height: 1.45;
-}
-
-/* The tile column. A fixed box whatever it holds, so a glyph row and a
-   monogram row start their text at the same place. */
-.cookbook-destination__mark {
-  display: grid;
-  place-items: center;
-  width: 34px;
-  height: 34px;
-  border: 1px solid var(--cp-line);
-  border-radius: var(--cp-radius-control);
-  background: var(--cp-surface-muted);
-  color: var(--cp-ink-soft);
-}
-.cookbook-destination:hover .cookbook-destination__mark {
-  border-color: var(--cp-accent);
-  color: var(--cp-accent);
-}
-.cookbook-destination__monogram {
-  font-size: var(--cp-fs-body-lg);
-  font-weight: 800;
-  line-height: 1;
-}
-.cookbook-destination__text {
-  display: grid;
-  gap: .15rem;
-  min-width: 0;
-}
-.cookbook-destination strong {
-  color: var(--cp-ink);
-  font-size: var(--cp-fs-body-lg);
-  font-weight: 800;
-}
-.cookbook-destination small {
-  color: var(--cp-ink-soft);
-  font-size: var(--cp-fs-caption);
-  line-height: 1.45;
-}
-
 /* Step three: the files landed, here is what they are for. A list and a
    definition list rather than prose, because this gets read while someone is
    looking at an upload form, not before. Flat, per policy. */
@@ -868,6 +716,74 @@
 .cookbook-binding__option:has(input:disabled) {
   opacity: .6;
   cursor: default;
+}
+
+/* The formats, one card each. Same single-select tokens as the pills above, and
+   the same hidden-but-focusable native radio. Flat: a hairline separates them,
+   and the selected one takes the shared selected look. */
+.cookbook-format-list {
+  display: grid;
+  gap: .5rem;
+}
+.cookbook-format {
+  display: grid;
+  gap: .15rem;
+  padding: .7rem .9rem;
+  border: 1px solid var(--cp-line-strong);
+  border-radius: var(--cp-radius-control);
+  background: var(--cp-page);
+  cursor: pointer;
+}
+.cookbook-format input {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  opacity: 0;
+  pointer-events: none;
+}
+.cookbook-format strong {
+  color: var(--cp-ink);
+  font-size: var(--cp-fs-body);
+  font-weight: 800;
+}
+.cookbook-format small {
+  color: var(--cp-ink-soft);
+  font-size: var(--cp-fs-caption);
+  line-height: 1.45;
+}
+.cookbook-format.is-active {
+  border-color: var(--cp-selected-border);
+  background: var(--cp-selected-fill);
+  box-shadow: var(--cp-selected-ring);
+}
+.cookbook-format.is-active strong {
+  color: var(--cp-selected-text);
+}
+.cookbook-format:has(input:focus-visible) {
+  outline: var(--cp-focus-ring);
+  outline-offset: var(--cp-focus-ring-offset);
+}
+.cookbook-format:has(input:disabled) {
+  opacity: .6;
+  cursor: default;
+}
+/* The destination's one line, with the way out to its site beside it. */
+.cookbook-ready__place {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: .3rem .75rem;
+}
+.cookbook-ready__place .cookbook-next__another {
+  display: inline-flex;
+  align-items: center;
+  gap: .25rem;
+}
+/* A quiet heads-up, not an alert: the cook can still save what they chose. */
+.cookbook-ready__note {
+  color: var(--cp-ink-soft);
+  font-size: var(--cp-fs-small);
+  line-height: 1.45;
 }
 /* Which book, stated once. A destination that binds one thing reads as a
    statement here rather than as a question with a single answer. */

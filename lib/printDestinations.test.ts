@@ -2,8 +2,11 @@ import { describe, expect, it } from "vitest";
 import { COOKBOOK_PRESETS, PRINTERS, getCookbookPreset } from "@/lib/cookbookPresets";
 import {
   PRINT_DESTINATIONS,
-  bindingLabels,
+  allFormats,
+  destinationNote,
   downloadSummary,
+  effectiveDestination,
+  formatOption,
   settingsIntro,
   destinationPresets,
   destinationPrinter,
@@ -209,53 +212,90 @@ describe("what to do with the file once it is saved", () => {
   });
 });
 
-describe("binding labels", () => {
-  it("never offers the same label twice in one picker", () => {
-    // Two radios reading "Hardcover" are one radio as far as anyone can tell,
-    // and picking either looks like the same click.
+describe("format descriptions", () => {
+  it("offers every format, whatever the destination", () => {
+    // A destination only decides which format starts selected. It never removes
+    // the others: we know a shop's form far better than what someone is printing.
+    expect(allFormats().map((preset) => preset.id)).toEqual(
+      COOKBOOK_PRESETS.map((preset) => preset.id),
+    );
     for (const destination of PRINT_DESTINATIONS) {
-      const labels = bindingLabels(destinationPresets(destination));
-      expect(new Set(labels).size).toBe(labels.length);
-      for (const label of labels) expect(label.trim()).not.toBe("");
+      for (const preset of destinationPresets(destination)) {
+        expect(allFormats()).toContain(preset);
+      }
     }
   });
 
-  it("leaves the size off when the binding alone is unambiguous", () => {
-    // Lulu binds one of each, so "Spiral" and "Hardcover" say everything. The
-    // trim is stated once below the picker rather than twice inside it.
-    expect(bindingLabels(destinationPresets(getPrintDestination("lulu")))).toEqual([
-      "Spiral",
-      "Hardcover",
-    ]);
-  });
-
-  it("offers the same two bindings whatever the destination", () => {
-    // Which book you want does not change with the shop. "Somewhere else"
-    // briefly carried a third pill, "Hardcover 8 × 10" beside "Hardcover
-    // 8.5 × 11", which is a trim choice wearing a binding's clothes.
-    for (const destination of PRINT_DESTINATIONS) {
-      const labels = bindingLabels(destinationPresets(destination));
-      expect(labels.length).toBeLessThanOrEqual(2);
-      for (const label of labels) expect(["Spiral", "Hardcover"]).toContain(label);
-    }
-  });
-
-  it("still disambiguates by trim if a picker ever holds two of one binding", () => {
-    // The guard has no live caller now that every picker offers one of each.
-    // It is kept, and tested, because the failure it prevents is silent: two
-    // pills reading "Hardcover", either of which looks like the same click.
-    const bothHardcovers = COOKBOOK_PRESETS.filter((preset) => !preset.coilBound);
-    expect(bindingLabels(bothHardcovers)).toEqual(["Hardcover 8.5 × 11", "Hardcover 8 × 10"]);
-  });
-
-  it("gives every preset a binding word to be labelled by", () => {
+  it("describes each format by what it is, and never by a binding we are guessing at", () => {
+    const titles = COOKBOOK_PRESETS.map((preset) => formatOption(preset).title);
+    expect(new Set(titles).size).toBe(titles.length);
     for (const preset of COOKBOOK_PRESETS) {
-      expect(preset.bindingName.trim()).not.toBe("");
-      // The binding alone, not the product: "Spiral Cookbook" beside
-      // "Hardcover Book" reads as two nouns rather than one choice.
-      expect(preset.bindingName).not.toContain("Cookbook");
-      expect(preset.bindingName).not.toContain("Book");
+      const { title, detail } = formatOption(preset);
+      expect(title.trim()).not.toBe("");
+      expect(detail.trim()).not.toBe("");
+      // "Spiral Cookbook" was shown to someone printing at home, about whom we
+      // knew only that they were printing at home.
+      expect(title).not.toMatch(/spiral|coil|comb|cookbook|hardcover/i);
+      expect(`${title} ${detail}`).not.toContain("—");
     }
+  });
+
+  it("states the trim in every title", () => {
+    for (const preset of COOKBOOK_PRESETS) {
+      expect(formatOption(preset).title).toContain(preset.trimWidthIn === 8.5 ? "US Letter" : "8 × 10");
+    }
+  });
+});
+
+describe("choosing a format at a destination that is not set up for it", () => {
+  const lulu = getPrintDestination("lulu");
+  const home = getPrintDestination("home");
+
+  it("says nothing for the format a destination leads with", () => {
+    for (const destination of PRINT_DESTINATIONS) {
+      for (const preset of destinationPresets(destination)) {
+        expect(destinationNote(destination, preset)).toBeNull();
+      }
+    }
+  });
+
+  it("says nothing when there is no destination, or no known spec to compare to", () => {
+    for (const preset of COOKBOOK_PRESETS) {
+      expect(destinationNote(null, preset)).toBeNull();
+      expect(destinationNote(getPrintDestination("other"), preset)).toBeNull();
+    }
+  });
+
+  it("suggests what the destination is set up for and lets the cook carry on", () => {
+    const note = destinationNote(lulu, getCookbookPreset("us-letter"));
+    expect(note).toContain("Lulu");
+    expect(note).toContain(formatOption(getCookbookPreset("coil-us-letter")).title);
+    expect(note).toMatch(/still save/i);
+    expect(destinationNote(home, getCookbookPreset("coil-us-letter"))).toContain("your own printer");
+  });
+
+  it("never names a shop as asking for something it was not set up for", () => {
+    // A copy shop handed an edge-to-edge book does not "ask for" two files.
+    const copyShop = getPrintDestination("copy-shop");
+    const preset = getCookbookPreset("coil-us-letter");
+    expect(downloadSummary(copyShop, preset)).not.toContain("Staples");
+    expect(settingsIntro(copyShop, preset)).not.toContain("Staples");
+    // It still does for the format Lulu is set up for.
+    expect(downloadSummary(lulu, preset)).toContain("Lulu");
+  });
+
+  it("writes the after-download instructions for the file when no destination was chosen", () => {
+    expect(effectiveDestination(null, getCookbookPreset("us-letter")).id).toBe("home");
+    expect(effectiveDestination(null, getCookbookPreset("coil-us-letter")).id).toBe("other");
+    expect(effectiveDestination(lulu, getCookbookPreset("us-letter"))).toBe(lulu);
+  });
+
+  it("does not tell a copy shop's customer their binding", () => {
+    const copyShop = getPrintDestination("copy-shop");
+    const binding = destinationSettings(copyShop, getCookbookPreset("us-letter")).find(
+      (row) => row.label === "Binding",
+    );
+    expect(binding?.value).toMatch(/lay-flat/);
   });
 });
 
