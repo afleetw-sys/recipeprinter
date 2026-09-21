@@ -714,11 +714,23 @@
   cursor: default;
 }
 
-/* The way out to the shop's own site, under the destination pills. */
+/* The optional shortcut: one quiet line, smaller than the questions under it. */
+.cookbook-ready__preset {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: .4rem .6rem;
+}
+.cookbook-ready__preset-label {
+  color: var(--cp-ink-soft);
+  font-size: var(--cp-fs-caption);
+}
+.cookbook-ready__preset .select-shell {
+  min-width: 11rem;
+}
 .cookbook-ready__place {
   display: inline-flex;
   align-items: center;
-  justify-self: start;
   gap: .25rem;
 }
 /* A quiet heads-up, not an alert: the cook can still save what they chose. */

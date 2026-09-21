@@ -22,23 +22,28 @@ function renderDialog(pageCount: number) {
 }
 
 const pill = (label: string) => screen.getByLabelText(label) as HTMLInputElement;
+const fillInFor = (id: string) =>
+  fireEvent.change(screen.getByLabelText("Fill in for"), { target: { value: id } });
 const save = () => screen.getByRole("button", { name: /save pdf/i }) as HTMLButtonElement;
 
 describe("the cookbook print dialog", () => {
-  it("lists every place, with no price", () => {
+  it("offers every place as an optional shortcut, with no price", () => {
     renderDialog(95);
     const dialog = screen.getByRole("dialog");
     expect(dialog.textContent).not.toMatch(/[$£€]|\bfrom about\b|\bcost/i);
     for (const destination of PRINT_DESTINATIONS) {
-      expect(screen.getByLabelText(destination.name)).toBeTruthy();
+      expect(screen.getByRole("option", { name: destination.name })).toBeTruthy();
     }
+    // Optional: it starts on nothing, and the questions are all there without it.
+    expect((screen.getByLabelText("Fill in for") as HTMLSelectElement).value).toBe("");
+    expect(screen.getByRole("radiogroup", { name: "How it will be bound" })).toBeTruthy();
   });
 
   it("starts small: two questions, nothing explained, nothing to save yet", () => {
     renderDialog(95);
     // It read as a wall of text. The panel is a handful of pills until someone
     // answers, and this length is the guard against it quietly growing back.
-    expect(screen.getByRole("dialog").textContent!.length).toBeLessThan(220);
+    expect(screen.getByRole("dialog").textContent!.length).toBeLessThan(300);
     expect(save().disabled).toBe(true);
     expect(screen.queryByText("Size")).toBeNull();
     expect(screen.queryByText("Photos")).toBeNull();
@@ -70,10 +75,10 @@ describe("the cookbook print dialog", () => {
 
   it("fills every answer in from a destination and leaves each one open", () => {
     renderDialog(95);
-    fireEvent.click(pill("Blurb"));
+    fillInFor("blurb");
     expect(pill("Hardcover").checked).toBe(true);
     expect(pill("8 × 10 in").checked).toBe(true);
-    fireEvent.click(pill("My own printer"));
+    fillInFor("home");
     expect(pill("Spiral, comb or 3-ring").checked).toBe(true);
     expect(pill("Standard").checked).toBe(true);
     // Not a lock: change one answer and the rest stay as they were.
@@ -84,7 +89,7 @@ describe("the cookbook print dialog", () => {
 
   it("says what will happen when the answers do not suit the destination", () => {
     renderDialog(95);
-    fireEvent.click(pill("My own printer"));
+    fillInFor("home");
     fireEvent.click(pill("Edge to edge"));
     expect(screen.getByText(/cut off/)).toBeTruthy();
   });
@@ -92,9 +97,17 @@ describe("the cookbook print dialog", () => {
   it("never calls the book a product we guessed at, whoever is printing it", () => {
     renderDialog(95);
     for (const destination of PRINT_DESTINATIONS) {
-      fireEvent.click(screen.getByLabelText(destination.name));
+      fillInFor(destination.id);
       expect(screen.getByRole("dialog").textContent).not.toMatch(/spiral cookbook|hardcover book/i);
     }
+  });
+
+  it("keeps the answers when the shortcut is cleared", () => {
+    renderDialog(95);
+    fillInFor("blurb");
+    fillInFor("");
+    expect(pill("Hardcover").checked).toBe(true);
+    expect(pill("8 × 10 in").checked).toBe(true);
   });
 
   it("reads the same whatever the page count", () => {

@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 
 import { Dialog } from "@/components/Dialog";
+import { Select } from "@/components/Select";
 import {
   CheckIcon,
   ExternalIcon,
@@ -39,13 +40,18 @@ import type { CoverSheetSpec } from "@/types/export";
 import type { CookbookPresetId } from "@/types/recipe";
 
 /**
- * One small panel: where it is going, how it will be bound, and one follow-up.
+ * One small panel: how it will be bound, and the one follow-up that binding
+ * needs.
  *
  * The follow-up depends on the binding and only exists for it. A hardcover has
  * a size; a spiral, comb or 3-ring book is US Letter and has one question about
  * the photos. Nothing else is asked, and nothing is explained until it is
- * selected. A destination is a shortcut that answers all of it at once, and
- * every answer stays open to change whichever destination is picked.
+ * selected.
+ *
+ * Where it is going is optional and deliberately quiet: a small "fill in for"
+ * menu that answers everything at once for a place we know. It is a shortcut,
+ * not a step, so nothing waits on it and every answer stays open to change
+ * whether or not it was used.
  */
 export function CookbookReadyDialog({
   open,
@@ -117,9 +123,10 @@ export function CookbookReadyDialog({
    * Picking a destination answers every question with the book it is set up
    * for. That is a starting point, not a lock: each answer stays open.
    */
-  const chooseDestination = (id: PrintDestinationId) => {
+  const chooseDestination = (id: PrintDestinationId | null) => {
     setDestinationId(id);
-    setChoice(choiceForPreset(destinationPresets(getPrintDestination(id))[0]));
+    // Clearing it leaves the answers as they are: it was only ever a shortcut.
+    if (id) setChoice(choiceForPreset(destinationPresets(getPrintDestination(id))[0]));
     onExportAnother?.();
   };
   const changeChoice = (patch: Partial<BookChoice>) => {
@@ -253,7 +260,7 @@ function ChooseBook({
   onPrinterClick,
 }: {
   destination: PrintDestination | null;
-  onChooseDestination: (id: PrintDestinationId) => void;
+  onChooseDestination: (id: PrintDestinationId | null) => void;
   choice: BookChoice;
   onChangeChoice: (patch: Partial<BookChoice>) => void;
   coverSizes: Record<string, { w: string; h: string; spine: string }>;
@@ -304,25 +311,37 @@ function ChooseBook({
 
   return (
     <>
-      <p className="cookbook-ready__lead">Where are you printing?</p>
-      <Pills
-        label="Where you’re printing"
-        name="cookbook-destination"
-        disabled={busy}
-        options={PRINT_DESTINATIONS.map((option) => ({ value: option.id, label: option.name }))}
-        selected={destination?.id ?? null}
-        onSelect={(id) => onChooseDestination(id as PrintDestinationId)}
-      />
-      {printer && (
-        <button
-          type="button"
-          className="cookbook-next__another cookbook-ready__place"
-          onClick={() => onPrinterClick(printer.id, printer.url)}
+      <div className="cookbook-ready__preset">
+        <label htmlFor="cookbook-preset" className="cookbook-ready__preset-label">
+          Fill in for
+        </label>
+        <Select
+          id="cookbook-preset"
+          variant="compact"
+          value={destination?.id ?? ""}
+          disabled={busy}
+          onChange={(event) =>
+            onChooseDestination(event.target.value ? (event.target.value as PrintDestinationId) : null)
+          }
         >
-          Open {printer.name}
-          <ExternalIcon size={ICON_SIZE.sm} />
-        </button>
-      )}
+          <option value="">Choose a printer</option>
+          {PRINT_DESTINATIONS.map((option) => (
+            <option key={option.id} value={option.id}>
+              {option.name}
+            </option>
+          ))}
+        </Select>
+        {printer && (
+          <button
+            type="button"
+            className="cookbook-next__another cookbook-ready__place"
+            onClick={() => onPrinterClick(printer.id, printer.url)}
+          >
+            Open {printer.name}
+            <ExternalIcon size={ICON_SIZE.sm} />
+          </button>
+        )}
+      </div>
 
       <p className="cookbook-ready__lead">How will it be bound?</p>
       <Pills
