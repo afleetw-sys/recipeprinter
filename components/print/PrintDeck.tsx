@@ -279,6 +279,30 @@ interface PrintDeckProps {
 // and the flat single-page card view — with inline edit controls, per-page photo
 // controls, and the front/back side switcher. Verbatim move out of the print
 // god-file; `renderActiveControls` and `renderDeckPage` moved in as internals.
+/**
+ * Puts the cursor in the page's link field, once it exists.
+ *
+ * The field is only drawn while the page's reveal is on, and pressing the link
+ * button is what turns that on, so it is not in the DOM yet when this is called.
+ * It looks again for a few frames instead of holding a flag in state for a
+ * focus that happens once. Only the focused page has real inputs (every other
+ * page draws its link as text), so the first match is the right one.
+ */
+function focusSourceLinkField() {
+  let tries = 0;
+  const attempt = () => {
+    const field = document.querySelector<HTMLInputElement>(
+      '.recipe-page-canvas input[aria-label="Source link"]',
+    );
+    if (field) {
+      field.focus();
+      return;
+    }
+    if (++tries < 12) window.requestAnimationFrame(attempt);
+  };
+  window.requestAnimationFrame(attempt);
+}
+
 export function PrintDeck(props: PrintDeckProps) {
   // Where the shared move menu should open, or null when it is closed. The
   // menu closes itself on an outside press, Escape, a scroll or a resize.
@@ -555,17 +579,37 @@ export function PrintDeck(props: PrintDeckProps) {
       navItem.kind === "recipe"
         ? recipeLinkOn(showSourceUrl, linkCookbook, projectMeta.meta.itemPlacements?.[navItem.recipeId])
         : showSourceUrl;
-    const linkControl = recipeForLink?.sourceUrl ? (
+    // Always on a recipe page, like the photo control beside it. It used to
+    // appear only once a recipe had a link, so on the very recipe that lacked
+    // one there was no sign that a link icon existed: a control that comes and
+    // goes with the data teaches nobody what it is for.
+    const hasLink = Boolean(recipeForLink?.sourceUrl);
+    const linkLabel = !hasLink
+      ? "Add recipe link"
+      : linkShown
+        ? "Hide recipe link"
+        : "Show recipe link";
+    const linkControl = recipeForLink ? (
       <button
         type="button"
         className={`recipe-page-toolbar__btn recipe-page-toolbar__btn--icon ${
-          linkShown ? "is-active" : ""
+          hasLink && linkShown ? "is-active" : ""
         }`}
-        aria-pressed={linkShown}
-        aria-label={linkShown ? "Hide recipe link" : "Show recipe link"}
-        title={linkShown ? "Hide recipe link" : "Show recipe link"}
+        aria-pressed={hasLink ? linkShown : undefined}
+        aria-label={linkLabel}
+        title={linkLabel}
         onClick={(event) => {
           event.stopPropagation();
+          if (!hasLink) {
+            // Nothing to show or hide yet, so this is the way to add one: reveal
+            // the empty link field and put the cursor in it. A recipe card has
+            // no per-recipe switch, so there the field only exists while the
+            // book's "Recipe link" setting is on, and adding one means wanting it.
+            if (!linkCookbook && !showSourceUrl) setShowSourceUrl(true);
+            if (!showEmptyFields) toggleShowEmptyFields();
+            focusSourceLinkField();
+            return;
+          }
           if (linkCookbook && navItem.kind === "recipe") {
             projectMeta.setItemPlacement(navItem.recipeId, {
               showSourceUrl: !linkShown === showSourceUrl ? undefined : !linkShown,
