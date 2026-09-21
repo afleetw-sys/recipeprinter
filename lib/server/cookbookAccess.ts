@@ -48,16 +48,36 @@ export function bearerToken(request: Request): string | null {
   return token || null;
 }
 
+/** Why Identity Toolkit turns a token away, as opposed to failing to answer. */
+const REJECTED_TOKEN_REASONS = [
+  "INVALID_ID_TOKEN",
+  "TOKEN_EXPIRED",
+  "USER_NOT_FOUND",
+  "USER_DISABLED",
+  "CREDENTIAL_TOO_OLD_LOGIN_AGAIN",
+];
+
+export type TokenCheck =
+  | { ok: true; uid: string }
+  /** Google looked at the token and said no: the person must sign in again. */
+  | { ok: false; kind: "rejected"; reason: string }
+  /** We could not get an answer (network, timeout, quota, a key or config
+      problem). Says nothing about the token, so it must not read as "signed out". */
+  | { ok: false; kind: "unavailable"; reason: string };
+
 /**
- * The uid this ID token belongs to, or null if it isn't a valid one.
+ * What this ID token is worth.
  *
  * `accounts:lookup` is the check: it resolves a token to its account and fails
- * on anything expired, malformed, revoked, or signed by someone else. A network
- * failure also returns null — an unverifiable caller is not an authorised one.
+ * on anything expired, malformed, revoked, or signed by someone else. An
+ * unverifiable caller is still not an authorised one, but "Google said no" and
+ * "we couldn't ask" are different things to tell a paying customer, so they come
+ * back as different kinds — and both are logged with Google's own reason, since
+ * this used to collapse to `null` and leave nothing to debug from.
  */
-export async function verifyIdToken(idToken: string): Promise<string | null> {
+export async function checkIdToken(idToken: string): Promise<TokenCheck> {
   const cfg = config();
-  if (!cfg) return null;
+  if (!cfg) return { ok: false, kind: "unavailable", reason: "not configured" };
   try {
     const response = await fetch(`${IDENTITY_TOOLKIT}?key=${encodeURIComponent(cfg.apiKey)}`, {
       method: "POST",
@@ -65,12 +85,25 @@ export async function verifyIdToken(idToken: string): Promise<string | null> {
       body: JSON.stringify({ idToken }),
       signal: AbortSignal.timeout(10_000),
     });
-    if (!response.ok) return null;
+    if (!response.ok) {
+      const body = (await response.json().catch(() => null)) as {
+        error?: { message?: string };
+      } | null;
+      const reason = body?.error?.message ?? `HTTP ${response.status}`;
+      const rejected =
+        response.status === 400 && REJECTED_TOKEN_REASONS.some((known) => reason.startsWith(known));
+      console.warn(`cookbook-pdf: token check ${rejected ? "rejected" : "unavailable"}: ${reason}`);
+      return { ok: false, kind: rejected ? "rejected" : "unavailable", reason };
+    }
     const data = (await response.json()) as { users?: Array<{ localId?: string }> };
     const uid = data.users?.[0]?.localId;
-    return typeof uid === "string" && uid ? uid : null;
-  } catch {
-    return null;
+    if (typeof uid === "string" && uid) return { ok: true, uid };
+    console.warn("cookbook-pdf: token check returned no user");
+    return { ok: false, kind: "rejected", reason: "no user in response" };
+  } catch (error) {
+    const reason = error instanceof Error ? error.message : String(error);
+    console.warn(`cookbook-pdf: token check unavailable: ${reason}`);
+    return { ok: false, kind: "unavailable", reason };
   }
 }
 

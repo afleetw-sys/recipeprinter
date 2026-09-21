@@ -4,7 +4,7 @@ import {
   cookbookAccessConfigured,
   hasCookbookUnlock,
   projectIdFromPayload,
-  verifyIdToken,
+  checkIdToken,
 } from "@/lib/server/cookbookAccess";
 import { callerKey, rateLimit } from "@/lib/server/rateLimit";
 
@@ -148,13 +148,20 @@ export async function POST(request: Request) {
     });
   }
 
-  const uid = await verifyIdToken(idToken);
-  if (!uid) {
+  const check = await checkIdToken(idToken);
+  if (!check.ok && check.kind === "unavailable") {
+    // We couldn't ask Google, which says nothing about whether this person is
+    // signed in. Telling them they were signed out sent a signed-in customer to
+    // a sign-in button that had nothing to do.
+    return jsonError("We couldn't confirm your sign-in just now. Try again in a moment.", 503);
+  }
+  if (!check.ok) {
     return jsonError("You've been signed out. Sign in again to download your cookbook.", 401, {
       needsAuth: true,
       needsAccount: false,
     });
   }
+  const uid = check.uid;
 
   let unlocked: boolean;
   try {

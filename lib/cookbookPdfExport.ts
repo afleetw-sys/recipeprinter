@@ -48,11 +48,11 @@ export class CookbookPdfError extends Error {
  * page, and pulling `firebase/auth` eagerly is what put the auth SDK on pages
  * that had no account on them.
  */
-async function currentIdToken(): Promise<string | null> {
+async function currentIdToken(forceRefresh = false): Promise<string | null> {
   try {
     const { getFirebaseAuth } = await import("@/lib/firebase/client");
     const user = getFirebaseAuth().currentUser;
-    return user ? await user.getIdToken() : null;
+    return user ? await user.getIdToken(forceRefresh) : null;
   } catch {
     // No Firebase configured, or no session to read. The route answers with the
     // sign-in prompt, which is the right thing to show either way.
@@ -93,9 +93,8 @@ export function coverWrapProject(project: PrintProject): PrintProject {
   return { ...project, sections: [], itemPlacements: undefined, stashedCookbook: undefined };
 }
 
-async function renderPdf(request: RenderRequest): Promise<Blob> {
-  const idToken = await currentIdToken();
-  const response = await fetch("/api/cookbook-pdf", {
+async function postRender(request: RenderRequest, idToken: string | null): Promise<Response> {
+  return fetch("/api/cookbook-pdf", {
     method: "POST",
     headers: {
       "content-type": "application/json",
@@ -103,12 +102,33 @@ async function renderPdf(request: RenderRequest): Promise<Blob> {
     },
     body: JSON.stringify(request),
   });
+}
+
+type ErrorBody = { error?: string; needsAuth?: boolean; needsAccount?: boolean };
+
+async function renderPdf(request: RenderRequest): Promise<Blob> {
+  const idToken = await currentIdToken();
+  let response = await postRender(request, idToken);
+  let body: ErrorBody = {};
+
+  // A token the server turned away is often just a stale one. Get a fresh one
+  // and ask once more before telling anybody anything about their account.
+  if (response.status === 401 && idToken) {
+    const refreshed = await currentIdToken(true);
+    if (refreshed) response = await postRender(request, refreshed);
+  }
 
   if (!response.ok) {
-    const body = await response
-      .json()
-      .then((parsed: { error?: string; needsAuth?: boolean; needsAccount?: boolean }) => parsed)
-      .catch(() => ({}) as { error?: string; needsAuth?: boolean; needsAccount?: boolean });
+    body = await response.json().catch(() => ({}) as ErrorBody);
+    // Someone who IS signed in and still gets "sign in again" has been handed a
+    // button that opens nothing (the sign-in dialog only exists while nobody is
+    // signed in). Say what will actually help instead.
+    if (response.status === 401 && idToken) {
+      throw new CookbookPdfError(
+        "We couldn't confirm your sign-in. Sign out from the account menu, sign back in, and try again.",
+        { needsAuth: false, needsAccount: false },
+      );
+    }
     throw new CookbookPdfError(body.error ?? "The cookbook couldn't be exported.", {
       needsAuth: Boolean(body.needsAuth),
       needsAccount: Boolean(body.needsAccount),
