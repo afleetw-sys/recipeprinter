@@ -337,7 +337,7 @@ describe("the settings list's opening line", () => {
     // one thing the screen did not say.
     for (const destination of PRINT_DESTINATIONS) {
       for (const preset of destinationPresets(destination)) {
-        expect(settingsIntro(destination, preset)).toMatch(/^That’s/);
+        expect(settingsIntro(destination, preset)).toMatch(/^(That’s|Your book is ready)/);
       }
     }
   });
@@ -366,7 +366,7 @@ describe("the settings list's opening line", () => {
   it("has nobody to satisfy at home", () => {
     const home = getPrintDestination("home");
     expect(settingsIntro(home, destinationPresets(home)[0])).toBe(
-      "That’s your whole book. When you print it:",
+      "Your book is ready. For the best result at home, use these print settings:",
     );
   });
 });

@@ -195,9 +195,9 @@ export function destinationSettings(
     // page. Neither announces itself.
     return [
       { label: "Paper", value: preset.trimLabel },
-      { label: "Scale", value: "Actual size, not “Fit to page”" },
-      { label: "Sides", value: "Double-sided, flipped on the long edge" },
-      { label: "Binding", value: "Coil, comb or a 3-ring binder, once it’s printed" },
+      { label: "Scale", value: "Actual size (100%)" },
+      { label: "Sides", value: "Double-sided, flip on the long edge" },
+      { label: "Binding", value: "Any coil, comb or 3-ring binder works" },
     ];
   }
 
@@ -294,7 +294,7 @@ export function settingsIntro(
   preset: CookbookPreset,
 ): string {
   if (!destinationUploadsAFile(destination)) {
-    return "That’s your whole book. When you print it:";
+    return "Your book is ready. For the best result at home, use these print settings:";
   }
   if (!preset.wrapRequired) {
     return "That’s everything the shop needs. Ask for:";
