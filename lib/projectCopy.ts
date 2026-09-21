@@ -7,10 +7,9 @@ import type {
 import type { PhotoStyle, ProjectMeta } from "@/lib/project";
 
 /** What `buildCookbookScaffoldPatch` (app/print/page.tsx) computes for a
-    fresh book — a cover, a table of contents, and chapters when there's
-    enough to group. Kept out of that file because `scaffoldCookbook` (the
-    legacy in-place toggle) needs the type without needing the rest of the
-    page. */
+    fresh book — a cover and a table of contents. Kept out of that file because
+    `scaffoldCookbook` (the legacy in-place toggle) needs the type without
+    needing the rest of the page. */
 export interface CookbookScaffoldPatch {
   template: RecipePrintTemplate;
   cookbookPreset?: CookbookPresetId;
@@ -20,7 +19,4 @@ export interface CookbookScaffoldPatch {
   tableOfContents: boolean;
   sectionDividers: boolean;
   frontMatter?: CookbookFrontMatter;
-  /** Auto-organized chapters, only when the scaffold decided there was
-      enough to group and nothing was already organized by hand. */
-  sections?: ProjectMeta["sections"];
 }

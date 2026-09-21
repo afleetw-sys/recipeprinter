@@ -11,7 +11,7 @@ import type { SVGProps } from "react";
 // site, or the same button ends up with a 16px glyph on one side and a 14px one
 // on the other (the rail's Add carried exactly that pair):
 //   - a LEADING icon takes its control's size — `md` inside any .btn, so Save,
-//     Print, Add recipes, Add cover and Organize for me all match;
+//     Print, Add recipes and Add cover all match;
 //   - a TRAILING disclosure chevron takes the TEXT's size (`sm`), because it
 //     belongs to the label rather than to the button;
 //   - meta icons beside small text are `sm`; glyphs inside a status chip `xs`.
@@ -269,15 +269,6 @@ export const GlobeIcon = (p: IconProps) => (
     <circle cx="12" cy="12" r="8.5" />
     <path d="M3.5 12h17" />
     <path d="M12 3.5c2.2 2.3 3.3 5.1 3.3 8.5S14.2 18.2 12 20.5c-2.2-2.3-3.3-5.1-3.3-8.5S9.8 5.8 12 3.5z" />
-  </Base>
-);
-
-export const RefreshIcon = (p: IconProps) => (
-  <Base {...p}>
-    <path d="M4 12a8 8 0 0114-5.3L21 9" />
-    <path d="M21 4v5h-5" />
-    <path d="M20 12a8 8 0 01-14 5.3L3 15" />
-    <path d="M3 20v-5h5" />
   </Base>
 );
 

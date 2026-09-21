@@ -100,10 +100,6 @@ import {
 } from "@/lib/cookbookPresets";
 import { track } from "@/lib/analytics";
 import {
-  organizationSectionsForApply,
-  suggestCookbookOrganization,
-} from "@/lib/cookbookOrganizer";
-import {
   BookIcon,
   CheckIcon,
   ChevronLeftIcon,
@@ -263,7 +259,6 @@ export default function PrintPage() {
   const [organizeWide, setOrganizeWide] = useState(false);
   const [organizeAnimating, setOrganizeAnimating] = useState(false);
   const organizeTimers = useRef<number[]>([]);
-  const [organizationUndo, setOrganizationUndo] = useState<ProjectMeta["sections"] | null>(null);
   /**
    * Puts back the lines a drag deleted in one go.
    *
@@ -1328,22 +1323,6 @@ export default function PrintPage() {
       namedSectionCount(joinedSections) === 0 && !meta.frontMatter && !meta.dedication
         ? { kind: "dedication", heading: "Dedication", body: "" }
         : undefined;
-    // Chapter the book they already have. Turning a stack of recipes into a
-    // cookbook and handing back one undivided run of pages leaves the cook to
-    // do by hand the thing the book was for — and "Organize for me" is a button
-    // they have to find, in a panel they have to open, to get a result we could
-    // already have given them. Only for a book with enough recipes to group,
-    // and never over chapters they made themselves.
-    const shouldAutoOrganize =
-      namedSectionCount(joinedSections) === 0 &&
-      scaffoldItems.filter((item) => item.recipe).length >= 2;
-    const organizedSections = shouldAutoOrganize
-      ? organizationSectionsForApply(
-          suggestCookbookOrganization(scaffoldItems),
-          scaffoldItems.filter((item) => item.recipe).map((item) => item.id),
-          meta.sections,
-        )
-      : undefined;
     return {
       template: bookTemplate,
       // Give the book a default print format (US Letter) so export geometry is
@@ -1357,7 +1336,6 @@ export default function PrintPage() {
       tableOfContents: true,
       sectionDividers: false,
       frontMatter,
-      sections: organizedSections,
     };
   }
 
@@ -1389,7 +1367,6 @@ export default function PrintPage() {
     projectMeta.setTableOfContents(patch.tableOfContents);
     projectMeta.setSectionDividers(patch.sectionDividers);
     if (patch.frontMatter) projectMeta.setFrontMatter(patch.frontMatter);
-    if (patch.sections) applyCookbookOrganization({ automatic: true });
     projectMeta.setCookbookWelcomeCompleted(true);
     // Every recipe gets its own full page — no auto-pairing. The cook can turn
     // an individual recipe into a full-page photo spread from the page controls.
@@ -1972,37 +1949,6 @@ export default function PrintPage() {
     });
   }
 
-  // The ONE place the recommended structure is applied. Always snapshots the
-  // current sections first, so the single Undo can restore them — that matters
-  // MORE when this runs by itself at build time, because nobody asked for it.
-  function applyCookbookOrganization({ automatic = false }: { automatic?: boolean } = {}) {
-    setOrganizationUndo(structuredClone(projectMeta.meta.sections));
-    const next = organizationSectionsForApply(
-      suggestCookbookOrganization(items ?? []),
-      (items ?? []).filter((item) => item.recipe).map((item) => item.id),
-      // What the book already has, so a chapter the suggestion agrees with
-      // keeps the opener photo, collage and intro the cook gave it instead of
-      // being rebuilt bare.
-      projectMeta.meta.sections,
-    );
-    projectMeta.setSectionStructure(next);
-    track("relayout_applied", { sectionCount: next.length, automatic });
-    // No toast for the automatic run: it lands while the book is being built, where it would
-    // be a notification about something the cook is already watching happen.
-    if (!automatic) showToast(cookbookMode ? "Cookbook organized" : "Recipes organized");
-  }
-
-  function suggestCookbookLayout() {
-    applyCookbookOrganization();
-  }
-
-  function undoCookbookOrganization() {
-    if (!organizationUndo) return;
-    projectMeta.setSectionStructure(organizationUndo);
-    setOrganizationUndo(null);
-    showToast("Organization undone");
-  }
-
   function recipeTitleForId(itemId: string) {
     const item = items?.find((entry) => entry.id === itemId);
     return (item?.recipe?.title || item?.title || "").trim();
@@ -2011,7 +1957,7 @@ export default function PrintPage() {
   // Sorting is a real reorder, not a view: the organizer shows the book, so A–Z
   // has to move the pages themselves — otherwise the tiles and the printed
   // order would disagree. Each section sorts within itself; section order is
-  // the cook's own (and "Organize for me" above owns that question).
+  // the cook's own.
   function applyRailSort(mode: RailSortMode) {
     if (mode === railSortMode) return;
     if (mode === "title") {
@@ -5386,9 +5332,6 @@ export default function PrintPage() {
           addMenuOpen={addMenuOpen}
           setAddMenuOpen={setAddMenuOpen}
           addMenuRef={addMenuRef}
-          suggestCookbookLayout={suggestCookbookLayout}
-          undoCookbookOrganization={undoCookbookOrganization}
-          canUndoOrganization={organizationUndo !== null}
         />
 
         {/* Center: large preview of the selected page */}
@@ -5663,9 +5606,6 @@ export default function PrintPage() {
           navigateToRecipe={navigateToRecipe}
           moveRecipeInBook={moveRecipeInBook}
           addStructureSection={addStructureSection}
-          suggestCookbookLayout={suggestCookbookLayout}
-          undoCookbookOrganization={undoCookbookOrganization}
-          canUndoOrganization={organizationUndo !== null}
           structureSheetOpen={structureSheetOpen}
           setStructureSheetOpen={setStructureSheetOpen}
         />
@@ -5844,11 +5784,6 @@ export default function PrintPage() {
                 setToastMessage(null);
               }}
             >
-              Undo
-            </button>
-          )}
-          {organizationUndo && toastMessage === "Cookbook organized" && (
-            <button type="button" className="recipe-toast__action" onClick={undoCookbookOrganization}>
               Undo
             </button>
           )}
