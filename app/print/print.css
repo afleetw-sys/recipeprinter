@@ -4830,15 +4830,28 @@
 }
 .image-picker__panel {
   position: relative;
+  display: flex;
+  flex-direction: column;
   width: min(560px, 100%);
   max-height: min(680px, calc(100vh - 48px));
-  overflow: auto;
-  padding: 24px;
+  /* The scrolling lives on `.image-picker__scroll` below, so Done and the
+     count can sit outside it as a fixed footer instead of scrolling away
+     with a long photo grid. */
+  overflow: hidden;
   border: 1px solid var(--cp-line);
   border-radius: 28px;
   background: var(--cp-card);
   box-shadow: var(--cp-shadow-xl);
   color: var(--cp-ink);
+}
+.image-picker__scroll {
+  overflow: auto;
+  flex: 1 1 auto;
+  /* Without this a flex child's default min-height (auto = its content's
+     full height) refuses to shrink below the grid's natural size, and the
+     scrollbar this element exists for never appears. */
+  min-height: 0;
+  padding: 24px;
 }
 /* Drag and drop. The veil covers the viewport, not just the panel, because the
    picker accepts a drop anywhere while it is open: releasing a photo beside the
@@ -5122,7 +5135,11 @@
   align-items: center;
   justify-content: space-between;
   gap: 12px;
-  margin-top: 20px;
+  flex: none;
+  padding: 16px 24px;
+  /* Separates it from the scrolled content now that it's a fixed strip below
+     `.image-picker__scroll` rather than the last thing in the same flow. */
+  border-top: 1px solid var(--cp-line);
 }
 /* On mobile this sits inside MobileSheet's own `footer` slot (shared with
    Size/Book/Themes), whose `.recipe-mobile-sheet__footer .btn` rule stretches
@@ -5144,7 +5161,6 @@
     padding: 12px;
   }
   .image-picker__panel {
-    padding: 20px;
     border-radius: 24px 24px 14px 14px;
   }
   .image-picker__grid {

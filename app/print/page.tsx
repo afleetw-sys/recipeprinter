@@ -42,8 +42,6 @@ import {
 import {
   buildSections,
   namedSectionCount,
-  resolveCardPhotoMode,
-  resolveArtPhotoMode,
   sectionDisplayTitle,
   useProjectMeta,
   type ProjectMeta,
@@ -1506,9 +1504,6 @@ export default function PrintPage() {
         current={edit.photoUrl}
         images={edit.recipeImages ?? []}
         onSelect={(url) => edit.onPhotoChange?.(url)}
-        gridActive={edit.gridActive}
-        onSelectGrid={edit.onSelectGrid}
-        onExitGrid={edit.onExitGrid}
         gridImages={edit.gridImages}
         onGridChange={edit.onGridChange}
         gridMax={edit.gridMax}
@@ -1535,9 +1530,6 @@ export default function PrintPage() {
         current={edit.photoUrl}
         images={edit.recipeImages ?? []}
         onSelect={(url) => edit.onPhotoChange?.(url)}
-        gridActive={edit.gridActive}
-        onSelectGrid={edit.onSelectGrid}
-        onExitGrid={edit.onExitGrid}
         gridImages={edit.gridImages}
         onGridChange={edit.onGridChange}
         gridMax={edit.gridMax}
@@ -4214,39 +4206,22 @@ export default function PrintPage() {
   // dialog is just "this slot's photo, or a collage, or none" — deleting the
   // photo is the None tile the plain picker already offers).
   const buildCardPhotoEdit = (section: Section | undefined) => {
-    const mode = resolveCardPhotoMode(section ?? {}, photoStyle);
     const ownImages = section ? sectionRecipeImages(section) : [];
-    const isGrid = mode === "grid";
-    // Nothing ticked until the cook taps a tile — "Select multiple" turns the
-    // mode on, it does not turn photos on. (The printed page still falls back
-    // to the chapter's own recipe photos while the collage is empty; see
+    // Nothing ticked until the cook taps a tile. (The printed page still falls
+    // back to the chapter's own recipe photos while the collage is empty; see
     // `defaultSectionGridImages` — that fallback is the renderer's, not this
-    // dialog's, and stays untouched here.)
+    // dialog's, and stays untouched here.) Every tap writes "grid" — a single
+    // ticked photo is a one-photo collage, not a different stored mode; see
+    // ImagePicker's own note on why there's no separate single/multi switch.
     const gridImages = section?.cardGridImages ?? [];
     return {
       photoUrl: section?.cardPhotoUrl,
       recipeImages: ownImages,
+      // Reached only by the "None" tile now — clears the photo outright.
       onPhotoChange: (url: string | undefined) => {
-        if (!section) return;
-        if (url === undefined) {
-          projectMeta.setCardPhoto(section.id, "none");
-        } else {
-          projectMeta.setCardPhoto(section.id, "photo", { photoUrl: url });
-        }
+        if (!section || url !== undefined) return;
+        projectMeta.setCardPhoto(section.id, "none");
       },
-      gridActive: isGrid,
-      onSelectGrid:
-        section && ownImages.length >= 2
-          ? () => projectMeta.setCardPhoto(section.id, "grid", { gridImages })
-          : undefined,
-      onExitGrid: section
-        ? () =>
-            projectMeta.setCardPhoto(section.id, "photo", {
-              photoUrl: section.cardPhotoUrl ?? section.cardGridImages?.[0] ?? ownImages[0],
-            })
-        : undefined,
-      // Pinning the tiles the moment one is toggled turns a defaulted collage
-      // into the cook's own, which is what un-ticking a photo means.
       gridImages,
       onGridChange: (urls: string[]) => {
         if (!section) return;
@@ -4259,33 +4234,16 @@ export default function PrintPage() {
   // The facing/art page's own photo edit wiring — same shape as the card's
   // above, entirely independent of it (see `buildCardPhotoEdit`).
   const buildArtPhotoEdit = (section: Section | undefined) => {
-    const mode = resolveArtPhotoMode(section ?? {}, photoStyle);
     const ownImages = section ? sectionRecipeImages(section) : [];
-    const isGrid = mode === "grid";
     // See buildCardPhotoEdit: nothing ticked until the cook taps a tile.
     const gridImages = section?.artGridImages ?? [];
     return {
       photoUrl: section?.artPhotoUrl,
       recipeImages: ownImages,
       onPhotoChange: (url: string | undefined) => {
-        if (!section) return;
-        if (url === undefined) {
-          projectMeta.setArtPhoto(section.id, "none");
-        } else {
-          projectMeta.setArtPhoto(section.id, "photo", { photoUrl: url });
-        }
+        if (!section || url !== undefined) return;
+        projectMeta.setArtPhoto(section.id, "none");
       },
-      gridActive: isGrid,
-      onSelectGrid:
-        section && ownImages.length >= 2
-          ? () => projectMeta.setArtPhoto(section.id, "grid", { gridImages })
-          : undefined,
-      onExitGrid: section
-        ? () =>
-            projectMeta.setArtPhoto(section.id, "photo", {
-              photoUrl: section.artPhotoUrl ?? section.artGridImages?.[0] ?? ownImages[0],
-            })
-        : undefined,
       gridImages,
       onGridChange: (urls: string[]) => {
         if (!section) return;
@@ -4513,48 +4471,27 @@ export default function PrintPage() {
     const cover = coverForSide(side) ?? defaultCover();
     const gridImages = (cover.gridImages ?? []).filter(Boolean);
     const candidates = coverPhotoCandidates;
-    // Not gated on `gridImages.length` — "Select multiple" turns collage mode
-    // ON with nothing ticked yet (see onSelectGrid below), and the picker
-    // still has to open into that empty grid rather than falling back to the
-    // single-photo view because nothing has been chosen.
-    const gridActive = cover.layout === "collage";
     return (
       <ImagePicker
         current={cover.imageUrl}
         images={candidates}
-        gridActive={gridActive}
         gridImages={gridImages}
-        onSelect={(imageUrl) =>
+        // Reached only by the "None" tile now — clears the photo outright.
+        onSelect={(imageUrl) => {
+          if (imageUrl !== undefined) return;
           setCoverForSide(side, {
             ...cover,
-            imageUrl,
+            imageUrl: undefined,
             gridImages: undefined,
-            layout: imageUrl ? "photo" : "typographic",
-          })
-        }
+            layout: "typographic",
+          });
+        }}
         onGridChange={(urls) =>
           setCoverForSide(side, {
             ...cover,
             gridImages: urls.length ? urls : undefined,
             imageUrl: undefined,
             layout: urls.length ? "collage" : "typographic",
-          })
-        }
-        onSelectGrid={
-          candidates.length >= 2
-            ? () =>
-                // Turns the mode on; nothing is ticked until the cook taps a
-                // tile. Whatever was already curated (`cover.gridImages`)
-                // carries over untouched via the spread below — only a FIRST
-                // entry starts empty.
-                setCoverForSide(side, { ...cover, imageUrl: undefined, layout: "collage" })
-            : undefined
-        }
-        onExitGrid={() =>
-          setCoverForSide(side, {
-            ...cover,
-            imageUrl: cover.imageUrl ?? gridImages[0],
-            layout: cover.imageUrl || gridImages[0] ? "photo" : "typographic",
           })
         }
         openSignal={photoDialogSignal(`cover:${side}`)}
