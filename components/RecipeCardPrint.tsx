@@ -1394,6 +1394,10 @@ export const DividerFace = memo(function DividerFace({
    * leave it alone.
    */
   const derivedIntro = useMemo(() => chapterIntroFromRecipes(recipeTitles), [recipeTitles]);
+  // `""` is a description the cook removed: it prints nothing, and neither the
+  // read-mode fallback nor the field's prompt may quietly bring the recipes'
+  // names back. Only an intro that was never written (`undefined`) follows them.
+  const introRemoved = (inlineEdit?.intro ?? intro) === "";
 
   /**
    * Move the caret between this page's lines.
@@ -1557,21 +1561,23 @@ export const DividerFace = memo(function DividerFace({
         {openerField({
           name: "intro",
           value: inlineEdit?.intro ?? intro ?? "",
-          // The prompt is the line that would actually print, not a generic
-          // "write something here" — an untouched intro is a decision, so show
-          // its result rather than hiding it until the cook clicks away. The
-          // way back once it HAS been typed over lives in the page toolbar,
-          // with the rest of the app's chrome: a control in here would be drawn
-          // at the card's print scale, which is a third of a legible size.
-          placeholder: derivedIntro,
-          ariaLabel: "Chapter intro",
+          // While untouched the prompt is the line that would actually print,
+          // not a generic "write something here" — an untouched description is a
+          // decision, so show its result rather than hiding it until the cook
+          // clicks away. Once it has been removed nothing prints, so the prompt
+          // is a plain invitation like every other empty field. The way back to
+          // the recipes' names lives in the page toolbar, with the rest of the
+          // app's chrome: a control in here would be drawn at the card's print
+          // scale, which is a third of a legible size.
+          placeholder: introRemoved ? "Section description" : derivedIntro,
+          ariaLabel: "Chapter description",
           className: "recipe-card__chapter-intro",
           // Two rows, unlike the lines above it: `field-sizing: content` grows
           // the box to the text (or the prompt) where it is supported and
           // ignores `rows` entirely, and where it isn't, the derived line's two
           // lines are what has to fit.
           rows: 2,
-          fallback: derivedIntro,
+          fallback: introRemoved ? undefined : derivedIntro,
           onChange: (value) => inlineEdit?.onIntroChange?.(value),
         })}
       </div>

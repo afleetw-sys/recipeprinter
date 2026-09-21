@@ -223,7 +223,10 @@ export function normalizeProjectMeta(value: unknown): ProjectMeta {
           gridImages: Array.isArray(section.gridImages)
             ? section.gridImages.filter((url): url is string => typeof url === "string" && Boolean(url))
             : undefined,
-          intro: cleanText(section.intro),
+          // `undefined` prints the recipes' names; `""` is a line the cook took
+          // away and prints nothing. Blank-but-present text is kept as `""`
+          // rather than dropped, or a removed intro would come back on reload.
+          intro: typeof section.intro === "string" ? (section.intro.trim() ? section.intro : "") : undefined,
           // Named cookbook sections always receive an opener. Keep the field
           // in persisted data for backward compatibility, but never preserve
           // an old user-disabled value.
@@ -665,13 +668,16 @@ export function useProjectMeta() {
     [update],
   );
 
-  /** Chapter-opener intro line for a section (cookbook mode). */
+  /** Chapter-opener description line for a section (cookbook mode).
+      `undefined` follows the chapter's recipes (the derived line); `""` is the
+      cook having removed it, which prints nothing. The two are not the same, so
+      neither is coerced into the other here. */
   const setSectionIntro = useCallback(
     (sectionId: string, intro: string | undefined) => {
       update((current) => ({
         ...current,
         sections: current.sections.map((section) =>
-          section.id === sectionId ? { ...section, intro: intro || undefined } : section,
+          section.id === sectionId ? { ...section, intro } : section,
         ),
       }));
     },

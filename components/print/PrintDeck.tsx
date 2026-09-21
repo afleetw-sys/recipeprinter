@@ -394,7 +394,7 @@ export function PrintDeck(props: PrintDeckProps) {
     /**
      * Does this page have a field nobody can see yet?
      *
-     * "More fields" reveals the slots a page has not filled in. On a page where
+     * The reveal button shows the slots a page has not filled in. On a page where
      * everything IS filled in it reveals nothing, so offering it is offering a
      * button that does nothing — and the reveal is the button's whole job now
      * that the text is editable by clicking it.
@@ -405,71 +405,91 @@ export function PrintDeck(props: PrintDeckProps) {
      * that they edit by being clicked, it is the same question.
      */
     /**
-     * The names of the recipe fields that are empty, in the order the button
-     * lists them. In a cookbook the button says these out loud, because "More
-     * fields" gave nobody a reason to press it to find where a link goes.
+     * The names of the fields this page has not filled in, in the order they
+     * appear on it. The button says them out loud ("Add link, time, servings"),
+     * because a generic "More fields" gave nobody a reason to press it, and it
+     * is also the answer to whether there is anything to offer: no names, no
+     * button. The same on every kind of page, so the toolbar never has to be
+     * learnt page by page.
      */
-    const missingRecipeFields = (): string[] => {
-      if (navItem.kind !== "recipe") return [];
-      const recipe = items?.find((item) => item.id === navItem.recipeId)?.recipe;
-      if (!recipe) return [];
-      const cookbook = Boolean(projectMeta.meta.cookbookMode);
-      const missing: string[] = [];
-      // A cookbook recipe can be given a link by hand whatever the book-wide
-      // setting says (it gets its own override on commit), so a missing link is
-      // always a hidden field there. Elsewhere the field only exists while the
-      // setting is on, so a missing link is only a hidden FIELD when that field
-      // would show.
-      if ((cookbook || showSourceUrl) && !recipe.sourceUrl) missing.push("link");
-      if (!formatRecipeTime(recipe.totalTime || recipe.cookTime || recipe.prepTime)) missing.push("time");
-      if (!(recipe.servings ?? recipe.yield)) missing.push("servings");
-      // Ask what the note WOULD print, not whether the website blurb
-      // exists. The card shows `composeNote(description, note,
-      // showDescription)`, so a recipe that arrived with a blurb and no
-      // note of its own prints nothing once the website-description
-      // checkbox is off — an empty line with no way to reach it, because
-      // this test read the stored blurb and concluded the field was
-      // filled. Reading the composed line also stops the opposite: a cook's
-      // own note with no blurb behind it printed fine and still offered to
-      // reveal a field that was never missing.
-      if (cookbook && !composeNote(recipe.description, recipe.note, showDescription).trim()) {
-        missing.push("note");
-      }
-      return missing;
-    };
-    const pageHasHiddenFields = (): boolean => {
+    const missingFieldNames = (): string[] => {
       if (navItem.kind === "recipe") {
         const recipe = items?.find((item) => item.id === navItem.recipeId)?.recipe;
-        if (!recipe) return false;
-        return (
-          recipe.ingredients.length === 0 ||
-          recipe.instructions.length === 0 ||
-          missingRecipeFields().length > 0
-        );
+        if (!recipe) return [];
+        const cookbook = Boolean(projectMeta.meta.cookbookMode);
+        const missing: string[] = [];
+        // A cookbook recipe can be given a link by hand whatever the book-wide
+        // setting says (it gets its own override on commit), so a missing link is
+        // always a hidden field there. Elsewhere the field only exists while the
+        // setting is on, so a missing link is only a hidden FIELD when that field
+        // would show.
+        if ((cookbook || showSourceUrl) && !recipe.sourceUrl) missing.push("link");
+        if (!formatRecipeTime(recipe.totalTime || recipe.cookTime || recipe.prepTime)) missing.push("time");
+        if (!(recipe.servings ?? recipe.yield)) missing.push("servings");
+        // Ask what the note WOULD print, not whether the website blurb
+        // exists. The card shows `composeNote(description, note,
+        // showDescription)`, so a recipe that arrived with a blurb and no
+        // note of its own prints nothing once the website-description
+        // checkbox is off — an empty line with no way to reach it, because
+        // this test read the stored blurb and concluded the field was
+        // filled. Reading the composed line also stops the opposite: a cook's
+        // own note with no blurb behind it printed fine and still offered to
+        // reveal a field that was never missing.
+        if (cookbook && !composeNote(recipe.description, recipe.note, showDescription).trim()) {
+          missing.push("note");
+        }
+        if (recipe.ingredients.length === 0) missing.push("ingredients");
+        if (recipe.instructions.length === 0) missing.push("steps");
+        return missing;
       }
       if (navItem.kind === "cover") {
         const side = coverSideFromNavItem(navItem);
         const cover = coverForSide(side);
-        if (!cover) return true;
         // The opening page's heading prints as "Dedication" when nobody types
         // one, so it is never an empty slot — it always has something to click.
-        if (side === "dedication") return !cover.blurb || !cover.author;
-        if (side === "back") return !cover.blurb || !cover.author;
-        return !cover.subtitle || !cover.title || !cover.author || !cover.edition;
+        if (side === "dedication") {
+          return [!cover?.blurb && "message", !cover?.author && "signature"].filter(
+            (name): name is string => Boolean(name),
+          );
+        }
+        if (side === "back") {
+          return [!cover?.blurb && "closing line", !cover?.author && "credit"].filter(
+            (name): name is string => Boolean(name),
+          );
+        }
+        return [
+          !cover?.subtitle && "subtitle",
+          !cover?.title && "title",
+          !cover?.author && "author",
+          !cover?.edition && "edition",
+        ].filter((name): name is string => Boolean(name));
       }
       if (navItem.kind === "divider") {
-        // The title always prints, and the intro prints the chapter's recipe
-        // names when nobody has written one — so the subtitle is the opener's
-        // only line that can be invisible for want of being written.
         const section = sections.find((candidate) => candidate.id === navItem.recipeId);
-        return !section?.subtitle?.trim();
+        // The title always prints. The description prints the chapter's recipe
+        // names until the cook writes their own or removes it, so it is only a
+        // hidden field once it has been removed (`""`); left alone it is not
+        // missing, it is being drawn for them.
+        return [
+          !section?.subtitle?.trim() && "subtitle",
+          section?.intro === "" && "description",
+        ].filter((name): name is string => Boolean(name));
       }
       // Nothing on the contents page can be missing: both of its lines print a
       // default ("Contents", "What's inside") when nobody types one, and the
       // entries are generated.
-      if (navItem.kind === "toc") return false;
-      return true;
+      return [];
     };
+    const missingNames = missingFieldNames();
+    const pageHasHiddenFields = (): boolean => missingNames.length > 0;
+    // Four names is what fits a phone's pill on two lines; any more collapse
+    // into a count. A blank recipe would otherwise list six.
+    const fieldsLabel =
+      missingNames.length === 0
+        ? "Add fields"
+        : `Add ${missingNames.slice(0, 4).join(", ")}${
+            missingNames.length > 4 ? ` +${missingNames.length - 4}` : ""
+          }`;
 
     // Whether this KIND of page has an edit/reveal button at all.
     const editable =
@@ -574,7 +594,9 @@ export function PrintDeck(props: PrintDeckProps) {
     const introReset = (() => {
       if (navItem.kind !== "divider" || !showEmptyFields) return null;
       const section = sections.find((candidate) => candidate.id === navItem.recipeId);
-      if (!section?.intro?.trim()) return null;
+      // Written over, or taken away: either way the recipes' names are no longer
+      // what prints, and this is the way back to them.
+      if (section?.intro === undefined) return null;
       return {
         sectionId: section.id,
         derived: chapterIntroFromRecipes(chapterRecipeTitles(section.items)),
@@ -689,11 +711,7 @@ export function PrintDeck(props: PrintDeckProps) {
                     clicked into existence because they take up no room. So it
                     says what appears rather than "Edit", which would promise a
                     mode that is not there any more. */}
-                {editing
-                  ? "Done"
-                  : projectMeta.meta.cookbookMode && missingRecipeFields().length > 0
-                    ? `Add ${missingRecipeFields().join(", ")}`
-                    : "More fields"}
+                {editing ? "Done" : fieldsLabel}
               </button>
             </div>
           )}
@@ -825,7 +843,10 @@ export function PrintDeck(props: PrintDeckProps) {
       onSubtitleChange: (value: string) =>
         projectMeta.updateSection(sectionId, { subtitle: value || undefined }),
       intro: section?.intro,
-      onIntroChange: (value: string) => projectMeta.setSectionIntro(sectionId, value || undefined),
+      // Kept as typed, `""` included: emptying the field removes the line. It no
+      // longer hands the page back to the recipes' names, which is what made the
+      // line impossible to get rid of.
+      onIntroChange: (value: string) => projectMeta.setSectionIntro(sectionId, value),
     };
   };
 
@@ -852,7 +873,7 @@ export function PrintDeck(props: PrintDeckProps) {
       showEmptyFields={showEmptyFields}
       showDescription={showDescription}
       // The recipe's own link decision travels on its slot. What is left for
-      // the deck to say is the reveal: "More fields" shows the empty slot a link
+      // the deck to say is the reveal: the button shows the empty slot a link
       // would be typed into, which in a cookbook needs no setting on first.
       revealSourceUrl={
         showEmptyFields &&

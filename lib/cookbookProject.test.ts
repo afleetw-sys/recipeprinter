@@ -321,3 +321,22 @@ describe("projectDisplayTitle: falling back to the recipes", () => {
   });
 });
 
+
+describe("a chapter's description line", () => {
+  const intro = (value: unknown) =>
+    normalizeProjectMeta({ sections: [{ id: "s", title: "Dinner", itemIds: [], intro: value }] })
+      .sections[0].intro;
+
+  it("stays undefined when never written, so it follows the chapter's recipes", () => {
+    expect(intro(undefined)).toBeUndefined();
+  });
+
+  it("stays an empty string when the cook removed it, so a reload does not bring it back", () => {
+    expect(intro("")).toBe("");
+    expect(intro("   ")).toBe("");
+  });
+
+  it("keeps what was written", () => {
+    expect(intro("Nana never served fewer than three.")).toBe("Nana never served fewer than three.");
+  });
+});

@@ -87,7 +87,7 @@ export const ScaledPage = memo(function ScaledPage({
   template: RecipePrintTemplate;
   doubleSided: boolean;
   /** Draw the source-link field even where the recipe's own resolved setting
-      (`slot.showSourceUrl`) has it off: the editor's "More fields" reveal, which
+      (`slot.showSourceUrl`) has it off: the editor's field reveal, which
       has to show the empty slot a link would be typed into. Never set by the
       export or the rail. */
   revealSourceUrl?: boolean;
