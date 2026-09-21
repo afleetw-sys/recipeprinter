@@ -22,7 +22,6 @@ import {
   ChevronLeftIcon,
   ChevronRightIcon,
   GripIcon,
-  RefreshIcon,
   ICON_SIZE,
   PlusIcon,
   SortIcon,
@@ -200,11 +199,6 @@ interface PageRailProps {
   railSortMode: RailSortMode;
   applyRailSort: (mode: RailSortMode) => void;
   addMenuOpen: boolean;
-  /** Sorts the book into sections and orders it — see `suggestCookbookLayout`. */
-  suggestCookbookLayout: () => void;
-  undoCookbookOrganization: () => void;
-  /** True once an auto-organize has run and its "before" snapshot is still held. */
-  canUndoOrganization: boolean;
   setAddMenuOpen: Dispatch<SetStateAction<boolean>>;
   addMenuRef: MutableRefObject<HTMLDivElement | null>;
 }
@@ -267,9 +261,6 @@ export function PageRail(props: PageRailProps) {
     railSortMode,
     applyRailSort,
     addMenuOpen,
-    suggestCookbookLayout,
-    undoCookbookOrganization,
-    canUndoOrganization,
     setAddMenuOpen,
     addMenuRef,
   } = props;
@@ -592,7 +583,14 @@ export function PageRail(props: PageRailProps) {
                 >
                   <ChevronLeftIcon size={ICON_SIZE.md} />
                 </IconButton>
-                <span className="recipe-organize-bar__title">Organize recipes</span>
+                <div className="recipe-organize-bar__titles">
+                  <span className="recipe-organize-bar__title">Organize recipes</span>
+                  {/* The two ways to move a recipe, said where the moving
+                      happens. Both already work; neither announces itself. */}
+                  <p className="recipe-organize-bar__hint">
+                    Drag or right click to move recipes between chapters.
+                  </p>
+                </div>
               </div>
               <div className="recipe-organize-bar__actions">
                 {/* Sort: the cook's own arrangement, or A–Z inside every
@@ -639,20 +637,6 @@ export function PageRail(props: PageRailProps) {
                     </div>
                   )}
                 </div>
-                {/* Auto-organize belongs to the organizer, not the rail. Out
-                    there it sat next to "Organize recipes" — a second, similar
-                    label competing with the thing that opens this — and offered
-                    to rearrange a book the cook could not see being rearranged.
-                    In here the result is right in front of them, and so is the
-                    Undo. */}
-                <button
-                  type="button"
-                  className="btn btn-secondary btn-compact recipe-organize-bar__auto"
-                  onClick={canUndoOrganization ? undoCookbookOrganization : suggestCookbookLayout}
-                >
-                  <RefreshIcon size={ICON_SIZE.md} />
-                  <span>{canUndoOrganization ? "Undo organizing" : "Organize for me"}</span>
-                </button>
                 {/* Sections are made in here, so the control to make one is in
                     here too. Two jobs, one button: with recipes selected it
                     wraps THOSE into a new section, and with nothing selected it

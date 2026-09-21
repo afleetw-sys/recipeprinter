@@ -184,19 +184,7 @@
   border-color: transparent;
 }
 
-/* Auto-organize / Undo, in the organizer's toolbar beside Sort and the
-   collapse control. Quiet by default — the cook is already arranging things by
-   hand in here, so this offers to help rather than announcing itself.
-
-   Layout only: it is a `.btn.btn-secondary.btn-compact`, so the box, corner,
-   hover and focus ring all arrive with the shared button. The organizer had
-   grown its own dialect — 40px pills on a softer hairline — and opening it
-   meant walking from one button language into another. */
-.recipe-organize-bar__auto {
-  white-space: nowrap;
-}
-
-/* Joins that toolbar on the same terms — a shared compact button, laid out
+/* In the organizer's toolbar beside Sort: a shared compact button, laid out
    only so it does not wrap or stretch. */
 .recipe-organize-bar__add-section {
   flex: 0 0 auto;
@@ -217,11 +205,24 @@
   flex: 0 0 auto;
   padding: 2px 2px 8px;
 }
-/* A row now: Back sits beside the title rather than above it. */
+/* A row now: Back sits beside the title rather than above it. The title and
+   the line about moving recipes stack; Back stays level with the title. */
 .recipe-organize-bar__heading {
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   gap: 4px;
+}
+.recipe-organize-bar__titles {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+.recipe-organize-bar__hint {
+  margin: 0;
+  font-size: var(--cp-fs-caption);
+  line-height: 1.35;
+  color: var(--cp-ink-soft);
 }
 .recipe-organize-bar__title {
   font-size: var(--cp-fs-h2-lg);
@@ -883,7 +884,7 @@
   gap: 0;
 }
 
-/* The organizer's own toolbar — "Organize for me", Sort, the collapse
+/* The organizer's own toolbar — Sort, Add chapter, the collapse
    control — settled on a shape that works: a pill, a hairline in `--cp-line`
    rather than the heavier `--cp-line-strong`, a card fill, and caption-sized
    text at 700. The rail's controls were the shared button component instead,
@@ -2441,7 +2442,7 @@
 }
 
 /* Failure tone. The toast is the ONLY place an import failure appears, so a
-   failure that looks exactly like "Cookbook organized" is a failure nobody
+   failure that looks exactly like "Sorted A–Z" is a failure nobody
    reads.
 
    Mixed into `--cp-card`, not `--cp-error-soft`: that token is a mix with

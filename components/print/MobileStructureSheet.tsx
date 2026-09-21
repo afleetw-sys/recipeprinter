@@ -2,7 +2,7 @@
 
 import type { Dispatch, SetStateAction } from "react";
 import { Checkbox, SelectTile } from "@/components/Controls";
-import { ChevronDownIcon, TrashIcon, PlusIcon, RefreshIcon, ICON_SIZE } from "@/components/icons";
+import { ChevronDownIcon, TrashIcon, PlusIcon, ICON_SIZE } from "@/components/icons";
 import { MobileSheet } from "@/components/print/MobileSheet";
 import { PHOTO_STYLE_OPTIONS, PhotoStylePreview } from "@/components/print/photoStyle";
 import { namedSectionCount, useProjectMeta, type PhotoStyle } from "@/lib/project";
@@ -21,9 +21,6 @@ interface MobileStructureSheetProps {
   navigateToRecipe: (itemId: string) => void;
   moveRecipeInBook: (itemId: string, direction: -1 | 1) => void;
   addStructureSection: () => void;
-  suggestCookbookLayout: () => void;
-  undoCookbookOrganization: () => void;
-  canUndoOrganization: boolean;
   structureSheetOpen: boolean;
   setStructureSheetOpen: Dispatch<SetStateAction<boolean>>;
 }
@@ -48,9 +45,6 @@ export function MobileStructureSheet({
   navigateToRecipe,
   moveRecipeInBook,
   addStructureSection,
-  suggestCookbookLayout,
-  undoCookbookOrganization,
-  canUndoOrganization,
   structureSheetOpen,
   setStructureSheetOpen,
 }: MobileStructureSheetProps) {
@@ -81,14 +75,6 @@ export function MobileStructureSheet({
               >
                 <PlusIcon size={ICON_SIZE.sm} />
                 Add chapter
-              </button>
-              <button
-                type="button"
-                className="btn btn-ghost btn-compact"
-                onClick={canUndoOrganization ? undoCookbookOrganization : suggestCookbookLayout}
-              >
-                <RefreshIcon size={ICON_SIZE.sm} />
-                {canUndoOrganization ? "Undo organizing" : "Organize for me"}
               </button>
             </>
           }
