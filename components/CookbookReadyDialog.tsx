@@ -20,7 +20,6 @@ import {
   PHOTOS_HELP,
   PRINT_DESTINATIONS,
   choiceForPreset,
-  destinationNote,
   destinationPresets,
   destinationPrinter as printerFor,
   destinationSettings,
@@ -285,7 +284,6 @@ function ChooseBook({
   const preset = presetForChoice(choice);
   const busy = exportingPreset !== null;
   const printer = destination ? printerFor(destination) : undefined;
-  const note = preset ? destinationNote(destination, preset) : null;
 
   const num = (raw: string, fallback: number) => {
     const parsed = Number.parseFloat(raw);
@@ -346,6 +344,15 @@ function ChooseBook({
         )}
       </div>
 
+      {/* What Save will produce, right under the shortcut that answers it —
+          not buried down by the button, where it read as a footnote on a
+          decision already made three questions ago. */}
+      {preset && (
+        <p className="cookbook-ready__downloads">
+          {downloadSummary(preset)}
+        </p>
+      )}
+
       <p className="cookbook-ready__lead">How will it be bound?</p>
       <Pills
         label="How it will be bound"
@@ -393,17 +400,6 @@ function ChooseBook({
           {choice.photos && <p className="cookbook-ready__note">{PHOTOS_HELP[choice.photos]}</p>}
         </>
       )}
-
-      {/* What Save will produce, straight under the choices it follows from. */}
-      {preset && (
-        <p className="cookbook-ready__downloads">
-          {downloadSummary(preset)}
-        </p>
-      )}
-
-      {/* Quiet, and only where the choice is not what this destination is set up
-          for. Never a block: the cook can save whatever they chose. */}
-      {note && <p className="cookbook-ready__note">{note}</p>}
 
       {/* Only where a cover travels on its own. A book with the cover as its
           first page has no cover sheet to size and nothing to read. */}
