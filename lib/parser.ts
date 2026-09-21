@@ -1,6 +1,11 @@
 "use client";
 
-import { adaptCookPilotRecipe, adaptCookPilotRecipes, normalizeImportURL } from "@/lib/cookpilot";
+import {
+  adaptCookPilotRecipe,
+  adaptCookPilotRecipes,
+  normalizeImportURL,
+  sourceUrlFromResponse,
+} from "@/lib/cookpilot";
 import { BLOCKED_REMEDY, searchPageMessage, unwrapRedirectUrl } from "@/lib/importUrl";
 import { errorParts } from "@/lib/friendlyErrors";
 import { anonymousOwnerId } from "@/lib/anonymousOwner";
@@ -444,7 +449,9 @@ export async function parseText(rawText: string): Promise<Recipe> {
       caption: text,
       transcript: text,
     });
-    const recipe = adaptCookPilotRecipe(data);
+    // A link pasted along with the text comes back as the recipe's source, so it
+    // lands in the link field instead of being typed at the end of the steps.
+    const recipe = adaptCookPilotRecipe(data, sourceUrlFromResponse(data));
     if (!recipe) {
       throw new ImportError(NO_RECIPE_IN_TEXT, "no_recipe");
     }

@@ -235,6 +235,21 @@ describe("parseText — reading the paste ourselves", () => {
     expect(recipe.title).toBe("Fallback Borscht");
   });
 
+  it("puts a link CookPilot found in the paste into the recipe's source", async () => {
+    callable.mockResolvedValue({
+      data: { ...COOKPILOT_RESULT.data, sourceURL: "https://www.example.com/banana-bread" },
+    });
+
+    const recipe = await parseText(`${PASTE}\nwww.example.com/banana-bread`);
+
+    expect(recipe.sourceUrl).toBe("https://www.example.com/banana-bread");
+  });
+
+  it("leaves the source empty when CookPilot found no link", async () => {
+    const recipe = await parseText(PASTE);
+    expect(recipe.sourceUrl).toBeUndefined();
+  });
+
   it("reads the text locally when CookPilot finds nothing in it", async () => {
     callable.mockResolvedValue({ data: {} });
 

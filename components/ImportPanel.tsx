@@ -612,7 +612,7 @@ export function ImportPanel({
             <textarea
               id="rp-text"
               className="field min-h-56"
-              placeholder={"Paste a full recipe with the title, ingredients, and steps.\n\nGrandma's Banana Bread\n\n2 cups flour\n3 ripe bananas\n…"}
+              placeholder={"Paste a full recipe with the title, ingredients, and steps.\n\nGrandma's Banana Bread\n\n2 cups flour\n3 ripe bananas\n…\n\nwww.example.com/banana-bread"}
               value={text}
               onChange={(e) => {
                 setText(e.target.value);
