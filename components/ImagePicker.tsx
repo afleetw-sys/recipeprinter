@@ -51,9 +51,11 @@ export function ImagePicker({
   onSelect: (url: string | undefined) => void;
   gridActive?: boolean;
   onSelectGrid?: () => void;
-  /** Turns the "Photo grid" choice into a toggle: when provided, clicking it
-      while grid is active exits back to a single photo (used by section openers,
-      where grid is a Full-page sub-mode). Absent = the cover's one-way behavior. */
+  /** Turns "Select multiple" into a toggle: when provided, clicking it while
+      grid is active exits back to a single photo. Every current caller passes
+      this. Absent falls back to a one-way `choose(onSelectGrid)` that picks a
+      collage and closes the dialog — kept for a caller that wants exactly
+      that, not because any does today. */
   onExitGrid?: () => void;
   /** Current photos in the cover collage (grid mode), in display order. */
   gridImages?: string[];
@@ -341,10 +343,13 @@ export function ImagePicker({
         <section className="image-picker__existing" aria-label="Photos">
           <div className="image-picker__existing-head">
             <h3>{gridMode ? "Tap to add or remove" : recipeMode ? "This recipe's photo" : "Your photos"}</h3>
-            {/* "Select multiple" turns the grid into a multi-pick collage. Section
-                openers can toggle back (onExitGrid); the cover enters and closes,
-                matching its one-way collage flow — so it's hidden once the cover is
-                already multi-selecting, having no single-photo state to return to. */}
+            {/* "Select multiple" turns the mode on — it does not pick anything;
+                the grid opens with nothing ticked and the cook taps tiles from
+                there. Every current caller (cover, chapter card, chapter facing
+                art) passes `onExitGrid`, so this also toggles back to a single
+                photo rather than being a one-way switch. `choose(onSelectGrid)`
+                below is a fallback for a caller that only wants the one-way
+                behavior — none does today. */}
             {showGridChoice && (!gridActive || onExitGrid) && (
               <button
                 type="button"

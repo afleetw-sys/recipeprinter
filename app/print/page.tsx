@@ -42,7 +42,6 @@ import {
 import {
   buildSections,
   namedSectionCount,
-  defaultSectionGridImages,
   resolveCardPhotoMode,
   resolveArtPhotoMode,
   sectionDisplayTitle,
@@ -4218,12 +4217,12 @@ export default function PrintPage() {
     const mode = resolveCardPhotoMode(section ?? {}, photoStyle);
     const ownImages = section ? sectionRecipeImages(section) : [];
     const isGrid = mode === "grid";
-    // A grid the BOOK chose behaves exactly like one the cook picked: the same
-    // photos, already ticked, with "Select multiple" on — so the dialog opens on
-    // a real selection they can add to or pare back.
-    const gridImages = section?.cardGridImages?.length
-      ? section.cardGridImages
-      : defaultSectionGridImages(ownImages);
+    // Nothing ticked until the cook taps a tile — "Select multiple" turns the
+    // mode on, it does not turn photos on. (The printed page still falls back
+    // to the chapter's own recipe photos while the collage is empty; see
+    // `defaultSectionGridImages` — that fallback is the renderer's, not this
+    // dialog's, and stays untouched here.)
+    const gridImages = section?.cardGridImages ?? [];
     return {
       photoUrl: section?.cardPhotoUrl,
       recipeImages: ownImages,
@@ -4263,9 +4262,8 @@ export default function PrintPage() {
     const mode = resolveArtPhotoMode(section ?? {}, photoStyle);
     const ownImages = section ? sectionRecipeImages(section) : [];
     const isGrid = mode === "grid";
-    const gridImages = section?.artGridImages?.length
-      ? section.artGridImages
-      : defaultSectionGridImages(ownImages);
+    // See buildCardPhotoEdit: nothing ticked until the cook taps a tile.
+    const gridImages = section?.artGridImages ?? [];
     return {
       photoUrl: section?.artPhotoUrl,
       recipeImages: ownImages,
@@ -4515,11 +4513,16 @@ export default function PrintPage() {
     const cover = coverForSide(side) ?? defaultCover();
     const gridImages = (cover.gridImages ?? []).filter(Boolean);
     const candidates = coverPhotoCandidates;
+    // Not gated on `gridImages.length` — "Select multiple" turns collage mode
+    // ON with nothing ticked yet (see onSelectGrid below), and the picker
+    // still has to open into that empty grid rather than falling back to the
+    // single-photo view because nothing has been chosen.
+    const gridActive = cover.layout === "collage";
     return (
       <ImagePicker
         current={cover.imageUrl}
         images={candidates}
-        gridActive={cover.layout === "collage" && gridImages.length > 0}
+        gridActive={gridActive}
         gridImages={gridImages}
         onSelect={(imageUrl) =>
           setCoverForSide(side, {
@@ -4539,18 +4542,20 @@ export default function PrintPage() {
         }
         onSelectGrid={
           candidates.length >= 2
-            ? () => {
-                // Seed the collage with a sensible starting set; the cook then
-                // curates how many and which ones in the picker.
-                const count = candidates.length >= 6 ? 6 : candidates.length >= 4 ? 4 : 2;
-                setCoverForSide(side, {
-                  ...cover,
-                  gridImages: candidates.slice(0, count),
-                  imageUrl: undefined,
-                  layout: "collage",
-                });
-              }
+            ? () =>
+                // Turns the mode on; nothing is ticked until the cook taps a
+                // tile. Whatever was already curated (`cover.gridImages`)
+                // carries over untouched via the spread below — only a FIRST
+                // entry starts empty.
+                setCoverForSide(side, { ...cover, imageUrl: undefined, layout: "collage" })
             : undefined
+        }
+        onExitGrid={() =>
+          setCoverForSide(side, {
+            ...cover,
+            imageUrl: cover.imageUrl ?? gridImages[0],
+            layout: cover.imageUrl || gridImages[0] ? "photo" : "typographic",
+          })
         }
         openSignal={photoDialogSignal(`cover:${side}`)}
         onOpenSignalConsumed={() => clearPhotoDialogSignal(`cover:${side}`)}
