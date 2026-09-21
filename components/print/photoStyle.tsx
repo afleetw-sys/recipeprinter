@@ -7,7 +7,7 @@ import type { PhotoStyle } from "@/lib/project";
 // sheet.
 export const PHOTO_STYLE_OPTIONS: Array<{ id: PhotoStyle; label: string; short: string; hint: string }> = [
   { id: "none", label: "None", short: "None", hint: "No recipe photos" },
-  { id: "card", label: "In the recipe card", short: "In card", hint: "A photo in each card’s header" },
+  { id: "card", label: "In the recipe page", short: "In page", hint: "A photo in each page’s header" },
   { id: "full", label: "Full page", short: "Full page", hint: "A full-page photo facing each recipe" },
 ];
 

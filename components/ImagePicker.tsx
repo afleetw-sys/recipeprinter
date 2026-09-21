@@ -42,6 +42,7 @@ export function ImagePicker({
   placementOptions,
   onPlacementChange,
   openSignal,
+  onOpenSignalConsumed,
   label = "Choose photo",
   className = "",
 }: {
@@ -68,24 +69,40 @@ export function ImagePicker({
   placement?: string;
   placementOptions?: Array<{ id: string; label: string; hint?: string }>;
   onPlacementChange?: (id: string) => void;
-  /** Opens the dialog from outside. Choosing "In card" or "Full page" for a
+  /** Opens the dialog from outside. Choosing "In page" or "Full page" for a
       recipe that has no photo yet is a request for a photo, so the thing that
       asks for one opens by itself instead of leaving a placement set to
       nothing. Each new value opens it once; closing is still the dialog's. */
   openSignal?: number;
+  /** Fired the instant a truthy `openSignal` has been acted on. The signal
+      lives in the caller (so it survives this component being torn down and
+      rebuilt as the deck scrolls a page in and out of view), and nothing else
+      ever clears it — without this callback, scrolling back to a page whose
+      dialog had been opened once, then closed, remounted this picker with
+      that same old signal still set and reopened the dialog on arrival,
+      every time. Telling the caller to clear it turns the signal back into a
+      one-shot pulse instead of a standing "open me" that outlives the click
+      that made it. */
+  onOpenSignalConsumed?: () => void;
   label?: string;
   className?: string;
 }) {
   const [open, setOpen] = useState(false);
   useEffect(() => {
-    if (openSignal) setOpen(true);
+    if (openSignal) {
+      setOpen(true);
+      onOpenSignalConsumed?.();
+    }
+    // Only `openSignal` should retrigger this — `onOpenSignalConsumed` is a
+    // fresh closure every render.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [openSignal]);
   const isMobile = useIsMobileSheet();
   const [uploading, setUploading] = useState(false);
   const [dragging, setDragging] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [failedImages, setFailedImages] = useState<Set<string>>(() => new Set());
-  // Recipe-photo mode: placement (None/In-card/Full-page) on top, then the
+  // Recipe-photo mode: placement (None/In-page/Full-page) on top, then the
   // source (this recipe's photo vs a custom one). `none` = no photo, so the
   // source section collapses.
   const recipeMode = Boolean(placementOptions && onPlacementChange);

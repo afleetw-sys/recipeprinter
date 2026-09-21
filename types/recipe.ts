@@ -268,31 +268,47 @@ export interface QueueItem {
    See the "Document model: sections, not divider objects" section of the
    implementation plan for the reasoning. */
 
-/** How a section opener shows its photo(s), mirroring the recipe photo model
-    (`PhotoStyle`) plus a chapter-only grid:
-    - `none` — a typographic opener, no photo, no facing page;
-    - `band` — a photo in the opener's own top band (the legacy `photoUrl`);
-    - `full` — a full-bleed photo on the page FACING the opener (like a recipe
-      image-spread);
-    - `grid` — a curated photo collage on the facing page (`gridImages`).
-    Absent resolves via `resolveSectionPhotoMode`: a `photoUrl` present → `band`,
-    else `none`. Only meaningful in cookbook mode. */
-export type SectionPhotoMode = "none" | "band" | "full" | "grid";
+/** How ONE opener photo slot shows its photo(s) — the opener card and the
+    facing/art page each carry their own independently (see `Section` below):
+    - `none` — no photo in this slot;
+    - `photo` — a single photo;
+    - `grid` — a curated photo collage.
+    Absent resolves via `resolveCardPhotoMode`/`resolveArtPhotoMode`: the book's
+    Photos default when there is one, else `none`. Only meaningful in cookbook
+    mode. */
+export type SlotPhotoMode = "none" | "photo" | "grid";
 
 export interface Section {
   id: string;
   /** Untitled = no visible grouping in the UI, no divider page when printed. */
   title?: string;
+  /** What prints as the opener's title, independent of `title` (the section's
+      real, organizational name — used by the rail, the mobile sheet, the TOC
+      and the running header, and never touched by this).
+      `undefined` = follow `title` (default); `""` = explicitly cleared on the
+      page, so nothing prints there. Mirrors `intro`'s own undefined/""
+      convention below. */
+  titleOverride?: string;
   /** Optional secondary line on a cookbook section opener. */
   subtitle?: string;
-  /** Chapter-opener photo (cookbook mode only). Carries both the `band` (in-card)
-      photo and the `full` facing photo — the single source, like a recipe's
-      `heroImageUrl`. */
-  photoUrl?: string;
-  /** Explicit opener photo placement. Absent = derived (see `SectionPhotoMode`). */
-  photoMode?: SectionPhotoMode;
-  /** Curated photos for the `grid` facing page (a chapter collage). */
-  gridImages?: string[];
+  /** The opener CARD's own photo (cookbook mode only) — lives inside the
+      templated title page itself, entirely independent of the facing/art
+      page's `artPhotoUrl` below (a cook can set either, both, or neither). */
+  cardPhotoMode?: SlotPhotoMode;
+  cardPhotoUrl?: string;
+  /** Curated photos for a `grid` card (a small in-card collage). */
+  cardGridImages?: string[];
+  /** The facing page's own photo (cookbook mode only) — a separate leaf that
+      exists only when it has a photo, a collage, or a caption (see
+      `artCaption`). Entirely independent of the opener card's `cardPhotoUrl`
+      above. */
+  artPhotoMode?: SlotPhotoMode;
+  artPhotoUrl?: string;
+  /** Curated photos for a `grid` facing page (a chapter collage). */
+  artGridImages?: string[];
+  /** Free-text caption printed on the facing page. On its own — with no photo
+      or collage set — it still earns the section a facing page. */
+  artCaption?: string;
   /** Short chapter intro line shown on the opener (cookbook mode only). */
   intro?: string;
   /** Whether this named section receives a printed opener page. */

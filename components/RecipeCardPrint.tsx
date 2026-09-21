@@ -35,6 +35,7 @@ import type {
   PrintCardSize,
   Recipe,
   RecipePrintTemplate,
+  SlotPhotoMode,
 } from "@/types/recipe";
 import { markImageAvailable, markImageUnavailable } from "@/lib/imageFailure";
 import { chapterIntroFromRecipes } from "@/lib/chapterIntro";
@@ -1348,7 +1349,9 @@ export const DividerFace = memo(function DividerFace({
   chapterNumber = 1,
   showChapterNumber = false,
   subtitle,
-  photoUrl,
+  cardPhotoMode = "none",
+  cardPhotoUrl,
+  cardGridImages,
   intro,
   recipeTitles,
   previewHidden = false,
@@ -1361,7 +1364,11 @@ export const DividerFace = memo(function DividerFace({
   chapterNumber?: number;
   showChapterNumber?: boolean;
   subtitle?: string;
-  photoUrl?: string;
+  /** The card's own photo slot — independent of the facing/art page, which
+      this component never draws (see `ScaledPage`'s `section-photo` branch). */
+  cardPhotoMode?: SlotPhotoMode;
+  cardPhotoUrl?: string;
+  cardGridImages?: string[];
   intro?: string;
   /** Titles of the recipes filed under this chapter, in book order — what the
       default intro names when the cook hasn't written one. */
@@ -1499,16 +1506,64 @@ export const DividerFace = memo(function DividerFace({
     ) : null;
   }
 
+  const cardImages = (cardGridImages ?? []).filter(Boolean);
+  const cardGridLayout = cardPhotoMode === "grid" ? photoGridLayout(cardImages.length) : null;
+  const hasCardPhoto =
+    (cardPhotoMode === "photo" && Boolean(cardPhotoUrl)) ||
+    (cardPhotoMode === "grid" && cardImages.length > 0);
+  // Any card photo fills the whole page — text (title, subtitle, intro)
+  // overlays it, the way a book cover's does. This does NOT depend on
+  // whether the title happens to be filled in: the layout never shifts
+  // between a banded and a full-bleed arrangement as the cook types or
+  // clears the title, only the gradient below does.
+  const cardPhotoFull = hasCardPhoto;
+  // While the title's live edit buffer is open it's the one the cook is
+  // actually looking at (see `DividerCardInlineEdit`'s own note on why title
+  // is buffered) — react to IT for the gradient below, not to the throttled
+  // write that lands a moment later.
+  const effectiveTitle = inlineEdit?.titleEditing ? inlineEdit.titleValue : title;
+  // The scrim earns its place only when there's BOTH a photo and text to
+  // protect — an image with nothing printing over it, or text with no photo
+  // behind it, needs no overlay. Intro counts unless explicitly removed
+  // (undefined still falls back to the derived line, which prints); reveal
+  // mode counts too, since a still-empty field shows a placeholder the scrim
+  // needs to sit behind.
+  const cardBodyHasText =
+    Boolean(effectiveTitle.trim()) ||
+    Boolean((inlineEdit?.subtitle ?? subtitle ?? "").trim()) ||
+    !introRemoved ||
+    showChapterNumber ||
+    showEmpty;
+
   return (
     <article
-      className={`recipe-card recipe-card--divider recipe-card--chapter${photoUrl ? " recipe-card--chapter-with-photo" : ""}`}
+      className={`recipe-card recipe-card--divider recipe-card--chapter${hasCardPhoto ? " recipe-card--chapter-with-photo" : ""}${cardPhotoFull ? " recipe-card--chapter-photo-full" : ""}`}
+      data-chapter-text={cardPhotoFull && !cardBodyHasText ? "none" : undefined}
       data-preview-hidden={previewHidden ? "true" : undefined}
     >
       <div className="recipe-card__chapter-photo" aria-hidden>
-        {photoUrl && (
+        {cardPhotoMode === "photo" && cardPhotoUrl ? (
           // eslint-disable-next-line @next/next/no-img-element
-          <img src={photoUrl} alt="" className="recipe-card__chapter-image" onLoad={(event) => markImageAvailable(event.currentTarget)} onError={(event) => markImageUnavailable(event.currentTarget)} />
-        )}
+          <img src={cardPhotoUrl} alt="" className="recipe-card__chapter-image" onLoad={(event) => markImageAvailable(event.currentTarget)} onError={(event) => markImageUnavailable(event.currentTarget)} />
+        ) : cardPhotoMode === "grid" && cardGridLayout ? (
+          <div
+            className="recipe-card__cover-photo recipe-card__cover-photo--grid recipe-card__chapter-photo--grid"
+            style={{ "--cover-grid-cols": cardGridLayout.columns } as CSSProperties}
+          >
+            {cardImages.map((url, index) => (
+              <span
+                key={`${url}-${index}`}
+                className={`recipe-card__cover-grid-cell ${
+                  cardGridLayout.firstSpans && index === 0 ? "recipe-card__cover-grid-img--wide" : ""
+                }`}
+              >
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src={url} alt="" className="recipe-card__cover-grid-img" onLoad={(event) => markImageAvailable(event.currentTarget)} onError={(event) => markImageUnavailable(event.currentTarget)} />
+                <span className="photo-unavailable-message">Photo unavailable</span>
+              </span>
+            ))}
+          </div>
+        ) : null}
         <span className="photo-unavailable-message">Photo unavailable</span>
       </div>
       {/* The chapter opener's photo is changed from the page toolbar, like
@@ -1542,14 +1597,28 @@ export const DividerFace = memo(function DividerFace({
               if (event.key === "Escape") inlineEdit.onTitleCancel();
             }}
           />
-        ) : (
+        ) : title.trim() ? (
           <h1
             className={`recipe-card__divider-title ${canEdit ? "recipe-card__opener-field--editable" : ""}`}
             onMouseDown={canEdit ? fieldOpener(openTitleField) : undefined}
           >
             {title}
           </h1>
-        )}
+        ) : showEmpty ? (
+          // A cleared title (see `Section.titleOverride`) still needs a way
+          // back — same "Add X, Y, Z" reveal as subtitle/description (the
+          // toolbar's missing-fields button, listed there ahead of them), not
+          // a standalone placeholder that shows whether or not the page's
+          // other fields are revealed. Never shown outside an editable
+          // context (export, print, rail thumbnails) — an actual printed
+          // page prints nothing here.
+          <h1
+            className="recipe-card__divider-title recipe-card__opener-field--empty"
+            onMouseDown={fieldOpener(openTitleField)}
+          >
+            Add title
+          </h1>
+        ) : null}
         {openerField({
           name: "subtitle",
           value: inlineEdit?.subtitle ?? subtitle ?? "",

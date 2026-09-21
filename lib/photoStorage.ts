@@ -205,25 +205,32 @@ async function visitCover<T extends CoverConfig>(
 }
 
 /**
- * A chapter opener's art.
+ * A chapter opener's two independent photo slots — the card (title page) and
+ * the facing/art page — swept in parallel.
  *
- * `gridImages` is the one that bites. A collage defaults to the chapter's OWN
- * recipe photos (`sectionRecipeImages` on the print page), so for a Paprika
- * import those defaults are `blob:` URLs — real-looking strings that resolve to
- * nothing outside the document that minted them.
+ * The grid fields are the ones that bite. A collage defaults to the chapter's
+ * OWN recipe photos (`sectionRecipeImages` on the print page), so for a
+ * Paprika import those defaults are `blob:` URLs — real-looking strings that
+ * resolve to nothing outside the document that minted them.
  *
  * Generic because a live `Section` and a stashed `SectionMeta` differ only in
  * whether they hold recipes or ids, and neither difference is art.
  */
-async function visitSectionArt<T extends { photoUrl?: string; gridImages?: string[] }>(
-  section: T,
-  visit: VisitPhotoUrl,
-): Promise<T> {
-  const [photoUrl, gridImages] = await Promise.all([
-    visitOne(section.photoUrl, ART, visit),
-    visitList(section.gridImages, visit),
+async function visitSectionArt<
+  T extends {
+    cardPhotoUrl?: string;
+    cardGridImages?: string[];
+    artPhotoUrl?: string;
+    artGridImages?: string[];
+  },
+>(section: T, visit: VisitPhotoUrl): Promise<T> {
+  const [cardPhotoUrl, cardGridImages, artPhotoUrl, artGridImages] = await Promise.all([
+    visitOne(section.cardPhotoUrl, ART, visit),
+    visitList(section.cardGridImages, visit),
+    visitOne(section.artPhotoUrl, ART, visit),
+    visitList(section.artGridImages, visit),
   ]);
-  return { ...section, photoUrl, gridImages };
+  return { ...section, cardPhotoUrl, cardGridImages, artPhotoUrl, artGridImages };
 }
 
 /**

@@ -43,7 +43,9 @@ import {
   buildSections,
   namedSectionCount,
   defaultSectionGridImages,
-  resolveSectionPhotoMode,
+  resolveCardPhotoMode,
+  resolveArtPhotoMode,
+  sectionDisplayTitle,
   useProjectMeta,
   type ProjectMeta,
   type PhotoStyle,
@@ -144,7 +146,6 @@ import type {
   QueueItem,
   Recipe,
   Section,
-  SectionPhotoMode,
 } from "@/types/recipe";
 import { postPrintPrompt, purchaseGate, type PostPrintAction } from "@/lib/purchaseAccess";
 import { isCookbookProjectUnlocked } from "@/lib/cookbookUnlocks";
@@ -159,16 +160,6 @@ import { useToast } from "@/lib/useToast";
 import { printProjectFingerprint, type PendingSave } from "@/lib/printSave";
 import { writeProject as runSaveWrite } from "@/lib/printSaveWrite";
 import { autosaveVerdict, LOADED_BASELINE, shouldFlushOnHide } from "@/lib/printAutosave";
-
-// The section opener's photo placement — the SAME None/In-card/Full-page row as
-// a recipe, so the two pickers read identically. A collage isn't a fourth
-// top-level choice: under Full page the cook can turn the single facing photo
-// into a grid of this chapter's photos (see `buildSectionPhotoEdit`).
-const SECTION_PHOTO_OPTIONS: Array<{ id: SectionPhotoMode; label: string; hint: string }> = [
-  { id: "none", label: "None", hint: "No opener photo" },
-  { id: "band", label: "In card", hint: "A photo in the opener’s band" },
-  { id: "full", label: "Full page", hint: "A full-page photo facing the opener" },
-];
 
 /** This section's own recipe photos, in item order, capped for a collage. Scopes
     the opener picker to the chapter (unlike the whole-book `coverPhotoCandidates`). */
@@ -1171,8 +1162,13 @@ export default function PrintPage() {
   // only in cookbook mode; the CSS keeps it off desktop entirely.
 
   function startSectionEdit(sectionId: string) {
+    // Seeded from what's actually printed (which may be hidden, i.e. ""), not
+    // the chapter's organizational name — otherwise clicking in and clicking
+    // straight back out of a hidden title would silently un-hide it by
+    // re-committing the unchanged org name.
+    const section = sections.find((candidate) => candidate.id === sectionId);
     setEditingSectionId(sectionId);
-    setEditingSectionTitle(sectionTitleForId(sectionId));
+    setEditingSectionTitle(section ? sectionDisplayTitle(section) : "");
   }
 
   // Typing a chapter name used to write project meta on every character, and a
@@ -1187,7 +1183,9 @@ export default function PrintPage() {
   const SECTION_RENAME_DEBOUNCE_MS = 200;
   const pendingSectionRenameRef = useRef<{ sectionId: string; value: string } | null>(null);
   const sectionRenameTimerRef = useRef<number | undefined>(undefined);
-  const renameSection = projectMeta.renameSection;
+  const updateSection = projectMeta.updateSection;
+  const setArtPhoto = projectMeta.setArtPhoto;
+  const setArtCaption = projectMeta.setArtCaption;
 
   const cancelPendingSectionRename = useCallback(() => {
     window.clearTimeout(sectionRenameTimerRef.current);
@@ -1200,11 +1198,20 @@ export default function PrintPage() {
     window.clearTimeout(sectionRenameTimerRef.current);
     sectionRenameTimerRef.current = undefined;
     pendingSectionRenameRef.current = null;
-    // An emptied title is a field mid-edit, not a request to unname the
-    // chapter: an untitled section has no opener, so the page being typed on
-    // would vanish.
-    if (pending?.value.trim()) renameSection(pending.sectionId, pending.value.trim());
-  }, [renameSection]);
+    if (!pending) return;
+    const trimmed = pending.value.trim();
+    // A non-empty title renames the chapter (and shows again if it had been
+    // hidden). An emptied field is NOT a request to unname the chapter — that
+    // would drop its opener and rail header out from under the cook mid-edit
+    // — it only hides the printed title, via `titleOverride`; the section's
+    // real name (`title`) is untouched, so the rail/mobile sheet/TOC/running
+    // header keep showing it.
+    if (trimmed) {
+      updateSection(pending.sectionId, { title: trimmed, titleOverride: undefined });
+    } else {
+      updateSection(pending.sectionId, { titleOverride: "" });
+    }
+  }, [updateSection]);
 
   const editSectionTitle = useCallback(
     (sectionId: string, value: string) => {
@@ -1228,9 +1235,13 @@ export default function PrintPage() {
     // Commit writes the authoritative value right here, so a queued trailing
     // write would only repeat it.
     cancelPendingSectionRename();
-    // Committing an empty title keeps the name the chapter already has.
-    if (editingSectionTitle.trim()) {
-      projectMeta.renameSection(editingSectionId, editingSectionTitle.trim());
+    // Committing an empty title hides it on the page (`titleOverride`)
+    // without renaming the chapter away — see `flushSectionRename`.
+    const trimmed = editingSectionTitle.trim();
+    if (trimmed) {
+      updateSection(editingSectionId, { title: trimmed, titleOverride: undefined });
+    } else {
+      updateSection(editingSectionId, { titleOverride: "" });
     }
     setEditingSectionId(null);
     setEditingSectionTitle("");
@@ -1437,8 +1448,8 @@ export default function PrintPage() {
   // What the book-wide "Photos" control shows as active: if every recipe with a
   // photo currently resolves to the SAME mode (whether by the book default or
   // because the cook set them all by hand), reflect that; otherwise fall back to
-  // the stored book default. So setting all recipes to "In card" flips the
-  // book-wide control to "In card" too.
+  // the stored book default. So setting all recipes to "In page" flips the
+  // book-wide control to "In page" too.
   // Returns null when recipes use a MIX of photo modes, so the book-wide control
   // shows nothing selected rather than pretending one option applies to all.
   const bookPhotoStyle = useMemo<PhotoStyle | null>(() => {
@@ -1477,40 +1488,63 @@ export default function PrintPage() {
   }
 
 
-  // The section-opener counterpart to renderPagePhotoControl: the same inline
-  // None / In card / Full page switch next to Edit, so an opener's photo
-  // placement is one click away on the page (not only inside the picker dialog).
-  // A curated collage is a Full-page sub-mode, so it reads as "Full page" active
-  // here — the grid itself is still curated from the dialog's "Select multiple".
-  const renderSectionPhotoControl = (sectionId: string) => {
+  // The opener CARD's own toolbar button — independent of the facing/art
+  // page's (`renderArtPhotoControl` below). Not one dialog offering both
+  // slots: this opens a PLAIN picker (no placement row) scoped to the card's
+  // own photo/collage, exactly like a recipe's or the cover's.
+  const renderCardPhotoControl = (sectionId: string) => {
     const section = sections.find((candidate) => candidate.id === sectionId);
     if (!section) return null;
     const ownImages = sectionRecipeImages(section);
     // Nothing to place if the section has neither a chosen photo nor any recipe
     // image to seed one from — hide the toggle rather than offer a blank page.
-    if (!section.photoUrl && ownImages.length === 0) return null;
-    // The toolbar button opens the SAME dialog the art itself opens -- photo
-    // placement on top, then which photo, plus the chapter's collage. Built at
-    // the "art" surface because that is the one that always offers a photo to
-    // pick; the "opener" surface withholds it outside band mode, which in a
-    // toolbar would be a picker that cannot pick.
-    const edit = buildSectionPhotoEdit(section, "art");
+    if (!section.cardPhotoUrl && !section.cardGridImages?.length && ownImages.length === 0) {
+      return null;
+    }
+    const edit = buildCardPhotoEdit(section);
     return (
       <ImagePicker
         current={edit.photoUrl}
         images={edit.recipeImages ?? []}
         onSelect={(url) => edit.onPhotoChange?.(url)}
-        placement={edit.placement}
-        placementOptions={edit.placementOptions}
-        onPlacementChange={edit.onPlacementChange}
         gridActive={edit.gridActive}
         onSelectGrid={edit.onSelectGrid}
         onExitGrid={edit.onExitGrid}
         gridImages={edit.gridImages}
         onGridChange={edit.onGridChange}
         gridMax={edit.gridMax}
-        openSignal={photoDialogSignal(sectionId)}
-        label={section.photoUrl ? "Photo" : "Add photo"}
+        openSignal={photoDialogSignal(`card:${sectionId}`)}
+        onOpenSignalConsumed={() => clearPhotoDialogSignal(`card:${sectionId}`)}
+        label={section.cardPhotoUrl || section.cardGridImages?.length ? "Photo" : "Add photo"}
+        className="recipe-page-toolbar__photo"
+      />
+    );
+  };
+
+  // The facing/art page's own toolbar button — independent of the opener
+  // card's above. Same plain-picker shape.
+  const renderArtPhotoControl = (sectionId: string) => {
+    const section = sections.find((candidate) => candidate.id === sectionId);
+    if (!section) return null;
+    const ownImages = sectionRecipeImages(section);
+    if (!section.artPhotoUrl && !section.artGridImages?.length && ownImages.length === 0) {
+      return null;
+    }
+    const edit = buildArtPhotoEdit(section);
+    return (
+      <ImagePicker
+        current={edit.photoUrl}
+        images={edit.recipeImages ?? []}
+        onSelect={(url) => edit.onPhotoChange?.(url)}
+        gridActive={edit.gridActive}
+        onSelectGrid={edit.onSelectGrid}
+        onExitGrid={edit.onExitGrid}
+        gridImages={edit.gridImages}
+        onGridChange={edit.onGridChange}
+        gridMax={edit.gridMax}
+        openSignal={photoDialogSignal(`art:${sectionId}`)}
+        onOpenSignalConsumed={() => clearPhotoDialogSignal(`art:${sectionId}`)}
+        label={section.artPhotoUrl || section.artGridImages?.length ? "Photo" : "Add photo"}
         className="recipe-page-toolbar__photo"
       />
     );
@@ -1639,13 +1673,27 @@ export default function PrintPage() {
       });
       return;
     }
+    if (navItem.kind === "section-photo") {
+      // This is the facing page's OWN delete, not the chapter's — clearing it
+      // just drops the art (photo/collage/caption), which collapses the leaf
+      // away, exactly like picking "None" in its photo dialog. No confirm: a
+      // lost photo is a much smaller loss than a lost chapter, re-added in one
+      // click, and every other photo removal in this app already works this
+      // way. Falling through to the generic cover-delete branch below would be
+      // wrong here — `coverSideFromNavItem` defaults to "front" for anything
+      // it doesn't recognize, which would have deleted the book's FRONT COVER
+      // instead of this page's art.
+      setArtPhoto(navItem.recipeId, "none");
+      setArtCaption(navItem.recipeId, undefined);
+      return;
+    }
     const side = coverSideFromNavItem(navItem);
     setPendingDelete({
       kind: "cover",
       side,
       title: navItem.label || (side === "front" ? "cover" : "back cover"),
     });
-  }, [items, itemIdsForSection, sectionTitleForId]);
+  }, [items, itemIdsForSection, sectionTitleForId, setArtPhoto, setArtCaption]);
 
   const requestDeleteSection = useCallback((sectionId: string) => {
     setPendingDelete({
@@ -3101,10 +3149,15 @@ export default function PrintPage() {
           sections: project.sections.map((section) => ({
             id: section.id,
             title: section.title,
+            titleOverride: section.titleOverride,
             subtitle: section.subtitle,
-            photoUrl: section.photoUrl,
-            photoMode: section.photoMode,
-            gridImages: section.gridImages,
+            cardPhotoMode: section.cardPhotoMode,
+            cardPhotoUrl: section.cardPhotoUrl,
+            cardGridImages: section.cardGridImages,
+            artPhotoMode: section.artPhotoMode,
+            artPhotoUrl: section.artPhotoUrl,
+            artGridImages: section.artGridImages,
+            artCaption: section.artCaption,
             intro: section.intro,
             showOpener: section.showOpener,
             numberAsChapter: section.numberAsChapter,
@@ -4151,74 +4204,40 @@ export default function PrintPage() {
     // stale configuration.
   }, [template, cardSize, cookbookMode, activePreset.id]);
 
-  // The photo-placement fields of a section opener's `dividerEdit`, shared by
-  // both deck call sites (spread deck + single-page deck) so the two can never
-  // drift. Drives the unified ImagePicker: the same None/In-card/Full-page row as
-  // a recipe. A collage is NOT a top-level choice — under Full page the cook can
-  // toggle the single facing photo into a grid of this chapter's own photos
-  // (scoped to the section, not the whole-book candidates).
-  const buildSectionPhotoEdit = (
-    section: Section | undefined,
-    // Where this picker is being rendered. The "Photo" button belongs ON the art
-    // it changes: in the opener card when the opener shows the photo, and on the
-    // facing page when the art lives there (`art`) — so a full-page or collage
-    // chapter is edited by clicking the picture, not a button on the page next
-    // to it. Everything else about the dialog is identical either way.
-    surface: "opener" | "art" = "opener",
-  ) => {
-    const mode = resolveSectionPhotoMode(section ?? {}, photoStyle);
+  // The opener CARD's own photo edit wiring — entirely independent of the
+  // facing/art page below. Drives a PLAIN ImagePicker (no placement row: the
+  // dialog is just "this slot's photo, or a collage, or none" — deleting the
+  // photo is the None tile the plain picker already offers).
+  const buildCardPhotoEdit = (section: Section | undefined) => {
+    const mode = resolveCardPhotoMode(section ?? {}, photoStyle);
     const ownImages = section ? sectionRecipeImages(section) : [];
     const isGrid = mode === "grid";
     // A grid the BOOK chose behaves exactly like one the cook picked: the same
     // photos, already ticked, with "Select multiple" on — so the dialog opens on
     // a real selection they can add to or pare back.
-    const gridImages = section?.gridImages?.length
-      ? section.gridImages
+    const gridImages = section?.cardGridImages?.length
+      ? section.cardGridImages
       : defaultSectionGridImages(ownImages);
     return {
-      photoUrl: section?.photoUrl,
+      photoUrl: section?.cardPhotoUrl,
       recipeImages: ownImages,
-      // A single photo tile is only pickable in band / single Full-page mode
-      // (grid has its own multi-select, none has no tiles) — keep the current
-      // placement and set the one photo it names.
-      onPhotoChange:
-        surface === "art" || mode === "band"
-          ? (url: string | undefined) => {
-              if (!section) return;
-              projectMeta.setSectionPhotoMode(section.id, mode === "band" ? "band" : "full", {
-                photoUrl: url,
-              });
-            }
-          : undefined,
-      // Grid is a Full-page sub-mode, so it reports "Full page" as the active
-      // placement and exposes the collage separately via `gridActive`.
-      placement: isGrid ? "full" : mode,
-      placementOptions: SECTION_PHOTO_OPTIONS,
-      onPlacementChange: (next: string) => {
+      onPhotoChange: (url: string | undefined) => {
         if (!section) return;
-        const m = next as SectionPhotoMode;
-        if (m === "none") {
-          projectMeta.setSectionPhotoMode(section.id, "none");
+        if (url === undefined) {
+          projectMeta.setCardPhoto(section.id, "none");
         } else {
-          // band or full — seed the photo from the section's first recipe image
-          // so the page/band is never blank (like a recipe's Full page seeds its
-          // hero). Clicking Full page while in a grid collapses back to one photo.
-          projectMeta.setSectionPhotoMode(section.id, m, {
-            photoUrl: section.photoUrl ?? ownImages[0],
-          });
+          projectMeta.setCardPhoto(section.id, "photo", { photoUrl: url });
         }
       },
-      // The Full-page → Photo grid toggle: on curates a collage seeded from this
-      // chapter's photos; off collapses back to a single facing photo.
       gridActive: isGrid,
       onSelectGrid:
         section && ownImages.length >= 2
-          ? () => projectMeta.setSectionPhotoMode(section.id, "grid", { gridImages })
+          ? () => projectMeta.setCardPhoto(section.id, "grid", { gridImages })
           : undefined,
       onExitGrid: section
         ? () =>
-            projectMeta.setSectionPhotoMode(section.id, "full", {
-              photoUrl: section.photoUrl ?? section.gridImages?.[0] ?? ownImages[0],
+            projectMeta.setCardPhoto(section.id, "photo", {
+              photoUrl: section.cardPhotoUrl ?? section.cardGridImages?.[0] ?? ownImages[0],
             })
         : undefined,
       // Pinning the tiles the moment one is toggled turns a defaulted collage
@@ -4226,7 +4245,47 @@ export default function PrintPage() {
       gridImages,
       onGridChange: (urls: string[]) => {
         if (!section) return;
-        projectMeta.setSectionPhotoMode(section.id, "grid", { gridImages: urls });
+        projectMeta.setCardPhoto(section.id, "grid", { gridImages: urls });
+      },
+      gridMax: 9,
+    };
+  };
+
+  // The facing/art page's own photo edit wiring — same shape as the card's
+  // above, entirely independent of it (see `buildCardPhotoEdit`).
+  const buildArtPhotoEdit = (section: Section | undefined) => {
+    const mode = resolveArtPhotoMode(section ?? {}, photoStyle);
+    const ownImages = section ? sectionRecipeImages(section) : [];
+    const isGrid = mode === "grid";
+    const gridImages = section?.artGridImages?.length
+      ? section.artGridImages
+      : defaultSectionGridImages(ownImages);
+    return {
+      photoUrl: section?.artPhotoUrl,
+      recipeImages: ownImages,
+      onPhotoChange: (url: string | undefined) => {
+        if (!section) return;
+        if (url === undefined) {
+          projectMeta.setArtPhoto(section.id, "none");
+        } else {
+          projectMeta.setArtPhoto(section.id, "photo", { photoUrl: url });
+        }
+      },
+      gridActive: isGrid,
+      onSelectGrid:
+        section && ownImages.length >= 2
+          ? () => projectMeta.setArtPhoto(section.id, "grid", { gridImages })
+          : undefined,
+      onExitGrid: section
+        ? () =>
+            projectMeta.setArtPhoto(section.id, "photo", {
+              photoUrl: section.artPhotoUrl ?? section.artGridImages?.[0] ?? ownImages[0],
+            })
+        : undefined,
+      gridImages,
+      onGridChange: (urls: string[]) => {
+        if (!section) return;
+        projectMeta.setArtPhoto(section.id, "grid", { gridImages: urls });
       },
       gridMax: 9,
     };
@@ -4305,7 +4364,7 @@ export default function PrintPage() {
   // keep it in edit mode across the jump.
   /**
    * A placement chosen for a recipe that has no photo yet, as a counter the
-   * card's picker watches. Choosing "In card" or "Full page" IS the request
+   * card's picker watches. Choosing "In page" or "Full page" IS the request
    * for a photo — the placement on its own points at nothing, and the cook is
    * left to find the small button that would have supplied one. The counter
    * rather than a boolean so choosing the same placement twice still opens it.
@@ -4327,6 +4386,15 @@ export default function PrintPage() {
   }
   const photoDialogSignal = (key: string) =>
     photoDialog?.key === key ? photoDialog.tick : undefined;
+  /**
+   * Turns the signal back into a one-shot pulse once the picker has acted on
+   * it. Left set, the same tick was still there the next time the deck
+   * scrolled this page's picker back into view — a fresh mount with no memory
+   * of ever having opened it — so the stale signal opened the dialog again on
+   * every arrival, whether or not the cook had since closed it.
+   */
+  const clearPhotoDialogSignal = (key: string) =>
+    setPhotoDialog((current) => (current?.key === key ? null : current));
 
   function setRecipePhotoMode(recipeId: string, mode: PhotoStyle) {
     if (showEmptyFields && activeRecipeId === recipeId) keepEditingRef.current = recipeId;
@@ -4349,7 +4417,7 @@ export default function PrintPage() {
     projectMeta.setItemPhotoMode(recipeId, mode, hero);
   }
   // The per-recipe photo placement toggle (cookbook): an always-present
-  // None / In-card / Full-page switch that sits next to the Edit button, so
+  // None / In-page / Full-page switch that sits next to the Edit button, so
   // placement is one click away in every mode (not only when the photo is off).
   // The floating "Photo" button on the page still opens the fuller dialog
   // (placement + which photo). Shared desktop + mobile.
@@ -4394,12 +4462,13 @@ export default function PrintPage() {
         label={own ? "Photo" : "Add photo"}
         className="recipe-page-toolbar__photo"
         openSignal={photoDialogSignal(recipeId)}
+        onOpenSignalConsumed={() => clearPhotoDialogSignal(recipeId)}
       />
     );
   };
   // A full-page photo's own control. The page it sits on is the recipe's hero
   // image, so this changes `heroImageUrl` rather than the recipe's photo, and
-  // offers the same None / In card / Full page placement as the recipe page
+  // offers the same None / In page / Full page placement as the recipe page
   // facing it. Repositioning and zoom stay ON the artwork — those are direct
   // manipulation of the picture, not a dialog.
   const renderImagePagePhotoControl = (recipeId: string) => {
@@ -4425,6 +4494,7 @@ export default function PrintPage() {
         }))}
         onPlacementChange={(mode) => setRecipePhotoMode(recipeId, mode as PhotoStyle)}
         openSignal={photoDialogSignal(recipeId)}
+        onOpenSignalConsumed={() => clearPhotoDialogSignal(recipeId)}
         label="Photo"
         className="recipe-page-toolbar__photo"
       />
@@ -4477,6 +4547,7 @@ export default function PrintPage() {
             : undefined
         }
         openSignal={photoDialogSignal(`cover:${side}`)}
+        onOpenSignalConsumed={() => clearPhotoDialogSignal(`cover:${side}`)}
         label={cover.imageUrl || gridImages.length ? "Photo" : "Add photo"}
         className="recipe-page-toolbar__photo"
       />
@@ -5400,7 +5471,10 @@ export default function PrintPage() {
           setCoverForSide={setCoverForSide}
           coverPhotoCandidates={coverPhotoCandidates}
           renderPagePhotoControl={renderPagePhotoControl}
-          renderSectionPhotoControl={renderSectionPhotoControl}
+          renderCardPhotoControl={renderCardPhotoControl}
+          renderArtPhotoControl={renderArtPhotoControl}
+          sectionRecipeImages={sectionRecipeImages}
+          photoStyle={photoStyle}
           renderCoverPhotoControl={renderCoverPhotoControl}
           renderImagePagePhotoControl={renderImagePagePhotoControl}
           parsingImports={deckPendingImports}
