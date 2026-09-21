@@ -1,4 +1,5 @@
 import { recipePrinterUnlockPath } from "@/lib/firebase/recipePrinterPaths";
+import { verifyFirebaseIdToken, type TokenCheck } from "@/lib/server/firebaseIdToken";
 
 /**
  * Server-side proof that the caller paid for a particular cookbook.
@@ -26,7 +27,6 @@ import { recipePrinterUnlockPath } from "@/lib/firebase/recipePrinterPaths";
  *    can't turn into a way to read someone else's data.
  */
 
-const IDENTITY_TOOLKIT = "https://identitytoolkit.googleapis.com/v1/accounts:lookup";
 const FIRESTORE_BASE = "https://firestore.googleapis.com/v1/projects";
 
 function config() {
@@ -48,30 +48,19 @@ export function bearerToken(request: Request): string | null {
   return token || null;
 }
 
+export type { TokenCheck };
+
 /**
- * The uid this ID token belongs to, or null if it isn't a valid one.
- *
- * `accounts:lookup` is the check: it resolves a token to its account and fails
- * on anything expired, malformed, revoked, or signed by someone else. A network
- * failure also returns null — an unverifiable caller is not an authorised one.
+ * What this ID token is worth. Verified locally — see `firebaseIdToken.ts` for
+ * why this no longer asks Identity Toolkit — and every failure is logged with
+ * its reason, since this once collapsed to `null` and left nothing to debug.
  */
-export async function verifyIdToken(idToken: string): Promise<string | null> {
+export async function checkIdToken(idToken: string): Promise<TokenCheck> {
   const cfg = config();
-  if (!cfg) return null;
-  try {
-    const response = await fetch(`${IDENTITY_TOOLKIT}?key=${encodeURIComponent(cfg.apiKey)}`, {
-      method: "POST",
-      headers: { "content-type": "application/json" },
-      body: JSON.stringify({ idToken }),
-      signal: AbortSignal.timeout(10_000),
-    });
-    if (!response.ok) return null;
-    const data = (await response.json()) as { users?: Array<{ localId?: string }> };
-    const uid = data.users?.[0]?.localId;
-    return typeof uid === "string" && uid ? uid : null;
-  } catch {
-    return null;
-  }
+  if (!cfg) return { ok: false, kind: "unavailable", reason: "not configured" };
+  const check = await verifyFirebaseIdToken(idToken, cfg.projectId);
+  if (!check.ok) console.warn(`cookbook-pdf: token check ${check.kind}: ${check.reason}`);
+  return check;
 }
 
 /**

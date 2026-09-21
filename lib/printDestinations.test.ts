@@ -2,8 +2,13 @@ import { describe, expect, it } from "vitest";
 import { COOKBOOK_PRESETS, PRINTERS, getCookbookPreset } from "@/lib/cookbookPresets";
 import {
   PRINT_DESTINATIONS,
-  bindingLabels,
+  NO_BOOK_CHOICE,
+  PHOTOS_HELP,
+  choiceForPreset,
+  destinationNote,
   downloadSummary,
+  effectiveDestination,
+  presetForChoice,
   settingsIntro,
   destinationPresets,
   destinationPrinter,
@@ -209,122 +214,129 @@ describe("what to do with the file once it is saved", () => {
   });
 });
 
-describe("binding labels", () => {
-  it("never offers the same label twice in one picker", () => {
-    // Two radios reading "Hardcover" are one radio as far as anyone can tell,
-    // and picking either looks like the same click.
-    for (const destination of PRINT_DESTINATIONS) {
-      const labels = bindingLabels(destinationPresets(destination));
-      expect(new Set(labels).size).toBe(labels.length);
-      for (const label of labels) expect(label.trim()).not.toBe("");
-    }
+describe("the two questions that name a format", () => {
+  it("names exactly one preset for every complete set of answers", () => {
+    const named = [
+      presetForChoice({ kind: "hardcover", size: "8x10", photos: null }),
+      presetForChoice({ kind: "hardcover", size: "letter", photos: null }),
+      presetForChoice({ kind: "flat", size: null, photos: "standard" }),
+      presetForChoice({ kind: "flat", size: null, photos: "edge" }),
+    ];
+    expect(named.every(Boolean)).toBe(true);
+    expect(new Set(named.map((preset) => preset!.id)).size).toBe(COOKBOOK_PRESETS.length);
   });
 
-  it("leaves the size off when the binding alone is unambiguous", () => {
-    // Lulu binds one of each, so "Spiral" and "Hardcover" say everything. The
-    // trim is stated once below the picker rather than twice inside it.
-    expect(bindingLabels(destinationPresets(getPrintDestination("lulu")))).toEqual([
-      "Spiral",
-      "Hardcover",
-    ]);
-  });
-
-  it("offers the same two bindings whatever the destination", () => {
-    // Which book you want does not change with the shop. "Somewhere else"
-    // briefly carried a third pill, "Hardcover 8 × 10" beside "Hardcover
-    // 8.5 × 11", which is a trim choice wearing a binding's clothes.
-    for (const destination of PRINT_DESTINATIONS) {
-      const labels = bindingLabels(destinationPresets(destination));
-      expect(labels.length).toBeLessThanOrEqual(2);
-      for (const label of labels) expect(["Spiral", "Hardcover"]).toContain(label);
-    }
-  });
-
-  it("still disambiguates by trim if a picker ever holds two of one binding", () => {
-    // The guard has no live caller now that every picker offers one of each.
-    // It is kept, and tested, because the failure it prevents is silent: two
-    // pills reading "Hardcover", either of which looks like the same click.
-    const bothHardcovers = COOKBOOK_PRESETS.filter((preset) => !preset.coilBound);
-    expect(bindingLabels(bothHardcovers)).toEqual(["Hardcover 8.5 × 11", "Hardcover 8 × 10"]);
-  });
-
-  it("gives every preset a binding word to be labelled by", () => {
+  it("round-trips: every preset's answers name that preset", () => {
     for (const preset of COOKBOOK_PRESETS) {
-      expect(preset.bindingName.trim()).not.toBe("");
-      // The binding alone, not the product: "Spiral Cookbook" beside
-      // "Hardcover Book" reads as two nouns rather than one choice.
-      expect(preset.bindingName).not.toContain("Cookbook");
-      expect(preset.bindingName).not.toContain("Book");
+      expect(presetForChoice(choiceForPreset(preset))?.id).toBe(preset.id);
+    }
+  });
+
+  it("names nothing while a follow-up is unanswered", () => {
+    expect(presetForChoice(NO_BOOK_CHOICE)).toBeNull();
+    expect(presetForChoice({ kind: "hardcover", size: null, photos: "edge" })).toBeNull();
+    expect(presetForChoice({ kind: "flat", size: "letter", photos: null })).toBeNull();
+  });
+
+  it("ignores the question that does not belong to the chosen kind", () => {
+    // A hardcover's photos always reach the edge and a lay-flat book is always
+    // US Letter, so a stale answer to the other question must not change the result.
+    expect(presetForChoice({ kind: "hardcover", size: "letter", photos: "standard" })?.id).toBe(
+      "hardcover-us-letter",
+    );
+    expect(presetForChoice({ kind: "flat", size: "8x10", photos: "edge" })?.id).toBe(
+      "coil-us-letter",
+    );
+  });
+
+  it("explains both photo answers in one short line each", () => {
+    for (const help of Object.values(PHOTOS_HELP)) {
+      expect(help.length).toBeLessThan(80);
+      expect(help).not.toContain("—");
+    }
+    expect(PHOTOS_HELP.standard).toMatch(/border/);
+  });
+
+  it("starts every destination on a complete set of answers", () => {
+    for (const destination of PRINT_DESTINATIONS) {
+      const first = destinationPresets(destination)[0];
+      expect(presetForChoice(choiceForPreset(first))?.id).toBe(first.id);
     }
   });
 });
 
-describe("what the destination list says", () => {
-  it("never puts a price on a row", () => {
-    // What a book costs turns on the binding, the paper and the shop's own
-    // rates. The rows describe the place instead.
+describe("choosing a format at a destination that is not set up for it", () => {
+  const lulu = getPrintDestination("lulu");
+  const home = getPrintDestination("home");
+
+  it("says nothing for the format a destination leads with", () => {
     for (const destination of PRINT_DESTINATIONS) {
-      expect(destination.tagline ?? "").not.toMatch(/[$£€]|\bcost|\bprice/i);
-      expect(destination).not.toHaveProperty("economics");
+      for (const preset of destinationPresets(destination)) {
+        expect(destinationNote(destination, preset)).toBeNull();
+      }
     }
   });
 
-  it("describes every place except the one whose name says it all", () => {
-    for (const destination of PRINT_DESTINATIONS) {
-      if (destination.id === "other") expect(destination.tagline).toBeUndefined();
-      else expect(destination.tagline?.length).toBeGreaterThan(0);
+  it("says nothing when there is no destination, or no known spec to compare to", () => {
+    for (const preset of COOKBOOK_PRESETS) {
+      expect(destinationNote(null, preset)).toBeNull();
+      expect(destinationNote(getPrintDestination("other"), preset)).toBeNull();
     }
+  });
+
+  it("says what will happen, in terms anyone can picture", () => {
+    const toLulu = destinationNote(lulu, getCookbookPreset("us-letter"));
+    expect(toLulu).toContain("Lulu");
+    expect(toLulu).toMatch(/turned away/);
+    expect(destinationNote(home, getCookbookPreset("coil-us-letter"))).toMatch(/cut off/);
+  });
+
+  it("says nothing where it would be a guess about the shop", () => {
+    const copyShop = getPrintDestination("copy-shop");
+    expect(destinationNote(copyShop, getCookbookPreset("coil-us-letter"))).toBeNull();
+    expect(destinationNote(getPrintDestination("blurb"), getCookbookPreset("hardcover-us-letter"))).toBeNull();
+  });
+
+  it("never names a shop as needing something it was not set up for", () => {
+    // A copy shop handed an edge-to-edge book does not "need" two files.
+    const copyShop = getPrintDestination("copy-shop");
+    const preset = getCookbookPreset("coil-us-letter");
+    expect(settingsIntro(copyShop, preset)).not.toContain("Staples");
+    // It still does for the format Lulu is set up for.
+    expect(settingsIntro(lulu, preset)).toContain("Lulu");
+  });
+
+  it("writes the after-download instructions for the file when no destination was chosen", () => {
+    expect(effectiveDestination(null, getCookbookPreset("us-letter")).id).toBe("home");
+    expect(effectiveDestination(null, getCookbookPreset("coil-us-letter")).id).toBe("other");
+    expect(effectiveDestination(lulu, getCookbookPreset("us-letter"))).toBe(lulu);
+  });
+
+  it("does not tell a copy shop's customer their binding", () => {
+    const copyShop = getPrintDestination("copy-shop");
+    const binding = destinationSettings(copyShop, getCookbookPreset("us-letter")).find(
+      (row) => row.label === "Binding",
+    );
+    expect(binding?.value).toMatch(/lay-flat/);
   });
 });
 
 describe("what pressing Save produces", () => {
-  it("names the service that wants two files", () => {
-    // "two files" on its own is shorthand for something nobody has been told:
-    // it is not a property of the book, it is the upload form having two
-    // fields. Unattributed, it reads as a quirk of ours.
-    for (const id of ["lulu", "blurb"] as const) {
-      const destination = getPrintDestination(id);
-      for (const preset of destinationPresets(destination)) {
-        const line = downloadSummary(destination, preset);
-        expect(line).toContain(destinationPrinter(destination)!.name);
-        expect(line).toContain("two files");
-      }
-    }
-  });
-
-  it("says who asks without inventing a shop", () => {
-    // "Somewhere else" has no name to put in the sentence.
-    const other = getPrintDestination("other");
-    for (const preset of destinationPresets(other)) {
-      expect(downloadSummary(other, preset)).toBe(
-        "Print services ask for two files: the pages and the cover.",
+  it("says how many files, from the format alone", () => {
+    // The destination is only a shortcut, so nothing here may depend on it:
+    // somebody can choose their own printer and then a hardcover.
+    for (const preset of COOKBOOK_PRESETS) {
+      expect(downloadSummary(preset)).toBe(
+        preset.wrapRequired
+          ? "You’ll get two files: the pages and the cover."
+          : "You’ll get one file, with the cover as its first page.",
       );
     }
   });
 
-  it("tells a copy shop's customer the shop does the binding", () => {
-    // Confirmed on a real order: Staples took the one file and bound the cover
-    // itself, which is the fact that makes it different from Lulu.
-    const shop = getPrintDestination("copy-shop");
-    const line = downloadSummary(shop, destinationPresets(shop)[0]);
-    expect(line).toContain("One file");
-    expect(line).toContain("binds the cover in");
-  });
-
-  it("tells a home printer where the cover ends up", () => {
-    const home = getPrintDestination("home");
-    expect(downloadSummary(home, destinationPresets(home)[0])).toBe(
-      "One file, with the cover as its first page.",
-    );
-  });
-
-  it("always says how many files, whatever the destination", () => {
-    for (const destination of PRINT_DESTINATIONS) {
-      for (const preset of destinationPresets(destination)) {
-        const line = downloadSummary(destination, preset);
-        expect(line).toMatch(/One file|two files/);
-        expect(line.endsWith(".")).toBe(true);
-      }
+  it("never names a shop or a kind of service", () => {
+    for (const preset of COOKBOOK_PRESETS) {
+      expect(downloadSummary(preset)).not.toMatch(/lulu|blurb|staples|shop|service|printer/i);
     }
   });
 });
@@ -337,7 +349,7 @@ describe("the settings list's opening line", () => {
     // one thing the screen did not say.
     for (const destination of PRINT_DESTINATIONS) {
       for (const preset of destinationPresets(destination)) {
-        expect(settingsIntro(destination, preset)).toMatch(/^That’s/);
+        expect(settingsIntro(destination, preset)).toMatch(/^(That’s|Your book is ready)/);
       }
     }
   });
@@ -352,7 +364,7 @@ describe("the settings list's opening line", () => {
   it("does not invent a service it cannot name", () => {
     const other = getPrintDestination("other");
     expect(settingsIntro(other, destinationPresets(other)[0])).toBe(
-      "That’s everything a print service needs. When you upload, choose:",
+      "That’s everything your printer needs. When you upload, choose:",
     );
   });
 
@@ -366,7 +378,7 @@ describe("the settings list's opening line", () => {
   it("has nobody to satisfy at home", () => {
     const home = getPrintDestination("home");
     expect(settingsIntro(home, destinationPresets(home)[0])).toBe(
-      "That’s your whole book. When you print it:",
+      "Your book is ready. For the best result at home, use these print settings:",
     );
   });
 });

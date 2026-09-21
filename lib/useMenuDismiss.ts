@@ -15,7 +15,9 @@ import { useEffect, type RefObject } from "react";
  * beside the thing it no longer points at.
  */
 export function useMenuDismiss(
-  ref: RefObject<HTMLElement | null>,
+  /** The menu, or every element that counts as inside it: a portalled menu
+      lives apart from its trigger, and pressing either is not "outside". */
+  ref: RefObject<HTMLElement | null> | Array<RefObject<HTMLElement | null>>,
   onClose: () => void,
   {
     enabled = true,
@@ -26,8 +28,10 @@ export function useMenuDismiss(
   useEffect(() => {
     if (!enabled) return;
 
+    const refs = Array.isArray(ref) ? ref : [ref];
+    const inside = (target: Node) => refs.some((each) => each.current?.contains(target));
     const onPointerDown = (event: PointerEvent) => {
-      if (!ref.current?.contains(event.target as Node)) onClose();
+      if (!inside(event.target as Node)) onClose();
     };
     // Captured, so closing the menu does not ALSO reach whatever Escape means
     // to the page underneath — in the rail that is "clear the selection", i.e.
@@ -40,7 +44,7 @@ export function useMenuDismiss(
     // Anything scrolling underneath moves what this points at — except the
     // menu's own scroll, when it holds more rows than fit.
     const onScroll = (event: Event) => {
-      if (ref.current?.contains(event.target as Node)) return;
+      if (inside(event.target as Node)) return;
       onClose();
     };
 

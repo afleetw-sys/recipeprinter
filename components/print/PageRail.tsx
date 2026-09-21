@@ -40,6 +40,7 @@ import type { useProjectMeta } from "@/lib/project";
 import type { useRailDrag } from "@/lib/useRailDrag";
 import type { useRailSelection } from "@/lib/useRailSelection";
 import type { QueueItem, Section, RailSortMode } from "@/types/recipe";
+import { AnchoredMenu } from "@/components/AnchoredMenu";
 import { ChapterNameInput } from "@/components/print/ChapterNameInput";
 
 // Rail thumbnails target a fixed width so they always fit the rail column,
@@ -324,12 +325,6 @@ export function PageRail(props: PageRailProps) {
   const [sortMenuOpen, setSortMenuOpen] = useState(false);
   const sortMenuRef = useRef<HTMLDivElement | null>(null);
   const closeSortMenu = useCallback(() => setSortMenuOpen(false), []);
-  // The shared dismissal. This was a near-verbatim reimplementation of it,
-  // down to repeating the reason for capturing Escape — that closing the menu
-  // must not also reach the page's own handler and clear the selection the cook
-  // opened it to act on. `closeOnScroll` off because the menu is absolutely
-  // positioned inside this trigger, so it rides the organize bar.
-  useMenuDismiss(sortMenuRef, closeSortMenu, { enabled: sortMenuOpen, closeOnScroll: false });
 
   // Right-clicking a tile in the organizer offers the drag's destinations as a
   // list — the same moves, for a book too long to drag across. The ids are
@@ -611,7 +606,12 @@ export function PageRail(props: PageRailProps) {
                     <SortIcon size={ICON_SIZE.md} />
                   </IconButton>
                   {sortMenuOpen && (
-                    <div className="cp-menu recipe-organize-bar__sort-menu" role="menu">
+                    <AnchoredMenu
+                      anchorRef={sortMenuRef}
+                      onClose={closeSortMenu}
+                      label="Sort recipes"
+                      className="recipe-organize-bar__sort-menu"
+                    >
                       <p className="cp-menu__heading">Sort recipes</p>
                       {RAIL_SORT_OPTIONS.map((option) => (
                         <button
@@ -635,7 +635,7 @@ export function PageRail(props: PageRailProps) {
                         Sorts the recipes inside each section. Your sections stay in the order you
                         put them.
                       </p>
-                    </div>
+                    </AnchoredMenu>
                   )}
                 </div>
                 {/* Sections are made in here, so the control to make one is in
