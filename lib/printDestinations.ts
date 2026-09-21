@@ -319,36 +319,19 @@ export function destinationNote(
 }
 
 /**
- * One sentence above the Save button saying what pressing it produces, and who
- * wants it that way.
+ * One sentence saying what pressing Save produces.
  *
- * It used to read "· two files", tacked onto the trim. That is shorthand for
- * something nobody has been told yet: two files is not a property of the book,
- * it is Lulu's upload form having two fields, and a cook who does not know
- * that reads "two files" as a quirk of ours. Naming who asks turns a fact
- * about our export into a fact about their order, which is the only reason it
- * is worth knowing.
+ * About the file and nothing else. It used to name who asks for it ("Lulu asks
+ * for two files", "Print services ask for..."), which made a claim about a shop
+ * we may not even have been told about: the destination is only a shortcut now,
+ * so somebody can pick their own printer and then a hardcover, and a sentence
+ * about print services has nothing to attach to. The number of files is a fact
+ * about what we are about to make.
  */
-export function downloadSummary(
-  destination: PrintDestination,
-  preset: CookbookPreset,
-): string {
-  if (preset.wrapRequired) {
-    // Only where this shop is set up for this format: a copy shop handed an
-    // edge-to-edge book does not "ask for" two files, and saying so would put
-    // words in Staples' mouth.
-    const printer = destination.presetIds.includes(preset.id)
-      ? destinationPrinter(destination)
-      : undefined;
-    // "Somewhere else" has no name to put in the sentence, so the category
-    // takes the subject instead of us inventing a shop.
-    return printer
-      ? `${printer.name} asks for two files: the pages and the cover.`
-      : "Print services ask for two files: the pages and the cover.";
-  }
-  return destinationUploadsAFile(destination)
-    ? "One file. The shop binds the cover in for you."
-    : "One file, with the cover as its first page.";
+export function downloadSummary(preset: CookbookPreset): string {
+  return preset.wrapRequired
+    ? "You’ll get two files: the pages and the cover."
+    : "You’ll get one file, with the cover as its first page.";
 }
 
 /**
@@ -377,6 +360,6 @@ export function settingsIntro(
   const printer = destination.presetIds.includes(preset.id)
     ? destinationPrinter(destination)
     : undefined;
-  const who = printer ? printer.name : "a print service";
+  const who = printer ? printer.name : "your printer";
   return `That’s everything ${who} needs. When you upload, choose:`;
 }

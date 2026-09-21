@@ -297,14 +297,13 @@ describe("choosing a format at a destination that is not set up for it", () => {
     expect(destinationNote(getPrintDestination("blurb"), getCookbookPreset("hardcover-us-letter"))).toBeNull();
   });
 
-  it("never names a shop as asking for something it was not set up for", () => {
-    // A copy shop handed an edge-to-edge book does not "ask for" two files.
+  it("never names a shop as needing something it was not set up for", () => {
+    // A copy shop handed an edge-to-edge book does not "need" two files.
     const copyShop = getPrintDestination("copy-shop");
     const preset = getCookbookPreset("coil-us-letter");
-    expect(downloadSummary(copyShop, preset)).not.toContain("Staples");
     expect(settingsIntro(copyShop, preset)).not.toContain("Staples");
     // It still does for the format Lulu is set up for.
-    expect(downloadSummary(lulu, preset)).toContain("Lulu");
+    expect(settingsIntro(lulu, preset)).toContain("Lulu");
   });
 
   it("writes the after-download instructions for the file when no destination was chosen", () => {
@@ -323,53 +322,21 @@ describe("choosing a format at a destination that is not set up for it", () => {
 });
 
 describe("what pressing Save produces", () => {
-  it("names the service that wants two files", () => {
-    // "two files" on its own is shorthand for something nobody has been told:
-    // it is not a property of the book, it is the upload form having two
-    // fields. Unattributed, it reads as a quirk of ours.
-    for (const id of ["lulu", "blurb"] as const) {
-      const destination = getPrintDestination(id);
-      for (const preset of destinationPresets(destination)) {
-        const line = downloadSummary(destination, preset);
-        expect(line).toContain(destinationPrinter(destination)!.name);
-        expect(line).toContain("two files");
-      }
-    }
-  });
-
-  it("says who asks without inventing a shop", () => {
-    // "Somewhere else" has no name to put in the sentence.
-    const other = getPrintDestination("other");
-    for (const preset of destinationPresets(other)) {
-      expect(downloadSummary(other, preset)).toBe(
-        "Print services ask for two files: the pages and the cover.",
+  it("says how many files, from the format alone", () => {
+    // The destination is only a shortcut, so nothing here may depend on it:
+    // somebody can choose their own printer and then a hardcover.
+    for (const preset of COOKBOOK_PRESETS) {
+      expect(downloadSummary(preset)).toBe(
+        preset.wrapRequired
+          ? "You’ll get two files: the pages and the cover."
+          : "You’ll get one file, with the cover as its first page.",
       );
     }
   });
 
-  it("tells a copy shop's customer the shop does the binding", () => {
-    // Confirmed on a real order: Staples took the one file and bound the cover
-    // itself, which is the fact that makes it different from Lulu.
-    const shop = getPrintDestination("copy-shop");
-    const line = downloadSummary(shop, destinationPresets(shop)[0]);
-    expect(line).toContain("One file");
-    expect(line).toContain("binds the cover in");
-  });
-
-  it("tells a home printer where the cover ends up", () => {
-    const home = getPrintDestination("home");
-    expect(downloadSummary(home, destinationPresets(home)[0])).toBe(
-      "One file, with the cover as its first page.",
-    );
-  });
-
-  it("always says how many files, whatever the destination", () => {
-    for (const destination of PRINT_DESTINATIONS) {
-      for (const preset of destinationPresets(destination)) {
-        const line = downloadSummary(destination, preset);
-        expect(line).toMatch(/One file|two files/);
-        expect(line.endsWith(".")).toBe(true);
-      }
+  it("never names a shop or a kind of service", () => {
+    for (const preset of COOKBOOK_PRESETS) {
+      expect(downloadSummary(preset)).not.toMatch(/lulu|blurb|staples|shop|service|printer/i);
     }
   });
 });
@@ -397,7 +364,7 @@ describe("the settings list's opening line", () => {
   it("does not invent a service it cannot name", () => {
     const other = getPrintDestination("other");
     expect(settingsIntro(other, destinationPresets(other)[0])).toBe(
-      "That’s everything a print service needs. When you upload, choose:",
+      "That’s everything your printer needs. When you upload, choose:",
     );
   });
 

@@ -762,16 +762,18 @@
   opacity: .6;
   cursor: default;
 }
+/* Portalled and placed from the trigger (see MenuSelect), so it is fixed and
+   sits ABOVE dialogs: the shared menu layer is deliberately below them. */
 .menu-select__menu {
-  position: absolute;
-  top: calc(100% + 4px);
-  right: 0;
+  position: fixed;
+  z-index: calc(var(--z-dialog) + 1);
   min-width: 11rem;
 }
 .menu-select__check {
   display: inline-grid;
   place-items: center;
   width: 1rem;
+  margin-left: auto;
   flex: 0 0 auto;
 }
 /* A quiet heads-up, not an alert: the cook can still save what they chose. */

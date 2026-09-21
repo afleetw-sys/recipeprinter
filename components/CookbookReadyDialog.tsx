@@ -385,7 +385,7 @@ function ChooseBook({
       {/* What Save will produce, straight under the choices it follows from. */}
       {preset && (
         <p className="cookbook-ready__downloads">
-          {downloadSummary(effectiveDestination(destination, preset), preset)}
+          {downloadSummary(preset)}
         </p>
       )}
 
