@@ -673,10 +673,10 @@ export function PrintDeck(props: PrintDeckProps) {
             </div>
           )}
           {showFieldsButton && (
-            <div className="recipe-page-toolbar__group">
+            <div className="recipe-page-toolbar__group recipe-page-toolbar__group--fields">
               <button
                 type="button"
-                className={`recipe-page-toolbar__btn ${editing ? "is-active" : ""}`}
+                className={`recipe-page-toolbar__btn recipe-page-toolbar__btn--fields ${editing ? "is-active" : ""}`}
                 aria-pressed={editing}
                 onClick={(event) => {
                   event.stopPropagation();
