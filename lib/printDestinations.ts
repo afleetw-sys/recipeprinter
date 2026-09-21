@@ -28,20 +28,6 @@ export interface PrintDestination {
   id: PrintDestinationId;
   /** What it is called on the first screen. */
   name: string;
-  /** How a sentence refers to it: "for your own printer", "for Lulu". */
-  place: string;
-  /**
-   * One line, describing the destination rather than the file. It is the whole
-   * of the row's second line: no price is shown anywhere in this dialog, because
-   * what a book costs depends on the binding, the paper and the shop's own
-   * rates, none of which we set.
-   *
-   * Optional, and "Somewhere else" is why: the name already says everything
-   * there is to say about a shop we know nothing about, and a line under it
-   * restating that in other words is a row of text asking to be read for
-   * nothing.
-   */
-  tagline?: string;
   /**
    * The books this destination can make, in order; the first is the default.
    *
@@ -82,8 +68,6 @@ export const PRINT_DESTINATIONS: PrintDestination[] = [
   {
     id: "home",
     name: "My own printer",
-    place: "your own printer",
-    tagline: "No bleed, so art stops short of the edge.",
     presetIds: ["us-letter"],
   },
   {
@@ -93,8 +77,6 @@ export const PRINT_DESTINATIONS: PrintDestination[] = [
     // gutter that a cased spine needs has no home here.
     id: "copy-shop",
     name: "A copy shop",
-    place: "a copy shop",
-    tagline: "Staples, FedEx Office and the like.",
     presetIds: ["us-letter"],
     printerId: "staples",
     extraSettings: [{ label: "Colour", value: "Full colour, printed on both sides" }],
@@ -102,8 +84,6 @@ export const PRINT_DESTINATIONS: PrintDestination[] = [
   {
     id: "lulu",
     name: "Lulu",
-    place: "Lulu",
-    tagline: "Print on demand.",
     presetIds: ["coil-us-letter", "hardcover-us-letter"],
     printerId: "lulu",
     // Standard or premium: both are full colour and both take the same file,
@@ -114,8 +94,6 @@ export const PRINT_DESTINATIONS: PrintDestination[] = [
   {
     id: "blurb",
     name: "Blurb",
-    place: "Blurb",
-    tagline: "Books at their 8 × 10 in trim.",
     presetIds: ["hardcover-8x10"],
     printerId: "blurb",
     extraSettings: [{ label: "Interior", value: "Full colour" }],
@@ -123,10 +101,6 @@ export const PRINT_DESTINATIONS: PrintDestination[] = [
   {
     id: "other",
     name: "Somewhere else",
-    place: "another printer",
-    // No tagline. "Somewhere else" is self-describing, and the cover-size
-    // warning that used to live here is on step two, beside the fields it is
-    // about.
     // Spiral or hardcover, both at US Letter. Deliberately the same two
     // choices every other row offers, because the question this step asks is
     // which book you want and that question does not change with the shop.
@@ -240,61 +214,68 @@ export function exportFileRoles(fileCount: number): string[] {
 }
 
 /**
- * How a book format is described: as what somebody is making, in the words
- * they would use, not as the properties of the file.
+ * The four files as the questions somebody can actually answer.
  *
- * "US Letter, standard" and "edge to edge" are how the four files differ, and
- * nobody arrives knowing which of those they want. What people know is where the
- * book is going and how it will be held together. So each format is named for
- * that, and the file's properties are said afterwards as plain consequences: how
- * many files they will get, whether photos reach the paper's edge, whether the
- * inside edge has room for a spine.
- *
- * Every format is offered whatever the destination. A destination only decides
- * which one is chosen to begin with.
+ * "Which of these four formats?" was a list of how the files differ, and nobody
+ * arrives knowing. What people know is how the book will be held together, and
+ * then one follow-up that only exists for that answer: a hardcover has a size
+ * (8 × 10 or 8.5 × 11), and a lay-flat book at US Letter has a choice about the
+ * photos (standard, with a small white border, or edge to edge). Each pair of
+ * answers names exactly one preset, so nothing here is a new file, only a better
+ * way to ask for one.
  */
-const FORMAT_COPY: Record<
-  CookbookPresetId,
-  { title: string; detail: string; suggestion: string }
-> = {
-  "us-letter": {
-    title: "Print it at home or at a copy shop",
-    detail:
-      "One file, with the cover as page 1. Pages keep a small white border so a regular printer can print all of it.",
-    suggestion: "printing it at home or at a copy shop",
-  },
-  "coil-us-letter": {
-    title: "Order a lay-flat book (spiral, comb or coil)",
-    detail:
-      "Two files: the pages and the cover. Photos run all the way to the edge, and there is no extra margin, so the pages lie flat.",
-    suggestion: "a lay-flat book",
-  },
-  "hardcover-us-letter": {
-    title: "Order a hardcover book, 8.5 × 11 in",
-    detail:
-      "Two files: the pages and the cover wrap. Photos run to the edge, and the inside edge has extra room for the spine.",
-    suggestion: "a hardcover book, 8.5 × 11 in",
-  },
-  "hardcover-8x10": {
-    title: "Order a hardcover book, 8 × 10 in",
-    detail:
-      "Two files: the pages and the cover wrap. Photos run to the edge, and the inside edge has extra room for the spine.",
-    suggestion: "a hardcover book, 8 × 10 in",
-  },
-};
+export type BookKind = "hardcover" | "flat";
+export type BookSize = "8x10" | "letter";
+export type BookPhotos = "standard" | "edge";
 
-export function formatOption(preset: CookbookPreset): { title: string; detail: string } {
-  return FORMAT_COPY[preset.id];
+export interface BookChoice {
+  kind: BookKind | null;
+  size: BookSize | null;
+  photos: BookPhotos | null;
+}
+
+export const NO_BOOK_CHOICE: BookChoice = { kind: null, size: null, photos: null };
+
+/** What a preset is, in the terms of the questions above. */
+export function choiceForPreset(preset: CookbookPreset): BookChoice {
+  return {
+    kind: preset.coilBound ? "flat" : "hardcover",
+    size: preset.trimWidthIn === 8.5 ? "letter" : "8x10",
+    photos: preset.bleedIn > 0 ? "edge" : "standard",
+  };
 }
 
 /**
- * Every format, in the order they are offered. The same four whatever the
- * destination is: choosing a destination picks one of these, it does not
- * remove the others.
+ * The one preset a complete set of answers names, or null while a follow-up is
+ * still unanswered. A lay-flat book is always US Letter, and a hardcover's
+ * photos always run to the edge, so each kind ignores the question that does
+ * not belong to it.
  */
-export function allFormats(): CookbookPreset[] {
-  return COOKBOOK_PRESETS;
+export function presetForChoice(choice: BookChoice): CookbookPreset | null {
+  if (choice.kind === "hardcover") {
+    if (!choice.size) return null;
+    return (
+      COOKBOOK_PRESETS.find(
+        (preset) => !preset.coilBound && choiceForPreset(preset).size === choice.size,
+      ) ?? null
+    );
+  }
+  if (choice.kind === "flat") {
+    if (!choice.photos) return null;
+    return (
+      COOKBOOK_PRESETS.find(
+        (preset) => preset.coilBound && choiceForPreset(preset).photos === choice.photos,
+      ) ?? null
+    );
+  }
+  return null;
 }
+
+/** One line for the photos question, said for the answer that is selected. */
+export const PHOTOS_HELP: Record<BookPhotos, string> = {
+  standard: "Keeps a small white border, so any printer can print all of it.",
+  edge: "Photos run all the way to the edge. Made for print shops.",
+};
 
 /**
  * The destination the after-download instructions should be written for.
@@ -317,11 +298,10 @@ export function effectiveDestination(
  * A quiet heads-up when the chosen format is not what a destination is set up
  * for, or null when it is (or when we know nothing about the destination).
  *
- * Never a block and never a warning in red: only Lulu and Blurb are checked
- * against real orders, and for the rest we state our defaults as defaults. The
- * cook can still save whatever they chose. Where the consequence is one anybody
- * can picture (photos cut off at the edge, a file a print service turns away)
- * it says that; otherwise it says what we would suggest.
+ * Only where the consequence is one anybody can picture: photos cut off at the
+ * edge of a home printer, or a file a print service turns away. Everywhere else
+ * we know too little about the shop to say anything, and saying less is safer
+ * than a confidently wrong line. Never a block: the cook can save what they chose.
  */
 export function destinationNote(
   destination: PrintDestination | null,
@@ -330,15 +310,12 @@ export function destinationNote(
   if (!destination || destination.unknownSpec) return null;
   if (destination.presetIds.includes(preset.id)) return null;
   if (destination.id === "home" && preset.bleedIn > 0) {
-    return "In this one photos run all the way to the edge, which most home printers can't print, so the edges may be cut off.";
+    return "Photos run to the edge here, which most home printers can’t print, so the edges may be cut off.";
   }
   if ((destination.id === "lulu" || destination.id === "blurb") && preset.bleedIn === 0) {
-    return `${destination.name} usually wants photos that run to the edge and a separate cover, so this file may be turned away. You can still save it.`;
+    return `${destination.name} usually wants photos that run to the edge and a separate cover, so this file may be turned away.`;
   }
-  const suggested = destinationPresets(destination)
-    .map((option) => FORMAT_COPY[option.id].suggestion)
-    .join(" or ");
-  return `For ${destination.place} we suggest ${suggested}. You can still save this one.`;
+  return null;
 }
 
 /**

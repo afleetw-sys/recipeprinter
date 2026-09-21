@@ -560,10 +560,6 @@
   gap: .1rem;
   min-width: 0;
 }
-.cookbook-ready__subtitle {
-  color: var(--cp-ink-soft);
-  font-size: var(--cp-fs-small);
-}
 /* What Save is about to produce, immediately above Save. */
 .cookbook-ready__downloads {
   margin-bottom: -.35rem;
@@ -718,65 +714,11 @@
   cursor: default;
 }
 
-/* The formats, one card each. Same single-select tokens as the pills above, and
-   the same hidden-but-focusable native radio. Flat: a hairline separates them,
-   and the selected one takes the shared selected look. */
-.cookbook-format-list {
-  display: grid;
-  gap: .5rem;
-}
-.cookbook-format {
-  display: grid;
-  gap: .15rem;
-  padding: .7rem .9rem;
-  border: 1px solid var(--cp-line-strong);
-  border-radius: var(--cp-radius-control);
-  background: var(--cp-page);
-  cursor: pointer;
-}
-.cookbook-format input {
-  position: absolute;
-  width: 1px;
-  height: 1px;
-  opacity: 0;
-  pointer-events: none;
-}
-.cookbook-format strong {
-  color: var(--cp-ink);
-  font-size: var(--cp-fs-body);
-  font-weight: 800;
-}
-.cookbook-format small {
-  color: var(--cp-ink-soft);
-  font-size: var(--cp-fs-caption);
-  line-height: 1.45;
-}
-.cookbook-format.is-active {
-  border-color: var(--cp-selected-border);
-  background: var(--cp-selected-fill);
-  box-shadow: var(--cp-selected-ring);
-}
-.cookbook-format.is-active strong {
-  color: var(--cp-selected-text);
-}
-.cookbook-format:has(input:focus-visible) {
-  outline: var(--cp-focus-ring);
-  outline-offset: var(--cp-focus-ring-offset);
-}
-.cookbook-format:has(input:disabled) {
-  opacity: .6;
-  cursor: default;
-}
-/* The destination's one line, with the way out to its site beside it. */
+/* The way out to the shop's own site, under the destination pills. */
 .cookbook-ready__place {
-  display: flex;
-  align-items: center;
-  flex-wrap: wrap;
-  gap: .3rem .75rem;
-}
-.cookbook-ready__place .cookbook-next__another {
   display: inline-flex;
   align-items: center;
+  justify-self: start;
   gap: .25rem;
 }
 /* A quiet heads-up, not an alert: the cook can still save what they chose. */

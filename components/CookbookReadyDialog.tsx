@@ -15,8 +15,10 @@ import type { PrinterOption } from "@/lib/cookbookPresets";
 import { getCookbookPreset } from "@/lib/cookbookPresets";
 import { coverWrapGeometry, wrapGeometryForSpine } from "@/lib/coverWrap";
 import {
+  NO_BOOK_CHOICE,
+  PHOTOS_HELP,
   PRINT_DESTINATIONS,
-  allFormats,
+  choiceForPreset,
   destinationNote,
   destinationPresets,
   destinationPrinter as printerFor,
@@ -24,9 +26,12 @@ import {
   downloadSummary,
   effectiveDestination,
   exportFileRoles,
-  formatOption,
   getPrintDestination,
+  presetForChoice,
   settingsIntro,
+  type BookChoice,
+  type BookPhotos,
+  type BookSize,
   type PrintDestination,
   type PrintDestinationId,
 } from "@/lib/printDestinations";
@@ -34,18 +39,13 @@ import type { CoverSheetSpec } from "@/types/export";
 import type { CookbookPresetId } from "@/types/recipe";
 
 /**
- * One panel: where the book is going, and the format of the file.
+ * One small panel: where it is going, how it will be bound, and one follow-up.
  *
- * Both are always on screen. A destination is a shortcut that fills the format
- * in (Lulu wants edge-to-edge art and a separate cover; a home printer wants
- * neither), and every format stays available whichever destination is picked,
- * because we know what a shop's own form asks for far better than we know what
- * someone is actually printing. Nothing here decides for them: the destination
- * chooses where to begin, and the format is theirs to change.
- *
- * This used to be two steps, destination first and then only the books that
- * destination could make. That hid the formats behind a guess about the shop and
- * labelled them by a binding ("Spiral Cookbook") we had no way of knowing.
+ * The follow-up depends on the binding and only exists for it. A hardcover has
+ * a size; a spiral, comb or 3-ring book is US Letter and has one question about
+ * the photos. Nothing else is asked, and nothing is explained until it is
+ * selected. A destination is a shortcut that answers all of it at once, and
+ * every answer stays open to change whichever destination is picked.
  */
 export function CookbookReadyDialog({
   open,
@@ -88,13 +88,13 @@ export function CookbookReadyDialog({
   /** Clears that finished export, putting the controls back. */
   onExportAnother?: () => void;
 }) {
-  // Both optional: somebody can pick a format without saying where it goes.
+  // Both optional: somebody can say how it is bound without saying where it goes.
   const [destinationId, setDestinationId] = useState<PrintDestinationId | null>(null);
-  const [selectedPresetId, setSelectedPresetId] = useState<CookbookPresetId | null>(null);
+  const [choice, setChoice] = useState<BookChoice>(NO_BOOK_CHOICE);
   useEffect(() => {
     if (!open) {
       setDestinationId(null);
-      setSelectedPresetId(null);
+      setChoice(NO_BOOK_CHOICE);
     }
   }, [open]);
 
@@ -114,16 +114,16 @@ export function CookbookReadyDialog({
     }));
 
   /**
-   * Picking a destination fills the format in with the one it is set up for.
-   * That is a starting point, not a lock: the format list below stays open.
+   * Picking a destination answers every question with the book it is set up
+   * for. That is a starting point, not a lock: each answer stays open.
    */
   const chooseDestination = (id: PrintDestinationId) => {
     setDestinationId(id);
-    setSelectedPresetId(destinationPresets(getPrintDestination(id))[0].id);
+    setChoice(choiceForPreset(destinationPresets(getPrintDestination(id))[0]));
     onExportAnother?.();
   };
-  const chooseFormat = (id: CookbookPresetId) => {
-    setSelectedPresetId(id);
+  const changeChoice = (patch: Partial<BookChoice>) => {
+    setChoice((current) => ({ ...current, ...patch }));
     onExportAnother?.();
   };
   const destination = destinationId ? getPrintDestination(destinationId) : null;
@@ -177,8 +177,8 @@ export function CookbookReadyDialog({
           <ChooseBook
             destination={destination}
             onChooseDestination={chooseDestination}
-            selectedPresetId={selectedPresetId}
-            onChooseFormat={chooseFormat}
+            choice={choice}
+            onChangeChoice={changeChoice}
             coverSizes={coverSizes}
             setCoverField={setCoverField}
             pageCount={pageCount}
@@ -192,21 +192,59 @@ export function CookbookReadyDialog({
   );
 }
 
+/** A single-select row of pills, driven by native radios so the arrow keys and
+    screen readers get the group they expect. */
+function Pills({
+  label,
+  name,
+  options,
+  selected,
+  onSelect,
+  disabled,
+}: {
+  label: string;
+  name: string;
+  options: Array<{ value: string; label: string }>;
+  selected: string | null;
+  onSelect: (value: string) => void;
+  disabled: boolean;
+}) {
+  return (
+    <div className="cookbook-binding" role="radiogroup" aria-label={label}>
+      {options.map((option) => (
+        <label
+          key={option.value}
+          className={`cookbook-binding__option${option.value === selected ? " is-active" : ""}`}
+        >
+          <input
+            type="radio"
+            name={name}
+            value={option.value}
+            checked={option.value === selected}
+            disabled={disabled}
+            onChange={() => onSelect(option.value)}
+          />
+          {option.label}
+        </label>
+      ))}
+    </div>
+  );
+}
+
 /**
- * The controls: where it is going, which format, the cover size if one travels
- * separately, and the button.
+ * The controls: where it is going, how it will be bound, the one follow-up that
+ * binding needs, the cover size if one travels separately, and the button.
  *
- * The four formats are genuinely different files, not labels on the same one.
- * A book with a spine margin carries a half-inch inset on the bound edge
- * because the spine swallows it, and its cover wrap is a different sheet
- * entirely — around 19 × 12.75in over boards, against 17.75 × 11.25 printed
- * flat. So the choice is stated plainly rather than made quietly.
+ * The answers name genuinely different files, not labels on the same one: a
+ * hardcover carries a half-inch inset on the bound edge because the spine
+ * swallows it, and its cover wrap is a different sheet entirely, around
+ * 19 × 12.75in over boards against 17.75 × 11.25 printed flat.
  */
 function ChooseBook({
   destination,
   onChooseDestination,
-  selectedPresetId,
-  onChooseFormat,
+  choice,
+  onChangeChoice,
   coverSizes,
   setCoverField,
   pageCount,
@@ -216,8 +254,8 @@ function ChooseBook({
 }: {
   destination: PrintDestination | null;
   onChooseDestination: (id: PrintDestinationId) => void;
-  selectedPresetId: CookbookPresetId | null;
-  onChooseFormat: (id: CookbookPresetId) => void;
+  choice: BookChoice;
+  onChangeChoice: (patch: Partial<BookChoice>) => void;
   coverSizes: Record<string, { w: string; h: string; spine: string }>;
   setCoverField: (presetId: string, field: "w" | "h" | "spine", value: string) => void;
   pageCount: number;
@@ -225,8 +263,7 @@ function ChooseBook({
   onExport: (presetId: CookbookPresetId, coverSheet?: CoverSheetSpec) => void;
   onPrinterClick: (printer: string, url: string) => void;
 }) {
-  const formats = allFormats();
-  const preset = formats.find((option) => option.id === selectedPresetId) ?? null;
+  const preset = presetForChoice(choice);
   const busy = exportingPreset !== null;
   const printer = destination ? printerFor(destination) : undefined;
   const note = preset ? destinationNote(destination, preset) : null;
@@ -267,69 +304,76 @@ function ChooseBook({
 
   return (
     <>
-      <p className="cookbook-ready__lead">
-        Pick where you’re printing and we’ll fill in the settings. You can change any of them.
-      </p>
-
-      <div className="cookbook-binding" role="radiogroup" aria-label="Where you’re printing">
-        {PRINT_DESTINATIONS.map((option) => (
-          <label
-            key={option.id}
-            className={`cookbook-binding__option${option.id === destination?.id ? " is-active" : ""}`}
-          >
-            <input
-              type="radio"
-              name="cookbook-destination"
-              value={option.id}
-              checked={option.id === destination?.id}
-              disabled={busy}
-              onChange={() => onChooseDestination(option.id)}
-            />
-            {option.name}
-          </label>
-        ))}
-      </div>
-
-      {destination && (destination.tagline || printer) && (
-        <p className="cookbook-ready__subtitle cookbook-ready__place">
-          {destination.tagline}
-          {printer && (
-            <button
-              type="button"
-              className="cookbook-next__another"
-              onClick={() => onPrinterClick(printer.id, printer.url)}
-            >
-              Open {printer.name}
-              <ExternalIcon size={ICON_SIZE.sm} />
-            </button>
-          )}
-        </p>
+      <p className="cookbook-ready__lead">Where are you printing?</p>
+      <Pills
+        label="Where you’re printing"
+        name="cookbook-destination"
+        disabled={busy}
+        options={PRINT_DESTINATIONS.map((option) => ({ value: option.id, label: option.name }))}
+        selected={destination?.id ?? null}
+        onSelect={(id) => onChooseDestination(id as PrintDestinationId)}
+      />
+      {printer && (
+        <button
+          type="button"
+          className="cookbook-next__another cookbook-ready__place"
+          onClick={() => onPrinterClick(printer.id, printer.url)}
+        >
+          Open {printer.name}
+          <ExternalIcon size={ICON_SIZE.sm} />
+        </button>
       )}
 
-      <p className="cookbook-ready__lead">What are you making?</p>
-      <div className="cookbook-format-list" role="radiogroup" aria-label="What you are making">
-        {formats.map((option) => {
-          const copy = formatOption(option);
-          const active = option.id === preset?.id;
-          return (
-            <label key={option.id} className={`cookbook-format${active ? " is-active" : ""}`}>
-              <input
-                type="radio"
-                name="cookbook-format"
-                value={option.id}
-                checked={active}
-                disabled={busy}
-                onChange={() => onChooseFormat(option.id)}
-              />
-              <strong>{copy.title}</strong>
-              <small>{copy.detail}</small>
-            </label>
-          );
-        })}
-      </div>
+      <p className="cookbook-ready__lead">How will it be bound?</p>
+      <Pills
+        label="How it will be bound"
+        name="cookbook-kind"
+        disabled={busy}
+        options={[
+          { value: "hardcover", label: "Hardcover" },
+          { value: "flat", label: "Spiral, comb or 3-ring" },
+        ]}
+        selected={choice.kind}
+        onSelect={(kind) => onChangeChoice({ kind: kind as BookChoice["kind"] })}
+      />
 
-      {/* Quiet, and only where the format is not the one this destination is set
-          up for. Never a block: the cook can save whatever they chose. */}
+      {choice.kind === "hardcover" && (
+        <>
+          <p className="cookbook-ready__lead">Size</p>
+          <Pills
+            label="Size"
+            name="cookbook-size"
+            disabled={busy}
+            options={[
+              { value: "8x10", label: "8 × 10 in" },
+              { value: "letter", label: "8.5 × 11 in" },
+            ]}
+            selected={choice.size}
+            onSelect={(size) => onChangeChoice({ size: size as BookSize })}
+          />
+        </>
+      )}
+
+      {choice.kind === "flat" && (
+        <>
+          <p className="cookbook-ready__lead">Photos</p>
+          <Pills
+            label="Photos"
+            name="cookbook-photos"
+            disabled={busy}
+            options={[
+              { value: "standard", label: "Standard" },
+              { value: "edge", label: "Edge to edge" },
+            ]}
+            selected={choice.photos}
+            onSelect={(photos) => onChangeChoice({ photos: photos as BookPhotos })}
+          />
+          {choice.photos && <p className="cookbook-ready__note">{PHOTOS_HELP[choice.photos]}</p>}
+        </>
+      )}
+
+      {/* Quiet, and only where the choice is not what this destination is set up
+          for. Never a block: the cook can save whatever they chose. */}
       {note && <p className="cookbook-ready__note">{note}</p>}
 
       {/* Only where a cover travels on its own. A book with the cover as its
@@ -385,9 +429,7 @@ function ChooseBook({
       )}
 
       <p className="cookbook-ready__downloads">
-        {preset
-          ? downloadSummary(effectiveDestination(destination, preset), preset)
-          : "Choose where you’re printing, or what you’re making, to save your book."}
+        {preset ? downloadSummary(effectiveDestination(destination, preset), preset) : ""}
       </p>
 
       <button

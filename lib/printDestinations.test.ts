@@ -2,11 +2,13 @@ import { describe, expect, it } from "vitest";
 import { COOKBOOK_PRESETS, PRINTERS, getCookbookPreset } from "@/lib/cookbookPresets";
 import {
   PRINT_DESTINATIONS,
-  allFormats,
+  NO_BOOK_CHOICE,
+  PHOTOS_HELP,
+  choiceForPreset,
   destinationNote,
   downloadSummary,
   effectiveDestination,
-  formatOption,
+  presetForChoice,
   settingsIntro,
   destinationPresets,
   destinationPrinter,
@@ -212,39 +214,53 @@ describe("what to do with the file once it is saved", () => {
   });
 });
 
-describe("format descriptions", () => {
-  it("offers every format, whatever the destination", () => {
-    // A destination only decides which format starts selected. It never removes
-    // the others: we know a shop's form far better than what someone is printing.
-    expect(allFormats().map((preset) => preset.id)).toEqual(
-      COOKBOOK_PRESETS.map((preset) => preset.id),
+describe("the two questions that name a format", () => {
+  it("names exactly one preset for every complete set of answers", () => {
+    const named = [
+      presetForChoice({ kind: "hardcover", size: "8x10", photos: null }),
+      presetForChoice({ kind: "hardcover", size: "letter", photos: null }),
+      presetForChoice({ kind: "flat", size: null, photos: "standard" }),
+      presetForChoice({ kind: "flat", size: null, photos: "edge" }),
+    ];
+    expect(named.every(Boolean)).toBe(true);
+    expect(new Set(named.map((preset) => preset!.id)).size).toBe(COOKBOOK_PRESETS.length);
+  });
+
+  it("round-trips: every preset's answers name that preset", () => {
+    for (const preset of COOKBOOK_PRESETS) {
+      expect(presetForChoice(choiceForPreset(preset))?.id).toBe(preset.id);
+    }
+  });
+
+  it("names nothing while a follow-up is unanswered", () => {
+    expect(presetForChoice(NO_BOOK_CHOICE)).toBeNull();
+    expect(presetForChoice({ kind: "hardcover", size: null, photos: "edge" })).toBeNull();
+    expect(presetForChoice({ kind: "flat", size: "letter", photos: null })).toBeNull();
+  });
+
+  it("ignores the question that does not belong to the chosen kind", () => {
+    // A hardcover's photos always reach the edge and a lay-flat book is always
+    // US Letter, so a stale answer to the other question must not change the result.
+    expect(presetForChoice({ kind: "hardcover", size: "letter", photos: "standard" })?.id).toBe(
+      "hardcover-us-letter",
     );
+    expect(presetForChoice({ kind: "flat", size: "8x10", photos: "edge" })?.id).toBe(
+      "coil-us-letter",
+    );
+  });
+
+  it("explains both photo answers in one short line each", () => {
+    for (const help of Object.values(PHOTOS_HELP)) {
+      expect(help.length).toBeLessThan(80);
+      expect(help).not.toContain("—");
+    }
+    expect(PHOTOS_HELP.standard).toMatch(/border/);
+  });
+
+  it("starts every destination on a complete set of answers", () => {
     for (const destination of PRINT_DESTINATIONS) {
-      for (const preset of destinationPresets(destination)) {
-        expect(allFormats()).toContain(preset);
-      }
-    }
-  });
-
-  it("names each format for what somebody is making, in words they would use", () => {
-    const titles = COOKBOOK_PRESETS.map((preset) => formatOption(preset).title);
-    expect(new Set(titles).size).toBe(titles.length);
-    for (const preset of COOKBOOK_PRESETS) {
-      const { title, detail } = formatOption(preset);
-      expect(title.trim()).not.toBe("");
-      expect(detail.trim()).not.toBe("");
-      // These are how the FILES differ, and nobody arrives knowing which they
-      // want. "US Letter, standard" and "edge to edge" meant nothing to a reader.
-      expect(`${title} ${detail}`).not.toMatch(/\bbleed\b|\bstandard\b|edge to edge|\bgutter\b/i);
-      // And never the product names we had guessed at for somebody's book.
-      expect(title).not.toMatch(/cookbook/i);
-      expect(`${title} ${detail}`).not.toContain("—");
-    }
-  });
-
-  it("says how many files a format produces", () => {
-    for (const preset of COOKBOOK_PRESETS) {
-      expect(formatOption(preset).detail).toContain(preset.wrapRequired ? "Two files" : "One file");
+      const first = destinationPresets(destination)[0];
+      expect(presetForChoice(choiceForPreset(first))?.id).toBe(first.id);
     }
   });
 });
@@ -268,15 +284,17 @@ describe("choosing a format at a destination that is not set up for it", () => {
     }
   });
 
-  it("suggests what the destination is set up for and lets the cook carry on", () => {
-    const note = destinationNote(lulu, getCookbookPreset("us-letter"));
-    expect(note).toContain("Lulu");
-    expect(note).toMatch(/still save/i);
-    // A consequence anyone can picture, not our vocabulary for the file.
+  it("says what will happen, in terms anyone can picture", () => {
+    const toLulu = destinationNote(lulu, getCookbookPreset("us-letter"));
+    expect(toLulu).toContain("Lulu");
+    expect(toLulu).toMatch(/turned away/);
     expect(destinationNote(home, getCookbookPreset("coil-us-letter"))).toMatch(/cut off/);
-    // Where there is nothing plain to say, it suggests what the destination is for.
+  });
+
+  it("says nothing where it would be a guess about the shop", () => {
     const copyShop = getPrintDestination("copy-shop");
-    expect(destinationNote(copyShop, getCookbookPreset("coil-us-letter"))).toContain("a copy shop");
+    expect(destinationNote(copyShop, getCookbookPreset("coil-us-letter"))).toBeNull();
+    expect(destinationNote(getPrintDestination("blurb"), getCookbookPreset("hardcover-us-letter"))).toBeNull();
   });
 
   it("never names a shop as asking for something it was not set up for", () => {
@@ -301,24 +319,6 @@ describe("choosing a format at a destination that is not set up for it", () => {
       (row) => row.label === "Binding",
     );
     expect(binding?.value).toMatch(/lay-flat/);
-  });
-});
-
-describe("what the destination list says", () => {
-  it("never puts a price on a row", () => {
-    // What a book costs turns on the binding, the paper and the shop's own
-    // rates. The rows describe the place instead.
-    for (const destination of PRINT_DESTINATIONS) {
-      expect(destination.tagline ?? "").not.toMatch(/[$£€]|\bcost|\bprice/i);
-      expect(destination).not.toHaveProperty("economics");
-    }
-  });
-
-  it("describes every place except the one whose name says it all", () => {
-    for (const destination of PRINT_DESTINATIONS) {
-      if (destination.id === "other") expect(destination.tagline).toBeUndefined();
-      else expect(destination.tagline?.length).toBeGreaterThan(0);
-    }
   });
 });
 
