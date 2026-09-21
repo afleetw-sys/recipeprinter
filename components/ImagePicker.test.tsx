@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
-import { cleanup, render, screen } from "@testing-library/react";
+import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { useState } from "react";
-import { afterEach, beforeAll, describe, expect, it } from "vitest";
+import { afterEach, beforeAll, describe, expect, it, vi } from "vitest";
 import { ImagePicker } from "@/components/ImagePicker";
 
 // ImagePicker checks the deck's mobile breakpoint on mount (`useIsMobileSheet`),
@@ -71,5 +71,64 @@ describe("ImagePicker openSignal", () => {
     rerender(<ParentWithSignal mounted={false} requestedTick={1} />);
     rerender(<ParentWithSignal mounted={true} requestedTick={2} />);
     expect(screen.queryByText("Choose an image")).not.toBe(null);
+  });
+});
+
+/**
+ * Every collage-capable slot now goes through the grid unconditionally (see
+ * ImagePicker's own note on why there is no single-vs-multiple switch), but a
+ * cover or chapter that hasn't been touched since that change can still carry
+ * a photo the OLD way — `current`, not `gridImages`. It has to read as one
+ * already-ticked tile, not as if the page had no photo at all.
+ */
+describe("ImagePicker grid selection", () => {
+  it("shows a photo stored the old way (current) as already selected", () => {
+    render(
+      <ImagePicker
+        current="a.jpg"
+        images={["a.jpg", "b.jpg"]}
+        onSelect={() => {}}
+        gridImages={[]}
+        onGridChange={() => {}}
+        openSignal={1}
+        onOpenSignalConsumed={() => {}}
+      />,
+    );
+    const tile = screen.getByLabelText("Remove photo 1 from collage");
+    expect(tile.getAttribute("aria-pressed")).toBe("true");
+  });
+
+  it("migrates it into gridImages, rather than duplicating it, on the next tap elsewhere", () => {
+    const onGridChange = vi.fn();
+    render(
+      <ImagePicker
+        current="a.jpg"
+        images={["a.jpg", "b.jpg"]}
+        onSelect={() => {}}
+        gridImages={[]}
+        onGridChange={onGridChange}
+        openSignal={1}
+        onOpenSignalConsumed={() => {}}
+      />,
+    );
+    fireEvent.click(screen.getByLabelText("Add photo 2 to collage"));
+    expect(onGridChange).toHaveBeenCalledWith(["a.jpg", "b.jpg"]);
+  });
+
+  it("tapping the already-selected legacy photo removes it, same as any other tile", () => {
+    const onGridChange = vi.fn();
+    render(
+      <ImagePicker
+        current="a.jpg"
+        images={["a.jpg", "b.jpg"]}
+        onSelect={() => {}}
+        gridImages={[]}
+        onGridChange={onGridChange}
+        openSignal={1}
+        onOpenSignalConsumed={() => {}}
+      />,
+    );
+    fireEvent.click(screen.getByLabelText("Remove photo 1 from collage"));
+    expect(onGridChange).toHaveBeenCalledWith([]);
   });
 });

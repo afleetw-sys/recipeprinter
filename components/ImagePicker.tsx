@@ -112,8 +112,18 @@ export function ImagePicker({
   // do (a recipe has one photo, no collage). No separate on/off switch: the
   // grid IS the picker for anything collage-capable, whether the cook ends up
   // tapping one tile or several.
-  const selectedGrid = (gridImages ?? []).filter(Boolean);
   const gridMode = Boolean(onGridChange);
+  // A photo stored the OLD way — `current`, from before every collage-capable
+  // slot went through `gridImages` — reads as one ticked tile here, same as
+  // any other. Without this, opening the picker on a cover/chapter that still
+  // has a single `imageUrl`/`photoUrl` (nothing yet forced it through
+  // `onGridChange`) showed every tile unselected, as if the page had no photo
+  // at all. Tapping it runs it through `toggleInGrid` like anything else,
+  // which is what actually migrates the data: the very next `onGridChange`
+  // commits the merged array and the caller drops `imageUrl` for good.
+  const selectedGrid = gridMode
+    ? Array.from(new Set([...(current ? [current] : []), ...(gridImages ?? []).filter(Boolean)]))
+    : (gridImages ?? []).filter(Boolean);
   const uniqueImages = Array.from(
     new Set(
       [
