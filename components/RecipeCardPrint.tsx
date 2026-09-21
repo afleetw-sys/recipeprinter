@@ -1866,11 +1866,21 @@ export const CoverFace = memo(function CoverFace({
   // Responsive collage: columns + banner adapt to the photo count so any number
   // (2, 3, 5, …) fills the frame with no empty cells. Shared with section grids.
   const { columns: gridColumns, firstSpans: gridFirstSpans } = photoGridLayout(gridImages.length);
+  // A cover with nothing written on it has no text to read, so nothing that
+  // exists for the text is left standing: the scrim that darkens the photo, the
+  // plate that backs it, its rule and its ornament (see `data-cover-text` in
+  // print.css). Not while the fields are revealed or one is open, when the empty
+  // lines have to be there to be typed into.
+  const coverTextEmpty =
+    ![draft.title, draft.subtitle, draft.author, draft.edition].some((line) => line?.trim()) &&
+    !showEmpty &&
+    editingField === null;
 
   return (
     <article
       className="recipe-card recipe-card--cover recipe-card--cover-front"
       data-cover-mode={coverMode}
+      data-cover-text={coverTextEmpty ? "none" : undefined}
       data-preview-hidden={previewHidden ? "true" : undefined}
     >
       <div

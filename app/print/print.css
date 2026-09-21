@@ -5089,6 +5089,18 @@
   }
 }
 
+/* A cover with nothing written on it. The text is gone, so everything that was
+   there for the text goes with it: the scrim that darkens the photo behind it,
+   the plate that backs it on the paper themes, and the lockup's own rule and
+   ornament. What belongs to the cover rather than to its words stays: the photo
+   or collage, and the template's accent (top band, frame, decoration). The
+   lockup is one box holding all of the above, so hiding it leaves no padding
+   reserved either. Only set when nothing is being typed into; see CoverFace. */
+.recipe-card--cover-front[data-cover-text="none"] .recipe-card__cover-scrim,
+.recipe-card--cover-front[data-cover-text="none"] .recipe-card__cover-content {
+  display: none;
+}
+
 /* Photo-free cover — a proper typographic cover on the template's paper in its
    own colors, NOT a placeholder fill: no scrim, title centered in the accent. */
 .recipe-card--cover-front[data-cover-mode="none"] .recipe-card__cover-photo {
