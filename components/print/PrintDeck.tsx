@@ -521,7 +521,12 @@ export function PrintDeck(props: PrintDeckProps) {
         : navItem.kind === "divider"
           ? renderSectionPhotoControl(navItem.recipeId)
           : navItem.kind === "cover"
-            ? renderCoverPhotoControl(coverSideFromNavItem(navItem))
+            ? // Only the front cover draws a photo. The back cover and the
+              // opening page are paper with text on it; offering the button
+              // there saved an image that nothing ever rendered.
+              coverSideFromNavItem(navItem) === "front"
+              ? renderCoverPhotoControl("front")
+              : null
             : // The art pages: a full-page recipe photo, and a chapter's facing
               // art. These used to carry their own button ON the picture, which
               // is the last place the dialog was reachable from anywhere but

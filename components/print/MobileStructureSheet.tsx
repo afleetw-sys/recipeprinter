@@ -5,6 +5,7 @@ import { Checkbox, SelectTile } from "@/components/Controls";
 import { ChevronDownIcon, TrashIcon, PlusIcon, ICON_SIZE } from "@/components/icons";
 import { MobileSheet } from "@/components/print/MobileSheet";
 import { PHOTO_STYLE_OPTIONS, PhotoStylePreview } from "@/components/print/photoStyle";
+import { ChapterNameInput } from "@/components/print/ChapterNameInput";
 import { namedSectionCount, useProjectMeta, type PhotoStyle } from "@/lib/project";
 import type { Section } from "@/types/recipe";
 
@@ -142,14 +143,12 @@ export function MobileStructureSheet({
                 <section className="recipe-structure-sheet__section" key={section.id}>
                   {showSectionChrome && (
                     <div className="recipe-structure-sheet__section-head">
-                      <input
+                      <ChapterNameInput
                         className="recipe-structure-sheet__section-title"
                         value={section.title ?? ""}
                         placeholder="Chapter name"
                         aria-label="Chapter name"
-                        onChange={(event) =>
-                          renameSectionEverywhere(section.id, event.target.value)
-                        }
+                        onRename={(value) => renameSectionEverywhere(section.id, value)}
                       />
                       <div className="recipe-structure-sheet__move">
                         <button
