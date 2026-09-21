@@ -1327,6 +1327,7 @@ export function usePrintSheets({
     continueOnBack,
     measuredRecipeItems,
     printLayoutReady,
+    layoutSettled,
     /** Sheets for the layout currently ON SCREEN (may lag by one measurement). */
     sheets: displayedLayout?.sheets ?? [],
     navItems: displayedLayout?.navItems ?? [],

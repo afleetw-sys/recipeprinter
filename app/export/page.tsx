@@ -326,7 +326,7 @@ function InteriorDocument({ payload }: { payload: ExportPayload }) {
     template,
   });
 
-  const { sheets, printLayoutReady, measurers } = usePrintSheets({
+  const { sheets, layoutSettled, measurers } = usePrintSheets({
     sections: project.sections,
     items,
     cover: coversAreSeparate ? undefined : project.cover,
@@ -357,7 +357,13 @@ function InteriorDocument({ payload }: { payload: ExportPayload }) {
     preset: payload.preset,
   });
 
-  useExportReady(printLayoutReady && sheets.length > 0);
+  // `printLayoutReady` is false by definition for a book with zero recipes
+  // (cover/chapters only) — it never fires, and this gate would wait for a
+  // signal that was never coming, stranding the render at the renderer's
+  // timeout with no error a cook could read. `layoutSettled` is the same
+  // condition `sheets` itself is gated on: true once every recipe has
+  // measured, OR immediately when there are none to measure.
+  useExportReady(layoutSettled && sheets.length > 0);
 
   /* The spine used to be drawn here as an extra FIRST page of the interior.
      It was an honest stopgap: `COVER_WRAP_ENABLED` was false, so a hardcover
