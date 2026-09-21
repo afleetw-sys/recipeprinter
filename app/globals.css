@@ -560,9 +560,8 @@
   gap: .1rem;
   min-width: 0;
 }
-/* What Save is about to produce, immediately above Save. */
+/* What Save will produce, directly under the choices it follows from. */
 .cookbook-ready__downloads {
-  margin-bottom: -.35rem;
   color: var(--cp-ink-soft);
   font-size: var(--cp-fs-small);
 }

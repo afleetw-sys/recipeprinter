@@ -382,6 +382,13 @@ function ChooseBook({
         </>
       )}
 
+      {/* What Save will produce, straight under the choices it follows from. */}
+      {preset && (
+        <p className="cookbook-ready__downloads">
+          {downloadSummary(effectiveDestination(destination, preset), preset)}
+        </p>
+      )}
+
       {/* Quiet, and only where the choice is not what this destination is set up
           for. Never a block: the cook can save whatever they chose. */}
       {note && <p className="cookbook-ready__note">{note}</p>}
@@ -437,10 +444,6 @@ function ChooseBook({
           </span>
         </div>
       )}
-
-      <p className="cookbook-ready__downloads">
-        {preset ? downloadSummary(effectiveDestination(destination, preset), preset) : ""}
-      </p>
 
       <button
         type="button"

@@ -131,6 +131,22 @@ describe("the cookbook print dialog", () => {
     expect(screen.queryByRole("menu")).toBeNull();
   });
 
+  it("says what Save produces right under the answers, not down by the button", () => {
+    renderDialog(95);
+    expect(document.querySelector(".cookbook-ready__downloads")).toBeNull();
+    fillInFor("copy-shop");
+    const summary = document.querySelector(".cookbook-ready__downloads")!;
+    expect(summary.textContent).toMatch(/one file/i);
+    // Before the notes and the cover fields, and well before Save.
+    const order = (a: Element, b: Element) =>
+      a.compareDocumentPosition(b) & Node.DOCUMENT_POSITION_FOLLOWING;
+    expect(order(screen.getByRole("radiogroup", { name: "How it will be bound" }), summary)).toBeTruthy();
+    expect(order(summary, save())).toBeTruthy();
+    fireEvent.click(pill("Edge to edge"));
+    const cover = document.querySelector(".cookbook-cover-size")!;
+    expect(order(summary, cover)).toBeTruthy();
+  });
+
   it("keeps the answers when the shortcut is cleared", () => {
     renderDialog(95);
     fillInFor("blurb");
