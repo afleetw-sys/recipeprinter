@@ -1200,7 +1200,10 @@ export default function PrintPage() {
     window.clearTimeout(sectionRenameTimerRef.current);
     sectionRenameTimerRef.current = undefined;
     pendingSectionRenameRef.current = null;
-    if (pending) renameSection(pending.sectionId, pending.value.trim() || undefined);
+    // An emptied title is a field mid-edit, not a request to unname the
+    // chapter: an untitled section has no opener, so the page being typed on
+    // would vanish.
+    if (pending?.value.trim()) renameSection(pending.sectionId, pending.value.trim());
   }, [renameSection]);
 
   const editSectionTitle = useCallback(
@@ -1225,7 +1228,10 @@ export default function PrintPage() {
     // Commit writes the authoritative value right here, so a queued trailing
     // write would only repeat it.
     cancelPendingSectionRename();
-    projectMeta.renameSection(editingSectionId, editingSectionTitle.trim() || undefined);
+    // Committing an empty title keeps the name the chapter already has.
+    if (editingSectionTitle.trim()) {
+      projectMeta.renameSection(editingSectionId, editingSectionTitle.trim());
+    }
     setEditingSectionId(null);
     setEditingSectionTitle("");
   }

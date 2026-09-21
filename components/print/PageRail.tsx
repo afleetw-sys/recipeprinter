@@ -40,6 +40,7 @@ import type { useProjectMeta } from "@/lib/project";
 import type { useRailDrag } from "@/lib/useRailDrag";
 import type { useRailSelection } from "@/lib/useRailSelection";
 import type { QueueItem, Section, RailSortMode } from "@/types/recipe";
+import { ChapterNameInput } from "@/components/print/ChapterNameInput";
 
 // Rail thumbnails target a fixed width so they always fit the rail column,
 // regardless of page aspect ratio (letter portrait vs. 6x4 landscape).
@@ -940,12 +941,12 @@ export function PageRail(props: PageRailProps) {
                           <GripIcon size={ICON_SIZE.sm} />
                         </button>
                         {organizeMode ? (
-                          <input
+                          <ChapterNameInput
                             className="recipe-page-rail__section-title-input"
                             value={section.title ?? ""}
                             placeholder="Chapter name"
                             aria-label="Chapter name"
-                            onChange={(event) => renameSectionEverywhere(section.id, event.target.value)}
+                            onRename={(value) => renameSectionEverywhere(section.id, value)}
                             onPointerDown={(event) => event.stopPropagation()}
                           />
                         ) : (
