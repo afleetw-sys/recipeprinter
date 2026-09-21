@@ -1560,7 +1560,13 @@ export const DividerFace = memo(function DividerFace({
         })}
         {openerField({
           name: "intro",
-          value: inlineEdit?.intro ?? intro ?? "",
+          // Opening the auto line puts its words IN the field. As a placeholder
+          // they were only a picture of text: the box opened empty, so there was
+          // nothing to select and delete, and no way to reach "removed". Left
+          // unchanged they are never written back (nothing is stored until an
+          // edit happens), so the line keeps following the chapter's recipes;
+          // emptying the field is what removes it.
+          value: inlineEdit?.intro ?? intro ?? (editingField === "intro" ? derivedIntro : ""),
           // While untouched the prompt is the line that would actually print,
           // not a generic "write something here" — an untouched description is a
           // decision, so show its result rather than hiding it until the cook
