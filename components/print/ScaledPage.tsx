@@ -111,7 +111,7 @@ export const ScaledPage = memo(function ScaledPage({
     photoUrl?: string;
     recipeImages?: string[];
     onPhotoChange?: (url: string | undefined) => void;
-    /** Unified placement (None/In-card/Full-page/Photo grid) + grid curation, so
+    /** Unified placement (None/In-page/Full-page/Photo grid) + grid curation, so
         the opener picker is the same dialog as the recipe one, plus the cover's
         multi-select grid. */
     placement?: string;
@@ -384,7 +384,7 @@ export const ScaledPage = memo(function ScaledPage({
                   isLastSheet ? "recipe-card-page--no-break" : ""
                 }`}
               >
-                {anySlot.mode === "full" && anySlot.photoUrl ? (
+                {anySlot.mode === "photo" && anySlot.photoUrl ? (
                   <>
                     {/* eslint-disable-next-line @next/next/no-img-element */}
                     <img
@@ -419,6 +419,15 @@ export const ScaledPage = memo(function ScaledPage({
                     ))}
                   </div>
                 ) : null}
+                {anySlot.caption?.trim() && (
+                  <p
+                    className={`recipe-card__chapter-photo-caption ${
+                      anySlot.mode === "none" ? "recipe-card__chapter-photo-caption--plain" : ""
+                    }`}
+                  >
+                    {anySlot.caption}
+                  </p>
+                )}
               </div>
             </div>
           </div>
@@ -482,12 +491,14 @@ export const ScaledPage = memo(function ScaledPage({
                 )}
                 {anySlot.kind === "divider" ? (
                   <DividerFace
-                    title={anySlot.title}
+                    title={anySlot.displayTitle}
                     recipeTitles={anySlot.recipeTitles}
                     chapterNumber={anySlot.chapterNumber}
                     showChapterNumber={anySlot.showChapterNumber}
                     subtitle={anySlot.subtitle}
-                    photoUrl={anySlot.photoUrl}
+                    cardPhotoMode={anySlot.cardPhotoMode}
+                    cardPhotoUrl={anySlot.cardPhotoUrl}
+                    cardGridImages={anySlot.cardGridImages}
                     intro={anySlot.intro}
                     template={template}
                     showDecoration={showDecoration}

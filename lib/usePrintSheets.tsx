@@ -12,7 +12,9 @@ import {
 } from "@/lib/recipeCardLayout";
 import {
   defaultSectionGridImages,
-  resolveSectionPhotoMode,
+  resolveCardPhotoMode,
+  resolveArtPhotoMode,
+  sectionDisplayTitle,
   type PhotoStyle,
 } from "@/lib/project";
 import { paginateTocEntries } from "@/lib/tocPagination";
@@ -34,6 +36,7 @@ import type {
   RecipePagePlacement,
   RecipePrintTemplate,
   Section,
+  SlotPhotoMode,
 } from "@/types/recipe";
 
 // Every physical sheet holds exactly one recipe-card slot, for every card
@@ -146,14 +149,24 @@ export interface RecipeSheetSlot {
 export interface DividerSheetSlot {
   kind: "divider";
   id: string;
+  /** The section's real name — feeds the TOC, running header and chapter
+      numbering. Never blank on a named section. */
   title: string;
+  /** What actually prints on the opener page. Usually equals `title`; can
+      diverge to empty when the cook has hidden it there (see
+      `Section.titleOverride`) without touching the section's real name. */
+  displayTitle: string;
   recipeTitles: string[];
   /** 1-based chapter ordinal among the sections that get an opener. */
   chapterNumber: number;
   showChapterNumber?: boolean;
   /** Chapter-opener photo/intro (cookbook mode); undefined = none. */
   subtitle?: string;
-  photoUrl?: string;
+  /** The opener CARD's own photo slot — independent of the facing/art page's
+      (`SectionPhotoSheetSlot` below). */
+  cardPhotoMode: SlotPhotoMode;
+  cardPhotoUrl?: string;
+  cardGridImages?: string[];
   intro?: string;
 }
 
@@ -167,11 +180,14 @@ export interface SectionPhotoSheetSlot {
       so the two group adjacently in the navigator. */
   sectionId: string;
   title: string;
-  mode: "full" | "grid";
-  /** `full` mode: the single full-bleed photo. */
+  mode: SlotPhotoMode;
+  /** `photo` mode: the single full-bleed photo. */
   photoUrl?: string;
   /** `grid` mode: the curated collage photos (already resolved / auto-filled). */
   gridImages?: string[];
+  /** Free-text caption. On its own (no photo, `mode: "none"`) it's still what
+      earns this section a facing page — see `hasFacing` at the emission site. */
+  caption?: string;
 }
 
 export interface CoverSheetSlot {
@@ -392,7 +408,8 @@ interface UsePrintSheetsOptions {
       defaults to a full-page image spread unless its own placement overrides. */
   defaultFullPage?: boolean;
   /** The book-wide Photos choice itself (cookbook). Chapter openers with no
-      placement of their own follow it — see `resolveSectionPhotoMode`. */
+      placement of their own follow it — see `resolveCardPhotoMode` /
+      `resolveArtPhotoMode`. */
   photoStyle?: PhotoStyle;
   cardSize: PrintCardSize;
   doubleSided: boolean;
@@ -876,45 +893,53 @@ export function usePrintSheets({
           .map((item) => item.recipe?.image)
           .filter((url): url is string => Boolean(url))
           .slice(0, 9);
-        const sectionPhotoMode = resolveSectionPhotoMode(
-          section,
-          cookbookLayouts ? photoStyle : undefined,
-        );
-        const sectionPhoto = section.photoUrl ?? ownImages[0];
+        // The opener card's own photo slot — entirely independent of the
+        // facing page below (a cook can set either, both, or neither).
+        const cardMode = resolveCardPhotoMode(section, cookbookLayouts ? photoStyle : undefined);
+        const cardPhoto = section.cardPhotoUrl ?? ownImages[0];
+        const cardGridImages =
+          cardMode === "grid"
+            ? section.cardGridImages?.length
+              ? section.cardGridImages
+              : defaultSectionGridImages(ownImages)
+            : [];
         out.push({
           id: `sheet-divider-${section.id}`,
           slots: [{
             kind: "divider",
             id: section.id,
             title: section.title,
+            displayTitle: sectionDisplayTitle(section),
             chapterNumber,
             showChapterNumber: Boolean(section.numberAsChapter),
             subtitle: section.subtitle,
-            // Only In-card (`band`) belongs inside the opener. Full/grid art is
-            // rendered on its own facing sheet below, never duplicated here.
-            photoUrl: sectionPhotoMode === "band" ? sectionPhoto : undefined,
+            cardPhotoMode: cardMode,
+            cardPhotoUrl: cardMode === "photo" ? cardPhoto : undefined,
+            cardGridImages: cardMode === "grid" ? cardGridImages : undefined,
             intro: section.intro,
             recipeTitles: chapterRecipeTitles(section.items),
           }],
           backGroupNeeded: false,
         });
 
-        // A `full`/`grid` opener gets a real facing photo page right after it —
-        // the section-level version of an image-spread recipe's photo page.
-        // `band`/`none` stay a single opener sheet. Skip the facing page when
-        // there's nothing to show yet (mode set but no photo picked) so we never
-        // print a blank.
+        // The facing page is a separate leaf, entirely independent of the
+        // card above — it exists whenever IT has a photo, a collage, or a
+        // caption, never just because the card does (or doesn't). Skip it
+        // when there's nothing to show yet (mode set but no photo picked, and
+        // no caption) so we never print a blank.
         if (cookbookLayouts) {
-          const photoMode = sectionPhotoMode;
-          const gridImages =
-            photoMode === "grid"
-              ? (section.gridImages?.length
-                  ? section.gridImages
-                  : defaultSectionGridImages(ownImages))
+          const artMode = resolveArtPhotoMode(section, photoStyle);
+          const artPhoto = section.artPhotoUrl ?? ownImages[0];
+          const artGridImages =
+            artMode === "grid"
+              ? section.artGridImages?.length
+                ? section.artGridImages
+                : defaultSectionGridImages(ownImages)
               : [];
           const hasFacing =
-            (photoMode === "full" && Boolean(sectionPhoto)) ||
-            (photoMode === "grid" && gridImages.length > 0);
+            (artMode === "photo" && Boolean(artPhoto)) ||
+            (artMode === "grid" && artGridImages.length > 0) ||
+            Boolean(section.artCaption?.trim());
           if (hasFacing) {
             out.push({
               id: `sheet-section-photo-${section.id}`,
@@ -922,9 +947,10 @@ export function usePrintSheets({
                 kind: "section-photo",
                 sectionId: section.id,
                 title: section.title,
-                mode: photoMode === "grid" ? "grid" : "full",
-                photoUrl: sectionPhoto,
-                gridImages: photoMode === "grid" ? gridImages : undefined,
+                mode: artMode,
+                photoUrl: artMode === "photo" ? artPhoto : undefined,
+                gridImages: artMode === "grid" ? artGridImages : undefined,
+                caption: section.artCaption,
               }],
               backGroupNeeded: false,
               layoutKind: "section-photo",

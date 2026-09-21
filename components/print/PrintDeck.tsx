@@ -37,7 +37,12 @@ import {
   type RecipePrintTemplate,
 } from "@/components/RecipeCardPrint";
 import type { NavItem, PageSheet, SheetSlot, usePrintSheets } from "@/lib/usePrintSheets";
-import type { useProjectMeta } from "@/lib/project";
+import {
+  resolveArtPhotoMode,
+  sectionDisplayTitle,
+  type PhotoStyle,
+  type useProjectMeta,
+} from "@/lib/project";
 import type { useDeckScroller } from "@/lib/useDeckScroller";
 import { isPhotoOpenClick, type PhotoPress } from "@/lib/photoOpenGesture";
 import { LineSelectionToolbar } from "@/components/print/LineSelectionToolbar";
@@ -245,7 +250,22 @@ interface PrintDeckProps {
   coverPhotoCandidates: string[];
   // Photo controls / helpers (defined in the page)
   renderPagePhotoControl: (recipeId: string) => ReactNode;
-  renderSectionPhotoControl: (sectionId: string) => ReactNode;
+  /** The opener/title page's OWN photo slot — independent of the facing art
+      page's, see `renderArtPhotoControl`. */
+  renderCardPhotoControl: (sectionId: string) => ReactNode;
+  /** The facing page's own photo/collage/caption slot — independent of the
+      opener card's, see `renderCardPhotoControl`. */
+  renderArtPhotoControl: (sectionId: string) => ReactNode;
+  /** This chapter's own recipe photos, capped — what the spread-level None /
+      Card / Full page control seeds a slot with, the same source the
+      per-page pickers scope their candidates to. */
+  sectionRecipeImages: (section: Section) => string[];
+  /** The book-wide Photos default — an opener with no explicit choice of its
+      own follows it (see `resolveCardPhotoMode` / `resolveArtPhotoMode`), so
+      the spread toolbar's active state needs it too, or a chapter that's
+      only ever followed the book reads as "None" there while the page
+      itself is showing a photo. */
+  photoStyle: PhotoStyle;
   renderCoverPhotoControl: (side: "front" | "back" | "dedication") => ReactNode;
   renderImagePagePhotoControl: (recipeId: string) => ReactNode;
   openAddRecipeBelow: (navItem?: NavItem | null) => void;
@@ -366,7 +386,10 @@ export function PrintDeck(props: PrintDeckProps) {
     setCoverForSide,
     coverPhotoCandidates,
     renderPagePhotoControl,
-    renderSectionPhotoControl,
+    renderCardPhotoControl,
+    renderArtPhotoControl,
+    sectionRecipeImages,
+    photoStyle,
     renderCoverPhotoControl,
     renderImagePagePhotoControl,
     openAddRecipeBelow,
@@ -381,6 +404,17 @@ export function PrintDeck(props: PrintDeckProps) {
     renderAllPages,
   } = props;
 
+  // Whether a chapter's facing/art page can exist AT ALL right now — mirrors
+  // `cookbookLayouts` in lib/usePrintSheets.tsx exactly (cookbook mode AND
+  // letter size; the 4×6 card format has no facing pages, ever, regardless
+  // of what's stored on the section). Read this before trusting
+  // `resolveCardPhotoMode`/`resolveArtPhotoMode` for anything that has to
+  // agree with what actually got printed — passing `photoStyle` to either
+  // when this is false claims a book-wide default that the sheet builder
+  // itself never applies outside letter size, and for the art side
+  // specifically, a stored `artPhotoMode` idles: no section-photo sheet is
+  // ever built for it while this is false, whatever the mode says.
+  const cookbookLayouts = Boolean(projectMeta.meta.cookbookMode) && cardSize === "letter";
 
   // Whether this page's reveal is on. Chapter openers and the contents page
   // used to answer this with a mode of their own — an Edit button that made
@@ -482,19 +516,23 @@ export function PrintDeck(props: PrintDeckProps) {
           );
         }
         return [
-          !cover?.subtitle && "subtitle",
           !cover?.title && "title",
+          !cover?.subtitle && "subtitle",
           !cover?.author && "author",
           !cover?.edition && "edition",
         ].filter((name): name is string => Boolean(name));
       }
       if (navItem.kind === "divider") {
         const section = sections.find((candidate) => candidate.id === navItem.recipeId);
-        // The title always prints. The description prints the chapter's recipe
-        // names until the cook writes their own or removes it, so it is only a
-        // hidden field once it has been removed (`""`); left alone it is not
-        // missing, it is being drawn for them.
+        // Title first, matching where it sits on the page. It's missing when
+        // the cook has hidden it (`titleOverride`), not when it's merely
+        // untouched — the section's real name is the default, always there
+        // unless deliberately cleared. The description prints the chapter's
+        // recipe names until the cook writes their own or removes it, so it
+        // is only a hidden field once it has been removed (`""`); left alone
+        // it is not missing, it is being drawn for them.
         return [
+          section && !sectionDisplayTitle(section).trim() && "title",
           !section?.subtitle?.trim() && "subtitle",
           section?.intro === "" && "description",
         ].filter((name): name is string => Boolean(name));
@@ -543,7 +581,7 @@ export function PrintDeck(props: PrintDeckProps) {
       : navItem.kind === "recipe"
         ? renderPagePhotoControl(navItem.recipeId)
         : navItem.kind === "divider"
-          ? renderSectionPhotoControl(navItem.recipeId)
+          ? renderCardPhotoControl(navItem.recipeId)
           : navItem.kind === "cover"
             ? // Only the front cover draws a photo. The back cover and the
               // opening page are paper with text on it; offering the button
@@ -558,7 +596,7 @@ export function PrintDeck(props: PrintDeckProps) {
               navItem.kind === "image"
               ? renderImagePagePhotoControl(navItem.recipeId)
               : navItem.kind === "section-photo"
-                ? renderSectionPhotoControl(navItem.recipeId)
+                ? renderArtPhotoControl(navItem.recipeId)
                 : null;
     // The recipe-link toggle, next to the photo control.
     //
@@ -648,12 +686,62 @@ export function PrintDeck(props: PrintDeckProps) {
           }
         : null;
 
+    // A chapter opener whose facing page has been removed (or never had one)
+    // gets a plain "Add image page" button, rather than a shared page-count
+    // control floating separately above the pair — that control used to move
+    // between two different toolbar homes depending on whether a facing page
+    // existed, and whichever page's focus it depended on could go stale the
+    // moment the page it was watching disappeared. This button just always
+    // lives here, on the card, and the facing page (once it exists) gets its
+    // own ordinary Delete like every other page — see the Delete group below,
+    // no longer excluded for a divider or its facing page. Deleting it from
+    // there is what brings this button back.
+    const dividerSection =
+      navItem.kind === "divider"
+        ? sections.find((candidate) => candidate.id === navItem.recipeId)
+        : undefined;
+    // Mirrors `hasFacing` in lib/usePrintSheets.tsx exactly — this has to
+    // agree with whether a `section-photo` sheet actually exists, or the
+    // button could show while a facing page is ALSO still there. Below
+    // letter size (`!cookbookLayouts`) a facing page can never exist, full
+    // stop — the sheet builder never even asks `artPhotoMode` in that case.
+    const dividerArtMode =
+      dividerSection && cookbookLayouts
+        ? resolveArtPhotoMode(dividerSection, photoStyle)
+        : "none";
+    const dividerHasFacing = dividerSection
+      ? (dividerArtMode === "photo" && Boolean(dividerSection.artPhotoUrl)) ||
+        (dividerArtMode === "grid" && Boolean(dividerSection.artGridImages?.length)) ||
+        Boolean(dividerSection.artCaption?.trim())
+      : false;
+    const addImagePageButton =
+      dividerSection && !dividerHasFacing ? (
+        <div className="recipe-page-toolbar__group">
+          <button
+            type="button"
+            className="recipe-page-toolbar__btn"
+            onClick={(event) => {
+              event.stopPropagation();
+              const seedPhoto = sectionRecipeImages(dividerSection)[0];
+              projectMeta.setArtPhoto(navItem.recipeId, "photo", {
+                photoUrl: dividerSection.artPhotoUrl ?? seedPhoto,
+              });
+            }}
+          >
+            Add image page
+          </button>
+        </div>
+      ) : null;
+
     // The art pages have no text and no reveal, but they DO have a photo — and
     // the toolbar is the only place their photo can be changed from now.
-    if (!navItem.flip && !editable && !photoControl && !linkControl) return null;
+    if (!navItem.flip && !editable && !photoControl && !linkControl && !addImagePageButton) {
+      return null;
+    }
+    const insideCard = navItem.kind === "divider" || navItem.kind === "section-photo";
     return (
       <div
-        className="recipe-page-canvas__controls no-print"
+        className={`recipe-page-canvas__controls ${insideCard ? "recipe-page-canvas__controls--inside" : ""} no-print`}
         style={{
           "--preview-w": `${previewW}px`,
           "--preview-offset": `${horizontalOffset}px`,
@@ -801,7 +889,12 @@ export function PrintDeck(props: PrintDeckProps) {
           {/* Delete, last and on its own: the Delete key already did this, and
               a key is not a control anyone finds. Its own group so it is not
               adjacent to Edit — the two are one pixel apart otherwise, and one
-              of them is not undoable. */}
+              of them is not undoable.
+              A divider's Delete removes the whole chapter (routes through
+              `requestDeleteNavItem`'s "divider" branch, which confirms first).
+              A facing page's Delete just clears that page's art/caption and
+              brings back the card's "Add image page" button — no confirm,
+              same as clearing any other optional photo. */}
           <div className="recipe-page-toolbar__group">
             <button
               type="button"
@@ -816,10 +909,12 @@ export function PrintDeck(props: PrintDeckProps) {
               <TrashIcon size={ICON_SIZE.md} />
             </button>
           </div>
+          {addImagePageButton}
         </div>
       </div>
     );
   };
+
   /**
    * A chapter opener's edit wiring, shared by the spread deck and the
    * single-page deck so the two cannot drift.
@@ -1290,25 +1385,27 @@ export function PrintDeck(props: PrintDeckProps) {
                     leftSheet?.slots.find((slot): slot is SheetSlot => slot !== null) ?? null;
                   const rightSlot =
                     rightSheet?.slots.find((slot): slot is SheetSlot => slot !== null) ?? null;
-                  // A chapter opener paired with its facing full-page/grid photo
-                  // (a real `section-photo` sheet) is one logical unit — focus and
-                  // outline them together like an image spread, and clicking either
-                  // page focuses the opener, which owns the section's edit controls.
+                  // A chapter opener still sits beside its facing full-page/grid
+                  // photo (a `section-photo` sheet) as one spread on screen, but
+                  // unlike an image spread it is not one shared editable unit:
+                  // the opener card and the facing page each carry their own
+                  // independent photo control (see `renderCardPhotoControl` /
+                  // `renderArtPhotoControl`) and its own Delete. So a section
+                  // spread stays OUT of `linkedSpread` below — each half keeps
+                  // its OWN focus ring and its OWN toolbar, and clicking one
+                  // never selects the other. It still outlines as a pair (see
+                  // `recipe-spread--section-focused` below).
                   const isSectionSpread =
                     leftSlot?.kind === "divider" && rightSlot?.kind === "section-photo";
-                  // Both an image spread and a section spread act as one editable
-                  // unit; `linkedFocusSheet` is the page whose controls the pair
-                  // shares — the recipe for an image spread, the opener for a
-                  // section spread.
                   // Two contents pages facing each other are one opening, so
                   // they outline and select together and the first page owns
                   // the editing — the heading you can change lives there.
                   const isTocSpread =
                     leftSlot?.kind === "toc" && rightSlot?.kind === "toc";
-                  const linkedSpread = isImageSpread || isSectionSpread || isTocSpread;
+                  const linkedSpread = isImageSpread || isTocSpread;
                   const linkedFocusSheet = isImageSpread
                     ? imageSpreadFocusSheet
-                    : isSectionSpread || isTocSpread
+                    : isTocSpread
                       ? spread.left
                       : null;
                   const designedBlank = leftSlot?.kind === "toc";
@@ -1355,8 +1452,11 @@ export function PrintDeck(props: PrintDeckProps) {
                     const ni = navIndexForSheet.get(sheetIndex);
                     const pageNav = ni != null ? navItems[ni] : null;
                     if (!pageNav) return renderBlank();
-                    // A linked spread (image or section) outlines both pages when
-                    // either is focused; a normal spread only the specific page.
+                    // A linked spread (image or TOC) outlines both pages when
+                    // either is focused; a normal spread, and a section spread,
+                    // only the specific page — a section spread gets its OWN
+                    // outer ring instead (`recipe-spread--section-focused` below),
+                    // which does not suppress this one, so both show at once.
                     const isFocused =
                       isActive &&
                       (linkedSpread
@@ -1369,9 +1469,11 @@ export function PrintDeck(props: PrintDeckProps) {
                         onClick={(event) => {
                           event.stopPropagation();
                           openPhotoOnClick(pageNav, isFocused)(event);
-                          // Focus the pair's editable page (the recipe for an image
-                          // spread, the opener for a section spread) no matter which
-                          // half was clicked, so its Edit controls are available.
+                          // A linked spread's click focuses the pair's ONE editable
+                          // page no matter which half was clicked (the recipe for
+                          // an image spread). A section spread has no such override
+                          // — `linkedFocusSheet` is null for it — so this focuses
+                          // whichever half was actually clicked.
                           focusSheetInSpread(
                             index,
                             linkedSpread ? linkedFocusSheet ?? sheetIndex : sheetIndex,
@@ -1411,7 +1513,9 @@ export function PrintDeck(props: PrintDeckProps) {
                           activeNavItem,
                           // A linked spread is one page as far as the reader is
                           // concerned, so its toolbar spans both sheets and sits
-                          // centred over the pair.
+                          // centred over the pair. A section spread's per-page
+                          // toolbar stays sized and offset to its own half —
+                          // it's the spread-level toolbar above that spans both.
                           linkedSpread
                             ? spreadWidth * deckScale
                             : previewDims.w * deckScale,
@@ -1430,6 +1534,12 @@ export function PrintDeck(props: PrintDeckProps) {
                           linkedSpread &&
                           (focusedSheet === spread.left || focusedSheet === spread.right)
                             ? "recipe-spread--image-focused"
+                            : ""
+                        } ${
+                          isActive &&
+                          isSectionSpread &&
+                          (focusedSheet === spread.left || focusedSheet === spread.right)
+                            ? "recipe-spread--section-focused"
                             : ""
                         }`}
                       >

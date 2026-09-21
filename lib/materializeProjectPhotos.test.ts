@@ -44,13 +44,34 @@ function section(overrides: Partial<Section> = {}): Section {
 describe("sweeping a book's photos before it leaves the browser", () => {
   it("uploads a chapter collage, which defaults to the chapter's own photos", async () => {
     const { photos } = await materializeProjectPhotos(
-      { sections: [section({ gridImages: ["blob:one", "blob:two", REMOTE] })] },
+      { sections: [section({ artGridImages: ["blob:one", "blob:two", REMOTE] })] },
       upload,
     );
-    const grid = photos.sections[0]!.gridImages!;
+    const grid = photos.sections[0]!.artGridImages!;
     expect(grid.slice(0, 2).every(isUploaded)).toBe(true);
     // A photo already in Storage is left exactly as it is.
     expect(grid[2]).toBe(REMOTE);
+  });
+
+  it("sweeps the card and art photo slots independently", async () => {
+    const { photos } = await materializeProjectPhotos(
+      {
+        sections: [
+          section({
+            cardPhotoUrl: "blob:card",
+            cardGridImages: ["blob:card-tile"],
+            artPhotoUrl: "blob:art",
+            artGridImages: ["blob:art-tile"],
+          }),
+        ],
+      },
+      upload,
+    );
+    const swept = photos.sections[0]!;
+    expect(isUploaded(swept.cardPhotoUrl)).toBe(true);
+    expect(isUploaded(swept.cardGridImages![0])).toBe(true);
+    expect(isUploaded(swept.artPhotoUrl)).toBe(true);
+    expect(isUploaded(swept.artGridImages![0])).toBe(true);
   });
 
   it("uploads the photos a recipe has worn before, so 'put the old one back' works", async () => {
@@ -67,15 +88,21 @@ describe("sweeping a book's photos before it leaves the browser", () => {
     const stashedCookbook: StashedCookbook = {
       cover: { title: "Our Favorites", template: "heirloom", imageUrl: "blob:cover" },
       sections: [
-        { id: "s1", title: "Mains", itemIds: ["r1"], photoUrl: "blob:opener", gridImages: ["blob:tile"] },
+        {
+          id: "s1",
+          title: "Mains",
+          itemIds: ["r1"],
+          artPhotoUrl: "blob:opener",
+          artGridImages: ["blob:tile"],
+        },
       ],
       itemPlacements: { r1: { heroImageUrl: "blob:hero" } },
     };
     const { photos } = await materializeProjectPhotos({ sections: [], stashedCookbook }, upload);
     const stash = photos.stashedCookbook!;
     expect(isUploaded(stash.cover!.imageUrl)).toBe(true);
-    expect(isUploaded(stash.sections[0]!.photoUrl)).toBe(true);
-    expect(isUploaded(stash.sections[0]!.gridImages![0])).toBe(true);
+    expect(isUploaded(stash.sections[0]!.artPhotoUrl)).toBe(true);
+    expect(isUploaded(stash.sections[0]!.artGridImages![0])).toBe(true);
     expect(isUploaded(stash.itemPlacements!.r1.heroImageUrl)).toBe(true);
   });
 
@@ -148,7 +175,7 @@ describe("sweeping a book's photos before it leaves the browser", () => {
       {
         sections: [
           section({
-            gridImages: [REMOTE],
+            artGridImages: [REMOTE],
             items: [{ id: "r1", recipe: { title: "Sourdough", image: REMOTE } }] as Section["items"],
           }),
         ],

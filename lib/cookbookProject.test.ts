@@ -5,7 +5,8 @@ import {
   normalizeProjectMeta,
   projectDisplayTitle,
   recipePagePlacementHasValues,
-  resolveSectionPhotoMode,
+  resolveCardPhotoMode,
+  resolveArtPhotoMode,
 } from "@/lib/project";
 import { assemblePrintProject } from "@/lib/printProjects";
 
@@ -106,30 +107,112 @@ describe("deleteSectionFromMeta", () => {
   });
 });
 
-describe("resolveSectionPhotoMode", () => {
-  it("follows the book when the opener has no placement of its own", () => {
-    expect(resolveSectionPhotoMode({}, "full")).toBe("grid");
-    expect(resolveSectionPhotoMode({}, "card")).toBe("band");
-    expect(resolveSectionPhotoMode({}, "none")).toBe("none");
+describe("resolveCardPhotoMode", () => {
+  it("follows the book's card setting when the opener has no choice of its own", () => {
+    expect(resolveCardPhotoMode({}, "card")).toBe("photo");
+    expect(resolveCardPhotoMode({}, "full")).toBe("none");
+    expect(resolveCardPhotoMode({}, "none")).toBe("none");
   });
 
   it("keeps an opener the cook placed by hand, whatever the book does", () => {
-    expect(resolveSectionPhotoMode({ photoMode: "none" }, "full")).toBe("none");
-    expect(resolveSectionPhotoMode({ photoMode: "band" }, "full")).toBe("band");
-    expect(resolveSectionPhotoMode({ photoMode: "grid" }, "none")).toBe("grid");
+    expect(resolveCardPhotoMode({ cardPhotoMode: "none" }, "card")).toBe("none");
+    expect(resolveCardPhotoMode({ cardPhotoMode: "photo" }, "none")).toBe("photo");
+    expect(resolveCardPhotoMode({ cardPhotoMode: "grid" }, "none")).toBe("grid");
   });
 
-  it("reads a legacy stored photo as the in-card band when there is no book to follow", () => {
-    expect(resolveSectionPhotoMode({ photoUrl: "hero.jpg" })).toBe("band");
+  it("stays off when the book is unknown", () => {
+    expect(resolveCardPhotoMode({})).toBe("none");
+  });
+});
+
+describe("resolveArtPhotoMode", () => {
+  it("follows the book's full-page setting as a collage", () => {
+    expect(resolveArtPhotoMode({}, "full")).toBe("grid");
+    expect(resolveArtPhotoMode({}, "card")).toBe("none");
+    expect(resolveArtPhotoMode({}, "none")).toBe("none");
   });
 
-  it("lets the book outrank a legacy stored photo, so an opener can follow it", () => {
-    expect(resolveSectionPhotoMode({ photoUrl: "hero.jpg" }, "full")).toBe("grid");
-    expect(resolveSectionPhotoMode({ photoUrl: "hero.jpg" }, "none")).toBe("none");
+  it("keeps an opener the cook placed by hand, whatever the book does", () => {
+    expect(resolveArtPhotoMode({ artPhotoMode: "none" }, "full")).toBe("none");
+    expect(resolveArtPhotoMode({ artPhotoMode: "photo" }, "full")).toBe("photo");
+    expect(resolveArtPhotoMode({ artPhotoMode: "grid" }, "none")).toBe("grid");
   });
 
-  it("stays typographic when the book is unknown", () => {
-    expect(resolveSectionPhotoMode({})).toBe("none");
+  it("stays off when the book is unknown", () => {
+    expect(resolveArtPhotoMode({})).toBe("none");
+  });
+});
+
+describe("migrating a legacy section photo into the two independent slots", () => {
+  it("migrates an explicit band mode into the card slot, and turns the art slot off", () => {
+    const normalized = normalizeProjectMeta({
+      sections: [{ id: "s", title: "Mains", photoMode: "band", photoUrl: "hero.jpg", itemIds: [] }],
+    });
+    expect(normalized.sections[0]).toMatchObject({
+      cardPhotoMode: "photo",
+      cardPhotoUrl: "hero.jpg",
+      artPhotoMode: "none",
+    });
+  });
+
+  it("migrates an explicit full mode into the art slot, and turns the card slot off", () => {
+    const normalized = normalizeProjectMeta({
+      sections: [{ id: "s", title: "Mains", photoMode: "full", photoUrl: "hero.jpg", itemIds: [] }],
+    });
+    expect(normalized.sections[0]).toMatchObject({
+      artPhotoMode: "photo",
+      artPhotoUrl: "hero.jpg",
+      cardPhotoMode: "none",
+    });
+  });
+
+  it("migrates an explicit grid mode into the art slot's collage", () => {
+    const normalized = normalizeProjectMeta({
+      sections: [
+        { id: "s", title: "Mains", photoMode: "grid", gridImages: ["a.jpg", "b.jpg"], itemIds: [] },
+      ],
+    });
+    expect(normalized.sections[0]).toMatchObject({
+      artPhotoMode: "grid",
+      artGridImages: ["a.jpg", "b.jpg"],
+      cardPhotoMode: "none",
+    });
+  });
+
+  it("migrates an explicit none mode by turning both slots off", () => {
+    const normalized = normalizeProjectMeta({
+      sections: [{ id: "s", title: "Mains", photoMode: "none", itemIds: [] }],
+    });
+    expect(normalized.sections[0]).toMatchObject({ cardPhotoMode: "none", artPhotoMode: "none" });
+  });
+
+  it("keeps a bare legacy photo (no explicit mode) as a dormant card photo, following the book", () => {
+    const normalized = normalizeProjectMeta({
+      sections: [{ id: "s", title: "Mains", photoUrl: "hero.jpg", itemIds: [] }],
+    });
+    expect(normalized.sections[0].cardPhotoUrl).toBe("hero.jpg");
+    expect(normalized.sections[0].cardPhotoMode).toBeUndefined();
+    expect(normalized.sections[0].artPhotoMode).toBeUndefined();
+  });
+
+  it("leaves an already-migrated section (new fields present) alone", () => {
+    const normalized = normalizeProjectMeta({
+      sections: [
+        {
+          id: "s",
+          title: "Mains",
+          cardPhotoMode: "none",
+          artPhotoMode: "photo",
+          artPhotoUrl: "art.jpg",
+          itemIds: [],
+        },
+      ],
+    });
+    expect(normalized.sections[0]).toMatchObject({
+      cardPhotoMode: "none",
+      artPhotoMode: "photo",
+      artPhotoUrl: "art.jpg",
+    });
   });
 });
 

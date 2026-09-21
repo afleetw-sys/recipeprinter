@@ -11,7 +11,7 @@ import type {
   RecipePagePlacement,
   Section,
   SectionMeta,
-  SectionPhotoMode,
+  SlotPhotoMode,
   StashedCookbook,
 } from "@/types/recipe";
 import { uid } from "@/lib/ids";
@@ -48,44 +48,37 @@ const PROJECT_META_RECOVERY_STORAGE_KEY = "recipeprinter:project-meta:recovery:v
     The per-page layout picker overrides individual recipes on top of this. */
 export type PhotoStyle = "none" | "card" | "full";
 
-const SECTION_PHOTO_MODES: readonly SectionPhotoMode[] = ["none", "band", "full", "grid"];
+const SLOT_PHOTO_MODES: readonly SlotPhotoMode[] = ["none", "photo", "grid"];
 
-/** The effective opener photo placement for a section. Explicit `photoMode`
-    wins; otherwise a stored `photoUrl` means the legacy top-band photo
-    (`band`), and failing both the opener FOLLOWS THE BOOK.
- *
- *  Chapter openers used to sit outside the book-wide Photos choice entirely: a
- *  book where every recipe faced a full-page photo still opened each chapter on
- *  a bare typographic page, and nothing in the UI explained why. So an opener
- *  with no choice of its own takes the book's:
- *    - `full` → `grid`, a collage of that chapter's own photos facing the
- *      opener. A single hero would just re-run the recipe pages' one-big-photo
- *      idea; a chapter is a group, and a group reads as a collage.
- *    - `card` → `band`, the photo inside the opener, matching the header photo
- *      each recipe card carries.
- *    - `none` → `none`.
- *  The book OUTRANKS a stored `photoUrl` (which only ever implied `band` for
- *  books saved before openers had a mode of their own) — otherwise a chapter
- *  with a photo could never follow a book that moved to full-page art. It does
- *  not outrank an explicit `photoMode`; changing the book-wide control clears
- *  those first (see `clearSectionPhotoModes`), so "follow the book" stays true
- *  without a placement the cook made becoming impossible to keep.
- *  Pass `bookPhotoStyle` wherever the book is known; omit it and the old
- *  photo-less default stands. Shared by the sheet builder and the pickers so
- *  the printed page and the dialog can never disagree. */
-export function resolveSectionPhotoMode(
-  section: {
-    photoMode?: SectionPhotoMode;
-    photoUrl?: string;
-  },
+/** The effective photo mode for the opener CARD slot — independent of the
+    facing/art page (`resolveArtPhotoMode` below). Explicit `cardPhotoMode`
+    wins; otherwise the card FOLLOWS THE BOOK's Photos default, but only its
+    "in the recipe card" setting — the book's full-page setting says nothing
+    about the card, which is what `resolveArtPhotoMode` follows instead. Pass
+    `bookPhotoStyle` wherever the book is known; omit it and the card stays
+    off. Shared by the sheet builder and the picker so the printed page and
+    the dialog can never disagree. */
+export function resolveCardPhotoMode(
+  section: { cardPhotoMode?: SlotPhotoMode },
   bookPhotoStyle?: PhotoStyle,
-): SectionPhotoMode {
-  if (section.photoMode) return section.photoMode;
-  if (bookPhotoStyle === "full") return "grid";
-  if (bookPhotoStyle === "card") return "band";
-  if (bookPhotoStyle === "none") return "none";
-  // No book to follow: a stored photo means the legacy top-band opener.
-  return section.photoUrl ? "band" : "none";
+): SlotPhotoMode {
+  if (section.cardPhotoMode) return section.cardPhotoMode;
+  return bookPhotoStyle === "card" ? "photo" : "none";
+}
+
+/** The effective photo mode for the facing/art page slot — independent of the
+    opener card (`resolveCardPhotoMode` above). Explicit `artPhotoMode` wins;
+    otherwise the page FOLLOWS THE BOOK's Photos default, but only its
+    full-page setting, as a collage (a chapter is a group of recipes, and a
+    group reads as a collage — a single hero would just re-run the recipe
+    pages' one-big-photo idea). Pass `bookPhotoStyle` wherever the book is
+    known; omit it and the page stays off. */
+export function resolveArtPhotoMode(
+  section: { artPhotoMode?: SlotPhotoMode },
+  bookPhotoStyle?: PhotoStyle,
+): SlotPhotoMode {
+  if (section.artPhotoMode) return section.artPhotoMode;
+  return bookPhotoStyle === "full" ? "grid" : "none";
 }
 
 /** How many of a chapter's own photos a collage starts with. A defaulted grid
@@ -204,6 +197,16 @@ function cleanText(value: unknown): string | undefined {
 }
 
 /** Normalizes legacy/session data without discarding unknown recipe content. */
+/** A section as it might still exist in storage from before the opener card
+    and the facing/art page became independent slots: one photo, one shared
+    mode. Only read during migration, in `normalizeProjectMeta` below. */
+interface LegacySectionPhotoFields {
+  photoUrl?: unknown;
+  photoMode?: unknown;
+  gridImages?: unknown;
+}
+const LEGACY_SECTION_PHOTO_MODES = ["none", "band", "full", "grid"] as const;
+
 export function normalizeProjectMeta(value: unknown): ProjectMeta {
   if (!value || typeof value !== "object") return { sections: [], projectId: uid() };
   const raw = value as Partial<ProjectMeta>;
@@ -211,34 +214,99 @@ export function normalizeProjectMeta(value: unknown): ProjectMeta {
   const sections = Array.isArray(raw.sections)
     ? raw.sections
         .filter((section) => section && typeof section === "object" && typeof section.id === "string")
-        .map((section) => ({
-          id: section.id,
-          title: cleanText(section.title),
-          subtitle: cleanText(section.subtitle),
-          photoUrl: cleanText(section.photoUrl),
-          photoMode:
-            SECTION_PHOTO_MODES.includes(section.photoMode as SectionPhotoMode)
-              ? (section.photoMode as SectionPhotoMode)
+        .map((section) => {
+          const legacy = section as LegacySectionPhotoFields;
+          const legacyPhotoUrl = cleanText(legacy.photoUrl as string | undefined);
+          const legacyMode = LEGACY_SECTION_PHOTO_MODES.includes(
+            legacy.photoMode as (typeof LEGACY_SECTION_PHOTO_MODES)[number],
+          )
+            ? (legacy.photoMode as (typeof LEGACY_SECTION_PHOTO_MODES)[number])
+            : undefined;
+          const legacyGridImages = Array.isArray(legacy.gridImages)
+            ? legacy.gridImages.filter((url): url is string => typeof url === "string" && Boolean(url))
+            : undefined;
+          // Migrate a still-legacy section (no new-shape fields of its own yet)
+          // into the two independent slots, preserving exactly what used to
+          // print: an explicit mode becomes an explicit choice on BOTH slots
+          // (the old model was one-or-the-other, so the slot that lost is
+          // explicitly turned off rather than left to newly follow the book).
+          // A bare stored photo with no explicit mode was already dormant
+          // whenever a book style was in play (the book outranked it) — kept
+          // as a card photo so it isn't lost, but left to follow the book
+          // like it always effectively did.
+          const migrated =
+            section.cardPhotoMode === undefined &&
+            section.cardPhotoUrl === undefined &&
+            section.artPhotoMode === undefined &&
+            section.artPhotoUrl === undefined &&
+            (legacyMode || legacyPhotoUrl)
+              ? legacyMode === "band"
+                ? { cardPhotoMode: "photo" as const, cardPhotoUrl: legacyPhotoUrl, artPhotoMode: "none" as const }
+                : legacyMode === "full"
+                  ? { artPhotoMode: "photo" as const, artPhotoUrl: legacyPhotoUrl, cardPhotoMode: "none" as const }
+                  : legacyMode === "grid"
+                    ? {
+                        artPhotoMode: "grid" as const,
+                        artGridImages: legacyGridImages,
+                        cardPhotoMode: "none" as const,
+                      }
+                    : legacyMode === "none"
+                      ? { cardPhotoMode: "none" as const, artPhotoMode: "none" as const }
+                      : { cardPhotoUrl: legacyPhotoUrl }
+              : {};
+          return {
+            id: section.id,
+            title: cleanText(section.title),
+            // Same undefined/"" convention as `intro` below: `undefined` follows
+            // `title`, `""` is the cook having hidden it on the page, and blank
+            // text is kept as `""` rather than dropped, or a hidden title would
+            // come back on reload.
+            titleOverride:
+              typeof section.titleOverride === "string"
+                ? section.titleOverride.trim()
+                  ? section.titleOverride
+                  : ""
+                : undefined,
+            subtitle: cleanText(section.subtitle),
+            cardPhotoMode:
+              SLOT_PHOTO_MODES.includes(section.cardPhotoMode as SlotPhotoMode)
+                ? (section.cardPhotoMode as SlotPhotoMode)
+                : migrated.cardPhotoMode,
+            cardPhotoUrl: cleanText(section.cardPhotoUrl) ?? migrated.cardPhotoUrl,
+            cardGridImages: Array.isArray(section.cardGridImages)
+              ? section.cardGridImages.filter((url): url is string => typeof url === "string" && Boolean(url))
               : undefined,
-          gridImages: Array.isArray(section.gridImages)
-            ? section.gridImages.filter((url): url is string => typeof url === "string" && Boolean(url))
-            : undefined,
-          // `undefined` prints the recipes' names; `""` is a line the cook took
-          // away and prints nothing. Blank-but-present text is kept as `""`
-          // rather than dropped, or a removed intro would come back on reload.
-          intro: typeof section.intro === "string" ? (section.intro.trim() ? section.intro : "") : undefined,
-          // Named cookbook sections always receive an opener. Keep the field
-          // in persisted data for backward compatibility, but never preserve
-          // an old user-disabled value.
-          showOpener: Boolean(cleanText(section.title)),
-          numberAsChapter:
-            typeof section.numberAsChapter === "boolean"
-              ? section.numberAsChapter
-              : legacyOpeners && Boolean(cleanText(section.title)),
-          itemIds: Array.isArray(section.itemIds)
-            ? section.itemIds.filter((id): id is string => typeof id === "string")
-            : [],
-        }))
+            artPhotoMode:
+              SLOT_PHOTO_MODES.includes(section.artPhotoMode as SlotPhotoMode)
+                ? (section.artPhotoMode as SlotPhotoMode)
+                : migrated.artPhotoMode,
+            artPhotoUrl: cleanText(section.artPhotoUrl) ?? migrated.artPhotoUrl,
+            artGridImages: Array.isArray(section.artGridImages)
+              ? section.artGridImages.filter((url): url is string => typeof url === "string" && Boolean(url))
+              : migrated.artGridImages,
+            artCaption:
+              typeof section.artCaption === "string"
+                ? section.artCaption.trim()
+                  ? section.artCaption
+                  : ""
+                : undefined,
+            // `undefined` prints the recipes' names; `""` is a line the cook took
+            // away and prints nothing. Blank-but-present text is kept as `""`
+            // rather than dropped, or a removed intro would come back on reload.
+            intro: typeof section.intro === "string" ? (section.intro.trim() ? section.intro : "") : undefined,
+            // Named cookbook sections always receive an opener. Keep the field
+            // in persisted data for backward compatibility, but never preserve
+            // an old user-disabled value.
+            showOpener: Boolean(cleanText(section.title)),
+            numberAsChapter:
+              typeof section.numberAsChapter === "boolean"
+                ? section.numberAsChapter
+                : legacyOpeners && Boolean(cleanText(section.title)),
+            itemIds: Array.isArray(section.itemIds)
+              ? section.itemIds.filter((id): id is string => typeof id === "string")
+              : [],
+          };
+        })
     : [];
   const legacyDedication = raw.dedication?.blurb?.trim();
   return {
@@ -383,10 +451,15 @@ export function buildSections(items: QueueItem[], meta: ProjectMeta): Section[] 
       return {
         id: section.id,
         title: section.title,
+        titleOverride: section.titleOverride,
         subtitle: section.subtitle,
-        photoUrl: section.photoUrl,
-        photoMode: section.photoMode,
-        gridImages: section.gridImages,
+        cardPhotoMode: section.cardPhotoMode,
+        cardPhotoUrl: section.cardPhotoUrl,
+        cardGridImages: section.cardGridImages,
+        artPhotoMode: section.artPhotoMode,
+        artPhotoUrl: section.artPhotoUrl,
+        artGridImages: section.artGridImages,
+        artCaption: section.artCaption,
         intro: section.intro,
         showOpener: section.showOpener,
         numberAsChapter: section.numberAsChapter,
@@ -421,14 +494,26 @@ export function namedSectionCount(sections: Section[]): number {
   return sections.filter((section) => section.title?.trim()).length;
 }
 
+/** What actually prints as a section's opener title — `title` unless the cook
+    has hidden it there (`titleOverride`). The one place this is computed, so
+    the sheet builder and the opener's own edit field can never disagree. */
+export function sectionDisplayTitle(section: { title?: string; titleOverride?: string }): string {
+  return section.titleOverride !== undefined ? section.titleOverride : section.title ?? "";
+}
+
 export function metaSectionsFromFull(sections: Section[]): ProjectMeta["sections"] {
   return sections.map((section) => ({
     id: section.id,
     title: section.title,
+    titleOverride: section.titleOverride,
     subtitle: section.subtitle,
-    photoUrl: section.photoUrl,
-    photoMode: section.photoMode,
-    gridImages: section.gridImages,
+    cardPhotoMode: section.cardPhotoMode,
+    cardPhotoUrl: section.cardPhotoUrl,
+    cardGridImages: section.cardGridImages,
+    artPhotoMode: section.artPhotoMode,
+    artPhotoUrl: section.artPhotoUrl,
+    artGridImages: section.artGridImages,
+    artCaption: section.artCaption,
     intro: section.intro,
     showOpener: section.showOpener,
     numberAsChapter: section.numberAsChapter,
@@ -456,13 +541,18 @@ function sectionsMetaEqual(a: ProjectMeta["sections"], b: ProjectMeta["sections"
       return (
         section.id === other.id &&
         section.title === other.title &&
+        section.titleOverride === other.titleOverride &&
         section.subtitle === other.subtitle &&
-        section.photoUrl === other.photoUrl &&
-        section.photoMode === other.photoMode &&
+        section.cardPhotoMode === other.cardPhotoMode &&
+        section.cardPhotoUrl === other.cardPhotoUrl &&
+        section.artPhotoMode === other.artPhotoMode &&
+        section.artPhotoUrl === other.artPhotoUrl &&
+        section.artCaption === other.artCaption &&
         section.intro === other.intro &&
         section.showOpener === other.showOpener &&
         section.numberAsChapter === other.numberAsChapter &&
-        stringArraysEqual(section.gridImages, other.gridImages) &&
+        stringArraysEqual(section.cardGridImages, other.cardGridImages) &&
+        stringArraysEqual(section.artGridImages, other.artGridImages) &&
         stringArraysEqual(section.itemIds, other.itemIds)
       );
     })
@@ -629,15 +719,17 @@ export function useProjectMeta() {
     [update],
   );
 
-  /** Sets a section opener's photo PLACEMENT, mirroring `setItemPhotoMode` for
-      recipes. `none` clears everything; `band`/`full` set the single `photoUrl`
-      (kept if `opts.photoUrl` is omitted) and drop any grid; `grid` sets the
-      curated `gridImages`. Keeping mode + payload in one setter means the
-      persisted `photoMode` can never drift out of sync with the photo it names. */
-  const setSectionPhotoMode = useCallback(
+  /** Sets the opener CARD slot's photo, entirely independent of the facing/art
+      page (`setArtPhoto` below) — mirroring `setItemPhotoMode` for recipes.
+      `none` clears everything in this slot; `photo` sets the single
+      `cardPhotoUrl` (kept if `opts.photoUrl` is omitted) and drops any grid;
+      `grid` sets the curated `cardGridImages`. Keeping mode + payload in one
+      setter means the persisted mode can never drift out of sync with the
+      photo(s) it names. */
+  const setCardPhoto = useCallback(
     (
       sectionId: string,
-      mode: SectionPhotoMode,
+      mode: SlotPhotoMode,
       opts?: { photoUrl?: string; gridImages?: string[] },
     ) => {
       update((current) => ({
@@ -645,24 +737,82 @@ export function useProjectMeta() {
         sections: current.sections.map((section) => {
           if (section.id !== sectionId) return section;
           if (mode === "none") {
-            return { ...section, photoMode: "none", photoUrl: undefined, gridImages: undefined };
+            return {
+              ...section,
+              cardPhotoMode: "none",
+              cardPhotoUrl: undefined,
+              cardGridImages: undefined,
+            };
           }
           if (mode === "grid") {
             return {
               ...section,
-              photoMode: "grid",
-              gridImages: (opts?.gridImages ?? section.gridImages ?? []).filter(Boolean),
+              cardPhotoMode: "grid",
+              cardGridImages: (opts?.gridImages ?? section.cardGridImages ?? []).filter(Boolean),
             };
           }
-          // band | full — a single facing/band photo, no grid.
           return {
             ...section,
-            photoMode: mode,
-            photoUrl:
-              opts?.photoUrl !== undefined ? opts.photoUrl || undefined : section.photoUrl,
-            gridImages: undefined,
+            cardPhotoMode: "photo",
+            cardPhotoUrl:
+              opts?.photoUrl !== undefined ? opts.photoUrl || undefined : section.cardPhotoUrl,
+            cardGridImages: undefined,
           };
         }),
+      }));
+    },
+    [update],
+  );
+
+  /** Sets the facing/art page slot's photo, entirely independent of the
+      opener card (`setCardPhoto` above). Same none/photo/grid shape. */
+  const setArtPhoto = useCallback(
+    (
+      sectionId: string,
+      mode: SlotPhotoMode,
+      opts?: { photoUrl?: string; gridImages?: string[] },
+    ) => {
+      update((current) => ({
+        ...current,
+        sections: current.sections.map((section) => {
+          if (section.id !== sectionId) return section;
+          if (mode === "none") {
+            return {
+              ...section,
+              artPhotoMode: "none",
+              artPhotoUrl: undefined,
+              artGridImages: undefined,
+            };
+          }
+          if (mode === "grid") {
+            return {
+              ...section,
+              artPhotoMode: "grid",
+              artGridImages: (opts?.gridImages ?? section.artGridImages ?? []).filter(Boolean),
+            };
+          }
+          return {
+            ...section,
+            artPhotoMode: "photo",
+            artPhotoUrl:
+              opts?.photoUrl !== undefined ? opts.photoUrl || undefined : section.artPhotoUrl,
+            artGridImages: undefined,
+          };
+        }),
+      }));
+    },
+    [update],
+  );
+
+  /** The facing page's free-text caption. Alone, it's enough to earn the
+      section a facing page — see `Section.artCaption`. */
+  const setArtCaption = useCallback(
+    (sectionId: string, caption: string | undefined) => {
+      update((current) => ({
+        ...current,
+        sections: current.sections.map((section) =>
+          section.id === sectionId ? { ...section, artCaption: caption } : section,
+        ),
       }));
     },
     [update],
@@ -690,7 +840,18 @@ export function useProjectMeta() {
       patch: Partial<
         Pick<
           ProjectMeta["sections"][number],
-          "title" | "subtitle" | "photoUrl" | "photoMode" | "gridImages" | "intro" | "showOpener"
+          | "title"
+          | "titleOverride"
+          | "subtitle"
+          | "cardPhotoMode"
+          | "cardPhotoUrl"
+          | "cardGridImages"
+          | "artPhotoMode"
+          | "artPhotoUrl"
+          | "artGridImages"
+          | "artCaption"
+          | "intro"
+          | "showOpener"
         >
       >,
     ) => {
@@ -927,19 +1088,23 @@ export function useProjectMeta() {
       picks a book-wide Photos option, which should override individual choices.
       A recipe's custom facing photo + focal point (heroImageUrl/heroFocus*) are
       kept, so a hand-picked full-page image survives the reset. */
-  /** Drops every opener's explicit photo placement so chapter openers fall back
-      to following the book (see `resolveSectionPhotoMode`). The art itself —
-      a chosen photo, a curated collage — is KEPT, so the new placement uses it
-      straight away and switching back restores exactly what was there. */
+  /** Drops every opener's explicit photo placement, on BOTH slots, so chapter
+      openers fall back to following the book (see `resolveCardPhotoMode` /
+      `resolveArtPhotoMode`). The art itself — a chosen photo, a curated
+      collage — is KEPT on both, so the new placement uses it straight away
+      and switching back restores exactly what was there. */
   const clearSectionPhotoModes = useCallback(() => {
     update((current) => {
-      if (!current.sections.some((section) => section.photoMode)) return current;
+      if (!current.sections.some((section) => section.cardPhotoMode || section.artPhotoMode)) {
+        return current;
+      }
       return {
         ...current,
         sections: current.sections.map((section) => {
-          if (!section.photoMode) return section;
+          if (!section.cardPhotoMode && !section.artPhotoMode) return section;
           const next = { ...section };
-          delete next.photoMode;
+          delete next.cardPhotoMode;
+          delete next.artPhotoMode;
           return next;
         }),
       };
@@ -1076,7 +1241,9 @@ export function useProjectMeta() {
     syncSections,
     addSection,
     renameSection,
-    setSectionPhotoMode,
+    setCardPhoto,
+    setArtPhoto,
+    setArtCaption,
     setSectionIntro,
     updateSection,
     deleteSection,

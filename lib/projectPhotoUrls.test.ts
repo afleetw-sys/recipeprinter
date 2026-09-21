@@ -34,8 +34,10 @@ function bookWithPhotoEverywhere(): ProjectPhotos {
         id: "ss1",
         title: "Set aside",
         itemIds: ["r1"],
-        photoUrl: "stash-opener",
-        gridImages: ["stash-collage-1"],
+        cardPhotoUrl: "stash-card-opener",
+        cardGridImages: ["stash-card-collage-1"],
+        artPhotoUrl: "stash-opener",
+        artGridImages: ["stash-collage-1"],
       },
     ],
     itemPlacements: {
@@ -51,8 +53,10 @@ function bookWithPhotoEverywhere(): ProjectPhotos {
       {
         id: "s1",
         title: "Breads",
-        photoUrl: "opener",
-        gridImages: ["collage-1", "collage-2"],
+        cardPhotoUrl: "card-opener",
+        cardGridImages: ["card-collage-1"],
+        artPhotoUrl: "opener",
+        artGridImages: ["collage-1", "collage-2"],
         items: [
           { id: "r1", recipe: { title: "Sourdough", image: "recipe-photo-1" } },
           { id: "r2", recipe: { title: "Rye", image: "recipe-photo-2" } },
@@ -73,12 +77,14 @@ const EVERY_PHOTO = [
   // The two adoption never knew about.
   "dedication-image", "dedication-grid-1", "dedication-grid-2",
   "history-1", "history-2",
+  "card-opener", "card-collage-1",
   "opener", "collage-1", "collage-2",
   "recipe-photo-1", "recipe-photo-2",
   "hero",
   "stash-cover-image", "stash-cover-grid-1", "stash-cover-grid-2",
   "stash-back-image", "stash-back-grid-1", "stash-back-grid-2",
   "stash-dedication-image", "stash-dedication-grid-1", "stash-dedication-grid-2",
+  "stash-card-opener", "stash-card-collage-1",
   "stash-opener", "stash-collage-1",
   "stash-hero", "stash-history-1",
 ];

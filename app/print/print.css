@@ -1199,6 +1199,17 @@
   outline: none;
 }
 
+/* A chapter opener's spread still rings as a pair — it's one chapter — but
+   unlike `--image-focused` it does NOT suppress the per-page ring above: the
+   card and the facing page are independently editable, so both the outer
+   "this is one chapter" ring and the inner "this specific page" ring show at
+   once. */
+.recipe-spread--section-focused {
+  outline: 2px solid var(--cp-accent);
+  outline-offset: 5px;
+  border-radius: 12px;
+}
+
 /* A parity blank — a real book page left intentionally empty. */
 .recipe-spread__blank {
   flex: none;
@@ -1232,6 +1243,17 @@
   width: min(100%, max(var(--preview-w, 100%), 420px));
   transform: translateX(-50%);
   pointer-events: none;
+}
+
+/* A chapter opener's own toolbar (photo, subtitle) sits INSIDE its page, near
+   the top edge, rather than floating above it — the spread-level toolbar
+   above (Delete + None/In page/Full page, `--spread` below) owns the "above"
+   spot, acting on the pair as a whole; each page's own controls belong ON
+   that page, same as the border does (see `recipe-spread--section-focused`
+   and `recipe-spread__page.is-focused`). */
+.recipe-page-canvas__controls--inside {
+  bottom: auto;
+  top: 12px;
 }
 
 /* ── The page toolbar ────────────────────────────────────────────────────────
@@ -3423,6 +3445,35 @@
   white-space: nowrap;
 }
 
+/* A chapter's facing-page caption (cookbook mode). Anchored over the photo
+   (or collage) behind it, the same dark-scrim-over-art treatment as the
+   drag hint above, so it reads over any photo. `--plain` is the caption-only
+   case — no photo or collage set, `artCaption` alone earned the page — where
+   there is no art to scrim, so it sits as plain page text instead. */
+.recipe-card__chapter-photo-caption {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 1;
+  margin: 0;
+  padding: 0.22in 0.4in;
+  background: rgba(17, 24, 39, 0.6);
+  color: #fff;
+  font-size: 10pt;
+  line-height: 1.45;
+  text-align: center;
+  -webkit-print-color-adjust: exact;
+  print-color-adjust: exact;
+}
+.recipe-card__chapter-photo-caption--plain {
+  position: static;
+  padding: 0.5in 0.6in;
+  background: none;
+  color: var(--recipe-ink, #22303a);
+  font-style: italic;
+}
+
 /* Zoom for a full-page photo, in the opposite corner from the Photo button so
    the two never crowd each other. A sibling of the scaled page (not a child),
    like that button — a transform-scaled control paints at one size and clicks
@@ -3680,7 +3731,7 @@
      "size every row's item to its own content instead of stretching it" — and
      the photo box's only in-flow content is the hidden `Photo unavailable`
      span, so it collapsed to ZERO height with its `inset: 0` image inside it.
-     That is why picking In-card for a chapter appeared to do nothing at all:
+     That is why picking In-page for a chapter appeared to do nothing at all:
      the image was there, in a box with no height. Same for `justify-*`. */
   align-items: stretch;
   justify-items: stretch;
@@ -3724,6 +3775,52 @@
   justify-content: center;
   gap: 0.1in;
   padding: 0.7in 0.72in;
+  color: var(--recipe-ink);
+}
+
+/* Any card photo goes edge-to-edge, text (if any) overlaid on top, rather
+   than sitting in a band above a separate text block — the layout never
+   shifts between the two as the cook types or clears the title (see
+   `cardPhotoFull` in RecipeCardPrint.tsx, which is just `hasCardPhoto` now).
+   Only the band themes (classic/pantry/bistro/counter) apply this;
+   heirloom/keepsake already show the card photo as a small centered frame by
+   design. */
+.recipe-card--chapter-photo-full {
+  grid-template-rows: 1fr;
+}
+.recipe-card--chapter-photo-full .recipe-card__chapter-body {
+  position: absolute;
+  inset: 0;
+  justify-content: flex-end;
+  padding-bottom: 0.6in;
+  /* A subtitle/intro left behind still needs to read over the photo — but a
+     bare photo with nothing printing over it doesn't need a scrim darkening
+     it for no reason (see `data-chapter-text="none"` below, set from
+     `cardBodyHasText` in RecipeCardPrint.tsx). */
+  background: linear-gradient(to top, rgba(17, 24, 39, 0.6), rgba(17, 24, 39, 0) 60%);
+  color: #fff;
+}
+/* `.recipe-card--chapter` doubled in: some themes (bistro) set the title's
+   color at the same two-class specificity this would otherwise be, and lose
+   the tie only by sitting earlier in the file — a fragile way to stay white
+   over a photo. The extra class is free (every one of these cards already
+   carries it) and wins outright regardless of source order. */
+.recipe-card--chapter.recipe-card--chapter-photo-full .recipe-card__chapter-eyebrow,
+.recipe-card--chapter.recipe-card--chapter-photo-full .recipe-card__divider-title,
+.recipe-card--chapter.recipe-card--chapter-photo-full .recipe-card__chapter-subtitle,
+.recipe-card--chapter.recipe-card--chapter-photo-full .recipe-card__chapter-intro {
+  color: inherit;
+}
+.recipe-card--chapter-photo-full[data-chapter-text="none"] .recipe-card__chapter-body {
+  background: none;
+  color: var(--recipe-ink);
+}
+/* Heirloom/keepsake keep their own centered-frame photo (see the per-theme
+   chapter-opener rules further down) — the full-bleed treatment above is for
+   the band themes only, so undo it here rather than fight its specificity. */
+.recipe-template--heirloom .recipe-card--chapter-photo-full .recipe-card__chapter-body,
+.recipe-template--keepsake .recipe-card--chapter-photo-full .recipe-card__chapter-body {
+  background: none;
   color: var(--recipe-ink);
 }
 
@@ -4458,7 +4555,7 @@
 }
 
 /* Framed openers (heirloom/keepsake) drop the full-width band by design,
-   which meant selecting "In card" for a chapter photo showed NOTHING on the
+   which meant selecting "In page" for a chapter photo showed NOTHING on the
    opener — the photo only appeared as a Full-page facing sheet. When an in-card
    photo IS set, show it as a centered framed image above the title instead of
    hiding it. React adds `recipe-card--chapter-with-photo` from the same
@@ -4795,7 +4892,7 @@
 .image-picker__close {
   flex: 0 0 auto;
 }
-/* Per-recipe Photo dialog: placement (None/In-card/Full-page) sits above the
+/* Per-recipe Photo dialog: placement (None/In-page/Full-page) sits above the
    source, so both live in one dialog. */
 .image-picker__placement {
   margin-top: 20px;
