@@ -574,36 +574,6 @@ export function PrintDeck(props: PrintDeckProps) {
       </button>
     ) : null;
     /**
-     * The way back to the derived chapter intro.
-     *
-     * An opener left alone names the recipes filed under it, and re-words itself
-     * whenever they move. Typing an intro of your own replaces that line for
-     * good — nothing overwrites what a cook wrote — which leaves no way back
-     * except guessing that emptying the field restores it. So the offer is made
-     * out loud, while that chapter is being edited and only once there is
-     * something to undo, and it says the line it would restore.
-     *
-     * Under the reveal, with the rest of "show me everything about this page" —
-     * an opener has no edit mode of its own left to hang it on, and a button
-     * standing there permanently would be shouting an offer nobody asked for.
-     *
-     * In the toolbar rather than beside the field it resets: the card is drawn
-     * at print scale, where 9px of app chrome lands at about a third of a
-     * legible size.
-     */
-    const introReset = (() => {
-      if (navItem.kind !== "divider" || !showEmptyFields) return null;
-      const section = sections.find((candidate) => candidate.id === navItem.recipeId);
-      // Written over, or taken away: either way the recipes' names are no longer
-      // what prints, and this is the way back to them.
-      if (section?.intro === undefined) return null;
-      return {
-        sectionId: section.id,
-        derived: chapterIntroFromRecipes(chapterRecipeTitles(section.items)),
-      };
-    })();
-
-    /**
      * The chapters this recipe could move to, or null outside a cookbook and
      * on anything that isn't a recipe. An untitled section is the implicit
      * ungrouped pool, so it is offered under the name the rail gives it rather
@@ -712,21 +682,6 @@ export function PrintDeck(props: PrintDeckProps) {
                     says what appears rather than "Edit", which would promise a
                     mode that is not there any more. */}
                 {editing ? "Done" : fieldsLabel}
-              </button>
-            </div>
-          )}
-          {introReset && (
-            <div className="recipe-page-toolbar__group">
-              <button
-                type="button"
-                className="recipe-page-toolbar__btn"
-                title={introReset.derived}
-                onClick={(event) => {
-                  event.stopPropagation();
-                  projectMeta.setSectionIntro(introReset.sectionId, undefined);
-                }}
-              >
-                Use recipe names
               </button>
             </div>
           )}
@@ -1083,6 +1038,27 @@ export function PrintDeck(props: PrintDeckProps) {
     ) : null;
 
 
+  /**
+   * The way back to the derived chapter description, for the field it belongs to.
+   *
+   * An opener left alone names the recipes filed under it, and re-words itself
+   * whenever they move. Writing a description of your own, or removing it,
+   * replaces that line for good — nothing overwrites what a cook wrote — so the
+   * offer to go back is made where the words are: on the description field's own
+   * bar, like bold and italic, and only while that field is the one being edited
+   * and there is something to undo. `undefined` until then, which keeps the bar
+   * off a field that is still following the recipes.
+   */
+  const activeIntroReset = (() => {
+    if (activeNavItem?.kind !== "divider") return undefined;
+    const section = sections.find((candidate) => candidate.id === activeNavItem.recipeId);
+    if (!section || section.intro === undefined) return undefined;
+    return {
+      derived: chapterIntroFromRecipes(chapterRecipeTitles(section.items)),
+      onReset: () => projectMeta.setSectionIntro(section.id, undefined),
+    };
+  })();
+
   return (
         <section
           className="recipe-page-canvas"
@@ -1092,7 +1068,7 @@ export function PrintDeck(props: PrintDeckProps) {
           {/* Body/heading and bold/italic, floating over the line being typed
               rather than joining the page's bar. It anchors itself to whatever
               field has focus, so it is mounted once for the whole deck. */}
-          <TextFieldToolbar inlineEdit={activeInlineEdit} zoom={deckZoom} />
+          <TextFieldToolbar inlineEdit={activeInlineEdit} zoom={deckZoom} introReset={activeIntroReset} />
           {/* Its twin, for a drag that ran across several lines rather than a
               caret sitting in one. Mounted once for the whole deck, the same
               way and for the same reason. */}
