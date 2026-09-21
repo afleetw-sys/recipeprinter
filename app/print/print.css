@@ -1210,6 +1210,12 @@
   border-radius: 12px;
 }
 
+/* The selected page within a chapter spread sits flush against the paper.
+   The spread's outer ring already provides breathing room around the pair. */
+.recipe-spread--section-focused .recipe-spread__page.is-focused .recipe-page-scaler {
+  outline-offset: 0;
+}
+
 /* A parity blank — a real book page left intentionally empty. */
 .recipe-spread__blank {
   flex: none;

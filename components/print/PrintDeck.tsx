@@ -38,7 +38,7 @@ import {
 } from "@/components/RecipeCardPrint";
 import type { NavItem, PageSheet, SheetSlot, usePrintSheets } from "@/lib/usePrintSheets";
 import {
-  resolveArtPhotoMode,
+  sectionHasArtPage,
   sectionDisplayTitle,
   type PhotoStyle,
   type useProjectMeta,
@@ -705,14 +705,8 @@ export function PrintDeck(props: PrintDeckProps) {
     // button could show while a facing page is ALSO still there. Below
     // letter size (`!cookbookLayouts`) a facing page can never exist, full
     // stop — the sheet builder never even asks `artPhotoMode` in that case.
-    const dividerArtMode =
-      dividerSection && cookbookLayouts
-        ? resolveArtPhotoMode(dividerSection, photoStyle)
-        : "none";
-    const dividerHasFacing = dividerSection
-      ? (dividerArtMode === "photo" && Boolean(dividerSection.artPhotoUrl)) ||
-        (dividerArtMode === "grid" && Boolean(dividerSection.artGridImages?.length)) ||
-        Boolean(dividerSection.artCaption?.trim())
+    const dividerHasFacing = dividerSection && cookbookLayouts
+      ? sectionHasArtPage(dividerSection, sectionRecipeImages(dividerSection), photoStyle)
       : false;
     const addImagePageButton =
       dividerSection && !dividerHasFacing ? (

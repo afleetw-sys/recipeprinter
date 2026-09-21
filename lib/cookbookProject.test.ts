@@ -7,6 +7,7 @@ import {
   recipePagePlacementHasValues,
   resolveCardPhotoMode,
   resolveArtPhotoMode,
+  sectionHasArtPage,
 } from "@/lib/project";
 import { assemblePrintProject } from "@/lib/printProjects";
 
@@ -140,6 +141,21 @@ describe("resolveArtPhotoMode", () => {
 
   it("stays off when the book is unknown", () => {
     expect(resolveArtPhotoMode({})).toBe("none");
+  });
+});
+
+describe("sectionHasArtPage", () => {
+  it("counts the recipe-photo fallback for a legacy full-page chapter", () => {
+    expect(sectionHasArtPage({ artPhotoMode: "photo" }, ["recipe.jpg"])).toBe(true);
+  });
+
+  it("counts the default collage used by the book-wide full-page setting", () => {
+    expect(sectionHasArtPage({}, ["one.jpg", "two.jpg"], "full")).toBe(true);
+  });
+
+  it("does not invent an art page when no printable content exists", () => {
+    expect(sectionHasArtPage({ artPhotoMode: "photo" }, [])).toBe(false);
+    expect(sectionHasArtPage({}, ["recipe.jpg"], "card")).toBe(false);
   });
 });
 

@@ -94,6 +94,27 @@ export function defaultSectionGridImages(ownImages: readonly string[]): string[]
   return ownImages.slice(0, SECTION_GRID_DEFAULT_COUNT);
 }
 
+/** Whether a chapter's facing art page has anything to print. Keep this shared
+    between the sheet builder and page toolbar: both explicit art and the
+    recipe-image fallback used by older/full-page books count as an existing
+    page. */
+export function sectionHasArtPage(
+  section: Pick<Section, "artPhotoMode" | "artPhotoUrl" | "artGridImages" | "artCaption">,
+  ownImages: readonly string[],
+  bookPhotoStyle?: PhotoStyle,
+): boolean {
+  const mode = resolveArtPhotoMode(section, bookPhotoStyle);
+  const photo = section.artPhotoUrl ?? ownImages[0];
+  const gridImages = section.artGridImages?.length
+    ? section.artGridImages
+    : defaultSectionGridImages(ownImages);
+  return (
+    (mode === "photo" && Boolean(photo)) ||
+    (mode === "grid" && gridImages.length > 0) ||
+    Boolean(section.artCaption?.trim())
+  );
+}
+
 export function recipePagePlacementHasValues(placement: RecipePagePlacement): boolean {
   return (
     placement.pageLayout !== undefined ||
