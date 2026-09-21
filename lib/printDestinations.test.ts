@@ -226,23 +226,25 @@ describe("format descriptions", () => {
     }
   });
 
-  it("describes each format by what it is, and never by a binding we are guessing at", () => {
+  it("names each format for what somebody is making, in words they would use", () => {
     const titles = COOKBOOK_PRESETS.map((preset) => formatOption(preset).title);
     expect(new Set(titles).size).toBe(titles.length);
     for (const preset of COOKBOOK_PRESETS) {
       const { title, detail } = formatOption(preset);
       expect(title.trim()).not.toBe("");
       expect(detail.trim()).not.toBe("");
-      // "Spiral Cookbook" was shown to someone printing at home, about whom we
-      // knew only that they were printing at home.
-      expect(title).not.toMatch(/spiral|coil|comb|cookbook|hardcover/i);
+      // These are how the FILES differ, and nobody arrives knowing which they
+      // want. "US Letter, standard" and "edge to edge" meant nothing to a reader.
+      expect(`${title} ${detail}`).not.toMatch(/\bbleed\b|\bstandard\b|edge to edge|\bgutter\b/i);
+      // And never the product names we had guessed at for somebody's book.
+      expect(title).not.toMatch(/cookbook/i);
       expect(`${title} ${detail}`).not.toContain("—");
     }
   });
 
-  it("states the trim in every title", () => {
+  it("says how many files a format produces", () => {
     for (const preset of COOKBOOK_PRESETS) {
-      expect(formatOption(preset).title).toContain(preset.trimWidthIn === 8.5 ? "US Letter" : "8 × 10");
+      expect(formatOption(preset).detail).toContain(preset.wrapRequired ? "Two files" : "One file");
     }
   });
 });
@@ -269,9 +271,12 @@ describe("choosing a format at a destination that is not set up for it", () => {
   it("suggests what the destination is set up for and lets the cook carry on", () => {
     const note = destinationNote(lulu, getCookbookPreset("us-letter"));
     expect(note).toContain("Lulu");
-    expect(note).toContain(formatOption(getCookbookPreset("coil-us-letter")).title);
     expect(note).toMatch(/still save/i);
-    expect(destinationNote(home, getCookbookPreset("coil-us-letter"))).toContain("your own printer");
+    // A consequence anyone can picture, not our vocabulary for the file.
+    expect(destinationNote(home, getCookbookPreset("coil-us-letter"))).toMatch(/cut off/);
+    // Where there is nothing plain to say, it suggests what the destination is for.
+    const copyShop = getPrintDestination("copy-shop");
+    expect(destinationNote(copyShop, getCookbookPreset("coil-us-letter"))).toContain("a copy shop");
   });
 
   it("never names a shop as asking for something it was not set up for", () => {

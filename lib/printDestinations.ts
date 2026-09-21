@@ -240,39 +240,46 @@ export function exportFileRoles(fileCount: number): string[] {
 }
 
 /**
- * How a book format is described, by what it IS rather than by where it goes.
+ * How a book format is described: as what somebody is making, in the words
+ * they would use, not as the properties of the file.
  *
- * These used to be named for a binding ("Spiral Cookbook", "Hardcover Book"),
- * which is a claim about what somebody is printing, and for a home printer, a
- * copy shop or Blurb we have no idea. The four formats differ in four plain
- * facts: the trim, whether art runs to the edge, whether there is room on the
- * inside edge for a spine, and whether the cover is its own file. Those are the
- * facts stated here, and which binding each one suits comes last, as a
- * suggestion.
+ * "US Letter, standard" and "edge to edge" are how the four files differ, and
+ * nobody arrives knowing which of those they want. What people know is where the
+ * book is going and how it will be held together. So each format is named for
+ * that, and the file's properties are said afterwards as plain consequences: how
+ * many files they will get, whether photos reach the paper's edge, whether the
+ * inside edge has room for a spine.
  *
  * Every format is offered whatever the destination. A destination only decides
  * which one is chosen to begin with.
  */
-const FORMAT_COPY: Record<CookbookPresetId, { title: string; detail: string }> = {
+const FORMAT_COPY: Record<
+  CookbookPresetId,
+  { title: string; detail: string; suggestion: string }
+> = {
   "us-letter": {
-    title: "US Letter, standard",
+    title: "Print it at home or at a copy shop",
     detail:
-      "One file with the cover as page 1. Art stops short of the edge, so a desktop printer can print it all.",
+      "One file, with the cover as page 1. Pages keep a small white border so a regular printer can print all of it.",
+    suggestion: "printing it at home or at a copy shop",
   },
   "coil-us-letter": {
-    title: "US Letter, edge to edge",
+    title: "Order a lay-flat book (spiral, comb or coil)",
     detail:
-      "Pages and cover as two files. Art runs to the edge, with no margin for binding, so it lies flat in a coil or comb.",
+      "Two files: the pages and the cover. Photos run all the way to the edge, and there is no extra margin, so the pages lie flat.",
+    suggestion: "a lay-flat book",
   },
   "hardcover-us-letter": {
-    title: "US Letter, with a spine margin",
+    title: "Order a hardcover book, 8.5 × 11 in",
     detail:
-      "Pages and cover wrap as two files. Art runs to the edge, with room on the inside edge for a bound spine.",
+      "Two files: the pages and the cover wrap. Photos run to the edge, and the inside edge has extra room for the spine.",
+    suggestion: "a hardcover book, 8.5 × 11 in",
   },
   "hardcover-8x10": {
-    title: "8 × 10 in, with a spine margin",
+    title: "Order a hardcover book, 8 × 10 in",
     detail:
-      "Pages and cover wrap as two files. Art runs to the edge, with room on the inside edge for a bound spine.",
+      "Two files: the pages and the cover wrap. Photos run to the edge, and the inside edge has extra room for the spine.",
+    suggestion: "a hardcover book, 8 × 10 in",
   },
 };
 
@@ -312,7 +319,9 @@ export function effectiveDestination(
  *
  * Never a block and never a warning in red: only Lulu and Blurb are checked
  * against real orders, and for the rest we state our defaults as defaults. The
- * cook can still save whatever they chose.
+ * cook can still save whatever they chose. Where the consequence is one anybody
+ * can picture (photos cut off at the edge, a file a print service turns away)
+ * it says that; otherwise it says what we would suggest.
  */
 export function destinationNote(
   destination: PrintDestination | null,
@@ -320,8 +329,14 @@ export function destinationNote(
 ): string | null {
   if (!destination || destination.unknownSpec) return null;
   if (destination.presetIds.includes(preset.id)) return null;
+  if (destination.id === "home" && preset.bleedIn > 0) {
+    return "In this one photos run all the way to the edge, which most home printers can't print, so the edges may be cut off.";
+  }
+  if ((destination.id === "lulu" || destination.id === "blurb") && preset.bleedIn === 0) {
+    return `${destination.name} usually wants photos that run to the edge and a separate cover, so this file may be turned away. You can still save it.`;
+  }
   const suggested = destinationPresets(destination)
-    .map((option) => formatOption(option).title)
+    .map((option) => FORMAT_COPY[option.id].suggestion)
     .join(" or ");
   return `For ${destination.place} we suggest ${suggested}. You can still save this one.`;
 }

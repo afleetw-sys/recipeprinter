@@ -306,8 +306,8 @@ function ChooseBook({
         </p>
       )}
 
-      <p className="cookbook-ready__lead">Format</p>
-      <div className="cookbook-format-list" role="radiogroup" aria-label="Format">
+      <p className="cookbook-ready__lead">What are you making?</p>
+      <div className="cookbook-format-list" role="radiogroup" aria-label="What you are making">
         {formats.map((option) => {
           const copy = formatOption(option);
           const active = option.id === preset?.id;
@@ -387,7 +387,7 @@ function ChooseBook({
       <p className="cookbook-ready__downloads">
         {preset
           ? downloadSummary(effectiveDestination(destination, preset), preset)
-          : "Choose where you’re printing, or a format, to save your book."}
+          : "Choose where you’re printing, or what you’re making, to save your book."}
       </p>
 
       <button

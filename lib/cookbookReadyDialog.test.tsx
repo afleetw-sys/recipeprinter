@@ -45,7 +45,7 @@ describe("the cookbook print dialog", () => {
   it("offers every format before anything is chosen, and saves nothing until one is", () => {
     renderDialog(95);
     for (const preset of COOKBOOK_PRESETS) {
-      expect(screen.getByLabelText(new RegExp(formatOption(preset).title))).toBeTruthy();
+      expect(screen.getByText(formatOption(preset).title)).toBeTruthy();
     }
     expect((screen.getByRole("button", { name: /save pdf/i }) as HTMLButtonElement).disabled).toBe(true);
   });
@@ -62,15 +62,19 @@ describe("the cookbook print dialog", () => {
     expect(checked).toContain(first.id);
     // Not a lock: any other format can be chosen, and the choice sticks.
     const other = COOKBOOK_PRESETS.find((preset) => preset.id !== first.id)!;
-    fireEvent.click(screen.getByLabelText(new RegExp(formatOption(other).title)));
-    expect((screen.getByLabelText(new RegExp(formatOption(other).title)) as HTMLInputElement).checked).toBe(true);
+    const radioFor = (title: string) =>
+      screen.getByText(title).closest("label")!.querySelector("input") as HTMLInputElement;
+    fireEvent.click(radioFor(formatOption(other).title));
+    expect(radioFor(formatOption(other).title).checked).toBe(true);
     expect((screen.getByRole("button", { name: /save pdf/i }) as HTMLButtonElement).disabled).toBe(false);
   });
 
-  it("never calls the book a spiral or a cookbook product to someone we know nothing about", () => {
+  it("never calls the book a product we guessed at, whoever is printing it", () => {
     renderDialog(95);
-    fireEvent.click(screen.getByLabelText("My own printer"));
-    expect(screen.getByRole("dialog").textContent).not.toMatch(/spiral cookbook|hardcover book/i);
+    for (const destination of PRINT_DESTINATIONS) {
+      fireEvent.click(screen.getByLabelText(destination.name));
+      expect(screen.getByRole("dialog").textContent).not.toMatch(/spiral cookbook|hardcover book\b(?!,)/i);
+    }
   });
 
   it("reads the same whatever the page count", () => {
