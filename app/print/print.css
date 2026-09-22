@@ -224,14 +224,11 @@
      auto-scroll a freshly added chapter triggers) carries "Back to pages" and
      "Add chapter" off the top with everything else, and reaching either one means
      scrolling back up first. Pinned to the container's own top instead, on the
-     same near-white ground the rail sits on, with a hairline to separate it from
-     the rows sliding underneath — the flat-design border-for-separation rule,
-     since this is chrome sitting in front of content rather than a floating one. */
+     same near-white ground the rail sits on. */
   position: sticky;
   top: 0;
   z-index: 3;
   background: var(--cp-chrome-ground);
-  border-bottom: 1px solid var(--cp-line);
 }
 /* A row now: Back sits beside the title rather than above it. The title and
    the line about moving recipes stack; Back stays level with the title. */
@@ -3425,6 +3422,19 @@
   height: 100%;
   object-fit: cover;
   display: block;
+}
+
+/* Standard photos use the same printer-required bleed-sized sheet as an
+   edge-to-edge book, but keep the interior artwork inside a white frame.
+   Covers render in a separate document and never inherit this rule. */
+.rp-exporting[data-photo-finish="standard"] .recipe-card-page--image {
+  padding: 0.5in;
+  background: #fff;
+}
+.rp-exporting[data-photo-finish="standard"] .recipe-card__chapter-photo-caption {
+  left: 0.5in;
+  right: 0.5in;
+  bottom: 0.5in;
 }
 .photo-unavailable-message {
   display: none;

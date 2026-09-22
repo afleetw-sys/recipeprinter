@@ -2931,7 +2931,10 @@ export default function PrintPage() {
    * and printers reserve an unprintable margin. There is no dialog now and
    * nothing to pick. The dialog stays open so another format is one click away.
    */
-  async function exportCookbookAs(presetId: CookbookPresetId) {
+  async function exportCookbookAs(
+    presetId: CookbookPresetId,
+    photoFinish: "standard" | "edge" = "edge",
+  ) {
     projectMeta.setCookbookPreset(presetId);
     track("cookbook_preset_selected", { preset: presetId });
     const project = currentExportProject();
@@ -2949,6 +2952,7 @@ export default function PrintPage() {
         presetId,
         cookbookPdfFileName(projectMeta.meta.cover?.title, presetId),
         setCookbookExportProgress,
+        photoFinish,
       );
       // A real, cook-initiated download the instant the interior is ready —
       // not bundled with a cover that doesn't exist yet. Lulu (and every other
@@ -5851,7 +5855,7 @@ export default function PrintPage() {
           setCookbookCoverPending(null);
           setCookbookExportError(null);
         }}
-        onExport={(presetId) => void exportCookbookAs(presetId)}
+        onExport={(presetId, photoFinish) => void exportCookbookAs(presetId, photoFinish)}
         lastExport={lastCookbookExport}
         awaitingCover={cookbookCoverPending}
         onDownloadCover={(coverSheet) => void downloadCookbookCover(coverSheet)}

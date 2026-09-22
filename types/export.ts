@@ -31,6 +31,10 @@ export interface ExportPayload {
   project: PrintProject;
   /** Physical format to render at — trim size and bleed. */
   preset: CookbookPresetId;
+  /** Whether full-page interior photos run through the trim edge or sit inside
+      a white margin. The sheet still includes printer-required bleed either
+      way; cover wraps always remain full bleed. */
+  photoFinish?: "standard" | "edge";
   /** The wrap size the printer asked for, when they told us. `cover-wrap` only. */
   coverSheet?: CoverSheetSpec;
   /**

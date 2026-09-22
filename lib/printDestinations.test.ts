@@ -54,7 +54,7 @@ describe("print destinations", () => {
     // bundled file and asked for the cover on its own. "Somewhere else" means
     // an unknown print SERVICE — a shop that binds the document you hand it is
     // the copy-shop row — so it holds to the same rule.
-    for (const id of ["lulu", "blurb", "other"] as const) {
+    for (const id of ["lulu", "blurb"] as const) {
       for (const preset of destinationPresets(getPrintDestination(id))) {
         expect(preset.wrapRequired).toBe(true);
         expect(preset.bleedIn).toBeGreaterThan(0);
@@ -73,11 +73,10 @@ describe("print destinations", () => {
     expect(blurb.every((preset) => !preset.coilBound)).toBe(true);
   });
 
-  it("admits when it does not know the printer's requirements", () => {
-    // Exactly one destination may say "read it off their upload page", and it
-    // is the one that means "a shop we have never seen".
+  it("does not offer an unknown-printer shortcut that duplicates choosing no printer", () => {
     const unknown = PRINT_DESTINATIONS.filter((d) => d.unknownSpec);
-    expect(unknown.map((d) => d.id)).toEqual(["other"]);
+    expect(unknown).toEqual([]);
+    expect(PRINT_DESTINATIONS.map((d) => d.name)).not.toContain("Somewhere else");
   });
 
   it("leaves no book unreachable", () => {
@@ -180,7 +179,7 @@ describe("what to do with the file once it is saved", () => {
 
   it("does not hand a home printer an upload form", () => {
     expect(destinationUploadsAFile(getPrintDestination("home"))).toBe(false);
-    for (const id of ["copy-shop", "lulu", "blurb", "other"] as const) {
+    for (const id of ["copy-shop", "lulu", "blurb"] as const) {
       expect(destinationUploadsAFile(getPrintDestination(id))).toBe(true);
     }
   });
@@ -214,11 +213,11 @@ describe("what to do with the file once it is saved", () => {
   });
 });
 
-describe("the two questions that name a format", () => {
+describe("the format questions", () => {
   it("names exactly one preset for every complete set of answers", () => {
     const named = [
-      presetForChoice({ kind: "hardcover", size: "8x10", photos: null }),
-      presetForChoice({ kind: "hardcover", size: "letter", photos: null }),
+      presetForChoice({ kind: "hardcover", size: "8x10", photos: "standard" }),
+      presetForChoice({ kind: "hardcover", size: "letter", photos: "edge" }),
       presetForChoice({ kind: "flat", size: null, photos: "standard" }),
       presetForChoice({ kind: "flat", size: null, photos: "edge" }),
     ];
@@ -238,12 +237,14 @@ describe("the two questions that name a format", () => {
     expect(presetForChoice({ kind: "flat", size: "letter", photos: null })).toBeNull();
   });
 
-  it("ignores the question that does not belong to the chosen kind", () => {
-    // A hardcover's photos always reach the edge and a lay-flat book is always
-    // US Letter, so a stale answer to the other question must not change the result.
+  it("keeps photo finish separate from hardcover geometry", () => {
     expect(presetForChoice({ kind: "hardcover", size: "letter", photos: "standard" })?.id).toBe(
       "hardcover-us-letter",
     );
+    expect(presetForChoice({ kind: "hardcover", size: "letter", photos: "edge" })?.id).toBe(
+      "hardcover-us-letter",
+    );
+    // A lay-flat book is always US Letter, so a stale size does not change it.
     expect(presetForChoice({ kind: "flat", size: "8x10", photos: "edge" })?.id).toBe(
       "coil-us-letter",
     );

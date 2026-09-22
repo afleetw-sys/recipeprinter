@@ -98,26 +98,21 @@ export const PRINT_DESTINATIONS: PrintDestination[] = [
     printerId: "blurb",
     extraSettings: [{ label: "Interior", value: "Full colour" }],
   },
-  {
-    id: "other",
-    name: "Somewhere else",
-    // Spiral or hardcover, both at US Letter. Deliberately the same two
-    // choices every other row offers, because the question this step asks is
-    // which book you want and that question does not change with the shop.
-    //
-    // The 8 × 10 hardcover is NOT here even though an unknown service might
-    // want one: adding it made a third pill, "Hardcover 8 × 10" beside
-    // "Hardcover 8.5 × 11", which turns a binding choice into a trim choice
-    // wearing a binding's clothes. 8 × 10 is Blurb's trim and reachable from
-    // Blurb's row. The zero-bleed home format is not here either — a shop that
-    // takes a plain document with the cover bound in is a copy shop, which is
-    // two rows up.
-    presetIds: ["coil-us-letter", "hardcover-us-letter"],
-    unknownSpec: true,
-  },
 ];
 
-const DESTINATIONS_BY_ID = new Map(PRINT_DESTINATIONS.map((d) => [d.id, d] as const));
+/** Internal fallback for after-download instructions when no printer was
+    selected. It is deliberately not in PRINT_DESTINATIONS: "Somewhere else"
+    duplicated the already-available None/manual-choice path in the menu. */
+const OTHER_DESTINATION: PrintDestination = {
+  id: "other",
+  name: "Somewhere else",
+  presetIds: ["coil-us-letter", "hardcover-us-letter"],
+  unknownSpec: true,
+};
+
+const DESTINATIONS_BY_ID = new Map(
+  [...PRINT_DESTINATIONS, OTHER_DESTINATION].map((d) => [d.id, d] as const),
+);
 
 export function getPrintDestination(id: PrintDestinationId): PrintDestination {
   return DESTINATIONS_BY_ID.get(id) ?? PRINT_DESTINATIONS[0];
@@ -218,11 +213,9 @@ export function exportFileRoles(fileCount: number): string[] {
  *
  * "Which of these four formats?" was a list of how the files differ, and nobody
  * arrives knowing. What people know is how the book will be held together, and
- * then one follow-up that only exists for that answer: a hardcover has a size
- * (8 × 10 or 8.5 × 11), and a lay-flat book at US Letter has a choice about the
- * photos (standard, with a small white border, or edge to edge). Each pair of
- * answers names exactly one preset, so nothing here is a new file, only a better
- * way to ask for one.
+ * then the follow-ups that apply: a hardcover has a size (8 × 10 or 8.5 × 11),
+ * and every binding has a photo finish (standard white frame or edge to edge).
+ * Photo finish is presentation layered over the printer's physical geometry.
  */
 export type BookKind = "hardcover" | "flat";
 export type BookSize = "8x10" | "letter";
@@ -247,13 +240,12 @@ export function choiceForPreset(preset: CookbookPreset): BookChoice {
 
 /**
  * The one preset a complete set of answers names, or null while a follow-up is
- * still unanswered. A lay-flat book is always US Letter, and a hardcover's
- * photos always run to the edge, so each kind ignores the question that does
- * not belong to it.
+ * still unanswered. A lay-flat book is always US Letter; hardcover size and
+ * photo finish are both required, though finish does not change its preset.
  */
 export function presetForChoice(choice: BookChoice): CookbookPreset | null {
   if (choice.kind === "hardcover") {
-    if (!choice.size) return null;
+    if (!choice.size || !choice.photos) return null;
     return (
       COOKBOOK_PRESETS.find(
         (preset) => !preset.coilBound && choiceForPreset(preset).size === choice.size,

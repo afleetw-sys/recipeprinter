@@ -165,6 +165,14 @@ export const UploadIcon = (p: IconProps) => (
   </Base>
 );
 
+export const DownloadIcon = (p: IconProps) => (
+  <Base {...p}>
+    <path d="M12 4v12" />
+    <path d="M7 11l5 5 5-5" />
+    <path d="M4 20h16" />
+  </Base>
+);
+
 export const PrintIcon = (p: IconProps) => (
   <Base {...p}>
     <path d="M7 9V3h10v6" />
@@ -410,4 +418,3 @@ export function AppleIcon({ size = ICON_SIZE.md }: { size?: number }) {
     </svg>
   );
 }
-

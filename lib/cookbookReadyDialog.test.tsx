@@ -12,13 +12,13 @@ import {
 
 afterEach(cleanup);
 
-function renderDialog() {
+function renderDialog(onExport: (presetId: "hardcover-8x10" | "hardcover-us-letter" | "us-letter" | "coil-us-letter", photoFinish: "standard" | "edge") => void = () => {}) {
   return render(
     <CookbookReadyDialog
       open
       justPurchased={false}
       onClose={() => {}}
-      onExport={() => {}}
+      onExport={onExport}
       onPrinterClick={() => {}}
       exportingPreset={null}
       exportError={null}
@@ -46,6 +46,7 @@ function renderExportingDialog(
 }
 
 function renderFinishedDialog() {
+  const onDownloadFile = vi.fn();
   return render(
     <CookbookReadyDialog
       open
@@ -63,6 +64,7 @@ function renderFinishedDialog() {
         ],
       }}
       onExportAnother={() => {}}
+      onDownloadFile={onDownloadFile}
     />,
   );
 }
@@ -136,20 +138,22 @@ describe("the cookbook print dialog", () => {
     }
   });
 
-  it("turns the file steps into the compact success state, offering each real download again separately", () => {
+  it("puts each repeat download at the far right of its completed file row", () => {
     renderFinishedDialog();
     expect(screen.getByRole("heading", { name: "Download started" })).toBeTruthy();
     expect(screen.getByText("Interior pages PDF downloaded").closest("li")?.className).toContain(
       "is-done",
     );
     expect(screen.getByText("Cover PDF downloaded").closest("li")?.className).toContain("is-done");
-    // No zip: the interior and the cover are two separate real downloads, so
-    // there are two separate "download again" buttons.
-    expect(screen.getByRole("button", { name: "Download interior again" })).toBeTruthy();
-    expect(screen.getByRole("button", { name: "Download cover again" })).toBeTruthy();
+    const interior = screen.getByRole("button", { name: "Download interior pages PDF again" });
+    const cover = screen.getByRole("button", { name: "Download cover PDF again" });
+    expect(interior.closest("li")?.textContent).toContain("Interior pages PDF downloaded");
+    expect(cover.closest("li")?.textContent).toContain("Cover PDF downloaded");
+    expect(screen.queryByRole("button", { name: "Download interior again" })).toBeNull();
+    expect(screen.queryByRole("button", { name: "Download cover again" })).toBeNull();
     expect(screen.queryByRole("button", { name: /ZIP/ })).toBeNull();
-    expect(screen.getByText(/Both PDFs downloaded separately/)).toBeTruthy();
-    expect(screen.getByRole("button", { name: "Try another way" })).toBeTruthy();
+    expect(screen.queryByText(/Both PDFs downloaded separately/)).toBeNull();
+    expect(screen.getByRole("button", { name: "Choose another format" })).toBeTruthy();
     expect(document.querySelector(".cookbook-next__settings")).toBeNull();
   });
 
@@ -158,10 +162,29 @@ describe("the cookbook print dialog", () => {
     renderAwaitingCoverDialog(download);
     expect(screen.getByRole("heading", { name: "Download your cover next" })).toBeTruthy();
     expect(screen.getByText("Interior pages PDF downloaded")).toBeTruthy();
-    expect(screen.getByText(/enter the cover size it gives you back/i)).toBeTruthy();
+    expect(screen.getByText(/copy its required cover dimensions and spine width/i)).toBeTruthy();
     expect(screen.getByText("Cover size")).toBeTruthy();
-    fireEvent.click(screen.getByRole("button", { name: "Download cover" }));
-    expect(download).toHaveBeenCalledOnce();
+    const coverButton = screen.getByRole("button", { name: "Download cover" }) as HTMLButtonElement;
+    expect(coverButton.disabled).toBe(true);
+    const width = screen.getByLabelText("Cover width in inches") as HTMLInputElement;
+    const height = screen.getByLabelText("Cover height in inches") as HTMLInputElement;
+    const spine = screen.getByLabelText("Spine width in inches") as HTMLInputElement;
+    expect(width.value).toBe("");
+    expect(height.value).toBe("");
+    expect(spine.value).toBe("");
+    fireEvent.change(width, { target: { value: "19.688 inches" } });
+    fireEvent.change(height, { target: { value: "12x.75" } });
+    fireEvent.change(spine, { target: { value: "spine 0.938in" } });
+    expect(width.value).toBe("19.688");
+    expect(height.value).toBe("12.75");
+    expect(spine.value).toBe("0.938");
+    expect(coverButton.disabled).toBe(false);
+    fireEvent.click(coverButton);
+    expect(download).toHaveBeenCalledWith({
+      widthIn: 19.688,
+      heightIn: 12.75,
+      spineWidthIn: 0.938,
+    });
   });
 
   it("offers every place as an optional shortcut, with no price", () => {
@@ -187,14 +210,19 @@ describe("the cookbook print dialog", () => {
     expect(screen.queryByText("Photos")).toBeNull();
   });
 
-  it("asks for a hardcover's size and nothing else", () => {
-    renderDialog();
+  it("asks a hardcover for both its size and photo finish", () => {
+    const onExport = vi.fn();
+    renderDialog(onExport);
     fireEvent.click(pill("Hardcover"));
     expect(screen.getByText("Size")).toBeTruthy();
-    expect(screen.queryByText("Photos")).toBeNull();
+    expect(screen.getByText("Photos")).toBeTruthy();
     expect(save().disabled).toBe(true);
     fireEvent.click(pill("8 × 10 in"));
+    expect(save().disabled).toBe(true);
+    fireEvent.click(pill("Standard"));
     expect(save().disabled).toBe(false);
+    fireEvent.click(save());
+    expect(onExport).toHaveBeenCalledWith("hardcover-8x10", "standard");
   });
 
   it("asks a lay-flat book about its photos, and explains the answer chosen", () => {

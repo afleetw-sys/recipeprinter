@@ -6,6 +6,7 @@ import { Dialog } from "@/components/Dialog";
 import { MenuSelect } from "@/components/MenuSelect";
 import {
   CheckIcon,
+  DownloadIcon,
   ExternalIcon,
   ICON_SIZE,
   PrintIcon,
@@ -15,7 +16,6 @@ import {
 import type { PrinterOption } from "@/lib/cookbookPresets";
 import { getCookbookPreset } from "@/lib/cookbookPresets";
 import type { CookbookPdfProgress, PreparedCookbookPages, PreparedPdfFile } from "@/lib/cookbookPdfExport";
-import { coverWrapGeometry, wrapGeometryForSpine } from "@/lib/coverWrap";
 import {
   NO_BOOK_CHOICE,
   PHOTOS_HELP,
@@ -71,7 +71,7 @@ export function CookbookReadyDialog({
   open: boolean;
   justPurchased: boolean;
   onClose: () => void;
-  onExport: (presetId: CookbookPresetId) => void;
+  onExport: (presetId: CookbookPresetId, photoFinish: BookPhotos) => void;
   /** Recipes going into this export. Unlike the preview sheet count, this is
       safe to show while the renderer decides the final pagination. */
   recipeCount?: number;
@@ -108,13 +108,14 @@ export function CookbookReadyDialog({
     if (!open) {
       setDestinationId(null);
       setChoice(NO_BOOK_CHOICE);
+      setCoverSizes({});
     }
   }, [open]);
 
   // Keyed by PRESET: two books do not share an answer, because a wrap quoted
   // for a US Letter book says nothing about an 8 × 10 one.
   //
-  // Empty means "use our figure". Held as strings so a half-typed number ("19."
+  // Empty means "the printer has not stated it yet". Held as strings so a half-typed number ("19."
   // on the way to 19.25) is not parsed, rounded and written back under the
   // cursor.
   const [coverSizes, setCoverSizes] = useState<
@@ -123,7 +124,10 @@ export function CookbookReadyDialog({
   const setCoverField = (presetId: string, field: "w" | "h" | "spine", value: string) =>
     setCoverSizes((current) => ({
       ...current,
-      [presetId]: { ...(current[presetId] ?? { w: "", h: "", spine: "" }), [field]: value },
+      [presetId]: {
+        ...(current[presetId] ?? { w: "", h: "", spine: "" }),
+        [field]: sanitizeDecimal(value),
+      },
     }));
 
   /**
@@ -210,6 +214,7 @@ export function CookbookReadyDialog({
             setCoverField={setCoverField}
             busy={exportingPreset !== null}
             onDownloadCover={onDownloadCover}
+            onDownloadFile={onDownloadFile}
             onExportAnother={onExportAnother}
           />
         ) : lastExport ? (
@@ -238,6 +243,15 @@ export function CookbookReadyDialog({
       </div>
     </Dialog>
   );
+}
+
+/** Keep one positive decimal-shaped value while someone types or pastes a
+    dimension. Units, multiplication signs and other copy from the printer's
+    requirements block never enter state. */
+export function sanitizeDecimal(value: string): string {
+  const numeric = value.replace(/[^\d.]/g, "");
+  const [whole = "", ...fraction] = numeric.split(".");
+  return fraction.length > 0 ? `${whole}.${fraction.join("")}` : whole;
 }
 
 function ExportProgress({
@@ -420,7 +434,7 @@ function ChooseBook({
   choice: BookChoice;
   onChangeChoice: (patch: Partial<BookChoice>) => void;
   exportingPreset: CookbookPresetId | null;
-  onExport: (presetId: CookbookPresetId) => void;
+  onExport: (presetId: CookbookPresetId, photoFinish: BookPhotos) => void;
   onPrinterClick: (printer: string, url: string) => void;
 }) {
   const preset = presetForChoice(choice);
@@ -491,7 +505,7 @@ function ChooseBook({
         </>
       )}
 
-      {choice.kind === "flat" && (
+      {choice.kind && (
         <>
           <p className="cookbook-ready__lead">Photos</p>
           <Pills
@@ -513,7 +527,7 @@ function ChooseBook({
         type="button"
         className="btn btn-primary cookbook-ready__save"
         disabled={busy || !preset}
-        onClick={() => preset && onExport(preset.id)}
+        onClick={() => preset && choice.photos && onExport(preset.id, choice.photos)}
       >
         {preset && exportingPreset === preset.id ? (
           <>
@@ -572,27 +586,23 @@ function ExportedNext({
               </strong>
               <span className="cookbook-next__file-name">{file.name}</span>
             </span>
+            <button
+              type="button"
+              className="cookbook-next__download icon-button icon-button--compact icon-button--bare"
+              aria-label={`Download ${multi ? (file.role === "pages" ? "interior pages PDF" : "cover PDF") : "PDF"} again`}
+              onClick={() => onDownloadFile?.(file)}
+            >
+              <DownloadIcon size={ICON_SIZE.md} />
+            </button>
           </li>
         ))}
       </ol>
 
-      <p className="cookbook-ready__lead">
-        {multi
-          ? "Both PDFs downloaded separately. Use the buttons below if you need either again."
-          : "Your PDF download has started. Use the button below if you need it again."}
-      </p>
+      {!multi && (
+        <p className="cookbook-ready__lead">Your PDF download has started.</p>
+      )}
 
       <div className="cookbook-next__actions">
-        {lastExport.files.map((file) => (
-          <button
-            key={file.name}
-            type="button"
-            className="btn btn-primary btn-compact"
-            onClick={() => onDownloadFile?.(file)}
-          >
-            Download {multi ? (file.role === "pages" ? "interior" : "cover") : "PDF"} again
-          </button>
-        ))}
         {printer && (
           <button
             type="button"
@@ -604,7 +614,7 @@ function ExportedNext({
         )}
         {onExportAnother && (
           <button type="button" className="cookbook-next__another" onClick={onExportAnother}>
-            Try another way
+            Choose another format
           </button>
         )}
       </div>
@@ -626,6 +636,7 @@ function AwaitingCover({
   setCoverField,
   busy,
   onDownloadCover,
+  onDownloadFile,
   onExportAnother,
 }: {
   pages: PreparedCookbookPages;
@@ -634,30 +645,21 @@ function AwaitingCover({
   setCoverField: (presetId: string, field: "w" | "h" | "spine", value: string) => void;
   busy: boolean;
   onDownloadCover?: (coverSheet?: CoverSheetSpec) => void;
+  onDownloadFile?: (file: PreparedPdfFile) => void;
   onExportAnother?: () => void;
 }) {
   const preset = getCookbookPreset(pages.preset);
-
-  const num = (raw: string, fallback: number) => {
-    const parsed = Number.parseFloat(raw);
-    return Number.isFinite(parsed) && parsed > 0 ? parsed : fallback;
-  };
-  const round = (value: number) => String(Number(value.toFixed(3)));
   const size = coverSizes[preset.id] ?? { w: "", h: "", spine: "" };
-  // The spine drives the sheet: it is the only part of a cover a print service
-  // will not publish a formula for.
-  const spineIn = num(size.spine, coverWrapGeometry(preset, pages.pageCount).spineWidthIn);
-  const derived = wrapGeometryForSpine(preset, spineIn);
-  const shown = {
-    spine: size.spine || round(spineIn),
-    w: size.w || round(derived.sheetWidthIn),
-    h: size.h || round(derived.sheetHeightIn),
+  const positiveNumber = (raw: string) => {
+    const parsed = Number(raw);
+    return Number.isFinite(parsed) && parsed > 0 ? parsed : null;
   };
-  const statedSheet: CoverSheetSpec = {
-    widthIn: num(size.w, derived.sheetWidthIn),
-    heightIn: num(size.h, derived.sheetHeightIn),
-    spineWidthIn: spineIn,
-  };
+  const widthIn = positiveNumber(size.w);
+  const heightIn = positiveNumber(size.h);
+  const spineWidthIn = positiveNumber(size.spine);
+  const statedSheet = widthIn && heightIn && spineWidthIn
+    ? { widthIn, heightIn, spineWidthIn }
+    : null;
   // Only claim the shop states its own numbers where it is set up for this
   // format. Anywhere else the numbers come off whatever upload page they use.
   const shopStatesNumbers = Boolean(
@@ -678,19 +680,29 @@ function AwaitingCover({
             <strong>Interior pages PDF downloaded</strong>
             <span className="cookbook-next__file-name">{pages.file.name}</span>
           </span>
+          <button
+            type="button"
+            className="cookbook-next__download icon-button icon-button--compact icon-button--bare"
+            aria-label="Download interior pages PDF again"
+            onClick={() => onDownloadFile?.(pages.file)}
+          >
+            <DownloadIcon size={ICON_SIZE.md} />
+          </button>
         </li>
       </ol>
 
       <p className="cookbook-ready__lead">
-        Upload that file to your printer, then enter the cover size it gives you back.
+        {destination?.id === "lulu"
+          ? "Upload the interior to Lulu. On the cover step, find REQUIREMENTS and copy Dimensions and Spine Width below."
+          : "Upload the interior to your printer. On the cover step, copy its required cover dimensions and spine width below."}
       </p>
 
       <div className="cookbook-cover-size">
         <span className="cookbook-cover-size__label">Cover size</span>
         <span className="cookbook-cover-size__hint">
-          {shopStatesNumbers && destination
-            ? `Only if ${destination.name} states different numbers.`
-            : "Copy these from your printer’s upload page."}
+          {shopStatesNumbers && destination?.id === "lulu"
+            ? "In Lulu: REQUIREMENTS → Dimensions and Spine Width."
+            : "Enter the exact numbers shown by your printer."}
         </span>
         {/* Sheet first, spine last: that is the order a print service states
             them in, and reading them back off their page in a different
@@ -700,7 +712,7 @@ function AwaitingCover({
             type="text"
             inputMode="decimal"
             aria-label="Cover width in inches"
-            value={shown.w}
+            value={size.w}
             disabled={busy}
             onChange={(event) => setCoverField(preset.id, "w", event.target.value)}
           />
@@ -709,7 +721,7 @@ function AwaitingCover({
             type="text"
             inputMode="decimal"
             aria-label="Cover height in inches"
-            value={shown.h}
+            value={size.h}
             disabled={busy}
             onChange={(event) => setCoverField(preset.id, "h", event.target.value)}
           />
@@ -720,7 +732,7 @@ function AwaitingCover({
             type="text"
             inputMode="decimal"
             aria-label="Spine width in inches"
-            value={shown.spine}
+            value={size.spine}
             disabled={busy}
             onChange={(event) => setCoverField(preset.id, "spine", event.target.value)}
           />
@@ -732,8 +744,8 @@ function AwaitingCover({
         <button
           type="button"
           className="btn btn-primary btn-compact"
-          disabled={busy}
-          onClick={() => onDownloadCover?.(statedSheet)}
+          disabled={busy || !statedSheet}
+          onClick={() => statedSheet && onDownloadCover?.(statedSheet)}
         >
           {busy ? (
             <>
@@ -749,7 +761,7 @@ function AwaitingCover({
         </button>
         {onExportAnother && (
           <button type="button" className="cookbook-next__another" onClick={onExportAnother}>
-            Try another way
+            Choose another format
           </button>
         )}
       </div>

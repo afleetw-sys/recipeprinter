@@ -66,6 +66,7 @@ interface RenderRequest {
   project: PrintProject;
   preset: CookbookPresetId;
   mode?: ExportMode;
+  photoFinish?: "standard" | "edge";
   pageCount?: number;
   sheet?: { widthIn: number; heightIn: number };
   /** The wrap the printer asked for, passed through so the page can lay its
@@ -281,6 +282,7 @@ export async function prepareCookbookPages(
   /** Real client-observable milestones only. The renderer does not stream its
       internal layout work, so the UI must not invent finer-grained progress. */
   onProgress?: (progress: CookbookPdfProgress) => void,
+  photoFinish: "standard" | "edge" = "edge",
 ): Promise<PreparedCookbookPages> {
   onProgress?.("preparing");
   // The renderer is on the server, so every image in the book has to be a URL
@@ -291,7 +293,7 @@ export async function prepareCookbookPages(
   // would otherwise print with holes where its photos are.
   const project = await materializeBookPhotos(book);
   onProgress?.("rendering-pages");
-  const interior = await renderPdf({ project, preset, fileName });
+  const interior = await renderPdf({ project, preset, fileName, photoFinish });
   return {
     project,
     preset,
