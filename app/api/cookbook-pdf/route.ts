@@ -213,8 +213,16 @@ export async function POST(request: Request) {
   }
 
   if (!response.ok) {
-    console.warn("cookbook-pdf: renderer failed", response.status);
-    return jsonError("The cookbook couldn't be rendered.", 502);
+    // The renderer's own body says what actually went wrong (a Puppeteer
+    // error, a validation message) — this used to be thrown away, logging
+    // only the status, so every failure here read as "renderer failed 502"
+    // and finding out more meant going to look at the renderer's own logs by
+    // hand. Never shown to the cook as-is: it's Chromium/Puppeteer text, not
+    // copy anyone wrote for a reader.
+    const detail = await response.text().catch(() => "");
+    console.warn(`cookbook-pdf: renderer failed status=${response.status} body=${detail.slice(0, 2000)}`);
+    const devDetail = process.env.NODE_ENV === "development" && detail ? ` (dev: ${detail})` : "";
+    return jsonError(`The cookbook couldn't be rendered.${devDetail}`, 502);
   }
 
   // Streamed, not buffered: a book runs to several MB and there is no reason to
