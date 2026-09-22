@@ -117,6 +117,22 @@ describe("the opening page's lines, cleared one at a time", () => {
     expect(html).not.toContain("recipe-card__cover-dedication-label");
     expect(html).toContain("Still here.");
   });
+
+  it("doesn't leave an empty plate floating over the photo when every line is cleared", () => {
+    // Regression: the plate CSS (print.css) paints for ANY photo/grid mode
+    // regardless of whether `.cover-back-content` actually has children in
+    // it — `data-cover-text="none"` is what hides the plate itself, and it
+    // was only ever wired up for the plain back cover, not this page.
+    const html = renderDedication({
+      title: "",
+      blurb: "",
+      author: "",
+      layout: "collage",
+      gridImages: ["a.jpg", "b.jpg"],
+    });
+    expect(html).toContain("recipe-card__cover-grid-cell");
+    expect(html).toContain('data-cover-text="none"');
+  });
 });
 
 const renderBack = (patch: Partial<CoverConfig>) =>

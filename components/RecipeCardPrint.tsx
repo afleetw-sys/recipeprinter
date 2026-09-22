@@ -1852,11 +1852,21 @@ export const CoverFace = memo(function CoverFace({
           : "none";
     const { columns: dedicationGridColumns, firstSpans: dedicationGridFirstSpans } =
       photoGridLayout(dedicationGridImages.length);
+    // Same reasoning as the back cover's own `backTextEmpty` (see below): a
+    // plate with nothing on it is an empty box floating over the photo, not
+    // a lockup with nothing to read. Missed on the first pass, which only
+    // wired this attribute up for the plain back cover, not the opening page
+    // that shares its plate CSS.
+    const dedicationTextEmpty =
+      ![draft.title, draft.blurb, draft.author].some((line) => line?.trim()) &&
+      !showEmpty &&
+      editingField === null;
 
     return (
       <article
         className="recipe-card recipe-card--cover recipe-card--cover-back recipe-card--cover-dedication"
         data-cover-mode={dedicationMode}
+        data-cover-text={dedicationTextEmpty ? "none" : undefined}
         data-preview-hidden={previewHidden ? "true" : undefined}
       >
         {dedicationMode === "none" ? (
