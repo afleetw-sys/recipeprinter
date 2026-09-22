@@ -468,7 +468,7 @@ function InteriorDocument({ payload }: { payload: ExportPayload }) {
       }`}
       style={exportStyle}
       data-export-root="true"
-      data-photo-finish={payload.photoFinish ?? "edge"}
+      data-photo-finish={payload.photoFinish ?? "standard"}
     >
       {measurers}
       {sheets.map((sheet, index) => (

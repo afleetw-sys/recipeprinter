@@ -2933,7 +2933,7 @@ export default function PrintPage() {
    */
   async function exportCookbookAs(
     presetId: CookbookPresetId,
-    photoFinish: "standard" | "edge" = "edge",
+    photoFinish: "standard" | "edge" = "standard",
   ) {
     projectMeta.setCookbookPreset(presetId);
     track("cookbook_preset_selected", { preset: presetId });

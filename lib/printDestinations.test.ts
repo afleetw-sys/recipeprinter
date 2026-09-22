@@ -237,6 +237,10 @@ describe("the format questions", () => {
     expect(presetForChoice({ kind: "flat", size: "letter", photos: null })).toBeNull();
   });
 
+  it("defaults a new book to standard photos", () => {
+    expect(NO_BOOK_CHOICE.photos).toBe("standard");
+  });
+
   it("keeps photo finish separate from hardcover geometry", () => {
     expect(presetForChoice({ kind: "hardcover", size: "letter", photos: "standard" })?.id).toBe(
       "hardcover-us-letter",

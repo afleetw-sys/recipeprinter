@@ -227,7 +227,10 @@ export interface BookChoice {
   photos: BookPhotos | null;
 }
 
-export const NO_BOOK_CHOICE: BookChoice = { kind: null, size: null, photos: null };
+/** Standard photos are the starting presentation; edge to edge is an explicit
+ * choice. Keeping the default here also means changing the binding or clearing
+ * a printer does not quietly switch the book back to bleed artwork. */
+export const NO_BOOK_CHOICE: BookChoice = { kind: null, size: null, photos: "standard" };
 
 /** What a preset is, in the terms of the questions above. */
 export function choiceForPreset(preset: CookbookPreset): BookChoice {

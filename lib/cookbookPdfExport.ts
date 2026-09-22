@@ -282,7 +282,7 @@ export async function prepareCookbookPages(
   /** Real client-observable milestones only. The renderer does not stream its
       internal layout work, so the UI must not invent finer-grained progress. */
   onProgress?: (progress: CookbookPdfProgress) => void,
-  photoFinish: "standard" | "edge" = "edge",
+  photoFinish: "standard" | "edge" = "standard",
 ): Promise<PreparedCookbookPages> {
   onProgress?.("preparing");
   // The renderer is on the server, so every image in the book has to be a URL

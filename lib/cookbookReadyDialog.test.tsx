@@ -217,9 +217,8 @@ describe("the cookbook print dialog", () => {
     expect(screen.getByText("Size")).toBeTruthy();
     expect(screen.getByText("Photos")).toBeTruthy();
     expect(save().disabled).toBe(true);
+    expect(pill("Standard").checked).toBe(true);
     fireEvent.click(pill("8 × 10 in"));
-    expect(save().disabled).toBe(true);
-    fireEvent.click(pill("Standard"));
     expect(save().disabled).toBe(false);
     fireEvent.click(save());
     expect(onExport).toHaveBeenCalledWith("hardcover-8x10", "standard");
@@ -230,8 +229,8 @@ describe("the cookbook print dialog", () => {
     fireEvent.click(pill("Spiral, comb or 3-ring"));
     expect(screen.getByText("Photos")).toBeTruthy();
     expect(screen.queryByText("Size")).toBeNull();
-    expect(save().disabled).toBe(true);
-    fireEvent.click(pill("Standard"));
+    expect(pill("Standard").checked).toBe(true);
+    expect(save().disabled).toBe(false);
     expect(screen.getByText(PHOTOS_HELP.standard)).toBeTruthy();
     fireEvent.click(pill("Edge to edge"));
     expect(screen.getByText(PHOTOS_HELP.edge)).toBeTruthy();
