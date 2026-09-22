@@ -61,6 +61,7 @@ export function CookbookReadyDialog({
   exportingPreset,
   exportError,
   pageCount = 0,
+  recipeCount = 0,
   exportNeedsAuth = false,
   exportNeedsAccount = false,
   onSignIn,
@@ -76,6 +77,9 @@ export function CookbookReadyDialog({
       interior, and the cook overwrites these fields with the printer's numbers
       anyway. */
   pageCount?: number;
+  /** Recipes going into this export. Unlike the preview sheet count, this is
+      safe to show while the renderer decides the final pagination. */
+  recipeCount?: number;
   onPrinterClick: (printer: string, url: string) => void;
   /** The format currently rendering, if any — the export is a server round trip
       that cold-starts a browser, so it is measured in seconds and has to say so. */
@@ -163,7 +167,11 @@ export function CookbookReadyDialog({
       <div className="cookbook-ready__head">
         <span className="cookbook-ready__title">
           <h2 id="cookbook-ready-title">
-            {justPurchased ? "Your cookbook is ready 🎉" : "Print your cookbook"}
+            {exportingPreset
+              ? "Creating your cookbook PDF"
+              : justPurchased
+                ? "Your cookbook is ready 🎉"
+                : "Print your cookbook"}
           </h2>
         </span>
       </div>
@@ -180,7 +188,9 @@ export function CookbookReadyDialog({
       )}
 
       <div className="cookbook-ready__formats">
-        {lastExport ? (
+        {exportingPreset ? (
+          <ExportProgress presetId={exportingPreset} recipeCount={recipeCount} />
+        ) : lastExport ? (
           /* Done. A finished PDF is only half of it: the file is correct
              against exactly one set of order options, and none of them are
              visible by opening it. So they are stated here, at the moment they
@@ -207,6 +217,93 @@ export function CookbookReadyDialog({
         )}
       </div>
     </Dialog>
+  );
+}
+
+const EXPORT_STAGES = [
+  {
+    afterMs: 0,
+    label: "Preparing your recipes",
+    detail: (recipes: string) => `Gathering ${recipes} and their print settings.`,
+  },
+  {
+    afterMs: 4_000,
+    label: "Checking your photos",
+    detail: () => "Loading each photo at print quality.",
+  },
+  {
+    afterMs: 14_000,
+    label: "Laying out the pages",
+    detail: () => "Keeping chapters, continuations, and facing pages in the right order.",
+  },
+  {
+    afterMs: 27_000,
+    label: "Creating your PDF",
+    detail: () => "Turning the finished layout into a print-ready file.",
+  },
+  {
+    afterMs: 40_000,
+    label: "Checking every page",
+    detail: () => "Confirming the PDF opens correctly and has the expected page size.",
+  },
+  {
+    afterMs: 55_000,
+    label: "Finishing a large cookbook",
+    detail: () => "Large, photo-heavy books can take a little longer. Your export is still working.",
+  },
+] as const;
+
+function ExportProgress({
+  presetId,
+  recipeCount,
+}: {
+  presetId: CookbookPresetId;
+  recipeCount: number;
+}) {
+  const [stageIndex, setStageIndex] = useState(0);
+  useEffect(() => {
+    setStageIndex(0);
+    const timers = EXPORT_STAGES.slice(1).map((stage, index) =>
+      window.setTimeout(() => setStageIndex(index + 1), stage.afterMs),
+    );
+    return () => timers.forEach(window.clearTimeout);
+  }, [presetId]);
+
+  const stage = EXPORT_STAGES[stageIndex];
+  const recipes = recipeCount === 1 ? "1 recipe" : `${recipeCount.toLocaleString()} recipes`;
+  const preset = getCookbookPreset(presetId);
+
+  return (
+    <section className="cookbook-export-progress" aria-labelledby="cookbook-export-stage">
+      <div className="cookbook-export-progress__current" role="status" aria-live="polite">
+        <span className="cookbook-export-progress__spinner" aria-hidden>
+          <SpinnerIcon size={ICON_SIZE.lg} />
+        </span>
+        <span>
+          <strong id="cookbook-export-stage">{stage.label}</strong>
+          <span>{stage.detail(recipes)}</span>
+        </span>
+      </div>
+
+      <ol className="cookbook-export-progress__steps" aria-label="Export progress">
+        {EXPORT_STAGES.slice(0, 5).map((item, index) => {
+          const state = index < stageIndex ? "done" : index === stageIndex ? "current" : "waiting";
+          return (
+            <li key={item.label} className={`is-${state}`} aria-current={state === "current" ? "step" : undefined}>
+              <span className="cookbook-export-progress__mark" aria-hidden>
+                {state === "done" ? <CheckIcon size={ICON_SIZE.sm} /> : index + 1}
+              </span>
+              <span>{item.label}</span>
+            </li>
+          );
+        })}
+      </ol>
+
+      <p className="cookbook-export-progress__facts">
+        {recipes} <span aria-hidden>·</span> {preset.trimLabel}
+      </p>
+      <p className="cookbook-export-progress__keep-open">Keep this window open. Your download will start automatically.</p>
+    </section>
   );
 }
 

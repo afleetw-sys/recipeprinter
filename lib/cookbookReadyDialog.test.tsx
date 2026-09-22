@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
-import { cleanup, fireEvent, render, screen } from "@testing-library/react";
-import { afterEach, describe, expect, it } from "vitest";
+import { act, cleanup, fireEvent, render, screen } from "@testing-library/react";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import { CookbookReadyDialog } from "@/components/CookbookReadyDialog";
 import {
   PHOTOS_HELP,
@@ -26,6 +26,22 @@ function renderDialog(pageCount: number) {
   );
 }
 
+function renderExportingDialog(recipeCount: number) {
+  return render(
+    <CookbookReadyDialog
+      open
+      justPurchased={false}
+      onClose={() => {}}
+      onExport={() => {}}
+      onPrinterClick={() => {}}
+      exportingPreset="hardcover-8x10"
+      exportError={null}
+      pageCount={recipeCount}
+      recipeCount={recipeCount}
+    />,
+  );
+}
+
 const pill = (label: string) => screen.getByLabelText(label) as HTMLInputElement;
 // The shortcut is a menu: open it, then pick a row. An empty id clears it.
 const fillInFor = (id: string) => {
@@ -36,6 +52,28 @@ const fillInFor = (id: string) => {
 const save = () => screen.getByRole("button", { name: /save pdf/i }) as HTMLButtonElement;
 
 describe("the cookbook print dialog", () => {
+  it("explains long exports in truthful timed stages without a fake percentage", () => {
+    vi.useFakeTimers();
+    try {
+      renderExportingDialog(148);
+      expect(screen.getByRole("heading", { name: "Creating your cookbook PDF" })).toBeTruthy();
+      expect(screen.getByRole("status").textContent).toMatch(/Preparing your recipes.*148 recipes/);
+      expect(document.querySelector(".cookbook-export-progress__facts")?.textContent).toMatch(
+        /148 recipes.*8.*10/,
+      );
+      expect(screen.getByRole("dialog").textContent).not.toMatch(/\d+%/);
+
+      act(() => vi.advanceTimersByTime(14_000));
+      expect(screen.getByRole("status").textContent).toMatch(/Laying out the pages/);
+
+      act(() => vi.advanceTimersByTime(41_000));
+      expect(screen.getByRole("status").textContent).toMatch(/Finishing a large cookbook/);
+      expect(screen.getByRole("dialog").textContent).toMatch(/still working/i);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
   it("offers every place as an optional shortcut, with no price", () => {
     renderDialog(95);
     const dialog = screen.getByRole("dialog");

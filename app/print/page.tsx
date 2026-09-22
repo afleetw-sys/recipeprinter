@@ -5748,6 +5748,7 @@ export default function PrintPage() {
         lastExport={lastCookbookExport}
         onExportAnother={() => setLastCookbookExport(null)}
         pageCount={sheets.length}
+        recipeCount={items?.length ?? 0}
         exportingPreset={exportingPreset}
         exportError={cookbookExportError}
         exportNeedsAuth={cookbookExportNeedsAuth}
