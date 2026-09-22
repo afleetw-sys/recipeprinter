@@ -131,13 +131,14 @@ describe("the cookbook print dialog", () => {
 
   it("turns the file steps into the compact success state", () => {
     renderFinishedDialog();
-    expect(screen.getByRole("heading", { name: "Your PDFs are ready" })).toBeTruthy();
+    expect(screen.getByRole("heading", { name: "Download started" })).toBeTruthy();
     expect(screen.getByText("Interior pages PDF ready").closest("li")?.className).toContain(
       "is-done",
     );
     expect(screen.getByText("Cover PDF ready").closest("li")?.className).toContain("is-done");
     expect(screen.getByRole("button", { name: "Download pages" })).toBeTruthy();
     expect(screen.getByRole("button", { name: "Download cover" })).toBeTruthy();
+    expect(screen.getByText(/One ZIP download contains both PDFs/)).toBeTruthy();
     expect(screen.getByRole("button", { name: "Try another way" })).toBeTruthy();
     expect(document.querySelector(".cookbook-next__settings")).toBeNull();
   });

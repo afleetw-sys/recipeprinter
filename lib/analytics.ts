@@ -387,7 +387,10 @@ type EventProps = {
   cookbook_export_ready: { preset: CookbookPresetId; files: number };
   /** A prepared file's user-gesture download was started. Browsers expose no
       reliable completion signal, so this deliberately does not say finished. */
-  cookbook_export_download_started: { preset: CookbookPresetId; role: "pages" | "cover" };
+  cookbook_export_download_started: {
+    preset: CookbookPresetId;
+    role: "pages" | "cover" | "package";
+  };
   /** A failed cover was prepared without rendering the safe interior again. */
   cookbook_cover_retry_succeeded: { preset: CookbookPresetId };
   /** A signed-out cookbook owner clicked a "back up your purchase with a free

@@ -8,6 +8,7 @@ import {
 } from "@/lib/coverWrap";
 import type { CoverSheetSpec, ExportMode } from "@/types/export";
 import type { CookbookPresetId, PrintProject } from "@/types/recipe";
+import { zipSync } from "fflate";
 
 /**
  * Downloads a cookbook as a finished PDF.
@@ -114,7 +115,8 @@ interface RenderedPdf {
 export type CookbookPdfProgress =
   | "preparing"
   | "rendering-pages"
-  | "rendering-cover";
+  | "rendering-cover"
+  | "packaging";
 
 async function renderPdf(request: RenderRequest): Promise<RenderedPdf> {
   const idToken = await currentIdToken();
@@ -195,6 +197,34 @@ export interface PreparedCookbookPages {
     an unsolicited automatic download. */
 export function downloadPreparedPdf(file: PreparedPdfFile): void {
   saveBlob(file.blob, file.name);
+}
+
+/** One automatic browser download. A hardcover's two already-compressed PDFs
+    are stored without recompression: this avoids browsers blocking a second
+    unsolicited download and avoids wasting CPU trying to compress PDF streams
+    that are compressed already. */
+export async function prepareCookbookDownload(files: PreparedPdfFile[]): Promise<{
+  name: string;
+  blob: Blob;
+}> {
+  if (files.length === 1) return { name: files[0]!.name, blob: files[0]!.blob };
+  const entries = Object.fromEntries(
+    await Promise.all(
+      files.map(async (file) => [file.name, new Uint8Array(await file.blob.arrayBuffer())] as const),
+    ),
+  );
+  const archive = zipSync(entries, { level: 0 });
+  const pagesName = files.find((file) => file.role === "pages")?.name ?? "Cookbook.pdf";
+  return {
+    name: pagesName.replace(/\.pdf$/i, "-Print-Files.zip"),
+    blob: new Blob([archive], { type: "application/zip" }),
+  };
+}
+
+export async function downloadPreparedCookbook(files: PreparedPdfFile[]): Promise<string> {
+  const download = await prepareCookbookDownload(files);
+  saveBlob(download.blob, download.name);
+  return download.name;
 }
 
 /**

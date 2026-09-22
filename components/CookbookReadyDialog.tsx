@@ -176,9 +176,7 @@ export function CookbookReadyDialog({
             {exportingPreset
               ? "Creating your cookbook PDF"
               : lastExport
-                ? lastExport.files.length > 1
-                  ? "Your PDFs are ready"
-                  : "Your PDF is ready"
+                ? "Download started"
                 : coverRetryPending
                   ? "Your pages PDF is safe"
                 : justPurchased
@@ -270,9 +268,20 @@ function ExportProgress({
           },
         ]
       : []),
+    {
+      id: "package",
+      label: "Starting your download",
+      detail: preset.wrapRequired
+        ? "Packing the pages and cover PDFs into one ZIP file."
+        : "Sending the finished PDF to your downloads.",
+    },
   ];
   const currentIndex =
-    progress === "rendering-cover" && preset.wrapRequired ? steps.length - 1 : pageStageIndex;
+    progress === "packaging"
+      ? steps.length - 1
+      : progress === "rendering-cover" && preset.wrapRequired
+        ? steps.length - 2
+        : pageStageIndex;
 
   return (
     <section className="cookbook-export-progress">
@@ -648,6 +657,12 @@ function ExportedNext({
           </li>
         ))}
       </ol>
+
+      <p className="cookbook-ready__lead">
+        {lastExport.files.length > 1
+          ? "One ZIP download contains both PDFs. Use the buttons below if you need either file again."
+          : "Your PDF download has started. Use the button below if you need it again."}
+      </p>
 
       <div className="cookbook-next__actions">
         {lastExport.files.map((file) => (

@@ -4,9 +4,11 @@ import {
   cookbookPdfFileName,
   coverWrapProject,
   prepareCookbookCover,
+  prepareCookbookDownload,
   trimSizeLabel,
 } from "@/lib/cookbookPdfExport";
 import { getCookbookPreset } from "@/lib/cookbookPresets";
+import { strFromU8, unzipSync } from "fflate";
 
 afterEach(() => vi.unstubAllGlobals());
 
@@ -142,5 +144,27 @@ describe("cover-only retry", () => {
     expect(requests[0]?.mode).toBe("cover-wrap");
     expect((requests[0]?.project as { sections: unknown[] }).sections).toEqual([]);
     expect(cover?.role).toBe("cover");
+  });
+});
+
+describe("automatic download packaging", () => {
+  it("keeps a one-file export as a PDF", async () => {
+    const pdf = new Blob(["%PDF-pages"], { type: "application/pdf" });
+    const download = await prepareCookbookDownload([
+      { name: "Family-Standard-8.5x11.pdf", blob: pdf, role: "pages" },
+    ]);
+    expect(download.name).toBe("Family-Standard-8.5x11.pdf");
+    expect(download.blob).toBe(pdf);
+  });
+
+  it("packages both hardcover PDFs into one automatic ZIP", async () => {
+    const download = await prepareCookbookDownload([
+      { name: "Family-Hardcover-8x10.pdf", blob: new Blob(["%PDF-pages"]), role: "pages" },
+      { name: "Family-Cover-Hardcover-8x10.pdf", blob: new Blob(["%PDF-cover"]), role: "cover" },
+    ]);
+    const files = unzipSync(new Uint8Array(await download.blob.arrayBuffer()));
+    expect(download.name).toBe("Family-Hardcover-8x10-Print-Files.zip");
+    expect(strFromU8(files["Family-Hardcover-8x10.pdf"]!)).toBe("%PDF-pages");
+    expect(strFromU8(files["Family-Cover-Hardcover-8x10.pdf"]!)).toBe("%PDF-cover");
   });
 });

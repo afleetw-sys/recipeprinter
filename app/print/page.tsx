@@ -21,6 +21,7 @@ import {
   type PreparedPdfFile,
   CookbookPdfError,
   cookbookPdfFileName,
+  downloadPreparedCookbook,
   downloadPreparedPdf,
   prepareCookbookCover,
   prepareCookbookPages,
@@ -2931,9 +2932,15 @@ export default function PrintPage() {
       try {
         const cover = await prepareCookbookCover(pages, coverSheet, setCookbookExportProgress);
         const files = cover ? [pages.file, cover] : [pages.file];
+        setCookbookExportProgress("packaging");
+        await downloadPreparedCookbook(files);
         setLastCookbookExport({ presetId, files });
         setCookbookCoverRetry(null);
         track("cookbook_export_ready", { preset: presetId, files: files.length });
+        track("cookbook_export_download_started", {
+          preset: presetId,
+          role: files.length > 1 ? "package" : "pages",
+        });
       } catch (error) {
         setCookbookCoverRetry({ pages, coverSheet });
         setCookbookExportError(
@@ -2970,9 +2977,13 @@ export default function PrintPage() {
         setCookbookExportProgress,
       );
       if (!cover) throw new CookbookPdfError("This format doesn't require a separate cover.");
-      setLastCookbookExport({ presetId, files: [retry.pages.file, cover] });
+      const files = [retry.pages.file, cover];
+      setCookbookExportProgress("packaging");
+      await downloadPreparedCookbook(files);
+      setLastCookbookExport({ presetId, files });
       setCookbookCoverRetry(null);
       track("cookbook_cover_retry_succeeded", { preset: presetId });
+      track("cookbook_export_download_started", { preset: presetId, role: "package" });
     } catch (error) {
       setCookbookExportError(
         error instanceof CookbookPdfError
