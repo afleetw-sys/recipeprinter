@@ -1055,6 +1055,35 @@ export function usePrintSheets({
         // Insert after the front-matter pages already emitted (cover, then
         // dedication) so the order is cover → dedication → contents → chapters.
         out.splice((cover ? 1 : 0) + (dedication ? 1 : 0), 0, ...tocSheets);
+
+        // If the contents end on their own left (verso) page, the very next
+        // spread — a recipe beside its own full-page photo, a chapter beside
+        // its art — would land split across the wrong two pages instead of
+        // facing each other. That's exactly what the preview's own spread
+        // assembly (assembleSpreads) already shows as an empty box on the
+        // right: it won't break an atomic pair apart, so it orphans the
+        // contents' last page rather than pair it with the first body page.
+        // That gap used to be preview-only — the export just emitted one
+        // page per sheet in order, with nothing there, so the file
+        // disagreed with the book the cook was looking at. A real blank
+        // page removes the gap instead of just describing it.
+        //
+        // needsOpeningBlank is exactly this rule — front matter (cover,
+        // dedication, contents) has to be an ODD count for the next real
+        // page to land correctly, and only when there's a facing pair
+        // anywhere to protect, or padding would cost a printed page to fix
+        // nothing. It was built to run once at the very front, only at
+        // export time, for a format whose cover ships separately — reused
+        // here unconditionally (every format, live in the editor too) and
+        // inserted right after the contents specifically, which is the
+        // exact spot a facing pair actually breaks.
+        if (needsOpeningBlank(out)) {
+          out.splice(frontMatterPageCount(out), 0, {
+            id: "sheet-toc-blank",
+            slots: [{ kind: "blank", id: "toc-blank" }],
+            backGroupNeeded: false,
+          });
+        }
       }
     }
 
