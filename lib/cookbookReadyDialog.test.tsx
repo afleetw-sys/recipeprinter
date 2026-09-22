@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
-import { cleanup, fireEvent, render, screen } from "@testing-library/react";
-import { afterEach, describe, expect, it } from "vitest";
+import { act, cleanup, fireEvent, render, screen } from "@testing-library/react";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import { CookbookReadyDialog } from "@/components/CookbookReadyDialog";
 import {
   PHOTOS_HELP,
@@ -86,6 +86,25 @@ describe("the cookbook print dialog", () => {
       /148 recipes.*8.*10/,
     );
     expect(screen.getByRole("dialog").textContent).not.toMatch(/\d+%/);
+  });
+
+  it("keeps the long pages render visibly active without claiming false completion", () => {
+    vi.useFakeTimers();
+    try {
+      renderExportingDialog(148, "rendering-pages");
+      expect(screen.getByRole("status").textContent).toMatch(/Building the page layout for 148 recipes/);
+
+      act(() => vi.advanceTimersByTime(7_000));
+      expect(screen.getByRole("status").textContent).toMatch(/Placing recipe text and photos/);
+
+      act(() => vi.advanceTimersByTime(14_000));
+      expect(screen.getByRole("status").textContent).toMatch(/renderer is still working/i);
+      expect(screen.getByText("Creating the pages PDF").closest("li")?.className).toContain(
+        "is-current",
+      );
+    } finally {
+      vi.useRealTimers();
+    }
   });
 
   it("turns the file steps into the compact success state", () => {

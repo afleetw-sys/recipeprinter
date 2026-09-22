@@ -837,6 +837,24 @@
   font-weight: 500;
   line-height: 1.4;
 }
+.cookbook-export-progress__activity {
+  animation: cookbook-export-message-in 240ms ease-out both;
+}
+@keyframes cookbook-export-message-in {
+  from {
+    opacity: 0;
+    transform: translateY(2px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .cookbook-export-progress__activity {
+    animation: none;
+  }
+}
 .cookbook-export-progress__steps li.is-done {
   color: var(--cp-ink-soft);
 }

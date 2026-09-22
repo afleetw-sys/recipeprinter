@@ -282,7 +282,12 @@ function ExportProgress({
               </span>
               <span className="cookbook-export-progress__copy">
                 <strong>{item.label}</strong>
-                {state === "current" && <span role="status">{item.detail}</span>}
+                {state === "current" &&
+                  (item.id === "rendering-pages" ? (
+                    <RenderActivity recipeCount={recipeCount} />
+                  ) : (
+                    <span role="status">{item.detail}</span>
+                  ))}
               </span>
             </li>
           );
@@ -294,6 +299,37 @@ function ExportProgress({
       </p>
       <p className="cookbook-export-progress__keep-open">Keep this window open. Your download will start automatically.</p>
     </section>
+  );
+}
+
+const RENDER_ACTIVITY = [
+  (count: string) => `Building the page layout for ${count}.`,
+  () => "Placing recipe text and photos into the book.",
+  () => "Keeping chapters and facing pages in the right order.",
+  () => "Large cookbooks take longer. The renderer is still working.",
+] as const;
+
+/**
+ * The render endpoint returns one finished response, not streamed internal
+ * progress. Rotate honest descriptions of the work covered by that request so
+ * a long cold start stays visibly alive without marking anything complete
+ * before the validated PDF actually arrives.
+ */
+function RenderActivity({ recipeCount }: { recipeCount: number }) {
+  const [messageIndex, setMessageIndex] = useState(0);
+  useEffect(() => {
+    const timer = window.setInterval(
+      () => setMessageIndex((current) => Math.min(current + 1, RENDER_ACTIVITY.length - 1)),
+      7_000,
+    );
+    return () => window.clearInterval(timer);
+  }, []);
+
+  const recipes = recipeCount === 1 ? "1 recipe" : `${recipeCount.toLocaleString()} recipes`;
+  return (
+    <span key={messageIndex} className="cookbook-export-progress__activity" role="status">
+      {RENDER_ACTIVITY[messageIndex](recipes)}
+    </span>
   );
 }
 
