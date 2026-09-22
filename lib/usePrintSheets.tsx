@@ -1301,19 +1301,12 @@ export function usePrintSheets({
   // cookbook mode, where the deck stays one page per slide.
   const spreads = useMemo<DeckSpread[]>(() => {
     if (!cookbookLayouts) return [];
-    const kinds: BookPageKind[] = sheets.map((sheet) => {
-      if (sheet.layoutKind === "section-photo") return "section-photo";
-      if (sheet.layoutKind === "image") return "image-photo";
-      const slot = sheet.slots.find((s): s is SheetSlot => s !== null);
-      if (slot?.kind === "cover") {
-        if (slot.side === "back") return "back";
-        if (slot.side === "dedication") return "dedication";
-        return "cover";
-      }
-      if (slot?.kind === "divider") return "chapter";
-      if (slot?.kind === "toc") return "toc";
-      return "content";
-    });
+    // Reuse `bookPageKindOf`, not a second copy of its mapping — a copy here
+    // once forgot that a gap-closing blank still reads as "toc" (see
+    // `BlankSheetSlot.pairsAs`), so the deck re-orphaned both the contents'
+    // last page and its own padding blank, drawing a whole phantom blank
+    // spread beside a book that was already correctly paginated.
+    const kinds: BookPageKind[] = sheets.map(bookPageKindOf);
     return assembleSpreads(kinds);
   }, [cookbookLayouts, sheets]);
 
