@@ -202,12 +202,13 @@ describe("assembleSpreads (book imposition)", () => {
     expect(spreads[spreads.length - 1]).toEqual({ left: 3, right: null, single: true });
   });
 
-  it("pairs dedication with the following interior page", () => {
-    // Only covers stand alone; front matter reads as an ordinary book spread.
+  it("stands an opening dedication alone as page 1", () => {
+    // The cover is supplied separately. The dedication is the first interior
+    // page, on the right, and must not acquire a printable blank after it.
     const spreads = assembleSpreads(K("cover", "dedication", "content", "content", "back"));
     expect(spreads[0]).toEqual({ left: null, right: 0, single: true });
-    expect(spreads[1]).toEqual({ left: 1, right: 2, single: false });
-    expect(spreads[2]).toEqual({ left: 3, right: null, single: false });
+    expect(spreads[1]).toEqual({ left: null, right: 1, single: true });
+    expect(spreads[2]).toEqual({ left: 2, right: 3, single: false });
     expect(spreads[spreads.length - 1]).toEqual({ left: 4, right: null, single: true });
   });
 
@@ -317,11 +318,11 @@ describe("a contents page that runs long", () => {
     expect(spreads).toContainEqual(spread(3, null));
   });
 
-  // A dedication sitting before the contents must not be dragged into its
-  // first opening, the same way a page before an image spread isn't.
+  // An opening dedication is page 1 and stands alone; the contents begins on
+  // the following spread.
   it("does not pull the page before it into the first contents spread", () => {
     const spreads = assembleSpreads(["cover", "dedication", "toc", "toc"]);
-    expect(spreads).toContainEqual(spread(1, null));
+    expect(spreads).toContainEqual(spread(null, 1, true));
     expect(spreads).toContainEqual(spread(2, 3));
   });
 
@@ -330,11 +331,11 @@ describe("a contents page that runs long", () => {
     expect(spreads).toContainEqual(spread(1, null));
   });
 
-  // A one-page contents has nothing to pair with itself, so it faces the
-  // opening page rather than leaving two half-empty spreads in a row.
-  it("sets a one-page contents facing the opening page", () => {
+  // Page 1 has no facing page. A one-page contents therefore starts after the
+  // standalone dedication instead of being paired with it in the preview.
+  it("keeps a one-page contents after the standalone opening page", () => {
     const spreads = assembleSpreads(["cover", "dedication", "toc", "chapter", "content"]);
-    expect(spreads).toContainEqual(spread(1, 2));
-    expect(spreads).not.toContainEqual(spread(1, null));
+    expect(spreads).toContainEqual(spread(null, 1, true));
+    expect(spreads).toContainEqual(spread(2, null));
   });
 });

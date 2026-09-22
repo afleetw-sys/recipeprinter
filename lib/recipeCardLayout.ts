@@ -943,6 +943,16 @@ export function assembleSpreads(pages: BookPageKind[]): BookSpread[] {
     spreads.push({ left: null, right: start, single: true });
     start += 1;
   }
+  // The dedication is page 1 of an interior whose cover is supplied
+  // separately. Page 1 has no facing left-hand page, so it stands alone just
+  // like the outside cover in the book view. Treating it as the left half of
+  // the first spread made the lookahead below orphan it whenever an atomic
+  // photo/recipe or chapter/art pair followed; closeSpreadGaps then turned
+  // that preview-only hole into a real blank page after the dedication.
+  if (pages[start] === "dedication") {
+    spreads.push({ left: null, right: start, single: true });
+    start += 1;
+  }
   let backSpread: BookSpread | null = null;
   if (end - 1 >= start && pages[end - 1] === "back") {
     backSpread = { left: end - 1, right: null, single: true };

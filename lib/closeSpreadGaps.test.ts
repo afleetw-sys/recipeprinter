@@ -17,6 +17,12 @@ const photo = () => sheet("image", "image");
 const opener = () => sheet("divider");
 const openerPhoto = () => sheet("section-photo", "section-photo");
 const toc = () => sheet("toc");
+const dedication = (): PageSheet =>
+  ({
+    id: "dedication",
+    slots: [{ kind: "cover", id: "dedication", cover: {}, side: "dedication" } as never],
+    backGroupNeeded: false,
+  }) as PageSheet;
 
 const kinds = (sheets: PageSheet[]) => sheets.map((s) => s.slots[0]?.kind ?? "blank");
 
@@ -25,6 +31,12 @@ describe("closeSpreadGaps", () => {
     const sheets = [recipe(), recipe(), recipe()];
     closeSpreadGaps(sheets);
     expect(sheets).toHaveLength(3);
+  });
+
+  it("does not add a blank after an opening dedication", () => {
+    const sheets = [dedication(), photo(), recipe()];
+    closeSpreadGaps(sheets);
+    expect(kinds(sheets)).toEqual(["cover", "image", "recipe"]);
   });
 
   it("inserts a real blank when a lone recipe precedes a facing-photo spread", () => {
