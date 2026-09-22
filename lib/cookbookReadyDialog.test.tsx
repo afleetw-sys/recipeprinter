@@ -93,12 +93,14 @@ describe("the cookbook print dialog", () => {
     try {
       renderExportingDialog(148, "rendering-pages");
       expect(screen.getByRole("status").textContent).toMatch(/Building the page layout for 148 recipes/);
+      expect(screen.queryByText(/Preparing your cookbook/)).toBeNull();
 
       act(() => vi.advanceTimersByTime(7_000));
-      expect(screen.getByRole("status").textContent).toMatch(/Placing recipe text and photos/);
+      expect(screen.getByText("Placing photos").closest("li")?.className).toContain("is-current");
+      expect(screen.getByRole("status").textContent).toMatch(/Fitting recipe photos/);
 
       act(() => vi.advanceTimersByTime(14_000));
-      expect(screen.getByRole("status").textContent).toMatch(/renderer is still working/i);
+      expect(screen.getByRole("status").textContent).toMatch(/Large cookbooks can take a little longer/);
       expect(screen.getByText("Creating the pages PDF").closest("li")?.className).toContain(
         "is-current",
       );

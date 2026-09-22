@@ -235,30 +235,31 @@ function ExportProgress({
   recipeCount: number;
   progress: CookbookPdfProgress;
 }) {
+  const [pageStageIndex, setPageStageIndex] = useState(0);
+  useEffect(() => {
+    const timer = window.setInterval(
+      () => setPageStageIndex((current) => Math.min(current + 1, PAGE_STAGES.length - 1)),
+      7_000,
+    );
+    return () => window.clearInterval(timer);
+  }, []);
+
   const recipes = recipeCount === 1 ? "1 recipe" : `${recipeCount.toLocaleString()} recipes`;
   const preset = getCookbookPreset(presetId);
   const steps = [
-    {
-      id: "preparing",
-      label: "Preparing your cookbook",
-      detail: `Gathering ${recipes}, their photos, and print settings.`,
-    },
-    {
-      id: "rendering-pages",
-      label: "Creating the pages PDF",
-      detail: "Laying out the cookbook and checking the finished pages.",
-    },
+    ...PAGE_STAGES.map((stage) => ({ ...stage, detail: stage.detail(recipes) })),
     ...(preset.wrapRequired
       ? [
           {
-            id: "rendering-cover",
+            id: "cover",
             label: "Creating the cover PDF",
             detail: "Sizing the cover and spine to the finished book.",
           },
         ]
       : []),
-  ] as Array<{ id: CookbookPdfProgress; label: string; detail: string }>;
-  const currentIndex = Math.max(0, steps.findIndex((step) => step.id === progress));
+  ];
+  const currentIndex =
+    progress === "rendering-cover" && preset.wrapRequired ? steps.length - 1 : pageStageIndex;
 
   return (
     <section className="cookbook-export-progress">
@@ -267,7 +268,7 @@ function ExportProgress({
           const state = index < currentIndex ? "done" : index === currentIndex ? "current" : "waiting";
           return (
             <li
-              key={item.id}
+              key={item.label}
               className={`is-${state}`}
               aria-current={state === "current" ? "step" : undefined}
             >
@@ -282,12 +283,15 @@ function ExportProgress({
               </span>
               <span className="cookbook-export-progress__copy">
                 <strong>{item.label}</strong>
-                {state === "current" &&
-                  (item.id === "rendering-pages" ? (
-                    <RenderActivity recipeCount={recipeCount} />
-                  ) : (
-                    <span role="status">{item.detail}</span>
-                  ))}
+                {state === "current" && (
+                  <span
+                    key={currentIndex}
+                    className="cookbook-export-progress__activity"
+                    role="status"
+                  >
+                    {item.detail}
+                  </span>
+                )}
               </span>
             </li>
           );
@@ -302,36 +306,24 @@ function ExportProgress({
   );
 }
 
-const RENDER_ACTIVITY = [
-  (count: string) => `Building the page layout for ${count}.`,
-  () => "Placing recipe text and photos into the book.",
-  () => "Keeping chapters and facing pages in the right order.",
-  () => "Large cookbooks take longer. The renderer is still working.",
+const PAGE_STAGES = [
+  {
+    label: "Laying out your recipes",
+    detail: (count: string) => `Building the page layout for ${count}.`,
+  },
+  {
+    label: "Placing photos",
+    detail: () => "Fitting recipe photos into their printable spaces.",
+  },
+  {
+    label: "Checking the page order",
+    detail: () => "Keeping chapters, facing pages, and blank pages in the right order.",
+  },
+  {
+    label: "Creating the pages PDF",
+    detail: () => "Finishing the print-ready file. Large cookbooks can take a little longer.",
+  },
 ] as const;
-
-/**
- * The render endpoint returns one finished response, not streamed internal
- * progress. Rotate honest descriptions of the work covered by that request so
- * a long cold start stays visibly alive without marking anything complete
- * before the validated PDF actually arrives.
- */
-function RenderActivity({ recipeCount }: { recipeCount: number }) {
-  const [messageIndex, setMessageIndex] = useState(0);
-  useEffect(() => {
-    const timer = window.setInterval(
-      () => setMessageIndex((current) => Math.min(current + 1, RENDER_ACTIVITY.length - 1)),
-      7_000,
-    );
-    return () => window.clearInterval(timer);
-  }, []);
-
-  const recipes = recipeCount === 1 ? "1 recipe" : `${recipeCount.toLocaleString()} recipes`;
-  return (
-    <span key={messageIndex} className="cookbook-export-progress__activity" role="status">
-      {RENDER_ACTIVITY[messageIndex](recipes)}
-    </span>
-  );
-}
 
 /** A single-select row of pills, driven by native radios so the arrow keys and
     screen readers get the group they expect. */
