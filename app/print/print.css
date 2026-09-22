@@ -3440,16 +3440,6 @@
   > .recipe-card__cover-photo--grid {
   inset: 0.5in;
 }
-/* Classic's top rule is page decoration rather than a photo, but leaving it
-   in the bleed/trim area makes the otherwise inset Standard treatment look
-   accidental and lets the printer crop it away. Put the whole rule inside the
-   same safe frame as the photos; Edge to edge keeps the original full-width,
-   top-edge rule. */
-.rp-exporting[data-photo-finish="standard"] .recipe-card__accent {
-  top: 0.5in;
-  left: 0.5in;
-  right: 0.5in;
-}
 .rp-exporting[data-photo-finish="standard"] .recipe-card__chapter-photo-caption {
   left: 0.5in;
   right: 0.5in;
