@@ -284,6 +284,70 @@ export function needsOpeningBlank(sheets: PageSheet[]): boolean {
   return frontMatterPageCount(sheets) % 2 === 0;
 }
 
+/** `sheets`, in the coarser terms `assembleSpreads` reasons in. */
+function bookPageKindOf(sheet: PageSheet): BookPageKind {
+  if (sheet.layoutKind === "section-photo") return "section-photo";
+  if (sheet.layoutKind === "image") return "image-photo";
+  const slot = sheet.slots.find((candidate): candidate is SheetSlot => candidate !== null);
+  if (slot?.kind === "cover") {
+    if (slot.side === "back") return "back";
+    if (slot.side === "dedication") return "dedication";
+    return "cover";
+  }
+  if (slot?.kind === "divider") return "chapter";
+  if (slot?.kind === "toc") return "toc";
+  if (slot?.kind === "blank" && slot.pairsAs === "toc") return "toc";
+  return "content";
+}
+
+/**
+ * Turns every spread gap `assembleSpreads` (the deck's own two-page "book
+ * view", unchanged) would draw into a real blank page, mutating `sheets` in
+ * place.
+ *
+ * assembleSpreads won't split an atomic pair apart to keep pace with
+ * whatever came before it — a recipe beside its own full-page photo, a
+ * chapter beside its facing art, a contents block that runs long. It orphans
+ * the single page ahead of the pair instead, and the deck draws an empty box
+ * for the missing half. That's the right call for the PREVIEW, which only
+ * has to look correct — but the export used to just print one page per sheet
+ * in order, nothing there, so the file disagreed with the book on screen: a
+ * recipe alone on its own page with a blank drawn beside it printed with
+ * nothing after it at all.
+ *
+ * This reruns assembleSpreads on the sheets actually being built — not a
+ * second, parallel rule that could drift from the deck's own — and closes
+ * every orphan it finds, except the very last one: a lone page ending the
+ * book has nothing left to protect, and a printed blank final page is the
+ * bug this used to have in the other direction (see the `trailing` handling
+ * in PrintDeck). Recomputed from scratch each pass rather than tracked
+ * through the splice, so an insertion can never read a stale index —
+ * book-sized inputs make the O(pages²) worst case irrelevant.
+ */
+export function closeSpreadGaps(sheets: PageSheet[]): void {
+  let guard = sheets.length;
+  while (guard > 0) {
+    guard -= 1;
+    const gapSpreads = assembleSpreads(sheets.map(bookPageKindOf));
+    const gapIndex = gapSpreads.findIndex(
+      (spread, index) => !spread.single && spread.right === null && index < gapSpreads.length - 1,
+    );
+    if (gapIndex === -1) return;
+    const orphanIndex = gapSpreads[gapIndex].left;
+    const insertAt = (orphanIndex ?? -1) + 1;
+    // Only the contents' own exclusive pairing needs this (see BlankSheetSlot);
+    // every other orphan pairs with any right-hand page under the default rule.
+    const pairsAs = orphanIndex !== null && bookPageKindOf(sheets[orphanIndex]) === "toc"
+      ? ("toc" as const)
+      : undefined;
+    sheets.splice(insertAt, 0, {
+      id: `sheet-gap-blank-${insertAt}`,
+      slots: [{ kind: "blank", id: `gap-blank-${insertAt}`, pairsAs }],
+      backGroupNeeded: false,
+    });
+  }
+}
+
 /**
  * A deliberately empty leaf, used only to open a book on the right page.
  *
@@ -297,6 +361,16 @@ export function needsOpeningBlank(sheets: PageSheet[]): boolean {
 export interface BlankSheetSlot {
   kind: "blank";
   id: string;
+  /** What this blank counts as for assembleSpreads' own pairing rules (see
+      closeSpreadGaps) — not what it looks like. A blank closing a gap next
+      to an orphaned contents page has to read as "toc" too, because
+      assembleSpreads only pairs a contents page with ANOTHER contents page;
+      a blank that reads as generic content would leave it orphaned again
+      and cascade into inserting one blank after another. Every other gap
+      (a recipe or chapter orphaned ahead of a facing-photo pair) has no such
+      exclusivity — the default pairing rule takes any right-hand page — so
+      this stays absent there. */
+  pairsAs?: "toc";
 }
 
 export type SheetSlot =
@@ -1055,35 +1129,6 @@ export function usePrintSheets({
         // Insert after the front-matter pages already emitted (cover, then
         // dedication) so the order is cover → dedication → contents → chapters.
         out.splice((cover ? 1 : 0) + (dedication ? 1 : 0), 0, ...tocSheets);
-
-        // If the contents end on their own left (verso) page, the very next
-        // spread — a recipe beside its own full-page photo, a chapter beside
-        // its art — would land split across the wrong two pages instead of
-        // facing each other. That's exactly what the preview's own spread
-        // assembly (assembleSpreads) already shows as an empty box on the
-        // right: it won't break an atomic pair apart, so it orphans the
-        // contents' last page rather than pair it with the first body page.
-        // That gap used to be preview-only — the export just emitted one
-        // page per sheet in order, with nothing there, so the file
-        // disagreed with the book the cook was looking at. A real blank
-        // page removes the gap instead of just describing it.
-        //
-        // needsOpeningBlank is exactly this rule — front matter (cover,
-        // dedication, contents) has to be an ODD count for the next real
-        // page to land correctly, and only when there's a facing pair
-        // anywhere to protect, or padding would cost a printed page to fix
-        // nothing. It was built to run once at the very front, only at
-        // export time, for a format whose cover ships separately — reused
-        // here unconditionally (every format, live in the editor too) and
-        // inserted right after the contents specifically, which is the
-        // exact spot a facing pair actually breaks.
-        if (needsOpeningBlank(out)) {
-          out.splice(frontMatterPageCount(out), 0, {
-            id: "sheet-toc-blank",
-            slots: [{ kind: "blank", id: "toc-blank" }],
-            backGroupNeeded: false,
-          });
-        }
       }
     }
 
@@ -1119,6 +1164,11 @@ export function usePrintSheets({
         sheet.backGroupNeeded = sheet.backGroupNeeded || index !== lastRecipeSheetIndex;
       });
     }
+
+    // Close every spread gap with a real page, not just a preview one — see
+    // closeSpreadGaps for the reasoning. Cookbook layouts only: assembleSpreads
+    // (and the deck's own "book view") is a no-op outside cookbook mode.
+    if (cookbookLayouts) closeSpreadGaps(out);
 
     return out;
   }, [layoutSettled, sections, allItems, cover, backCover, dedication, padOpening, tableOfContents, bookTitle, cardSize, continueOnBack, photoOnFor, linkOnFor, photoStyle, template, measuredFacesFor, cookbookLayouts, cookbookResolution, itemPlacements, bookPreset]);
