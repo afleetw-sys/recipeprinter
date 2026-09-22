@@ -318,4 +318,20 @@ describe("the Lulu US Letter hardcover format", () => {
     const generic = wrapGeometryForSpine(preset, 0.5, DEFAULT_COVER_WRAP_SPEC);
     expect(generic.sheetWidthIn).not.toBeCloseTo(19.25, 3);
   });
+
+  it("derives a spine close to Lulu's own quote from page count alone", () => {
+    // A real order: a 288-page book, Lulu's upload page requiring a 0.5in
+    // spine. This is the path that actually mattered — a cook exporting
+    // without ever touching the "Cover size" fields gets this by default —
+    // and it previously used DEFAULT_PAPER_CALIPER_IN (uncoated text stock)
+    // instead of Lulu's actual coated colour-book caliper, producing a sheet
+    // Lulu's upload page rejected outright (19.514 x 12.75 against a required
+    // 19.25 x 12.75). See LULU_CASEWRAP_PAPER_CALIPER_IN's own comment for the
+    // derivation. A generous tolerance on width (0.01in) rather than an exact
+    // match, since this is still one confirmed point standing in for Lulu's
+    // own unpublished formula, not a guarantee for every page count.
+    const g = coverWrapGeometry(preset, 288);
+    expect(g.sheetWidthIn).toBeCloseTo(19.25, 1);
+    expect(g.sheetHeightIn).toBeCloseTo(12.75, 6);
+  });
 });

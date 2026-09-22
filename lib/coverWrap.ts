@@ -179,8 +179,35 @@ export const LULU_COIL_SPEC: CoverWrapSpec = {
   fixedSpineIn: 0,
 };
 
+/**
+ * Lulu's actual hardcover interior caliper, backed out from a real rejection
+ * rather than assumed.
+ *
+ * `DEFAULT_PAPER_CALIPER_IN` (0.0042in/sheet) is documented above as a figure
+ * for generic UNCOATED text stock — the wrong paper for what a RecipePrinter
+ * cookbook actually is: full colour, photo on nearly every page, printed on
+ * Lulu's coated colour stock, which runs thinner. The comment above this spec
+ * already asserted the correct answer for a US Letter cookbook — 19.25 x
+ * 12.75 at a 0.5in spine — but the caliper below it was never updated to
+ * reproduce that spine, only the wrap/overhang numbers around it (confirmed
+ * right independently: they reproduce Lulu's 19.25 x 12.75 exactly once fed
+ * the correct spine).
+ *
+ * Solved from that one real order: a 288-page (144-sheet) book, Lulu's own
+ * upload page requiring a 0.5in spine.
+ *   caliper = (0.5in spine − 0.125in board allowance) / 144 sheets
+ *           ≈ 0.0026in/sheet
+ * One confirmed point, not Lulu's own published table — closer than the
+ * generic default for the paper this actually is, but still an estimate a
+ * different page count could be off for. The "Cover size" fields in
+ * `CookbookReadyDialog` stay editable for exactly that reason: Lulu's upload
+ * page is the number that's actually authoritative, this is only the best
+ * default to start from.
+ */
+export const LULU_CASEWRAP_PAPER_CALIPER_IN = 0.0026;
+
 export const LULU_CASEWRAP_SPEC: CoverWrapSpec = {
-  paperCaliperIn: DEFAULT_PAPER_CALIPER_IN,
+  paperCaliperIn: LULU_CASEWRAP_PAPER_CALIPER_IN,
   wrapAllowanceIn: 0.75,
   boardAllowanceIn: DEFAULT_BOARD_ALLOWANCE_IN,
   overhangHIn: 0.125,
