@@ -265,22 +265,28 @@ export function frontMatterPageCount(sheets: PageSheet[]): number {
  *
  * Two conditions, and both matter.
  *
- * There has to be something to align. The pairing only means anything in a book
- * built from two-page units — a photo facing its recipe, an opener facing its
- * chapter photo. A book with no facing photos at all has no spread to break, so
- * padding it would cost a printed page to fix nothing.
+ * There has to be something the parity actually affects. That's either of two
+ * things: a facing pair to keep aligned — a photo facing its recipe, an
+ * opener facing its chapter photo — or a cased spine, whose gutter sits on
+ * the INNER edge and therefore flips left/right with the page's own role
+ * (see `gutterSideForRole`). A flat book with no facing pages either has
+ * nothing to break: padding it would cost a printed page to fix nothing.
  *
  * And the front matter has to be EVEN. Page 1 stands alone opposite the
  * unprintable inside cover, so spreads pair (2,3), (4,5), (6,7): a unit reads
  * correctly only if it starts on an even page, which happens when an odd number
  * of pages precede the body. Zero counts as even — a book that opens straight
  * onto a chapter needs the leaf as much as one with a two-page contents does.
+ *
+ * A book whose contents run long enough to end on its own left page is
+ * exactly the case this exists for — an even-length TOC (or TOC + dedication)
+ * is not a special case, just one more way front matter lands even.
  */
-export function needsOpeningBlank(sheets: PageSheet[]): boolean {
+export function needsOpeningBlank(sheets: PageSheet[], hasGutter: boolean): boolean {
   const hasFacingPages = sheets.some(
     (sheet) => sheet.layoutKind === "image" || sheet.layoutKind === "section-photo",
   );
-  if (!hasFacingPages) return false;
+  if (!hasFacingPages && !hasGutter) return false;
   return frontMatterPageCount(sheets) % 2 === 0;
 }
 
@@ -1064,7 +1070,7 @@ export function usePrintSheets({
     // page keeps the body aligned, two knocks it out. Front matter is the run
     // of cover/contents pages before the first body page, so a dedication the
     // cook wrote counts towards it and does the padding for free.
-    if (padOpening && needsOpeningBlank(out)) {
+    if (padOpening && needsOpeningBlank(out, bookPreset.gutterIn > 0)) {
       out.unshift({
         id: "sheet-opening-blank",
         slots: [{ kind: "blank", id: "opening-blank" }],
