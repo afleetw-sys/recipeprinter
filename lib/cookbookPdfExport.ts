@@ -177,6 +177,26 @@ function saveBlob(blob: Blob, fileName: string): void {
   }
 }
 
+export interface PreparedPdfFile {
+  name: string;
+  blob: Blob;
+  role: "pages" | "cover";
+}
+
+export interface PreparedCookbookPages {
+  project: PrintProject;
+  preset: CookbookPresetId;
+  file: PreparedPdfFile;
+  pageCount: number;
+}
+
+/** Starts a prepared file from an explicit customer click. Keeping this out of
+    the async render path avoids browsers blocking the second hardcover file as
+    an unsolicited automatic download. */
+export function downloadPreparedPdf(file: PreparedPdfFile): void {
+  saveBlob(file.blob, file.name);
+}
+
 /**
  * A copy of the book with every browser-local image uploaded, or the book
  * unchanged when there weren't any (the normal case, and a no-op that costs
@@ -188,7 +208,7 @@ function saveBlob(blob: Blob, fileName: string): void {
  */
 async function materializeBookPhotos(project: PrintProject): Promise<PrintProject> {
   try {
-    const { materializeProjectPhotos } = await import("@/lib/photoStorage");
+    const { collectProjectPhotoUrls, materializeProjectPhotos } = await import("@/lib/photoStorage");
     // The renderer is on a server and fetches every image by URL, so a chapter
     // collage or a hero's photo history left holding `blob:` strings renders as
     // a hole in the printed book. Same field list as the save — see
@@ -206,37 +226,44 @@ async function materializeBookPhotos(project: PrintProject): Promise<PrintProjec
     // `uploadedRecipeImages` is dropped here on purpose: an export has no queue
     // to point back at, and the save path is what owns that. A book exported
     // without an intervening save pays one upload; the next save settles it.
-    return { ...project, ...photos };
+    const materialized = { ...project, ...photos };
+    await assertExportPhotosAreRemote(materialized, collectProjectPhotoUrls);
+    return materialized;
   } catch (error) {
-    // An upload that fails shouldn't cost the cook the whole export — the book
-    // still renders, just without whichever photo couldn't be sent ahead.
     console.warn("RecipePrinter: could not upload local photos before export", error);
-    return project;
+    if (error instanceof CookbookPdfError) throw error;
+    throw new CookbookPdfError(
+      "We couldn't prepare your photos for export. Check your connection and try again.",
+    );
   }
 }
 
-export async function downloadCookbookPdf(
+/** Exported for the narrow regression test: server-side rendering cannot ever
+    resolve a browser-local URL, so this is an explicit precondition rather than
+    something left for Chromium to discover after an expensive request. */
+export async function assertExportPhotosAreRemote(
+  project: PrintProject,
+  collect: (project: PrintProject) => Promise<string[]> = async (value) => {
+    const { collectProjectPhotoUrls } = await import("@/lib/photoStorage");
+    return collectProjectPhotoUrls(value);
+  },
+): Promise<void> {
+  const localPhotos = (await collect(project)).filter((url) => /^(?:blob:|data:)/i.test(url));
+  if (localPhotos.length > 0) {
+    throw new CookbookPdfError(
+      `We couldn't prepare ${localPhotos.length === 1 ? "one photo" : `${localPhotos.length} photos`} for export. Check your connection and try again.`,
+    );
+  }
+}
+
+export async function prepareCookbookPages(
   book: PrintProject,
   preset: CookbookPresetId,
   fileName: string,
-  /**
-   * The cover dimensions the print service stated, when the cook has them.
-   *
-   * Everything we would compute instead is an estimate of facts only the
-   * printer holds — their stock's caliper, their boards, their fold-over — and
-   * a wrap that is a quarter inch out is rejected on upload rather than
-   * printed slightly wrong. When these are supplied they are used verbatim.
-   */
-  coverSheet?: CoverSheetSpec,
   /** Real client-observable milestones only. The renderer does not stream its
       internal layout work, so the UI must not invent finer-grained progress. */
   onProgress?: (progress: CookbookPdfProgress) => void,
-  /** Returns the files that were saved, in download order — the interior first,
-      then the cover wrap where there is one. The caller shows them by name on
-      the screen after, because "upload the interior, then the cover" is only
-      actionable if it says which file is which. */
-): Promise<string[]> {
-  const resolved = getCookbookPreset(preset);
+): Promise<PreparedCookbookPages> {
   onProgress?.("preparing");
   // The renderer is on the server, so every image in the book has to be a URL
   // it can fetch. A photo the browser is still holding locally (a Paprika
@@ -247,19 +274,26 @@ export async function downloadCookbookPdf(
   const project = await materializeBookPhotos(book);
   onProgress?.("rendering-pages");
   const interior = await renderPdf({ project, preset });
-  saveBlob(interior.blob, fileName);
+  return {
+    project,
+    preset,
+    file: { name: fileName, blob: interior.blob, role: "pages" },
+    pageCount: interior.pageCount,
+  };
+}
 
-  // A case-bound hardcover needs a SECOND file: the cover wrap. Print-on-demand
-  // services reject a cover bound into the interior, and the wrap is a
-  // different size from the pages, so it cannot be one render. A spiral book
-  // has no spine to wrap, so it stays a single file.
-  if (!COVER_WRAP_ENABLED || !resolved.wrapRequired) return [fileName];
-
+export async function prepareCookbookCover(
+  pages: PreparedCookbookPages,
+  coverSheet?: CoverSheetSpec,
+  onProgress?: (progress: CookbookPdfProgress) => void,
+): Promise<PreparedPdfFile | null> {
+  const resolved = getCookbookPreset(pages.preset);
+  if (!COVER_WRAP_ENABLED || !resolved.wrapRequired) return null;
   // Page count drives the spine's thickness, and the renderer is what actually
   // knows it. It validates the PDF page tree against the laid-out sheets, then
   // returns that authoritative count beside the file; the browser never has to
   // decode a potentially 90MB PDF into a string just to rediscover one number.
-  const pageCount = interior.pageCount;
+  const pageCount = pages.pageCount;
   const geometry = coverSheet
     ? coverWrapGeometryFromSheet(resolved, coverSheet)
     : coverWrapGeometry(resolved, pageCount);
@@ -271,16 +305,18 @@ export async function downloadCookbookPdf(
     // The cover, not the book — see `coverWrapProject`. The page count the
     // spine is sized from was already read off the interior above, so nothing
     // here needs the recipes.
-    project: coverWrapProject(project),
-    preset,
+    project: coverWrapProject(pages.project),
+    preset: pages.preset,
     mode: "cover-wrap",
     pageCount,
     coverSheet,
     sheet: { widthIn: geometry.sheetWidthIn, heightIn: geometry.sheetHeightIn },
   });
-  const wrapName = coverWrapFileName(project.cover?.title, preset);
-  saveBlob(wrap.blob, wrapName);
-  return [fileName, wrapName];
+  return {
+    name: coverWrapFileName(pages.project.cover?.title, pages.preset),
+    blob: wrap.blob,
+    role: "cover",
+  };
 }
 
 /**

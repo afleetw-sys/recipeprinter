@@ -17,9 +17,13 @@ import { CookbookWelcomeDialog } from "@/components/CookbookWelcomeDialog";
 import { CookbookReadyDialog } from "@/components/CookbookReadyDialog";
 import {
   type CookbookPdfProgress,
+  type PreparedCookbookPages,
+  type PreparedPdfFile,
   CookbookPdfError,
   cookbookPdfFileName,
-  downloadCookbookPdf,
+  downloadPreparedPdf,
+  prepareCookbookCover,
+  prepareCookbookPages,
 } from "@/lib/cookbookPdfExport";
 import type { CoverSheetSpec } from "@/types/export";
 import { ImagePicker } from "@/components/ImagePicker";
@@ -622,12 +626,16 @@ export default function PrintPage() {
   const [exportingPreset, setExportingPreset] = useState<CookbookPresetId | null>(null);
   const [cookbookExportProgress, setCookbookExportProgress] =
     useState<CookbookPdfProgress>("preparing");
-  /** The last export that actually landed: which book, and the files it wrote.
-      Held here rather than in the dialog because the dialog cannot know a
-      download succeeded — `onExport` returns before the render does. */
+  /** The last fully prepared export package. Blobs stay here until the cook
+      explicitly downloads them, which makes a two-file hardcover one atomic
+      result instead of two browser-initiated downloads that can split. */
   const [lastCookbookExport, setLastCookbookExport] = useState<{
     presetId: CookbookPresetId;
-    files: string[];
+    files: PreparedPdfFile[];
+  } | null>(null);
+  const [cookbookCoverRetry, setCookbookCoverRetry] = useState<{
+    pages: PreparedCookbookPages;
+    coverSheet?: CoverSheetSpec;
   } | null>(null);
   const [cookbookExportError, setCookbookExportError] = useState<string | null>(null);
   /** The export was refused for want of an account, not because it broke — so
@@ -2912,16 +2920,29 @@ export default function PrintPage() {
     setExportingPreset(presetId);
     setCookbookExportProgress("preparing");
     setLastCookbookExport(null);
+    setCookbookCoverRetry(null);
     try {
-      const files = await downloadCookbookPdf(
+      const pages = await prepareCookbookPages(
         project,
         presetId,
         cookbookPdfFileName(projectMeta.meta.cover?.title, presetId),
-        coverSheet,
         setCookbookExportProgress,
       );
-      setLastCookbookExport({ presetId, files });
-      track("cookbook_exported", { preset: presetId, files: files.length });
+      try {
+        const cover = await prepareCookbookCover(pages, coverSheet, setCookbookExportProgress);
+        const files = cover ? [pages.file, cover] : [pages.file];
+        setLastCookbookExport({ presetId, files });
+        setCookbookCoverRetry(null);
+        track("cookbook_export_ready", { preset: presetId, files: files.length });
+      } catch (error) {
+        setCookbookCoverRetry({ pages, coverSheet });
+        setCookbookExportError(
+          error instanceof CookbookPdfError
+            ? `Your pages PDF is safe, but the cover couldn't be prepared. ${error.message}`
+            : "Your pages PDF is safe, but the cover couldn't be prepared. Try again.",
+        );
+        return;
+      }
     } catch (error) {
       setCookbookExportError(
         error instanceof CookbookPdfError
@@ -2930,6 +2951,34 @@ export default function PrintPage() {
       );
       setCookbookExportNeedsAuth(error instanceof CookbookPdfError && error.needsAuth);
       setCookbookExportNeedsAccount(error instanceof CookbookPdfError && error.needsAccount);
+    } finally {
+      setExportingPreset(null);
+    }
+  }
+
+  async function retryCookbookCover() {
+    const retry = cookbookCoverRetry;
+    if (!retry) return;
+    const presetId = retry.pages.preset;
+    setCookbookExportError(null);
+    setExportingPreset(presetId);
+    setCookbookExportProgress("rendering-cover");
+    try {
+      const cover = await prepareCookbookCover(
+        retry.pages,
+        retry.coverSheet,
+        setCookbookExportProgress,
+      );
+      if (!cover) throw new CookbookPdfError("This format doesn't require a separate cover.");
+      setLastCookbookExport({ presetId, files: [retry.pages.file, cover] });
+      setCookbookCoverRetry(null);
+      track("cookbook_cover_retry_succeeded", { preset: presetId });
+    } catch (error) {
+      setCookbookExportError(
+        error instanceof CookbookPdfError
+          ? `Your pages PDF is safe, but the cover still couldn't be prepared. ${error.message}`
+          : "Your pages PDF is safe, but the cover still couldn't be prepared. Try again.",
+      );
     } finally {
       setExportingPreset(null);
     }
@@ -5748,10 +5797,22 @@ export default function PrintPage() {
           setShowCookbookPrintDialog(false);
           setCookbookJustPurchased(false);
           setLastCookbookExport(null);
+          setCookbookCoverRetry(null);
+          setCookbookExportError(null);
         }}
         onExport={(presetId, coverSheet) => void exportCookbookAs(presetId, coverSheet)}
         lastExport={lastCookbookExport}
-        onExportAnother={() => setLastCookbookExport(null)}
+        coverRetryPending={cookbookCoverRetry !== null}
+        onRetryCover={() => void retryCookbookCover()}
+        onDownloadFile={(file) => {
+          downloadPreparedPdf(file);
+          track("cookbook_export_download_started", { preset: activePreset.id, role: file.role });
+        }}
+        onExportAnother={() => {
+          setLastCookbookExport(null);
+          setCookbookCoverRetry(null);
+          setCookbookExportError(null);
+        }}
         pageCount={sheets.length}
         recipeCount={items?.length ?? 0}
         exportingPreset={exportingPreset}

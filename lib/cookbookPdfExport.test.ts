@@ -1,6 +1,14 @@
-import { describe, expect, it } from "vitest";
-import { cookbookPdfFileName, coverWrapProject, trimSizeLabel } from "@/lib/cookbookPdfExport";
+import { afterEach, describe, expect, it, vi } from "vitest";
+import {
+  assertExportPhotosAreRemote,
+  cookbookPdfFileName,
+  coverWrapProject,
+  prepareCookbookCover,
+  trimSizeLabel,
+} from "@/lib/cookbookPdfExport";
 import { getCookbookPreset } from "@/lib/cookbookPresets";
+
+afterEach(() => vi.unstubAllGlobals());
 
 describe("trimSizeLabel", () => {
   it("names the physical page size, dropping a trailing .0", () => {
@@ -84,5 +92,55 @@ describe("coverWrapProject", () => {
     coverWrapProject(book);
     expect(book.sections).toHaveLength(1);
     expect(book.itemPlacements).toBeDefined();
+  });
+});
+
+describe("export photo preflight", () => {
+  const project = { id: "book-1", sections: [] } as unknown as import("@/types/recipe").PrintProject;
+
+  it("stops before rendering when even one browser-local photo remains", async () => {
+    await expect(
+      assertExportPhotosAreRemote(project, async () => ["https://cdn.example/a.jpg", "blob:failed"]),
+    ).rejects.toThrow(/couldn't prepare one photo/i);
+  });
+
+  it("accepts a fully remote photo set", async () => {
+    await expect(
+      assertExportPhotosAreRemote(project, async () => ["https://cdn.example/a.jpg"]),
+    ).resolves.toBeUndefined();
+  });
+});
+
+describe("cover-only retry", () => {
+  it("requests only the cover from an already prepared interior", async () => {
+    const requests: Array<Record<string, unknown>> = [];
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async (_url: string, init?: RequestInit) => {
+        requests.push(JSON.parse(String(init?.body)) as Record<string, unknown>);
+        return new Response(new Blob(["%PDF-cover"]), {
+          status: 200,
+          headers: { "content-type": "application/pdf", "x-recipeprinter-page-count": "1" },
+        });
+      }),
+    );
+
+    const project = {
+      id: "book-1",
+      cover: { title: "Family Table" },
+      sections: [{ id: "s1", title: "Mains", items: [{ id: "r1", recipe: { title: "Soup" } }] }],
+      settings: { template: "classic" },
+    } as unknown as import("@/types/recipe").PrintProject;
+    const cover = await prepareCookbookCover({
+      project,
+      preset: "hardcover-8x10",
+      file: { name: "pages.pdf", blob: new Blob(), role: "pages" },
+      pageCount: 128,
+    });
+
+    expect(requests).toHaveLength(1);
+    expect(requests[0]?.mode).toBe("cover-wrap");
+    expect((requests[0]?.project as { sections: unknown[] }).sections).toEqual([]);
+    expect(cover?.role).toBe("cover");
   });
 });

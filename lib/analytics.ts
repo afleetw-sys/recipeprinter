@@ -382,11 +382,14 @@ type EventProps = {
   cookbook_print_options_shown: { preset: CookbookPresetId };
   /** A recommended print-shop link was opened from the export screen. */
   cookbook_printer_clicked: { printer: string; preset?: CookbookPresetId };
-  /** A cookbook PDF actually landed. `files` is 1 or 2 — a print service takes
-      the cover as its own upload, a copy shop takes the cover bound in — which
-      is the split the destination step exists to get right, so it is worth
-      being able to see it fail. */
-  cookbook_exported: { preset: CookbookPresetId; files: number };
+  /** Every file in an export package passed validation and is ready for the
+      cook's explicit download. */
+  cookbook_export_ready: { preset: CookbookPresetId; files: number };
+  /** A prepared file's user-gesture download was started. Browsers expose no
+      reliable completion signal, so this deliberately does not say finished. */
+  cookbook_export_download_started: { preset: CookbookPresetId; role: "pages" | "cover" };
+  /** A failed cover was prepared without rendering the safe interior again. */
+  cookbook_cover_retry_succeeded: { preset: CookbookPresetId };
   /** A signed-out cookbook owner clicked a "back up your purchase with a free
       account" nudge. `source` distinguishes where the nudge lived (persistent
       editor banner today) so we can see which surface converts guests. */

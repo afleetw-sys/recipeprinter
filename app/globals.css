@@ -881,6 +881,15 @@
   background: var(--cp-accent);
   color: var(--cp-on-accent);
 }
+.cookbook-export-progress__steps .is-error {
+  color: var(--cp-error);
+  font-weight: 750;
+}
+.cookbook-export-progress__steps .is-error .cookbook-export-progress__mark {
+  border-color: var(--cp-error);
+  background: var(--cp-error-soft);
+  color: var(--cp-error);
+}
 .cookbook-export-progress__facts,
 .cookbook-export-progress__keep-open {
   margin: 0;

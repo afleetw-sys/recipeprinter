@@ -58,8 +58,28 @@ function renderFinishedDialog() {
       exportError={null}
       lastExport={{
         presetId: "hardcover-8x10",
-        files: ["Family-Hardcover-8x10.pdf", "Family-Cover-Hardcover-8x10.pdf"],
+        files: [
+          { name: "Family-Hardcover-8x10.pdf", blob: new Blob(), role: "pages" },
+          { name: "Family-Cover-Hardcover-8x10.pdf", blob: new Blob(), role: "cover" },
+        ],
       }}
+      onExportAnother={() => {}}
+    />,
+  );
+}
+
+function renderCoverRetryDialog(onRetryCover = () => {}) {
+  return render(
+    <CookbookReadyDialog
+      open
+      justPurchased={false}
+      onClose={() => {}}
+      onExport={() => {}}
+      onPrinterClick={() => {}}
+      exportingPreset={null}
+      exportError="Your pages PDF is safe, but the cover couldn't be prepared."
+      coverRetryPending
+      onRetryCover={onRetryCover}
       onExportAnother={() => {}}
     />,
   );
@@ -111,13 +131,25 @@ describe("the cookbook print dialog", () => {
 
   it("turns the file steps into the compact success state", () => {
     renderFinishedDialog();
-    expect(screen.getByRole("heading", { name: "Downloaded successfully" })).toBeTruthy();
-    expect(screen.getByText("Interior pages PDF downloaded").closest("li")?.className).toContain(
+    expect(screen.getByRole("heading", { name: "Your PDFs are ready" })).toBeTruthy();
+    expect(screen.getByText("Interior pages PDF ready").closest("li")?.className).toContain(
       "is-done",
     );
-    expect(screen.getByText("Cover PDF downloaded").closest("li")?.className).toContain("is-done");
+    expect(screen.getByText("Cover PDF ready").closest("li")?.className).toContain("is-done");
+    expect(screen.getByRole("button", { name: "Download pages" })).toBeTruthy();
+    expect(screen.getByRole("button", { name: "Download cover" })).toBeTruthy();
     expect(screen.getByRole("button", { name: "Try another way" })).toBeTruthy();
     expect(document.querySelector(".cookbook-next__settings")).toBeNull();
+  });
+
+  it("keeps a safe interior and offers a cover-only retry", () => {
+    const retry = vi.fn();
+    renderCoverRetryDialog(retry);
+    expect(screen.getByRole("heading", { name: "Your pages PDF is safe" })).toBeTruthy();
+    expect(screen.getByText("Interior pages PDF ready")).toBeTruthy();
+    expect(screen.getByText(/will not be rendered again/i)).toBeTruthy();
+    fireEvent.click(screen.getByRole("button", { name: "Retry cover" }));
+    expect(retry).toHaveBeenCalledOnce();
   });
 
   it("offers every place as an optional shortcut, with no price", () => {

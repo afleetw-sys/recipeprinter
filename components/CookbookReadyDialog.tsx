@@ -15,6 +15,7 @@ import {
 import type { PrinterOption } from "@/lib/cookbookPresets";
 import { getCookbookPreset } from "@/lib/cookbookPresets";
 import type { CookbookPdfProgress } from "@/lib/cookbookPdfExport";
+import type { PreparedPdfFile } from "@/lib/cookbookPdfExport";
 import { coverWrapGeometry, wrapGeometryForSpine } from "@/lib/coverWrap";
 import {
   NO_BOOK_CHOICE,
@@ -24,7 +25,6 @@ import {
   destinationPresets,
   destinationPrinter as printerFor,
   downloadSummary,
-  exportFileRoles,
   getPrintDestination,
   presetForChoice,
   type BookChoice,
@@ -65,6 +65,9 @@ export function CookbookReadyDialog({
   exportNeedsAccount = false,
   onSignIn,
   lastExport = null,
+  coverRetryPending = false,
+  onRetryCover,
+  onDownloadFile,
   onExportAnother,
 }: {
   open: boolean;
@@ -93,7 +96,10 @@ export function CookbookReadyDialog({
   onSignIn?: () => void;
   /** The export that landed, if one has. It replaces the controls until the cook
       asks to save another format. */
-  lastExport?: { presetId: CookbookPresetId; files: string[] } | null;
+  lastExport?: { presetId: CookbookPresetId; files: PreparedPdfFile[] } | null;
+  coverRetryPending?: boolean;
+  onRetryCover?: () => void;
+  onDownloadFile?: (file: PreparedPdfFile) => void;
   /** Clears that finished export, putting the controls back. */
   onExportAnother?: () => void;
 }) {
@@ -170,7 +176,11 @@ export function CookbookReadyDialog({
             {exportingPreset
               ? "Creating your cookbook PDF"
               : lastExport
-                ? "Downloaded successfully"
+                ? lastExport.files.length > 1
+                  ? "Your PDFs are ready"
+                  : "Your PDF is ready"
+                : coverRetryPending
+                  ? "Your pages PDF is safe"
                 : justPurchased
                   ? "Your cookbook is ready 🎉"
                   : "Print your cookbook"}
@@ -196,8 +206,10 @@ export function CookbookReadyDialog({
             recipeCount={recipeCount}
             progress={exportProgress}
           />
+        ) : coverRetryPending ? (
+          <CoverRetry onRetryCover={onRetryCover} onExportAnother={onExportAnother} />
         ) : lastExport ? (
-          /* Done. A finished PDF is only half of it: the file is correct
+          /* Done. A prepared PDF is only half of it: the file is correct
              against exactly one set of order options, and none of them are
              visible by opening it. So they are stated here, at the moment they
              are about to be used. */
@@ -206,6 +218,7 @@ export function CookbookReadyDialog({
             lastExport={lastExport}
             onPrinterClick={onPrinterClick}
             onExportAnother={onExportAnother}
+            onDownloadFile={onDownloadFile}
           />
         ) : (
           <ChooseBook
@@ -604,38 +617,49 @@ function ExportedNext({
   lastExport,
   onPrinterClick,
   onExportAnother,
+  onDownloadFile,
 }: {
   destination: PrintDestination | null;
-  lastExport: { presetId: CookbookPresetId; files: string[] };
+  lastExport: { presetId: CookbookPresetId; files: PreparedPdfFile[] };
   onPrinterClick: (printer: string, url: string) => void;
   onExportAnother?: () => void;
+  onDownloadFile?: (file: PreparedPdfFile) => void;
 }) {
   const printer: PrinterOption | undefined = chosen ? printerFor(chosen) : undefined;
-  const roles = exportFileRoles(lastExport.files.length);
   return (
     <>
       <ol
         className="cookbook-export-progress__steps cookbook-export-progress__steps--complete"
         aria-label="Completed export"
       >
-        {lastExport.files.map((file, index) => (
-          <li key={file} className="is-done">
+        {lastExport.files.map((file) => (
+          <li key={file.name} className="is-done">
             <span className="cookbook-export-progress__mark" aria-hidden>
               <CheckIcon size={ICON_SIZE.sm} />
             </span>
             <span className="cookbook-export-progress__copy">
               <strong>
                 {lastExport.files.length > 1
-                  ? `${roles[index]} PDF downloaded`
-                  : "PDF downloaded"}
+                  ? `${file.role === "pages" ? "Interior pages" : "Cover"} PDF ready`
+                  : "PDF ready"}
               </strong>
-              <span className="cookbook-next__file-name">{file}</span>
+              <span className="cookbook-next__file-name">{file.name}</span>
             </span>
           </li>
         ))}
       </ol>
 
       <div className="cookbook-next__actions">
+        {lastExport.files.map((file) => (
+          <button
+            key={file.name}
+            type="button"
+            className="btn btn-primary btn-compact"
+            onClick={() => onDownloadFile?.(file)}
+          >
+            Download {lastExport.files.length > 1 ? (file.role === "pages" ? "pages" : "cover") : "PDF"}
+          </button>
+        ))}
         {printer && (
           <button
             type="button"
@@ -652,5 +676,53 @@ function ExportedNext({
         )}
       </div>
     </>
+  );
+}
+
+function CoverRetry({
+  onRetryCover,
+  onExportAnother,
+}: {
+  onRetryCover?: () => void;
+  onExportAnother?: () => void;
+}) {
+  return (
+    <div className="cookbook-next">
+      <ol
+        className="cookbook-export-progress__steps cookbook-export-progress__steps--complete"
+        aria-label="Partial export"
+      >
+        <li className="is-done">
+          <span className="cookbook-export-progress__mark" aria-hidden>
+            <CheckIcon size={ICON_SIZE.sm} />
+          </span>
+          <span className="cookbook-export-progress__copy">
+            <strong>Interior pages PDF ready</strong>
+            <span>It will not be rendered again.</span>
+          </span>
+        </li>
+        <li className="is-error">
+          <span className="cookbook-export-progress__mark" aria-hidden>
+            <XIcon size={ICON_SIZE.sm} />
+          </span>
+          <span className="cookbook-export-progress__copy">
+            <strong>Cover PDF needs another try</strong>
+            <span>Retrying starts with the cover, not the cookbook pages.</span>
+          </span>
+        </li>
+      </ol>
+      <div className="cookbook-next__actions">
+        {onRetryCover && (
+          <button type="button" className="btn btn-primary btn-compact" onClick={onRetryCover}>
+            Retry cover
+          </button>
+        )}
+        {onExportAnother && (
+          <button type="button" className="cookbook-next__another" onClick={onExportAnother}>
+            Try another way
+          </button>
+        )}
+      </div>
+    </div>
   );
 }
