@@ -146,11 +146,33 @@ async function renderPdf(request: RenderRequest): Promise<RenderedPdf> {
       needsAccount: Boolean(body.needsAccount),
     });
   }
-  const pageCount = Number(response.headers.get("x-recipeprinter-page-count"));
-  if (!Number.isSafeInteger(pageCount) || pageCount < 1) {
-    throw new CookbookPdfError("The cookbook renderer returned an invalid file. Try again in a moment.");
+
+  // The route no longer hands back the PDF itself — a large hardcover
+  // interior can run well past what a single HTTP response is allowed to
+  // carry (a real 288-page book came out at 490MB), a ceiling neither this
+  // app nor the renderer can configure away. Instead it's a Storage URL,
+  // fetched here directly: no app server sits in that path at all, so
+  // nothing about it can hit the same response-size wall a second time.
+  const success = (await response.json().catch(() => null)) as
+    | {downloadUrl?: unknown; pageCount?: unknown}
+    | null;
+  const downloadUrl = success?.downloadUrl;
+  const pageCount = success?.pageCount;
+  if (
+    typeof downloadUrl !== "string" ||
+    !downloadUrl ||
+    typeof pageCount !== "number" ||
+    !Number.isSafeInteger(pageCount) ||
+    pageCount < 1
+  ) {
+    throw new CookbookPdfError("The cookbook renderer returned an invalid response. Try again in a moment.");
   }
-  return {blob: await response.blob(), pageCount};
+
+  const fileResponse = await fetch(downloadUrl);
+  if (!fileResponse.ok) {
+    throw new CookbookPdfError("We couldn't download your finished cookbook. Try again in a moment.");
+  }
+  return {blob: await fileResponse.blob(), pageCount};
 }
 
 function saveBlob(blob: Blob, fileName: string): void {

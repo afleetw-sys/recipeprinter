@@ -116,14 +116,25 @@ describe("export photo preflight", () => {
 describe("cover-only retry", () => {
   it("requests only the cover from an already prepared interior", async () => {
     const requests: Array<Record<string, unknown>> = [];
+    // The route no longer hands back the PDF directly (a large hardcover
+    // interior can exceed what a single HTTP response may carry) — it
+    // returns {downloadUrl, pageCount}, and the caller fetches the file
+    // itself from that URL as a second request. Both hops go through the
+    // same stubbed `fetch` here.
     vi.stubGlobal(
       "fetch",
-      vi.fn(async (_url: string, init?: RequestInit) => {
+      vi.fn(async (url: string, init?: RequestInit) => {
+        if (url === "https://storage.example/cover.pdf") {
+          return new Response(new Blob(["%PDF-cover"]), {
+            status: 200,
+            headers: { "content-type": "application/pdf" },
+          });
+        }
         requests.push(JSON.parse(String(init?.body)) as Record<string, unknown>);
-        return new Response(new Blob(["%PDF-cover"]), {
-          status: 200,
-          headers: { "content-type": "application/pdf", "x-recipeprinter-page-count": "1" },
-        });
+        return new Response(
+          JSON.stringify({ downloadUrl: "https://storage.example/cover.pdf", pageCount: 1 }),
+          { status: 200, headers: { "content-type": "application/json" } },
+        );
       }),
     );
 

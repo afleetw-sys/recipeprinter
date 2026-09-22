@@ -43,6 +43,20 @@ service firebase.storage {
       allow read, write: if signedIn() && request.auth.uid == userId;
     }
 
+    // ── Recipe Printer finished exports (cookbook PDFs) ────────────────────
+    // Written only by functions-pdf's own admin credentials (see
+    // exportStorage.ts in the CookPilot repo), which bypass these rules
+    // entirely — there is deliberately no `allow write` here for any client.
+    // Public read for the same reason a recipe photo is: the path segment is
+    // an unguessable request UUID and the URL additionally carries its own
+    // download token, matching every other upload in this file. Self-cleaned
+    // by the function after ~2 days; see that file's own comment for why
+    // this is NOT a bucket lifecycle rule.
+    match /recipeprinter/exports/{path=**} {
+      allow read: if true;
+      allow write: if false;
+    }
+
     // ── Recipe Printer owner-isolated storage ──────────────────────────────
     match /recipeprinter/photos/users/{uid}/{path=**} {
       allow read: if true;

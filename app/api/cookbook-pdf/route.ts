@@ -237,32 +237,45 @@ export async function POST(request: Request) {
     return jsonError(`The cookbook couldn't be rendered.${devDetail}`, 502);
   }
 
-  const contentType = response.headers.get("content-type")?.toLowerCase() ?? "";
-  const pageCount = Number(response.headers.get("x-recipeprinter-page-count"));
-  if (!contentType.startsWith("application/pdf") || !Number.isSafeInteger(pageCount) || pageCount < 1) {
+  // The renderer no longer streams the PDF back in this response — Cloud Run
+  // caps a single HTTP response well below what a large hardcover interior
+  // can run to (a real 288-page book came out at 490MB, and that ceiling
+  // isn't something either side can configure away), so it uploads the
+  // finished file to Storage and hands back a URL instead. The browser
+  // fetches that URL directly (lib/cookbookPdfExport.ts) — Storage has no
+  // such response-size limit, and critically, this route is never in that
+  // path either, so it cannot reintroduce the same ceiling one hop later.
+  let body: {downloadUrl?: unknown; pageCount?: unknown};
+  try {
+    body = await response.json();
+  } catch {
+    console.warn(`cookbook-pdf: renderer returned unparseable JSON requestId=${requestId}`);
+    return jsonError("The cookbook renderer returned an invalid response. Try again in a moment.", 502);
+  }
+  const downloadUrl = body.downloadUrl;
+  const pageCount = body.pageCount;
+  if (
+    typeof downloadUrl !== "string" ||
+    !downloadUrl ||
+    typeof pageCount !== "number" ||
+    !Number.isSafeInteger(pageCount) ||
+    pageCount < 1
+  ) {
     console.warn(
-      `cookbook-pdf: renderer returned an invalid success requestId=${requestId} contentType=${contentType || "?"} pageCount=${pageCount || "?"}`,
+      `cookbook-pdf: renderer returned an invalid success requestId=${requestId} body=${JSON.stringify(body).slice(0, 500)}`,
     );
-    await response.body?.cancel().catch(() => undefined);
-    return jsonError("The cookbook renderer returned an invalid file. Try again in a moment.", 502);
+    return jsonError("The cookbook renderer returned an invalid response. Try again in a moment.", 502);
   }
 
   // A successful render used to log nothing at all — every failure was
   // traceable but a SLOW success (a cold container, a large book) left no
-  // record anywhere to tell the two apart after the fact. One line, no body
-  // read, so it costs nothing on the path that already works.
+  // record anywhere to tell the two apart after the fact.
   console.log(
-    `cookbook-pdf: rendered requestId=${requestId} ms=${Date.now() - startedAt} bytes=${response.headers.get("content-length") ?? "?"}`,
+    `cookbook-pdf: rendered requestId=${requestId} ms=${Date.now() - startedAt} pageCount=${pageCount}`,
   );
 
-  // Streamed, not buffered: a book runs to several MB and there is no reason to
-  // hold all of it in this function's memory before the download starts.
-  return new NextResponse(response.body, {
-    status: 200,
-    headers: {
-      "content-type": "application/pdf",
-      "x-recipeprinter-page-count": String(pageCount),
-      "cache-control": "no-store",
-    },
-  });
+  return NextResponse.json(
+    {downloadUrl, pageCount},
+    {status: 200, headers: {"cache-control": "no-store"}},
+  );
 }
