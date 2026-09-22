@@ -221,6 +221,7 @@ export function CookbookReadyDialog({
             onDownloadCover={onDownloadCover}
             onDownloadFile={onDownloadFile}
             onExportAnother={onExportAnother}
+            onPrinterClick={onPrinterClick}
           />
         ) : lastExport ? (
           /* Done. A prepared PDF is only half of it: the file is correct
@@ -643,6 +644,7 @@ function AwaitingCover({
   onDownloadCover,
   onDownloadFile,
   onExportAnother,
+  onPrinterClick,
 }: {
   pages: PreparedCookbookPages;
   destination: PrintDestination | null;
@@ -652,6 +654,7 @@ function AwaitingCover({
   onDownloadCover?: (coverSheet?: CoverSheetSpec) => void;
   onDownloadFile?: (file: PreparedPdfFile) => void;
   onExportAnother?: () => void;
+  onPrinterClick: (printer: string, url: string) => void;
 }) {
   const preset = getCookbookPreset(pages.preset);
   const size = coverSizes[preset.id] ?? { w: "", h: "", spine: "" };
@@ -670,6 +673,7 @@ function AwaitingCover({
   const shopStatesNumbers = Boolean(
     destination && !destination.unknownSpec && destination.presetIds.includes(preset.id),
   );
+  const printer = destination ? printerFor(destination) : undefined;
 
   return (
     <div className="cookbook-next">
@@ -698,7 +702,20 @@ function AwaitingCover({
 
       <p className="cookbook-ready__lead">
         {destination?.id === "lulu"
-          ? "Upload the interior to Lulu. On the cover step, find REQUIREMENTS and copy Dimensions and Spine Width below."
+          ? printer && (
+              <a
+                href={printer.url}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="cookbook-ready__inline-link"
+                onClick={(event) => {
+                  event.preventDefault();
+                  onPrinterClick(printer.id, printer.url);
+                }}
+              >
+                Upload the interior to Lulu
+              </a>
+            )
           : "Upload the interior to your printer. On the cover step, copy its required cover dimensions and spine width below."}
       </p>
 

@@ -725,6 +725,18 @@
   align-items: center;
   gap: .25rem;
 }
+
+.cookbook-ready__inline-link {
+  appearance: none;
+  border: 0;
+  padding: 0;
+  background: none;
+  color: inherit;
+  font: inherit;
+  text-decoration: underline;
+  text-underline-offset: 0.16em;
+  cursor: pointer;
+}
 /* MenuSelect: a label and a trigger on one line, the list under the trigger. The
    list itself is the shared `cp-menu` surface. */
 .menu-select {
