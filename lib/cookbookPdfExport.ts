@@ -111,6 +111,11 @@ interface RenderedPdf {
   pageCount: number;
 }
 
+export type CookbookPdfProgress =
+  | "preparing"
+  | "rendering-pages"
+  | "rendering-cover";
+
 async function renderPdf(request: RenderRequest): Promise<RenderedPdf> {
   const idToken = await currentIdToken();
   let response = await postRender(request, idToken);
@@ -223,12 +228,16 @@ export async function downloadCookbookPdf(
    * printed slightly wrong. When these are supplied they are used verbatim.
    */
   coverSheet?: CoverSheetSpec,
+  /** Real client-observable milestones only. The renderer does not stream its
+      internal layout work, so the UI must not invent finer-grained progress. */
+  onProgress?: (progress: CookbookPdfProgress) => void,
   /** Returns the files that were saved, in download order — the interior first,
       then the cover wrap where there is one. The caller shows them by name on
       the screen after, because "upload the interior, then the cover" is only
       actionable if it says which file is which. */
 ): Promise<string[]> {
   const resolved = getCookbookPreset(preset);
+  onProgress?.("preparing");
   // The renderer is on the server, so every image in the book has to be a URL
   // it can fetch. A photo the browser is still holding locally (a Paprika
   // import that hasn't been saved yet) is a `blob:` URL that means nothing
@@ -236,6 +245,7 @@ export async function downloadCookbookPdf(
   // project runs the same sweep; a book exported without an intervening save
   // would otherwise print with holes where its photos are.
   const project = await materializeBookPhotos(book);
+  onProgress?.("rendering-pages");
   const interior = await renderPdf({ project, preset });
   saveBlob(interior.blob, fileName);
 
@@ -253,6 +263,10 @@ export async function downloadCookbookPdf(
   const geometry = coverSheet
     ? coverWrapGeometryFromSheet(resolved, coverSheet)
     : coverWrapGeometry(resolved, pageCount);
+  // The pages download has already been started at this point. This transition
+  // is intentionally after saveBlob so the checklist cannot lag behind the
+  // browser the way the old time-based animation did.
+  onProgress?.("rendering-cover");
   const wrap = await renderPdf({
     // The cover, not the book — see `coverWrapProject`. The page count the
     // spine is sized from was already read off the interior above, so nothing

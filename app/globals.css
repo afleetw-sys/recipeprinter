@@ -800,35 +800,6 @@
   gap: 1rem;
   padding-top: .1rem;
 }
-.cookbook-export-progress__current {
-  display: grid;
-  grid-template-columns: 2.5rem minmax(0, 1fr);
-  gap: .75rem;
-  align-items: start;
-}
-.cookbook-export-progress__current > span:last-child {
-  display: grid;
-  gap: .2rem;
-}
-.cookbook-export-progress__current strong {
-  color: var(--cp-ink);
-  font-size: var(--cp-fs-body-lg);
-  line-height: 1.3;
-}
-.cookbook-export-progress__current strong + span {
-  color: var(--cp-ink-soft);
-  font-size: var(--cp-fs-small);
-  line-height: 1.45;
-}
-.cookbook-export-progress__spinner {
-  display: grid;
-  place-items: center;
-  width: 2.5rem;
-  height: 2.5rem;
-  border-radius: 50%;
-  background: var(--cp-selected-fill);
-  color: var(--cp-accent);
-}
 .cookbook-export-progress__steps {
   display: grid;
   gap: .55rem;
@@ -841,7 +812,7 @@
   display: grid;
   grid-template-columns: 1.35rem minmax(0, 1fr);
   gap: .55rem;
-  align-items: center;
+  align-items: start;
   color: var(--cp-ink-soft);
   font-size: var(--cp-fs-small);
   line-height: 1.3;
@@ -849,6 +820,22 @@
 .cookbook-export-progress__steps li.is-current {
   color: var(--cp-ink);
   font-weight: 750;
+}
+.cookbook-export-progress__copy {
+  display: grid;
+  gap: .15rem;
+  padding-top: .05rem;
+}
+.cookbook-export-progress__copy strong {
+  color: inherit;
+  font-size: var(--cp-fs-small);
+  line-height: 1.3;
+}
+.cookbook-export-progress__copy > span {
+  color: var(--cp-ink-soft);
+  font-size: var(--cp-fs-caption);
+  font-weight: 500;
+  line-height: 1.4;
 }
 .cookbook-export-progress__steps li.is-done {
   color: var(--cp-ink-soft);
@@ -868,6 +855,9 @@
   background: var(--cp-selected-fill);
   color: var(--cp-selected-text);
 }
+.cookbook-export-progress__steps .is-current .cookbook-export-progress__mark svg {
+  color: var(--cp-selected-text);
+}
 .cookbook-export-progress__steps .is-done .cookbook-export-progress__mark {
   border-color: var(--cp-accent);
   background: var(--cp-accent);
@@ -885,6 +875,10 @@
   gap: .45rem;
   color: var(--cp-ink);
   font-weight: 750;
+}
+.cookbook-export-progress__steps--complete {
+  padding-top: 0;
+  border-top: 0;
 }
 
 /* Three numbers copied off a printer's upload page, and the only input group

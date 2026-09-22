@@ -16,6 +16,7 @@ import { recipeLinkOn } from "@/lib/recipeLink";
 import { CookbookWelcomeDialog } from "@/components/CookbookWelcomeDialog";
 import { CookbookReadyDialog } from "@/components/CookbookReadyDialog";
 import {
+  type CookbookPdfProgress,
   CookbookPdfError,
   cookbookPdfFileName,
   downloadCookbookPdf,
@@ -619,6 +620,8 @@ export default function PrintPage() {
   // the rest of the time, so the on-screen book and a plain Ctrl+P stay Letter.
   /** The format currently rendering server-side, if any. */
   const [exportingPreset, setExportingPreset] = useState<CookbookPresetId | null>(null);
+  const [cookbookExportProgress, setCookbookExportProgress] =
+    useState<CookbookPdfProgress>("preparing");
   /** The last export that actually landed: which book, and the files it wrote.
       Held here rather than in the dialog because the dialog cannot know a
       download succeeded — `onExport` returns before the render does. */
@@ -2907,6 +2910,7 @@ export default function PrintPage() {
     setCookbookExportNeedsAuth(false);
     setCookbookExportNeedsAccount(false);
     setExportingPreset(presetId);
+    setCookbookExportProgress("preparing");
     setLastCookbookExport(null);
     try {
       const files = await downloadCookbookPdf(
@@ -2914,6 +2918,7 @@ export default function PrintPage() {
         presetId,
         cookbookPdfFileName(projectMeta.meta.cover?.title, presetId),
         coverSheet,
+        setCookbookExportProgress,
       );
       setLastCookbookExport({ presetId, files });
       track("cookbook_exported", { preset: presetId, files: files.length });
@@ -5750,6 +5755,7 @@ export default function PrintPage() {
         pageCount={sheets.length}
         recipeCount={items?.length ?? 0}
         exportingPreset={exportingPreset}
+        exportProgress={cookbookExportProgress}
         exportError={cookbookExportError}
         exportNeedsAuth={cookbookExportNeedsAuth}
         exportNeedsAccount={cookbookExportNeedsAccount}

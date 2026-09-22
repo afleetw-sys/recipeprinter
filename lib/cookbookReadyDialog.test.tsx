@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
-import { act, cleanup, fireEvent, render, screen } from "@testing-library/react";
-import { afterEach, describe, expect, it, vi } from "vitest";
+import { cleanup, fireEvent, render, screen } from "@testing-library/react";
+import { afterEach, describe, expect, it } from "vitest";
 import { CookbookReadyDialog } from "@/components/CookbookReadyDialog";
 import {
   PHOTOS_HELP,
@@ -26,7 +26,10 @@ function renderDialog(pageCount: number) {
   );
 }
 
-function renderExportingDialog(recipeCount: number) {
+function renderExportingDialog(
+  recipeCount: number,
+  exportProgress: "preparing" | "rendering-pages" | "rendering-cover" = "preparing",
+) {
   return render(
     <CookbookReadyDialog
       open
@@ -35,9 +38,29 @@ function renderExportingDialog(recipeCount: number) {
       onExport={() => {}}
       onPrinterClick={() => {}}
       exportingPreset="hardcover-8x10"
+      exportProgress={exportProgress}
       exportError={null}
       pageCount={recipeCount}
       recipeCount={recipeCount}
+    />,
+  );
+}
+
+function renderFinishedDialog() {
+  return render(
+    <CookbookReadyDialog
+      open
+      justPurchased={false}
+      onClose={() => {}}
+      onExport={() => {}}
+      onPrinterClick={() => {}}
+      exportingPreset={null}
+      exportError={null}
+      lastExport={{
+        presetId: "hardcover-8x10",
+        files: ["Family-Hardcover-8x10.pdf", "Family-Cover-Hardcover-8x10.pdf"],
+      }}
+      onExportAnother={() => {}}
     />,
   );
 }
@@ -52,26 +75,28 @@ const fillInFor = (id: string) => {
 const save = () => screen.getByRole("button", { name: /save pdf/i }) as HTMLButtonElement;
 
 describe("the cookbook print dialog", () => {
-  it("explains long exports in truthful timed stages without a fake percentage", () => {
-    vi.useFakeTimers();
-    try {
-      renderExportingDialog(148);
-      expect(screen.getByRole("heading", { name: "Creating your cookbook PDF" })).toBeTruthy();
-      expect(screen.getByRole("status").textContent).toMatch(/Preparing your recipes.*148 recipes/);
-      expect(document.querySelector(".cookbook-export-progress__facts")?.textContent).toMatch(
-        /148 recipes.*8.*10/,
-      );
-      expect(screen.getByRole("dialog").textContent).not.toMatch(/\d+%/);
+  it("shows real export milestones inline, including a separate hardcover cover", () => {
+    renderExportingDialog(148, "rendering-cover");
+    expect(screen.getByRole("heading", { name: "Creating your cookbook PDF" })).toBeTruthy();
+    expect(screen.getByText("Creating the cover PDF").closest("li")?.getAttribute("aria-current")).toBe("step");
+    expect(screen.getByRole("status").textContent).toMatch(/Sizing the cover and spine/);
+    expect(screen.getByText("Creating the pages PDF").closest("li")?.className).toContain("is-done");
+    expect(document.querySelectorAll(".cookbook-export-progress__current")).toHaveLength(0);
+    expect(document.querySelector(".cookbook-export-progress__facts")?.textContent).toMatch(
+      /148 recipes.*8.*10/,
+    );
+    expect(screen.getByRole("dialog").textContent).not.toMatch(/\d+%/);
+  });
 
-      act(() => vi.advanceTimersByTime(14_000));
-      expect(screen.getByRole("status").textContent).toMatch(/Laying out the pages/);
-
-      act(() => vi.advanceTimersByTime(41_000));
-      expect(screen.getByRole("status").textContent).toMatch(/Finishing a large cookbook/);
-      expect(screen.getByRole("dialog").textContent).toMatch(/still working/i);
-    } finally {
-      vi.useRealTimers();
-    }
+  it("turns the file steps into the compact success state", () => {
+    renderFinishedDialog();
+    expect(screen.getByRole("heading", { name: "Downloaded successfully" })).toBeTruthy();
+    expect(screen.getByText("Interior pages PDF downloaded").closest("li")?.className).toContain(
+      "is-done",
+    );
+    expect(screen.getByText("Cover PDF downloaded").closest("li")?.className).toContain("is-done");
+    expect(screen.getByRole("button", { name: "Try another way" })).toBeTruthy();
+    expect(document.querySelector(".cookbook-next__settings")).toBeNull();
   });
 
   it("offers every place as an optional shortcut, with no price", () => {
