@@ -192,13 +192,6 @@ export interface PreparedCookbookPages {
   pageCount: number;
 }
 
-/** Starts a prepared file from an explicit customer click. Keeping this out of
-    the async render path avoids browsers blocking the second hardcover file as
-    an unsolicited automatic download. */
-export function downloadPreparedPdf(file: PreparedPdfFile): void {
-  saveBlob(file.blob, file.name);
-}
-
 /** One automatic browser download. A hardcover's two already-compressed PDFs
     are stored without recompression: this avoids browsers blocking a second
     unsolicited download and avoids wasting CPU trying to compress PDF streams

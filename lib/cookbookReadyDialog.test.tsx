@@ -136,8 +136,8 @@ describe("the cookbook print dialog", () => {
       "is-done",
     );
     expect(screen.getByText("Cover PDF ready").closest("li")?.className).toContain("is-done");
-    expect(screen.getByRole("button", { name: "Download pages" })).toBeTruthy();
-    expect(screen.getByRole("button", { name: "Download cover" })).toBeTruthy();
+    expect(screen.getByRole("button", { name: "Download ZIP again" })).toBeTruthy();
+    expect(screen.queryByRole("button", { name: /Download pages|Download cover/ })).toBeNull();
     expect(screen.getByText(/One ZIP download contains both PDFs/)).toBeTruthy();
     expect(screen.getByRole("button", { name: "Try another way" })).toBeTruthy();
     expect(document.querySelector(".cookbook-next__settings")).toBeNull();

@@ -22,7 +22,6 @@ import {
   CookbookPdfError,
   cookbookPdfFileName,
   downloadPreparedCookbook,
-  downloadPreparedPdf,
   prepareCookbookCover,
   prepareCookbookPages,
 } from "@/lib/cookbookPdfExport";
@@ -5815,9 +5814,12 @@ export default function PrintPage() {
         lastExport={lastCookbookExport}
         coverRetryPending={cookbookCoverRetry !== null}
         onRetryCover={() => void retryCookbookCover()}
-        onDownloadFile={(file) => {
-          downloadPreparedPdf(file);
-          track("cookbook_export_download_started", { preset: activePreset.id, role: file.role });
+        onDownloadFiles={(files) => {
+          void downloadPreparedCookbook(files);
+          track("cookbook_export_download_started", {
+            preset: activePreset.id,
+            role: files.length > 1 ? "package" : "pages",
+          });
         }}
         onExportAnother={() => {
           setLastCookbookExport(null);

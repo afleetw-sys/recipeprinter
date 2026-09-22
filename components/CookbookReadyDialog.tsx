@@ -67,7 +67,7 @@ export function CookbookReadyDialog({
   lastExport = null,
   coverRetryPending = false,
   onRetryCover,
-  onDownloadFile,
+  onDownloadFiles,
   onExportAnother,
 }: {
   open: boolean;
@@ -99,7 +99,7 @@ export function CookbookReadyDialog({
   lastExport?: { presetId: CookbookPresetId; files: PreparedPdfFile[] } | null;
   coverRetryPending?: boolean;
   onRetryCover?: () => void;
-  onDownloadFile?: (file: PreparedPdfFile) => void;
+  onDownloadFiles?: (files: PreparedPdfFile[]) => void;
   /** Clears that finished export, putting the controls back. */
   onExportAnother?: () => void;
 }) {
@@ -216,7 +216,7 @@ export function CookbookReadyDialog({
             lastExport={lastExport}
             onPrinterClick={onPrinterClick}
             onExportAnother={onExportAnother}
-            onDownloadFile={onDownloadFile}
+            onDownloadFiles={onDownloadFiles}
           />
         ) : (
           <ChooseBook
@@ -626,13 +626,13 @@ function ExportedNext({
   lastExport,
   onPrinterClick,
   onExportAnother,
-  onDownloadFile,
+  onDownloadFiles,
 }: {
   destination: PrintDestination | null;
   lastExport: { presetId: CookbookPresetId; files: PreparedPdfFile[] };
   onPrinterClick: (printer: string, url: string) => void;
   onExportAnother?: () => void;
-  onDownloadFile?: (file: PreparedPdfFile) => void;
+  onDownloadFiles?: (files: PreparedPdfFile[]) => void;
 }) {
   const printer: PrinterOption | undefined = chosen ? printerFor(chosen) : undefined;
   return (
@@ -660,21 +660,18 @@ function ExportedNext({
 
       <p className="cookbook-ready__lead">
         {lastExport.files.length > 1
-          ? "One ZIP download contains both PDFs. Use the buttons below if you need either file again."
+          ? "One ZIP download contains both PDFs. Use the button below if you need the package again."
           : "Your PDF download has started. Use the button below if you need it again."}
       </p>
 
       <div className="cookbook-next__actions">
-        {lastExport.files.map((file) => (
-          <button
-            key={file.name}
-            type="button"
-            className="btn btn-primary btn-compact"
-            onClick={() => onDownloadFile?.(file)}
-          >
-            Download {lastExport.files.length > 1 ? (file.role === "pages" ? "pages" : "cover") : "PDF"}
-          </button>
-        ))}
+        <button
+          type="button"
+          className="btn btn-primary btn-compact"
+          onClick={() => onDownloadFiles?.(lastExport.files)}
+        >
+          Download {lastExport.files.length > 1 ? "ZIP" : "PDF"} again
+        </button>
         {printer && (
           <button
             type="button"
