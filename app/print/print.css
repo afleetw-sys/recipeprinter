@@ -3436,6 +3436,34 @@
   right: 0.5in;
   bottom: 0.5in;
 }
+/* A chapter opener can put its photo on the opener itself rather than on a
+   separate facing page. The band-style themes make that a true full-page photo,
+   so it follows the same finish choice. Heirloom and Keepsake deliberately use
+   a small framed photograph already and are not full-page surfaces. */
+.rp-exporting[data-photo-finish="standard"]
+  .recipe-card-set:not(.recipe-template--heirloom):not(.recipe-template--keepsake)
+  .recipe-card--chapter-photo-full
+  .recipe-card__chapter-photo {
+  margin: 0.5in;
+}
+.rp-exporting[data-photo-finish="standard"]
+  .recipe-card-set:not(.recipe-template--heirloom):not(.recipe-template--keepsake)
+  .recipe-card--chapter-photo-full
+  .recipe-card__chapter-body {
+  inset: 0.5in;
+}
+/* Front covers, dedication/opening pages, and closing/back pages all share the
+   cover photo surface. Inset only real photo/collage modes; typographic paper
+   still fills the sheet. A separately rendered printer cover wrap never carries
+   data-photo-finish and therefore remains full bleed. */
+.rp-exporting[data-photo-finish="standard"]
+  .recipe-card--cover[data-cover-mode="photo"]
+  .recipe-card__cover-photo,
+.rp-exporting[data-photo-finish="standard"]
+  .recipe-card--cover[data-cover-mode="grid"]
+  .recipe-card__cover-photo {
+  inset: 0.5in;
+}
 .photo-unavailable-message {
   display: none;
 }
