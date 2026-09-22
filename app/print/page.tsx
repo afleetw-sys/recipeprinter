@@ -289,6 +289,9 @@ export default function PrintPage() {
    */
   const [settlingIds, setSettlingIds] = useState<ReadonlySet<string>>(new Set());
   const [pendingFocusNavId, setPendingFocusNavId] = useState<string | null>(null);
+  // A just-added chapter, so the rail can scroll to its row and select the
+  // "New chapter" placeholder title once it actually exists in the DOM.
+  const [pendingRailChapterFocusId, setPendingRailChapterFocusId] = useState<string | null>(null);
   // The recipe whose rail row is currently shaking, set when a re-imported
   // duplicate points back at a recipe already in this deck. `nonce` lets the
   // same recipe re-shake on a repeat import (a bare id wouldn't change).
@@ -1269,6 +1272,7 @@ export default function PrintPage() {
     setEditingSectionId(sectionId);
     setEditingSectionTitle(title);
     setPendingFocusNavId(sectionId);
+    setPendingRailChapterFocusId(sectionId);
     showToast("Chapter added. Drag recipes beneath it to group them.");
   }
 
@@ -1503,12 +1507,10 @@ export default function PrintPage() {
   const renderCardPhotoControl = (sectionId: string) => {
     const section = sections.find((candidate) => candidate.id === sectionId);
     if (!section) return null;
-    const ownImages = sectionRecipeImages(section);
-    // Nothing to place if the section has neither a chosen photo nor any recipe
-    // image to seed one from — hide the toggle rather than offer a blank page.
-    if (!section.cardPhotoUrl && !section.cardGridImages?.length && ownImages.length === 0) {
-      return null;
-    }
+    // Always offered, even on a chapter with no recipes (and so no recipe
+    // photo to seed from) yet — a chapter can be created ahead of its
+    // recipes, and the cook's own upload is the point of the button, not
+    // just a picker over photos already in the book.
     const edit = buildCardPhotoEdit(section);
     return (
       <ImagePicker
@@ -1531,10 +1533,10 @@ export default function PrintPage() {
   const renderArtPhotoControl = (sectionId: string) => {
     const section = sections.find((candidate) => candidate.id === sectionId);
     if (!section) return null;
-    const ownImages = sectionRecipeImages(section);
-    if (!section.artPhotoUrl && !section.artGridImages?.length && ownImages.length === 0) {
-      return null;
-    }
+    // This only renders once the facing page itself exists (a `section-photo`
+    // nav item — see `sectionHasArtPage`), so by the time the toolbar reaches
+    // here there is already a page to put a photo on, whether or not one has
+    // been chosen yet.
     const edit = buildArtPhotoEdit(section);
     return (
       <ImagePicker
@@ -1609,6 +1611,22 @@ export default function PrintPage() {
     const cover = projectMeta.meta.cover ?? defaultCover();
     projectMeta.setCover(cover);
     setPendingFocusNavId("cover-front");
+  }
+
+  /** Mirrors the scaffold's own minimal closer (see `buildCookbookScaffoldPatch`):
+      a template band on the theme's paper, no title — the cook adds a blurb or
+      "from the kitchen of" line by editing it once it exists. */
+  function defaultBackCover(): CoverConfig {
+    return { title: "", template };
+  }
+
+  /** The back cover's own recovery, mirroring `addCover` above — deleting either
+      cover used to be a dead end for the back one specifically, since only the
+      front had a way back onto the page. */
+  function addBackCover() {
+    const cover = projectMeta.meta.backCover ?? defaultBackCover();
+    projectMeta.setBackCover(cover);
+    setPendingFocusNavId("cover-back");
   }
 
   /** Toggles the dedication front-matter page. Adding one seeds a quiet,
@@ -3821,6 +3839,36 @@ export default function PrintPage() {
     return () => window.cancelAnimationFrame(frame);
   }, [pendingImportItems.length]);
 
+  // A freshly added chapter's rail row isn't reliably in the DOM by the next
+  // frame — same race the pending-page scroll below retries for, since both
+  // wait on a row that only exists once the rail has re-rendered off a
+  // state update a few commits upstream of this effect. Retry across a
+  // bounded run of frames rather than trusting the first one, then scroll to
+  // the row and select the "New chapter" placeholder so typing a real name
+  // replaces it outright.
+  useEffect(() => {
+    if (!pendingRailChapterFocusId) return;
+    let frame = 0;
+    let attempts = 0;
+    const tryFocus = () => {
+      const header = railScrollRef.current?.querySelector<HTMLElement>(
+        `[data-rail-section="${pendingRailChapterFocusId}"] .recipe-page-rail__section-header`,
+      );
+      const input = header?.querySelector<HTMLInputElement>('input[aria-label="Chapter name"]');
+      if (!header || !input) {
+        attempts += 1;
+        if (attempts < 30) frame = window.requestAnimationFrame(tryFocus);
+        return;
+      }
+      header.scrollIntoView({ behavior: "smooth", block: "nearest" });
+      input.focus();
+      input.select();
+      setPendingRailChapterFocusId(null);
+    };
+    frame = window.requestAnimationFrame(tryFocus);
+    return () => window.cancelAnimationFrame(frame);
+  }, [pendingRailChapterFocusId]);
+
   // Re-importing a recipe that's already in this print job doesn't add a
   // duplicate — the queue focuses the existing item (bumping `focusNonce`).
   // Mirror the home queue's cue here: scroll the deck to that recipe and shake
@@ -5387,6 +5435,7 @@ export default function PrintPage() {
           exitOrganizeMode={exitOrganizeMode}
           projectMeta={projectMeta}
           addCover={addCover}
+          addBackCover={addBackCover}
           cookbookView={cookbookView}
           navItems={navItems}
           navIndexForSheet={navIndexForSheet}

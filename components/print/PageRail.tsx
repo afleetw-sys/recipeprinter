@@ -160,6 +160,7 @@ interface PageRailProps {
   exitOrganizeMode: () => void;
   projectMeta: ReturnType<typeof useProjectMeta>;
   addCover: () => void;
+  addBackCover: () => void;
   cookbookView: boolean;
   navItems: ReturnType<typeof usePrintSheets>["navItems"];
   navIndexForSheet: Map<number, number>;
@@ -228,6 +229,7 @@ export function PageRail(props: PageRailProps) {
     exitOrganizeMode,
     projectMeta,
     addCover,
+    addBackCover,
     cookbookView,
     navItems,
     navIndexForSheet,
@@ -677,6 +679,22 @@ export function PageRail(props: PageRailProps) {
               Add cover
             </button>
           )}
+          {/* The front cover's own recovery button, mirrored — deleting the back
+              cover used to be a dead end, with no way back onto the page short
+              of hand-editing project data. */}
+          {projectMeta.meta.cookbookMode && !projectMeta.meta.backCover && (
+            <button
+              type="button"
+              className="btn btn-secondary btn-compact recipe-page-rail__add-cover"
+              onClick={() => {
+                setAddMenuOpen(false);
+                addBackCover();
+              }}
+            >
+              <PlusIcon size={ICON_SIZE.md} />
+              Add back cover
+            </button>
+          )}
           {cookbookView
             ? (() => {
                 const navFor = (sheetIndex: number | null) =>
@@ -1089,7 +1107,17 @@ export function PageRail(props: PageRailProps) {
                       onClick={() => {
                         setPendingAddSectionId(group.sectionId);
                         setPendingAddIndex(itemIdsForSection(group.sectionId!).length);
-                        setPendingAddAfterRecipeId(itemIdsForSection(group.sectionId!).at(-1) ?? null);
+                        // Anchor to the LAST recipe already in the chapter, same as
+                        // everywhere else a recipe lands — but a chapter with none
+                        // yet has no recipe to anchor to, and falling back to `null`
+                        // reads as "no anchor at all", which drops the incoming
+                        // loading/error placeholder at the very end of the book
+                        // (behind the back cover) instead of in this chapter. The
+                        // chapter's own opener is anchor enough (see
+                        // `addRecipeTarget`'s divider case, which this mirrors).
+                        setPendingAddAfterRecipeId(
+                          itemIdsForSection(group.sectionId!).at(-1) ?? group.sectionId,
+                        );
                         setShowAddRecipeDialog(true);
                       }}
                       aria-label={`Add recipes to ${sectionTitleForId(group.sectionId)}`}

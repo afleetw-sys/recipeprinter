@@ -127,6 +127,13 @@
   max-height: calc(100dvh - 110px);
   padding: 16px 16px 16px 4px;
   overflow-y: auto;
+  /* Otherwise transparent, which is invisible in normal scroll (the sticky
+     `.recipe-organize-bar` above covers its own former padding with its own
+     background) but shows through during rubber-band overscroll past the top,
+     or any frame where that negative-margin box doesn't exactly cover this
+     area — a bare flash of whatever sits behind the rail instead of matching
+     it. Matching backgrounds here closes that gap regardless of scroll state. */
+  background: var(--cp-chrome-ground);
   /* No bar. The rail is a narrow strip of page thumbnails against the shell's
      edge, and a scrollbar there reads as a seam down the side of the window
      rather than as a control for the strip. Scrolling is untouched: wheel,
@@ -203,7 +210,28 @@
   width: 100%;
   max-width: none;
   flex: 0 0 auto;
-  padding: 2px 2px 8px;
+  /* This bar is `.recipe-page-rail`'s first child AND its sticky header (see
+     `position: sticky` below), so the container gives it zero top padding on
+     purpose (organize mode's rule, above) — a sticky child only sticks to its
+     container's PADDING edge, so any padding the CONTAINER carried there
+     would show as a blank gap above the bar once stuck, filled by neither.
+     Nothing to cancel here as a result: this padding is genuinely all there
+     is, and it's covered by this element's own background either way,
+     stuck or not. */
+  padding: 8px 2px;
+  /* The bar lives inside the rail's own scroll container (see `.recipe-page-rail`),
+     not above it — so without this, scrolling down the chapter list (including the
+     auto-scroll a freshly added chapter triggers) carries "Back to pages" and
+     "Add chapter" off the top with everything else, and reaching either one means
+     scrolling back up first. Pinned to the container's own top instead, on the
+     same near-white ground the rail sits on, with a hairline to separate it from
+     the rows sliding underneath — the flat-design border-for-separation rule,
+     since this is chrome sitting in front of content rather than a floating one. */
+  position: sticky;
+  top: 0;
+  z-index: 3;
+  background: var(--cp-chrome-ground);
+  border-bottom: 1px solid var(--cp-line);
 }
 /* A row now: Back sits beside the title rather than above it. The title and
    the line about moving recipes stack; Back stays level with the title. */
@@ -345,7 +373,12 @@
      separate on their hairline border, as everything else here does. */
   .recipe-print-shell--organizing > .recipe-page-rail {
     min-width: 0;
-    padding: 18px 20px;
+    /* No top padding here — `.recipe-organize-bar` is this container's first
+       child AND its sticky header, and it carries its own top padding
+       instead (see its rule below). A container padding a sticky child has
+       to cancel to sit flush is a number two rules have to agree on forever;
+       zero needs no agreement. */
+    padding: 0 20px 18px;
   }
 
   .recipe-print-shell--organizing .recipe-page-rail__section-group {

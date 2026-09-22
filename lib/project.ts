@@ -97,20 +97,31 @@ export function defaultSectionGridImages(ownImages: readonly string[]): string[]
 /** Whether a chapter's facing art page has anything to print. Keep this shared
     between the sheet builder and page toolbar: both explicit art and the
     recipe-image fallback used by older/full-page books count as an existing
-    page. */
+    page.
+
+    A chapter the cook explicitly turned this on for (`section.artPhotoMode`
+    itself set, rather than inherited from the book's default) keeps its page
+    even before any photo exists — a cook adding a chapter ahead of its
+    recipes can still upload one of their own straight onto a still-empty
+    chapter, rather than the page winking out from under them for having
+    nothing in it yet. A page that only exists because the BOOK default says
+    "every chapter gets one" still waits for a real photo first, or an empty
+    book would print a blank spread per chapter before a single recipe photo
+    exists. */
 export function sectionHasArtPage(
   section: Pick<Section, "artPhotoMode" | "artPhotoUrl" | "artGridImages" | "artCaption">,
   ownImages: readonly string[],
   bookPhotoStyle?: PhotoStyle,
 ): boolean {
   const mode = resolveArtPhotoMode(section, bookPhotoStyle);
+  const explicit = Boolean(section.artPhotoMode);
   const photo = section.artPhotoUrl ?? ownImages[0];
   const gridImages = section.artGridImages?.length
     ? section.artGridImages
     : defaultSectionGridImages(ownImages);
   return (
-    (mode === "photo" && Boolean(photo)) ||
-    (mode === "grid" && gridImages.length > 0) ||
+    (mode === "photo" && (Boolean(photo) || explicit)) ||
+    (mode === "grid" && (gridImages.length > 0 || explicit)) ||
     Boolean(section.artCaption?.trim())
   );
 }

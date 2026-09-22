@@ -153,8 +153,18 @@ describe("sectionHasArtPage", () => {
     expect(sectionHasArtPage({}, ["one.jpg", "two.jpg"], "full")).toBe(true);
   });
 
-  it("does not invent an art page when no printable content exists", () => {
-    expect(sectionHasArtPage({ artPhotoMode: "photo" }, [])).toBe(false);
+  it("keeps a page the cook explicitly turned on, even blank", () => {
+    // Explicit ("Add image page" / the picker) beats having nothing to show
+    // yet — a chapter can be built ahead of its recipes, and the cook's own
+    // upload is the point, not just a fallback over photos already in the book.
+    expect(sectionHasArtPage({ artPhotoMode: "photo" }, [])).toBe(true);
+    expect(sectionHasArtPage({ artPhotoMode: "grid" }, [])).toBe(true);
+  });
+
+  it("does not invent an art page from the book default alone", () => {
+    // No explicit per-section choice, and nothing to show yet — an empty book
+    // in "full page" style would otherwise print a blank spread per chapter.
+    expect(sectionHasArtPage({}, [], "full")).toBe(false);
     expect(sectionHasArtPage({}, ["recipe.jpg"], "card")).toBe(false);
   });
 });
