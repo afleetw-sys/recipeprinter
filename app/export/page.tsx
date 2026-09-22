@@ -175,6 +175,24 @@ function useExportReady(contentReady: boolean): void {
       const sources = new Set(
         Array.from(document.images, (image) => image.currentSrc || image.src).filter(Boolean),
       );
+      // The renderer's own image-compression layer only intercepts http(s)
+      // requests (functions-pdf/src/printImages.ts) — anything else (a
+      // `data:` URI, a `blob:` URL) silently bypasses it entirely and reaches
+      // Chromium at whatever size it already is, with no size cap. A 490MB
+      // PDF against a compression layer that only ever saw ~42MB of image
+      // data pointed straight at this gap; this confirms which (if any) of
+      // the book's images are actually falling through it.
+      const byScheme = new Map<string, {count: number; totalLen: number}>();
+      Array.from(sources).forEach((src) => {
+        const scheme = src.startsWith("data:") ? "data:" : src.startsWith("blob:") ? "blob:" : src.startsWith("http") ? "http(s):" : "other:";
+        const entry = byScheme.get(scheme) ?? {count: 0, totalLen: 0};
+        entry.count += 1;
+        entry.totalLen += src.length;
+        byScheme.set(scheme, entry);
+      });
+      console.warn(
+        `export: ${sources.size} distinct image sources by scheme: ${JSON.stringify(Object.fromEntries(byScheme))}`,
+      );
       // Failed and timed-out photos are both logged and returned to the ready
       // gate below. Neither may turn into a successful partial cookbook: the
       // renderer waits for `data-export-error` alongside `data-export-ready`
