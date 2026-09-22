@@ -281,6 +281,16 @@ export function needsOpeningBlank(sheets: PageSheet[]): boolean {
     (sheet) => sheet.layoutKind === "image" || sheet.layoutKind === "section-photo",
   );
   if (!hasFacingPages) return false;
+  // A dedication is meant to do this job itself (see the doc comment above),
+  // but only does when it happens to land the count on the right parity —
+  // cover + dedication is 2 pages, which is EVEN, so the parity check below
+  // asked for a blank anyway. A dedication is a page the cook chose to put
+  // there; it should never be followed (or preceded) by a blank leaf neither
+  // of them asked for, whatever the parity math says.
+  const hasDedication = sheets.some((sheet) =>
+    sheet.slots.some((slot) => slot?.kind === "cover" && slot.side === "dedication"),
+  );
+  if (hasDedication) return false;
   return frontMatterPageCount(sheets) % 2 === 0;
 }
 

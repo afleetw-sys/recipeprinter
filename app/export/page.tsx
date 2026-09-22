@@ -382,11 +382,16 @@ function InteriorDocument({ payload }: { payload: ExportPayload }) {
     cover: coversAreSeparate ? undefined : project.cover,
     backCover: coversAreSeparate ? undefined : project.backCover,
     dedication: openingPage,
-    // Only the separate-cover interior needs this: it is the one whose page 1
-    // is a right-hand page, because the printer cannot print the inside of a
-    // cover. A book with its cover bound in has the cover as page 1 and pairs
-    // from there.
-    padOpening: coversAreSeparate,
+    // NOT every separate-cover interior needs this — only a COIL one. A
+    // case-bound hardcover's boards and endpapers are made in a completely
+    // separate step of the printer's own binding process, so the
+    // "unprintable inside cover" this pads around is already accounted for
+    // outside our file; reserving a page for it a second time is a page
+    // Lulu's own template didn't ask for, and it throws off every page after
+    // it (confirmed directly against Lulu's hardcover: "doesn't allow you to
+    // have a left inside cover page"). Coil has no boards or endpapers of its
+    // own to do that job, so it still needs the pad.
+    padOpening: coversAreSeparate && preset.coilBound,
     tableOfContents: cookbookMode ? settings.tableOfContents : false,
     bookTitle: project.cover?.title,
     cookbookMode,

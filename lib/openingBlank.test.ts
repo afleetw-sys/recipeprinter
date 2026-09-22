@@ -87,4 +87,30 @@ describe("needsOpeningBlank", () => {
     const padded = [sheet("blank"), ...sheets];
     expect(needsOpeningBlank(padded)).toBe(false);
   });
+
+  describe("a real dedication (side: \"dedication\")", () => {
+    // The `dedication()` helper above (and everywhere else in this file) is a
+    // plain `kind: "cover"` sheet with no `side` set at all — it exercises the
+    // generic front-matter COUNTING behaviour, not the dedication-specific
+    // rule below, which reads `side` on the slot. That gap is exactly how a
+    // real book (cover + dedication, no contents page: 2 sheets, EVEN) kept
+    // getting padded despite the doc comment's claim that a dedication does
+    // this job itself — the two front-matter pages never landed on the
+    // parity where that claim happened to hold.
+    const realDedication = (): PageSheet =>
+      ({
+        id: "dedication",
+        slots: [{ kind: "cover", id: "dedication", cover: {}, side: "dedication" } as never],
+        backGroupNeeded: false,
+      }) as PageSheet;
+
+    it("never pads around a dedication, whatever the parity", () => {
+      // Every one of these would land on the EVEN (pad-triggering) side of
+      // the parity check the generic cases above exercise, if the dedication
+      // check did not short-circuit it first.
+      expect(needsOpeningBlank([cover(), realDedication(), ...body()])).toBe(false);
+      expect(needsOpeningBlank([realDedication(), ...body()])).toBe(false);
+      expect(needsOpeningBlank([cover(), realDedication(), ...toc(2), ...body()])).toBe(false);
+    });
+  });
 });
