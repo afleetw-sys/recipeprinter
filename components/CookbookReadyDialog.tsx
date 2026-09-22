@@ -14,8 +14,7 @@ import {
 } from "@/components/icons";
 import type { PrinterOption } from "@/lib/cookbookPresets";
 import { getCookbookPreset } from "@/lib/cookbookPresets";
-import type { CookbookPdfProgress } from "@/lib/cookbookPdfExport";
-import type { PreparedPdfFile } from "@/lib/cookbookPdfExport";
+import type { CookbookPdfProgress, PreparedCookbookPages, PreparedPdfFile } from "@/lib/cookbookPdfExport";
 import { coverWrapGeometry, wrapGeometryForSpine } from "@/lib/coverWrap";
 import {
   NO_BOOK_CHOICE,
@@ -59,26 +58,20 @@ export function CookbookReadyDialog({
   exportingPreset,
   exportProgress = "preparing",
   exportError,
-  pageCount = 0,
   recipeCount = 0,
   exportNeedsAuth = false,
   exportNeedsAccount = false,
   onSignIn,
   lastExport = null,
-  coverRetryPending = false,
-  onRetryCover,
-  onDownloadFiles,
+  awaitingCover = null,
+  onDownloadCover,
+  onDownloadFile,
   onExportAnother,
 }: {
   open: boolean;
   justPurchased: boolean;
   onClose: () => void;
-  onExport: (presetId: CookbookPresetId, coverSheet?: CoverSheetSpec) => void;
-  /** Sheets in the book as previewed, used only to prefill the cover estimate.
-      An approximation on purpose: the real count comes off the rendered
-      interior, and the cook overwrites these fields with the printer's numbers
-      anyway. */
-  pageCount?: number;
+  onExport: (presetId: CookbookPresetId) => void;
   /** Recipes going into this export. Unlike the preview sheet count, this is
       safe to show while the renderer decides the final pagination. */
   recipeCount?: number;
@@ -94,12 +87,17 @@ export function CookbookReadyDialog({
   /** No session at all, so the way forward is making one rather than signing in. */
   exportNeedsAccount?: boolean;
   onSignIn?: () => void;
-  /** The export that landed, if one has. It replaces the controls until the cook
-      asks to save another format. */
+  /** Files downloaded so far — one entry once the interior lands, two once the
+      cover follows. Replaces the controls until the cook asks to save another
+      format. */
   lastExport?: { presetId: CookbookPresetId; files: PreparedPdfFile[] } | null;
-  coverRetryPending?: boolean;
-  onRetryCover?: () => void;
-  onDownloadFiles?: (files: PreparedPdfFile[]) => void;
+  /** Set once the interior has downloaded for a wrap-required preset — the
+      cover has not been rendered yet. Printers (Lulu included) only state the
+      real spine after seeing the interior, so this is also where the cook
+      enters that number rather than one we estimated up front. */
+  awaitingCover?: PreparedCookbookPages | null;
+  onDownloadCover?: (coverSheet?: CoverSheetSpec) => void;
+  onDownloadFile?: (file: PreparedPdfFile) => void;
   /** Clears that finished export, putting the controls back. */
   onExportAnother?: () => void;
 }) {
@@ -175,13 +173,13 @@ export function CookbookReadyDialog({
           <h2 id="cookbook-ready-title">
             {exportingPreset
               ? "Creating your cookbook PDF"
-              : lastExport
-                ? "Download started"
-                : coverRetryPending
-                  ? "Your pages PDF is safe"
-                : justPurchased
-                  ? "Your cookbook is ready 🎉"
-                  : "Print your cookbook"}
+              : awaitingCover
+                ? "Download your cover next"
+                : lastExport
+                  ? "Download started"
+                  : justPurchased
+                    ? "Your cookbook is ready 🎉"
+                    : "Print your cookbook"}
           </h2>
         </span>
       </div>
@@ -204,8 +202,16 @@ export function CookbookReadyDialog({
             recipeCount={recipeCount}
             progress={exportProgress}
           />
-        ) : coverRetryPending ? (
-          <CoverRetry onRetryCover={onRetryCover} onExportAnother={onExportAnother} />
+        ) : awaitingCover ? (
+          <AwaitingCover
+            pages={awaitingCover}
+            destination={destination}
+            coverSizes={coverSizes}
+            setCoverField={setCoverField}
+            busy={exportingPreset !== null}
+            onDownloadCover={onDownloadCover}
+            onExportAnother={onExportAnother}
+          />
         ) : lastExport ? (
           /* Done. A prepared PDF is only half of it: the file is correct
              against exactly one set of order options, and none of them are
@@ -216,7 +222,7 @@ export function CookbookReadyDialog({
             lastExport={lastExport}
             onPrinterClick={onPrinterClick}
             onExportAnother={onExportAnother}
-            onDownloadFiles={onDownloadFiles}
+            onDownloadFile={onDownloadFile}
           />
         ) : (
           <ChooseBook
@@ -224,9 +230,6 @@ export function CookbookReadyDialog({
             onChooseDestination={chooseDestination}
             choice={choice}
             onChangeChoice={changeChoice}
-            coverSizes={coverSizes}
-            setCoverField={setCoverField}
-            pageCount={pageCount}
             exportingPreset={exportingPreset}
             onExport={onExport}
             onPrinterClick={onPrinterClick}
@@ -246,6 +249,37 @@ function ExportProgress({
   recipeCount: number;
   progress: CookbookPdfProgress;
 }) {
+  const preset = getCookbookPreset(presetId);
+  // A cover renders on its own now, as its own later click once the cook has
+  // a real spine width from the printer — never in the same request as the
+  // interior — so this component only ever sees "rendering-cover" when it is
+  // literally the only thing being rendered.
+  if (progress === "rendering-cover") {
+    return (
+      <section className="cookbook-export-progress">
+        <ol className="cookbook-export-progress__steps" aria-label="Cover export progress" aria-live="polite">
+          <li className="is-current" aria-current="step">
+            <span className="cookbook-export-progress__mark" aria-hidden>
+              <SpinnerIcon size={ICON_SIZE.sm} />
+            </span>
+            <span className="cookbook-export-progress__copy">
+              <strong>Creating the cover PDF</strong>
+              <span className="cookbook-export-progress__activity" role="status">
+                Sizing the cover and spine to the finished book.
+              </span>
+            </span>
+          </li>
+        </ol>
+        <p className="cookbook-export-progress__facts">{preset.trimLabel}</p>
+        <p className="cookbook-export-progress__keep-open">Keep this window open. Your download will start automatically.</p>
+      </section>
+    );
+  }
+
+  return <PagesProgress presetId={presetId} recipeCount={recipeCount} />;
+}
+
+function PagesProgress({ presetId, recipeCount }: { presetId: CookbookPresetId; recipeCount: number }) {
   const [pageStageIndex, setPageStageIndex] = useState(0);
   useEffect(() => {
     const timer = window.setInterval(
@@ -257,31 +291,8 @@ function ExportProgress({
 
   const recipes = recipeCount === 1 ? "1 recipe" : `${recipeCount.toLocaleString()} recipes`;
   const preset = getCookbookPreset(presetId);
-  const steps = [
-    ...PAGE_STAGES.map((stage) => ({ ...stage, detail: stage.detail(recipes) })),
-    ...(preset.wrapRequired
-      ? [
-          {
-            id: "cover",
-            label: "Creating the cover PDF",
-            detail: "Sizing the cover and spine to the finished book.",
-          },
-        ]
-      : []),
-    {
-      id: "package",
-      label: "Starting your download",
-      detail: preset.wrapRequired
-        ? "Packing the pages and cover PDFs into one ZIP file."
-        : "Sending the finished PDF to your downloads.",
-    },
-  ];
-  const currentIndex =
-    progress === "packaging"
-      ? steps.length - 1
-      : progress === "rendering-cover" && preset.wrapRequired
-        ? steps.length - 2
-        : pageStageIndex;
+  const steps = PAGE_STAGES.map((stage) => ({ ...stage, detail: stage.detail(recipes) }));
+  const currentIndex = pageStageIndex;
 
   return (
     <section className="cookbook-export-progress">
@@ -400,9 +411,6 @@ function ChooseBook({
   onChooseDestination,
   choice,
   onChangeChoice,
-  coverSizes,
-  setCoverField,
-  pageCount,
   exportingPreset,
   onExport,
   onPrinterClick,
@@ -411,50 +419,13 @@ function ChooseBook({
   onChooseDestination: (id: PrintDestinationId | null) => void;
   choice: BookChoice;
   onChangeChoice: (patch: Partial<BookChoice>) => void;
-  coverSizes: Record<string, { w: string; h: string; spine: string }>;
-  setCoverField: (presetId: string, field: "w" | "h" | "spine", value: string) => void;
-  pageCount: number;
   exportingPreset: CookbookPresetId | null;
-  onExport: (presetId: CookbookPresetId, coverSheet?: CoverSheetSpec) => void;
+  onExport: (presetId: CookbookPresetId) => void;
   onPrinterClick: (printer: string, url: string) => void;
 }) {
   const preset = presetForChoice(choice);
   const busy = exportingPreset !== null;
   const printer = destination ? printerFor(destination) : undefined;
-
-  const num = (raw: string, fallback: number) => {
-    const parsed = Number.parseFloat(raw);
-    return Number.isFinite(parsed) && parsed > 0 ? parsed : fallback;
-  };
-  const round = (value: number) => String(Number(value.toFixed(3)));
-  const size = (preset && coverSizes[preset.id]) ?? { w: "", h: "", spine: "" };
-  // The spine drives the sheet: it is the only part of a cover a print service
-  // will not publish a formula for.
-  const wrap = preset?.wrapRequired ? preset : null;
-  const spineIn = wrap ? num(size.spine, coverWrapGeometry(wrap, pageCount).spineWidthIn) : 0;
-  const derived = wrap ? wrapGeometryForSpine(wrap, spineIn) : null;
-  const shown = derived
-    ? {
-        spine: size.spine || round(spineIn),
-        w: size.w || round(derived.sheetWidthIn),
-        h: size.h || round(derived.sheetHeightIn),
-      }
-    : { spine: "", w: "", h: "" };
-  const statedSheet: CoverSheetSpec | undefined = derived
-    ? {
-        widthIn: num(size.w, derived.sheetWidthIn),
-        heightIn: num(size.h, derived.sheetHeightIn),
-        spineWidthIn: spineIn,
-      }
-    : undefined;
-  // Only claim the shop states its own numbers where it is set up for this
-  // format. Anywhere else the numbers come off whatever upload page they use.
-  const shopStatesNumbers = Boolean(
-    destination &&
-      preset &&
-      !destination.unknownSpec &&
-      destination.presetIds.includes(preset.id),
-  );
 
   return (
     <>
@@ -538,63 +509,11 @@ function ChooseBook({
         </>
       )}
 
-      {/* Only where a cover travels on its own. A book with the cover as its
-          first page has no cover sheet to size and nothing to read. */}
-      {wrap && (
-        <div className="cookbook-cover-size">
-          <span className="cookbook-cover-size__label">Cover size</span>
-          {/* Above the fields, not below them. The rest of the app explains a
-              control before you reach it — `cp-menu__item--stacked` and the
-              hinted `Checkbox` both read label, note, control — and an
-              instruction printed underneath three inputs is an instruction you
-              find out you needed after typing in them. */}
-          <span className="cookbook-cover-size__hint">
-            {shopStatesNumbers && destination
-              ? `Only if ${destination.name} states different numbers.`
-              : "Copy these from your printer’s upload page."}
-          </span>
-          {/* Sheet first, spine last: that is the order a print service states
-              them in, and reading them back off their page in a different
-              order is how a number lands in the wrong box. */}
-          <span className="cookbook-cover-size__fields">
-            <input
-              type="text"
-              inputMode="decimal"
-              aria-label="Cover width in inches"
-              value={shown.w}
-              disabled={busy}
-              onChange={(event) => setCoverField(wrap.id, "w", event.target.value)}
-            />
-            <span aria-hidden>×</span>
-            <input
-              type="text"
-              inputMode="decimal"
-              aria-label="Cover height in inches"
-              value={shown.h}
-              disabled={busy}
-              onChange={(event) => setCoverField(wrap.id, "h", event.target.value)}
-            />
-            <span className="cookbook-cover-size__unit" aria-hidden>
-              in, spine
-            </span>
-            <input
-              type="text"
-              inputMode="decimal"
-              aria-label="Spine width in inches"
-              value={shown.spine}
-              disabled={busy}
-              onChange={(event) => setCoverField(wrap.id, "spine", event.target.value)}
-            />
-            <span className="cookbook-cover-size__unit">in</span>
-          </span>
-        </div>
-      )}
-
       <button
         type="button"
         className="btn btn-primary cookbook-ready__save"
         disabled={busy || !preset}
-        onClick={() => preset && onExport(preset.id, statedSheet)}
+        onClick={() => preset && onExport(preset.id)}
       >
         {preset && exportingPreset === preset.id ? (
           <>
@@ -626,15 +545,16 @@ function ExportedNext({
   lastExport,
   onPrinterClick,
   onExportAnother,
-  onDownloadFiles,
+  onDownloadFile,
 }: {
   destination: PrintDestination | null;
   lastExport: { presetId: CookbookPresetId; files: PreparedPdfFile[] };
   onPrinterClick: (printer: string, url: string) => void;
   onExportAnother?: () => void;
-  onDownloadFiles?: (files: PreparedPdfFile[]) => void;
+  onDownloadFile?: (file: PreparedPdfFile) => void;
 }) {
   const printer: PrinterOption | undefined = chosen ? printerFor(chosen) : undefined;
+  const multi = lastExport.files.length > 1;
   return (
     <>
       <ol
@@ -648,9 +568,7 @@ function ExportedNext({
             </span>
             <span className="cookbook-export-progress__copy">
               <strong>
-                {lastExport.files.length > 1
-                  ? `${file.role === "pages" ? "Interior pages" : "Cover"} PDF ready`
-                  : "PDF ready"}
+                {multi ? `${file.role === "pages" ? "Interior pages" : "Cover"} PDF downloaded` : "PDF downloaded"}
               </strong>
               <span className="cookbook-next__file-name">{file.name}</span>
             </span>
@@ -659,19 +577,22 @@ function ExportedNext({
       </ol>
 
       <p className="cookbook-ready__lead">
-        {lastExport.files.length > 1
-          ? "One ZIP download contains both PDFs. Use the button below if you need the package again."
+        {multi
+          ? "Both PDFs downloaded separately. Use the buttons below if you need either again."
           : "Your PDF download has started. Use the button below if you need it again."}
       </p>
 
       <div className="cookbook-next__actions">
-        <button
-          type="button"
-          className="btn btn-primary btn-compact"
-          onClick={() => onDownloadFiles?.(lastExport.files)}
-        >
-          Download {lastExport.files.length > 1 ? "ZIP" : "PDF"} again
-        </button>
+        {lastExport.files.map((file) => (
+          <button
+            key={file.name}
+            type="button"
+            className="btn btn-primary btn-compact"
+            onClick={() => onDownloadFile?.(file)}
+          >
+            Download {multi ? (file.role === "pages" ? "interior" : "cover") : "PDF"} again
+          </button>
+        ))}
         {printer && (
           <button
             type="button"
@@ -691,44 +612,141 @@ function ExportedNext({
   );
 }
 
-function CoverRetry({
-  onRetryCover,
+/**
+ * Shown right after the interior downloads for a wrap-required preset — the
+ * cover comes next, but not from our own estimate. A printer (Lulu included)
+ * only states the real spine width after it has seen the interior, so the
+ * cover fields live here, after that download, instead of before it the way
+ * they used to sit in `ChooseBook`.
+ */
+function AwaitingCover({
+  pages,
+  destination,
+  coverSizes,
+  setCoverField,
+  busy,
+  onDownloadCover,
   onExportAnother,
 }: {
-  onRetryCover?: () => void;
+  pages: PreparedCookbookPages;
+  destination: PrintDestination | null;
+  coverSizes: Record<string, { w: string; h: string; spine: string }>;
+  setCoverField: (presetId: string, field: "w" | "h" | "spine", value: string) => void;
+  busy: boolean;
+  onDownloadCover?: (coverSheet?: CoverSheetSpec) => void;
   onExportAnother?: () => void;
 }) {
+  const preset = getCookbookPreset(pages.preset);
+
+  const num = (raw: string, fallback: number) => {
+    const parsed = Number.parseFloat(raw);
+    return Number.isFinite(parsed) && parsed > 0 ? parsed : fallback;
+  };
+  const round = (value: number) => String(Number(value.toFixed(3)));
+  const size = coverSizes[preset.id] ?? { w: "", h: "", spine: "" };
+  // The spine drives the sheet: it is the only part of a cover a print service
+  // will not publish a formula for.
+  const spineIn = num(size.spine, coverWrapGeometry(preset, pages.pageCount).spineWidthIn);
+  const derived = wrapGeometryForSpine(preset, spineIn);
+  const shown = {
+    spine: size.spine || round(spineIn),
+    w: size.w || round(derived.sheetWidthIn),
+    h: size.h || round(derived.sheetHeightIn),
+  };
+  const statedSheet: CoverSheetSpec = {
+    widthIn: num(size.w, derived.sheetWidthIn),
+    heightIn: num(size.h, derived.sheetHeightIn),
+    spineWidthIn: spineIn,
+  };
+  // Only claim the shop states its own numbers where it is set up for this
+  // format. Anywhere else the numbers come off whatever upload page they use.
+  const shopStatesNumbers = Boolean(
+    destination && !destination.unknownSpec && destination.presetIds.includes(preset.id),
+  );
+
   return (
     <div className="cookbook-next">
       <ol
         className="cookbook-export-progress__steps cookbook-export-progress__steps--complete"
-        aria-label="Partial export"
+        aria-label="Interior downloaded"
       >
         <li className="is-done">
           <span className="cookbook-export-progress__mark" aria-hidden>
             <CheckIcon size={ICON_SIZE.sm} />
           </span>
           <span className="cookbook-export-progress__copy">
-            <strong>Interior pages PDF ready</strong>
-            <span>It will not be rendered again.</span>
-          </span>
-        </li>
-        <li className="is-error">
-          <span className="cookbook-export-progress__mark" aria-hidden>
-            <XIcon size={ICON_SIZE.sm} />
-          </span>
-          <span className="cookbook-export-progress__copy">
-            <strong>Cover PDF needs another try</strong>
-            <span>Retrying starts with the cover, not the cookbook pages.</span>
+            <strong>Interior pages PDF downloaded</strong>
+            <span className="cookbook-next__file-name">{pages.file.name}</span>
           </span>
         </li>
       </ol>
+
+      <p className="cookbook-ready__lead">
+        Upload that file to your printer, then enter the cover size it gives you back.
+      </p>
+
+      <div className="cookbook-cover-size">
+        <span className="cookbook-cover-size__label">Cover size</span>
+        <span className="cookbook-cover-size__hint">
+          {shopStatesNumbers && destination
+            ? `Only if ${destination.name} states different numbers.`
+            : "Copy these from your printer’s upload page."}
+        </span>
+        {/* Sheet first, spine last: that is the order a print service states
+            them in, and reading them back off their page in a different
+            order is how a number lands in the wrong box. */}
+        <span className="cookbook-cover-size__fields">
+          <input
+            type="text"
+            inputMode="decimal"
+            aria-label="Cover width in inches"
+            value={shown.w}
+            disabled={busy}
+            onChange={(event) => setCoverField(preset.id, "w", event.target.value)}
+          />
+          <span aria-hidden>×</span>
+          <input
+            type="text"
+            inputMode="decimal"
+            aria-label="Cover height in inches"
+            value={shown.h}
+            disabled={busy}
+            onChange={(event) => setCoverField(preset.id, "h", event.target.value)}
+          />
+          <span className="cookbook-cover-size__unit" aria-hidden>
+            in, spine
+          </span>
+          <input
+            type="text"
+            inputMode="decimal"
+            aria-label="Spine width in inches"
+            value={shown.spine}
+            disabled={busy}
+            onChange={(event) => setCoverField(preset.id, "spine", event.target.value)}
+          />
+          <span className="cookbook-cover-size__unit">in</span>
+        </span>
+      </div>
+
       <div className="cookbook-next__actions">
-        {onRetryCover && (
-          <button type="button" className="btn btn-primary btn-compact" onClick={onRetryCover}>
-            Retry cover
-          </button>
-        )}
+        <button
+          type="button"
+          className="btn btn-primary btn-compact"
+          disabled={busy}
+          onClick={() => onDownloadCover?.(statedSheet)}
+        >
+          {busy ? (
+            <>
+              <SpinnerIcon size={ICON_SIZE.md} />
+              Preparing…
+            </>
+          ) : (
+            <>
+              <PrintIcon size={ICON_SIZE.md} />
+              Download cover
+            </>
+          )}
+        </button>
         {onExportAnother && (
           <button type="button" className="cookbook-next__another" onClick={onExportAnother}>
             Try another way

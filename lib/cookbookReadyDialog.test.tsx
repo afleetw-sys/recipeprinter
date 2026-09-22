@@ -2,6 +2,7 @@
 import { act, cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { CookbookReadyDialog } from "@/components/CookbookReadyDialog";
+import type { PreparedCookbookPages } from "@/lib/cookbookPdfExport";
 import {
   PHOTOS_HELP,
   PRINT_DESTINATIONS,
@@ -11,7 +12,7 @@ import {
 
 afterEach(cleanup);
 
-function renderDialog(pageCount: number) {
+function renderDialog() {
   return render(
     <CookbookReadyDialog
       open
@@ -21,7 +22,6 @@ function renderDialog(pageCount: number) {
       onPrinterClick={() => {}}
       exportingPreset={null}
       exportError={null}
-      pageCount={pageCount}
     />,
   );
 }
@@ -40,7 +40,6 @@ function renderExportingDialog(
       exportingPreset="hardcover-8x10"
       exportProgress={exportProgress}
       exportError={null}
-      pageCount={recipeCount}
       recipeCount={recipeCount}
     />,
   );
@@ -59,8 +58,8 @@ function renderFinishedDialog() {
       lastExport={{
         presetId: "hardcover-8x10",
         files: [
-          { name: "Family-Hardcover-8x10.pdf", blob: new Blob(), role: "pages" },
-          { name: "Family-Cover-Hardcover-8x10.pdf", blob: new Blob(), role: "cover" },
+          { name: "Family-Hardcover-8x10.pdf", downloadUrl: "https://storage.example/pages.pdf", role: "pages" },
+          { name: "Family-Cover-Hardcover-8x10.pdf", downloadUrl: "https://storage.example/cover.pdf", role: "cover" },
         ],
       }}
       onExportAnother={() => {}}
@@ -68,7 +67,16 @@ function renderFinishedDialog() {
   );
 }
 
-function renderCoverRetryDialog(onRetryCover = () => {}) {
+function fakePages(): PreparedCookbookPages {
+  return {
+    project: { id: "book-1", sections: [] } as unknown as PreparedCookbookPages["project"],
+    preset: "hardcover-8x10",
+    file: { name: "Family-Hardcover-8x10.pdf", downloadUrl: "https://storage.example/pages.pdf", role: "pages" },
+    pageCount: 148,
+  };
+}
+
+function renderAwaitingCoverDialog(onDownloadCover = () => {}) {
   return render(
     <CookbookReadyDialog
       open
@@ -77,9 +85,9 @@ function renderCoverRetryDialog(onRetryCover = () => {}) {
       onExport={() => {}}
       onPrinterClick={() => {}}
       exportingPreset={null}
-      exportError="Your pages PDF is safe, but the cover couldn't be prepared."
-      coverRetryPending
-      onRetryCover={onRetryCover}
+      exportError={null}
+      awaitingCover={fakePages()}
+      onDownloadCover={onDownloadCover}
       onExportAnother={() => {}}
     />,
   );
@@ -95,16 +103,15 @@ const fillInFor = (id: string) => {
 const save = () => screen.getByRole("button", { name: /save pdf/i }) as HTMLButtonElement;
 
 describe("the cookbook print dialog", () => {
-  it("shows real export milestones inline, including a separate hardcover cover", () => {
+  it("shows a dedicated cover-only progress view, once the interior has already downloaded", () => {
     renderExportingDialog(148, "rendering-cover");
     expect(screen.getByRole("heading", { name: "Creating your cookbook PDF" })).toBeTruthy();
     expect(screen.getByText("Creating the cover PDF").closest("li")?.getAttribute("aria-current")).toBe("step");
     expect(screen.getByRole("status").textContent).toMatch(/Sizing the cover and spine/);
-    expect(screen.getByText("Creating the pages PDF").closest("li")?.className).toContain("is-done");
-    expect(document.querySelectorAll(".cookbook-export-progress__current")).toHaveLength(0);
-    expect(document.querySelector(".cookbook-export-progress__facts")?.textContent).toMatch(
-      /148 recipes.*8.*10/,
-    );
+    // The cover renders on its own now, as a later click, never bundled into
+    // the pages steps — there is nothing here about laying out recipes.
+    expect(screen.queryByText("Creating the pages PDF")).toBeNull();
+    expect(screen.queryByText("Laying out your recipes")).toBeNull();
     expect(screen.getByRole("dialog").textContent).not.toMatch(/\d+%/);
   });
 
@@ -129,32 +136,36 @@ describe("the cookbook print dialog", () => {
     }
   });
 
-  it("turns the file steps into the compact success state", () => {
+  it("turns the file steps into the compact success state, offering each real download again separately", () => {
     renderFinishedDialog();
     expect(screen.getByRole("heading", { name: "Download started" })).toBeTruthy();
-    expect(screen.getByText("Interior pages PDF ready").closest("li")?.className).toContain(
+    expect(screen.getByText("Interior pages PDF downloaded").closest("li")?.className).toContain(
       "is-done",
     );
-    expect(screen.getByText("Cover PDF ready").closest("li")?.className).toContain("is-done");
-    expect(screen.getByRole("button", { name: "Download ZIP again" })).toBeTruthy();
-    expect(screen.queryByRole("button", { name: /Download pages|Download cover/ })).toBeNull();
-    expect(screen.getByText(/One ZIP download contains both PDFs/)).toBeTruthy();
+    expect(screen.getByText("Cover PDF downloaded").closest("li")?.className).toContain("is-done");
+    // No zip: the interior and the cover are two separate real downloads, so
+    // there are two separate "download again" buttons.
+    expect(screen.getByRole("button", { name: "Download interior again" })).toBeTruthy();
+    expect(screen.getByRole("button", { name: "Download cover again" })).toBeTruthy();
+    expect(screen.queryByRole("button", { name: /ZIP/ })).toBeNull();
+    expect(screen.getByText(/Both PDFs downloaded separately/)).toBeTruthy();
     expect(screen.getByRole("button", { name: "Try another way" })).toBeTruthy();
     expect(document.querySelector(".cookbook-next__settings")).toBeNull();
   });
 
-  it("keeps a safe interior and offers a cover-only retry", () => {
-    const retry = vi.fn();
-    renderCoverRetryDialog(retry);
-    expect(screen.getByRole("heading", { name: "Your pages PDF is safe" })).toBeTruthy();
-    expect(screen.getByText("Interior pages PDF ready")).toBeTruthy();
-    expect(screen.getByText(/will not be rendered again/i)).toBeTruthy();
-    fireEvent.click(screen.getByRole("button", { name: "Retry cover" }));
-    expect(retry).toHaveBeenCalledOnce();
+  it("prompts for the cover size once the interior has already downloaded", () => {
+    const download = vi.fn();
+    renderAwaitingCoverDialog(download);
+    expect(screen.getByRole("heading", { name: "Download your cover next" })).toBeTruthy();
+    expect(screen.getByText("Interior pages PDF downloaded")).toBeTruthy();
+    expect(screen.getByText(/enter the cover size it gives you back/i)).toBeTruthy();
+    expect(screen.getByText("Cover size")).toBeTruthy();
+    fireEvent.click(screen.getByRole("button", { name: "Download cover" }));
+    expect(download).toHaveBeenCalledOnce();
   });
 
   it("offers every place as an optional shortcut, with no price", () => {
-    renderDialog(95);
+    renderDialog();
     const dialog = screen.getByRole("dialog");
     expect(dialog.textContent).not.toMatch(/[$£€]|\bfrom about\b|\bcost/i);
     fireEvent.click(screen.getByRole("button", { name: /fill in for/i }));
@@ -167,7 +178,7 @@ describe("the cookbook print dialog", () => {
   });
 
   it("starts small: two questions, nothing explained, nothing to save yet", () => {
-    renderDialog(95);
+    renderDialog();
     // It read as a wall of text. The panel is a handful of pills until someone
     // answers, and this length is the guard against it quietly growing back.
     expect(screen.getByRole("dialog").textContent!.length).toBeLessThan(300);
@@ -177,7 +188,7 @@ describe("the cookbook print dialog", () => {
   });
 
   it("asks for a hardcover's size and nothing else", () => {
-    renderDialog(95);
+    renderDialog();
     fireEvent.click(pill("Hardcover"));
     expect(screen.getByText("Size")).toBeTruthy();
     expect(screen.queryByText("Photos")).toBeNull();
@@ -187,7 +198,7 @@ describe("the cookbook print dialog", () => {
   });
 
   it("asks a lay-flat book about its photos, and explains the answer chosen", () => {
-    renderDialog(95);
+    renderDialog();
     fireEvent.click(pill("Spiral, comb or 3-ring"));
     expect(screen.getByText("Photos")).toBeTruthy();
     expect(screen.queryByText("Size")).toBeNull();
@@ -201,7 +212,7 @@ describe("the cookbook print dialog", () => {
   });
 
   it("fills every answer in from a destination and leaves each one open", () => {
-    renderDialog(95);
+    renderDialog();
     fillInFor("blurb");
     expect(pill("Hardcover").checked).toBe(true);
     expect(pill("8 × 10 in").checked).toBe(true);
@@ -215,7 +226,7 @@ describe("the cookbook print dialog", () => {
   });
 
   it("clears the shortcut once an answer no longer suits it, rather than leaving a stale claim", () => {
-    renderDialog(95);
+    renderDialog();
     fillInFor("home");
     fireEvent.click(pill("Edge to edge"));
     // "Fill in for Home" sitting over a file Home can't use would be a claim
@@ -231,7 +242,7 @@ describe("the cookbook print dialog", () => {
   });
 
   it("leaves the shortcut alone when the new answer is still a book that destination makes", () => {
-    renderDialog(95);
+    renderDialog();
     // Lulu offers both of its own books — switching between them is not a
     // disagreement, so the shortcut should survive it.
     fillInFor("lulu");
@@ -243,7 +254,7 @@ describe("the cookbook print dialog", () => {
   });
 
   it("never calls the book a product we guessed at, whoever is printing it", () => {
-    renderDialog(95);
+    renderDialog();
     for (const destination of PRINT_DESTINATIONS) {
       fillInFor(destination.id);
       expect(screen.getByRole("dialog").textContent).not.toMatch(/spiral cookbook|hardcover book/i);
@@ -251,7 +262,7 @@ describe("the cookbook print dialog", () => {
   });
 
   it("puts the way out to the place's site under the menu once one is chosen", () => {
-    renderDialog(95);
+    renderDialog();
     expect(screen.queryByRole("button", { name: /^open /i })).toBeNull();
     fillInFor("copy-shop");
     expect(screen.getByRole("button", { name: /open staples/i })).toBeTruthy();
@@ -260,7 +271,7 @@ describe("the cookbook print dialog", () => {
   });
 
   it("closes the menu when a choice is made, and on Escape", () => {
-    renderDialog(95);
+    renderDialog();
     fireEvent.click(screen.getByRole("button", { name: /fill in for/i }));
     expect(screen.getByRole("menu")).toBeTruthy();
     fireEvent.keyDown(document, { key: "Escape" });
@@ -270,13 +281,15 @@ describe("the cookbook print dialog", () => {
   });
 
   it("says what Save produces right under the shortcut, before the questions that follow it", () => {
-    renderDialog(95);
+    renderDialog();
     expect(document.querySelector(".cookbook-ready__downloads")).toBeNull();
     fillInFor("copy-shop");
     const summary = document.querySelector(".cookbook-ready__downloads")!;
     expect(summary.textContent).toMatch(/one file/i);
-    // Right under "Fill in for", ahead of the binding question, the cover
-    // fields, and well before Save.
+    // Right under "Fill in for", ahead of the binding question, and well
+    // before Save. The cover-size fields no longer live on this screen at
+    // all — they only appear later, in the "download your cover" step, once
+    // a real spine width is available.
     const order = (a: Element, b: Element) =>
       a.compareDocumentPosition(b) & Node.DOCUMENT_POSITION_FOLLOWING;
     expect(order(screen.getByRole("button", { name: /fill in for/i }), summary)).toBeTruthy();
@@ -285,12 +298,11 @@ describe("the cookbook print dialog", () => {
     ).toBeTruthy();
     expect(order(summary, save())).toBeTruthy();
     fireEvent.click(pill("Edge to edge"));
-    const cover = document.querySelector(".cookbook-cover-size")!;
-    expect(order(summary, cover)).toBeTruthy();
+    expect(document.querySelector(".cookbook-cover-size")).toBeNull();
   });
 
   it("draws the menu outside the dialog, so it is not confined to its size", () => {
-    renderDialog(95);
+    renderDialog();
     fireEvent.click(screen.getByRole("button", { name: /fill in for/i }));
     const menu = screen.getByRole("menu");
     expect(screen.getByRole("dialog").contains(menu)).toBe(false);
@@ -298,7 +310,7 @@ describe("the cookbook print dialog", () => {
   });
 
   it("puts the check mark on the right of the chosen row", () => {
-    renderDialog(95);
+    renderDialog();
     fillInFor("lulu");
     fireEvent.click(screen.getByRole("button", { name: /fill in for/i }));
     const chosen = screen.getByRole("menuitemradio", { name: "Lulu" });
@@ -311,7 +323,7 @@ describe("the cookbook print dialog", () => {
   });
 
   it("does not count a press inside its own menu as outside", () => {
-    renderDialog(95);
+    renderDialog();
     fireEvent.click(screen.getByRole("button", { name: /fill in for/i }));
     const row = screen.getByRole("menuitemradio", { name: "Blurb" });
     fireEvent.pointerDown(row);
@@ -325,7 +337,7 @@ describe("the cookbook print dialog", () => {
   });
 
   it("moves with the arrow keys and hands focus back on Tab", () => {
-    renderDialog(95);
+    renderDialog();
     const trigger = screen.getByRole("button", { name: /fill in for/i });
     fireEvent.click(trigger);
     const rows = screen.getAllByRole("menuitemradio");
@@ -340,7 +352,7 @@ describe("the cookbook print dialog", () => {
   });
 
   it("says how many files in plain terms, whoever is printing", () => {
-    renderDialog(95);
+    renderDialog();
     fillInFor("home");
     fireEvent.click(pill("Hardcover"));
     fireEvent.click(pill("8 × 10 in"));
@@ -350,17 +362,11 @@ describe("the cookbook print dialog", () => {
   });
 
   it("keeps the answers when the shortcut is cleared", () => {
-    renderDialog(95);
+    renderDialog();
     fillInFor("blurb");
     fillInFor("");
     expect(pill("Hardcover").checked).toBe(true);
     expect(pill("8 × 10 in").checked).toBe(true);
   });
 
-  it("reads the same whatever the page count", () => {
-    const short = renderDialog(12).container.ownerDocument.body.textContent;
-    cleanup();
-    const long = renderDialog(400).container.ownerDocument.body.textContent;
-    expect(long).toBe(short);
-  });
 });

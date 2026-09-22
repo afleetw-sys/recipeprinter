@@ -4,11 +4,9 @@ import {
   cookbookPdfFileName,
   coverWrapProject,
   prepareCookbookCover,
-  prepareCookbookDownload,
   trimSizeLabel,
 } from "@/lib/cookbookPdfExport";
 import { getCookbookPreset } from "@/lib/cookbookPresets";
-import { strFromU8, unzipSync } from "fflate";
 
 afterEach(() => vi.unstubAllGlobals());
 
@@ -116,20 +114,13 @@ describe("export photo preflight", () => {
 describe("cover-only retry", () => {
   it("requests only the cover from an already prepared interior", async () => {
     const requests: Array<Record<string, unknown>> = [];
-    // The route no longer hands back the PDF directly (a large hardcover
-    // interior can exceed what a single HTTP response may carry) — it
-    // returns {downloadUrl, pageCount}, and the caller fetches the file
-    // itself from that URL as a second request. Both hops go through the
-    // same stubbed `fetch` here.
+    // The route hands back {downloadUrl, pageCount} JSON, not the PDF bytes
+    // (a large hardcover interior can exceed what a single HTTP response may
+    // carry) — the browser's own download manager fetches the file straight
+    // from that URL later, via a real click, never through this code path.
     vi.stubGlobal(
       "fetch",
-      vi.fn(async (url: string, init?: RequestInit) => {
-        if (url === "https://storage.example/cover.pdf") {
-          return new Response(new Blob(["%PDF-cover"]), {
-            status: 200,
-            headers: { "content-type": "application/pdf" },
-          });
-        }
+      vi.fn(async (_url: string, init?: RequestInit) => {
         requests.push(JSON.parse(String(init?.body)) as Record<string, unknown>);
         return new Response(
           JSON.stringify({ downloadUrl: "https://storage.example/cover.pdf", pageCount: 1 }),
@@ -147,7 +138,7 @@ describe("cover-only retry", () => {
     const cover = await prepareCookbookCover({
       project,
       preset: "hardcover-8x10",
-      file: { name: "pages.pdf", blob: new Blob(), role: "pages" },
+      file: { name: "pages.pdf", downloadUrl: "https://storage.example/pages.pdf", role: "pages" },
       pageCount: 128,
     });
 
@@ -155,27 +146,6 @@ describe("cover-only retry", () => {
     expect(requests[0]?.mode).toBe("cover-wrap");
     expect((requests[0]?.project as { sections: unknown[] }).sections).toEqual([]);
     expect(cover?.role).toBe("cover");
-  });
-});
-
-describe("automatic download packaging", () => {
-  it("keeps a one-file export as a PDF", async () => {
-    const pdf = new Blob(["%PDF-pages"], { type: "application/pdf" });
-    const download = await prepareCookbookDownload([
-      { name: "Family-Standard-8.5x11.pdf", blob: pdf, role: "pages" },
-    ]);
-    expect(download.name).toBe("Family-Standard-8.5x11.pdf");
-    expect(download.blob).toBe(pdf);
-  });
-
-  it("packages both hardcover PDFs into one automatic ZIP", async () => {
-    const download = await prepareCookbookDownload([
-      { name: "Family-Hardcover-8x10.pdf", blob: new Blob(["%PDF-pages"]), role: "pages" },
-      { name: "Family-Cover-Hardcover-8x10.pdf", blob: new Blob(["%PDF-cover"]), role: "cover" },
-    ]);
-    const files = unzipSync(new Uint8Array(await download.blob.arrayBuffer()));
-    expect(download.name).toBe("Family-Hardcover-8x10-Print-Files.zip");
-    expect(strFromU8(files["Family-Hardcover-8x10.pdf"]!)).toBe("%PDF-pages");
-    expect(strFromU8(files["Family-Cover-Hardcover-8x10.pdf"]!)).toBe("%PDF-cover");
+    expect(cover?.downloadUrl).toBe("https://storage.example/cover.pdf");
   });
 });

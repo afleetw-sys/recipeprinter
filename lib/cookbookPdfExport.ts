@@ -8,7 +8,6 @@ import {
 } from "@/lib/coverWrap";
 import type { CoverSheetSpec, ExportMode } from "@/types/export";
 import type { CookbookPresetId, PrintProject } from "@/types/recipe";
-import { zipSync } from "fflate";
 
 /**
  * Downloads a cookbook as a finished PDF.
@@ -72,6 +71,12 @@ interface RenderRequest {
   /** The wrap the printer asked for, passed through so the page can lay its
       panels out against the same numbers the sheet is cut to. */
   coverSheet?: CoverSheetSpec;
+  /** What the cook will actually see in their downloads folder. The renderer
+      sets this as the finished file's Content-Disposition — the HTML anchor
+      `download` attribute a browser would otherwise use is not reliably
+      honored cross-origin (Storage's domain, not this app's), which is
+      exactly where the file now lives. See exportStorage.ts in CookPilot. */
+  fileName?: string;
 }
 
 /**
@@ -108,15 +113,11 @@ async function postRender(request: RenderRequest, idToken: string | null): Promi
 type ErrorBody = { error?: string; needsAuth?: boolean; needsAccount?: boolean };
 
 interface RenderedPdf {
-  blob: Blob;
+  downloadUrl: string;
   pageCount: number;
 }
 
-export type CookbookPdfProgress =
-  | "preparing"
-  | "rendering-pages"
-  | "rendering-cover"
-  | "packaging";
+export type CookbookPdfProgress = "preparing" | "rendering-pages" | "rendering-cover";
 
 async function renderPdf(request: RenderRequest): Promise<RenderedPdf> {
   const idToken = await currentIdToken();
@@ -150,9 +151,14 @@ async function renderPdf(request: RenderRequest): Promise<RenderedPdf> {
   // The route no longer hands back the PDF itself — a large hardcover
   // interior can run well past what a single HTTP response is allowed to
   // carry (a real 288-page book came out at 490MB), a ceiling neither this
-  // app nor the renderer can configure away. Instead it's a Storage URL,
-  // fetched here directly: no app server sits in that path at all, so
-  // nothing about it can hit the same response-size wall a second time.
+  // app nor the renderer can configure away. Instead it's a Storage URL. This
+  // used to be fetched right here into a Blob — but that meant buffering the
+  // WHOLE file in this tab's memory with no progress feedback at all before
+  // anything could start, which is worse than the wall it was working around:
+  // a real download button hands the transfer to the browser's own download
+  // manager, streamed straight to disk, with a real progress bar, for a file
+  // that can run past what most memory-buffered approaches handle gracefully
+  // anyway. See `triggerDownload` below and downloadPreparedFile.
   const success = (await response.json().catch(() => null)) as
     | {downloadUrl?: unknown; pageCount?: unknown}
     | null;
@@ -167,44 +173,39 @@ async function renderPdf(request: RenderRequest): Promise<RenderedPdf> {
   ) {
     throw new CookbookPdfError("The cookbook renderer returned an invalid response. Try again in a moment.");
   }
-
-  const fileResponse = await fetch(downloadUrl);
-  if (!fileResponse.ok) {
-    throw new CookbookPdfError("We couldn't download your finished cookbook. Try again in a moment.");
-  }
-  return {blob: await fileResponse.blob(), pageCount};
+  return {downloadUrl, pageCount};
 }
 
-function saveBlob(blob: Blob, fileName: string): void {
-  const url = URL.createObjectURL(blob);
-  try {
-    const link = document.createElement("a");
-    link.href = url;
-    link.download = fileName;
-    document.body.appendChild(link);
-    link.click();
-    link.remove();
-  } finally {
-    // A minute, not a tick.
-    //
-    // Revoking synchronously races the browser's own read of the blob, which
-    // was known, and a next-tick timeout was the fix. It is not enough. A
-    // click only STARTS a download; Chrome then streams the blob out to disk,
-    // and a cookbook is several megabytes, so the read is still running long
-    // after the tick that scheduled this. Revoke underneath it and the transfer
-    // stops where it is — which is the `Unconfirmed NNNNNN.crdownload` left in
-    // the downloads folder next to the file that did survive.
-    //
-    // Nothing is leaked by waiting: the URL is dropped either way, just after
-    // the browser has finished with it rather than during.
-    window.setTimeout(() => URL.revokeObjectURL(url), 60_000);
-  }
+/** Starts a real browser download — the download manager's own, streamed
+    straight to disk, not a Blob buffered in this tab's memory first. The
+    `download` attribute is a same-origin nicety only; the filename that
+    actually lands (cross-origin, which Storage always is here) comes from
+    the object's own Content-Disposition, set server-side at upload time —
+    see the `fileName` field on RenderRequest and exportStorage.ts. */
+function triggerDownload(url: string, fileName: string): void {
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = fileName;
+  link.rel = "noopener";
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
 }
 
 export interface PreparedPdfFile {
   name: string;
-  blob: Blob;
+  downloadUrl: string;
   role: "pages" | "cover";
+}
+
+/** The one call every download button in the UI makes — no zip, no bundling.
+    Two files (a hardcover's interior and cover) are now two separate,
+    cook-initiated clicks rather than one script firing two downloads at
+    once, which is what the zip step existed to work around in the first
+    place (browsers block an unsolicited SECOND automatic download; they do
+    not block two the cook actually clicked for). */
+export function downloadPreparedFile(file: PreparedPdfFile): void {
+  triggerDownload(file.downloadUrl, file.name);
 }
 
 export interface PreparedCookbookPages {
@@ -212,34 +213,6 @@ export interface PreparedCookbookPages {
   preset: CookbookPresetId;
   file: PreparedPdfFile;
   pageCount: number;
-}
-
-/** One automatic browser download. A hardcover's two already-compressed PDFs
-    are stored without recompression: this avoids browsers blocking a second
-    unsolicited download and avoids wasting CPU trying to compress PDF streams
-    that are compressed already. */
-export async function prepareCookbookDownload(files: PreparedPdfFile[]): Promise<{
-  name: string;
-  blob: Blob;
-}> {
-  if (files.length === 1) return { name: files[0]!.name, blob: files[0]!.blob };
-  const entries = Object.fromEntries(
-    await Promise.all(
-      files.map(async (file) => [file.name, new Uint8Array(await file.blob.arrayBuffer())] as const),
-    ),
-  );
-  const archive = zipSync(entries, { level: 0 });
-  const pagesName = files.find((file) => file.role === "pages")?.name ?? "Cookbook.pdf";
-  return {
-    name: pagesName.replace(/\.pdf$/i, "-Print-Files.zip"),
-    blob: new Blob([archive], { type: "application/zip" }),
-  };
-}
-
-export async function downloadPreparedCookbook(files: PreparedPdfFile[]): Promise<string> {
-  const download = await prepareCookbookDownload(files);
-  saveBlob(download.blob, download.name);
-  return download.name;
 }
 
 /**
@@ -318,11 +291,11 @@ export async function prepareCookbookPages(
   // would otherwise print with holes where its photos are.
   const project = await materializeBookPhotos(book);
   onProgress?.("rendering-pages");
-  const interior = await renderPdf({ project, preset });
+  const interior = await renderPdf({ project, preset, fileName });
   return {
     project,
     preset,
-    file: { name: fileName, blob: interior.blob, role: "pages" },
+    file: { name: fileName, downloadUrl: interior.downloadUrl, role: "pages" },
     pageCount: interior.pageCount,
   };
 }
@@ -342,10 +315,10 @@ export async function prepareCookbookCover(
   const geometry = coverSheet
     ? coverWrapGeometryFromSheet(resolved, coverSheet)
     : coverWrapGeometry(resolved, pageCount);
-  // The pages download has already been started at this point. This transition
-  // is intentionally after saveBlob so the checklist cannot lag behind the
-  // browser the way the old time-based animation did.
+  // The pages download has its own button now — this no longer has to race
+  // it, so this transition is just "the cover render started."
   onProgress?.("rendering-cover");
+  const fileName = coverWrapFileName(pages.project.cover?.title, pages.preset);
   const wrap = await renderPdf({
     // The cover, not the book — see `coverWrapProject`. The page count the
     // spine is sized from was already read off the interior above, so nothing
@@ -356,10 +329,11 @@ export async function prepareCookbookCover(
     pageCount,
     coverSheet,
     sheet: { widthIn: geometry.sheetWidthIn, heightIn: geometry.sheetHeightIn },
+    fileName,
   });
   return {
-    name: coverWrapFileName(pages.project.cover?.title, pages.preset),
-    blob: wrap.blob,
+    name: fileName,
+    downloadUrl: wrap.downloadUrl,
     role: "cover",
   };
 }
