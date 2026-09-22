@@ -246,19 +246,26 @@ export function choiceForPreset(preset: CookbookPreset): BookChoice {
  * still unanswered. A lay-flat book is always US Letter; hardcover size and
  * photo finish are both required, though finish does not change its preset.
  */
-export function presetForChoice(choice: BookChoice): CookbookPreset | null {
+export function presetForChoice(
+  choice: BookChoice,
+  availablePresets?: CookbookPreset[],
+): CookbookPreset | null {
+  const candidates = availablePresets ?? COOKBOOK_PRESETS;
   if (choice.kind === "hardcover") {
     if (!choice.size || !choice.photos) return null;
     return (
-      COOKBOOK_PRESETS.find(
+      candidates.find(
         (preset) => !preset.coilBound && choiceForPreset(preset).size === choice.size,
       ) ?? null
     );
   }
   if (choice.kind === "flat") {
     if (!choice.photos) return null;
+    // A named printer decides the physical page geometry. Its bleed-capable
+    // PDF is still required when the photos themselves use a standard frame.
+    if (availablePresets) return candidates.find((preset) => preset.coilBound) ?? null;
     return (
-      COOKBOOK_PRESETS.find(
+      candidates.find(
         (preset) => preset.coilBound && choiceForPreset(preset).photos === choice.photos,
       ) ?? null
     );

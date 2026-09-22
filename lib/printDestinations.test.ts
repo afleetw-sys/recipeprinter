@@ -254,6 +254,16 @@ describe("the format questions", () => {
     );
   });
 
+  it("keeps a printer's bleed geometry when standard photos are chosen", () => {
+    const lulu = destinationPresets(getPrintDestination("lulu"));
+    expect(presetForChoice({ kind: "flat", size: "letter", photos: "standard" }, lulu)?.id).toBe(
+      "coil-us-letter",
+    );
+    expect(presetForChoice({ kind: "hardcover", size: "letter", photos: "standard" }, lulu)?.id).toBe(
+      "hardcover-us-letter",
+    );
+  });
+
   it("explains both photo answers in one short line each", () => {
     for (const help of Object.values(PHOTOS_HELP)) {
       expect(help.length).toBeLessThan(80);

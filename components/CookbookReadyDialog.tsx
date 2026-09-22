@@ -137,7 +137,12 @@ export function CookbookReadyDialog({
   const chooseDestination = (id: PrintDestinationId | null) => {
     setDestinationId(id);
     // Clearing it leaves the answers as they are: it was only ever a shortcut.
-    if (id) setChoice(choiceForPreset(destinationPresets(getPrintDestination(id))[0]));
+    if (id) {
+      setChoice({
+        ...choiceForPreset(destinationPresets(getPrintDestination(id))[0]),
+        photos: "standard",
+      });
+    }
     onExportAnother?.();
   };
   const changeChoice = (patch: Partial<BookChoice>) => {
@@ -437,7 +442,7 @@ function ChooseBook({
   onExport: (presetId: CookbookPresetId, photoFinish: BookPhotos) => void;
   onPrinterClick: (printer: string, url: string) => void;
 }) {
-  const preset = presetForChoice(choice);
+  const preset = presetForChoice(choice, destination ? destinationPresets(destination) : undefined);
   const busy = exportingPreset !== null;
   const printer = destination ? printerFor(destination) : undefined;
 

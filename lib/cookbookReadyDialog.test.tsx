@@ -200,6 +200,14 @@ describe("the cookbook print dialog", () => {
     expect(screen.getByRole("radiogroup", { name: "How it will be bound" })).toBeTruthy();
   });
 
+  it("defaults printer shortcuts to standard photos without losing printer geometry", () => {
+    renderDialog();
+    fireEvent.click(screen.getByRole("button", { name: /fill in for/i }));
+    fireEvent.click(screen.getByRole("menuitemradio", { name: "Lulu" }));
+    expect(pill("Standard").checked).toBe(true);
+    expect(save().disabled).toBe(false);
+  });
+
   it("starts small: two questions, nothing explained, nothing to save yet", () => {
     renderDialog();
     // It read as a wall of text. The panel is a handful of pills until someone
