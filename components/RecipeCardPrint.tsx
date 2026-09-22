@@ -1935,13 +1935,68 @@ export const CoverFace = memo(function CoverFace({
 
   // Back cover: a quiet closing page on the template's own paper — a short
   // blurb and a "from the kitchen of" line, centered. No photo/scrim.
+  // Back cover: same photo system as the front — a collage, a single photo,
+  // or (no photos) the template's own paper — behind the same two lines it
+  // always had (a closing blurb, a "from the kitchen of" credit). `coverMode`
+  // and the empty-text hiding work exactly like the front cover's; see the
+  // comments down there for why.
   if (side === "back") {
+    const backGridImages = (draft.gridImages ?? []).filter(Boolean);
+    const backLayout =
+      draft.layout ??
+      (backGridImages.length > 0 ? "collage" : draft.imageUrl ? "photo" : "typographic");
+    const backCoverMode =
+      backLayout === "collage" && backGridImages.length > 0
+        ? "grid"
+        : backLayout === "photo" && draft.imageUrl
+          ? "photo"
+          : "none";
+    const { columns: backGridColumns, firstSpans: backGridFirstSpans } =
+      photoGridLayout(backGridImages.length);
+    const backTextEmpty =
+      ![draft.blurb, draft.author].some((line) => line?.trim()) && !showEmpty && editingField === null;
+
     return (
       <article
         className="recipe-card recipe-card--cover recipe-card--cover-back"
+        data-cover-mode={backCoverMode}
+        data-cover-text={backTextEmpty ? "none" : undefined}
         data-preview-hidden={previewHidden ? "true" : undefined}
       >
-        <div className="recipe-card__cover-photo recipe-card__cover-photo--paper" aria-hidden />
+        <div
+          className={`recipe-card__cover-photo ${backCoverMode === "grid" ? "recipe-card__cover-photo--grid" : ""} ${backCoverMode === "none" ? "recipe-card__cover-photo--paper" : ""}`}
+          style={
+            backCoverMode === "grid"
+              ? ({ "--cover-grid-cols": backGridColumns } as CSSProperties)
+              : undefined
+          }
+          aria-hidden
+        >
+          {backCoverMode === "grid" &&
+            backGridImages.slice(0, 6).map((image, index) => (
+              <span
+                key={`${image}-${index}`}
+                className={`recipe-card__cover-grid-cell ${
+                  backGridFirstSpans && index === 0 ? "recipe-card__cover-grid-img--wide" : ""
+                }`}
+              >
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src={image} alt="" className="recipe-card__cover-grid-img" onLoad={(event) => markImageAvailable(event.currentTarget)} onError={(event) => markImageUnavailable(event.currentTarget)} />
+                <span className="photo-unavailable-message">Photo unavailable</span>
+              </span>
+            ))}
+          {backCoverMode === "photo" && (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img src={draft.imageUrl} alt="" className="recipe-card__cover-image" onLoad={(event) => markImageAvailable(event.currentTarget)} onError={(event) => markImageUnavailable(event.currentTarget)} />
+          )}
+          {backCoverMode === "photo" && <span className="photo-unavailable-message">Photo unavailable</span>}
+        </div>
+        {/* No bottom-weighted scrim here (unlike the front cover) — the back
+            cover's text sits centered, not anchored to a title lockup at the
+            bottom, so a gradient tuned for that spot would leave the middle
+            of the page under-darkened. A plate behind the centered text (see
+            print.css) does the same legibility job for every theme, not just
+            the paper ones. */}
         <TemplateDecoration
           template={template ?? draft.template}
           show={showDecoration && (template ?? draft.template) !== "bistro"}

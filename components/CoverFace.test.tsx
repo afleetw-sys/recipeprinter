@@ -118,3 +118,66 @@ describe("the opening page's lines, cleared one at a time", () => {
     expect(html).toContain("Still here.");
   });
 });
+
+const renderBack = (patch: Partial<CoverConfig>) =>
+  renderToStaticMarkup(
+    <CoverFace cover={{ title: "", template: "bistro", ...patch }} side="back" template="bistro" showDecoration={false} />,
+  );
+
+describe("the back cover's photo", () => {
+  it("prints its text on plain paper by default, with no photo chosen", () => {
+    const html = renderBack({ blurb: "From our table to yours." });
+    expect(html).toContain("From our table to yours.");
+    expect(html).toContain("recipe-card__cover-photo--paper");
+    expect(html).not.toContain("recipe-card__cover-image");
+  });
+
+  it("sits behind the words rather than replacing them, same as the front cover", () => {
+    const html = renderBack({
+      layout: "photo",
+      imageUrl: "https://example.com/a.jpg",
+      blurb: "From our table to yours.",
+      author: "The Smiths",
+    });
+    expect(html).toContain("recipe-card__cover-image");
+    expect(html).toContain("https://example.com/a.jpg");
+    expect(html).toContain("From our table to yours.");
+    expect(html).toContain("The Smiths");
+    // No bottom-weighted scrim: the back cover's text is centered, not
+    // anchored to a bottom title lockup — see print.css.
+    expect(html).not.toContain("recipe-card__cover-scrim");
+  });
+
+  it("prints a collage the same way", () => {
+    const html = renderBack({
+      layout: "collage",
+      gridImages: ["a.jpg", "b.jpg"],
+      blurb: "From our table to yours.",
+    });
+    expect(html).toContain("recipe-card__cover-grid-cell");
+    expect(html).toContain("recipe-card__cover-photo--grid");
+    expect(html).toContain("From our table to yours.");
+  });
+
+  it("falls back to paper when the layout is set back to typographic, even with a photo still on file", () => {
+    const html = renderBack({
+      layout: "typographic",
+      imageUrl: "https://example.com/a.jpg",
+      blurb: "From our table to yours.",
+    });
+    expect(html).not.toContain("recipe-card__cover-image");
+    expect(html).toContain("From our table to yours.");
+  });
+
+  it("clears each line independently of whether a photo is set", () => {
+    const html = renderBack({
+      blurb: "",
+      author: "",
+      layout: "photo",
+      imageUrl: "https://example.com/a.jpg",
+    });
+    expect(html).toContain("recipe-card__cover-image");
+    expect(html).not.toContain("recipe-card__cover-blurb");
+    expect(html).not.toContain("recipe-card__cover-from");
+  });
+});

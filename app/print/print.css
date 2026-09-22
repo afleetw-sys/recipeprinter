@@ -5316,11 +5316,47 @@
   opacity: 1;
 }
 
+/* ── Back cover (and the opening page, which shares this class) with a
+   photo ──────────────────────────────────────────────────────────────────
+   No per-theme split like the front cover's: `.recipe-card__cover-scrim`
+   isn't rendered here at all (see CoverFace) because its dark-at-bottom
+   gradient is tuned for a bottom-anchored title, and this content is
+   centered — a plate behind the centered text does the legibility job for
+   every theme uniformly, the same way the front cover's paper themes
+   already do it. */
+.recipe-card--cover-back[data-cover-text="none"] .recipe-card__cover-back-content {
+  display: none;
+}
+.recipe-card--cover-back[data-cover-mode="grid"] .recipe-card__cover-back-content,
+.recipe-card--cover-back[data-cover-mode="photo"] .recipe-card__cover-back-content {
+  inset: auto;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: max-content;
+  max-width: 78%;
+  gap: 0.14in;
+  padding: 0.42in 0.6in;
+  border-radius: 0.09in;
+  background: color-mix(in srgb, var(--recipe-bg) 92%, transparent);
+  border: 1px solid color-mix(in srgb, var(--recipe-accent) 30%, transparent);
+  color: var(--recipe-ink);
+}
+/* `.cover-dedication-label` is the opening page's own heading — `.cover-blurb`
+   and `.cover-from` are already shared with it (see CoverFace), so those two
+   rules cover both pages without repeating this block. */
+.recipe-card--cover-back[data-cover-mode="grid"] .recipe-card__cover-dedication-label,
+.recipe-card--cover-back[data-cover-mode="photo"] .recipe-card__cover-dedication-label {
+  color: var(--recipe-accent);
+}
+
 /* Counter's cover disc (the big accent-2 circle) belongs to its photo-FREE
    "solid dark top" cover — over a photo grid it's just a random orange blob, so
    drop it for photo covers. */
 .recipe-template--counter .recipe-card--cover-front[data-cover-mode="grid"] .recipe-card__cover-photo::after,
-.recipe-template--counter .recipe-card--cover-front[data-cover-mode="photo"] .recipe-card__cover-photo::after {
+.recipe-template--counter .recipe-card--cover-front[data-cover-mode="photo"] .recipe-card__cover-photo::after,
+.recipe-template--counter .recipe-card--cover-back[data-cover-mode="grid"] .recipe-card__cover-photo::after,
+.recipe-template--counter .recipe-card--cover-back[data-cover-mode="photo"] .recipe-card__cover-photo::after {
   display: none;
 }
 
