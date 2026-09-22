@@ -1,7 +1,8 @@
 import sharp from "sharp";
 
 const MAX_PX = 2560;
-const MAX_PARALLEL = 2;
+// Keep in sync with MAX_PARALLEL_NORMALIZATIONS in functions-pdf/src/printImages.ts.
+const MAX_PARALLEL = Number(process.env.DIAG_MAX_PARALLEL ?? 6);
 
 /** Local mirror of functions-pdf/src/printImages.ts. Production owns the
     implementation; this keeps the stress harness representative. */
