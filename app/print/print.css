@@ -3473,6 +3473,19 @@
   .recipe-card__cover-photo {
   inset: 0.5in;
 }
+/* The template band rides the top of the photo, so it moves in with it. Left
+   at the sheet edge, an opening page read as a full-bleed band over a framed
+   photo, where the cover wrap shows the whole panel framed together. */
+.rp-exporting[data-photo-finish="standard"]
+  .recipe-card--cover[data-cover-mode="photo"]
+  > .recipe-card__cover-band,
+.rp-exporting[data-photo-finish="standard"]
+  .recipe-card--cover[data-cover-mode="grid"]
+  > .recipe-card__cover-band {
+  top: 0.5in;
+  left: 0.5in;
+  right: 0.5in;
+}
 .photo-unavailable-message {
   display: none;
 }
