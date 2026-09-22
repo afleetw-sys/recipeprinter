@@ -106,7 +106,12 @@ async function postRender(request: RenderRequest, idToken: string | null): Promi
 
 type ErrorBody = { error?: string; needsAuth?: boolean; needsAccount?: boolean };
 
-async function renderPdf(request: RenderRequest): Promise<Blob> {
+interface RenderedPdf {
+  blob: Blob;
+  pageCount: number;
+}
+
+async function renderPdf(request: RenderRequest): Promise<RenderedPdf> {
   const idToken = await currentIdToken();
   let response = await postRender(request, idToken);
   let body: ErrorBody = {};
@@ -134,7 +139,11 @@ async function renderPdf(request: RenderRequest): Promise<Blob> {
       needsAccount: Boolean(body.needsAccount),
     });
   }
-  return response.blob();
+  const pageCount = Number(response.headers.get("x-recipeprinter-page-count"));
+  if (!Number.isSafeInteger(pageCount) || pageCount < 1) {
+    throw new CookbookPdfError("The cookbook renderer returned an invalid file. Try again in a moment.");
+  }
+  return {blob: await response.blob(), pageCount};
 }
 
 function saveBlob(blob: Blob, fileName: string): void {
@@ -228,7 +237,7 @@ export async function downloadCookbookPdf(
   // would otherwise print with holes where its photos are.
   const project = await materializeBookPhotos(book);
   const interior = await renderPdf({ project, preset });
-  saveBlob(interior, fileName);
+  saveBlob(interior.blob, fileName);
 
   // A case-bound hardcover needs a SECOND file: the cover wrap. Print-on-demand
   // services reject a cover bound into the interior, and the wrap is a
@@ -236,10 +245,11 @@ export async function downloadCookbookPdf(
   // has no spine to wrap, so it stays a single file.
   if (!COVER_WRAP_ENABLED || !resolved.wrapRequired) return [fileName];
 
-  // Page count drives the spine's thickness, and the interior render is what
-  // actually knows it — so it is read back off the file we just made rather
-  // than re-derived from the project and risking disagreement with the book.
-  const pageCount = await pdfPageCount(interior);
+  // Page count drives the spine's thickness, and the renderer is what actually
+  // knows it. It validates the PDF page tree against the laid-out sheets, then
+  // returns that authoritative count beside the file; the browser never has to
+  // decode a potentially 90MB PDF into a string just to rediscover one number.
+  const pageCount = interior.pageCount;
   const geometry = coverSheet
     ? coverWrapGeometryFromSheet(resolved, coverSheet)
     : coverWrapGeometry(resolved, pageCount);
@@ -255,33 +265,8 @@ export async function downloadCookbookPdf(
     sheet: { widthIn: geometry.sheetWidthIn, heightIn: geometry.sheetHeightIn },
   });
   const wrapName = coverWrapFileName(project.cover?.title, preset);
-  saveBlob(wrap, wrapName);
+  saveBlob(wrap.blob, wrapName);
   return [fileName, wrapName];
-}
-
-/**
- * Pages in a rendered PDF, counted from the file itself.
- *
- * Deliberately a byte scan rather than a PDF library: this runs in the browser
- * on a file that is already several MB, and the only fact needed is how many
- * `/Type /Page` objects it contains. Pulling in a parser to learn one integer
- * would cost every visitor the bundle.
- *
- * Falls back to 0 on anything unexpected, which yields a spine of just the
- * board thickness — a visibly-too-thin spine the cook can report, rather than a
- * confidently wrong one that only shows up on a printed book.
- */
-async function pdfPageCount(blob: Blob): Promise<number> {
-  try {
-    const text = new TextDecoder("latin1").decode(await blob.arrayBuffer());
-    const counts = Array.from(text.match(/\/Count\s+\d+/g) ?? [], (m) =>
-      Number(m.replace(/\D+/g, "")),
-    );
-    if (counts.length > 0) return Math.max(...counts);
-    return (text.match(/\/Type\s*\/Page[^s]/g) ?? []).length;
-  } catch {
-    return 0;
-  }
 }
 
 /**

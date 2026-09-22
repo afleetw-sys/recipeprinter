@@ -20,6 +20,7 @@
 import { createServer } from "node:http";
 import { existsSync } from "node:fs";
 import puppeteer from "puppeteer-core";
+import { installPrintImageNormalization } from "./pdf-print-image-normalizer.mjs";
 
 const PORT = Number(process.env.PDF_DEV_PORT ?? 8899);
 const APP_ORIGIN = process.env.RECIPEPRINTER_ORIGIN ?? "http://localhost:3000";
@@ -130,6 +131,7 @@ createServer(async (req, res) => {
   const browser = await getBrowser();
   const page = await browser.newPage();
   try {
+    await installPrintImageNormalization(page);
     await page.evaluateOnNewDocument((injected) => {
       window.__RP_EXPORT__ = injected;
     }, payload);
@@ -138,11 +140,21 @@ createServer(async (req, res) => {
     // ~900ms spent on a weaker version of the same thing.
     await page.goto(`${APP_ORIGIN}/export`, {
       waitUntil: "domcontentloaded",
-      timeout: 45000,
+      timeout: 60000,
     });
-    await page.waitForSelector('html[data-export-ready="true"]', {
-      timeout: 45000,
+    await page.waitForFunction(() =>
+      document.documentElement.hasAttribute("data-export-ready") ||
+      document.documentElement.hasAttribute("data-export-error"), {
+      timeout: 60000,
     });
+    const exportError = await page.evaluate(() =>
+      document.documentElement.getAttribute("data-export-error"),
+    );
+    if (exportError) throw new Error(exportError);
+    const pageCount = payload.mode === "cover-wrap"
+      ? 1
+      : await page.$$eval(".recipe-card-page", (pages) => pages.length);
+    if (pageCount < 1) throw new Error("The export page completed without any laid-out pages.");
     const pdf = await page.pdf({
       ...sheet,
       margin: { top: "0", right: "0", bottom: "0", left: "0" },
@@ -155,6 +167,7 @@ createServer(async (req, res) => {
       .writeHead(200, {
         "content-type": "application/pdf",
         "content-length": pdf.length,
+        "x-recipeprinter-page-count": pageCount,
       })
       .end(Buffer.from(pdf));
   } catch (error) {

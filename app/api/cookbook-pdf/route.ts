@@ -7,6 +7,7 @@ import {
   checkIdToken,
 } from "@/lib/server/cookbookAccess";
 import { callerKey, rateLimit } from "@/lib/server/rateLimit";
+import { randomUUID } from "node:crypto";
 
 export const runtime = "nodejs";
 // A cookbook is dozens of pages and the renderer cold-starts Chromium, so the
@@ -88,6 +89,7 @@ function projectIdFromBody(rawBody: string): string | null | undefined {
 }
 
 export async function POST(request: Request) {
+  const requestId = randomUUID();
   const limit = rateLimit(`cookbook-pdf:${callerKey(request)}`, EXPORT_LIMIT, EXPORT_WINDOW_MS);
   if (!limit.ok) {
     return NextResponse.json(
@@ -195,7 +197,11 @@ export async function POST(request: Request) {
   try {
     response = await fetch(endpoint, {
       method: "POST",
-      headers: { "content-type": "application/json", authorization: secret },
+      headers: {
+        "content-type": "application/json",
+        authorization: secret,
+        "x-recipeprinter-request-id": requestId,
+      },
       // The bytes as they arrived, not a re-serialization of them.
       body: rawBody,
       signal: AbortSignal.timeout(RENDERER_TIMEOUT_MS),
@@ -205,10 +211,10 @@ export async function POST(request: Request) {
     // say than "it didn't respond" — and the only one of the two where trying
     // again has any reason to go differently.
     if (error instanceof Error && error.name === "TimeoutError") {
-      console.warn(`cookbook-pdf: renderer timed out  ms=${Date.now() - startedAt}`);
+      console.warn(`cookbook-pdf: renderer timed out requestId=${requestId} ms=${Date.now() - startedAt}`);
       return jsonError("The cookbook took too long to render. Try again in a moment.", 504);
     }
-    console.warn("cookbook-pdf: renderer unreachable", error);
+    console.warn(`cookbook-pdf: renderer unreachable requestId=${requestId}`, error);
     return jsonError("The cookbook renderer didn't respond.", 502);
   }
 
@@ -220,10 +226,34 @@ export async function POST(request: Request) {
     // hand. Never shown to the cook as-is: it's Chromium/Puppeteer text, not
     // copy anyone wrote for a reader.
     const detail = await response.text().catch(() => "");
-    console.warn(`cookbook-pdf: renderer failed status=${response.status} body=${detail.slice(0, 2000)}`);
+    console.warn(`cookbook-pdf: renderer failed requestId=${requestId} status=${response.status} body=${detail.slice(0, 2000)}`);
+    if (response.status === 422) {
+      return jsonError(
+        "Some cookbook photos couldn't be loaded, so we stopped instead of downloading an incomplete book. Check your connection and try again.",
+        502,
+      );
+    }
     const devDetail = process.env.NODE_ENV === "development" && detail ? ` (dev: ${detail})` : "";
     return jsonError(`The cookbook couldn't be rendered.${devDetail}`, 502);
   }
+
+  const contentType = response.headers.get("content-type")?.toLowerCase() ?? "";
+  const pageCount = Number(response.headers.get("x-recipeprinter-page-count"));
+  if (!contentType.startsWith("application/pdf") || !Number.isSafeInteger(pageCount) || pageCount < 1) {
+    console.warn(
+      `cookbook-pdf: renderer returned an invalid success requestId=${requestId} contentType=${contentType || "?"} pageCount=${pageCount || "?"}`,
+    );
+    await response.body?.cancel().catch(() => undefined);
+    return jsonError("The cookbook renderer returned an invalid file. Try again in a moment.", 502);
+  }
+
+  // A successful render used to log nothing at all — every failure was
+  // traceable but a SLOW success (a cold container, a large book) left no
+  // record anywhere to tell the two apart after the fact. One line, no body
+  // read, so it costs nothing on the path that already works.
+  console.log(
+    `cookbook-pdf: rendered requestId=${requestId} ms=${Date.now() - startedAt} bytes=${response.headers.get("content-length") ?? "?"}`,
+  );
 
   // Streamed, not buffered: a book runs to several MB and there is no reason to
   // hold all of it in this function's memory before the download starts.
@@ -231,6 +261,7 @@ export async function POST(request: Request) {
     status: 200,
     headers: {
       "content-type": "application/pdf",
+      "x-recipeprinter-page-count": String(pageCount),
       "cache-control": "no-store",
     },
   });

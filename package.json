@@ -16,6 +16,7 @@
     "test:rules": "npx firebase-tools@14.27.0 --config firebase.rules-test.json emulators:exec --only firestore,storage \"vitest run --config vitest.rules.config.ts\"",
     "test:watch": "vitest",
     "pdf:dev": "node scripts/pdf-renderer-dev.mjs",
+    "pdf:stress": "node scripts/pdf-export-stress.mjs",
     "logo:build": "node scripts/build-logo-assets.mjs",
     "og:card": "node scripts/build-og-card.mjs"
   },
@@ -43,6 +44,7 @@
     "jsdom": "^25.0.1",
     "postcss": "^8",
     "puppeteer-core": "^25.8.0",
+    "sharp": "^0.34.5",
     "tailwindcss": "^3.4.1",
     "typescript": "^5",
     "vitest": "^2.1.9"

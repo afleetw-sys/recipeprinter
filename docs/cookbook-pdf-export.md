@@ -58,8 +58,31 @@ Run), the script uses whatever Chrome is already installed (`CHROME_PATH` to
 override). `puppeteer-core` is a devDependency; nothing here reaches the browser
 or production.
 
+The deployed renderer additionally normalizes raster image responses to a
+2560px long edge, at most two at a time. That protects existing books whose
+stored URLs predate upload-time normalization; it is intentionally transient
+and does not rewrite the customer's saved photographs. The local stub does not
+intercept those responses, so image-memory and final-size benchmarks must use
+already-normalized fixtures or the deployed renderer.
+
+Before returning 200, the deployed renderer parses Chromium's output and
+requires its page tree and every MediaBox to match the laid-out document and
+requested sheet. The verified page count travels through the app as
+`X-RecipePrinter-Page-Count`; hardcover spine sizing uses that value instead of
+turning the complete PDF into a browser string and scanning its object syntax.
+Only Chromium acquisition is retried once. Navigation, layout and `page.pdf()`
+are never repeated automatically.
+
 If the dev server isn't on port 3000, point the renderer at it:
 `RECIPEPRINTER_ORIGIN=http://localhost:3001 npm run pdf:dev`.
+
+For the large-book envelope, run `npm run pdf:stress` after both local servers
+are ready. It builds a synthetic 148-recipe book with distinct 4000x3000 image
+URLs, renders it through the same route, verifies the page-count header, and
+writes `tmp/pdfs/stress-148.pdf`. `PDF_STRESS_RECIPES`,
+`PDF_STRESS_RENDERER`, `PDF_STRESS_PRESET`, and `PDF_STRESS_OUTPUT` override the
+defaults. The script refuses production-looking renderer URLs so a load test
+cannot be aimed at a live customer service by mistake.
 
 Without those two env vars the export button reports "PDF export isn't
 configured on this deployment" — that is this state, not a broken cookbook.
@@ -130,6 +153,43 @@ Two things get it there, both in the renderer:
 
 If cold starts ever matter more than cost, `minInstances: 1` on the function
 keeps one container warm — that is a standing bill, so it is not on by default.
+
+### Re-measured 2026-09-21 (Phase 0 of a "make the first export faster" pass)
+
+Local only — no deploy, no code change. Driven straight against the renderer
+stub (`scripts/pdf-renderer-dev.mjs`) with synthetic books built from scratch
+(3 recipes / no photos, and 40 recipes / one distinct local JPEG each from
+`public/images/`, cycled), bypassing `/api/cookbook-pdf` entirely so nothing
+touched Firebase auth, Firestore, or a real account.
+
+| | small (3 recipes, no photos) | large (40 recipes, with photos) |
+|---|---|---|
+| Chromium launch (cold) | ~660ms–1.1s | — |
+| Chromium launch (warm, reused) | included above | included above |
+| `domcontentloaded` | ~140ms | ~270ms |
+| layout + `data-export-ready` | ~330ms | **~960ms** — matches the ~1.0s this doc already recorded |
+| `page.pdf()` | ~120ms | **~11.1s** |
+
+Layout/readiness for a 40-recipe photo book is unchanged from the number
+above. `page.pdf()` for the same book (~11.1s here vs. ~4.7s recorded above)
+is **not** treated as a confirmed regression — this machine had several other
+Chrome/Node processes already competing for CPU while measuring (a second
+`pdf:dev` instance and dev server were already running from another session),
+and `page.pdf()`'s cost is exactly the CPU-bound rasterization step the
+original note flags as having "no obvious slack." Re-measuring on an idle
+machine, or pulling real execution-time samples from Cloud Run for
+`recipePrinterCookbookPdf` (the `firebase functions:log` CLI only surfaced
+deploy audit events for this function, not per-invocation timing — reading
+this needs the Cloud Console UI or a `gcloud logging read` query, neither
+available in this pass), is the next step before treating `page.pdf()` itself
+as a target.
+
+What this pass *does* confirm, cleanly: the cold-vs-warm Chromium launch gap
+(~1s+ on a laptop, "seconds" on Cloud Run per the section above) is real and
+reproducible, it is paid in full by whichever export lands on a cold
+container, and nothing else in the pipeline depends on it — which is why
+`minInstances: 1` (below) is still the lowest-risk lever for "the first
+export," independent of whatever `page.pdf()` turns out to cost.
 
 ### The 20 seconds that were not work
 

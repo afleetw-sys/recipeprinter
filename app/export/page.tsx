@@ -45,7 +45,8 @@ const EXPORT_READY_FALLBACK_MS = 1000;
  * which is why it was specifically the end of the book coming up blank
  * rather than photos missing at random. 45s (paired with a matching raise to
  * READY_TIMEOUT_MS in the renderer, functions-pdf/src/index.ts) gives that
- * queue room to drain before the deadline starts discarding what's left. */
+ * queue room to drain before the export fails explicitly. The renderer no
+ * longer captures a partial book when that deadline is reached. */
 const IMAGE_WAIT_MS = 45000;
 
 /** Settles when `promise` does, or when `ms` elapses — whichever comes first,
@@ -142,6 +143,12 @@ function useExportReady(contentReady: boolean): void {
       window.__RP_EXPORT_READY__ = true;
       document.documentElement.setAttribute("data-export-ready", "true");
     };
+    const fail = (message: string) => {
+      if (done || cancelled) return;
+      done = true;
+      window.__RP_EXPORT_ERROR__ = message;
+      document.documentElement.setAttribute("data-export-error", message);
+    };
 
     // Decoded OFF the document, one probe per distinct photo — never by calling
     // `decode()` on the elements themselves.
@@ -167,15 +174,12 @@ function useExportReady(contentReady: boolean): void {
       const sources = new Set(
         Array.from(document.images, (image) => image.currentSrc || image.src).filter(Boolean),
       );
-      // Missing photos used to be silent by design (see the IMAGE_WAIT_MS
-      // comment) — a captured book with one gone was worth more than no
-      // book at all, which is still true, but "silent" also meant nobody
-      // could tell a slow network from a missing image without noticing the
-      // book itself came up short. This makes both visible in the
-      // renderer's own logs (forwarded from the page — see the `console`
-      // listener in functions-pdf/src/index.ts) without changing what the
-      // page waits on or how long it waits.
+      // Failed and timed-out photos are both logged and returned to the ready
+      // gate below. Neither may turn into a successful partial cookbook: the
+      // renderer waits for `data-export-error` alongside `data-export-ready`
+      // and returns a specific failure to the app.
       const stragglers: string[] = [];
+      const failed: string[] = [];
       return Promise.all(
         Array.from(sources, (src) => {
           const probe = new Image();
@@ -187,12 +191,13 @@ function useExportReady(contentReady: boolean): void {
             },
             () => {
               settled = true;
-              console.warn(`export: photo failed to decode — ${src}`);
+              failed.push(src);
+              console.warn("export: a required photo failed to decode");
             },
           );
           // A failed photo resolves too, and so does one that simply never
-          // answers — neither a broken photo nor a stalled one may hold an
-          // entire book hostage (see IMAGE_WAIT_MS).
+          // answers. Both are counted so the gate can fail promptly instead of
+          // holding the request until the renderer's outer timeout.
           return withDeadline(decode, IMAGE_WAIT_MS).then(() => {
             if (!settled) stragglers.push(src);
           });
@@ -200,10 +205,10 @@ function useExportReady(contentReady: boolean): void {
       ).then(() => {
         if (stragglers.length > 0) {
           console.warn(
-            `export: ${stragglers.length} of ${sources.size} photo(s) still hadn't decoded after ${IMAGE_WAIT_MS}ms, captured without them:`,
-            stragglers,
+            `export: ${stragglers.length} of ${sources.size} photo(s) still hadn't decoded after ${IMAGE_WAIT_MS}ms`,
           );
         }
+        return { failed: failed.length, timedOut: stragglers.length, total: sources.size };
       });
     };
 
@@ -213,8 +218,14 @@ function useExportReady(contentReady: boolean): void {
     void Promise.all([
       withDeadline(document.fonts.ready, IMAGE_WAIT_MS),
       imagesDecoded(),
-    ]).then(() => {
+    ]).then(([, images]) => {
       if (cancelled) return;
+      if (images.failed > 0 || images.timedOut > 0) {
+        fail(
+          `Required cookbook photos were unavailable (${images.failed} failed, ${images.timedOut} timed out, ${images.total} total).`,
+        );
+        return;
+      }
       timer = window.setTimeout(signal, EXPORT_READY_FALLBACK_MS);
       frame = requestAnimationFrame(() => {
         frame = requestAnimationFrame(signal);

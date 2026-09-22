@@ -64,5 +64,8 @@ declare global {
         painted. The renderer waits on this before asking for the PDF —
         screenshotting a book mid-measurement is how you get half-empty pages. */
     __RP_EXPORT_READY__?: boolean;
+    /** Set instead of READY when required photos did not decode. The renderer
+        treats this as a failed render, never as a successful partial book. */
+    __RP_EXPORT_ERROR__?: string;
   }
 }
