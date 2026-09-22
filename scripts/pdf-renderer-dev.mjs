@@ -130,6 +130,27 @@ createServer(async (req, res) => {
   const started = Date.now();
   const browser = await getBrowser();
   const page = await browser.newPage();
+  page.on("console", (msg) => console.log(`  [page console] ${msg.text()}`));
+  const DIAG_TIMING = process.env.DIAG_TIMING === "1";
+  if (DIAG_TIMING) {
+    let n = 0;
+    page.on("request", (req) => {
+      if (req.url().includes("firebasestorage")) {
+        n += 1;
+        console.log(`  [req  +${Date.now() - started}ms] #${n} start ${req.url().slice(-40)}`);
+      }
+    });
+    page.on("requestfinished", (req) => {
+      if (req.url().includes("firebasestorage")) {
+        console.log(`  [done +${Date.now() - started}ms] finish ${req.url().slice(-40)}`);
+      }
+    });
+    page.on("requestfailed", (req) => {
+      if (req.url().includes("firebasestorage")) {
+        console.log(`  [FAIL +${Date.now() - started}ms] ${req.failure()?.errorText} ${req.url().slice(-40)}`);
+      }
+    });
+  }
   try {
     await installPrintImageNormalization(page);
     await page.evaluateOnNewDocument((injected) => {

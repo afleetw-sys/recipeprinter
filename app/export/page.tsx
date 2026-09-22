@@ -133,6 +133,7 @@ function ExportDocument({ payload }: { payload: ExportPayload }) {
 function useExportReady(contentReady: boolean): void {
   useEffect(() => {
     if (!contentReady) return;
+    console.warn(`export: decode gate opened at +${Math.round(performance.now())}ms, ${document.images.length} <img> elements in DOM`);
     let cancelled = false;
     let done = false;
     let frame = 0;
@@ -205,7 +206,7 @@ function useExportReady(contentReady: boolean): void {
       ).then(() => {
         if (stragglers.length > 0) {
           console.warn(
-            `export: ${stragglers.length} of ${sources.size} photo(s) still hadn't decoded after ${IMAGE_WAIT_MS}ms`,
+            `export: ${stragglers.length} of ${sources.size} photo(s) still hadn't decoded after ${IMAGE_WAIT_MS}ms: ${JSON.stringify(stragglers)}`,
           );
         }
         return { failed: failed.length, timedOut: stragglers.length, total: sources.size };

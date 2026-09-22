@@ -33,3 +33,7 @@ scratch-export.pdf
 *-export.pdf
 .vercel
 .env*
+
+# scratch output for local scripts (pdf:stress, diagnostic renders, etc.) —
+# multi-MB/GB binaries, never meant to be committed
+tmp/
