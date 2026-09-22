@@ -694,13 +694,6 @@ export default function PrintPage() {
     backCover: projectMeta.meta.backCover,
     dedication: dedicationPage,
     tableOfContents: projectMeta.meta.cookbookMode ? projectMeta.meta.tableOfContents : false,
-    // Matches the export route's own `coversAreSeparate` exactly (see
-    // app/export/page.tsx) — a wrap-required preset's page 1 is a right-hand
-    // page, so the preview has to open the same opening blank the export
-    // will, or the page numbers, TOC entries and gutter sides the cook is
-    // looking at while editing disagree with the file they eventually
-    // download.
-    padOpening: activePreset.wrapRequired,
     cookbookMode: projectMeta.meta.cookbookMode,
     itemPlacements: projectMeta.meta.itemPlacements,
     defaultFullPage,

@@ -56,10 +56,7 @@ describe("needsOpeningBlank", () => {
 
   for (const [label, front, expected] of cases) {
     it(`${expected ? "pads" : "leaves alone"}: ${label}`, () => {
-      // hasGutter=false: these books already have facing pages (`body()`),
-      // which is reason enough on its own — the gutter dedicated cases below
-      // prove the OTHER reason works the same way with no facing pages at all.
-      expect(needsOpeningBlank([...front, ...body()], false)).toBe(expected);
+      expect(needsOpeningBlank([...front, ...body()])).toBe(expected);
     });
   }
 
@@ -68,16 +65,16 @@ describe("needsOpeningBlank", () => {
     // matter, the first body page must end up even — the left half of a spread.
     for (const [, front] of cases) {
       const sheets = [...front, ...body()];
-      const pad = needsOpeningBlank(sheets, false) ? 1 : 0;
+      const pad = needsOpeningBlank(sheets) ? 1 : 0;
       expect((frontMatterPageCount(sheets) + pad + 1) % 2).toBe(0);
     }
   });
 
-  it("never pads a flat book with no gutter and nothing to pair", () => {
-    // No facing photos and no gutter means no spread to break, and a blank
-    // leaf is a printed page someone pays for.
+  it("never pads a book with nothing to pair", () => {
+    // No facing photos means no spread to break, and a blank leaf is a printed
+    // page someone pays for.
     for (const [, front] of cases) {
-      expect(needsOpeningBlank([...front, ...flatBody()], false)).toBe(false);
+      expect(needsOpeningBlank([...front, ...flatBody()])).toBe(false);
     }
   });
 
@@ -86,28 +83,8 @@ describe("needsOpeningBlank", () => {
     // leaf, which is what would happen if the blank were not counted as front
     // matter.
     const sheets = [...toc(2), ...body()];
-    expect(needsOpeningBlank(sheets, false)).toBe(true);
+    expect(needsOpeningBlank(sheets)).toBe(true);
     const padded = [sheet("blank"), ...sheets];
-    expect(needsOpeningBlank(padded, false)).toBe(false);
-  });
-
-  describe("a cased spine, even with no facing photos", () => {
-    // The report this exists for: a hardcover's TOC ran long enough to end on
-    // its own left page, with a flat (photo-free) body after it — the exact
-    // shape `flatBody()` + an even-length contents describes. The gutter sits
-    // on the inner edge and flips with every page's left/right role (see
-    // `gutterSideForRole`), so this needs the same padding a facing pair
-    // would, even though nothing here faces anything.
-    for (const [label, front, expected] of cases) {
-      it(`${expected ? "pads" : "leaves alone"}: ${label}`, () => {
-        expect(needsOpeningBlank([...front, ...flatBody()], true)).toBe(expected);
-      });
-    }
-
-    it("never pads when there is neither a gutter nor anything to pair", () => {
-      // The baseline this whole block is contrasted with — same books,
-      // hasGutter=false, per the "leaves alone" test above.
-      expect(needsOpeningBlank([...toc(2), ...flatBody()], false)).toBe(false);
-    });
+    expect(needsOpeningBlank(padded)).toBe(false);
   });
 });
