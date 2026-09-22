@@ -35,8 +35,18 @@ const EXPORT_READY_FALLBACK_MS = 1000;
  * the whole set rather than per photo, and it sits well inside the renderer's
  * wait — a real photo arriving slowly still lands in the book. Past it we
  * capture what we have: a book missing one photo is worth more than no book.
- */
-const IMAGE_WAIT_MS = 20000;
+ *
+ * Raised from 20s: a large book's photos are all requested at once (see the
+ * `imagesDecoded` comment below), and the browser's own connection limits
+ * queue them — the LAST photos in DOM order are the last ones the network
+ * layer even starts fetching, not just the last to decode. On a book with a
+ * couple hundred photos, that queue alone can eat most of a 20s budget
+ * before the photos furthest into the book have downloaded a single byte,
+ * which is why it was specifically the end of the book coming up blank
+ * rather than photos missing at random. 45s (paired with a matching raise to
+ * READY_TIMEOUT_MS in the renderer, functions-pdf/src/index.ts) gives that
+ * queue room to drain before the deadline starts discarding what's left. */
+const IMAGE_WAIT_MS = 45000;
 
 /** Settles when `promise` does, or when `ms` elapses — whichever comes first,
     and never rejects. */
@@ -157,16 +167,44 @@ function useExportReady(contentReady: boolean): void {
       const sources = new Set(
         Array.from(document.images, (image) => image.currentSrc || image.src).filter(Boolean),
       );
+      // Missing photos used to be silent by design (see the IMAGE_WAIT_MS
+      // comment) — a captured book with one gone was worth more than no
+      // book at all, which is still true, but "silent" also meant nobody
+      // could tell a slow network from a missing image without noticing the
+      // book itself came up short. This makes both visible in the
+      // renderer's own logs (forwarded from the page — see the `console`
+      // listener in functions-pdf/src/index.ts) without changing what the
+      // page waits on or how long it waits.
+      const stragglers: string[] = [];
       return Promise.all(
         Array.from(sources, (src) => {
           const probe = new Image();
           probe.src = src;
+          let settled = false;
+          const decode = probe.decode().then(
+            () => {
+              settled = true;
+            },
+            () => {
+              settled = true;
+              console.warn(`export: photo failed to decode — ${src}`);
+            },
+          );
           // A failed photo resolves too, and so does one that simply never
           // answers — neither a broken photo nor a stalled one may hold an
           // entire book hostage (see IMAGE_WAIT_MS).
-          return withDeadline(probe.decode(), IMAGE_WAIT_MS);
+          return withDeadline(decode, IMAGE_WAIT_MS).then(() => {
+            if (!settled) stragglers.push(src);
+          });
         }),
-      );
+      ).then(() => {
+        if (stragglers.length > 0) {
+          console.warn(
+            `export: ${stragglers.length} of ${sources.size} photo(s) still hadn't decoded after ${IMAGE_WAIT_MS}ms, captured without them:`,
+            stragglers,
+          );
+        }
+      });
     };
 
     // The font wait is bounded on the same terms and for the same reason: it is
