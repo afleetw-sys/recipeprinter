@@ -8,6 +8,11 @@
  * `@sparticuz/chromium` (a Linux build for Cloud Run), and this uses whatever
  * Chrome is already on the machine.
  *
+ * Also matches the deployed function's RESPONSE shape: {downloadUrl,
+ * pageCount} JSON, not the raw PDF bytes. There's no real Storage bucket to
+ * upload to locally, so the finished file is kept in memory and served back
+ * from this same process's own GET /files/<id>.pdf.
+ *
  *   npm run pdf:dev
  *
  * Then point the app at it in `.env.local`:
@@ -19,12 +24,31 @@
  */
 import { createServer } from "node:http";
 import { existsSync } from "node:fs";
+import { randomUUID } from "node:crypto";
 import puppeteer from "puppeteer-core";
 import { installPrintImageNormalization } from "./pdf-print-image-normalizer.mjs";
 
 const PORT = Number(process.env.PDF_DEV_PORT ?? 8899);
 const APP_ORIGIN = process.env.RECIPEPRINTER_ORIGIN ?? "http://localhost:3000";
 const AUTH = process.env.RECIPEPRINTER_PDF_AUTH ?? "local-dev-secret";
+
+/**
+ * The deployed function no longer streams the PDF back in its response — Cloud
+ * Run caps a single response well below what a large hardcover interior can
+ * run to, so it uploads to Storage and hands back {downloadUrl, pageCount}
+ * JSON instead (see exportStorage.ts in CookPilot). This local stand-in has no
+ * real bucket to upload to, so it keeps the finished file in memory here and
+ * serves it back from its own GET /files/<id>.pdf — same shape, no Storage
+ * credentials needed for local dev.
+ */
+const renderedFiles = new Map();
+const FILE_TTL_MS = 10 * 60 * 1000;
+function storeFile(buffer, downloadFilename) {
+  const id = randomUUID();
+  renderedFiles.set(id, { buffer, downloadFilename, createdAt: Date.now() });
+  setTimeout(() => renderedFiles.delete(id), FILE_TTL_MS).unref();
+  return id;
+}
 
 // Keep in sync with COOKBOOK_PRESETS (lib/cookbookPresets.ts) and the function's
 // own PRESET_SHEETS — trim plus bleed.
@@ -41,6 +65,13 @@ const PRESET_SHEETS = {
 // Ceiling on a caller-supplied sheet, so a bad request can't ask Chromium for a
 // 400-inch page. Mirrors MAX_SHEET_IN in the deployed function.
 const MAX_SHEET_IN = 40;
+
+/** Mirrors safeDownloadFilename in CookPilot's exportStorage.ts — strips
+    anything that would break a Content-Disposition header. */
+function safeDownloadFilename(name) {
+  const cleaned = String(name ?? "").replace(/[\x00-\x1f"\\]/g, "").trim();
+  return cleaned || "cookbook.pdf";
+}
 
 /**
  * The sheet to render at — mirrors `resolveSheet` in the deployed function.
@@ -102,6 +133,22 @@ process.on("SIGINT", shutdown);
 process.on("SIGTERM", shutdown);
 
 createServer(async (req, res) => {
+  if (req.method === "GET" && req.url?.startsWith("/files/")) {
+    const id = req.url.slice("/files/".length).replace(/\.pdf$/, "");
+    const entry = renderedFiles.get(id);
+    if (!entry) {
+      res.writeHead(404).end("Not found, or this dev renderer has restarted since it was made.");
+      return;
+    }
+    res
+      .writeHead(200, {
+        "content-type": "application/pdf",
+        "content-length": entry.buffer.length,
+        "content-disposition": `attachment; filename="${entry.downloadFilename}"`,
+      })
+      .end(entry.buffer);
+    return;
+  }
   if (req.method !== "POST") {
     res.writeHead(405).end("Use POST.");
     return;
@@ -184,13 +231,16 @@ createServer(async (req, res) => {
     console.log(
       `rendered ${payload.preset} — ${pdf.length} bytes in ${Date.now() - started}ms`,
     );
+    const pathFilename = payload.mode === "cover-wrap" ? "cover.pdf" : "interior.pdf";
+    const downloadFilename = safeDownloadFilename(
+      typeof payload.fileName === "string" && payload.fileName.trim()
+        ? payload.fileName
+        : pathFilename,
+    );
+    const id = storeFile(Buffer.from(pdf), downloadFilename);
     res
-      .writeHead(200, {
-        "content-type": "application/pdf",
-        "content-length": pdf.length,
-        "x-recipeprinter-page-count": pageCount,
-      })
-      .end(Buffer.from(pdf));
+      .writeHead(200, { "content-type": "application/json" })
+      .end(JSON.stringify({ downloadUrl: `http://localhost:${PORT}/files/${id}.pdf`, pageCount }));
   } catch (error) {
     console.error("render failed:", error.message);
     res.writeHead(500).end("Could not render the cookbook.");
