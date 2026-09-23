@@ -118,6 +118,6 @@ describe("blankPageReason", () => {
   it("explains a blank that keeps the recipes off the contents' last opening", () => {
     const sheets = [toc(), toc(), opener(), recipe()];
     closeSpreadGaps(sheets);
-    expect(blankPageReason(sheets, blankIndex(sheets))).toMatch(/recipes start after a page turn/);
+    expect(blankPageReason(sheets, blankIndex(sheets))).toMatch(/nothing sits beside the contents/);
   });
 });
