@@ -2676,8 +2676,16 @@
     align-items: center;
     justify-content: center;
     gap: 5px;
+    /* 92px, and shrinks to fit rather than scroll: a cookbook has four
+       tiles (Add, Extra pages, Photos, Themes), and on a 375px phone four at
+       92 overflowed. 80 is the floor where "Extra pages" (~72px) still sits
+       on one line, level with its neighbours' labels; below that the row
+       scrolls, as it always has. */
+    flex: 0 1 92px;
     width: 92px;
-    padding: 10px 6px;
+    min-width: 80px;
+    padding: 10px 4px;
+    white-space: nowrap;
     border: 0;
     border-radius: 14px;
     background: var(--cp-surface-strong);
@@ -2888,27 +2896,11 @@
     padding: 8px 4px 14px;
   }
 
-  .recipe-structure-sheet__photos {
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
-  }
-
-  /* Small caps eyebrow — same role as `.recipe-config-label` on desktop, sized
-     for the sheet. Doubles as the divider between the settings and the section
-     list. */
-  .recipe-structure-sheet__group-label {
-    display: block;
+  .recipe-structure-sheet__note {
+    margin: 0;
     color: var(--cp-ink-soft);
-    font-size: var(--cp-fs-label);
-    font-weight: 800;
-    letter-spacing: 0.06em;
-    text-transform: uppercase;
-  }
-
-  .recipe-structure-sheet__group-label--structure {
-    padding: 14px 4px 2px;
-    border-top: 1px solid var(--cp-line);
+    font-size: var(--cp-fs-caption);
+    line-height: 1.4;
   }
 
   .recipe-structure-sheet__section {

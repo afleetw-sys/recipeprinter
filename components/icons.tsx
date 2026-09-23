@@ -265,6 +265,15 @@ export const PagesIcon = (p: IconProps) => (
   </Base>
 );
 
+/** A page with a plus: pages the book gains (dedication, contents). */
+export const PagePlusIcon = (p: IconProps) => (
+  <Base {...p}>
+    <path d="M14 3.5H7A2 2 0 005 5.5v13a2 2 0 002 2h10a2 2 0 002-2V8.5z" />
+    <path d="M14 3.5v5h5" />
+    <path d="M12 11.5v6M9 14.5h6" />
+  </Base>
+);
+
 export const BookIcon = (p: IconProps) => (
   <Base {...p}>
     <path d="M4 5.5C4 4.67 4.67 4 5.5 4H12v16H5.5A1.5 1.5 0 014 18.5v-13z" />

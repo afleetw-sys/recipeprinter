@@ -22,25 +22,29 @@ interface MobileStructureSheetProps {
   navigateToRecipe: (itemId: string) => void;
   moveRecipeInBook: (itemId: string, direction: -1 | 1) => void;
   addStructureSection: () => void;
-  bookSheetOpen: boolean;
-  setBookSheetOpen: Dispatch<SetStateAction<boolean>>;
+  bookSheet: MobileBookSheet;
+  setBookSheet: Dispatch<SetStateAction<MobileBookSheet>>;
   structureSheetOpen: boolean;
   setStructureSheetOpen: Dispatch<SetStateAction<boolean>>;
 }
 
+/** Which of the book-wide sheets is open, from the bottom bar's tiles. */
+export type MobileBookSheet = "extras" | "photos" | null;
+
 /**
- * The two mobile cookbook sheets. Desktop uses the page rail and the Book
+ * The mobile cookbook sheets. Desktop uses the page rail and the Book
  * Settings panel instead; these are the touch-native equivalents, since the
  * mobile config drawer only ever opens the Themes section.
  *
- * - "Book" (the bottom bar's Book button): book-wide settings, the extra
- *   pages and photos.
+ * - "Extra pages" and "Photos" (each its own tile in the bottom bar): the
+ *   book-wide settings. They used to share one "Book" sheet, which made a
+ *   cook open a settings sheet to find either one.
  * - "Pages" (the floating page-sorter button over the deck): the reorderable
  *   list of chapters and recipes.
  *
- * They used to be one sheet, with the structure list under the settings. The
- * list is what a cook comes back to again and again, and it answers a
- * different question from how the book is set up, so it has its own way in.
+ * The structure list used to sit under the settings too. It is what a cook
+ * comes back to again and again, and it answers a different question from
+ * how the book is set up, so it has its own way in.
  */
 export function MobileStructureSheet({
   projectMeta,
@@ -55,8 +59,8 @@ export function MobileStructureSheet({
   navigateToRecipe,
   moveRecipeInBook,
   addStructureSection,
-  bookSheetOpen,
-  setBookSheetOpen,
+  bookSheet,
+  setBookSheet,
   structureSheetOpen,
   setStructureSheetOpen,
 }: MobileStructureSheetProps) {
@@ -67,19 +71,14 @@ export function MobileStructureSheet({
     return (
       <>
         <MobileSheet
-          open={bookSheetOpen}
-          onClose={() => setBookSheetOpen(false)}
-          title="Book"
+          open={bookSheet === "extras"}
+          onClose={() => setBookSheet(null)}
+          title="Extra pages"
           className="recipe-structure-sheet"
         >
-            {/* Book-wide settings — the same controls as the desktop "Book
-                Settings" panel, which the mobile config drawer never exposes
-                (it only ever opens the Themes section). */}
-            {/* Grouped the way the desktop panel groups them: pages the book
-                gains, then what every recipe carries. Same settings, same two
-                questions, so the same two headings. */}
+            {/* The same controls as the desktop "Book Settings" panel's
+                Extra pages group. */}
             <div className="recipe-structure-sheet__settings">
-              <span className="recipe-structure-sheet__group-label">Extra pages</span>
               <Checkbox
                   label="Dedication"
                   checked={Boolean(projectMeta.meta.frontMatter || projectMeta.meta.dedication)}
@@ -90,36 +89,47 @@ export function MobileStructureSheet({
                   checked={Boolean(projectMeta.meta.tableOfContents)}
                   onChange={(event) => projectMeta.setTableOfContents(event.target.checked)}
               />
-              {anyRecipeHasImage && (
-                <div className="recipe-structure-sheet__photos">
-                  <span className="recipe-config-sublabel" id="sheet-photos-label">
-                    Photos
-                  </span>
-                  <div
-                    className="recipe-photo-style"
-                    role="radiogroup"
-                    aria-labelledby="sheet-photos-label"
-                  >
-                    {PHOTO_STYLE_OPTIONS.map((option) => (
-                      <SelectTile
-                        key={option.id}
-                        selected={bookPhotoStyle === option.id}
-                        className="recipe-photo-style__tile"
-                      >
-                        <input
-                          type="radio"
-                          name="recipe-sheet-photo-style"
-                          className="sr-only"
-                          checked={bookPhotoStyle === option.id}
-                          onChange={() => applyBookPhotoStyle(option.id)}
-                        />
-                        <PhotoStylePreview id={option.id} />
-                        <span className="recipe-photo-style__tile-label">{option.short}</span>
-                      </SelectTile>
-                    ))}
-                  </div>
-                </div>
+            </div>
+        </MobileSheet>
+
+        <MobileSheet
+          open={bookSheet === "photos"}
+          onClose={() => setBookSheet(null)}
+          title="Photos"
+          className="recipe-structure-sheet"
+        >
+            <div className="recipe-structure-sheet__settings">
+              {/* The tiles change nothing on screen until a recipe has a
+                  photo, so a new book can look as though they are broken.
+                  Same note the desktop panel gives. */}
+              {!anyRecipeHasImage && (
+                <p className="recipe-structure-sheet__note">
+                  Add a photo to a recipe to see these layouts on its page.
+                </p>
               )}
+              <div
+                className="recipe-photo-style"
+                role="radiogroup"
+                aria-label="Photo layout"
+              >
+                {PHOTO_STYLE_OPTIONS.map((option) => (
+                  <SelectTile
+                    key={option.id}
+                    selected={bookPhotoStyle === option.id}
+                    className="recipe-photo-style__tile"
+                  >
+                    <input
+                      type="radio"
+                      name="recipe-sheet-photo-style"
+                      className="sr-only"
+                      checked={bookPhotoStyle === option.id}
+                      onChange={() => applyBookPhotoStyle(option.id)}
+                    />
+                    <PhotoStylePreview id={option.id} />
+                    <span className="recipe-photo-style__tile-label">{option.short}</span>
+                  </SelectTile>
+                ))}
+              </div>
             </div>
         </MobileSheet>
 

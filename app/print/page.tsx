@@ -33,7 +33,7 @@ import { useModalFocus } from "@/lib/useModalFocus";
 import { navigateAfterOverlayHistory, useBackDismiss } from "@/lib/useBackDismiss";
 import type { PrintCardSize, RecipePrintTemplate } from "@/components/RecipeCardPrint";
 import { PHOTO_STYLE_OPTIONS } from "@/components/print/photoStyle";
-import { MobileStructureSheet } from "@/components/print/MobileStructureSheet";
+import { MobileStructureSheet, type MobileBookSheet } from "@/components/print/MobileStructureSheet";
 import { MobileSheet } from "@/components/print/MobileSheet";
 import { PrintConfigPanel } from "@/components/print/PrintConfigPanel";
 import { PrintFormatToggle } from "@/components/print/PrintFormatToggle";
@@ -106,6 +106,7 @@ import { track } from "@/lib/analytics";
 import {
   BookIcon,
   PagesIcon,
+  PagePlusIcon,
   CheckIcon,
   ChevronLeftIcon,
   ChevronRightIcon,
@@ -4654,9 +4655,9 @@ export default function PrintPage() {
   // taps instead, opened from the floating page-sorter button over the deck.
   // Cookbook mode only — plain cards have no sections to arrange.
   const [structureSheetOpen, setStructureSheetOpen] = useState(false);
-  // The bottom bar's Book button: book-wide settings, kept apart from the
-  // structure list above.
-  const [bookSheetOpen, setBookSheetOpen] = useState(false);
+  // The bottom bar's Extra pages and Photos tiles: book-wide settings, one
+  // sheet each, kept apart from the structure list above.
+  const [bookSheet, setBookSheet] = useState<MobileBookSheet>(null);
   // The print-setup panel is a persistent sidebar on desktop and a modal
   // drawer on mobile, so it can only claim to be a dialog in the second case.
   // While it is one, it gets a real focus trap and Escape-to-close — it
@@ -5622,26 +5623,33 @@ export default function PrintPage() {
                   (an import still parsing counts), so the two never disagree. */}
               {recipeCount > 0 ? "Add more" : "Add recipe"}
             </button>
-            {/* Book-wide settings. The structure list lives behind the
-                floating page-sorter button instead. Cookbook mode only. */}
-            {cookbookMode && (
-              <button
-                type="button"
-                className={`recipe-mobile-toolbar__btn ${bookSheetOpen ? "is-active" : ""}`}
-                aria-pressed={bookSheetOpen}
-                aria-haspopup="dialog"
-                onClick={() => {
-                  setSizeMenuOpen(false);
-                  setStructureSheetOpen(false);
-                  setBookSheetOpen((open) => !open);
-                }}
-              >
-                <span className="recipe-mobile-toolbar__btn-icon">
-                  <BookIcon size={ICON_SIZE.lg} />
-                </span>
-                Book
-              </button>
-            )}
+            {/* Book-wide settings, one tile each: the extra pages the book
+                gains, and how every recipe carries its photo. The structure
+                list lives behind the floating page-sorter button instead.
+                Cookbook mode only. */}
+            {cookbookMode &&
+              (
+                [
+                  { id: "extras", label: "Extra pages", icon: <PagePlusIcon size={ICON_SIZE.lg} /> },
+                  { id: "photos", label: "Photos", icon: <ImageIcon size={ICON_SIZE.lg} /> },
+                ] as const
+              ).map((tile) => (
+                <button
+                  key={tile.id}
+                  type="button"
+                  className={`recipe-mobile-toolbar__btn ${bookSheet === tile.id ? "is-active" : ""}`}
+                  aria-pressed={bookSheet === tile.id}
+                  aria-haspopup="dialog"
+                  onClick={() => {
+                    setSizeMenuOpen(false);
+                    setStructureSheetOpen(false);
+                    setBookSheet((open) => (open === tile.id ? null : tile.id));
+                  }}
+                >
+                  <span className="recipe-mobile-toolbar__btn-icon">{tile.icon}</span>
+                  {tile.label}
+                </button>
+              ))}
             {/* Size is a recipe-card concept only — hidden in cookbook mode,
                 where every page is a bound letter page. */}
             {!projectMeta.meta.cookbookMode && (
@@ -5752,7 +5760,7 @@ export default function PrintPage() {
             aria-expanded={structureSheetOpen}
             onClick={() => {
               setSizeMenuOpen(false);
-              setBookSheetOpen(false);
+              setBookSheet(null);
               setStructureSheetOpen((open) => !open);
             }}
           >
@@ -5773,8 +5781,8 @@ export default function PrintPage() {
           navigateToRecipe={navigateToRecipe}
           moveRecipeInBook={moveRecipeInBook}
           addStructureSection={addStructureSection}
-          bookSheetOpen={bookSheetOpen}
-          setBookSheetOpen={setBookSheetOpen}
+          bookSheet={bookSheet}
+          setBookSheet={setBookSheet}
           structureSheetOpen={structureSheetOpen}
           setStructureSheetOpen={setStructureSheetOpen}
         />
