@@ -271,9 +271,13 @@ type EventProps = {
    *  cycle was selected at the time — the step right before checkout (signed
    *  in) or the sign-in gate (signed out). */
   pro_continue_clicked: { cycle: "monthly" | "annual"; auto_renew: boolean };
-  /** "Continue Pro monthly" under the Monthly tile was checked or unchecked.
+  /** "Auto-renew monthly" inside the Monthly tile was checked or unchecked.
    *  Unchecked buys one month of Pro that ends on its own. */
   pro_auto_renew_toggled: { enabled: boolean };
+  /** A one-month Pro purchase was paid for, but asking CookPilot to turn it
+   *  into Pro failed. The webhook grants the same month on its own, so this
+   *  counts how often buyers waited on it rather than lost anything. */
+  pro_month_grant_failed: { reason: string; customerId: string };
   /** The sign-in dialog opened specifically because signing in was required
    *  to continue a Pro purchase (as opposed to the cookbook's existing
    *  "protect your purchase" use of the same dialog). Doubles as the

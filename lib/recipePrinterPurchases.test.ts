@@ -19,7 +19,10 @@ import { synthesizeCustomerInfoFromMirror } from "./proAccessFallback";
  * which is exactly what these pure functions exist to be tested without.
  */
 function customerWith(
-  active: Record<string, { productIdentifier?: string; expirationDate?: Date | null; willRenew?: boolean; isActive?: boolean }>,
+  active: Record<
+    string,
+    { productIdentifier?: string; store?: string; expirationDate?: Date | null; willRenew?: boolean; isActive?: boolean }
+  >,
 ): CustomerInfo {
   const entitlements = Object.fromEntries(
     Object.entries(active).map(([id, info]) => [
@@ -29,6 +32,7 @@ function customerWith(
         isActive: info.isActive ?? true,
         willRenew: info.willRenew ?? true,
         productIdentifier: info.productIdentifier ?? id,
+        store: info.store ?? "rc_billing",
         expirationDate: info.expirationDate ?? null,
       },
     ]),
@@ -208,14 +212,12 @@ describe("proSubscriptionDetails", () => {
       cycle: null,
       active: false,
       willRenew: false,
-      oneMonth: false,
       expiresAtMs: null,
     });
     expect(proSubscriptionDetails(NO_ENTITLEMENTS)).toEqual({
       cycle: null,
       active: false,
       willRenew: false,
-      oneMonth: false,
       expiresAtMs: null,
     });
   });
@@ -229,21 +231,25 @@ describe("proSubscriptionDetails", () => {
       cycle: "monthly",
       active: true,
       willRenew: true,
-      oneMonth: false,
       expiresAtMs: expires.getTime(),
     });
   });
 
-  test("a single month of Pro reads as monthly, not renewing, and not canceled", () => {
+  test("a month bought on its own (a promotional grant) reads like a canceled monthly", () => {
     const expires = new Date("2026-10-23T00:00:00Z");
     const info = customerWith({
-      pro: { productIdentifier: "pro_one_month", expirationDate: expires, willRenew: false, isActive: true },
+      pro: {
+        productIdentifier: "rc_promo_pro_monthly",
+        store: "promotional",
+        expirationDate: expires,
+        willRenew: true,
+        isActive: true,
+      },
     });
     expect(proSubscriptionDetails(info)).toEqual({
       cycle: "monthly",
       active: true,
       willRenew: false,
-      oneMonth: true,
       expiresAtMs: expires.getTime(),
     });
   });

@@ -5,8 +5,12 @@ import type { User } from "firebase/auth";
 import type { CustomerInfo } from "@revenuecat/purchases-js";
 import { track, truncateReason } from "@/lib/analytics";
 import { friendlyPurchaseSetupError } from "@/lib/friendlyErrors";
-import { hasProEntitlement, purchaseRecipePrinterPro } from "@/lib/recipePrinterPurchases";
-import type { ProPlan } from "@/lib/proProduct";
+import {
+  grantPurchasedProMonth,
+  hasProEntitlement,
+  purchaseRecipePrinterPro,
+} from "@/lib/recipePrinterPurchases";
+import { buysOneMonth, type ProPlan } from "@/lib/proProduct";
 
 interface UseProPurchaseOptions {
   /** Shared with usePremiumTemplatePurchase — this hook reuses that hook's
@@ -111,7 +115,24 @@ export function useProPurchase({
 
       track("purchase_completed", { product: "pro", cycle, customerId: revenueCatUserId });
 
-      if (!hasProEntitlement(result.customerInfo)) {
+      // A month bought on its own grants nothing at checkout; CookPilot turns
+      // it into Pro. A failure here is after the charge, so it is not a failed
+      // purchase: the webhook grants the same month, and the message below
+      // tells them it is on its way.
+      let settledInfo = result.customerInfo;
+      if (buysOneMonth(plan)) {
+        try {
+          settledInfo = await grantPurchasedProMonth(revenueCatUserId);
+          setCustomerInfo(settledInfo);
+        } catch (error) {
+          track("pro_month_grant_failed", {
+            reason: truncateReason(error),
+            customerId: revenueCatUserId,
+          });
+        }
+      }
+
+      if (!hasProEntitlement(settledInfo)) {
         showErrorToast("Your purchase went through, but Pro isn't ready yet. Wait a moment, then try again.");
         onSettled("failed");
         return;

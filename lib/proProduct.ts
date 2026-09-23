@@ -29,14 +29,20 @@ export const RECIPEPRINTER_PRO_PRODUCT_IDS = {
   annual: "pro_annual",
 } as const satisfies Record<ProBillingCycle, string>;
 
-// One month of Pro that does not renew — what Monthly buys when "Continue Pro
-// monthly" is unchecked. A non-renewing product in the same "pro" offering,
-// attached to the same "pro" entitlement with a one-month duration, so it
-// grants and expires Pro exactly the way a canceled monthly subscription
-// does and every entitlement check stays as it is. Must exist in RevenueCat's
-// dashboard before an unchecked Monthly can resolve a package.
+// One month of Pro that does not renew — what Monthly buys when "Auto-renew
+// monthly" is unchecked. RevenueCat Web Billing has no purchase that grants an
+// entitlement for a fixed time (one attached to "pro" would grant it forever),
+// so this is a CONSUMABLE in the "pro" offering attached to NO entitlement.
+// Buying it grants nothing by itself: CookPilot's `grantRecipePrinterProMonth`
+// (called right after checkout, see `grantPurchasedProMonth`) and its webhook
+// turn each purchase into a one-month promotional "pro" grant. Match
+// RECIPEPRINTER_PRO_ONE_MONTH_PRODUCT_ID in CookPilot's
+// functions/src/recipePrinterRevenueCat.ts.
 export const RECIPEPRINTER_PRO_ONE_MONTH_PACKAGE_ID = "pro_one_month";
 export const RECIPEPRINTER_PRO_ONE_MONTH_PRODUCT_ID = "pro_one_month";
+/** The product id RevenueCat puts on a one-month promotional "pro" grant —
+ *  what the entitlement reads as once a one-month purchase has been granted. */
+export const RECIPEPRINTER_PRO_ONE_MONTH_GRANT_PRODUCT_ID = "rc_promo_pro_monthly";
 
 /** What the upgrade dialog hands to checkout. `autoRenew` only ever changes
  *  anything for Monthly; Annual always renews. */
@@ -45,7 +51,7 @@ export interface ProPlan {
   autoRenew: boolean;
 }
 
-function buysOneMonth({ cycle, autoRenew }: ProPlan): boolean {
+export function buysOneMonth({ cycle, autoRenew }: ProPlan): boolean {
   return cycle === "monthly" && !autoRenew;
 }
 

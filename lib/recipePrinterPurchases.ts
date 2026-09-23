@@ -24,7 +24,7 @@ import {
   proProductId,
   RECIPEPRINTER_PRO_ENTITLEMENT_ID,
   RECIPEPRINTER_PRO_OFFERING_ID,
-  RECIPEPRINTER_PRO_ONE_MONTH_PRODUCT_ID,
+  RECIPEPRINTER_PRO_ONE_MONTH_GRANT_PRODUCT_ID,
   RECIPEPRINTER_PRO_PRODUCT_IDS,
   type ProBillingCycle,
   type ProPlan,
@@ -659,6 +659,32 @@ export async function purchaseRecipePrinterPro({
   });
 }
 
+/**
+ * Turns a just-paid month of Pro into Pro. The purchase itself grants
+ * nothing (see RECIPEPRINTER_PRO_ONE_MONTH_PRODUCT_ID): CookPilot reads it
+ * from RevenueCat and grants a one-month promotional "pro". Then this reads
+ * the customer back until Pro shows, since the webhook may be the one
+ * finishing a grant the call found already underway.
+ *
+ * Returns the freshest customer info either way; the caller decides what a
+ * still-missing Pro means. Throws only when the grant call itself failed.
+ */
+export async function grantPurchasedProMonth(userId: string): Promise<CustomerInfo> {
+  const [{ httpsCallable }, { getFns }] = await Promise.all([
+    import("firebase/functions"),
+    import("@/lib/firebase/functions"),
+  ]);
+  await httpsCallable(getFns(), "grantRecipePrinterProMonth")({});
+
+  const purchases = await getPurchases(userId);
+  let customerInfo = await purchases.getCustomerInfo();
+  for (let attempt = 0; attempt < 4 && !hasProEntitlement(customerInfo); attempt += 1) {
+    await new Promise((resolve) => setTimeout(resolve, 1500));
+    customerInfo = await purchases.getCustomerInfo();
+  }
+  return customerInfo;
+}
+
 /** RevenueCat's hosted billing-management link for the signed-in customer —
  *  where a subscriber changes plan or cancels. Null when the SDK has no
  *  portal URL to offer (e.g. no purchase relationship yet). */
@@ -672,9 +698,6 @@ export interface ProSubscriptionDetails {
    *  `expiresAtMs`, it isn't revoked the moment someone cancels. */
   active: boolean;
   willRenew: boolean;
-  /** Bought as a single month (`pro_one_month`) rather than a subscription.
-   *  It never renews, but nobody canceled anything either. */
-  oneMonth: boolean;
   expiresAtMs: number | null;
 }
 
@@ -685,20 +708,22 @@ export interface ProSubscriptionDetails {
 export function proSubscriptionDetails(customerInfo: CustomerInfo | null): ProSubscriptionDetails {
   const entitlement = customerInfo?.entitlements.all[RECIPEPRINTER_PRO_ENTITLEMENT_ID];
   if (!entitlement) {
-    return { cycle: null, active: false, willRenew: false, oneMonth: false, expiresAtMs: null };
+    return { cycle: null, active: false, willRenew: false, expiresAtMs: null };
   }
   const product = entitlement.productIdentifier;
   const cycle: ProBillingCycle | null =
     product === RECIPEPRINTER_PRO_PRODUCT_IDS.annual
       ? "annual"
-      : product === RECIPEPRINTER_PRO_PRODUCT_IDS.monthly || product === RECIPEPRINTER_PRO_ONE_MONTH_PRODUCT_ID
+      : product === RECIPEPRINTER_PRO_PRODUCT_IDS.monthly || product === RECIPEPRINTER_PRO_ONE_MONTH_GRANT_PRODUCT_ID
         ? "monthly"
         : null;
   return {
     cycle,
     active: entitlement.isActive,
-    willRenew: entitlement.willRenew,
-    oneMonth: product === RECIPEPRINTER_PRO_ONE_MONTH_PRODUCT_ID,
+    // A month bought on its own arrives as a promotional grant, which ends on
+    // its own date. It reads exactly like a monthly subscription that was
+    // canceled, on purpose.
+    willRenew: entitlement.willRenew && entitlement.store !== "promotional",
     expiresAtMs: entitlement.expirationDate ? entitlement.expirationDate.getTime() : null,
   };
 }

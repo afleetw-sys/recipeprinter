@@ -22,7 +22,6 @@ import { loadRecipePrinterUserProfile, type RecipePrinterMirroredEntitlement } f
 import {
   PRO_ANNUAL_PRICE_FALLBACK,
   PRO_MONTHLY_PRICE_FALLBACK,
-  PRO_ONE_MONTH_PRICE_FALLBACK,
   PRO_PRICE_FALLBACKS,
   proAnnualSavingsPercent,
   type ProBillingCycle,
@@ -222,22 +221,16 @@ export function AccountProStatus({ user }: { user: User }) {
                   <h3 className="text-cp-body font-extrabold text-ink">Pro</h3>
                 </div>
                 <p className="mt-1 text-cp-body font-bold text-ink-soft">
-                  {proDetails.oneMonth
-                    ? PRO_ONE_MONTH_PRICE_FALLBACK
-                    : proDetails.cycle
-                      ? PRO_PRICE_FALLBACKS[proDetails.cycle]
-                      : "Your plan"}
+                  {proDetails.cycle ? PRO_PRICE_FALLBACKS[proDetails.cycle] : "Your plan"}
                 </p>
                 <p className="mt-1 text-cp-small font-bold text-ink">
                   {proDetails.willRenew
                     ? `Renews ${formatDate(proDetails.expiresAtMs) ?? "soon"}`
-                    : `Ends ${formatDate(proDetails.expiresAtMs) ?? "at the end of your paid period"}`}
+                    : `Pro through ${formatDate(proDetails.expiresAtMs) ?? "the end of your paid period"}`}
                 </p>
                 {!proDetails.willRenew && (
                   <p className="text-cp-small text-ink-soft">
-                    {proDetails.oneMonth
-                      ? "Your month of Pro. You can keep Pro going any time before then."
-                      : "You canceled, but you can pick Pro back up any time before then."}
+                    You can pick Pro back up any time before then.
                   </p>
                 )}
                 <ul className="mt-cp-2 flex flex-1 flex-col gap-cp-1">
@@ -286,7 +279,7 @@ export function AccountProStatus({ user }: { user: User }) {
                       setShowProUpgradeDialog(true);
                     }}
                   >
-                    {proDetails.oneMonth ? "Keep Pro" : "Resubscribe"}
+                    Resubscribe
                   </button>
                 )}
               </div>
