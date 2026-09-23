@@ -943,20 +943,36 @@ export function assembleSpreads(pages: BookPageKind[]): BookSpread[] {
     spreads.push({ left: null, right: start, single: true });
     start += 1;
   }
-  // The dedication is page 1 of an interior whose cover is supplied
-  // separately. Page 1 has no facing left-hand page, so it stands alone just
-  // like the outside cover in the book view. Treating it as the left half of
-  // the first spread made the lookahead below orphan it whenever an atomic
-  // photo/recipe or chapter/art pair followed; closeSpreadGaps then turned
-  // that preview-only hole into a real blank page after the dedication.
-  if (pages[start] === "dedication") {
-    spreads.push({ left: null, right: start, single: true });
-    start += 1;
-  }
   let backSpread: BookSpread | null = null;
   if (end - 1 >= start && pages[end - 1] === "back") {
     backSpread = { left: end - 1, right: null, single: true };
     end -= 1;
+  }
+
+  /**
+   * Page 1 is a right-hand page, alone, whatever it is.
+   *
+   * No printer will put a page on the inside of the front cover, so the first
+   * interior page always faces nothing. That is the dedication when there is
+   * one, the first contents page when there is not, and the first page of the
+   * body when there is neither. Everything after it pairs (2,3), (4,5).
+   *
+   * The one page that cannot go there is the first half of a pair that has to
+   * lie open together: a recipe's photo, or a chapter opener with its art.
+   * Standing that alone would put its partner overleaf, so page 1 is left
+   * empty instead ({ left: null, right: null }), and closeSpreadGaps prints
+   * it as a blank leaf.
+   */
+  if (start < end) {
+    const opensPair =
+      (pages[start] === "image-photo" && pages[start + 1] === "content") ||
+      (pages[start] === "chapter" && pages[start + 1] === "section-photo");
+    if (opensPair) {
+      spreads.push({ left: null, right: null, single: true });
+    } else {
+      spreads.push({ left: null, right: start, single: true });
+      start += 1;
+    }
   }
 
   // Keep a full-photo page and the recipe immediately following it as one

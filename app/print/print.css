@@ -1265,17 +1265,6 @@
   pointer-events: none;
 }
 
-/* A chapter opener's own toolbar (photo, subtitle) sits INSIDE its page, near
-   the top edge, rather than floating above it — the spread-level toolbar
-   above (Delete + None/In page/Full page, `--spread` below) owns the "above"
-   spot, acting on the pair as a whole; each page's own controls belong ON
-   that page, same as the border does (see `recipe-spread--section-focused`
-   and `recipe-spread__page.is-focused`). */
-.recipe-page-canvas__controls--inside {
-  bottom: auto;
-  top: 12px;
-}
-
 /* ── The page toolbar ────────────────────────────────────────────────────────
    One bar, not two islands. Front/Back floated centred over the page while
    Edit floated at its right edge: two controls acting on the same page, far
@@ -1583,6 +1572,42 @@
   width: 100%;
   height: 100%;
   background: var(--recipe-bg, var(--cp-card));
+}
+
+/* Why a blank page is blank. Screen only: the page prints empty. */
+.recipe-spread__blank {
+  position: relative;
+}
+
+/* A dashed inset frame reads as "placeholder", not as page content, and the
+   heading names the page before the line says why. */
+.recipe-spread__blank-note {
+  position: absolute;
+  inset: 6%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 16px;
+  border: 1px dashed var(--cp-line-strong);
+  border-radius: var(--cp-radius-sm);
+  text-align: center;
+}
+
+.recipe-spread__blank-note-title {
+  margin: 0;
+  color: var(--cp-ink);
+  font-size: var(--cp-fs-caption);
+  font-weight: 700;
+}
+
+.recipe-spread__blank-note-reason {
+  max-width: 22em;
+  margin: 0;
+  color: var(--cp-ink-soft);
+  font-size: var(--cp-fs-caption);
+  line-height: 1.45;
 }
 
 /* The first slide's controls float above the card like every other slide's —

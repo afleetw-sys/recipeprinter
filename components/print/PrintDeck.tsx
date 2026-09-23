@@ -35,6 +35,7 @@ import {
   type PrintCardSize,
   type RecipePrintTemplate,
 } from "@/components/RecipeCardPrint";
+import { blankPageReason } from "@/lib/usePrintSheets";
 import type { NavItem, PageSheet, SheetSlot, usePrintSheets } from "@/lib/usePrintSheets";
 import {
   sectionHasArtPage,
@@ -729,10 +730,9 @@ export function PrintDeck(props: PrintDeckProps) {
     if (!navItem.flip && !editable && !photoControl && !linkControl && !addImagePageButton) {
       return null;
     }
-    const insideCard = navItem.kind === "divider" || navItem.kind === "section-photo";
     return (
       <div
-        className={`recipe-page-canvas__controls ${insideCard ? "recipe-page-canvas__controls--inside" : ""} no-print`}
+        className="recipe-page-canvas__controls no-print"
         style={{
           "--preview-w": `${previewW}px`,
           "--preview-offset": `${horizontalOffset}px`,
@@ -1404,7 +1404,7 @@ export function PrintDeck(props: PrintDeckProps) {
                       ? spread.left
                       : null;
                   const designedBlank = leftSlot?.kind === "toc";
-                  const renderBlank = (trailing = false) => (
+                  const renderBlank = (trailing = false, reason?: string) => (
                     <div
                       className={`recipe-spread__blank recipe-template--${previewTemplate} ${
                         designedBlank ? "recipe-spread__blank--designed" : ""
@@ -1414,7 +1414,7 @@ export function PrintDeck(props: PrintDeckProps) {
                           ? `${RECIPE_PRINT_TEMPLATE_OPTIONS.find((option) => option.id === previewTemplate)?.label ?? "Template"} decorative page`
                           : undefined
                       }
-                      aria-hidden={designedBlank ? undefined : true}
+                      aria-hidden={designedBlank || reason ? undefined : true}
                       style={{
                         width: `${previewDims.w * deckScale}px`,
                         height: `${previewDims.h * deckScale}px`,
@@ -1422,6 +1422,12 @@ export function PrintDeck(props: PrintDeckProps) {
                     >
                       {leftSlot?.kind === "toc" ? (
                         <div className="recipe-spread__blank-decoration" aria-hidden />
+                      ) : null}
+                      {reason ? (
+                        <div className="recipe-spread__blank-note no-print">
+                          <p className="recipe-spread__blank-note-title">Blank page</p>
+                          <p className="recipe-spread__blank-note-reason">{reason}</p>
+                        </div>
                       ) : null}
                     </div>
                   );
@@ -1446,7 +1452,12 @@ export function PrintDeck(props: PrintDeckProps) {
                     }
                     const ni = navIndexForSheet.get(sheetIndex);
                     const pageNav = ni != null ? navItems[ni] : null;
-                    if (!pageNav) return renderBlank();
+                    if (!pageNav) {
+                      // A blank leaf the book prints on purpose: say why, on
+                      // screen only, so it isn't mistaken for a missing page.
+                      const isBlankLeaf = pageSheet.slots.some((slot) => slot?.kind === "blank");
+                      return renderBlank(false, isBlankLeaf ? blankPageReason(sheets, sheetIndex) : undefined);
+                    }
                     // A linked spread (image or TOC) outlines both pages when
                     // either is focused; a normal spread, and a section spread,
                     // only the specific page — a section spread gets its OWN
@@ -1508,9 +1519,9 @@ export function PrintDeck(props: PrintDeckProps) {
                           activeNavItem,
                           // A linked spread is one page as far as the reader is
                           // concerned, so its toolbar spans both sheets and sits
-                          // centred over the pair. A section spread's per-page
-                          // toolbar stays sized and offset to its own half —
-                          // it's the spread-level toolbar above that spans both.
+                          // centred over the pair. Every other spread, a chapter
+                          // opener's included, floats the toolbar over the half
+                          // being edited.
                           linkedSpread
                             ? spreadWidth * deckScale
                             : previewDims.w * deckScale,

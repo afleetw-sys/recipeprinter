@@ -212,33 +212,44 @@ describe("assembleSpreads (book imposition)", () => {
     expect(spreads[spreads.length - 1]).toEqual({ left: 4, right: null, single: true });
   });
 
-  it("pairs body pages left→right", () => {
-    // cover, [c1|c2], [c3|c4], back
+  it("pairs body pages left→right after a lone page 1", () => {
+    // cover, [ |c1], [c2|c3], [c4| ], back
     const spreads = assembleSpreads(K("cover", "content", "content", "content", "content", "back"));
     expect(spreads).toEqual([
       { left: null, right: 0, single: true },
-      { left: 1, right: 2, single: false },
-      { left: 3, right: 4, single: false },
+      { left: null, right: 1, single: true },
+      { left: 2, right: 3, single: false },
+      { left: 4, right: null, single: false },
       { left: 5, right: null, single: true },
     ]);
   });
 
-  it("lets a chapter opener flow naturally without inserting a blank", () => {
-    const spreads = assembleSpreads(K("cover", "chapter", "content"));
+  it("stands page 1 alone with or without a cover in front of it", () => {
+    // A separately supplied cover is not in the file at all, so the first
+    // page of the file is page 1.
+    const spreads = assembleSpreads(K("content", "content", "content"));
+    expect(spreads[0]).toEqual({ left: null, right: 0, single: true });
     expect(spreads[1]).toEqual({ left: 1, right: 2, single: false });
-    expect(spreads).toHaveLength(2);
+  });
+
+  it("stands a chapter opener alone when it is page 1", () => {
+    const spreads = assembleSpreads(K("cover", "chapter", "content"));
+    expect(spreads[1]).toEqual({ left: null, right: 1, single: true });
+    expect(spreads[2]).toEqual({ left: 2, right: null, single: false });
   });
 
   it("keeps each full-page image on the left of its own recipe", () => {
     const spreads = assembleSpreads(K("cover", "content", "image-photo", "content"));
-    expect(spreads[1]).toEqual({ left: 1, right: null, single: false });
+    expect(spreads[1]).toEqual({ left: null, right: 1, single: true });
     expect(spreads[2]).toEqual({ left: 2, right: 3, single: false });
   });
 
-  it("leaves an already-aligned image-spread untouched", () => {
-    // cover, image-photo(1) at verso already, recipe(2) at recto
+  it("leaves page 1 empty rather than split a photo from its recipe", () => {
+    // Page 1 is a right-hand page. A photo there would face nothing and its
+    // recipe would be overleaf, so page 1 is left for a blank.
     const spreads = assembleSpreads(K("cover", "image-photo", "content"));
-    expect(spreads[1]).toEqual({ left: 1, right: 2, single: false });
+    expect(spreads[1]).toEqual({ left: null, right: null, single: true });
+    expect(spreads[2]).toEqual({ left: 1, right: 2, single: false });
   });
 
   it("keeps successive recipe images attached to their matching recipes", () => {
@@ -248,30 +259,36 @@ describe("assembleSpreads (book imposition)", () => {
       "image-photo", "content",
     ));
     expect(spreads).toEqual([
-      { left: 0, right: null, single: false },
+      { left: null, right: 0, single: true },
       { left: 1, right: 2, single: false },
       { left: 3, right: 4, single: false },
     ]);
   });
 
   it("pads a trailing lone body page to a full spread", () => {
-    const spreads = assembleSpreads(K("cover", "content"));
-    expect(spreads[1]).toEqual({ left: 1, right: null, single: false });
+    const spreads = assembleSpreads(K("cover", "content", "content"));
+    expect(spreads[2]).toEqual({ left: 2, right: null, single: false });
   });
 
   it("pairs a chapter opener with its facing section photo", () => {
-    const spreads = assembleSpreads(K("cover", "chapter", "section-photo", "content"));
+    const spreads = assembleSpreads(K("cover", "content", "chapter", "section-photo", "content"));
     // opener on the verso, its full-page/grid photo on the recto, as one spread
-    expect(spreads[1]).toEqual({ left: 1, right: 2, single: false });
-    expect(spreads[2]).toEqual({ left: 3, right: null, single: false });
+    expect(spreads[2]).toEqual({ left: 2, right: 3, single: false });
+    expect(spreads[3]).toEqual({ left: 4, right: null, single: false });
+  });
+
+  it("leaves page 1 empty rather than split a chapter opener from its photo", () => {
+    const spreads = assembleSpreads(K("cover", "chapter", "section-photo", "content"));
+    expect(spreads[1]).toEqual({ left: null, right: null, single: true });
+    expect(spreads[2]).toEqual({ left: 1, right: 2, single: false });
   });
 
   it("realigns a stray page so a chapter opener isn't split from its photo", () => {
-    const spreads = assembleSpreads(K("content", "chapter", "section-photo", "content"));
+    const spreads = assembleSpreads(K("content", "content", "chapter", "section-photo", "content"));
     // the lone content stands by itself so the opener keeps its photo on the recto
-    expect(spreads[0]).toEqual({ left: 0, right: null, single: false });
-    expect(spreads[1]).toEqual({ left: 1, right: 2, single: false });
-    expect(spreads[2]).toEqual({ left: 3, right: null, single: false });
+    expect(spreads[1]).toEqual({ left: 1, right: null, single: false });
+    expect(spreads[2]).toEqual({ left: 2, right: 3, single: false });
+    expect(spreads[3]).toEqual({ left: 4, right: null, single: false });
   });
 });
 
@@ -307,15 +324,29 @@ describe("a contents page that runs long", () => {
    * chapter opener — half table-of-contents, half book, selected as one thing.
    */
   it("pairs contents pages only with each other", () => {
-    const spreads = assembleSpreads(["cover", "toc", "toc", "chapter", "content"]);
-    expect(spreads).toContainEqual(spread(1, 2));
-    expect(spreads.some((s) => s.left === 2 && s.right === 3)).toBe(false);
+    const spreads = assembleSpreads(["cover", "dedication", "toc", "toc", "toc", "chapter", "content"]);
+    expect(spreads).toContainEqual(spread(2, 3));
+    expect(spreads.some((s) => s.left === 4 && s.right === 5)).toBe(false);
   });
 
   it("leaves an odd third contents page on its own", () => {
+    const spreads = assembleSpreads(["cover", "dedication", "toc", "toc", "toc", "chapter"]);
+    expect(spreads).toContainEqual(spread(2, 3));
+    expect(spreads).toContainEqual(spread(4, null));
+  });
+
+  // With no dedication, the first contents page is page 1: alone on the right.
+  // The rest of the contents pairs from page 2.
+  it("stands the first contents page alone when there is no dedication", () => {
     const spreads = assembleSpreads(["cover", "toc", "toc", "toc", "chapter"]);
-    expect(spreads).toContainEqual(spread(1, 2));
-    expect(spreads).toContainEqual(spread(3, null));
+    expect(spreads).toContainEqual(spread(null, 1, true));
+    expect(spreads).toContainEqual(spread(2, 3));
+  });
+
+  it("gives the second contents page its own spread, not the first chapter's", () => {
+    const spreads = assembleSpreads(["cover", "toc", "toc", "chapter", "content"]);
+    expect(spreads).toContainEqual(spread(null, 1, true));
+    expect(spreads).toContainEqual(spread(2, null));
   });
 
   // An opening dedication is page 1 and stands alone; the contents begins on
@@ -326,9 +357,10 @@ describe("a contents page that runs long", () => {
     expect(spreads).toContainEqual(spread(2, 3));
   });
 
-  it("still pairs a single contents page with nothing after it", () => {
+  it("stands a one-page contents alone as page 1", () => {
     const spreads = assembleSpreads(["cover", "toc", "chapter", "content"]);
-    expect(spreads).toContainEqual(spread(1, null));
+    expect(spreads).toContainEqual(spread(null, 1, true));
+    expect(spreads).toContainEqual(spread(2, 3));
   });
 
   // Page 1 has no facing page. A one-page contents therefore starts after the

@@ -1,9 +1,9 @@
 import { describe, expect, it } from "vitest";
-import { closeSpreadGaps, type PageSheet } from "@/lib/usePrintSheets";
+import { blankPageReason, closeSpreadGaps, type PageSheet } from "@/lib/usePrintSheets";
 
 /* Sheets, stripped to the two things assembleSpreads reads: what kind of
-   page it is, and whether it is one half of a facing pair. Mirrors
-   openingBlank.test.ts's own fixture builder. */
+   page it is, and whether it is one half of a facing pair. No cover in front,
+   so the first sheet is page 1: a right-hand page, alone. */
 const sheet = (kind: string, layoutKind?: "image" | "section-photo"): PageSheet =>
   ({
     id: kind,
@@ -39,48 +39,56 @@ describe("closeSpreadGaps", () => {
     expect(kinds(sheets)).toEqual(["cover", "image", "recipe"]);
   });
 
-  it("inserts a real blank when a lone recipe precedes a facing-photo spread", () => {
-    // The reported bug: a single recipe, then an image-spread pair — the
-    // preview orphans the recipe (an empty box on the right) to keep the
-    // photo beside its own recipe instead.
+  it("needs no blank when page 1 stands alone before a facing-photo spread", () => {
     const sheets = [recipe(), photo(), recipe()];
     closeSpreadGaps(sheets);
-    expect(kinds(sheets)).toEqual(["recipe", "blank", "image", "recipe"]);
+    expect(kinds(sheets)).toEqual(["recipe", "image", "recipe"]);
+  });
+
+  it("inserts a real blank when a lone recipe precedes a facing-photo spread", () => {
+    // Page 2 is a left-hand page with a photo/recipe pair after it; the
+    // preview orphans it (an empty box on the right) to keep the photo beside
+    // its own recipe.
+    const sheets = [recipe(), recipe(), photo(), recipe()];
+    closeSpreadGaps(sheets);
+    expect(kinds(sheets)).toEqual(["recipe", "recipe", "blank", "image", "recipe"]);
   });
 
   it("does the same for a chapter opener before its own facing art", () => {
-    const sheets = [recipe(), opener(), openerPhoto()];
+    const sheets = [recipe(), recipe(), opener(), openerPhoto()];
     closeSpreadGaps(sheets);
-    expect(kinds(sheets)).toEqual(["recipe", "blank", "divider", "section-photo"]);
+    expect(kinds(sheets)).toEqual(["recipe", "recipe", "blank", "divider", "section-photo"]);
   });
 
-  it("leaves the book alone when an even run already precedes the photo", () => {
-    const sheets = [recipe(), recipe(), photo(), recipe()];
-    closeSpreadGaps(sheets);
-    expect(sheets).toHaveLength(4);
-  });
-
-  it("never pads the book's true last page — a lone trailing page is not a gap", () => {
+  it("prints page 1 blank rather than split a photo from its recipe", () => {
     const sheets = [photo(), recipe(), recipe()];
     closeSpreadGaps(sheets);
-    // The photo pairs with the first recipe; the second recipe ends the book
-    // alone. That's a real, correct ending, not a gap to close.
-    expect(sheets).toHaveLength(3);
+    // The second recipe ends the book alone: a real ending, not a gap.
+    expect(kinds(sheets)).toEqual(["blank", "image", "recipe", "recipe"]);
   });
 
-  it("closes a gap made by an odd-length contents block too", () => {
-    // Three contents pages pair as (toc,toc) then a lone third — orphaned to
-    // keep the photo spread that follows intact.
+  it("prints page 1 blank rather than split a chapter opener from its art", () => {
+    const sheets = [opener(), openerPhoto(), recipe()];
+    closeSpreadGaps(sheets);
+    expect(kinds(sheets)).toEqual(["blank", "divider", "section-photo", "recipe"]);
+  });
+
+  it("stands the first of two contents pages alone and gives the second its own spread", () => {
+    const sheets = [toc(), toc(), photo(), recipe()];
+    closeSpreadGaps(sheets);
+    expect(kinds(sheets)).toEqual(["toc", "toc", "blank", "image", "recipe"]);
+  });
+
+  it("leaves a three-page contents alone: page 1, then a spread", () => {
     const sheets = [toc(), toc(), toc(), photo(), recipe()];
     closeSpreadGaps(sheets);
-    expect(kinds(sheets)).toEqual(["toc", "toc", "toc", "blank", "image", "recipe"]);
+    expect(sheets).toHaveLength(5);
   });
 
   it("closes more than one gap in the same book", () => {
-    const sheets = [recipe(), photo(), recipe(), recipe(), opener(), openerPhoto()];
+    const sheets = [photo(), recipe(), recipe(), opener(), openerPhoto()];
     closeSpreadGaps(sheets);
     expect(kinds(sheets)).toEqual([
-      "recipe",
       "blank",
       "image",
       "recipe",
@@ -89,5 +97,27 @@ describe("closeSpreadGaps", () => {
       "divider",
       "section-photo",
     ]);
+  });
+});
+
+describe("blankPageReason", () => {
+  const blankIndex = (sheets: PageSheet[]) => kinds(sheets).indexOf("blank");
+
+  it("explains a blank that keeps a photo beside its recipe", () => {
+    const sheets = [photo(), recipe()];
+    closeSpreadGaps(sheets);
+    expect(blankPageReason(sheets, blankIndex(sheets))).toMatch(/photo sits beside its recipe/);
+  });
+
+  it("explains a blank that keeps a chapter opener beside its art", () => {
+    const sheets = [recipe(), recipe(), opener(), openerPhoto()];
+    closeSpreadGaps(sheets);
+    expect(blankPageReason(sheets, blankIndex(sheets))).toMatch(/chapter sits beside its photo/);
+  });
+
+  it("explains a blank that keeps the recipes off the contents' last opening", () => {
+    const sheets = [toc(), toc(), opener(), recipe()];
+    closeSpreadGaps(sheets);
+    expect(blankPageReason(sheets, blankIndex(sheets))).toMatch(/nothing sits beside the contents/);
   });
 });
