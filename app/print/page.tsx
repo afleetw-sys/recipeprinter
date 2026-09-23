@@ -2780,7 +2780,6 @@ export default function PrintPage() {
       customerInfo: effectiveCustomerInfo.customerInfo,
       cookbookMode,
       template,
-      selectedPremiumTemplate,
       cardSize,
       recipeCount,
     });
@@ -3580,7 +3579,6 @@ export default function PrintPage() {
         customerInfo: effectiveCustomerInfo.customerInfo,
         cookbookMode,
         template,
-        selectedPremiumTemplate,
         cardSize,
         recipeCount: recipeCountNow,
       });

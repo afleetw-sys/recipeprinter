@@ -263,14 +263,12 @@ export function computeProLocks({
   customerInfo,
   cookbookMode,
   template,
-  selectedPremiumTemplate,
   cardSize,
   recipeCount,
 }: {
   customerInfo: CustomerInfo | null;
   cookbookMode: boolean;
   template: RecipePrintTemplate;
-  selectedPremiumTemplate: PremiumRecipePrintTemplate | null;
   cardSize: PrintCardSize;
   recipeCount: number;
 }): ProLocks {
@@ -278,10 +276,8 @@ export function computeProLocks({
   // purchase, so neither paywall applies while in cookbook mode — the
   // cookbook unlock is the only gate there. Switching back to recipe cards
   // restores normal gating.
-  const themeLocked =
-    Boolean(selectedPremiumTemplate) &&
-    !hasTemplateOrProEntitlement(customerInfo, template) &&
-    !cookbookMode;
+  // A free theme is never locked: `hasTemplateOrProEntitlement` answers true for it.
+  const themeLocked = !cookbookMode && !hasTemplateOrProEntitlement(customerInfo, template);
   const cardSizeLocked = !cookbookMode && !canUseCardSize(customerInfo, cardSize);
   // Printing more than one recipe in one job (outside a cookbook, which has
   // its own separate purchase model) is its own Pro-gated capability — see
@@ -354,13 +350,12 @@ export async function loadRecipePrinterCustomerInfo(
  * Unlike `changeUser` (a plain identity switch), `identifyUser` aliases the
  * current anonymous customer's purchase history into `uid` when the current
  * identity is anonymous — this is what recovers a template bought before the
- * user ever logged in. `wasCreated` tells the caller whether `uid` already
- * had a RevenueCat customer record (i.e. purchases made under this account
- * elsewhere) versus being brand new.
+ * user ever logged in. `alreadyLinked` says whether this browser had already
+ * linked `uid` on an earlier visit, so the caller can stay quiet on a reload.
  */
 export async function identifyRecipePrinterCustomer(
   uid: string,
-): Promise<{ customerInfo: CustomerInfo; wasCreated: boolean; alreadyLinked: boolean }> {
+): Promise<{ customerInfo: CustomerInfo; alreadyLinked: boolean }> {
   const alreadyLinked = hasLinkedRecipePrinterCustomer(uid);
 
   // A reload clears the in-memory SDK instance but not the anonymous buyer ID.
@@ -377,35 +372,25 @@ export async function identifyRecipePrinterCustomer(
   if (!purchasesInstance || transition !== "identify") {
     const purchases = await getPurchases(uid);
     markRecipePrinterCustomerLinked(uid);
-    return { customerInfo: await purchases.getCustomerInfo(), wasCreated: false, alreadyLinked };
+    return { customerInfo: await purchases.getCustomerInfo(), alreadyLinked };
   }
 
-  const result = await purchasesInstance.identifyUser(uid);
+  const { customerInfo } = await purchasesInstance.identifyUser(uid);
   configuredUserId = uid;
   markRecipePrinterCustomerLinked(uid);
   // The just-claimed anonymous ID now belongs to this account. Prepare a new
   // guest identity for any future signed-out purchase in this browser.
   clearClaimedAnonymousCustomerId();
-  return { ...result, alreadyLinked };
+  return { customerInfo, alreadyLinked };
 }
 
-export async function syncRecipePrinterCustomerAttributes({
-  userId,
-  email,
-  displayName,
-}: {
-  userId: string;
-  email?: string | null;
-  displayName?: string | null;
-}): Promise<void> {
+export async function syncRecipePrinterCustomerAttributes(userId: string): Promise<void> {
   const purchases = await getPurchases(userId);
   await purchases.setAttributes({
     recipeprinter_customer_id: userId,
     // Lets a Customer List filter on environment in the dashboard, so any
     // test record that slips through is findable without matching id strings.
     environment: isProductionRuntime() ? "production" : "development",
-    ...(email ? { $email: email } : {}),
-    ...(displayName ? { $displayName: displayName } : {}),
   });
 }
 

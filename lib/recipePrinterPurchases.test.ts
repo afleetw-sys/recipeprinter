@@ -271,7 +271,6 @@ describe("computeProLocks — the print page's Pro-gate matrix", () => {
   const baseArgs = {
     cookbookMode: false,
     template: "classic" as const,
-    selectedPremiumTemplate: null,
     cardSize: "card-6x4" as const,
     recipeCount: 1,
   };
@@ -341,7 +340,7 @@ describe("computeProLocks — the print page's Pro-gate matrix", () => {
   test("a legacy $1.99 theme owner without Pro: their theme works, but 4x6 stays locked", () => {
     const owner = customerWith({ template_heirloom: {} });
     expect(
-      computeProLocks({ ...baseArgs, customerInfo: owner, template: "heirloom", selectedPremiumTemplate: "heirloom" })
+      computeProLocks({ ...baseArgs, customerInfo: owner, template: "heirloom" })
         .themeLocked,
     ).toBe(false);
     expect(computeProLocks({ ...baseArgs, customerInfo: owner }).cardSizeLocked).toBe(true);

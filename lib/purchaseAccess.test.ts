@@ -77,7 +77,6 @@ describe("purchaseGate driven end-to-end by resolveEffectiveCustomerInfo (fallba
       customerInfo: effective.customerInfo,
       cookbookMode: false,
       template: "classic",
-      selectedPremiumTemplate: null,
       cardSize: "card-6x4",
       recipeCount: 1,
     }).proLocked;
@@ -110,7 +109,6 @@ describe("purchaseGate driven end-to-end by resolveEffectiveCustomerInfo (fallba
       customerInfo: effective.customerInfo,
       cookbookMode: false,
       template: "classic",
-      selectedPremiumTemplate: null,
       cardSize: "card-6x4",
       recipeCount: 1,
     });

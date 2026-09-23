@@ -3,11 +3,9 @@
 import { useEffect, useRef, useState } from "react";
 import type { User } from "firebase/auth";
 import type { CustomerInfo } from "@revenuecat/purchases-js";
-import { RECIPE_PRINT_TEMPLATE_OPTIONS } from "@/lib/printTemplates";
 import type { RecipePrintTemplate } from "@/types/recipe";
 import { isPremiumTemplate } from "@/lib/premiumTemplates";
 import {
-  hasTemplateEntitlement,
   identifyRecipePrinterCustomer,
   loadRecipePrinterCustomerInfo,
   recipePrinterCustomerId,
@@ -68,16 +66,8 @@ export function usePremiumTemplatePurchase({
   }
 
   const selectedPremiumTemplate = isPremiumTemplate(template) ? template : null;
-  const selectedTemplateOption = RECIPE_PRINT_TEMPLATE_OPTIONS.find(
-    (option) => option.id === template,
-  );
-  const selectedTemplateLabel = selectedTemplateOption?.label ?? "this";
-  const selectedTemplateLocked =
-    selectedPremiumTemplate !== null &&
-    !hasTemplateEntitlement(customerInfo, selectedPremiumTemplate);
 
-  async function refreshCustomerInfo(userId = revenueCatUserId): Promise<CustomerInfo | null> {
-    if (!userId) return null;
+  async function refreshCustomerInfo(userId: string): Promise<CustomerInfo | null> {
     let info: CustomerInfo | null;
     try {
       info = await loadRecipePrinterCustomerInfo(userId);
@@ -104,9 +94,7 @@ export function usePremiumTemplatePurchase({
       }
       return null;
     }
-    syncRecipePrinterCustomerAttributes({
-      userId,
-    }).catch((error) => {
+    syncRecipePrinterCustomerAttributes(userId).catch((error) => {
       console.warn("RecipePrinter: could not sync RevenueCat customer attributes", error);
     });
     if (revenueCatUserIdRef.current === userId) {
@@ -219,9 +207,6 @@ export function usePremiumTemplatePurchase({
       setCustomerInfoStatus("ok");
       setCustomerInfoLastVerifiedAtMs(Date.now());
     },
-    refreshCustomerInfo,
     selectedPremiumTemplate,
-    selectedTemplateLabel,
-    selectedTemplateLocked,
   };
 }
